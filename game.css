@@ -1,0 +1,86 @@
+﻿@import url('common.css');
+
+.day-alive { background-color: #e8e8d8; color: #303030; }
+.day-dead { background-color: #c0c0b0; color: #909090; }
+.day-mark { background-color: #99bb99; color: #303030; }
+.day-grey { color: #909090; }
+.day-empty { background-color: #c0c0b0; color: #303030; }
+
+button.day-char { border: 0; height: 28px; width: 28px; margin: 0px; padding: 1px; color: #303030; background-color: transparent; }
+button.day-char[checked] { border: 1px solid; padding: 0px; background-color: #aaccdd; }
+button.day-char[disabled] { border: 1px solid; padding: 0px; color: #808080; }
+button.night-char:hover { border: 1px outset #dddddd; padding: 0px;  }
+button.day-char:active { border: 1px inset #dddddd; padding: 0px;  }
+
+button.day-vote { border: 1px outset #dddddd; height: 28px; width: 160px; margin: 0px; padding: 1px; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.day-vote[checked] { border: 1px solid #909090; padding: 0px; background-color: #aaccdd; }
+button.day-vote[disabled] { border: 1px solid #909090; padding: 0px; color: #808080; background-color: transparent; }
+button.day-vote:active { border: 1px inset #dddddd; padding: 0px;  }
+
+.night-alive { background-color: #c0c0b0; color: #303030; }
+.night-dead { background-color: #a0a090; color: #707070; }
+.night-mark { background-color: #779977; color: #303030; }
+.night-grey { color: #707070; }
+.night-empty { background-color: #a0a090; color: #303030; }
+
+button.night-char { border: 0; height: 28px; width: 28px; margin: 0px; padding: 1px; color: #303030; background-color: transparent; }
+button.night-char[checked] { border: 1px solid #707070; padding: 0px; color: #303030; background-color: #8899aa; }
+button.night-char[disabled] { border: 1px solid #707070; padding: 0px; color: #707070; }
+button.night-char:hover { border: 1px outset #cccccc; padding: 0px;  }
+button.night-char:active { border: 1px inset #cccccc; padding: 0px; }
+
+button.night-vote { border: 1px outset #cccccc; height: 28px; width: 160px; margin: 0px; padding: 1px; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.night-vote[checked] { border: 1px solid #909090; padding: 0px; color: #303030; background-color: #8899aa; font-weight:bold; }
+button.night-vote[disabled] { border: 1px solid #909090; padding: 0px; color: #707070; }
+button.night-vote:active { border: 1px inset #cccccc; padding: 0px; }
+
+table.invis { border: 0; padding: 0; margin:0; }
+table.invis tr { border: 0; padding: 0; margin:0; }
+table.invis td { border: 0; padding: 0; margin:0; }
+
+table.reg-list { border: 0; padding: 0; margin:0; }
+table.reg-list tr { border: 0; padding: 0; margin:0; }
+table.reg-list td { border: 0; padding: 7px; margin:0; }
+
+button.noms { height: 28px; width: 200px; margin: 0px; padding: 1px; border: 1px outset #cccccc; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.noms:hover { border: 1px outset #cccccc; padding: 0px;  }
+button.noms:active { border: 1px inset #cccccc; padding: 0px;  }
+
+button.game-btn { height: 28px; width: 120px; margin: 0px; padding: 1px; border: 1px outset #cccccc; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.game-btn:hover { border: 1px outset #cccccc; padding: 0px;  }
+button.game-btn:active { border: 1px inset #cccccc; padding: 0px;  }
+button.game-btn[disabled] { border: 1px solid #303030; padding: 0px; color: #808080; background-color: transparent; opacity: 0.2; }
+button.game-btn[disabled]:hover {}
+button.game-btn[disabled]:active {}
+
+button.ops { border: 0; height: 58px; width: 58px; margin: 0px; padding: 0px; vertical-align: center; margin: 0px 6px 0px 6px; background-color: transparent; }
+button.ops:hover { border: 1px outset #cccccc; padding: 0px;  }
+button.ops:active { border: 1px inset #cccccc; padding: 0px; }
+
+button.timer { border: 0; height: 46px; width: 46px; margin: 0px; padding: 0px; vertical-align: center; background-color: transparent; }
+table.timer { height: 78px; border: 1px solid #909090; margin: 3px; }
+table.timer td { padding: 1px 12px 1px 12px; }
+table.timer-0{ background-color: #e8e8d8; }
+table.timer-1 { background-color: #990000; }
+div.timer { text-align: center; vertical-align: center; margin: 1px; padding: 2px; font-size: 3em; color: #606060; }
+img.timer { height: 46px; width: 46px; border: none; }
+
+img.text { vertical-align:middle; border: 0; text-align: left; }
+
+button.warn3 { height: 40px; width: 300px; margin: 0px 1px 1px 1px; padding: 1px; border: 1px outset #cccccc; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.warn3[disabled] { border: 1px solid #909090; padding: 0px; color: #808080; background-color: transparent; }
+button.warn3[checked] { border: 1px solid; padding: 0px; background-color: #aaccdd; }
+button.warn3:hover { border: 1px outset #cccccc; padding: 0px;  }
+button.warn3:active { border: 1px inset #cccccc; padding: 0px;  }
+
+#info { font-weight:bold; }
+#clock { text-align:right; padding:0px; margin:0px; }
+#demo { text-align:center; vertical-align: center; top:200px; position: absolute; left:0; width:100%; margin:0; border-style: none; font-size: 15em; font-weight:bold; opacity: 0.3; display:none; pointer-events:none; }
+#saving { padding:8px; font-weight:bold; }
+
+img.role-icon { opacity: 0.5; }
+.ops-item { text-align:left; }
+.header-row { height:94px; font-weight:bold; text-align:center; }
+.player-row { height:38px; }
+.footer-row { height:38px; }
+.btn-panel { margin-top: 6px; }

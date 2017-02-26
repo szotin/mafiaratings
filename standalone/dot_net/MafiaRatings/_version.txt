@@ -1,0 +1,7 @@
+Instructions how to change version:
+
+1. Go to www\downloads\windows\version.php file. Increase VERSION to 1. Set all the changed files in the array to the latest version.
+2. Open MafiaRatings.sln; Right click on MafiaRatingsSetup project. Choose View/Registry. In HKEY_LOCAL_MACHINE/Software/[Manufacturer] change version to the same as in version.php file.
+3. Do the same for MafiaRatingsSetup.ru project.
+4. Run _deploy.bat
+5. Copy all the content of www\downloads\windows directory to the appropriate web-server dir.

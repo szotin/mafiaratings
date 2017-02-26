@@ -1,0 +1,45 @@
+﻿body { background-color: #aaaaaa; color: #303030; }
+
+button.timer { height: 28px; width: 28px; margin: 0px; padding: 2px; border: none; vertical-align: center;  background-color: transparent; border-color: #999999; }
+input.timer { height: 18px; width: 20px; text-align: center; vertical-align: top; margin: 1px; padding: 2px; border: 1px inset; }
+
+table.bordered, table.bordered tr, table.bordered th, table.bordered td { border: 2px ridge; border-spacing:0; border-collapse:collapse; padding: 4px; border-color: #cccccc; }
+table.dialog_form, table.dialog_form tr, table.dialog_form th, table.dialog_form td { border: 2px ridge; border-spacing:0; border-collapse:collapse; padding: 4px; border-color: #ffffff; background-color: transparent; }
+table.transp, table.transp tr, table.transp th, table.transp td  { padding: 0px; margin: 0px; border-spacing:0; border: none; }
+
+button.icon { height: 38px; width: 38px; margin: 0px; padding: 1px; border: 0px; background-color:transparent; }
+button.icon:hover { border: 1px outset; padding: 0px; border-color: #bbbbbb; }
+button.icon:active { border: 1px inset; padding: 0px; border-color: #bbbbbb; }
+img.icon { border: 0; width: 36px; }
+
+.day-alive { background-color: #b6b6b6; color: #303030; }
+.day-dead { background-color: #aaaaaa; color: #909090; }
+.day-mark { background-color: #cccccc; color: #303030; }
+.day-grey { color: #909090; }
+.day-empty {}
+
+button.day-char { height: 28px; width: 28px; margin: 0px; padding: 1px; border: 0px; color: #303030; }
+button.night-char[disabled] { border: 1px solid; padding: 0px; color: #909090; }
+button.day-char:hover { border: 1px outset; padding: 0px;  }
+button.day-char:active { border: 1px inset; padding: 0px;  }
+
+.night-alive { background-color: #464646; color: #cccccc; }
+.night-dead { background-color: #505050; color: #707070; }
+.night-mark { background-color: #888888; color: #303030; }
+.night-grey { color: #707070; }
+.night-empty { background-color: #999999; color: #444444; }
+
+button.night-char { height: 28px; width: 28px; margin: 0px; padding: 1px; border: 0px; color: #cccccc; background-color: transparent; }
+button.night-char[disabled] { border: 1px solid; padding: 0px; color: #707070; }
+button.night-char:hover { border: 1px outset; padding: 0px;  }
+button.night-char:active { border: 1px inset; padding: 0px; }
+
+table.invis { border: 0; padding: 0; margin:0; }
+table.invis tr { border: 0; padding: 0; margin:0; }
+table.invis td { border: 0; padding: 0; margin:0; }
+
+table.reg-list { border: 0; padding: 0; margin:0; }
+table.reg-list tr { border: 0; padding: 0; margin:0; }
+table.reg-list td { border: 0; padding: 7px; margin:0; }
+
+#loading { display:none; z-index:10000; border: 0px; width: 200px; height: 100px; text-align:center; position:absolute; left: 50%; top: 50%; margin-left:-100px; margin-top: -50px; border-color: #ffffff; background-color: #eeeeee; }

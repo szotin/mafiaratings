@@ -1,0 +1,42 @@
+http://developers.facebook.com/setup/done?id=192839860755299&locale=en_US
+
+
+Settings
+
+Mafia World is now registered with Facebook. You can edit your app settings at any time in your Developer Dashboard.
+
+App Name:	Mafia World
+App URL:	http://www.mafiaworld.ca/
+App ID:	192839860755299
+App Secret:	bbb55ae0640b3245ac476775775b718c
+Sample Code
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:fb="http://www.facebook.com/2008/fbml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Mafia World</title>
+  </head>
+  <body>
+    <h1>Mafia World</h1>
+    <p><fb:login-button autologoutlink="true"></fb:login-button></p>
+    <p><fb:like></fb:like></p>
+
+    <div id="fb-root"></div>
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({appId: '192839860755299', status: true, cookie: true,
+                 xfbml: true});
+      };
+      (function() {
+        var e = document.createElement('script');
+        e.type = 'text/javascript';
+        e.src = document.location.protocol +
+          '//connect.facebook.net/en_US/all.js';
+        e.async = true;
+        document.getElementById('fb-root').appendChild(e);
+      }());
+    </script>
+  </body>
+</html>

@@ -1,0 +1,432 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AllOrNobody" xml:space="preserve">
+    <value>Вы хотите убить всех, или никого. Нажмите дальше.</value>
+  </data>
+  <data name="CiviliansWin" xml:space="preserve">
+    <value>Честные выиграли!!!</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>Подсоединен к {1} как {0}</value>
+  </data>
+  <data name="ConnectToCreate" xml:space="preserve">
+    <value>Вам нужно подключиться к серверу, чтобы создать игрока</value>
+  </data>
+  <data name="ConnectToReg" xml:space="preserve">
+    <value>Вам нужно подключиться к серверу, чтобы зарегистрировать игрока</value>
+  </data>
+  <data name="DayNum" xml:space="preserve">
+    <value>День {0}</value>
+  </data>
+  <data name="don" xml:space="preserve">
+    <value>дон</value>
+  </data>
+  <data name="DonChecking" xml:space="preserve">
+    <value>Дон ищет шерифа. Выберите игрока и нажмите "Дальше".</value>
+  </data>
+  <data name="EnterShooting" xml:space="preserve">
+    <value>Введите выстрел(ы) мафии и нажмите Дальше, чтобы начать проверу дона.</value>
+  </data>
+  <data name="EnterUserName" xml:space="preserve">
+    <value>Введите имя игрока</value>
+  </data>
+  <data name="ErrGetEvents" xml:space="preserve">
+    <value>Ошибка загрузки игровых дней</value>
+  </data>
+  <data name="ErrLoadData" xml:space="preserve">
+    <value>Ошибка загрузки данных</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="ErrProgress" xml:space="preserve">
+    <value>Не получается стартовать прогресс диалог</value>
+  </data>
+  <data name="ErrRegister" xml:space="preserve">
+    <value>Ошибка регистрации пользователя</value>
+  </data>
+  <data name="ErrSavePwd" xml:space="preserve">
+    <value>Ошибка записи пароля</value>
+  </data>
+  <data name="ErrUserNicks" xml:space="preserve">
+    <value>Ошибка загрузки ников игроков</value>
+  </data>
+  <data name="FloorToNext" xml:space="preserve">
+    <value>Нажмите Дальше, чтобы предоставить слово {0}. </value>
+  </data>
+  <data name="GameErr" xml:space="preserve">
+    <value>Ошибка игры</value>
+  </data>
+  <data name="GameTerminated" xml:space="preserve">
+    <value>Игра прекращена.</value>
+  </data>
+  <data name="GoodMorning" xml:space="preserve">
+    <value>Доброе утро!</value>
+  </data>
+  <data name="he" xml:space="preserve">
+    <value>он</value>
+  </data>
+  <data name="her" xml:space="preserve">
+    <value>ей</value>
+  </data>
+  <data name="him" xml:space="preserve">
+    <value>ему</value>
+  </data>
+  <data name="his" xml:space="preserve">
+    <value>его</value>
+  </data>
+  <data name="Immunity" xml:space="preserve">
+    <value>Иммунитет</value>
+  </data>
+  <data name="InvalidEmail" xml:space="preserve">
+    <value>{0} неправильный email.</value>
+  </data>
+  <data name="InvalidLang" xml:space="preserve">
+    <value>Пожалуйста выберите по крайней мере один язык.</value>
+  </data>
+  <data name="InvalidPwd" xml:space="preserve">
+    <value>Пожалуйста введите пароль.</value>
+  </data>
+  <data name="InvalidPwdConfirm" xml:space="preserve">
+    <value>Пожалуйста введите подтверждение пароля.</value>
+  </data>
+  <data name="KickOut" xml:space="preserve">
+    <value>Выкинуть {0} из игры</value>
+  </data>
+  <data name="KilledLastNight" xml:space="preserve">
+    <value>{0} убит(а) этой ночью.</value>
+  </data>
+  <data name="LastSpeech" xml:space="preserve">
+    <value>{0} убит(а) этой ночью и говорит свое последнее слово.</value>
+  </data>
+  <data name="LoginErr" xml:space="preserve">
+    <value>Ошибка входа</value>
+  </data>
+  <data name="mafia" xml:space="preserve">
+    <value>мафия</value>
+  </data>
+  <data name="MafiaWins" xml:space="preserve">
+    <value>Мафия выиграла!!!</value>
+  </data>
+  <data name="ManyDistrusted" xml:space="preserve">
+    <value>{0} игроков на недоверии. Нажмите Дальше, чтобы предоставить слово {1}.</value>
+  </data>
+  <data name="ManyVoteLeaders" xml:space="preserve">
+    <value>{0} игроков выиграли голосование.</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Дальше</value>
+  </data>
+  <data name="NightFalling" xml:space="preserve">
+    <value>Наступила ночь. Убедитесь, что все закрыли глаза прежде чем нажать Дальше.</value>
+  </data>
+  <data name="NightNum" xml:space="preserve">
+    <value>Ночь {0}</value>
+  </data>
+  <data name="NobodyKilled" xml:space="preserve">
+    <value>Этой ночью никто не был убит.</value>
+  </data>
+  <data name="NobodyKilledNoRepeat" xml:space="preserve">
+    <value>Никто не убит. Когда голоса четырех игроков делятся по два, повторное голосование не проводится. Нажмите Дальше, чтобы начать ночь.</value>
+  </data>
+  <data name="NoConnection" xml:space="preserve">
+    <value>Нет соединения</value>
+  </data>
+  <data name="NoDon" xml:space="preserve">
+    <value>Дона нет в игре. Нажмите Дальше, чтобы начать шерифскую проверку.</value>
+  </data>
+  <data name="NominatedPlayers" xml:space="preserve">
+    <value>Выдвинутые игроки. Нажмите Дальше, чтобы начать голосование.</value>
+  </data>
+  <data name="NoNomination" xml:space="preserve">
+    <value>Никто не убит, потому что никто не выдвинут. Нажмите Дальше, чтобы начать ночь.</value>
+  </data>
+  <data name="NoNomination1" xml:space="preserve">
+    <value>На недоверии никого нет, потому что никто не выставлен. Нажмите Дальше, чтобы начать ночь.</value>
+  </data>
+  <data name="NoServer" xml:space="preserve">
+    <value>Сервер не доступен</value>
+  </data>
+  <data name="NoSheriff" xml:space="preserve">
+    <value>Шерифа нет в игре. Нажмите Дальше, чтобы начать день.</value>
+  </data>
+  <data name="NoToDon" xml:space="preserve">
+    <value>Ответьте НЕТ дону. Нажмите Дальше, чтобы начать шерифскую проверку.</value>
+  </data>
+  <data name="NoToSheriff" xml:space="preserve">
+    <value>Ответьте НЕТ шерифу. Нажмите Дальше, чтобы начать день.</value>
+  </data>
+  <data name="Offline" xml:space="preserve">
+    <value>Автономный режим</value>
+  </data>
+  <data name="OneNomination" xml:space="preserve">
+    <value>{0} убит(а) как единственный выставленный(ая) игрок. Нажмите Дальше, чтобы предоставить {1} слово.</value>
+  </data>
+  <data name="OneNomination1" xml:space="preserve">
+    <value>{0} на недоверии как единственный выставленный(ая) игрок. Нажмите Дальше, чтобы предоставить {1} слово.</value>
+  </data>
+  <data name="OnlineNameCheckOn" xml:space="preserve">
+    <value>Включить проверку имени пользователя "на лету".</value>
+  </data>
+  <data name="PlayerKickedOut" xml:space="preserve">
+    <value>{0} вышвырнут из игры ведущим.</value>
+  </data>
+  <data name="PlayerKilled" xml:space="preserve">
+    <value>{0} убит(а)</value>
+  </data>
+  <data name="PlayerKilledByWarnings" xml:space="preserve">
+    <value>{0} убит(а) четырьмя замечаниями.</value>
+  </data>
+  <data name="PlayerMissingSpeech" xml:space="preserve">
+    <value>{0} пропускает речь из-за трех замечаний. Однако {2} может выставить кого нибудь.</value>
+  </data>
+  <data name="PlayerSpeaking" xml:space="preserve">
+    <value>{0} говорит свое слово.</value>
+  </data>
+  <data name="PlayerSuisided" xml:space="preserve">
+    <value>{0} покончил(а) самоубийством.</value>
+  </data>
+  <data name="PwdNotMatch" xml:space="preserve">
+    <value>Пароли не совпадают.</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>Регистрация</value>
+  </data>
+  <data name="RepeatVoting" xml:space="preserve">
+    <value>Голосование нужно повторить. Нажмите Дальше, чтобы предоставить слово {0}.</value>
+  </data>
+  <data name="she" xml:space="preserve">
+    <value>она</value>
+  </data>
+  <data name="sheriff" xml:space="preserve">
+    <value>шериф</value>
+  </data>
+  <data name="SheriffChecking" xml:space="preserve">
+    <value>Шериф ищет мафию. Выберите игрока и нажмите Дальше.</value>
+  </data>
+  <data name="Space" xml:space="preserve">
+    <value> </value>
+  </data>
+  <data name="StartNight" xml:space="preserve">
+    <value>Нажмите Дальше, чтобы начать ночь.</value>
+  </data>
+  <data name="StartVoting" xml:space="preserve">
+    <value>Нажмите Дальше, чтобы начать голосование.</value>
+  </data>
+  <data name="String1" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Suiside" xml:space="preserve">
+    <value>Самоубийство - {0} покидает игру.</value>
+  </data>
+  <data name="VotingCanceled" xml:space="preserve">
+    <value>Голосование отменено, потому что некоторые игроки уже покинули игру в этот день. Нажмите Дальше, чтобы начать ночь.</value>
+  </data>
+  <data name="VotingFor" xml:space="preserve">
+    <value>Голосование за {0}. Нажмите Дальше, чтобы голосовать за {1}.</value>
+  </data>
+  <data name="VotingFor1" xml:space="preserve">
+    <value>Голосование за {0}. Нажмите Дальше, чтобы увидеть результаты голосования.</value>
+  </data>
+  <data name="VotingLastSpeech" xml:space="preserve">
+    <value>{0} произносит последнее слово.</value>
+  </data>
+  <data name="VotingNobodyKilled" xml:space="preserve">
+    <value>Никто не убит. Нажмите Дальше.</value>
+  </data>
+  <data name="Warn" xml:space="preserve">
+    <value>Дать {0} замечание</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>1 замечание</value>
+  </data>
+  <data name="Warnings" xml:space="preserve">
+    <value>{0} замечания</value>
+  </data>
+  <data name="YesToDon" xml:space="preserve">
+    <value>Ответьте ДА дону. Нажмите Дальше, чтобы начать шерифскую проверку.</value>
+  </data>
+  <data name="YesToSheriff" xml:space="preserve">
+    <value>Ответьте ДА шерифу. Нажмите Дальше, чтобы начать день.</value>
+  </data>
+  <data name="Check" xml:space="preserve">
+    <value>проверить</value>
+  </data>
+  <data name="NoCheck" xml:space="preserve">
+    <value>не проверять</value>
+  </data>
+  <data name="Nominate" xml:space="preserve">
+    <value>выставить</value>
+  </data>
+  <data name="NoNominate" xml:space="preserve">
+    <value>не выставлять</value>
+  </data>
+  <data name="Vote" xml:space="preserve">
+    <value>голосовать</value>
+  </data>
+  <data name="DonIsChecking" xml:space="preserve">
+    <value>Проверки дона</value>
+  </data>
+  <data name="Killed" xml:space="preserve">
+    <value>Убит</value>
+  </data>
+  <data name="MafiaArrangement" xml:space="preserve">
+    <value>Договоренка мафии</value>
+  </data>
+  <data name="Player" xml:space="preserve">
+    <value>Выберите лучшего игрока</value>
+  </data>
+  <data name="PlayerWarnings" xml:space="preserve">
+    <value>Замечания</value>
+  </data>
+  <data name="RatingPoints" xml:space="preserve">
+    <value>Рейтинг</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>Роль</value>
+  </data>
+  <data name="SheriffIsChecking" xml:space="preserve">
+    <value>Шерифские проверки</value>
+  </data>
+  <data name="ImmunityLower" xml:space="preserve">
+    <value>иммунитет</value>
+  </data>
+  <data name="Lang" xml:space="preserve">
+    <value>ru</value>
+  </data>
+  <data name="OnlineNameCheckOff" xml:space="preserve">
+    <value>Выключить проверку имени пользователя "на лету".</value>
+  </data>
+  <data name="ConnectToRegOtherClub" xml:space="preserve">
+    <value>Вам нужно подключиться к серверу, чтобы зарегистрировать игрока из другого клуба.</value>
+  </data>
+  <data name="JoinClub" xml:space="preserve">
+    <value>{0} хочет вступить в {1}</value>
+  </data>
+  <data name="NoBestPlayer" xml:space="preserve">
+    <value>нет лучшего игрока</value>
+  </data>
+  <data name="StartFreeRound" xml:space="preserve">
+    <value>Нажмите Дальше чтобы начать свободную дискуссию.</value>
+  </data>
+  <data name="FreeRound" xml:space="preserve">
+    <value>Свободная дискуссия.</value>
+  </data>
+</root>

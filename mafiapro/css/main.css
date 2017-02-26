@@ -1,0 +1,102 @@
+td, body
+{
+	font-family: Arial;
+	font-size: 12px;
+	color : #A09F9F;
+}
+
+h1, h2, h3, h4, h5, h6
+{
+	font-family: Arial;
+	font-size: 13px;
+	font-weight: bolder;
+	color : #ffffff;
+	margin-bottom: 0px;
+}
+
+
+
+a
+{
+	font-size: 12px;
+	text-decoration: none;
+	font-weight: bolder;
+	color : #FF0000;
+}
+
+a:hover
+{
+	font-size: 12px;
+	text-decoration: none;
+	font-weight: bolder;
+	color : #ffffff;
+}
+
+
+
+.slog
+{
+	font-size: small;
+	color : #ADCEFF;
+}
+
+.medium
+{
+	font-size: 11px;
+}
+
+.small
+{
+	font-size: 10px;
+}
+
+.vsmall
+{
+	font-size: 9px;
+}
+
+.big
+{
+	font-size: x-large;
+}
+
+.vbig
+{
+	font-size: xx-large;
+}
+
+
+hr
+{
+	height : 1px ;
+	color : #ff0000;
+	background-color : #ff0000;
+}
+
+img.border
+{
+	border: solid 3px #A09F9F;
+}
+
+.input
+{
+
+	background-color : #ffffff;
+}
+
+th
+{
+	font-family: Arial;
+	font-size: 12px;
+	color : #ff0000;
+}
+
+td.mark
+{
+	color : #ff0000;
+}
+
+td.highlight
+{
+	color : #ffffff;
+}

@@ -1,0 +1,2106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="label12.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="&gt;&gt;playerCombo1.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="panel2.TabIndex" type="System.Int32, mscorlib">
+    <value>12</value>
+  </data>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="label13.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 13</value>
+  </data>
+  <data name="&gt;&gt;registerButton4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label4.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="label13.Location" type="System.Drawing.Point, System.Drawing">
+    <value>501, 10</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label6.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="moderRegisterButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 23</value>
+  </data>
+  <data name="&gt;&gt;registerButton8.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;label5.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="label8.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="playerCombo10.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="label5.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="registerButton10.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="playerCombo9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 3</value>
+  </data>
+  <data name="langLabel.Text" xml:space="preserve">
+    <value>Language:</value>
+  </data>
+  <data name="label4.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;langComboBox.Name" xml:space="preserve">
+    <value>langComboBox</value>
+  </data>
+  <data name="&gt;&gt;registerButton7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="panel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="label1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="playerCombo8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="registerNewButton2.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="registerButton4.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="panel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="label14.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="&gt;&gt;label14.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label8.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="panel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 375</value>
+  </data>
+  <data name="&gt;&gt;label9.Name" xml:space="preserve">
+    <value>label9</value>
+  </data>
+  <data name="playerCombo6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton7.Name" xml:space="preserve">
+    <value>registerNewButton7</value>
+  </data>
+  <data name="registerNewButton5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="registerNewButton5.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="registerButton3.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;playerCombo1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerButton7.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="langComboBox.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Right</value>
+  </data>
+  <data name="playerCombo3.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;label12.Name" xml:space="preserve">
+    <value>label12</value>
+  </data>
+  <data name="label11.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="panel4.TabIndex" type="System.Int32, mscorlib">
+    <value>14</value>
+  </data>
+  <data name="playerCombo9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="label2.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="panel9.TabIndex" type="System.Int32, mscorlib">
+    <value>19</value>
+  </data>
+  <data name="&gt;&gt;toolTip.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="label10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="label14.Text" xml:space="preserve">
+    <value>Make sure all eyes are closed before clicking 'Start game'.</value>
+  </data>
+  <data name="label12.Size" type="System.Drawing.Size, System.Drawing">
+    <value>37, 13</value>
+  </data>
+  <data name="playerCombo7.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="registerButton9.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="label1.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;playerCombo9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerButton9.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="&gt;&gt;moderRegisterButton.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="label6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="playerCombo2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 3</value>
+  </data>
+  <data name="&gt;&gt;label10.Name" xml:space="preserve">
+    <value>label10</value>
+  </data>
+  <data name="&gt;&gt;label5.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="panel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="&gt;&gt;playerCombo4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel4.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="registerNewButton5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 3</value>
+  </data>
+  <data name="&gt;&gt;playerCombo9.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton2.Name" xml:space="preserve">
+    <value>registerNewButton2</value>
+  </data>
+  <data name="panel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="&gt;&gt;panel5.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="playerCombo7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="registerNewButton10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;playerCombo2.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;label11.Name" xml:space="preserve">
+    <value>label11</value>
+  </data>
+  <data name="&gt;&gt;langLabel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton1.Name" xml:space="preserve">
+    <value>registerNewButton1</value>
+  </data>
+  <data name="label5.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton3.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="registerButton9.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="rulesComboBox.Size" type="System.Drawing.Size, System.Drawing">
+    <value>268, 21</value>
+  </data>
+  <data name="&gt;&gt;eventsComboBox.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="&gt;&gt;registerButton10.Name" xml:space="preserve">
+    <value>registerButton10</value>
+  </data>
+  <data name="playerCombo1.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;registerButton3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="panel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="registerButton2.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton9.Name" xml:space="preserve">
+    <value>registerNewButton9</value>
+  </data>
+  <data name="&gt;&gt;label7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton6.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton1.Parent" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="&gt;&gt;label7.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton6.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="moderRegisterButton.TabIndex" type="System.Int32, mscorlib">
+    <value>7</value>
+  </data>
+  <data name="&gt;&gt;label10.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton5.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;moderRegisterButton.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="registerNewButton10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 3</value>
+  </data>
+  <data name="&gt;&gt;registerButton2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="panel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="&gt;&gt;playerCombo10.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>Event:</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton4.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;playerCombo9.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;langComboBox.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label1.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="registerNewButton1.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
+    <value>6, 13</value>
+  </data>
+  <data name="&gt;&gt;moderComboBox.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="&gt;&gt;label11.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;infoPanel.Name" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="&gt;&gt;rulesComboBox.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="registerButton6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 3</value>
+  </data>
+  <data name="label8.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;panel8.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="registerButton2.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="label14.Size" type="System.Drawing.Size, System.Drawing">
+    <value>280, 13</value>
+  </data>
+  <data name="&gt;&gt;panel6.Name" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;panel9.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;label13.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="panel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="&gt;&gt;registerButton4.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="registerNewButton6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 3</value>
+  </data>
+  <data name="&gt;&gt;registerButton9.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="label5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton2.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="registerNewButton7.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="label13.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Right</value>
+  </data>
+  <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="label3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="&gt;&gt;$this.Type" xml:space="preserve">
+    <value>MafiaRatings.GameControl, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerCombo10.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;label14.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="registerNewButton1.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="&gt;&gt;registerButton5.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="langLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 13</value>
+  </data>
+  <data name="registerNewButton2.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;playerCombo3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;rulesComboBox.Name" xml:space="preserve">
+    <value>rulesComboBox</value>
+  </data>
+  <data name="label11.Size" type="System.Drawing.Size, System.Drawing">
+    <value>38, 13</value>
+  </data>
+  <data name="registerButton1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 3</value>
+  </data>
+  <data name="eventsComboBox.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="label9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="&gt;&gt;registerButton6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="playerCombo8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 3</value>
+  </data>
+  <data name="playerCombo4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="playerCombo2.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="registerNewButton9.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;panel5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerButton4.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="registerNewButton5.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="&gt;&gt;registerButton7.Name" xml:space="preserve">
+    <value>registerButton7</value>
+  </data>
+  <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="&gt;&gt;panel10.Name" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;playerCombo7.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="registerButton3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 5</value>
+  </data>
+  <data name="&gt;&gt;panel8.Name" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;playerCombo7.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;panel6.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="label4.Text" xml:space="preserve">
+    <value>4:</value>
+  </data>
+  <data name="panel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 279</value>
+  </data>
+  <data name="label12.Location" type="System.Drawing.Point, System.Drawing">
+    <value>5, 37</value>
+  </data>
+  <data name="&gt;&gt;label14.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="panel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 343</value>
+  </data>
+  <data name="&gt;&gt;registerButton7.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;registerButton6.Name" xml:space="preserve">
+    <value>registerButton6</value>
+  </data>
+  <data name="&gt;&gt;panel9.Name" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;eventsComboBox.Name" xml:space="preserve">
+    <value>eventsComboBox</value>
+  </data>
+  <data name="registerButton6.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton3.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;rulesComboBox.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerButton1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerNewButton4.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="playerCombo6.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="&gt;&gt;panel8.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="infoPanel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 87</value>
+  </data>
+  <data name="&gt;&gt;panel1.Name" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="playerCombo4.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="registerButton9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 3</value>
+  </data>
+  <data name="&gt;&gt;label8.Name" xml:space="preserve">
+    <value>label8</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton10.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="panel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="&gt;&gt;panel9.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="label7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="&gt;&gt;panel3.Name" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;registerButton6.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="playerCombo5.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="registerButton10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 3</value>
+  </data>
+  <data name="playerCombo3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="registerButton8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 3</value>
+  </data>
+  <data name="label14.Location" type="System.Drawing.Point, System.Drawing">
+    <value>5, 71</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton9.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;moderRegisterButton.Name" xml:space="preserve">
+    <value>moderRegisterButton</value>
+  </data>
+  <data name="&gt;&gt;playerCombo3.Name" xml:space="preserve">
+    <value>playerCombo3</value>
+  </data>
+  <data name="registerNewButton9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;registerButton8.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerNewButton2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 3</value>
+  </data>
+  <data name="playerCombo7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 3</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton4.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;label1.Name" xml:space="preserve">
+    <value>label1</value>
+  </data>
+  <data name="registerNewButton3.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="label7.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="playerCombo5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 3</value>
+  </data>
+  <data name="label11.Location" type="System.Drawing.Point, System.Drawing">
+    <value>5, 10</value>
+  </data>
+  <data name="&gt;&gt;label7.Name" xml:space="preserve">
+    <value>label7</value>
+  </data>
+  <data name="registerNewButton9.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton7.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="playerCombo1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="&gt;&gt;playerCombo5.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="playerCombo2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="panel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 151</value>
+  </data>
+  <data name="&gt;&gt;playerCombo9.Name" xml:space="preserve">
+    <value>playerCombo9</value>
+  </data>
+  <data name="&gt;&gt;label10.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="registerButton10.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="&gt;&gt;panel3.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>1:</value>
+  </data>
+  <data name="registerNewButton6.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="label6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="&gt;&gt;panel10.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="panel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 247</value>
+  </data>
+  <data name="&gt;&gt;label6.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="registerNewButton6.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;playerCombo5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton2.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="panel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="label6.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;registerButton3.Name" xml:space="preserve">
+    <value>registerButton3</value>
+  </data>
+  <data name="&gt;&gt;moderComboBox.Name" xml:space="preserve">
+    <value>moderComboBox</value>
+  </data>
+  <data name="registerNewButton3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;panel6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;playerCombo10.Name" xml:space="preserve">
+    <value>playerCombo10</value>
+  </data>
+  <data name="&gt;&gt;label11.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="playerCombo10.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;playerCombo2.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="panel7.TabIndex" type="System.Int32, mscorlib">
+    <value>17</value>
+  </data>
+  <data name="&gt;&gt;label3.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="moderRegisterButton.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Right</value>
+  </data>
+  <data name="&gt;&gt;infoPanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;playerCombo1.Parent" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="&gt;&gt;registerButton1.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="panel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 215</value>
+  </data>
+  <data name="label5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="panel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="&gt;&gt;registerButton2.Name" xml:space="preserve">
+    <value>registerButton2</value>
+  </data>
+  <data name="&gt;&gt;playerCombo5.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="label9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="&gt;&gt;label2.Name" xml:space="preserve">
+    <value>label2</value>
+  </data>
+  <data name="&gt;&gt;registerButton3.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton8.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerNewButton7.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="label8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="label10.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>3:</value>
+  </data>
+  <data name="&gt;&gt;label2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerNewButton8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 3</value>
+  </data>
+  <data name="panel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="&gt;&gt;langComboBox.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="panel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="label3.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="label2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="registerNewButton4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 3</value>
+  </data>
+  <data name="label10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="&gt;&gt;playerCombo10.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerNewButton2.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="&gt;&gt;label11.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>2:</value>
+  </data>
+  <data name="registerNewButton2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton4.Name" xml:space="preserve">
+    <value>registerNewButton4</value>
+  </data>
+  <data name="&gt;&gt;registerButton2.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="langLabel.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Right</value>
+  </data>
+  <data name="playerCombo6.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;label10.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="moderComboBox.Size" type="System.Drawing.Size, System.Drawing">
+    <value>225, 21</value>
+  </data>
+  <data name="&gt;&gt;panel2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;playerCombo6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerNewButton9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 3</value>
+  </data>
+  <data name="rulesComboBox.TabIndex" type="System.Int32, mscorlib">
+    <value>9</value>
+  </data>
+  <data name="&gt;&gt;panel3.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="panel5.TabIndex" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="registerNewButton8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="label3.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="playerCombo5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="&gt;&gt;moderRegisterButton.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="infoPanel.TabIndex" type="System.Int32, mscorlib">
+    <value>10</value>
+  </data>
+  <data name="registerButton8.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>8:</value>
+  </data>
+  <data name="&gt;&gt;panel10.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="rulesComboBox.Location" type="System.Drawing.Point, System.Drawing">
+    <value>49, 34</value>
+  </data>
+  <data name="playerCombo1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 3</value>
+  </data>
+  <data name="label4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="&gt;&gt;toolTip.Name" xml:space="preserve">
+    <value>toolTip</value>
+  </data>
+  <data name="eventsComboBox.Location" type="System.Drawing.Point, System.Drawing">
+    <value>49, 7</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton3.Name" xml:space="preserve">
+    <value>registerNewButton3</value>
+  </data>
+  <data name="&gt;&gt;panel4.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="panel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 119</value>
+  </data>
+  <data name="label14.TabIndex" type="System.Int32, mscorlib">
+    <value>6</value>
+  </data>
+  <data name="eventsComboBox.Size" type="System.Drawing.Size, System.Drawing">
+    <value>268, 21</value>
+  </data>
+  <data name="registerNewButton3.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="&gt;&gt;label13.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerNewButton4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;panel5.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;registerButton5.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="registerNewButton5.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="registerNewButton3.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton7.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="registerNewButton8.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="&gt;&gt;playerCombo1.Name" xml:space="preserve">
+    <value>playerCombo1</value>
+  </data>
+  <data name="&gt;&gt;registerButton10.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="panel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="label11.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="registerButton7.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;playerCombo4.Name" xml:space="preserve">
+    <value>playerCombo4</value>
+  </data>
+  <data name="label1.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="label13.TabIndex" type="System.Int32, mscorlib">
+    <value>4</value>
+  </data>
+  <data name="&gt;&gt;playerCombo8.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;moderComboBox.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="&gt;&gt;playerCombo4.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;registerButton1.Name" xml:space="preserve">
+    <value>registerButton1</value>
+  </data>
+  <data name="registerButton1.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="registerButton6.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="playerCombo9.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;playerCombo4.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;label2.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton10.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;infoPanel.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton8.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="registerButton5.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="registerButton2.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="&gt;&gt;label12.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="&gt;&gt;rulesComboBox.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton6.Name" xml:space="preserve">
+    <value>registerNewButton6</value>
+  </data>
+  <data name="&gt;&gt;infoPanel.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="&gt;&gt;panel7.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton8.Name" xml:space="preserve">
+    <value>registerNewButton8</value>
+  </data>
+  <data name="&gt;&gt;panel9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerButton8.Name" xml:space="preserve">
+    <value>registerButton8</value>
+  </data>
+  <data name="label5.Text" xml:space="preserve">
+    <value>5:</value>
+  </data>
+  <data name="registerButton9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;$this.Name" xml:space="preserve">
+    <value>StartGameControl</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton5.Name" xml:space="preserve">
+    <value>registerNewButton5</value>
+  </data>
+  <data name="&gt;&gt;playerCombo7.Name" xml:space="preserve">
+    <value>playerCombo7</value>
+  </data>
+  <data name="moderComboBox.Location" type="System.Drawing.Point, System.Drawing">
+    <value>594, 7</value>
+  </data>
+  <data name="&gt;&gt;panel10.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="panel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="langComboBox.Location" type="System.Drawing.Point, System.Drawing">
+    <value>594, 34</value>
+  </data>
+  <data name="&gt;&gt;panel2.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="playerCombo9.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="registerNewButton7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="panel10.TabIndex" type="System.Int32, mscorlib">
+    <value>20</value>
+  </data>
+  <data name="label9.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;panel7.Name" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerButton5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="label13.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="&gt;&gt;registerButton6.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="langComboBox.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="registerButton7.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="&gt;&gt;panel8.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerButton2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;label9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton5.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="registerButton2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 3</value>
+  </data>
+  <data name="label7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="playerCombo8.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton10.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerButton8.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;label13.Name" xml:space="preserve">
+    <value>label13</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>Moderator:</value>
+  </data>
+  <data name="panel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 183</value>
+  </data>
+  <data name="panel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="&gt;&gt;label6.Name" xml:space="preserve">
+    <value>label6</value>
+  </data>
+  <data name="playerCombo7.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="registerNewButton10.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="moderRegisterButton.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="registerNewButton1.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="registerNewButton8.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="playerCombo4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 3</value>
+  </data>
+  <data name="&gt;&gt;label13.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="playerCombo10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 3</value>
+  </data>
+  <data name="registerNewButton4.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="registerButton8.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="label6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="&gt;&gt;playerCombo3.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;label3.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="panel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="infoPanel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>6:</value>
+  </data>
+  <data name="registerNewButton6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;playerCombo2.Name" xml:space="preserve">
+    <value>playerCombo2</value>
+  </data>
+  <data name="registerNewButton7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 3</value>
+  </data>
+  <data name="&gt;&gt;label12.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label12.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="registerNewButton6.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="&gt;&gt;label7.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="playerCombo8.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="&gt;&gt;panel2.Name" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;label1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="playerCombo3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 5</value>
+  </data>
+  <data name="&gt;&gt;playerCombo2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="playerCombo6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>74, 3</value>
+  </data>
+  <data name="&gt;&gt;label4.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="label2.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerButton4.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;panel4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel1.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="&gt;&gt;playerCombo8.Name" xml:space="preserve">
+    <value>playerCombo8</value>
+  </data>
+  <data name="label12.TabIndex" type="System.Int32, mscorlib">
+    <value>8</value>
+  </data>
+  <data name="&gt;&gt;label5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerNewButton9.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="registerNewButton10.ToolTip" xml:space="preserve">
+    <value>Register new player</value>
+  </data>
+  <data name="registerButton5.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="panel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="&gt;&gt;label8.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="label8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="label8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="panel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 311</value>
+  </data>
+  <data name="&gt;&gt;registerButton3.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="playerCombo5.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="&gt;&gt;playerCombo6.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;panel1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;label9.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="registerButton4.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="registerButton1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="registerButton10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="&gt;&gt;playerCombo6.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>10:</value>
+  </data>
+  <data name="registerNewButton7.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESERdmoAG/
+        AAACPElEQVQ4T6WTy2taQRTG00UbWuiqf4irgBBBEl/RRBTFB4paNA8EtUgWUsWGgoQsNL42JQSR6kJ8
+        JqjEQJauYpMYXIasKiGbLlIaAlrydc60CWmVtNCBw5l773y/882ZOxMAJv4nxorFYnFYo9F802q1WFhY
+        gEKhuBYKhZFxhUYAIpEooNfrb41GIwwGA3Q6Hebn58GgtwKB4P2fkBEAE8NsNvPKJKSsVqshkUgwNTV1
+        9VeAUqnE1tYW9vb2sL29jZmZGchkMsjlckxPTw8CgcDkQ8iIA5vN9uXy8hLtdhv7+/soFApoNBo4Pz/H
+        0tLSVSaTefYowG63tw8PD0FxfHyMk5MTPqdwuVyfHt0CEz9lHf/o9Xq5oNfr8Tg6OoLf74dKpaqw/jwf
+        64CJJ61Wq9vj8aDf7yMUCiEYDPKg+dnZGQhsMpnesNN5cQfhPWDiJ0z8mqpcXFzg9PQUrVaL7313dxe1
+        Wg3pdJqDfD4fnE7nDTutd6TlgMXFRe3Kygq32+l00Gw2Ua/XubharSISiWB9fZ0Du90uUqkUWFHMzs5G
+        OYCRv9PiXC7Hq91VrVQqKJVKcLvd/B0BaCQSCSSTSQLccEA4HL4ly2Tx4OAAJCyXyygWi/wY6a+k7w8H
+        OWSAnxcpm82+ZWO4uro6pKaRi52dnfuYm5vD5uYmYrEYZ0Sj0d8dECSfz79cW1t7xex+cDgcn5eXl69Z
+        XwYsD6RS6dBisSAej/PeUKbn+x78y3VmizdYfCXbv/IG6X4AARSlO0vPWqIAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton8.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>22, 32</value>
+  </data>
+  <data name="&gt;&gt;playerCombo3.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;label6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="label10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="&gt;&gt;panel7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerButton1.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="&gt;&gt;playerCombo5.Name" xml:space="preserve">
+    <value>playerCombo5</value>
+  </data>
+  <data name="&gt;&gt;label4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerButton3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;registerButton10.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerButton5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 3</value>
+  </data>
+  <data name="&gt;&gt;registerButton2.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="langLabel.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="&gt;&gt;panel4.Name" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="label9.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;label2.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="registerNewButton1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="registerButton3.ToolTip" xml:space="preserve">
+    <value>Register existing player</value>
+  </data>
+  <data name="registerButton6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="playerCombo4.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="registerButton4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 3</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>7:</value>
+  </data>
+  <data name="langComboBox.Size" type="System.Drawing.Size, System.Drawing">
+    <value>225, 21</value>
+  </data>
+  <data name="&gt;&gt;panel5.Name" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="registerButton4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="panel6.TabIndex" type="System.Int32, mscorlib">
+    <value>16</value>
+  </data>
+  <data name="&gt;&gt;playerCombo7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="moderRegisterButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>565, 6</value>
+  </data>
+  <data name="registerButton7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>27, 3</value>
+  </data>
+  <data name="&gt;&gt;registerButton10.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="playerCombo10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>745, 21</value>
+  </data>
+  <data name="&gt;&gt;langLabel.Name" xml:space="preserve">
+    <value>langLabel</value>
+  </data>
+  <data name="&gt;&gt;langLabel.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="&gt;&gt;langComboBox.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="label7.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;registerButton5.Name" xml:space="preserve">
+    <value>registerButton5</value>
+  </data>
+  <data name="&gt;&gt;playerCombo8.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="label4.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>9:</value>
+  </data>
+  <data name="moderRegisterButton.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="&gt;&gt;eventsComboBox.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton9.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="registerNewButton4.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;registerButton9.Name" xml:space="preserve">
+    <value>registerButton9</value>
+  </data>
+  <data name="&gt;&gt;registerButton9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerNewButton3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 5</value>
+  </data>
+  <data name="panel1.TabIndex" type="System.Int32, mscorlib">
+    <value>11</value>
+  </data>
+  <data name="label6.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;panel6.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="playerCombo2.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label5.Name" xml:space="preserve">
+    <value>label5</value>
+  </data>
+  <data name="playerCombo3.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="$this.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 423</value>
+  </data>
+  <data name="&gt;&gt;panel3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label8.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="langLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="registerNewButton10.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;registerButton4.Name" xml:space="preserve">
+    <value>registerButton4</value>
+  </data>
+  <data name="registerButton1.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;playerCombo8.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;label9.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;label3.Name" xml:space="preserve">
+    <value>label3</value>
+  </data>
+  <data name="moderComboBox.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Right</value>
+  </data>
+  <data name="registerButton3.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="registerNewButton8.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="label4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="&gt;&gt;label4.Name" xml:space="preserve">
+    <value>label4</value>
+  </data>
+  <data name="&gt;&gt;panel7.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="panel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 87</value>
+  </data>
+  <data name="langLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>501, 37</value>
+  </data>
+  <data name="panel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>824, 32</value>
+  </data>
+  <data name="playerCombo1.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Left, Right</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton10.Name" xml:space="preserve">
+    <value>registerNewButton10</value>
+  </data>
+  <data name="label12.Text" xml:space="preserve">
+    <value>Rules:</value>
+  </data>
+  <data name="panel8.TabIndex" type="System.Int32, mscorlib">
+    <value>18</value>
+  </data>
+  <data name="panel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="registerButton8.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="&gt;&gt;label3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerNewButton4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerButton9.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="infoPanel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="registerNewButton1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>50, 3</value>
+  </data>
+  <data name="&gt;&gt;eventsComboBox.Parent" xml:space="preserve">
+    <value>infoPanel</value>
+  </data>
+  <data name="label7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="&gt;&gt;label1.Parent" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="moderComboBox.TabIndex" type="System.Int32, mscorlib">
+    <value>5</value>
+  </data>
+  <data name="&gt;&gt;panel1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;registerButton5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="registerButton6.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="registerButton10.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="&gt;&gt;langLabel.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="registerButton5.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAACwwAAAsMAT9AIsgAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfbBBESEDmjbT0x
+        AAACKUlEQVQ4T6WTy2saURTGU2gbWsiq0H/DlSAoiIhKfBDxDaIWfGFURF1oFZXQ/hFFxEd94ltMUIvg
+        xpVWRVyKbioihS4CtRRTPL33Qoa2SrrIwOHeGeb7fed+Z+YEAE4eU0fFbDY7dHFx8V0qlYJYLAaBQLBl
+        MBjvjxkdAFgslk8ul+9VKhUolUqQyWQgEokAQfc0Gu3qX8gBAIlBo9EQZyzEq0QiAS6XC3Q6/fa/gPPz
+        c4hGo9BqtSAWiwGHwwEejwd8Ph+YTObO5/Od/gk56ECn033bbDbQ7/eh0+lAoVCA6+trWCwWYDabb+Px
+        +PMHAXq9vj8YDADXeDyGyWRC9riMRuPnB4+AxM9Q4h+dTicRzGYzUqPRCNxuNwiFwgrK58XRDpD4VKvV
+        2hwOB6xWKwgGgxAIBEjh/Xw+BwxWq9UuNJ2X9xCSARI/QeI32GW9XsN0OoV2u03O3mg0oFarQa/Xg+Vy
+        CR6PBxQKhQ1N6ynWEoDJZJJarVbS7nA4hJubG2g2m0RcrVahVCqRMLvdLgGhMAEbUgDU4i/8cjqdJm73
+        rpVKhRLncjlIpVKQSCSIgd/v31GAUCi0xy3js2IXLCyXy1AsFokzXvP5PDkW+g7IeFE2ewqQTCbfouvO
+        6/Xe4dBwF/V6nSp8j+vy8hJcLtc2HA7/RJp3FABvMpnMWSQSeWWz2T4YDIYvFotli3LZoXWHMvqBnn21
+        2+2fUAevs9ns2V9TeMzv/BsoEqz9oooEcgAAAABJRU5ErkJggg==
+</value>
+  </data>
+  <data name="&gt;&gt;playerCombo6.Name" xml:space="preserve">
+    <value>playerCombo6</value>
+  </data>
+  <data name="&gt;&gt;registerButton1.Parent" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="&gt;&gt;panel2.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="registerButton7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="label12.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="&gt;&gt;registerButton7.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="label10.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="panel3.TabIndex" type="System.Int32, mscorlib">
+    <value>13</value>
+  </data>
+  <data name="registerButton8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>23, 22</value>
+  </data>
+  <data name="&gt;&gt;moderComboBox.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label14.Name" xml:space="preserve">
+    <value>label14</value>
+  </data>
+  <metadata name="label1.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="panel10.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label14.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolTip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <metadata name="panel3.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label11.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>True</value>
+  </metadata>
+  <metadata name="panel8.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label5.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label13.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="panel1.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="panel9.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="panel4.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label8.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="panel5.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label6.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="panel6.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label4.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label2.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label9.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="panel7.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="infoPanel.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label10.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolTip.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="panel2.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label7.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label12.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="label3.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+</root>

@@ -1,0 +1,86 @@
+body
+{
+	font-size: 11px;
+	background-color: #ffffff;
+	color: #303030;
+}
+
+td.back
+{
+	font-size: 16px;
+	background-color: #ffffff;
+	color: #303030;
+}
+
+td
+{
+	font-size: 16px;
+	background-color: #77c2fd;
+	color: #303030;
+}
+
+th
+{
+	font-size: 16px;
+	background-color: #57a2fd;
+	color: #303030;
+}
+
+iframe
+{
+	vertical-align: top; 
+	overflow:hidden;
+	
+	margin: 0px; 
+	border:0px;
+	border:none; /*mozilla?*/	
+
+	height: 700px;
+/*	background-color: #57a2fd;
+	color: #303030;*/
+	
+/*	-moz-border-radius: 12px;
+	-webkit-border-radius: 12px; 
+	border-radius: 12px; 
+
+	-moz-box-shadow: 4px 4px 14px #000; 
+	-webkit-box-shadow: 4px 4px 14px #000; 
+	box-shadow: 4px 4px 14px #000; */
+}
+
+#tabs
+{
+	font-family:Georgia;
+	font-size: 16px;
+	font-weight: bold;
+	float: left;
+	list-style-type:none;
+	margin: 22px 0 40px 0;
+	width: 100%;
+}
+#tabs li
+{
+	font-family:Georgia;
+	font-size: 16px;
+	font-weight: bold;
+	float: left;
+	text-transform: uppercase;
+	margin-right: 60px;
+	color: #436996;
+}
+#tabs li a
+{
+	font-family:Georgia;
+	font-size: 16px;
+	font-weight: bold;
+	display: block;
+	color: #4792ed;
+}
+#tabs li a:hover
+{
+	font-family:Georgia;
+	font-size: 16px;
+	font-weight: bold;
+	color: #ffffff;
+	background-color: #57a2fd;
+}

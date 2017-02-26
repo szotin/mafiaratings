@@ -1,0 +1,163 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<title>Mafia Ratings</title>
+<META content="text/html; charset=utf-8" http-equiv=Content-Type>
+<meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=10, user-scalable=no, target-densitydpi=device-dpi"/>
+<link rel="stylesheet" href="game.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="jquery-ui.css" />
+<script src="js/jcordova.js"></script>
+<script src="js/local.js"></script>
+<script>
+function onLoad() { local.init(); }
+</script>
+</head>
+
+<body onload="onLoad()">
+<table class="bordered" width="100%" id="players">
+<tr style="height:100px; font-weight:bold;" align="center"><td colspan="6" id="status"></td></tr>
+
+<tr style="height:52px;" id="r0">
+<td align="center" id="num0" style="min-width: 20px;">1</td>
+<td id="name0" style="min-width: 300px;"></td>
+<td id="timer0" style="min-width: 120px;"></td>
+<td id="control0" style="min-width: 160px;"></td>
+<td id="warn0" style="min-width: 100px;"></td>
+<td style="min-width: 124px;"><span id="btns-0">
+<button class="icon" onclick="mafia.ui.warnPlayer(0)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(0)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(0)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r1">
+<td align="center" id="num1">2</td>
+<td id="name1"></td>
+<td id="timer1"></td>
+<td id="control1"></td>
+<td id="warn1"></td>
+<td><span id="btns-1">
+<button class="icon" onclick="mafia.ui.warnPlayer(1)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(1)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(1)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r2">
+<td align="center" id="num2">3</td>
+<td id="name2"></td>
+<td id="timer2"></td>
+<td id="control2"></td>
+<td id="warn2"></td>
+<td><span id="btns-2">
+<button class="icon" onclick="mafia.ui.warnPlayer(2)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(2)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(2)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r3">
+<td align="center" id="num3">4</td>
+<td id="name3"></td>
+<td id="timer3"></td>
+<td id="control3"></td>
+<td id="warn3"></td>
+<td><span id="btns-3">
+<button class="icon" onclick="mafia.ui.warnPlayer(3)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(3)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(3)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r4">
+<td align="center" id="num4">5</td>
+<td id="name4"></td>
+<td id="timer4"></td>
+<td id="control4"></td>
+<td id="warn4"></td>
+<td><span id="btns-4">
+<button class="icon" onclick="mafia.ui.warnPlayer(4)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(4)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(4)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r5">
+<td align="center" id="num5">6</td>
+<td id="name5"></td>
+<td id="timer5"></td>
+<td id="control5"></td>
+<td id="warn5"></td>
+<td><span id="btns-5">
+<button class="icon" onclick="mafia.ui.warnPlayer(5)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(5)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(5)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r6">
+<td align="center" id="num6">7</td>
+<td id="name6"></td>
+<td id="timer6"></td>
+<td id="control6"></td>
+<td id="warn6"></td>
+<td><span id="btns-6">
+<button class="icon" onclick="mafia.ui.warnPlayer(6)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(6)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(6)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r7">
+<td align="center" id="num7">8</td>
+<td id="name7"></td>
+<td id="timer7"></td>
+<td id="control7"></td>
+<td id="warn7"></td>
+<td><span id="btns-7">
+<button class="icon" onclick="mafia.ui.warnPlayer(7)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(7)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(7)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r8">
+<td align="center" id="num8">9</td>
+<td id="name8"></td>
+<td id="timer8"></td>
+<td id="control8"></td>
+<td id="warn8"></td>
+<td><span id="btns-8">
+<button class="icon" onclick="mafia.ui.warnPlayer(8)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(8)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(8)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r9">
+<td align="center" id="num9">10</td>
+<td id="name9"></td>
+<td id="timer9"></td>
+<td id="control9"></td>
+<td id="warn9"></td>
+<td><span id="btns-9">
+<button class="icon" onclick="mafia.ui.warnPlayer(9)"><img src="images/warn.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.suicide(9)"><img src="images/suicide.png" class="icon"></button>
+<button class="icon" onclick="mafia.ui.kickOut(9)"><img src="images/delete.png" class="icon"></button>
+</span></td></tr>
+
+<tr style="height:52px;" id="r-1">
+<td colspan="3" id="saving"></td>
+<td id="control-1"></td>
+<td colspan="2"></td>
+</tr>
+
+<tr><td colspan="6"><table class="transp" width="100%"><tr><td>
+<input value="Back" class="btn norm" type="submit" id="back" onclick="mafia.ui.back()" disabled="1">
+<input value="Next" class="btn norm" type="submit" id="next" onclick="mafia.ui.next()" disabled="1">
+</td><td align="right">
+<input value="Sync" class="btn norm" type="submit" id="sync" onclick="local.sync()">
+<input value="Restart game" class="btn norm" type="submit" id="restart" onclick="mafia.ui.restart()" disabled="1">
+<input value="Terminate game" class="btn norm" type="submit" id="terminate" onclick="mafia.ui.terminate()" disabled="1">
+</td></tr></table>
+</td></tr></table>
+
+<audio id="end-snd" src="sound/end.mp3"></audio>
+<audio id="prompt-snd" src="sound/10sec.mp3"></audio>
+
+<div id="dlg"></div>
+<div id="loading"><img style="margin-top:20px;" src="images/loading.gif" alt="Loading.."/><h4>Please wait..</h4></div>
+
+</body>
+</html>

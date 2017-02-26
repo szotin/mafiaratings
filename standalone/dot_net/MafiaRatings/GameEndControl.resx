@@ -1,0 +1,2952 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <metadata name="panel11.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="playerRadioButton10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="playerRadioButton10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="playerRadioButton10.TabIndex" type="System.Int32, mscorlib">
+    <value>86</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton10.Name" xml:space="preserve">
+    <value>playerRadioButton10</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton10.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton10.Parent" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton10.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel10.TabIndex" type="System.Int32, mscorlib">
+    <value>85</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel10.Name" xml:space="preserve">
+    <value>ratingLabel10</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel10.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel10.Parent" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel10.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel10.TabIndex" type="System.Int32, mscorlib">
+    <value>84</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel10.Name" xml:space="preserve">
+    <value>sheriffLabel10</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel10.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel10.Parent" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel10.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel10.TabIndex" type="System.Int32, mscorlib">
+    <value>83</value>
+  </data>
+  <data name="&gt;&gt;donLabel10.Name" xml:space="preserve">
+    <value>donLabel10</value>
+  </data>
+  <data name="&gt;&gt;donLabel10.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel10.Parent" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;donLabel10.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel10.TabIndex" type="System.Int32, mscorlib">
+    <value>82</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel10.Name" xml:space="preserve">
+    <value>arrangementLabel10</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel10.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel10.Parent" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel10.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel10.TabIndex" type="System.Int32, mscorlib">
+    <value>81</value>
+  </data>
+  <data name="&gt;&gt;killedLabel10.Name" xml:space="preserve">
+    <value>killedLabel10</value>
+  </data>
+  <data name="&gt;&gt;killedLabel10.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel10.Parent" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;killedLabel10.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel10.TabIndex" type="System.Int32, mscorlib">
+    <value>80</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel10.Name" xml:space="preserve">
+    <value>warinigsLabel10</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel10.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel10.Parent" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel10.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel10.TabIndex" type="System.Int32, mscorlib">
+    <value>79</value>
+  </data>
+  <data name="&gt;&gt;roleLabel10.Name" xml:space="preserve">
+    <value>roleLabel10</value>
+  </data>
+  <data name="&gt;&gt;roleLabel10.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel10.Parent" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;roleLabel10.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel10.TabIndex" type="System.Int32, mscorlib">
+    <value>71</value>
+  </data>
+  <data name="&gt;&gt;numberLabel10.Name" xml:space="preserve">
+    <value>numberLabel10</value>
+  </data>
+  <data name="&gt;&gt;numberLabel10.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel10.Parent" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;numberLabel10.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel11.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel11.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 369</value>
+  </data>
+  <data name="panel11.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel11.TabIndex" type="System.Int32, mscorlib">
+    <value>16</value>
+  </data>
+  <data name="&gt;&gt;panel11.Name" xml:space="preserve">
+    <value>panel11</value>
+  </data>
+  <data name="&gt;&gt;panel11.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel11.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel11.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <metadata name="panel10.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerRadioButton9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerRadioButton9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerRadioButton9.TabIndex" type="System.Int32, mscorlib">
+    <value>79</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton9.Name" xml:space="preserve">
+    <value>playerRadioButton9</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton9.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton9.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel9.TabIndex" type="System.Int32, mscorlib">
+    <value>78</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel9.Name" xml:space="preserve">
+    <value>ratingLabel9</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel9.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel9.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel9.TabIndex" type="System.Int32, mscorlib">
+    <value>77</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel9.Name" xml:space="preserve">
+    <value>sheriffLabel9</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel9.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel9.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel9.TabIndex" type="System.Int32, mscorlib">
+    <value>76</value>
+  </data>
+  <data name="&gt;&gt;donLabel9.Name" xml:space="preserve">
+    <value>donLabel9</value>
+  </data>
+  <data name="&gt;&gt;donLabel9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel9.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;donLabel9.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel9.TabIndex" type="System.Int32, mscorlib">
+    <value>75</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel9.Name" xml:space="preserve">
+    <value>arrangementLabel9</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel9.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel9.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel9.TabIndex" type="System.Int32, mscorlib">
+    <value>74</value>
+  </data>
+  <data name="&gt;&gt;killedLabel9.Name" xml:space="preserve">
+    <value>killedLabel9</value>
+  </data>
+  <data name="&gt;&gt;killedLabel9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel9.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;killedLabel9.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel9.TabIndex" type="System.Int32, mscorlib">
+    <value>73</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel9.Name" xml:space="preserve">
+    <value>warinigsLabel9</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel9.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel9.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel9.TabIndex" type="System.Int32, mscorlib">
+    <value>72</value>
+  </data>
+  <data name="&gt;&gt;roleLabel9.Name" xml:space="preserve">
+    <value>roleLabel9</value>
+  </data>
+  <data name="&gt;&gt;roleLabel9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel9.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;roleLabel9.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel9.TabIndex" type="System.Int32, mscorlib">
+    <value>69</value>
+  </data>
+  <data name="&gt;&gt;numberLabel9.Name" xml:space="preserve">
+    <value>numberLabel9</value>
+  </data>
+  <data name="&gt;&gt;numberLabel9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel9.Parent" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;numberLabel9.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel10.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 336</value>
+  </data>
+  <data name="panel10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel10.TabIndex" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="&gt;&gt;panel10.Name" xml:space="preserve">
+    <value>panel10</value>
+  </data>
+  <data name="&gt;&gt;panel10.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel10.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel10.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <metadata name="panel9.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerRadioButton8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerRadioButton8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerRadioButton8.TabIndex" type="System.Int32, mscorlib">
+    <value>77</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton8.Name" xml:space="preserve">
+    <value>playerRadioButton8</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton8.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton8.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel8.TabIndex" type="System.Int32, mscorlib">
+    <value>76</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel8.Name" xml:space="preserve">
+    <value>ratingLabel8</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel8.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel8.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel8.TabIndex" type="System.Int32, mscorlib">
+    <value>75</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel8.Name" xml:space="preserve">
+    <value>sheriffLabel8</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel8.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel8.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel8.TabIndex" type="System.Int32, mscorlib">
+    <value>74</value>
+  </data>
+  <data name="&gt;&gt;donLabel8.Name" xml:space="preserve">
+    <value>donLabel8</value>
+  </data>
+  <data name="&gt;&gt;donLabel8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel8.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;donLabel8.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel8.TabIndex" type="System.Int32, mscorlib">
+    <value>73</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel8.Name" xml:space="preserve">
+    <value>arrangementLabel8</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel8.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel8.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel8.TabIndex" type="System.Int32, mscorlib">
+    <value>72</value>
+  </data>
+  <data name="&gt;&gt;killedLabel8.Name" xml:space="preserve">
+    <value>killedLabel8</value>
+  </data>
+  <data name="&gt;&gt;killedLabel8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel8.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;killedLabel8.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel8.TabIndex" type="System.Int32, mscorlib">
+    <value>71</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel8.Name" xml:space="preserve">
+    <value>warinigsLabel8</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel8.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel8.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel8.TabIndex" type="System.Int32, mscorlib">
+    <value>70</value>
+  </data>
+  <data name="&gt;&gt;roleLabel8.Name" xml:space="preserve">
+    <value>roleLabel8</value>
+  </data>
+  <data name="&gt;&gt;roleLabel8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel8.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;roleLabel8.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel8.TabIndex" type="System.Int32, mscorlib">
+    <value>67</value>
+  </data>
+  <data name="&gt;&gt;numberLabel8.Name" xml:space="preserve">
+    <value>numberLabel8</value>
+  </data>
+  <data name="&gt;&gt;numberLabel8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel8.Parent" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;numberLabel8.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 303</value>
+  </data>
+  <data name="panel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel9.TabIndex" type="System.Int32, mscorlib">
+    <value>14</value>
+  </data>
+  <data name="&gt;&gt;panel9.Name" xml:space="preserve">
+    <value>panel9</value>
+  </data>
+  <data name="&gt;&gt;panel9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel9.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel9.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <metadata name="panel8.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerRadioButton7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerRadioButton7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerRadioButton7.TabIndex" type="System.Int32, mscorlib">
+    <value>75</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton7.Name" xml:space="preserve">
+    <value>playerRadioButton7</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton7.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton7.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton7.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel7.TabIndex" type="System.Int32, mscorlib">
+    <value>74</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel7.Name" xml:space="preserve">
+    <value>ratingLabel7</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel7.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel7.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel7.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel7.TabIndex" type="System.Int32, mscorlib">
+    <value>73</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel7.Name" xml:space="preserve">
+    <value>sheriffLabel7</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel7.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel7.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel7.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel7.TabIndex" type="System.Int32, mscorlib">
+    <value>72</value>
+  </data>
+  <data name="&gt;&gt;donLabel7.Name" xml:space="preserve">
+    <value>donLabel7</value>
+  </data>
+  <data name="&gt;&gt;donLabel7.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel7.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;donLabel7.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel7.TabIndex" type="System.Int32, mscorlib">
+    <value>71</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel7.Name" xml:space="preserve">
+    <value>arrangementLabel7</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel7.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel7.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel7.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel7.TabIndex" type="System.Int32, mscorlib">
+    <value>70</value>
+  </data>
+  <data name="&gt;&gt;killedLabel7.Name" xml:space="preserve">
+    <value>killedLabel7</value>
+  </data>
+  <data name="&gt;&gt;killedLabel7.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel7.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;killedLabel7.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel7.TabIndex" type="System.Int32, mscorlib">
+    <value>69</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel7.Name" xml:space="preserve">
+    <value>warinigsLabel7</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel7.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel7.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel7.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel7.TabIndex" type="System.Int32, mscorlib">
+    <value>68</value>
+  </data>
+  <data name="&gt;&gt;roleLabel7.Name" xml:space="preserve">
+    <value>roleLabel7</value>
+  </data>
+  <data name="&gt;&gt;roleLabel7.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel7.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;roleLabel7.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel7.TabIndex" type="System.Int32, mscorlib">
+    <value>65</value>
+  </data>
+  <data name="&gt;&gt;numberLabel7.Name" xml:space="preserve">
+    <value>numberLabel7</value>
+  </data>
+  <data name="&gt;&gt;numberLabel7.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel7.Parent" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;numberLabel7.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 270</value>
+  </data>
+  <data name="panel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel8.TabIndex" type="System.Int32, mscorlib">
+    <value>13</value>
+  </data>
+  <data name="&gt;&gt;panel8.Name" xml:space="preserve">
+    <value>panel8</value>
+  </data>
+  <data name="&gt;&gt;panel8.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel8.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel8.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <metadata name="panel7.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerRadioButton6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerRadioButton6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerRadioButton6.TabIndex" type="System.Int32, mscorlib">
+    <value>73</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton6.Name" xml:space="preserve">
+    <value>playerRadioButton6</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton6.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton6.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton6.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel6.TabIndex" type="System.Int32, mscorlib">
+    <value>72</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel6.Name" xml:space="preserve">
+    <value>ratingLabel6</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel6.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel6.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel6.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel6.TabIndex" type="System.Int32, mscorlib">
+    <value>71</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel6.Name" xml:space="preserve">
+    <value>sheriffLabel6</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel6.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel6.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel6.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel6.TabIndex" type="System.Int32, mscorlib">
+    <value>70</value>
+  </data>
+  <data name="&gt;&gt;donLabel6.Name" xml:space="preserve">
+    <value>donLabel6</value>
+  </data>
+  <data name="&gt;&gt;donLabel6.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel6.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;donLabel6.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel6.TabIndex" type="System.Int32, mscorlib">
+    <value>69</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel6.Name" xml:space="preserve">
+    <value>arrangementLabel6</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel6.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel6.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel6.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel6.TabIndex" type="System.Int32, mscorlib">
+    <value>68</value>
+  </data>
+  <data name="&gt;&gt;killedLabel6.Name" xml:space="preserve">
+    <value>killedLabel6</value>
+  </data>
+  <data name="&gt;&gt;killedLabel6.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel6.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;killedLabel6.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel6.TabIndex" type="System.Int32, mscorlib">
+    <value>67</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel6.Name" xml:space="preserve">
+    <value>warinigsLabel6</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel6.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel6.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel6.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel6.TabIndex" type="System.Int32, mscorlib">
+    <value>66</value>
+  </data>
+  <data name="&gt;&gt;roleLabel6.Name" xml:space="preserve">
+    <value>roleLabel6</value>
+  </data>
+  <data name="&gt;&gt;roleLabel6.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel6.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;roleLabel6.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel6.TabIndex" type="System.Int32, mscorlib">
+    <value>63</value>
+  </data>
+  <data name="&gt;&gt;numberLabel6.Name" xml:space="preserve">
+    <value>numberLabel6</value>
+  </data>
+  <data name="&gt;&gt;numberLabel6.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel6.Parent" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;numberLabel6.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel7.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 237</value>
+  </data>
+  <data name="panel7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel7.TabIndex" type="System.Int32, mscorlib">
+    <value>12</value>
+  </data>
+  <data name="&gt;&gt;panel7.Name" xml:space="preserve">
+    <value>panel7</value>
+  </data>
+  <data name="&gt;&gt;panel7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel7.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel7.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <metadata name="panel6.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerRadioButton5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerRadioButton5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerRadioButton5.TabIndex" type="System.Int32, mscorlib">
+    <value>71</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton5.Name" xml:space="preserve">
+    <value>playerRadioButton5</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton5.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton5.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton5.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel5.TabIndex" type="System.Int32, mscorlib">
+    <value>70</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel5.Name" xml:space="preserve">
+    <value>ratingLabel5</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel5.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel5.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel5.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel5.TabIndex" type="System.Int32, mscorlib">
+    <value>69</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel5.Name" xml:space="preserve">
+    <value>sheriffLabel5</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel5.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel5.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel5.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel5.TabIndex" type="System.Int32, mscorlib">
+    <value>68</value>
+  </data>
+  <data name="&gt;&gt;donLabel5.Name" xml:space="preserve">
+    <value>donLabel5</value>
+  </data>
+  <data name="&gt;&gt;donLabel5.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel5.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;donLabel5.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel5.TabIndex" type="System.Int32, mscorlib">
+    <value>67</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel5.Name" xml:space="preserve">
+    <value>arrangementLabel5</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel5.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel5.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel5.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel5.TabIndex" type="System.Int32, mscorlib">
+    <value>66</value>
+  </data>
+  <data name="&gt;&gt;killedLabel5.Name" xml:space="preserve">
+    <value>killedLabel5</value>
+  </data>
+  <data name="&gt;&gt;killedLabel5.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel5.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;killedLabel5.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel5.TabIndex" type="System.Int32, mscorlib">
+    <value>65</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel5.Name" xml:space="preserve">
+    <value>warinigsLabel5</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel5.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel5.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel5.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel5.TabIndex" type="System.Int32, mscorlib">
+    <value>64</value>
+  </data>
+  <data name="&gt;&gt;roleLabel5.Name" xml:space="preserve">
+    <value>roleLabel5</value>
+  </data>
+  <data name="&gt;&gt;roleLabel5.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel5.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;roleLabel5.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel5.TabIndex" type="System.Int32, mscorlib">
+    <value>61</value>
+  </data>
+  <data name="&gt;&gt;numberLabel5.Name" xml:space="preserve">
+    <value>numberLabel5</value>
+  </data>
+  <data name="&gt;&gt;numberLabel5.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel5.Parent" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;numberLabel5.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel6.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 204</value>
+  </data>
+  <data name="panel6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel6.TabIndex" type="System.Int32, mscorlib">
+    <value>11</value>
+  </data>
+  <data name="&gt;&gt;panel6.Name" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="&gt;&gt;panel6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel6.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel6.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <metadata name="panel5.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerRadioButton4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerRadioButton4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerRadioButton4.TabIndex" type="System.Int32, mscorlib">
+    <value>69</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton4.Name" xml:space="preserve">
+    <value>playerRadioButton4</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton4.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton4.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton4.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel4.TabIndex" type="System.Int32, mscorlib">
+    <value>68</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel4.Name" xml:space="preserve">
+    <value>ratingLabel4</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel4.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel4.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel4.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel4.TabIndex" type="System.Int32, mscorlib">
+    <value>67</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel4.Name" xml:space="preserve">
+    <value>sheriffLabel4</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel4.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel4.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel4.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel4.TabIndex" type="System.Int32, mscorlib">
+    <value>66</value>
+  </data>
+  <data name="&gt;&gt;donLabel4.Name" xml:space="preserve">
+    <value>donLabel4</value>
+  </data>
+  <data name="&gt;&gt;donLabel4.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel4.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;donLabel4.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel4.TabIndex" type="System.Int32, mscorlib">
+    <value>65</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel4.Name" xml:space="preserve">
+    <value>arrangementLabel4</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel4.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel4.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel4.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel4.TabIndex" type="System.Int32, mscorlib">
+    <value>64</value>
+  </data>
+  <data name="&gt;&gt;killedLabel4.Name" xml:space="preserve">
+    <value>killedLabel4</value>
+  </data>
+  <data name="&gt;&gt;killedLabel4.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel4.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;killedLabel4.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel4.TabIndex" type="System.Int32, mscorlib">
+    <value>63</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel4.Name" xml:space="preserve">
+    <value>warinigsLabel4</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel4.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel4.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel4.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel4.TabIndex" type="System.Int32, mscorlib">
+    <value>62</value>
+  </data>
+  <data name="&gt;&gt;roleLabel4.Name" xml:space="preserve">
+    <value>roleLabel4</value>
+  </data>
+  <data name="&gt;&gt;roleLabel4.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel4.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;roleLabel4.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel4.TabIndex" type="System.Int32, mscorlib">
+    <value>59</value>
+  </data>
+  <data name="&gt;&gt;numberLabel4.Name" xml:space="preserve">
+    <value>numberLabel4</value>
+  </data>
+  <data name="&gt;&gt;numberLabel4.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel4.Parent" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;numberLabel4.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel5.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 171</value>
+  </data>
+  <data name="panel5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel5.TabIndex" type="System.Int32, mscorlib">
+    <value>10</value>
+  </data>
+  <data name="&gt;&gt;panel5.Name" xml:space="preserve">
+    <value>panel5</value>
+  </data>
+  <data name="&gt;&gt;panel5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel5.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel5.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <metadata name="panel4.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerRadioButton3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerRadioButton3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerRadioButton3.TabIndex" type="System.Int32, mscorlib">
+    <value>67</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton3.Name" xml:space="preserve">
+    <value>playerRadioButton3</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton3.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton3.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel3.TabIndex" type="System.Int32, mscorlib">
+    <value>66</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel3.Name" xml:space="preserve">
+    <value>ratingLabel3</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel3.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel3.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel3.TabIndex" type="System.Int32, mscorlib">
+    <value>65</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel3.Name" xml:space="preserve">
+    <value>sheriffLabel3</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel3.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel3.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel3.TabIndex" type="System.Int32, mscorlib">
+    <value>64</value>
+  </data>
+  <data name="&gt;&gt;donLabel3.Name" xml:space="preserve">
+    <value>donLabel3</value>
+  </data>
+  <data name="&gt;&gt;donLabel3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel3.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;donLabel3.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel3.TabIndex" type="System.Int32, mscorlib">
+    <value>63</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel3.Name" xml:space="preserve">
+    <value>arrangementLabel3</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel3.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel3.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel3.TabIndex" type="System.Int32, mscorlib">
+    <value>62</value>
+  </data>
+  <data name="&gt;&gt;killedLabel3.Name" xml:space="preserve">
+    <value>killedLabel3</value>
+  </data>
+  <data name="&gt;&gt;killedLabel3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel3.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;killedLabel3.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel3.TabIndex" type="System.Int32, mscorlib">
+    <value>61</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel3.Name" xml:space="preserve">
+    <value>warinigsLabel3</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel3.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel3.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel3.TabIndex" type="System.Int32, mscorlib">
+    <value>60</value>
+  </data>
+  <data name="&gt;&gt;roleLabel3.Name" xml:space="preserve">
+    <value>roleLabel3</value>
+  </data>
+  <data name="&gt;&gt;roleLabel3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel3.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;roleLabel3.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel3.TabIndex" type="System.Int32, mscorlib">
+    <value>57</value>
+  </data>
+  <data name="&gt;&gt;numberLabel3.Name" xml:space="preserve">
+    <value>numberLabel3</value>
+  </data>
+  <data name="&gt;&gt;numberLabel3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel3.Parent" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;numberLabel3.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel4.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 138</value>
+  </data>
+  <data name="panel4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel4.TabIndex" type="System.Int32, mscorlib">
+    <value>9</value>
+  </data>
+  <data name="&gt;&gt;panel4.Name" xml:space="preserve">
+    <value>panel4</value>
+  </data>
+  <data name="&gt;&gt;panel4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel4.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel4.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <metadata name="panel3.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerRadioButton2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerRadioButton2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerRadioButton2.TabIndex" type="System.Int32, mscorlib">
+    <value>65</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton2.Name" xml:space="preserve">
+    <value>playerRadioButton2</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton2.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton2.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton2.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel2.TabIndex" type="System.Int32, mscorlib">
+    <value>64</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel2.Name" xml:space="preserve">
+    <value>ratingLabel2</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel2.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel2.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel2.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel2.TabIndex" type="System.Int32, mscorlib">
+    <value>63</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel2.Name" xml:space="preserve">
+    <value>sheriffLabel2</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel2.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel2.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel2.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel2.TabIndex" type="System.Int32, mscorlib">
+    <value>62</value>
+  </data>
+  <data name="&gt;&gt;donLabel2.Name" xml:space="preserve">
+    <value>donLabel2</value>
+  </data>
+  <data name="&gt;&gt;donLabel2.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel2.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;donLabel2.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel2.TabIndex" type="System.Int32, mscorlib">
+    <value>61</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel2.Name" xml:space="preserve">
+    <value>arrangementLabel2</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel2.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel2.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel2.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel2.TabIndex" type="System.Int32, mscorlib">
+    <value>60</value>
+  </data>
+  <data name="&gt;&gt;killedLabel2.Name" xml:space="preserve">
+    <value>killedLabel2</value>
+  </data>
+  <data name="&gt;&gt;killedLabel2.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel2.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;killedLabel2.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel2.TabIndex" type="System.Int32, mscorlib">
+    <value>59</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel2.Name" xml:space="preserve">
+    <value>warinigsLabel2</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel2.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel2.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel2.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel2.TabIndex" type="System.Int32, mscorlib">
+    <value>58</value>
+  </data>
+  <data name="&gt;&gt;roleLabel2.Name" xml:space="preserve">
+    <value>roleLabel2</value>
+  </data>
+  <data name="&gt;&gt;roleLabel2.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel2.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;roleLabel2.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel2.TabIndex" type="System.Int32, mscorlib">
+    <value>55</value>
+  </data>
+  <data name="&gt;&gt;numberLabel2.Name" xml:space="preserve">
+    <value>numberLabel2</value>
+  </data>
+  <data name="&gt;&gt;numberLabel2.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel2.Parent" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;numberLabel2.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 105</value>
+  </data>
+  <data name="panel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel3.TabIndex" type="System.Int32, mscorlib">
+    <value>8</value>
+  </data>
+  <data name="&gt;&gt;panel3.Name" xml:space="preserve">
+    <value>panel3</value>
+  </data>
+  <data name="&gt;&gt;panel3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel3.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel3.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <metadata name="panel2.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerRadioButton1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerRadioButton1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerRadioButton1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerRadioButton1.TabIndex" type="System.Int32, mscorlib">
+    <value>64</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton1.Name" xml:space="preserve">
+    <value>playerRadioButton1</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton1.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton1.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;playerRadioButton1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel1.TabIndex" type="System.Int32, mscorlib">
+    <value>63</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel1.Name" xml:space="preserve">
+    <value>ratingLabel1</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel1.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel1.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel1.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel1.TabIndex" type="System.Int32, mscorlib">
+    <value>62</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel1.Name" xml:space="preserve">
+    <value>sheriffLabel1</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel1.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel1.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel1.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel1.TabIndex" type="System.Int32, mscorlib">
+    <value>61</value>
+  </data>
+  <data name="&gt;&gt;donLabel1.Name" xml:space="preserve">
+    <value>donLabel1</value>
+  </data>
+  <data name="&gt;&gt;donLabel1.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel1.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;donLabel1.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangementLabel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangementLabel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangementLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangementLabel1.TabIndex" type="System.Int32, mscorlib">
+    <value>60</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel1.Name" xml:space="preserve">
+    <value>arrangementLabel1</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel1.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel1.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;arrangementLabel1.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel1.TabIndex" type="System.Int32, mscorlib">
+    <value>59</value>
+  </data>
+  <data name="&gt;&gt;killedLabel1.Name" xml:space="preserve">
+    <value>killedLabel1</value>
+  </data>
+  <data name="&gt;&gt;killedLabel1.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel1.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;killedLabel1.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warinigsLabel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warinigsLabel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warinigsLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warinigsLabel1.TabIndex" type="System.Int32, mscorlib">
+    <value>58</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel1.Name" xml:space="preserve">
+    <value>warinigsLabel1</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel1.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel1.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;warinigsLabel1.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel1.TabIndex" type="System.Int32, mscorlib">
+    <value>57</value>
+  </data>
+  <data name="&gt;&gt;roleLabel1.Name" xml:space="preserve">
+    <value>roleLabel1</value>
+  </data>
+  <data name="&gt;&gt;roleLabel1.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel1.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;roleLabel1.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="numberLabel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="numberLabel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="numberLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="numberLabel1.TabIndex" type="System.Int32, mscorlib">
+    <value>53</value>
+  </data>
+  <data name="&gt;&gt;numberLabel1.Name" xml:space="preserve">
+    <value>numberLabel1</value>
+  </data>
+  <data name="&gt;&gt;numberLabel1.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;numberLabel1.Parent" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;numberLabel1.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel2.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 72</value>
+  </data>
+  <data name="panel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel2.TabIndex" type="System.Int32, mscorlib">
+    <value>7</value>
+  </data>
+  <data name="&gt;&gt;panel2.Name" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;panel2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel2.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel2.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <metadata name="panel12.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="playerLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="playerLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="playerLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="playerLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>73</value>
+  </data>
+  <data name="&gt;&gt;playerLabel.Name" xml:space="preserve">
+    <value>playerLabel</value>
+  </data>
+  <data name="&gt;&gt;playerLabel.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;playerLabel.Parent" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;playerLabel.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ratingLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="ratingLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="ratingLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="ratingLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>80</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel.Name" xml:space="preserve">
+    <value>ratingLabel</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel.Parent" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;ratingLabel.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sheriffLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="sheriffLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>371, 0</value>
+  </data>
+  <data name="sheriffLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="sheriffLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>79</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel.Name" xml:space="preserve">
+    <value>sheriffLabel</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel.Parent" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;sheriffLabel.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="donLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="donLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>455, 0</value>
+  </data>
+  <data name="donLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="donLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>78</value>
+  </data>
+  <data name="&gt;&gt;donLabel.Name" xml:space="preserve">
+    <value>donLabel</value>
+  </data>
+  <data name="&gt;&gt;donLabel.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;donLabel.Parent" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;donLabel.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="arrangeLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="arrangeLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>539, 0</value>
+  </data>
+  <data name="arrangeLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="arrangeLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>77</value>
+  </data>
+  <data name="&gt;&gt;arrangeLabel.Name" xml:space="preserve">
+    <value>arrangeLabel</value>
+  </data>
+  <data name="&gt;&gt;arrangeLabel.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;arrangeLabel.Parent" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;arrangeLabel.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="killedLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="killedLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>623, 0</value>
+  </data>
+  <data name="killedLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="killedLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>76</value>
+  </data>
+  <data name="&gt;&gt;killedLabel.Name" xml:space="preserve">
+    <value>killedLabel</value>
+  </data>
+  <data name="&gt;&gt;killedLabel.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;killedLabel.Parent" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;killedLabel.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="warningsLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="warningsLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>707, 0</value>
+  </data>
+  <data name="warningsLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="warningsLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>75</value>
+  </data>
+  <data name="&gt;&gt;warningsLabel.Name" xml:space="preserve">
+    <value>warningsLabel</value>
+  </data>
+  <data name="&gt;&gt;warningsLabel.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;warningsLabel.Parent" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;warningsLabel.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="roleLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="roleLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>791, 0</value>
+  </data>
+  <data name="roleLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>84, 33</value>
+  </data>
+  <data name="roleLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>74</value>
+  </data>
+  <data name="&gt;&gt;roleLabel.Name" xml:space="preserve">
+    <value>roleLabel</value>
+  </data>
+  <data name="&gt;&gt;roleLabel.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;roleLabel.Parent" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;roleLabel.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <metadata name="borderLabel3.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="borderLabel3.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="borderLabel3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="borderLabel3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="borderLabel3.TabIndex" type="System.Int32, mscorlib">
+    <value>71</value>
+  </data>
+  <data name="&gt;&gt;borderLabel3.Name" xml:space="preserve">
+    <value>borderLabel3</value>
+  </data>
+  <data name="&gt;&gt;borderLabel3.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;borderLabel3.Parent" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;borderLabel3.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="panel12.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel12.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 39</value>
+  </data>
+  <data name="panel12.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel12.TabIndex" type="System.Int32, mscorlib">
+    <value>17</value>
+  </data>
+  <data name="&gt;&gt;panel12.Name" xml:space="preserve">
+    <value>panel12</value>
+  </data>
+  <data name="&gt;&gt;panel12.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel12.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel12.ZOrder" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <metadata name="panel1.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="noPlayerRadioButton.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="noPlayerRadioButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>29, 0</value>
+  </data>
+  <data name="noPlayerRadioButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>258, 33</value>
+  </data>
+  <data name="noPlayerRadioButton.TabIndex" type="System.Int32, mscorlib">
+    <value>87</value>
+  </data>
+  <data name="&gt;&gt;noPlayerRadioButton.Name" xml:space="preserve">
+    <value>noPlayerRadioButton</value>
+  </data>
+  <data name="&gt;&gt;noPlayerRadioButton.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderRadioButton, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;noPlayerRadioButton.Parent" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="&gt;&gt;noPlayerRadioButton.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <metadata name="borderLabel8.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="borderLabel8.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Right</value>
+  </data>
+  <data name="borderLabel8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>287, 0</value>
+  </data>
+  <data name="borderLabel8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>588, 33</value>
+  </data>
+  <data name="borderLabel8.TabIndex" type="System.Int32, mscorlib">
+    <value>60</value>
+  </data>
+  <data name="&gt;&gt;borderLabel8.Name" xml:space="preserve">
+    <value>borderLabel8</value>
+  </data>
+  <data name="&gt;&gt;borderLabel8.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;borderLabel8.Parent" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="&gt;&gt;borderLabel8.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <metadata name="borderLabel9.GenerateMember" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="borderLabel9.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Left</value>
+  </data>
+  <data name="borderLabel9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="borderLabel9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>29, 33</value>
+  </data>
+  <data name="borderLabel9.TabIndex" type="System.Int32, mscorlib">
+    <value>57</value>
+  </data>
+  <data name="&gt;&gt;borderLabel9.Name" xml:space="preserve">
+    <value>borderLabel9</value>
+  </data>
+  <data name="&gt;&gt;borderLabel9.Type" xml:space="preserve">
+    <value>MafiaRatings.BorderLabel, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;borderLabel9.Parent" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="&gt;&gt;borderLabel9.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="panel1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="panel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 402</value>
+  </data>
+  <data name="panel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 33</value>
+  </data>
+  <data name="panel1.TabIndex" type="System.Int32, mscorlib">
+    <value>18</value>
+  </data>
+  <data name="&gt;&gt;panel1.Name" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="&gt;&gt;panel1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;panel1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="titleLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="titleLabel.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Arial, 21.75pt</value>
+  </data>
+  <data name="titleLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="titleLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 39</value>
+  </data>
+  <data name="titleLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="titleLabel.Text" xml:space="preserve">
+    <value>Day</value>
+  </data>
+  <data name="titleLabel.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;titleLabel.Name" xml:space="preserve">
+    <value>titleLabel</value>
+  </data>
+  <data name="&gt;&gt;titleLabel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;titleLabel.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;titleLabel.ZOrder" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>True</value>
+  </metadata>
+  <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
+    <value>6, 13</value>
+  </data>
+  <data name="$this.Size" type="System.Drawing.Size, System.Drawing">
+    <value>875, 453</value>
+  </data>
+  <data name="&gt;&gt;$this.Name" xml:space="preserve">
+    <value>GameEndControl</value>
+  </data>
+  <data name="&gt;&gt;$this.Type" xml:space="preserve">
+    <value>MafiaRatings.GameControl, MafiaRatings, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+</root>

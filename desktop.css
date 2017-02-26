@@ -1,0 +1,14 @@
+body { font-family: 'lucida grande', tahoma, verdana, arial, sans-serif; font-size: 11px; background-color: #efffff; color: #303030; }
+
+input { font-family: 'lucida grande', tahoma, verdana, arial, sans-serif; font-size: 11px; }
+select { font-family: 'lucida grande', tahoma, verdana, arial, sans-serif; font-size: 11px; }
+
+.header, .header a:link, .header a:visited, .header a:active { line-height: 16px; background-color: #aababa; color: #000000; }
+.in-header {}
+
+/*table.edging, table.edging tr, table.edging th, table.edging td  { padding: 2px; border: none; }*/
+
+.menu { font-size: 12px; line-height: 16px; }
+table.menu table.menu tr, table.menu th, table.menu td { padding: 2px; border: none; }
+th.menu { background-color: #708080; color: #dddddd; text-align: left; }
+td.menu a:hover  { background-color: #99a9a9; }
