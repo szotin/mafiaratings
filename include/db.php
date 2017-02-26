@@ -429,6 +429,11 @@ class Db
 	}
 }
 
+if (DB_LIB == DB_MYSQL)
+{
+	error_reporting(E_ALL & ~E_DEPRECATED);
+}
+
 if (is_testing_server())
 {
 	Db::init('mafia', 'root', '');
