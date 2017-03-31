@@ -774,8 +774,8 @@ class Event
 							if (!$found)
 							{
 								$found = true;
-								echo '<table class="transp" width="100%">';
-								echo '<tr class="darker"><td width="1"><img src="images/up.png"></td><td><b>' . get_label('[0] declined', $declined) . ':</b></td></tr></table><table width="100%" class="bordered"><tr>';
+								echo '<table class="bordered" width="100%">';
+								echo '<tr class="darker"><td><b>' . get_label('[0] declined', $declined) . ':</b></td></tr></table><table width="100%" class="bordered"><tr>';
 							}
 							else
 							{
