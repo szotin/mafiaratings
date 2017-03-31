@@ -406,9 +406,10 @@ class ForumMessage
 						'url' => new Tag($request_base),
 						'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
 						
-					list($subj, $body) = include 'include/languages/' . $lang . '/email_forum_reply.php';
+					list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_forum_reply.php';
 					$body = parse_tags($body, $tags);
-					send_notification($email, $body, $subj, $id, EMAIL_OBJ_MESSAGE, $message_id, $code);
+					$text_body = parse_tags($text_body, $tags);
+					send_notification($email, $body, $text_body, $subj, $id, EMAIL_OBJ_MESSAGE, $message_id, $code);
 				}
 			}
 			else if ($obj == FORUM_OBJ_USER && $obj_id != $_profile->user_id)
@@ -434,9 +435,10 @@ class ForumMessage
 						'url' => new Tag($request_base),
 						'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
 					
-					list($subj, $body) = include 'include/languages/' . $lang . '/email_forum_private.php';
+					list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_forum_private.php';
 					$body = parse_tags($body, $tags);
-					send_notification($email, $body, $subj, $id, EMAIL_OBJ_MESSAGE, $message_id, $code);
+					$text_body = parse_tags($text_body, $tags);
+					send_notification($email, $body, $text_body, $subj, $id, EMAIL_OBJ_MESSAGE, $message_id, $code);
 				}
 			}
 			else if ($obj == FORUM_OBJ_EVENT && $viewers <= FOR_MEMBERS)
@@ -476,9 +478,10 @@ class ForumMessage
 						'url' => new Tag($request_base),
 						'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
 					
-					list($subj, $body) = include 'include/languages/' . get_lang_code($user_lang) . '/email_forum_event.php';
+					list($subj, $body, $text_body) = include 'include/languages/' . get_lang_code($user_lang) . '/email_forum_event.php';
 					$body = parse_tags($body, $tags);
-					send_notification($user_email, $body, $subj, $user_id, EMAIL_OBJ_MESSAGE, $message_id, $code);
+					$text_body = parse_tags($text_body, $tags);
+					send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_MESSAGE, $message_id, $code);
 				}
 				Db::commit();
 			}
@@ -505,9 +508,10 @@ class ForumMessage
 						'photo' => new Tag('<a href="' . $request_base . '&pid=' . $photo_id . '"><img src="' . $image_url . '" border="0" width="' . EVENT_PHOTO_WIDTH . '"></a>'),
 						'unsub' => new Tag('<a href="' . $request_base . '/email_request.php?code=' . $code . '&uid=' . $user_id . '&unsub=1" target="_blank">', '</a>'));
 					
-					list($subj, $body) = include 'include/languages/' . get_lang_code($user_lang) . '/email_forum_photo.php';
+					list($subj, $body, $text_body) = include 'include/languages/' . get_lang_code($user_lang) . '/email_forum_photo.php';
 					$body = parse_tags($body, $tags);
-					send_notification($user_email, $body, $subj, $user_id, EMAIL_OBJ_MESSAGE, $message_id, $code);
+					$text_body = parse_tags($text_body, $tags);
+					send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_MESSAGE, $message_id, $code);
 				}
 				Db::commit();
 			}

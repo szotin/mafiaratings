@@ -21,25 +21,46 @@ define('WEEK_FLAG_FRI', 32);
 define('WEEK_FLAG_SAT', 64);
 define('WEEK_FLAG_ALL', 127);
 
+define('BRIEF_ATTENDANCE', true);
+
 function show_event_pic($id, $flags, $alt_id, $alt_flags, $dir, $width = 0, $height = 0, $alt_addr = true)
 {
+	global $_lang_code;
+
+	$w = $width;
+	$h = $height;
+	if ($dir == ICONS_DIR)
+	{
+		if ($w <= 0)
+		{
+			$w = ICON_WIDTH;
+		}
+		if ($h <= 0)
+		{
+			$h = ICON_HEIGHT;
+		}
+	}
+	else if ($dir == TNAILS_DIR)
+	{
+		if ($w <= 0)
+		{
+			$w = TNAIL_WIDTH;
+		}
+		if ($h <= 0)
+		{
+			$h = TNAIL_HEIGHT;
+		}
+	}
+	
 	if ($width <= 0 && $height <= 0)
 	{
-		if ($dir == ICONS_DIR)
-		{
-			$width = ICON_WIDTH;
-			$height = ICON_HEIGHT;
-		}
-		else if ($dir == TNAILS_DIR)
-		{
-			$width = TNAIL_WIDTH;
-			$height = TNAIL_HEIGHT;
-		}
+		$width = $w;
+		$height = $h;
 	}
 
 	$origin = EVENT_PICS_DIR . $dir . $id . '.png';
-	echo '<img code="' . EVENT_PIC_CODE . $id . '" origin="' . $origin . '" src="';
-	if (($flags & EVENT_ICON_MASK) != 0)
+	echo '<div style="position:relative;"><img code="' . EVENT_PIC_CODE . $id . '" origin="' . $origin . '" src="';
+	if ($flags & EVENT_ICON_MASK)
 	{
 		echo $origin . '?' . (($flags & EVENT_ICON_MASK) >> EVENT_ICON_MASK_OFFSET);
 	}
@@ -77,6 +98,20 @@ function show_event_pic($id, $flags, $alt_id, $alt_flags, $dir, $width = 0, $hei
 		echo ' height="' . $height . '"';
 	}
 	echo '>';
+	if ($flags & EVENT_FLAG_CANCELED)
+	{
+		echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
+		if ($width > 0)
+		{
+			echo ' width="' . $width . '"';
+		}
+		if ($height > 0)
+		{
+			echo ' height="' . $height . '"';
+		}
+		echo '>';
+	}
+	echo '</div>';
 }
 
 class Event
@@ -182,6 +217,26 @@ class Event
 		$this->name = $this->club_name;
 	}
 	
+	static function late_str($late)
+	{
+		if ($late < 0)
+		{
+			$result .= get_label('; very late');
+		}
+
+		$hour = floor($late / 60);
+		$minutes = $late % 60;
+		if ($hour == 0)
+		{
+			return get_label('late [0] min', $minutes);
+		}
+		else if ($minutes == 0)
+		{
+			return get_label('late [0] hr', $hour);
+		}
+		return get_label('late [0] hr [1] min', $hour, $minutes);
+	}
+	
 	static function odds_str($odds, $bringing, $late)
 	{
 		if ($odds <= 0)
@@ -198,26 +253,9 @@ class Event
 		{
 			$result .= get_label('; plus 1 friend');
 		}
-		if ($late < 0)
+		if ($late != 0)
 		{
-			$result .= get_label('; very late');
-		}
-		else if ($late > 0)
-		{
-			$hour = floor($late / 60);
-			$minutes = $late % 60;
-			if ($hour == 0)
-			{
-				$result .= get_label('; late [0] min', $minutes);
-			}
-			else if ($minutes == 0)
-			{
-				$result .= get_label('; late [0] hr', $hour);
-			}
-			else
-			{
-				$result .= get_label('; late [0] hr [1] min', $hour, $minutes);
-			}
+			$result .= '; ' . Event::late_str($late);
 		}
 		return $result;
 	}
@@ -546,7 +584,8 @@ class Event
 			$coming = 0;
 			$min_coming = 0;
 			$max_coming = 0;
-			$query = new DbQuery('SELECT u.id, u.name, a.coming_odds, a.people_with_me, u.flags, a.late FROM event_users a JOIN users u ON a.user_id = u.id WHERE a.event_id = ? ORDER BY a.coming_odds DESC, a.people_with_me DESC, a.late, u.name', $this->id);
+			$declined = 0;
+			$query = new DbQuery('SELECT u.id, u.name, a.coming_odds, a.people_with_me, u.flags, a.late FROM event_users a JOIN users u ON a.user_id = u.id WHERE a.event_id = ? ORDER BY a.coming_odds DESC, a.late, a.people_with_me DESC, u.name', $this->id);
 			while ($row = $query->next())
 			{
 				$attendance[] = $row;
@@ -562,6 +601,10 @@ class Event
 				{
 					$max_coming += 1 + $bringing;
 					$coming += (1 + $bringing) * $odds / 100;
+				}
+				else
+				{
+					++$declined;
 				}
 			}
 			
@@ -620,6 +663,124 @@ class Event
 								echo '<tr class="darker"><td colspan="6" align="center"><b>' . get_label('Declined') . ':</b></td>';
 							}
 							echo '</tr><tr>';
+						}
+						
+						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
+						show_user_pic($user_id, $user_flags, ICONS_DIR, 50, 50);
+						echo '</a><br>' . $name . '</td>';
+						++$col;
+						if ($col == 6)
+						{
+							$col = 0;
+						}
+					}
+				}
+				if ($found)
+				{
+					if ($col > 0)
+					{
+						echo '<td colspan="' . (6 - $col) . '"></td>';
+					}
+					echo '</tr></table>';
+				}
+			}
+			else if (BRIEF_ATTENDANCE)
+			{
+				$found = false;
+				$col = 0;
+				foreach ($attendance as $a)
+				{
+					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
+					if ($odds > 0)
+					{
+						if ($col == 0)
+						{
+							if (!$found)
+							{
+								$found = true;
+								echo '<table class="bordered" width="100%">';
+								echo '<tr class="darker"><td colspan="6" align="left"><b>';
+								if ($max_coming == 0)
+								{
+									echo get_label('No players attended yet.');
+								}
+								else if ($max_coming != $min_coming)
+								{
+									echo get_label('Players coming: [0]-[1]. Most likely: [2].', $min_coming, $max_coming, number_format($coming,0));
+								}
+								else
+								{
+									echo get_label('Players coming: [0].', $min_coming, $max_coming, number_format($coming,0));
+								}
+								echo '</b></td>';
+							}
+							echo '</tr><tr>';
+						}
+						
+						echo '<td width="16.66%" ';
+						if ($odds < 50)
+						{
+							echo 'class="dark"';
+						}
+						else if ($odds < 100)
+						{
+							echo 'class="light"';
+						}
+						else
+						{
+							echo 'class="lighter"';
+						}
+						echo 'align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
+						show_user_pic($user_id, $user_flags, ICONS_DIR, 50, 50);
+						echo '</a><br>' . $name;
+						if ($bringing > 0)
+						{
+							echo ' + ' . $bringing; 
+						}
+						if ($odds < 100)
+						{
+							echo ' (' . $odds . '%)';
+						}
+						if ($late != 0)
+						{
+							echo '<br>' . Event::late_str($late);
+						}
+						echo '</td>';
+						++$col;
+						if ($col == 6)
+						{
+							$col = 0;
+						}
+					}
+				}
+				if ($found)
+				{
+					if ($col > 0)
+					{
+						echo '<td class="dark" colspan="' . (6 - $col) . '"></td>';
+					}
+					echo '</tr></table>';
+				}
+				
+				$found = false;
+				$col = 0;
+				foreach ($attendance as $a)
+				{
+					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
+					if ($odds <= 0)
+					{
+						if ($col == 0)
+						{
+							if (!$found)
+							{
+								$found = true;
+								echo '<table class="transp" width="100%">';
+								echo '<tr class="darker"><td width="1"><img src="images/up.png"></td><td><b>' . get_label('[0] declined', $declined) . ':</b></td></tr></table><table width="100%" class="bordered"><tr>';
+							}
+							else
+							{
+								echo '</tr><tr>';
+							}
 						}
 						
 						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';

@@ -50,8 +50,9 @@ try
 		}
 		Db::commit();
 		
-		$email_body = '<body color="#303030" bgcolor="#cccccc">'.get_label('Your password at').' <a href="http://www.mafiaratings.com">'.get_label('Mafia Ratings').'</a> '.get_label('has been reset to').' <b>' . $password . '</b></body>';
-		send_email($email, $email_body, 'Mafia');
+		$body = get_label('Your password at') . ' <a href="http://www.mafiaratings.com">' . get_label('Mafia Ratings').'</a> ' . get_label('has been reset to') . ' <b>' . $password . '</b>';
+		$text_body = get_label('Your password at') . ' http://www.mafiaratings.com ' . get_label('has been reset to') . ' ' . $password . "\r\n\r\n";
+		send_email($email, $body, $text_body, 'Mafia');
 		echo  get_label('Your password has been reset. Please check your email for the new password.');
 	}
 	else
@@ -250,14 +251,14 @@ try
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
 				$lang = get_lang_code($admin_def_lang);
-				list($subj, $body) = include 'include/languages/' . $lang . '/email_create_club.php';
+				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_create_club.php';
 				
 				$tags = array(
 					'uname' => new Tag($admin_name),
 					'sender' => new Tag($_profile->user_name));
 				$body = parse_tags($body, $tags);
-					
-				send_email($admin_email, $body, $subj);
+				$text_body = parse_tags($text_body, $tags);
+				send_email($admin_email, $body, $text_body, $subj);
 			}
 			
 			Db::commit();

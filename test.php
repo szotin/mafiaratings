@@ -1,0 +1,45 @@
+{"sync":"",
+"club":1,
+"game":
+{
+	"id":-1,
+	"user_id":"1",
+	"club_id":"1",
+	"moder_id":-1,
+	"lang":0,
+	"event_id":"7316",
+	"start_time":0,
+	"end_time":0,
+	"players":
+	[
+		{"id":167,"number":0,"nick":"Irinaus","is_male":0,"has_immunity":0,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false},
+		{"id":-1,"number":1,"nick":"","is_male":1,"has_immunity":false,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false},
+		{"id":-1,"number":2,"nick":"","is_male":1,"has_immunity":false,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false},
+		{"id":-1,"number":3,"nick":"","is_male":1,"has_immunity":false,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false},
+		{"id":-1,"number":4,"nick":"","is_male":1,"has_immunity":false,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false},
+		{"id":-1,"number":5,"nick":"","is_male":1,"has_immunity":false,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false},
+		{"id":-1,"number":6,"nick":"","is_male":1,"has_immunity":false,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false},
+		{"id":-1,"number":7,"nick":"","is_male":1,"has_immunity":false,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false},
+		{"id":-1,"number":8,"nick":"","is_male":1,"has_immunity":false,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false},
+		{"id":-1,"number":9,"nick":"","is_male":1,"has_immunity":false,"role":0,"warnings":0,"state":0,"kill_round":-1,"kill_reason":-1,"arranged":-1,"don_check":-1,"sheriff_check":-1,"misses_speech":false}
+	],
+	"mafia_count":3,
+	"civil_count":7,
+	"gamestate":0,
+	"round":null,
+	"player_speaking":null,
+	"table_opener":null,
+	"current_nominant":null,
+	"votings":null,
+	"shooting":[],
+	"log":null,
+	"log_corrupted":false,
+	"dummy_players":null,
+	"best_player":-1,
+	"rules_id":"1"
+},
+"data":
+[
+	{"action":"reg","id":167,"nick":"Irinaus","event":"7316"}
+]
+}

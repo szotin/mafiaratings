@@ -64,7 +64,7 @@ class Page extends GeneralPageBase
 			}*/
 			if ($ccc_id > 0)
 			{
-				$condition->add(' AND u.club_id = ', $ccc_id);
+				$condition->add(' AND u.club_id = ?', $ccc_id);
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{

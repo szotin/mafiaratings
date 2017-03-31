@@ -45,8 +45,7 @@ class Page extends GeneralPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities i ON a.city_id = i.id' .
 			' JOIN countries o ON i.country_id = o.id' .
-			' WHERE e.start_time + e.duration >= ? AND e.start_time < ?' .
-			' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0',
+			' WHERE e.start_time + e.duration >= ? AND e.start_time < ?',
 			$time, $end_time);
 		
 		$ccc_id = $this->ccc_filter->get_id();

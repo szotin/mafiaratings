@@ -38,7 +38,7 @@ class Page extends ClubPageBase
 			' FROM events e ' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
-				' WHERE e.start_time < UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CANCELED .  ') = 0 AND e.club_id = ?',
+				' WHERE e.start_time < UNIX_TIMESTAMP() AND e.club_id = ?',
 			$this->id);
 		if (!$show_empty)
 		{
@@ -65,7 +65,14 @@ class Page extends ClubPageBase
 		{
 			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $address_id, $address, $address_flags, $games_count, $users_count) = $row;
 
-			echo '<tr>';
+			if ($event_flags & EVENT_FLAG_CANCELED)
+			{
+				echo '<tr class="dark">';
+			}
+			else
+			{
+				echo '<tr>';
+			}
 			
 			echo '<td width="50"><a href="event_players.php?bck=1&id=' . $event_id . '">';
 			show_event_pic($event_id, $event_flags, $address_id, $address_flags, ICONS_DIR, 50);

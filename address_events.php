@@ -34,7 +34,7 @@ class Page extends AddressPageBase
 		echo ' onclick="document.clubForm.submit()"> ' . get_label('Show events with no games');
 		echo '</td></tr></table></form>';
 		
-		$condition = new SQL(' FROM events e WHERE e.address_id = ? AND e.start_time < UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CANCELED .  ') = 0', $this->id);
+		$condition = new SQL(' FROM events e WHERE e.address_id = ? AND e.start_time < UNIX_TIMESTAMP()', $this->id);
 		if (!$show_empty)
 		{
 			$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
@@ -61,7 +61,14 @@ class Page extends AddressPageBase
 		{
 			list ($event_id, $event_name, $event_time, $event_flags, $games_count, $users_count) = $row;
 			
-			echo '<tr>';
+			if ($event_flags & EVENT_FLAG_CANCELED)
+			{
+				echo '<tr class="dark">';
+			}
+			else
+			{
+				echo '<tr>';
+			}
 			
 			echo '<td width="50" class="dark"><a href="event_players.php?bck=1&id=' . $event_id . '">';
 			show_event_pic($event_id, $event_flags, $this->id, $this->flags, ICONS_DIR, 50);

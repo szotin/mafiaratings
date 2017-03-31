@@ -23,7 +23,7 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page;
 		
-		$condition = new SQL(' FROM events e JOIN addresses a ON e.address_id = a.id JOIN clubs c ON e.club_id = c.id JOIN cities ct ON ct.id = a.city_id WHERE e.start_time < UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CANCELED .  ') = 0');
+		$condition = new SQL(' FROM events e JOIN addresses a ON e.address_id = a.id JOIN clubs c ON e.club_id = c.id JOIN cities ct ON ct.id = a.city_id WHERE e.start_time < UNIX_TIMESTAMP()');
 		
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())

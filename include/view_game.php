@@ -120,7 +120,7 @@ class ViewGame
 		{
 			echo '<tr><td>'.get_label('Best move').':</td><td>' . ($this->gs->best_move + 1) . ': ' . $this->gs->players[$this->gs->best_move]->nick . '</td></tr>';
 		}
-		if ($_profile->is_admin() && $this->gs->error != NULL)
+		if ($_profile != NULL && $_profile->is_admin() && $this->gs->error != NULL)
 		{
 			echo '<tr><td>'.get_label('Error').':</td><td>' . $this->gs->error . '</td></tr>';
 		}

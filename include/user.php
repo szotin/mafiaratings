@@ -8,21 +8,22 @@ require_once 'include/club.php';
 
 function send_activation_email($user_id, $name, $email)
 {
+	global $_lang_code;
+
 	if ($email == '')
 	{
 		return true;
 	}
 
 	$email_code = md5(rand_string(8));
-	$link = '<a href="http://' . get_server_url() . '/email_request.php?uid=' . $user_id . '&code=' . $email_code . '">';
-	$email_body =
-		'<body color="#303030" bgcolor="#cccccc">' .
-		get_label('Hello [0]!', $name) .
-		'<p>' . get_label('Thank you for signing up on Mafia Ratings!') .
-		'</p><p>' . get_label('Please [0]click here[1] to activate your account.', $link, '</a>') .
-		'</p></body>';
+	$tags = array(
+		'uname' => new Tag($name),
+		'url' => new Tag('http://' . get_server_url() . '/email_request.php?uid=' . $user_id . '&code=' . $email_code));
 	
-	send_notification($email, $email_body, 'Mafia', $user_id, EMAIL_OBJ_SIGN_IN, 0, $email_code);
+	list($subj, $body, $text_body) = include 'include/languages/' . $_lang_code . '/email_user_activation.php';
+	$body = parse_tags($body, $tags);
+	$text_body = parse_tags($text_body, $tags);
+	send_notification($email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_SIGN_IN, 0, $email_code);
 }
 
 function create_user($name, $email, $flags = U_NEW_PLAYER_FLAGS, $club_id = NULL, $city_id = -1, $lang = 0)

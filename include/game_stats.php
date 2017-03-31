@@ -836,12 +836,17 @@ function save_game_results($gs)
 		if ($update_stats)
 		{
 			Db::exec(get_label('user'), 'UPDATE users u, games g SET u.games_moderated = u.games_moderated + 1 WHERE u.id = g.moderator_id AND g.id = ?', $gs->id);
+			Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $gs->id);
+			Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $gs->id);
+			Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $gs->id);
+			Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $gs->id);
 			for ($i = 0; $i < 10; ++$i)
 			{
 				$stats = new GamePlayerStats($gs, $i);
 				$stats->save();
 			}
 		}
+		Db::commit();
 	}
 	catch (FatalExc $e)
 	{
@@ -853,7 +858,6 @@ function save_game_results($gs)
 		Db::rollback();
 		throw new Exc(get_label('Unable to save game [2] stats for player #[0]: [1]', $i + 1, $e->getMessage(), $gs->id));
 	}
-	Db::commit();
 }
 
 function rebuild_game_stats($gs)

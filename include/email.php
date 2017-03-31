@@ -3,6 +3,7 @@
 require_once 'include/rand_str.php';
 require_once 'include/server.php';
 require_once 'include/message.php';
+require_once 'include/db.php';
 
 define('EMAIL_OBJ_EVENT', 0);
 define('EMAIL_OBJ_MESSAGE', 1);
@@ -40,7 +41,7 @@ function show_email_tags($event_tags)
 	echo '</table>';
 }
 
-function send_email($email, $body, $subject, $unsubs_url = NULL)
+function send_email($email, $body, $text_body, $subject, $unsubs_url = NULL)
 {
 	if (is_production_server())
 	{
@@ -49,13 +50,36 @@ function send_email($email, $body, $subject, $unsubs_url = NULL)
 			"Reply-To: godfather@mafiaratings.com\r\n" .
 			"Precedence: bulk\r\n" .
 			"Return-Path: <godfather@mafiaratings.com>\r\n" .
-			"Content-Type: text/html; charset=UTF-8\r\n" .
+			"MIME-Version: 1.0\r\n" .
 			"X-Mailer: PHP/" . phpversion() . "\r\n";
-
+			
 		if ($unsubs_url != NULL)
 		{
 			$headers .= "List-Unsubscribe: <" . $unsubs_url . ">\r\n";
 		}
+
+		if ($body == NULL)
+		{
+			$headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+			$body = $text_body;
+		}
+		else if ($text_body == NULL)
+		{
+			$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+			$body = '<html><body>' . $body . '</body></html>';
+		}
+		else
+		{
+			$headers .= "Content-Type: multipart/alternative; boundary=c4d5d00c4725d9ed0b3c8b\r\n";
+			$body = 
+				"--c4d5d00c4725d9ed0b3c8b\r\n" . 
+				"Content-Type: text/plain; charset=UTF-8\r\n\r\n" . $text_body . "\r\n\r\n" .
+				"--c4d5d00c4725d9ed0b3c8b\r\n" . 
+				"Content-Type: text/html; charset=UTF-8\r\n\r\n" . 
+				"<html><body>" . $body . "</body></html>\r\n\r\n" . 
+				"--c4d5d00c4725d9ed0b3c8b--\r\n";
+		}
+			
 		if (!mail($email, $subject, $body, $headers))
 		{
 			throw new Exc(get_label('Failed to send email "[1]" to [0]', $email, $subject));
@@ -63,7 +87,16 @@ function send_email($email, $body, $subject, $unsubs_url = NULL)
 	}
 	else if (!defined('GATE'))
 	{
-		echo '<center><table class="bordered" width="100%"><tr><td>' . get_label('Email has been sent') . ':</td></tr><tr><td>To:' . $email . '</td></tr><tr><td>' . $body . '</td></tr></table></center>';
+		echo '<center><table class="bordered" width="100%"><tr><td>' . get_label('Email has been sent to') . ': ' . $email . '</td></tr>';
+		if ($body != NULL)
+		{
+			echo '<tr><td>' . $body . '</td></tr>';
+		}
+		if ($text_body != NULL)
+		{
+			echo '<tr><td><pre>' . $text_body . '</pre></td></tr>';
+		}
+		echo '</table></center>';
 	}
 }
 
@@ -76,24 +109,26 @@ class EmailCommiter extends DbCommiter
 {
 	private $email;
 	private $body;
+	private $text_body;
 	private $subject;
 	private $unsubs_url;
 	
-	public function __construct($email, $body, $subject, $unsubs_url)
+	public function __construct($email, $body, $text_body, $subject, $unsubs_url)
 	{
 		$this->email = $email;
 		$this->body = $body;
+		$this->text_body = $text_body;
 		$this->subject = $subject;
 		$this->unsubs_url = $unsubs_url;
 	}
 
 	public function commit()
 	{
-		send_email($this->email, $this->body, $this->subject, $this->unsubs_url);
+		send_email($this->email, $this->body, $this->text_body, $this->subject, $this->unsubs_url);
 	}
 }
 
-function send_notification($email, $body, $subject, $user_id, $obj, $obj_id, $code)
+function send_notification($email, $body, $text_body, $subject, $user_id, $obj, $obj_id, $code)
 {
 	$email = trim($email);
 	if ($email == '')
@@ -104,18 +139,17 @@ function send_notification($email, $body, $subject, $user_id, $obj, $obj_id, $co
 	$url = 'http://' . get_server_url() . '/email_request.php';
 	$unsubs_url = $url . '?uid=' . $user_id . '&code=' . $code . '&unsub=1';
 	$body =
-		'<body color="#303030" bgcolor="#cccccc">' .
 		'<form method="get" action="' . $url . '">' . 
 		'<input type="hidden" name="uid" value="' . $user_id . '">' .
 		'<input type="hidden" name="code" value="' . $code . '">' . $body .
-		'</form></body>';
+		'</form>';
 		
 	Db::exec(
 		get_label('email'), 
 		'INSERT INTO emails (user_id, code, send_time, obj, obj_id) VALUES (?, ?, ?, ?, ?)', 
 		$user_id, $code, time(), $obj, $obj_id);
 	
-	Db::add_commiter(new EmailCommiter($email, $body, $subject, $unsubs_url));
+	Db::add_commiter(new EmailCommiter($email, $body, $text_body, $subject, $unsubs_url));
 }
 
 ?>

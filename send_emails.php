@@ -1,5 +1,7 @@
 <?php
 
+setDir();
+
 require_once 'include/db.php';
 require_once 'include/email.php';
 require_once 'include/languages.php';
@@ -7,7 +9,34 @@ require_once 'include/constants.php';
 require_once 'include/localization.php';
 require_once 'include/error.php';
 
-define('MAX_EMAILS', 300);
+if (PHP_SAPI == 'cli')
+{
+	define('EOL', "\n");
+}
+else
+{
+	define('EOL', " <br>\n");
+}
+
+function setDir()
+{
+	// Set the current working directory to the directory of the script.
+	// This script is sometimes called from the other directories - for auto sending, so we need to change the directory
+	$pos = strrpos(__FILE__, '/');
+	if ($pos === false)
+	{
+		$pos = strrpos(__FILE__, '\\');
+		if ($pos === false)
+		{
+			return;
+		}
+	}
+	$dir = substr(__FILE__, 0, $pos);
+	chdir($dir);
+}
+
+define('NO_TEXT', 'Please enable http in your email client in order to read this message');
+define('MAX_EMAILS', 25);
 try
 {
 	$time = time();
@@ -26,6 +55,8 @@ try
 		' WHERE ee.status in (' . MAILING_WAITING . ', ' . MAILING_SENDING . ')' .
 		' AND ee.send_time <= ' . $time .
 		' ORDER BY ee.send_time');
+	// echo $query->get_parsed_sql();
+	// echo '</br>';
 	$image_base = 'http://' . $server_name . '/' . ADDRESS_PICS_DIR . TNAILS_DIR;
 	while (($row = $query->next()) && $emails_remaining > 0)
 	{
@@ -114,7 +145,10 @@ try
 			}
 		
 			$query1 = new DbQuery('SELECT u.id, u.name, u.email FROM users u, user_clubs uc WHERE ', $condition);
-			$query1->add(' LIMIT ' . $emails_remaining);
+			$query1->add(' ORDER BY u.id LIMIT ' . $emails_remaining);
+			echo $query1->get_parsed_sql();
+			echo '</br>';
+			
 			while ($row1 = $query1->next())
 			{
 				list($user_id, $user_name, $user_email) = $row1;
@@ -133,19 +167,22 @@ try
 					
 				$body1 = parse_tags($body, $tags);
 				$subj1 = parse_tags($subj, $tags);
+				if (empty($subj1))
+				{
+					$subj1 = 'Mafia ratings';
+				}
 				
 				try
 				{
-					send_notification($user_email, $body1, $subj1, $user_id, EMAIL_OBJ_EVENT, $email_id, $code);
+					send_notification($user_email, $body1, NO_TEXT, $subj1, $user_id, EMAIL_OBJ_EVENT, $email_id, $code);
 					++$count;
-					echo 'Email about ' . $event_name . ' at ' . date('l, F d, Y', $event_start_time) . ' has been sent to ' . $user_name;
+					echo 'Email about ' . $event_name . ' at ' . date('l, F d, Y', $event_start_time) . ' has been sent to ' . $user_name . EOL;
 				}
 				catch (Exception $e)
 				{
 					Exc::log($e, true);
-					echo 'Failed to send email about ' . $event_name . ' at ' . date('l, F d, Y', $event_start_time) . ' to ' . $user_name;
+					echo 'Failed to send email about ' . $event_name . ' at ' . date('l, F d, Y', $event_start_time) . ' to ' . $user_name . EOL;
 				}
-				echo "<br>\n";
 				
 				--$emails_remaining;
 			}
@@ -177,7 +214,8 @@ try
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities i ON a.city_id = i.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
-			' WHERE (e.flags & ' . EVENT_FLAG_DONE . ') <> 0 AND e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' < UNIX_TIMESTAMP()');
+			' WHERE (e.flags & ' . EVENT_FLAG_DONE . ') = 0 AND e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' < UNIX_TIMESTAMP() AND e.start_time + e.duration + ' . EVENT_NOT_DONE_TIME . ' >= UNIX_TIMESTAMP()');
+			
 		while (($row = $query->next()) && $emails_remaining > 0)
 		{
 			list($e_id, $e_name, $e_start_time, $e_duration, $e_notes, $e_languages, $a_id, $a_address, $a_map_url, $i_timezone, $c_id, $c_name) = $row;
@@ -219,16 +257,17 @@ try
 				list ($u_id, $u_name, $u_lang, $u_email, $u_nick) = $row1;
 				$lang = get_lang_code($u_lang);
 				$code = generate_email_code();
-				//echo '<a href="email_request.php?uid=' . $u_id . '&code=' . $code .'&yes=" target="_balnk">' . $u_name . '</a><br><br>';
+				// echo '<a href="email_request.php?uid=' . $u_id . '&code=' . $code .'&yes=" target="_balnk">' . $u_name . '</a><br><br>';
 				$tags['code'] = new Tag($code);
 				$tags['uid'] = new Tag($u_id);
 				$tags['uname'] = new Tag($u_name);
 				$tags['nick'] = new Tag($u_nick);
 				$tags['edate'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
 				$tags['etime'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
-				list($subj, $body) = include 'include/languages/' . $lang . '/email_confirm_event.php';
+				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_confirm_event.php';
 				$body = parse_tags($body, $tags);
-				send_notification($u_email, $body, $subj, $u_id, EMAIL_OBJ_CONFIRM_EVENT, $e_id, $code);
+				$text_body = parse_tags($text_body, $tags);
+				send_notification($u_email, $body, $text_body, $subj, $u_id, EMAIL_OBJ_CONFIRM_EVENT, $e_id, $code);
 				--$emails_remaining;
 			}
 			
@@ -258,9 +297,10 @@ try
 					$tags['edate'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
 					$tags['etime'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
 						
-					list($subj, $body) = include 'include/languages/' . $lang . '/email_event_no_user.php';
+					list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_event_no_user.php';
 					$body = parse_tags($body, $tags);
-					send_notification($u_email, $body, $subj, $u_id, EMAIL_OBJ_EVENT_NO_USER, $e_id, $code);
+					$text_body = parse_tags($text_body, $tags);
+					send_notification($u_email, $body, $text_body, $subj, $u_id, EMAIL_OBJ_EVENT_NO_USER, $e_id, $code);
 					
 					--$emails_remaining;
 				}
@@ -323,17 +363,18 @@ try
 				'url' => new Tag($request_base),
 				'unsub' => new Tag('<a href="http://' . get_server_url() . '/email_request.php?uid=' . $user_id . '&code=' . $code . '&unsub=1" target="_blank">', '</a>'));
 				
-			$email_info = include 'include/languages/' . $lang . '/email_photo.php';
-			$email_message = parse_tags($email_info[1], $tags);
+			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_photo.php';
+			$body = parse_tags($body, $tags);
+			$text_body = parse_tags($text_body, $tags);
 			try
 			{
-				send_notification($email, $email_message, $email_info[0], $user_id, EMAIL_OBJ_PHOTO, 0, $code);
-				echo 'Email about photo tagging has been sent to ' . $user_name;
+				send_notification($email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_PHOTO, 0, $code);
+				echo 'Email about photo tagging has been sent to ' . $user_name . EOL;
 			}
 			catch (Exception $e)
 			{
 				Exc::log($e, true);
-				echo 'Failed to send email about photo tagging to ' . $user_name;
+				echo 'Failed to send email about photo tagging to ' . $user_name . EOL;
 			}
 		}
 		Db::exec(get_label('photo'), 'UPDATE user_photos SET email_sent = TRUE');
@@ -402,7 +443,9 @@ catch (Exception $e)
 {
 	Db::rollback();
 	Exc::log($e, true);
-	echo $e->getMessage();
+	echo $e->getMessage() . EOL;
 }
+
+echo 'done' . EOL;
 
 ?>

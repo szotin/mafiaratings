@@ -725,7 +725,7 @@ var mafia = new function()
 		return user_id;
 	}
 	
-	this.createUser = function(name, nick, email, flags)
+	this.checkUser = function(name)
 	{
 		var club = _data.club;
 		var event = club.events[_data.game.event_id];
@@ -733,14 +733,13 @@ var mafia = new function()
 		
 		if (event.id == 0)
 		{
-			throw l('ErrDemo');
+			return l('ErrDemo');
 		}
 		
 		name = name.trim();
-		email = email.trim();
 		if (name == '')
 		{
-			throw l('ErrNoName');
+			return l('ErrNoName');
 		}
 		
 		var lName = name.toLocaleLowerCase();
@@ -748,8 +747,25 @@ var mafia = new function()
 		{
 			if (club.players[pid].name.toLocaleLowerCase() == lName)
 			{
-				throw l('ErrUserExists', name);
+				return l('ErrUserExists', name);
 			}
+		}
+		return null;
+	}
+	
+	this.createUser = function(name, nick, email, flags)
+	{
+		var club = _data.club;
+		var event = club.events[_data.game.event_id];
+		var players = club.players;
+		
+		name = name.trim();
+		email = email.trim();
+		
+		var error = mafia.checkUser(name);
+		if (error != null)
+		{
+			throw error;
 		}
 		
 		var user_id = (--_curUserId);

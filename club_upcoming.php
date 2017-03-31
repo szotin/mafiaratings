@@ -38,10 +38,6 @@ class Page extends ClubPageBase
 			++$event_count;
 			++$column_count;
 		}
-		else
-		{
-			$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');
-		}
 		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*) FROM events e WHERE ', $condition);
 		show_pages_navigation($page_size, $count);

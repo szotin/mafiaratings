@@ -23,25 +23,25 @@ try
 		throw new Exc(get_label('No permissions'));
 	}
 	
-	if (!isset($_REQUEST['id']))
+	if (!isset($_POST['id']))
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('club')));
 	}
 	
-	$id = $_REQUEST['id'];
+	$id = $_POST['id'];
 	
 /*	echo '<pre>';
-	print_r($_REQUEST);
+	print_r($_POST);
 	echo '</pre>';*/
 	
-	if (isset($_REQUEST['decline']))
+	if (isset($_POST['decline']))
 	{
 		if (!$_profile->is_admin())
 		{
 			throw new Exc(get_label('No permissions'));
 		}
 		
-		$reason = $_REQUEST['reason'];
+		$reason = $_POST['reason'];
 	
 		Db::begin();
 		list($name, $url, $langs, $user_id, $user_name, $user_email, $user_lang) = Db::record(
@@ -55,23 +55,24 @@ try
 		if ($reason != '')
 		{
 			$lang = get_lang_code($user_lang);
-			list($subj, $body) = include 'include/languages/' . $lang . '/email_decline_club.php';
+			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_decline_club.php';
 			$tags = array(
 				'uname' => new Tag($user_name),
 				'reason' => new Tag($reason),
 				'club_name' => new Tag($name));
 			$body = parse_tags($body, $tags);
-			send_email($user_email, $body, $subj);
+			$text_body = parse_tags($text_body, $tags);
+			send_email($user_email, $body, $text_body, $subj);
 		}
 	}
-	else if (isset($_REQUEST['accept']))
+	else if (isset($_POST['accept']))
 	{
 		if (!$_profile->is_admin())
 		{
 			throw new Exc(get_label('No permissions'));
 		}
 		
-		$name = $_REQUEST['name'];
+		$name = $_POST['name'];
 		
 		Db::begin();
 		list($url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone, $city_id, $city_name) = Db::record(
@@ -157,9 +158,10 @@ try
 			'uname' => new Tag($user_name),
 			'cname' => new Tag($name),
 			'url' => new Tag('http://' . get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id));
-		list($subj, $body) = include 'include/languages/' . $lang . '/email_accept_club.php';
+		list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_accept_club.php';
 		$body = parse_tags($body, $tags);
-		send_notification($user_email, $body, $subj, $user_id, EMAIL_OBJ_CREATE_CLUB, $club_id, $code);
+		$text_body = parse_tags($text_body, $tags);
+		send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_CREATE_CLUB, $club_id, $code);
 		
 		Db::commit();
 		
@@ -168,7 +170,7 @@ try
 			$_profile->update_clubs();
 		}
 	}
-	else if (isset($_REQUEST['restore']))
+	else if (isset($_POST['restore']))
 	{
 		if (!check_manager_permission($id)) // can not use $_profile->is_manager because the club is retired
 		{
@@ -192,7 +194,7 @@ try
 		}
 		$club = $_profile->clubs[$id];
 		
-		if (isset($_REQUEST['retire']))
+		if (isset($_POST['retire']))
 		{
 			Db::begin();
 			Db::exec(get_label('club'), 'UPDATE clubs SET flags = flags | ' . CLUB_FLAG_RETIRED . ' WHERE id = ?', $club->id);
@@ -203,14 +205,14 @@ try
 			Db::commit();
 			$_profile->update_clubs();
 		}
-		else if (isset($_REQUEST['edit']))
+		else if (isset($_POST['edit']))
 		{
-			$name = trim($_REQUEST['name']);
-			$url = check_url($_REQUEST['url']);
-			$email = trim($_REQUEST['email']);
-			$phone = $_REQUEST['phone'];
-			$price = $_REQUEST['price'];
-			$langs = $_REQUEST['langs'];
+			$name = trim($_POST['name']);
+			$url = check_url($_POST['url']);
+			$email = trim($_POST['email']);
+			$phone = $_POST['phone'];
+			$price = $_POST['price'];
+			$langs = $_POST['langs'];
 			
 			check_club_name($name, $club->id);
 			if ($langs == 0)
@@ -224,7 +226,7 @@ try
 			}
 			
 			Db::begin();
-			$city_id = retrieve_city_id($_REQUEST['city'], retrieve_country_id($_REQUEST['country']), $club->timezone);
+			$city_id = retrieve_city_id($_POST['city'], retrieve_country_id($_POST['country']), $club->timezone);
 			
 			Db::exec(
 				get_label('club'), 
@@ -247,26 +249,42 @@ try
 				
 			$_profile->update_clubs();
 		}
-		else if (isset($_REQUEST['new_address']))
+		else if (isset($_POST['new_address']))
 		{
-			$address = $_REQUEST['address'];
+			$address = '';
+			if (isset($_POST['address']))
+			{
+				$address = $_POST['address'];
+			}
 			if ($address == '')
 			{
 				throw new Exc(get_label('Please enter [0].', get_label('address')));
 			}
 			
 			$name = '';
-			if (isset($_REQUEST['name']))
+			if (isset($_POST['name']))
 			{
-				$name = $_REQUEST['name'];
+				$name = $_POST['name'];
 			}
 			if ($name == '')
 			{
 				$name = $address;
 			}
 			
+			if (!isset($_POST['city']))
+			{
+				throw new Exc(get_label('Please enter [0].', get_label('city')));
+			}
+			$city = $_POST['city'];
+			
+			if (!isset($_POST['country']))
+			{
+				throw new Exc(get_label('Please enter [0].', get_label('country')));
+			}
+			$country = $_POST['country'];
+			
 			Db::begin();
-			$city_id = retrieve_city_id($_REQUEST['city'], retrieve_country_id($_REQUEST['country']), $club->timezone);
+			$city_id = retrieve_city_id($city, retrieve_country_id($country, $club->timezone));
 			$sc_name = htmlspecialchars($name, ENT_QUOTES);
 			$sc_address = htmlspecialchars($address, ENT_QUOTES);
 	
@@ -292,40 +310,40 @@ try
 	
 			Db::commit();
 		}
-		else if (isset($_REQUEST['new_event']))
+		else if (isset($_POST['new_event']))
 		{
 			$event = new Event();
 			$event->set_club($club);
 		
-			$event->name = $_REQUEST['name'];
-			$event->hour = $_REQUEST['hour'];
-			$event->minute = $_REQUEST['minute'];
-			$event->duration = $_REQUEST['duration'];
-			$event->price = $_REQUEST['price'];
-			$event->rules_id = $_REQUEST['rules'];
-			$event->system_id = $_REQUEST['system'];
+			$event->name = $_POST['name'];
+			$event->hour = $_POST['hour'];
+			$event->minute = $_POST['minute'];
+			$event->duration = $_POST['duration'];
+			$event->price = $_POST['price'];
+			$event->rules_id = $_POST['rules'];
+			$event->system_id = $_POST['system'];
 			if ($event->system_id <= 0)
 			{
 				$event->system_id = NULL;
 			}
-			$event->notes = $_REQUEST['notes'];
-			$event->flags = $_REQUEST['flags'];
-			$event->langs = $_REQUEST['langs'];
-			$event->addr_id = $_REQUEST['addr'];
+			$event->notes = $_POST['notes'];
+			$event->flags = $_POST['flags'];
+			$event->langs = $_POST['langs'];
+			$event->addr_id = $_POST['addr'];
 			if ($event->addr_id <= 0)
 			{
-				$event->addr = $_REQUEST['new_addr'];
-				$event->country = $_REQUEST['country'];
-				$event->city = $_REQUEST['city'];
+				$event->addr = $_POST['new_addr'];
+				$event->country = $_POST['country'];
+				$event->city = $_POST['city'];
 			}
 			
 			Db::begin();
 			date_default_timezone_set($event->timezone);
-			$time = mktime($event->hour, $event->minute, 0, $_REQUEST['month'], $_REQUEST['day'], $_REQUEST['year']);
-			if (isset($_REQUEST['weekdays']))
+			$time = mktime($event->hour, $event->minute, 0, $_POST['month'], $_POST['day'], $_POST['year']);
+			if (isset($_POST['weekdays']))
 			{
-				$weekdays = $_REQUEST['weekdays'];
-				$until = mktime($event->hour, $event->minute, 0, $_REQUEST['to_month'], $_REQUEST['to_day'], $_REQUEST['to_year']);
+				$weekdays = $_POST['weekdays'];
+				$until = mktime($event->hour, $event->minute, 0, $_POST['to_month'], $_POST['to_day'], $_POST['to_year']);
 				if ($time < time())
 				{
 					$time += 86400; // 86400 - seconds per day

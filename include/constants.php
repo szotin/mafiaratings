@@ -139,6 +139,7 @@ define('EVENT_ICON_MASK_OFFSET', 6);
 define('EVENT_ICON_MAX_VERSION', 7);
 
 define('EVENT_ALIVE_TIME', 28800); // event can be extended during this time after being finished (8 hours)
+define('EVENT_NOT_DONE_TIME', 1209600);
 
 // address flags
 // 1 - 0x0001 -      1 - not used

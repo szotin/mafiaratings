@@ -41,7 +41,13 @@ function retrieve_country_id($country)
 				'!</p><p>' . $_profile->user_name .
 				' created new country <a href="http://' . get_server_url() . '/countries.php">' . $country .
 				'</a>.</p><p>Please confirm!</p>';
-			send_email($admin_email, $body, 'New country');
+			$text_body =
+				'Hi, ' . $admin_name .
+				'!\r\n\r\n' . $_profile->user_name .
+				' created new country ' . $country . 
+				' (http://' . get_server_url() . 
+				'/countries.php).\r\n\r\nPlease confirm!\r\n';
+			send_email($admin_email, $body, $text_body, 'New country');
 		}
 	}
 	return $country_id;

@@ -37,7 +37,7 @@ class Page extends ClubPageBase
 			echo '<td width="' . COLUMN_WIDTH . '%" align="center">';
 			echo '<a href="event_info.php?bck=1&id=' . $event_id . '" title="' . get_label('View event details.') . '"><b>';
 			echo format_date('l, F d, Y, H:i', $event_time, $timezone) . '</b><br>';
-			show_event_pic($event_id, $event_flags, $addr_id, $addr_flags, ICONS_DIR);
+			show_event_pic($event_id, $event_flags, $addr_id, $addr_flags, ICONS_DIR, 0, 0, true);
 			echo '</a><br>';
 			if ($addr_name == $event_name)
 			{
@@ -110,7 +110,7 @@ class Page extends ClubPageBase
 					' JOIN addresses a ON e.address_id = a.id' .
 					' JOIN clubs c ON e.club_id = c.id' .
 					' JOIN cities ct ON ct.id = c.city_id' .
-					' WHERE u.user_id = ? AND u.coming_odds > 0 AND e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?' .
+					' WHERE u.user_id = ? AND u.coming_odds > 0 AND e.start_time + e.duration > UNIX_TIMESTAMP() AND e.club_id = ?' .
 					' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
 				$_profile->user_id, $this->id);
 			$this->show_events_list($query, get_label('Your events'));
@@ -122,7 +122,7 @@ class Page extends ClubPageBase
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN clubs c ON e.club_id = c.id' .
 				' JOIN cities ct ON ct.id = c.city_id' .
-				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_CHAMPIONSHIP) . ') = ' . EVENT_FLAG_CHAMPIONSHIP . ' AND e.club_id = ?',
+				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CHAMPIONSHIP . ') = ' . EVENT_FLAG_CHAMPIONSHIP . ' AND e.club_id = ?',
 			$this->id);
 		if ($_profile != NULL)
 		{
@@ -137,7 +137,7 @@ class Page extends ClubPageBase
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN clubs c ON e.club_id = c.id' .
 				' JOIN cities ct ON ct.id = c.city_id' .
-				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_CHAMPIONSHIP) . ') = 0 AND e.club_id = ?',
+				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CHAMPIONSHIP . ') = 0 AND e.club_id = ?',
 			$this->id);
 		if ($_profile != NULL)
 		{

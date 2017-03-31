@@ -183,7 +183,7 @@ try
 			' JOIN addresses a ON e.address_id = a.id' . 
 			' JOIN cities c ON a.city_id = c.id' . 
 			' WHERE e.club_id = ?' .
-			' AND (e.flags & ' . EVENT_FLAG_CANCELED .  ') = 0 AND e.start_time < UNIX_TIMESTAMP() ORDER BY e.start_time DESC LIMIT 30',
+			' AND e.start_time < UNIX_TIMESTAMP() ORDER BY e.start_time DESC LIMIT 30',
 		$event->club_id);
 	echo get_label('Copy event data from') . ': <select id="form-copy" onChange="copyEvent()"><option value="0"></option>';
 	while ($row = $query->next())

@@ -36,17 +36,16 @@ class Page extends ClubPageBase
 		{
 			$this->year = $_REQUEST['year'];
 		}
-		else if ($this->is_manager)
+		else
 		{
 			$this->year = $this->this_year;
 		}
-		else
-		{
-			$this->year = $this->this_year - 1;
-		}
 		
-		$this->from = mktime(0, 0, 0, 1, 1, $this->year);
-		$this->to = mktime(0, 0, 0, 1, 1, $this->year + 1);
+		if ($this->year > 0)
+		{
+			$this->from = mktime(0, 0, 0, 1, 1, $this->year);
+			$this->to = mktime(0, 0, 0, 1, 1, $this->year + 1);
+		}
 		
 		$this->view = VIEW_OVERAL;
 		if (isset($_REQUEST['view']))
@@ -57,10 +56,24 @@ class Page extends ClubPageBase
 		{
 			$this->view = VIEW_OVERAL;
 		}
+
+		if ($this->year > 0)
+		{
+			list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE club_id = ? AND  start_time >= ? AND start_time < ?', $this->id, $this->from, $this->to);
+		}
+		else
+		{
+			list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE club_id = ?', $this->id);
+		}
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE club_id = ? AND  start_time >= ? AND start_time < ?', $this->id, $this->from, $this->to);
-		
-		$this->_title = $this->name . ': ' . $this->views[$this->view] . ' ' . $this->year;
+		if ($this->year > 0)
+		{
+			$this->_title = $this->name . ': ' . $this->views[$this->view] . ' ' . $this->year;
+		}
+		else
+		{
+			$this->_title = $this->name . ': ' . $this->views[$this->view];
+		}
 	}
 	
 	protected function show_body()
@@ -82,6 +95,7 @@ class Page extends ClubPageBase
 		echo '<form name="filter" method="get"><input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<select name="year" onchange="document.filter.submit()">';
+		show_option(0, $this->year, get_label('All time'));
 		for ($i = $min_year; $i <= $max_year; ++$i)
 		{
 			show_option($i, $this->year, $i);
@@ -111,7 +125,14 @@ class Page extends ClubPageBase
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
 		$terminated_count = 0;
-		$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND start_time >= ? AND start_time < ? GROUP BY result', $this->id, $this->from, $this->to);
+		if ($this->year > 0)
+		{
+			$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND start_time >= ? AND start_time < ? GROUP BY result', $this->id, $this->from, $this->to);
+		}
+		else
+		{
+			$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? GROUP BY result', $this->id);
+		}
 		while ($row = $query->next())
 		{
 			switch ($row[0])
@@ -151,17 +172,42 @@ class Page extends ClubPageBase
 		
 		if ($civils_win_count + $mafia_win_count > 0)
 		{
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p, games g WHERE p.game_id = g.id AND g.club_id = ?  AND g.start_time >= ? AND g.start_time < ?', $this->id, $this->from, $this->to);
+			if ($this->year > 0)
+			{
+				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p, games g WHERE p.game_id = g.id AND g.club_id = ? AND g.start_time >= ? AND g.start_time < ?', $this->id, $this->from, $this->to);
+			}
+			else
+			{
+				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p, games g WHERE p.game_id = g.id AND g.club_id = ?', $this->id);
+			}
 			echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 			
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT moderator_id) FROM games WHERE club_id = ? AND start_time >= ? AND start_time < ?', $this->id, $this->from, $this->to);
+			if ($this->year > 0)
+			{
+				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT moderator_id) FROM games WHERE club_id = ? AND start_time >= ? AND start_time < ?', $this->id, $this->from, $this->to);
+			}
+			else
+			{
+				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT moderator_id) FROM games WHERE club_id = ?', $this->id);
+			}
 			echo '<tr><td>'.get_label('People moderated').':</td><td>' . $counter . '</td></tr>';
 			
-			list ($a_game, $s_game, $l_game) = Db::record(
-				get_label('game'),
-				'SELECT AVG(end_time - start_time), MIN(end_time - start_time), MAX(end_time - start_time) ' .
-					'FROM games WHERE result > 0 AND result < 3 AND club_id = ? AND start_time >= ? AND start_time < ?', 
-				$this->id, $this->from, $this->to);
+			if ($this->year > 0)
+			{
+				list ($a_game, $s_game, $l_game) = Db::record(
+					get_label('game'),
+					'SELECT AVG(end_time - start_time), MIN(end_time - start_time), MAX(end_time - start_time) ' .
+						'FROM games WHERE result > 0 AND result < 3 AND club_id = ? AND start_time >= ? AND start_time < ?', 
+					$this->id, $this->from, $this->to);
+			}
+			else
+			{
+				list ($a_game, $s_game, $l_game) = Db::record(
+					get_label('game'),
+					'SELECT AVG(end_time - start_time), MIN(end_time - start_time), MAX(end_time - start_time) ' .
+						'FROM games WHERE result > 0 AND result < 3 AND club_id = ?', 
+					$this->id);
+			}
 			echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Longest game').':</td><td>' . format_time($l_game) . '</td></tr>';
@@ -170,9 +216,18 @@ class Page extends ClubPageBase
 		
 		if ($games_count > 0)
 		{
-			$query = new DbQuery(
-				'SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.club_id = ? AND g.start_time >= ? AND g.start_time < ? AND g.result IN(1, 2) GROUP BY p.kill_type, p.role',
-				$this->id, $this->from, $this->to);
+			if ($this->year > 0)
+			{
+				$query = new DbQuery(
+					'SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.club_id = ? AND g.start_time >= ? AND g.start_time < ? AND g.result IN(1, 2) GROUP BY p.kill_type, p.role',
+					$this->id, $this->from, $this->to);
+			}
+			else
+			{
+				$query = new DbQuery(
+					'SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.club_id = ? AND g.result IN(1, 2) GROUP BY p.kill_type, p.role',
+					$this->id);
+			}
 			$killed = array();
 			while ($row = $query->next())
 			{
@@ -309,12 +364,30 @@ class Page extends ClubPageBase
 			$min_games -= $min_games % 10;
 		}
 	
-		$query = new DbQuery(
-			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val' .
-				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
-				' WHERE g.club_id = ? AND g.start_time >= ? AND g.start_time < ? ' . $roles[$role][1] . 
-				' GROUP BY p.user_id HAVING cnt > ?',
-			$this->id, $this->from, $this->to, $min_games);
+		if ($this->year > 0)
+		{
+			$query = new DbQuery(
+				'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val' .
+					' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
+					' WHERE g.club_id = ? AND g.start_time >= ? AND g.start_time < ? ' . $roles[$role][1] . 
+					' GROUP BY p.user_id HAVING cnt > ?',
+				$this->id, $this->from, $this->to, $min_games);
+		}
+		else
+		{
+			echo 'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val' .
+					' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
+					' WHERE g.club_id = ? ' . $roles[$role][1] . 
+					' GROUP BY p.user_id HAVING cnt > ?';
+					
+			$query = new DbQuery(
+				'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val' .
+					' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
+					' WHERE g.club_id = ? ' . $roles[$role][1] . 
+					' GROUP BY p.user_id HAVING cnt > ?',
+				$this->id, $min_games);
+		}
+		
 		if ($sort & 2)
 		{
 			if ($sort & 1)

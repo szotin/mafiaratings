@@ -48,7 +48,7 @@ class Page extends PageBase
 		$this->event = new Event();
 		$this->event->load($_REQUEST['event']);
 		
-		if ($this->event->timestamp + 1209600 < time())
+		if ($this->event->timestamp + $this->event->duration + EVENT_NOT_DONE_TIME < time())
 		{
 			throw new FatalExc(get_label('Too late to claim this event.'));
 		}
@@ -132,9 +132,10 @@ class Page extends PageBase
 					'uname1' => new Tag($user_name),
 					'uname2' => new Tag($_profile->user_name));
 					
-				list($subj, $body) = include 'include/languages/' . $lang . '/email_event_conflict.php';
+				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_event_conflict.php';
 				$body = parse_tags($body, $tags);
-				send_email($to, $body, $subj);
+				$text_body = parse_tags($text_body, $tags);
+				send_email($to, $body, $text_body, $subj);
 			}
 		}
 		

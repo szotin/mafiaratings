@@ -232,7 +232,7 @@ class Page extends PageBase
 		echo '</table></td></tr>';
 		echo '</table>';
 		
-		echo '<input type="submit" class="btn norm" value="'.get_label('Send').'" name="send">';
+		echo '<input type="submit" class="btn norm" value="'.get_label('Create').'" name="send">';
 		echo '<input type="submit" class="btn norm" value="'.get_label('Do not send').'" name="cancel">';
 		echo '</form>';
 	}

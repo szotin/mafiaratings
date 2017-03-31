@@ -79,16 +79,14 @@ var timer = new function()
 		return v;
 	}
 	
-	this.hide = function(reset)
+	this.hide = function(reset, clockHtml)
 	{
-		if (!_hidden)
-		{
-			$('#clock').html('');
-			_hidden = true;
-		}
+		$('#clock').html(clockHtml);
+		_hidden = true;
 		
 		if (reset)
 			_start = 0;
+		
 	}
 	
 	this.show = function(total, prompt, reset)
@@ -99,6 +97,7 @@ var timer = new function()
 			_hidden = false;
 		}
 		
+		$('#t-area').attr('class', 'timer timer-0');
 		_eSnd = document.getElementById('end-snd').cloneNode(true);
 		_pSnd = document.getElementById('prompt-snd').cloneNode(true);
 		
@@ -501,6 +500,8 @@ mafia.ui = new function()
 		mafia.sync(clubId, eventId, function()
 		{
 			mafia.ui.fillUsers();
+			console.log("Set interval in mafia.sync");
+
 			setInterval(function()
 			{
 				var s = mafia.data().user.settings;
@@ -545,6 +546,7 @@ mafia.ui = new function()
 		
 		var st = 0;
 		var spt;
+		var clockHtml = '';
 		
 		if (reset) _shortSpeech = false;
 		
@@ -576,8 +578,8 @@ mafia.ui = new function()
 			}
 			status += '</select></td></tr></table>';
 			
-			var clock = '<table width="100%"><tr><td align="right">' + l('Lang') + ': <select id="lang" onchange="mafia.ui.langChange()"></select></td></tr>';
-			clock += '</select></td></tr><tr><td align="right"><table><tr><td>' + l('Moder') + ':</td><td><button id="reg-moder" class="icon" onclick="mafia.ui.register(10)"><img src="images/user.png" class="icon"></button></td><td><select id="player10" onchange="mafia.ui.playerChange(10)"></select></td></tr></table></td></tr></table></td></tr></table>';
+			clockHtml = '<table width="100%"><tr><td align="right">' + l('Lang') + ': <select id="lang" onchange="mafia.ui.langChange()"></select></td></tr>';
+			clockHtml += '</select></td></tr><tr><td align="right"><table><tr><td>' + l('Moder') + ':</td><td><button id="reg-moder" class="icon" onclick="mafia.ui.register(10)"><img src="images/user.png" class="icon"></button></td><td><select id="player10" onchange="mafia.ui.playerChange(10)"></select></td></tr></table></td></tr></table></td></tr></table>';
 			
 			for (var i = 0; i < 10; ++i)
 			{
@@ -591,7 +593,6 @@ mafia.ui = new function()
 			}
 			$('#r-1').removeClass().addClass('day-empty');
 			$('#head').removeClass().addClass('day-empty');
-			$('#clock').html(clock);
 			onStatus = mafia.ui.fillEvents;
 			$('#info').html('');
 			$('#noms').html('');
@@ -887,7 +888,7 @@ mafia.ui = new function()
 							him = l('her_');
 						}
 						status = l('MissingSpeech', mafia.playerTitle(p.number), he, his);
-						$('#clock').html('<button class="warn3" onclick="mafia.ui.shortSpeech()">' + l('LetSpeak', him) +'</button><button class="warn3" onclick="mafia.postponeMute()">' + l('PostponeBan') + '</button>');
+						clockHtml = '<button class="warn3" onclick="mafia.ui.shortSpeech()">' + l('LetSpeak', him) +'</button><button class="warn3" onclick="mafia.postponeMute()">' + l('PostponeBan') + '</button>';
 					}
 
 					n = mafia.nextPlayer(game.player_speaking);
@@ -1030,11 +1031,11 @@ mafia.ui = new function()
 							else
 							{
 								status = l('AllOrNoOne', n.length);
-								$('#clock').html('<button id="ka" class="warn3" onclick="mafia.votingKillAll(true)">' + l('All') + '</button><button id="kn" class="warn3" onclick="mafia.votingKillAll(false)">' + l('Nobody') + '</button>');
-								if (mafia.votingKillAll())
-									$('#ka').attr('checked', true);
-								else
-									$('#kn').attr('checked', true);
+								clockHtml = 
+									'<button id="ka"' + (mafia.votingKillAll() ? ' checked' : '') + 
+									' class="warn3" onclick="mafia.votingKillAll(true)">' + l('All') + 
+									'</button><button id="kn"' + (mafia.votingKillAll() ? '' : 'checked') + 
+									' class="warn3" onclick="mafia.votingKillAll(false)">' + l('Nobody') + '</button>';
 							}
 						}
 						else
@@ -1198,9 +1199,13 @@ mafia.ui = new function()
 		}
 		
 		if (st > 0)
+		{
 			timer.show(st, spt, reset);
+		}
 		else
-			timer.hide(reset);
+		{
+			timer.hide(reset, clockHtml);
+		}
 		
 		$('#status').html(status);
 		if (onStatus != null)
@@ -2077,14 +2082,28 @@ var regForm = new function()
 
 var newUserForm = new function()
 {
-	this.show = function(num)
+	this.show = function(num, error, name, email, sex)
 	{
-		var html =
-			'<table class="dialog_form" width="100%">' +
-			'<tr><td width="140">' + l('UserName') + ':</td><td><input id="form-name"></td>' +
-			'<tr><td>' + l('Email') + ':</td><td><input id="form-email"></td>' +
-			'<tr><td>' + l('Gender') + ':</td><td><input type="radio" name="form-sex" id="form-male" checked> ' + l('male') +
-			' <input type="radio" name="form-sex" id="form-female"> ' + l('female') + 
+		if (typeof name != 'string')
+			name = '';
+	
+		if (typeof email != 'string')
+			email = '';
+			
+		if (typeof sex == 'undefined')
+			sex = true;
+			
+		var male = sex ? ' checked' : '';
+		var female = sex ? '' : ' checked';
+	
+		var html = '<table class="dialog_form" width="100%">';
+		if (typeof error == 'string')
+			html += '<tr><td colspan="2"><b>' + error + '</b></td></tr>';
+		html +=
+			'<tr><td width="140">' + l('UserName') + ':</td><td><input id="form-name" value="' + name + '"></td></tr>' +
+			'<tr><td>' + l('Email') + ':</td><td><input id="form-email" value="' + email + '"></td></tr>' +
+			'<tr><td>' + l('Gender') + ':</td><td><input type="radio" name="form-sex" id="form-male"' + male + '> ' + l('male') +
+			' <input type="radio" name="form-sex" id="form-female"' + female + '> ' + l('female') + 
 			'</td></tr></table>';
 			
 		dlg.okCancel(html, l('CreateUser'), 500, function()
@@ -2116,7 +2135,12 @@ var newUserForm = new function()
 				});
 			}
 		
-			if ($("#form-email").val().trim() == '')
+			var error = mafia.checkUser(name);
+			if (error != null)
+			{
+				newUserForm.show(num, error, name, email, flags & /*U_FLAG_MALE*/64);
+			}
+			else if ($("#form-email").val().trim() == '')
 			{
 				dlg.yesNo(l('EmptyEmail'), null, null, createUser);
 			}
@@ -2297,4 +2321,6 @@ var gameStartForm = new function()
 	}
 } // gameStartForm
 
+
+console.log("Set interval for timer");
 setInterval(timer.tick, 1000);

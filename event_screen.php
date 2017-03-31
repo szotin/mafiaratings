@@ -99,6 +99,23 @@ try
 	}
 	echo '</td></tr></table>';
 		
+	if (count($players) == 0)
+	{
+		$rows -= 2;
+		$page_size = $rows * $cols;
+	
+		echo '<center><h2>' . get_label('The event hasn\'t started yet. Current ratings:') . '</h2></center>';
+		$query = new DbQuery(
+			'SELECT u.id, u.name, u.name, r.rating as rating, r.games as games, r.games_won as won, u.flags' . 
+				' FROM users u, club_ratings r, events e WHERE u.id = r.user_id AND e.id = ? AND r.club_id = e.club_id' .
+				' AND r.role = 0 AND type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1) ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT ' . $page_size,
+			$event->id);
+		while ($row = $query->next())
+		{
+			$players[] = $row;
+		}
+	}
+	
 	$number = 0;
 	echo '<table width="100%"><tr>';
 	for ($i = 0; $i < $cols; ++$i)
@@ -149,11 +166,13 @@ try
 		}
 		echo '</table></td>';
 	}
-	echo '</tr></table></body>';
+	echo '</tr></table>';
+	echo '</body>';
 }
 catch (Exception $e)
 {
 	echo $e->getMessage();
+	Exc::log($e);
 }
 
 $refr = 60;

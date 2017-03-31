@@ -47,7 +47,7 @@ class Page extends ClubPageBase
 		
 		$query = new DbQuery(
 			'SELECT a.id, a.name, a.address, a.map_url, a.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code .
-				', (SELECT count(*) FROM events e WHERE e.address_id = a.id AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0) cnt FROM addresses a' . 
+				', (SELECT count(*) FROM events e WHERE e.address_id = a.id) cnt FROM addresses a' . 
 				' JOIN cities ct ON a.city_id = ct.id' .
 				' JOIN countries cr ON ct.country_id = cr.id' .
 				' WHERE club_id = ?' .

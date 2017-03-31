@@ -836,14 +836,15 @@ try
 						$game->club_id, $game->user_id, $data);
 					
 					list($ulang, $uname, $uemail, $utimezone) = Db::record(get_label('user'), 'SELECT u.def_lang, u.name, u.email, i.timezone FROM users u JOIN cities i ON i.id = u.city_id WHERE u.id = ?', $game->user_id);
-					list($subj, $body) = include 'include/languages/' . get_lang_code($ulang) . '/email_submit.php';
+					list($subj, $body, $text_body) = include 'include/languages/' . get_lang_code($ulang) . '/email_submit.php';
 					$tags = array(
 						'uname' => new Tag($uname),
 						'date' => new Tag(format_date('l, F d, Y', time(), $utimezone, $ulang)),
 						'uname1' => new Tag($_profile->user_name),
 						'url' => new Tag('http://' . get_server_url() . '/changelists.php'));
 					$body = parse_tags($body, $tags);
-					send_email($uemail, $body, $subj);
+					$text_body = parse_tags($text_body, $tags);
+					send_email($uemail, $body, $text_body, $subj);
 				}
 			}
 			else 
