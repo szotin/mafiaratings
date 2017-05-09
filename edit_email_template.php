@@ -15,6 +15,7 @@ class Page extends PageBase
 	private $subj;
 	private $body;
 	private $club_id;
+	private $default_for;
 	
 	protected function prepare()
 	{
@@ -32,8 +33,8 @@ class Page extends PageBase
 		}
 		$this->id = $_REQUEST['id'];
 		
-		list($this->name, $this->subj, $this->body, $this->club_id) = 
-			Db::record(get_label('email template'), 'SELECT name, subject, body, club_id FROM email_templates WHERE id = ?', $this->id);
+		list($this->name, $this->subj, $this->body, $this->club_id, $this->default_for) = 
+			Db::record(get_label('email template'), 'SELECT name, subject, body, club_id, default_for FROM email_templates WHERE id = ?', $this->id);
 			
 		if ($_profile == NULL || !$_profile->is_manager($this->club_id))
 		{
@@ -45,11 +46,12 @@ class Page extends PageBase
 			$this->name = $_POST['name'];
 			$this->subj = $_POST['subj'];
 			$this->body = $_POST['body'];
+			$this->default_for = $_POST['default_for'];
 		}
 		
 		if (isset($_POST['update']))
 		{
-			update_template($this->id, $this->name, $this->subj, $this->body);
+			update_template($this->id, $this->name, $this->subj, $this->body, $this->default_for);
 			redirect_back();
 		}
 	}
@@ -65,6 +67,17 @@ class Page extends PageBase
 		echo '<td width="100">' . get_label('Name') . ':</td><td><input name="name" value="' . htmlspecialchars($this->name, ENT_QUOTES) . '"></td></tr>';
 		
 		echo '<tr><td valign="top">' . get_label('Subject') . ':</td><td><input name="subj" value="' . htmlspecialchars($this->subj, ENT_QUOTES) . '"></td></tr>';
+		
+		echo '<tr><td>' . get_label('Default for') . ':</td><td>';
+		echo '<select name="default_for">';
+		show_option(EMAIL_DEFAULT_FOR_NOTHING, $this->default_for, '');
+		show_option(EMAIL_DEFAULT_FOR_INVITE, $this->default_for, get_label('Inviting'));
+		show_option(EMAIL_DEFAULT_FOR_CANCEL, $this->default_for, get_label('Canceling'));
+		show_option(EMAIL_DEFAULT_FOR_CHANGE_ADDRESS, $this->default_for, get_label('Changing address'));
+		show_option(EMAIL_DEFAULT_FOR_CHANGE_TIME, $this->default_for, get_label('Changing time'));
+		echo '</select>';
+		
+		echo '</td></tr>';
 		
 		echo '<tr><td valign="top">' . get_label('Body') . ':</td><td>';
 		show_single_editor('body', $this->body, event_tags());

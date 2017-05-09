@@ -3,6 +3,12 @@
 require_once 'include/db.php';
 require_once 'include/names.php';
 
+define('EMAIL_DEFAULT_FOR_NOTHING', 0);
+define('EMAIL_DEFAULT_FOR_INVITE', 1);
+define('EMAIL_DEFAULT_FOR_CANCEL', 2);
+define('EMAIL_DEFAULT_FOR_CHANGE_ADDRESS', 3);
+define('EMAIL_DEFAULT_FOR_CHANGE_TIME', 4);
+
 function create_template($name, $subj, $body, $club_id)
 {
 	global $_profile;
@@ -23,7 +29,7 @@ function create_template($name, $subj, $body, $club_id)
 	Db::commit();
 }
 
-function update_template($id, $name, $subj, $body)
+function update_template($id, $name, $subj, $body, $default_for)
 {
 	global $_profile;
 	
@@ -36,9 +42,20 @@ function update_template($id, $name, $subj, $body)
 	check_email_template_name($name, $club_id, $id);
 
 	Db::begin();
-	Db::exec(get_label('email template'), 
-		'UPDATE email_templates SET name = ?, subject = ?, body = ? WHERE id = ?',
-		$name, $subj, $body, $id);
+	if ($default_for < 0)
+	{
+		Db::exec(get_label('email template'), 
+			'UPDATE email_templates SET name = ?, subject = ?, body = ? WHERE id = ?',
+			$name, $subj, $body, $id);
+	}
+	else
+	{
+		echo $default_for . ' --<br>';
+		Db::exec(get_label('email template'), 'UPDATE email_templates SET default_for = 0 WHERE club_id = ? AND default_for = ?', $club_id, $default_for);
+		Db::exec(get_label('email template'), 
+			'UPDATE email_templates SET name = ?, subject = ?, body = ?, default_for = ? WHERE id = ?',
+			$name, $subj, $body, $default_for, $id);
+	}
 	if (Db::affected_rows() > 0)
 	{
 		$log_details =

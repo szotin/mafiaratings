@@ -338,7 +338,7 @@ var mr = new function()
 				id_str += delim + ids[i];
 				delim = ',';
 			}
-			window.location.replace('create_event_mailing.php?bck=1&msg=0&events=' + ids);
+			window.location.replace('create_event_mailing.php?bck=1&for=1&msg=0&events=' + ids);
 		});
 	}
 	
@@ -365,7 +365,7 @@ var mr = new function()
 			{
 				if (typeof obj.question == "string")
 				{
-					dlg.yesNo(obj.question, null, null, function() { window.location.replace('create_event_mailing.php?bck=1&events=' + id); }, refr);
+					dlg.yesNo(obj.question, null, null, function() { window.location.replace('create_event_mailing.php?bck=1&for=2&events=' + id); }, refr);
 				}
 				else
 				{

@@ -132,21 +132,27 @@ try
 		
 		// create default event emails
 		$l = LANG_NO;
+		$second_lang = false;
 		while (($l = get_next_lang($l, $langs)) != LANG_NO)
 		{
 			$lang = get_lang_code($l);
 			$event_emails = include 'include/languages/' . $lang . '/event_emails.php';
 			foreach ($event_emails as $event_email)
 			{
-				list($ename, $esubj, $ebody) = $event_email;
+				list($ename, $esubj, $ebody, $default_for) = $event_email;
+				if ($second_lang)
+				{
+					$default_for = 0;
+				}
 				Db::exec(
 					get_label('email'),
-					'INSERT INTO email_templates (club_id, name, subject, body) VALUES (?, ?, ?, ?)',
-					$club_id, $ename, $esubj, $ebody);
+					'INSERT INTO email_templates (club_id, name, subject, body, default_for) VALUES (?, ?, ?, ?, ?)',
+					$club_id, $ename, $esubj, $ebody, $default_for);
 				list ($template_id) = Db::record(get_label('email'), 'SELECT LAST_INSERT_ID()');
 				$log_details = 'name=' . $ename . "<br>subject=" . $esubj . "<br>body=<br>" . $ebody;
 				db_log('email_template', 'Created', $log_details, $template_id, $club_id);
 			}
+			$second_lang = true;
 		}
 		
 		// send email

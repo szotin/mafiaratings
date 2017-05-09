@@ -50,7 +50,7 @@ class Page extends PageBase
 		$this->subj = '';
 		$this->body = '';
 		$this->lang = $_profile->user_def_lang;
-		$this->flags = MAILING_FLAG_AUTODETECT_LANG | MAILING_FLAG_TO_ALL;;
+		$this->flags = MAILING_FLAG_AUTODETECT_LANG | MAILING_FLAG_TO_ALL;
 		$this->hour = 0;
 		$this->minute = 0;
 		$this->day = 0;
@@ -99,15 +99,18 @@ class Page extends PageBase
 		}
 		else if (isset($_POST['overwrite']))
 		{
-			update_template($_POST['tid'], $this->name, $this->subj, $this->body);
+			if ($_POST['tid'] > 0)
+			{
+				update_template($_POST['tid'], $this->name, $this->subj, $this->body, -1);
+			}
 		}
 		else if (isset($_POST['copy']))
 		{
-			$template_id = $_POST['copy'];
+			$this->template_id = $_POST['copy'];
 			if ($template_id > 0)
 			{
 				list ($this->name, $this->subj, $this->body) =
-					Db::record(get_label('email template'), 'SELECT name, subject, body FROM email_templates WHERE id = ?', $template_id);
+					Db::record(get_label('email template'), 'SELECT name, subject, body FROM email_templates WHERE id = ?', $this->template_id);
 			}
 		}
 		$this->_title = get_label('Edit mailing for [0]', $this->event->get_full_name());
@@ -121,7 +124,7 @@ class Page extends PageBase
 			$query = new DbQuery('SELECT id FROM email_templates WHERE name = ?', $this->name);
 			if ($row = $query->next())
 			{
-				// not working fix with js
+				// todo: not working fix with js
 				echo '<form method="post">';
 				echo '<input type="hidden" name="tid" value="' . $row[0] . '">';
 				echo '<input type="hidden" name="id" value="' . $this->id . '">';

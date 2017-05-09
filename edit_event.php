@@ -3,6 +3,7 @@
 require_once 'include/page_base.php';
 require_once 'include/event.php';
 require_once 'include/image.php';
+require_once 'include/email_template.php';
 
 class Page extends PageBase
 {
@@ -12,6 +13,7 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
+		$template_for = EMAIL_DEFAULT_FOR_NOTHING;
 		if (isset($_POST['cancel']))
 		{
 			redirect_back();
@@ -49,6 +51,7 @@ class Page extends PageBase
 							$addr_id);
 					$this->event->addr_id = $addr_id;
 					$this->event->set_datetime($this->event->timestamp, $timezone);
+					$template_for = EMAIL_DEFAULT_FOR_CHANGE_ADDRESS;
 				}
 			}
 			else
@@ -60,14 +63,26 @@ class Page extends PageBase
 		
 		if (isset($_REQUEST['day']))
 		{
+			if ($this->event->day != $_REQUEST['day'])
+			{
+				$template_for = EMAIL_DEFAULT_FOR_CHANGE_TIME;
+			}
 			$this->event->day = $_REQUEST['day'];
 		}
 		if (isset($_REQUEST['month']))
 		{
+			if ($this->event->month != $_REQUEST['month'])
+			{
+				$template_for = EMAIL_DEFAULT_FOR_CHANGE_TIME;
+			}
 			$this->event->month = $_REQUEST['month'];
 		}
-		if (isset($_REQUEST['month']))
+		if (isset($_REQUEST['year']))
 		{
+			if ($this->event->year != $_REQUEST['year'])
+			{
+				$template_for = EMAIL_DEFAULT_FOR_CHANGE_TIME;
+			}
 			$this->event->year = $_REQUEST['year'];
 		}
 		if (isset($_REQUEST['name']))
@@ -80,10 +95,18 @@ class Page extends PageBase
 		}
 		if (isset($_REQUEST['hour']))
 		{
+			if ($this->event->hour != $_REQUEST['hour'])
+			{
+				$template_for = EMAIL_DEFAULT_FOR_CHANGE_TIME;
+			}
 			$this->event->hour = $_REQUEST['hour'];
 		}
 		if (isset($_REQUEST['minute']))
 		{
+			if ($this->event->minute != $_REQUEST['minute'])
+			{
+				$template_for = EMAIL_DEFAULT_FOR_CHANGE_TIME;
+			}
 			$this->event->minute = $_REQUEST['minute'];
 		}
 		if (isset($_REQUEST['notes']))
@@ -140,6 +163,7 @@ class Page extends PageBase
 			if (isset($_REQUEST['canceled']))
 			{
 				$this->event->flags |= EVENT_FLAG_CANCELED;
+				$template_for = EMAIL_DEFAULT_FOR_CANCEL;
 			}
 			else
 			{
@@ -158,7 +182,7 @@ class Page extends PageBase
 			}
 			
 			$this->event->update();
-			throw new RedirectExc('create_event_mailing.php?msg=1&events=' . $this->event->id);
+			throw new RedirectExc('create_event_mailing.php?msg=1&events=' . $this->event->id . '&template=' . $email_template_id . '&for=' . $template_for);
 		}
 	}
 	

@@ -2,6 +2,7 @@
 
 require_once 'include/club.php';
 require_once 'include/pages.php';
+require_once 'include/email_template.php';
 
 define('PAGE_SIZE', 20);
 
@@ -53,18 +54,36 @@ class Page extends ClubPageBase
 		echo '<tr class="darker"><td width="52">';
 		echo '<a href ="create_email_template.php?club=' . $this->id . '&bck=1" title="' . get_label('New template') . '">';
 		echo '<img src="images/create.png" border="0">';
-		echo '</a></td><td>'.get_label('Template name').'</td></tr>';
+		echo '</a></td><td>'.get_label('Template name').'</td><td width="200">' . get_label('Default for') . '</td></tr>';
 		
-		$query = new DbQuery('SELECT e.id, e.name FROM email_templates e WHERE e.club_id = ? ORDER BY e.name', $this->id);
+		$query = new DbQuery('SELECT e.id, e.name, e.default_for FROM email_templates e WHERE e.club_id = ? ORDER BY e.name', $this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name) = $row;
+			list($id, $name, $default_for) = $row;
 			
 			echo '<tr><td class="dark">';
 			echo '<a href="?id=' . $this->id . '&delete=' . $id . '" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
 			echo ' <a href="edit_email_template.php?id=' . $id . '&bck=1" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
 			echo '</td><td>' . $name . '</td>';
-			echo '</tr>';
+			echo '</td><td>';
+			switch ($default_for)
+			{
+				case EMAIL_DEFAULT_FOR_INVITE:
+					echo get_label('Inviting');
+					break;
+				case EMAIL_DEFAULT_FOR_CANCEL:
+					echo get_label('Canceling');
+					break;
+				case EMAIL_DEFAULT_FOR_CHANGE_ADDRESS:
+					echo get_label('Changing address');
+					break;
+				case EMAIL_DEFAULT_FOR_CHANGE_TIME:
+					echo get_label('Changing time');
+					break;
+				default:
+					break;
+			}
+			echo '</td></tr>';
 		}
 		echo '</table>';
 	}

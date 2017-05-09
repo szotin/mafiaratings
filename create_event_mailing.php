@@ -19,6 +19,7 @@ class Page extends PageBase
 	private $name;
 	private $lang;
 	private $flags;
+	private $template_id;
 
 	protected function prepare()
 	{
@@ -42,6 +43,12 @@ class Page extends PageBase
 			throw new FatalExc(get_label('Unknown [0]', get_label('event')));
 		}
 
+		$this->template_id = 0;
+		if (isset($_REQUEST['tid']))
+		{
+			$this->template_id = $_REQUEST['tid'];
+		}
+		
 		$this->send_time = 3;
 		if (isset($_POST['send_time']))
 		{
@@ -86,13 +93,14 @@ class Page extends PageBase
 		}
 		else if (isset($_POST['overwrite']))
 		{
-			update_template($_POST['tid'], $this->name, $this->subj, $this->body);
+			update_template($this->template_id, $this->name, $this->subj, $this->body, -1);
 		}
 		else if (isset($_POST['copy']))
 		{
 			$template_id = $_POST['copy'];
 			if ($template_id > 0)
 			{
+				$this->template_id = $template_id;
 				list ($this->name, $this->subj, $this->body) =
 					Db::record(get_label('email template'), 'SELECT name, subject, body FROM email_templates WHERE id = ?', $template_id);
 			}
@@ -100,6 +108,15 @@ class Page extends PageBase
 		
 		$this->event = new Event();
 		$this->event->load($this->events[0]);
+		
+		if (isset($_REQUEST['for']))
+		{
+			$query = new DbQuery('SELECT id, name, subject, body FROM email_templates WHERE club_id = ? AND default_for = ? ORDER BY id DESC', $this->event->club_id, $_REQUEST['for']);
+			if ($row = $query->next())
+			{
+				list($this->template_id, $this->name, $this->subj, $this->body) = $row;
+			}
+		}
 		
 		if ($_profile == NULL || !$_profile->is_manager($this->event->club_id))
 		{
@@ -122,12 +139,19 @@ class Page extends PageBase
 		
 		if (isset($_POST['save']))
 		{
-			$query = new DbQuery('SELECT id FROM email_templates WHERE name = ?', $this->name);
-			if ($row = $query->next())
+			if ($this->template_id > 0)
 			{
-				echo '<input type="hidden" name="tid" value="' . $row[0] . '">';
+				echo '<form method="post" name="overwriteForm" action="create_event_mailing.php">';
+				echo '<input type="hidden" name="events" value="' . $this->events_str . '">';
+				echo '<input type="hidden" name="name" value="' . $this->name . '">';
+				echo '<input type="hidden" name="subj" value="' . $this->subj . '">';
+				echo '<input type="hidden" name="body" value="' . htmlspecialchars($this->body, ENT_QUOTES) . '">';
+				echo '<input type="hidden" name="send_time" value="' . $this->send_time . '">';
+				echo '<input type="hidden" name="tid" value="' . $this->template_id . '">';
+				
 				echo '<p>' . get_label('Saved email [0] already exists. Do you want to overwrite it?', $this->name) . '</p>';
 				echo '<p><input type="submit" class="btn norm" value="' . get_label('Yes') . '" name="overwrite"><input type="submit" class="btn norm" value="' . get_label('No') . '"></p>';
+				echo '</form>';
 			}
 			else
 			{
@@ -137,6 +161,10 @@ class Page extends PageBase
 		
 		echo '<form method="post" name="createForm" action="create_event_mailing.php">';
 		echo '<input type="hidden" name="events" value="' . $this->events_str . '">';
+		if ($this->template_id > 0)
+		{
+			echo '<input type="hidden" name="tid" value="' . $this->template_id . '">';
+		}
 		
 		list($p_body, $p_subj, $detected_lang) = $this->event->parse_sample_email($_profile->user_email, $this->body, $this->subj);
 		if (($this->flags & MAILING_FLAG_AUTODETECT_LANG) != 0)
