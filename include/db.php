@@ -402,6 +402,14 @@ class Db
 		return $query->exec($obj_name);
 	}
 	
+	static function exec_with_echo($obj_name)
+	{
+		$args = func_get_args();
+		$query = new DbQuery($args, 1);
+		echo $query->get_parsed_sql();
+		return $query->exec($obj_name);
+	}
+	
 	static function record($obj_name)
 	{
 		$args = func_get_args();

@@ -238,22 +238,25 @@ class ViewGamePageBase extends PageBase
 		
 		if ($this->gametime == 0)
 		{
-			$right_page = '/view_game.php';
+			$right_page = 'view_game.php';
 		}
 		else if ($this->gametime == 1)
 		{
-			$right_page = '/view_game_start.php';
+			$right_page = 'view_game_start.php';
 		}
 		else if (($this->gametime & 1) == 0)
 		{
-			$right_page = '/view_game_day.php';
+			$right_page = 'view_game_day.php';
 		}
 		else
 		{
-			$right_page = '/view_game_night.php';
+			$right_page = 'view_game_night.php';
 		}
 		
-		if ($right_page != strtolower(get_page_name()))
+		$page_name = get_page_name();
+		$page_name_len = strlen($page_name);
+		$right_page_len = strlen($right_page);
+		if ($right_page_len > $page_name_len || substr_compare($page_name, $right_page, $page_name_len - $right_page_len, $right_page_len) !== 0)
 		{
 			throw new RedirectExc($right_page . '?gametime=' . $this->gametime);
 		}

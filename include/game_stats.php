@@ -793,7 +793,7 @@ class GamePlayerStats
 
 function save_game_results($gs)
 {
-	if ($gs->id <= 0 || $gs->event_id <= 0)
+	if ($gs->id <= 0)
 	{
 		return NULL;
 	}
@@ -862,7 +862,7 @@ function save_game_results($gs)
 
 function rebuild_game_stats($gs)
 {
-	if ($gs->id <= 0 || $gs->event_id <= 0)
+	if ($gs->id <= 0)
     {
 		return;
 	}
