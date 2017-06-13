@@ -233,12 +233,14 @@ class WSGame
 			}
 		}
 		
+		$round = 0;
 		foreach ($gs->shooting as $shots)
 		{
 			foreach ($shots as $shoter => $shooted)
 			{
-				$this->players[$shoter]->shooting[] = $shooted;
+				$this->players[$shoter]->shooting['round_' . $round] = $shooted;
 			}
+			++$round;
 		}
 	}
 }
@@ -349,7 +351,7 @@ class WSGame
 				<dt>nominating</td>
 					<dd>How the player was nominating. An assotiated array in the form <i>round_N: M</i>. Where N is day number (starting from 0); M is the number of player who was nominated (0 to 9).</dd>
 				<dt>shooting</td>
-					<dd>For mafia only. An array of numbers where every number is a player who was shot in the corresponding round. For example: [ 0, 8, 9] means that this player was shooting player 1(index 0) the first night; player 9 the second night; and player 10 the third night.</dd>
+					<dd>For mafia only. An assotiated array in the form <i>round_N: M</i>. . Where N is day number (starting from 0); M is the number of player who was nominated (0 to 9). For example: { round_0: 0, round_1: 8, round_2: 9 } means that this player was shooting player 1(index 0) the first night; player 9 the second night; and player 10 the third night.</dd>
 <?php		
 		}
 		else
