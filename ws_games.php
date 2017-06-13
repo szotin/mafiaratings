@@ -2,9 +2,8 @@
 
 require_once 'include/session.php';
 require_once 'include/rating_system.php';
-require_once 'include/player_stats.php';
-require_once 'include/game_player.php';
 require_once 'include/languages.php';
+require_once 'include/game_state.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -23,18 +22,6 @@ class WSPlayer
 	public $user_id;
 	public $nick_name;
 	public $role;
-	public $voted_civ;
-	public $voted_maf;
-	public $voted_srf;
-	public $voted_by_civ;
-	public $voted_by_maf;
-	public $voted_by_srf;
-	public $nominated_civ;
-	public $nominated_maf;
-	public $nominated_srf;
-	public $nominated_by_civ;
-	public $nominated_by_maf;
-	public $nominated_by_srf;
 	public $death_round;
 	public $death_type;
 	public $warnings;
@@ -45,37 +32,16 @@ class WSPlayer
 	public $best_move;
 	public $guessed_all_maf;
 	
-	function __construct($row)
+	function normalize()
 	{
-		list (
-			$number, $this->user_id, $this->nick_name, $this->role, $this->voted_civ, $this->voted_maf, 
-			$this->voted_srf, $this->voted_by_civ, $this->voted_by_maf, $this->voted_by_srf, $this->nominated_civ, 
-			$this->nominated_maf, $this->nominated_srf, $this->nominated_by_civ, $this->nominated_by_maf, $this->nominated_by_srf, 
-			$this->death_round, $this->death_type, $this->warnings, $this->arranged_for_round, $this->checked_by_don, 
-			$this->checked_by_srf, $flags) = $row;
-			
 		$this->user_id = (int)$this->user_id;
 		$this->role = (int)$this->role;
-		$this->voted_civ = (int)$this->voted_civ;
-		$this->voted_maf = (int)$this->voted_maf;
-		$this->voted_srf = (int)$this->voted_srf;
-		$this->voted_by_civ = (int)$this->voted_by_civ;
-		$this->voted_by_maf = (int)$this->voted_by_maf;
-		$this->voted_by_srf = (int)$this->voted_by_srf;
-		$this->nominated_civ = (int)$this->nominated_civ;
-		$this->nominated_maf = (int)$this->nominated_maf;
-		$this->nominated_srf = (int)$this->nominated_srf;
-		$this->nominated_by_civ = (int)$this->nominated_by_civ;
-		$this->nominated_by_maf = (int)$this->nominated_by_maf;
-		$this->nominated_by_srf = (int)$this->nominated_by_srf;
 		$this->death_round = (int)$this->death_round;
-		$this->death_type = (int)$this->death_type;
 		$this->warnings = (int)$this->warnings;
 		$this->arranged_for_round = (int)$this->arranged_for_round;
 		$this->checked_by_don = (int)$this->checked_by_don;
 		$this->checked_by_srf = (int)$this->checked_by_srf;
-		$flags = (int)$flags;
-			
+
 		switch ($this->role)
 		{
 			case PLAYER_ROLE_CIVILIAN:
@@ -97,27 +63,9 @@ class WSPlayer
 			unset($this->death_round);
 		}
 		
-		switch ($this->death_type)
+		if ($this->user_id <= 0)
 		{
-			case DAY_KILL:
-				$this->death_type = 'day';
-				break;
-			case NIGHT_KILL:
-				$this->death_type = 'night';
-				break;
-			case WARNINGS_KILL:
-				$this->death_type = 'warning';
-				break;
-			case SUICIDE_KILL:
-				$this->death_type = 'suicide';
-				break;
-			case KICK_OUT_KILL:
-				$this->death_type = 'kick-out';
-				break;
-			case SURVIVED:
-			default:
-				unset($this->death_type);
-				break;
+			unset($this->user_id);
 		}
 		
 		if ($this->warnings <= 0)
@@ -140,92 +88,64 @@ class WSPlayer
 			unset($this->checked_by_don);
 		}
 		
-		if ($this->voted_civ <= 0)
-		{
-			unset($this->voted_civ);
-		}
-		
-		if ($this->voted_maf <= 0)
-		{
-			unset($this->voted_maf);
-		}
-		
-		if ($this->voted_srf <= 0)
-		{
-			unset($this->voted_srf);
-		}
-		
-		if ($this->voted_by_civ <= 0)
-		{
-			unset($this->voted_by_civ);
-		}
-		
-		if ($this->voted_by_maf <= 0)
-		{
-			unset($this->voted_by_maf);
-		}
-		
-		if ($this->voted_by_srf <= 0)
-		{
-			unset($this->voted_by_srf);
-		}
-		
-		if ($this->nominated_civ <= 0)
-		{
-			unset($this->nominated_civ);
-		}
-		
-		if ($this->nominated_maf <= 0)
-		{
-			unset($this->nominated_maf);
-		}
-		
-		if ($this->nominated_srf <= 0)
-		{
-			unset($this->nominated_srf);
-		}
-		
-		if ($this->nominated_by_civ <= 0)
-		{
-			unset($this->nominated_by_civ);
-		}
-		
-		if ($this->nominated_by_maf <= 0)
-		{
-			unset($this->nominated_by_maf);
-		}
-		
-		if ($this->nominated_by_srf <= 0)
-		{
-			unset($this->nominated_by_srf);
-		}
-		
-		if ($flags & RATING_BEST_PLAYER)
-		{
-			$this->best_player = true;
-		}
-		else
+		if (!$this->best_player)
 		{
 			unset($this->best_player);
 		}
 		
-		if ($flags & RATING_BEST_MOVE)
-		{
-			$this->best_move = true;
-		}
-		else
+		if (!$this->best_move)
 		{
 			unset($this->best_move);
 		}
 		
-		if ($flags & RATING_GUESS_ALL_MAF)
-		{
-			$this->guessed_all_maf = true;
-		}
-		else
+		if (!$this->guessed_all_maf)
 		{
 			unset($this->guessed_all_maf);
 		}
+	}
+	
+	function __construct($gs, $index)
+	{
+		$player = $gs->players[$index];
+		$this->user_id = $player->id;
+		$this->nick_name = $player->nick;
+		$this->role = $player->role;
+		$this->death_round = $player->kill_round;
+        switch ($player->kill_reason)
+        {
+            case KILL_REASON_NORMAL:
+                if ($player->state == PLAYER_STATE_KILLED_NIGHT)
+                {
+                    $this->death_type = 'night';
+                }
+                else if ($player->state == PLAYER_STATE_KILLED_DAY)
+                {
+                    $this->death_type = 'day';
+                }
+                break;
+            case KILL_REASON_SUICIDE:
+                $this->death_type = 'suicide';
+                break;
+            case KILL_REASON_WARNINGS:
+                $this->death_type = 'warning';
+                break;
+            case KILL_REASON_KICK_OUT:
+                $this->death_type = 'kick-out';
+                break;
+            default:
+				unset($this->death_type);
+                break;
+        }
+		
+		$this->warnings = $player->warnings;
+		$this->arranged_for_round = $player->arranged;
+		$this->checked_by_don = $player->don_check;
+		$this->checked_by_srf = $player->sheriff_check;
+		$this->best_player = ($gs->best_player == $index);
+		$this->best_move = ($gs->best_move == $index);
+		$this->guessed_all_maf = $gs->is_good_guesser($index);
+		
+		$this->normalize();
 	}
 }
 
@@ -241,83 +161,83 @@ class WSGame
 	public $winner;
 	public $players;
 	
-	function __construct($row)
+	function __construct($gs)
 	{
-		list ($this->id, $this->club_id, $this->event_id, $this->start_time, $this->end_time, $this->language, $this->moderator_id, $this->winner) = $row;
-		$this->players = array();
-		
-		$this->id = (int)$this->id;
-		$this->club_id = (int)$this->club_id;
-		if (is_null($this->event_id))
+		$this->id = $gs->id;
+		$this->club_id = $gs->club_id;
+		if (is_null($gs->event_id))
 		{
 			unset($this->event_id);
 		}
 		else
 		{
-			$this->event_id = (int)$this->event_id;
+			$this->event_id = $gs->event_id;
 		}
-		$this->start_time = (int)$this->start_time;
-		$this->end_time = (int)$this->end_time;
+		$this->start_time = $gs->start_time;
+		$this->end_time = $gs->end_time;
 		
-		$this->language = get_lang_code($this->language);
-		switch ($this->winner)
+		$this->language = get_lang_code($gs->lang);
+		switch ($gs->gamestate)
 		{
-			case 1:
-				$this->winner = 'civ';
-				break;
-			case 2:
+			case GAME_MAFIA_WON:
 				$this->winner = 'maf';
+				break;
+			case GAME_CIVIL_WON:
+				$this->winner = 'civ';
 				break;
 			default:
 				unset($this->winner);
 				break;
 		}
-		$this->moderator_id = (int)$this->moderator_id;
+		$this->moderator_id = $gs->moder_id;
 		
-		$this->players = array( NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL );
-		$query = new DbQuery(
-			'SELECT number, user_id, nick_name, role, voted_civil, voted_mafia, voted_sheriff, voted_by_civil, voted_by_mafia, ' .
-			'voted_by_sheriff, nominated_civil, nominated_mafia, nominated_sheriff, nominated_by_civil, nominated_by_mafia, ' . 
-			'nominated_by_sheriff, kill_round, kill_type, warns, was_arranged, checked_by_don, checked_by_sheriff, flags ' .
-			'FROM players WHERE game_id = ?',
-			$this->id);
-		while ($row = $query->next())
+		$this->players = array();
+		for ($i = 0; $i < 10; ++$i)
 		{
-			$this->players[(int)$row[0] - 1] = new WSPlayer($row);
+			$this->players[$i] = new WSPlayer($gs, $i);
 		}
 		
-		$query = new DbQuery(
-			'SELECT user_id, shots1_ok + shots2_ok + shots3_ok, shots1_miss + shots2_miss + shots3_miss, shots1_miss + shots2_blank + shots3_blank, shots3_fail, shots3_rearrange FROM mafiosos WHERE game_id = ?',
-			$this->id);
-		while ($row = $query->next())
+		// $this->voting = $gs->votings;
+		foreach ($gs->votings as $voting)
 		{
-			list ($user_id, $successful_shots, $missed_shots, $skipped_shots, $failed_shots, $rearranged_shots) = $row;
-			foreach ($this->players as $player)
+			$round_key = 'round_' . $voting->round;
+			if ($voting->voting_round == 0)
 			{
-				if (!is_null($player) && $player->user_id == $user_id)
+				foreach ($voting->nominants as $nominant)
 				{
-					if ($successful_shots > 0)
+					if ($nominant->nominated_by >= 0 && $nominant->nominated_by < 10)
 					{
-						$player->successful_shots = (int)$successful_shots;
+						$this->players[$nominant->nominated_by]->nominating[$round_key] = $nominant->player_num;
 					}
-					if ($missed_shots > 0)
-					{
-						$player->missed_shots = (int)$missed_shots;
-					}
-					if ($skipped_shots > 0)
-					{
-						$player->skipped_shots = (int)$skipped_shots;
-					}
-					if ($failed_shots > 0)
-					{
-						$player->failed_shots = (int)$failed_shots;
-					}
-					if ($rearranged_shots > 0)
-					{
-						$player->rearranged_shots = (int)$rearranged_shots;
-					}
-					break;
 				}
+			}
+			
+			for ($i = 0; $i < 10; ++$i)
+			{
+				$vote = $voting->votes[$i];
+				if ($vote >= 0)
+				{
+					if (!isset($this->players[$i]->votes) || !isset($this->players[$i]->votes[$round_key]))
+					{
+						$this->players[$i]->voting[$round_key] = $voting->nominants[$vote]->player_num;
+					}
+					else if (is_array($this->players[$i]->votes[$round_key]))
+					{
+						$this->players[$i]->voting[$round_key][] = $voting->nominants[$vote]->player_num;
+					}
+					else
+					{
+						$this->players[$i]->voting[$round_key] = array($this->players[$i]->votes[$round_key], $voting->nominants[$vote]->player_num);
+					}
+				}
+			}
+		}
+		
+		foreach ($gs->shooting as $shots)
+		{
+			foreach ($shots as $shoter => $shooted)
+			{
+				$this->players[$shoter]->shooting[] = $shooted;
 			}
 		}
 	}
@@ -398,38 +318,14 @@ class WSGame
 				<dt>winner</dt>
 				  <dd>Who won the game. Possible values: "civ" or "maf". Tie is not supported in the current version.</dd>
 				<dt>players</dt>
-				  <dd>The array of players who played. Array size is always 10. Players index in the array matches their number at the table. For some players null is returned. This means that a player does not have mafiaratings account.</dd>
+				  <dd>The array of players who played. Array size is always 10. Players index in the array matches their number at the table.</dd>
 			<h2>Player parameters:</h2>
 				<dt>user_id</td>
-					<dd>User id.</dd>
+					<dd>User id. <i>Optional:</i> missing when someone not registered in mafiaratings played.</dd>
 				<dt>nick_name</td>
 					<dd>Nick name used in this game.</dd>
 				<dt>role</td>
-					<dd>One of: "civ", "maf", "srf", or "don"</dd>
-				<dt>voted_civ</td>
-					<dd>How many times this player voted against civilians. <i>Optional:</i> missing when 0.</dd>
-				<dt>voted_maf</td>
-					<dd>How many times this player voted against mafia. <i>Optional:</i> missing when 0.</dd>
-				<dt>voted_srf</td>
-					<dd>How many times this player voted against sheriff. <i>Optional:</i> missing when 0.</dd>
-				<dt>voted_by_civ</td>
-					<dd>How many times civilians voted against this player. <i>Optional:</i> missing when 0.</dd>
-				<dt>voted_by_maf</td>
-					<dd>How many times mafia voted against this player. <i>Optional:</i> missing when 0.</dd>
-				<dt>voted_by_srf</td>
-					<dd>How many times sheriff voted against this player. <i>Optional:</i> missing when 0.</dd>
-				<dt>nominated_civ</td>
-					<dd>How many times this player nominated civilians. <i>Optional:</i> missing when 0.</dd>
-				<dt>nominated_maf</td>
-					<dd>How many times this player nominated mafia. <i>Optional:</i> missing when 0.</dd>
-				<dt>nominated_srf</td>
-					<dd>How many times this player nominated sheriff. <i>Optional:</i> missing when 0.</dd>
-				<dt>nominated_by_civ</td>
-					<dd>How many times civilians nominated this player. <i>Optional:</i> missing when 0.</dd>
-				<dt>nominated_by_maf</td>
-					<dd>How many times mafia nominated this player. <i>Optional:</i> missing when 0.</dd>
-				<dt>nominated_by_srf</td>
-					<dd>How many times sheriff nominated this player. <i>Optional:</i> missing when 0.</dd>
+					<dd>One of: "civ", "maf", "srf", or "don".</dd>
 				<dt>death_round</td>
 					<dd>The round number (starting from 0) when this player was killed. <i>Optional:</i> missing if the player survived.</dd>
 				<dt>death_type</td>
@@ -448,21 +344,19 @@ class WSGame
 					<dd>True if the player did the best move of the game. <i>Optional:</i> missing when false.</dd>
 				<dt>guessed_all_maf</td>
 					<dd>True if the player guessed all 3 mafs right. <i>Optional:</i> missing when player was not killed in night 0, or when they guessed wrong.</dd>
-				<dt>successful_shots</dt>
-					<dd>Number of times the player partisipated in successful night shooting. <i>Optional:</i> missing when the player was red or was not participating in successful shooting.</dd>
-				<dt>missed_shots</dt>
-					<dd>Number of times the player partisipated in unsuccessful night shooting. <i>Optional:</i> missing when the player was red or was not participating in missed shooting.</dd>
-				<dt>skipped_shots</dt>
-					<dd>Number of times the player did not do the night shot. <i>Optional:</i> missing when the player was red or skipped_shots is 0.</dd>
-				<dt>failed_shots</dt>
-					<dd>Number of times the player was guilty in a mafia miss. This is when 2 partners shoot one player but this player shoots someone else.<i>Optional:</i> missing when the player was red or failed_shots is 0.</dd>
-				<dt>rearranged_shots</dt>
-					<dd>Number of times the player participated in successful shot that was not statically arranged. <i>Optional:</i> missing when the player was red or rearranged_shots is 0.</dd>
+				<dt>voting</td>
+					<dd>How the player was voting. An assotiated array in the form <i>round_N: M</i>. Where N is day number (starting from 0); M is the number of player for whom he/she voted (0 to 9).</dd>
+				<dt>nominating</td>
+					<dd>How the player was nominating. An assotiated array in the form <i>round_N: M</i>. Where N is day number (starting from 0); M is the number of player who was nominated (0 to 9).</dd>
+				<dt>shooting</td>
+					<dd>For mafia only. An array of numbers where every number is a player who was shot in the corresponding round. For example: [ 0, 8, 9] means that this player was shooting player 1(index 0) the first night; player 9 the second night; and player 10 the third night.</dd>
 <?php		
 		}
 		else
 		{
 			initiate_session();
+			
+			$raw = isset($_REQUEST['raw']);
 			
 			$from = 0;
 			if (isset($_REQUEST['from']))
@@ -522,7 +416,7 @@ class WSGame
 				}
 				else
 				{
-					$query = new DbQuery('SELECT g.id, g.club_id, g.event_id, g.start_time, g.end_time, g.language, g.moderator_id, g.result FROM players p JOIN games g ON  p.game_id = g.id WHERE g.result IN(1,2) AND p.user_id = ?', $user);
+					$query = new DbQuery('SELECT g.id, g.log FROM players p JOIN games g ON  p.game_id = g.id WHERE g.result IN(1,2) AND p.user_id = ?', $user);
 				}
 			}
 			else if ($count_only)
@@ -531,7 +425,7 @@ class WSGame
 			}
 			else
 			{
-				$query = new DbQuery('SELECT g.id, g.club_id, g.event_id, g.start_time, g.end_time, g.language, g.moderator_id, g.result FROM games g WHERE g.result IN(1,2)');
+				$query = new DbQuery('SELECT g.id, g.log FROM games g WHERE g.result IN(1,2)');
 			}
 			if ($from > 0)
 			{
@@ -573,7 +467,18 @@ class WSGame
 				
 				while ($row = $query->next())
 				{
-					$result->games[] = new WSGame($row);
+					list ($id, $log) = $row;
+					$gs = new GameState();
+					$gs->init_existing($id, $log);
+					if ($raw)
+					{
+						$game = $gs;
+					}
+					else
+					{
+						$game = new WSGame($gs);
+					}
+					$result->games[] = $game;
 				}
 			}
 		}
