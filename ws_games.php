@@ -217,17 +217,18 @@ class WSGame
 				$vote = $voting->votes[$i];
 				if ($vote >= 0)
 				{
-					if (!isset($this->players[$i]->votes) || !isset($this->players[$i]->votes[$round_key]))
+					$player = $this->players[$i];
+					if (!isset($player->voting) || !isset($player->voting[$round_key]))
 					{
-						$this->players[$i]->voting[$round_key] = $voting->nominants[$vote]->player_num;
+						$player->voting[$round_key] = $voting->nominants[$vote]->player_num;
 					}
-					else if (is_array($this->players[$i]->votes[$round_key]))
+					else if (is_array($player->voting[$round_key]))
 					{
-						$this->players[$i]->voting[$round_key][] = $voting->nominants[$vote]->player_num;
+						$player->voting[$round_key][] = $voting->nominants[$vote]->player_num;
 					}
 					else
 					{
-						$this->players[$i]->voting[$round_key] = array($this->players[$i]->votes[$round_key], $voting->nominants[$vote]->player_num);
+						$player->voting[$round_key] = array($player->voting[$round_key], $voting->nominants[$vote]->player_num);
 					}
 				}
 			}
@@ -238,7 +239,10 @@ class WSGame
 		{
 			foreach ($shots as $shoter => $shooted)
 			{
-				$this->players[$shoter]->shooting['round_' . $round] = $shooted;
+				if ($shooted >= 0 && $shooted < 10)
+				{
+					$this->players[$shoter]->shooting['round_' . $round] = $shooted;
+				}
 			}
 			++$round;
 		}

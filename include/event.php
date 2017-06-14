@@ -908,11 +908,7 @@ class Event
 				$no_buttons = false;
 			}
 		}
-		
-		if ($no_buttons)
-		{
-			echo '<img src="images/transp.png" height="26">';
-		}
+		echo '<button class="icon" onclick="window.open(\'event_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
 	}
 	
 	function show_pic($dir, $width = 0, $height = 0, $alt_addr = true)

@@ -232,7 +232,6 @@ try
 			Db::commit();
 		}
 		$c = 0;
-		$query = new DbQuery('SELECT id FROM photos WHERE id > ? ORDER BY id LIMIT 10', $last_id);
 		$query = new DbQuery('SELECT id, log FROM games WHERE id > ? AND result > 0 AND result < 3 ORDER BY id LIMIT 10', $last_id);
 		while ($row = $query->next())
 		{

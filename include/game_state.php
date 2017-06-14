@@ -66,7 +66,7 @@ class GameState
 	public $best_move; // number of the player who did the best move 0-9; any value otside the range means "no best move"
 	public $guess3; // array containing guess (who is mafia) of the player killed the first night. 3 player numbers.
 	
-	private $rules;
+	public $rules;
 	public $rules_id;
 	
 	public $error; // error message if log is corrupted (not localized - this is for admin only)

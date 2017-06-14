@@ -134,7 +134,21 @@ class Voting
 			$player = $this->gs->players[$num];
 			if ($player->kill_round >= 0 && $player->kill_round < $this->round)
 			{
-				$this->gs->error = $who . ' player' . ($num + 1) . ' is dead in the votings of the ' . ($this->round + 1) . ' round.';
+				// todo make sure game rules can not be changed after the game
+				if ($player->kill_round + 1 != $this->round || $player->state != PLAYER_STATE_KILLED_NIGHT || /*($this->gs->rules->flags & RULES_FLAG_NIGHT_KILL_CAN_NOMINATE) == 0 ||*/ $who != 'Nominating')
+				{
+					$kill_daytime = 'unknown time ';
+					switch ($player->state)
+					{
+						case PLAYER_STATE_KILLED_NIGHT:
+							$kill_daytime = "night";
+							break;
+						case PLAYER_STATE_KILLED_DAY:
+							$kill_daytime = "day";
+							break;
+					}
+					$this->gs->error = $who . ' player' . ($num + 1) . ' is dead in the votings of the ' . ($this->round + 1) . ' round. He was killed in ' . $kill_daytime . ' ' . ($player->kill_round + 1) . '.';
+				}
 			}
 		}
 	}
