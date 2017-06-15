@@ -216,7 +216,6 @@ class ClubPageBase extends PageBase
 			}
 			$menu[] = new MenuItem('#other', get_label('Other'), NULL, $other_menu);
 		}
-		$menu[] = new MenuItem('club_info.php?id=' . $this->id, get_label('About [0]', $this->name), get_label('[0] information', $this->name));
 		
 		echo '<table class="head" width="100%">';
 		

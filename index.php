@@ -160,9 +160,9 @@ class Page extends GeneralPageBase
 			echo '</table></p>';
 		}
 		
-		echo '<p>';
-		ForumMessage::show_messages(array('ccc' => $this->ccc_filter->get_code()), FORUM_OBJ_NO, -1, $this->ccc_filter);
-		echo '</p>';
+		// echo '<p>';
+		// ForumMessage::show_messages(array('ccc' => $this->ccc_filter->get_code()), FORUM_OBJ_NO, -1, $this->ccc_filter);
+		// echo '</p>';
 		
 		// ratings
 		$query = new DbQuery(
