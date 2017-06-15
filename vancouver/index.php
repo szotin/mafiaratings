@@ -8,7 +8,7 @@ $upcoming = get_json('ws_upcoming.php?club=1&df=D%20F%20d%20H:i&lang=en');
 
 echo '<table border="1" cellpadding="20" cellspacing="0"  width="100%">';
 echo '<tr><td>Looking for volonteers for designing this web site!!!</td>';
-echo '<tr><td>MafiaWorld and <a href="http://mafiaratings.com">MafiaRatings</a> are now separated. MafiaWorld represents Vancouver Mafia Club. <a href="http://mafiaratings.com">MafiaRatings</a> represents inter-club ratings site.</td>';
+echo '<tr><td>MafiaWorld and <a href="https://mafiaratings.com">MafiaRatings</a> are now separated. MafiaWorld represents Vancouver Mafia Club. <a href="https://mafiaratings.com">MafiaRatings</a> represents inter-club ratings site.</td>';
 
 foreach ($upcoming->events as $event)
 {

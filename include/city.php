@@ -48,13 +48,13 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 			$body =
 				'<p>Hi, ' . $admin_name .
 				'!</p><p>' . $_profile->user_name .
-				' created new city <a href="http://' . get_server_url() . '/cities.php">' . $city .
+				' created new city <a href="' . get_server_url() . '/cities.php">' . $city .
 				'</a>.</p><p>Please confirm!</p>';
 			$text_body =
 				'Hi, ' . $admin_name .
 				"!\r\n\r\n" . $_profile->user_name .
 				' created new city ' . $city . 
-				' (http://' . get_server_url() . 
+				' (' . get_server_url() . 
 				'/cities.php).\r\nPlease confirm!\r\n';
 			send_email($admin_email, $body, $text_body, 'New city');
 		}

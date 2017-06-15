@@ -24,7 +24,7 @@ class Page extends PageBase
 		
 		if (isset($_POST['test']))
 		{
-			$body = '<form action="http://' . get_server_url() . '/test_email.php" method="post"><p>Testing <b>email</b>!!!</p><p>Send your message: <input name="message" value="' . $this->message . '"><input type="hidden" name="email" value="' . $this->email . '"></p><p><input type="submit" name="message_test" value="Send"></p></form>';
+			$body = '<form action="' . get_server_url() . '/test_email.php" method="post"><p>Testing <b>email</b>!!!</p><p>Send your message: <input name="message" value="' . $this->message . '"><input type="hidden" name="email" value="' . $this->email . '"></p><p><input type="submit" name="message_test" value="Send"></p></form>';
 			$text_body = "Testing email!!!\r\nMafia ratings";
 			$subject = 'Mafia ratings';
 			send_email($this->email, $body, $text_body, $subject);

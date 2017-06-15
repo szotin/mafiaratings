@@ -25,6 +25,6 @@ if (isset($_REQUEST['data']))
 
 require_once 'include/languages/' . get_lang_code($lang) . '/labels.php';
 echo '#1#';
-echo get_label('Windows standalone client is not supported any more. Please use web page http://mafiaratings.com/game.php instead. Sorry for the inconvinience.');
+echo get_label('Windows standalone client is not supported any more. Please use web page https://mafiaratings.com/game.php instead. Sorry for the inconvinience.');
 echo '#';
 ?>

@@ -466,7 +466,7 @@ class Event
 	{
 		global $_profile;
 		$code = generate_email_code();
-		$base_url = 'http://' . get_server_url() . '/email_request.php?uid=' . $_profile->user_id . '&code=' . $code;
+		$base_url = get_server_url() . '/email_request.php?uid=' . $_profile->user_id . '&code=' . $code;
 		
 		if (!is_valid_lang($lang))
 		{
@@ -489,7 +489,7 @@ class Event
 		$tags['aid'] = new Tag($this->addr_id);
 		if ($this->id > 0)
 		{
-			$tags['aimage'] = new Tag('<img src="http://' . get_server_url() . '/' . ADDRESS_PICS_DIR . TNAILS_DIR . $this->addr_id . '.jpg">');
+			$tags['aimage'] = new Tag('<img src="' . get_server_url() . '/' . ADDRESS_PICS_DIR . TNAILS_DIR . $this->addr_id . '.jpg">');
 		}
 		else
 		{

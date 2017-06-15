@@ -50,8 +50,8 @@ try
 		}
 		Db::commit();
 		
-		$body = get_label('Your password at') . ' <a href="http://www.mafiaratings.com">' . get_label('Mafia Ratings').'</a> ' . get_label('has been reset to') . ' <b>' . $password . '</b>';
-		$text_body = get_label('Your password at') . ' http://www.mafiaratings.com ' . get_label('has been reset to') . ' ' . $password . "\r\n\r\n";
+		$body = get_label('Your password at') . ' <a href="https://www.mafiaratings.com">' . get_label('Mafia Ratings').'</a> ' . get_label('has been reset to') . ' <b>' . $password . '</b>';
+		$text_body = get_label('Your password at') . ' https://www.mafiaratings.com ' . get_label('has been reset to') . ' ' . $password . "\r\n\r\n";
 		send_email($email, $body, $text_body, 'Mafia');
 		echo  get_label('Your password has been reset. Please check your email for the new password.');
 	}

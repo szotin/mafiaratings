@@ -2,7 +2,7 @@
 
 require_once 'include/ws.php';
 
-$_base_url = 'http://' . get_server_url() . '/';
+$_base_url = get_server_url() . '/';
 
 class Photo
 {
@@ -39,7 +39,7 @@ class Album
 		$this->icon_url = '';
 		if (($flags & ALBUM_ICON_MASK) != 0)
 		{
-			$this->icon_url = 'http://' . get_server_url() . '/' . ALBUM_PICS_DIR . TNAILS_DIR . $this->id . '.png';
+			$this->icon_url = get_server_url() . '/' . ALBUM_PICS_DIR . TNAILS_DIR . $this->id . '.png';
 		}
 			
 			

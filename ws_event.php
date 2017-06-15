@@ -53,7 +53,7 @@ class Event
 		}
 
 		
-		$base = 'http://' . get_server_url() . '/';
+		$base = get_server_url() . '/';
 		$this->addr_image = '';
 		if (($addr_flags & ADDR_ICON_MASK) != 0)
 		{

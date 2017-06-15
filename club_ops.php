@@ -163,7 +163,7 @@ try
 			'code' => new Tag($code),
 			'uname' => new Tag($user_name),
 			'cname' => new Tag($name),
-			'url' => new Tag('http://' . get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id));
+			'url' => new Tag(get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id));
 		list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_accept_club.php';
 		$body = parse_tags($body, $tags);
 		$text_body = parse_tags($text_body, $tags);

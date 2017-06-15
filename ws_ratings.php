@@ -18,7 +18,7 @@ class Rating
 	{
 		list($this->user_id, $this->user_name, $user_flags, $this->rating, $this->num_games, $this->games_won) = $row;
 		$this->num = $num;
-		$base = 'http://' . get_server_url() . '/';
+		$base = get_server_url() . '/';
 		$this->user_page = $base . 'user_info.php?id=' . $this->user_id;
 		$this->is_male = (($user_flags & U_FLAG_MALE) != 0);
 		$this->user_image = '';

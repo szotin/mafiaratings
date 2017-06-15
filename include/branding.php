@@ -14,7 +14,7 @@ class Brand
 	{
 		$this->titleprefix   = "Mafia Ratings:";
 		$this->metatitle     = "Mafia Ratings";
-		$this->metaurl       = "http://www.mafiaratings.com";
+		$this->metaurl       = "https://www.mafiaratings.com";
 		$this->metasitename  = "Mafia Ratings";
 		$this->metafbadmins  = "1339983926";
 		$this->cssfile       = "";

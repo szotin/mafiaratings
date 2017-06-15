@@ -12,6 +12,7 @@ define('FILTER_MAFIA_WON', 2);
 define('FILTER_TERMINATED', 4);
 define('FILTER_PLAYING', 8);
 
+echo $_SERVER['SERVER_PROTOCOL'] . '<br>';
 class Page extends AddressPageBase
 {
 	protected function prepare()

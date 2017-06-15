@@ -136,7 +136,7 @@ function send_notification($email, $body, $text_body, $subject, $user_id, $obj, 
 		return false;
 	}
 
-	$url = 'http://' . get_server_url() . '/email_request.php';
+	$url = get_server_url() . '/email_request.php';
 	$unsubs_url = $url . '?uid=' . $user_id . '&code=' . $code . '&unsub=1';
 	$body =
 		'<form method="get" action="' . $url . '">' . 

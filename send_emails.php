@@ -57,7 +57,7 @@ try
 		' ORDER BY ee.send_time');
 	// echo $query->get_parsed_sql();
 	// echo '</br>';
-	$image_base = 'http://' . $server_name . '/' . ADDRESS_PICS_DIR . TNAILS_DIR;
+	$image_base = $server_name . '/' . ADDRESS_PICS_DIR . TNAILS_DIR;
 	while (($row = $query->next()) && $emails_remaining > 0)
 	{
 		list(
@@ -154,7 +154,7 @@ try
 				list($user_id, $user_name, $user_email) = $row1;
 				
 				$code = generate_email_code();
-				$base_url = 'http://' . get_server_url() . '/email_request.php?uid=' . $user_id . '&code=' . $code;
+				$base_url = get_server_url() . '/email_request.php?uid=' . $user_id . '&code=' . $code;
 				
 				$tags = array(
 					'uname' => new Tag($user_name),
@@ -293,7 +293,7 @@ try
 					$tags['code'] = new Tag($code);
 					$tags['uid'] = new Tag($u_id);
 					$tags['uname'] = new Tag($u_name);
-					$tags['url'] = new Tag('http://' . get_server_url() . '/email_request.php?uid=' . $u_id . '&code=' . $code);
+					$tags['url'] = new Tag(get_server_url() . '/email_request.php?uid=' . $u_id . '&code=' . $code);
 					$tags['edate'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
 					$tags['etime'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
 						
@@ -325,7 +325,7 @@ try
 			--$emails_remaining;
 		}
 		
-		$image_base = 'http://' . $server_name . '/' . PHOTOS_DIR . TNAILS_DIR;
+		$image_base = $server_name . '/' . PHOTOS_DIR . TNAILS_DIR;
 		
 		foreach ($photos as $user_id => $user_photos)
 		{
@@ -337,7 +337,7 @@ try
 			$count = count($user_photos);
 			$code = generate_email_code();
 			
-			$request_base = 'http://' . $server_name . '/email_request.php?uid=' . $user_id . '&code=' . $code;
+			$request_base = $server_name . '/email_request.php?uid=' . $user_id . '&code=' . $code;
 			
 			$counter = 1;
 			$photos = '';
@@ -361,7 +361,7 @@ try
 				'pcount' => new Tag($count),
 				'photos' => new Tag($photos),
 				'url' => new Tag($request_base),
-				'unsub' => new Tag('<a href="http://' . get_server_url() . '/email_request.php?uid=' . $user_id . '&code=' . $code . '&unsub=1" target="_blank">', '</a>'));
+				'unsub' => new Tag('<a href="' . get_server_url() . '/email_request.php?uid=' . $user_id . '&code=' . $code . '&unsub=1" target="_blank">', '</a>'));
 				
 			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_photo.php';
 			$body = parse_tags($body, $tags);

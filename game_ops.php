@@ -841,7 +841,7 @@ try
 						'uname' => new Tag($uname),
 						'date' => new Tag(format_date('l, F d, Y', time(), $utimezone, $ulang)),
 						'uname1' => new Tag($_profile->user_name),
-						'url' => new Tag('http://' . get_server_url() . '/changelists.php'));
+						'url' => new Tag(get_server_url() . '/changelists.php'));
 					$body = parse_tags($body, $tags);
 					$text_body = parse_tags($text_body, $tags);
 					send_email($uemail, $body, $text_body, $subj);

@@ -51,7 +51,7 @@ class Event
 			$this->addr_id, $this->addr, $this->addr_url, $this->timezone, $addr_flags, $this->city, $this->country,
 			$this->notes, $this->langs, $flags, $this->rules_id) = $row;
 		
-		$base = 'http://' . get_server_url() . '/';
+		$base = get_server_url() . '/';
 			
 		$this->addr_image = '';
 		if (($addr_flags & ADDR_ICON_MASK) != 0)

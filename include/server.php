@@ -11,17 +11,21 @@ function get_server_url()
 			$row .= ':' . $_SERVER["SERVER_PORT"];
 		}
 	}
-	return $row;
+	
+    if (isset($_SERVER['HTTPS']))
+    {
+		return 'https://' . $row;
+    }
+	return 'http://' . $row;
 }
 
 function get_server_protocol()
 {
-    $row = 'http';
-    if ($_SERVER['HTTPS'] == 'on')
+    if (isset($_SERVER['HTTPS']))
     {
-        $row .= "s";
+		return 'https';
     }
-	return $row;
+	return 'http';
 }
 
 function get_page_url()

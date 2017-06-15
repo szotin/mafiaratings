@@ -2,7 +2,7 @@ var local = new function()
 {
 	this.init = function()
 	{
-/*		http.host("http://mafiaratings.com/");
+/*		http.host("https://mafiaratings.com/");
 		mafia.stateChange(mafia.ui.sync);
 		mafia.dirtyEvent(function(dirty) { $('#save').prop('disabled', !dirty); mafia.ui.updateButtons(); });
 		mafia.failEvent(function(message) { dlg.error(message); });*/

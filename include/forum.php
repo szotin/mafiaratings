@@ -394,7 +394,7 @@ class ForumMessage
 				{
 					$lang = get_lang_code($def_lang);
 					$code = generate_email_code();
-					$request_base = 'http://' . get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $id;
+					$request_base = get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $id;
 					
 					$tags = array(
 						'uid' => new Tag($id),
@@ -424,7 +424,7 @@ class ForumMessage
 				{
 					$lang = get_lang_code($def_lang);
 					$code = generate_email_code();
-					$request_base = 'http://' . get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $id;
+					$request_base = get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $id;
 					
 					$tags = array(
 						'uid' => new Tag($id),
@@ -463,7 +463,7 @@ class ForumMessage
 					list($user_id, $user_name, $user_email, $user_lang, $event_id, $event_name, $event_start_time, $event_timezone, $event_addr) = $row;
 				
 					$code = generate_email_code();
-					$request_base = 'http://' . get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id;
+					$request_base = get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id;
 					$tags = array(
 						'uid' => new Tag($user_id),
 						'eid' => new Tag($event_id),
@@ -494,7 +494,7 @@ class ForumMessage
 					list($user_id, $user_name, $user_email, $user_lang, $photo_id) = $row;
 				
 					$code = generate_email_code();
-					$server = 'http://' . get_server_url() . '/';
+					$server = get_server_url() . '/';
 					$request_base = $server . 'email_request.php?code=' . $code . '&uid=' . $user_id;
 					$image_url = $server . PHOTOS_DIR . TNAILS_DIR . $photo_id . '.jpg';
 					
