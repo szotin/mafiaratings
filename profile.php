@@ -10,6 +10,7 @@ require_once 'include/country.php';
 class Page extends OptionsPageBase
 {
 	private $message;
+	private $name;
 	private $city_id;
 	private $country_id;
 	private $club_id;
@@ -21,6 +22,12 @@ class Page extends OptionsPageBase
 		
 		parent::prepare();
 
+		$this->name = $_profile->user_name;
+		if (isset($_REQUEST['name']))
+		{
+			$this->name = $_REQUEST['name'];
+		}
+		
 		$this->club_id = $_profile->user_club_id;
 		if (isset($_REQUEST['club']))
 		{
@@ -94,19 +101,25 @@ class Page extends OptionsPageBase
 				throw new Exc(get_label('Unknown [0]', get_label('city')));
 			}
 			
+			if ($this->name != $_profile->user_name)
+			{
+				check_user_name($this->name);
+			}
+			
 			$update_clubs = false;
 			Db::begin();
 			Db::exec(
 				get_label('user'), 
-				'UPDATE users SET flags = ?, city_id = ?, languages = ?, phone = ?, club_id = ? WHERE id = ?',
-				$this->user_flags, $this->city_id, $langs, $this->phone, $this->club_id, $_profile->user_id);
+				'UPDATE users SET name = ?, flags = ?, city_id = ?, languages = ?, phone = ?, club_id = ? WHERE id = ?',
+				$this->name, $this->user_flags, $this->city_id, $langs, $this->phone, $this->club_id, $_profile->user_id);
 			if (Db::affected_rows() > 0)
 			{
 				list($city_name) = Db::record(get_label('user'), 'SELECT name_en FROM cities WHERE id = ?', $this->city_id);
 				$log_details = 
 					'flags=' . $this->user_flags .
 					"<br>city=" . $city_name . ' (' . $this->city_id . ')' .
-					"<br>langs=" . $langs;
+					"<br>langs=" . $langs .
+					"<br>name=" . $this->name;
 				db_log('user', 'Changed', $log_details, $_profile->user_id);
 				
 				if ($this->club_id != NULL && !isset($_profile->clubs[$this->club_id]))
@@ -119,6 +132,7 @@ class Page extends OptionsPageBase
 			Db::commit();
 				
 			$this->message = get_label('Profile is saved.');
+			$_profile->user_name = $this->name;
 			$_profile->user_flags = $this->user_flags;
 			$_profile->user_langs = $langs;
 			$_profile->user_phone = $this->phone;
@@ -156,14 +170,14 @@ class Page extends OptionsPageBase
 			echo '<tr><td colspan="2" class="light">' . $this->message . '</td></tr>';
 		}
 		
-		echo '<tr><td class="dark" width="80">'.get_label('Login name').':</td><td class="light">' . cut_long_name($_profile->user_name, 80) . '</td></tr>';
+		echo '<tr><td class="dark" width="120">'.get_label('User name').':</td><td class="light"><input name="name" value="' . $this->name . '"></td></tr>';
 		
 		$club_id = $this->club_id;
 		if ($club_id == NULL)
 		{
 			$club_id = 0;
 		}
-		echo '<tr><td class="dark" valign="top">'.get_label('Club').':</td><td class="light">' . get_label('Please enter your favourite club. The club you want to represent on championships.') . '<br>';
+		echo '<tr><td class="dark" valign="top">'.get_label('Main club').':</td><td class="light">';
 		echo '<select name="club">';
 		show_option(0, $club_id, '');
 		$query = new DbQuery('SELECT id, name FROM clubs ORDER BY name');
@@ -223,7 +237,7 @@ class Page extends OptionsPageBase
 		echo '</select>';
 		
 		echo '<tr><td class="dark">' . get_label('Phone') . ':</td><td class="light">';
-		echo get_label('Phone is optional. You can give us your phone if you do not mind us calling you.') . '<br><input name="phone" value="' . $_profile->user_phone . '"></td></tr>';
+		echo '<input name="phone" value="' . $_profile->user_phone . '"></td></tr>';
 		
 		echo '</table>';
 		

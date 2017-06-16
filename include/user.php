@@ -211,7 +211,13 @@ class UserPageBase extends PageBase
 		PageBase::show_menu($menu);
 		echo '</td></tr>';	
 		
-		echo '<tr><td rowspan="2" width="' . TNAIL_WIDTH . '"><table class="bordered light"><tr><td class="dark" valign="top" style="min-width:28px; padding:4px;"></td><td style="padding: 4px 2px 4px 1px;">';
+		echo '<tr><td rowspan="2" width="' . TNAIL_WIDTH . '"><table class="bordered light"><tr><td class="dark" valign="top" style="min-width:28px; padding:4px;">';
+		if ($_profile->user_id == $this->id)
+		{
+			echo '<button class="icon" onclick="mr.editAccount()" title="' . get_label('Account settings') . '"><img src="images/settings.png" border="0"></button>';
+			// echo '<button class="icon" onclick="mr.editAccountPassword()" title="' . get_label('Change password') . '"><img src="images/key.png" border="0"></button>';
+		}
+		echo '</td><td style="padding: 4px 2px 4px 1px;">';
 		show_user_pic($this->id, $this->flags, TNAILS_DIR);
 		echo '</td></tr></table><td valign="top"rowspan="2" >' . $this->standard_title() . '<p class="subtitle">';
 		echo $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';

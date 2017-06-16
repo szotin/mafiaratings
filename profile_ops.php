@@ -296,6 +296,101 @@ try
 			Db::commit();
 			$_profile->update_clubs();
 		}
+		else if (isset($_POST['edit_account']))
+		{
+			$name = trim($_POST['name']);
+			if ($name != $_profile->user_name)
+			{
+				check_user_name($name);
+			}
+			
+			$club_id = $_POST['club'];
+			if ($club_id <= 0)
+			{
+				$club_id = NULL;
+			}
+			
+			$city_id = retrieve_city_id($_POST['city'], retrieve_country_id($_POST['country']), $_profile->timezone);
+			$langs = $_POST['langs'];
+			$phone = $_POST['phone'];
+			$flags = $_profile->user_flags;
+			if ($_POST['message_notify'])
+			{
+				$flags |= U_FLAG_MESSAGE_NOTIFY;
+			}
+			else
+			{
+				$flags &= ~U_FLAG_MESSAGE_NOTIFY;
+			}
+			if ($_POST['private_message_notify'])
+			{
+				$flags |= U_FLAG_PHOTO_NOTIFY;
+			}
+			else
+			{
+				$flags &= ~U_FLAG_PHOTO_NOTIFY;
+			}
+			if ($_POST['male'])
+			{
+				$flags |= U_FLAG_MALE;
+			}
+			else
+			{
+				$flags &= ~U_FLAG_MALE;
+			}
+			
+			$update_clubs = false;
+			Db::begin();
+			Db::exec(
+				get_label('user'), 
+				'UPDATE users SET name = ?, flags = ?, city_id = ?, languages = ?, phone = ?, club_id = ? WHERE id = ?',
+				$name, $flags, $city_id, $langs, $phone, $club_id, $_profile->user_id);
+			if (Db::affected_rows() > 0)
+			{
+				if ($club_id != NULL && !isset($_profile->clubs[$club_id]))
+				{
+					Db::exec(get_label('membership'), 'INSERT INTO user_clubs (user_id, club_id, flags) values (?, ?, ' . UC_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $club_id);
+					db_log('user', 'Joined the club', NULL, $_profile->user_id, $club_id);
+					$update_clubs = true;
+				}
+				
+				
+				$log_details = 
+					'flags=' . $flags .
+					"<br>name=" . $name . 
+					"<br>city=" . $_POST['city'] . ' (' . $city_id . ')' .
+					"<br>langs=" . $langs;
+					
+				if (!is_null($club_id))
+				{
+					list ($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+					$log_details .= '<br>club=' . $club_name . ' (' . $club_id . ')';
+				}
+				db_log('user', 'Changed', $log_details, $_profile->user_id);
+			}
+			Db::commit();
+					
+			$_profile->user_name = $name;
+			$_profile->user_flags = $flags;
+			$_profile->user_langs = $langs;
+			$_profile->user_phone = $phone;
+			$_profile->user_club_id = $club_id;
+			if ($_profile->city_id != $city_id)
+			{
+				$_profile->city_id = $city_id;
+				list ($_profile->country_id, $_profile->timezone) =
+					Db::record(get_label('city'), 'SELECT country_id, timezone FROM cities WHERE id = ?', $city_id);
+			}
+			if ($update_clubs)
+			{
+				$_profile->update_clubs();
+			}
+		}
+		else if (isset($_POST['change_name']))
+		{
+			$name = $_POST['name'];
+			$password = $_POST['password'];
+		}
 		else
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('request')));

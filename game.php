@@ -27,6 +27,8 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
+		$this->no_selectors = true;
+		
 		if (isset($_REQUEST['reset']))
 		{
 			unset($_SESSION['game' . $_REQUEST['reset']]);

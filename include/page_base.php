@@ -207,6 +207,12 @@ class PageBase
 				echo '<input value="Login" class="in-header" type="submit"><br>';
 				echo '<a href="reset_pwd.php?bck=0">'.get_label('Forgot your password?').'</a></form></td>';
 			}
+			// else if ($_profile != NULL)
+			// {
+				// echo '<td valign="middle" align="right">';
+				// show_user_pic($_profile->user_id, $_profile->user_flags, ICONS_DIR, 48);
+				// echo '<img src="images/clubs.png" /></td>';
+			// }
 			echo '</tr></table>';
 
 			echo '<table class="main" border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
@@ -305,45 +311,48 @@ class PageBase
 		
 		if (is_mobile())
 		{
-			echo '<table class="transp" width="100%"><tr><td align="right" valign="top">';
-			if (!isset($_SESSION['mobile']))
+			if (!isset($this->no_selectors))
 			{
-				if ($_agent == AGENT_BROWSER)
+				echo '<table class="transp" width="100%"><tr><td align="right" valign="top">';
+				if (!isset($_SESSION['mobile']))
 				{
-					$style = SITE_STYLE_DESKTOP;
+					if ($_agent == AGENT_BROWSER)
+					{
+						$style = SITE_STYLE_DESKTOP;
+					}
+					else
+					{
+						$style = SITE_STYLE_MOBILE;
+					}
 				}
-				else
+				else if ($_SESSION['mobile'])
 				{
 					$style = SITE_STYLE_MOBILE;
 				}
-			}
-			else if ($_SESSION['mobile'])
-			{
-				$style = SITE_STYLE_MOBILE;
-			}
-			else
-			{
-				$style = SITE_STYLE_DESKTOP;
-			}
-			echo get_label('Site style') . ':&nbsp;<select id="mobile" onChange="mr.mobileStyleChange()">';
-			show_option(SITE_STYLE_DESKTOP, $style, get_label('Desktop'));
-			show_option(SITE_STYLE_MOBILE, $style, get_label('Mobile'));
-			echo '</select>&nbsp;&nbsp;&nbsp;';
-			
-			echo get_label('Language') . ':&nbsp;<select id="browser_lang" onChange="mr.browserLangChange()">';
-			$lang = LANG_NO;
-			while (($lang = get_next_lang($lang)) != LANG_NO)
-			{
-				$code = get_lang_code($lang);
-				echo '<option value="' . $code . '"';
-				if ($code == $_lang_code)
+				else
 				{
-					echo ' selected';
+					$style = SITE_STYLE_DESKTOP;
 				}
-				echo '>' . get_lang_str($lang) . '</option>';
-			 }
-			echo '</select></td>';
-			echo '</tr></table>';
+				echo get_label('Site style') . ':&nbsp;<select id="mobile" onChange="mr.mobileStyleChange()">';
+				show_option(SITE_STYLE_DESKTOP, $style, get_label('Desktop'));
+				show_option(SITE_STYLE_MOBILE, $style, get_label('Mobile'));
+				echo '</select>&nbsp;&nbsp;&nbsp;';
+				
+				echo get_label('Language') . ':&nbsp;<select id="browser_lang" onChange="mr.browserLangChange()">';
+				$lang = LANG_NO;
+				while (($lang = get_next_lang($lang)) != LANG_NO)
+				{
+					$code = get_lang_code($lang);
+					echo '<option value="' . $code . '"';
+					if ($code == $_lang_code)
+					{
+						echo ' selected';
+					}
+					echo '>' . get_lang_str($lang) . '</option>';
+				 }
+				echo '</select></td>';
+				echo '</tr></table>';
+			}
 		}
 		else
 		{
@@ -361,7 +370,7 @@ class PageBase
 				echo '<iframe src="http://www.facebook.com/plugins/like.php?href=www.mafiaworld.ca&amp;layout=button_count&amp;show_faces=false&amp;width=450&amp;action=like&amp;font&amp;colorscheme=light&amp;height=21" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:450px; height:21px;" allowTransparency="true"></iframe>';
 			}*/
 			
-			if (empty($_POST))
+			if (empty($_POST) && !isset($this->no_selectors))
 			{
 				echo '<td class="header" align="right" valign="top">';
 				foreach ($_GET as $key => $value)

@@ -56,6 +56,16 @@ var mr = new function()
 		}, function() { window.location.replace("/"); });
 	}
 
+	this.editAccount = function()
+	{
+		dlg.form("account_edit.php", refr, 600);
+	}
+	
+	this.editAccountPassword = function()
+	{
+		dlg.form("account_password.php", refr, 600);
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// administration
 	//--------------------------------------------------------------------------------------
