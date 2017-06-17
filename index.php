@@ -8,7 +8,7 @@ require_once 'include/forum.php';
 require_once 'include/user_location.php';
 require_once 'include/club.php';
 
-define('COLUMN_COUNT', 4);
+define('COLUMN_COUNT', 5);
 define('ROW_COUNT', 2);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
@@ -193,7 +193,7 @@ class Page extends GeneralPageBase
 		$number = 1;
 		if ($row = $query->next())
 		{
-			echo '</td><td width="240" valign="top">';
+			echo '</td><td width="280" valign="top">';
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="4"><a href="ratings.php?bck=1&ccc=' . $ccc_code . '"><b>' . get_label('More ratings...') . '</b></a></td></tr>';
 			

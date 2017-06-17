@@ -252,4 +252,56 @@ class ClubPageBase extends PageBase
 	}
 }
 
+// define('CLUB_FROM_PROFILE', 0);
+// define('CLUB_DETECT', 1);
+// function show_club_input($name, $value, $city_id = -1)
+// {
+	// global $_profile, $_lang_code;
+
+	// if ($value === CLUB_FROM_PROFILE)
+	// {
+		// $value = $_profile->clubs[$_profile->user_club]->name;
+	// }
+
+	// echo '<input type="text" id="' . $name . '" value="' . $value . '"/>';
+	// if (is_numeric($city_id))
+	// {
+// ***>
+		// <script>
+		// $("#<***php echo $name; ***>").autocomplete(
+		// { 
+			// source: function(request, response)
+			// {
+				// $.getJSON("ws_club.php",
+				// {
+					// term: $("#<***php echo $name; ***>").val(),
+					// cid: <***php echo $city_id; ***>
+				// }, response);
+			// }
+			// , minLength: 0
+		// });
+		// </script>
+// <***php
+	// }
+	// else
+	// {
+// ***>
+		// <script>
+		// $("#<***php echo $name; ***>").autocomplete(
+		// { 
+			// source: function(request, response)
+			// {
+				// $.getJSON("ws_club.php",
+				// {
+					// term: $("#<***php echo $name; ***>").val(),
+					// cname: $("#<***php echo $city_id; ***>").val()
+				// }, response);
+			// }
+			// , select: function(event, ui) { $("#<***php echo $city_id; ***>").val(ui.item.city); }
+			// , minLength: 0
+		// });
+		// </script>
+// <***php
+	// }
+
 ?>

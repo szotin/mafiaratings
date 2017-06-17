@@ -62,30 +62,7 @@ try
 			throw new Exc(get_label('Unknown [0]', get_label('user')));
 		}
 		
-		if (isset($_POST['change_email']))
-		{
-			$email = $_POST['email'];
-			if ($email != '' && !is_email($email))
-			{
-				throw new Exc(get_label('[0] is not a valid email address.', $email));
-			}
-
-			$flags = $_profile->user_flags | U_FLAG_DEACTIVATED;
-			Db::begin();
-			Db::exec(get_label('user'), 'UPDATE users SET email = ?, flags = ? WHERE id = ?', $email, $flags, $_profile->user_id);
-			if (Db::affected_rows() > 0)
-			{
-				$log_details = 'email=' . $email . "<br>flags=" . $flags;
-				db_log('user', 'Changed', $log_details, $_profile->user_id);
-			}
-			send_activation_email($_profile->user_id, $_profile->user_name, $email);
-			Db::commit();
-			
-			$_profile->user_email = $email;
-			$_profile->user_flags = $flags;
-			echo get_label('Your email address has been changed. Please check your email to re-activate yor account.');
-		}
-		else if (isset($_POST['activate']))
+		if (isset($_POST['activate']))
 		{
 			$email = $_POST['email'];
 			if ($email != $_profile->user_email)
@@ -302,6 +279,34 @@ try
 			if ($name != $_profile->user_name)
 			{
 				check_user_name($name);
+			}
+			
+			$email = trim($_POST['email']);
+			if ($email != $_profile->user_email)
+			{
+				if (empty($email))
+				{
+					throw new Exc(get_label('Please enter [0].', get_label('email address')));
+				}
+				else if (!is_email($email))
+				{
+					throw new Exc(get_label('[0] is not a valid email address.', $email));
+				}
+				
+				$flags = $_profile->user_flags | U_FLAG_DEACTIVATED;
+				Db::begin();
+				Db::exec(get_label('user'), 'UPDATE users SET email = ?, flags = ? WHERE id = ?', $email, $flags, $_profile->user_id);
+				if (Db::affected_rows() > 0)
+				{
+					$log_details = 'email=' . $email . "<br>flags=" . $flags;
+					db_log('user', 'Changed', $log_details, $_profile->user_id);
+				}
+				send_activation_email($_profile->user_id, $_profile->user_name, $email);
+				Db::commit();
+				
+				$_profile->user_email = $email;
+				$_profile->user_flags = $flags;
+				echo get_label('Your email address has been changed. Please check your email to re-activate yor account.');
 			}
 			
 			$club_id = $_POST['club'];

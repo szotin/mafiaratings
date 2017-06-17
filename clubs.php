@@ -9,7 +9,7 @@ require_once 'include/image.php';
 require_once 'include/user_location.php';
 
 define('PAGE_SIZE', 30);
-define('COLUMN_COUNT', 5);
+define('COLUMN_COUNT', 6);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends GeneralPageBase
@@ -54,7 +54,7 @@ class Page extends GeneralPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add(' AND c.id IN (' . $_profile->get_comma_sep_clubs() . ')');
+				$condition->add(' AND u.user_id = ?', $_profile->user_id);
 			}
 			break;
 		case CCCF_CITY:
@@ -75,15 +75,20 @@ class Page extends GeneralPageBase
 			++$clubs_count;
 		}
 		
-		list ($count) = Db::record(get_label('club'), 'SELECT count(*) FROM clubs c JOIN cities i ON c.city_id = i.id', $condition);
-		
-		show_pages_navigation($page_size, $count);
-		
 		$user_id = -1;
 		if ($_profile != NULL)
 		{
 			$user_id = $_profile->user_id;
 		}
+		
+		list ($count) = Db::record(get_label('club'), 'SELECT count(*) FROM clubs c ' .
+				' LEFT OUTER JOIN user_clubs u ON u.user_id = ? AND u.club_id = c.id' .
+				' JOIN cities i ON c.city_id = i.id',
+				' LEFT OUTER JOIN user_clubs u ON u.user_id = ? AND u.club_id = c.id' .
+				' JOIN cities i ON c.city_id = i.id',
+			$user_id, $condition);
+		
+		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery(
 			'SELECT c.id, c.name, c.flags, c.web_site, i.name_' . $_lang_code . ', u.flags FROM clubs c' .

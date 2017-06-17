@@ -5,13 +5,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createAccount = function(name, email)
 	{
-		json.post("profile_ops.php",
-		{
-			'name': name,
-			'email': email,
-			create_account: ""
-		},
-		function() { window.location.replace("/"); });
+		dlg.form("account_create.php", function(){}, 400);
 	}
 
 	this.activateProfile = function()
@@ -26,14 +20,7 @@ var mr = new function()
 
 	this.changePassword = function()
 	{
-		json.post("profile_ops.php",
-		{
-			old_pwd: $("#old_pwd").val(),
-			new_pwd: $("#new_pwd").val(),
-			confirm_pwd: $("#confirm_pwd").val(),
-			change_pwd: ""
-		},
-		function() { window.location.replace("/"); });
+		dlg.form("password_change.php", refr, 400);
 	}
 
 	this.mobileStyleChange = function()
@@ -48,12 +35,7 @@ var mr = new function()
 
 	this.resetPassword = function()
 	{
-		json.post("profile_ops.php",
-		{
-			name: $("#name").val(),
-			email: $("#email").val(),
-			reset_pwd: ""
-		}, function() { window.location.replace("/"); });
+		dlg.form("password_reset.php", refr, 400);
 	}
 
 	this.editAccount = function()

@@ -188,6 +188,7 @@ class PageBase
 		else
 		{
 			echo '<body>';
+			
 			echo '<table border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
 			echo '<tr class="header">';
 			if (is_ratings_server())
@@ -200,77 +201,104 @@ class PageBase
 			}
 			if ($_session_state == SESSION_NO_USER || $_session_state == SESSION_LOGIN_FAILED)
 			{
-				echo '<td align="right"><form action="javascript:login()">';
+				echo '<td class="header" align="right"><form action="javascript:login()">';
 				echo get_label('User name') . ':&nbsp;<input id="username" class="in-header short">&nbsp;';
 				echo get_label('Password') . ':&nbsp;<input type="password" id="password" class="in-header short">&nbsp;';
-				echo '<input class="in-header" type="checkbox" id="remember" checked>'.get_label('remember me').'&nbsp;';
 				echo '<input value="Login" class="in-header" type="submit"><br>';
-				echo '<a href="reset_pwd.php?bck=0">'.get_label('Forgot your password?').'</a></form></td>';
+				echo '<input class="in-header" type="checkbox" id="remember" checked>'.get_label('remember me').'</form></td>';
+				echo '<td  class="header" align="right"><a href="javascript:mr.resetPassword()" title="' . get_label('I forgot my password. Please help me!') . '"><img src="images/tools.png"></a>';
+				echo '<a href="javascript:mr.createAccount()" title="' . get_label('Create user account') . '"><img src="images/create_user.png"></a></td>';
 			}
-			// else if ($_profile != NULL)
-			// {
-				// echo '<td valign="middle" align="right">';
-				// show_user_pic($_profile->user_id, $_profile->user_flags, ICONS_DIR, 48);
-				// echo '<img src="images/clubs.png" /></td>';
-			// }
+			else if ($_profile != NULL)
+			{
+				$club = NULL;
+				if ($_profile->user_club_id != NULL && isset($_profile->clubs[$_profile->user_club_id]))
+				{
+					$club = $_profile->clubs[$_profile->user_club_id];
+				}
+				
+				echo '<td valign="middle" align="right">';
+				echo '<a href="index.php" title="' . get_label('Home') . '"><img src="images/home.png" /></a></>';
+				// echo '<a href="ratings.php" title="' . get_label('Ratings') . '"><img src="images/clubs.png" /></a>';
+				echo '<a href="game.php" title="' . get_label('The game') . '"><img src="images/thegame.png" /></a>';
+				if ($club != NULL)
+				{
+					echo '<a href="club_main.php?id=' . $club->id . '" title="' . $club->name . '">';
+					show_club_pic($club->id, $club->club_flags, ICONS_DIR, 48);
+					echo '</a>';
+				}
+				echo '<a id="user" onMouseEnter="javascript:showUserMenu()" href="user_info.php?id=' . $_profile->user_id . '" title="' . $_profile->user_name . '">';
+				show_user_pic($_profile->user_id, $_profile->user_flags, ICONS_DIR, 48);
+				echo '</a>';
+				
+				echo '<ul id="user-menu" style="display:none;position:absolute;width:150px;text-align:left;">';
+				echo '<li><a href="user_info.php?id=' . $_profile->user_id . '" title="' . get_label('Statistics for [0]', $_profile->user_name) . '">' . get_label('My statistics') . '</a></li>';
+				echo '<li><a href="javascript:mr.editAccount()" title="' . get_label('Account settings') . '">' . get_label('My account') . '</a></li>';
+				echo '<li><a href="javascript:mr.changePassword()" title="' . get_label('Change password') . '">' . get_label('Change password') . '</a></li>';
+				echo '<li><a href="javascript:logout()" title="' . get_label('Logout from Mafia Ratings') . '">' . get_label('Log out') . '</a></li>';
+				echo '</ul>';
+				echo '</td>';
+			}
 			echo '</tr></table>';
-
-			echo '<table class="main" border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
-			echo '<tr><td class="menu" width="' . MENU_WIDTH . '" valign="top">';
-
-			if (($permissions & PERM_STRANGER) != 0)
-			{
-				echo '<table class="menu" width="100%">';
-				echo '<tr><td class="menu"><a href="create_account.php?bck=0" title="'.get_label('Create user account').'">'.get_label('Create account').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="index.php?bck=0">'.get_label('Home').'</a></td></tr>';
-				echo '</table><br>';
 			
-				echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('General').'</th></tr>';
-				echo '<tr><td class="menu"><a href="calendar.php?bck=0" title="'.get_label('Where and when can I play').'">'.get_label('Calendar').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="ratings.php?bck=0" title="'.get_label('Players ratings').'">'.get_label('Ratings').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="clubs.php?bck=0" title="'.get_label('Clubs list').'">'.get_label('Clubs').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="photo_albums.php?bck=0" title="'.get_label('Photo albums').'">'.get_label('Photo albums').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="history.php?bck=0" title="'.get_label('Events history').'">'.get_label('History').'</a></td></tr>';
-//				echo '<tr><td class="menu"><a href="welcome.php?bck=0" title="'.get_label('About Mafia: rules, tactics, general information.').'">'.get_label('About').'</a></td></tr>';
-				echo '</table><br>';
-			}
-			else
-			{
-				echo '<table class="menu" width="100%"><tr><th class="menu">' . cut_long_name($_profile->user_name, 15) . '</th></tr>';
-				echo '<tr><td class="menu"><a href="index.php?bck=0">'.get_label('Home').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="profile.php?bck=0" title="'.get_label('Change my profile options').'">'.get_label('My profile').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="inbox.php?bck=0" title="'.get_label('Private messages to me').'">'.get_label('Messages').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="#" onclick="logout()" title="'.get_label('Logout from Mafia Ratings').'">'.get_label('Log out').'</a></td></tr>';
-				echo '</table><br>';
-				
-				if (!$_profile->is_admin() && count($_profile->clubs) > 0)
-				{
-					echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('My clubs').'</th></tr>';
-					foreach ($_profile->clubs as $club)
-					{
-						echo '<tr><td class="menu"><a href="club_main.php?bck=0&id=' . $club->id . '" title="' . $club->name . '">' . cut_long_name($club->name, 16) . '</a></td></tr>';
-					}
-					echo '</table><br>';
-				}
-				
-				echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('General').'</th></tr>';
-				echo '<tr><td class="menu"><a href="calendar.php?bck=0" title="'.get_label('Where and when can I play').'">'.get_label('Calendar').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="ratings.php?bck=0" title="'.get_label('Players ratings').'">'.get_label('Ratings').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="clubs.php?bck=0" title="'.get_label('Clubs list').'">'.get_label('Clubs').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="photo_albums.php?bck=0" title="'.get_label('Photo albums').'">'.get_label('Photo albums').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="history.php?bck=0" title="'.get_label('Events history').'">'.get_label('History').'</a></td></tr>';
-				echo '<tr><td class="menu"><a href="welcome.php?bck=0" title="'.get_label('About Mafia: rules, tactics, general information.').'">'.get_label('About').'</a></td></tr>';
-				echo '</table><br>';
-				
-				if (count($_profile->clubs) > 0)
-				{
-					echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('Game').'</th></tr>';
-					echo '<tr><td class="menu"><a href="game.php?bck=0" title="'.get_label('Start the game').'">'.get_label('The game').'</a></td></tr>';
-					echo '</table><br>';
-				}
-			}
+			echo '<table class="main" border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
+			echo '<tr>';
+			// echo '<td class="menu" width="' . MENU_WIDTH . '" valign="top">';
 
-			echo '</td><td valign="top">';
+			// if (($permissions & PERM_STRANGER) != 0)
+			// {
+				// echo '<table class="menu" width="100%">';
+				// echo '<tr><td class="menu"><a href="create_account.php?bck=0" title="'.get_label('Create user account').'">'.get_label('Create account').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="index.php?bck=0">'.get_label('Home').'</a></td></tr>';
+				// echo '</table><br>';
+			
+				// echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('General').'</th></tr>';
+				// echo '<tr><td class="menu"><a href="calendar.php?bck=0" title="'.get_label('Where and when can I play').'">'.get_label('Calendar').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="ratings.php?bck=0" title="'.get_label('Players ratings').'">'.get_label('Ratings').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="clubs.php?bck=0" title="'.get_label('Clubs list').'">'.get_label('Clubs').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="photo_albums.php?bck=0" title="'.get_label('Photo albums').'">'.get_label('Photo albums').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="history.php?bck=0" title="'.get_label('Events history').'">'.get_label('History').'</a></td></tr>';
+// //				echo '<tr><td class="menu"><a href="welcome.php?bck=0" title="'.get_label('About Mafia: rules, tactics, general information.').'">'.get_label('About').'</a></td></tr>';
+				// echo '</table><br>';
+			// }
+			// else
+			// {
+				// echo '<table class="menu" width="100%"><tr><th class="menu">' . cut_long_name($_profile->user_name, 15) . '</th></tr>';
+				// echo '<tr><td class="menu"><a href="index.php?bck=0">'.get_label('Home').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="profile.php?bck=0" title="'.get_label('Change my profile options').'">'.get_label('My profile').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="inbox.php?bck=0" title="'.get_label('Private messages to me').'">'.get_label('Messages').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="#" onclick="logout()" title="'.get_label('Logout from Mafia Ratings').'">'.get_label('Log out').'</a></td></tr>';
+				// echo '</table><br>';
+				
+				// if (!$_profile->is_admin() && count($_profile->clubs) > 0)
+				// {
+					// echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('My clubs').'</th></tr>';
+					// foreach ($_profile->clubs as $club)
+					// {
+						// echo '<tr><td class="menu"><a href="club_main.php?bck=0&id=' . $club->id . '" title="' . $club->name . '">' . cut_long_name($club->name, 16) . '</a></td></tr>';
+					// }
+					// echo '</table><br>';
+				// }
+				
+				// echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('General').'</th></tr>';
+				// echo '<tr><td class="menu"><a href="calendar.php?bck=0" title="'.get_label('Where and when can I play').'">'.get_label('Calendar').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="ratings.php?bck=0" title="'.get_label('Players ratings').'">'.get_label('Ratings').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="clubs.php?bck=0" title="'.get_label('Clubs list').'">'.get_label('Clubs').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="photo_albums.php?bck=0" title="'.get_label('Photo albums').'">'.get_label('Photo albums').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="history.php?bck=0" title="'.get_label('Events history').'">'.get_label('History').'</a></td></tr>';
+				// echo '<tr><td class="menu"><a href="welcome.php?bck=0" title="'.get_label('About Mafia: rules, tactics, general information.').'">'.get_label('About').'</a></td></tr>';
+				// echo '</table><br>';
+				
+				// if (count($_profile->clubs) > 0)
+				// {
+					// echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('Game').'</th></tr>';
+					// echo '<tr><td class="menu"><a href="game.php?bck=0" title="'.get_label('Start the game').'">'.get_label('The game').'</a></td></tr>';
+					// echo '</table><br>';
+				// }
+			// }
+
+			// echo '</td>';
+			echo '<td valign="top">';
 		}
 		$this->_state = PAGE_STATE_HEADER;
 
@@ -496,6 +524,29 @@ class PageBase
 		global $_profile;
 	
 		echo "\n<script>";
+		if ($_profile != NULL)
+		{
+?>
+			var showUserMenu = function()
+			{
+				var userMenu = $('#user-menu').menu();
+				userMenu.show(0, function()
+				{
+					userMenu.position(
+					{
+						my: "right top",
+						at: "right bottom",
+						of: $('#user')
+					});
+					$(document).one("click", function() { userMenu.hide(); });
+				});
+			}
+			var hideUserMenu = function()
+			{
+				$('#user-menu').hide();
+			}
+<?php
+		}
 		echo "\n\t$(function()";
 		echo "\n\t{\n";
 		if ($this->_err_message != NULL)

@@ -150,7 +150,7 @@ class Page extends UserPageBase
 		
 		if ($rating_pos >= 0)
 		{
-			echo '</td><td width="240" valign="top">';
+			echo '</td><td width="280" valign="top">';
 			$rating_page = $rating_pos - 3;
 			if ($rating_page < 0)
 			{

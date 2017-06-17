@@ -31,10 +31,25 @@ try
 	{
 		$club_id = 0;
 	}
+	
+	echo '<tr><td class="dark">' . get_label('Email') . ':</td><td class="light"><input id="form-email" value="' . $_profile->user_email . '"></td></tr>';
+	
+	echo '<tr><td>' . get_label('Country') . ':</td><td>';
+	show_country_input('form-country', $_profile->country, 'form-city');
+	echo '</td></tr>';
+	
+	echo '<tr><td>' . get_label('City') . ':</td><td>';
+	show_city_input('form-city', $_profile->city, 'form-country');
+	echo '</td></tr>';
+	
+	// echo '<tr><td>' . get_label('Main club') . ':</td><td>';
+	// show_city_input('form-club', $_profile->city, 'form-country');
+	// echo '</td></tr>';
+	
 	echo '<tr><td class="dark" valign="top">'.get_label('Main club').':</td><td class="light">';
 	echo '<select id="form-club">';
 	show_option(0, $club_id, '');
-	$query = new DbQuery('SELECT id, name FROM clubs ORDER BY name');
+	$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_RETIRED . ') = 0 ORDER BY name');
 	while ($row = $query->next())
 	{
 		list ($cid, $cname) = $row;
@@ -72,14 +87,6 @@ try
 	langs_checkboxes($_profile->user_langs);
 	echo '</td></tr>';
 	
-	echo '<tr><td>' . get_label('Country') . ':</td><td>';
-	show_country_input('form-country', $_profile->country, 'form-city');
-	echo '</td></tr>';
-	
-	echo '<tr><td>' . get_label('City') . ':</td><td>';
-	show_city_input('form-city', $_profile->city, 'form-country');
-	echo '</td></tr>';
-	
 	echo '<tr><td class="dark">' . get_label('Phone') . ':</td><td class="light"><input id="form-phone" value="' . $_profile->user_phone . '"></td></tr>';
 	
 	echo '</table>';
@@ -101,12 +108,13 @@ try
 	show_upload_script(USER_PIC_CODE, $_profile->user_id);
 ?>
 	<script>
-	function commit(onSuccess)
+	function doCommit(onSuccess)
 	{
 		var languages = mr.getLangs();
 		json.post("profile_ops.php",
 		{
 			name: $("#form-name").val(),
+			email: $("#form-email").val(),
 			club: $("#form-club").val(),
 			male: ($("#form-male").attr("checked") ? 1 : 0),
 			country: $("#form-country").val(),
@@ -118,6 +126,23 @@ try
 			edit_account: ""
 		},
 		onSuccess);
+	}
+	
+	function commit(onSuccess)
+	{
+		if ($("#form-email").val() != "<?php echo $_profile->user_email; ?>")
+		{
+			dlg.yesNo(
+				"<?php echo get_label('<p>Changing your email address deactivates your account. You will need to activate it back using your new email address.</p><p>Do you want to change it?</p>'); ?>", null, null,
+				function()
+				{
+					doCommit(onSuccess);
+				});
+		}
+		else
+		{
+			doCommit(onSuccess);
+		}
 	}
 	</script>
 <?php

@@ -7,7 +7,7 @@ require_once 'include/address.php';
 require_once 'include/user.php';
 require_once 'include/forum.php';
 
-define('COLUMN_COUNT', 4);
+define('COLUMN_COUNT', 5);
 define('ROW_COUNT', 2);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 define('MANAGER_COLUMNS', 5);
@@ -356,7 +356,7 @@ class Page extends ClubPageBase
 		// ratings
 		if ($games_count > 0)
 		{
-			echo '</td><td width="240" valign="top">';
+			echo '</td><td width="280" valign="top">';
 			
 			$query = new DbQuery(
 				'SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags ' . 

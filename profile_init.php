@@ -22,6 +22,39 @@ try
 	echo get_label('Your account is activated. Please answer a few questions about yourself');
 	echo ':</td></tr>';
 		
+	echo '<tr>';
+	
+	echo '<td>' . get_label('Country') . ':</td><td>';
+	show_country_input('form-country', COUNTRY_DETECT, 'form-city');
+	echo '</td>';
+	
+	echo '<td width="' . ICON_WIDTH . '" align="center" valign="top" rowspan="8">';
+	show_user_pic($_profile->user_id, $_profile->user_flags, ICONS_DIR);
+	echo '<p>';
+	show_upload_button();
+	echo '</p></td></tr>';
+
+	$club_id = $_profile->user_club_id;
+	if ($club_id == NULL)
+	{
+		$club_id = 0;
+	}
+	
+	echo '<tr><td>' . get_label('City') . ':</td><td>';
+	show_city_input('form-city', CITY_DETECT, 'form-country');
+	echo '</td></tr>';
+	
+	echo '<tr><td valign="top">'.get_label('Main club').':</td><td>';
+	echo '<select id="form-club">';
+	show_option(0, $club_id, '');
+	$query = new DbQuery('SELECT id, name FROM clubs ORDER BY name');
+	while ($row = $query->next())
+	{
+		list ($cid, $cname) = $row;
+		show_option($cid, $club_id, $cname);
+	}
+	echo '</td></tr>';
+	
 	echo '<tr><td width="120" valign="top">' . get_label('Gender') . ':</td><td>';
 	echo '<input type="radio" name="form-is_male" id="form-male" value="1" onClick="maleClick(true)"';
 	if ($_profile->user_flags & U_FLAG_MALE)
@@ -36,45 +69,14 @@ try
 		echo ' checked';
 	}
 	echo '/>'.get_label('female');
-	
-	echo '</td>';
-	
-	echo '<td width="' . ICON_WIDTH . '" align="center" valign="top" rowspan="8">';
-	show_user_pic($_profile->user_id, $_profile->user_flags, ICONS_DIR);
-	echo '<p>';
-	show_upload_button();
-	echo '</p></td></tr>';
-
-	$club_id = $_profile->user_club_id;
-	if ($club_id == NULL)
-	{
-		$club_id = 0;
-	}
-	echo '<tr><td valign="top">'.get_label('Club').':</td><td>' . get_label('Please enter your favourite club. The club you want to represent on championships.') . '<br>';
-	echo '<select id="form-club">';
-	show_option(0, $club_id, '');
-	$query = new DbQuery('SELECT id, name FROM clubs ORDER BY name');
-	while ($row = $query->next())
-	{
-		list ($cid, $cname) = $row;
-		show_option($cid, $club_id, $cname);
-	}
 	echo '</td></tr>';
 	
 	echo '<tr><td valign="top">'.get_label('Languages').':</td><td>';
 	langs_checkboxes($_profile->user_langs);
 	echo '</td></tr>';
 	
-	echo '<tr><td>' . get_label('Country') . ':</td><td>';
-	show_country_input('form-country', COUNTRY_DETECT, 'form-city');
-	echo '</td></tr>';
-	
-	echo '<tr><td>' . get_label('City') . ':</td><td>';
-	show_city_input('form-city', CITY_DETECT, 'form-country');
-	echo '</td></tr>';
-	
 	echo '<tr><td>' . get_label('Phone') . ':</td><td>';
-	echo get_label('Phone is optional. You can give us your phone if you do not mind us calling you.') . '<br><input id="form-phone" value="' . $_profile->user_phone . '"></td></tr>';
+	echo '<input id="form-phone" value="' . $_profile->user_phone . '"></td></tr>';
 		
 	echo '<tr><td>'.get_label('Password').':</td><td><input type="password" id="form-pwd"></td></tr>';
 	echo '<tr><td>'.get_label('Confirm password').':</td><td><input type="password" id="form-confirm"></td></tr>';
