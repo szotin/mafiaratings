@@ -240,64 +240,8 @@ class PageBase
 				echo '</td>';
 			}
 			echo '</tr></table>';
-			
 			echo '<table class="main" border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
 			echo '<tr>';
-			// echo '<td class="menu" width="' . MENU_WIDTH . '" valign="top">';
-
-			// if (($permissions & PERM_STRANGER) != 0)
-			// {
-				// echo '<table class="menu" width="100%">';
-				// echo '<tr><td class="menu"><a href="create_account.php?bck=0" title="'.get_label('Create user account').'">'.get_label('Create account').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="index.php?bck=0">'.get_label('Home').'</a></td></tr>';
-				// echo '</table><br>';
-			
-				// echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('General').'</th></tr>';
-				// echo '<tr><td class="menu"><a href="calendar.php?bck=0" title="'.get_label('Where and when can I play').'">'.get_label('Calendar').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="ratings.php?bck=0" title="'.get_label('Players ratings').'">'.get_label('Ratings').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="clubs.php?bck=0" title="'.get_label('Clubs list').'">'.get_label('Clubs').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="photo_albums.php?bck=0" title="'.get_label('Photo albums').'">'.get_label('Photo albums').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="history.php?bck=0" title="'.get_label('Events history').'">'.get_label('History').'</a></td></tr>';
-// //				echo '<tr><td class="menu"><a href="welcome.php?bck=0" title="'.get_label('About Mafia: rules, tactics, general information.').'">'.get_label('About').'</a></td></tr>';
-				// echo '</table><br>';
-			// }
-			// else
-			// {
-				// echo '<table class="menu" width="100%"><tr><th class="menu">' . cut_long_name($_profile->user_name, 15) . '</th></tr>';
-				// echo '<tr><td class="menu"><a href="index.php?bck=0">'.get_label('Home').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="profile.php?bck=0" title="'.get_label('Change my profile options').'">'.get_label('My profile').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="inbox.php?bck=0" title="'.get_label('Private messages to me').'">'.get_label('Messages').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="#" onclick="logout()" title="'.get_label('Logout from Mafia Ratings').'">'.get_label('Log out').'</a></td></tr>';
-				// echo '</table><br>';
-				
-				// if (!$_profile->is_admin() && count($_profile->clubs) > 0)
-				// {
-					// echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('My clubs').'</th></tr>';
-					// foreach ($_profile->clubs as $club)
-					// {
-						// echo '<tr><td class="menu"><a href="club_main.php?bck=0&id=' . $club->id . '" title="' . $club->name . '">' . cut_long_name($club->name, 16) . '</a></td></tr>';
-					// }
-					// echo '</table><br>';
-				// }
-				
-				// echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('General').'</th></tr>';
-				// echo '<tr><td class="menu"><a href="calendar.php?bck=0" title="'.get_label('Where and when can I play').'">'.get_label('Calendar').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="ratings.php?bck=0" title="'.get_label('Players ratings').'">'.get_label('Ratings').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="clubs.php?bck=0" title="'.get_label('Clubs list').'">'.get_label('Clubs').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="photo_albums.php?bck=0" title="'.get_label('Photo albums').'">'.get_label('Photo albums').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="history.php?bck=0" title="'.get_label('Events history').'">'.get_label('History').'</a></td></tr>';
-				// echo '<tr><td class="menu"><a href="welcome.php?bck=0" title="'.get_label('About Mafia: rules, tactics, general information.').'">'.get_label('About').'</a></td></tr>';
-				// echo '</table><br>';
-				
-				// if (count($_profile->clubs) > 0)
-				// {
-					// echo '<table class="menu" width="100%"><tr><th class="menu">'.get_label('Game').'</th></tr>';
-					// echo '<tr><td class="menu"><a href="game.php?bck=0" title="'.get_label('Start the game').'">'.get_label('The game').'</a></td></tr>';
-					// echo '</table><br>';
-				// }
-			// }
-
-			// echo '</td>';
 			echo '<td valign="top">';
 		}
 		$this->_state = PAGE_STATE_HEADER;
@@ -597,41 +541,6 @@ class MenuItem
 		$this->title = $title;
 		$this->text = $text;
 		$this->submenu = $submenu;
-	}
-}
-
-class OptionsPageBase extends PageBase
-{
-	protected $user_flags;
-	
-	protected function prepare()
-	{
-		global $_profile;
-		$this->user_flags = $_profile->user_flags;
-	}
-
-	protected function show_title()
-	{
-		global $_profile;
-		
-		$menu = array(
-			new MenuItem('profile.php', get_label('My profile'), get_label('Change profile settings')),
-			new MenuItem('change_email.php', get_label('Email'), get_label('Change profile email')),
-			new MenuItem('change_password.php', get_label('Password'), get_label('Change password')));
-			
-		echo '<table class="transp" width="100%">';
-		
-		echo '<tr><td colspan="4">';
-		PageBase::show_menu($menu);
-		echo '</td></tr>';	
-		
-		echo '<tr><td valign="top">' . $this->standard_title() . '</td><td align="right" valign="top">';
-		show_back_button();
-		echo '</td><td valign="top" align="right" width="' . ICON_WIDTH . '">';	
-		show_user_pic($_profile->user_id, $this->user_flags, ICONS_DIR);
-		echo '</td></tr>';
-		
-		echo '</table>';
 	}
 }
 
