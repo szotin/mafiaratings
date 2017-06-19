@@ -232,10 +232,10 @@ class PageBase
 				echo '</a>';
 				
 				echo '<ul id="user-menu" style="display:none;position:absolute;width:150px;text-align:left;">';
-				echo '<li><a href="user_info.php?id=' . $_profile->user_id . '" title="' . get_label('Statistics for [0]', $_profile->user_name) . '">' . get_label('My statistics') . '</a></li>';
-				echo '<li><a href="javascript:mr.editAccount()" title="' . get_label('Account settings') . '">' . get_label('My account') . '</a></li>';
-				echo '<li><a href="javascript:mr.changePassword()" title="' . get_label('Change password') . '">' . get_label('Change password') . '</a></li>';
-				echo '<li><a href="javascript:logout()" title="' . get_label('Logout from Mafia Ratings') . '">' . get_label('Log out') . '</a></li>';
+				echo '<li><a href="user_info.php?id=' . $_profile->user_id . '" title="' . get_label('Statistics for [0]', $_profile->user_name) . '"><img src="images/user.png" class="menu_image"> ' . get_label('My statistics') . '</a></li>';
+				echo '<li><a href="javascript:mr.editAccount()" title="' . get_label('Account settings') . '"><img src="images/settings.png" class="menu_image"> ' . get_label('My account') . '</a></li>';
+				echo '<li><a href="javascript:mr.changePassword()" title="' . get_label('Change password') . '"><img src="images/key.png" class="menu_image"> ' . get_label('Change password') . '</a></li>';
+				echo '<li><a href="javascript:logout()" title="' . get_label('Logout from Mafia Ratings') . '"><img src="images/logout.png" class="menu_image"> ' . get_label('Log out') . '</a></li>';
 				echo '</ul>';
 				echo '</td>';
 			}

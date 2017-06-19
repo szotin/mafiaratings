@@ -90,3 +90,6 @@ div.flash { width: 375px; margin: 10px 5px; border-color: #222222;
 .progressBarComplete { width: 100%; background-color: #aaaaaa; visibility: hidden; }
 .progressBarError { width: 100%; background-color: #aaaaaa; visibility: hidden; }
 .progressBarStatus { margin-top: 2px; width: 337px; font-size: 7pt; font-family: Arial; text-align: left; white-space: nowrap; }
+
+img.menu_image { vertical-align:middle; border: 0; text-align: left; }
+
