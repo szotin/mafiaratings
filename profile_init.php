@@ -25,7 +25,7 @@ try
 	echo '<tr>';
 	
 	echo '<td>' . get_label('Country') . ':</td><td>';
-	show_country_input('form-country', COUNTRY_DETECT, 'form-city');
+	show_country_input('form-country', COUNTRY_DETECT, 'form-city', 'updateClub');
 	echo '</td>';
 	
 	echo '<td width="' . ICON_WIDTH . '" align="center" valign="top" rowspan="8">';
@@ -41,18 +41,7 @@ try
 	}
 	
 	echo '<tr><td>' . get_label('City') . ':</td><td>';
-	show_city_input('form-city', CITY_DETECT, 'form-country');
-	echo '</td></tr>';
-	
-	echo '<tr><td valign="top">'.get_label('Main club').':</td><td>';
-	echo '<select id="form-club">';
-	show_option(0, $club_id, '');
-	$query = new DbQuery('SELECT id, name FROM clubs ORDER BY name');
-	while ($row = $query->next())
-	{
-		list ($cid, $cname) = $row;
-		show_option($cid, $club_id, $cname);
-	}
+	show_city_input('form-city', CITY_DETECT, 'form-country', 'updateClub');
 	echo '</td></tr>';
 	
 	echo '<tr><td width="120" valign="top">' . get_label('Gender') . ':</td><td>';
@@ -77,6 +66,17 @@ try
 	
 	echo '<tr><td>' . get_label('Phone') . ':</td><td>';
 	echo '<input id="form-phone" value="' . $_profile->user_phone . '"></td></tr>';
+	
+	echo '<tr><td valign="top">'.get_label('Main club').':</td><td>';
+	echo '<select id="form-club">';
+	show_option(0, $club_id, '');
+	$query = new DbQuery('SELECT id, name FROM clubs ORDER BY name');
+	while ($row = $query->next())
+	{
+		list ($cid, $cname) = $row;
+		show_option($cid, $club_id, $cname);
+	}
+	echo '</td></tr>';
 		
 	echo '<tr><td>'.get_label('Password').':</td><td><input type="password" id="form-pwd"></td></tr>';
 	echo '<tr><td>'.get_label('Confirm password').':</td><td><input type="password" id="form-confirm"></td></tr>';
@@ -87,6 +87,26 @@ try
 	
 ?>	
 	<script>
+	var clubSetManually = false;
+	function updateClub()
+	{
+		if (!clubSetManually)
+		{
+			var languages = mr.getLangs();
+			json.post("profile_ops.php", 
+			{ 
+				suggest_club: "", 
+				langs: languages, 
+				city: $("#form-city").val(),
+				country: $("#form-country").val()
+			}, 
+			function(obj)
+			{
+				$("#form-club").val(obj['club_id']);
+			});
+		}
+	}
+	
 	function maleClick(male)
 	{
 		var id = "<?php echo $_profile->user_id; ?>";
@@ -130,6 +150,14 @@ try
 		
 		json.post("profile_ops.php", params, onSuccess);
 	}
+	
+	$("#form-club").change(function() { clubSetManually = true; });
+	$("#form-country").on( "autocompletechange", updateClub );
+	$("#form-city").on( "autocompletechange", updateClub );
+	$("#ru" ).change(updateClub);
+	$("#en" ).change(updateClub);
+	updateClub();
+	
 	</script>
 <?php
 	echo '<ok>';

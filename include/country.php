@@ -72,7 +72,7 @@ function detect_country()
 
 define('COUNTRY_FROM_PROFILE', 0);
 define('COUNTRY_DETECT', 1);
-function show_country_input($name, $value, $city_input = NULL)
+function show_country_input($name, $value, $city_input = NULL, $on_select = NULL)
 {
 	global $_profile, $_lang_code;
 
@@ -110,6 +110,7 @@ function show_country_input($name, $value, $city_input = NULL)
 					term: $("#<?php echo $name; ?>").val()
 				}, response);
 			}
+			<?php if ($on_select != NULL) echo ', select: function(event, ui) { ' . $on_select . '(); }'; ?>
 			, minLength: 0
 		})
 		.on("focus", function () { $(this).autocomplete("search", ''); });
@@ -129,7 +130,7 @@ function show_country_input($name, $value, $city_input = NULL)
 					term: $("#<?php echo $name; ?>").val()
 				}, response);
 			}
-			, select: function(event, ui) { $("#<?php echo $city_input; ?>").val(""); }
+			, select: function(event, ui) { $("#<?php echo $city_input; ?>").val(""); <?php if ($on_select != NULL) echo $on_select . '();'; ?> }
 			, minLength: 0
 		});
 		</script>

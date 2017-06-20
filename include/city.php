@@ -77,7 +77,7 @@ function detect_city()
 
 define('CITY_FROM_PROFILE', 0);
 define('CITY_DETECT', 1);
-function show_city_input($name, $value, $country_id = -1)
+function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 {
 	global $_profile, $_lang_code;
 
@@ -135,7 +135,7 @@ function show_city_input($name, $value, $country_id = -1)
 					cname: $("#<?php echo $country_id; ?>").val()
 				}, response);
 			}
-			, select: function(event, ui) { $("#<?php echo $country_id; ?>").val(ui.item.country); }
+			, select: function(event, ui) { $("#<?php echo $country_id; ?>").val(ui.item.country); <?php if ($on_select != NULL) echo $on_select . '();'; ?> }
 			, minLength: 0
 		});
 		</script>

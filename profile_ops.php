@@ -396,6 +396,170 @@ try
 			$name = $_POST['name'];
 			$password = $_POST['password'];
 		}
+		else if (isset($_REQUEST['suggest_club']))
+		{
+			$langs = $_profile->user_langs;
+			if (isset($_REQUEST['langs']))
+			{
+				$langs = (int)$_REQUEST['langs'];
+			}
+			
+			$city = '';
+			if (isset($_REQUEST['city']))
+			{
+				$city = $_REQUEST['city'];
+			}
+			
+			$country = '';
+			if (isset($_REQUEST['country']))
+			{
+				$country = $_REQUEST['country'];
+			}
+			
+			$result = array();
+			$city_id = -1;
+			$country_id = -1;
+			$query = new DbQuery('SELECT id, country_id, near_id FROM cities WHERE name_en = ? OR name_ru = ?', $city, $city);
+			// $result['sql-01'] = $query->get_parsed_sql();
+			if ($row = $query->next())
+			{
+				list($city_id, $country_id, $parent_city_id) = $row;
+			}
+			else
+			{
+				$query = new DbQuery('SELECT id FROM countries WHERE name_en = ? OR name_ru = ?', $country, $country);
+				// $result['sql-02'] = $query->get_parsed_sql();
+				if ($row = $query->next())
+				{
+					list($country_id) = $row;
+				}
+			}
+			
+			$club_id = -1;
+			if ($city_id > 0)
+			{
+				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id = ? AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $city_id, $langs);
+				// $result['sql-03'] = $query->get_parsed_sql();
+				if ($row = $query->next())
+				{
+					list($club_id) = $row;
+				}
+				
+				if ($club_id <= 0)
+				{
+					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id = ? AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $city_id, $langs);
+					// $result['sql-04'] = $query->get_parsed_sql();
+					if ($row = $query->next())
+					{
+						list($club_id) = $row;
+					}
+				}
+				
+				if ($club_id <= 0)
+				{
+					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $city_id);
+					// $result['sql-05'] = $query->get_parsed_sql();
+					if ($row = $query->next())
+					{
+						list($club_id) = $row;
+					}
+				}
+				
+				if ($parent_city_id != NULL)
+				{
+					if ($club_id <= 0)
+					{
+						$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id IN (SELECT id FROM cities WHERE near_id = ?)) AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $parent_city_id, $parent_city_id, $langs);
+						// $result['sql-06'] = $query->get_parsed_sql();
+						if ($row = $query->next())
+						{
+							list($club_id) = $row;
+						}
+					}
+					
+					if ($club_id <= 0)
+					{
+						$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE near_id = ?)) AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $parent_city_id, $parent_city_id, $langs);
+						// $result['sql-07'] = $query->get_parsed_sql();
+						if ($row = $query->next())
+						{
+							list($club_id) = $row;
+						}
+					}
+					
+					if ($club_id <= 0)
+					{
+						$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE near_id = ?)) AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $parent_city_id, $parent_city_id);
+						// $result['sql-08'] = $query->get_parsed_sql();
+						if ($row = $query->next())
+						{
+							list($club_id) = $row;
+						}
+					}
+				}
+			}
+			
+			if ($club_id <= 0 && $country_id > 0)
+			{
+				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?) AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $country_id, $langs);
+				// $result['sql-09'] = $query->get_parsed_sql();
+				if ($row = $query->next())
+				{
+					list($club_id) = $row;
+				}
+				
+				if ($club_id <= 0)
+				{
+					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?) AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $country_id, $langs);
+					// $result['sql-10'] = $query->get_parsed_sql();
+					if ($row = $query->next())
+					{
+						list($club_id) = $row;
+					}
+				}
+				
+				if ($club_id <= 0)
+				{
+					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?) AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $country_id);
+					// $result['sql-11'] = $query->get_parsed_sql();
+					if ($row = $query->next())
+					{
+						list($club_id) = $row;
+					}
+				}
+			}
+			
+			if ($club_id <= 0)
+			{
+				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $langs);
+				// $result['sql-12'] = $query->get_parsed_sql();
+				if ($row = $query->next())
+				{
+					list($club_id) = $row;
+				}
+			}
+			
+			if ($club_id <= 0)
+			{
+				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $langs);
+				// $result['sql-13'] = $query->get_parsed_sql();
+				if ($row = $query->next())
+				{
+					list($club_id) = $row;
+				}
+			}
+			
+			if ($club_id <= 0)
+			{
+				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC');
+				// $result['sql-14'] = $query->get_parsed_sql();
+				if ($row = $query->next())
+				{
+					list($club_id) = $row;
+				}
+			}
+			$result['club_id'] = $club_id;
+		}
 		else
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('request')));
