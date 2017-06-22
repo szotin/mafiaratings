@@ -26,7 +26,7 @@ class Event
 	public $notes;
 	public $langs;
 	public $rules_id;
-	public $system_id;
+	public $scoring_id;
 	public $date_str;
 	public $time_str;
 	public $hour;
@@ -40,18 +40,13 @@ class Event
 		list(
 			$this->id, $this->name, $this->price, $this->club_id, $this->club_name, $club_flags, $this->club_url, $this->start, $this->duration,
 			$this->addr_id, $this->addr, $this->addr_url, $this->timezone, $addr_flags, $this->city, $this->country,
-			$this->notes, $this->langs, $this->flags, $this->rules_id, $this->system_id) = Db::record(get_label('event'),
-				'SELECT e.id, e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, ct.timezone, a.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', e.notes, e.languages, e.flags, e.rules_id, e.system_id FROM events e' .
+			$this->notes, $this->langs, $this->flags, $this->rules_id, $this->scoring_id) = Db::record(get_label('event'),
+				'SELECT e.id, e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, ct.timezone, a.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', e.notes, e.languages, e.flags, e.rules_id, e.scoring_id FROM events e' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN clubs c ON e.club_id = c.id' .
 				' JOIN cities ct ON a.city_id = ct.id' .
 				' JOIN countries cr ON ct.country_id = cr.id' .
 				' WHERE e.id = ?', $id);
-		if ($this->system_id == NULL)
-		{
-			$this->system_id = -1;
-		}
-
 		
 		$base = get_server_url() . '/';
 		$this->addr_image = '';

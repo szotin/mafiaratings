@@ -29,6 +29,7 @@ class ProfileClub
 	public $country;
 	public $timezone;
 	public $rules_id;
+	public $scoring_id;
 	public $price;
 }
 
@@ -112,7 +113,7 @@ class Profile
 		if ($this->is_admin())
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, ' . (UC_PERM_PLAYER | UC_PERM_MODER| UC_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules_id, c.price FROM clubs c' .
+				'SELECT c.id, c.name, ' . (UC_PERM_PLAYER | UC_PERM_MODER| UC_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules_id, c.scoring_id, c.price FROM clubs c' .
 					' JOIN cities i ON c.city_id = i.id ' .
 					' JOIN countries o ON i.country_id = o.id ' .
 					' WHERE (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 ORDER BY c.name');
@@ -120,7 +121,7 @@ class Profile
 		else
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, uc.flags, c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules_id, c.price FROM user_clubs uc' .
+				'SELECT c.id, c.name, uc.flags, c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules_id, c.scoring_id, c.price FROM user_clubs uc' .
 					' JOIN clubs c ON c.id = uc.club_id' .
 					' JOIN cities i ON i.id = c.city_id' .
 					' JOIN countries o ON i.country_id = o.id ' .
@@ -135,7 +136,7 @@ class Profile
 			while ($row = $query->next())
 			{
 				$pc = new ProfileClub();
-				list($pc->id, $pc->name, $pc->flags, $pc->club_flags, $pc->langs, $pc->city_id, $pc->city, $pc->country_id, $pc->country, $pc->timezone, $pc->rules_id, $pc->price) = $row;
+				list($pc->id, $pc->name, $pc->flags, $pc->club_flags, $pc->langs, $pc->city_id, $pc->city, $pc->country_id, $pc->country, $pc->timezone, $pc->rules_id, $pc->scoring_id, $pc->price) = $row;
 				$this->clubs[$pc->id] = $pc;
 				$this->user_club_flags |= $pc->flags;
 			}

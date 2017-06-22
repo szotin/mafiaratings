@@ -1,7 +1,7 @@
 <?php
 
 require_once 'include/session.php';
-require_once 'include/scoring_system.php';
+require_once 'include/scoring.php';
 require_once 'include/names.php';
 
 ob_start();
@@ -43,17 +43,17 @@ try
 		$digits = $_POST['digits'];
 		
 		Db::begin();
-		check_scoring_system_name($name, $club_id);
+		check_scoring_name($name, $club_id);
 		
 		if ($club_id > 0)
 		{
-			Db::exec(get_label('scoring system'), 'INSERT INTO scoring_systems (club_id, name, digits) VALUES (?, ?, ?)', $club_id, $name, $digits);
+			Db::exec(get_label('scoring system'), 'INSERT INTO scorings (club_id, name, digits) VALUES (?, ?, ?)', $club_id, $name, $digits);
 		}
 		else
 		{
-			Db::exec(get_label('scoring system'), 'INSERT INTO scoring_systems (name, digits) VALUES (?, ?)', $name, $digits);
+			Db::exec(get_label('scoring system'), 'INSERT INTO scorings (name, digits) VALUES (?, ?)', $name, $digits);
 		}
-		list ($system_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
+		list ($scoring_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
 		$log_details =
 			'name=' . $name .
 			'<br>digits=' . $digits;
@@ -67,17 +67,17 @@ try
 			if ($points != 0)
 			{
 				$log_details .= '<br>flag-' . $flag . '=' . $points;
-				Db::exec(get_label('scoring system'), 'INSERT INTO scoring_points (system_id, flag, points) VALUES (?, ?, ?)', $system_id, $flag, $points);
+				Db::exec(get_label('scoring system'), 'INSERT INTO scoring_points (system_id, flag, points) VALUES (?, ?, ?)', $scoring_id, $flag, $points);
 			}
 		}
 		
 		if ($club_id > 0)
 		{
-			db_log('scoring system', 'Created', $log_details, $system_id, $club_id);
+			db_log('scoring system', 'Created', $log_details, $scoring_id, $club_id);
 		}
 		else
 		{
-			db_log('scoring system', 'Created', $log_details, $system_id);
+			db_log('scoring system', 'Created', $log_details, $scoring_id);
 		}
 		Db::commit();
 	}
@@ -87,9 +87,9 @@ try
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('scoring system')));
 		}
-		$system_id = $_REQUEST['id'];
+		$scoring_id = $_REQUEST['id'];
 		
-		list ($club_id) = Db::record(get_label('scoring system'), 'SELECT club_id FROM scoring_systems WHERE id = ?', $system_id);
+		list ($club_id) = Db::record(get_label('scoring system'), 'SELECT club_id FROM scorings WHERE id = ?', $scoring_id);
 		if ($club_id == NULL)
 		{
 			if (!$_profile->is_admin())
@@ -107,12 +107,12 @@ try
 			Db::begin();
 			
 			$name = trim($_POST['name']);
-			check_scoring_system_name($name, $club_id, $system_id);
+			check_scoring_name($name, $club_id, $scoring_id);
 			
 			$digits = $_POST['digits'];
 			
-			Db::exec(get_label('scoring system'), 'UPDATE scoring_systems SET name = ?, digits = ? WHERE id = ?', $name, $digits, $system_id);
-			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE system_id = ?', $system_id);
+			Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ?, digits = ? WHERE id = ?', $name, $digits, $scoring_id);
+			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE system_id = ?', $scoring_id);
 			
 			$log_details =
 				'name=' . $name .
@@ -127,19 +127,19 @@ try
 				if ($points != 0)
 				{
 					$log_details .= '<br>flag-' . $flag . '=' . $points;
-					Db::exec(get_label('scoring system'), 'INSERT INTO scoring_points (system_id, flag, points) VALUES (?, ?, ?)', $system_id, $flag, $points);
+					Db::exec(get_label('scoring system'), 'INSERT INTO scoring_points (system_id, flag, points) VALUES (?, ?, ?)', $scoring_id, $flag, $points);
 				}
 			}
-			db_log('scoring system', 'Changed', $log_details, $system_id, $club_id);
+			db_log('scoring system', 'Changed', $log_details, $scoring_id, $club_id);
 			Db::commit();
 		}
 		else if (isset($_POST['delete']))
 		{
 			Db::begin();
-			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE system_id = ?', $system_id);
-			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_systems WHERE id = ?', $system_id);
+			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE system_id = ?', $scoring_id);
+			Db::exec(get_label('scoring system'), 'DELETE FROM scorings WHERE id = ?', $scoring_id);
 			Db::commit();
-			db_log('scoring system', 'Deleted', '', $system_id, $club_id);
+			db_log('scoring system', 'Deleted', '', $scoring_id, $club_id);
 		}
 	}
 }

@@ -113,31 +113,24 @@ try
 		echo '<input type="hidden" id="form-rules" value="' . $club->rules_id . '">';
 	}
 	
-	$query = new DbQuery('SELECT id, name FROM scoring_systems WHERE club_id = ? OR (club_id IS NULL AND name <> "") ORDER BY name', $event->club_id);
-	if ($row = $query->next())
+	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $event->club_id);
+	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
+	while ($row = $query->next())
 	{
-		echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-system"><option value="-1"';
-		if ($event->system_id == NULL)
+		list ($scoring_id, $scoring_name) = $row;
+		if (empty($scoring_name))
+		{
+			$scoring_name = get_label('[default]');
+		}
+		
+		echo '<option value="' . $scoring_id . '"';
+		if ($scoring_id == $event->scoring_id)
 		{
 			echo ' selected';
 		}
-		echo '>' . get_label('[default]') . '</option>';
-		do
-		{
-			list ($system_id, $system_name) = $row;
-			echo '<option value="' . $system_id . '"';
-			if ($system_id == $event->system_id)
-			{
-				echo ' selected';
-			}
-			echo '>' . $system_name . '</option>';
-		} while ($row = $query->next());
-		echo '</select></td></tr>';
-	}
-	else
-	{
-		echo '<input type="hidden" id="form-system" value="-1">';
-	}
+		echo '>' . $scoring_name . '</option>';
+	} 
+	echo '</select></td></tr>';
 	
 	if (is_valid_lang($club->langs))
 	{
@@ -253,7 +246,7 @@ try
 			$("#form-addr_id").val(json.addr_id);
 			$("#form-price").val(json.price);
 			$("#form-rules").val(json.rules_id);
-			$("#form-system").val(json.system_id);
+			$("#form-scoring").val(json.scoring_id);
 			$("#form-notes").val(json.notes);
 			$("#form-reg_att").prop('checked', (json.flags & <?php echo EVENT_FLAG_REG_ON_ATTEND; ?>) != 0);
 			$("#form-pwd_req").prop('checked', (json.flags & <?php echo EVENT_FLAG_PWD_REQUIRED; ?>) != 0);
@@ -284,7 +277,7 @@ try
 			price: $("#form-price").val(),
 			addr: _addr,
 			rules: $("#form-rules").val(),
-			system: $("#form-system").val(),
+			scoring: $("#form-scoring").val(),
 			notes: $("#form-notes").val(),
 			flags: _flags,
 			langs: _langs,

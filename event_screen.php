@@ -112,31 +112,18 @@ try
 		
 		$digits = 0;
 		$div = 1;
-		if ($event->system_id == NULL)
+		list ($digits) = Db::record(get_label('scoring system'), 'SELECT digits FROM scorings WHERE id = ' . $event->scoring_id);
+		for ($i = 0; $i < $digits; ++$i)
 		{
-			$query = new DbQuery(
-				'SELECT p.user_id, u.name, r.nick_name, SUM(p.rating) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
-					' JOIN games g ON p.game_id = g.id' .
-					' JOIN users u ON p.user_id = u.id' .
-					' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
-					' WHERE g.event_id = ? GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . $page_size,
-				$event->id);
+			$div *= 10;
 		}
-		else
-		{
-			list ($digits) = Db::record(get_label('scoring system'), 'SELECT digits FROM scoring_systems WHERE id = ' . $event->system_id);
-			for ($i = 0; $i < $digits; ++$i)
-			{
-				$div *= 10;
-			}
-			$query = new DbQuery(
-				'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.system_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
-				' JOIN games g ON p.game_id = g.id' .
-				' JOIN users u ON p.user_id = u.id' .
-				' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
-				' WHERE g.event_id = ? GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . $page_size,
-				$event->system_id, $event->id);
-		}
+		$query = new DbQuery(
+			'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.system_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+			' JOIN games g ON p.game_id = g.id' .
+			' JOIN users u ON p.user_id = u.id' .
+			' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
+			' WHERE g.event_id = ? GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . $page_size,
+			$event->scoring_id, $event->id);
 		
 		$players = array();
 		while ($row = $query->next())

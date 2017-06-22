@@ -1,7 +1,7 @@
 <?php
 
 require_once 'include/session.php';
-require_once 'include/scoring_system.php';
+require_once 'include/scoring.php';
 
 initiate_session();
 
@@ -42,7 +42,7 @@ try
 		{
 			params[flag] = $("#form-" + flag).val();
 		}
-		json.post("scoring_system_ops.php", params, onSuccess);
+		json.post("scoring_ops.php", params, onSuccess);
 	}
 	</script>
 <?php

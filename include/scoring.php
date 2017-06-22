@@ -48,7 +48,7 @@ class ScoringSystem
 		else
 		{
 			list ($this->id, $this->club_id, $this->name, $this->digits) =
-				Db::record(get_label('scoring system'), 'SELECT id, club_id, name, digits FROM scoring_systems WHERE id = ?', $id);
+				Db::record(get_label('scoring system'), 'SELECT id, club_id, name, digits FROM scorings WHERE id = ?', $id);
 			$this->points = array(
 				SCORING_WIN_CIV => 0, SCORING_WIN_SRF => 0, SCORING_WIN_MAF => 0, SCORING_WIN_DON => 0,
 				SCORING_LOS_CIV => 0, SCORING_LOS_SRF => 0, SCORING_LOS_MAF => 0, SCORING_LOS_DON => 0,

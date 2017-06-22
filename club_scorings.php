@@ -16,7 +16,7 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_page;
 		
-		list ($count) = Db::record(get_label('scoring system'), 'SELECT count(*) FROM scoring_systems WHERE club_id = ?', $this->id);
+		list ($count) = Db::record(get_label('scoring system'), 'SELECT count(*) FROM scorings WHERE club_id = ?', $this->id);
 
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="52"><a href="#" onclick="mr.createScoringSystem(' . $this->id . ')" title="'.get_label('New scoring system').'">';
@@ -24,7 +24,7 @@ class Page extends ClubPageBase
 		
 		echo '<td>'.get_label('Scoring system name').'</td></tr>';
 		
-		$query = new DbQuery('SELECT id, name FROM scoring_systems WHERE club_id = ? ORDER BY name', $this->id);
+		$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? ORDER BY name', $this->id);
 		while ($row = $query->next())
 		{
 			list ($id, $name) = $row;

@@ -17,7 +17,7 @@ class Page extends GeneralPageBase
 		
 		echo '<td>'.get_label('Scoring system name').'</td></tr>';
 		
-		$query = new DbQuery('SELECT id, name FROM scoring_systems WHERE club_id IS NULL ORDER BY name');
+		$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id IS NULL ORDER BY name');
 		while ($row = $query->next())
 		{
 			list ($id, $name) = $row;
@@ -29,7 +29,7 @@ class Page extends GeneralPageBase
 			}
 			else
 			{
-				echo '</td><td>[' . get_label('default') . ']</td></tr>';
+				echo '</td><td>' . get_label('[default]') . '</td></tr>';
 			}
 		}
 		echo '</table>';

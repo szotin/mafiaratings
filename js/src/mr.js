@@ -443,18 +443,18 @@ var mr = new function()
 	{
 		dlg.yesNo(confirmMessage, null, null, function()
 		{
-			json.post("scoring_system_ops.php", { 'id': id, 'delete': "" }, refr);
+			json.post("scoring_ops.php", { 'id': id, 'delete': "" }, refr);
 		});
 	}
 
 	this.createScoringSystem = function(club_id)
 	{
-		dlg.form("scoring_system_create.php?club=" + club_id, refr);
+		dlg.form("scoring_create.php?club=" + club_id, refr);
 	}
 
 	this.editScoringSystem = function(id)
 	{
-		dlg.form("scoring_system_edit.php?id=" + id, refr);
+		dlg.form("scoring_edit.php?id=" + id, refr);
 	}
 	
 	//--------------------------------------------------------------------------------------

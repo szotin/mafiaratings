@@ -215,7 +215,7 @@ function check_email_template_name($name, $club_id, $template_id = -1)
 	}
 }
 
-function check_scoring_system_name($name, $club_id, $id = -1)
+function check_scoring_name($name, $club_id, $id = -1)
 {
 	global $_profile;
 
@@ -228,11 +228,11 @@ function check_scoring_system_name($name, $club_id, $id = -1)
 
 	if ($id > 0)
 	{
-		$query = new DbQuery('SELECT name FROM scoring_systems WHERE name = ? AND (club_id = ? OR club_id IS NULL) AND id <> ?', $name, $club_id, $id);
+		$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND (club_id = ? OR club_id IS NULL) AND id <> ?', $name, $club_id, $id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT name FROM scoring_systems WHERE name = ? AND (club_id = ? OR club_id IS NULL)', $name, $club_id);
+		$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND (club_id = ? OR club_id IS NULL)', $name, $club_id);
 	}
 	if ($query->next())
 	{

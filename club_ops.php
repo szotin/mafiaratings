@@ -327,11 +327,7 @@ try
 			$event->duration = $_POST['duration'];
 			$event->price = $_POST['price'];
 			$event->rules_id = $_POST['rules'];
-			$event->system_id = $_POST['system'];
-			if ($event->system_id <= 0)
-			{
-				$event->system_id = NULL;
-			}
+			$event->scoring_id = $_POST['scoring'];
 			$event->notes = $_POST['notes'];
 			$event->flags = $_POST['flags'];
 			$event->langs = $_POST['langs'];

@@ -136,7 +136,7 @@ class Event
 	public $flags;
 	public $langs;
 	public $rules_id;
-	public $system_id;
+	public $scoring_id;
 	
 	public $day;
 	public $month;
@@ -168,7 +168,7 @@ class Event
 		$this->flags = EVENT_FLAG_REG_ON_ATTEND | EVENT_FLAG_ALL_MODERATE;
 		$this->langs = LANG_ALL;
 		$this->rules_id = -1;
-		$this->system_id = NULL;
+		$this->scoring_id = -1;
 		$this->coming_odds = NULL;
 		
 		if ($_profile != NULL)
@@ -181,6 +181,7 @@ class Event
 					$this->club_id = $club->id;
 					$timezone = $club->timezone;
 					$this->rules_id = $club->rules_id;
+					$this->scoring_id = $club->scoring_id;
 					$this->langs = $club->langs;
 					break;
 				}
@@ -368,11 +369,11 @@ class Event
 		
 		Db::exec(
 			get_label('event'), 
-			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, system_id) ' .
+			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id) ' .
 			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$this->name, $this->price, $this->addr_id, $this->club_id, $this->timestamp, 
 			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_id, 
-			$this->system_id);
+			$this->scoring_id);
 		list ($this->id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 		list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
 		$log_details = 
@@ -384,7 +385,7 @@ class Event
 			"<br>flags=" . $this->flags .
 			"<br>langs=" . $this->langs .
 			"<br>rules=" . $this->rules_id .
-			"<br>system=" . $this->system_id;
+			"<br>scoring=" . $this->scoring_id;
 		db_log('event', 'Created', $log_details, $this->id, $this->club_id);
 		
 		Db::commit();
@@ -430,10 +431,10 @@ class Event
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
-				'name = ?, price = ?, club_id = ?, rules_id = ?, system_id = ?, ' .
+				'name = ?, price = ?, club_id = ?, rules_id = ?, scoring_id = ?, ' .
 				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
 				'languages = ? WHERE id = ?',
-			$this->name, $this->price, $this->club_id, $this->rules_id, $this->system_id, 
+			$this->name, $this->price, $this->club_id, $this->rules_id, $this->scoring_id, 
 			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags, 
 			$this->langs, $this->id);
 		if (Db::affected_rows() > 0)
@@ -448,7 +449,7 @@ class Event
 				"<br>flags=" . $this->flags .
 				"<br>langs=" . $this->langs .
 				"<br>rules=" . $this->rules_id .
-				"<br>system=" . $this->system_id;
+				"<br>scoring=" . $this->scoring_id;
 			db_log('event', 'Changed', $log_details, $this->id, $this->club_id);
 		}
 		
@@ -532,10 +533,10 @@ class Event
 		list (
 			$this->name, $this->price, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
 			$this->addr_id, $this->addr, $this->addr_url, $timezone, $this->addr_flags,
-			$this->notes, $this->langs, $this->flags, $this->rules_id, $this->system_id, $this->coming_odds, $this->city, $this->country) =
+			$this->notes, $this->langs, $this->flags, $this->rules_id, $this->scoring_id, $this->coming_odds, $this->city, $this->country) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules_id, e.system_id, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
+					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules_id, e.scoring_id, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .

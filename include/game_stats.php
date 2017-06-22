@@ -2,7 +2,7 @@
 
 require_once 'include/game_state.php';
 require_once 'include/localization.php';
-require_once 'include/scoring_system.php';
+require_once 'include/scoring.php';
 
 class GamePlayerStats
 {

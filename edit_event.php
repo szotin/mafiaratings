@@ -121,13 +121,9 @@ class Page extends PageBase
 		{
 			$this->event->rules_id = $_REQUEST['rules'];
 		}
-		if (isset($_REQUEST['system']))
+		if (isset($_REQUEST['scoring']))
 		{
-			$this->event->system_id = $_REQUEST['system'];
-			if ($this->event->system_id <= 0)
-			{
-				$this->event->system_id = NULL;
-			}
+			$this->event->scoring_id = $_REQUEST['scoring'];
 		}
 		$this->event->langs = get_langs($this->event->langs);
 		
@@ -273,27 +269,24 @@ class Page extends PageBase
 			echo '</select> <a href ="javascript:mr.createRules(' . $club->id . ', rulesCreated)" title="' . get_label('Create [0]', get_label('rules')) . '"><img src="images/rules.png" border="0"></a></td></tr>';
 		}
 		
-		$query = new DbQuery('SELECT id, name FROM scoring_systems WHERE club_id = ? OR (club_id IS NULL AND name <> "") ORDER BY name', $this->event->club_id);
-		if ($row = $query->next())
+		$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $this->event->club_id);
+		echo '<tr><td class="dark">' . get_label('Scoring system') . ':</td><td><select name="scoring">';
+		while ($row = $query->next())
 		{
-			echo '<tr><td class="dark">' . get_label('Scoring system') . ':</td><td><select name="system"><option value="-1"';
-			if ($this->event->system_id == NULL)
+			list ($scoring_id, $scoring_name) = $row;
+			if (empty($scoring_name))
+			{
+				$scoring_name = get_label('[default]');
+			}
+			
+			echo '<option value="' . $scoring_id . '"';
+			if ($scoring_id == $this->event->scoring_id)
 			{
 				echo ' selected';
 			}
-			echo '>' . get_label('[default]') . '</option>';
-			do
-			{
-				list ($system_id, $system_name) = $row;
-				echo '<option value="' . $system_id . '"';
-				if ($system_id == $this->event->system_id)
-				{
-					echo ' selected';
-				}
-				echo '>' . $system_name . '</option>';
-			} while ($row = $query->next());
-			echo '</select></td></tr>';
-		}
+			echo '>' . $scoring_name . '</option>';
+		} 
+		echo '</select></td></tr>';
 		
 		if (is_valid_lang($club->langs))
 		{

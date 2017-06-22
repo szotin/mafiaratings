@@ -63,7 +63,7 @@ class GeneralPageBase extends PageBase
 				new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage Mafia Ratings users')),
 				new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
 				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
-				new MenuItem('scoring_systems.php' . $ccc, get_label('Scoring systems'), get_label('Manage scoring systems')),
+				new MenuItem('scorings.php' . $ccc, get_label('Scoring systems'), get_label('Manage scoring systems')),
 				new MenuItem('club_requests.php' . $ccc, get_label('Club requests'), get_label('Requests for creating a club')),
 				new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things'))));
 		}

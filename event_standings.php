@@ -30,31 +30,18 @@ class Page extends EventPageBase
 		
 		$digits = 0;
 		$div = 1;
-		if ($this->event->system_id == NULL)
+		list ($digits) = Db::record(get_label('scoring system'), 'SELECT digits FROM scorings WHERE id = ' . $this->event->scoring_id);
+		for ($i = 0; $i < $digits; ++$i)
 		{
-			$query = new DbQuery(
-				'SELECT p.user_id, u.name, r.nick_name, SUM(p.rating) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
-					' JOIN games g ON p.game_id = g.id' .
-					' JOIN users u ON p.user_id = u.id' .
-					' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
-					' WHERE g.event_id = ? GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
-				$this->event->id);
+			$div *= 10;
 		}
-		else
-		{
-			list ($digits) = Db::record(get_label('scoring system'), 'SELECT digits FROM scoring_systems WHERE id = ' . $this->event->system_id);
-			for ($i = 0; $i < $digits; ++$i)
-			{
-				$div *= 10;
-			}
-			$query = new DbQuery(
-				'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.system_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
-					' JOIN games g ON p.game_id = g.id' .
-					' JOIN users u ON p.user_id = u.id' .
-					' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
-					' WHERE g.event_id = ? GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
-				$this->event->system_id, $this->event->id);
-		}
+		$query = new DbQuery(
+			'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.system_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+				' JOIN games g ON p.game_id = g.id' .
+				' JOIN users u ON p.user_id = u.id' .
+				' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
+				' WHERE g.event_id = ? GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
+			$this->event->scoring_id, $this->event->id);
 		
 		$number = $_page * PAGE_SIZE;
 		echo '<table class="bordered light" width="100%">';
