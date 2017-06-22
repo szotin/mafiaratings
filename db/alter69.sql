@@ -13,3 +13,7 @@ ALTER TABLE `events` CHANGE COLUMN `system_id` `scoring_id` int(11) NOT NULL;
 ALTER TABLE `events` ADD CONSTRAINT `event_scoring` FOREIGN KEY (`scoring_id`) REFERENCES `scoring_systems` (`id`);
 
 RENAME TABLE scoring_systems TO scorings;
+
+ALTER TABLE `scoring_points` DROP FOREIGN KEY `scoring_points_ibfk_1`;
+ALTER TABLE `scoring_points` CHANGE COLUMN `system_id` `scoring_id` int(11) NOT NULL;
+ALTER TABLE `scoring_points` ADD CONSTRAINT `points_scoring` FOREIGN KEY (`scoring_id`) REFERENCES `scorings` (`id`);

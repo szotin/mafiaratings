@@ -55,7 +55,7 @@ class ScoringSystem
 				SCORING_BEST_PLAYER => 0, SCORING_BEST_MOVE => 0, SCORING_GUESS_ALL_MAF => 0, SCORING_NO_VOTE_FOR_RED => 0,
 				SCORING_FIND_AND_KILL_SRF_MAF => 0, SCORING_FIND_AND_KILL_SRF_DON => 0, SCORING_FIND_SRF => 0, SCORING_THREE_DARK_CHECKS => 0, SCORING_ARRANGED_SRF =>0
 			);
-			$query = new DbQuery('SELECT flag, points FROM scoring_points WHERE system_id = ?', $id);
+			$query = new DbQuery('SELECT flag, points FROM scoring_points WHERE scoring_id = ?', $id);
 			while ($row = $query->next())
 			{
 				list ($flag, $points) = $row;

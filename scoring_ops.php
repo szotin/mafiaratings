@@ -67,7 +67,7 @@ try
 			if ($points != 0)
 			{
 				$log_details .= '<br>flag-' . $flag . '=' . $points;
-				Db::exec(get_label('scoring system'), 'INSERT INTO scoring_points (system_id, flag, points) VALUES (?, ?, ?)', $scoring_id, $flag, $points);
+				Db::exec(get_label('scoring system'), 'INSERT INTO scoring_points (scoring_id, flag, points) VALUES (?, ?, ?)', $scoring_id, $flag, $points);
 			}
 		}
 		
@@ -112,7 +112,7 @@ try
 			$digits = $_POST['digits'];
 			
 			Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ?, digits = ? WHERE id = ?', $name, $digits, $scoring_id);
-			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE system_id = ?', $scoring_id);
+			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE scoring_id = ?', $scoring_id);
 			
 			$log_details =
 				'name=' . $name .
@@ -127,7 +127,7 @@ try
 				if ($points != 0)
 				{
 					$log_details .= '<br>flag-' . $flag . '=' . $points;
-					Db::exec(get_label('scoring system'), 'INSERT INTO scoring_points (system_id, flag, points) VALUES (?, ?, ?)', $scoring_id, $flag, $points);
+					Db::exec(get_label('scoring system'), 'INSERT INTO scoring_points (scoring_id, flag, points) VALUES (?, ?, ?)', $scoring_id, $flag, $points);
 				}
 			}
 			db_log('scoring system', 'Changed', $log_details, $scoring_id, $club_id);
@@ -136,7 +136,7 @@ try
 		else if (isset($_POST['delete']))
 		{
 			Db::begin();
-			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE system_id = ?', $scoring_id);
+			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE scoring_id = ?', $scoring_id);
 			Db::exec(get_label('scoring system'), 'DELETE FROM scorings WHERE id = ?', $scoring_id);
 			Db::commit();
 			db_log('scoring system', 'Deleted', '', $scoring_id, $club_id);

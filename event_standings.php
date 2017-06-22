@@ -36,7 +36,7 @@ class Page extends EventPageBase
 			$div *= 10;
 		}
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.system_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+			'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON p.user_id = u.id' .
 				' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
