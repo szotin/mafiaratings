@@ -150,6 +150,7 @@ class ClubPageBase extends PageBase
 	protected $price;
 	protected $country;
 	protected $city;
+	protected $scoring_id;
 	protected $memb_flags;
 	protected $is_manager;
 	protected $is_moder;
@@ -174,10 +175,10 @@ class ClubPageBase extends PageBase
 			$this->is_moder = $_profile->is_moder($this->id);
 		}
 		
-		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags) = 
+		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags, $this->scoring_id) = 
 			Db::record(
 				get_label('club'),
-				'SELECT c.name, c.flags, c.web_site, c.langs, c.email, c.phone, c.price, cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', u.flags FROM clubs c ' .
+				'SELECT c.name, c.flags, c.web_site, c.langs, c.email, c.phone, c.price, cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', u.flags, c.scoring_id FROM clubs c ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
 					'LEFT OUTER JOIN user_clubs u ON u.club_id = c.id AND u.user_id = ? ' .

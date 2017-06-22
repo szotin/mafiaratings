@@ -9,6 +9,7 @@ require_once 'include/address.php';
 require_once 'include/game_rules.php';
 require_once 'include/event.php';
 require_once 'include/url.php';
+require_once 'include/scoring.php';
 
 ob_start();
 $result = array();
@@ -92,7 +93,7 @@ try
 		
 		Db::exec(
 			get_label('club'),
-			'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?)',
+			'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
 			$name, $langs, $rules_id, $url, $email, $phone, $city_id);
 			
 		list ($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
@@ -219,6 +220,7 @@ try
 			$phone = $_POST['phone'];
 			$price = $_POST['price'];
 			$langs = $_POST['langs'];
+			$scoring_id = $_POST['scoring'];
 			
 			check_club_name($name, $club->id);
 			if ($langs == 0)
@@ -236,8 +238,8 @@ try
 			
 			Db::exec(
 				get_label('club'), 
-				'UPDATE clubs SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, city_id = ? WHERE id = ?',
-				$name, $url, $langs, $email, $phone, $price, $city_id, $club->id);
+				'UPDATE clubs SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, city_id = ?, scoring_id = ? WHERE id = ?',
+				$name, $url, $langs, $email, $phone, $price, $city_id, $scoring_id, $club->id);
 			if (Db::affected_rows() > 0)
 			{
 				list($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);

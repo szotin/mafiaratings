@@ -22,15 +22,8 @@ class Page extends GeneralPageBase
 		{
 			list ($id, $name) = $row;
 			echo '<tr><td class="dark"><a href ="javascript:mr.editScoringSystem(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
-			if (!empty($name))
-			{
-				echo ' <a href="#" onclick="mr.deleteScoringSystem(' . $id . ', \'' . get_label('Are you sure you want to delete [0]?', $name) . '\')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
-				echo '</td><td>' . $name . '</td></tr>';
-			}
-			else
-			{
-				echo '</td><td>' . get_label('[default]') . '</td></tr>';
-			}
+			echo ' <a href="#" onclick="mr.deleteScoringSystem(' . $id . ', \'' . get_label('Are you sure you want to delete [0]?', $name) . '\')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
+			echo '</td><td>' . $name . '</td></tr>';
 		}
 		echo '</table>';
 		

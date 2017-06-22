@@ -40,23 +40,21 @@ try
 		}
 	
 		$name = trim($_POST['name']);
-		$digits = $_POST['digits'];
 		
 		Db::begin();
 		check_scoring_name($name, $club_id);
 		
 		if ($club_id > 0)
 		{
-			Db::exec(get_label('scoring system'), 'INSERT INTO scorings (club_id, name, digits) VALUES (?, ?, ?)', $club_id, $name, $digits);
+			Db::exec(get_label('scoring system'), 'INSERT INTO scorings (club_id, name) VALUES (?, ?)', $club_id, $name);
 		}
 		else
 		{
-			Db::exec(get_label('scoring system'), 'INSERT INTO scorings (name, digits) VALUES (?, ?)', $name, $digits);
+			Db::exec(get_label('scoring system'), 'INSERT INTO scorings (name) VALUES (?)', $name);
 		}
 		list ($scoring_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
 		$log_details =
-			'name=' . $name .
-			'<br>digits=' . $digits;
+			'name=' . $name;
 		for ($flag = 1; $flag < SCORING_FIRST_AVAILABLE_FLAG; $flag <<= 1)
 		{
 			$points = 0;
@@ -109,14 +107,11 @@ try
 			$name = trim($_POST['name']);
 			check_scoring_name($name, $club_id, $scoring_id);
 			
-			$digits = $_POST['digits'];
-			
-			Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ?, digits = ? WHERE id = ?', $name, $digits, $scoring_id);
+			Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
 			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE scoring_id = ?', $scoring_id);
 			
 			$log_details =
-				'name=' . $name .
-				'<br>digits=' . $digits;
+				'name=' . $name;
 			for ($flag = 1; $flag < SCORING_FIRST_AVAILABLE_FLAG; $flag <<= 1)
 			{
 				$points = 0;

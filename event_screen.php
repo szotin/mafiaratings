@@ -4,6 +4,7 @@ require_once 'include/event.php';
 require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
+require_once 'include/scoring.php';
 
 try
 {
@@ -110,13 +111,6 @@ try
 	{
 		$page_size = $rows * $cols;
 		
-		$digits = 0;
-		$div = 1;
-		list ($digits) = Db::record(get_label('scoring system'), 'SELECT digits FROM scorings WHERE id = ' . $event->scoring_id);
-		for ($i = 0; $i < $digits; ++$i)
-		{
-			$div *= 10;
-		}
 		$query = new DbQuery(
 			'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 			' JOIN games g ON p.game_id = g.id' .
@@ -208,14 +202,7 @@ try
 				show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 				echo '</td><td>' . $name . '</td>';
 				echo '<td align="center" class="lighter">';
-				if ($digits == 0)
-				{
-					echo $points;
-				}
-				else
-				{
-					echo number_format($points/$div, $digits);
-				}
+				echo format_score($points);
 				echo '</td>';
 				echo '<td align="center">' . $games_played . '</td>';
 				echo '<td align="center">' . $games_won . '</td>';

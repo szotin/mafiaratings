@@ -58,6 +58,20 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</td></tr>';
 	
+	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $id);
+	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
+	while ($row = $query->next())
+	{
+		list ($scoring_id, $scoring_name) = $row;
+		echo '<option value="' . $scoring_id . '"';
+		if ($scoring_id == $club->scoring_id)
+		{
+			echo ' selected';
+		}
+		echo '>' . $scoring_name . '</option>';
+	} 
+	echo '</select></td></tr>';
+	
 	echo '</table>';
 	
 	show_upload_script(CLUB_PIC_CODE, $id);
@@ -76,6 +90,7 @@ try
 			price: $("#form-price").val(),
 			city: $("#form-city").val(),
 			country: $("#form-country").val(),
+			scoring: $("#form-scoring").val(),
 			langs: languages,
 			edit: ""
 		},

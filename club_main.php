@@ -363,6 +363,12 @@ class Page extends ClubPageBase
 					'FROM users u, club_ratings r WHERE u.id = r.user_id AND r.club_id = ?' .
 					' AND r.role = 0 AND type_id = 1 ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT 10',
 				$this->id);
+					
+			$query = new DbQuery(
+				'SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags ' . 
+					'FROM users u, club_ratings r WHERE u.id = r.user_id AND r.club_id = ?' .
+					' AND r.role = 0 AND type_id = 1 ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT 10',
+				$this->id);
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="4"><a href="club_standings.php?bck=1&id=' . $this->id . '"><b>' . get_label('Best players') . '</b></a></td></tr>';
 			$number = 1;

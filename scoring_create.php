@@ -34,13 +34,12 @@ try
 		var params =
 		{
 			name: $("#form-name").val(),
-			digits: $("#form-digits").val(),
 			club: <?php echo $club_id; ?>,
 			create: ''
 		};
 		for (var flag = 1; flag < <?php echo SCORING_FIRST_AVAILABLE_FLAG; ?>; flag <<= 1)
 		{
-			params[flag] = $("#form-" + flag).val();
+			params[flag] = $("#form-" + flag).val() * <?php echo SCORING_DIVIDE; ?>;
 		}
 		json.post("scoring_ops.php", params, onSuccess);
 	}

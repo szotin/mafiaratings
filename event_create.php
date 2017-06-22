@@ -118,11 +118,6 @@ try
 	while ($row = $query->next())
 	{
 		list ($scoring_id, $scoring_name) = $row;
-		if (empty($scoring_name))
-		{
-			$scoring_name = get_label('[default]');
-		}
-		
 		echo '<option value="' . $scoring_id . '"';
 		if ($scoring_id == $event->scoring_id)
 		{
