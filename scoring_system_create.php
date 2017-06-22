@@ -7,19 +7,25 @@ initiate_session();
 
 try
 {
-	dialog_title(get_label('Edit [0]', get_label('scoring system')));
+	dialog_title(get_label('Scoring system'));
 
-	if (!isset($_REQUEST['id']))
+	$club_id = -1;
+	if (isset($_REQUEST['club']))
 	{
-		throw new Exc(get_label('Unknown [0]', get_label('scoring system')));
+		$club_id = $_REQUEST['club'];
 	}
-	$system = new ScoringSystem($_REQUEST['id']);
-	if ($_profile == NULL || !$_profile->is_manager($system->club_id))
+	if ($_profile == NULL || !$_profile->is_manager($club_id))
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}
 	
-	$system->show_edit_form();
+	if ($club_id < 0 && !$_profile->is_admin())
+	{
+		throw new FatalExc(get_label('No permissions'));
+	}
+	
+	$rs = new ScoringSystem(-1, $club_id);
+	$rs->show_edit_form();
 	
 ?>	
 	<script>
@@ -27,10 +33,10 @@ try
 	{
 		var params =
 		{
-			id: <?php echo $system->id; ?>,
 			name: $("#form-name").val(),
 			digits: $("#form-digits").val(),
-			update: ''
+			club: <?php echo $club_id; ?>,
+			create: ''
 		};
 		for (var flag = 1; flag < <?php echo SCORING_FIRST_AVAILABLE_FLAG; ?>; flag <<= 1)
 		{

@@ -33,6 +33,11 @@ try
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
+		
+		if ($club_id <= 0 && !$_profile->is_admin())
+		{
+			throw new FatalExc(get_label('No permissions'));
+		}
 	
 		$name = trim($_POST['name']);
 		$digits = $_POST['digits'];
@@ -40,7 +45,14 @@ try
 		Db::begin();
 		check_scoring_system_name($name, $club_id);
 		
-		Db::exec(get_label('scoring system'), 'INSERT INTO scoring_systems (club_id, name, digits) VALUES (?, ?, ?)', $club_id, $name, $digits);
+		if ($club_id > 0)
+		{
+			Db::exec(get_label('scoring system'), 'INSERT INTO scoring_systems (club_id, name, digits) VALUES (?, ?, ?)', $club_id, $name, $digits);
+		}
+		else
+		{
+			Db::exec(get_label('scoring system'), 'INSERT INTO scoring_systems (name, digits) VALUES (?, ?)', $name, $digits);
+		}
 		list ($system_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
 		$log_details =
 			'name=' . $name .
@@ -58,7 +70,15 @@ try
 				Db::exec(get_label('scoring system'), 'INSERT INTO scoring_points (system_id, flag, points) VALUES (?, ?, ?)', $system_id, $flag, $points);
 			}
 		}
-		db_log('scoring system', 'Created', $log_details, $system_id, $club_id);
+		
+		if ($club_id > 0)
+		{
+			db_log('scoring system', 'Created', $log_details, $system_id, $club_id);
+		}
+		else
+		{
+			db_log('scoring system', 'Created', $log_details, $system_id);
+		}
 		Db::commit();
 	}
 	else
@@ -70,7 +90,14 @@ try
 		$system_id = $_REQUEST['id'];
 		
 		list ($club_id) = Db::record(get_label('scoring system'), 'SELECT club_id FROM scoring_systems WHERE id = ?', $system_id);
-		if (!$_profile->is_manager($club_id))
+		if ($club_id == NULL)
+		{
+			if (!$_profile->is_admin())
+			{
+				throw new FatalExc(get_label('No permissions'));
+			}
+		}
+		else if (!$_profile->is_manager($club_id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
@@ -112,6 +139,7 @@ try
 			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_points WHERE system_id = ?', $system_id);
 			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_systems WHERE id = ?', $system_id);
 			Db::commit();
+			db_log('scoring system', 'Deleted', '', $system_id, $club_id);
 		}
 	}
 }

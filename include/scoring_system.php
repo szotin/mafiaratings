@@ -67,8 +67,11 @@ class ScoringSystem
 	function show_edit_form()
 	{
 		echo '<table class="dialog_form" width="100%">';
-		echo '<tr><td width="600">'.get_label('Scoring system name').':</td><td><input id="form-name" value="' . $this->name . '"></td></tr>';
-		echo '<tr><td>'.get_label('Digits after decimal point').':</td><td><input id="form-digits" value="' . $this->digits . '"></td></tr>';
+		if (!empty($this->name) || $this->id < 0)
+		{
+			echo '<tr><td width="600">'.get_label('Scoring system name').':</td><td><input id="form-name" value="' . $this->name . '"></td></tr>';
+		}
+		echo '<tr><td width="600">'.get_label('Digits after decimal point').':</td><td><input id="form-digits" value="' . $this->digits . '"></td></tr>';
 		echo '<tr class="dark"><td colspan="2" align="center">'.get_label('Points').':</td></tr>';
 		echo '<tr><td>'.get_label('Best player').':</td><td><input id="form-' . SCORING_BEST_PLAYER . '" value="' . $this->points[SCORING_BEST_PLAYER] . '"></td></tr>';
 		echo '<tr><td>'.get_label('Best move').':</td><td><input id="form-' . SCORING_BEST_MOVE . '" value="' . $this->points[SCORING_BEST_MOVE] . '"></td></tr>';

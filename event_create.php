@@ -113,7 +113,7 @@ try
 		echo '<input type="hidden" id="form-rules" value="' . $club->rules_id . '">';
 	}
 	
-	$query = new DbQuery('SELECT id, name FROM scoring_systems WHERE club_id = ? ORDER BY name', $event->club_id);
+	$query = new DbQuery('SELECT id, name FROM scoring_systems WHERE club_id = ? OR (club_id IS NULL AND name <> "") ORDER BY name', $event->club_id);
 	if ($row = $query->next())
 	{
 		echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-system"><option value="-1"';

@@ -228,11 +228,11 @@ function check_scoring_system_name($name, $club_id, $id = -1)
 
 	if ($id > 0)
 	{
-		$query = new DbQuery('SELECT name FROM scoring_systems WHERE name = ? AND club_id = ? AND id <> ?', $name, $club_id, $id);
+		$query = new DbQuery('SELECT name FROM scoring_systems WHERE name = ? AND (club_id = ? OR club_id IS NULL) AND id <> ?', $name, $club_id, $id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT name FROM scoring_systems WHERE name = ? AND club_id = ?', $name, $club_id);
+		$query = new DbQuery('SELECT name FROM scoring_systems WHERE name = ? AND (club_id = ? OR club_id IS NULL)', $name, $club_id);
 	}
 	if ($query->next())
 	{
