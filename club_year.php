@@ -293,7 +293,7 @@ class Page extends ClubPageBase
 	function show_nom_winners()
 	{
 		$noms = array(
-			array(get_label('Rating'), 'SUM(p.rating)', 'count(*)', 0),
+			array(get_label('Points'), 'SUM(p.rating)', 'count(*)', 0),
 			array(get_label('Number of wins'), 'SUM(p.won)', 'count(*)', 1),
 			array(get_label('Voted against civilians'), 'SUM(p.voted_civil)', 'SUM(p.voted_civil + p.voted_mafia + p.voted_sheriff)', 1),
 			array(get_label('Voted against mafia'), 'SUM(p.voted_mafia)', 'SUM(p.voted_civil + p.voted_mafia + p.voted_sheriff)', 1),

@@ -4,6 +4,38 @@ require_once 'include/languages.php';
 require_once 'include/user.php';
 require_once 'include/club.php';
 
+function show_permissions($user_flags)
+{
+	$sep = '';
+	$title = '';
+	$image = NULL;
+	if (($user_flags & UC_PERM_PLAYER) != 0)
+	{
+		$title .= $sep . get_label('player');
+		$sep = '; ';
+		$image = 'player.png';
+	}
+	
+	if (($user_flags & UC_PERM_MODER) != 0)
+	{
+		$title .= $sep . get_label('moderator');
+		$sep = '; ';
+		$image = 'moderator.png';
+	}
+	
+	if (($user_flags & UC_PERM_MANAGER) != 0)
+	{
+		$title .= $sep . get_label('manager');
+		$sep = '; ';
+		$image = 'manager.png';
+	}
+	
+	if ($image != NULL)
+	{
+		echo '<img src="images/' . $image . '" title="' . $title . '">';
+	}
+}
+
 class Page extends UserPageBase
 {
 	protected function prepare()
@@ -35,42 +67,13 @@ class Page extends UserPageBase
 		
         echo '<table class="bordered light" width="100%">';
 		
-        echo '<tr><td class="dark" width="150">'.get_label('Clubs').':</td><td>';
-		$query = new DbQuery('SELECT c.id, c.name, uc.flags FROM clubs c, user_clubs uc WHERE c.id = uc.club_id AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 AND uc.user_id = ?', $this->id);
-		$separator = '';
-		while ($row = $query->next())
-		{
-			list ($club_id, $club_name, $club_flags) = $row;
-			echo $separator;
-			$separator = '<br>';
-			
-			echo '<a href="club_main.php?bck=1&id=' . $club_id . '">' . $club_name . '</a>';
-			$sep = ' - ';
-			if (($club_flags & UC_PERM_PLAYER) != 0)
-			{
-				echo $sep . get_label('player');
-				$sep = ', ';
-			}
-			if (($club_flags & UC_PERM_MODER) != 0)
-			{
-				echo $sep . get_label('moderator');
-				$sep = ', ';
-			}
-			if (($club_flags & UC_PERM_MANAGER) != 0)
-			{
-				echo $sep . get_label('manager');
-				$sep = ', ';
-			}
-		}
-		echo '</td></tr>';
-		
 		$timezone = 'America/Vancouver';
 		if ($_profile != NULL)
 		{
 			$timezone = $_profile->timezone;
 		}
 		
-		echo '<tr><td class="dark">'.get_label('Languages').':</td><td>' . get_langs_str($this->langs, ', ') . '</td><tr>';
+		echo '<tr><td width="150" class="dark">'.get_label('Languages').':</td><td>' . get_langs_str($this->langs, ', ') . '</td><tr>';
 		echo '<tr><td class="dark">'.get_label('Registered since').':</td><td>' . format_date('F d, Y', $this->reg_date, $timezone) . '</td></tr>';
 		
         if (($this->flags & U_FLAG_MALE) != 0)
@@ -99,17 +102,17 @@ class Page extends UserPageBase
 		
 		$red_rating = 0;
 		$dark_rating = 0;
-		$query = new DbQuery('SELECT role, rating FROM ratings WHERE user_id = ? AND type_id = 1 AND role >= ' . RATING_RED . ' AND role <= ' . RATING_DARK, $this->id);
+		$query = new DbQuery('SELECT role, rating FROM ratings WHERE user_id = ? AND type_id = 1 AND role >= ' . POINTS_RED . ' AND role <= ' . POINTS_DARK, $this->id);
 		while ($row = $query->next())
 		{
 			$role = $row[0];
 			$rating = $row[1];
 			switch ($role)
 			{
-				case RATING_RED:
+				case POINTS_RED:
 					$red_rating = $rating;
 					break;
-				case RATING_DARK:
+				case POINTS_DARK:
 					$dark_rating = $rating;
 					break;
 			}
@@ -129,7 +132,36 @@ class Page extends UserPageBase
 			get_label('As a sheriff'),
 			get_label('As a mafiosy'),
 			get_label('As a don'));
-		$query = new DbQuery('SELECT c.id, c.name, c.flags, c.web_site, r.role, r.rating, r.games, r.games_won FROM club_ratings r, clubs c WHERE r.club_id = c.id AND r.type_id = 1 AND r.user_id = ? ORDER BY r.club_id, r.role', $this->id);
+		// $query = new DbQuery(
+			// 'SELECT c.id, c.name, c.flags, c.web_site, r.role, r.rating, r.games, r.games_won FROM club_ratings r, clubs c WHERE r.club_id = c.id AND r.type_id = 1 AND r.user_id = ? ORDER BY r.club_id, r.role', $this->id);
+		$query = new DbQuery(
+			'SELECT c.id, c.name, c.flags, c.web_site, r.role, r.rating, r.games, r.games_won, u.flags FROM clubs c' .
+			' JOIN user_clubs u ON u.club_id = c.id' .
+			' JOIN club_ratings r ON r.club_id = c.id AND r.user_id = u.user_id' .
+			' WHERE r.type_id = 1 AND u.user_id = ? ORDER BY r.club_id, r.role', $this->id);
+		while ($row = $query->next())
+		{
+			list ($club_id, $club_name, $club_flags, $club_url, $role, $rating, $games, $games_won, $user_flags) = $row;
+			if ($club_id != $prev_club_id)
+			{
+				echo '</table>';
+				echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
+				echo '<table class="transp" width="100%"><tr><td width="52"><a href="club_main.php?bck=1&id=' . $club_id . '">';
+				show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48);
+				echo '</a></td><td>' . $club_name . '</td><td align="right">';
+				show_permissions($user_flags);
+				echo '</td></tr></table>';
+				echo '</td><td width="100">' . get_label('Games played');
+				echo ':</td><td width="100">' . get_label('Games won') . ':</td><td width="100">' . get_label('Rating') . ':</td></tr>';
+				$prev_club_id = $club_id;
+			}
+			echo '<tr><td class="dark">' . $role_titles[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '</td><td>' . get_label('[0] ([1] per game)', $rating, number_format($rating/$games, 1)) . '</td></tr>';
+		}
+		
+		$query = new DbQuery(
+			'SELECT c.id, c.name, c.flags, c.web_site, r.role, r.rating, r.games, r.games_won FROM clubs c' .
+			' JOIN club_ratings r ON r.club_id = c.id' .
+			' WHERE r.type_id = 1 AND r.user_id = ? AND c.id NOT IN (SELECT u.club_id FROM user_clubs u WHERE u.user_id = r.user_id) ORDER BY r.club_id, r.role', $this->id);
 		while ($row = $query->next())
 		{
 			list ($club_id, $club_name, $club_flags, $club_url, $role, $rating, $games, $games_won) = $row;
@@ -137,8 +169,8 @@ class Page extends UserPageBase
 			{
 				echo '</table>';
 				echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
-				echo '<table class="transp"><tr><td width="' . ICON_WIDTH . '"><a href="club_main.php?bck=1&id=' . $club_id . '">';
-				show_club_pic($club_id, $club_flags, ICONS_DIR, 50, 50);
+				echo '<table class="transp" width="100%"><tr><td width="52"><a href="club_main.php?bck=1&id=' . $club_id . '">';
+				show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48);
 				echo '</a></td><td>' . $club_name . '</td></tr></table>';
 				echo '</td><td width="100">' . get_label('Games played');
 				echo ':</td><td width="100">' . get_label('Games won') . ':</td><td width="100">' . get_label('Rating') . ':</td></tr>';
@@ -146,6 +178,25 @@ class Page extends UserPageBase
 			}
 			echo '<tr><td class="dark">' . $role_titles[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '</td><td>' . get_label('[0] ([1] per game)', $rating, number_format($rating/$games, 1)) . '</td></tr>';
 		}
+		
+		$query = new DbQuery(
+			'SELECT c.id, c.name, c.flags, c.web_site, u.flags FROM clubs c' .
+			' JOIN user_clubs u ON u.club_id = c.id' .
+			' WHERE u.user_id = ? AND u.club_id NOT IN (SELECT club_id FROM club_ratings r WHERE r.user_id = u.user_id) ORDER BY u.flags DESC', $this->id);
+		while ($row = $query->next())
+		{
+			list ($club_id, $club_name, $club_flags, $club_url, $user_flags) = $row;
+			echo '</table>';
+			echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
+			echo '<table class="transp" width="100%"><tr><td width="' . ICON_WIDTH . '"><a href="club_main.php?bck=1&id=' . $club_id . '">';
+			show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48);
+			echo '</a></td><td>' . $club_name . '</td><td align="right">';
+			show_permissions($user_flags);
+			echo '</td></tr></table>';
+			echo '</td><td width="100"></td><td width="100"></td><td width="100"></td></tr>';
+			$prev_club_id = $club_id;
+		}
+		
 		echo '</table>';
 		
 		if ($rating_pos >= 0)
@@ -178,8 +229,8 @@ class Page extends UserPageBase
 				}
 				
 				echo '<td width="20" align="center">' . $number . '</td>';
-				echo '<td width="50"><a href="user_info.php?id=' . $id . '">';
-				show_user_pic($id, $flags, ICONS_DIR, 50, 50);
+				echo '<td width="52"><a href="user_info.php?id=' . $id . '">';
+				show_user_pic($id, $flags, ICONS_DIR, 48, 48);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . $rating . '</td>';
 				echo '</tr>';

@@ -9,7 +9,7 @@ class Page extends ViewGamePageBase
 		echo '<table class="bordered" width="100%" id="players">';
 		echo '<tr class="th darker"><td width="30">&nbsp;</td>';
 		echo '<td>'.get_label('Player').'</td>';
-		echo '<td width="60">'.get_label('Rating points').'</td>';
+		echo '<td width="60">'.get_label('Points').'</td>';
 		echo '<td width="60">'.get_label('The Sheriff\'s check').'</td>';
 		echo '<td width="60">'.get_label('The Don\'s check').'</td>';
 		echo '<td width="60">'.get_label('Mafia arrangement').'</td>';

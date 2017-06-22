@@ -355,7 +355,7 @@ class Page extends PageBase
 		if ($this->event_id != NULL && $this->event_id > 0)
 		{
 			list($event_name) = Db::record(get_label('event'), 'SELECT name FROM events WHERE id = ?', $this->event_id);
-			echo '<tr><td>'.get_label('Event').':</td><td><a href="event_players.php?id=' . $this->event_id . '&bck=1">' . $this->club_name . ': ' . $event_name . '</a></td></tr>';
+			echo '<tr><td>'.get_label('Event').':</td><td><a href="event_standings.php?id=' . $this->event_id . '&bck=1">' . $this->club_name . ': ' . $event_name . '</a></td></tr>';
 		}
 		else
 		{

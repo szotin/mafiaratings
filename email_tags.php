@@ -23,7 +23,7 @@ if (isset($_REQUEST['e']))
 echo '<tr><td>'.get_label('User name').'</td><td><b>[uname]</b></td></tr>';
 echo '<tr><td>'.get_label('User id').'</td><td><b>[uid]</b></td></tr>';
 echo '<tr><td>'.get_label('User email').'</td><td><b>[email]</b></td></tr>';
-echo '<tr><td>'.get_label('User rating').'</td><td><b>[rating]</b></td></tr>';
+echo '<tr><td>'.get_label('User points').'</td><td><b>[points]</b></td></tr>';
 echo '<tr><td>'.get_label('Club name').'</td><td><b>[cname]</b></td></tr>';
 echo '<tr><td>'.get_label('Club id').'</td><td><b>[cid]</b></td></tr>';
 echo '<tr><td>'.get_label('Email code').'</td><td><b>[code]</b></td></tr>';

@@ -46,7 +46,7 @@ try
 	}
 	else
 	{
-		list($type_id) = Db::record(get_label('rating'), 'SELECT id FROM rating_types ORDER BY def DESC, id LIMIT 1');
+		list($type_id) = Db::record(get_label('points'), 'SELECT id FROM rating_types ORDER BY def DESC, id LIMIT 1');
 	}
 
 	$global_rating = (isset($_REQUEST['gr']) && $_REQUEST['gr']);
@@ -120,7 +120,7 @@ try
 	
 	echo '<html>';
 	echo '<head>';
-	echo '<title>Ratings</title>';
+	echo '<title>Points</title>';
 	echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
 	if ($style != '')
 	{
@@ -147,7 +147,7 @@ try
 					echo '<th>'.get_label('Player').'</th>';
 					break;
 				case 'r':
-					echo '<th width="60">'.get_label('Rating').'</th>';
+					echo '<th width="60">'.get_label('Points').'</th>';
 					break;
 				case 'g':
 					echo '<th width="60">'.get_label('Games played').'</th>';
@@ -159,7 +159,7 @@ try
 					echo '<th width="60">'.get_label('Winning %').'</th>';
 					break;
 				case 'a':
-					echo '<th width="60">'.get_label('Rating per game').'</th>';
+					echo '<th width="60">'.get_label('Points per game').'</th>';
 					break;
 			}
 		}
@@ -170,7 +170,7 @@ try
 	while ($row = $query->next())
 	{
 		++$number;
-		list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
+		list ($id, $name, $points, $games_played, $games_won, $flags) = $row;
 		
 		echo '<tr>';
 		for ($i = 0; $i < $cols_count; ++$i)
@@ -189,7 +189,7 @@ try
 					echo '<td><a href="../user_info.php?id=' . $id . '" target="blank">' . $name . '</a></td>';
 					break;
 				case 'r':
-					echo '<td width="60" align="center">' . $rating . '</td>';
+					echo '<td width="60" align="center">' . $points . '</td>';
 					break;
 				case 'g':
 					echo '<td width="60" align="center">' . $games_played . '</td>';
@@ -210,7 +210,7 @@ try
 				case 'a':
 					if ($games_played != 0)
 					{
-						echo '<td width="60" align="center">' . number_format($rating/$games_played, 2) . '</td>';
+						echo '<td width="60" align="center">' . number_format($points/$games_played, 2) . '</td>';
 					}
 					else
 					{

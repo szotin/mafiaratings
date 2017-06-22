@@ -215,28 +215,28 @@ function check_email_template_name($name, $club_id, $template_id = -1)
 	}
 }
 
-function check_rating_system_name($name, $club_id, $id = -1)
+function check_scoring_system_name($name, $club_id, $id = -1)
 {
 	global $_profile;
 
 	if ($name == '')
 	{
-		throw new Exc(get_label('Please enter [0].', get_label('rating system name')));
+		throw new Exc(get_label('Please enter [0].', get_label('scoring system name')));
 	}
 
-	check_name($name, get_label('rating system name'));
+	check_name($name, get_label('scoring system name'));
 
 	if ($id > 0)
 	{
-		$query = new DbQuery('SELECT name FROM systems WHERE name = ? AND club_id = ? AND id <> ?', $name, $club_id, $id);
+		$query = new DbQuery('SELECT name FROM scoring_systems WHERE name = ? AND club_id = ? AND id <> ?', $name, $club_id, $id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT name FROM systems WHERE name = ? AND club_id = ?', $name, $club_id);
+		$query = new DbQuery('SELECT name FROM scoring_systems WHERE name = ? AND club_id = ?', $name, $club_id);
 	}
 	if ($query->next())
 	{
-        throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('rating system name'), $name));
+        throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('scoring system name'), $name));
 	}
 }
 

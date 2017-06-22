@@ -1,20 +1,18 @@
 <?php
 
-require_once 'include/page_base.php';
-require_once 'include/player_stats.php';
 require_once 'include/club.php';
-require_once 'include/languages.php';
-require_once 'include/address.php';
-require_once 'include/pages.php';
 require_once 'include/user.php';
+require_once 'include/pages.php';
+require_once 'include/image.php';
 
 define("PAGE_SIZE",15);
 define('ROLES_COUNT', 7);
 
-class Page extends AddressPageBase
+class Page extends ClubPageBase
 {
 	private $my_id;
 	private $view_id;
+	private $type_id;
 	
 	protected function prepare()
 	{
@@ -27,13 +25,22 @@ class Page extends AddressPageBase
 			$this->my_id = $_profile->user_id;
 		}
 
-		$this->view_id = RATING_ALL;
+		$this->view_id = POINTS_ALL;
 		if (isset($_REQUEST['view']))
 		{
 			$this->view_id = $_REQUEST['view'];
 		}
 		
-		$this->_title = get_label('[0] ratings', $this->name);
+		if (isset($_REQUEST['type']))
+		{
+			$this->type_id = $_REQUEST['type'];
+		}
+		else
+		{
+			list($this->type_id) = Db::record(get_label('points'), 'SELECT id FROM rating_types ORDER BY def DESC, id LIMIT 1');
+		}
+		
+		$this->_title = get_label('[0] standings', $this->name);
 	}
 	
 	protected function show_body()
@@ -54,6 +61,15 @@ class Page extends AddressPageBase
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
 		
+		echo '<select name="type" onChange="document.viewForm.submit()">';
+		$query = new DbQuery('SELECT id, name_' . $_lang_code . ' FROM rating_types ORDER BY id');
+		while ($row = $query->next())
+		{
+			list ($tid, $tname) = $row;
+			show_option($tid, $this->type_id, $tname);
+		}
+		echo '</select> ';
+		
 		echo '<select name="view" onChange="document.viewForm.submit()">';
 		for ($i = 0; $i < ROLES_COUNT; ++$i)
 		{
@@ -63,55 +79,29 @@ class Page extends AddressPageBase
 		
 		echo '</td></tr></table></form>';
 		
-		$role_condition = new SQL();
-		switch ($this->view_id)
-		{
-		case RATING_RED:
-			$role_condition->add(' AND p.role < 2');
-			break;
-		case RATING_DARK:
-			$role_condition->add(' AND p.role > 1');
-			break;
-		case RATING_CIVIL:
-			$role_condition->add(' AND p.role = 0');
-			break;
-		case RATING_SHERIFF:
-			$role_condition->add(' AND p.role = 1');
-			break;
-		case RATING_MAFIA:
-			$role_condition->add(' AND p.role = 2');
-			break;
-		case RATING_DON:
-			$role_condition->add(' AND p.role = 3');
-			break;
-		}
-		
-		list ($count) = Db::record(get_label('rating'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ?', $this->id, $role_condition);
+		list ($count) = Db::record(get_label('points'), 'SELECT count(*) FROM club_ratings WHERE type_id = ? AND club_id = ? AND role = ?', $this->type_id, $this->id, $this->view_id);
 		$query = new DbQuery(
-			'SELECT u.id, u.name, SUM(p.rating) as rating, count(*) as games, SUM(p.won) as won, u.flags FROM players p' .
-				' JOIN users u ON p.user_id = u.id' .
-				' JOIN games g ON p.game_id = g.id' .
-				' JOIN events e ON g.event_id = e.id' .
-				' WHERE e.address_id = ?',
-			$this->id, $role_condition);
-		$query->add(' GROUP BY u.id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+			'SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags ' . 
+				'FROM users u, club_ratings r WHERE u.id = r.user_id AND r.club_id = ? AND r.role = ? AND type_id = ? ' .
+				'ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
+			$this->id, $this->view_id, $this->type_id);
 		
 		show_pages_navigation(PAGE_SIZE, $count);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
 		echo '<td colspan="2">'.get_label('Player').'</td>';
-		echo '<td width="80" align="center">'.get_label('Rating').'</td>';
+		echo '<td width="80" align="center">'.get_label('Points').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games won').'</td>';
 		echo '<td width="80" align="center">'.get_label('Winning %').'</td>';
-		echo '<td width="80" align="center">'.get_label('Rating per game').'</td>';
+		echo '<td width="80" align="center">'.get_label('Points per game').'</td>';
 		echo '</tr>';
 
 		$number = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
+			list ($id, $name, $points, $games_played, $games_won, $flags) = $row;
 
 			if ($id == $this->my_id)
 			{
@@ -126,17 +116,17 @@ class Page extends AddressPageBase
 			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 			show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-			echo '<td class="dark" align="center">' . $rating . '</td>';
+			echo '<td align="center" class="dark">' . $points . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)
 			{
 				echo '<td align="center">' . number_format(($games_won*100.0)/$games_played, 1) . '%</td>';
-				echo '<td align="center">' . number_format($rating/$games_played, 2) . '</td>';
+				echo '<td align="center">' . number_format($points/$games_played, 2) . '</td>';
 			}
 			else
 			{
-				echo '<td>&nbsp;</td><td>&nbsp;</td>';
+				echo '<td align="center">&nbsp;</td><td align="center">&nbsp;</td>';
 			}
 			echo '</tr>';
 		}
@@ -145,6 +135,6 @@ class Page extends AddressPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Address'), PERM_ALL);
+$page->run(get_label('Club standings'), PERM_ALL);
 
 ?>

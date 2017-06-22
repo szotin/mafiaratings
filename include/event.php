@@ -939,7 +939,7 @@ function event_tags()
 		array('[uname]', get_label('User name')),
 		array('[uid]', get_label('User id')),
 		array('[email]', get_label('User email')),
-		array('[rating]', get_label('User rating')),
+		array('[score]', get_label('User score')),
 		array('[cname]', get_label('Club name')),
 		array('[cid]', get_label('Club id')),
 		array('[code]', get_label('Email code')));
@@ -1121,7 +1121,7 @@ class EventPageBase extends PageBase
 		{
 			$menu = array(
 				new MenuItem('event_info.php?id=' . $this->event->id, get_label('Event'), get_label('General event information')),
-				new MenuItem('event_players.php?id=' . $this->event->id, get_label('Ratings'), get_label('Event ratings')),
+				new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings')),
 				new MenuItem('event_stats.php?id=' . $this->event->id, get_label('Stats'), get_label('Event statistics')),
 				new MenuItem('event_albums.php?id=' . $this->event->id, get_label('Photos'), get_label('Event photo albums')),
 				new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event')),

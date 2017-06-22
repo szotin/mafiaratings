@@ -27,7 +27,7 @@ class Page extends GeneralPageBase
 			$this->my_id = $_profile->user_id;
 		}
 
-		$this->role = RATING_ALL;
+		$this->role = POINTS_ALL;
 		if (isset($_REQUEST['role']))
 		{
 			$this->role = $_REQUEST['role'];

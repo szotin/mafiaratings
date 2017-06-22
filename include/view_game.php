@@ -97,7 +97,7 @@ class ViewGame
 		echo '<tr><td width="120">'.get_label('Club').':</td><td><a href="club_main.php?id=' . $this->club_id . '&bck=1">' . $this->club . '</a></td></tr>';
 		if ($this->event != NULL)
 		{
-			echo '<tr><td>'.get_label('Event').':</td><td><a href="event_players.php?id=' . $this->event_id . '&bck=1">' . $this->event . '</a></td></tr>';
+			echo '<tr><td>'.get_label('Event').':</td><td><a href="event_standings.php?id=' . $this->event_id . '&bck=1">' . $this->event . '</a></td></tr>';
 		}
 		echo '<tr><td>'.get_label('Start time').':</td><td>' . $this->start_time . '</td></tr>';
 		echo '<tr><td>'.get_label('Duration').':</td><td>' . $this->duration . '</td></tr>';

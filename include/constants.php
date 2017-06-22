@@ -109,13 +109,13 @@ define('TNAIL_HEIGHT', 160);
 define('ICON_WIDTH', 70);
 define('ICON_HEIGHT', 70);
 
-define('RATING_ALL', 0);
-define('RATING_RED', 1);
-define('RATING_DARK', 2);
-define('RATING_CIVIL', 3);
-define('RATING_SHERIFF', 4);
-define('RATING_MAFIA', 5);
-define('RATING_DON', 6);
+define('POINTS_ALL', 0);
+define('POINTS_RED', 1);
+define('POINTS_DARK', 2);
+define('POINTS_CIVIL', 3);
+define('POINTS_SHERIFF', 4);
+define('POINTS_MAFIA', 5);
+define('POINTS_DON', 6);
 
 // event flags
 // 1 - 0x0001 -      1 - register on attend

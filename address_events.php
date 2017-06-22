@@ -14,7 +14,7 @@ class Page extends AddressPageBase
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->_title = get_label('[0] ratings', $this->name);
+		$this->_title = get_label('[0] events', $this->name);
 	}
 
 	protected function show_body()
@@ -70,7 +70,7 @@ class Page extends AddressPageBase
 				echo '<tr>';
 			}
 			
-			echo '<td width="50" class="dark"><a href="event_players.php?bck=1&id=' . $event_id . '">';
+			echo '<td width="50" class="dark"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
 			show_event_pic($event_id, $event_flags, $this->id, $this->flags, ICONS_DIR, 50);
 			echo '</a></td>';
 			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $this->timezone) . '</b></td>';
@@ -78,7 +78,7 @@ class Page extends AddressPageBase
 			echo '<td>' . $this->address . '</td>';
 			
 			echo '<td align="center"><a href="event_games.php?bck=1&id=' . $event_id . '">' . $games_count . '</a></td>';
-			echo '<td align="center"><a href="event_players.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
+			echo '<td align="center"><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
 			
 			echo '</tr>';
 		}

@@ -574,22 +574,22 @@ class GameState
 		return false;
 	}
 
-    function get_rating($p)
+    function get_points($p)
     {
-        $rating = 0;
+        $points = 0;
 		$player = $this->players[$p];
         if ($this->gamestate == GAME_MAFIA_WON)
         {
             switch ($player->role)
             {
                 case PLAYER_ROLE_SHERIFF:
-                    $rating = -1;
+                    $points = -1;
                     break;
                 case PLAYER_ROLE_MAFIA:
-                    $rating = 4;
+                    $points = 4;
                     break;
                 case PLAYER_ROLE_DON:
-                    $rating = 5;
+                    $points = 5;
                     break;
             }
         }
@@ -598,29 +598,29 @@ class GameState
             switch ($player->role)
             {
                 case PLAYER_ROLE_CIVILIAN:
-                    $rating = 3;
+                    $points = 3;
                     break;
                 case PLAYER_ROLE_SHERIFF:
-                    $rating = 4;
+                    $points = 4;
                     break;
                 case PLAYER_ROLE_DON:
-                    $rating = -1;
+                    $points = -1;
                     break;
             }
         }
 		if ($p == $this->best_player)
 		{
-			$rating += 1;
+			$points += 1;
 		}
 		if ($p == $this->best_move)
 		{
-			$rating += 1;
+			$points += 1;
 		}
 		if ($this->is_good_guesser($p))
 		{
-			$rating += 1;
+			$points += 1;
 		}
-        return $rating;
+        return $points;
     }
 	
 	function get_last_gametime($log_num = -1) // returns when last gametime and round: 0 - not started; 1 - initial night; 2 - day 1; 3 - night 1; etc

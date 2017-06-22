@@ -273,10 +273,10 @@ class Page extends PageBase
 			echo '</select> <a href ="javascript:mr.createRules(' . $club->id . ', rulesCreated)" title="' . get_label('Create [0]', get_label('rules')) . '"><img src="images/rules.png" border="0"></a></td></tr>';
 		}
 		
-		$query = new DbQuery('SELECT id, name FROM systems WHERE club_id = ? ORDER BY name', $this->event->club_id);
+		$query = new DbQuery('SELECT id, name FROM scoring_systems WHERE club_id = ? ORDER BY name', $this->event->club_id);
 		if ($row = $query->next())
 		{
-			echo '<tr><td class="dark">' . get_label('Rating system') . ':</td><td><select name="system"><option value="-1"';
+			echo '<tr><td class="dark">' . get_label('Scoring system') . ':</td><td><select name="system"><option value="-1"';
 			if ($this->event->system_id == NULL)
 			{
 				echo ' selected';

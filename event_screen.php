@@ -124,13 +124,13 @@ try
 		}
 		else
 		{
-			list ($digits) = Db::record(get_label('rating system'), 'SELECT digits FROM systems WHERE id = ' . $event->system_id);
+			list ($digits) = Db::record(get_label('scoring system'), 'SELECT digits FROM scoring_systems WHERE id = ' . $event->system_id);
 			for ($i = 0; $i < $digits; ++$i)
 			{
 				$div *= 10;
 			}
 			$query = new DbQuery(
-				'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM points o WHERE o.system_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+				'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.system_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON p.user_id = u.id' .
 				' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
@@ -196,7 +196,7 @@ try
 				{
 					break;
 				}
-				list ($id, $name, $nick, $rating, $games_played, $games_won, $flags) = $players[$number++];
+				list ($id, $name, $nick, $points, $games_played, $games_won, $flags) = $players[$number++];
 				
 				if ($nick != $name)
 				{
@@ -209,7 +209,7 @@ try
 					echo '<tr class="th-long darker">';
 					echo '<td width="20"><button class="icon" onclick="window.location.replace(\'event_screen.php?id=' . $event->id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button></td>';
 					echo '<td colspan="2">'.get_label('Player').'</td>';
-					echo '<td width="60" align="center">'.get_label('Rating').'</td>';
+					echo '<td width="60" align="center">'.get_label('Points').'</td>';
 					echo '<td width="60" align="center">'.get_label('Games played').'</td>';
 					echo '<td width="60" align="center">'.get_label('Games won').'</td>';
 					echo '</tr>';
@@ -223,11 +223,11 @@ try
 				echo '<td align="center" class="lighter">';
 				if ($digits == 0)
 				{
-					echo $rating;
+					echo $points;
 				}
 				else
 				{
-					echo number_format($rating/$div, $digits);
+					echo number_format($points/$div, $digits);
 				}
 				echo '</td>';
 				echo '<td align="center">' . $games_played . '</td>';

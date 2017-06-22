@@ -197,7 +197,7 @@ class ClubPageBase extends PageBase
 			
 		$menu = array(
 			new MenuItem('club_main.php?id=' . $this->id, get_label('Club'), get_label('[0] main page', $this->name)),
-			new MenuItem('club_ratings.php?id=' . $this->id, get_label('Ratings'), get_label('[0] ratings', $this->name)),
+			new MenuItem('club_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
 			new MenuItem('club_upcoming.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name)),
 			new MenuItem('club_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name)),
 			new MenuItem('club_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name)),
@@ -210,7 +210,7 @@ class ClubPageBase extends PageBase
 			if ($this->is_manager)
 			{
 				$other_menu[] = new MenuItem('club_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name));
-				$other_menu[] = new MenuItem('club_rating_systems.php?id=' . $this->id, get_label('Rating systems'), get_label('Alternative methods of calculating ratings for [0]', $this->name));
+				$other_menu[] = new MenuItem('club_scoring_systems.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name));
 				$other_menu[] = new MenuItem('club_emails.php?id=' . $this->id, get_label('Emails'), get_label('[0] email templates', $this->name));
 				$other_menu[] = new MenuItem('club_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name));
 			}

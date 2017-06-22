@@ -269,7 +269,7 @@ class AddressPageBase extends PageBase
 	{
 		$menu = array(
 			new MenuItem('address_info.php?id=' . $this->id, get_label('Address'), get_label('[0] information', $this->name)),
-			new MenuItem('address_ratings.php?id=' . $this->id, get_label('Ratings'), get_label('[0] ratings', $this->name)),
+			new MenuItem('address_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
 			new MenuItem('address_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name)),
 			new MenuItem('address_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
 			new MenuItem('address_games.php?id=' . $this->id, get_label('Games'), get_label('Games list at [0]', $this->name)),

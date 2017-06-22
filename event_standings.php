@@ -12,7 +12,7 @@ class Page extends EventPageBase
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->_title = get_label('[0] ratings', $this->event->name);
+		$this->_title = get_label('[0] standings', $this->event->name);
 	}
 	
 	protected function show_body()
@@ -42,13 +42,13 @@ class Page extends EventPageBase
 		}
 		else
 		{
-			list ($digits) = Db::record(get_label('rating system'), 'SELECT digits FROM systems WHERE id = ' . $this->event->system_id);
+			list ($digits) = Db::record(get_label('scoring system'), 'SELECT digits FROM scoring_systems WHERE id = ' . $this->event->system_id);
 			for ($i = 0; $i < $digits; ++$i)
 			{
 				$div *= 10;
 			}
 			$query = new DbQuery(
-				'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM points o WHERE o.system_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+				'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.system_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 					' JOIN games g ON p.game_id = g.id' .
 					' JOIN users u ON p.user_id = u.id' .
 					' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
@@ -60,16 +60,16 @@ class Page extends EventPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
 		echo '<td colspan="2">'.get_label('Player').'</td>';
-		echo '<td width="80" align="center">'.get_label('Rating').'</td>';
+		echo '<td width="80" align="center">'.get_label('Points').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games won').'</td>';
 		echo '<td width="80" align="center">'.get_label('Winning %').'</td>';
-		echo '<td width="80" align="center">'.get_label('Rating per game').'</td>';
+		echo '<td width="80" align="center">'.get_label('Points per game').'</td>';
 		echo '</tr>';
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $nick, $rating, $games_played, $games_won, $flags) = $row;
+			list ($id, $name, $nick, $points, $games_played, $games_won, $flags) = $row;
 			
 			if ($nick != $name)
 			{
@@ -92,11 +92,11 @@ class Page extends EventPageBase
 			echo '<td align="center" class="dark">';
 			if ($digits == 0)
 			{
-				echo $rating;
+				echo $points;
 			}
 			else
 			{
-				echo number_format($rating/$div, $digits);
+				echo number_format($points/$div, $digits);
 			}
 			echo '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
@@ -107,11 +107,11 @@ class Page extends EventPageBase
 				echo '<td align="center">';
 				if ($digits == 0)
 				{
-					echo number_format($rating/$games_played, 2);
+					echo number_format($points/$games_played, 2);
 				}
 				else
 				{
-					echo number_format($rating/($games_played*$div), 2);
+					echo number_format($points/($games_played*$div), 2);
 				}
 				echo '</td>';
 			}

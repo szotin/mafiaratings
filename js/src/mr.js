@@ -437,24 +437,24 @@ var mr = new function()
 	}
 	
 	//--------------------------------------------------------------------------------------
-	// rating system
+	// scoring system
 	//--------------------------------------------------------------------------------------
-	this.deleteRatingSystem = function(id, confirmMessage)
+	this.deleteScoringSystem = function(id, confirmMessage)
 	{
 		dlg.yesNo(confirmMessage, null, null, function()
 		{
-			json.post("rating_system_ops.php", { 'id': id, 'delete': "" }, refr);
+			json.post("scoring_system_ops.php", { 'id': id, 'delete': "" }, refr);
 		});
 	}
 
-	this.createRatingSystem = function(club_id)
+	this.createScoringSystem = function(club_id)
 	{
-		dlg.form("rating_system_create.php?club=" + club_id, refr);
+		dlg.form("scoring_system_create.php?club=" + club_id, refr);
 	}
 
-	this.editRatingSystem = function(id)
+	this.editScoringSystem = function(id)
 	{
-		dlg.form("rating_system_edit.php?id=" + id, refr);
+		dlg.form("scoring_system_edit.php?id=" + id, refr);
 	}
 	
 	//--------------------------------------------------------------------------------------

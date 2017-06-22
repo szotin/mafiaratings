@@ -33,7 +33,7 @@ class Page extends UserPageBase
 			$filter = $_REQUEST['filter'];
 		}
 	
-		$condition = new SQL(' FROM users u JOIN ratings r ON u.id = r.user_id AND r.role = ' . RATING_ALL . ' AND r.type_id = 1 WHERE u.id <> ?', $this->id);
+		$condition = new SQL(' FROM users u JOIN ratings r ON u.id = r.user_id AND r.role = ' . POINTS_ALL . ' AND r.type_id = 1 WHERE u.id <> ?', $this->id);
 		if ($filter != '')
 		{
 			$condition->add(' AND u.name LIKE ?', $filter . '%');

@@ -77,15 +77,15 @@ class Page extends ClubPageBase
 		ForumMessage::proceed_send(FORUM_OBJ_NO, 0, $this->id);
 	}
 	
-	protected function rating_row($row, $number)
+	protected function points_row($row, $number)
 	{
-		list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
+		list ($id, $name, $points, $games_played, $games_won, $flags) = $row;
 
 		echo '<tr><td width="20" align="center">' . $number . '</td>';
 		echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 		show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 		echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-		echo '<td width="60" align="center">' . $rating . '</td>';
+		echo '<td width="60" align="center">' . $points . '</td>';
 		echo '</tr>';
 	}
 	
@@ -353,7 +353,7 @@ class Page extends ClubPageBase
 			echo '</tr></table></p>';
 		}
 		
-		// ratings
+		// points
 		if ($games_count > 0)
 		{
 			echo '</td><td width="280" valign="top">';
@@ -364,17 +364,17 @@ class Page extends ClubPageBase
 					' AND r.role = 0 AND type_id = 1 ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT 10',
 				$this->id);
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="4"><a href="club_ratings.php?bck=1&id=' . $this->id . '"><b>' . get_label('Best players') . '</b></a></td></tr>';
+			echo '<tr class="darker"><td colspan="4"><a href="club_standings.php?bck=1&id=' . $this->id . '"><b>' . get_label('Best players') . '</b></a></td></tr>';
 			$number = 1;
 			while ($row = $query->next())
 			{
-				list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
+				list ($id, $name, $points, $games_played, $games_won, $flags) = $row;
 
 				echo '<td width="20" align="center">' . $number . '</td>';
 				echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 				show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-				echo '<td width="60" align="center">' . $rating . '</td>';
+				echo '<td width="60" align="center">' . $points . '</td>';
 				echo '</tr>';
 				
 				++$number;
