@@ -116,7 +116,7 @@ class Profile
 				'SELECT c.id, c.name, ' . (UC_PERM_PLAYER | UC_PERM_MODER| UC_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules_id, c.scoring_id, c.price FROM clubs c' .
 					' JOIN cities i ON c.city_id = i.id ' .
 					' JOIN countries o ON i.country_id = o.id ' .
-					' WHERE (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 ORDER BY c.name');
+					' ORDER BY c.name');
 		}
 		else
 		{
@@ -126,9 +126,8 @@ class Profile
 					' JOIN cities i ON i.id = c.city_id' .
 					' JOIN countries o ON i.country_id = o.id ' .
 					' WHERE uc.user_id = ?' .
-					' AND (c.flags & ' . CLUB_FLAG_RETIRED . 
-					') = 0 AND (uc.flags & ' . UC_FLAG_BANNED .
-					') = 0 ORDER BY c.name',
+					' AND (uc.flags & ' . UC_FLAG_BANNED . ') = 0' .
+					' ORDER BY c.name',
 				$this->user_id, $this->user_club_id);
 		}
 		if ($query)

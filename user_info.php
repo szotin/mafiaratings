@@ -198,7 +198,7 @@ class Page extends UserPageBase
 			list ($club_id, $club_name, $club_flags, $club_url, $user_flags) = $row;
 			echo '</table>';
 			echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
-			echo '<table class="transp" width="100%"><tr><td width="' . ICON_WIDTH . '"><a href="club_main.php?bck=1&id=' . $club_id . '">';
+			echo '<table class="transp" width="100%"><tr><td width="52"><a href="club_main.php?bck=1&id=' . $club_id . '">';
 			show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48);
 			echo '</a></td><td>' . $club_name . '</td><td align="right">';
 			show_permissions($user_flags);

@@ -30,22 +30,40 @@ function check_manager_permission($id)
 
 function show_club_pic($club_id, $flags, $dir, $width = 0, $height = 0)
 {
-	if ($width <= 0 && $height <= 0)
+	global $_lang_code;
+	$w = $width;
+	$h = $height;
+	if ($dir == ICONS_DIR)
 	{
-		if ($dir == ICONS_DIR)
+		if ($w <= 0)
 		{
-			$width = ICON_WIDTH;
-			$height = ICON_HEIGHT;
+			$w = ICON_WIDTH;
 		}
-		else if ($dir == TNAILS_DIR)
+		if ($h <= 0)
 		{
-			$width = TNAIL_WIDTH;
-			$height = TNAIL_HEIGHT;
+			$h = ICON_HEIGHT;
 		}
 	}
-
+	else if ($dir == TNAILS_DIR)
+	{
+		if ($w <= 0)
+		{
+			$w = TNAIL_WIDTH;
+		}
+		if ($h <= 0)
+		{
+			$h = TNAIL_HEIGHT;
+		}
+	}
+	
+	if ($width <= 0 && $height <= 0)
+	{
+		$width = $w;
+		$height = $h;
+	}
+	
 	$origin = CLUB_PICS_DIR . $dir . $club_id . '.png';
-	echo '<img code="' . CLUB_PIC_CODE . $club_id . '" origin="' . $origin . '" src="';
+	echo '<span style="position:relative;"><img code="' . CLUB_PIC_CODE . $club_id . '" origin="' . $origin . '" src="';
 	if (($flags & CLUB_ICON_MASK) != 0)
 	{
 		echo $origin . '?' . (($flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET);
@@ -65,6 +83,20 @@ function show_club_pic($club_id, $flags, $dir, $width = 0, $height = 0)
 		echo ' height="' . $height . '"';
 	}
 	echo '>';
+	if ($flags & CLUB_FLAG_RETIRED)
+	{
+		echo '<img src="images/' . $dir . $_lang_code . '/closed.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
+		if ($width > 0)
+		{
+			echo ' width="' . $width . '"';
+		}
+		if ($height > 0)
+		{
+			echo ' height="' . $height . '"';
+		}
+		echo '>';
+	}
+	echo '</span>';
 }
 
 function has_club_buttons($id, $flags, $memb_flags)

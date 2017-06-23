@@ -59,7 +59,7 @@ function show_event_pic($id, $flags, $alt_id, $alt_flags, $dir, $width = 0, $hei
 	}
 
 	$origin = EVENT_PICS_DIR . $dir . $id . '.png';
-	echo '<div style="position:relative;"><img code="' . EVENT_PIC_CODE . $id . '" origin="' . $origin . '" src="';
+	echo '<span style="position:relative;"><img code="' . EVENT_PIC_CODE . $id . '" origin="' . $origin . '" src="';
 	if ($flags & EVENT_ICON_MASK)
 	{
 		echo $origin . '?' . (($flags & EVENT_ICON_MASK) >> EVENT_ICON_MASK_OFFSET);
@@ -111,7 +111,7 @@ function show_event_pic($id, $flags, $alt_id, $alt_flags, $dir, $width = 0, $hei
 		}
 		echo '>';
 	}
-	echo '</div>';
+	echo '</span>';
 }
 
 class Event
