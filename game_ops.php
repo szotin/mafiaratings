@@ -434,7 +434,7 @@ class CommandQueue
 		{
 			Db::rollback();
 			Exc::log($e, true);
-			return get_label('Failed to submit data to the server: [0].<p>MafiaRatings administration will contact you ASAP to resolve this issue.</p><p>Sorry for the inconvenience.</p>', $e->getMessage());
+			return get_label('Failed to submit data to the server: [0].<p>[1] administration will contact you ASAP to resolve this issue.</p><p>Sorry for the inconvenience.</p>', $e->getMessage(), PRODUCT_NAME);
 		}
 		
 		$this->correct_game($game);

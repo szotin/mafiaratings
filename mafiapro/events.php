@@ -17,7 +17,7 @@ foreach ($upcoming->events as $event)
 		$no = array();
 		foreach ($event->coming as $coming)
 		{
-			$str = '<a href="http://mafiaratings.com/user_info.php?id=' . $coming->id . '" target="blank">' . $coming->name . '</a>';
+			$str = '<a href="' . PRODUCT_URL . '/user_info.php?id=' . $coming->id . '" target="blank">' . $coming->name . '</a>';
 			if ($coming->odds > 50)
 			{
 				$yes[] = $str;

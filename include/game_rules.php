@@ -439,7 +439,7 @@ class GameRules
 
 		echo '<tr><td class="dark" align="center" width="80">' . ++$num . '</td>';
 		echo '<td class="light"><p><b>' . get_label('Are you using simplified voting?') . '</b></p>';
-		echo '<p>' . get_label('When simplified voting is on moderators do not enter voting details. They enter results only. That simplifies and speeds up moderation but looses important stats about voting. Choose it if your moderators are not experienced enough with MafiaRatings.') . '</p>';
+		echo '<p>' . get_label('When simplified voting is on moderators do not enter voting details. They enter results only. That simplifies and speeds up moderation but looses important stats about voting. Choose it if your moderators are not experienced enough with [0].', PRODUCT_NAME) . '</p>';
 		echo '<p>';
 		echo '<input type="radio" name="form-client" id="form-client-1">' . get_label('No, we are not using simplified voting.');
 		echo '<br><input type="radio" name="form-client" id="form-client-2">' . get_label('Yes, our moderators must use it.');

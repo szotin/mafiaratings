@@ -15,8 +15,8 @@ class Page extends GeneralPageBase
 	{
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="darker"><td width="26"></td><td>' . get_label('Product') . '</td><td width="100">' . get_label('Language') . '</td></tr>';
-		show_row('downloads/MafiaRatingsSetup.msi', get_label('MafiaRatings for Windows 2000/XP/7'), get_label('multilanguage'));
-		show_row('downloads/MafiaRatingsSetup.ru.msi', get_label('MafiaRatings for Windows 2000/XP/7'), get_label('Russian'));
+		show_row('downloads/MafiaRatingsSetup.msi', get_label('[0] for Windows 2000/XP/7', PRODUCT_NAME), get_label('multilanguage'));
+		show_row('downloads/MafiaRatingsSetup.ru.msi', get_label('[0] for Windows 2000/XP/7', PRODUCT_NAME), get_label('Russian'));
 		echo '</table>';
 	}
 }

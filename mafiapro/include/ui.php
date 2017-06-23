@@ -7,7 +7,7 @@ function service_host()
 	{
 		return 'http://' . $server . ':' . $_SERVER['SERVER_PORT'];
 	}
-	return 'http://mafiaratings.com';
+	return 'https://mafiaratings.com';
 }
 
 function get_json($page)
