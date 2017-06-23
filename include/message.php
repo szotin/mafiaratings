@@ -13,7 +13,7 @@ class Tag
 	// 'b' => new Tag('<b>', '</b>') - replaces all occurances of [b] with <b> ; all occurances of [/b] with </b>. If [b] does not have a corresponding [/b] it auto-adds </b> at the end.
 	// 'img' => new Tag('<img src="#" />') - replaces all occurances of [img=image.jpg] with <img src="image.jpg"> ; [/img] is left as is.
 	// # is treated as a parameter. If # needed as a symbol, use \# - !!! not implemented yet
-	// 'url' => new Tag('<a href="#">', '</a>') - '[url=https://www.mafiaratings.com]Mafia[/url] -> <a href="http://www.mafiaratings.com">Mafia</a>. If [url] does not have a corresponding [/url] it auto-adds </a> at the end.
+	// 'url' => new Tag('<a href="#">', '</a>') - '[url=http://www.google.com]Google[/url] -> <a href="http://www.google.com">Google</a>. If [url] does not have a corresponding [/url] it auto-adds </a> at the end.
 	//
 	// Nested tags are allowed. For example:
 	//

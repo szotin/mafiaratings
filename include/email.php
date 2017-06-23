@@ -46,10 +46,10 @@ function send_email($email, $body, $text_body, $subject, $unsubs_url = NULL)
 	if (is_production_server())
 	{
 		$headers =
-			"From: godfather@mafiaratings.com\r\n" .
-			"Reply-To: godfather@mafiaratings.com\r\n" .
+			"From: " . PRODUCT_EMAIL . "\r\n" .
+			"Reply-To: " . PRODUCT_EMAIL . "\r\n" .
 			"Precedence: bulk\r\n" .
-			"Return-Path: <godfather@mafiaratings.com>\r\n" .
+			"Return-Path: <" . PRODUCT_EMAIL . ">\r\n" .
 			"MIME-Version: 1.0\r\n" .
 			"X-Mailer: PHP/" . phpversion() . "\r\n";
 			

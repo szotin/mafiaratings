@@ -94,7 +94,7 @@ class PageBase
 	{
 		global $_profile;
 		
-		echo '<h3>' . get_label('Mafia Ratings is under maintenance. Please come again later.') . '</h3>';
+		echo '<h3>' . get_label('[0] is under maintenance. Please come again later.', PRODUCT_NAME) . '</h3>';
 		echo '<img src="images/repairs.png" width="160">';
 		if ($_profile != NULL && $_profile->is_admin())
 		{
@@ -105,7 +105,6 @@ class PageBase
 	final function show_header()
 	{
 		global $_session_state, $_profile, $_lang_code;
-		global $brand;
 		
 		if ($this->_state != PAGE_STATE_EMPTY)
 		{
@@ -115,7 +114,7 @@ class PageBase
 		echo '<!DOCTYPE HTML>';
 		echo '<html>';
 		echo '<head>';
-		echo '<title>' . $brand->titleprefix . ' ' . $this->_title . '</title>';
+		echo '<title>' . PRODUCT_NAME . ': ' . $this->_title . '</title>';
 		echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
 		echo '<script src="js/jquery.min.js"></script>';
 		echo '<script src="js/jquery-ui.min.js"></script>';
@@ -131,11 +130,11 @@ class PageBase
 		}
 		else
 		{
-			echo '<meta property="og:title" content="' . $brand->metatitle . '" />';
+			echo '<meta property="og:title" content="' . PRODUCT_NAME . '" />';
 			echo '<meta property="og:type" content="activity" />';
-			echo '<meta property="og:url" content="' . $brand->metaurl . '" />';
-			echo '<meta property="og:site_name" content="' . $brand->metasitename . '" />';
-			echo '<meta property="fb:admins" content="' . $brand->metafbadmins . '" />';
+			echo '<meta property="og:url" content="' . PRODUCT_URL . '" />';
+			echo '<meta property="og:site_name" content="' . PRODUCT_NAME . '" />';
+			echo '<meta property="fb:admins" content="' . PRODUCT_FB_ADMINS . '" />';
 			echo '<link rel="stylesheet" href="desktop.css" type="text/css" media="screen" />';
 		}
 		echo '<link rel="stylesheet" href="common.css" type="text/css" media="screen" />';
@@ -235,7 +234,7 @@ class PageBase
 				echo '<li><a href="user_info.php?id=' . $_profile->user_id . '" title="' . get_label('Statistics for [0]', $_profile->user_name) . '"><img src="images/user.png" class="menu_image"> ' . get_label('My statistics') . '</a></li>';
 				echo '<li><a href="javascript:mr.editAccount()" title="' . get_label('Account settings') . '"><img src="images/settings.png" class="menu_image"> ' . get_label('My account') . '</a></li>';
 				echo '<li><a href="javascript:mr.changePassword()" title="' . get_label('Change password') . '"><img src="images/key.png" class="menu_image"> ' . get_label('Change password') . '</a></li>';
-				echo '<li><a href="javascript:logout()" title="' . get_label('Logout from Mafia Ratings') . '"><img src="images/logout.png" class="menu_image"> ' . get_label('Log out') . '</a></li>';
+				echo '<li><a href="javascript:logout()" title="' . get_label('Logout from [0]', PRODUCT_NAME) . '"><img src="images/logout.png" class="menu_image"> ' . get_label('Log out') . '</a></li>';
 				echo '</ul>';
 				echo '</td>';
 			}
@@ -274,7 +273,7 @@ class PageBase
 
 	final function show_footer()
 	{
-		global $brand, $_lang_code, $_agent;
+		global $_lang_code, $_agent;
 		
 		if ($this->_state != PAGE_STATE_HEADER)
 		{
@@ -338,7 +337,7 @@ class PageBase
 			// facebook like button
 /*			if ($this->_facebook)
 			{
-				// echo '<script src="http://connect.facebook.net/en_US/all.js#xfbml=1"></script><fb:like href="' . $brand->metaurl . '" layout="button_count" show_faces="false" width="' . MENU_WIDTH . '"></fb:like>';
+				// echo '<script src="http://connect.facebook.net/en_US/all.js#xfbml=1"></script><fb:like href="' . PRODUCT_URL . '" layout="button_count" show_faces="false" width="' . MENU_WIDTH . '"></fb:like>';
 				echo '<iframe src="http://www.facebook.com/plugins/like.php?href=www.mafiaworld.ca&amp;layout=button_count&amp;show_faces=false&amp;width=450&amp;action=like&amp;font&amp;colorscheme=light&amp;height=21" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:450px; height:21px;" allowTransparency="true"></iframe>';
 			}*/
 			

@@ -203,7 +203,7 @@ class Page extends PageBase
 		
 		echo '<form method="post" name="createForm" enctype="multipart/form-data">';
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker"><td colspan="2" align="center"><br>' . get_label('Hello! You are invited to participate in the [0] in [1]. Please create an account in Mafia Ratings in order to accept the invitation.', $this->event->name, $this->event->club_name) . '<br><br></td></tr>';
+		echo '<tr class="th darker"><td colspan="2" align="center"><br>' . get_label('Hello! You are invited to participate in the [0] in [1]. Please create an account in [2] in order to accept the invitation.', $this->event->name, $this->event->club_name, PRODUCT_NAME) . '<br><br></td></tr>';
 		echo '<tr><td class="dark" width="160">'.get_label('User name').':</td><td>' . get_label('User name must be unique. If someone is already using your favourite name, use something else and enter it as your nick-name.') . '<br><input name="name" value="' . $this->name . '"></td></tr>';
 		echo '<tr><td class="dark">' . get_label('Nick name') . ':</td><td>' . get_label('Please enter the nick-name you want to use. Leave it empty if it is the same as user name.') . '<br><input name="nick" value="' . $this->nick . '"></td></tr>';
 		echo '<tr><td class="dark">' . get_label('Email') . ':</td><td>' . get_label('Please give your real email. It will be used for your account activation.') . '<br><input name="email" value="' . $this->email . '"></td></tr>';
@@ -240,7 +240,7 @@ class Page extends PageBase
 	{
 		if ($this->created)
 		{
-			$message = get_label('Thank you for registering in Mafia Ratings and for attending [0]. The activation email has been sent to you. Please click the link in this email to complete your registration.', $this->event->name);
+			$message = get_label('Thank you for registering in [1] and for attending [0]. The activation email has been sent to you. Please click the link in this email to complete your registration.', $this->event->name, PRODUCT_NAME);
 ?>
 			var message = "<?php echo $message; ?>";
 			var redir = "event_info.php?id=<?php echo $this->event->id; ?>";

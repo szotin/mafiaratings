@@ -60,7 +60,7 @@ class GeneralPageBase extends PageBase
 		{
 			$menu[] = new MenuItem('#site', get_label('Site'), NULL, array(
 				new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log')),
-				new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage Mafia Ratings users')),
+				new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage [0] users', PRODUCT_NAME)),
 				new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
 				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
 				new MenuItem('scorings.php' . $ccc, get_label('Scoring systems'), get_label('Manage scoring systems')),
@@ -69,8 +69,8 @@ class GeneralPageBase extends PageBase
 		}
 		
 		$menu[] = new MenuItem('#about', get_label('About'), NULL, array(
-//			new MenuItem('welcome.php' . $ccc, get_label('Welcome'), get_label('Welcome to the Mafia Ratings!')),
-//			new MenuItem('about.php' . $ccc, get_label('About'), get_label('About Mafia Ratings')),
+//			new MenuItem('welcome.php' . $ccc, get_label('Welcome'), get_label('Welcome to the [0]!', PRODUCT_NAME)),
+//			new MenuItem('about.php' . $ccc, get_label('About'), get_label('About [0]', PRODUCT_NAME)),
 			new MenuItem('rulebook.php' . $ccc, get_label('Rules'), get_label('Mafia rulebook')),
 			new MenuItem('tactics.php' . $ccc, get_label('Tactics'), get_label('Game tactics')),
 //			new MenuItem('downloads.php' . $ccc, get_label('Downloads'), get_label('Download client software for Mafia.'))

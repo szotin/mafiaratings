@@ -241,7 +241,7 @@ class Page extends PageBase
 
 		if ($this->role == ADMIN)
 		{
-			echo '<tr><td class="dark">' . get_label('Ban') . ':</td><td class="light"><input type="checkbox" name="banned"' . ((($this->flags & U_FLAG_BANNED) != 0) ? ' checked' : '') . '>'.get_label('ban [0] from Mafia Ratings', $this->name).'</td></tr>';
+			echo '<tr><td class="dark">' . get_label('Ban') . ':</td><td class="light"><input type="checkbox" name="banned"' . ((($this->flags & U_FLAG_BANNED) != 0) ? ' checked' : '') . '>'.get_label('ban [0] from [1]', $this->name, PRODUCT_NAME).'</td></tr>';
 		}
 		echo '</table>';
 		

@@ -72,7 +72,7 @@ class Page extends PageBase
 				echo '<td width="33%" align="center"><a href="inbox.php?bck=0" title="' . get_label('Private messages to me') . '">' . get_label('Messages');
 				echo '<br><img src="images/email_big.png" border="0"></a></td>';
 				
-				echo '<td width="34%" align="center"><a href="#" onclick="logout()" title="' . get_label('Logout from Mafia Ratings') . '">' . get_label('Log out');
+				echo '<td width="34%" align="center"><a href="#" onclick="logout()" title="' . get_label('Logout from [0]', PRODUCT_NAME) . '">' . get_label('Log out');
 				echo '<br><img src="images/logout_big.png" border="0"></a></td>';
 				
 				echo '<td>&nbsp;</td></tr></table></td></tr>';
@@ -91,7 +91,7 @@ class Page extends PageBase
 				
 				echo '<td>&nbsp;</td>';
 				
-				echo '<td width="17%" align="center"><a href="#" onclick="logout()" title="' . get_label('Logout from Mafia Ratings') . '">' . get_label('Log out');
+				echo '<td width="17%" align="center"><a href="#" onclick="logout()" title="' . get_label('Logout from [0]', PRODUCT_NAME) . '">' . get_label('Log out');
 				echo '<br><img src="images/logout_big.png" border="0"></a></td>';
 				
 				echo '</tr></table></td></tr>';

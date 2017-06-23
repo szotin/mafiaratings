@@ -1,8 +1,10 @@
 <?php
 
+require_once 'include/branding.php';
+
 function get_server_url()
 {
-	$row = 'www.mafiaratings.com';
+	$row = PRODUCT_SITE;
 	if (isset($_SERVER['SERVER_NAME']))
 	{
 		$row = $_SERVER['SERVER_NAME'];

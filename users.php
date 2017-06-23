@@ -133,6 +133,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Mafia Ratings users'), U_PERM_ADMIN);
+$page->run(get_label('[0] users', PRODUCT_NAME), U_PERM_ADMIN);
 
 ?>

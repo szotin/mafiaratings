@@ -54,7 +54,7 @@ class Page extends PageBase
 				db_log('user', 'Activated', $log_details, $_profile->user_id);
 			}
 			$_profile->user_flags = $flags;
-			$this->message = get_label('Hi [0]! Thank you for activating your account. Click Ok to start using Mafia Ratings.', $_profile->user_name);
+			$this->message = get_label('Hi [0]! Thank you for activating your account. Click Ok to start using [1].', $_profile->user_name, PRODUCT_NAME);
 		}
 	
 		switch ($obj)

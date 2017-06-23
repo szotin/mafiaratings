@@ -18,8 +18,8 @@ class Page extends GeneralPageBase
 		}
 		
 		$this->videos = array(
-			array(get_label('What is Mafia Ratings'), 'http://www.youtube.com/embed/CG3v9U6oCm0'),
-			array(get_label('How to create new club'), 'http://www.youtube.com/embed/V25SXvKxL3U'));
+			array(get_label('What is [0]', PRODUCT_NAME), 'http://www.youtube.com/embed/CG3v9U6oCm0'),
+			array(get_label('How to create new club in [0]', PRODUCT_NAME), 'http://www.youtube.com/embed/V25SXvKxL3U'));
 		
 	}
 	
@@ -91,6 +91,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Welcome to the Mafia Ratings!'), PERM_ALL);
+$page->run(get_label('Welcome to the [0]!', PRODUCT_NAME), PERM_ALL);
 
 ?>

@@ -25,7 +25,7 @@ try
 		create_user($name, $email);
 		
 		echo
-			'<p>' . get_label('Thank you for signing up on Mafia Ratings!') .
+			'<p>' . get_label('Thank you for signing up on [0]!', PRODUCT_NAME) .
 			'<br>' . get_label('We have sent you a confirmation email to [0].', $email) .
 			'</p><p>' . get_label('Click on the confirmation link in the email to complete your sign up.') . '</p>';
 	}
@@ -50,8 +50,8 @@ try
 		}
 		Db::commit();
 		
-		$body = get_label('Your password at') . ' <a href="https://www.mafiaratings.com">' . get_label('Mafia Ratings').'</a> ' . get_label('has been reset to') . ' <b>' . $password . '</b>';
-		$text_body = get_label('Your password at') . ' https://www.mafiaratings.com ' . get_label('has been reset to') . ' ' . $password . "\r\n\r\n";
+		$body = get_label('Your password at') . ' <a href="' . PRODUCT_URL . '">' . PRODUCT_NAME .'</a> ' . get_label('has been reset to') . ' <b>' . $password . '</b>';
+		$text_body = get_label('Your password at') . ' ' . PRODUCT_URL . ' ' . get_label('has been reset to') . ' ' . $password . "\r\n\r\n";
 		send_email($email, $body, $text_body, 'Mafia');
 		echo  get_label('Your password has been reset. Please check your email for the new password.');
 	}

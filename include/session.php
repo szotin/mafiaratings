@@ -602,7 +602,7 @@ function check_maintenance()
 {
 	if (is_dir('lock'))
 	{
-		throw new FatalExc(get_label('Mafia Ratings is under maintenance. Please repeat the request later.'));
+		throw new FatalExc(get_label('[0] is under maintenance. Please repeat the request later.', PRODUCT_NAME));
 	}
 }
 

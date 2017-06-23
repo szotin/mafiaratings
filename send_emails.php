@@ -2,6 +2,7 @@
 
 setDir();
 
+require_once 'include/branding.php';
 require_once 'include/db.php';
 require_once 'include/email.php';
 require_once 'include/languages.php';
@@ -169,7 +170,7 @@ try
 				$subj1 = parse_tags($subj, $tags);
 				if (empty($subj1))
 				{
-					$subj1 = 'Mafia ratings';
+					$subj1 = PRODUCT_NAME;
 				}
 				
 				try
