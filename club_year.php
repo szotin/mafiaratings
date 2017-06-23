@@ -3,6 +3,7 @@
 require_once 'include/page_base.php';
 require_once 'include/game_player.php';
 require_once 'include/user.php';
+require_once 'include/scoring.php';
 
 define('VIEW_OVERAL', 0);
 define('VIEW_NOM_WINNERS', 1);
@@ -318,16 +319,6 @@ class Page extends ClubPageBase
 			array(get_label('Checked by sheriff'), 'SUM(IF(p.checked_by_sheriff >= 0, 1, 0))', 'count(*)', 1),
 		);
 		
-		$roles = array(
-			array(get_label('All roles'), ''),
-			array(get_label('Red players'), ' AND p.role < 2'),
-			array(get_label('Dark players'), ' AND p.role > 1'),
-			array(get_label('Civilians'), ' AND p.role = 0'),
-			array(get_label('Sheriffs'), ' AND p.role = 1'),
-			array(get_label('Mafiosy'), ' AND p.role = 2'),
-			array(get_label('Dons'), ' AND p.role = 3'),
-		);
-		
 		$nom = 0;
 		if (isset($_REQUEST['nom']))
 		{
@@ -338,14 +329,10 @@ class Page extends ClubPageBase
 			$nom = 0;
 		}
 		
-		$role = 0;
-		if (isset($_REQUEST['role']))
+		$roles = POINTS_ALL;
+		if (isset($_REQUEST['roles']))
 		{
-			$role = $_REQUEST['role'];
-		}
-		if ($role >= count($roles))
-		{
-			$role = 0;
+			$roles = (int)$_REQUEST['roles'];
 		}
 		
 		$sort = 0;
@@ -364,29 +351,24 @@ class Page extends ClubPageBase
 			$min_games -= $min_games % 10;
 		}
 	
+		$roles_condition = get_roles_condition($roles);
 		if ($this->year > 0)
 		{
 			$query = new DbQuery(
 				'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val' .
 					' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
-					' WHERE g.club_id = ? AND g.start_time >= ? AND g.start_time < ? ' . $roles[$role][1] . 
-					' GROUP BY p.user_id HAVING cnt > ?',
-				$this->id, $this->from, $this->to, $min_games);
+					' WHERE g.club_id = ? AND g.start_time >= ? AND g.start_time < ?',
+				$this->id, $this->from, $this->to, $roles_condition);
 		}
 		else
 		{
-			echo 'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val' .
-					' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
-					' WHERE g.club_id = ? ' . $roles[$role][1] . 
-					' GROUP BY p.user_id HAVING cnt > ?';
-					
 			$query = new DbQuery(
 				'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val' .
 					' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
-					' WHERE g.club_id = ? ' . $roles[$role][1] . 
-					' GROUP BY p.user_id HAVING cnt > ?',
-				$this->id, $min_games);
+					' WHERE g.club_id = ?',
+				$this->id);
 		}
+		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $min_games);
 		
 		if ($sort & 2)
 		{
@@ -411,12 +393,9 @@ class Page extends ClubPageBase
 		echo '<input type="hidden" name="sort" id="sort" value="' . $sort . '">';
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="2"><select name="role" onchange="document.filter.submit()">';
-		for ($i = 0; $i < count($roles); ++$i)
-		{
-			show_option($i, $role, $roles[$i][0]);
-		}
-		echo '</select></td>';
+		echo '<td colspan="2">';
+		show_roles_select($roles, 'filter');
+		echo '</td>';
 		echo '<td width="100" align="center">&gt; <select name="min" onchange="document.filter.submit()">';
 		$max_option = round($this->games_count / 20) * 10;
 		for ($i = 0; $i <= $max_option; $i += 10)

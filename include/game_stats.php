@@ -517,18 +517,6 @@ class GamePlayerStats
 					'INSERT INTO ratings (user_id, type_id, role, rating, games, games_won) VALUES (?, ?, ?, ?, 1, ?)',
 					$user_id, $type_id, $role, $this->points, $this->won);
 			}
-			
-			Db::exec(
-				get_label('points'), 
-				'UPDATE club_ratings SET rating = rating + ?, games = games + 1, games_won = games_won + ? WHERE club_id = ? AND user_id = ? AND type_id = ? AND role = ?',
-				$this->points, $this->won, $this->gs->club_id, $user_id, $type_id, $role);
-			if (Db::affected_rows() <= 0)
-			{
-				Db::exec(
-					get_label('points'), 
-					'INSERT INTO club_ratings (club_id, user_id, type_id, role, rating, games, games_won) VALUES (?, ?, ?, ?, ?, 1, ?)',
-					$this->gs->club_id, $user_id, $type_id, $role, $this->rating, $this->won);
-			}
 		}
 	}
 
@@ -895,15 +883,6 @@ function rebuild_game_stats($gs)
 		'UPDATE ratings r, players p, rating_types t, games g SET r.rating = r.rating - p.rating, r.games = r.games - 1, r.games_won = r.games_won - p.won WHERE p.game_id = g.id AND r.type_id = t.id ' .
 		' AND g.id = ?' . 
 		' AND (t.span = 0 OR g.start_time > t.renew_time - t.span) ' .
-		' AND r.user_id = p.user_id' .
-		' AND (r.role = 0 OR r.role = p.role + 3 OR r.role = (p.role DIV 2 + 1))',
-		$gs->id);
-	
-	Db::exec(get_label('points'), 
-		'UPDATE club_ratings r, players p, rating_types t, games g SET r.rating = r.rating - p.rating, r.games = r.games - 1, r.games_won = r.games_won - p.won WHERE p.game_id = g.id AND r.type_id = t.id ' .
-		' AND g.id = ?' . 
-		' AND r.club_id = g.club_id' .
-		' AND (t.span = 0 OR g.start_time > t.renew_time - t.span)' .
 		' AND r.user_id = p.user_id' .
 		' AND (r.role = 0 OR r.role = p.role + 3 OR r.role = (p.role DIV 2 + 1))',
 		$gs->id);

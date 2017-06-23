@@ -29,7 +29,7 @@ class Page extends ViewGamePageBase
 			}
 			echo '<td class="dark" align="center">' . ($i + 1) . '</td>';
 			echo '<td><a href="view_game_stats.php?num=' . $i . '&bck=1">' . cut_long_name($player->nick, 20) . '</a></td>';
-			echo '<td align="right">' . $this->vg->gs->get_rating($i) . '</td>';
+			echo '<td align="right">' . $this->vg->gs->get_points($i) . '</td>';
 			echo '<td>' . $player->sheriff_check_text() . '</td>';
 			echo '<td>' . $player->don_check_text() . '</td>';
 			echo '<td>' . $player->arranged_text() . '</td>';

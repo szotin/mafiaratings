@@ -6,6 +6,7 @@ require_once 'include/pages.php';
 require_once 'include/address.php';
 require_once 'include/user.php';
 require_once 'include/forum.php';
+require_once 'include/scoring.php';
 
 define('COLUMN_COUNT', 5);
 define('ROW_COUNT', 2);
@@ -358,17 +359,14 @@ class Page extends ClubPageBase
 		{
 			echo '</td><td width="280" valign="top">';
 			
+			// last year only
 			$query = new DbQuery(
-				'SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags ' . 
-					'FROM users u, club_ratings r WHERE u.id = r.user_id AND r.club_id = ?' .
-					' AND r.role = 0 AND type_id = 1 ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT 10',
-				$this->id);
+				'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+					' JOIN games g ON p.game_id = g.id' .
+					' JOIN users u ON p.user_id = u.id' .
+					' WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - 31536000 GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT 10',
+				$this->scoring_id, $this->id);
 					
-			$query = new DbQuery(
-				'SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags ' . 
-					'FROM users u, club_ratings r WHERE u.id = r.user_id AND r.club_id = ?' .
-					' AND r.role = 0 AND type_id = 1 ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT 10',
-				$this->id);
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="4"><a href="club_standings.php?bck=1&id=' . $this->id . '"><b>' . get_label('Best players') . '</b></a></td></tr>';
 			$number = 1;
@@ -380,7 +378,7 @@ class Page extends ClubPageBase
 				echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 				show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-				echo '<td width="60" align="center">' . $points . '</td>';
+				echo '<td width="60" align="center">' . format_score($points) . '</td>';
 				echo '</tr>';
 				
 				++$number;

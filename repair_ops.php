@@ -227,7 +227,6 @@ try
 			Db::exec(get_label('sheriff'), 'DELETE FROM sheriffs');
 			Db::exec(get_label('player'), 'DELETE FROM players');
 			Db::exec(get_label('rating'), 'DELETE FROM ratings');
-			Db::exec(get_label('rating'), 'DELETE FROM club_ratings');
 			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = 0');
 			Db::commit();
 		}

@@ -410,27 +410,6 @@ try
 				' SELECT p.user_id, ?, 3 + p.role, SUM(p.rating), count(*), SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id' .
 				' WHERE g.start_time > UNIX_TIMESTAMP() - ? GROUP BY user_id, role',
 				$type_id, $type_span);
-			Db::exec($ratings_label, 'DELETE FROM club_ratings WHERE type_id = ?', $type_id);
-			Db::exec($ratings_label,
-				'INSERT INTO club_ratings (club_id, user_id, type_id, role, rating, games, games_won)' .
-				' SELECT g.club_id, p.user_id, ?, 0, SUM(p.rating), count(*), SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id' .
-				' WHERE g.start_time > UNIX_TIMESTAMP() - ? GROUP BY g.club_id, p.user_id',
-				$type_id, $type_span);
-			Db::exec($ratings_label,
-				'INSERT INTO club_ratings (club_id, user_id, type_id, role, rating, games, games_won)' .
-				' SELECT g.club_id, p.user_id, ?, 1, SUM(p.rating), count(*), SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id' .
-				' WHERE g.start_time > UNIX_TIMESTAMP() - ? AND p.role <= 1 GROUP BY g.club_id, p.user_id',
-				$type_id, $type_span);
-			Db::exec($ratings_label,
-				'INSERT INTO club_ratings (club_id, user_id, type_id, role, rating, games, games_won)' .
-				' SELECT g.club_id, p.user_id, ?, 2, SUM(p.rating), count(*), SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id' .
-				' WHERE g.start_time > UNIX_TIMESTAMP() - ? AND p.role >= 2 GROUP BY g.club_id, p.user_id',
-				$type_id, $type_span);
-			Db::exec($ratings_label,
-				'INSERT INTO club_ratings (club_id, user_id, type_id, role, rating, games, games_won)' .
-				' SELECT g.club_id, p.user_id, ?, 3 + p.role, SUM(p.rating), count(*), SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id' .
-				' WHERE g.start_time > UNIX_TIMESTAMP() - ? GROUP BY g.club_id, p.user_id, p.role',
-				$type_id, $type_span);
 			Db::exec($ratings_label, 'UPDATE rating_types SET renew_time = UNIX_TIMESTAMP() WHERE id = ?', $type_id);
 			
 			db_log('ratings', 'Rebuild ' . $type_name, NULL);

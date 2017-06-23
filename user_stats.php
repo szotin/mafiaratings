@@ -53,7 +53,7 @@ class Page extends UserPageBase
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<input type="hidden" name="filter" value="">';
 		
-		$query = new DbQuery('SELECT DISTINCT c.id, c.name FROM club_ratings r, clubs c WHERE r.club_id = c.id AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 AND r.user_id = ? ORDER BY c.name', $this->id);
+		$query = new DbQuery('SELECT DISTINCT c.id, c.name FROM players p, games g, clubs c WHERE p.game_id = g.id AND g.club_id = c.id AND p.user_id = ? ORDER BY c.name', $this->id);
 		echo '<select name="club" onChange="document.form.submit()">';
 		show_option(ALL_CLUBS, $club_id, get_label('All clubs'));
 		while ($row = $query->next())

@@ -4,6 +4,7 @@ require_once 'include/club.php';
 require_once 'include/user.php';
 require_once 'include/pages.php';
 require_once 'include/image.php';
+require_once 'include/scoring.php';
 
 define("PAGE_SIZE",15);
 define('ROLES_COUNT', 7);
@@ -11,8 +12,9 @@ define('ROLES_COUNT', 7);
 class Page extends ClubPageBase
 {
 	private $my_id;
-	private $view_id;
-	private $type_id;
+	private $roles;
+	private $days_limit; 
+	private $seconds_limit; 
 	
 	protected function prepare()
 	{
@@ -25,19 +27,22 @@ class Page extends ClubPageBase
 			$this->my_id = $_profile->user_id;
 		}
 
-		$this->view_id = POINTS_ALL;
-		if (isset($_REQUEST['view']))
+		$this->roles = POINTS_ALL;
+		if (isset($_REQUEST['roles']))
 		{
-			$this->view_id = $_REQUEST['view'];
+			$this->roles = $_REQUEST['roles'];
 		}
 		
-		if (isset($_REQUEST['type']))
+		$this->days_limit = 365;
+		if (isset($_REQUEST['days']))
 		{
-			$this->type_id = $_REQUEST['type'];
+			$this->days_limit = ((int)$_REQUEST['days']);
 		}
-		else
+		$this->seconds_limit = $this->days_limit * 24 * 60 * 60;
+		
+		if (isset($_REQUEST['scoring']))
 		{
-			list($this->type_id) = Db::record(get_label('points'), 'SELECT id FROM rating_types ORDER BY def DESC, id LIMIT 1');
+			$this->scoring_id = (int)$_REQUEST['scoring'];
 		}
 		
 		$this->_title = get_label('[0] standings', $this->name);
@@ -47,44 +52,41 @@ class Page extends ClubPageBase
 	{
 		global $_page, $_lang_code;
 		
-		$role_names = array(
-			get_label('All roles'),
-			get_label('Red players'),
-			get_label('Dark players'),
-			get_label('Civilians'),
-			get_label('Sheriffs'),
-			get_label('Mafiosy'),
-			get_label('Dons'));
-		
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%">';
-		echo '<tr><td>';
-		
-		echo '<select name="type" onChange="document.viewForm.submit()">';
-		$query = new DbQuery('SELECT id, name_' . $_lang_code . ' FROM rating_types ORDER BY id');
-		while ($row = $query->next())
-		{
-			list ($tid, $tname) = $row;
-			show_option($tid, $this->type_id, $tname);
-		}
+		echo '<tr><td>' . get_label('Scoring system') . ': ';
+		show_scoring_select($this->id, $this->scoring_id, 'viewForm');
+		echo '</td><td align="right">';
+		echo '<select name="days" onChange="document.viewForm.submit()">';
+		show_option(0, $this->days_limit, get_label('All time'));
+		show_option(365, $this->days_limit, get_label('Last year'));
 		echo '</select> ';
-		
-		echo '<select name="view" onChange="document.viewForm.submit()">';
-		for ($i = 0; $i < ROLES_COUNT; ++$i)
-		{
-			show_option($i, $this->view_id, $role_names[$i]);
-		}
-		echo '</select>';
-		
+		show_roles_select($this->roles, 'viewForm');
 		echo '</td></tr></table></form>';
 		
-		list ($count) = Db::record(get_label('points'), 'SELECT count(*) FROM club_ratings WHERE type_id = ? AND club_id = ? AND role = ?', $this->type_id, $this->id, $this->view_id);
-		$query = new DbQuery(
-			'SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags ' . 
-				'FROM users u, club_ratings r WHERE u.id = r.user_id AND r.club_id = ? AND r.role = ? AND type_id = ? ' .
-				'ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
-			$this->id, $this->view_id, $this->type_id);
+		$role_condition = get_roles_condition($this->roles);
+		if ($this->seconds_limit > 0)
+		{
+			list ($count) = Db::record(get_label('points'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - ?', $this->id, $this->seconds_limit, $role_condition);
+			$query = new DbQuery(
+				'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+					' JOIN games g ON p.game_id = g.id' .
+					' JOIN users u ON p.user_id = u.id' .
+					' WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - ?',
+				$this->scoring_id, $this->id, $this->seconds_limit, $role_condition);
+		}
+		else
+		{
+			list ($count) = Db::record(get_label('points'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.club_id = ?', $this->id, $role_condition);
+			$query = new DbQuery(
+				'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+					' JOIN games g ON p.game_id = g.id' .
+					' JOIN users u ON p.user_id = u.id' .
+					' WHERE g.club_id = ?',
+				$this->scoring_id, $this->id, $role_condition);
+		}
+		$query->add(' GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
 		show_pages_navigation(PAGE_SIZE, $count);
 		echo '<table class="bordered light" width="100%">';
@@ -116,13 +118,13 @@ class Page extends ClubPageBase
 			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 			show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-			echo '<td align="center" class="dark">' . $points . '</td>';
+			echo '<td align="center" class="dark">' . format_score($points) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)
 			{
 				echo '<td align="center">' . number_format(($games_won*100.0)/$games_played, 1) . '%</td>';
-				echo '<td align="center">' . number_format($points/$games_played, 2) . '</td>';
+				echo '<td align="center">' . format_score($points/$games_played, 2) . '</td>';
 			}
 			else
 			{

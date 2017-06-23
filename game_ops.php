@@ -184,7 +184,7 @@ class GClub
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.flags, c.flags FROM user_clubs c' .
 				' JOIN users u ON u.id = c.user_id' .
-				' LEFT OUTER JOIN club_ratings r ON r.user_id = u.id AND c.club_id = r.club_id AND r.type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1) AND role = 0' .
+				' LEFT OUTER JOIN ratings r ON r.user_id = u.id AND r.type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1) AND role = 0' .
 				' WHERE (c.flags & ' . UC_FLAG_BANNED .
 					') = 0 AND (c.flags & ' . (UC_PERM_PLAYER | UC_PERM_MODER) .
 					') <> 0 AND (u.flags & ' . U_FLAG_BANNED .

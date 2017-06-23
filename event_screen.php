@@ -112,7 +112,7 @@ try
 		$page_size = $rows * $cols;
 		
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+			'SELECT p.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 			' JOIN games g ON p.game_id = g.id' .
 			' JOIN users u ON p.user_id = u.id' .
 			' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
@@ -143,10 +143,13 @@ try
 		
 			echo '<center><h2>' . get_label('The event hasn\'t started yet. Current ratings:') . '</h2></center>';
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.name, r.rating as rating, r.games as games, r.games_won as won, u.flags' . 
-					' FROM users u, club_ratings r, events e, registrations reg WHERE reg.event_id = e.id AND reg.user_id = u.id AND u.id = r.user_id AND e.id = ? AND r.club_id = e.club_id' .
-					' AND r.role = 0 AND type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1) ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT ' . $page_size,
-				$event->id);
+				'SELECT r.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+					' JOIN games g ON p.game_id = g.id' .
+					' JOIN registrations r ON r.event_id = ? AND r.user_id = p.user_id' .
+					' JOIN users u ON r.user_id = u.id' .
+					' WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - 31536000 GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT 10',
+				$event->scoring_id, $event->id, $event->club_id);
+			
 			while ($row = $query->next())
 			{
 				$players[] = $row;
@@ -155,10 +158,12 @@ try
 			if (count($players) == 0)
 			{
 				$query = new DbQuery(
-					'SELECT u.id, u.name, u.name, r.rating as rating, r.games as games, r.games_won as won, u.flags' . 
-						' FROM users u, club_ratings r, events e WHERE u.id = r.user_id AND e.id = ? AND r.club_id = e.club_id' .
-						' AND r.role = 0 AND type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1) ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT ' . $page_size,
-					$event->id);
+					'SELECT u.id, u.name, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+						' JOIN games g ON p.game_id = g.id' .
+						' JOIN events e ON g.event_id = e.id' .
+						' JOIN users u ON p.user_id = u.id' .
+						' WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - 31536000 GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT 10',
+					$event->scoring_id, $event->club_id);
 				while ($row = $query->next())
 				{
 					$players[] = $row;

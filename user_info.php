@@ -3,6 +3,7 @@
 require_once 'include/languages.php';
 require_once 'include/user.php';
 require_once 'include/club.php';
+require_once 'include/scoring.php';
 
 function show_permissions($user_flags)
 {
@@ -132,16 +133,23 @@ class Page extends UserPageBase
 			get_label('As a sheriff'),
 			get_label('As a mafiosy'),
 			get_label('As a don'));
-		// $query = new DbQuery(
-			// 'SELECT c.id, c.name, c.flags, c.web_site, r.role, r.rating, r.games, r.games_won FROM club_ratings r, clubs c WHERE r.club_id = c.id AND r.type_id = 1 AND r.user_id = ? ORDER BY r.club_id, r.role', $this->id);
+		$role_titles1 = array(
+			get_label('As a civilian'),
+			get_label('As a sheriff'),
+			get_label('As a mafiosy'),
+			get_label('As a don'));
+		
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, r.role, r.rating, r.games, r.games_won, u.flags FROM clubs c' .
-			' JOIN user_clubs u ON u.club_id = c.id' .
-			' JOIN club_ratings r ON r.club_id = c.id AND r.user_id = u.user_id' .
-			' WHERE r.type_id = 1 AND u.user_id = ? ORDER BY r.club_id, r.role', $this->id);
+			'SELECT c.id, c.name, c.flags, c.web_site, p.role, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = c.scoring_id AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM clubs c' . 
+				' JOIN games g ON g.club_id = c.id' .
+				' JOIN user_clubs u ON u.club_id = c.id' .
+				' JOIN players p ON p.user_id = u.user_id AND p.game_id = g.id' .
+				' WHERE u.user_id = ? GROUP BY c.id, p.role ORDER BY c.id, p.role',
+			$this->id);
+			
 		while ($row = $query->next())
 		{
-			list ($club_id, $club_name, $club_flags, $club_url, $role, $rating, $games, $games_won, $user_flags) = $row;
+			list ($club_id, $club_name, $club_flags, $club_url, $role, $points, $games, $games_won, $user_flags) = $row;
 			if ($club_id != $prev_club_id)
 			{
 				echo '</table>';
@@ -152,19 +160,21 @@ class Page extends UserPageBase
 				show_permissions($user_flags);
 				echo '</td></tr></table>';
 				echo '</td><td width="100">' . get_label('Games played');
-				echo ':</td><td width="100">' . get_label('Games won') . ':</td><td width="100">' . get_label('Rating') . ':</td></tr>';
+				echo ':</td><td width="100">' . get_label('Games won') . ':</td><td width="100">' . get_label('Points') . ':</td></tr>';
 				$prev_club_id = $club_id;
 			}
-			echo '<tr><td class="dark">' . $role_titles[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '</td><td>' . get_label('[0] ([1] per game)', $rating, number_format($rating/$games, 1)) . '</td></tr>';
+			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_score($points), format_score($points/$games, 1)) . '</td></tr>';
 		}
 		
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, r.role, r.rating, r.games, r.games_won FROM clubs c' .
-			' JOIN club_ratings r ON r.club_id = c.id' .
-			' WHERE r.type_id = 1 AND r.user_id = ? AND c.id NOT IN (SELECT u.club_id FROM user_clubs u WHERE u.user_id = r.user_id) ORDER BY r.club_id, r.role', $this->id);
+			'SELECT c.id, c.name, c.flags, c.web_site, p.role, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = c.scoring_id AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won FROM clubs c' . 
+				' JOIN games g ON g.club_id = c.id' .
+				' JOIN players p ON p.game_id = g.id' .
+				' WHERE p.user_id = ? AND c.id NOT IN (SELECT u.club_id FROM user_clubs u WHERE u.user_id = p.user_id) GROUP BY c.id, p.role ORDER BY c.id, p.role',
+			$this->id);
 		while ($row = $query->next())
 		{
-			list ($club_id, $club_name, $club_flags, $club_url, $role, $rating, $games, $games_won) = $row;
+			list ($club_id, $club_name, $club_flags, $club_url, $role, $points, $games, $games_won) = $row;
 			if ($club_id != $prev_club_id)
 			{
 				echo '</table>';
@@ -173,16 +183,16 @@ class Page extends UserPageBase
 				show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48);
 				echo '</a></td><td>' . $club_name . '</td></tr></table>';
 				echo '</td><td width="100">' . get_label('Games played');
-				echo ':</td><td width="100">' . get_label('Games won') . ':</td><td width="100">' . get_label('Rating') . ':</td></tr>';
+				echo ':</td><td width="100">' . get_label('Games won') . ':</td><td width="100">' . get_label('Points') . ':</td></tr>';
 				$prev_club_id = $club_id;
 			}
-			echo '<tr><td class="dark">' . $role_titles[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '</td><td>' . get_label('[0] ([1] per game)', $rating, number_format($rating/$games, 1)) . '</td></tr>';
+			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_score($points), format_score($points/$games, 1)) . '</td></tr>';
 		}
 		
 		$query = new DbQuery(
 			'SELECT c.id, c.name, c.flags, c.web_site, u.flags FROM clubs c' .
 			' JOIN user_clubs u ON u.club_id = c.id' .
-			' WHERE u.user_id = ? AND u.club_id NOT IN (SELECT club_id FROM club_ratings r WHERE r.user_id = u.user_id) ORDER BY u.flags DESC', $this->id);
+			' WHERE u.user_id = ? AND u.club_id NOT IN (SELECT g.club_id FROM players p, games g WHERE p.game_id = g.id AND p.user_id = u.user_id) ORDER BY u.flags DESC', $this->id);
 		while ($row = $query->next())
 		{
 			list ($club_id, $club_name, $club_flags, $club_url, $user_flags) = $row;
@@ -239,29 +249,6 @@ class Page extends UserPageBase
 			
 			echo '</td></tr></table>';
 		}
-		
-/*		$role_titles = array(
-			get_label('Total'),
-			get_label('As a red player'),
-			get_label('As a dark player'),
-			get_label('As a civilian'),
-			get_label('As a sheriff'),
-			get_label('As a mafiosy'),
-			get_label('As a don'));
-		
-		$query = new DbQuery('SELECT role, rating, games, games_won FROM ratings WHERE user_id = ? ORDER BY role', $this->id);
-		while ($row = $query->next())
-		{
-			$role = $row[0];
-			$rating = $row[1];
-			$games = $row[2];
-			$games_won = $row[3];
-		
-			echo '<h4>' . $role_titles[$role] . ':</h4><table class="bordered" width="100%">';
-			echo '<tr><td width="150">'.get_label('Games played').':</td><td>' . $games . '</td></tr>';
-			echo '<tr><td>'.get_label('Games won').':</td><td>' . $games_won . ' (' . number_format(($games_won*100.0)/$games, 1) . '%)</td></tr>';
-			echo '<tr><td>'.get_label('Rating').':</td><td>' . get_label('[0] ([1] per game)', $rating, number_format($rating/$games, 1)) . '</td></tr></table>';
-		}*/
 	}
 }
 

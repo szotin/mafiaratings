@@ -2,6 +2,7 @@
 
 require_once 'include/db.php';
 require_once 'include/names.php';
+require_once 'include/constants.php';
 
 define('SCORING_DEFAULT_ID', 10); // Default scoring system is hardcoded here to ФИИМ (FIGM)
 
@@ -38,6 +39,58 @@ function format_score($score)
 		return number_format($score/100, 1);
 	}
 	return number_format($score/100);
+}
+
+function show_scoring_select($club_id, $scoring_id, $form_name)
+{
+	echo '<select name="scoring" onChange="document.' . $form_name . '.submit()">';
+	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
+	while ($row = $query->next())
+	{
+		list ($sid, $sname) = $row;
+		show_option($sid, $scoring_id, $sname);
+	}
+	echo '</select></td>';
+}
+
+function show_roles_select($roles, $form_name)
+{
+	echo '<select name="roles" onChange="document.' . $form_name . '.submit()">';
+	show_option(POINTS_ALL, $roles, get_label('All roles'));
+	show_option(POINTS_RED, $roles, get_label('Red players'));
+	show_option(POINTS_DARK, $roles, get_label('Dark players'));
+	show_option(POINTS_CIVIL, $roles, get_label('Civilians'));
+	show_option(POINTS_SHERIFF, $roles, get_label('Sheriffs'));
+	show_option(POINTS_MAFIA, $roles, get_label('Mafiosy'));
+	show_option(POINTS_DON, $roles, get_label('Dons'));
+	echo '</select>';
+}
+
+function get_roles_condition($roles)
+{
+	$role_condition = new SQL();
+	switch ($roles)
+	{
+	case POINTS_RED:
+		$role_condition->add(' AND p.role < 2');
+		break;
+	case POINTS_DARK:
+		$role_condition->add(' AND p.role > 1');
+		break;
+	case POINTS_CIVIL:
+		$role_condition->add(' AND p.role = 0');
+		break;
+	case POINTS_SHERIFF:
+		$role_condition->add(' AND p.role = 1');
+		break;
+	case POINTS_MAFIA:
+		$role_condition->add(' AND p.role = 2');
+		break;
+	case POINTS_DON:
+		$role_condition->add(' AND p.role = 3');
+		break;
+	}
+	return $role_condition;
 }
 
 class ScoringSystem

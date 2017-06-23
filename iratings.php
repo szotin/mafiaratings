@@ -100,7 +100,7 @@ try
 	}
 	else
 	{
-		$condition = new SQL(' FROM club_ratings r JOIN users u ON u.id = r.user_id WHERE r.club_id = ? AND', $club_id);
+		$condition = new SQL(' FROM ratings r JOIN users u ON r.user_id = u.id JOIN user_clubs c ON c.user_id = r.user_id WHERE c.club_id = ? AND', $club_id);
 	}
 	$condition->add(' r.role = ? AND type_id = ?', $view_id, $type_id);
 

@@ -7,6 +7,7 @@ require_once 'include/languages.php';
 require_once 'include/address.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
+require_once 'include/scoring.php';
 
 define("PAGE_SIZE",15);
 define('ROLES_COUNT', 7);
@@ -14,7 +15,7 @@ define('ROLES_COUNT', 7);
 class Page extends AddressPageBase
 {
 	private $my_id;
-	private $view_id;
+	private $roles;
 	
 	protected function prepare()
 	{
@@ -27,10 +28,10 @@ class Page extends AddressPageBase
 			$this->my_id = $_profile->user_id;
 		}
 
-		$this->view_id = POINTS_ALL;
-		if (isset($_REQUEST['view']))
+		$this->roles = POINTS_ALL;
+		if (isset($_REQUEST['roles']))
 		{
-			$this->view_id = $_REQUEST['view'];
+			$this->roles = $_REQUEST['roles'];
 		}
 		
 		$this->_title = get_label('[0] standings', $this->name);
@@ -40,52 +41,14 @@ class Page extends AddressPageBase
 	{
 		global $_page, $_lang_code;
 		
-		$role_names = array(
-			get_label('All roles'),
-			get_label('Red players'),
-			get_label('Dark players'),
-			get_label('Civilians'),
-			get_label('Sheriffs'),
-			get_label('Mafiosy'),
-			get_label('Dons'));
-		
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		
-		echo '<select name="view" onChange="document.viewForm.submit()">';
-		for ($i = 0; $i < ROLES_COUNT; ++$i)
-		{
-			show_option($i, $this->view_id, $role_names[$i]);
-		}
-		echo '</select>';
-		
+		show_roles_select($this->roles, 'viewForm');
 		echo '</td></tr></table></form>';
 		
-		$role_condition = new SQL();
-		switch ($this->view_id)
-		{
-		case POINTS_RED:
-			$role_condition->add(' AND p.role < 2');
-			break;
-		case POINTS_DARK:
-			$role_condition->add(' AND p.role > 1');
-			break;
-		case POINTS_CIVIL:
-			$role_condition->add(' AND p.role = 0');
-			break;
-		case POINTS_SHERIFF:
-			$role_condition->add(' AND p.role = 1');
-			break;
-		case POINTS_MAFIA:
-			$role_condition->add(' AND p.role = 2');
-			break;
-		case POINTS_DON:
-			$role_condition->add(' AND p.role = 3');
-			break;
-		}
-		
+		$role_condition = get_roles_condition($this->roles);
 		list ($count) = Db::record(get_label('points'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ?', $this->id, $role_condition);
 		$query = new DbQuery(
 			'SELECT u.id, u.name, SUM(p.rating) as rating, count(*) as games, SUM(p.won) as won, u.flags FROM players p' .

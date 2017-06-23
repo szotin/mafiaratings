@@ -11,6 +11,7 @@ define("PAGE_SIZE",15);
 class Page extends EventPageBase
 {
 	private $scoring_id;
+	private $roles;
 	
 	protected function prepare()
 	{
@@ -21,6 +22,12 @@ class Page extends EventPageBase
 		if (isset($_REQUEST['scoring']))
 		{
 			$this->scoring_id = (int)$_REQUEST['scoring'];
+		}
+		
+		$this->roles = POINTS_ALL;
+		if (isset($_REQUEST['roles']))
+		{
+			$this->roles = (int)$_REQUEST['roles'];
 		}
 	}
 	
@@ -37,28 +44,24 @@ class Page extends EventPageBase
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
 		echo '<table class="transp" width="100%">';
-		echo '<tr><td>' . get_label('Scoring system');
-		echo ': <select name="scoring" onChange="document.viewForm.submit()">';
-		$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $this->event->club_id);
-		while ($row = $query->next())
-		{
-			list ($sid, $sname) = $row;
-			show_option($sid, $this->scoring_id, $sname);
-		}
-		echo '</select>';
-		
+		echo '<tr><td>' . get_label('Scoring system') . ': ';
+		show_scoring_select($this->event->club_id, $this->scoring_id, 'viewForm');
+		echo '</td><td align="right">';
+		show_roles_select($this->roles, 'viewForm');
 		echo '</td></tr></table></form>';
 
-		list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?', $this->event->id);
+		$role_condition = get_roles_condition($this->roles);
+		list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?', $this->event->id, $role_condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, r.nick_name, SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+			'SELECT p.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON p.user_id = u.id' .
 				' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
-				' WHERE g.event_id = ? GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
-			$this->scoring_id, $this->event->id);
+				' WHERE g.event_id = ?',
+			$this->scoring_id, $this->event->id, $role_condition);
+		$query->add(' GROUP BY p.user_id ORDER BY points DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
 		$number = $_page * PAGE_SIZE;
 		echo '<table class="bordered light" width="100%">';
