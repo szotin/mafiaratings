@@ -1,11 +1,13 @@
 <?php
 
+require_once 'include/branding.php';
+
 define('VERSION', 10);
 
 $files = array(
-	array('MafiaRatings.exe', 10),
+	array(PRODUCT_TERM . '.exe', 10),
 	array('Launcher.exe', 10),
-	array('ru/MafiaRatings.resources.dll', 10),
+	array('ru/' . PRODUCT_TERM . '.resources.dll', 10),
 	array('ru/Launcher.resources.dll', 10)
 );
 
