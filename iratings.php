@@ -40,16 +40,6 @@ try
 		$club_id = $_REQUEST['club'];
 	}
 	
-	if (isset($_REQUEST['type']))
-	{
-		$type_id = $_REQUEST['type'];
-	}
-	else
-	{
-		list($type_id) = Db::record(get_label('points'), 'SELECT id FROM rating_types ORDER BY def DESC, id LIMIT 1');
-	}
-
-	$global_rating = (isset($_REQUEST['gr']) && $_REQUEST['gr']);
 	$no_header = (isset($_REQUEST['h']) && !$_REQUEST['h']);
 
 	$view_id = 0;
@@ -90,25 +80,12 @@ try
 		$cols = $_REQUEST['cols'];
 	}
 
-	if ($club_id <= 0)
+	$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags FROM users u WHERE u.games > 0');
+	if ($club_id > 0)
 	{
-		$condition = new SQL(' FROM ratings r JOIN users u ON u.id = r.user_id WHERE');
+		$query->add(' AND u.club_id = ?', $club_id);
 	}
-	else if ($global_rating)
-	{
-		$condition = new SQL(' FROM ratings r JOIN users u ON r.user_id = u.id JOIN user_clubs c ON c.user_id = r.user_id WHERE c.club_id = ? AND', $club_id);
-	}
-	else
-	{
-		$condition = new SQL(' FROM ratings r JOIN users u ON r.user_id = u.id JOIN user_clubs c ON c.user_id = r.user_id WHERE c.club_id = ? AND', $club_id);
-	}
-	$condition->add(' r.role = ? AND type_id = ?', $view_id, $type_id);
-
-	//		list ($count) = Db::record(get_label('rating'), 'SELECT count(*)', $condition);
-	//		show_pages_navigation($page_size, $count);
-			
-	$query = new DbQuery('SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags', $condition);
-	$query->add(' ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT ' . ($page * $page_size) . ',' . $page_size);
+	$query->add(' ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . ($page * $page_size) . ',' . $page_size);
 			
 	$cols_count = strlen($cols);
 	

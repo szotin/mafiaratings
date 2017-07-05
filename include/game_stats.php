@@ -8,9 +8,13 @@ class GamePlayerStats
 {
     public $gs;
     public $player_num;
-    public $points;
 	public $won;
 	public $flags;
+	
+    public $rating_before;
+    public $rating_earned;
+    public $club_points;
+    public $event_points;
    
     public $voted_civil;
     public $voted_mafia;
@@ -178,7 +182,6 @@ class GamePlayerStats
 
         $this->gs = $gs;
         $this->player_num = $player_num;
-        $this->points = $gs->get_points($player_num);
 		
 		$this->won = 0;
 		if ($gs->gamestate == GAME_CIVIL_WON)
@@ -493,33 +496,94 @@ class GamePlayerStats
         }
 		
 		$this->calculate_flags();
+
+		// init points and ratings
+		$this->rating_before = 0;
+		$this->rating_earned = 0;
+		$this->club_points = 0;
+		$this->event_points = 0;
+        $player = $gs->players[$this->player_num];
+		if ($player->id <= 0)
+		{
+			return;
+		}
+		
+		$query = new DbQuery('SELECT p.rating_before + p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE g.end_time < ? AND p.user_id = ? ORDER BY g.end_time DESC LIMIT 1', $gs->end_time, $player->id);
+		if ($row = $query->next())
+		{
+			list($this->rating_before) = $row;
+		}
+		else
+		{
+			$this->rating_before = USER_INITIAL_RATING;
+		}
+		
+		$query = new DbQuery('SELECT p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE g.id = ? AND p.user_id = ?', $gs->id, $player->id);
+		if ($row = $query->next())
+		{
+			list($this->rating_earned) = $row;
+		}
+		
+		list($this->event_points) = Db::record(get_label('event'), 'SELECT IFNULL(SUM(o.points), 0) FROM scoring_points o WHERE o.scoring_id = (SELECT e.scoring_id FROM events e WHERE e.id = ?) AND (o.flag & ?) <> 0', $gs->event_id, $this->flags);
+		list($this->club_points) = Db::record(get_label('event'), 'SELECT IFNULL(SUM(o.points), 0) FROM scoring_points o WHERE o.scoring_id = (SELECT c.scoring_id FROM clubs c WHERE c.id = ?) AND (o.flag & ?) <> 0', $gs->club_id, $this->flags);
     }
 	
-	function add_points($user_id, $role)
+	function calculate_rating($civ_odds)
 	{
-		$query = new DbQuery('SELECT id, span FROM rating_types');
-		while ($row = $query->next())
+        $gs = $this->gs;
+        $player = $gs->players[$this->player_num];
+		if ($player->id <= 0)
 		{
-			list($type_id, $type_span) = $row;
-			if ($type_span > 0 && $this->gs->start_time <= $this->timestamp - $type_span)
-			{
-				continue;
-			}
-			
-			Db::exec(
-				get_label('points'), 
-				'UPDATE ratings SET rating = rating + ?, games = games + 1, games_won = games_won + ? WHERE user_id = ? AND type_id = ? AND role = ?',
-				$this->points, $this->won, $user_id, $type_id, $role);
-			if (Db::affected_rows() <= 0)
-			{
-				Db::exec(
-					get_label('points'), 
-					'INSERT INTO ratings (user_id, type_id, role, rating, games, games_won) VALUES (?, ?, ?, ?, 1, ?)',
-					$user_id, $type_id, $role, $this->points, $this->won);
-			}
+			return;
+		}
+
+		$K = 20;
+		// if ($this->rating_before < 500)
+		// {
+			// $K = 100;
+		// }
+		// else
+		// {
+			// $K = 100 * 500 / $this->rating_before;
+		// }
+		
+		// $K = 40;
+		// if ($this->rating_before > 1300)
+		// {
+			// $K = 10;
+		// }
+		// else if ($this->rating_before > 1000)
+		// {
+			// $K = 20;
+		// }
+		
+		switch ($player->role)
+		{
+			case PLAYER_ROLE_CIVILIAN:
+			case PLAYER_ROLE_SHERIFF:
+				if ($gs->gamestate == GAME_CIVIL_WON)
+				{
+					$this->rating_earned = $K * (1 - $civ_odds);
+				}
+				else
+				{
+					$this->rating_earned = - $K * $civ_odds;
+				}
+				break;
+			case PLAYER_ROLE_MAFIA:
+			case PLAYER_ROLE_DON:
+				if ($gs->gamestate == GAME_CIVIL_WON)
+				{
+					$this->rating_earned = $K * ($civ_odds - 1);
+				}
+				else
+				{
+					$this->rating_earned = $K * $civ_odds;
+				}
+				break;
 		}
 	}
-
+	
     function save()
     {
         $gs = $this->gs;
@@ -531,67 +595,67 @@ class GamePlayerStats
 		
         Db::exec(
 			get_label('player'), 
-            'INSERT INTO players (game_id, user_id, nick_name, number, role, rating, flags, ' .
+            'INSERT INTO players (game_id, user_id, nick_name, number, role, rating_before, rating_earned, club_points, event_points, flags, ' .
 				'voted_civil, voted_mafia, voted_sheriff, voted_by_civil, voted_by_mafia, voted_by_sheriff, ' .
 				'nominated_civil, nominated_mafia, nominated_sheriff, nominated_by_civil, nominated_by_mafia, nominated_by_sheriff, ' .
 				'kill_round, kill_type, warns, was_arranged, checked_by_don, checked_by_sheriff, won) ' .
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$gs->id, $player->id, $player->nick, $this->player_num + 1, $player->role, $this->points, $this->flags,
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$gs->id, $player->id, $player->nick, $this->player_num + 1, $player->role, $this->rating_before, $this->rating_earned, $this->club_points, $this->event_points, $this->flags,
 			$this->voted_civil, $this->voted_mafia, $this->voted_sheriff, $this->voted_by_civil, $this->voted_by_mafia, $this->voted_by_sheriff,
 			$this->nominated_civil, $this->nominated_mafia, $this->nominated_sheriff, $this->nominated_by_civil, $this->nominated_by_mafia, $this->nominated_by_sheriff,
 			$player->kill_round, $this->kill_type, $player->warnings, $player->arranged, $player->don_check, $player->sheriff_check, $this->won);
 
-        if ($player->role == PLAYER_ROLE_CIVILIAN)
-        {
-			$this->add_points($player->id, POINTS_ALL);
-			$this->add_points($player->id, POINTS_CIVIL);
-			$this->add_points($player->id, POINTS_RED);
-        }
-        else if ($player->role == PLAYER_ROLE_SHERIFF)
-        {
-            Db::exec(
-				get_label('sheriff'), 
-                'INSERT INTO sheriffs VALUES (?, ?, ?, ?)',
-				$gs->id, $player->id, $this->civil_found, $this->mafia_found);
-			
-			$this->add_points($player->id, POINTS_ALL);
-			$this->add_points($player->id, POINTS_SHERIFF);
-			$this->add_points($player->id, POINTS_RED);
-        }
-        else
-        {
-            Db::exec(
-				get_label('mafioso'), 
-                'INSERT INTO mafiosos VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . ($player->role == PLAYER_ROLE_DON ? 'true' : 'false') . ')',
-				$gs->id, $player->id, $this->shots1_ok, $this->shots1_miss, $this->shots2_ok,
-				$this->shots2_miss, $this->shots2_blank, $this->shots2_rearrange, $this->shots3_ok, $this->shots3_miss,
-				$this->shots3_blank, $this->shots3_fail, $this->shots3_rearrange);
-			
-			$this->add_points($player->id, POINTS_ALL);
-			$this->add_points($player->id, POINTS_DARK);
-
-            if ($player->role == PLAYER_ROLE_MAFIA)
-            {
-				$this->add_points($player->id, POINTS_MAFIA);
-            }
-            else // DON
-            {
-                Db::exec(
-					get_label('don'), 
-                    'INSERT INTO dons VALUES (?, ?, ?, ?)',
-					$gs->id, $player->id, $this->sheriff_found, $this->sheriff_arranged);
-
-				$this->add_points($player->id, POINTS_DON);
-            }
-        }
-		
-		if ($player->kill_round == 0 && $player->state == PLAYER_STATE_KILLED_NIGHT)
+		switch ($player->role)
 		{
-			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . U_FLAG_IMMUNITY . ') WHERE id = ?', $player->id);
+			case PLAYER_ROLE_CIVILIAN:
+				break;
+			case PLAYER_ROLE_SHERIFF:
+				Db::exec(
+					get_label('sheriff'), 
+					'INSERT INTO sheriffs VALUES (?, ?, ?, ?)',
+					$gs->id, $player->id, $this->civil_found, $this->mafia_found);
+				break;
+			case PLAYER_ROLE_DON:
+				Db::exec(
+					get_label('mafioso'), 
+					'INSERT INTO mafiosos VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . ($player->role == PLAYER_ROLE_DON ? 'true' : 'false') . ')',
+					$gs->id, $player->id, $this->shots1_ok, $this->shots1_miss, $this->shots2_ok,
+					$this->shots2_miss, $this->shots2_blank, $this->shots2_rearrange, $this->shots3_ok, $this->shots3_miss,
+					$this->shots3_blank, $this->shots3_fail, $this->shots3_rearrange);
+				Db::exec(
+					get_label('don'), 
+					'INSERT INTO dons VALUES (?, ?, ?, ?)',
+					$gs->id, $player->id, $this->sheriff_found, $this->sheriff_arranged);
+				break;
+			case PLAYER_ROLE_MAFIA:
+				Db::exec(
+					get_label('mafioso'), 
+					'INSERT INTO mafiosos VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . ($player->role == PLAYER_ROLE_DON ? 'true' : 'false') . ')',
+					$gs->id, $player->id, $this->shots1_ok, $this->shots1_miss, $this->shots2_ok,
+					$this->shots2_miss, $this->shots2_blank, $this->shots2_rearrange, $this->shots3_ok, $this->shots3_miss,
+					$this->shots3_blank, $this->shots3_fail, $this->shots3_rearrange);
+				break;
+		}
+		
+		$query = new DbQuery('SELECT g.id, p.user_id FROM players p JOIN games g ON p.game_id = g.id WHERE g.id > ?', $gs->id); //, $gs->end_time);
+		if ($row = $query->next())
+		{
+			// list($gid, $pid) = $row;
+			// echo 'Game ' . $gs->id . ': later game ' . $gid . ' found for user ' . $pid . '<br>';
 		}
 		else
 		{
-			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ' . ~U_FLAG_IMMUNITY . ') WHERE id = ?', $player->id);
+			$query = new DbQuery('UPDATE users SET rating = ?, games = games + 1, games_won = games_won + ?', $this->rating_before + $this->rating_earned, $this->won);
+			if ($player->kill_round == 0 && $player->state == PLAYER_STATE_KILLED_NIGHT)
+			{
+				$query->add(', flags = (flags | ' . U_FLAG_IMMUNITY . ')');
+			}
+			else
+			{
+				$query->add(', flags = (flags & ' . ~U_FLAG_IMMUNITY . ')');
+			}
+			$query->add(' WHERE id = ?', $player->id);
+			Db::exec(get_label('user'), $query);
 		}
     }
 	
@@ -600,182 +664,6 @@ class GamePlayerStats
 		$gs = $this->gs;
         $player = $gs->players[$this->player_num];
 		return get_label('Game [0], player [1] - [2]', $gs->id, $this->player_num + 1, cut_long_name($player->nick, 66));
-	}
-	
-	private function output_row($civil, $mafia, $sheriff, $title, $for_word)
-	{
-		$count = $civil + $mafia + $sheriff;
-		$delimiter = ': ';
-		echo '<tr class="light"><td width="200" class="dark">' . $title . '</td><td>';
-		switch ($count)
-		{
-			case 0:
-				echo '&nbsp;</td></tr>';
-				return;
-			case 1:
-				echo get_label('1 time') . ':';
-				if ($mafia > 0)
-				{
-					echo $for_word . get_label('mafia');
-				}
-				else if ($civil > 0)
-				{
-					echo $for_word . get_label('civilian');
-				}
-				else if ($sheriff > 0)
-				{
-					echo $for_word . get_label('sheriff');
-				}
-				echo '</td></tr>';
-				break;
-			default:
-				echo $count . ' '.get_label('times');
-				if ($mafia > 0)
-				{
-					echo $delimiter . $mafia . $for_word . ' '.get_label('mafia');
-					$delimiter = '; ';
-				}
-				
-				switch ($civil)
-				{
-					case 0:
-						break;
-					case 1:
-						echo $delimiter . $civil . $for_word . ' '.get_label('civilian');
-						$delimiter = '; ';
-						break;
-					default:
-						echo $delimiter . $civil . $for_word . ' '.get_label('civilians');
-						$delimiter = '; ';
-						break;
-				}
-				
-				if ($sheriff > 0)
-				{
-					echo $delimiter . $sheriff . $for_word . ' '.get_label('sheriff');
-				}
-				echo '</td></tr>';
-				break;
-		}
-	}
-	
-	public function output()
-	{
-		$gs = $this->gs;
-		
-		$player = $gs->players[$this->player_num];
-
-		echo '<p><table class="bordered" width="100%" id="players">';
-		echo '<tr class="th-short darker"><td colspan="2"><b>' . get_label('General') . '</b></td></tr>';
-		echo '<tr class="light"><td class="dark" width="200">'.get_label('Role').':</td><td>' . $player->role_text(true) . '</td></tr>';
-		echo '<tr class="light"><td class="dark">'.get_label('Points earned').':</td><td>' . $this->points . '</td></tr>';
-		echo '<tr class="light"><td class="dark">'.get_label('Warnings').':</td><td>' . $player->warnings_text() . '</td></tr>';
-		echo '<tr class="light"><td class="dark">'.get_label('Killed').':</td><td>' . $player->killed_text() . '</td></tr>';
-		echo '<tr class="light"><td class="dark">'.get_label('Was arranged by mafia at').':</td><td>' . $player->arranged_text() . '</td></tr>';
-		echo '<tr class="light"><td class="dark">'.get_label('Checked by the Don').':</td><td>' . $player->don_check_text() . '</td></tr>';
-		echo '<tr class="light"><td class="dark">'.get_label('Checked by the Sheriff').':</td><td>' . $player->sheriff_check_text() . '</td></tr>';
-		echo '</table></p>';
-		
-		echo '<p><table class="bordered" width="100%" id="Table1">';
-		echo '<tr class="th-short darker"><td colspan="2"><b>' . get_label('Voting and nominating') . '</b></td></tr>';
-		$this->output_row($this->voted_civil, $this->voted_mafia, $this->voted_sheriff, get_label('Voted') . ':', ' '.get_label('for').' ');
-		$this->output_row($this->voted_by_civil, $this->voted_by_mafia, $this->voted_by_sheriff, get_label('Was voted') . ':', ' '.get_label('by').' ');
-		$this->output_row($this->nominated_civil, $this->nominated_mafia, $this->nominated_sheriff, get_label('Nominated') . ':', ' ');
-		$this->output_row($this->nominated_by_civil, $this->nominated_by_mafia, $this->nominated_by_sheriff, get_label('Was nominated') . ':', ' '.get_label('by').' ');
-		echo '</table></p>';
-
-		if ($player->role == PLAYER_ROLE_SHERIFF)
-		{
-			echo '<p><table class="bordered" width="100%" id="Table2">';
-			echo '<tr class="th-short darker"><td colspan="2"><b>' . get_label('The Sheriff checking') . '</b></td></tr>';
-			$count = $this->civil_found + $this->mafia_found;
-			if ($count > 0)
-			{
-				echo '<tr class="light"><td class="dark" width="200">'.get_label('Civilians found').':</td><td>' . $this->civil_found . ' (' . number_format($this->civil_found*100.0/$count, 1) . '%)</td></tr>';
-				echo '<tr class="light"><td class="dark">'.get_label('Mafiosos found').':</td><td>' . $this->mafia_found . ' (' . number_format($this->mafia_found*100.0/$count, 1) . '%)</td></tr>';
-			}
-			else
-			{
-				echo '<tr class="light"><td class="dark" width="200">'.get_label('Civilians found').':</td><td>&nbsp;</td></tr>';
-				echo '<tr class="light"><td class="dark">'.get_label('Mafiosos found').':</td><td>&nbsp;</td></tr>';
-			}
-			echo '</table><p>';
-		}
-
-		if ($player->role == PLAYER_ROLE_MAFIA || $player->role == PLAYER_ROLE_DON)
-		{
-			echo '<p><table class="bordered" width="100%" id="Table3">';
-			echo '<tr class="th-short darker"><td colspan="2"><b>' . get_label('Mafia shooting') . '</b></td></tr>';
-			$count = $this->shots1_ok + $this->shots2_ok + $this->shots3_ok + $this->shots1_miss + $this->shots2_miss + $this->shots3_miss;
-			if ($count > 0)
-			{
-				$shots_ok = $this->shots1_ok + $this->shots2_ok + $this->shots3_ok;
-				echo '<tr class="light"><td class="dark" width="200">'.get_label('Shooting').':</td><td>' . $count . ' '.get_label('shot');
-				if ($count > 1)
-				{
-					echo get_label('s');
-				}
-				echo '; ' . $shots_ok . ' '.get_label('successful').' (' . number_format($shots_ok*100.0/$count, 1) . '%)</td></tr>';
-			}
-
-			$count = $this->shots3_ok + $this->shots3_miss;
-			if ($count > 0)
-			{
-				echo '<tr class="light"><td class="dark" width="200">'.get_label('3 shooters').':</td><td>' . $count . ' '.get_label('shot');
-				if ($count > 1)
-				{
-					echo get_label('s');
-				}
-				echo '; ' . $this->shots3_ok . ' '.get_label('successful').' (' . number_format($this->shots3_ok*100.0/$count, 1) . '%)</td></tr>';
-			}
-
-			$count = $this->shots2_ok + $this->shots2_miss;
-			if ($count > 0)
-			{
-				echo '<tr class="light"><td class="dark" width="200">'.get_label('2 shooters').':</td><td>' . $count . ' '.get_label('shot');
-				if ($count > 1)
-				{
-					echo get_label('s');
-				}
-				echo '; ' . $this->shots2_ok . ' '.get_label('successful').' (' . number_format($this->shots2_ok*100.0/$count, 1) . '%)</td></tr>';
-			}
-
-			$count = $this->shots1_ok + $this->shots1_miss;
-			if ($count > 0)
-			{
-				echo '<tr class="light"><td class="dark" width="200">'.get_label('1 shooter').':</td><td>' . $count . ' '.get_label('shot');
-				if ($count > 1)
-				{
-					echo get_label('s');
-				}
-				echo '; ' . $this->shots1_ok . ' '.get_label('successful').' (' . number_format($this->shots1_ok*100.0/$count, 1) . '%)</td></tr>';
-			}
-
-			echo '</table></p>';
-
-			if ($player->role == PLAYER_ROLE_DON)
-			{
-				echo '<p><table class="bordered" width="100%" id="Table4">';
-				echo '<tr class="th-short darker"><td colspan="2"><b>' . get_label('The Don\'s game') . '</b></td></tr>';
-				if ($this->sheriff_found >= 0)
-				{
-					echo '<tr class="light"><td class="dark" width="200">'.get_label('Sheriff found').':</td><td>' . ($this->sheriff_found + 1) . ' '.get_label('night').'</td></tr>';
-				}
-				else
-				{
-					echo '<tr class="light"><td class="dark" width="200">'.get_label('Sheriff found').':</td><td>'.get_label('no').'</td></tr>';
-				}
-				if ($this->sheriff_arranged >= 0)
-				{
-					echo '<tr class="light"><td class="dark" width="200">'.get_label('Sheriff arranged').':</td><td>' . ($this->sheriff_arranged + 1) . ' '.get_label('night').'</td></tr>';
-				}
-				else
-				{
-					echo '<tr class="light"><td class="dark" width="200">'.get_label('Sheriff arranged').':</td><td>'.get_label('no').'</td></tr>';
-				}
-				echo '</table></p>';
-			}
-		}
 	}
 }
 
@@ -820,7 +708,6 @@ function save_game_results($gs)
 			}
 		}
 		
-		Db::exec(get_label('game'), 'UPDATE games SET result = ?, best_player_id = ?, flags = ? WHERE id = ?', $game_result, $best_player_id, $gs->flags, $gs->id);
 		if ($update_stats)
 		{
 			Db::exec(get_label('user'), 'UPDATE users u, games g SET u.games_moderated = u.games_moderated + 1 WHERE u.id = g.moderator_id AND g.id = ?', $gs->id);
@@ -828,11 +715,58 @@ function save_game_results($gs)
 			Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $gs->id);
 			Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $gs->id);
 			Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $gs->id);
+			$stats = array();
 			for ($i = 0; $i < 10; ++$i)
 			{
-				$stats = new GamePlayerStats($gs, $i);
-				$stats->save();
+				$stats[] = new GamePlayerStats($gs, $i);
 			}
+			
+			// calculate ratings
+			$maf_sum = 0;
+			$maf_count = 0;
+			$civ_sum = 0;
+			$civ_count = 0;
+			for ($i = 0; $i < 10; ++$i)
+			{
+				$player = $gs->players[$i];
+				if ($player->id > 0)
+				{
+					switch ($player->role)
+					{
+						case PLAYER_ROLE_CIVILIAN:
+						case PLAYER_ROLE_SHERIFF:
+							$civ_sum += $stats[$i]->rating_before;
+							++$civ_count;
+							break;
+						case PLAYER_ROLE_MAFIA:
+						case PLAYER_ROLE_DON:
+							$maf_sum += $stats[$i]->rating_before;
+							++$maf_count;
+							break;
+					}
+				}
+			}
+			
+			$civ_odds = NULL;
+			if ($maf_count > 0 && $civ_count > 0)
+			{
+				$civ_odds = 1.0 / (1.0 + pow(10.0, ($maf_sum / $maf_count - $civ_sum / $civ_count) / 400));
+				for ($i = 0; $i < 10; ++$i)
+				{
+					$stats[$i]->calculate_rating($civ_odds);
+				}
+			}
+			
+			// save stats
+			for ($i = 0; $i < 10; ++$i)
+			{
+				$stats[$i]->save();
+			}
+			Db::exec(get_label('game'), 'UPDATE games SET result = ?, best_player_id = ?, flags = ?, civ_odds = ? WHERE id = ?', $game_result, $best_player_id, $gs->flags, $civ_odds, $gs->id);
+		}
+		else
+		{
+			Db::exec(get_label('game'), 'UPDATE games SET result = ?, best_player_id = ?, flags = ? WHERE id = ?', $game_result, $best_player_id, $gs->flags, $gs->id);
 		}
 		Db::commit();
 	}
@@ -857,36 +791,6 @@ function rebuild_game_stats($gs)
 
 	Db::begin();
 	Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated - 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $gs->id);
-	
-/*	player.role    points.role
-	0         0, 1, 3
-	1         0, 1, 4
-	2         0, 2, 5
-	3         0, 2, 6
-	
-	C: r.role == 0 || r.role == p.role + 3 || r.role == p.role / 2 + 1;
-	SQL: (r.role = 0 OR r.role = p.role + 3 OR r.role = (p.role DIV 2 + 1));
-	
-	PLAYER_ROLE_CIVILIAN = 0
-	PLAYER_ROLE_SHERIFF = 1
-	PLAYER_ROLE_MAFIA = 2
-	PLAYER_ROLE_DON = 3
-
-	POINTS_ALL = 0
-	POINTS_RED = 1
-	POINTS_DARK = 2
-	POINTS_CIVIL = 3
-	POINTS_SHERIFF = 4
-	POINTS_MAFIA = 5
-	POINTS_DON = 6*/
-	Db::exec(get_label('points'),
-		'UPDATE ratings r, players p, rating_types t, games g SET r.rating = r.rating - p.rating, r.games = r.games - 1, r.games_won = r.games_won - p.won WHERE p.game_id = g.id AND r.type_id = t.id ' .
-		' AND g.id = ?' . 
-		' AND (t.span = 0 OR g.start_time > t.renew_time - t.span) ' .
-		' AND r.user_id = p.user_id' .
-		' AND (r.role = 0 OR r.role = p.role + 3 OR r.role = (p.role DIV 2 + 1))',
-		$gs->id);
-	
 	Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $gs->id);
 	Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $gs->id);
 	Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $gs->id);

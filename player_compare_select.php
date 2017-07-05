@@ -33,7 +33,7 @@ class Page extends UserPageBase
 			$filter = $_REQUEST['filter'];
 		}
 	
-		$condition = new SQL(' FROM users u JOIN ratings r ON u.id = r.user_id AND r.role = ' . POINTS_ALL . ' AND r.type_id = 1 WHERE u.id <> ?', $this->id);
+		$condition = new SQL(' FROM users u WHERE u.id <> ? AND u.games > 0', $this->id);
 		if ($filter != '')
 		{
 			$condition->add(' AND u.name LIKE ?', $filter . '%');
@@ -55,8 +55,8 @@ class Page extends UserPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td>'.get_label('Player').'</td><td width="100">Rating</td><td width="100">'.get_label('Games played').'</td></tr>';
 		
-		$query = new DbQuery('SELECT u.id, u.name, r.rating, r.games', $condition);
-		$query->add(' ORDER BY r.rating DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games', $condition);
+		$query->add(' ORDER BY u.rating DESC, u.games LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
 			list ($uid, $uname, $urating, $ugames) = $row;

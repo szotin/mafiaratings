@@ -50,15 +50,13 @@ class Page extends UserPageBase
 		global $_profile;
 		
 		$rating_pos = -1;
-		list ($rating_type) = Db::record(get_label('rating'), 'SELECT id FROM rating_types WHERE def = 1 LIMIT 1');
-		$query = new DbQuery('SELECT rating, games, games_won FROM ratings WHERE role = 0 AND type_id = ? AND user_id = ?', $rating_type, $this->id);
+		$query = new DbQuery('SELECT rating, games, games_won FROM users WHERE id = ?', $this->id);
 		if ($row = $query->next())
 		{
 			list ($rating, $games, $won) = $row;
 			list ($rating_pos) = Db::record(get_label('rating'), 
-				'SELECT count(*) FROM ratings WHERE role = 0 AND type_id = ?' .
-				' AND (rating > ? OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND user_id < ?))))))', 
-				$rating_type, $rating, $rating, $games, $games, $won, $won, $this->id);
+				'SELECT count(*) FROM users WHERE rating > ? AND games > 0 OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND id < ?)))))', 
+				$rating, $rating, $games, $games, $won, $won, $this->id);
 		}
 		
 		if ($rating_pos >= 0)
@@ -99,24 +97,6 @@ class Page extends UserPageBase
 				echo ', ' . cut_long_name($row[0], 88);
 			}
 			echo '</td></tr>';
-		}
-		
-		$red_rating = 0;
-		$dark_rating = 0;
-		$query = new DbQuery('SELECT role, rating FROM ratings WHERE user_id = ? AND type_id = 1 AND role >= ' . POINTS_RED . ' AND role <= ' . POINTS_DARK, $this->id);
-		while ($row = $query->next())
-		{
-			$role = $row[0];
-			$rating = $row[1];
-			switch ($role)
-			{
-				case POINTS_RED:
-					$red_rating = $rating;
-					break;
-				case POINTS_DARK:
-					$dark_rating = $rating;
-					break;
-			}
 		}
 		
 		if ($this->games_moderated > 0)
@@ -218,10 +198,8 @@ class Page extends UserPageBase
 				$rating_page = 0;
 			}
 			$query = new DbQuery(
-				'SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags ' . 
-				'FROM users u, ratings r WHERE u.id = r.user_id AND r.role = 0 AND type_id = ?' .
-				' ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT ' . $rating_page . ',7',
-				$rating_type);
+				'SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags ' . 
+				'FROM users u WHERE u.games > 0 ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $rating_page . ',7');
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="4"><b>' . get_label('Rating position') . '</a></td></tr>';
 			$number = $rating_page;
@@ -242,7 +220,7 @@ class Page extends UserPageBase
 				echo '<td width="52"><a href="user_info.php?id=' . $id . '">';
 				show_user_pic($id, $flags, ICONS_DIR, 48, 48);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '">' . cut_long_name($name, 45) . '</a></td>';
-				echo '<td width="60" align="center">' . $rating . '</td>';
+				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';
 			}
 			echo '</table>';

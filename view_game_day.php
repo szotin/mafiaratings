@@ -35,37 +35,30 @@ class Page extends ViewGamePageBase
 		
 		echo '<table class="bordered" width="100%" id="players">';
 		echo '<tr class="th darker"><td width="30">&nbsp;</td>';
-		echo '<td>'.get_label('Player').'</td>';
+		echo '<td colspan="2">'.get_label('Player').'</td>';
 		if ($voting != NULL && !$voting->is_canceled())
 		{
-			echo '<td width="80">'.get_label('Nominated').'</td>';
-			echo '<td width="80">'.get_label('Voted for').'</td>';
+			echo '<td width="80" align="center">'.get_label('Nominated').'</td>';
+			echo '<td width="80" align="center">'.get_label('Voted for').'</td>';
 		}
-		echo '<td width="100">'.get_label('Result').'</td>';
-		echo '<td width="60">'.get_label('Role').'</td></tr>';
+		echo '<td width="80" align="center">'.get_label('Result').'</td>';
+		echo '<td width="80" align="center">'.get_label('Role').'</td></tr>';
 		for ($i = 0; $i < 10; ++$i)
 		{
 			$player = $this->vg->gs->players[$i];
+			$player_score = $this->vg->players[$i];
 			if ($player->kill_round >= 0 && $player->kill_round < $round)
 			{
 				continue;
 			}
 
-			if ($player->id == $this->vg->mark_player)
-			{
-				echo '<tr class="lighter">';
-			}
-			else
-			{
-				echo '<tr class="light">';
-			}
-			
+			echo '<tr class="light">';
 			echo '<td class="dark" align="center">' . ($i + 1) . '</td>';
-			echo '<td><a href="view_game_stats.php?num=' . $i . '&bck=1">' . cut_long_name($player->nick, 55) . '</a></td>';
+			$this->show_player_name($player, $player_score);
 			
 			if ($voting != NULL && !$voting->is_canceled())
 			{
-				echo '<td>';
+				echo '<td align="center">';
 				foreach ($voting->nominants as $nominant)
 				{
 					if ($nominant->nominated_by == $i)
@@ -76,7 +69,7 @@ class Page extends ViewGamePageBase
 				}
 				echo '&nbsp;</td>';
 				
-				echo '<td>';
+				echo '<td align="center">';
 				if (($this->vg->gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT) == 0)
 				{
 					$voted_for = $voting->votes[$i];
@@ -96,7 +89,7 @@ class Page extends ViewGamePageBase
 				echo '&nbsp;</td>';
 			}
 			
-			echo '<td>';
+			echo '<td align="center">';
 			if ($player->kill_round == $round && $player->state == PLAYER_STATE_KILLED_DAY)
 			{
 				switch ($player->kill_reason)
@@ -116,9 +109,7 @@ class Page extends ViewGamePageBase
 				}
 			}
 			echo '&nbsp;</td>';
-			
-			echo '<td>' . $player->role_text(false) . '</td>';
-		
+			$this->show_player_role($player);
 			echo '</tr>';
 		}
 		echo '</table>';

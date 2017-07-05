@@ -239,6 +239,7 @@ class AddressPageBase extends PageBase
 	protected $flags;
 	protected $club_id;
 	protected $club_name;
+	protected $scoring_id;
 	protected $city_id;
 	protected $city_name;
 	protected $timezone;
@@ -255,10 +256,10 @@ class AddressPageBase extends PageBase
 		}
 		$this->id = $_REQUEST['id'];
 
-		list ($this->name, $this->address, $this->url, $this->flags, $this->club_id, $this->club_name, $this->club_flags, $this->city_id, $this->city_name, $this->timezone, $this->country_id, $this->country_name) = 
+		list ($this->name, $this->address, $this->url, $this->flags, $this->club_id, $this->club_name, $this->scoring_id, $this->club_flags, $this->city_id, $this->city_name, $this->timezone, $this->country_id, $this->country_name) = 
 			Db::record(
 				get_label('address'),
-				'SELECT a.name, a.address, a.map_url, a.flags, a.club_id, c.name, c.flags, a.city_id, ct.name_' . $_lang_code . ', ct.timezone, ct.country_id, cr.name_' . $_lang_code . ' FROM addresses a' .
+				'SELECT a.name, a.address, a.map_url, a.flags, a.club_id, c.name, c.scoring_id, c.flags, a.city_id, ct.name_' . $_lang_code . ', ct.timezone, ct.country_id, cr.name_' . $_lang_code . ' FROM addresses a' .
 				' JOIN clubs c ON c.id = a.club_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN countries cr ON cr.id = ct.country_id' .

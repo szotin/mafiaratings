@@ -78,15 +78,15 @@ class Page extends ClubPageBase
 		ForumMessage::proceed_send(FORUM_OBJ_NO, 0, $this->id);
 	}
 	
-	protected function points_row($row, $number)
+	protected function rating_row($row, $number)
 	{
-		list ($id, $name, $points, $games_played, $games_won, $flags) = $row;
+		list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
 
 		echo '<tr><td width="20" align="center">' . $number . '</td>';
 		echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 		show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 		echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-		echo '<td width="60" align="center">' . $points . '</td>';
+		echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 		echo '</tr>';
 	}
 	
@@ -354,31 +354,26 @@ class Page extends ClubPageBase
 			echo '</tr></table></p>';
 		}
 		
-		// points
+		// ratings
 		if ($games_count > 0)
 		{
 			echo '</td><td width="280" valign="top">';
 			
 			// last year only
-			$query = new DbQuery(
-				'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
-					' JOIN games g ON p.game_id = g.id' .
-					' JOIN users u ON p.user_id = u.id' .
-					' WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - 31536000 GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT 10',
-				$this->scoring_id, $this->id);
+			$query = new DbQuery('SELECT id, name, rating, games, games_won, flags FROM users WHERE club_id = ? ORDER BY rating DESC, games, games_won DESC, id LIMIT 10', $this->id);
 					
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="4"><a href="club_standings.php?bck=1&id=' . $this->id . '"><b>' . get_label('Best players') . '</b></a></td></tr>';
 			$number = 1;
 			while ($row = $query->next())
 			{
-				list ($id, $name, $points, $games_played, $games_won, $flags) = $row;
+				list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
 
 				echo '<td width="20" align="center">' . $number . '</td>';
 				echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 				show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-				echo '<td width="60" align="center">' . format_score($points) . '</td>';
+				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';
 				
 				++$number;

@@ -184,12 +184,11 @@ class GClub
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.flags, c.flags FROM user_clubs c' .
 				' JOIN users u ON u.id = c.user_id' .
-				' LEFT OUTER JOIN ratings r ON r.user_id = u.id AND r.type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1) AND role = 0' .
 				' WHERE (c.flags & ' . UC_FLAG_BANNED .
 					') = 0 AND (c.flags & ' . (UC_PERM_PLAYER | UC_PERM_MODER) .
 					') <> 0 AND (u.flags & ' . U_FLAG_BANNED .
 					') = 0 AND c.club_id = ?' .
-				' ORDER BY r.rating DESC',
+				' ORDER BY u.rating DESC',
 			$id);
 		while ($row = $query->next())
 		{
@@ -932,7 +931,7 @@ try
 		$num = 0;
 		if (isset($_REQUEST['num']))
 		{
-			$num = $_REQUEST['num'];
+			$num = (int)$_REQUEST['num'];
 		}
 		
 		$name = '';
@@ -942,57 +941,34 @@ try
 		}
 		
 		array();
-		if (is_numeric($num) && $num > 0)
+		if ($name == '')
 		{
-			if ($name == '')
-			{
-				$query = new DbQuery(
-					'SELECT * FROM (SELECT u.id AS id, u.name AS name, NULL, u.flags AS flags FROM ratings r' .
-						' JOIN users u ON r.user_id = u.id' .
-						' WHERE r.type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1) AND r.role = 0 AND u.id NOT IN (SELECT user_id FROM user_clubs WHERE club_id = ?)' .
-						' ORDER BY rating DESC LIMIT ' . $num . ') u ORDER BY u.name',
-					$club_id);
-			}
-			else
-			{
-				$query = new DbQuery(
-					'SELECT id, name, NULL, flags FROM users ' .
-						' WHERE (name LIKE ? OR name LIKE ? OR name LIKE ? OR name LIKE ?)' .
-						' AND id NOT IN (SELECT user_id FROM user_clubs WHERE club_id = ?) UNION' .
-						' SELECT DISTINCT u.id, u.name, r.nick_name, u.flags FROM users u' . 
-						' JOIN registrations r ON r.user_id = u.id' .
-						' WHERE r.nick_name <> u.name AND (r.nick_name LIKE ? OR r.nick_name LIKE ? OR r.nick_name LIKE ? OR r.nick_name LIKE ?)' .
-						' AND u.id NOT IN (SELECT user_id FROM user_clubs WHERE club_id = ?)' .
-						' ORDER BY name LIMIT ' . $num,
-					$name . '%',
-					'% ' . $name . '%',
-					'%\_' . $name . '%',
-					'%-' . $name . '%', 
-					$club_id, 
-					$name . '%', 
-					'% ' . $name . '%', 
-					'%\_' . $name . '%',
-					'%-' . $name . '%',
-					$club_id);
-			}
-		}
-		else if ($name == '')
-		{
-			$query = new DbQuery(
-				'SELECT u.id, u.name, NULL, u.flags FROM ratings r' .
-					' JOIN users u ON r.user_id = u.id' .
-					' WHERE r.type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1) AND r.role = 0 AND u.id NOT IN (SELECT user_id FROM user_clubs WHERE club_id = ?)' .
-					' ORDER BY u.name',
-				$club_id);
+			$query = new DbQuery('SELECT id, name, NULL, flags FROM users ORDER BY rating DESC');
 		}
 		else
 		{
 			$query = new DbQuery(
-				'SELECT DISTINCT u.id, u.name, r.nick_name, u.flags FROM users u' .
-					' LEFT OUTER JOIN registrations r ON r.user_id = u.id' .
-					' WHERE ((u.name LIKE(?) AND r.nick_name IS NULL) OR r.nick_name LIKE(?)) AND u.id NOT IN (SELECT user_id FROM user_clubs WHERE club_id = ?)' .
-					' ORDER BY u.name',
-				$name . '%', $name . '%', $club_id);
+				'SELECT id, name, NULL, flags FROM users ' .
+					' WHERE name LIKE ? OR name LIKE ? OR name LIKE ? OR name LIKE ?' .
+					' UNION' .
+					' SELECT DISTINCT u.id, u.name, r.nick_name, u.flags FROM users u' . 
+					' JOIN registrations r ON r.user_id = u.id' .
+					' WHERE r.nick_name <> u.name AND (r.nick_name LIKE ? OR r.nick_name LIKE ? OR r.nick_name LIKE ? OR r.nick_name LIKE ?)',
+				$name . '%',
+				'% ' . $name . '%',
+				'%\_' . $name . '%',
+				'%-' . $name . '%', 
+				$club_id, 
+				$name . '%', 
+				'% ' . $name . '%', 
+				'%\_' . $name . '%',
+				'%-' . $name . '%',
+				$club_id);
+		}
+		
+		if ($num > 0)
+		{
+			$query->add(' ORDER BY name LIMIT ' . $num);
 		}
 		
 		$list = array();
@@ -1080,6 +1056,10 @@ catch (Exception $e)
 	else
 	{
 		Exc::log($e, true);
+		if (isset($query))
+		{
+			$result['sql'] = $query->get_parsed_sql();
+		}
 		$result['error'] = $e->getMessage();
 	}
 }

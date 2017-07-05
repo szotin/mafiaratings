@@ -3,34 +3,43 @@
 require_once 'include/game_stats.php';
 require_once 'include/page_base.php';
 require_once 'include/club.php';
+require_once 'include/event.php';
+require_once 'include/address.php';
+
+class ViewGamePlayer
+{
+	public $rating_before;
+	public $rating_earned;
+	public $club_points;
+	public $event_points;
+	public $user_flags;
+}
 
 class ViewGame
 {
 	public $gs;
-	public $mark_player;
 	public $event_id;
 	public $event;
+	public $event_flags;
+	public $address_id;
+	public $address;
+	public $address_flags;
 	public $club_id;
 	public $club;
 	public $club_flags;
 	public $start_time;
 	public $duration;
 	public $language;
+	public $language_code;
 	public $moder;
+	public $moder_flags;
 	public $row;
+	public $civ_odds;
+	
+	public $players;
 	
 	function __construct($id)
 	{
-		global $_profile;
-	
-		if ($_profile != NULL)
-		{
-			$this->mark_player = $_profile->user_id;
-		}
-		else
-		{
-			$this->mark_player = 'n';
-		}
 		$this->refresh($id);
 	}
 	
@@ -46,7 +55,7 @@ class ViewGame
 		
 		if ($this->gs->moder_id > 0)
 		{
-			list ($this->moder) = Db::record(get_label('moderator'), 'SELECT name FROM users WHERE id = ?', $this->gs->moder_id);
+			list ($this->moder, $this->moder_flags) = Db::record(get_label('moderator'), 'SELECT name, flags FROM users WHERE id = ?', $this->gs->moder_id);
 		}
 		else
 		{
@@ -54,7 +63,7 @@ class ViewGame
 		}
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, ct.timezone, e.start_time, c.id, c.name, c.flags, g.start_time, g.end_time - g.start_time, g.language, g.result FROM games g' .
+			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN clubs c ON c.id = g.club_id' . 
 				' JOIN addresses a ON a.id = e.address_id' .
@@ -64,15 +73,15 @@ class ViewGame
 		if ($row = $query->next())
 		{
 			list (
-				$this->event_id, $event_name, $timezone, $event_time, $this->club_id, $this->club, $this->club_flags, $start_time, $duration,
-				$language, $this->result) = $row;
-			
+				$this->event_id, $event_name, $this->event_flags, $timezone, $event_time, $this->club_id, $this->club, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $start_time, $duration,
+				$this->language_code, $this->civ_odds, $this->result) = $row;
+
 			$this->event = $event_name . format_date('. M j Y.', $event_time, $timezone);
 		}
 		else
 		{
 			list (
-				$timezone, $this->club, $start_time, $duration, $language, $this->result) =
+				$timezone, $this->club, $start_time, $duration, $this->language_code, $this->result) =
 					Db::record(
 						get_label('game'), 
 						'SELECT ct.timezone, c.name, g.start_time, g.end_time - g.start_time, g.language, g.result FROM games g' . 
@@ -86,45 +95,17 @@ class ViewGame
 		
 		$this->start_time = format_date('M j Y H:i', $start_time, $timezone);
 		$this->duration = format_time($duration);
-		$this->language = get_lang_str($language);
-	}
-	
-	function show_details()
-	{
-		global $_profile;
-	
-		echo '<table class="transp" width="100%">';
-		echo '<tr><td width="120">'.get_label('Club').':</td><td><a href="club_main.php?id=' . $this->club_id . '&bck=1">' . $this->club . '</a></td></tr>';
-		if ($this->event != NULL)
+		$this->language = get_lang_str($this->language_code);
+		$this->players = array(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		$query = new DbQuery('SELECT p.number, p.rating_before, p.rating_earned, p.club_points, p.event_points, u.flags FROM players p JOIN users u ON p.user_id = u.id WHERE p.game_id = ?', $id);
+		while ($row = $query->next())
 		{
-			echo '<tr><td>'.get_label('Event').':</td><td><a href="event_standings.php?id=' . $this->event_id . '&bck=1">' . $this->event . '</a></td></tr>';
+			$player_stats = new ViewGamePlayer();
+			list ($number, $player_stats->rating_before, $player_stats->rating_earned, $player_stats->club_points, $player_stats->event_points, $player_stats->user_flags) = $row;
+			--$number;
+			$player = $this->gs->players[$number];
+			$this->players[$number] = $player_stats;
 		}
-		echo '<tr><td>'.get_label('Start time').':</td><td>' . $this->start_time . '</td></tr>';
-		echo '<tr><td>'.get_label('Duration').':</td><td>' . $this->duration . '</td></tr>';
-		echo '<tr><td>'.get_label('Moderator') . ':</td><td>';
-		if ($this->gs->moder_id > 0)
-		{
-			echo '<a href="user_info.php?id=' . $this->gs->moder_id . '&bck=1">' . $this->moder . '</a>';
-		}
-		else
-		{
-			echo $this->moder;
-		}
-		echo '</td></tr>';
-		echo '<tr><td>'.get_label('Language').':</td><td>' . $this->language . '</td></tr>';
-		if ($this->gs->best_player >= 0 && $this->gs->best_player < 10)
-		{
-			echo '<tr><td>'.get_label('Best player').':</td><td>' . ($this->gs->best_player + 1) . ': ' . $this->gs->players[$this->gs->best_player]->nick . '</td></tr>';
-		}
-		if ($this->gs->best_move >= 0 && $this->gs->best_move < 10)
-		{
-			echo '<tr><td>'.get_label('Best move').':</td><td>' . ($this->gs->best_move + 1) . ': ' . $this->gs->players[$this->gs->best_move]->nick . '</td></tr>';
-		}
-		if ($_profile != NULL && $_profile->is_admin() && $this->gs->error != NULL)
-		{
-			echo '<tr><td>'.get_label('Error').':</td><td>' . $this->gs->error . '</td></tr>';
-		}
-		echo '</table>';
 	}
 	
 	function can_terminate()
@@ -160,6 +141,56 @@ class ViewGamePageBase extends PageBase
 	protected $vg;
 	protected $gametime;
 	private $last_gametime;
+	
+	protected function show_player_name($player, $player_score)
+	{
+		$gs = $this->vg->gs;
+		echo '<td width="48"><a href="view_game_stats.php?num=' . $player->number . '&bck=1" title="' . $player->nick . '">';
+		if ($player_score != NULL)
+		{
+			show_user_pic($player->id, $player_score->user_flags, ICONS_DIR, 48, 48);
+		}
+		else if ($player->id < 0)
+		{
+			echo '<img src="images/create_user.png" width="48" height="48">';
+		}
+		else
+		{
+			echo '<img src="images/transp.png" width="48" height="48">';
+		}
+		echo '</a></td><td>';
+		if ($gs->best_player == $player->number)
+		{
+			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right"><img src="images/best_player.png" title="' . get_label('Best player') . '"></td></tr></table>';
+		}
+		else if ($gs->best_move == $player->number)
+		{
+			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right"><img src="images/best_move.png" title="' . get_label('Best move') . '"></td></tr></table>';
+		}
+		else
+		{
+			echo cut_long_name($player->nick, 50);
+		}
+		echo '</td>';
+	}
+	
+	protected function show_player_role($player)
+	{
+		echo '<td align="center">';
+        switch ($player->role)
+        {
+            case PLAYER_ROLE_SHERIFF:
+				echo '<img src="images/sheriff.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
+				break;
+            case PLAYER_ROLE_DON:
+				echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
+				break;
+            case PLAYER_ROLE_MAFIA:
+				echo '<img src="images/maf.png" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
+				break;
+        }
+		echo '</td>';
+	}
 	
 	protected function prepare()
 	{
@@ -264,23 +295,69 @@ class ViewGamePageBase extends PageBase
 	
 	protected function show_title()
 	{
+		global $_profile;
+		
+		$vg = $this->vg;
+		$gs = $vg->gs;
 		echo '<table class="head" width="100%"><tr><td width="1">';
-		echo '<a href="club_main.php?id=' . $this->vg->club_id . '&bck=1">';
-		show_club_pic($this->vg->club_id, $this->vg->club_flags, ICONS_DIR);
-		echo '</a></td><td valign="top">' . $this->standard_title() . '</td><td align="right" valign="top">';
+		echo '</td><td valign="top">' . $this->standard_title() . '</td><td align="right" valign="top">';
 		show_back_button();
 		echo '</tr></table>';
 		
 //		parent::show_title();
 		
-		echo '<table class="transp" width="100%"><tr><td>';
-		$this->vg->show_details();
-		echo '</td>';
-		echo '<td align="right" valign="bottom">';
-		if ($this->vg->result == 0 && $this->vg->can_terminate())
+		if ($_profile != NULL && $_profile->is_admin() && $gs->error != NULL)
+		{
+			echo '<p><b>'.get_label('Error').': ' . $gs->error . '</b></p>';
+		}
+		
+		echo '<p><table class="transp" width="100%"><tr><td><table class="bordered">';
+		echo '<tr align="center" class="th light" padding="5px"><td width="100">' . get_label('Club') . '</td><td width="100">' . get_label('Event') . '</td><td width="100">' . get_label('Address') . '</td><td width="100">' . get_label('Moderator') . '</td><td width="100">'.get_label('Time').'</td><td width="100">'.get_label('Duration').'</td><td width="100">'.get_label('Language').'</td>';
+		if ($vg->civ_odds >= 0 && $vg->civ_odds <= 1)
+		{
+			echo '<td width="100">'.get_label('Civs odds').'</td>';
+		}
+		echo '<tr align="center" class="light"><td><a href="club_main.php?id=' . $vg->club_id . '&bck=1" title="' . $vg->club . '">';
+		show_club_pic($vg->club_id, $vg->club_flags, ICONS_DIR, 48);
+		echo '</a></td><td>';
+		if ($vg->event != NULL)
+		{
+			echo '<a href="event_standings.php?id=' . $vg->event_id . '&bck=1" title="' . $vg->event . '">';
+			show_event_pic($vg->event_id, $vg->event_flags, $vg->address_id, $vg->address_flags, ICONS_DIR, 48);
+			echo '</a>';
+		}
+		else
+		{
+			echo '<img src="images/transp.png" width="48" height="48">';
+		}
+		echo '</td><td><a href="address_info.php?id=' . $vg->address_id . '&bck=1" title="' . $vg->address . '">';
+		show_address_pic($vg->address_id, $vg->address_flags, ICONS_DIR, 48);
+		echo '</td><td>';
+		if ($gs->moder_id > 0)
+		{
+			echo '<a href="user_info.php?id=' . $gs->moder_id . '&bck=1" title="' . $vg->moder . '">';
+			show_user_pic($gs->moder_id, $vg->moder_flags, ICONS_DIR, 48, 48);
+			echo '</a>';
+		}
+		else
+		{
+			echo '<img src="images/create_user.png" width="48" height="48" title="' . $vg->moder . '">';
+		}
+		echo '</td><td>' . $vg->start_time . '</td><td>' . $vg->duration . '</td><td>';
+		show_language_pic($vg->language_code, ICONS_DIR, 48, 48);
+		if ($vg->civ_odds >= 0 && $vg->civ_odds <= 1)
+		{
+			$odds_text = number_format($vg->civ_odds * 100, 1) . '%';
+			$text = get_label('The chances to win for the town estimated by [0] before the game were [1].', PRODUCT_NAME, $odds_text);
+			$red_width = round(48 * $vg->civ_odds);
+			echo '</td><td>' . $odds_text . '<br><img src="images/red_dot.png" width="' . $red_width . '" height="12" title="' . $text . '"><img src="images/black_dot.png" width="' . (48 - $red_width) . '" height="12" title="' . $text . '">';
+			
+		}
+		echo '</td></tr></table></td><td align="right">';
+		if ($vg->result == 0 && $vg->can_terminate())
 		{
 			echo '<a href="view_game.php?end=1">';
-			if ($this->vg->gs->gamestate == GAME_MAFIA_WON || $this->vg->gs->gamestate == GAME_CIVIL_WON)
+			if ($gs->gamestate == GAME_MAFIA_WON || $gs->gamestate == GAME_CIVIL_WON)
 			{
 				echo get_label('End game');
 			}
@@ -305,13 +382,12 @@ class ViewGamePageBase extends PageBase
 				show_option($i, $this->gametime, get_label('Night [0]', ($i>>1)));
 			}
 		}
-		echo '</select></form>';
-		echo '</td></tr></table>';
+		echo '</select></form></td></tr></table></p>';
 	}
 	
 	protected function show_body()
 	{
-		echo '<form method="post" action="' . get_page_name() . '">';
+		echo '<p><form method="post" action="' . get_page_name() . '">';
 		echo '<input type="hidden" name="gametime" value="' . $this->gametime . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td valign="top"><input value="'.get_label('Prev').'" class="btn norm" type="submit" name="prev"';
@@ -325,7 +401,7 @@ class ViewGamePageBase extends PageBase
 			echo ' disabled';
 		}
 		echo '></td></tr></table>';
-		echo '</form>';
+		echo '</form></p>';
 	}
 }
 

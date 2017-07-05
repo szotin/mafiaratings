@@ -214,7 +214,7 @@ class DbQuery extends SQL
 			{
 				$message = get_label('Query failed');
 			}
-			throw new FatalExc($message, $parsed_sql . '; ' . mysql_error(), true);
+			throw new FatalExc($message, $parsed_sql . '<br>' . mysql_error(), true);
 		}
 		return $this;
 	}
@@ -233,7 +233,7 @@ class DbQuery extends SQL
 		$row = $this->next($obj_name);
 		if (!$row)
 		{
-			throw new FatalExc(get_label('Unable to find [0].', $obj_name), $this->get_parsed_sql() . '; ' . mysql_error());
+			throw new FatalExc(get_label('Unable to find [0].', $obj_name), $this->get_parsed_sql() . '<br>' . mysql_error(), true);
 		}
 		return $row;
 	}
@@ -248,7 +248,7 @@ class DbQuery extends SQL
 		$row = mysql_num_rows($this->query);
 		if ($row === false)
 		{
-			throw new FatalExc(get_label('Unable to get number of records'), mysql_error(), true);
+			throw new FatalExc(get_label('Unable to get number of records'), $this->get_parsed_sql() . '<br>' . mysql_error(), true);
 		}
 		return $row;
 	}

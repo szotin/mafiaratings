@@ -3,6 +3,7 @@
 require_once 'include/user.php';
 require_once 'include/player_stats.php';
 require_once 'include/pages.php';
+require_once 'include/scoring.php';
 
 define("PAGE_SIZE", 20);
 
@@ -160,7 +161,7 @@ class Page extends UserPageBase
 			show_pages_navigation(PAGE_SIZE, $count);
 			
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker"><td width="90"></td><td>'.get_label('Club name').'</td><td width="100">'.get_label('Moderator').'</td><td width="140">'.get_label('Start time').'</td><td width="60">'.get_label('Duration').'</td><td width="100">'.get_label('Result').'</td></tr>';
+			echo '<tr class="th darker"><td width="90"></td><td>'.get_label('Club name').'</td><td width="100">'.get_label('Moderator').'</td><td width="140">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="100">'.get_label('Result').'</td></tr>';
 			
 			$query = new DbQuery(
 				'SELECT g.id, c.name, ct.timezone, g.start_time, g.end_time - g.start_time, g.result FROM games g' .
@@ -255,11 +256,11 @@ class Page extends UserPageBase
 			}
 			if (($flags & FLAG_WON) == 0)
 			{
-				$condition->add(' AND p.rating <= 0');
+				$condition->add(' AND p.won = 0');
 			}
 			if (($flags & FLAG_LOST) == 0)
 			{
-				$condition->add(' AND p.rating > 0');
+				$condition->add(' AND p.won > 0');
 			}
 			if (($flags & FLAG_CIVIL_WON) == 0)
 			{
@@ -340,10 +341,10 @@ class Page extends UserPageBase
 			list ($count) = Db::record(get_label('player'), 'SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE ', $condition);
 			show_pages_navigation(PAGE_SIZE, $count);
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker"><td width="90"></td><td>'.get_label('Club name').'</td><td width="100">'.get_label('Moderator').'</td><td width="140">'.get_label('Start time').'</td><td width="60">'.get_label('Duration').'</td><td width="100">'.get_label('Result').'</td><td width="40">'.get_label('Rating').'</td></tr>';
+			echo '<tr class="th darker"><td width="90"></td><td>'.get_label('Club name').'</td><td width="100">'.get_label('Moderator').'</td><td width="140">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="100">'.get_label('Result').'</td><td width="40">'.get_label('Rating berore the game').'</td><td width="40">'.get_label('Rating earned').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.name, ct.timezone, m.name, g.start_time, g.end_time - g.start_time, g.result, p.role, p.rating FROM players p' .
+				'SELECT g.id, c.name, ct.timezone, m.name, g.start_time, g.end_time - g.start_time, g.result, p.role, p.rating_before, p.rating_earned FROM players p' .
 				' JOIN games g ON g.id = p.game_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
@@ -355,13 +356,13 @@ class Page extends UserPageBase
 			{
 				list (
 					$game_id, $club_name, $timezone, $moder_name, $start, $duration, 
-					$game_result, $role, $rating) = $row;
+					$game_result, $role, $rating_before, $rating_earned) = $row;
 			
 				echo '<tr><td class="dark"><a href="view_game.php?id=' . $game_id . '&pid=' . $this->id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 				echo '<td>' . $club_name . '</td>';
-				echo '<td width="200">' . cut_long_name($moder_name, 36) . '</td>';
-				echo '<td width="140">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
-				echo '<td width="60">' . format_time($duration) . '</td>';
+				echo '<td>' . cut_long_name($moder_name, 36) . '</td>';
+				echo '<td>' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
+				echo '<td>' . format_time($duration) . '</td>';
 				
 				$row_text = get_label('invalid');
 				switch ($game_result)
@@ -401,8 +402,9 @@ class Page extends UserPageBase
 						}
 						break;
 				}
-				echo '<td width="100">' . $row_text . '</td>';
-				echo '<td width="40">' . $rating . '</td></tr>';
+				echo '<td>' . $row_text . '</td>';
+				echo '<td>' . number_format($rating_before) . '</td>';
+				echo '<td>' . number_format($rating_earned) . '</td></tr>';
 			}
 			echo '</table>';
 		}

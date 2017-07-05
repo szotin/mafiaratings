@@ -375,8 +375,8 @@ class Page extends UserPageBase
 		
 		$query = new DbQuery(
 			'SELECT count(*),' .
-			' SUM(p1.rating), SUM(p2.rating),' .
-			' SUM(IF(p1.rating > 0, 1, 0)), SUM(IF(p2.rating > 0, 1, 0)),' .
+			' SUM(p1.rating_earned), SUM(p2.rating_earned),' .
+			' SUM(IF(p1.rating_earned > 0, 1, 0)), SUM(IF(p2.rating_earned > 0, 1, 0)),' .
 			' SUM(IF(p1.kill_type = 0, 1, 0)), SUM(IF(p2.kill_type = 0, 1, 0)),' .
 			' SUM(p1.voted_by_civil + p1.voted_by_mafia + p1.voted_by_sheriff), SUM(p2.voted_by_civil + p2.voted_by_mafia + p2.voted_by_sheriff),' .
 			' SUM(p1.nominated_by_civil + p1.nominated_by_mafia + p1.nominated_by_sheriff), SUM(p2.nominated_by_civil + p2.nominated_by_mafia + p2.nominated_by_sheriff),' .

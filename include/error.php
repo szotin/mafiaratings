@@ -1,6 +1,7 @@
 <?php
 
 require_once 'include/log.php';
+require_once 'include/server.php';
 
 class FatalExc extends Exception
 {
@@ -9,7 +10,6 @@ class FatalExc extends Exception
 
     public function __construct($message, $details = NULL, $for_log = false)
 	{
-		parent::__construct($message);
 		if ($details === true)
 		{
 			$this->details = NULL;
@@ -20,6 +20,11 @@ class FatalExc extends Exception
 			$this->details = $details;
 			$this->for_log = $for_log;
 		}
+		if (is_testing_server())
+		{
+			$message .= '<p>' . $this->details . '</p>';
+		}
+		parent::__construct($message);
     }
 	
 	public function for_log()

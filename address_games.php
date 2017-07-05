@@ -101,7 +101,7 @@ class Page extends AddressPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker"><td width="90">&nbsp;</td><td>'.get_label('Club name').'</td><td width="100">'.get_label('Moderator').'</td><td width="140">'.get_label('Start time').'</td><td width="60">'.get_label('Duration').'</td><td width="100">'.get_label('Result').'</td></tr>';
+		echo '<tr class="th darker"><td width="90">&nbsp;</td><td>'.get_label('Club name').'</td><td width="100">'.get_label('Moderator').'</td><td width="140">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="100">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, c.id, c.name, ct.timezone, m.id, m.name, g.start_time, g.end_time - g.start_time, g.result FROM games g' .
 			' JOIN clubs c ON c.id = g.club_id' .

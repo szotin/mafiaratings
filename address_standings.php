@@ -34,6 +34,11 @@ class Page extends AddressPageBase
 			$this->roles = $_REQUEST['roles'];
 		}
 		
+		if (isset($_REQUEST['scoring']))
+		{
+			$this->scoring_id = $_REQUEST['scoring'];
+		}
+		
 		$this->_title = get_label('[0] standings', $this->name);
 	}
 	
@@ -44,20 +49,23 @@ class Page extends AddressPageBase
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%">';
-		echo '<tr><td>';
+		echo '<tr><td>' . get_label('Scoring system') . ': ';
+		show_scoring_select($this->club_id, $this->scoring_id, 'viewForm');
+		echo '</td><td align="right">';
 		show_roles_select($this->roles, 'viewForm');
 		echo '</td></tr></table></form>';
-		
+
 		$role_condition = get_roles_condition($this->roles);
 		list ($count) = Db::record(get_label('points'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ?', $this->id, $role_condition);
 		$query = new DbQuery(
-			'SELECT u.id, u.name, SUM(p.rating) as rating, count(*) as games, SUM(p.won) as won, u.flags FROM players p' .
-				' JOIN users u ON p.user_id = u.id' .
+			'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 				' JOIN games g ON p.game_id = g.id' .
+				' JOIN users u ON p.user_id = u.id' .
+				' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
 				' JOIN events e ON g.event_id = e.id' .
 				' WHERE e.address_id = ?',
-			$this->id, $role_condition);
-		$query->add(' GROUP BY u.id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+			$this->scoring_id, $this->id, $role_condition);
+		$query->add(' GROUP BY p.user_id ORDER BY points DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
 		show_pages_navigation(PAGE_SIZE, $count);
 		echo '<table class="bordered light" width="100%">';
@@ -89,13 +97,13 @@ class Page extends AddressPageBase
 			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 			show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-			echo '<td class="dark" align="center">' . $points . '</td>';
+			echo '<td class="dark" align="center">' . format_score($points) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)
 			{
 				echo '<td align="center">' . number_format(($games_won*100.0)/$games_played, 1) . '%</td>';
-				echo '<td align="center">' . number_format($points/$games_played, 2) . '</td>';
+				echo '<td align="center">' . format_score($points/$games_played) . '</td>';
 			}
 			else
 			{

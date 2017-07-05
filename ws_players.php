@@ -38,11 +38,7 @@ try
 
 	if ($term == '')
 	{
-		$query = new DbQuery(
-			'SELECT u.id, u.name FROM ratings r' .
-			' JOIN users u ON r.user_id = u.id' .
-			' WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 AND r.type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1) AND r.role = 0' .
-			' ORDER BY rating DESC');
+		$query = new DbQuery('SELECT u.id, u.name FROM users u WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 ORDER BY rating DESC');
 	}
 	else
 	{

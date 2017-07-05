@@ -184,7 +184,7 @@ class PlayerStats
 		}
 		
 		$query = new DbQuery(
-			'SELECT count(*), SUM(p.won), SUM(p.rating), ' .
+			'SELECT count(*), SUM(p.won), SUM(p.rating_earned), ' .
 				'SUM(p.voted_civil), SUM(p.voted_mafia), SUM(p.voted_sheriff), ' .
 				'SUM(p.voted_by_civil), SUM(p.voted_by_mafia), SUM(p.voted_by_sheriff), ' .
 				'SUM(p.nominated_civil), SUM(p.nominated_mafia), SUM(p.nominated_sheriff), ' .

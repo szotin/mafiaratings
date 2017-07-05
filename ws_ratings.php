@@ -34,27 +34,24 @@ class Ratings
 	public $count;
 	public $ratings;
 	
-	function __construct($pos, $len, $role, $type_id, $global_rating)
+	// note that role is not working. Fix later.
+	function __construct($pos, $len, $role)
 	{
 		global $club_id;
 		if ($club_id <= 0)
 		{
-			$condition = new SQL(' FROM ratings r JOIN users u ON u.id = r.user_id WHERE');
-		}
-		else if ($global_rating)
-		{
-			$condition = new SQL(' FROM ratings r JOIN users u ON r.user_id = u.id JOIN user_clubs c ON c.user_id = r.user_id WHERE c.club_id = ? AND', $club_id);
+			$condition = new SQL(' FROM users u WHERE');
 		}
 		else
 		{
-			$condition = new SQL(' FROM ratings r JOIN users u ON r.user_id = u.id JOIN user_clubs c ON c.user_id = r.user_id WHERE c.club_id = ? AND', $club_id);
+			$condition = new SQL(' FROM users u JOIN user_clubs c ON c.user_id = r.user_id WHERE c.club_id = ? AND', $club_id);
 		}
-		$condition->add(' r.role = ? AND type_id = ?', $role, $type_id);
+		// $condition->add(' r.role = ? AND type_id = ?', $role, $type_id);
 		
 		list($this->count) = Db::record(get_label('rating'), 'SELECT count(*) ', $condition);
 		
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, r.rating, r.games, r.games_won', $condition);
-		$query->add(' ORDER BY r.rating DESC, r.games, r.games_won, r.user_id DESC LIMIT ' . $pos . ',' . $len);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.rating, u.games, u.games_won', $condition);
+		$query->add(' ORDER BY u.rating DESC, u.games, u.games_won, u.user_id DESC LIMIT ' . $pos . ',' . $len);
 
 		$num = $pos + 1;
 		$this->ratings = array();
@@ -77,18 +74,6 @@ if (isset($_REQUEST['len']))
 {
 	$len = $_REQUEST['len'];
 }
-
-$global_rating = isset($_REQUEST['gr']) && $_REQUEST['gr'];
-
-if (isset($_REQUEST['type']))
-{
-	$type_id = $_REQUEST['type'];
-}
-else
-{
-	list($type_id) = Db::record(get_label('rating'), 'SELECT id FROM rating_types ORDER BY def DESC, id LIMIT 1');
-}
-
 
 $role = 0;
 if (isset($_REQUEST['role']))
@@ -122,7 +107,7 @@ if (isset($_REQUEST['role']))
 
 try
 {
-	echo json_encode(new Ratings($pos, $len, $role, $type_id, $global_rating));
+	echo json_encode(new Ratings($pos, $len, $role));
 }
 catch (Exception $e)
 {

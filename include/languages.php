@@ -305,4 +305,33 @@ function detect_lang($str)
 	return LANG_NO;
 }
 
+function show_language_pic($lang, $dir, $width = 0, $height = 0)
+{
+	if ($width <= 0 && $height <= 0)
+	{
+		if ($dir == ICONS_DIR)
+		{
+			$width = ICON_WIDTH;
+			$height = ICON_HEIGHT;
+		}
+		else if ($dir == TNAILS_DIR)
+		{
+			$width = TNAIL_WIDTH;
+			$height = TNAIL_HEIGHT;
+		}
+	}
+
+	echo '<img src="images/' . $dir . 'lang' . $lang . '.png" title="' . get_lang_str($lang) . '"';
+	if ($width > 0)
+	{
+		echo ' width="' . $width . '"';
+	}
+	if ($height > 0)
+	{
+		echo ' height="' . $height . '"';
+	}
+	echo '>';
+}
+
+
 ?>

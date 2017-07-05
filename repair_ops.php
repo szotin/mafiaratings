@@ -226,8 +226,7 @@ try
 			Db::exec(get_label('mafioso'), 'DELETE FROM mafiosos');
 			Db::exec(get_label('sheriff'), 'DELETE FROM sheriffs');
 			Db::exec(get_label('player'), 'DELETE FROM players');
-			Db::exec(get_label('rating'), 'DELETE FROM ratings');
-			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = 0');
+			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = 0, rating = ' . USER_INITIAL_RATING . ', games = 0, games_won = 0');
 			Db::commit();
 		}
 		$c = 0;

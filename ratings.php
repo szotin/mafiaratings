@@ -5,6 +5,7 @@ require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/club.php';
 require_once 'include/user.php';
+require_once 'include/scoring.php';
 
 define("PAGE_SIZE",15);
 define('ROLES_COUNT', 7);
@@ -13,7 +14,6 @@ class Page extends GeneralPageBase
 {
 	private $my_id;
 	private $role;
-	private $type_id;
 
 	protected function prepare()
 	{
@@ -32,24 +32,13 @@ class Page extends GeneralPageBase
 		{
 			$this->role = $_REQUEST['role'];
 		}
-		
-		if (isset($_REQUEST['type']))
-		{
-			$this->type_id = $_REQUEST['type'];
-		}
-		else
-		{
-			list($this->type_id) = Db::record(get_label('rating'), 'SELECT id FROM rating_types ORDER BY def DESC, id LIMIT 1');
-		}
 	}
 	
-	protected function show_body()
+	private function common_condition()
 	{
-		global $_page, $_profile;
+		global $_profile;
 		
-		$condition = new SQL(
-			' FROM ratings r JOIN users u ON u.id = r.user_id LEFT OUTER JOIN clubs c ON u.club_id = c.id WHERE r.role = ? AND r.type_id = ?',
-			$this->role, $this->type_id);
+		$condition = new SQL(' WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 AND u.games > 0');
 		$ccc_id = $this->ccc_filter->get_id();
 		switch ($this->ccc_filter->get_type())
 		{
@@ -78,11 +67,34 @@ class Page extends GeneralPageBase
 			$condition->add(' AND u.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $ccc_id);
 			break;
 		}
+		return $condition;
+	}
+	
+	protected function show_body()
+	{
+		global $_page, $_profile;
 
-		list ($count) = Db::record(get_label('rating'), 'SELECT count(*)', $condition);
-		$query = new DbQuery('SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags, c.id, c.flags', $condition);
-		$query->add(' ORDER BY r.rating DESC, r.games, r.games_won DESC, r.user_id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
-		
+		$condition = $this->common_condition();
+		if ($this->role == POINTS_ALL)
+		{
+			$query = new DbQuery(
+				'SELECT u.id, u.name, u.rating as rating, u.games as games, u.games_won as won, u.flags, c.id, c.flags FROM users u' . 
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id', $condition);
+			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
+		}
+		else
+		{
+			$condition->add(get_roles_condition($this->role));
+			$query = new DbQuery(
+				'SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.flags, c.id, c.flags FROM users u' . 
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' JOIN players p ON p.user_id = u.id', $condition);
+			$query->add(' GROUP BY u.id ');
+			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id', $condition);
+		}
+		$query->add(' ORDER BY rating DESC, games, won DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+			
+		list ($count) = Db::record(get_label('rating'), $count_query);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		echo '<table class="bordered light" width="100%">';
@@ -118,7 +130,7 @@ class Page extends GeneralPageBase
 			echo '<td width="50" align="center">';
 			show_club_pic($club_id, $club_flags, ICONS_DIR, 40, 40);
 			echo '</td>';
-			echo '<td align="center" class="dark">' . $rating . '</td>';
+			echo '<td align="center" class="dark">' . number_format($rating) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)
@@ -140,15 +152,6 @@ class Page extends GeneralPageBase
 		global $_lang_code;
 
 		echo '<table class="transp" width="100%">';
-		echo '<tr><td align="right"><select id="type" onChange="filter()">';
-		$query = new DbQuery('SELECT id, name_' . $_lang_code . ' FROM rating_types ORDER BY id');
-		while ($row = $query->next())
-		{
-			list ($tid, $tname) = $row;
-			show_option($tid, $this->type_id, $tname);
-		}
-		echo '</select> ';
-		
 		echo '<select id="role" onChange = "filter()">';
 		show_option(0, $this->role, get_label('All roles'));
 		show_option(1, $this->role, get_label('Red players'));
@@ -163,7 +166,7 @@ class Page extends GeneralPageBase
 	
 	protected function get_filter_js()
 	{
-		return '+ "&type=" + $("#type option:selected").val() + "&role=" + $("#role option:selected").val()';
+		return '+ "&role=" + $("#role option:selected").val()';
 	}
 }
 

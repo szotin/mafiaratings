@@ -380,42 +380,6 @@ try
 		}
 		Db::exec(get_label('photo'), 'UPDATE user_photos SET email_sent = TRUE');
 	}
-	
-	if ($emails_remaining == MAX_EMAILS)
-	{
-		// if we are idling, we can check if ratings require rebuilding
-		$query = new DbQuery('SELECT id, span, name_en FROM rating_types WHERE span > 0 AND renew_span > 0 AND renew_time < UNIX_TIMESTAMP() - renew_span LIMIT 1');
-		if ($row = $query->next($query))
-		{
-			list($type_id, $type_span, $type_name) = $row;
-			$ratings_label = get_label('ratings');
-			
-			Db::exec($ratings_label, 'DELETE FROM ratings WHERE type_id = ?', $type_id);
-			Db::exec($ratings_label,
-				'INSERT INTO ratings (user_id, type_id, role, rating, games, games_won) ' .
-				'SELECT p.user_id, ?, 0, SUM(p.rating), count(*), SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id ' .
-				'WHERE g.start_time > UNIX_TIMESTAMP() - ? GROUP BY user_id', 
-				$type_id, $type_span);
-			Db::exec($ratings_label,
-				'INSERT INTO ratings (user_id, type_id, role, rating, games, games_won) ' .
-				'SELECT p.user_id, ?, 1, SUM(p.rating), count(*), SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id ' .
-				'WHERE g.start_time > UNIX_TIMESTAMP() - ? AND p.role <= 1 GROUP BY user_id',
-				$type_id, $type_span);
-			Db::exec($ratings_label,
-				'INSERT INTO ratings (user_id, type_id, role, rating, games, games_won)' .
-				' SELECT p.user_id, ?, 2, SUM(p.rating), count(*), SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id' .
-				' WHERE g.start_time > UNIX_TIMESTAMP() - ? AND p.role >= 2 GROUP BY user_id',
-				$type_id, $type_span);
-			Db::exec($ratings_label,
-				'INSERT INTO ratings (user_id, type_id, role, rating, games, games_won)' .
-				' SELECT p.user_id, ?, 3 + p.role, SUM(p.rating), count(*), SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id' .
-				' WHERE g.start_time > UNIX_TIMESTAMP() - ? GROUP BY user_id, role',
-				$type_id, $type_span);
-			Db::exec($ratings_label, 'UPDATE rating_types SET renew_time = UNIX_TIMESTAMP() WHERE id = ?', $type_id);
-			
-			db_log('ratings', 'Rebuild ' . $type_name, NULL);
-		}
-	}
 
 	Db::commit();
 }

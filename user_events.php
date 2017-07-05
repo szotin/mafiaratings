@@ -6,6 +6,7 @@ require_once 'include/languages.php';
 require_once 'include/pages.php';
 require_once 'include/event.php';
 require_once 'include/ccc_filter.php';
+require_once 'include/scoring.php';
 
 define("PAGE_SIZE",15);
 
@@ -24,29 +25,19 @@ class Page extends UserPageBase
 	{
 		global $_profile, $_page;
 		
-		$show_empty = isset($_REQUEST['emp']);
-		
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		$this->ccc_filter->show('onCCC');
-		echo '</td><td align="right">';
-		echo '<input type="checkbox" id="emp"';
-		if ($show_empty)
-		{
-			echo ' checked';
-		}
-		echo ' onclick="filter()"> ' . get_label('Show events with no games');
 		echo '</td></tr></table>';
 		
 		$condition = new SQL(
-			' FROM registrations r' .
-			' JOIN events e ON r.event_id = e.id' .
+			' FROM events e' .
+			' JOIN games g ON g.event_id = e.id' .
+			' JOIN players p ON p.game_id = g.id' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' . 
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE r.user_id = ? AND e.start_time < UNIX_TIMESTAMP()',
-			$this->id);
-			
+			' WHERE p.user_id = ?', $this->id);
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
 		{
@@ -68,27 +59,20 @@ class Page extends UserPageBase
 			break;
 		}
 			
-		if (!$show_empty)
-		{
-			$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
-		}
-		
-		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
+		list ($count) = Db::record(get_label('event'), 'SELECT count(DISTINCT e.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
-
+		
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags,' .
-			' (SELECT count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = r.user_id AND g.event_id = e.id), ' .
-			' (SELECT SUM(p.rating) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = r.user_id AND g.event_id = e.id), ' .
-			' (SELECT SUM(p.won) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = r.user_id AND g.event_id = e.id)', 
+			' SUM(p.rating_earned), IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = c.scoring_id AND (o.flag & p.flags) <> 0)), 0), COUNT(g.id), SUM(p.won)',
 			$condition);
-		$query->add(' ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query->add(' GROUP BY e.id ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
 		echo '<td colspan="2">' . get_label('Event') . '</td>';
-		echo '<td>' . get_label('Address') . '</td>';
-		echo '<td width="60" align="center">'.get_label('Rating').'</td>';
+		echo '<td width="60" align="center">'.get_label('Rating earned').'</td>';
+		echo '<td width="60" align="center">'.get_label('Points').'</td>';
 		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="60" align="center">'.get_label('Games won').'</td>';
 		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
@@ -96,18 +80,17 @@ class Page extends UserPageBase
 		
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $games_played, $rating, $games_won) = $row;
+			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $rating, $points, $games_played, $games_won) = $row;
 			
 			echo '<tr>';
 			
 			echo '<td width="50" class="dark"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
 			show_event_pic($event_id, $event_flags, $club_id, $club_flags, ICONS_DIR, 50, 50, false);
 			echo '</a></td>';
-			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
+			echo '<td>' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
 			
-			echo '<td>' . $address . '</td>';
-			
-			echo '<td align="center" class="dark">' . $rating . '</td>';
+			echo '<td align="center" class="dark">' . number_format($rating) . '</td>';
+			echo '<td align="center">' . format_score($points) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)

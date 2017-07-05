@@ -165,10 +165,7 @@ class Page extends GeneralPageBase
 		// echo '</p>';
 		
 		// ratings
-		$query = new DbQuery(
-			'SELECT u.id, u.name, r.rating, r.games, r.games_won, u.flags FROM ratings r' .
-			' JOIN users u ON u.id = r.user_id' .
-			' WHERE r.role = 0 AND type_id = (SELECT id FROM rating_types WHERE def = 1 LIMIT 1)');
+		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags FROM users u WHERE u.games > 0');
 		switch($ccc_type)
 		{
 		case CCCF_CLUB:
@@ -188,7 +185,7 @@ class Page extends GeneralPageBase
 			$query->add(' AND u.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $ccc_id);
 			break;
 		}
-		$query->add(' ORDER BY r.rating DESC, r.games, r.games_won, r.user_id DESC LIMIT 15');
+		$query->add(' ORDER BY u.rating DESC, u.games, u.games_won, u.id LIMIT 15');
 		
 		$number = 1;
 		if ($row = $query->next())
@@ -205,7 +202,7 @@ class Page extends GeneralPageBase
 				echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 				show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-				echo '<td width="60" align="center">' . $rating . '</td>';
+				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';
 				
 				++$number;
