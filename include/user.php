@@ -108,7 +108,7 @@ function create_user($name, $email, $flags = U_NEW_PLAYER_FLAGS, $club_id = NULL
 	return $user_id;
 }
 
-function show_user_pic($user_id, $user_flags, $dir, $width = 0, $height = 0)
+function show_user_pic($user_id, $user_flags, $dir, $width = 0, $height = 0, $attributes = NULL)
 {
 	if ($width <= 0 && $height <= 0)
 	{
@@ -146,6 +146,10 @@ function show_user_pic($user_id, $user_flags, $dir, $width = 0, $height = 0)
 	if ($height > 0)
 	{
 		echo ' height="' . $height . '"';
+	}
+	if ($attributes != NULL)
+	{
+		echo $attributes;
 	}
 	echo '>';
 }

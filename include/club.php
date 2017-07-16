@@ -28,7 +28,7 @@ function check_manager_permission($id)
 	return false;
 }
 
-function show_club_pic($club_id, $flags, $dir, $width = 0, $height = 0)
+function show_club_pic($club_id, $flags, $dir, $width = 0, $height = 0, $attributes = NULL)
 {
 	global $_lang_code;
 	$w = $width;
@@ -81,6 +81,10 @@ function show_club_pic($club_id, $flags, $dir, $width = 0, $height = 0)
 	if ($height > 0)
 	{
 		echo ' height="' . $height . '"';
+	}
+	if ($attributes != NULL)
+	{
+		echo $attributes;
 	}
 	echo '>';
 	if ($flags & CLUB_FLAG_RETIRED)
