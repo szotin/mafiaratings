@@ -27,7 +27,7 @@ function db_num_rows($query)
 
 function db_connect($url, $user, $password, $database)
 {
-	return mysql_connect($url, $user, $password) && mysql_select_db($database);
+	return @mysql_connect($url, $user, $password) && mysql_select_db($database);
 }
 
 function db_disconnect()

@@ -13,10 +13,10 @@ if (isset($_REQUEST['role']))
 $p = 0;
 if (isset($_REQUEST['p']))
 {
-	$p = $_REQUEST['p'];
+	$p = (int)$_REQUEST['p'];
 }
 
-$ratings = get_json('ws_ratings.php?club=2&pos=' . ($p * PAGE_SIZE) . '&len=' . PAGE_SIZE . '&role=' . $role);
+$ratings = get_json('/ws_ratings.php?club=2&page=' . $p . '&page_size=' . PAGE_SIZE . '&role=' . $role);
 
 echo '<form method="get" name="viewForm" action="index.php">';
 echo '<input type="hidden" name="page" value="ratings">';
@@ -57,12 +57,12 @@ foreach ($ratings->ratings as $rating)
 	{
 		echo '<tr>';
 		echo '<td align="center" class="highlight">' . $rating->num . '</td>';
-		echo '<td width="1"><a href="' . $rating->user_page . '" target="blank"><img src="';
-		if ($rating->user_image != '')
+		echo '<td width="1"><a href="/user_info.php?id=' . $rating->user_id . '" target="blank"><img src="';
+		if (isset($rating->user_icon) && $rating->user_icon != '')
 		{
-			echo $rating->user_image;
+			echo '/' . $rating->user_icon;
 		}
-		else if ($rating->is_male)
+		else if (isset($rating->male))
 		{
 			echo 'images/male.png';
 		}
@@ -70,9 +70,9 @@ foreach ($ratings->ratings as $rating)
 		{
 			echo 'images/female.png';
 		}
-		echo '" border="0"></a></td>';
-		echo '<td><a href="' . $rating->user_page . '" target="blank">' . $rating->user_name . '</a></td>';
-		echo '<td align="center" class="highlight">' . $rating->rating . '</td>';
+		echo '" width="64" height="64" border="0"></a></td>';
+		echo '<td><a href="/user_info.php?id=' . $rating->user_id . '" target="blank">' . $rating->user_name . '</a></td>';
+		echo '<td align="center" class="highlight">' . number_format($rating->rating) . '</td>';
 		echo '<td align="center" class="highlight">' . $rating->num_games . '</td>';
 		echo '<td align="center" class="highlight">' . $rating->games_won . '</td>';
 		echo '</tr>';

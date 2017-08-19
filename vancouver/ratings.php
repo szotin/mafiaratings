@@ -13,10 +13,10 @@ if (isset($_REQUEST['role']))
 $page = 0;
 if (isset($_REQUEST['page']))
 {
-	$page = $_REQUEST['page'];
+	$page = (int)$_REQUEST['page'];
 }
 
-$ratings = get_json('ws_ratings.php?club=1&pos=' . ($page * 10) . '&count=10&role=' . $role);
+$ratings = get_json('/ws_ratings.php?club=1&page=' . $page . '&page_size=10&role=' . $role);
 
 echo '<form method="get" name="viewForm" action="ratings.php">';
 echo '<table class="transp" cellpadding="20" cellspacing="0"  width="100%"><tr><td class="back" width="30">';
@@ -50,22 +50,22 @@ echo '<th width="60">Rating</th>';
 echo '<th width="60">Games played</th>';
 echo '<th width="60">Games won</th>';
 echo '</tr>';
-foreach ($ratings->ratings	 as $rating)
+foreach ($ratings->ratings as $rating)
 {
 	if (!is_numeric($rating))
 	{
 		echo '<tr>';
 		echo '<td align="center">' . $rating->num . '</td>';
-		echo '<td width="50"><a href="' . $rating->user_page . '"><img src="';
-		if ($rating->user_image != '')
-			echo $rating->user_image;
-		else if ($rating->is_male)
+		echo '<td width="50"><a href="/user_info.php?id=' . $rating->user_id . '"><img src="';
+		if (isset($rating->user_icon) && $rating->user_icon != '')
+			echo '/' . $rating->user_icon;
+		else if (isset($rating->male))
 			echo 'images/male.png';
 		else
 			echo 'images/female.png';
 		echo '" border="0" width="50" height="50"></a></td>';
 		echo '<td>' . $rating->user_name . '</td>';
-		echo '<td align="center">' . $rating->rating . '</td>';
+		echo '<td align="center">' . number_format($rating->rating) . '</td>';
 		echo '<td align="center">' . $rating->num_games . '</td>';
 		echo '<td align="center">' . $rating->games_won . '</td>';
 		echo '</tr>';

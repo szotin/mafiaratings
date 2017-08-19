@@ -592,7 +592,7 @@ $labelMenu = array (
 'Games list of [0]' => 'Список игр [0]', // ./include/club.php, ./include/user.php
 'Compare players' => 'Сравнить игроков', // player_compare.php
 'User' => 'Пользователь', // club_accept.php, club_decline.php, club_log.php, club_requests.php, log.php, log_details.php, player_compare_select.php, user_games.php, user_info.php, user_messages.php, user_photos.php, user_stats.php
-'rating' => 'рейтинг', // ratings.php, user_info.php, ws_ratings.php
+'rating' => 'рейтинг', // ratings.php, user_info.php
 'mafioso' => 'мафиози', // repair_ops.php, ./include/game_stats.php, ./include/game_stats.php
 '[0] stats' => '[0] статистика', // event_stats.php, user_stats.php, user_stats.php
 'mailing' => 'рассылка', // view_event_mailing.php
@@ -975,7 +975,7 @@ $labelMenu = array (
 'Refresh every' => 'Обновлять каждые', // event_screen.php
 'show title' => 'показывать заголовок', // event_screen.php
 'Settings' => 'Настройки', // account_edit.php, event_screen.php
-'Version [0] is not supported. The latest supported version is [1].' => 'Версия [0] не поддерживается. Последняя поддерживаемая версия [1].', // ws_games.php
+'Version [0] is not supported. The latest supported version is [1].' => 'Версия [0] не поддерживается. Последняя поддерживаемая версия [1].', // ws_games.php, ws_ratings.php
 'Open interactive standings page' => 'Интерактивная турнирная таблица', // ./include/event.php
 'Use 0 for no logo' => 'Введите 0 чтобы убрать логотип', // event_screen.php
 'sec' => 'сек', // event_screen.php
@@ -1016,11 +1016,11 @@ $labelMenu = array (
 'show games lost by [0]' => 'показывать игры где [0] проиграл', // user_games.php
 'town' => 'город', // user_games.php, user_games.php
 'Apply' => 'Применить', // user_games.php
+'Remove' => 'Убрать', // user_games.php
 'The Sheriff\'s check' => 'Проверка шерифа', // view_game.php
 'The Don\'s check' => 'Проверка дона', // view_game.php
 'The Don\'s game' => 'Игра доном', // view_game_stats.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
-'Remove' => 'Убрать', // user_games.php
 );
 
 return $labelMenu;

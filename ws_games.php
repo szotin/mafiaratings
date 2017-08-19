@@ -1,7 +1,6 @@
 <?php
 
 require_once 'include/session.php';
-require_once 'include/rating_system.php';
 require_once 'include/languages.php';
 require_once 'include/game_state.php';
 
@@ -291,7 +290,7 @@ class WSGame
 			  <dt>game</dt>
 				<dd>Game id. For example: <a href="ws_games.php?game=1299">ws_games.php?game=1299</a> returns only one game played in VaWaCa tournament.</dd>
 			  <dt>count</dt>
-				<dd>Returns game count instead of games. For example: <a href="ws_games.php?user=25&count">ws_games.php?user=25&count</a> returns how many games Fantomas have played; <a href="ws_games.php?event=7927&count">ws_games.php?event=7927&count</a> returns how many games were played in VaWaCa tournament.</dd>
+				<dd>Returns game count but does not return the games. For example: <a href="ws_games.php?user=25&count">ws_games.php?user=25&count</a> returns how many games Fantomas have played; <a href="ws_games.php?event=7927&count">ws_games.php?event=7927&count</a> returns how many games were played in VaWaCa tournament.</dd>
 			  <dt>page</dt>
 				<dd>Page number. For example: <a href="ws_games.php?club=1&page=1">ws_games.php?club=1&page=1</a> returns the second page for Vancouver Mafia Club.</dd>
 			  <dt>page_size</dt>
@@ -356,6 +355,7 @@ class WSGame
 					<dd>How the player was nominating. An assotiated array in the form <i>round_N: M</i>. Where N is day number (starting from 0); M is the number of player who was nominated (0 to 9).</dd>
 				<dt>shooting</td>
 					<dd>For mafia only. An assotiated array in the form <i>round_N: M</i>. . Where N is day number (starting from 0); M is the number of player who was nominated (0 to 9). For example: { round_0: 0, round_1: 8, round_2: 9 } means that this player was shooting player 1(index 0) the first night; player 9 the second night; and player 10 the third night.</dd>
+			<br><br>
 <?php		
 		}
 		else
@@ -414,57 +414,48 @@ class WSGame
 			
 			$count_only = isset($_REQUEST['count']);
 			
-			if ($user > 0)
-			{
-				if ($count_only)
-				{
-					$query = new DbQuery('SELECT count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.result IN(1,2) AND p.user_id = ?', $user);
-				}
-				else
-				{
-					$query = new DbQuery('SELECT g.id, g.log FROM players p JOIN games g ON  p.game_id = g.id WHERE g.result IN(1,2) AND p.user_id = ?', $user);
-				}
-			}
-			else if ($count_only)
-			{
-				$query = new DbQuery('SELECT count(*) FROM games g WHERE g.result IN(1,2)');
-			}
-			else
-			{
-				$query = new DbQuery('SELECT g.id, g.log FROM games g WHERE g.result IN(1,2)');
-			}
+			$condition = new SQL('');
 			if ($from > 0)
 			{
-				$query->add(' AND g.end_time > ?', $from);
+				$condition->add(' AND g.end_time > ?', $from);
 			}
 
 			if ($to > 0)
 			{
-				$query->add(' AND g.start_time < ?', $to);
+				$condition->add(' AND g.start_time < ?', $to);
 			}
 
 			if ($club > 0)
 			{
-				$query->add(' AND g.club_id = ?', $club);
+				$condition->add(' AND g.club_id = ?', $club);
 			}
 
 			if ($event > 0)
 			{
-				$query->add(' AND g.event_id = ?', $event);
+				$condition->add(' AND g.event_id = ?', $event);
 			}
 			
 			if ($game > 0)
 			{
-				$query->add(' AND g.id = ?', $game);
+				$condition->add(' AND g.id = ?', $game);
 			}
 			
-			$query->add(' ORDER BY g.start_time DESC');
+			$condition->add(' ORDER BY g.start_time DESC');
 			
-			if ($count_only)
+			if ($user > 0)
 			{
-				list ($result->count) = $query->next();
+				$count_query = new DbQuery('SELECT count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.result IN(1,2) AND p.user_id = ?', $user, $condition);
+				$query = new DbQuery('SELECT g.id, g.log FROM players p JOIN games g ON  p.game_id = g.id WHERE g.result IN(1,2) AND p.user_id = ?', $user, $condition);
 			}
 			else
+			{
+				$count_query = new DbQuery('SELECT count(*) FROM games g WHERE g.result IN(1,2)', $condition);
+				$query = new DbQuery('SELECT g.id, g.log FROM games g WHERE g.result IN(1,2)', $condition);
+			}
+			
+			list ($count) = $count_query->record('game');
+			$result->count = (int)$count;
+			if (!$count_only)
 			{
 				if ($page_size > 0)
 				{

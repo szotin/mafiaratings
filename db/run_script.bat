@@ -1,0 +1,1 @@
+mysql -u root mafia < %1

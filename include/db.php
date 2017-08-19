@@ -286,7 +286,7 @@ class Db
 	{
 		if (!Db::$connected)
 		{
-			if (!mysql_connect('127.0.0.1', Db::$user, Db::$password))
+			if (!@mysql_connect('127.0.0.1', Db::$user, Db::$password))
 			{	
 				throw new FatalExc(get_label('Can not connect to the database'), mysql_error(), true);
 			}
