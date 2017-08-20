@@ -175,7 +175,7 @@ class WSGame
 		$this->start_time = $gs->start_time;
 		$this->end_time = $gs->end_time;
 		
-		$this->language = get_lang_code($gs->lang);
+		$this->language = (int)$gs->lang;
 		switch ($gs->gamestate)
 		{
 			case GAME_MAFIA_WON:
@@ -256,7 +256,7 @@ class WSGame
 			$result->version = (int)$_REQUEST['version'];
 			if ($result->version > CURRENT_VERSION)
 			{
-				throw new Exc(get_label('Version [0] is not supported. The latest supported version is [1].', $result->version, CURRENT_VERSION));
+				throw new Exc('Version ' . $result->version . ' is not supported. The latest supported version is ' . CURRENT_VERSION . '.');
 			}
 		}
 
@@ -317,7 +317,7 @@ class WSGame
 				<dt>end_time</dt>
 				  <dd>Unix timestamp for the game end.</dd>
 				<dt>language</dt>
-				  <dd>Language of the game. Possible values are: "ru" or "en". Other languages are not supported in the current version.</dd>
+				  <dd>Language of the game. Possible values are: 1 for English; 2 for Russian. Other languages are not supported in the current version.</dd>
 				<dt>moderator_id</dt>
 				  <dd>User id of the user who moderated the game.</dd>
 				<dt>winner</dt>

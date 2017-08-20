@@ -58,7 +58,7 @@ try
 		$result->version = (int)$_REQUEST['version'];
 		if ($result->version > CURRENT_VERSION)
 		{
-			throw new Exc(get_label('Version [0] is not supported. The latest supported version is [1].', $result->version, CURRENT_VERSION));
+			throw new Exc('Version ' . $result->version . ' is not supported. The latest supported version is ' . CURRENT_VERSION . '.');
 		}
 	}
 
