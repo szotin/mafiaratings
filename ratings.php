@@ -92,7 +92,7 @@ class Page extends GeneralPageBase
 			$query->add(' GROUP BY u.id ');
 			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id', $condition);
 		}
-		$query->add(' ORDER BY rating DESC, games, won DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query->add(' ORDER BY rating DESC, won DESC, games DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
 		list ($count) = Db::record(get_label('rating'), $count_query);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -130,13 +130,13 @@ class Page extends GeneralPageBase
 			echo '<td width="50" align="center">';
 			show_club_pic($club_id, $club_flags, ICONS_DIR, 40, 40);
 			echo '</td>';
-			echo '<td align="center" class="dark">' . number_format($rating) . '</td>';
+			echo '<td align="center" class="dark">' . format_rating($rating) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)
 			{
 				echo '<td align="center">' . number_format(($games_won*100.0)/$games_played, 1) . '%</td>';
-				echo '<td align="center">' . number_format($rating/$games_played, 2) . '</td>';
+				echo '<td align="center">' . format_rating($rating/$games_played, 2) . '</td>';
 			}
 			else
 			{

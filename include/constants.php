@@ -60,7 +60,7 @@ define('U_FLAG_IMMUNITY', 0x400);
 define('U_FLAG_NAME_CHANGED', 0x4000);
 define('U_PERM_MASK', 0x8); // U_PERM_ADMIN
 
-define('USER_INITIAL_RATING', 1000);
+define('USER_INITIAL_RATING', 0);
 
 define('U_ICON_MASK', 0x3800);
 define('U_ICON_MASK_OFFSET', 11);

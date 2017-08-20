@@ -41,6 +41,22 @@ function format_score($score)
 	return number_format($score/100);
 }
 
+function format_rating($rating)
+{
+	$fraction = 100;
+	$rat = abs($rating);
+	$digits = 0;
+	if ($rat > 0.0001)
+	{
+		while ($rat < $fraction)
+		{
+			$fraction /= 10;
+			++$digits;
+		}
+	}
+	return number_format($rating, $digits);
+}
+
 function show_scoring_select($club_id, $scoring_id, $form_name)
 {
 	echo '<select name="scoring" onChange="document.' . $form_name . '.submit()">';

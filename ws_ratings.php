@@ -273,7 +273,7 @@ try
 		if ($page_size > 0)
 		{
 			$num = $page * $page_size;
-			$query->add(' ORDER BY rating DESC, games, won DESC  LIMIT ' . $num . ',' . $page_size);
+			$query->add(' ORDER BY rating DESC, won DESC, games DESC  LIMIT ' . $num . ',' . $page_size);
 		}
 		
 		list($count) = Db::record('rating', $count_query);

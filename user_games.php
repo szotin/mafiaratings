@@ -373,8 +373,8 @@ class Page extends UserPageBase
 						break;
 				}
 				echo '</td>';
-				echo '<td align="center">' . number_format($rating_before) . '</td>';
-				echo '<td align="center">' . number_format($rating_earned) . '</td></tr>';
+				echo '<td align="center">' . format_rating($rating_before) . '</td>';
+				echo '<td align="center">' . format_rating($rating_earned) . '</td></tr>';
 			}
 			echo '</table>';
 

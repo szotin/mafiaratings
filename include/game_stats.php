@@ -537,50 +537,38 @@ class GamePlayerStats
 			return;
 		}
 
-		$K = 20;
-		// if ($this->rating_before < 500)
-		// {
-			// $K = 100;
-		// }
-		// else
-		// {
-			// $K = 100 * 500 / $this->rating_before;
-		// }
-		
-		// $K = 40;
-		// if ($this->rating_before > 1300)
-		// {
-			// $K = 10;
-		// }
-		// else if ($this->rating_before > 1000)
-		// {
-			// $K = 20;
-		// }
-		
+		$WINNING_K = 21;
+		$LOOSING_K = 14;
 		switch ($player->role)
 		{
 			case PLAYER_ROLE_CIVILIAN:
 			case PLAYER_ROLE_SHERIFF:
 				if ($gs->gamestate == GAME_CIVIL_WON)
 				{
-					$this->rating_earned = $K * (1 - $civ_odds);
+					$this->rating_earned = $WINNING_K * (1 - $civ_odds);
 				}
 				else
 				{
-					$this->rating_earned = - $K * $civ_odds;
+					$this->rating_earned = - $LOOSING_K * $civ_odds;
 				}
 				break;
 			case PLAYER_ROLE_MAFIA:
 			case PLAYER_ROLE_DON:
 				if ($gs->gamestate == GAME_CIVIL_WON)
 				{
-					$this->rating_earned = $K * ($civ_odds - 1);
+					$this->rating_earned = $LOOSING_K * ($civ_odds - 1);
 				}
 				else
 				{
-					$this->rating_earned = $K * $civ_odds;
+					$this->rating_earned = $WINNING_K * $civ_odds;
 				}
 				break;
+		}
+		
+		// $this->rating_earned += 1;
+		if ($this->rating_before + $this->rating_earned < USER_INITIAL_RATING)
+		{
+			$this->rating_earned = USER_INITIAL_RATING - $this->rating_before;
 		}
 	}
 	
