@@ -289,6 +289,8 @@ class WSGame
 				<dd>User id. For example: <a href="ws_games.php?user=25">ws_games.php?user=25</a> returns all games where Fantomas played. If missing, all games for all users are returned.</dd>
 			  <dt>game</dt>
 				<dd>Game id. For example: <a href="ws_games.php?game=1299">ws_games.php?game=1299</a> returns only one game played in VaWaCa tournament.</dd>
+			  <dt>langs</dt>
+				<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_games.php?langs=1">ws_games.php?langs=1</a> returns all games played in English; <a href="ws_games.php?club=1&langs=3">ws_games.php?club=1&langs=3</a> returns all English and Russian games of Vancouver Mafia Club</dd>
 			  <dt>count</dt>
 				<dd>Returns game count but does not return the games. For example: <a href="ws_games.php?user=25&count">ws_games.php?user=25&count</a> returns how many games Fantomas have played; <a href="ws_games.php?event=7927&count">ws_games.php?event=7927&count</a> returns how many games were played in VaWaCa tournament.</dd>
 			  <dt>page</dt>
@@ -394,6 +396,12 @@ class WSGame
 				$user = (int)$_REQUEST['user'];
 			}
 			
+			$langs = LANG_ALL;
+			if (isset($_REQUEST['langs']))
+			{
+				$langs = (int)$_REQUEST['langs'];
+			}
+			
 			$game = 0;
 			if (isset($_REQUEST['game']))
 			{
@@ -438,6 +446,11 @@ class WSGame
 			if ($game > 0)
 			{
 				$condition->add(' AND g.id = ?', $game);
+			}
+			
+			if ($langs != LANG_ALL)
+			{
+				$condition->add(' AND (g.language & ?) <> 0', $langs);
 			}
 			
 			$condition->add(' ORDER BY g.start_time DESC');

@@ -57,10 +57,10 @@ foreach ($ratings->ratings as $rating)
 	{
 		echo '<tr>';
 		echo '<td align="center" class="highlight">' . $rating->num . '</td>';
-		echo '<td width="1"><a href="/user_info.php?id=' . $rating->user_id . '" target="blank"><img src="';
-		if (isset($rating->user_icon) && $rating->user_icon != '')
+		echo '<td width="1"><a href="/user_info.php?id=' . $rating->id . '" target="blank"><img src="';
+		if (isset($rating->icon) && $rating->icon != '')
 		{
-			echo '/' . $rating->user_icon;
+			echo '/' . $rating->icon;
 		}
 		else if (isset($rating->male))
 		{
@@ -71,7 +71,7 @@ foreach ($ratings->ratings as $rating)
 			echo 'images/female.png';
 		}
 		echo '" width="64" height="64" border="0"></a></td>';
-		echo '<td><a href="/user_info.php?id=' . $rating->user_id . '" target="blank">' . $rating->user_name . '</a></td>';
+		echo '<td><a href="/user_info.php?id=' . $rating->id . '" target="blank">' . $rating->name . '</a></td>';
 		echo '<td align="center" class="highlight">' . number_format($rating->rating) . '</td>';
 		echo '<td align="center" class="highlight">' . $rating->num_games . '</td>';
 		echo '<td align="center" class="highlight">' . $rating->games_won . '</td>';

@@ -10,8 +10,9 @@ class WSRating
 {
 	public $num;
 	public $pos;
-	public $user_id;
-	public $user_name;
+	public $id;
+	public $name;
+	public $languages;
 	public $rating;
 	public $num_games;
 	public $games_won;
@@ -20,10 +21,11 @@ class WSRating
 	
 	function __construct($row, $num)
 	{
-		list($this->user_id, $this->user_name, $user_flags, $this->pos, $this->rating, $this->num_games, $this->games_won, $this->club_id, $this->club_name) = $row;
+		list($this->id, $this->name, $user_flags, $this->languages, $this->pos, $this->rating, $this->num_games, $this->games_won, $this->club_id, $this->club_name) = $row;
 		$this->num = (int)$num;
 		$this->pos = (int)$this->pos;
-		$this->user_id = (int)$this->user_id;
+		$this->id = (int)$this->id;
+		$this->languages = (int)$this->languages;
 		$this->rating = (float)$this->rating;
 		$this->num_games = (int)$this->num_games;
 		$this->games_won = (int)$this->games_won;
@@ -34,8 +36,8 @@ class WSRating
 		}
 		if (($user_flags & U_ICON_MASK) != 0)
 		{
-			$this->user_image = USER_PICS_DIR . TNAILS_DIR . $this->user_id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
-			$this->user_icon = USER_PICS_DIR . ICONS_DIR . $this->user_id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
+			$this->image = USER_PICS_DIR . TNAILS_DIR . $this->id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
+			$this->icon = USER_PICS_DIR . ICONS_DIR . $this->id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
 		}
 	}
 }
@@ -96,6 +98,8 @@ try
 			<dd>Event id. For example: <a href="ws_ratings.php?event=7927">ws_ratings.php?event=7927</a> returns ratings for all players participated in VaWaCa tournament. If missing, all players for all events are returned.</dd>
 		  <dt>game</dt>
 			<dd>Game id. For example: <a href="ws_ratings.php?game=1299">ws_ratings.php?game=1299</a> returns ratings for all players participated in the game 1299, played in VaWaCa tournament.</dd>
+		  <dt>langs</dt>
+			<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_ratings.php?langs=1">ws_ratings.php?langs=1</a> returns ratings for players who speak English; <a href="ws_ratings.php?club=1&langs=3">ws_ratings.php?club=1&langs=3</a> returns ratings for players who can speak English and Russian.</dd>
 		  <dt>count</dt>
 			<dd>Returns game count instead of players list. For example: <a href="ws_ratings.php?club=1&count">ws_ratings.php?club=1&count</a> returns how many players with ratings are there in Vancouver Mafia Club; <a href="ws_ratings.php?event=7927&count">ws_ratings.php?event=7927&count</a> returns how many players with ratings participated in VaWaCa tournament.</dd>
 		  <dt>page</dt>
@@ -117,12 +121,14 @@ try
 		  <dd>Number in the current list.</dd>
 		<dt>pos</dt>
 		  <dd>Position in the global rating.</dd>
-		<dt>user_id</dt>
+		<dt>id</dt>
 		  <dd>User id. Unique user identifier.</dd>
-		<dt>user_name</dt>
-		  <dd>Any questions?</dd>
-		<dt>user_image</dt>
+		<dt>name</dt>
+		  <dd>User name.</dd>
+		<dt>image</dt>
 		  <dd>A link to the user image at mafiaratings.com. Not set when the image is not uploaded by the user.</dd>
+		<dt>icon</dt>
+		  <dd>A link to the user icon at mafiaratings.com. Not set when the icon is not uploaded by the user.</dd>
 		<dt>rating</dt>
 		  <dd>The Elo rating.</dd>
 		<dt>num_games</dt>
@@ -190,6 +196,12 @@ try
 			$game = (int)$_REQUEST['game'];
 		}
 		
+		$langs = LANG_ALL;
+		if (isset($_REQUEST['langs']))
+		{
+			$langs = (int)$_REQUEST['langs'];
+		}
+			
 		$page_size = 16;
 		if (isset($_REQUEST['page_size']))
 		{
@@ -221,10 +233,15 @@ try
 			$condition->add(' AND u.id IN (SELECT user_id FROM players WHERE game_id = ?)', $game);
 		}
 		
+		if ($langs != LANG_ALL)
+		{
+			$condition->add(' AND (u.languages & ?) <> 0', $langs);
+		}
+			
 		if ($role == POINTS_ALL)
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, u.rating as rating, u.games as games, u.games_won as won, c.id, c.name FROM users u' . 
+				'SELECT u.id, u.name, u.flags, u.languages, (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, u.rating as rating, u.games as games, u.games_won as won, c.id, c.name FROM users u' . 
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id', $condition);
 			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
 		}
@@ -232,7 +249,7 @@ try
 		{
 			$condition->add(get_roles_condition($role));
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, c.id, c.name FROM users u' . 
+				'SELECT u.id, u.name, u.flags, u.languages, (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, c.id, c.name FROM users u' . 
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' JOIN players p ON p.user_id = u.id', $condition);
 			$query->add(' GROUP BY u.id ');

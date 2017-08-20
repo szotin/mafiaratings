@@ -7,15 +7,15 @@ define('PAGE_SIZE', 10);
 $p = 0;
 if (isset($_REQUEST['p']))
 {
-	$p = $_REQUEST['p'];
+	$p = (int)$_REQUEST['p'];
 }
 
-$adverts = get_json('ws_adverts.php?club=2&pos=' . ($p * PAGE_SIZE) . '&len=' . PAGE_SIZE . '&df=l,%20F%20d,%20Y');
+$adverts = get_json('/ws_adverts.php?club=2&page=' . $p . '&page_size=' . PAGE_SIZE);
 
 echo '<h4>Новости</h4><hr>';
 foreach ($adverts->messages as $message)
 {
-	echo '<h5>' . $message->date_str . '</h5>';
+	echo '<h5>' . date_format('d/m/y', $message->timestamp, $message->timezone) . '</h5>';
 	echo $message->message;
 	echo '<hr>';
 }

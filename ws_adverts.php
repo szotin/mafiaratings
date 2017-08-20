@@ -62,13 +62,17 @@ try
 ?>
 			</dd>
 		  <dt>club</dt>
-			<dd>Club id. For example: <a href="ws_adverts.php?club=1">ws_adverts.php?club=1</a> returns all advertizements of Vancouver Mafia Club. If missing, all players for all clubs are returned.</dd>
+			<dd>Club id. <i>Mandatory parameter.</i> For example: <a href="ws_adverts.php?club=1">ws_adverts.php?club=1</a> returns all advertizements of Vancouver Mafia Club. If missing, all players for all clubs are returned.</dd>
 		  <dt>langs</dt>
 			<dd>Message languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_adverts.php?club=1&langs=1">ws_adverts.php?club=1&langs=1</a> returns all English advertizements of Vancouver Mafia Club; <a href="ws_adverts.php?club=1&langs=3">ws_adverts.php?club=1&langs=3</a> returns all English and Russian advertizements of Vancouver Mafia Club</dd>
+		  <dt>from</dt>
+			<dd>Unix timestamp for the earliest message to return. For example: <a href="ws_adverts.php?club=1&from=1483228800">ws_adverts.php?club=1&from=1483228800</a> returns all messages starting from January 1, 2017</dd>
+		  <dt>to</dt>
+			<dd>Unix timestamp for the latest message to return. For example: <a href="ws_adverts.php?club=1&to=1483228800">ws_adverts.php?club=1&to=1483228800</a> returns all messages before 2017; <a href="ws_adverts.php?club=1&from=1483228800&to=1485907200">ws_adverts.php?club=1&from=1483228800&to=1485907200</a> returns all messages in January 2017</dd>
 		  <dt>count</dt>
 			<dd>Returns game count instead of advertizements list. For example: <a href="ws_adverts.php?club=1&count">ws_adverts.php?club=1&count</a> returns how many advertizements are there in Vancouver Mafia Club</dd>
 		  <dt>page</dt>
-			<dd>Page number. For example: <a href="ws_adverts.php?club=1&page=1">v.php?club=1&page=1</a> returns the second page of advertizements for Vancouver Mafia Club players.</dd>
+			<dd>Page number. For example: <a href="ws_adverts.php?club=1&page=1">ws_adverts.php?club=1&page=1</a> returns the second page of advertizements for Vancouver Mafia Club players.</dd>
 		  <dt>page_size</dt>
 			<dd>Page size. Default page_size is 16. For example: <a href="ws_adverts.php?club=1&page_size=32">ws_adverts.php?club=1&page_size=32</a> returns last 32 advertizements for Vancouver Mafia Club; <a href="ws_adverts.php?club=6&page_size=0">ws_adverts.php?club=6&page_size=0</a> returns all advertizements for Empire of Mafia club in one page; <a href="ws_adverts.php?club=1">ws_adverts.php?club=1</a> returns last 16 advertizements for Vancouver Mafia Club;</dd>
 		</dl>	
@@ -105,6 +109,11 @@ try
 			$club = (int)$_REQUEST['club'];
 		}
 		
+		if ($club <= 0)
+		{
+			throw new Exc('Club is not scpecified.');
+		}
+		
 		$page_size = 16;
 		if (isset($_REQUEST['page_size']))
 		{
@@ -123,9 +132,32 @@ try
 			$langs = (int)$_REQUEST['langs'];
 		}
 		
+		$from = 0;
+		if (isset($_REQUEST['from']))
+		{
+			$from = (int)$_REQUEST['from'];
+		}
+		
+		$to = 0;
+		if (isset($_REQUEST['to']))
+		{
+			$to = (int)$_REQUEST['to'];
+		}
+			
 		$count_only = isset($_REQUEST['count']);
 		
 		$condition = new SQL(' FROM news n JOIN clubs c ON c.id = n.club_id JOIN cities ct ON ct.id = c.city_id WHERE (n.lang & ?) <> 0 AND c.id = ?', $langs, $club);
+		if ($from > 0)
+		{
+			$condition->add(' AND n.timestamp > ?', $from);
+		}
+
+		if ($to > 0)
+		{
+			$condition->add(' AND n.timestamp < ?', $to);
+		}
+
+		
 		list ($count) = Db::record('advert', 'SELECT count(*)', $condition);
 		$result->count = (int)$count;
 

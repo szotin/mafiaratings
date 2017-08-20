@@ -56,15 +56,15 @@ foreach ($ratings->ratings as $rating)
 	{
 		echo '<tr>';
 		echo '<td align="center">' . $rating->num . '</td>';
-		echo '<td width="50"><a href="/user_info.php?id=' . $rating->user_id . '"><img src="';
-		if (isset($rating->user_icon) && $rating->user_icon != '')
-			echo '/' . $rating->user_icon;
+		echo '<td width="50"><a href="/user_info.php?id=' . $rating->id . '"><img src="';
+		if (isset($rating->icon) && $rating->icon != '')
+			echo '/' . $rating->icon;
 		else if (isset($rating->male))
 			echo 'images/male.png';
 		else
 			echo 'images/female.png';
 		echo '" border="0" width="50" height="50"></a></td>';
-		echo '<td>' . $rating->user_name . '</td>';
+		echo '<td>' . $rating->name . '</td>';
 		echo '<td align="center">' . number_format($rating->rating) . '</td>';
 		echo '<td align="center">' . $rating->num_games . '</td>';
 		echo '<td align="center">' . $rating->games_won . '</td>';
