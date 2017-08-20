@@ -98,6 +98,8 @@ try
 			<dd>Event id. For example: <a href="ws_ratings.php?event=7927">ws_ratings.php?event=7927</a> returns ratings for all players participated in VaWaCa tournament. If missing, all players for all events are returned.</dd>
 		  <dt>game</dt>
 			<dd>Game id. For example: <a href="ws_ratings.php?game=1299">ws_ratings.php?game=1299</a> returns ratings for all players participated in the game 1299, played in VaWaCa tournament.</dd>
+		  <dt>address</dt>
+			<dd>Address id. For example: <a href="ws_ratings.php?address=10">ws_ratings.php?address=10</a> returns ratings for all players who played in Tafs Cafe in Vancouver Mafia Club.</dd>
 		  <dt>langs</dt>
 			<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_ratings.php?langs=1">ws_ratings.php?langs=1</a> returns ratings for players who speak English; <a href="ws_ratings.php?club=1&langs=3">ws_ratings.php?club=1&langs=3</a> returns ratings for players who can speak English and Russian.</dd>
 		  <dt>count</dt>
@@ -196,6 +198,12 @@ try
 			$game = (int)$_REQUEST['game'];
 		}
 		
+		$address = 0;
+		if (isset($_REQUEST['address']))
+		{
+			$address = (int)$_REQUEST['address'];
+		}
+		
 		$langs = LANG_ALL;
 		if (isset($_REQUEST['langs']))
 		{
@@ -231,6 +239,11 @@ try
 		if ($game > 0)
 		{
 			$condition->add(' AND u.id IN (SELECT user_id FROM players WHERE game_id = ?)', $game);
+		}
+		
+		if ($address > 0)
+		{
+			$condition->add(' AND u.id IN (SELECT DISTINCT p1.user_id FROM players p1 JOIN games g1 ON p1.game_id = g1.id JOIN events e1 ON g1.event_id = e1.id WHERE e1.address_id = ?)', $address);
 		}
 		
 		if ($langs != LANG_ALL)

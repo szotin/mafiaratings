@@ -285,6 +285,8 @@ class WSGame
 				<dd>Club id. For example: <a href="ws_games.php?club=1">ws_games.php?club=1</a> returns all games for Vancouver Mafia Club. If missing, all games for all clubs are returned.</dd>
 			  <dt>event</dt>
 				<dd>Event id. For example: <a href="ws_games.php?event=7927">ws_games.php?event=7927</a> returns all games for VaWaCa tournament. If missing, all games for all events are returned.</dd>
+			  <dt>address</dt>
+				<dd>Address id. For example: <a href="ws_games.php?address=10">ws_games.php?address=10</a> returns all games played in Tafs Cafe by Vancouver Mafia Club.</dd>
 			  <dt>user</dt>
 				<dd>User id. For example: <a href="ws_games.php?user=25">ws_games.php?user=25</a> returns all games where Fantomas played. If missing, all games for all users are returned.</dd>
 			  <dt>game</dt>
@@ -408,6 +410,12 @@ class WSGame
 				$game = (int)$_REQUEST['game'];
 			}
 			
+			$address = 0;
+			if (isset($_REQUEST['address']))
+			{
+				$address = (int)$_REQUEST['address'];
+			}
+			
 			$page_size = 16;
 			if (isset($_REQUEST['page_size']))
 			{
@@ -446,6 +454,11 @@ class WSGame
 			if ($game > 0)
 			{
 				$condition->add(' AND g.id = ?', $game);
+			}
+			
+			if ($address > 0)
+			{
+				$condition->add(' AND g.event_id IN (SELECT id FROM events WHERE address_id = ?)', $address);
 			}
 			
 			if ($langs != LANG_ALL)
