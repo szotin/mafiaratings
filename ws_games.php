@@ -283,14 +283,20 @@ class WSGame
 				<dd>Unix timestamp for the latest game to return. For example: <a href="ws_games.php?to=1483228800">ws_games.php?to=1483228800</a> returns all games played before 2017; <a href="ws_games.php?from=1483228800&to=1485907200">ws_games.php?from=1483228800&to=1485907200</a> returns all games played in January 2017</dd>
 			  <dt>club</dt>
 				<dd>Club id. For example: <a href="ws_games.php?club=1">ws_games.php?club=1</a> returns all games for Vancouver Mafia Club. If missing, all games for all clubs are returned.</dd>
+			  <dt>game</dt>
+				<dd>Game id. For example: <a href="ws_games.php?game=1299">ws_games.php?game=1299</a> returns only one game played in VaWaCa tournament.</dd>
 			  <dt>event</dt>
 				<dd>Event id. For example: <a href="ws_games.php?event=7927">ws_games.php?event=7927</a> returns all games for VaWaCa tournament. If missing, all games for all events are returned.</dd>
 			  <dt>address</dt>
 				<dd>Address id. For example: <a href="ws_games.php?address=10">ws_games.php?address=10</a> returns all games played in Tafs Cafe by Vancouver Mafia Club.</dd>
+			  <dt>city</dt>
+				<dd>City id. For example: <a href="ws_games.php?city=49">ws_games.php?city=49</a> returns all games played in Seattle. List of the cities and their ids can be obtained using <a href="ws_cities.php?help>">ws_cities.php</a>.</dd>
+			  <dt>area</dt>
+				<dd>City id. The difference with city is that when area is set, the games from all nearby cities are also returned. For example: <a href="ws_games.php?area=1">ws_games.php?area=1</a> returns all games played in Vancouver and nearby cities. Though <a href="ws_games.php?city=1">ws_games.php?city=1</a> returns only the games played in Vancouver itself.</dd>
+			  <dt>country</dt>
+				<dd>Country id. For example: <a href="ws_games.php?country=2">ws_games.php?country=2</a> returns all games played in Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help>">ws_countries.php</a>.</dd>
 			  <dt>user</dt>
 				<dd>User id. For example: <a href="ws_games.php?user=25">ws_games.php?user=25</a> returns all games where Fantomas played. If missing, all games for all users are returned.</dd>
-			  <dt>game</dt>
-				<dd>Game id. For example: <a href="ws_games.php?game=1299">ws_games.php?game=1299</a> returns only one game played in VaWaCa tournament.</dd>
 			  <dt>langs</dt>
 				<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_games.php?langs=1">ws_games.php?langs=1</a> returns all games played in English; <a href="ws_games.php?club=1&langs=3">ws_games.php?club=1&langs=3</a> returns all English and Russian games of Vancouver Mafia Club</dd>
 			  <dt>count</dt>
@@ -416,6 +422,24 @@ class WSGame
 				$address = (int)$_REQUEST['address'];
 			}
 			
+			$country = 0;
+			if (isset($_REQUEST['country']))
+			{
+				$country = (int)$_REQUEST['country'];
+			}
+			
+			$area = 0;
+			if (isset($_REQUEST['area']))
+			{
+				$area = (int)$_REQUEST['area'];
+			}
+			
+			$city = 0;
+			if (isset($_REQUEST['city']))
+			{
+				$city = (int)$_REQUEST['city'];
+			}
+			
 			$page_size = 16;
 			if (isset($_REQUEST['page_size']))
 			{
@@ -446,19 +470,35 @@ class WSGame
 				$condition->add(' AND g.club_id = ?', $club);
 			}
 
-			if ($event > 0)
-			{
-				$condition->add(' AND g.event_id = ?', $event);
-			}
-			
 			if ($game > 0)
 			{
 				$condition->add(' AND g.id = ?', $game);
 			}
-			
-			if ($address > 0)
+			else if ($event > 0)
+			{
+				$condition->add(' AND g.event_id = ?', $event);
+			}
+			else if ($address > 0)
 			{
 				$condition->add(' AND g.event_id IN (SELECT id FROM events WHERE address_id = ?)', $address);
+			}
+			else if ($city > 0)
+			{
+				$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id WHERE a1.city_id = ?)', $city);
+			}
+			else if ($area > 0)
+			{
+				$query1 = new DbQuery('SELECT near_id FROM cities WHERE id = ?', $area);
+				list($parent_city) = $query1->record('city');
+				if ($parent_city == NULL)
+				{
+					$parent_city = $area;
+				}
+				$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.id = ? OR c1.near_id = ?)', $parent_city, $parent_city);
+			}
+			else if ($country > 0)
+			{
+				$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.country_id = ?)', $country);
 			}
 			
 			if ($langs != LANG_ALL)
