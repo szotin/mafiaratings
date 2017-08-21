@@ -62,7 +62,13 @@ try
 ?>
 			</dd>
 		  <dt>club</dt>
-			<dd>Club id. <i>Mandatory parameter.</i> For example: <a href="ws_adverts.php?club=1">ws_adverts.php?club=1</a> returns all advertizements of Vancouver Mafia Club. If missing, all players for all clubs are returned.</dd>
+			<dd>Club id.</i> For example: <a href="ws_adverts.php?club=1">ws_adverts.php?club=1</a> returns all advertizements of Vancouver Mafia Club. If missing, all players for all clubs are returned.</dd>
+		  <dt>city</dt>
+			<dd>City id. For example: <a href="ws_adverts.php?city=2">ws_adverts.php?city=2</a> returns all adverts from Moscow clubs. List of the cities and their ids can be obtained using <a href="ws_cities.php?help>">ws_cities.php</a>.</dd>
+		  <dt>area</dt>
+			<dd>City id. The difference with city is that when area is set, the adverts from all nearby cities are also returned. For example: <a href="ws_adverts.php?area=1">ws_adverts.php?area=1</a> returns all adverts published in Vancouver and nearby cities. Though <a href="ws_adverts.php?city=1">ws_adverts.php?city=1</a> returns only the adverts published in Vancouver itself.</dd>
+		  <dt>country</dt>
+			<dd>Country id. For example: <a href="ws_adverts.php?country=2">ws_adverts.php?country=2</a> returns all adverts published in Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help>">ws_countries.php</a>.</dd>
 		  <dt>langs</dt>
 			<dd>Message languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_adverts.php?club=1&langs=1">ws_adverts.php?club=1&langs=1</a> returns all English advertizements of Vancouver Mafia Club; <a href="ws_adverts.php?club=1&langs=3">ws_adverts.php?club=1&langs=3</a> returns all English and Russian advertizements of Vancouver Mafia Club</dd>
 		  <dt>from</dt>
@@ -109,11 +115,6 @@ try
 			$club = (int)$_REQUEST['club'];
 		}
 		
-		if ($club <= 0)
-		{
-			throw new Exc('Club is not scpecified.');
-		}
-		
 		$page_size = 16;
 		if (isset($_REQUEST['page_size']))
 		{
@@ -144,9 +145,27 @@ try
 			$to = (int)$_REQUEST['to'];
 		}
 			
+		$country = 0;
+		if (isset($_REQUEST['country']))
+		{
+			$country = (int)$_REQUEST['country'];
+		}
+		
+		$area = 0;
+		if (isset($_REQUEST['area']))
+		{
+			$area = (int)$_REQUEST['area'];
+		}
+		
+		$city = 0;
+		if (isset($_REQUEST['city']))
+		{
+			$city = (int)$_REQUEST['city'];
+		}
+		
 		$count_only = isset($_REQUEST['count']);
 		
-		$condition = new SQL(' FROM news n JOIN clubs c ON c.id = n.club_id JOIN cities ct ON ct.id = c.city_id WHERE (n.lang & ?) <> 0 AND c.id = ?', $langs, $club);
+		$condition = new SQL(' FROM news n JOIN clubs c ON c.id = n.club_id JOIN cities ct ON ct.id = c.city_id WHERE (n.lang & ?) <> 0', $langs);
 		if ($from > 0)
 		{
 			$condition->add(' AND n.timestamp > ?', $from);
@@ -156,7 +175,29 @@ try
 		{
 			$condition->add(' AND n.timestamp < ?', $to);
 		}
-
+		
+		if ($club > 0)
+		{
+			$condition->add(' AND c.id = ?', $club);
+		}
+		else if ($city > 0)
+		{
+			$condition->add(' AND ct.id = ?', $city);
+		}
+		else if ($area > 0)
+		{
+			$query1 = new DbQuery('SELECT near_id FROM cities WHERE id = ?', $area);
+			list($parent_city) = $query1->record('city');
+			if ($parent_city == NULL)
+			{
+				$parent_city = $area;
+			}
+			$condition->add(' AND (ct.id = ? OR ct.id IN (SELECT id FROM cities WHERE near_id = ?))', $parent_city, $parent_city);
+		}
+		else if ($country > 0)
+		{
+			$condition->add(' AND ct.country_id = ?', $country);
+		}
 		
 		list ($count) = Db::record('advert', 'SELECT count(*)', $condition);
 		$result->count = (int)$count;
