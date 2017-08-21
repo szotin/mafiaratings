@@ -69,80 +69,92 @@ try
 ?>
 	<h1>Parameters:</h1>
 		<dl>
-		  <dt>help</dt>
-			<dd>Shows this screen.</dd>
-		  <dt>version</dt>
-			<dd>Requiered data version. It is recommended to set it. It guarantees that the format of a data you receive is never changed. If not set, the latest version is returned. Note that <i>version</i> is the only parameter that can be used together with <i>help</i>.
+			<dt>help</dt>
+				<dd>Shows this screen.</dd>
+			<dt>version</dt>
+				<dd>Requiered data version. It is recommended to set it. It guarantees that the format of a data you receive is never changed. If not set, the latest version is returned. Note that <i>version</i> is the only parameter that can be used together with <i>help</i>.
 <?php				
-				echo 'Current version is ' . CURRENT_VERSION . '.';
-				if (CURRENT_VERSION != $result->version)
-				{
-					echo ' This help shows the data format for version ' . $result->version . '.';
-				}
+					echo 'Current version is ' . CURRENT_VERSION . '.';
+					if (CURRENT_VERSION != $result->version)
+					{
+						echo ' This help shows the data format for version ' . $result->version . '.';
+					}
 ?>
-			</dd>
-		  <dt>role</dt>
-			<dd>The rating for the specified role only. Possible values are:<ul>
-				<li>a - all roles (default)</li>
-				<li>r - red roles = civilian + sheriff: <a href="ws_ratings.php?role=r">ws_ratings.php?role=r</a></li>
-				<li>b - black roles = mafia + don: <a href="ws_ratings.php?role=b">ws_ratings.php?role=b</a></li>
-				<li>c - civilian but not the sheriff: <a href="ws_ratings.php?role=c">ws_ratings.php?role=c</a></li>
-				<li>s - sheriff: <a href="ws_ratings.php?role=s">ws_ratings.php?role=s</a></li>
-				<li>m - mafia but not the don: <a href="ws_ratings.php?role=m">ws_ratings.php?role=m</a></li>
-				<li>d - don: <a href="ws_ratings.php?role=d">ws_ratings.php?role=d</a></li>
-				</ul>
-			</dd>
-		  <dt>club</dt>
-			<dd>Club id. For example: <a href="ws_ratings.php?club=1">ws_ratings.php?club=1</a> returns ratings for all players of Vancouver Mafia Club. If missing, all players for all clubs are returned.</dd>
-		  <dt>event</dt>
-			<dd>Event id. For example: <a href="ws_ratings.php?event=7927">ws_ratings.php?event=7927</a> returns ratings for all players participated in VaWaCa tournament. If missing, all players for all events are returned.</dd>
-		  <dt>game</dt>
-			<dd>Game id. For example: <a href="ws_ratings.php?game=1299">ws_ratings.php?game=1299</a> returns ratings for all players participated in the game 1299, played in VaWaCa tournament.</dd>
-		  <dt>address</dt>
-			<dd>Address id. For example: <a href="ws_ratings.php?address=10">ws_ratings.php?address=10</a> returns ratings for all players who played in Tafs Cafe in Vancouver Mafia Club.</dd>
-		  <dt>langs</dt>
-			<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_ratings.php?langs=1">ws_ratings.php?langs=1</a> returns ratings for players who speak English; <a href="ws_ratings.php?club=1&langs=3">ws_ratings.php?club=1&langs=3</a> returns ratings for players who can speak English and Russian.</dd>
-		  <dt>count</dt>
-			<dd>Returns game count instead of players list. For example: <a href="ws_ratings.php?club=1&count">ws_ratings.php?club=1&count</a> returns how many players with ratings are there in Vancouver Mafia Club; <a href="ws_ratings.php?event=7927&count">ws_ratings.php?event=7927&count</a> returns how many players with ratings participated in VaWaCa tournament.</dd>
-		  <dt>page</dt>
-			<dd>Page number. For example: <a href="ws_ratings.php?club=1&page=1">v.php?club=1&page=1</a> returns the second page of ratings for Vancouver Mafia Club players.</dd>
-		  <dt>page_size</dt>
-			<dd>Page size. Default page_size is 16. For example: <a href="ws_ratings.php?club=1&page_size=32">ws_ratings.php?club=1&page_size=32</a> returns top 32 players for Vancouver Mafia Club; <a href="ws_ratings.php?club=6&page_size=0">ws_ratings.php?club=6&page_size=0</a> returns all players for Empire of Mafia club in one page; <a href="ws_ratings.php?club=1">ws_ratings.php?club=1</a> returns top 16 players for Vancouver Mafia Club;</dd>
+				</dd>
+			<dt>role</dt>
+				<dd>The rating for the specified role only. Possible values are:<ul>
+					<li>a - all roles (default)</li>
+					<li>r - red roles = civilian + sheriff: <a href="ws_ratings.php?role=r">ws_ratings.php?role=r</a></li>
+					<li>b - black roles = mafia + don: <a href="ws_ratings.php?role=b">ws_ratings.php?role=b</a></li>
+					<li>c - civilian but not the sheriff: <a href="ws_ratings.php?role=c">ws_ratings.php?role=c</a></li>
+					<li>s - sheriff: <a href="ws_ratings.php?role=s">ws_ratings.php?role=s</a></li>
+					<li>m - mafia but not the don: <a href="ws_ratings.php?role=m">ws_ratings.php?role=m</a></li>
+					<li>d - don: <a href="ws_ratings.php?role=d">ws_ratings.php?role=d</a></li>
+					</ul>
+				</dd>
+			<dt>club</dt>
+				<dd>Club id. For example: <a href="ws_ratings.php?club=1">ws_ratings.php?club=1</a> returns ratings for all players of Vancouver Mafia Club. If missing, all players for all clubs are returned.</dd>
+			<dt>club_members</dt>
+				<dd>Club id. For example: <a href="ws_ratings.php?club_members=42">ws_ratings.php?club_members=42</a> returns ratings for all members of Seattle Mafia Club. The difference with the "club" parameter is that "club" returns only the players who consider Seattle Mafia Club as their main club. Though "club_members" returns all members even if their main club is different. Note that Fantomas and Tigra are returned in the sample request, though their main club is Vancouver.</dd>
+			<dt>game</dt>
+				<dd>Game id. For example: <a href="ws_ratings.php?game=1299">ws_ratings.php?game=1299</a> returns ratings for all players participated in the game 1299, played in VaWaCa tournament.</dd>
+			<dt>event</dt>
+				<dd>Event id. For example: <a href="ws_ratings.php?event=7927">ws_ratings.php?event=7927</a> returns ratings for all players participated in VaWaCa tournament. If missing, all players for all events are returned.</dd>
+			<dt>address</dt>
+				<dd>Address id. For example: <a href="ws_ratings.php?address=10">ws_ratings.php?address=10</a> returns ratings for all players who played in Tafs Cafe in Vancouver Mafia Club.</dd>
+			<dt>city</dt>
+				<dd>City id. For example: <a href="ws_ratings.php?city=49">ws_ratings.php?city=49</a> returns ratings for all players from Seattle. List of the cities and their ids can be obtained using <a href="ws_cities.php?help">ws_cities.php</a>.</dd>
+			<dt>area</dt>
+				<dd>City id. The difference with city is that when area is set, the games from all nearby cities are also returned. For example: <a href="ws_ratings.php?area=1">ws_ratings.php?area=1</a> returns all players from Vancouver and nearby cities like Delta, Burnaby, Surrey, etc. Though <a href="ws_ratings.php?city=1">ws_ratings.php?city=1</a> returns only the players from Vancouver itself.</dd>
+			<dt>country</dt>
+				<dd>Country id. For example: <a href="ws_ratings.php?country=2">ws_ratings.php?country=2</a> returns all players from Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help">ws_countries.php</a>.</dd>
+			<dt>langs</dt>
+				<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_ratings.php?langs=1">ws_ratings.php?langs=1</a> returns ratings for players who speak English; <a href="ws_ratings.php?club=1&langs=3">ws_ratings.php?club=1&langs=3</a> returns ratings for players who can speak English and Russian.</dd>
+			<dt>count</dt>
+				<dd>Returns game count instead of players list. For example: <a href="ws_ratings.php?club=1&count">ws_ratings.php?club=1&count</a> returns how many players with ratings are there in Vancouver Mafia Club; <a href="ws_ratings.php?event=7927&count">ws_ratings.php?event=7927&count</a> returns how many players with ratings participated in VaWaCa tournament.</dd>
+			<dt>page</dt>
+				<dd>Page number. For example: <a href="ws_ratings.php?club=1&page=1">v.php?club=1&page=1</a> returns the second page of ratings for Vancouver Mafia Club players.</dd>
+			<dt>page_size</dt>
+				<dd>Page size. Default page_size is 16. For example: <a href="ws_ratings.php?club=1&page_size=32">ws_ratings.php?club=1&page_size=32</a> returns top 32 players for Vancouver Mafia Club; <a href="ws_ratings.php?club=6&page_size=0">ws_ratings.php?club=6&page_size=0</a> returns all players for Empire of Mafia club in one page; <a href="ws_ratings.php?club=1">ws_ratings.php?club=1</a> returns top 16 players for Vancouver Mafia Club;</dd>
 		</dl>	
 	<h1>Results:</h1>
-		<dt>version</dt>
-		  <dd>Data version.</dd>
-		<dt>ratings</dt>
-		  <dd>The array of ratings. Ratings are always sorted in "from bigger to smaller" order. There is no way to change sorting order in the current version of the API.</dd>
-		<dt>count</dt>
-		  <dd>The total number of players satisfying the request parameters.</dd>
-		<dt>error</dt>
-		  <dd>Error message when an error occurs.</dd>
+		<dl>
+			<dt>version</dt>
+			  <dd>Data version.</dd>
+			<dt>ratings</dt>
+			  <dd>The array of ratings. Ratings are always sorted in "from bigger to smaller" order. There is no way to change sorting order in the current version of the API.</dd>
+			<dt>count</dt>
+			  <dd>The total number of players satisfying the request parameters.</dd>
+			<dt>error</dt>
+			  <dd>Error message when an error occurs.</dd>
+		</dl>
 	<h2>Rating parameters:</h2>
-		<dt>num</dt>
-		  <dd>Number in the current list.</dd>
-		<dt>pos</dt>
-		  <dd>Position in the global rating.</dd>
-		<dt>id</dt>
-		  <dd>User id. Unique user identifier.</dd>
-		<dt>name</dt>
-		  <dd>User name.</dd>
-		<dt>image</dt>
-		  <dd>A link to the user image at mafiaratings.com. Not set when the image is not uploaded by the user.</dd>
-		<dt>icon</dt>
-		  <dd>A link to the user icon at mafiaratings.com. Not set when the icon is not uploaded by the user.</dd>
-		<dt>rating</dt>
-		  <dd>The Elo rating.</dd>
-		<dt>num_games</dt>
-		  <dd>Number of games played by the player.</dd>
-		<dt>games_won</dt>
-		  <dd>Number of games won by the player.</dd>
-		<dt>male</dt>
-		  <dd>True for males; not set for females.</dd>
-		<dt>club_id</dt>
-		  <dd>This player's main club id.</dd>
-		<dt>club_name</dt>
-		  <dd>This player's main club name.</dd>
+		<dl>
+			<dt>num</dt>
+			  <dd>Number in the current list.</dd>
+			<dt>pos</dt>
+			  <dd>Position in the global rating.</dd>
+			<dt>id</dt>
+			  <dd>User id. Unique user identifier.</dd>
+			<dt>name</dt>
+			  <dd>User name.</dd>
+			<dt>image</dt>
+			  <dd>A link to the user image at mafiaratings.com. Not set when the image is not uploaded by the user.</dd>
+			<dt>icon</dt>
+			  <dd>A link to the user icon at mafiaratings.com. Not set when the icon is not uploaded by the user.</dd>
+			<dt>rating</dt>
+			  <dd>The Elo rating.</dd>
+			<dt>num_games</dt>
+			  <dd>Number of games played by the player.</dd>
+			<dt>games_won</dt>
+			  <dd>Number of games won by the player.</dd>
+			<dt>male</dt>
+			  <dd>True for males; not set for females.</dd>
+			<dt>club_id</dt>
+			  <dd>This player's main club id.</dd>
+			<dt>club_name</dt>
+			  <dd>This player's main club name.</dd>
+		</dl>
 	<br><br>
 <?php		
 	}
@@ -186,10 +198,10 @@ try
 			$club = (int)$_REQUEST['club'];
 		}
 		
-		$event = 0;
-		if (isset($_REQUEST['event']))
+		$club_members = 0;
+		if (isset($_REQUEST['club_members']))
 		{
-			$event = (int)$_REQUEST['event'];
+			$club_members = (int)$_REQUEST['club_members'];
 		}
 		
 		$game = 0;
@@ -198,10 +210,34 @@ try
 			$game = (int)$_REQUEST['game'];
 		}
 		
+		$event = 0;
+		if (isset($_REQUEST['event']))
+		{
+			$event = (int)$_REQUEST['event'];
+		}
+		
 		$address = 0;
 		if (isset($_REQUEST['address']))
 		{
 			$address = (int)$_REQUEST['address'];
+		}
+		
+		$country = 0;
+		if (isset($_REQUEST['country']))
+		{
+			$country = (int)$_REQUEST['country'];
+		}
+		
+		$area = 0;
+		if (isset($_REQUEST['area']))
+		{
+			$area = (int)$_REQUEST['area'];
+		}
+		
+		$city = 0;
+		if (isset($_REQUEST['city']))
+		{
+			$city = (int)$_REQUEST['city'];
 		}
 		
 		$langs = LANG_ALL;
@@ -230,20 +266,40 @@ try
 		{
 			$condition->add(' AND u.club_id = ?', $club);
 		}
-		
-		if ($event > 0)
+		else if ($club_members > 0)
 		{
-			$condition->add(' AND u.id IN (SELECT user_id FROM registrations WHERE event_id = ?)', $event);
+			$condition->add(' AND u.id IN (SELECT user_id FROM user_clubs WHERE club_id = ?)', $club_members);
 		}
 		
 		if ($game > 0)
 		{
 			$condition->add(' AND u.id IN (SELECT user_id FROM players WHERE game_id = ?)', $game);
 		}
-		
-		if ($address > 0)
+		else if ($event > 0)
+		{
+			$condition->add(' AND u.id IN (SELECT user_id FROM registrations WHERE event_id = ?)', $event);
+		}
+		else if ($address > 0)
 		{
 			$condition->add(' AND u.id IN (SELECT DISTINCT p1.user_id FROM players p1 JOIN games g1 ON p1.game_id = g1.id JOIN events e1 ON g1.event_id = e1.id WHERE e1.address_id = ?)', $address);
+		}
+		else if ($city > 0)
+		{
+			$condition->add(' AND u.city_id = ?', $city);
+		}
+		else if ($area > 0)
+		{
+			$query1 = new DbQuery('SELECT near_id FROM cities WHERE id = ?', $area);
+			list($parent_city) = $query1->record('city');
+			if ($parent_city == NULL)
+			{
+				$parent_city = $area;
+			}
+			$condition->add(' AND (u.city_id = ? OR u.city_id IN (SELECT id FROM cities WHERE near_id = ?))', $parent_city, $parent_city);
+		}
+		else if ($country > 0)
+		{
+			$condition->add(' AND u.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $country);
 		}
 		
 		if ($langs != LANG_ALL)

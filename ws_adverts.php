@@ -64,11 +64,11 @@ try
 		  <dt>club</dt>
 			<dd>Club id.</i> For example: <a href="ws_adverts.php?club=1">ws_adverts.php?club=1</a> returns all advertizements of Vancouver Mafia Club. If missing, all players for all clubs are returned.</dd>
 		  <dt>city</dt>
-			<dd>City id. For example: <a href="ws_adverts.php?city=2">ws_adverts.php?city=2</a> returns all adverts from Moscow clubs. List of the cities and their ids can be obtained using <a href="ws_cities.php?help>">ws_cities.php</a>.</dd>
+			<dd>City id. For example: <a href="ws_adverts.php?city=2">ws_adverts.php?city=2</a> returns all adverts from Moscow clubs. List of the cities and their ids can be obtained using <a href="ws_cities.php?help">ws_cities.php</a>.</dd>
 		  <dt>area</dt>
 			<dd>City id. The difference with city is that when area is set, the adverts from all nearby cities are also returned. For example: <a href="ws_adverts.php?area=1">ws_adverts.php?area=1</a> returns all adverts published in Vancouver and nearby cities. Though <a href="ws_adverts.php?city=1">ws_adverts.php?city=1</a> returns only the adverts published in Vancouver itself.</dd>
 		  <dt>country</dt>
-			<dd>Country id. For example: <a href="ws_adverts.php?country=2">ws_adverts.php?country=2</a> returns all adverts published in Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help>">ws_countries.php</a>.</dd>
+			<dd>Country id. For example: <a href="ws_adverts.php?country=2">ws_adverts.php?country=2</a> returns all adverts published in Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help">ws_countries.php</a>.</dd>
 		  <dt>langs</dt>
 			<dd>Message languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_adverts.php?club=1&langs=1">ws_adverts.php?club=1&langs=1</a> returns all English advertizements of Vancouver Mafia Club; <a href="ws_adverts.php?club=1&langs=3">ws_adverts.php?club=1&langs=3</a> returns all English and Russian advertizements of Vancouver Mafia Club</dd>
 		  <dt>from</dt>

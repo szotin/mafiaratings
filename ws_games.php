@@ -290,11 +290,11 @@ class WSGame
 			  <dt>address</dt>
 				<dd>Address id. For example: <a href="ws_games.php?address=10">ws_games.php?address=10</a> returns all games played in Tafs Cafe by Vancouver Mafia Club.</dd>
 			  <dt>city</dt>
-				<dd>City id. For example: <a href="ws_games.php?city=49">ws_games.php?city=49</a> returns all games played in Seattle. List of the cities and their ids can be obtained using <a href="ws_cities.php?help>">ws_cities.php</a>.</dd>
+				<dd>City id. For example: <a href="ws_games.php?city=49">ws_games.php?city=49</a> returns all games played in Seattle. List of the cities and their ids can be obtained using <a href="ws_cities.php?help">ws_cities.php</a>.</dd>
 			  <dt>area</dt>
 				<dd>City id. The difference with city is that when area is set, the games from all nearby cities are also returned. For example: <a href="ws_games.php?area=1">ws_games.php?area=1</a> returns all games played in Vancouver and nearby cities. Though <a href="ws_games.php?city=1">ws_games.php?city=1</a> returns only the games played in Vancouver itself.</dd>
 			  <dt>country</dt>
-				<dd>Country id. For example: <a href="ws_games.php?country=2">ws_games.php?country=2</a> returns all games played in Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help>">ws_countries.php</a>.</dd>
+				<dd>Country id. For example: <a href="ws_games.php?country=2">ws_games.php?country=2</a> returns all games played in Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help">ws_countries.php</a>.</dd>
 			  <dt>user</dt>
 				<dd>User id. For example: <a href="ws_games.php?user=25">ws_games.php?user=25</a> returns all games where Fantomas played. If missing, all games for all users are returned.</dd>
 			  <dt>langs</dt>
