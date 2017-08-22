@@ -132,6 +132,10 @@ try
 				<dd>User id. For example: <a href="ws_ratings.php?in_user=4">ws_ratings.php?in_user=4</a> returns rating points in the games where lilya played.</dd>
 			<dt>in_langs</dt>
 				<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_ratings.php?in_langs=1">ws_ratings.php?in_langs=1</a> returns rating points earned in games played in English; <a href="ws_ratings.php?club=1&in_langs=3">ws_ratings.php?club=1&in_langs=3</a> returns rating points earned in English and Russian games by the players of Vancouver club.</dd>
+			<dt>in_before</dt>
+				<dd>Unix timestamp. For example: <a href="ws_ratings.php?in_before=1483228800">ws_ratings.php?in_before=1483228800</a> returns ratings earned before 2017. In other words it returns ratings as they were at the end of 2016.</dd>
+			<dt>in_after</dt>
+				<dd>Unix timestamp. For example: <a href="ws_ratings.php?in_after=1483228800">ws_ratings.php?in_after=1483228800</a> returns ratings earned after January 1, 2017; <a href="ws_ratings.php?in_after=1483228800&in_before=1485907200">ws_ratings.php?in_after=1483228800&in_before=1485907200</a> returns ratings earned in January 2017</dd>
 			<dt>count</dt>
 				<dd>Returns game count instead of players list. For example: <a href="ws_ratings.php?club=1&count">ws_ratings.php?club=1&count</a> returns how many players with ratings are there in Vancouver Mafia Club; <a href="ws_ratings.php?event=7927&count">ws_ratings.php?event=7927&count</a> returns how many players with ratings participated in VaWaCa tournament.</dd>
 			<dt>page</dt>
@@ -339,6 +343,20 @@ try
 			$in_langs = (int)$_REQUEST['in_langs'];
 		}
 		
+		$in_before = 0;
+		if (isset($_REQUEST['in_before']))
+		{
+			$in_set = true;
+			$in_before = (int)$_REQUEST['in_before'];
+		}
+		
+		$in_after = 0;
+		if (isset($_REQUEST['in_after']))
+		{
+			$in_set = true;
+			$in_after = (int)$_REQUEST['in_after'];
+		}
+		
 		$page_size = 16;
 		if (isset($_REQUEST['page_size']))
 		{
@@ -411,6 +429,16 @@ try
 			if ($in_langs > 0)
 			{
 				$condition->add(' AND (g.language & ?) <> 0', $in_langs);
+			}
+			
+			if ($in_before > 0)
+			{
+				$condition->add(' AND g.start_time < ?', $in_before);
+			}
+			
+			if ($in_after > 0)
+			{
+				$condition->add(' AND g.start_time >= ?', $in_after);
 			}
 			
 			if ($in_user > 0)

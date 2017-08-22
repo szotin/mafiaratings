@@ -277,10 +277,10 @@ class WSGame
 					}
 ?>
 				</dd>
-			  <dt>from</dt>
-				<dd>Unix timestamp for the earliest game to return. For example: <a href="ws_games.php?from=1483228800">ws_games.php?from=1483228800</a> returns all games played starting from January 1, 2017</dd>
-			  <dt>to</dt>
-				<dd>Unix timestamp for the latest game to return. For example: <a href="ws_games.php?to=1483228800">ws_games.php?to=1483228800</a> returns all games played before 2017; <a href="ws_games.php?from=1483228800&to=1485907200">ws_games.php?from=1483228800&to=1485907200</a> returns all games played in January 2017</dd>
+			  <dt>before</dt>
+				<dd>Unix timestamp for the latest game to return. For example: <a href="ws_games.php?before=1483228800">ws_games.php?before=1483228800</a> returns all games started before 2017</dd>
+			  <dt>after</dt>
+				<dd>Unix timestamp for the earliest game to return. For example: <a href="ws_games.php?after=1483228800">ws_games.php?after=1483228800</a> returns all games started after January 1, 2017 inclusive; <a href="ws_games.php?after=1483228800&before=1485907200">ws_games.php?after=1483228800&before=1485907200</a> returns all games played in January 2017. (Using start time - if the game ended in February but started in January it is still a January game).</dd>
 			  <dt>club</dt>
 				<dd>Club id. For example: <a href="ws_games.php?club=1">ws_games.php?club=1</a> returns all games for Vancouver Mafia Club. If missing, all games for all clubs are returned.</dd>
 			  <dt>game</dt>
@@ -374,16 +374,16 @@ class WSGame
 			
 			$raw = isset($_REQUEST['raw']);
 			
-			$from = 0;
-			if (isset($_REQUEST['from']))
+			$after = 0;
+			if (isset($_REQUEST['after']))
 			{
-				$from = (int)$_REQUEST['from'];
+				$after = (int)$_REQUEST['after'];
 			}
 			
-			$to = 0;
-			if (isset($_REQUEST['to']))
+			$before = 0;
+			if (isset($_REQUEST['before']))
 			{
-				$to = (int)$_REQUEST['to'];
+				$before = (int)$_REQUEST['before'];
 			}
 			
 			$club = 0;
@@ -455,14 +455,14 @@ class WSGame
 			$count_only = isset($_REQUEST['count']);
 			
 			$condition = new SQL('');
-			if ($from > 0)
+			if ($before > 0)
 			{
-				$condition->add(' AND g.end_time > ?', $from);
+				$condition->add(' AND g.start_time < ?', $before);
 			}
 
-			if ($to > 0)
+			if ($after > 0)
 			{
-				$condition->add(' AND g.start_time < ?', $to);
+				$condition->add(' AND g.start_time >= ?', $after);
 			}
 
 			if ($club > 0)
