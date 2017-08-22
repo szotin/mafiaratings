@@ -81,17 +81,6 @@ try
 					}
 ?>
 				</dd>
-			<dt>role</dt>
-				<dd>The rating for the specified role only. Possible values are:<ul>
-					<li>a - all roles (default)</li>
-					<li>r - red roles = civilian + sheriff: <a href="ws_ratings.php?role=r">ws_ratings.php?role=r</a></li>
-					<li>b - black roles = mafia + don: <a href="ws_ratings.php?role=b">ws_ratings.php?role=b</a></li>
-					<li>c - civilian but not the sheriff: <a href="ws_ratings.php?role=c">ws_ratings.php?role=c</a></li>
-					<li>s - sheriff: <a href="ws_ratings.php?role=s">ws_ratings.php?role=s</a></li>
-					<li>m - mafia but not the don: <a href="ws_ratings.php?role=m">ws_ratings.php?role=m</a></li>
-					<li>d - don: <a href="ws_ratings.php?role=d">ws_ratings.php?role=d</a></li>
-					</ul>
-				</dd>
 			<dt>club</dt>
 				<dd>Club id. For example: <a href="ws_ratings.php?club=1">ws_ratings.php?club=1</a> returns ratings for all players of Vancouver Mafia Club. If missing, all players for all clubs are returned.</dd>
 			<dt>club_members</dt>
@@ -108,8 +97,41 @@ try
 				<dd>City id. The difference with city is that when area is set, the games from all nearby cities are also returned. For example: <a href="ws_ratings.php?area=1">ws_ratings.php?area=1</a> returns all players from Vancouver and nearby cities like Delta, Burnaby, Surrey, etc. Though <a href="ws_ratings.php?city=1">ws_ratings.php?city=1</a> returns only the players from Vancouver itself.</dd>
 			<dt>country</dt>
 				<dd>Country id. For example: <a href="ws_ratings.php?country=2">ws_ratings.php?country=2</a> returns all players from Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help">ws_countries.php</a>.</dd>
+			<dt>user</dt>
+				<dd>User id. For example: <a href="ws_ratings.php?user=4">ws_ratings.php?user=4</a> returns all players who played with lilya at least once.</dd>
 			<dt>langs</dt>
 				<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_ratings.php?langs=1">ws_ratings.php?langs=1</a> returns ratings for players who speak English; <a href="ws_ratings.php?club=1&langs=3">ws_ratings.php?club=1&langs=3</a> returns ratings for players who can speak English and Russian.</dd>
+			<dt>in_role</dt>
+				<dd>The rating for the specified role only. Possible values are:
+					<ul>
+						<li>a - all roles (default)</li>
+						<li>r - red roles = civilian + sheriff: <a href="ws_ratings.php?in_role=r">ws_ratings.php?in_role=r</a></li>
+						<li>b - black roles = mafia + don: <a href="ws_ratings.php?in_role=b">ws_ratings.php?in_role=b</a></li>
+						<li>c - civilian but not the sheriff: <a href="ws_ratings.php?in_role=c">ws_ratings.php?in_role=c</a></li>
+						<li>s - sheriff: <a href="ws_ratings.php?in_role=s">ws_ratings.php?in_role=s</a></li>
+						<li>m - mafia but not the don: <a href="ws_ratings.php?in_role=m">ws_ratings.php?in_role=m</a></li>
+						<li>d - don: <a href="ws_ratings.php?in_role=d">ws_ratings.php?in_role=d</a></li>
+					</ul>
+					If any of the parameters staring with "in_" is set, the rating calculation is changed. For example in_role shows only rating earned in a specific roles; in_country - only the rating earned in a specific country; etc.
+				</dd>
+			<dt>in_club</dt>
+				<dd>Club id. For example: <a href="ws_ratings.php?in_club=1">ws_ratings.php?in_club=1</a> returns only rating points earned in Vancouver Mafia Club. <a href="ws_ratings.php?in_club=1&club=42">ws_ratings.php?in_club=1&club=42</a> returns rating points of Seattle club players earned in Vancouver.</dd>
+			<dt>in_game</dt>
+				<dd>Game id. For example: <a href="ws_ratings.php?in_game=1299">ws_ratings.php?in_game=1299</a> returns rating points earned in the game 1299, played in VaWaCa tournament.</dd>
+			<dt>in_event</dt>
+				<dd>Event id. For example: <a href="ws_ratings.php?in_event=7927">ws_ratings.php?in_event=7927</a> returns ratings points earned in VaWaCa tournament.</dd>
+			<dt>in_address</dt>
+				<dd>Address id. For example: <a href="ws_ratings.php?in_address=10">ws_ratings.php?in_address=10</a> returns rating points earned in Tafs Cafe in Vancouver Mafia Club.</dd>
+			<dt>in_city</dt>
+				<dd>City id. For example: <a href="ws_ratings.php?in_city=49">ws_ratings.php?in_city=49</a> returns rating points earned in Seattle. List of the cities and their ids can be obtained using <a href="ws_cities.php?help">ws_cities.php</a>.</dd>
+			<dt>in_area</dt>
+				<dd>City id. The difference with city is that when area is set, the games from all nearby cities are also returned. For example: <a href="ws_ratings.php?in_area=1">ws_ratings.php?in_area=1</a> returns all rating points earned in Vancouver and nearby cities like Delta, Burnaby, Surrey, etc. Though <a href="ws_ratings.php?in_city=1">ws_ratings.php?in_city=1</a> returns only rating points earned in Vancouver itself.</dd>
+			<dt>in_country</dt>
+				<dd>Country id. For example: <a href="ws_ratings.php?in_country=2">ws_ratings.php?in_country=2</a> returns rating points earned in Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help">ws_countries.php</a>.</dd>
+			<dt>in_user</dt>
+				<dd>User id. For example: <a href="ws_ratings.php?in_user=4">ws_ratings.php?in_user=4</a> returns rating points in the games where lilya played.</dd>
+			<dt>in_langs</dt>
+				<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_ratings.php?in_langs=1">ws_ratings.php?in_langs=1</a> returns rating points earned in games played in English; <a href="ws_ratings.php?club=1&in_langs=3">ws_ratings.php?club=1&in_langs=3</a> returns rating points earned in English and Russian games by the players of Vancouver club.</dd>
 			<dt>count</dt>
 				<dd>Returns game count instead of players list. For example: <a href="ws_ratings.php?club=1&count">ws_ratings.php?club=1&count</a> returns how many players with ratings are there in Vancouver Mafia Club; <a href="ws_ratings.php?event=7927&count">ws_ratings.php?event=7927&count</a> returns how many players with ratings participated in VaWaCa tournament.</dd>
 			<dt>page</dt>
@@ -162,36 +184,6 @@ try
 	{
 		initiate_session();
 		
-		$role = POINTS_ALL;
-		if (isset($_REQUEST['role']))
-		{
-			$role = $_REQUEST['role'];
-			switch($role)
-			{
-				case 'a';
-					$role = POINTS_ALL;
-					break;
-				case 'r';
-					$role = POINTS_RED;
-					break;
-				case 'b';
-					$role = POINTS_DARK;
-					break;
-				case 'c';
-					$role = POINTS_CIVIL;
-					break;
-				case 's';
-					$role = POINTS_SHERIFF;
-					break;
-				case 'm';
-					$role = POINTS_MAFIA;
-					break;
-				case 'd';
-					$role = POINTS_DON;
-					break;
-			}
-		}
-		
 		$club = 0;
 		if (isset($_REQUEST['club']))
 		{
@@ -240,12 +232,113 @@ try
 			$city = (int)$_REQUEST['city'];
 		}
 		
+		$user = 0;
+		if (isset($_REQUEST['user']))
+		{
+			$user = (int)$_REQUEST['user'];
+		}
+		
 		$langs = LANG_ALL;
 		if (isset($_REQUEST['langs']))
 		{
 			$langs = (int)$_REQUEST['langs'];
 		}
-			
+
+		$in_set = false;
+		$in_role = POINTS_ALL;
+		if (isset($_REQUEST['in_role']))
+		{
+			$in_role = $_REQUEST['in_role'];
+			$in_set = true;
+			switch($in_role)
+			{
+				case 'r';
+					$in_role = POINTS_RED;
+					break;
+				case 'b';
+					$in_role = POINTS_DARK;
+					break;
+				case 'c';
+					$in_role = POINTS_CIVIL;
+					break;
+				case 's';
+					$in_role = POINTS_SHERIFF;
+					break;
+				case 'm';
+					$in_role = POINTS_MAFIA;
+					break;
+				case 'd';
+					$in_role = POINTS_DON;
+					break;
+				default:
+					$in_set = false;
+					break;
+			}
+		}
+		
+		$in_club = 0;
+		if (isset($_REQUEST['in_club']))
+		{
+			$in_set = true;
+			$in_club = (int)$_REQUEST['in_club'];
+		}
+		
+		$in_game = 0;
+		if (isset($_REQUEST['in_game']))
+		{
+			$in_set = true;
+			$in_game = (int)$_REQUEST['in_game'];
+		}
+		
+		$in_event = 0;
+		if (isset($_REQUEST['in_event']))
+		{
+			$in_set = true;
+			$in_event = (int)$_REQUEST['in_event'];
+		}
+		
+		$in_address = 0;
+		if (isset($_REQUEST['in_address']))
+		{
+			$in_set = true;
+			$in_address = (int)$_REQUEST['in_address'];
+		}
+		
+		$in_city = 0;
+		if (isset($_REQUEST['in_city']))
+		{
+			$in_set = true;
+			$in_city = (int)$_REQUEST['in_city'];
+		}
+		
+		$in_area = 0;
+		if (isset($_REQUEST['in_area']))
+		{
+			$in_set = true;
+			$in_area = (int)$_REQUEST['in_area'];
+		}
+		
+		$in_country = 0;
+		if (isset($_REQUEST['in_country']))
+		{
+			$in_set = true;
+			$in_country = (int)$_REQUEST['in_country'];
+		}
+		
+		$in_user = 0;
+		if (isset($_REQUEST['in_user']))
+		{
+			$in_set = true;
+			$in_user = (int)$_REQUEST['in_user'];
+		}
+		
+		$in_langs = 0;
+		if (isset($_REQUEST['in_langs']))
+		{
+			$in_set = true;
+			$in_langs = (int)$_REQUEST['in_langs'];
+		}
+		
 		$page_size = 16;
 		if (isset($_REQUEST['page_size']))
 		{
@@ -302,27 +395,81 @@ try
 			$condition->add(' AND u.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $country);
 		}
 		
+		if ($user > 0)
+		{
+			$condition->add(' AND u.id IN (SELECT DISTINCT p1.user_id FROM players p1 JOIN players p2 ON p1.game_id = p2.game_id WHERE p2.user_id = ?)', $user);
+		}
+		
 		if ($langs != LANG_ALL)
 		{
 			$condition->add(' AND (u.languages & ?) <> 0', $langs);
 		}
 			
-		if ($role == POINTS_ALL)
+		if ($in_set)
+		{
+			$condition->add(get_roles_condition($in_role));
+			if ($in_langs > 0)
+			{
+				$condition->add(' AND (g.language & ?) <> 0', $in_langs);
+			}
+			
+			if ($in_user > 0)
+			{
+				$condition->add(' AND g.id IN (SELECT game_id FROM players WHERE user_id = ?)', $in_user);
+			}
+			
+			if ($in_game > 0)
+			{
+				$condition->add(' AND g.id = ?', $in_game);
+			}
+			else if ($in_event > 0)
+			{
+				$condition->add(' AND g.event_id = ?', $in_event);
+			}
+			else if ($in_address > 0)
+			{
+				$condition->add(' AND g.event_id IN (SELECT id FROM events WHERE address_id = ?)', $in_address);
+			}
+			else if ($in_club > 0)
+			{
+				$condition->add(' AND g.club_id = ?', $in_club);
+			}
+			else if ($in_city > 0)
+			{
+				$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id WHERE a1.city_id = ?)', $in_city);
+			}
+			else if ($in_area > 0)
+			{
+				if ($in_area != $area)
+				{
+					$query1 = new DbQuery('SELECT near_id FROM cities WHERE id = ?', $in_area);
+					list($parent_city) = $query1->record('city');
+					if ($parent_city == NULL)
+					{
+						$parent_city = $in_area;
+					}
+				}
+				$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.id = ? OR c1.near_id = ?)', $parent_city, $parent_city);
+			}
+			else if ($in_country > 0)
+			{
+				$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.country_id = ?)', $in_country, $in_country);
+			}
+			
+			$query = new DbQuery(
+				'SELECT u.id, u.name, u.flags, u.languages, (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, c.id, c.name FROM users u' . 
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' JOIN players p ON p.user_id = u.id' .
+				' JOIN games g ON p.game_id = g.id', $condition); 
+			$query->add(' GROUP BY u.id ');
+			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id JOIN games g ON p.game_id = g.id', $condition);
+		}
+		else
 		{
 			$query = new DbQuery(
 				'SELECT u.id, u.name, u.flags, u.languages, (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, u.rating as rating, u.games as games, u.games_won as won, c.id, c.name FROM users u' . 
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id', $condition);
 			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
-		}
-		else
-		{
-			$condition->add(get_roles_condition($role));
-			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, u.languages, (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, c.id, c.name FROM users u' . 
-				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' JOIN players p ON p.user_id = u.id', $condition);
-			$query->add(' GROUP BY u.id ');
-			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id', $condition);
 		}
 		
 		$num = 0;
@@ -333,7 +480,7 @@ try
 		}
 		
 		list($count) = Db::record('rating', $count_query);
-		$result->count = $count;
+		$result->count = (int)$count;
 		if (!$count_only)
 		{
 			$result->ratings = array();
