@@ -28,12 +28,20 @@ class Page extends PageBase
 		</tr>
 		
 		<tr>
+			<td><a href="ws_scores.php?help">ws_scores.php</a></td>
+			<td>
+				<p>Returns players scores in games/events using configurable scoring systems.</p>
+			</td>
+		</tr>
+		
+<!--		
+		<tr>
 			<td><a href="ws_adverts.php?help">ws_adverts.php</a></td>
 			<td>
 				<p>Returns club advertisements.</p>
 			</td>
 		</tr>
-
+-->
 		</table>
 <?php
 	}

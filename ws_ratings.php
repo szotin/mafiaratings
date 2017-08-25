@@ -98,7 +98,9 @@ try
 			<dt>country</dt>
 				<dd>Country id. For example: <a href="ws_ratings.php?country=2">ws_ratings.php?country=2</a> returns all players from Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help">ws_countries.php</a>.</dd>
 			<dt>user</dt>
-				<dd>User id. For example: <a href="ws_ratings.php?user=4">ws_ratings.php?user=4</a> returns all players who played with lilya at least once.</dd>
+				<dd>User id. For example: <a href="ws_ratings.php?user=4">ws_ratings.php?user=4</a> returns only lilya's rating.</dd>
+			<dt>with_user</dt>
+				<dd>User id. For example: <a href="ws_ratings.php?with_user=4">ws_ratings.php?with_user=4</a> returns all players who played with lilya at least once.</dd>
 			<dt>langs</dt>
 				<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_ratings.php?langs=1">ws_ratings.php?langs=1</a> returns ratings for players who speak English; <a href="ws_ratings.php?club=1&langs=3">ws_ratings.php?club=1&langs=3</a> returns ratings for players who can speak English and Russian.</dd>
 			<dt>in_role</dt>
@@ -128,8 +130,8 @@ try
 				<dd>City id. The difference with city is that when area is set, the games from all nearby cities are also returned. For example: <a href="ws_ratings.php?in_area=1">ws_ratings.php?in_area=1</a> returns all rating points earned in Vancouver and nearby cities like Delta, Burnaby, Surrey, etc. Though <a href="ws_ratings.php?in_city=1">ws_ratings.php?in_city=1</a> returns only rating points earned in Vancouver itself.</dd>
 			<dt>in_country</dt>
 				<dd>Country id. For example: <a href="ws_ratings.php?in_country=2">ws_ratings.php?in_country=2</a> returns rating points earned in Russia. List of the countries and their ids can be obtained using <a href="ws_countries.php?help">ws_countries.php</a>.</dd>
-			<dt>in_user</dt>
-				<dd>User id. For example: <a href="ws_ratings.php?in_user=4">ws_ratings.php?in_user=4</a> returns rating points in the games where lilya played.</dd>
+			<dt>in_with_user</dt>
+				<dd>User id. For example: <a href="ws_ratings.php?in_with_user=4">ws_ratings.php?in_with_user=4</a> returns rating points in the games where lilya played.</dd>
 			<dt>in_langs</dt>
 				<dd>Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="ws_ratings.php?in_langs=1">ws_ratings.php?in_langs=1</a> returns rating points earned in games played in English; <a href="ws_ratings.php?club=1&in_langs=3">ws_ratings.php?club=1&in_langs=3</a> returns rating points earned in English and Russian games by the players of Vancouver club.</dd>
 			<dt>in_before</dt>
@@ -242,6 +244,12 @@ try
 			$user = (int)$_REQUEST['user'];
 		}
 		
+		$with_user = 0;
+		if (isset($_REQUEST['with_user']))
+		{
+			$with_user = (int)$_REQUEST['with_user'];
+		}
+		
 		$langs = LANG_ALL;
 		if (isset($_REQUEST['langs']))
 		{
@@ -329,11 +337,11 @@ try
 			$in_country = (int)$_REQUEST['in_country'];
 		}
 		
-		$in_user = 0;
-		if (isset($_REQUEST['in_user']))
+		$in_with_user = 0;
+		if (isset($_REQUEST['in_with_user']))
 		{
 			$in_set = true;
-			$in_user = (int)$_REQUEST['in_user'];
+			$in_with_user = (int)$_REQUEST['in_with_user'];
 		}
 		
 		$in_langs = 0;
@@ -415,7 +423,12 @@ try
 		
 		if ($user > 0)
 		{
-			$condition->add(' AND u.id IN (SELECT DISTINCT p1.user_id FROM players p1 JOIN players p2 ON p1.game_id = p2.game_id WHERE p2.user_id = ?)', $user);
+			$condition->add(' AND u.id = ?', $user);
+		}
+		
+		if ($with_user > 0)
+		{
+			$condition->add(' AND u.id IN (SELECT DISTINCT p1.user_id FROM players p1 JOIN players p2 ON p1.game_id = p2.game_id WHERE p2.user_id = ?)', $with_user);
 		}
 		
 		if ($langs != LANG_ALL)
@@ -441,9 +454,9 @@ try
 				$condition->add(' AND g.start_time >= ?', $in_after);
 			}
 			
-			if ($in_user > 0)
+			if ($in_with_user > 0)
 			{
-				$condition->add(' AND g.id IN (SELECT game_id FROM players WHERE user_id = ?)', $in_user);
+				$condition->add(' AND g.id IN (SELECT game_id FROM players WHERE user_id = ?)', $in_with_user);
 			}
 			
 			if ($in_game > 0)
@@ -500,11 +513,12 @@ try
 			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
 		}
 		
+		$query->add(' ORDER BY rating DESC, won DESC, games DESC');
 		$num = 0;
 		if ($page_size > 0)
 		{
 			$num = $page * $page_size;
-			$query->add(' ORDER BY rating DESC, won DESC, games DESC  LIMIT ' . $num . ',' . $page_size);
+			$query->add(' LIMIT ' . $num . ',' . $page_size);
 		}
 		
 		list($count) = Db::record('rating', $count_query);
