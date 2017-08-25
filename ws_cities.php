@@ -68,8 +68,10 @@ try
 					}
 ?>
 				</dd>
-			<dt>term</dt>
-				<dd>Search pattern. For example: <a href="ws_cities.php?term=va">ws_cities.php?term=va</a> returns cities containing "va" in their name.</dd>
+			<dt>contains</dt>
+				<dd>Search pattern. For example: <a href="ws_cities.php?contains=va">ws_cities.php?contains=va</a> returns cities containing "va" in their name.</dd>
+			<dt>starts</dt>
+				<dd>Search pattern. For example: <a href="ws_cities.php?starts=va">ws_cities.php?starts=va</a> returns cities with names starting with "va".</dd>
 			<dt>city</dt>
 				<dd>City id or city name. For example: <a href="ws_cities.php?city=1">ws_cities.php?city=1</a> returns information about Vancouver; <a href="ws_cities.php?city=moscow">ws_cities.php?city=moscow</a> returns information about Moscow.</dd>
 			<dt>area</dt>
@@ -79,7 +81,7 @@ try
 			<dt>lang</dt>
 				<dd>Language for city and country names. 1 is English; 2 is Russian. For example: <a href="ws_cities.php?lang=2">ws_cities.php?lang=2</a> returns cities names in Russian. If not specified, default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.</dd>
 			<dt>count</dt>
-				<dd>Returns cities count instead of the cities themselves. For example: <a href="ws_cities.php?term=mo&count">ws_cities.php?term=mo&count</a> returns how many cities contain 'mo' in their name.</dd>
+				<dd>Returns cities count instead of the cities themselves. For example: <a href="ws_cities.php?contains=mo&count">ws_cities.php?contains=mo&count</a> returns how many cities contain 'mo' in their name.</dd>
 			<dt>page</dt>
 				<dd>Page number. For example: <a href="ws_cities.php?page=1">ws_cities.php?page=1</a> returns the second page of cities by alphabet.</dd>
 			<dt>page_size</dt>
@@ -116,10 +118,16 @@ try
 	{
 		initiate_session();
 	
-		$term = '';
-		if (isset($_REQUEST['term']))
+		$contains = '';
+		if (isset($_REQUEST['contains']))
 		{
-			$term = $_REQUEST['term'];
+			$contains = $_REQUEST['contains'];
+		}
+		
+		$starts = '';
+		if (isset($_REQUEST['starts']))
+		{
+			$starts = $_REQUEST['starts'];
 		}
 		
 		$country = 0;
@@ -180,10 +188,18 @@ try
 		
 		$condition = new SQL();
 		$delim = ' WHERE ';
-		if ($term != '')
+		if ($contains != '')
 		{
-			$term = '%' . $term . '%';
-			$condition->add($delim . '(i.name_en LIKE(?) OR i.name_ru LIKE(?))', $term, $term);
+			$contains = '%' . $contains . '%';
+			$condition->add($delim . '(i.name_en LIKE(?) OR i.name_ru LIKE(?))', $contains, $contains);
+			$delim = ' AND ';
+		}
+		
+		if ($starts != '')
+		{
+			$starts1 = '% ' . $starts . '%';
+			$starts2 = $starts . '%';
+			$condition->add($delim . '(i.name_en LIKE(?) OR i.name_ru LIKE(?) OR i.name_en LIKE(?) OR i.name_ru LIKE(?))', $starts1, $starts1, $starts2, $starts2);
 			$delim = ' AND ';
 		}
 		

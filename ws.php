@@ -37,7 +37,7 @@ class Page extends PageBase
 		<tr>
 			<td><a href="ws_player_stats.php?help">ws_player_stats.php</a></td>
 			<td>
-				<p>Returns a player's statistics.</p>
+				<p>Returns player's statistics.</p>
 				<p>A number of games played in different roles; shooting/voting/nominating stats; moderating stats; surviving stats; etc.</p>
 			</td>
 		</tr>
