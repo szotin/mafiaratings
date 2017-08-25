@@ -110,6 +110,8 @@ try
 						<li>d - don: <a href="ws_scores.php?role=d">ws_scores.php?role=d</a></li>
 					</ul>
 				</dd>
+			<dt>number</dt>
+				<dd>Number in the game (1-10). For example: <a href="ws_scores.php?number=2&event=7927">ws_scores.php?number=2&event=7927</a> returns scores earned by players playing on number 2 in VaWaCa tournement. In the other words: who is the best number 2 in the tournament.</dd>
 			<dt>before</dt>
 				<dd>Unix timestamp. For example: <a href="ws_scores.php?before=1483228800">ws_scores.php?before=1483228800</a> returns scores earned before 2017. In other words it returns scores as they were at the end of 2016.</dd>
 			<dt>after</dt>
@@ -249,6 +251,12 @@ try
 			}
 		}
 		
+		$number = 0;
+		if (isset($_REQUEST['number']))
+		{
+			$number = (int)$_REQUEST['number'];
+		}
+		
 		$before = 0;
 		if (isset($_REQUEST['before']))
 		{
@@ -304,6 +312,11 @@ try
 		$result->role = $role;
 		$condition->add(get_roles_condition($role));
 		
+		if ($number > 0)
+		{
+			$condition->add(' AND p.number = ?', $number);
+		}
+			
 		if ($club > 0)
 		{
 			$condition->add(' AND g.club_id = ?', $club);

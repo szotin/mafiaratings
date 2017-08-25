@@ -116,6 +116,8 @@ try
 					</ul>
 					If any of the parameters staring with "in_" is set, the rating calculation is changed. For example in_role shows only rating earned in a specific roles; in_country - only the rating earned in a specific country; etc.
 				</dd>
+			<dt>in_number</dt>
+				<dd>Number in the game (1-10). For example: <a href="ws_ratings.php?in_number=8">ws_ratings.php?in_number=8</a> returns only rating points earned by players playing on number 8. <a href="ws_ratings.php?in_club=1&club=42">ws_ratings.php?in_club=1&club=42</a> returns rating points of Seattle club players earned in Vancouver.</dd>
 			<dt>in_club</dt>
 				<dd>Club id. For example: <a href="ws_ratings.php?in_club=1">ws_ratings.php?in_club=1</a> returns only rating points earned in Vancouver Mafia Club. <a href="ws_ratings.php?in_club=1&club=42">ws_ratings.php?in_club=1&club=42</a> returns rating points of Seattle club players earned in Vancouver.</dd>
 			<dt>in_game</dt>
@@ -288,6 +290,13 @@ try
 			}
 		}
 		
+		$in_number = 0;
+		if (isset($_REQUEST['in_number']))
+		{
+			$in_set = true;
+			$in_number = (int)$_REQUEST['in_number'];
+		}
+
 		$in_club = 0;
 		if (isset($_REQUEST['in_club']))
 		{
@@ -439,6 +448,11 @@ try
 		if ($in_set)
 		{
 			$condition->add(get_roles_condition($in_role));
+			if ($in_number > 0)
+			{
+				$condition->add(' AND p.number = ?', $in_number);
+			}
+			
 			if ($in_langs > 0)
 			{
 				$condition->add(' AND (g.language & ?) <> 0', $in_langs);
