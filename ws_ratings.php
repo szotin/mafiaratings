@@ -143,7 +143,7 @@ try
 			<dt>count</dt>
 				<dd>Returns game count instead of players list. For example: <a href="ws_ratings.php?club=1&count">ws_ratings.php?club=1&count</a> returns how many players with ratings are there in Vancouver Mafia Club; <a href="ws_ratings.php?event=7927&count">ws_ratings.php?event=7927&count</a> returns how many players with ratings participated in VaWaCa tournament.</dd>
 			<dt>page</dt>
-				<dd>Page number. For example: <a href="ws_ratings.php?club=1&page=1">v.php?club=1&page=1</a> returns the second page of ratings for Vancouver Mafia Club players.</dd>
+				<dd>Page number. For example: <a href="ws_ratings.php?club=1&page=1">ws_ratings.php?club=1&page=1</a> returns the second page of ratings for Vancouver Mafia Club players.</dd>
 			<dt>page_size</dt>
 				<dd>Page size. Default page_size is 16. For example: <a href="ws_ratings.php?club=1&page_size=32">ws_ratings.php?club=1&page_size=32</a> returns top 32 players for Vancouver Mafia Club; <a href="ws_ratings.php?club=6&page_size=0">ws_ratings.php?club=6&page_size=0</a> returns all players for Empire of Mafia club in one page; <a href="ws_ratings.php?club=1">ws_ratings.php?club=1</a> returns top 16 players for Vancouver Mafia Club;</dd>
 		</dl>	

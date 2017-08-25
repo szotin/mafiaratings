@@ -34,6 +34,30 @@ class Page extends PageBase
 			</td>
 		</tr>
 		
+		<tr>
+			<td><a href="ws_player_stats.php?help">ws_player_stats.php</a></td>
+			<td>
+				<p>Returns a player's statistics.</p>
+				<p>A number of games played in different roles; shooting/voting/nominating stats; moderating stats; surviving stats; etc.</p>
+			</td>
+		</tr>
+		
+		<tr>
+			<td><a href="ws_cities.php?help">ws_cities.php</a></td>
+			<td>
+				<p>Returns a list of known cities.</p>
+				<p>A good place to find city ids.</p>
+			</td>
+		</tr>
+
+		<tr>
+			<td><a href="ws_countries.php?help">ws_countries.php</a></td>
+			<td>
+				<p>Returns a list of known countries.</p>
+				<p>A good place to find country ids.</p>
+			</td>
+		</tr>
+		
 <!--		
 		<tr>
 			<td><a href="ws_adverts.php?help">ws_adverts.php</a></td>
