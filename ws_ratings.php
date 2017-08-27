@@ -67,7 +67,7 @@ try
 	if (isset($_REQUEST['help']))
 	{
 ?>
-	<h1>Parameters:</h1>
+	<h1>ws_ratings Parameters:</h1>
 		<dl>
 			<dt>help</dt>
 				<dd>Shows this screen.</dd>
@@ -147,7 +147,7 @@ try
 			<dt>page_size</dt>
 				<dd>Page size. Default page_size is 16. For example: <a href="ws_ratings.php?club=1&page_size=32">ws_ratings.php?club=1&page_size=32</a> returns top 32 players for Vancouver Mafia Club; <a href="ws_ratings.php?club=6&page_size=0">ws_ratings.php?club=6&page_size=0</a> returns all players for Empire of Mafia club in one page; <a href="ws_ratings.php?club=1">ws_ratings.php?club=1</a> returns top 16 players for Vancouver Mafia Club;</dd>
 		</dl>	
-	<h1>Results:</h1>
+	<h1>ws_ratings Results:</h1>
 		<dl>
 			<dt>version</dt>
 			  <dd>Data version.</dd>
@@ -158,7 +158,7 @@ try
 			<dt>error</dt>
 			  <dd>Error message when an error occurs.</dd>
 		</dl>
-	<h2>Rating parameters:</h2>
+	<h2>Rating:</h2>
 		<dl>
 			<dt>num</dt>
 			  <dd>Number in the current list.</dd>

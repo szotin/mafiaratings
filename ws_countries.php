@@ -43,7 +43,7 @@ try
 	if (isset($_REQUEST['help']))
 	{
 ?>
-	<h1>Parameters:</h1>
+	<h1>ws_countries Parameters:</h1>
 		<dl>
 			<dt>help</dt>
 				<dd>Shows this screen.</dd>
@@ -70,7 +70,7 @@ try
 			<dt>page_size</dt>
 				<dd>Page size. Default page_size is 16. For example: <a href="ws_countries.php?page_size=32">ws_countries.php?page_size=32</a> returns first 32 countries; <a href="ws_countries.php?page_size=0">ws_countries.php?page_size=0</a> returns countries in one page; <a href="ws_countries.php">ws_countries.php</a> returns first 16 countries by alphabet.</dd>
 		</dl>	
-	<h1>Results:</h1>
+	<h1>ws_countries Results:</h1>
 		<dl>
 			<dt>version</dt>
 			  <dd>Data version.</dd>
@@ -81,7 +81,7 @@ try
 			<dt>error</dt>
 			  <dd>Error message when an error occurs.</dd>
 		</dl>
-	<h2>Country parameters:</h2>
+	<h2>Country:</h2>
 		<dl>
 			<dt>id</dt>
 			  <dd>Country id.</dd>

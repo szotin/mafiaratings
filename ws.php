@@ -43,6 +43,13 @@ class Page extends PageBase
 		</tr>
 		
 		<tr>
+			<td><a href="ws_clubs.php?help">ws_clubs.php</a></td>
+			<td>
+				<p>Returns a list of known clubs.</p>
+			</td>
+		</tr>
+
+		<tr>
 			<td><a href="ws_cities.php?help">ws_cities.php</a></td>
 			<td>
 				<p>Returns a list of known cities.</p>

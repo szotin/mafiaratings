@@ -263,7 +263,7 @@ class WSGame
 		if (isset($_REQUEST['help']))
 		{
 ?>
-		<h1>Parameters:</h1>
+		<h1>ws_games Parameters:</h1>
 			<dl>
 			  <dt>help</dt>
 				<dd>Shows this screen.</dd>
@@ -306,7 +306,7 @@ class WSGame
 			  <dt>page_size</dt>
 				<dd>Page size. Default page_size is 16. For example: <a href="ws_games.php?club=1&page_size=32">ws_games.php?club=1&page_size=32</a> returns last 32 games for Vancouver Mafia Club; <a href="ws_games.php?club=6&page_size=0">ws_games.php?club=6&page_size=0</a> returns all games for Empire of Mafia club in one page; <a href="ws_games.php?club=1">ws_games.php?club=1</a> returns last 16 games for Vancouver Mafia Club;</dd>
 			</dl>	
-		<h1>Results:</h1>
+		<h1>ws_games Results:</h1>
 			<dt>version</dt>
 			  <dd>Data version.</dd>
 			<dt>games</dt>
@@ -315,7 +315,7 @@ class WSGame
 			  <dd>The total number of games sutisfying the request parameters. It is set only when the parameter <i>count</i> is set.</dd>
 			<dt>error</dt>
 			  <dd>Error message when an error occurs.</dd>
-			<h2>Game parameters:</h2>
+			<h2>Game:</h2>
 				<dt>id</dt>
 				  <dd>Game id. Unique game identifier.</dd>
 				<dt>club_id</dt>
@@ -334,7 +334,7 @@ class WSGame
 				  <dd>Who won the game. Possible values: "civ" or "maf". Tie is not supported in the current version.</dd>
 				<dt>players</dt>
 				  <dd>The array of players who played. Array size is always 10. Players index in the array matches their number at the table.</dd>
-			<h2>Player parameters:</h2>
+			<h2>Player:</h2>
 				<dt>user_id</td>
 					<dd>User id. <i>Optional:</i> missing when someone not registered in mafiaratings played.</dd>
 				<dt>nick_name</td>
