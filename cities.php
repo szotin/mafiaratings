@@ -46,7 +46,7 @@ class Page extends GeneralPageBase
 			}
 			break;
 		case CCCF_CITY:
-			$condition->add(' AND i.id IN (SELECT id FROM cities WHERE id = ? OR near_id = ?)', $ccc_id, $ccc_id);
+			$condition->add(' AND i.id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)', $ccc_id, $ccc_id);
 			break;
 		case CCCF_COUNTRY:
 			$condition->add(' AND i.country_id = ?', $ccc_id);
@@ -58,7 +58,7 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT i.id, i.name_' . $_lang_code . ', i.flags, o.name_' . $_lang_code . ', i.timezone, n.name_' . $_lang_code . ' FROM cities i' . 
 				' JOIN countries o ON i.country_id = o.id' .
-				' LEFT OUTER JOIN cities n ON i.near_id = n.id',
+				' LEFT OUTER JOIN cities n ON i.area_id = n.id',
 			$condition);
 		$query->add(' ORDER BY i.name_' . $_lang_code . ' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';

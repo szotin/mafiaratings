@@ -20,9 +20,9 @@ try
 	}
 	$id = $_REQUEST['id'];
 	
-	list($country_id, $country_name, $name_en, $name_ru, $timezone, $flags, $near_id) = Db::record(
+	list($country_id, $country_name, $name_en, $name_ru, $timezone, $flags, $area_id) = Db::record(
 		get_label('city'), 
-		'SELECT i.country_id, o.name_' . $_lang_code . ', i.name_en, i.name_ru, i.timezone, i.flags, i.near_id FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.id = ?',
+		'SELECT i.country_id, o.name_' . $_lang_code . ', i.name_en, i.name_ru, i.timezone, i.flags, i.area_id FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.id = ?',
 		$id);
 		
 	if (($flags & CITY_FLAG_NOT_CONFIRMED) != 0)
@@ -46,14 +46,14 @@ try
 	show_timezone_input($timezone);
 	echo '</td></tr>';
 	
-	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', i.timezone, o.id, o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.near_id IS NULL AND i.id <> ? ORDER BY i.name_' . $_lang_code, $id);
+	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', i.timezone, o.id, o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.area_id = i.id AND i.id <> ? ORDER BY i.name_' . $_lang_code, $id);
 	echo '<tr><td>' . get_label('Is near bigger city') . ':</td><td>';
 	echo '<select id="form-near" onChange="nearChange()"><option value="-1"></option>';
 	while ($row = $query->next())
 	{
 		list ($cid, $cname, $ctimezone, $ccid, $ccname) = $row;
 		echo '<option value="' . $cid . ';' . $ctimezone . ';' . $ccid . ';' . $ccname . '"';
-		if ($cid == $near_id)
+		if ($cid == $area_id)
 		{
 			echo ' selected';
 		}

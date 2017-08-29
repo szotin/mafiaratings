@@ -186,13 +186,7 @@ try
 		}
 		else if ($area > 0)
 		{
-			$query1 = new DbQuery('SELECT near_id FROM cities WHERE id = ?', $area);
-			list($parent_city) = $query1->record('city');
-			if ($parent_city == NULL)
-			{
-				$parent_city = $area;
-			}
-			$condition->add(' AND (ct.id = ? OR ct.id IN (SELECT id FROM cities WHERE near_id = ?))', $parent_city, $parent_city);
+			$condition->add(' AND ct.area_id = (SELECT area_id FROM cities WHERE id = ?)', $area);
 		}
 		else if ($country > 0)
 		{

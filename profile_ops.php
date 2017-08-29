@@ -419,7 +419,7 @@ try
 			$result = array();
 			$city_id = -1;
 			$country_id = -1;
-			$query = new DbQuery('SELECT id, country_id, near_id FROM cities WHERE name_en = ? OR name_ru = ?', $city, $city);
+			$query = new DbQuery('SELECT id, country_id, area_id FROM cities WHERE name_en = ? OR name_ru = ?', $city, $city);
 			// $result['sql-01'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{
@@ -469,7 +469,7 @@ try
 				{
 					if ($club_id <= 0)
 					{
-						$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id IN (SELECT id FROM cities WHERE near_id = ?)) AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $parent_city_id, $parent_city_id, $langs);
+						$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id IN (SELECT id FROM cities WHERE area_id = ?)) AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $parent_city_id, $parent_city_id, $langs);
 						// $result['sql-06'] = $query->get_parsed_sql();
 						if ($row = $query->next())
 						{
@@ -479,7 +479,7 @@ try
 					
 					if ($club_id <= 0)
 					{
-						$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE near_id = ?)) AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $parent_city_id, $parent_city_id, $langs);
+						$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE area_id = ?)) AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $parent_city_id, $parent_city_id, $langs);
 						// $result['sql-07'] = $query->get_parsed_sql();
 						if ($row = $query->next())
 						{
@@ -489,7 +489,7 @@ try
 					
 					if ($club_id <= 0)
 					{
-						$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE near_id = ?)) AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $parent_city_id, $parent_city_id);
+						$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE area_id = ?)) AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $parent_city_id, $parent_city_id);
 						// $result['sql-08'] = $query->get_parsed_sql();
 						if ($row = $query->next())
 						{

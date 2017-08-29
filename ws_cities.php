@@ -209,13 +209,13 @@ try
 		}
 		else if ($area)
 		{
-			$query1 = new DbQuery('SELECT near_id FROM cities WHERE id = ?', $area);
+			$query1 = new DbQuery('SELECT area_id FROM cities WHERE id = ?', $area);
 			list($parent_city) = $query1->record('city');
 			if ($parent_city == NULL)
 			{
 				$parent_city = $area;
 			}
-			$condition->add($delim . ' i.id = ? OR i.near_id = ?', $area, $area);
+			$condition->add($delim . ' i.area_id = (SELECT area_id FROM cities WHERE id = ?)', $area);
 		}
 		else if ($country > 0)
 		{
@@ -226,7 +226,7 @@ try
 		$result->count = (int)$count;
 		if (!$count_only)
 		{
-			$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', o.id, o.name_' . $_lang_code . ', i.near_id FROM cities i JOIN countries o ON o.id = i.country_id', $condition);
+			$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', o.id, o.name_' . $_lang_code . ', i.area_id FROM cities i JOIN countries o ON o.id = i.country_id', $condition);
 			$query->add(' ORDER BY i.name_' . $_lang_code);
 			if ($page_size > 0)
 			{

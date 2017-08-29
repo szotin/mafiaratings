@@ -74,14 +74,10 @@ class Page extends GeneralPageBase
 			}
 			break;
 		case CCCF_CITY:
-			// ATTENTION!!! Not quite right. We select all games played in clubs of the city.
-			// We should select all games played in the city. Can't do it before reorganizing games.
-			// Sould add city field to a game or make all games to be played in the event. TBD.
-			// Same about countries.
-			$condition->add(' AND g.club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE id = ? OR near_id = ?))', $ccc_id, $ccc_id);
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities i ON i.id = a.city_id WHERE i.id = ? OR i.area_id = ?)', $ccc_id, $ccc_id);
 			break;
 		case CCCF_COUNTRY:
-			$condition->add(' AND g.club_id IN (SELECT c.id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE i.country_id = ?)', $ccc_id);
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities i ON i.id = a.city_id WHERE i.country_id = ?)', $ccc_id);
 			break;
 		}
 		

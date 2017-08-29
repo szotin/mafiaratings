@@ -665,11 +665,11 @@ class ForumMessage
 		case CCCF_CITY:
 			if ($distinct)
 			{
-				$condition->add(' AND m.club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE id = ? OR near_id = ?))', $ccc_id, $ccc_id);
+				$condition->add(' AND m.club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?))', $ccc_id, $ccc_id);
 			}
 			else
 			{
-				$condition->add(' AND (m.club_id IS NULL OR m.club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE id = ? OR near_id = ?)))', $ccc_id, $ccc_id);
+				$condition->add(' AND (m.club_id IS NULL OR m.club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)))', $ccc_id, $ccc_id);
 			}
 			break;
 		case CCCF_COUNTRY:

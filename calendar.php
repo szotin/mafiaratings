@@ -62,7 +62,7 @@ class Page extends GeneralPageBase
 			}
 			break;
 		case CCCF_CITY:
-			$query->add(' AND a.city_id IN (SELECT id FROM cities WHERE id = ? OR near_id = ?)', $ccc_id, $ccc_id);
+			$query->add(' AND a.city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)', $ccc_id, $ccc_id);
 			break;
 		case CCCF_COUNTRY:
 			$query->add(' AND i.country_id = ?', $ccc_id);

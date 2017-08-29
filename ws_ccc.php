@@ -54,7 +54,7 @@ class CCCContext
 			return;
 		}
 		
-		$query = new DbQuery('SELECT c.id, i.id, i.country_id, i.near_id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE name = ?', $term);
+		$query = new DbQuery('SELECT c.id, i.id, i.country_id, i.area_id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE name = ?', $term);
 		if ($row = $query->next())
 		{
 			list($this->club_id, $this->city_id, $this->country_id, $this->region_id) = $row;
@@ -62,7 +62,7 @@ class CCCContext
 			return;
 		}
 
-		$query = new DbQuery('SELECT id, country_id, near_id FROM cities WHERE name_en = ? OR name_ru = ?', $term, $term);
+		$query = new DbQuery('SELECT id, country_id, area_id FROM cities WHERE name_en = ? OR name_ru = ?', $term, $term);
 		if ($row = $query->next())
 		{
 			list($this->city_id, $this->country_id, $this->region_id) = $row;
@@ -174,10 +174,10 @@ try
 			$query->add(' WHERE (i.id = ? OR i.id = ?)', $context->city_id, $context->region_id);
 			break;
 		case DEFINED_REGION:
-			$query->add(' WHERE (i.id = ? OR i.near_id = ?)', $context->city_id, $context->city_id);
+			$query->add(' WHERE (i.id = ? OR i.area_id = ?)', $context->city_id, $context->city_id);
 			break;
 		case DEFINED_COUNTRY:
-			$query->add(' WHERE i.near_id IS NULL AND i.country_id = ?', $context->country_id);
+			$query->add(' WHERE i.area_id = i.id AND i.country_id = ?', $context->country_id);
 			break;
 		}
 		$query->add(' ORDER BY (SELECT count(*) FROM clubs WHERE city_id = i.id) DESC, i.name_' . $_lang_code . ' LIMIT 8');
@@ -207,7 +207,7 @@ try
 			break;
 		case DEFINED_CLUB:
 		case DEFINED_REGION:
-			$query->add(' WHERE c.city_id IN (SELECT id FROM cities WHERE id = ? OR near_id = ?)', $context->city_id, $context->city_id);
+			$query->add(' WHERE c.city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)', $context->city_id, $context->city_id);
 			break;
 		case DEFINED_COUNTRY:
 			$query->add(' WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $context->country_id);

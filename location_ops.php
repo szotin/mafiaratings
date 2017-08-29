@@ -31,17 +31,17 @@ try
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('city')));
 		}
-		$id = $_POST['id'];
+		$id = (int)$_POST['id'];
 		$name_en = $_POST['name_en'];
 		$name_ru = $_POST['name_ru'];
 		$country = $_POST['country'];
 		$timezone = $_POST['timezone'];
-		$near_id = $_POST['near'];
+		$area_id = (int)$_POST['near'];
 		$confirm = (isset($_POST['confirm']) && $_POST['confirm']);
 		
-		if ($near_id <= 0)
+		if ($area_id <= 0)
 		{
-			$near_id = NULL;
+			$area_id = $id;
 		}
 		
 		if ($name_en == '')
@@ -71,7 +71,7 @@ try
 		}
 		
 		$op = 'Changed';
-		$query = new DbQuery('UPDATE cities SET country_id = ?, name_en = ?, name_ru = ?, near_id = ?, timezone = ?', $country_id, $name_en, $name_ru, $near_id, $timezone);
+		$query = new DbQuery('UPDATE cities SET country_id = ?, name_en = ?, name_ru = ?, area_id = ?, timezone = ?', $country_id, $name_en, $name_ru, $area_id, $timezone);
 		if ($confirm)
 		{
 			$query->add(', flags = (flags & ~' . CITY_FLAG_NOT_CONFIRMED . ')');
@@ -99,14 +99,14 @@ try
 		$timezone = $_POST['timezone'];
 		$confirm = (isset($_POST['confirm']) && $_POST['confirm']);
 		
-		$near_id = -1;
+		$area_id = -1;
 		if (isset($_POST['near']))
 		{
-			$near_id = $_POST['near'];
+			$area_id = $_POST['near'];
 		}
-		if ($near_id <= 0)
+		if ($area_id <= 0)
 		{
-			$near_id = NULL;
+			$area_id = NULL;
 		}
 		
 		$flags = $confirm ? 0 : CITY_FLAG_NOT_CONFIRMED;
@@ -140,10 +140,14 @@ try
 		
 		Db::exec(
 			get_label('city'), 
-			'INSERT INTO cities (country_id, name_en, name_ru, timezone, near_id, flags) ' .
+			'INSERT INTO cities (country_id, name_en, name_ru, timezone, area_id, flags) ' .
 				'VALUES (?, ?, ?, ?, ?, ?)',
-			$country_id, $name_en, $name_ru, $timezone, $near_id, $flags);
+			$country_id, $name_en, $name_ru, $timezone, $area_id, $flags);
 		list ($city_id) = Db::record(get_label('city'), 'SELECT LAST_INSERT_ID()');
+		if ($area_id == NULL)
+		{
+			Db::exec(get_label('city'), 'UPDATE cities SET area_id = id WHERE id = ?', $city_id);
+		}
 		$log_details =
 			'country=' . $country . ' (' . $country_id .
 			")<br>name_en=" . $name_en .

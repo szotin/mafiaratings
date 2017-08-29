@@ -68,7 +68,7 @@ class Profile
 						', r.id, r.name_' . $_lang_code .
 						', i.country_id, o.name_' . $_lang_code . ', i.timezone FROM users u' .
 						' JOIN cities i ON u.city_id = i.id' .
-						' LEFT OUTER JOIN cities r ON i.near_id = r.id' .
+						' LEFT OUTER JOIN cities r ON i.area_id = r.id' .
 						' JOIN countries o ON o.id = i.country_id' .
 						' WHERE u.id = ?', 
 					$user_id);

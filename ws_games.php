@@ -488,13 +488,7 @@ class WSGame
 			}
 			else if ($area > 0)
 			{
-				$query1 = new DbQuery('SELECT near_id FROM cities WHERE id = ?', $area);
-				list($parent_city) = $query1->record('city');
-				if ($parent_city == NULL)
-				{
-					$parent_city = $area;
-				}
-				$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.id = ? OR c1.near_id = ?)', $parent_city, $parent_city);
+				$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.area_id = (SELECT area_id FROM cities WHERE id = ?))', $area);
 			}
 			else if ($country > 0)
 			{

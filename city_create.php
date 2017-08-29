@@ -28,7 +28,7 @@ try
 	show_timezone_input($_profile->timezone);
 	echo '</td></tr>';
 	
-	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', i.timezone, o.id, o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.near_id IS NULL ORDER BY i.name_' . $_lang_code);
+	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', i.timezone, o.id, o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.area_id == i.id ORDER BY i.name_' . $_lang_code);
 	echo '<tr><td>' . get_label('Is near bigger city') . ':</td><td>';
 	echo '<select id="form-near" onChange="nearChange()"><option value="-1"></option>';
 	while ($row = $query->next())

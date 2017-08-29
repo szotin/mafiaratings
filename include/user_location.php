@@ -15,7 +15,7 @@ class UserLocation
 	{
 		$location = Location::get();
 		
-		$query = new DbQuery('SELECT i.id, i.near_id, o.id FROM cities i JOIN countries o ON i.country_id = o.id WHERE i.name_en = ? AND o.code = ?', $location->city, $location->country_code);
+		$query = new DbQuery('SELECT i.id, i.area_id, o.id FROM cities i JOIN countries o ON i.country_id = o.id WHERE i.name_en = ? AND o.code = ?', $location->city, $location->country_code);
 		if ($row = $query->next())
 		{
 			list($this->city_id, $this->region_id, $this->country_id) = $row;
@@ -36,7 +36,7 @@ class UserLocation
 			$this->city_evidence = false;
 			
 			$query = new DbQuery(
-				'SELECT i.id, i.near_id, count(*) as club_count FROM clubs c' .
+				'SELECT i.id, i.area_id, count(*) as club_count FROM clubs c' .
 					' JOIN cities i ON c.city_id = i.id' .
 					' WHERE i.country_id = ?' .
 					' GROUP BY i.id ORDER BY club_count DESC LIMIT 1',
@@ -60,7 +60,7 @@ class UserLocation
 		$this->country_evidence = false;
 		$this->city_evidence = false;
 		$query = new DbQuery(
-			'SELECT i.id, i.near_id, i.country_id, count(*) as club_count FROM clubs c' .
+			'SELECT i.id, i.area_id, i.country_id, count(*) as club_count FROM clubs c' .
 			' JOIN cities i ON c.city_id = i.id' .
 			' GROUP BY i.id ORDER BY club_count DESC LIMIT 1');
 		if ($row = $query->next())

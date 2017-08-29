@@ -41,7 +41,7 @@ class Page extends GeneralPageBase
 			}
 			break;
 		case CCCF_CITY:
-			$condition = new SQL('a.club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE id = ? OR near_id = ?))', $ccc_id, $ccc_id);
+			$condition = new SQL('a.club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?))', $ccc_id, $ccc_id);
 			break;
 		case CCCF_COUNTRY:
 			$condition = new SQL('a.club_id IN (SELECT c.id FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE ct.country_id = ?)', $ccc_id);

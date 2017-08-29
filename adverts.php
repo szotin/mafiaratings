@@ -38,7 +38,7 @@ class Page extends GeneralPageBase
 			}
 			break;
 		case CCCF_CITY:
-			$condition->add($delim . 'ct.id IN (SELECT id FROM cities WHERE id = ? OR near_id = ?)', $ccc_id, $ccc_id);
+			$condition->add($delim . '(ct.id = ? OR ct.area_id = ?)', $ccc_id, $ccc_id);
 			break;
 		case CCCF_COUNTRY:
 			$condition->add($delim . 'ct.country_id = ?', $ccc_id);

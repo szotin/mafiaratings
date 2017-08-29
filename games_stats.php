@@ -36,7 +36,7 @@ class Page extends GeneralPageBase
 			// We should select all games played in the city. Can't do it before reorganizing games.
 			// Sould add city field to a game or make all games to be played in the event. TBD.
 			// Same about countries.
-			$condition->add(' AND g.club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE id = ? OR near_id = ?))', $ccc_id, $ccc_id);
+			$condition->add(' AND g.club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?))', $ccc_id, $ccc_id);
 			break;
 		case CCCF_COUNTRY:
 			$condition->add(' AND g.club_id IN (SELECT c.id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE i.country_id = ?)', $ccc_id);
