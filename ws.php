@@ -79,6 +79,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0] web services', PRODUCT_NAME), PERM_ALL);
+$page->run(PRODUCT_NAME + ' web services'), PERM_ALL);
 
 ?>

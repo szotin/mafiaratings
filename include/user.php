@@ -197,6 +197,7 @@ class UserPageBase extends PageBase
 		$menu = array(
 			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information')),
 			new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('[0] statistics', $this->title)),
+			new MenuItem('user_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('[0] statistics on different numbers', $this->title)),
 			new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)),
 			new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title)),
 			new MenuItem('user_messages.php?id=' . $this->id, get_label('Messages'), get_label('Forum messages of [0]', $this->title)));
@@ -216,7 +217,7 @@ class UserPageBase extends PageBase
 		echo '</td></tr>';	
 		
 		echo '<tr><td rowspan="2" width="' . TNAIL_WIDTH . '"><table class="bordered light"><tr><td class="dark" valign="top" style="min-width:28px; padding:4px;">';
-		if ($_profile->user_id == $this->id)
+		if ($_profile != NULL && $_profile->user_id == $this->id)
 		{
 			echo '<button class="icon" onclick="mr.editAccount()" title="' . get_label('Account settings') . '"><img src="images/settings.png" border="0"></button>';
 			// echo '<button class="icon" onclick="mr.editAccountPassword()" title="' . get_label('Change password') . '"><img src="images/key.png" border="0"></button>';
