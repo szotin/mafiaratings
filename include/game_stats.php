@@ -674,11 +674,6 @@ function save_game_results($gs)
             $game_result = 1;
             break;
 
-        case GAME_TERMINATED:
-			$update_stats = false;
-            $game_result = 3;
-			break;
-			
         default:
             throw new Exc(get_label('The game [0] is not finished yet.', $gs->id));
     }

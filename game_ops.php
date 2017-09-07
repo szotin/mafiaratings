@@ -165,6 +165,7 @@ class GClub
 	public $rules;
 	public $addrs;
 	public $price;
+	public $icon;
 	
 	function __construct($id, $game)
 	{
@@ -177,6 +178,14 @@ class GClub
 		$this->country = $club->country;
 		$this->price = $club->price;
 		$this->langs = (int)$club->langs;
+		if (($club->club_flags & CLUB_ICON_MASK) != 0)
+		{
+			$this->icon = CLUB_PICS_DIR . ICONS_DIR . $club->id . '.png';
+		}
+		else
+		{
+			$this->icon = 'images/' . ICONS_DIR . 'club.png'
+		}
 		
 		$haunters_count = 0;
 		$this->haunters = array();
@@ -735,15 +744,6 @@ class CommandQueue
 				'INSERT INTO game_settings (user_id, l_autosave, g_autosave, flags) VALUES (?, ?, ?, ?)',
 				$_profile->user_id, $rec->l_autosave, $rec->g_autosave, $rec->flags);
 		}
-	}
-	
-	function terminate_game($rec)
-	{
-		if (!isset($rec->id))
-		{
-			throw new Exc(get_label('Invalid request'));
-		}
-		Db::exec(get_label('event'), 'UPDATE events SET duration = ? WHERE id = ?', $rec->duration, $id);
 	}
 }
 

@@ -28,7 +28,7 @@ define('GAME_NIGHT_SHERIFF_CHECK', 15);
 define('GAME_NIGHT_SHERIFF_CHECK_END', 16); // deprecated the code should reach this only for the old logs
 define('GAME_MAFIA_WON', 17);
 define('GAME_CIVIL_WON', 18);
-define('GAME_TERMINATED', 19);
+//define('GAME_TERMINATED', 19); // no more terminated games - we just delete them
 define('GAME_DAY_FREE_DISCUSSION', 20);
 define('GAME_DAY_GUESS3', 21);
 define('GAME_CHOOSE_BEST_PLAYER', 22);
@@ -176,8 +176,6 @@ class GameState
 				return 2;
 			case GAME_CIVIL_WON:
 				return 1;
-			case GAME_TERMINATED:
-				return 3;
 		}
 		return 0;
 	}
@@ -275,12 +273,6 @@ class GameState
 		}
 	}
 	
-    function terminate()
-    {
-        $this->log[] = new LogRecord(LOGREC_NORMAL, $this->round, $this->gamestate, $this->player_speaking, $this->current_nominant, -1);
-        $this->gamestate = GAME_TERMINATED;
-    }
-
     function write()
     {
         $out =
@@ -619,7 +611,6 @@ class GameState
 			case GAME_CIVIL_WON:
 			case GAME_CHOOSE_BEST_PLAYER:
 			case GAME_CHOOSE_BEST_MOVE:
-			case GAME_TERMINATED:
 				if ($log_num < 0)
 				{
 					$log_num = count($this->log);

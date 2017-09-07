@@ -57,7 +57,6 @@
 // /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15
 // /*GAME_STATE_MAFIA_WON*/17
 // /*GAME_STATE_CIVIL_WON*/18
-// /*GAME_STATE_TERMINATED*/19 // to be deprecated
 // /*GAME_STATE_DAY_FREE_DISCUSSION*/20
 // /*GAME_STATE_DAY_GUESS3*/21
 // /*GAME_STATE_BEST_PLAYER*/22 // deprecated
@@ -814,19 +813,6 @@ var mafia = new function()
 	this.canRestart = function()
 	{
 		return _data.game.gamestate > /*GAME_STATE_NOT_STARTED*/0;
-	}
-	
-	this.canTerminate = function()
-	{
-		switch (_data.game.gamestate)
-		{
-			case /*GAME_STATE_NOT_STARTED*/0:
-			case /*GAME_STATE_CIVIL_WON*/18:
-			case /*GAME_STATE_MAFIA_WON*/17:
-			case /*GAME_STATE_TERMINATED*/19:
-				return false;
-		}
-		return true;
 	}
 	
 	this.setRules = function(rules_id)
@@ -1708,7 +1694,6 @@ var mafia = new function()
 				
 			case /*GAME_STATE_MAFIA_WON*/17:
 			case /*GAME_STATE_CIVIL_WON*/18:
-			case /*GAME_STATE_TERMINATED*/19:
 				return;
 		}
 		_gameStep(/*STATE_CHANGE_FLAG_RESET_TIMER*/1, logRec);
@@ -1717,7 +1702,7 @@ var mafia = new function()
 	this.back = function()
 	{
 		var game = _data.game;
-		if (game.gamestate > /*GAME_STATE_TERMINATED*/19 || game.gamestate < /*GAME_STATE_MAFIA_WON*/17)
+		if (game.gamestate > /*GAME_STATE_CIVIL_WON*/18 || game.gamestate < /*GAME_STATE_MAFIA_WON*/17)
 		{
 			var logNum = game.log.length - 1;
 			if (logNum >= 0)
@@ -2304,7 +2289,6 @@ var mafia = new function()
 		{
 			case /*GAME_STATE_MAFIA_WON*/17:
 			case /*GAME_STATE_CIVIL_WON*/18:
-			case /*GAME_STATE_TERMINATED*/19:
 			case /*GAME_STATE_BEST_PLAYER*/22:
 			case /*GAME_STATE_BEST_MOVE*/23:
 			case /*GAME_STATE_END*/25:
@@ -2389,7 +2373,6 @@ var mafia = new function()
 		{
 			case /*GAME_STATE_MAFIA_WON*/17:
 			case /*GAME_STATE_CIVIL_WON*/18:
-			case /*GAME_STATE_TERMINATED*/19:
 			case /*GAME_STATE_BEST_PLAYER*/22:
 			case /*GAME_STATE_BEST_MOVE*/23:
 			case /*GAME_STATE_END*/25:
@@ -2416,7 +2399,6 @@ var mafia = new function()
 		{
 			case /*GAME_STATE_MAFIA_WON*/17:
 			case /*GAME_STATE_CIVIL_WON*/18:
-			case /*GAME_STATE_TERMINATED*/19:
 			case /*GAME_STATE_BEST_PLAYER*/22:
 			case /*GAME_STATE_BEST_MOVE*/23:
 			case /*GAME_STATE_END*/25:
@@ -2623,17 +2605,6 @@ var mafia = new function()
 		return game;
 	}
 
-	this.terminate = function()
-	{
-		_data.game = _newGame(_data.game.id);
-		_curVoting = null;
-		dirty();
-		if (_stateChange != null)
-		{
-			_stateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
-		}
-	}
-
 	this.restart = function()
 	{
 		var game = _data.game;
@@ -2733,7 +2704,7 @@ var mafia = new function()
 	this.submit = function()
 	{
 		var game = _data.game;
-		if (game.gamestate >= /*GAME_STATE_MAFIA_WON*/17 && game.gamestate <= /*GAME_STATE_TERMINATED*/19)
+		if (game.gamestate >= /*GAME_STATE_MAFIA_WON*/17 && game.gamestate <= /*GAME_STATE_CIVIL_WON*/18)
 		{
 			_data.game = _newGame();
 			_curVoting = null;
@@ -2747,21 +2718,18 @@ var mafia = new function()
 				};
 				_data.requests.push(req);
 				
-				if (game.gamestate != /*GAME_STATE_TERMINATED*/19)
+				for (var i = 0; i < 10; ++i)
 				{
-					for (var i = 0; i < 10; ++i)
+					var p = game.players[i];
+					if (p.id != 0)
 					{
-						var p = game.players[i];
-						if (p.id != 0)
+						if (p.state == /*PLAYER_STATE_KILLED_NIGHT*/1 && p.kill_round == 0 && p.kill_reason == /*PLAYER_KR_NORMAL*/0)
 						{
-							if (p.state == /*PLAYER_STATE_KILLED_NIGHT*/1 && p.kill_round == 0 && p.kill_reason == /*PLAYER_KR_NORMAL*/0)
-							{
-								_data.club.players[p.id].flags |= /*U_FLAG_IMMUNITY*/1024;
-							}
-							else
-							{
-								_data.club.players[p.id].flags &= ~/*U_FLAG_IMMUNITY*/1024;
-							}
+							_data.club.players[p.id].flags |= /*U_FLAG_IMMUNITY*/1024;
+						}
+						else
+						{
+							_data.club.players[p.id].flags &= ~/*U_FLAG_IMMUNITY*/1024;
 						}
 					}
 				}

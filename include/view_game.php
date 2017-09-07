@@ -108,7 +108,7 @@ class ViewGame
 		}
 	}
 	
-	function can_terminate()
+	function can_edit()
 	{
 		global $_profile;
 		return $_profile->is_admin() || $_profile->is_manager($this->gs->club_id);
@@ -127,9 +127,6 @@ class ViewGame
 				break;
 			case 2:
 				$state = get_label('Mafia won.');
-				break;
-			case 3:
-				$state = get_label('Terminated.');
 				break;
 		}
 		return get_label('Game [0]. [1]', $this->gs->id, $state);
@@ -225,20 +222,20 @@ class ViewGamePageBase extends PageBase
 			throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 		}
 		
-		if (isset($_REQUEST['end']) && $this->vg->can_terminate())
-		{
-			if ($this->vg->gs->gamestate != GAME_MAFIA_WON && $this->vg->gs->gamestate != GAME_CIVIL_WON)
-			{
-				$this->vg->gs->terminate();
-			}
-			save_game_results($this->vg->gs);
-			if (isset($_SESSION['game_state']))
-			{
-				unset($_SESSION['game_state']);
-			}
-			$this->vg->refresh();
-			redirect_back();
-		}
+		// if (isset($_REQUEST['end']) && $this->vg->can_edit())
+		// {
+			// if ($this->vg->gs->gamestate != GAME_MAFIA_WON && $this->vg->gs->gamestate != GAME_CIVIL_WON)
+			// {
+				// $this->vg->gs->terminate();
+			// }
+			// save_game_results($this->vg->gs);
+			// if (isset($_SESSION['game_state']))
+			// {
+				// unset($_SESSION['game_state']);
+			// }
+			// $this->vg->refresh();
+			// redirect_back();
+		// }
 		
 		$this->gametime = 0;
 		if (isset($_REQUEST['gametime']))
@@ -311,7 +308,7 @@ class ViewGamePageBase extends PageBase
 			echo '<p><b>'.get_label('Error').': ' . $gs->error . '</b></p>';
 		}
 		
-		echo '<p><table class="transp" width="100%"><tr><td><table class="bordered">';
+		echo '<p><table class="transp" width="100%"><tr><td rowspan="2"><table class="bordered">';
 		echo '<tr align="center" class="th light" padding="5px"><td width="100">' . get_label('Club') . '</td><td width="100">' . get_label('Event') . '</td><td width="100">' . get_label('Address') . '</td><td width="100">' . get_label('Moderator') . '</td><td width="100">'.get_label('Time').'</td><td width="100">'.get_label('Duration').'</td><td width="100">'.get_label('Language').'</td>';
 		if ($vg->civ_odds >= 0 && $vg->civ_odds <= 1)
 		{
@@ -353,21 +350,27 @@ class ViewGamePageBase extends PageBase
 			echo '</td><td>' . $odds_text . '<br><img src="images/red_dot.png" width="' . $red_width . '" height="12" title="' . $text . '"><img src="images/black_dot.png" width="' . (48 - $red_width) . '" height="12" title="' . $text . '">';
 			
 		}
-		echo '</td></tr></table></td><td align="right">';
-		if ($vg->result == 0 && $vg->can_terminate())
+		echo '</td></tr></table></td><td align="right" valign="top">';
+		if ($vg->can_edit())
 		{
-			echo '<a href="view_game.php?end=1">';
-			if ($gs->gamestate == GAME_MAFIA_WON || $gs->gamestate == GAME_CIVIL_WON)
+			if ($vg->result == 0 && ($gs->gamestate == GAME_MAFIA_WON || $gs->gamestate == GAME_CIVIL_WON))
 			{
-				echo get_label('End game');
+				echo '<button class="icon" onclick="mr.finishGame(' . $gs->id . ')" title="' . get_label('Finish game [0]', $gs->id) . '"><img src="images/accept.png" border="0"></button>';
+				// echo '<a href="view_game.php?end=1">';
+				// if ($gs->gamestate == GAME_MAFIA_WON || $gs->gamestate == GAME_CIVIL_WON)
+				// {
+					// echo get_label('End game');
+				// }
+				// else
+				// {
+					// echo get_label('Terminate game');
+				// }
+				// echo '</a>';
 			}
-			else
-			{
-				echo get_label('Terminate game');
-			}
-			echo '</a>';
+			echo '<button class="icon" onclick="mr.deleteGame(' . $gs->id . ')" title="' . get_label('Delete game [0]', $gs->id) . '"><img src="images/delete.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.editGame(' . $gs->id . ')" title="' . get_label('Edit game [0]', $gs->id) . '"><img src="images/edit.png" border="0"></button>';
 		}
-		echo '<br><form method="get" name="gotoForm" action="' . get_page_name() . '">';
+		echo '</td></tr><tr><td align="right" valign="bottom"><form method="get" name="gotoForm" action="' . get_page_name() . '">';
 		echo '<select name="gametime" onChange="document.gotoForm.submit()">';
 		show_option(0, $this->gametime, get_label('Game results'));
 		show_option(1, $this->gametime, get_label('Initial Night'));

@@ -10,8 +10,6 @@ define("PAGE_SIZE", 20);
 
 define('FILTER_CIVIL_WON', 1);
 define('FILTER_MAFIA_WON', 2);
-define('FILTER_TERMINATED', 4);
-define('FILTER_PLAYING', 8);
 
 class Page extends GeneralPageBase
 {
@@ -42,16 +40,6 @@ class Page extends GeneralPageBase
 		if (($this->filter & FILTER_MAFIA_WON) != 0)
 		{
 			$condition->add($delim . '2');
-			$delim = ', ';
-		}
-		if (($this->filter & FILTER_TERMINATED) != 0)
-		{
-			$condition->add($delim . '3');
-			$delim = ', ';
-		}
-		if (($this->filter & FILTER_PLAYING) != 0)
-		{
-			$condition->add($delim . '0');
 			$delim = ', ';
 		}
 		if ($delim == '(')
@@ -116,9 +104,6 @@ class Page extends GeneralPageBase
 				case 2:
 					echo get_label('mafia won');
 					break;
-				case 3:
-					echo get_label('terminated');
-					break;
 				default:
 					echo get_label('invalid');
 					break;
@@ -141,19 +126,7 @@ class Page extends GeneralPageBase
 		{
 			echo ' checked';
 		}
-		echo '>'.get_label('mafia won').' ';
-		echo '<input type="checkbox" id="terminated" onClick="filter()"';
-		if (($this->filter & FILTER_TERMINATED) != 0)
-		{
-			echo ' checked';
-		}
-		echo '>'.get_label('terminated').' ';
-		echo '<input type="checkbox" id="playing" onClick="filter()"';
-		if (($this->filter & FILTER_PLAYING) != 0)
-		{
-			echo ' checked';
-		}
-		echo '>'.get_label('still playing');
+		echo '>'.get_label('mafia won');
 	}
 	
 	protected function get_filter_js()
@@ -170,8 +143,6 @@ class Page extends GeneralPageBase
 			var filter = 0;
 			if ($('#civil').attr('checked')) filter |= <?php echo FILTER_CIVIL_WON; ?>;
 			if ($('#mafia').attr('checked')) filter |= <?php echo FILTER_MAFIA_WON; ?>;
-			if ($('#terminated').attr('checked')) filter |= <?php echo FILTER_TERMINATED; ?>;
-			if ($('#playing').attr('checked')) filter |= <?php echo FILTER_PLAYING; ?>;
 			return filter;
 		}
 <?php	

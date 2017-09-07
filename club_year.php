@@ -125,7 +125,6 @@ class Page extends ClubPageBase
 		$playing_count = 0;
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
-		$terminated_count = 0;
 		if ($this->year > 0)
 		{
 			$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND start_time >= ? AND start_time < ? GROUP BY result', $this->id, $this->from, $this->to);
@@ -147,12 +146,9 @@ class Page extends ClubPageBase
 				case 2:
 					$mafia_win_count = $row[1];
 					break;
-				case 3:
-					$terminated_count = $row[1];
-					break;
 			}
 		}
-		$games_count = $civils_win_count + $mafia_win_count + $playing_count + $terminated_count;
+		$games_count = $civils_win_count + $mafia_win_count + $playing_count;
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td colspan="2"><a href="club_games.php?bck=1&id=' . $this->id . '"><b>' . get_label('Stats') . '</b></a></td></tr>';
@@ -161,10 +157,6 @@ class Page extends ClubPageBase
 		{
 			echo '<tr><td>'.get_label('Mafia won in').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
 			echo '<tr><td>'.get_label('Civilians won in').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
-		}
-		if ($terminated_count > 0)
-		{
-			echo '<tr><td>'.get_label('Games terminated').':</td><td>' . $terminated_count . ' (' . number_format($terminated_count*100.0/($terminated_count + $civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
 		}
 		if ($playing_count > 0)
 		{

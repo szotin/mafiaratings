@@ -8,8 +8,6 @@ define("PAGE_SIZE", 20);
 
 define('FILTER_CIVIL_WON', 1);
 define('FILTER_MAFIA_WON', 2);
-define('FILTER_TERMINATED', 4);
-define('FILTER_PLAYING', 8);
 
 class Page extends EventPageBase
 {
@@ -27,8 +25,6 @@ class Page extends EventPageBase
 				$this->filter = 0;
 				$this->filter |= isset($_REQUEST['civil']) ? FILTER_CIVIL_WON : 0;
 				$this->filter |= isset($_REQUEST['mafia']) ? FILTER_MAFIA_WON : 0;
-				$this->filter |= isset($_REQUEST['terminated']) ? FILTER_TERMINATED : 0;
-				$this->filter |= isset($_REQUEST['playing']) ? FILTER_PLAYING : 0;
 			}
 		}
 		$this->_title = get_label('[0]: games', $this->event->name);
@@ -48,16 +44,6 @@ class Page extends EventPageBase
 		if (($this->filter & FILTER_MAFIA_WON) != 0)
 		{
 			$condition->add($delim . '2');
-			$delim = ', ';
-		}
-		if (($this->filter & FILTER_TERMINATED) != 0)
-		{
-			$condition->add($delim . '3');
-			$delim = ', ';
-		}
-		if (($this->filter & FILTER_PLAYING) != 0)
-		{
-			$condition->add($delim . '0');
 			$delim = ', ';
 		}
 		if ($delim == '(')
@@ -84,19 +70,7 @@ class Page extends EventPageBase
 		{
 			echo ' checked';
 		}
-		echo '>'.get_label('mafia won').' ';
-		echo '<input type="checkbox" name="terminated" onClick="document.form.submit()"';
-		if (($this->filter & FILTER_TERMINATED) != 0)
-		{
-			echo ' checked';
-		}
-		echo '>'.get_label('terminated').' ';
-		echo '<input type="checkbox" name="playing" onClick="document.form.submit()"';
-		if (($this->filter & FILTER_PLAYING) != 0)
-		{
-			echo ' checked';
-		}
-		echo '>'.get_label('still playing');
+		echo '>'.get_label('mafia won');
 		echo '</td></tr></table></form>';
 		
 		echo '<table class="bordered light" width="100%">';
@@ -130,9 +104,6 @@ class Page extends EventPageBase
 					break;
 				case 2:
 					echo get_label('mafia won');
-					break;
-				case 3:
-					echo get_label('terminated');
 					break;
 				default:
 					echo get_label('invalid');

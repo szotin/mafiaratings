@@ -11,9 +11,6 @@ define('FLAG_MODER', 1);
 define('FLAG_CIVIL_WON', 2);
 define('FLAG_MAFIA_WON', 4);
 
-define('FLAG_TERMINATED', 8);
-define('FLAG_PLAYING', 16);
-
 define('FLAG_WON', 8);
 define('FLAG_LOST', 16);
 define('FLAG_CIVIL', 32);
@@ -43,12 +40,7 @@ class Page extends UserPageBase
 				$flags |= isset($_REQUEST['civil_won']) ? FLAG_CIVIL_WON : 0;
 				$flags |= isset($_REQUEST['mafia_won']) ? FLAG_MAFIA_WON : 0;
 				
-				if (($flags & FLAG_MODER) != 0)
-				{
-					$flags |= isset($_REQUEST['terminated']) ? FLAG_TERMINATED : 0;
-					$flags |= isset($_REQUEST['playing']) ? FLAG_PLAYING : 0;
-				}
-				else
+				if (($flags & FLAG_MODER) == 0)
 				{
 					$flags |= isset($_REQUEST['won']) ? FLAG_WON : 0;
 					$flags |= isset($_REQUEST['lost']) ? FLAG_LOST : 0;
@@ -94,16 +86,6 @@ class Page extends UserPageBase
 			if (($flags & FLAG_MAFIA_WON) != 0)
 			{
 				$condition->add($delim . '2');
-				$delim = ', ';
-			}
-			if (($flags & FLAG_TERMINATED) != 0)
-			{
-				$condition->add($delim . '3');
-				$delim = ', ';
-			}
-			if (($flags & FLAG_PLAYING) != 0)
-			{
-				$condition->add($delim . '0');
 				$delim = ', ';
 			}
 			if ($delim == '')
@@ -160,9 +142,6 @@ class Page extends UserPageBase
 					case 2: // mafia won
 						echo '<img src="images/maf.png" title="' . get_label('mafia won') . '" style="opacity: 0.5;">';
 						break;
-					case 3: 
-						echo '<img src="images/delete.png" title="' . get_label('terminated') . '">';
-						break;
 				}
 				echo '</td>';
 				++$count;
@@ -184,18 +163,6 @@ class Page extends UserPageBase
 				echo ' checked';
 			}
 			echo '> ' . get_label('show games won by [0]', get_label('mafia'));
-			echo '<br><input type="checkbox" value="" id="filter-terminated"';
-			if (($flags & FLAG_TERMINATED) != 0)
-			{
-				echo ' checked';
-			}
-			echo '> ' . get_label('show terminated games');
-			echo '<br><input type="checkbox" value="" id="filter-playing"';
-			if (($flags & FLAG_PLAYING) != 0)
-			{
-				echo ' checked';
-			}
-			echo '> ' . get_label('show unfinished games');
 			echo "';";
 ?>
 			function resetFilter()
@@ -213,14 +180,6 @@ class Page extends UserPageBase
 				if ($('#filter-mafia_won').attr('checked'))
 				{
 					flags |= <?php echo FLAG_MAFIA_WON; ?>;
-				}
-				if ($('#filter-terminated').attr('checked'))
-				{
-					flags |= <?php echo FLAG_TERMINATED; ?>;
-				}
-				if ($('#filter-playing').attr('checked'))
-				{
-					flags |= <?php echo FLAG_PLAYING; ?>;
 				}
 				var url = "user_games.php?id=<?php echo $this->id; ?>&moder=1&flags=" + flags;
 				window.location.replace(url);

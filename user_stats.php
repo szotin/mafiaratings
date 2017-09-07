@@ -319,7 +319,6 @@ class Page extends UserPageBase
 			$playing_count = 0;
 			$civils_win_count = 0;
 			$mafia_win_count = 0;
-			$terminated_count = 0;
 			if ($club_id > 0)
 			{
 				$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND moderator_id = ? GROUP BY result', $club_id, $this->id);
@@ -341,9 +340,6 @@ class Page extends UserPageBase
 					case 2:
 						$mafia_win_count = $row[1];
 						break;
-					case 3:
-						$terminated_count = $row[1];
-						break;
 				}
 			}
 			
@@ -352,10 +348,6 @@ class Page extends UserPageBase
 			{
 				echo '<tr><td class="dark">'.get_label('Mafia won in').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
 				echo '<tr><td class="dark">'.get_label('Civilians won in').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
-			}
-			if ($terminated_count > 0)
-			{
-				echo '<tr><td class="dark">'.get_label('Games terminated').':</td><td>' . $terminated_count . ' (' . number_format($terminated_count*100.0/($terminated_count + $civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
 			}
 			if ($playing_count > 0)
 			{

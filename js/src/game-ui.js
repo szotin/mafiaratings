@@ -377,7 +377,6 @@ mafia.ui = new function()
 		var data = mafia.data();
 		
 		$('#back').prop('disabled', !mafia.canBack());
-		_enableMenuItem($('#terminate'), mafia.canTerminate());
 		_enableMenuItem($('#save'), mafia.localDirty());
 		_enableMenuItem($('#sync'), mafia.globalDirty());
 		_enableMenuItem($('#club'), data != null && data.user.clubs.length > 1);
@@ -407,7 +406,6 @@ mafia.ui = new function()
 									'<li type="separator"></li>' +
 									'<li id="sync" class="ops-item"><a href="#" onclick="mafia.sync()"><img src="images/sync.png" class="text"> ' + l('SendData') + '</a></li>' +
 									'<li id="save" class="ops-item"><a href="#" onclick="mafia.ui.save()"><img src="images/save.png" class="text"> ' + l('Save') + '</a></li>' +
-									'<li id="terminate" class="ops-item"><a href="#" onclick="mafia.ui.restart()"><img src="images/delete.png" class="text"> ' + l('CancelGame') + '</a></li>' +
 									'<li type="separator"></li>' +
 									'<li id="voting" class="ops-item"><a href="#" onclick="mafia.toggleVoting()"><img src="images/vote.png" class="text"> <span id="voting-txt">' + l('CancelVoting') + '</span></a></li>' +
 									'<li type="separator"></li>';
@@ -1405,11 +1403,6 @@ mafia.ui = new function()
 		mafia.shoot(parseInt($('#shot' + num).val()), num);
 	}
 	
-	this.terminate = function()
-	{
-		dlg.yesNo(l('Terminate'), null, null, mafia.terminate);
-	}
-
 	this.restart = function()
 	{
 		dlg.yesNo(l('Restart'), null, null, mafia.restart);

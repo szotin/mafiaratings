@@ -12,14 +12,15 @@ define('SORT_TYPE_BY_RATING', 3);
 define('SORT_TYPE_BY_WARNINGS', 4);
 define('SORT_TYPE_BY_SHERIFF_CHECK', 5);
 define('SORT_TYPE_BY_DON_CHECK', 6);
-define('SORT_TYPE_BY_KILLED_FIRST_NIGHT', 7);
+define('SORT_TYPE_BY_KILLED_NIGHT', 7);
+define('SORT_TYPE_BY_KILLED_FIRST_NIGHT', 8);
 
 $sort_type = SORT_TYPE_BY_WIN * 2 + 1;
 function compare_numbers($row1, $row2)
 {
 	global $sort_type;
-	list($number1, $games1, $won1, $rating1, $warnings1, $don_check1, $sheriff_check1, $killed_first1) = $row1;
-	list($number2, $games2, $won2, $rating2, $warnings2, $don_check2, $sheriff_check2, $killed_first2) = $row2;
+	list($number1, $games1, $won1, $rating1, $warnings1, $sheriff_check1, $don_check1, $killed_first1, $killed_night1) = $row1;
+	list($number2, $games2, $won2, $rating2, $warnings2, $sheriff_check2, $don_check2, $killed_first2, $killed_night2) = $row2;
 	$desc = (($sort_type & 1) << 1) - 1;
 	switch ($sort_type >> 1)
 	{
@@ -89,6 +90,19 @@ function compare_numbers($row1, $row2)
 				return $desc;
 			}
 			else if ($don_check_per_game1 > $don_check_per_game2)
+			{
+				return -$desc;
+			}
+			break;
+			
+		case SORT_TYPE_BY_KILLED_NIGHT:
+			$killed_night_per_game1 = $killed_night1 / $games1;
+			$killed_night_per_game2 = $killed_night2 / $games2;
+			if ($killed_night_per_game1 < $killed_night_per_game2)
+			{
+				return $desc;
+			}
+			else if ($killed_night_per_game1 > $killed_night_per_game2)
 			{
 				return -$desc;
 			}
@@ -184,7 +198,7 @@ class Page extends UserPageBase
 
 		$numbers = array();
 		$query = new DbQuery(
-			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) as killed_first' .
+			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
 			' FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ?', $this->id);
 		$query->add(get_roles_condition($roles));
 		if ($club_id > 0)
@@ -211,20 +225,22 @@ class Page extends UserPageBase
 		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_WARNINGS, get_label('Warnings (per game)')) . '</td>';
 		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_SHERIFF_CHECK, get_label('Checked by sheriff (%)')) . '</td>';
 		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_DON_CHECK, get_label('Checked by don (%)')) . '</td>';
+		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_KILLED_NIGHT, get_label('Killed at night (%)')) . '</td>';
 		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_KILLED_FIRST_NIGHT, get_label('Killed first night (%)')) . '</td>';
 		echo '</tr>';
 		
 		foreach ($numbers as $row)
 		{
-			list($number, $games, $won, $rating, $warnings, $don_check, $sheriff_check, $killed_first) = $row;
+			list($number, $games, $won, $rating, $warnings, $sheriff_check, $don_check, $killed_first, $killed_night) = $row;
 			echo '<tr>';
 			echo '<td>' . $number . '</td>';
 			echo '<td>' . $games . '</td>';
 			echo '<td>' . $won . ' (' . format_rating($won*100/$games) . '%)</td>';
 			echo '<td>' . format_rating($rating) . ' (' . format_rating($rating/$games) . ')</td>';
 			echo '<td>' . $warnings . ' (' . format_rating($warnings/$games) . ')</td>';
-			echo '<td>' . $don_check . ' (' . format_rating($don_check*100/$games) . '%)</td>';
 			echo '<td>' . $sheriff_check . ' (' . format_rating($sheriff_check*100/$games) . '%)</td>';
+			echo '<td>' . $don_check . ' (' . format_rating($don_check*100/$games) . '%)</td>';
+			echo '<td>' . $killed_night . ' (' . format_rating($killed_night*100/$games) . '%)</td>';
 			echo '<td>' . $killed_first . ' (' . format_rating($killed_first*100/$games) . '%)</td>';
 			echo '</tr>';
 		}
