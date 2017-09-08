@@ -1100,9 +1100,12 @@ function show_time_controls($hour, $minute, $prefix = '')
 class EventPageBase extends PageBase
 {
 	protected $event;
+	protected $is_manager;
 
 	protected function prepare()
 	{
+		global $_profile;
+		
 		if (!isset($_REQUEST['id']))
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('event')));
@@ -1110,6 +1113,7 @@ class EventPageBase extends PageBase
 		
 		$this->event = new Event();
 		$this->event->load($_REQUEST['id']);
+		$this->is_manager = ($_profile != NULL && $_profile->is_manager($this->event->club_id));
 		
 		$this->_title = $this->event->name;
 	}

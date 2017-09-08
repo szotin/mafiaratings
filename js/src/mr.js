@@ -491,6 +491,27 @@ var mr = new function()
 			_delete();
 		}
 	}
+	
+	//--------------------------------------------------------------------------------------
+	// rules
+	//--------------------------------------------------------------------------------------
+	this.deleteGame = function(game_id, confirmMessage, onSuccess)
+	{
+		if (typeof onSuccess == "undefined")
+			onSuccess = refr;
+		dlg.yesNo(confirmMessage, null, null, function()
+		{
+			json.post("game_ops.php", { 'delete_game': game_id }, onSuccess);
+		});
+	}
+	
+	this.editGame = function(game_id)
+	{
+		json.post("game_ops.php", { 'edit_game': game_id }, function() 
+		{
+			window.location.replace("game.php");
+		});
+	}
 }
 
 var swfu = null;

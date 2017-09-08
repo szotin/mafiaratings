@@ -222,21 +222,6 @@ class ViewGamePageBase extends PageBase
 			throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 		}
 		
-		// if (isset($_REQUEST['end']) && $this->vg->can_edit())
-		// {
-			// if ($this->vg->gs->gamestate != GAME_MAFIA_WON && $this->vg->gs->gamestate != GAME_CIVIL_WON)
-			// {
-				// $this->vg->gs->terminate();
-			// }
-			// save_game_results($this->vg->gs);
-			// if (isset($_SESSION['game_state']))
-			// {
-				// unset($_SESSION['game_state']);
-			// }
-			// $this->vg->refresh();
-			// redirect_back();
-		// }
-		
 		$this->gametime = 0;
 		if (isset($_REQUEST['gametime']))
 		{
@@ -353,21 +338,7 @@ class ViewGamePageBase extends PageBase
 		echo '</td></tr></table></td><td align="right" valign="top">';
 		if ($vg->can_edit())
 		{
-			if ($vg->result == 0 && ($gs->gamestate == GAME_MAFIA_WON || $gs->gamestate == GAME_CIVIL_WON))
-			{
-				echo '<button class="icon" onclick="mr.finishGame(' . $gs->id . ')" title="' . get_label('Finish game [0]', $gs->id) . '"><img src="images/accept.png" border="0"></button>';
-				// echo '<a href="view_game.php?end=1">';
-				// if ($gs->gamestate == GAME_MAFIA_WON || $gs->gamestate == GAME_CIVIL_WON)
-				// {
-					// echo get_label('End game');
-				// }
-				// else
-				// {
-					// echo get_label('Terminate game');
-				// }
-				// echo '</a>';
-			}
-			echo '<button class="icon" onclick="mr.deleteGame(' . $gs->id . ')" title="' . get_label('Delete game [0]', $gs->id) . '"><img src="images/delete.png" border="0"></button>';
+			echo '<button class="icon" onclick="deleteGame(' . $gs->id . ')" title="' . get_label('Delete game [0]', $gs->id) . '"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.editGame(' . $gs->id . ')" title="' . get_label('Edit game [0]', $gs->id) . '"><img src="images/edit.png" border="0"></button>';
 		}
 		echo '</td></tr><tr><td align="right" valign="bottom"><form method="get" name="gotoForm" action="' . get_page_name() . '">';
@@ -405,6 +376,18 @@ class ViewGamePageBase extends PageBase
 		}
 		echo '></td></tr></table>';
 		echo '</form></p>';
+	}
+	
+	protected function js()
+	{
+?>
+		function deleteGame(gameId)
+		{
+			mr.deleteGame(gameId, "<?php echo get_label('Are you sure you want to delete the game [0]?', $this->vg->gs->id); ?>", function(){
+				window.location.replace("<?php echo get_back_page(); ?>");
+			});
+		}
+<?php
 	}
 }
 

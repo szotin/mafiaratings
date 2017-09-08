@@ -508,6 +508,30 @@ function add_request_params($request, $params)
 	return $row;
 }
 
+function get_back_page($params = NULL)
+{
+	if (isset($_SESSION['back_list']))
+	{
+		$list = $_SESSION['back_list'];
+		$current_back = count($list) - 1;
+		if ($current_back >= 0)
+		{
+			if ($params != NULL)
+			{
+				$list[$current_back][1] = add_request_params($list[$current_back][1], $params);
+				$_SESSION['back_list'] = $list;
+			}
+			return $list[$current_back][1];
+		}
+	}
+	
+	if (is_mobile())
+	{
+		return 'menu.php';
+	}
+	return '';
+}
+
 function show_back_button($params = NULL)
 {
 	if (isset($_SESSION['back_list']))

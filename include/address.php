@@ -245,6 +245,7 @@ class AddressPageBase extends PageBase
 	protected $timezone;
 	protected $country_id;
 	protected $country_name;
+	protected $is_manager;
 	
 	protected function prepare()
 	{
@@ -264,6 +265,8 @@ class AddressPageBase extends PageBase
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN countries cr ON cr.id = ct.country_id' .
 				' WHERE a.id = ?', $this->id);
+				
+		$this->is_manager = ($_profile != NULL && $_profile->is_manager($this->club_id));
 	}
 
 	protected function show_title()

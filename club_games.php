@@ -3,11 +3,9 @@
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/pages.php';
+require_once 'include/user.php';
 
 define("PAGE_SIZE", 20);
-
-define('FILTER_CIVIL_WON', 1);
-define('FILTER_MAFIA_WON', 2);
 
 class Page extends ClubPageBase
 {
@@ -21,94 +19,92 @@ class Page extends ClubPageBase
 	{
 		global $_page;
 		
-		$filter = FILTER_CIVIL_WON | FILTER_MAFIA_WON;
-		if (isset($_REQUEST['filter']))
+		$result_filter = -1;
+		if (isset($_REQUEST['results']))
 		{
-			$filter = $_REQUEST['filter'];
-			if (!is_numeric($filter))
+			$result_filter = (int)$_REQUEST['results'];
+			if ($result_filter == 0 && !$this->is_manager)
 			{
-				$filter = 0;
-				$filter |= isset($_REQUEST['civil']) ? FILTER_CIVIL_WON : 0;
-				$filter |= isset($_REQUEST['mafia']) ? FILTER_MAFIA_WON : 0;
+				$result_filter = -1;
 			}
 		}
 		
 		echo '<form method="get" name="form" action="club_games.php">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		echo '<input type="hidden" name="filter" value="">';
-		echo '<input type="checkbox" name="civil" onClick="document.form.submit()"';
-		if (($filter & FILTER_CIVIL_WON) != 0)
+		
+		echo '<select name="results" onChange="document.form.submit()">';
+		show_option(-1, $result_filter, get_label('All games'));
+		show_option(1, $result_filter, get_label('Games won by town'));
+		show_option(2, $result_filter, get_label('Games won by mafia'));
+		if ($this->is_manager)
 		{
-			echo ' checked';
+			show_option(0, $result_filter, get_label('Unfinished games'));
 		}
-		echo '>'.get_label('civilians won').' ';
-		echo '<input type="checkbox" name="mafia" onClick="document.form.submit()"';
-		if (($filter & FILTER_MAFIA_WON) != 0)
-		{
-			echo ' checked';
-		}
-		echo '>'.get_label('mafia won');
+		echo '</select>';
 		echo '</td></tr></table></form>';
 
-		$condition = new SQL('g.result IN');
-		$delim = '(';
-		if (($filter & FILTER_CIVIL_WON) != 0)
+		$condition = new SQL(' WHERE g.club_id = ?', $this->id);
+		if ($result_filter >= 0)
 		{
-			$condition->add($delim . '1');
-			$delim = ', ';
+			$condition->add(' AND g.result = ?', $result_filter);
 		}
-		if (($filter & FILTER_MAFIA_WON) != 0)
+		else
 		{
-			$condition->add($delim . '2');
-			$delim = ', ';
+			$condition->add(' AND g.result <> 0');
 		}
-		if ($delim == '(')
-		{
-			$condition->add($delim . '-1');
-		}
-		$condition->add(') AND g.club_id = ?', $this->id);
 		
-		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE ', $condition);
+		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		echo '<table class="bordered" width="100%">';
-		echo '<tr class="th darker"><td width="90">&nbsp;</td><td>'.get_label('Club name').'</td><td width="100">'.get_label('Moderator').'</td><td width="140">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="100">'.get_label('Result').'</td></tr>';
+		echo '<tr class="th darker"><td';
+		if ($this->is_manager)
+		{
+			echo ' colspan="2"';
+		}
+		echo '>&nbsp;</td><td width="48">'.get_label('Moderator').'</td><td>'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, ct.timezone, m.id, m.name, g.start_time, g.end_time - g.start_time, g.result FROM games g' .
+			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
-				' JOIN cities ct ON ct.id = c.city_id' .
-				' WHERE ',
+				' JOIN cities ct ON ct.id = c.city_id',
 			$condition);
 		$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $club_id, $club_name, $timezone, $moder_id, $moder_name, $start, $duration, $game_result) = $row;
+			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result) = $row;
 			
-			echo '<tr class="light"><td class="dark"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
-			echo '<td><a href="club_main.php?id=' . $club_id . '&bck=1">' . $club_name . '</a></td>';
-			echo '<td><a href="user_info.php?id=' . $moder_id . '&bck=1">' . cut_long_name($moder_name, 40) . '</td>';
+			echo '<tr class="light">';
+			if ($this->is_manager)
+			{
+				echo '<td class="dark" width="60">';
+				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.editGame(' . $game_id . ')" title="' . get_label('Edit game [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
+				echo '</td>';
+			}
+			
+			echo '<td class="dark" width="90" align="center"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
+			echo '<td align="center">';
+			show_user_pic($moder_id, $moder_flags, ICONS_DIR, 32, 32, ' title="' . $moder_name . '" style="opacity: 0.8;"');
+			echo '</td>';
+			
 			echo '<td>' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
-			echo '<td>' . format_time($duration) . '</td>';
+			echo '<td align="center">' . format_time($duration) . '</td>';
 			
-			echo '<td>';
+			echo '<td align="center">';
 			switch ($game_result)
 			{
 				case 0:
-					echo get_label('still playing');
 					break;
-				case 1:
-					echo get_label('civilians won');
+				case 1: // civils won
+					echo '<img src="images/civ.png" title="' . get_label('civilians won') . '" style="opacity: 0.5;">';
 					break;
-				case 2:
-					echo get_label('mafia won');
-					break;
-				default:
-					echo get_label('invalid');
+				case 2: // mafia won
+					echo '<img src="images/maf.png" title="' . get_label('mafia won') . '" style="opacity: 0.5;">';
 					break;
 			}
-			echo '</td>';
+			echo '</td></tr>';
 		}
 		echo '</table>';
 	}

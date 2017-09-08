@@ -184,7 +184,7 @@ class GClub
 		}
 		else
 		{
-			$this->icon = 'images/' . ICONS_DIR . 'club.png'
+			$this->icon = 'images/' . ICONS_DIR . 'club.png';
 		}
 		
 		$haunters_count = 0;
@@ -1044,6 +1044,36 @@ try
 	else if (isset($_REQUEST['get_club']))
 	{
 		$result['club_id'] = def_club();
+	}
+	else if (isset($_REQUEST['delete_game']))
+	{
+		$game_id = (int)$_REQUEST['delete_game'];
+		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM players WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
+		
+		// send notification to admin
+		$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
+		while ($row = $query->next())
+		{
+			list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
+			$lang = get_lang_code($admin_def_lang);
+			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_game_deleted.php';
+			
+			$tags = array(
+				'uname' => new Tag($admin_name),
+				'game' => new Tag($game_id),
+				'sender' => new Tag($_profile->user_name));
+			$body = parse_tags($body, $tags);
+			$text_body = parse_tags($text_body, $tags);
+			send_email($admin_email, $body, $text_body, $subj);
+		}
+	}
+	else if (isset($_REQUEST['edit_game']))
+	{
+		throw new Exc(get_label('Editing is not implemented yet.'));
 	}
 }
 catch (Exception $e)
