@@ -149,6 +149,10 @@ $message = ob_get_contents();
 ob_end_clean();
 if ($message != '')
 {
+	if (isset($result['message']))
+	{
+		$message = '<p>' . $result['message'] . '</p><hr>' . $message;
+	}
 	$result['message'] = $message;
 }
 

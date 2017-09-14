@@ -577,6 +577,10 @@ $message = ob_get_contents();
 ob_end_clean();
 if ($message != '')
 {
+	if (isset($result['message']))
+	{
+		$message = $result['message'] . '<hr>' . $message;
+	}
 	$result['message'] = $message;
 }
 

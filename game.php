@@ -28,13 +28,6 @@ class Page extends PageBase
 		global $_profile;
 		
 		$this->no_selectors = true;
-		
-		if (isset($_REQUEST['reset']))
-		{
-			unset($_SESSION['game' . $_REQUEST['reset']]);
-			throw new RedirectExc('game.php');
-		}
-		
 		$this->error = false;
 		try
 		{
@@ -73,9 +66,19 @@ class Page extends PageBase
 			echo 'mafia.ui.start(mafia.ui.FLAG_ONLINE';
 			if (is_mobile())
 			{
-				echo '| mafia.ui.FLAG_MOBILE';
+				echo ' | mafia.ui.FLAG_MOBILE';
 			}
-			echo ', ' . $this->club_id . ', ' . $this->event_id . ');';
+			if (isset($_REQUEST['edit']))
+			{
+				echo ' | mafia.ui.FLAG_EDITING';
+			}
+			echo ', ' . $this->club_id . ', ' . $this->event_id;
+			if (isset($_REQUEST['back']))
+			{
+				echo ', "' . urldecode($_REQUEST['back']) . '"';
+				unset($_SESSION['game_back_link']);
+			}
+			echo ');';
 		}
 	}
 }

@@ -104,6 +104,7 @@ var mafia = new function()
 	var _stateChange = null;
 	var _dirtyEvent = null;
 	var _failEvent = null;
+	var _editing;
 	
 	var _curEventId = 0;
 	var _curUserId = 0;
@@ -167,6 +168,16 @@ var mafia = new function()
 		if (typeof e == "function")
 		{
 			_stateChange = e;
+		}
+		return _e;
+	}
+	
+	this.editing = function(e)
+	{
+		var _e = _editing;
+		if (typeof e == "boolean")
+		{
+			_editing = e;
 		}
 		return _e;
 	}
@@ -414,6 +425,13 @@ var mafia = new function()
 				if (typeof data.club.events[eventId] != "undefined")
 				{
 					data.game.event_id = eventId;
+				}
+				switch (data.game.gamestate)
+				{
+					case /*GAME_STATE_MAFIA_WON*/17:
+					case /*GAME_STATE_CIVIL_WON*/18:
+						data.game.gamestate = /*GAME_STATE_END*/25;
+						break;
 				}
 				mafia.data(data);
 			}
@@ -1285,8 +1303,11 @@ var mafia = new function()
 		{
 			_data.game.log.push(logRec);
 		}
-		
-		_data.game.end_time = mafia.time();
+
+		if (!_editing)
+		{
+			_data.game.end_time = mafia.time();
+		}
 		dirty();
 		if (_stateChange != null)
 		{
@@ -1408,7 +1429,10 @@ var mafia = new function()
 				game.shooting = [];
 				game.log = [];
 
-				game.start_time = mafia.time();
+				if (!_editing)
+				{
+					game.start_time = mafia.time();
+				}
 				break;
 
 			case /*GAME_STATE_NIGHT0_START*/1:
@@ -1702,324 +1726,329 @@ var mafia = new function()
 	this.back = function()
 	{
 		var game = _data.game;
-		if (game.gamestate > /*GAME_STATE_CIVIL_WON*/18 || game.gamestate < /*GAME_STATE_MAFIA_WON*/17)
+		var logNum = game.log.length - 1;
+		if (logNum >= 0)
 		{
-			var logNum = game.log.length - 1;
-			if (logNum >= 0)
-			{
-				var game = _data.game;
-				var logRec = game.log[logNum];
-				
-				var stepFlags = 0;
-				if (logRec.type <= /*LOGREC_TYPE_MISSED_SPEECH*/1)
-					stepFlags |= /*STATE_CHANGE_FLAG_RESET_TIMER*/1;
-				if (game.gamestate == /*GAME_STATE_END*/25)
-					stepFlags |= /*STATE_CHANGE_FLAG_GAME_WAS_ENDED*/4;
+			var game = _data.game;
+			var logRec = game.log[logNum];
+			
+			var stepFlags = 0;
+			if (logRec.type <= /*LOGREC_TYPE_MISSED_SPEECH*/1)
+				stepFlags |= /*STATE_CHANGE_FLAG_RESET_TIMER*/1;
+			if (game.gamestate == /*GAME_STATE_END*/25)
+				stepFlags |= /*STATE_CHANGE_FLAG_GAME_WAS_ENDED*/4;
 
-				if (logRec.type == /*LOGREC_TYPE_WARNING*/2)
+			if (logRec.type == /*LOGREC_TYPE_WARNING*/2)
+			{
+				var player = game.players[logRec.player];
+				if (player.warnings >= 4)
 				{
-					var player = game.players[logRec.player];
-					if (player.warnings >= 4)
-					{
-						player.warnings = 3;
-						_resurrectPlayer(logRec.player);
-					}
-					else if (player.warnings == 3)
-					{
-						player.warnings = 2;
-						player.mute = -1;
-					}
-					else if (player.warnings > 0)
-					{
-						--player.warnings;
-					}
-				}
-				else if (logRec.type == /*LOGREC_TYPE_SUICIDE*/3 || logRec.type == /*LOGREC_TYPE_KICK_OUT*/4)
-				{
+					player.warnings = 3;
 					_resurrectPlayer(logRec.player);
 				}
-				else if (logRec.type == /*LOGREC_TYPE_POSTPONE_MUTE*/5)
+				else if (player.warnings == 3)
 				{
-					var player = game.players[logRec.player];
-					player.mute = logRec.round;
+					player.warnings = 2;
+					player.mute = -1;
 				}
-				else if (logRec.type == /*LOGREC_TYPE_CANCEL_VOTING*/6)
+				else if (player.warnings > 0)
 				{
-					_curVoting.canceled = 0;
+					--player.warnings;
 				}
-				else if (logRec.type == /*LOGREC_TYPE_RESUME_VOTING*/7)
-				{
-					if (logRec.player > 0)
-						_curVoting.canceled = logRec.player;
-					else
-						_duplicateVoting(false);
-				}
-				else
-				{
-					switch (logRec.gamestate)
-					{
-						case /*GAME_STATE_DAY_START*/3:
-							switch (game.gamestate)
-							{
-								case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-									/*if ((mafia.gameRules.flags & 2) != 0)
-									{
-										_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									}*/
-									if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
-									{
-										_removeNominant();
-									}
-									break;
-								case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-									/*if ((mafia.gameRules.flags & 2) == 0)
-									{
-										_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									}*/
-									if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
-									{
-										_removeNominant();
-									}
-									break;
-								/*default:
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									break;*/
-							}
-							break;
-
-						case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-							/*if (game.gamestate != 5 || (mafia.gameRules.flags & 2) == 0)
-							{
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-							}*/
-							if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
-							{
-								_removeNominant();
-							}
-							break;
-
-						case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-							if (logRec.type == /*LOGREC_TYPE_MISSED_SPEECH*/1)
-							{
-								game.players[logRec.player_speaking].mute = -1;
-							}
-							switch (game.gamestate)
-							{
-								case /*GAME_STATE_NIGHT_START*/11:
-									if (game.votings.length > 1)
-									{
-										game.votings.pop();
-										_curVoting = game.votings[game.votings.length - 1];
-									}
-									break;
-								case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-								case /*GAME_STATE_END*/25:
-								case /*GAME_STATE_BEST_PLAYER*/22:
-								case /*GAME_STATE_BEST_MOVE*/23:
-									if (mafia.isKillingThisDay())
-									{
-										var winners = mafia.votingWinners();
-										/*_assert_(winners.length == 1);*/
-										_resurrectPlayer(winners[0]);
-									}
-									break;
-								/*case /GAME_STATE_VOTING/8:
-									if (mafia.isDefenciveRoundThisDay())
-									{
-										_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									}
-									break;*/
-								/*case /GAME_STATE_VOTING_NOMINANT_SPEAKING/10:
-									if (!mafia.isDefenciveRoundThisDay())
-									{
-										_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									}
-									break;*/
-								/*default:
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									break;*/
-							}
-							if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
-							{
-								_removeNominant();
-							}
-							break;
-
-						case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-							switch (game.gamestate)
-							{
-								case /*GAME_STATE_NIGHT_START*/11:
-									if (game.votings.length > 1)
-									{
-										game.votings.pop();
-										_curVoting = game.votings[game.votings.length - 1];
-									}
-									break;
-								case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-									break;
-								/*default:
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									break;*/
-							}
-							break;
-
-						case /*GAME_STATE_VOTING*/8:
-							switch (game.gamestate)
-							{
-								case /*GAME_STATE_NIGHT_START*/11:
-									if (game.votings.length > 1)
-									{
-										game.votings.pop();
-										_curVoting = game.votings[game.votings.length - 1];
-									}
-									break;
-								case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-								case /*GAME_STATE_END*/25:
-								case /*GAME_STATE_BEST_PLAYER*/22:
-								case /*GAME_STATE_BEST_MOVE*/23:
-									if (mafia.isKillingThisDay())
-									{
-										/*_assert_(winners.length == 1);*/
-										_resurrectPlayer(mafia.votingWinners()[0]);
-									}
-									break;
-								/*case /GAME_STATE_VOTING/8:
-								case /GAME_STATE_VOTING_MULTIPLE_WINNERS/9:
-									break;
-								default:
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									break;*/
-							}
-							break;
-
-						case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
-							switch (game.gamestate)
-							{
-								case /*GAME_STATE_NIGHT_START*/11:
-								case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
-									if (game.votings.length > 1)
-									{
-										game.votings.pop();
-										_curVoting = game.votings[game.votings.length - 1];
-									}
-									break;
-								case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-								case /*GAME_STATE_END*/25:
-								case /*GAME_STATE_BEST_PLAYER*/22:
-								case /*GAME_STATE_BEST_MOVE*/23:
-									/*_assert_(_curVoting.canceled <= 0);*/
-									if (mafia.isKillingThisDay())
-									{
-										var winners = mafia.votingWinners();
-										/*_assert_(count > 1);*/
-										for (var i = 0; i < winners.length; ++i)
-										{
-											_resurrectPlayer(winners[i]);
-										}
-									}
-									break;
-								/*default:
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									break;*/
-							}
-							break;
-
-						case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
-							switch (game.gamestate)
-							{
-								case /*GAME_STATE_NIGHT_START*/11:
-									if (game.votings.length > 1)
-									{
-										game.votings.pop();
-										_curVoting = game.votings[game.votings.length - 1];
-									}
-									break;
-								/*case /GAME_STATE_VOTING_NOMINANT_SPEAKING/10:
-								case /GAME_STATE_VOTING/8:
-									break;
-								default:
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									break;*/
-							}
-							break;
-
-						case /*GAME_STATE_NIGHT_SHOOTING*/12:
-							switch (game.gamestate)
-							{
-								case /*GAME_STATE_NIGHT_DON_CHECK*/13:
-								case /*GAME_STATE_END*/25:
-								case /*GAME_STATE_BEST_PLAYER*/22:
-								case /*GAME_STATE_BEST_MOVE*/23:
-									if (game.player_speaking >= 0)
-									{
-										_resurrectPlayer(game.player_speaking);
-									}
-									for (var i = 0; i < 10; ++i)
-									{
-										if (game.players[i].don_check == game.round)
-										{
-											game.players[i].don_check = -1;
-										}
-									}
-									break;
-								/*default:
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									break;*/
-							}
-							break;
-					
-						case /*GAME_STATE_NIGHT_DON_CHECK*/13:
-							switch (game.gamestate)
-							{
-								case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
-									for (var i = 0; i < 10; ++i)
-									{
-										if (game.players[i].sheriff_check == game.round)
-										{
-											game.players[i].sheriff_check = -1;
-										}
-									}
-									break;
-								/*case /GAME_STATE_NIGHT_DON_CHECK/14:
-									break;
-								default:
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									break;*/
-							}
-							break;
-
-						case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
-							switch (game.gamestate)
-							{
-								case /*GAME_STATE_DAY_START*/3:
-									game.table_opener = mafia.prevPlayer(game.table_opener);
-									break;
-								/*case /GAME_STATE_NIGHT_SHERIFF_CHECK/16:
-									break;
-								default:
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-									break;*/
-							}
-							break;
-					}
-
-					if (game.gamestate == /*GAME_STATE_NIGHT_SHOOTING*/12)
-					{
-						while (game.shooting.length > game.round)
-						{
-							game.shooting.pop();
-						}
-					}
-				}
-
-				game.round = logRec.round;
-				game.gamestate = logRec.gamestate;
-				game.player_speaking = logRec.player_speaking;
-				game.current_nominant = logRec.current_nominant;
-				game.log.pop();
-
-				_gameStep(stepFlags);
 			}
+			else if (logRec.type == /*LOGREC_TYPE_SUICIDE*/3 || logRec.type == /*LOGREC_TYPE_KICK_OUT*/4)
+			{
+				_resurrectPlayer(logRec.player);
+			}
+			else if (logRec.type == /*LOGREC_TYPE_POSTPONE_MUTE*/5)
+			{
+				var player = game.players[logRec.player];
+				player.mute = logRec.round;
+			}
+			else if (logRec.type == /*LOGREC_TYPE_CANCEL_VOTING*/6)
+			{
+				_curVoting.canceled = 0;
+			}
+			else if (logRec.type == /*LOGREC_TYPE_RESUME_VOTING*/7)
+			{
+				if (logRec.player > 0)
+					_curVoting.canceled = logRec.player;
+				else
+					_duplicateVoting(false);
+			}
+			else
+			{
+				switch (logRec.gamestate)
+				{
+					case /*GAME_STATE_DAY_START*/3:
+						switch (game.gamestate)
+						{
+							case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
+								/*if ((mafia.gameRules.flags & 2) != 0)
+								{
+									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								}*/
+								if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
+								{
+									_removeNominant();
+								}
+								break;
+							case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
+								/*if ((mafia.gameRules.flags & 2) == 0)
+								{
+									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								}*/
+								if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
+								{
+									_removeNominant();
+								}
+								break;
+							/*default:
+								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								break;*/
+						}
+						break;
+
+					case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
+						/*if (game.gamestate != 5 || (mafia.gameRules.flags & 2) == 0)
+						{
+							_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+						}*/
+						if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
+						{
+							_removeNominant();
+						}
+						break;
+
+					case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
+						if (logRec.type == /*LOGREC_TYPE_MISSED_SPEECH*/1)
+						{
+							game.players[logRec.player_speaking].mute = -1;
+						}
+						switch (game.gamestate)
+						{
+							case /*GAME_STATE_NIGHT_START*/11:
+								if (game.votings.length > 1)
+								{
+									game.votings.pop();
+									_curVoting = game.votings[game.votings.length - 1];
+								}
+								break;
+							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
+							case /*GAME_STATE_MAFIA_WON*/17:
+							case /*GAME_STATE_CIVIL_WON*/18:
+							case /*GAME_STATE_END*/25:
+							case /*GAME_STATE_BEST_PLAYER*/22:
+							case /*GAME_STATE_BEST_MOVE*/23:
+								if (mafia.isKillingThisDay())
+								{
+									var winners = mafia.votingWinners();
+									/*_assert_(winners.length == 1);*/
+									_resurrectPlayer(winners[0]);
+								}
+								break;
+							/*case /GAME_STATE_VOTING/8:
+								if (mafia.isDefenciveRoundThisDay())
+								{
+									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								}
+								break;*/
+							/*case /GAME_STATE_VOTING_NOMINANT_SPEAKING/10:
+								if (!mafia.isDefenciveRoundThisDay())
+								{
+									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								}
+								break;*/
+							/*default:
+								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								break;*/
+						}
+						if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
+						{
+							_removeNominant();
+						}
+						break;
+
+					case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
+						switch (game.gamestate)
+						{
+							case /*GAME_STATE_NIGHT_START*/11:
+								if (game.votings.length > 1)
+								{
+									game.votings.pop();
+									_curVoting = game.votings[game.votings.length - 1];
+								}
+								break;
+							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
+								break;
+							/*default:
+								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								break;*/
+						}
+						break;
+
+					case /*GAME_STATE_VOTING*/8:
+						switch (game.gamestate)
+						{
+							case /*GAME_STATE_NIGHT_START*/11:
+								if (game.votings.length > 1)
+								{
+									game.votings.pop();
+									_curVoting = game.votings[game.votings.length - 1];
+								}
+								break;
+							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
+							case /*GAME_STATE_MAFIA_WON*/17:
+							case /*GAME_STATE_CIVIL_WON*/18:
+							case /*GAME_STATE_END*/25:
+							case /*GAME_STATE_BEST_PLAYER*/22:
+							case /*GAME_STATE_BEST_MOVE*/23:
+								if (mafia.isKillingThisDay())
+								{
+									/*_assert_(winners.length == 1);*/
+									_resurrectPlayer(mafia.votingWinners()[0]);
+								}
+								break;
+							/*case /GAME_STATE_VOTING/8:
+							case /GAME_STATE_VOTING_MULTIPLE_WINNERS/9:
+								break;
+							default:
+								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								break;*/
+						}
+						break;
+
+					case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
+						switch (game.gamestate)
+						{
+							case /*GAME_STATE_NIGHT_START*/11:
+							case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+								if (game.votings.length > 1)
+								{
+									game.votings.pop();
+									_curVoting = game.votings[game.votings.length - 1];
+								}
+								break;
+							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
+							case /*GAME_STATE_MAFIA_WON*/17:
+							case /*GAME_STATE_CIVIL_WON*/18:
+							case /*GAME_STATE_END*/25:
+							case /*GAME_STATE_BEST_PLAYER*/22:
+							case /*GAME_STATE_BEST_MOVE*/23:
+								/*_assert_(_curVoting.canceled <= 0);*/
+								if (mafia.isKillingThisDay())
+								{
+									var winners = mafia.votingWinners();
+									/*_assert_(count > 1);*/
+									for (var i = 0; i < winners.length; ++i)
+									{
+										_resurrectPlayer(winners[i]);
+									}
+								}
+								break;
+							/*default:
+								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								break;*/
+						}
+						break;
+
+					case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+						switch (game.gamestate)
+						{
+							case /*GAME_STATE_NIGHT_START*/11:
+								if (game.votings.length > 1)
+								{
+									game.votings.pop();
+									_curVoting = game.votings[game.votings.length - 1];
+								}
+								break;
+							/*case /GAME_STATE_VOTING_NOMINANT_SPEAKING/10:
+							case /GAME_STATE_VOTING/8:
+								break;
+							default:
+								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								break;*/
+						}
+						break;
+
+					case /*GAME_STATE_NIGHT_SHOOTING*/12:
+						switch (game.gamestate)
+						{
+							case /*GAME_STATE_NIGHT_DON_CHECK*/13:
+							case /*GAME_STATE_MAFIA_WON*/17:
+							case /*GAME_STATE_CIVIL_WON*/18:
+							case /*GAME_STATE_END*/25:
+							case /*GAME_STATE_BEST_PLAYER*/22:
+							case /*GAME_STATE_BEST_MOVE*/23:
+								if (game.player_speaking >= 0)
+								{
+									_resurrectPlayer(game.player_speaking);
+								}
+								for (var i = 0; i < 10; ++i)
+								{
+									if (game.players[i].don_check == game.round)
+									{
+										game.players[i].don_check = -1;
+									}
+								}
+								break;
+							/*default:
+								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								break;*/
+						}
+						break;
+				
+					case /*GAME_STATE_NIGHT_DON_CHECK*/13:
+						switch (game.gamestate)
+						{
+							case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
+								for (var i = 0; i < 10; ++i)
+								{
+									if (game.players[i].sheriff_check == game.round)
+									{
+										game.players[i].sheriff_check = -1;
+									}
+								}
+								break;
+							/*case /GAME_STATE_NIGHT_DON_CHECK/14:
+								break;
+							default:
+								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								break;*/
+						}
+						break;
+
+					case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
+						switch (game.gamestate)
+						{
+							case /*GAME_STATE_DAY_START*/3:
+								game.table_opener = mafia.prevPlayer(game.table_opener);
+								break;
+							/*case /GAME_STATE_NIGHT_SHERIFF_CHECK/16:
+								break;
+							default:
+								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
+								break;*/
+						}
+						break;
+				}
+
+				if (game.gamestate == /*GAME_STATE_NIGHT_SHOOTING*/12)
+				{
+					while (game.shooting.length > game.round)
+					{
+						game.shooting.pop();
+					}
+				}
+			}
+
+			game.round = logRec.round;
+			game.gamestate = logRec.gamestate;
+			game.player_speaking = logRec.player_speaking;
+			game.current_nominant = logRec.current_nominant;
+			game.log.pop();
+
+			_gameStep(stepFlags);
 		}
 	}
 
@@ -2549,7 +2578,7 @@ var mafia = new function()
 		var lang = club.langs;
 		var user = _data.user;
 		var event = club.events[_data.game.event_id];
-		var moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : _data.user.id;
+		var moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : user.id;
 		if (typeof id == "undefined")
 		{
 			id = 0;
@@ -2571,8 +2600,8 @@ var mafia = new function()
 		var game =
 		{
 			id: id,
-			user_id: user.id,
 			club_id: club.id,
+			user_id: user.id,
 			moder_id: moder_id,
 			lang: lang,
 			event_id: _data.game.event_id,
@@ -2611,7 +2640,10 @@ var mafia = new function()
 		game.best_player = -1;
 		game.best_move = -1;
 		game.guess3 = null;
-		game.start_time = game.end_time = 0;
+		if (!_editing)
+		{
+			game.start_time = game.end_time = 0;
+		}
 		game.gamestate = /*GAME_STATE_NOT_STARTED*/0;
 		game.round = game.player_speaking = game.table_opener = game.current_nominant = game.votings = game.shooting = game.log = null;
 		game.flags = 0;

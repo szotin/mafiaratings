@@ -763,7 +763,6 @@ function accept_data($data, $game)
 		}
 	}
 	
-	$_SESSION['game' . $game->club_id] = $game;
 	$gid = $game->id;
 	$game->full_save();
 	if ($game->id != $gid)
@@ -819,50 +818,20 @@ try
 			$game_str = str_replace('\"', '"', $_REQUEST['game']);
 			$game = new GameState();
 			$game->create_from_json(json_decode($game_str));
-			if ($game->user_id != $_profile->user_id)
+			$output = ($club_id != $game->club_id);
+			$data = NULL;
+			if (isset($_REQUEST['data']))
 			{
-				if (isset($_REQUEST['data']) || $game->gamestate != GAME_NOT_STARTED)
+				$data = json_decode(str_replace('\"', '"', $_REQUEST['data']));
+				if (count($data) <= 0)
 				{
-					$data = '{"game":' . $game_str;
-					if (isset($_REQUEST['data']))
-					{
-						$data .= ',"data":' . str_replace('\"', '"', $_REQUEST['data']);
-					}
-					$data .= '}';
-					Db::exec(
-						get_label('game'),
-						'INSERT INTO changelists (club_id, user_id, submit_time, data) VALUES (?, ?, UNIX_TIMESTAMP(), ?)',
-						$game->club_id, $game->user_id, $data);
-					
-					list($ulang, $uname, $uemail, $utimezone) = Db::record(get_label('user'), 'SELECT u.def_lang, u.name, u.email, i.timezone FROM users u JOIN cities i ON i.id = u.city_id WHERE u.id = ?', $game->user_id);
-					list($subj, $body, $text_body) = include 'include/languages/' . get_lang_code($ulang) . '/email_submit.php';
-					$tags = array(
-						'uname' => new Tag($uname),
-						'date' => new Tag(format_date('l, F d, Y', time(), $utimezone, $ulang)),
-						'uname1' => new Tag($_profile->user_name),
-						'url' => new Tag(get_server_url() . '/changelists.php'));
-					$body = parse_tags($body, $tags);
-					$text_body = parse_tags($text_body, $tags);
-					send_email($uemail, $body, $text_body, $subj);
+					$data = NULL;
 				}
 			}
-			else 
+			
+			if (accept_data($data, $game))
 			{
-				$output = ($club_id != $game->club_id);
-				$data = NULL;
-				if (isset($_REQUEST['data']))
-				{
-					$data = json_decode(str_replace('\"', '"', $_REQUEST['data']));
-					if (count($data) <= 0)
-					{
-						$data = NULL;
-					}
-				}
-				
-				if (accept_data($data, $game))
-				{
-					$output = true;
-				}
+				$output = true;
 			}
 		}
 		
@@ -873,16 +842,17 @@ try
 				$club_id = def_club();
 			}
 		
-			$game_profile = 'game' . $club_id;
-			if (isset($_SESSION[$game_profile]))
+			$query = new DbQuery('SELECT id, log, club_id FROM games WHERE user_id = ? AND result = 0', $_profile->user_id);
+			if ($row = $query->next())
 			{
- 				$game = $_SESSION[$game_profile];
+				list($game_id, $log, $club_id) = $row;
+                $game = new GameState();
+				$game->init_existing($game_id, $log);
 			}
 			else
 			{
 				$game = new GameState();
 				$game->init_new($_profile->user_id, $club_id);
-				$_SESSION[$game_profile] = $game;
 			}
 			
 			$result['user'] = new GUser($club_id);
@@ -890,35 +860,6 @@ try
 			$result['game'] = $game;
 			$result['time'] = time();
 		}
-	}
-	else if (isset($_REQUEST['accept_cl']))
-	{
-		$cl_id = $_REQUEST['accept_cl'];
-		
-		Db::begin();
-		list($cl_str) = Db::record(get_label('changelist'), 'SELECT data FROM changelists WHERE id = ?', $cl_id);
-		
-		$cl = json_decode($cl_str);
-		if (!isset($cl->game))
-		{
-			throw new Exc(get_label('Changelist data is corrupted.'));
-		}
-		
-		$game = new GameState();
-		$game->create_from_json($cl->game);
-		
-		$data = NULL;
-		if (isset($cl->data))
-		{
-			$data = $cl->data;
-		}
-		accept_data($data, $game);
-		Db::exec(get_label('changelist'), 'DELETE FROM changelists WHERE id = ?', $cl_id);
-		Db::commit();
-	}
-	else if (isset($_REQUEST['decline_cl']))
-	{
-		Db::exec(get_label('changelist'), 'DELETE FROM changelists WHERE id = ?', $_REQUEST['decline_cl']);
 	}
 	else if (isset($_REQUEST['ulist']))
 	{
@@ -1048,6 +989,8 @@ try
 	else if (isset($_REQUEST['delete_game']))
 	{
 		$game_id = (int)$_REQUEST['delete_game'];
+		list($club_id) = Db::record(get_label('game'), 'SELECT club_id FROM games WHERE id = ?', $game_id);
+		
 		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
@@ -1060,9 +1003,10 @@ try
 		{
 			list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
 			$lang = get_lang_code($admin_def_lang);
-			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_game_deleted.php';
+			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_game_changed.php';
 			
 			$tags = array(
+				'action' => new Tag(get_label('deleted')),
 				'uname' => new Tag($admin_name),
 				'game' => new Tag($game_id),
 				'sender' => new Tag($_profile->user_name));
@@ -1070,10 +1014,54 @@ try
 			$text_body = parse_tags($text_body, $tags);
 			send_email($admin_email, $body, $text_body, $subj);
 		}
+		
+		db_log('game', 'deleted', '', $game_id, $club_id);
+		$result['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
 	}
 	else if (isset($_REQUEST['edit_game']))
 	{
-		throw new Exc(get_label('Editing is not implemented yet.'));
+		$game_id = (int)$_REQUEST['edit_game'];
+		list($club_id, $club_name, $log) = Db::record(get_label('game'), 'SELECT c.id, c.name, g.log FROM games g JOIN clubs c ON c.id = g.club_id WHERE g.id = ?', $game_id);
+		$result['club_id'] = $club_id;
+		
+		$query = new DbQuery('SELECT id FROM games WHERE user_id = ? AND club_id = ? AND result = 0', $_profile->user_id, $club_id);
+		if ($query->next())
+		{
+			$result['open_game_anyway'] = true;
+			throw new Exc(get_label('You are already editing a game for [0]. Please finish it first.', $club_name));
+		}
+		
+		$gs = new GameState();
+		$gs->init_existing($game_id, $log);
+		$gs->user_id = $_profile->user_id;
+		$gs->full_save();
+		
+		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM players WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'UPDATE games SET result = 0, user_id = ? WHERE id = ?', $_profile->user_id, $game_id);
+		
+		// send notification to admin
+		$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
+		while ($row = $query->next())
+		{
+			list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
+			$lang = get_lang_code($admin_def_lang);
+			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_game_changed.php';
+			
+			$tags = array(
+				'action' => new Tag(get_label('changed')),
+				'uname' => new Tag($admin_name),
+				'game' => new Tag($game_id),
+				'sender' => new Tag($_profile->user_name));
+			$body = parse_tags($body, $tags);
+			$text_body = parse_tags($text_body, $tags);
+			send_email($admin_email, $body, $text_body, $subj);
+		}
+		
+		db_log('game', 'changed', 'old_log: ' . $log, $game_id, $club_id);
+		$result['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
 	}
 }
 catch (Exception $e)
@@ -1098,6 +1086,10 @@ $message = ob_get_contents();
 ob_end_clean();
 if ($message != '')
 {
+	if (isset($result['message']))
+	{
+		$message = '<p>' . $result['message'] . '</p><br><br>' . $message;
+	}
 	$result['message'] = $message;
 }
 

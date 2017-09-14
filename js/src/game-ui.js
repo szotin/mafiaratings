@@ -288,6 +288,8 @@ var statusWaiter = new function()
 		}
 		if (data == null)
 			$('#saving').html('');
+		else if (typeof data.game.id === 'number' && data.game.id > 0)
+			$('#saving').html(data.club.name + ' : Game ' + data.game.id);
 		else
 			$('#saving').html(data.club.name);
 	}
@@ -304,6 +306,8 @@ mafia.ui = new function()
 	var _shortSpeech = false;
 	var _lCounter = 0;
 	var _gCounter = 0;
+	var _backPage = null;
+	var _oldState = -1;
 
 	function _option(value, current, text)
 	{
@@ -391,8 +395,14 @@ mafia.ui = new function()
 	
 	this.FLAG_MOBILE = 1;
 	this.FLAG_ONLINE = 2;
-	this.start = function (flags, clubId, eventId)
+	this.FLAG_EDITING = 4;
+	this.start = function (flags, clubId, eventId, backPage)
 	{
+		if (typeof backPage === "string")
+		{
+			_backPage = backPage;
+		}
+		
 		var html = 
 			'<div id="demo">' + l('Demo') + '</div>' +
 			'<table class="bordered" width="100%" id="players">' +
@@ -487,6 +497,7 @@ mafia.ui = new function()
 		dialogWaiter.connected = silentWaiter.connected = statusWaiter.connected;
 	
 		mafia.ui.mobile((flags & this.FLAG_MOBILE) != 0);
+		mafia.editing((flags & this.FLAG_EDITING) != 0);
 		mafia.stateChange(mafia.ui.sync);
 		mafia.dirtyEvent(mafia.ui.updateButtons);
 		mafia.failEvent(function(message) { dlg.error(message); });
@@ -554,8 +565,19 @@ mafia.ui = new function()
 			mafia.ui.fillUsers();
 		
 		$('#control-1').html('');
+		
+		// console.log("... " + game.gamestate);
 		if (game.gamestate == /*GAME_STATE_NOT_STARTED*/0)
 		{
+			if (_oldState > 0 && _backPage != null)
+			{
+				mafia.sync(0, 0, function()
+				{
+					window.location.replace(_backPage);
+				});
+				return;
+			}
+			
 			status = '<table width="100%"><tr><td><table><tr><td>' + l('Event') + ':</td>';
 			if (user.manager)
 			{
@@ -714,7 +736,6 @@ mafia.ui = new function()
 			}
 			
 			var p, n;
-			//console.log(game.gamestate);
 			switch (game.gamestate)
 			{
 				case /*GAME_STATE_NIGHT0_START*/1:
@@ -982,6 +1003,7 @@ mafia.ui = new function()
 							p = game.players[i];
 							if (p.state == /*PLAYER_STATE_ALIVE*/0)
 							{
+								// console.log("." + i + '.' + " (current_nominant=" +  game.current_nominant + "; n[" + i + "]=" + n[i]);
 								if (n[i] == game.current_nominant)
 								{
 									$('#control' + i).html('<button class="day-vote" onclick="mafia.vote(' + i + ', false)" checked>' + l('vote', i + 1, num + 1) + '</button>');
@@ -1210,6 +1232,7 @@ mafia.ui = new function()
 			onStatus();
 		}
 		mafia.ui.updateButtons();
+		_oldState = game.gamestate;
 	}
 	
 	this.showNominants = function()
@@ -1351,16 +1374,16 @@ mafia.ui = new function()
 				else
 					$('#reg-new-' + i).show();
 			}
-			
-			if (event.id != 0 || window.navigator.userAgent.indexOf('MSIE') >= 0)
-				$('#demo').hide();
-			else
-				$('#demo').show();
 		}
 		else for (var i = 0; i < 10; ++i)
 		{
 			$('#name' + i).html(mafia.userTitle(game.players[i].id));
 		}
+			
+		if (event.id != 0 || window.navigator.userAgent.indexOf('MSIE') >= 0)
+			$('#demo').hide();
+		else
+			$('#demo').show();
 	}
 
 	this.langChange = function()

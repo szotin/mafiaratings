@@ -507,9 +507,17 @@ var mr = new function()
 	
 	this.editGame = function(game_id)
 	{
-		json.post("game_ops.php", { 'edit_game': game_id }, function() 
+		var gotoGame = function(data)
 		{
-			window.location.replace("game.php");
+			var link = "game.php?edit&back=" + encodeURIComponent(window.location.href);
+			if (typeof data.club_id !== "undefined")
+				link += "&club=" + data.club_id
+			window.location.replace(link);
+		}
+		
+		json.post("game_ops.php", { 'edit_game': game_id  }, gotoGame, function(errorMessage, data) 
+		{
+			gotoGame(data);
 		});
 	}
 }

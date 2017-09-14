@@ -197,14 +197,34 @@ var dialogWaiter = new function()
 		}
 	}
 	
-	this.error = function(message)
+	this.error = function(message, onError, data)
 	{
 		if (--counter <= 0)
 		{
 			counter = 0;
 			$("#loading").hide();
 		}
-		dlg.error(message);
+		dlg.error(message, undefined, undefined, function() 
+		{ 
+			if (typeof onError === "function")
+			{
+				if (typeof data != "undefined")
+				{
+					try
+					{
+						onError(message, jQuery.parseJSON(data));
+					}
+					catch (e)
+					{
+						onError(message);
+					}				
+				}
+				else
+				{
+					onError(message);
+				}
+			}
+		});
 	}
 	
 	this.info = function(message, title, onClose)
@@ -288,7 +308,7 @@ var http = new function()
 				var error = onSuccess(response.responseText);
 				if (typeof error == "string" && error.length > 0)
 				{
-					w.error(error);
+					w.error(error, onError, response.responseText);
 				}
 				else
 				{
@@ -298,11 +318,7 @@ var http = new function()
 			{
 				http.connected(false, w);
 				var msg = http.errorMsg(response, page);
-				w.error(msg);
-				if (typeof onError != "undefined")
-				{
-					onError(msg);
-				}
+				w.error(msg, onError, response.responseText);
 			});
 			//}, 3000);
 		}
@@ -321,7 +337,7 @@ var http = new function()
 				var error = onSuccess(response.responseText);
 				if (typeof error == "string" && error.length > 0)
 				{
-					w.error(error);
+					w.error(error, onError, response.responseText);
 				}
 				else
 				{
@@ -331,11 +347,7 @@ var http = new function()
 			{
 				http.connected(false, w);
 				var msg = http.errorMsg(response, page);
-				w.error(msg);
-				if (typeof onError != "undefined")
-				{
-					onError(msg);
-				}
+				w.error(msg, onError, response.responseText);
 			});
 			//}, 3000);
 		}
@@ -421,8 +433,6 @@ var json = new function()
 			else if (typeof obj.error == "string")
 			{
 				result = obj.error;
-				if (typeof onError != "undefined")
-					onError(obj.error);
 			}
 			else if (typeof obj.message == "string")
 			{
