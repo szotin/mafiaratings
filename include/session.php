@@ -16,6 +16,25 @@ if (isset($_SERVER['HTTP_USER_AGENT']))
 	$_http_agent = $_SERVER['HTTP_USER_AGENT'];
 }
 
+if (!isset($_SERVER['HTTPS']) && is_production_server())
+{
+	$url = 'https://';
+	if (isset($_SERVER['SERVER_NAME']))
+	{
+		$url .= $_SERVER['SERVER_NAME'];
+		if ($_SERVER['SERVER_PORT'] != "80")
+		{
+			$url .= ':' . $_SERVER["SERVER_PORT"];
+		}
+	}
+	else
+	{
+		$url .= PRODUCT_SITE;
+	}
+	$url .= $_SERVER['REQUEST_URI'];
+	header('location: ' . $url);
+}
+
 class ProfileClub
 {
 	public $id;

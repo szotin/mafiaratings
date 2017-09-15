@@ -4,21 +4,48 @@ require_once 'include/branding.php';
 
 function get_server_url()
 {
-	$row = PRODUCT_SITE;
-	if (isset($_SERVER['SERVER_NAME']))
+	if (!isset($_SESSION['root_url']))
 	{
-		$row = $_SERVER['SERVER_NAME'];
-		if ($_SERVER['SERVER_PORT'] != "80")
+		$port = '';
+		if (isset($_SERVER['HTTPS']))
 		{
-			$row .= ':' . $_SERVER["SERVER_PORT"];
+			$url = 'https://';
+			if ($_SERVER['SERVER_PORT'] != "443")
+			{
+				$port = $_SERVER["SERVER_PORT"];
+			}
 		}
+		else
+		{
+			$url = 'http://';
+			if ($_SERVER['SERVER_PORT'] != "80")
+			{
+				$port = $_SERVER["SERVER_PORT"];
+			}
+		}
+		
+		if (isset($_SERVER['SERVER_NAME']))
+		{
+			$url .= $_SERVER['SERVER_NAME'];
+		}
+		else
+		{
+			$url .= PRODUCT_SITE;
+		}
+		$url .= $port;
+		
+		if (isset($_SERVER['REQUEST_URI']))
+		{
+			$uri = $_SERVER['REQUEST_URI'];
+			$pos = strrpos($uri, '/');
+			if ($pos !== false && $pos > 0)
+			{
+				$url .= substr($uri, 0, $pos);
+			}
+		}
+		$_SESSION['root_url'] = $url;
 	}
-	
-    if (isset($_SERVER['HTTPS']))
-    {
-		return 'https://' . $row;
-    }
-	return 'http://' . $row;
+	return $_SESSION['root_url'];
 }
 
 function get_server_protocol()
