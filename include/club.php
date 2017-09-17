@@ -190,6 +190,7 @@ class ClubPageBase extends PageBase
 	protected $memb_flags;
 	protected $is_manager;
 	protected $is_moder;
+	protected $timezone;
 	
 	protected function prepare()
 	{
@@ -211,10 +212,10 @@ class ClubPageBase extends PageBase
 			$this->is_moder = $_profile->is_moder($this->id);
 		}
 		
-		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags, $this->scoring_id) = 
+		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags, $this->scoring_id, $this->timezone) = 
 			Db::record(
 				get_label('club'),
-				'SELECT c.name, c.flags, c.web_site, c.langs, c.email, c.phone, c.price, cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', u.flags, c.scoring_id FROM clubs c ' .
+				'SELECT c.name, c.flags, c.web_site, c.langs, c.email, c.phone, c.price, cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', u.flags, c.scoring_id, ct.timezone FROM clubs c ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
 					'LEFT OUTER JOIN user_clubs u ON u.club_id = c.id AND u.user_id = ? ' .
@@ -236,7 +237,6 @@ class ClubPageBase extends PageBase
 			new MenuItem('club_main.php?id=' . $this->id, get_label('Club'), get_label('[0] main page', $this->name)),
 			new MenuItem('club_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
 			new MenuItem('club_upcoming.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name)),
-			new MenuItem('club_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name)),
 			new MenuItem('club_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name)),
 			new MenuItem('club_addresses.php?id=' . $this->id, get_label('Addresses'), get_label('[0] addresses', $this->name)),
 			new MenuItem('#history', get_label('History'), NULL, $history_menu));
@@ -246,12 +246,14 @@ class ClubPageBase extends PageBase
 			$other_menu = array(new MenuItem('club_players.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name)));
 			if ($this->is_manager)
 			{
+				$other_menu[] = new MenuItem('club_seasons.php?id=' . $this->id, get_label('Seasons'), get_label('[0] seasons', $this->name));
+				$other_menu[] = new MenuItem('club_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name));
 				$other_menu[] = new MenuItem('club_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name));
 				$other_menu[] = new MenuItem('club_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name));
 				$other_menu[] = new MenuItem('club_emails.php?id=' . $this->id, get_label('Emails'), get_label('[0] email templates', $this->name));
 				$other_menu[] = new MenuItem('club_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name));
 			}
-			$menu[] = new MenuItem('#other', get_label('Other'), NULL, $other_menu);
+			$menu[] = new MenuItem('#other', get_label('Management'), NULL, $other_menu);
 		}
 		
 		echo '<table class="head" width="100%">';

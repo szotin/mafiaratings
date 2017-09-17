@@ -779,7 +779,7 @@ function rebuild_game_stats($gs)
 	Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $gs->id);
 	Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $gs->id);
 	
-	$gs->full_save();
+	$gs->save();
 	save_game_results($gs);
 	db_log('game', 'Stats rebuilt', NULL, $gs->id, $gs->club_id);
 	Db::commit();

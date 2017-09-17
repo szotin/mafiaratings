@@ -135,6 +135,14 @@ var mafia = new function()
 		}
 	}
 	
+	function _callStateChange(flags)
+	{
+		if (_stateChange != null)
+		{
+			_stateChange(flags);
+		}
+	}
+	
 	this.load = function()
 	{
 		if (typeof localStorage == "object")
@@ -350,10 +358,7 @@ var mafia = new function()
 				game.moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : _data.user.id;
 			}
 			
-			if (_stateChange != null)
-			{
-				_stateChange(stateChangeFlags);
-			}
+			_callStateChange(stateChangeFlags);
 			
 			if (typeof _data.fail == 'string' && _failEvent != null)
 			{
@@ -418,6 +423,10 @@ var mafia = new function()
 		var oldDirty = _gDirty;
 		json.post('game_ops.php', request, function(data)
 		{
+			//if (typeof data.console == "object")
+			//	for (var i = 0; i < data.console.length; ++i)
+			//		console.log('Sync log: ' + data.console[i]);
+				
 			_dirty(_lDirty, _gDirty - oldDirty);
 			_syncCount = 0;
 			if (typeof data.club != 'undefined')
@@ -1309,10 +1318,7 @@ var mafia = new function()
 			_data.game.end_time = mafia.time();
 		}
 		dirty();
-		if (_stateChange != null)
-		{
-			_stateChange(flags);
-		}
+		_callStateChange(flags);
 	}
 	
 	this.playersCount = function(t)
@@ -1376,10 +1382,7 @@ var mafia = new function()
 		if (forse)
 		{
 			dirty();
-			if (_stateChange != null)
-			{
-				_stateChange(0);
-			}
+			_callStateChange(0);
 		}
 	}
 	
@@ -2150,10 +2153,7 @@ var mafia = new function()
 			game.guess3[2] = num;
 		}
 		dirty();
-		if (_stateChange != null)
-		{
-			_stateChange(0);
-		}
+		_callStateChange(0);
 	}
 	
 	this.isGuessed = function(num)
@@ -2183,10 +2183,7 @@ var mafia = new function()
 			}
 		}
 		dirty();
-		if (_stateChange != null)
-		{
-			_stateChange(0);
-		}
+		_callStateChange(0);
 	}
 	
 	this.bestPlayer = function(num)
@@ -2195,10 +2192,7 @@ var mafia = new function()
 		if (num < 0 || num >= 10) num = -1;
 		game.best_player = num;
 		dirty();
-		if (_stateChange != null)
-		{
-			_stateChange(0);
-		}
+		_callStateChange(0);
 	}
 	
 	this.bestMove = function(num)
@@ -2207,10 +2201,7 @@ var mafia = new function()
 		if (num < 0 || num >= 10) num = -1;
 		game.best_move = num;
 		dirty();
-		if (_stateChange != null)
-		{
-			_stateChange(0);
-		}
+		_callStateChange(0);
 	}
 	
 	this.vote = function(num, v)
@@ -2221,10 +2212,7 @@ var mafia = new function()
 		{
 			_vote(num, v ? game.current_nominant : -1);
 			dirty();
-			if (_stateChange != null)
-			{
-				_stateChange(0);
-			}
+			_callStateChange(0);
 		}
 	}
 
@@ -2565,10 +2553,7 @@ var mafia = new function()
 			}
 			
 			dirty();
-			if (_stateChange != null)
-			{
-				_stateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
-			}
+			_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
 		}
 	}
 	
@@ -2657,10 +2642,7 @@ var mafia = new function()
 		_curVoting = null;
 		
 		dirty();
-		if (_stateChange != null)
-		{
-			_stateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
-		}
+		_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
 	}
 
 	this.votingKillAll = function(killAll)
@@ -2672,7 +2654,7 @@ var mafia = new function()
 			if (game.gamestate == /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9)
 			{
 				_curVoting.multiple_kill = killAll;
-				_stateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/0);
+				_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/0);
 			}
 		}
 		return m;
@@ -2780,10 +2762,7 @@ var mafia = new function()
 				mafia.save();
 			}
 			
-			if (_stateChange != null)
-			{
-				_stateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
-			}
+			_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
 		}
 	}
 	

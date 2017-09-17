@@ -165,3 +165,4 @@ _l['SendData']="Send data to Mafia Ratings";
 _l['Save']="Save";
 _l['Offline']="How to play offline";
 _l['OfflineText']='<p>Please click on this link <a href="game-{1}en.html">game-{1}en.html</a> and add it to bookmarks. After you visit this page it will become available offline.</p><p>However, don\'t forget to send data to Mafia Ratings as soon as you re-establish connection.</p>';
+_l['Game']='game';

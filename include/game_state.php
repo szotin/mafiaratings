@@ -486,30 +486,10 @@ class GameState
         return $version;
     }
 
-    function save($update_time = true)
-    {
-		$log = $this->write();
-		if ($update_time)
-		{
-			$this->end_time = time();
-		}
-		
-		if ($this->id > 0)
-		{
-			Db::exec(get_label('game'), 'UPDATE games SET log = ?, end_time = ? WHERE id = ?', $log, $this->end_time, $this->id);
-        }
-	}
-	
-	function full_save()
+	function save()
 	{
 		if ($this->event_id <= 0)
 		{
-			return;
-		}
-	
-		if ($this->gamestate == GAME_NOT_STARTED)
-		{
-			Db::exec(get_label('game'), 'DELETE FROM games WHERE result = 0 AND user_id = ?', $this->user_id);
 			return;
 		}
 	

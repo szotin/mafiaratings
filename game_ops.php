@@ -703,7 +703,7 @@ class CommandQueue
 		$game = new GameState();
 		$game->create_from_json($rec->game);
 		$this->correct_game($game);
-		$game->full_save();
+		$game->save();
 		save_game_results($game);
 	}
 	
@@ -764,7 +764,7 @@ function accept_data($data, $game)
 	}
 	
 	$gid = $game->id;
-	$game->full_save();
+	$game->save();
 	if ($game->id != $gid)
 	{
 		$output = true;
@@ -813,6 +813,7 @@ try
 	
 		$output = true;
 		$game = NULL;
+		// $console = array();
 		if (isset($_REQUEST['game']))
 		{
 			$game_str = str_replace('\"', '"', $_REQUEST['game']);
@@ -842,10 +843,12 @@ try
 				$club_id = def_club();
 			}
 		
-			$query = new DbQuery('SELECT id, log, club_id FROM games WHERE user_id = ? AND result = 0', $_profile->user_id);
+			$query = new DbQuery('SELECT id, log FROM games WHERE user_id = ? AND result = 0 AND club_id = ?', $_profile->user_id, $club_id);
 			if ($row = $query->next())
 			{
-				list($game_id, $log, $club_id) = $row;
+				list($game_id, $log) = $row;
+				// $console[] = 'game id = ' . $game_id;
+				// $console[] = 'log = ' . $log;
                 $game = new GameState();
 				$game->init_existing($game_id, $log);
 			}
@@ -860,6 +863,11 @@ try
 			$result['game'] = $game;
 			$result['time'] = time();
 		}
+		
+		// if (count($console) > 0)
+		// {
+			// $result['console'] = $console;
+		// }
 	}
 	else if (isset($_REQUEST['ulist']))
 	{
@@ -1024,17 +1032,27 @@ try
 		list($club_id, $club_name, $log) = Db::record(get_label('game'), 'SELECT c.id, c.name, g.log FROM games g JOIN clubs c ON c.id = g.club_id WHERE g.id = ?', $game_id);
 		$result['club_id'] = $club_id;
 		
-		$query = new DbQuery('SELECT id FROM games WHERE user_id = ? AND club_id = ? AND result = 0', $_profile->user_id, $club_id);
-		if ($query->next())
+		$query = new DbQuery('SELECT id, log FROM games WHERE user_id = ? AND club_id = ? AND result = 0', $_profile->user_id, $club_id);
+		while ($row = $query->next())
 		{
-			$result['open_game_anyway'] = true;
-			throw new Exc(get_label('You are already editing a game for [0]. Please finish it first.', $club_name));
+			list($gid, $glog) = $row;
+			$gs = new GameState();
+			$gs->init_existing($game_id, $glog);
+			if ($gs->gamestate == GAME_NOT_STARTED)
+			{
+				Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $gid);
+			}
+			else
+			{
+				$result['open_game_anyway'] = true;
+				throw new Exc(get_label('You are already editing a game for [0]. Please finish it first.', $club_name));
+			}
 		}
 		
 		$gs = new GameState();
 		$gs->init_existing($game_id, $log);
 		$gs->user_id = $_profile->user_id;
-		$gs->full_save();
+		$gs->save();
 		
 		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);

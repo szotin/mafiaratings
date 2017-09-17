@@ -286,12 +286,7 @@ var statusWaiter = new function()
 			$('#saving-img').attr("src", "images/disconnected.png");
 			$('#saving-btn').attr("onclick", "mafia.sync()");
 		}
-		if (data == null)
-			$('#saving').html('');
-		else if (typeof data.game.id === 'number' && data.game.id > 0)
-			$('#saving').html(data.club.name + ' : Game ' + data.game.id);
-		else
-			$('#saving').html(data.club.name);
+        $('#saving').html('');
 	}
 	
 	this.update = function()
@@ -438,7 +433,7 @@ mafia.ui = new function()
 				'<tr class="day-alive player-row" id="r' + i + '">' +
 					'<td width="20" align="center" id="num' + i + '">' + (i + 1) + '</td>' +
 					'<td id="name' + i + '"></td>' +
-					'<td id="panel' + i + '" width="112"></td>' +
+					'<td id="panel' + i + '" width="114"></td>' +
 					'<td id="control' + i + '" width="160"></td>' +
 					'<td id="warn' + i + '" width="100"></td>' +
 					'<td width="90">' +
@@ -453,9 +448,10 @@ mafia.ui = new function()
 		html +=
 				'<tr class="day-empty footer-row" id="r-1">' +
 					'<td colspan="3">' +
-						'<table class="invis"><tr>' +
+						'<table class="invis" width="100%"><tr>' +
 							'<td><button class="icon" id="saving-btn"><img id="saving-img" border="0"></button></td>' +
 							'<td id="saving"></td>' +
+							'<td id="game-id" align="right"></td>' +
 						'</tr></table>' +
 					'</td>' +
 					'<td id="control-1"></td>' +
@@ -557,6 +553,11 @@ mafia.ui = new function()
 		var clockHtml = '';
 		
 		if (reset) _shortSpeech = false;
+		
+		if (game.id > 0)
+			$('#game-id').html('<b>' + data.club.name + ' : ' + l('Game') + ' ' + data.game.id + '</b>');
+		else
+			$('#game-id').html('<b>' + data.club.name + '</b>');
 		
 		if (flags & /*STATE_CHANGE_FLAG_CLUB_CHANGED*/2)
 			statusWaiter.update();

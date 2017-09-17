@@ -6,7 +6,7 @@ initiate_session();
 
 try
 {
-	if ($_profile == NULL || !$_profile->is_admin())
+	if ($_profile == NULL)
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}
@@ -26,6 +26,10 @@ try
 				' LEFT OUTER JOIN clubs c ON c.id = l.club_id WHERE l.id = ?',
 			$id);
 
+	if (!$_profile->is_admin() && ($club_id == NULL || !$_profile->is_manager($club_id)))
+	{
+		throw new FatalExc(get_label('No permissions'));
+	}
 	echo '<table class="dialog_form" width="100%">';
 	
 	echo '<tr><td width="140">' . get_label('Time') . ':</td><td>' . format_date('d/m/y H:i', $time, $_profile->timezone) . '</td></tr>';

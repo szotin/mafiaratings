@@ -1059,7 +1059,8 @@ function show_date_controls($day, $month, $year, $name_base = '')
 	}
 	echo '</select>';
 	echo '<select id="' . $name_base . 'year" name="' . $name_base . 'year">';
-	for ($i = 2010; $i <= 2020; ++$i)
+	$current_year = (int)date("Y");
+	for ($i = $current_year - 1; $i <= $current_year + 5; ++$i)
 	{
 		echo '<option value="' . $i . '"';
 		if ($year == $i)

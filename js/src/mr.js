@@ -180,6 +180,36 @@ var mr = new function()
 	}
 
 	//--------------------------------------------------------------------------------------
+	// Season
+	//--------------------------------------------------------------------------------------
+	this.editSeason = function(id)
+	{
+		dlg.form("season_edit.php?season=" + id, refr);
+	}
+
+	this.deleteSeason = function(id, confirmMessage)
+	{
+		function _delete()
+		{
+			json.post("season_ops.php", { 'id': id, 'delete': "" }, refr);
+		}
+
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _delete);
+		}
+		else
+		{
+			_delete();
+		}
+	}
+
+	this.createSeason = function(club_id)
+	{
+		dlg.form("season_create.php?club=" + club_id, refr);
+	}
+
+	//--------------------------------------------------------------------------------------
 	// address
 	//--------------------------------------------------------------------------------------
 	this.createAddr = function(club_id)
