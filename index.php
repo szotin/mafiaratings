@@ -30,7 +30,7 @@ class Page extends GeneralPageBase
 				if ($event_count == 0)
 				{
 					echo '<table class="bordered light" width="100%">';
-					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . $title . ':</b></td></tr>';
+					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . $title . '</b></td></tr>';
 				}
 				else
 				{
@@ -59,7 +59,9 @@ class Page extends GeneralPageBase
 		if ($event_count > 0)
 		{
 			echo '</tr></table>';
+			return true;
 		}
+		return false;
 	}
 
 	protected function show_body()
@@ -91,6 +93,7 @@ class Page extends GeneralPageBase
 		}
 		
 		echo '<table width="100%"><tr><td valign="top">';
+		$have_tables = false;
 	
 		// my events
 		if ($_profile != NULL)
@@ -104,7 +107,7 @@ class Page extends GeneralPageBase
 					' WHERE u.user_id = ? AND u.coming_odds > 0 AND e.start_time + e.duration > UNIX_TIMESTAMP()' .
 					' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
 				$_profile->user_id);
-			$this->show_events_list($query, get_label('Your events'));
+			$have_tables = $this->show_events_list($query, get_label('Your events')) || $have_tables;
 		}
 		
 		// championships
@@ -119,7 +122,7 @@ class Page extends GeneralPageBase
 			$query->add(' AND e.id NOT IN (SELECT event_id FROM event_users WHERE user_id = ? AND coming_odds > 0)', $_profile->user_id);
 		}
 		$query->add(' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
-		$this->show_events_list($query, get_label('Upcoming championships'));
+		$have_tables = $this->show_events_list($query, get_label('Upcoming championships')) || $have_tables;
 		
 		// upcoming
 		$query = new DbQuery(
@@ -133,7 +136,7 @@ class Page extends GeneralPageBase
 			$query->add(' AND e.id NOT IN (SELECT event_id FROM event_users WHERE user_id = ? AND coming_odds > 0)', $_profile->user_id);
 		}
 		$query->add(' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
-		$this->show_events_list($query, '<a href="calendar.php?bck=1">' . get_label('Coming soon') . '</a>');
+		$have_tables = $this->show_events_list($query, get_label('Coming soon')) || $have_tables;
 
 		// adverts
 		$query = new DbQuery(
@@ -144,8 +147,12 @@ class Page extends GeneralPageBase
 		
 		if ($row = $query->next())
 		{
-			echo '<p><table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="2"><a href="adverts.php?bck=1&ccc=' . $ccc_code . '"><b>' . get_label('More adverts...') . '</b></a></td></tr>';
+			if ($have_tables)
+			{
+				echo '<p>';
+			}
+			echo '<table class="bordered light" width="100%">';
+			echo '<tr class="darker"><td colspan="2"><b>' . get_label('Adverts') . '</b></a></td></tr>';
 			
 			do
 			{
@@ -157,7 +164,15 @@ class Page extends GeneralPageBase
 				
 				
 			} while ($row = $query->next());
-			echo '</table></p>';
+			echo '</table>';
+			if ($have_tables)
+			{
+				echo '</p>';
+			}
+			else
+			{
+				$have_tables = true;
+			}
 		}
 		
 		// echo '<p>';
@@ -192,7 +207,7 @@ class Page extends GeneralPageBase
 		{
 			echo '</td><td width="280" valign="top">';
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="4"><a href="ratings.php?bck=1&ccc=' . $ccc_code . '"><b>' . get_label('More ratings...') . '</b></a></td></tr>';
+			echo '<tr class="darker"><td colspan="4"><b>' . get_label('Best players') . '</b></td></tr>';
 			
 			do
 			{

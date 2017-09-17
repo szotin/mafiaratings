@@ -44,28 +44,26 @@ class GeneralPageBase extends PageBase
 			new MenuItem('index.php' . $ccc, get_label('Home'), get_label('Main page')),
 			new MenuItem('clubs.php' . $ccc, get_label('Clubs'), get_label('Clubs list')),
 			new MenuItem('ratings.php' . $ccc, get_label('Ratings'), get_label('Players ratings')),
-			new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),
+			new MenuItem('games_stats.php' . $ccc, get_label('Stats'), get_label('Games statistics')),
+			new MenuItem('history.php' . $ccc, get_label('Events'), get_label('Events history')),
+			// new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),
 			new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums')),
-			new MenuItem('calendar.php' . $ccc, get_label('Calendar'), get_label('Where and when can I play')),
-			new MenuItem('forum.php' . $ccc, get_label('Forum'), get_label('Mafia forum'))
+			new MenuItem('moderators.php' . $ccc, get_label('Moderators'), get_label('Moderators statistics')),
+			new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games'))
+			// new MenuItem('calendar.php' . $ccc, get_label('Calendar'), get_label('Where and when can I play')),
+			// new MenuItem('forum.php' . $ccc, get_label('Forum'), get_label('Mafia forum'))
 			);
 			
-		$menu[] = new MenuItem('#history', get_label('History'), NULL, array(
-			new MenuItem('history.php' . $ccc, get_label('Events'), get_label('Events history')),
-			new MenuItem('games_stats.php' . $ccc, get_label('Games statistics'), get_label('Games statistics')),
-			new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games')),
-			new MenuItem('moderators.php' . $ccc, get_label('Moderators'), get_label('Moderators statistics'))));
-
 		if ($_profile != NULL && $_profile->is_admin())
 		{
-			$menu[] = new MenuItem('#site', get_label('Site'), NULL, array(
-				new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log')),
+			$menu[] = new MenuItem('#site', get_label('Management'), NULL, array(
 				new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage [0] users', PRODUCT_NAME)),
 				new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
 				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
 				new MenuItem('scorings.php' . $ccc, get_label('Scoring systems'), get_label('Manage scoring systems')),
 				new MenuItem('club_requests.php' . $ccc, get_label('Club requests'), get_label('Requests for creating a club')),
-				new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things'))));
+				new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things')),
+				new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log'))));
 		}
 		
 		$menu[] = new MenuItem('#about', get_label('About'), NULL, array(

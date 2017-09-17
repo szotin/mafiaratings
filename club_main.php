@@ -28,7 +28,7 @@ class Page extends ClubPageBase
 				if ($event_count == 0)
 				{
 					echo '<table class="bordered light" width="100%">';
-					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . $title . ':</b></td></tr>';
+					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . $title . '</b></td></tr>';
 				}
 				else
 				{
@@ -170,7 +170,7 @@ class Page extends ClubPageBase
 			$query->add(' AND e.id NOT IN (SELECT event_id FROM event_users WHERE user_id = ? AND coming_odds > 0)', $_profile->user_id);
 		}
 		$query->add(' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
-		$have_tables = $this->show_events_list($query, '<a href="club_upcoming.php?bck=1&id=' . $this->id . '">' . get_label('Coming soon') . '</a>') || $have_tables;
+		$have_tables = $this->show_events_list($query, get_label('Coming soon')) || $have_tables;
 			
 		// adverts
 		$query = new DbQuery(
@@ -187,7 +187,7 @@ class Page extends ClubPageBase
 				echo '<p>';
 			}
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td><a href="club_adverts.php?bck=1&id=' . $this->id . '"><b>' . get_label('Adverts') . '</b></a></td></tr>';
+			echo '<tr class="darker"><td><b>' . get_label('Adverts') . '</b></td></tr>';
 			
 			do
 			{
@@ -209,7 +209,7 @@ class Page extends ClubPageBase
 			echo '<p>';
 		}
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td colspan="2"><a href="club_adverts.php?bck=1&id=' . $this->id . '"><b>' . get_label('Information') . '</b></a></td></tr>';
+		echo '<tr class="darker"><td colspan="2"><b>' . get_label('Information') . '</b></td></tr>';
 		echo '<tr><td width="200">'.get_label('City').':</td><td>' . $this->city . ', ' . $this->country	 . '</td></tr>';
 		if ($this->url != '')
 		{
@@ -274,7 +274,7 @@ class Page extends ClubPageBase
 		if ($games_count > 0)
 		{
 			echo '<p><table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="2"><a href="club_games.php?bck=1&id=' . $this->id . '"><b>' . get_label('Stats') . '</b></a></td></tr>';
+			echo '<tr class="darker"><td colspan="2"><b>' . get_label('Stats') . '</b></td></tr>';
 			echo '<tr><td width="200">'.get_label('Games played').':</td><td>' . ($civils_win_count + $mafia_win_count) . '</td></tr>';
 			if ($civils_win_count + $mafia_win_count > 0)
 			{
@@ -355,7 +355,7 @@ class Page extends ClubPageBase
 			$query = new DbQuery('SELECT id, name, rating, games, games_won, flags FROM users WHERE club_id = ? ORDER BY rating DESC, games, games_won DESC, id LIMIT 10', $this->id);
 					
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="4"><a href="club_standings.php?bck=1&id=' . $this->id . '"><b>' . get_label('Best players') . '</b></a></td></tr>';
+			echo '<tr class="darker"><td colspan="4"><b>' . get_label('Best players') . '</b></td></tr>';
 			$number = 1;
 			while ($row = $query->next())
 			{

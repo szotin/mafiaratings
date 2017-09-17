@@ -227,33 +227,30 @@ class ClubPageBase extends PageBase
 	{
 		global $_profile;
 		
-		$history_menu = array(
-			new MenuItem('club_history.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
-			new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)),
-			new MenuItem('club_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name)),
-			new MenuItem('club_year.php?id=' . $this->id, get_label('Past years'), get_label('Per year stats for the past years', $this->name)));
-			
 		$menu = array(
 			new MenuItem('club_main.php?id=' . $this->id, get_label('Club'), get_label('[0] main page', $this->name)),
 			new MenuItem('club_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
-			new MenuItem('club_upcoming.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name)),
+			new MenuItem('club_year.php?id=' . $this->id, get_label('Stats'), get_label('Per year stats for the past years', $this->name)),
+			new MenuItem('club_history.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
 			new MenuItem('club_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name)),
-			new MenuItem('club_addresses.php?id=' . $this->id, get_label('Addresses'), get_label('[0] addresses', $this->name)),
-			new MenuItem('#history', get_label('History'), NULL, $history_menu));
+			new MenuItem('club_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name)),
+			new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)));
 			
 		if ($this->is_manager || $this->is_moder)
 		{
-			$other_menu = array(new MenuItem('club_players.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name)));
+			$managment_menu = array(new MenuItem('club_players.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name)));
 			if ($this->is_manager)
 			{
-				$other_menu[] = new MenuItem('club_seasons.php?id=' . $this->id, get_label('Seasons'), get_label('[0] seasons', $this->name));
-				$other_menu[] = new MenuItem('club_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name));
-				$other_menu[] = new MenuItem('club_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name));
-				$other_menu[] = new MenuItem('club_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name));
-				$other_menu[] = new MenuItem('club_emails.php?id=' . $this->id, get_label('Emails'), get_label('[0] email templates', $this->name));
-				$other_menu[] = new MenuItem('club_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name));
+				$managment_menu[] = new MenuItem('club_upcoming.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name));
+				$managment_menu[] = new MenuItem('club_addresses.php?id=' . $this->id, get_label('Addresses'), get_label('[0] addresses', $this->name));
+				$managment_menu[] = new MenuItem('club_seasons.php?id=' . $this->id, get_label('Seasons'), get_label('[0] seasons', $this->name));
+				$managment_menu[] = new MenuItem('club_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name));
+				$managment_menu[] = new MenuItem('club_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name));
+				$managment_menu[] = new MenuItem('club_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name));
+				$managment_menu[] = new MenuItem('club_emails.php?id=' . $this->id, get_label('Emails'), get_label('[0] email templates', $this->name));
+				$managment_menu[] = new MenuItem('club_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name));
 			}
-			$menu[] = new MenuItem('#other', get_label('Management'), NULL, $other_menu);
+			$menu[] = new MenuItem('#other', get_label('Management'), NULL, $managment_menu);
 		}
 		
 		echo '<table class="head" width="100%">';
