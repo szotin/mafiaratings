@@ -300,13 +300,9 @@ function show_seasons_select($club_id, $option, $form_name)
 	
 	if ($option == 0)
 	{
-		if ($current_season > 0)
+		if (count($seasons) > 0)
 		{
-			$option = $current_season;
-		}
-		else if (count($seasons) > 0)
-		{
-			$option = $seasons[0]['id'];
+			$option = $seasons[0][0];
 		}
 		else
 		{

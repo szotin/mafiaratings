@@ -61,7 +61,6 @@ class Page extends AddressPageBase
 			'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON p.user_id = u.id' .
-				' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
 				' JOIN events e ON g.event_id = e.id' .
 				' WHERE e.address_id = ?',
 			$this->scoring_id, $this->id, $role_condition);

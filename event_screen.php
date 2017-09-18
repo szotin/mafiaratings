@@ -115,7 +115,7 @@ try
 			'SELECT p.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 			' JOIN games g ON p.game_id = g.id' .
 			' JOIN users u ON p.user_id = u.id' .
-			' JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
+			' LEFT OUTER JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
 			' WHERE g.event_id = ? GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . $page_size,
 			$event->scoring_id, $event->id);
 		
@@ -145,7 +145,7 @@ try
 			$query = new DbQuery(
 				'SELECT r.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
 					' JOIN games g ON p.game_id = g.id' .
-					' JOIN registrations r ON r.event_id = ? AND r.user_id = p.user_id' .
+					' LEFT OUTER JOIN registrations r ON r.event_id = ? AND r.user_id = p.user_id' .
 					' JOIN users u ON r.user_id = u.id' .
 					' WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - 31536000 GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT 10',
 				$event->scoring_id, $event->id, $event->club_id);
@@ -184,7 +184,7 @@ try
 				}
 				list ($id, $name, $nick, $points, $games_played, $games_won, $flags) = $players[$number++];
 				
-				if ($nick != $name)
+				if (!empty($nick) && $nick != $name)
 				{
 					$name = $nick . ' (' . $name . ')';
 				}
