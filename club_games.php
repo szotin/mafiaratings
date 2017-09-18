@@ -29,11 +29,17 @@ class Page extends ClubPageBase
 			}
 		}
 		
+		$season = 0;
+		if (isset($_REQUEST['season']))
+		{
+			$season = (int)$_REQUEST['season'];
+		}
+		
 		echo '<form method="get" name="form" action="club_games.php">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		
-		echo '<select name="results" onChange="document.form.submit()">';
+		$season = show_seasons_select($this->id, $season, 'form');
+		echo ' <select name="results" onChange="document.form.submit()">';
 		show_option(-1, $result_filter, get_label('All games'));
 		show_option(1, $result_filter, get_label('Games won by town'));
 		show_option(2, $result_filter, get_label('Games won by mafia'));
@@ -53,6 +59,7 @@ class Page extends ClubPageBase
 		{
 			$condition->add(' AND g.result <> 0');
 		}
+		$condition->add(get_season_condition($season, 'g.start_time', 'g.end_time'));
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);

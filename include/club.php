@@ -230,8 +230,8 @@ class ClubPageBase extends PageBase
 		$menu = array(
 			new MenuItem('club_main.php?id=' . $this->id, get_label('Club'), get_label('[0] main page', $this->name)),
 			new MenuItem('club_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
-			new MenuItem('club_year.php?id=' . $this->id, get_label('Stats'), get_label('Per year stats for the past years', $this->name)),
-			new MenuItem('club_history.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
+			new MenuItem('club_stats.php?id=' . $this->id, get_label('Stats'), get_label('Per year stats for the past years', $this->name)),
+			new MenuItem('club_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
 			new MenuItem('club_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name)),
 			new MenuItem('club_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name)),
 			new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)));
@@ -286,6 +286,84 @@ class ClubPageBase extends PageBase
 		show_back_button();
 		echo '</td></tr></table>';
 	}
+}
+
+function show_seasons_select($club_id, $option, $form_name)
+{
+	$seasons = array();
+	$now = time();
+	$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
+	while ($row = $query->next())
+	{
+		$seasons[] = $row;
+	}
+	
+	if ($option == 0)
+	{
+		if ($current_season > 0)
+		{
+			$option = $current_season;
+		}
+		else if (count($seasons) > 0)
+		{
+			$option = $seasons[0]['id'];
+		}
+		else
+		{
+			$option = -1;
+		}
+	}
+	echo '<select name="season" onChange="document.' . $form_name. '.submit()">';
+	show_option(-1, $option, get_label('All time'));
+	show_option(-2, $option, get_label('Last year'));
+	if (count($seasons) > 0)
+	{
+		foreach ($seasons as $season)
+		{
+			list($id, $name, $start, $end) = $season;
+			show_option($id, $option, $name);
+		}
+	}
+	else
+	{
+		$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE g.club_id = ? and result <> 0 ORDER BY g.start_time LIMIT 1', $club_id);
+		if ($row = $query->next())
+		{
+			list($first_game_time, $first_game_timezone) = $row;
+			date_default_timezone_set($first_game_timezone);
+			$first_year = (int)date('Y', $first_game_time);
+			$next_year = (int)date('Y', $now) + 1;
+			for ($y = $first_year; $y < $next_year; ++$y)
+			{
+				show_option(-$y, $option, $y);
+			}
+		}
+	}
+	echo '</select> ';
+	return $option;
+}
+
+function get_season_condition($season, $start_field, $end_field)
+{
+	$condition = new SQL('');
+	if ($season > 0)
+	{
+		$condition->add(' AND EXISTS(SELECT _s.id FROM seasons _s WHERE _s.start_time <= ' . $end_field . ' AND _s.end_time > ' . $start_field . ' AND _s.id = ?)', $season);
+	}
+	else if ($season < -1)
+	{
+		if ($season == -2)
+		{
+			$condition->add(' AND ' . $end_field . ' >= UNIX_TIMESTAMP() - 31536000');
+		}
+		else
+		{
+			$start = mktime(0, 0, 0, 1, 1, -$season);
+			$end = mktime(0, 0, 0, 1, 1, 1 - $season);
+			$condition->add(' AND ' . $end_field . ' >= ? AND ' . $start_field . ' < ?', $start, $end);
+		}
+	}
+	return $condition;
 }
 
 // define('CLUB_FROM_PROFILE', 0);

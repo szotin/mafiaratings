@@ -18,16 +18,28 @@ class Page extends ClubPageBase
 	{
 		global $_page;
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT moderator_id) FROM games WHERE club_id = ?', $this->id);
+		$season = 0;
+		if (isset($_REQUEST['season']))
+		{
+			$season = (int)$_REQUEST['season'];
+		}
+		
+		echo '<form method="get" name="clubForm">';
+		echo '<input type="hidden" name="id" value="' . $this->id . '">';
+		echo '<table class="transp" width="100%"><tr><td>';
+		$season = show_seasons_select($this->id, $season, 'clubForm');
+		echo '</td></tr></table></form>';
+		
+		$condition = get_season_condition($season, 'g.start_time', 'g.end_time');
+		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ?', $this->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)) FROM users u' .
 				' JOIN games g ON g.moderator_id = u.id' .
-				' WHERE g.club_id = ?' .
-				' GROUP BY u.id ORDER BY count(g.id) DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
-			$this->id);
-		
+				' WHERE g.club_id = ?',
+			$this->id, $condition);
+		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="20">&nbsp;</td>';
 		echo '<td colspan="2">'.get_label('User name') . '</td>';

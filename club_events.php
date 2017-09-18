@@ -21,11 +21,18 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_page;
 		
+		$season = 0;
+		if (isset($_REQUEST['season']))
+		{
+			$season = (int)$_REQUEST['season'];
+		}
 		$show_empty = isset($_REQUEST['emp']);
 		
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		echo '<table class="transp" width="100%"><tr><td align="right">';
+		echo '<table class="transp" width="100%"><tr><td>';
+		$season = show_seasons_select($this->id, $season, 'clubForm');
+		echo '</td><td align="right">';
 		echo '<input type="checkbox" name="emp"';
 		if ($show_empty)
 		{
@@ -44,6 +51,7 @@ class Page extends ClubPageBase
 		{
 			$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
 		}
+		$condition->add(get_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
 		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);

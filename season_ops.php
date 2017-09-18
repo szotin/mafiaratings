@@ -92,7 +92,7 @@ try
 			$end = mktime(0, 0, 0, $end_month, $end_day, $end_year);
 			
 			Db::begin();
-			Db::exec(get_label('season'), 'UPDATE seasons SET name = ?, start_time = ?, end_time = ? WHERE id = ?', $name, $start, $end, $id);
+			Db::exec_with_echo(get_label('season'), 'UPDATE seasons SET name = ?, start_time = ?, end_time = ? WHERE id = ?', $name, $start, $end, $id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = 'name=' . $name . '; start=' . $start . '; end=' . $end;

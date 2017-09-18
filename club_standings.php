@@ -13,8 +13,7 @@ class Page extends ClubPageBase
 {
 	private $my_id;
 	private $roles;
-	private $days_limit; 
-	private $seconds_limit; 
+	private $season; 
 	
 	protected function prepare()
 	{
@@ -33,12 +32,11 @@ class Page extends ClubPageBase
 			$this->roles = $_REQUEST['roles'];
 		}
 		
-		$this->days_limit = 365;
-		if (isset($_REQUEST['days']))
+		$this->season = 0;
+		if (isset($_REQUEST['season']))
 		{
-			$this->days_limit = ((int)$_REQUEST['days']);
+			$this->season = (int)$_REQUEST['season'];
 		}
-		$this->seconds_limit = $this->days_limit * 24 * 60 * 60;
 		
 		if (isset($_REQUEST['scoring']))
 		{
@@ -55,37 +53,23 @@ class Page extends ClubPageBase
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%">';
-		echo '<tr><td>' . get_label('Scoring system') . ': ';
-		show_scoring_select($this->id, $this->scoring_id, 'viewForm');
-		echo '</td><td align="right">';
-		echo '<select name="days" onChange="document.viewForm.submit()">';
-		show_option(0, $this->days_limit, get_label('All time'));
-		show_option(365, $this->days_limit, get_label('Last year'));
-		echo '</select> ';
+		echo '<tr><td>';
+		$this->season = show_seasons_select($this->id, $this->season, 'viewForm');
+		echo ' ';
 		show_roles_select($this->roles, 'viewForm');
+		echo '</td><td align="right">' . get_label('Scoring system') . ': ';
+		show_scoring_select($this->id, $this->scoring_id, 'viewForm');		
 		echo '</td></tr></table></form>';
 		
-		$role_condition = get_roles_condition($this->roles);
-		if ($this->seconds_limit > 0)
-		{
-			list ($count) = Db::record(get_label('points'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - ?', $this->id, $this->seconds_limit, $role_condition);
-			$query = new DbQuery(
-				'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
-					' JOIN games g ON p.game_id = g.id' .
-					' JOIN users u ON p.user_id = u.id' .
-					' WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - ?',
-				$this->scoring_id, $this->id, $this->seconds_limit, $role_condition);
-		}
-		else
-		{
-			list ($count) = Db::record(get_label('points'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.club_id = ?', $this->id, $role_condition);
-			$query = new DbQuery(
-				'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
-					' JOIN games g ON p.game_id = g.id' .
-					' JOIN users u ON p.user_id = u.id' .
-					' WHERE g.club_id = ?',
-				$this->scoring_id, $this->id, $role_condition);
-		}
+		$condition = get_roles_condition($this->roles);
+		$condition->add(get_season_condition($this->season, 'g.start_time', 'g.end_time'));
+		list ($count) = Db::record(get_label('points'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.club_id = ?', $this->id, $condition);
+		$query = new DbQuery(
+			'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+				' JOIN games g ON p.game_id = g.id' .
+				' JOIN users u ON p.user_id = u.id' .
+				' WHERE g.club_id = ?',
+			$this->scoring_id, $this->id, $condition);
 		$query->add(' GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
 		show_pages_navigation(PAGE_SIZE, $count);
