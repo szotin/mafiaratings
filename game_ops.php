@@ -898,21 +898,13 @@ try
 		{
 			$query = new DbQuery(
 				'SELECT id, name, NULL, flags FROM users ' .
-					' WHERE name LIKE ? OR name LIKE ? OR name LIKE ? OR name LIKE ?' .
+					' WHERE name LIKE ? AND (flags & ' . U_FLAG_BANNED . ') = 0' .
 					' UNION' .
 					' SELECT DISTINCT u.id, u.name, r.nick_name, u.flags FROM users u' . 
 					' JOIN registrations r ON r.user_id = u.id' .
-					' WHERE r.nick_name <> u.name AND (r.nick_name LIKE ? OR r.nick_name LIKE ? OR r.nick_name LIKE ? OR r.nick_name LIKE ?)',
-				$name . '%',
-				'% ' . $name . '%',
-				'%\_' . $name . '%',
-				'%-' . $name . '%', 
-				$club_id, 
-				$name . '%', 
-				'% ' . $name . '%', 
-				'%\_' . $name . '%',
-				'%-' . $name . '%',
-				$club_id);
+					' WHERE r.nick_name <> u.name AND (u.flags & ' . U_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ?',
+				'%' . $name . '%',
+				'%' . $name . '%');
 		}
 		
 		if ($num > 0)
