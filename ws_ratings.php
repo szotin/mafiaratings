@@ -81,6 +81,10 @@ try
 					}
 ?>
 				</dd>
+			<dt>contains</dt>
+				<dd>Search pattern. For example: <a href="ws_ratings.php?contains=al">ws_ratings.php?contains=al</a> returns players containing "al" in their name.</dd>
+			<dt>starts</dt>
+				<dd>Search pattern. For example: <a href="ws_ratings.php?starts=bo">ws_ratings.php?starts=bo</a> returns players with names starting with "bo". Note that "Bad Boy" is also returned.</dd>
 			<dt>club</dt>
 				<dd>Club id. For example: <a href="ws_ratings.php?club=1">ws_ratings.php?club=1</a> returns ratings for all players of Vancouver Mafia Club. If missing, all players for all clubs are returned.</dd>
 			<dt>club_members</dt>
@@ -191,6 +195,17 @@ try
 	else
 	{
 		initiate_session();
+		
+		if (isset($_REQUEST['contains']))
+		{
+			$contains = $_REQUEST['contains'];
+		}
+		
+		$starts = '';
+		if (isset($_REQUEST['starts']))
+		{
+			$starts = $_REQUEST['starts'];
+		}
 		
 		$club = 0;
 		if (isset($_REQUEST['club']))
@@ -389,6 +404,16 @@ try
 		$count_only = isset($_REQUEST['count']);
 		
 		$condition = new SQL(' WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 AND u.games > 0');
+		
+		if (isset($contains))
+		{
+			$condition->add(' AND u.name LIKE(?)', '%' . $contains . '%');
+		}
+		
+		if (isset($starts))
+		{
+			$condition->add(' AND (u.name LIKE(?) OR u.name LIKE(?))', $starts . '%', '% ' . $starts . '%');
+		}
 		
 		if ($club > 0)
 		{

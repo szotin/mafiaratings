@@ -78,6 +78,10 @@ try
 					}
 ?>
 				</dd>
+			<dt>contains</dt>
+				<dd>Search pattern. For example: <a href="ws_scores.php?contains=al">ws_scores.php?contains=al</a> returns players containing "al" in their name.</dd>
+			<dt>starts</dt>
+				<dd>Search pattern. For example: <a href="ws_scores.php?starts=bo">ws_scores.php?starts=bo</a> returns players with names starting with "bo". Note that "Bad Boy" is also returned.</dd>
 			<dt>scoring</dt>
 				<dd>Scoring system id. For example: <a href="ws_scores.php?club=1&scoring=13">ws_scores.php?club=1&scoring=13</a> returns scores for all players of Vancouver Mafia Club using 3-4-4-5 scoring system. If missing, the club scoring system (if club is specified) or event scoring system (if event is specified) or default scoring system is used.</dd>
 			<dt>club</dt>
@@ -168,6 +172,17 @@ try
 		if (isset($_REQUEST['scoring']))
 		{
 			$scoring = (int)$_REQUEST['scoring'];
+		}
+		
+		if (isset($_REQUEST['contains']))
+		{
+			$contains = $_REQUEST['contains'];
+		}
+		
+		$starts = '';
+		if (isset($_REQUEST['starts']))
+		{
+			$starts = $_REQUEST['starts'];
 		}
 		
 		$club = 0;
@@ -311,6 +326,16 @@ try
 		$condition = new SQL(' WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 AND u.games > 0');
 		$result->role = $role;
 		$condition->add(get_roles_condition($role));
+		
+		if (isset($contains))
+		{
+			$condition->add(' AND u.name LIKE(?)', '%' . $contains . '%');
+		}
+		
+		if (isset($starts))
+		{
+			$condition->add(' AND (u.name LIKE(?) OR u.name LIKE(?))', $starts . '%', '% ' . $starts . '%');
+		}
 		
 		if ($number > 0)
 		{

@@ -79,6 +79,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(PRODUCT_NAME + ' web services'), PERM_ALL);
+$page->run(PRODUCT_NAME . ' web services', PERM_ALL);
 
 ?>
