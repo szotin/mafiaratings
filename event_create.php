@@ -232,7 +232,7 @@ try
 	
 	function copyEvent()
 	{
-		json.get("ws_event.php?lang=<?php echo $_lang_code; ?>&id=" + $("#form-copy").val(), function(json)
+		json.get("event_ops.php?get&id=" + $("#form-copy").val(), function(json)
 		{
 			$("#form-name").val(json.name);
 			$("#form-hour").val(json.hour);

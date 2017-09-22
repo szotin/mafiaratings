@@ -43,12 +43,6 @@ class Page extends PageBase
 			foreach ($this->data as $row)
 			{
 				list($incomer_id, $incomer_name, $incomer_flags, $nick, $user_id, $user_name) = $row;
-				if ($user_id == NULL)
-				{
-					$user_name = get_label('[unknown]');
-					$user_id = 0;
-				}
-				
 				echo '<tr><td>';
 				if ($incomer_name == $nick)
 				{
@@ -90,7 +84,7 @@ class Page extends PageBase
 			var i = c.attr("id").substring(1);
 			c.autocomplete(
 			{ 
-				source: function(request, response) { $.getJSON("ws_players.php", { term: c.val(), nu: "<?php echo get_label('[unknown]'); ?>" }, response); },
+				source: function(request, response) { $.getJSON("user_ops.php", { list: 0, term: c.val()" }, response); },
 				select: function(event, ui)
 				{
 					if (ui.item.id != users[i])

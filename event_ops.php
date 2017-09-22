@@ -17,24 +17,24 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('user')));
 	}
 	
-	if (!isset($_POST['id']))
+	if (!isset($_REQUEST['id']))
 	{
-		throw new Exc(get_label('Unknown [0]', get_label('club')));
+		throw new Exc(get_label('Unknown [0]', get_label('event')));
 	}
-	$id = $_POST['id'];
+	$id = $_REQUEST['id'];
 	
-	if (isset($_POST['attend']))
+	if (isset($_REQUEST['attend']))
 	{
-		$odds = $_POST['odds'];
+		$odds = $_REQUEST['odds'];
 		$late = 0;
-		if (isset($_POST['late']))
+		if (isset($_REQUEST['late']))
 		{
-			$late = $_POST['late'];
+			$late = $_REQUEST['late'];
 		}
 		$friends = 0;
-		if (isset($_POST['friends']))
+		if (isset($_REQUEST['friends']))
 		{
-			$friends = $_POST['friends'];
+			$friends = $_REQUEST['friends'];
 		}
 		
 		Db::begin();
@@ -48,9 +48,9 @@ try
 		if ($odds >= 100)
 		{
 			$nick = '';
-			if (isset($_POST['nick']))
+			if (isset($_REQUEST['nick']))
 			{
-				$nick = $_POST['nick'];
+				$nick = $_REQUEST['nick'];
 			}
 			if ($nick == '')
 			{
@@ -74,14 +74,70 @@ try
 			throw new Exc(get_label('Unknown [0]', get_label('event')));
 		}
 		
-		if (isset($_POST['extend']))
+		if (isset($_REQUEST['get']))
+		{
+			$date_format = '';
+			if (isset($_REQUEST['df']))
+			{
+				$date_format = $_REQUEST['df'];
+			}
+
+			$time_format = '';
+			if (isset($_REQUEST['tf']))
+			{
+				$time_format = $_REQUEST['tf'];
+			}
+
+			$e = new stdClass();
+			$e->id = $event->id;
+			$e->name = $event->name;
+			$e->price = $event->price;
+			$e->club_id = $event->club_id;
+			$e->club_name = $event->club_name;
+			$e->club_url = $event->club_url;
+			$e->start = $event->timestamp;
+			$e->duration = $event->duration;
+			$e->addr_id = $event->addr_id;
+			$e->addr = $event->addr;
+			$e->addr_url = $event->addr_url;
+			$e->timezone = $event->timezone;
+			$e->city = $event->city;
+			$e->country = $event->country;
+			$e->notes = $event->notes;
+			$e->langs = $event->langs;
+			$e->flags = $event->flags;
+			$e->rules_id = $event->rules_id;
+			$e->scoring_id = $event->scoring_id;
+			
+			$base = get_server_url() . '/';
+			$e->addr_image = '';
+			if (($event->addr_flags & ADDR_ICON_MASK) != 0)
+			{
+				$e->addr_image = $base . ADDRESS_PICS_DIR . TNAILS_DIR . $e->addr_id . '.jpg';
+			}
+			
+			$e->page = $base . 'event_info.php?id=' . $e->id;
+			$e->attend_page = $base . 'attend.php?id=' . $e->id;
+			$e->decline_page = $base . 'pass.php?id=' . $e->id;
+			$e->club_page = $base . 'club_main.php?id=' . $e->club_id;
+			
+			$e->date_str = format_date($date_format, $e->start, $e->timezone);
+			$e->time_str = format_date($time_format, $e->start, $e->timezone);
+			
+			date_default_timezone_set($e->timezone);
+			$e->hour = date('G', $e->start);
+			$e->minute = round(date('i', $e->start) / 10) * 10;
+			
+			$result = $e;
+		}
+		else if (isset($_REQUEST['extend']))
 		{
 			if ($event->timestamp + $event->duration + EVENT_ALIVE_TIME < time())
 			{
 				throw new Exc(get_label('The event is too old. It can not be extended.'));
 			}
 			
-			$duration = $_POST['duration'];
+			$duration = $_REQUEST['duration'];
 			Db::begin();
 			Db::exec(get_label('event'), 'UPDATE events SET duration = ? WHERE id = ?', $duration, $event->id);
 			if (Db::affected_rows() > 0)
@@ -91,7 +147,7 @@ try
 			}
 			Db::commit();
 		}
-		else if (isset($_POST['cancel']))
+		else if (isset($_REQUEST['cancel']))
 		{
 			Db::begin();
 			list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM events WHERE id = ?', $id);
@@ -137,7 +193,7 @@ try
 				}
 			}
 		}
-		else if (isset($_POST['restore']))
+		else if (isset($_REQUEST['restore']))
 		{
 			Db::begin();
 			Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_CANCELED . ') WHERE id = ?', $id);

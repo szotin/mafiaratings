@@ -121,7 +121,7 @@ class CCCFilter
 		{ 
 			source: function( request, response )
 			{
-				$.getJSON("ws_ccc.php",
+				$.getJSON("ccc_ops.php",
 				{
 					flags: "<?php echo $this->flags; ?>",
 					term: $("#<?php echo $this->name; ?>").val()

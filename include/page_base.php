@@ -449,9 +449,13 @@ class PageBase
 	{
 	}
 	
-	private function error($exc)
+	protected function error($exc)
 	{
-		$message = str_replace('"', '\\"', $exc->getMessage());
+		$this->errorMessage(str_replace('"', '\\"', $exc->getMessage()));
+	}
+	
+	protected function errorMessage($message)
+	{
 		if ($this->_state != PAGE_STATE_EMPTY)
 		{
 			echo '<script> $(function() { dlg.error("' . $message . '"); }); </script>';

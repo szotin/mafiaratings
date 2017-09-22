@@ -91,12 +91,18 @@ class GeneralPageBase extends PageBase
 		{
 			$this->ccc_filter->show('onCCC');
 		}
-		echo '</td><td align="right">';
+		echo ' ';
 		$this->show_filter_fields();
+		echo '</td><td align="right">';
+		$this->show_search_fields();
 		echo '</table>';
 	}
 	
 	protected function show_filter_fields()
+	{
+	}
+	
+	protected function show_search_fields()
 	{
 	}
 	

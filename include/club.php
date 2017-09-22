@@ -382,8 +382,9 @@ function get_season_condition($season, $start_field, $end_field)
 		// { 
 			// source: function(request, response)
 			// {
-				// $.getJSON("ws_club.php",
+				// $.getJSON("club_ops.php",
 				// {
+					// list: "",
 					// term: $("#<***php echo $name; ***>").val(),
 					// cid: <***php echo $city_id; ***>
 				// }, response);
@@ -401,8 +402,9 @@ function get_season_condition($season, $start_field, $end_field)
 		// { 
 			// source: function(request, response)
 			// {
-				// $.getJSON("ws_club.php",
+				// $.getJSON("club_ops.php",
 				// {
+					// list: ""
 					// term: $("#<***php echo $name; ***>").val(),
 					// cname: $("#<***php echo $city_id; ***>").val()
 				// }, response);

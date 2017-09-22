@@ -12,25 +12,26 @@ define('ROLES_COUNT', 7);
 	
 class Page extends GeneralPageBase
 {
-	private $my_id;
+	private $user_id;
 	private $role;
 
 	protected function prepare()
 	{
-		global $_profile;
+		global $_page, $_profile;
 		
 		parent::prepare();
 		
-		$this->my_id = -1;
-		if ($_profile != NULL)
-		{
-			$this->my_id = $_profile->user_id;
-		}
-
 		$this->role = POINTS_ALL;
 		if (isset($_REQUEST['role']))
 		{
 			$this->role = $_REQUEST['role'];
+		}
+		
+		$this->user_id = 0;
+		if ($_page < 0)
+		{
+			$this->user_id = -$_page;
+			$_page = 0;
 		}
 	}
 	
@@ -73,26 +74,77 @@ class Page extends GeneralPageBase
 	protected function show_body()
 	{
 		global $_page, $_profile;
-
+		
 		$condition = $this->common_condition();
 		if ($this->role == POINTS_ALL)
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.rating as rating, u.games as games, u.games_won as won, u.flags, c.id, c.flags FROM users u' . 
+				'SELECT u.id, u.name, u.rating as rating, u.games as games, u.games_won as won, u.flags, c.id, c.name, c.flags FROM users u' . 
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id', $condition);
 			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
+			if ($this->user_id > 0)
+			{
+				$pos_query = new DbQuery('SELECT id, name, rating, games, games_won FROM users WHERE id = ?', $this->user_id);
+				if ($row = $pos_query->next())
+				{
+					list ($uid, $uname, $urating, $ugames, $uwon) = $row;
+					if ($ugames > 0)
+					{
+						$pos_query = new DbQuery('SELECT count(*) FROM users u', $condition);
+						$pos_query->add(' AND (u.rating > ? OR (u.rating = ? AND (u.games_won > ? OR (u.games_won = ? AND (u.games > ? OR (u.games = ? AND u.id < ?))))))', $urating, $urating, $uwon, $uwon, $ugames, $ugames, $uid);
+						list($user_pos) = $pos_query->next();
+						$_page = floor($user_pos / PAGE_SIZE);
+					}
+					else
+					{
+						$this->errorMessage(get_label('User [0] played no games.', $uname));
+						$_page = 0;
+					}
+				}
+				else
+				{
+					$this->errorMessage(get_label('Player not found.'));
+					$_page = 0;
+				}
+			}
 		}
 		else
 		{
 			$condition->add(get_roles_condition($this->role));
 			$query = new DbQuery(
-				'SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.flags, c.id, c.flags FROM users u' . 
+				'SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags FROM users u' . 
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' JOIN players p ON p.user_id = u.id', $condition);
-			$query->add(' GROUP BY u.id ');
+			$query->add(' GROUP BY u.id');
 			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id', $condition);
+			if ($this->user_id > 0)
+			{
+				$pos_query = new DbQuery('SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won FROM players p JOIN users u ON p.user_id = u.id', $condition);
+				$pos_query->add(' AND u.id = ? GROUP BY u.id', $this->user_id);
+				if ($row = $pos_query->next())
+				{
+					list ($uid, $uname, $urating, $ugames, $uwon) = $row;
+					if ($ugames > 0)
+					{
+						$pos_query = new DbQuery('SELECT count(*) FROM (SELECT u.id FROM players p JOIN users u ON p.user_id = u.id ', $condition);
+						$pos_query->add(' GROUP BY u.id HAVING (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) > ? OR (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) = ? AND (SUM(p.won) > ? OR (SUM(p.won) = ? AND (count(p.game_id) > ? OR (count(p.game_id) = ? AND u.id < ?))))))) as upper', $urating, $urating, $uwon, $uwon, $ugames, $ugames, $uid);
+						list($user_pos) = $pos_query->next();
+						$_page = floor($user_pos / PAGE_SIZE);
+					}
+					else
+					{
+						$this->errorMessage(get_label('User [0] played no games.', $uname));
+						$_page = 0;
+					}
+				}
+				else
+				{
+					$this->errorMessage(get_label('Player not found.'));
+					$_page = 0;
+				}
+			}
 		}
-		$query->add(' ORDER BY rating DESC, won DESC, games DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query->add(' ORDER BY rating DESC, won DESC, games DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
 		list ($count) = Db::record(get_label('rating'), $count_query);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -111,11 +163,11 @@ class Page extends GeneralPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $rating, $games_played, $games_won, $flags, $club_id, $club_flags) = $row;
+			list ($id, $name, $rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $row;
 
-			if ($id == $this->my_id)
+			if ($id == $this->user_id)
 			{
-				echo '<tr class="light">';
+				echo '<tr class="dark">';
 			}
 			else
 			{
@@ -128,7 +180,7 @@ class Page extends GeneralPageBase
 			echo '</a></td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
-			show_club_pic($club_id, $club_flags, ICONS_DIR, 40, 40);
+			show_club_pic($club_id, $club_flags, ICONS_DIR, 40, 40, 'title="' . $club_name . '"');
 			echo '</td>';
 			echo '<td align="center" class="dark">' . format_rating($rating) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
@@ -164,9 +216,20 @@ class Page extends GeneralPageBase
 		echo '</td></tr></table>';
 	}
 	
+	protected function show_search_fields()
+	{
+		echo get_label('Find') . ': ';
+		show_user_input('page', '', 'mr.gotoFind');
+	}
+	
 	protected function get_filter_js()
 	{
-		return '+ "&role=" + $("#role option:selected").val()';
+		$result = '+ "&role=" + $("#role option:selected").val()';
+		if ($this->user_id > 0)
+		{
+			$result .= ' + "&page=-' . $this->user_id . '"';
+		}
+		return $result;
 	}
 }
 

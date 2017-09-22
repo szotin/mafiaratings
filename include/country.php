@@ -105,7 +105,7 @@ function show_country_input($name, $value, $city_input = NULL, $on_select = NULL
 		{ 
 			source: function( request, response )
 			{
-				$.getJSON("ws_country.php",
+				$.getJSON("country_ops.php",
 				{
 					term: $("#<?php echo $name; ?>").val()
 				}, response);
@@ -125,7 +125,7 @@ function show_country_input($name, $value, $city_input = NULL, $on_select = NULL
 		{ 
 			source: function( request, response )
 			{
-				$.getJSON("ws_country.php",
+				$.getJSON("country_ops.php",
 				{
 					term: $("#<?php echo $name; ?>").val()
 				}, response);

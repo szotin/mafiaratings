@@ -110,7 +110,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 		{ 
 			source: function(request, response)
 			{
-				$.getJSON("ws_city.php",
+				$.getJSON("city_ops.php",
 				{
 					term: $("#<?php echo $name; ?>").val(),
 					cid: <?php echo $country_id; ?>
@@ -129,7 +129,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 		{ 
 			source: function(request, response)
 			{
-				$.getJSON("ws_city.php",
+				$.getJSON("city_ops.php",
 				{
 					term: $("#<?php echo $name; ?>").val(),
 					cname: $("#<?php echo $country_id; ?>").val()

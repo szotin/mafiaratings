@@ -523,7 +523,7 @@ var mr = new function()
 	}
 	
 	//--------------------------------------------------------------------------------------
-	// rules
+	// game
 	//--------------------------------------------------------------------------------------
 	this.deleteGame = function(game_id, confirmMessage, onSuccess)
 	{
@@ -549,6 +549,36 @@ var mr = new function()
 		{
 			gotoGame(data);
 		});
+	}
+	
+	//--------------------------------------------------------------------------------------
+	// find
+	//--------------------------------------------------------------------------------------
+	this.gotoFind = function(data)
+	{
+		var url = window.location.href;
+		var i = url.indexOf('?');
+		if (i >= 0)
+		{
+			i = url.indexOf('page=');
+			if (i >= 0)
+			{
+				i += 5;
+				var end = url.indexOf('&', i);
+				url = url.substring(0, i) + "-" + data.id;
+				if (end >= 0)
+					url += url.substring(end);
+			}
+			else
+			{
+				url += "&page=-" + data.id;
+			}
+		}
+		else
+		{
+			url += "?page=-" + data.id;
+		}
+		window.location.replace(url);
 	}
 }
 

@@ -238,4 +238,29 @@ class UserPageBase extends PageBase
 	}
 }
 
+function show_user_input($name, $value, $on_select = NULL)
+{
+	global $_profile, $_lang_code;
+
+	echo '<input type="text" id="' . $name . '" value="' . $value . '"/>';
+?>
+		<script>
+		$("#<?php echo $name; ?>").autocomplete(
+		{ 
+			source: function( request, response )
+			{
+				$.getJSON("user_ops.php",
+				{
+					list: '',
+					term: $("#<?php echo $name; ?>").val()
+				}, response);
+			}
+			<?php if ($on_select != NULL) echo ', select: function(event, ui) { ' . $on_select . '(ui.item); }'; ?>
+			, minLength: 0
+		})
+		.on("focus", function () { $(this).autocomplete("search", ''); });
+		</script>
+<?php
+}
+
 ?>
