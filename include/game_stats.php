@@ -537,8 +537,8 @@ class GamePlayerStats
 			return;
 		}
 
-		$WINNING_K = 21;
-		$LOOSING_K = 14;
+		$WINNING_K = 20;
+		$LOOSING_K = 15;
 		switch ($player->role)
 		{
 			case PLAYER_ROLE_CIVILIAN:
