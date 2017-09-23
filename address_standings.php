@@ -52,7 +52,7 @@ class Page extends AddressPageBase
 		echo '<tr><td>' . get_label('Scoring system') . ': ';
 		show_scoring_select($this->club_id, $this->scoring_id, 'viewForm');
 		echo '</td><td align="right">';
-		show_roles_select($this->roles, 'viewForm');
+		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
 		echo '</td></tr></table></form>';
 
 		$role_condition = get_roles_condition($this->roles);

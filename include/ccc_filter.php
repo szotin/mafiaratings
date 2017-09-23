@@ -93,11 +93,11 @@ class CCCFilter
 		}
 	}
 	
-	function show($on_select)
+	function show($on_select, $title)
 	{
 		global $_lang_code;
 	
-		echo '<input type="text" class="dropdown" id="' . $this->name . '" value="' . $this->value . '"/>';
+		echo '<input type="text" class="dropdown" id="' . $this->name . '" value="' . $this->value . '" title="' . $title . '"/>';
 		echo '<input type="image" class="dropdown-btn" src="images/dropdown.png" onclick="cccDrop()"/>';
 //		echo '<button class="dropdown-btn" onclick="cccDrop()"><img src="images/down.png" width="16" height="16"></button>';
 ?>

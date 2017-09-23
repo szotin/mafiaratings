@@ -238,11 +238,11 @@ class UserPageBase extends PageBase
 	}
 }
 
-function show_user_input($name, $value, $on_select = NULL)
+function show_user_input($name, $value, $title)
 {
 	global $_profile, $_lang_code;
 
-	echo '<input type="text" id="' . $name . '" value="' . $value . '"/>';
+	echo '<input type="text" id="' . $name . '" value="' . $value . '" title="' . $title . '"/>';
 ?>
 		<script>
 		$("#<?php echo $name; ?>").autocomplete(
@@ -255,7 +255,7 @@ function show_user_input($name, $value, $on_select = NULL)
 					term: $("#<?php echo $name; ?>").val()
 				}, response);
 			}
-			<?php if ($on_select != NULL) echo ', select: function(event, ui) { ' . $on_select . '(ui.item); }'; ?>
+			, select: function(event, ui) { mr.gotoFind(ui.item); }
 			, minLength: 0
 		})
 		.on("focus", function () { $(this).autocomplete("search", ''); });

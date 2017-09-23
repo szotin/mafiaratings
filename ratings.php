@@ -26,6 +26,8 @@ class Page extends GeneralPageBase
 		
 		parent::prepare();
 		
+		$this->ccc_title = get_label('Filter players by club, city, or country.');
+		
 		$this->role = POINTS_ALL;
 		if (isset($_REQUEST['role']))
 		{
@@ -37,20 +39,20 @@ class Page extends GeneralPageBase
 		{
 			if ($this->ccc_value != NULL)
 			{
-				$this->_title = get_label('Ratings for [0].', get_role_name($this->role, ROLE_NAME_FLAG_LOWERCASE));
+				$this->_title = $this->ccc_value . '. ' . get_role_name($this->role) . '.';
 			}
 			else
 			{
-				$this->_title = get_label('[0] players ratings for [1].', $this->ccc_value, get_role_name($this->role, ROLE_NAME_FLAG_LOWERCASE));
+				$this->_title = get_role_name($this->role) . '.';
 			}
 		}
 		else if ($this->ccc_value != NULL)
 		{
-			$this->_title = get_label('[0] players ratings.', $this->ccc_value, get_role_name($this->role, ROLE_NAME_FLAG_LOWERCASE));
+			$this->_title = $this->ccc_value . '.';
 		}
 		else
 		{
-			$this->_title = get_label('Ratings.');
+			$this->_title = get_label('All ratings.');
 		}
 		
 		$this->user_id = 0;
@@ -267,30 +269,18 @@ class Page extends GeneralPageBase
 	
 	protected function show_filter_fields()
 	{
-		global $_lang_code;
-
-		echo '<table class="transp" width="100%">';
-		echo '<select id="role" onChange = "filter()">';
-		show_option(0, $this->role, get_label('All roles'));
-		show_option(1, $this->role, get_label('Reds'));
-		show_option(2, $this->role, get_label('Blacks'));
-		show_option(3, $this->role, get_label('Civilians'));
-		show_option(4, $this->role, get_label('Sheriffs'));
-		show_option(5, $this->role, get_label('Mafiosi'));
-		show_option(6, $this->role, get_label('Dons'));
-		echo '</select>';
-		echo '</td></tr></table>';
+		show_roles_select($this->role, 'filter()', get_label('Use only the rating earned in a specific role.'));
 	}
 	
 	protected function show_search_fields()
 	{
 		echo get_label('Find') . ': ';
-		show_user_input('page', '', 'mr.gotoFind');
+		show_user_input('page', '', get_label('Go to the page where a specific player is located.'));
 	}
 	
 	protected function get_filter_js()
 	{
-		$result = '+ "&role=" + $("#role option:selected").val()';
+		$result = '+ "&role=" + $("#roles option:selected").val()';
 		if ($this->user_id > 0)
 		{
 			$result .= ' + "&page=-' . $this->user_id . '"';

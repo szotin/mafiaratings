@@ -159,9 +159,9 @@ function get_role_name($role, $flags = 0)
 	return '';
 }
 
-function show_roles_select($roles, $form_name, $flags = 0)
+function show_roles_select($roles, $on_change, $title, $flags = 0)
 {
-	echo '<select name="roles" onChange="document.' . $form_name . '.submit()">';
+	echo '<select name="roles" id="roles" onChange="' . $on_change . '" title="' . $title . '">';
 	show_option(POINTS_ALL, $roles, get_role_name(POINTS_ALL, $flags));
 	show_option(POINTS_RED, $roles, get_role_name(POINTS_RED, $flags));
 	show_option(POINTS_DARK, $roles, get_role_name(POINTS_DARK, $flags));

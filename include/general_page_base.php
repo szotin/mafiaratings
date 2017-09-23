@@ -13,6 +13,7 @@ class GeneralPageBase extends PageBase
 {
 	protected $ccc_filter;
 	protected $ccc_state = CCCS_ALL;
+	protected $ccc_title = '';
 	
 	public function set_ccc($ccc_state) { $this->ccc_state = $ccc_state; }
 	
@@ -89,7 +90,7 @@ class GeneralPageBase extends PageBase
 		echo '<tr><td>';
 		if ($this->ccc_filter != NULL)
 		{
-			$this->ccc_filter->show('onCCC');
+			$this->ccc_filter->show('onCCC', $this->ccc_title);
 		}
 		echo ' ';
 		$this->show_filter_fields();

@@ -56,7 +56,7 @@ class Page extends ClubPageBase
 		echo '<tr><td>';
 		$this->season = show_seasons_select($this->id, $this->season, 'viewForm');
 		echo ' ';
-		show_roles_select($this->roles, 'viewForm');
+		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
 		echo '</td><td align="right">' . get_label('Scoring system') . ': ';
 		show_scoring_select($this->id, $this->scoring_id, 'viewForm');		
 		echo '</td></tr></table></form>';

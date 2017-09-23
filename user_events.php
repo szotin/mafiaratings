@@ -27,7 +27,7 @@ class Page extends UserPageBase
 		
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$this->ccc_filter->show('onCCC');
+		$this->ccc_filter->show('onCCC', get_label('Filter events by club, city, or country.'));
 		echo '</td></tr></table>';
 		
 		$condition = new SQL(

@@ -290,7 +290,7 @@ class Page extends ClubPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="40">&nbsp;</td>';
 		echo '<td colspan="2">';
-		show_roles_select($roles, 'filter');
+		show_roles_select($roles, 'document.filter.submit()', get_label('Use only the stats of a specific role.'));
 		echo '</td>';
 		echo '<td width="100" align="center">&gt; <select name="min" onchange="document.filter.submit()">';
 		$max_option = round($this->games_count / 20) * 10;
