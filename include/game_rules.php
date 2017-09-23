@@ -15,7 +15,7 @@ define('RULES_VOTING_CANCEL_NO', 0x40); // voting is never canceled when someone
 define('RULES_VOTING_CANCEL_BY_NOM', 0x80); // voting is canceled when someone is killed by warnings only if the one was nominated
 define('RULES_BEST_PLAYER', 0x100); // moderator chooses best player after the game
 define('RULES_BEST_MOVE', 0x200); // moderator chooses best move after the game
-define('RULES_GUESS_MAFIA', 0x400); // a player killed first night guesses 3 mafiosy
+define('RULES_GUESS_MAFIA', 0x400); // a player killed first night guesses 3 mafiosi
 define('RULES_SIMPLIFIED_CLIENT', 0x800); // moderators must use simplified client (does not work on championships)
 define('RULES_ANY_CLIENT', 0x1000); // it is up to moderators whether to use simplified client or not. If both RULES_SIMPLIFIED_CLIENT and RULES_ANY_CLIENT are set, RULES_SIMPLIFIED_CLIENT wins.
 define('RULES_MUTE_NEXT', 0x2000); // if a player gets third warning during a day he misses his speech only next day (not this day)
@@ -323,7 +323,7 @@ class GameRules
 		echo '</p></td></tr>';
 
 		echo '<tr><td class="dark" align="center" width="80">' . ++$num . '</td>';
-		echo '<td class="light"><p><b>' . get_label('If a player has three warnings and has to miss his speech in a critical round with only one mafiosy left, do you let him speak?') . '</b></p>';
+		echo '<td class="light"><p><b>' . get_label('If a player has three warnings and has to miss his speech in a critical round with only one mafiosi left, do you let him speak?') . '</b></p>';
 		echo '<p>';
 		echo '<input type="radio" name="form-mute-crit" id="form-mute-crit-0">' . get_label('No.');
 		echo '<br><input type="radio" name="form-mute-crit" id="form-mute-crit-1">' . get_label('Yes, but we allow him a shorter "defensive" speech.');
@@ -344,7 +344,7 @@ class GameRules
 		echo '</p></td></tr>';
 
 		echo '<tr><td class="dark" align="center">' . ++$num . '</td>';
-		echo '<td class="light"><p><b>' . get_label('Does a player killed in the first night guess 3 mafiosy?') . '</b></p>';
+		echo '<td class="light"><p><b>' . get_label('Does a player killed in the first night guess 3 mafiosi?') . '</b></p>';
 		echo '<p>';
 		echo '<input type="radio" name="form-guess3" id="form-guess3-0">' . get_label('Yes');
 		echo '<br><input type="radio" name="form-guess3" id="form-guess3-1">' . get_label('No');

@@ -193,7 +193,7 @@ class Page extends UserPageBase
 			show_option($cid, $club_id, $cname);
 		}
 		echo '</select> ';
-		show_roles_select($roles, 'form');
+		show_roles_select($roles, 'form', ROLE_NAME_FLAG_SINGLE);
 		echo '</td></tr></table></form>';
 
 		$numbers = array();

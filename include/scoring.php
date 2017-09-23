@@ -21,8 +21,8 @@ define('SCORING_NO_VOTE_FOR_RED', 0x800); // 2048: for civilian: never voted aga
 define('SCORING_FIND_AND_KILL_SRF_MAF', 0x1000); // 4096: for mafia: when don finds sheriff the first night and they rearange him to kill (does not count if sheriff was already arranged)
 define('SCORING_FIND_AND_KILL_SRF_DON', 0x2000); // 8192: for don: when don finds sheriff the first night and they rearange him to kill (does not count if sheriff was already arranged)
 define('SCORING_FIND_SRF', 0x4000); // 16384: for don: finds the sheriff the first night
-define('SCORING_THREE_DARK_CHECKS', 0x8000); // 32768: for sheriff: makes 3 dark checks
-define('SCORING_ARRANGED_SRF', 0x10000); // 65536: for sheriff: makes 3 dark checks
+define('SCORING_THREE_DARK_CHECKS', 0x8000); // 32768: for sheriff: makes 3 black checks
+define('SCORING_ARRANGED_SRF', 0x10000); // 65536: for sheriff: makes 3 black checks
 define('SCORING_FIRST_AVAILABLE_FLAG', 0x20000); 
 
 define('SCORING_DIVIDE', 100); 
@@ -69,16 +69,106 @@ function show_scoring_select($club_id, $scoring_id, $form_name)
 	echo '</select></td>';
 }
 
-function show_roles_select($roles, $form_name)
+define('ROLE_NAME_FLAG_LOWERCASE', 1);
+define('ROLE_NAME_FLAG_SINGLE', 2);
+
+function get_role_name($role, $flags = 0)
+{
+	switch ($flags & 3)
+	{
+		case 0:
+			switch ($role)
+			{
+				case POINTS_ALL:
+					return get_label('All roles');
+				case POINTS_RED:
+					return get_label('Reds');
+				case POINTS_DARK:
+					return get_label('Blacks');
+				case POINTS_CIVIL:
+					return get_label('Civilians');
+				case POINTS_SHERIFF:
+					return get_label('Sheriffs');
+				case POINTS_MAFIA:
+					return get_label('Mafiosi');
+				case POINTS_DON:
+					return get_label('Dons');
+			}
+			break;
+			
+		case 1:
+			switch ($role)
+			{
+				case POINTS_ALL:
+					return get_label('all roles');
+				case POINTS_RED:
+					return get_label('reds');
+				case POINTS_DARK:
+					return get_label('blacks');
+				case POINTS_CIVIL:
+					return get_label('civilians');
+				case POINTS_SHERIFF:
+					return get_label('sheriffs');
+				case POINTS_MAFIA:
+					return get_label('mafiosi');
+				case POINTS_DON:
+					return get_label('dons');
+			}
+			break;
+			
+		case 2:
+			switch ($role)
+			{
+				case POINTS_ALL:
+					return get_label('Any role');
+				case POINTS_RED:
+					return get_label('Red');
+				case POINTS_DARK:
+					return get_label('Black');
+				case POINTS_CIVIL:
+					return get_label('Civilian');
+				case POINTS_SHERIFF:
+					return get_label('Sheriff');
+				case POINTS_MAFIA:
+					return get_label('Mafiosi');
+				case POINTS_DON:
+					return get_label('Don');
+			}
+			break;
+			
+		case 3:
+			switch ($role)
+			{
+				case POINTS_ALL:
+					return get_label('any role');
+				case POINTS_RED:
+					return get_label('red');
+				case POINTS_DARK:
+					return get_label('black');
+				case POINTS_CIVIL:
+					return get_label('civilian');
+				case POINTS_SHERIFF:
+					return get_label('sheriff');
+				case POINTS_MAFIA:
+					return get_label('mafiosi');
+				case POINTS_DON:
+					return get_label('don');
+			}
+			break;
+	}
+	return '';
+}
+
+function show_roles_select($roles, $form_name, $flags = 0)
 {
 	echo '<select name="roles" onChange="document.' . $form_name . '.submit()">';
-	show_option(POINTS_ALL, $roles, get_label('All roles'));
-	show_option(POINTS_RED, $roles, get_label('Red players'));
-	show_option(POINTS_DARK, $roles, get_label('Dark players'));
-	show_option(POINTS_CIVIL, $roles, get_label('Civilians'));
-	show_option(POINTS_SHERIFF, $roles, get_label('Sheriffs'));
-	show_option(POINTS_MAFIA, $roles, get_label('Mafiosy'));
-	show_option(POINTS_DON, $roles, get_label('Dons'));
+	show_option(POINTS_ALL, $roles, get_role_name(POINTS_ALL, $flags));
+	show_option(POINTS_RED, $roles, get_role_name(POINTS_RED, $flags));
+	show_option(POINTS_DARK, $roles, get_role_name(POINTS_DARK, $flags));
+	show_option(POINTS_CIVIL, $roles, get_role_name(POINTS_CIVIL, $flags));
+	show_option(POINTS_SHERIFF, $roles, get_role_name(POINTS_SHERIFF, $flags));
+	show_option(POINTS_MAFIA, $roles, get_role_name(POINTS_MAFIA, $flags));
+	show_option(POINTS_DON, $roles, get_role_name(POINTS_DON, $flags));
 	echo '</select>';
 }
 
@@ -158,19 +248,19 @@ class ScoringSystem
 		echo '<tr><td>'.get_label('Best move').':</td><td><input id="form-' . SCORING_BEST_MOVE . '" value="' . $this->points[SCORING_BEST_MOVE] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For civilian. Winning the game').':</td><td><input id="form-' . SCORING_WIN_CIV . '" value="' . $this->points[SCORING_WIN_CIV] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For sheriff. Winning the game').':</td><td><input id="form-' . SCORING_WIN_SRF . '" value="' . $this->points[SCORING_WIN_SRF] / SCORING_DIVIDE . '"></td></tr>';
-		echo '<tr><td>'.get_label('For mafiosy. Winning the game').':</td><td><input id="form-' . SCORING_WIN_MAF . '" value="' . $this->points[SCORING_WIN_MAF] / SCORING_DIVIDE . '"></td></tr>';
+		echo '<tr><td>'.get_label('For mafiosi. Winning the game').':</td><td><input id="form-' . SCORING_WIN_MAF . '" value="' . $this->points[SCORING_WIN_MAF] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For don. Winning the game').':</td><td><input id="form-' . SCORING_WIN_DON . '" value="' . $this->points[SCORING_WIN_DON] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For civilian. Loosing the game').':</td><td><input id="form-' . SCORING_LOS_CIV . '" value="' . $this->points[SCORING_LOS_CIV] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For sheriff. Loosing the game').':</td><td><input id="form-' . SCORING_LOS_SRF . '" value="' . $this->points[SCORING_LOS_SRF] / SCORING_DIVIDE . '"></td></tr>';
-		echo '<tr><td>'.get_label('For mafiosy. Loosing the game').':</td><td><input id="form-' . SCORING_LOS_MAF . '" value="' . $this->points[SCORING_LOS_MAF] / SCORING_DIVIDE . '"></td></tr>';
+		echo '<tr><td>'.get_label('For mafiosi. Loosing the game').':</td><td><input id="form-' . SCORING_LOS_MAF . '" value="' . $this->points[SCORING_LOS_MAF] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For don. Loosing the game').':</td><td><input id="form-' . SCORING_LOS_DON . '" value="' . $this->points[SCORING_LOS_DON] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For civilian. Killed the first night and successfuly guessed all 3 mafs').':</td><td><input id="form-' . SCORING_GUESS_ALL_MAF . '" value="' . $this->points[SCORING_GUESS_ALL_MAF] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For civilian. Never voting against red players (minimum 3 votes)').':</td><td><input id="form-' . SCORING_NO_VOTE_FOR_RED . '" value="' . $this->points[SCORING_NO_VOTE_FOR_RED] / SCORING_DIVIDE . '"></td></tr>';
-		echo '<tr><td>'.get_label('For mafiosy. Don finds the sheriff the first night and they killed him the next night (does not count if sheriff was arranged)').':</td><td><input id="form-' . SCORING_FIND_AND_KILL_SRF_MAF . '" value="' . $this->points[SCORING_FIND_AND_KILL_SRF_MAF] / SCORING_DIVIDE . '"></td></tr>';
+		echo '<tr><td>'.get_label('For mafiosi. Don finds the sheriff the first night and they killed him the next night (does not count if sheriff was arranged)').':</td><td><input id="form-' . SCORING_FIND_AND_KILL_SRF_MAF . '" value="' . $this->points[SCORING_FIND_AND_KILL_SRF_MAF] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For don. Don finds the sheriff the first night and they killed him the next night (does not count if sheriff was arranged)').':</td><td><input id="form-' . SCORING_FIND_AND_KILL_SRF_DON . '" value="' . $this->points[SCORING_FIND_AND_KILL_SRF_DON] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For don. Finding the sheriff the first night').':</td><td><input id="form-' . SCORING_FIND_SRF . '" value="' . $this->points[SCORING_FIND_SRF] / SCORING_DIVIDE . '"></td></tr>';
 		echo '<tr><td>'.get_label('For don. Arranged sheriff for the first night').':</td><td><input id="form-' . SCORING_ARRANGED_SRF . '" value="' . $this->points[SCORING_ARRANGED_SRF] / SCORING_DIVIDE . '"></td></tr>';
-		echo '<tr><td>'.get_label('For sheriff. Making 3 dark checks in a row').':</td><td><input id="form-' . SCORING_THREE_DARK_CHECKS . '" value="' . $this->points[SCORING_THREE_DARK_CHECKS] / SCORING_DIVIDE . '"></td></tr>';
+		echo '<tr><td>'.get_label('For sheriff. Making 3 black checks in a row').':</td><td><input id="form-' . SCORING_THREE_DARK_CHECKS . '" value="' . $this->points[SCORING_THREE_DARK_CHECKS] / SCORING_DIVIDE . '"></td></tr>';
 		echo '</table>';
 		
 ?>

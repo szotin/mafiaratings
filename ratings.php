@@ -12,8 +12,13 @@ define('ROLES_COUNT', 7);
 	
 class Page extends GeneralPageBase
 {
-	private $user_id;
 	private $role;
+	private $user_id;
+	private $user_name;
+	private $user_club_id;
+	private $user_city_id;
+	private $user_country_id;
+	private $ccc_value;
 
 	protected function prepare()
 	{
@@ -27,11 +32,42 @@ class Page extends GeneralPageBase
 			$this->role = $_REQUEST['role'];
 		}
 		
+		$this->ccc_value = $this->ccc_filter->get_value();
+		if ($this->role != POINTS_ALL)
+		{
+			if ($this->ccc_value != NULL)
+			{
+				$this->_title = get_label('Ratings for [0].', get_role_name($this->role, ROLE_NAME_FLAG_LOWERCASE));
+			}
+			else
+			{
+				$this->_title = get_label('[0] players ratings for [1].', $this->ccc_value, get_role_name($this->role, ROLE_NAME_FLAG_LOWERCASE));
+			}
+		}
+		else if ($this->ccc_value != NULL)
+		{
+			$this->_title = get_label('[0] players ratings.', $this->ccc_value, get_role_name($this->role, ROLE_NAME_FLAG_LOWERCASE));
+		}
+		else
+		{
+			$this->_title = get_label('Ratings.');
+		}
+		
 		$this->user_id = 0;
 		if ($_page < 0)
 		{
 			$this->user_id = -$_page;
 			$_page = 0;
+			$query = new DbQuery('SELECT u.name, u.club_id, u.city_id, c.country_id FROM users u JOIN cities c ON c.id = u.city_id WHERE u.id = ?', $this->user_id);
+			if ($row = $query->next())
+			{
+				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
+				$this->_title .= ' ' . get_label('Following [0].', $this->user_name);
+			}
+			else
+			{
+				$this->errorMessage(get_label('Player not found.'));
+			}
 		}
 	}
 	
@@ -71,6 +107,50 @@ class Page extends GeneralPageBase
 		return $condition;
 	}
 	
+	private function no_user_error()
+	{
+		global $_profile;
+		
+		$member = true;
+		if ($this->ccc_value != NULL)
+		{
+			$id = $this->ccc_filter->get_id();
+			switch ($this->ccc_filter->get_type())
+			{
+			case CCCF_CLUB:
+				if ($id == 0)
+				{
+					$member = ($_profile != NULL && isset($_profile->clubs[$this->user_club_id]));
+				}
+				else
+				{
+					$member = ($id == $this->user_club_id);
+				}
+				break;
+			case CCCF_CITY:
+				$member = ($id == $this->user_city_id);
+				break;
+			case CCCF_COUNTRY:
+				$member = ($id == $this->user_country_id);
+				break;
+			}
+		}
+		
+		if (!$member)
+		{
+			$message = get_label('[0] is not from [1].', $this->user_name, $this->ccc_value);
+		}
+		else if ($this->role == POINTS_ALL)
+		{
+			$message = get_label('[0] played no games.', $this->user_name);
+		}
+		else
+		{
+			$message = get_label('[0] played no games as [1].', $this->user_name, get_role_name($this->role, ROLE_NAME_FLAG_SINGLE | ROLE_NAME_FLAG_LOWERCASE));
+		}
+		$this->errorMessage($message);
+	}
+	
 	protected function show_body()
 	{
 		global $_page, $_profile;
@@ -84,27 +164,21 @@ class Page extends GeneralPageBase
 			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
 			if ($this->user_id > 0)
 			{
-				$pos_query = new DbQuery('SELECT id, name, rating, games, games_won FROM users WHERE id = ?', $this->user_id);
+				$pos_query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won FROM users u WHERE u.id = ?', $this->user_id);
 				if ($row = $pos_query->next())
 				{
 					list ($uid, $uname, $urating, $ugames, $uwon) = $row;
 					if ($ugames > 0)
 					{
 						$pos_query = new DbQuery('SELECT count(*) FROM users u', $condition);
-						$pos_query->add(' AND (u.rating > ? OR (u.rating = ? AND (u.games_won > ? OR (u.games_won = ? AND (u.games > ? OR (u.games = ? AND u.id < ?))))))', $urating, $urating, $uwon, $uwon, $ugames, $ugames, $uid);
+						$pos_query->add(' AND u.id <> ? AND (u.rating > ? OR (u.rating = ? AND (u.games_won > ? OR (u.games_won = ? AND (u.games > ? OR (u.games = ? AND u.id < ?))))))', $uid, $urating, $urating, $uwon, $uwon, $ugames, $ugames, $uid);
 						list($user_pos) = $pos_query->next();
 						$_page = floor($user_pos / PAGE_SIZE);
 					}
 					else
 					{
-						$this->errorMessage(get_label('User [0] played no games.', $uname));
-						$_page = 0;
+						$this->no_user_error();
 					}
-				}
-				else
-				{
-					$this->errorMessage(get_label('Player not found.'));
-					$_page = 0;
 				}
 			}
 		}
@@ -119,28 +193,20 @@ class Page extends GeneralPageBase
 			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id', $condition);
 			if ($this->user_id > 0)
 			{
-				$pos_query = new DbQuery('SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won FROM players p JOIN users u ON p.user_id = u.id', $condition);
+				$pos_query = new DbQuery('SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.club_id, u.city_id, c.country_id FROM players p JOIN users u ON p.user_id = u.id JOIN cities c ON u.city_id = c.id', $condition);
 				$pos_query->add(' AND u.id = ? GROUP BY u.id', $this->user_id);
+				
 				if ($row = $pos_query->next())
 				{
 					list ($uid, $uname, $urating, $ugames, $uwon) = $row;
-					if ($ugames > 0)
-					{
-						$pos_query = new DbQuery('SELECT count(*) FROM (SELECT u.id FROM players p JOIN users u ON p.user_id = u.id ', $condition);
-						$pos_query->add(' GROUP BY u.id HAVING (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) > ? OR (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) = ? AND (SUM(p.won) > ? OR (SUM(p.won) = ? AND (count(p.game_id) > ? OR (count(p.game_id) = ? AND u.id < ?))))))) as upper', $urating, $urating, $uwon, $uwon, $ugames, $ugames, $uid);
-						list($user_pos) = $pos_query->next();
-						$_page = floor($user_pos / PAGE_SIZE);
-					}
-					else
-					{
-						$this->errorMessage(get_label('User [0] played no games.', $uname));
-						$_page = 0;
-					}
+					$pos_query = new DbQuery('SELECT count(*) FROM (SELECT u.id FROM players p JOIN users u ON p.user_id = u.id ', $condition);
+					$pos_query->add(' AND u.id <> ? GROUP BY u.id HAVING (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) > ? OR (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) = ? AND (SUM(p.won) > ? OR (SUM(p.won) = ? AND (count(p.game_id) > ? OR (count(p.game_id) = ? AND u.id < ?))))))) as upper', $uid, $urating, $urating, $uwon, $uwon, $ugames, $ugames, $uid);
+					list($user_pos) = $pos_query->next();
+					$_page = floor($user_pos / PAGE_SIZE);
 				}
 				else
 				{
-					$this->errorMessage(get_label('Player not found.'));
-					$_page = 0;
+					$this->no_user_error();
 				}
 			}
 		}
@@ -206,11 +272,11 @@ class Page extends GeneralPageBase
 		echo '<table class="transp" width="100%">';
 		echo '<select id="role" onChange = "filter()">';
 		show_option(0, $this->role, get_label('All roles'));
-		show_option(1, $this->role, get_label('Red players'));
-		show_option(2, $this->role, get_label('Dark players'));
+		show_option(1, $this->role, get_label('Reds'));
+		show_option(2, $this->role, get_label('Blacks'));
 		show_option(3, $this->role, get_label('Civilians'));
 		show_option(4, $this->role, get_label('Sheriffs'));
-		show_option(5, $this->role, get_label('Mafiosy'));
+		show_option(5, $this->role, get_label('Mafiosi'));
 		show_option(6, $this->role, get_label('Dons'));
 		echo '</select>';
 		echo '</td></tr></table>';
@@ -235,6 +301,6 @@ class Page extends GeneralPageBase
 
 $page = new Page();
 $page->set_ccc(CCCS_ALL);
-$page->run(get_label('Ratings'), PERM_ALL);
+$page->run('', PERM_ALL);
 
 ?>

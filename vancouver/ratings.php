@@ -24,7 +24,7 @@ if ($page > 0)
 {
 	echo '<a href="ratings.php?role=' . $role . '&page=' . ($page - 1) . '"><img src="images/arrow-left.jpg" width="30" border="0"></a>';
 }
-$role_names = array('a'=>'All roles', 'r'=>'Red players', 'b'=>'Dark players', 'c'=>'Civilians', 's'=>'Sheriffs', 'm'=>'Mafiosy', 'd'=>'Dons');
+$role_names = array('a'=>'All roles', 'r'=>'Reds', 'b'=>'Blacks', 'c'=>'Civilians', 's'=>'Sheriffs', 'm'=>'Mafiosi', 'd'=>'Dons');
 echo '</td><td class="back" align="center"><select name="role" onChange = "document.viewForm.submit()">';
 foreach ($role_names as $key => $value)
 {

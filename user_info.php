@@ -107,16 +107,16 @@ class Page extends UserPageBase
 		$prev_club_id = 0;
 		$role_titles = array(
 			get_label('Total'),
-			get_label('As a red player'),
-			get_label('As a dark player'),
+			get_label('As a red'),
+			get_label('As a black'),
 			get_label('As a civilian'),
 			get_label('As a sheriff'),
-			get_label('As a mafiosy'),
+			get_label('As a mafiosi'),
 			get_label('As a don'));
 		$role_titles1 = array(
 			get_label('As a civilian'),
 			get_label('As a sheriff'),
-			get_label('As a mafiosy'),
+			get_label('As a mafiosi'),
 			get_label('As a don'));
 		
 		$query = new DbQuery(

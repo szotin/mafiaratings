@@ -46,7 +46,7 @@ class Page extends GeneralPageBase
 		echo '<form name="roleForm" method="get"><select name="role" onchange="document.roleForm.submit()">';
 		show_option(0, $this->role, get_label('How a Sheriff should play'));
 		show_option(1, $this->role, get_label('How a civilian should play'));
-		show_option(2, $this->role, get_label('How a mafiosy should play'));
+		show_option(2, $this->role, get_label('How a mafiosi should play'));
 		show_option(3, $this->role, get_label('How a don should play'));
 		echo '</select></form>';
 	}

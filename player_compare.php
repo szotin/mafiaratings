@@ -77,11 +77,11 @@ function role_select($form_name, $role_name, $role, $together = false)
 {
 	echo '<select name="' . $role_name . '" onChange = "document.' . $form_name . '.submit()">';
 	show_option(0, $role, get_label('Any role'));
-	show_option(1, $role, get_label('Red player'));
-	show_option(2, $role, get_label('Dark player'));
+	show_option(1, $role, get_label('Red'));
+	show_option(2, $role, get_label('Black'));
 	show_option(3, $role, get_label('Civilian'));
 	show_option(4, $role, get_label('Sheriff'));
-	show_option(5, $role, get_label('Mafiosy'));
+	show_option(5, $role, get_label('Mafiosi'));
 	show_option(6, $role, get_label('Don'));
 	if ($together)
 	{
@@ -399,7 +399,7 @@ class Page extends UserPageBase
 			case 4: // Sheriff
 				$query->add(' AND p1.role = ' . PLAYER_ROLE_SHERIFF);
 				break;
-			case 5: // Mafiosy
+			case 5: // Mafiosi
 				$query->add(' AND p1.role = ' . PLAYER_ROLE_MAFIA);
 				break;
 			case 6: // Don
@@ -421,7 +421,7 @@ class Page extends UserPageBase
 			case 4: // Sheriff
 				$query->add(' AND p2.role = ' . PLAYER_ROLE_SHERIFF);
 				break;
-			case 5: // Mafiosy
+			case 5: // Mafiosi
 				$query->add(' AND p2.role = ' . PLAYER_ROLE_MAFIA);
 				break;
 			case 6: // Don

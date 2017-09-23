@@ -9,15 +9,25 @@ class CCCFilter
 	private $flags;
 	private $type;
 	private $id;
+	private $value;
 	
 	function get_type() { return $this->type; }
 	function get_id() { return $this->id; }
 	function get_code() { return $this->type . $this->id; }
 	function get_flags() { return $this->flags; }
 	
+	function get_value()
+	{
+		if ($this->id >= 0)
+		{
+			return $this->value;
+		}
+		return NULL;
+	}
+	
 	function __construct($name, $filter_str, $flags = 0)
 	{
-		global $_profile;
+		global $_profile, $_lang_code;
 	
 		if (isset($_REQUEST[$name]))
 		{
@@ -29,19 +39,57 @@ class CCCFilter
 		$this->type = substr($filter_str, 0, 1);
 		$this->id = substr($filter_str, 1);
 		
-		if ($this->type == CCCF_CLUB && $this->id == 0 && $_profile == NULL)
+		$this->value = '';
+		switch ($this->type)
 		{
-			$loc = UserLocation::get();
-/*			echo '<pre>';
-			print_r($loc);
-			echo '</pre>';*/
-			$this->type = CCCF_CITY;
-			$this->id = $loc->get_region_id(true);
-			if ($this->id <= 0)
-			{
-				$this->type = CCCF_COUNTRY;
-				$this->id = $loc->get_country_id();
-			}
+			case CCCF_CLUB:
+				if ($this->id < 0)
+				{
+					$this->value = get_label('All');
+				}
+				else if ($this->id == 0)
+				{
+					$this->value = get_label('My clubs');
+					if ($_profile == NULL)
+					{
+						$loc = UserLocation::get();
+			/*			echo '<pre>';
+						print_r($loc);
+						echo '</pre>';*/
+						$this->type = CCCF_CITY;
+						$this->id = $loc->get_region_id(true);
+						if ($this->id <= 0)
+						{
+							$this->type = CCCF_COUNTRY;
+							$this->id = $loc->get_country_id();
+						}
+					}
+				}
+				else
+				{
+					list ($this->value) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $this->id);
+				}
+				break;
+			case CCCF_CITY:
+				if ($this->id <= 0)
+				{
+					$this->value = get_label('All');
+				}
+				else
+				{
+					list ($this->value) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $this->id);
+				}
+				break;
+			case CCCF_COUNTRY:
+				if ($this->id <= 0)
+				{
+					$this->value = get_label('All');
+				}
+				else
+				{
+					list ($this->value) = Db::record(get_label('country'), 'SELECT name_' . $_lang_code . ' FROM countries WHERE id = ?', $this->id);
+				}
+				break;
 		}
 	}
 	
@@ -49,46 +97,7 @@ class CCCFilter
 	{
 		global $_lang_code;
 	
-		$value = '';
-		switch ($this->type)
-		{
-			case CCCF_CLUB:
-				if ($this->id < 0)
-				{
-					$value = get_label('All');
-				}
-				else if ($this->id == 0)
-				{
-					$value = get_label('My clubs');
-				}
-				else
-				{
-					list ($value) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $this->id);
-				}
-				break;
-			case CCCF_CITY:
-				if ($this->id <= 0)
-				{
-					$value = get_label('All');
-				}
-				else
-				{
-					list ($value) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $this->id);
-				}
-				break;
-			case CCCF_COUNTRY:
-				if ($this->id <= 0)
-				{
-					$value = get_label('All');
-				}
-				else
-				{
-					list ($value) = Db::record(get_label('country'), 'SELECT name_' . $_lang_code . ' FROM countries WHERE id = ?', $this->id);
-				}
-				break;
-		}
-	
-		echo '<input type="text" class="dropdown" id="' . $this->name . '" value="' . $value . '"/>';
+		echo '<input type="text" class="dropdown" id="' . $this->name . '" value="' . $this->value . '"/>';
 		echo '<input type="image" class="dropdown-btn" src="images/dropdown.png" onclick="cccDrop()"/>';
 //		echo '<button class="dropdown-btn" onclick="cccDrop()"><img src="images/down.png" width="16" height="16"></button>';
 ?>

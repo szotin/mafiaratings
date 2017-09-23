@@ -12,7 +12,7 @@ define('CCCS_NO', 2);
 class GeneralPageBase extends PageBase
 {
 	protected $ccc_filter;
-	protected $ccc_state = CCCS_MY;
+	protected $ccc_state = CCCS_ALL;
 	
 	public function set_ccc($ccc_state) { $this->ccc_state = $ccc_state; }
 	
