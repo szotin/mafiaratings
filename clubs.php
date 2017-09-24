@@ -14,6 +14,12 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends GeneralPageBase
 {
+	protected function prepare()
+	{
+		parent::prepare();
+		$this->ccc_title = get_label('Show only clubs from a specific city, or country.');
+	}
+	
 	protected function show_filter_fields()
 	{
 		echo '<input type="checkbox" id="retired" onclick="filter()"';
@@ -21,7 +27,7 @@ class Page extends GeneralPageBase
 		{
 			echo ' checked';
 		}
-		echo '> ' . get_label('retired clubs');
+		echo '> ' . get_label('Show retired clubs');
 	}
 	
 	protected function get_filter_js()
@@ -91,11 +97,11 @@ class Page extends GeneralPageBase
 		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, i.name_' . $_lang_code . ', u.flags FROM clubs c' .
+			'SELECT c.id, c.name, c.flags, c.web_site, i.name_' . $_lang_code . ', u.flags, (SELECT count(*) FROM games g WHERE g.club_id = c.id) as games FROM clubs c' .
 				' LEFT OUTER JOIN user_clubs u ON u.user_id = ? AND u.club_id = c.id' .
 				' JOIN cities i ON c.city_id = i.id',
 			$user_id, $condition);
-		$query->add(' ORDER BY c.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+		$query->add(' ORDER BY ISNULL(u.flags), games DESC, c.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 			
 		if ($_profile != NULL && !$retired)
 		{

@@ -842,7 +842,7 @@ $labelMenu = array (
 'For don. Don finds the sheriff the first night and they killed him the next night (does not count if sheriff was arranged)' => 'Для дона. Дон нашел шерифа в первую ночь и мафия сделала успешную передоговоренку (не считается, если шериф уже был в договоренке)', // ./include/scoring.php
 'For don. Finding the sheriff the first night' => 'Для дона. Нашел шерифа в первую ночь', // ./include/scoring.php
 'For sheriff. Making 3 black checks in a row' => 'Для шерифа. Три черные проверки подряд', // ./include/scoring.php
-'retired clubs' => 'клубы которых больше нет', // clubs.php
+'Show retired clubs' => 'Показать клубы которых больше нет', // clubs.php
 'For don. Arranged sheriff for the first night' => 'Для дона. Поставил шерифа в договоренку на первую ночь', // ./include/scoring.php
 'Do you kill in the first day?' => 'Вы убиваете в первый день?', // ./include/game_rules.php
 'We are using classic rules. We vote and kill only if there is more than one nominated player.' => 'Мы используем классические правила. Мы голосуем и убиваем только если выставлено больше одного игрока.', // ./include/game_rules.php
@@ -1042,11 +1042,12 @@ $labelMenu = array (
 'Filter events by club, city, or country.' => 'Показывать только игровые дни какого нибудь клуба, города, или страны.', // user_events.php
 'Use stats of a specific role.' => 'Показать статистику определенной роли.', // user_numbers.php
 'All ratings.' => 'Все рейтинги.', // ratings.php
+'Go to the page where a specific player is located.' => 'Перейти на страницу, на которой находится выбранный игрок.', // ratings.php
 'The Sheriff\'s check' => 'Проверка шерифа', // view_game.php
 'The Don\'s check' => 'Проверка дона', // view_game.php
 'The Don\'s game' => 'Игра доном', // view_game_stats.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
-'Go to the page where a specific player is located.' => 'Перейти на страницу, на которой находится выбранный игрок.', // ratings.php
+'Show only clubs from a specific city, or country.' => 'Показывать только клубы из определенного города, или страны', // clubs.php
 );
 
 return $labelMenu;

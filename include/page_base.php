@@ -217,12 +217,20 @@ class PageBase
 				}
 				
 				echo '<td valign="middle" align="right">';
-				echo '<a href="index.php" title="' . get_label('Home') . '"><img src="images/home.png" /></a></>';
-				// echo '<a href="ratings.php" title="' . get_label('Ratings') . '"><img src="images/clubs.png" /></a>';
-				echo '<a href="game.php" title="' . get_label('The game') . '"><img src="images/thegame.png" /></a>';
+				echo '<a href="index.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('Home') . '"><img src="images/home.png" /></a></>';
+				// echo '<a href="ratings.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('Ratings') . '"><img src="images/clubs.png" /></a>';
+				echo '<a href="game.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('The game') . '"><img src="images/thegame.png" /></a>';
 				if ($club != NULL)
 				{
-					echo '<a href="club_main.php?id=' . $club->id . '" title="' . $club->name . '">';
+					echo '<a href="club_main.php?id=' . $club->id . '" title="' . $club->name . '" id="club"  onMouseEnter="javascript:';
+					if (count($_profile->clubs) > 1)
+					{
+						echo 'showClubMenu()">';
+					}
+					else
+					{
+						echo 'setCurrentMenu(null)">';
+					}
 					show_club_pic($club->id, $club->club_flags, ICONS_DIR, 48);
 					echo '</a>';
 				}
@@ -236,6 +244,21 @@ class PageBase
 				echo '<li><a href="javascript:mr.changePassword()" title="' . get_label('Change password') . '"><img src="images/key.png" class="menu_image"> ' . get_label('Change password') . '</a></li>';
 				echo '<li><a href="javascript:logout()" title="' . get_label('Logout from [0]', PRODUCT_NAME) . '"><img src="images/logout.png" class="menu_image"> ' . get_label('Log out') . '</a></li>';
 				echo '</ul>';
+
+				if (count($_profile->clubs) > 1)
+				{
+					echo '<ul id="club-menu" style="display:none;position:absolute;text-align:left;">';
+					foreach ($_profile->clubs as $c)
+					{
+						if ($c->id != $club->id)
+						{
+							echo '<li><a href="club_main.php?id=' . $c->id . '">';
+							show_club_pic($c->id, $c->club_flags, ICONS_DIR, 48, 48, ' class="menu_image"');
+							echo ' ' . $c->name . '</a></li>';
+						}
+					}
+					echo '</ul>';
+				}
 				echo '</td>';
 			}
 			echo '</tr></table>';
@@ -474,8 +497,21 @@ class PageBase
 		if ($_profile != NULL)
 		{
 ?>
+			var currentMenu = null;
+			var setCurrentMenu = function(menu)
+			{
+				console.log(currentMenu + ': ' + menu);
+				if (currentMenu != null)
+				{
+					console.log('hide');
+					$(currentMenu).hide();
+				}
+				currentMenu = menu;
+			}
+
 			var showUserMenu = function()
 			{
+				setCurrentMenu('#user-menu');
 				var userMenu = $('#user-menu').menu();
 				userMenu.show(0, function()
 				{
@@ -485,14 +521,30 @@ class PageBase
 						at: "right bottom",
 						of: $('#user')
 					});
-					$(document).one("click", function() { userMenu.hide(); });
+					$(document).one("click", function() { setCurrentMenu(null); });
 				});
 			}
-			var hideUserMenu = function()
-			{
-				$('#user-menu').hide();
-			}
 <?php
+			if (count($_profile->clubs) > 1)
+			{
+?>
+				var showClubMenu = function()
+				{
+					setCurrentMenu('#club-menu');
+					var clubMenu = $('#club-menu').menu();
+					clubMenu.show(0, function()
+					{
+						clubMenu.position(
+						{
+							my: "right top",
+							at: "right bottom",
+							of: $('#club')
+						});
+						$(document).one("click", function() { setCurrentMenu(null); });
+					});
+				}
+<?php
+			}
 		}
 		echo "\n\t$(function()";
 		echo "\n\t{\n";
