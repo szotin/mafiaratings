@@ -508,7 +508,7 @@ class GamePlayerStats
 			return;
 		}
 		
-		$query = new DbQuery('SELECT p.rating_before + p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE g.end_time < ? AND p.user_id = ? ORDER BY g.end_time DESC LIMIT 1', $gs->end_time, $player->id);
+		$query = new DbQuery('SELECT p.rating_before + p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE (g.start_time < ? OR (g.start_time = ? AND g.id < ?)) AND p.user_id = ? ORDER BY g.end_time DESC, g.id DESC LIMIT 1', $gs->end_time, $gs->end_time, $gs->id, $player->id);
 		if ($row = $query->next())
 		{
 			list($this->rating_before) = $row;

@@ -292,10 +292,13 @@ function show_seasons_select($club_id, $option, $form_name)
 {
 	$seasons = array();
 	$now = time();
-	$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
-	while ($row = $query->next())
+	if ($club_id > 0)
 	{
-		$seasons[] = $row;
+		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
+		while ($row = $query->next())
+		{
+			$seasons[] = $row;
+		}
 	}
 	
 	if ($option == 0)
@@ -322,7 +325,14 @@ function show_seasons_select($club_id, $option, $form_name)
 	}
 	else
 	{
-		$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE g.club_id = ? and result <> 0 ORDER BY g.start_time LIMIT 1', $club_id);
+		if ($club_id > 0)
+		{
+			$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE g.club_id = ? and result > 0 ORDER BY g.start_time LIMIT 1', $club_id);
+		}
+		else
+		{
+			$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE result > 0 ORDER BY g.start_time LIMIT 1');
+		}
 		if ($row = $query->next())
 		{
 			list($first_game_time, $first_game_timezone) = $row;

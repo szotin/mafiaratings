@@ -282,7 +282,7 @@ class Page extends UserPageBase
 				' JOIN cities ct ON ct.id = c.city_id' .
 				' WHERE ', 
 				$condition);
-			$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+			$query->add(' ORDER BY g.start_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			while ($row = $query->next())
 			{
 				list (
@@ -334,6 +334,9 @@ class Page extends UserPageBase
 				echo '</td>';
 				echo '<td align="center">' . format_rating($rating_before) . '</td>';
 				echo '<td align="center">' . format_rating($rating_earned) . '</td></tr>';
+/*				echo '<tr><td>' . $game_id . '</td><td>' . $start . '</td>';
+				echo '<td align="center">' . $rating_before . '</td>';
+				echo '<td align="center">' . $rating_earned . '</td></tr>';*/
 			}
 			echo '</table>';
 

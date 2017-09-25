@@ -45,7 +45,7 @@ class GeneralPageBase extends PageBase
 			new MenuItem('index.php' . $ccc, get_label('Home'), get_label('Main page')),
 			new MenuItem('clubs.php' . $ccc, get_label('Clubs'), get_label('Clubs list')),
 			new MenuItem('ratings.php' . $ccc, get_label('Ratings'), get_label('Players ratings')),
-			new MenuItem('games_stats.php' . $ccc, get_label('Stats'), get_label('Games statistics')),
+			new MenuItem('stats.php' . $ccc, get_label('Stats'), get_label('Games statistics')),
 			new MenuItem('history.php' . $ccc, get_label('Events'), get_label('Events history')),
 			// new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),
 			new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums')),

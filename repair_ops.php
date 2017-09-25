@@ -211,13 +211,16 @@ try
 	else if (isset($_REQUEST['stats']))
 	{
 		$last_id = 0;
+		$query = new DbQuery('SELECT id, log FROM games WHERE result > 0');
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
+			list($last_start) = Db::record(get_label('game'), 'SELECT start_time FROM games WHERE id = ?', $last_id);
+			$query->add(' AND (start_time > ? OR (start_time = ? AND id > ?))', $last_start, $last_start, $last_id);
 		}
 		else
 		{
-			list ($count) = Db::record('games', 'SELECT count(*) FROM games WHERE result > 0 AND result < 3');
+			list ($count) = Db::record('games', 'SELECT count(*) FROM games WHERE result > 0');
 			$result['count'] = $count;
 			lock_site(true);
 			
@@ -229,8 +232,8 @@ try
 			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = 0, rating = ' . USER_INITIAL_RATING . ', games = 0, games_won = 0');
 			Db::commit();
 		}
+		$query->add(' ORDER BY start_time, id LIMIT 10');
 		$c = 0;
-		$query = new DbQuery('SELECT id, log FROM games WHERE id > ? AND result > 0 AND result < 3 ORDER BY id LIMIT 10', $last_id);
 		while ($row = $query->next())
 		{
 			list($id, $log) = $row;
