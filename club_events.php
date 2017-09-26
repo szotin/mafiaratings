@@ -31,7 +31,7 @@ class Page extends ClubPageBase
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_seasons_select($this->id, $season, 'clubForm');
+		$season = show_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show [0] of a specific season.', get_label('events')));
 		echo '</td><td align="right">';
 		echo '<input type="checkbox" name="emp"';
 		if ($show_empty)

@@ -54,7 +54,7 @@ class Page extends ClubPageBase
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		$this->season = show_seasons_select($this->id, $this->season, 'viewForm');
+		$this->season = show_seasons_select($this->id, $this->season, 'document.viewForm.submit()', get_label('Standings by season.'));
 		echo ' ';
 		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
 		echo '</td><td align="right">' . get_label('Scoring system') . ': ';

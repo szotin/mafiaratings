@@ -27,7 +27,7 @@ class Page extends ClubPageBase
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_seasons_select($this->id, $season, 'clubForm');
+		$season = show_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show moderators who moderated in a specific season.');
 		echo '</td></tr></table></form>';
 		
 		$condition = get_season_condition($season, 'g.start_time', 'g.end_time');

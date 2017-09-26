@@ -52,7 +52,7 @@ class Page extends ClubPageBase
 		
 		echo '<form name="filter" method="get"><input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$this->season = show_seasons_select($this->id, $this->season, 'filter');
+		$this->season = show_seasons_select($this->id, $this->season, 'document.filter.submit()');
 		echo '</td><td align="right"><select name="view" onchange="document.filter.submit()">';
 		for ($i = 0; $i < count($this->views); ++$i)
 		{

@@ -623,10 +623,14 @@ function check_permissions($permissions, $club_id = -1)
 	return $_profile->has_perm($permissions & UC_PERM_MASK, $club_id);
 }
 
-function show_option($option_value, $current_value, $text)
+function show_option($option_value, $current_value, $text, $title = NULL)
 {
 	$result = false;
 	echo '<option value="' . $option_value . '"';
+	if ($title != NULL)
+	{
+		echo ' title="' . $title . '"';
+	}
 	if ($option_value == $current_value)
 	{
 		echo ' selected';

@@ -44,7 +44,7 @@ class Page extends PageBase
 			echo '<td width="16%" align="center"><a href="photo_albums.php?bck=0" title="' . get_label('Photo albums') . '">' . get_label('Photo albums');
 			echo '<br><img src="images/album_big.png" border="0"></a></td>';
 			
-			echo '<td width="17%" align="center"><a href="history.php?bck=0" title="' . get_label('Events history') . '">' . get_label('History');
+			echo '<td width="17%" align="center"><a href="events.php?bck=0" title="' . get_label('Events history') . '">' . get_label('History');
 			echo '<br><img src="images/history_big.png" border="0"></a></td>';
 			
 //			echo '<td width="16%" align="center"><a href="welcome.php?bck=0" title="' . get_label('About Mafia: rules, tactics, general information.') . '">' . get_label('About');
@@ -116,7 +116,7 @@ class Page extends PageBase
 			echo '<td width="16%" align="center"><a href="photo_albums.php?bck=0" title="' . get_label('Photo albums') . '">' . get_label('Photo albums');
 			echo '<br><img src="images/album_big.png" border="0"></a></td>';
 			
-			echo '<td width="17%" align="center"><a href="history.php?bck=0" title="' . get_label('Events history') . '">' . get_label('History');
+			echo '<td width="17%" align="center"><a href="events.php?bck=0" title="' . get_label('Events history') . '">' . get_label('History');
 			echo '<br><img src="images/history_big.png" border="0"></a></td>';
 			
 //			echo '<td width="16%" align="center"><a href="welcome.php?bck=0" title="' . get_label('About Mafia: rules, tactics, general information.') . '">' . get_label('About');

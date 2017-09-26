@@ -288,7 +288,7 @@ class ClubPageBase extends PageBase
 	}
 }
 
-function show_seasons_select($club_id, $option, $form_name)
+function show_seasons_select($club_id, $option, $on_change, $title)
 {
 	$seasons = array();
 	$now = time();
@@ -312,9 +312,9 @@ function show_seasons_select($club_id, $option, $form_name)
 			$option = -1;
 		}
 	}
-	echo '<select name="season" onChange="document.' . $form_name. '.submit()">';
+	echo '<select name="season" id="season" onChange="' . $on_change . '" title="' . $title . '">';
 	show_option(-1, $option, get_label('All time'));
-	show_option(-2, $option, get_label('Last year'));
+	show_option(-2, $option, get_label('Last year'), get_label('Sinse the same day a year ago.'));
 	if (count($seasons) > 0)
 	{
 		foreach ($seasons as $season)
@@ -338,8 +338,8 @@ function show_seasons_select($club_id, $option, $form_name)
 			list($first_game_time, $first_game_timezone) = $row;
 			date_default_timezone_set($first_game_timezone);
 			$first_year = (int)date('Y', $first_game_time);
-			$next_year = (int)date('Y', $now) + 1;
-			for ($y = $first_year; $y < $next_year; ++$y)
+			$this_year = (int)date('Y', $now);
+			for ($y = $this_year; $y >= $first_year; --$y)
 			{
 				show_option(-$y, $option, $y);
 			}

@@ -45,8 +45,11 @@ class GeneralPageBase extends PageBase
 			new MenuItem('index.php' . $ccc, get_label('Home'), get_label('Main page')),
 			new MenuItem('clubs.php' . $ccc, get_label('Clubs'), get_label('Clubs list')),
 			new MenuItem('ratings.php' . $ccc, get_label('Ratings'), get_label('Players ratings')),
-			new MenuItem('stats.php' . $ccc, get_label('Stats'), get_label('Games statistics')),
-			new MenuItem('history.php' . $ccc, get_label('Events'), get_label('Events history')),
+			new MenuItem('#stats', get_label('Stats'), NULL, array(
+				new MenuItem('stats.php' . $ccc, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
+				new MenuItem('by_numbers.php' . $ccc, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+				new MenuItem('nominations.php' . $ccc, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')))),
+			new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
 			// new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),
 			new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums')),
 			new MenuItem('moderators.php' . $ccc, get_label('Moderators'), get_label('Moderators statistics')),
@@ -76,13 +79,13 @@ class GeneralPageBase extends PageBase
 //			new MenuItem('downloads.php' . $ccc, get_label('Downloads'), get_label('Download client software for Mafia.'))
 		));
 		
-		echo '<table class="head" width="100%">';
+		echo '<p><table class="head" width="100%">';
 		
 		echo '<tr><td colspan="2">';
 		PageBase::show_menu($menu);
 		echo '</td></tr>';
 		
-		echo '<tr><td>' . $this->standard_title() . '</td><td align="right" valign="top">';
+		echo '<tr><td><p>' . $this->standard_title() . '</p></td><td align="right" valign="top">';
 		show_back_button();
 		echo '</td></tr>';
 		echo '</table>';
@@ -97,7 +100,7 @@ class GeneralPageBase extends PageBase
 		$this->show_filter_fields();
 		echo '</td><td align="right">';
 		$this->show_search_fields();
-		echo '</table>';
+		echo '</table></p>';
 	}
 	
 	protected function show_filter_fields()
