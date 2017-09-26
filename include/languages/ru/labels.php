@@ -1016,7 +1016,6 @@ $labelMenu = array (
 'season name' => 'название сезона', // ./include/names.php, ./include/names.php, ./include/names.php
 '[0] played no games.' => '[0] не сыграл ни одной игры.', // ratings.php
 'Player not found.' => 'Игрок не найден', // ratings.php
-'Find' => 'Найти', // ratings.php
 'Red' => 'Красный', // player_compare.php, ./include/scoring.php
 'Black' => 'Черный', // player_compare.php, ./include/scoring.php
 'Following [0].' => 'Следим за [0].', // ratings.php
@@ -1065,11 +1064,12 @@ $labelMenu = array (
 'Duplicated games' => 'Дублированные игры', // ./include/general_page_base.php
 'Search for duplicated games suspects.' => 'Найти игры подозреваемые в том, что они дублируют друг друга.', // ./include/general_page_base.php
 'Show moderators who moderated in a specific season.' => 'Показать ведущих, ведших игры в соответствующем сезоне.', // club_moderators.php
+'Consider only the games played in a specific club, city, or country.' => 'Учитывать только игры сыгранные в определенном клубе, городе, или стране.', // nominations.php
 'The Sheriff\'s check' => 'Проверка шерифа', // view_game.php
 'The Don\'s check' => 'Проверка дона', // view_game.php
 'The Don\'s game' => 'Игра доном', // view_game_stats.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
-'Consider only the games played in a specific club, city, or country.' => 'Учитывать только игры сыгранные в определенном клубе, городе, или стране.', // nominations.php
+'Find player' => 'Найти игрока', // ratings.php
 );
 
 return $labelMenu;

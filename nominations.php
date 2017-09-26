@@ -100,8 +100,8 @@ class Page extends GeneralPageBase
 		global $_profile, $_lang_code;
 		
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $this->noms[$this->nom][1] . ') as abs, (' . $this->noms[$this->nom][1] . ') / (' . $this->noms[$this->nom][2] . ') as val' .
-				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
+			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $this->noms[$this->nom][1] . ') as abs, (' . $this->noms[$this->nom][1] . ') / (' . $this->noms[$this->nom][2] . ') as val, c.id, c.name, c.flags' .
+				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' WHERE g.result > 0',
 			$this->condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $this->min_games);
@@ -128,7 +128,7 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="2">' . get_label('Player') . '</td>';
+		echo '<td colspan="3">' . get_label('Player') . '</td>';
 		echo '<td width="100" align="center">' . get_label('Games played') . '</td>';
 		echo '<td width="100" align="center">';
 		if ($this->sort & 2)
@@ -177,12 +177,15 @@ class Page extends GeneralPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $games_played, $abs, $val) = $row;
+			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags) = $row;
 
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 			show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+			echo '<td width="50" align="center">';
+			show_club_pic($club_id, $club_flags, ICONS_DIR, 40, 40, 'title="' . $club_name . '"');
+			echo '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td width="100" align="center">' . number_format($abs, 0) . '</td>';
 			echo '<td width="100" align="center">';
