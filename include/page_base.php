@@ -179,7 +179,7 @@ class PageBase
 				echo '<input value="Login" type="submit" class="login_btn"><br>';
 				echo '<a href="reset_pwd.php?bck=0">'.get_label('Forgot your password?').'</a></form></td>';
 				
-				echo '<td align="right"><a href="create_account.php?bck=0" title="'.get_label('Create user account').'">'.get_label('Create account').'</a></td>';
+				echo '<td align="right"><a href="javascript:mr.createAccount()" title="'.get_label('Create user account').'">'.get_label('Create account').'</a></td>';
 				
 				echo '</tr></table>';
 			}

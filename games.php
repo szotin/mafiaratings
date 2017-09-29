@@ -20,6 +20,7 @@ class Page extends GeneralPageBase
 		
 		parent::prepare();
 		
+		$this->ccc_title = get_label('Filter games by club, city, or country.');
 		$this->is_admin = ($_profile != NULL && $_profile->is_admin());
 		$this->result_filter = -1;
 		if (isset($_REQUEST['results']))
@@ -125,7 +126,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_filter_fields()
 	{
-		echo '<select id="results" onChange="filter()">';
+		echo '<select id="results" onChange="filter()" title="' . get_label('Filter games by result.') . '">';
 		show_option(-1, $this->result_filter, get_label('All games'));
 		show_option(1, $this->result_filter, get_label('Games won by town'));
 		show_option(2, $this->result_filter, get_label('Games won by mafia'));

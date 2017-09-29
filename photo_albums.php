@@ -15,6 +15,7 @@ class Page extends GeneralPageBase
 		parent::prepare();
 		$this->link_params = array('ccc' => $this->ccc_filter->get_code());
 		PhotoAlbum::prepare_list($this->link_params);
+		$this->ccc_title = get_label('Filter photo albums by club, city, or country.');
 	}
 	
 	protected function show_body()

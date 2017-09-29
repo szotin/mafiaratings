@@ -580,6 +580,24 @@ var mr = new function()
 		}
 		window.location.replace(url);
 	}
+	
+	//--------------------------------------------------------------------------------------
+	// user
+	//--------------------------------------------------------------------------------------
+	this.banUser = function(userId)
+	{
+		json.post("user_ops.php", { 'ban': userId  }, refr);
+	}
+	
+	this.unbanUser = function(userId)
+	{
+		json.post("user_ops.php", { 'unban': userId  }, refr);
+	}
+	
+	this.editUser = function(userId)
+	{
+		dlg.form("user_edit.php?id=" + userId, refr, 400);
+	}
 }
 
 var swfu = null;

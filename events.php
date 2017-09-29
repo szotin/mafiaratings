@@ -17,6 +17,7 @@ class Page extends GeneralPageBase
 	{
 		parent::prepare();
 		$this->show_empty = isset($_REQUEST['emp']);
+		$this->ccc_title = get_label('Filter events by club, city, or country.');
 	}
 
 	protected function show_body()

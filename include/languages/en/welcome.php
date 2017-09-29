@@ -6,7 +6,7 @@
  
 <p>This stationary game is a popular group party game involving lots of strategy and bluffing. It is good for discussing topics such as lying, deception, trust, good versus evil, etc. or just for a fun time. There are four roles one can play: A mobster, The Don, The Sheriff, or a civilian.</p>
  
-<p><a href="create_account.php">Sign up</a> only takes a minute, and is free. You could soon be on your way to become the biggest, most feared, and respected mobster! Note that you can come without signing up - it is absolutely fine. But signing up and registering helps us to plan the events, so it's recommended.</p>
+<p><a href="javascript:mr.createAccount()">Sign up</a> only takes a minute, and is free. You could soon be on your way to become the biggest, most feared, and respected mobster! Note that you can come without signing up - it is absolutely fine. But signing up and registering helps us to plan the events, so it's recommended.</p>
  
 <p>We play Mafia every Friday in Vancouver at 7 p.m. where you can join us for loads of fun, socializing and just a major blast! And it's FREE. Please check our <a href="calendar.php">events calendar</a> for more details.<p>
  
@@ -22,5 +22,5 @@
 
 <p>Based on our personal research, more than 70% of people who come once want to come again.</p>
 
-<p>Try it! <a href="create_account.php">Sign up</a> and come next Friday.<br>
+<p>Try it! <a href="javascript:mr.createAccount()">Sign up</a> and come next Friday.<br>
 You are more than welcome to join our club!</p>

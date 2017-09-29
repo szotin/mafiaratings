@@ -68,6 +68,10 @@ function show_club_pic($club_id, $flags, $dir, $width = 0, $height = 0, $attribu
 	{
 		echo $origin . '?' . (($flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET);
 	}
+	else if ($club_id == NULL)
+	{
+		echo 'images/transp.png';
+	}
 	else
 	{
 		echo 'images/' . $dir . 'club.png';
