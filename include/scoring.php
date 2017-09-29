@@ -57,16 +57,16 @@ function format_rating($rating)
 	return number_format($rating, $digits);
 }
 
-function show_scoring_select($club_id, $scoring_id, $form_name)
+function show_scoring_select($club_id, $scoring_id, $form_name, $title)
 {
-	echo '<select name="scoring" onChange="document.' . $form_name . '.submit()">';
+	echo '<select name="scoring" onChange="document.' . $form_name . '.submit()" title="' . $title . '">';
 	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
 	while ($row = $query->next())
 	{
 		list ($sid, $sname) = $row;
 		show_option($sid, $scoring_id, $sname);
 	}
-	echo '</select></td>';
+	echo '</select>';
 }
 
 define('ROLE_NAME_FLAG_LOWERCASE', 1);

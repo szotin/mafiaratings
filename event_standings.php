@@ -13,10 +13,18 @@ class Page extends EventPageBase
 	private $scoring_id;
 	private $roles;
 	
+	private $user_id;
+	private $user_name;
+	private $user_club_id;
+	private $user_city_id;
+	private $user_country_id;
+	
 	protected function prepare()
 	{
+		global $_page;
+		
 		parent::prepare();
-		$this->_title = get_label('[0] standings', $this->event->name);
+		$this->_title = get_label('[0]. Standings.', $this->event->name);
 		
 		$this->scoring_id = $this->event->scoring_id;
 		if (isset($_REQUEST['scoring']))
@@ -29,29 +37,83 @@ class Page extends EventPageBase
 		{
 			$this->roles = (int)$_REQUEST['roles'];
 		}
+		
+		$this->user_id = 0;
+		if ($_page < 0)
+		{
+			$this->user_id = -$_page;
+			$_page = 0;
+			$query = new DbQuery('SELECT u.name, u.club_id, u.city_id, c.country_id FROM users u JOIN cities c ON c.id = u.city_id WHERE u.id = ?', $this->user_id);
+			if ($row = $query->next())
+			{
+				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
+				$this->_title .= ' ' . get_label('Following [0].', $this->user_name);
+			}
+			else
+			{
+				$this->errorMessage(get_label('Player not found.'));
+			}
+		}
 	}
 	
 	protected function show_body()
 	{
 		global $_profile, $_page;
 		
-		$my_id = -1;
-		if ($_profile != NULL)
+		$condition = get_roles_condition($this->roles);
+		if ($this->user_id > 0)
 		{
-			$my_id = $_profile->user_id;
+			$pos_query = new DbQuery(
+				'SELECT IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
+					' JOIN games g ON p.game_id = g.id' .
+					' JOIN users u ON p.user_id = u.id' .
+					' WHERE g.event_id = ?',
+			$this->scoring_id, $this->event->id, $condition);
+			$pos_query->add(' AND u.id = ? GROUP BY u.id', $this->user_id);
+			
+			if ($row = $pos_query->next())
+			{
+				list ($uscore, $ugames, $uwon) = $row;
+				if ($ugames > 0)
+				{
+					$pos_query = new DbQuery(
+						'SELECT count(*) FROM (SELECT u.id, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, SUM(p.won) as won, COUNT(p.game_id) as games' .
+							' FROM players p' .
+							' JOIN users u ON p.user_id = u.id' .
+							' JOIN games g ON g.id = p.game_id' .
+							' WHERE g.event_id = ?', $this->scoring_id, $this->event->id, $condition);
+					$pos_query->add(
+						' AND u.id <> ? GROUP BY u.id ' . 
+						' HAVING score > ? OR (score = ? AND (won > ? OR (won = ? AND (games > ? OR (games = ? AND u.id < ?)))))'  . 
+						') as upper',
+						$this->user_id, $uscore, $uscore, $uwon, $uwon, $ugames, $ugames, $this->user_id);
+					list($user_pos) = $pos_query->next();
+					$_page = floor($user_pos / PAGE_SIZE);
+				}
+				else
+				{
+					$this->no_user_error();
+				}
+			}
+			else
+			{
+				$this->no_user_error();
+			}
 		}
 		
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
 		echo '<table class="transp" width="100%">';
-		echo '<tr><td>' . get_label('Scoring system') . ': ';
-		show_scoring_select($this->event->club_id, $this->scoring_id, 'viewForm');
-		echo '</td><td align="right">';
+		echo '<tr><td>';
+		show_scoring_select($this->event->club_id, $this->scoring_id, 'viewForm', get_label('Scoring system'));
+		echo ' ';
 		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
+		echo '</td><td align="right">';
+		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', '', get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
 
-		$role_condition = get_roles_condition($this->roles);
-		list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?', $this->event->id, $role_condition);
+		list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?', $this->event->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
@@ -60,8 +122,8 @@ class Page extends EventPageBase
 				' JOIN users u ON p.user_id = u.id' .
 				' LEFT OUTER JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
 				' WHERE g.event_id = ?',
-			$this->scoring_id, $this->event->id, $role_condition);
-		$query->add(' GROUP BY p.user_id ORDER BY points DESC, games, won DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+			$this->scoring_id, $this->event->id, $condition);
+		$query->add(' GROUP BY p.user_id ORDER BY points DESC, won DESC, games DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
 		$number = $_page * PAGE_SIZE;
 		echo '<table class="bordered light" width="100%">';
@@ -83,16 +145,15 @@ class Page extends EventPageBase
 				$name = $nick . ' (' . $name . ')';
 			}
 			
-			if ($id == $my_id)
+			if ($id == $this->user_id)
 			{
-				echo '<tr class="light"><td align="center">';
+				echo '<tr class="dark">';
 			}
 			else
 			{
-				echo '<tr><td align="center" class="dark">';
+				echo '<tr>';
 			}
-
-			echo $number . '</td>';
+			echo '<td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 			show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . $name . '</a></td>';
@@ -115,6 +176,20 @@ class Page extends EventPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+	}
+	
+	
+	private function no_user_error()
+	{
+		if ($this->roles == POINTS_ALL)
+		{
+			$message = get_label('[0] played no games.', $this->user_name);
+		}
+		else
+		{
+			$message = get_label('[0] played no games as [1].', $this->user_name, get_role_name($this->roles, ROLE_NAME_FLAG_SINGLE | ROLE_NAME_FLAG_LOWERCASE));
+		}
+		$this->errorMessage($message);
 	}
 }
 
