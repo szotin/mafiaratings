@@ -177,7 +177,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_filter_fields()
 	{
-		$this->season = show_seasons_select(0, $this->season, 'filter()', get_label('Show [0] of a specific season.', get_label('stats')));
+		$this->season = show_seasons_select(0, $this->season, 'filter()', get_label('Show stats of a specific season.'));
 	}
 	
 	protected function get_filter_js()

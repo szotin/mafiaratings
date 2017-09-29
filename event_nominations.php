@@ -1,29 +1,31 @@
 <?php
 
-require_once 'include/general_page_base.php';
+require_once 'include/event.php';
 require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 
-class Page extends GeneralPageBase
+class Page extends EventPageBase
 {
-	private $season;
-	private $roles;
-	private $min_games;
 	private $games_count;
-	private $condition;
-	private $noms;
-	private $nom;
-	private $sort;
 
 	protected function prepare()
 	{
-		global $_profile;
-		
 		parent::prepare();
 		
-		$this->noms = array(
-			array(get_label('Rating'), 'SUM(p.rating_earned)', 'count(*)', 0),
+		$this->_title = get_label('[0]. Nomination winners.', $this->event->name);
+		list($timezone) = Db::record(get_label('event'), 'SELECT c.timezone FROM events e JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE e.id = ?', $this->event->id);
+		date_default_timezone_set($timezone);
+		
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND g.result > 0', $this->event->id);
+	}
+	
+	protected function show_body()
+	{
+		global $_profile, $_lang_code;
+		
+		$noms = array(
+			array(get_label('Points'), 'IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ' . $this->event->scoring_id . ' AND (o.flag & p.flags) <> 0)), 0) / 100', 'count(*)', 0),
 			array(get_label('Number of wins'), 'SUM(p.won)', 'count(*)', 1),
 			array(get_label('Voted against civilians'), 'SUM(p.voted_civil)', 'SUM(p.voted_civil + p.voted_mafia + p.voted_sheriff)', 1),
 			array(get_label('Voted against mafia'), 'SUM(p.voted_mafia)', 'SUM(p.voted_civil + p.voted_mafia + p.voted_sheriff)', 1),
@@ -48,67 +50,52 @@ class Page extends GeneralPageBase
 			array(get_label('Checked by sheriff'), 'SUM(IF(p.checked_by_sheriff >= 0, 1, 0))', 'count(*)', 1),
 		);
 		
-		$this->season = 0;
-		if (isset($_REQUEST['season']))
-		{
-			$this->season = $_REQUEST['season'];
-		}
-		
-		$this->roles = POINTS_ALL;
-		if (isset($_REQUEST['roles']))
-		{
-			$this->roles = (int)$_REQUEST['roles'];
-		}
-		
-		date_default_timezone_set($_profile->timezone);
-		$this->condition = get_season_condition($this->season, 'g.start_time', 'g.end_time');
-		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.result > 0 ', $this->condition);
-		$this->condition->add(get_roles_condition($this->roles));
-		
-		if (isset($_REQUEST['min']))
-		{
-			$this->min_games = $_REQUEST['min'];
-		}
-		else
-		{
-			$this->min_games = round($this->games_count / 100) * 10;
-			$this->min_games -= $this->min_games % 10;
-		}
-		
-		$this->nom = 0;
+		$nom = 0;
 		if (isset($_REQUEST['nom']))
 		{
-			$this->nom = $_REQUEST['nom'];
+			$nom = $_REQUEST['nom'];
 		}
-		if ($this->nom >= count($this->noms))
+		if ($nom >= count($noms))
 		{
-			$this->nom = 0;
+			$nom = 0;
 		}
 		
-		$this->sort = 0;
+		$roles = POINTS_ALL;
+		if (isset($_REQUEST['roles']))
+		{
+			$roles = (int)$_REQUEST['roles'];
+		}
+		
+		$sort = 0;
 		if (isset($_REQUEST['sort']))
 		{
-			$this->sort = $_REQUEST['sort'];
+			$sort = $_REQUEST['sort'];
 		}
 		
-		$this->ccc_title = get_label('Consider only the games played in a specific club, city, or country.');
-	}
-	
-	protected function show_body()
-	{
-		global $_profile, $_lang_code;
-		
-		$query = new DbQuery(
-			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $this->noms[$this->nom][1] . ') as abs, (' . $this->noms[$this->nom][1] . ') / (' . $this->noms[$this->nom][2] . ') as val, c.id, c.name, c.flags' .
-				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-				' WHERE g.result > 0',
-			$this->condition);
-		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $this->min_games);
-		
-		if ($this->sort & 2)
+		echo '<form name="filter" method="get"><input type="hidden" name="id" value="' . $this->event->id . '">';
+		echo '<input type="hidden" name="sort" id="sort" value="' . $sort . '">';
+		echo '<table class="transp" width="100%"><tr><td>';
+		show_roles_select($roles, 'document.filter.submit()', get_label('Use only the stats of a specific role.'));
+		echo '</td><td align="right">';
+		echo '<select name="nom" onchange="document.filter.submit()">';
+		for ($i = 0; $i < count($noms); ++$i)
 		{
-			if ($this->sort & 1)
+			show_option($i, $nom, $noms[$i][0]);
+		}
+		echo '</select>';
+		echo '</td></tr></table></form>';
+		
+		$condition = get_roles_condition($roles);
+		$query = new DbQuery(
+			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val' .
+				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
+				' WHERE g.event_id = ? AND g.result > 0',
+			$this->event->id, $condition);
+		$query->add(' GROUP BY p.user_id');
+		
+		if ($sort & 2)
+		{
+			if ($sort & 1)
 			{
 				$query->add(' ORDER BY abs, val, cnt DESC LIMIT 10');
 			}
@@ -117,7 +104,7 @@ class Page extends GeneralPageBase
 				$query->add(' ORDER BY abs DESC, val DESC, cnt DESC LIMIT 10');
 			}
 		}
-		else if ($this->sort & 1)
+		else if ($sort & 1)
 		{
 			$query->add(' ORDER BY val, abs, cnt DESC LIMIT 10');
 		}
@@ -128,12 +115,12 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="3">' . get_label('Player') . '</td>';
+		echo '<td colspan="2">' . get_label('Player') . '</td>';
 		echo '<td width="100" align="center">' . get_label('Games played') . '</td>';
 		echo '<td width="100" align="center">';
-		if ($this->sort & 2)
+		if ($sort & 2)
 		{
-			if ($this->sort & 1)
+			if ($sort & 1)
 			{
 				echo '&#x25B2; <a href="javascript:sortBy(2)">';
 			}
@@ -148,9 +135,9 @@ class Page extends GeneralPageBase
 		}
 		echo get_label('Absolute') . '</a></td>';
 		echo '<td width="100" align="center">';
-		if (($this->sort & 2) == 0)
+		if (($sort & 2) == 0)
 		{
-			if ($this->sort & 1)
+			if ($sort & 1)
 			{
 				echo '&#x25B2; <a href="javascript:sortBy(0)">';
 			}
@@ -163,7 +150,7 @@ class Page extends GeneralPageBase
 		{
 			echo '<a href="javascript:sortBy(0)">';
 		}
-		if ($this->noms[$this->nom][3])
+		if ($noms[$nom][3])
 		{
 			echo '%';
 		}
@@ -177,19 +164,16 @@ class Page extends GeneralPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags) = $row;
+			list ($id, $name, $flags, $games_played, $abs, $val) = $row;
 
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
 			show_user_pic($id, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-			echo '<td width="50" align="center">';
-			show_club_pic($club_id, $club_flags, ICONS_DIR, 40, 40, 'title="' . $club_name . '"');
-			echo '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td width="100" align="center">' . number_format($abs, 0) . '</td>';
 			echo '<td width="100" align="center">';
-			if ($this->noms[$this->nom][3])
+			if ($noms[$nom][3])
 			{
 				echo number_format($val * 100, 1) . '%';
 			}
@@ -201,61 +185,21 @@ class Page extends GeneralPageBase
 		}
 		echo '</table>';
 	}
-	
-	protected function show_filter_fields()
-	{
-		$this->season = show_seasons_select(0, $this->season, 'filter()', get_label('Show nomimations of a specific season.'));
-		show_roles_select($this->roles, 'filter()', get_label('Use only the stats of a specific role.'));
-		
-		echo ' <select id="min" onchange="filter()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
-		$max_option = round($this->games_count / 20) * 10;
-		for ($i = 0; $i <= $max_option; $i += 10)
-		{
-			if ($i == 0)
-			{
-				show_option($i, $this->min_games, get_label('All players'));
-			}
-			else
-			{
-				show_option($i, $this->min_games, get_label('[0] or more games', $i));
-			}
-		}
-		echo '</select>';
-	}
-	
-	protected function show_search_fields()
-	{
-		echo '<select id="nom" onchange="filter()" title="' . get_label('Nomination to view.') . '">';
-		for ($i = 0; $i < count($this->noms); ++$i)
-		{
-			show_option($i, $this->nom, $this->noms[$i][0]);
-		}
-		echo '</select>';
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ "&season=" + $("#season").val() + "&roles=" + $("#roles").val() + "&min=" + $("#min").val() + "&nom=" + $("#nom").val() + "&sort=" + sort';
-	}
-	
-	protected function js()
-	{
-		parent::js();
-?>
-		var sort = <?php echo $this->sort; ?>;
-		function sortBy(s)
-		{
-			if (s != sort)
-			{
-				sort = s;
-				filter();
-			}
-		}
-<?php
-	}
 }
 
 $page = new Page();
-$page->run(get_label('Nomination winners.'), PERM_ALL);
+$page->run(get_label('Event'), PERM_ALL);
 
 ?>
+
+<script>
+function sortBy(s)
+{
+	if (s != $('#sort').val())
+	{
+		$('#sort').val(s);
+		//console.log($('#sort').val());
+		document.filter.submit();
+	}
+}
+</script>

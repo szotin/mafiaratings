@@ -197,7 +197,7 @@ class UserPageBase extends PageBase
 		$menu = array(
 			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information')),
 			new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('[0] statistics', $this->title)),
-			new MenuItem('user_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('[0] statistics on different numbers', $this->title)),
+			new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('[0] statistics on different numbers', $this->title)),
 			new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)),
 			new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title)),
 			new MenuItem('user_messages.php?id=' . $this->id, get_label('Messages'), get_label('Forum messages of [0]', $this->title)));

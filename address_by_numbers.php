@@ -1,5 +1,6 @@
 <?php
 
+require_once 'include/address.php';
 require_once 'include/user.php';
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
@@ -151,12 +152,20 @@ function sorting_link($ref, $sort, $text)
 	return $result;
 }
 
-class Page extends UserPageBase
+class Page extends AddressPageBase
 {
+	private $season;
+	
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->_title = get_label('[0] stats', $this->title);
+		$this->season = 0;
+		if (isset($_REQUEST['season']))
+		{
+			$this->season = $_REQUEST['season'];
+		}
+		
+		$this->_title = get_label('[0]. Stats by numbers.', $this->name);
 	}
 	
 	protected function show_body()
@@ -167,44 +176,27 @@ class Page extends UserPageBase
 			$sort_type = (int)$_REQUEST['sort'];
 		}
 		
-		$club_id = 0;
-		if (isset($_REQUEST['club']))
-		{
-			$club_id = $_REQUEST['club'];
-		}
-	
 		$roles = POINTS_ALL;
 		if (isset($_REQUEST['roles']))
 		{
 			$roles = (int)$_REQUEST['roles'];
 		}
 		
-		echo '<form method="get" name="form" action="user_numbers.php">';
+		echo '<form method="get" name="form" action="address_by_numbers.php">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<input type="hidden" name="sort" value="' . $sort_type . '">';
-		
-		$query = new DbQuery('SELECT DISTINCT c.id, c.name FROM players p, games g, clubs c WHERE p.game_id = g.id AND g.club_id = c.id AND p.user_id = ? ORDER BY c.name', $this->id);
-		echo '<select name="club" onChange="document.form.submit()">';
-		show_option(0, $club_id, get_label('All clubs'));
-		while ($row = $query->next())
-		{
-			list($cid, $cname) = $row;
-			show_option($cid, $club_id, $cname);
-		}
-		echo '</select> ';
+		$this->season = show_seasons_select($this->club_id, $this->season, 'document.form.submit()', get_label('Show stats of a specific season.'));
+		echo ' ';
 		show_roles_select($roles, 'document.form.submit()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
 		echo '</td></tr></table></form>';
 
 		$numbers = array();
 		$query = new DbQuery(
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
-			' FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ?', $this->id);
+			' FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ?', $this->id);
 		$query->add(get_roles_condition($roles));
-		if ($club_id > 0)
-		{
-			$query->add(' AND g.club_id = ?', $club_id);
-		}
+		$query->add(get_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		$query->add(' GROUP BY p.number');
 		while ($row = $query->next())
 		{
@@ -212,7 +204,7 @@ class Page extends UserPageBase
 		}
 		usort($numbers, "compare_numbers");
 			
-		$ref = 'user_numbers.php?id=' . $this->id;
+		$ref = 'address_by_numbers.php?id=' . $this->id;
 		if ($roles != POINTS_ALL)
 		{
 			$ref .= '&roles=' . $roles;
@@ -229,9 +221,19 @@ class Page extends UserPageBase
 		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_KILLED_FIRST_NIGHT, get_label('Killed first night (%)')) . '</td>';
 		echo '</tr>';
 		
+		$sum_games = $sum_won = $sum_rating = $sum_warnings = $sum_sheriff_check = $sum_don_check = $sum_killed_first = $sum_killed_night = 0;
 		foreach ($numbers as $row)
 		{
 			list($number, $games, $won, $rating, $warnings, $sheriff_check, $don_check, $killed_first, $killed_night) = $row;
+			$sum_games += $games;
+			$sum_won += $won;
+			$sum_rating += $rating;
+			$sum_warnings += $warnings;
+			$sum_sheriff_check += $sheriff_check;
+			$sum_don_check += $don_check;
+			$sum_killed_first += $killed_first;
+			$sum_killed_night += $killed_night;
+			
 			echo '<tr>';
 			echo '<td>' . $number . '</td>';
 			echo '<td>' . $games . '</td>';
@@ -244,11 +246,26 @@ class Page extends UserPageBase
 			echo '<td>' . $killed_first . ' (' . format_rating($killed_first*100/$games) . '%)</td>';
 			echo '</tr>';
 		}
+		
+		if ($sum_games > 0)
+		{
+			echo '<tr class="darker">';
+			echo '<td>' . get_label('Total') . '</td>';
+			echo '<td>' . $sum_games . '</td>';
+			echo '<td>' . $sum_won . ' (' . format_rating($sum_won*100/$sum_games) . '%)</td>';
+			echo '<td>' . format_rating($sum_rating) . ' (' . format_rating($sum_rating/$sum_games) . ')</td>';
+			echo '<td>' . $sum_warnings . ' (' . format_rating($sum_warnings/$sum_games) . ')</td>';
+			echo '<td>' . $sum_sheriff_check . ' (' . format_rating($sum_sheriff_check*100/$sum_games) . '%)</td>';
+			echo '<td>' . $sum_don_check . ' (' . format_rating($sum_don_check*100/$sum_games) . '%)</td>';
+			echo '<td>' . $sum_killed_night . ' (' . format_rating($sum_killed_night*100/$sum_games) . '%)</td>';
+			echo '<td>' . $sum_killed_first . ' (' . format_rating($sum_killed_first*100/$sum_games) . '%)</td>';
+			echo '</tr>';
+		}
 		echo '</table>';
 	}
 }
 
 $page = new Page();
-$page->run(get_label('[0] statistics by numbers', get_label('User')), PERM_ALL);
+$page->run(get_label('[0]. Stats by numbers.', get_label('Address')), PERM_ALL);
 
 ?>

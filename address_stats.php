@@ -1,11 +1,11 @@
 <?php
 
-require_once 'include/page_base.php';
+require_once 'include/address.php';
 require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 
-class Page extends ClubPageBase
+class Page extends AddressPageBase
 {
 	private $season;
 	private $min_games;
@@ -17,7 +17,7 @@ class Page extends ClubPageBase
 		parent::prepare();
 		
 		$this->_title = get_label('[0]. General stats.', $this->name);
-		list($timezone) = Db::record(get_label('club'), 'SELECT i.timezone FROM clubs c JOIN cities i ON c.city_id = i.id WHERE c.id = ?', $this->id);
+		list($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 		
 		$this->season = 0;
@@ -33,16 +33,16 @@ class Page extends ClubPageBase
 		
 		echo '<form name="filter" method="get"><input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$this->season = show_seasons_select($this->id, $this->season, 'document.filter.submit()', get_label('Show stats of a specific season.'));
+		$this->season = show_seasons_select($this->club_id, $this->season, 'document.filter.submit()', get_label('Show stats of a specific season.'));
 		echo '</td></tr></table>';
 		
 		$this->season_condition = get_season_condition($this->season, 'g.start_time', 'g.end_time');
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.club_id = ? AND g.result > 0', $this->id, $this->season_condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.result > 0', $this->id, $this->season_condition);
 		
 		$playing_count = 0;
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
-		$query = new DbQuery('SELECT g.result, count(*) FROM games g WHERE g.club_id = ? AND g.result > 0', $this->id, $this->season_condition);
+		$query = new DbQuery('SELECT g.result, count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.result > 0', $this->id, $this->season_condition);
 		$query->add(' GROUP BY result');
 		while ($row = $query->next())
 		{
@@ -62,7 +62,7 @@ class Page extends ClubPageBase
 		$games_count = $civils_win_count + $mafia_win_count + $playing_count;
 		
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td colspan="2"><a href="club_games.php?bck=1&id=' . $this->id . '"><b>' . get_label('Stats') . '</b></a></td></tr>';
+		echo '<tr class="darker"><td colspan="2"><a href="address_games.php?bck=1&id=' . $this->id . '"><b>' . get_label('Stats') . '</b></a></td></tr>';
 		echo '<tr><td width="200">'.get_label('Games played').':</td><td>' . ($civils_win_count + $mafia_win_count) . '</td></tr>';
 		if ($civils_win_count + $mafia_win_count > 0)
 		{
@@ -76,16 +76,16 @@ class Page extends ClubPageBase
 		
 		if ($civils_win_count + $mafia_win_count > 0)
 		{
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.club_id = ? AND g.result > 0', $this->id, $this->season_condition);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.result > 0', $this->id, $this->season_condition);
 			echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 			
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND g.result > 0', $this->id, $this->season_condition);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.result > 0', $this->id, $this->season_condition);
 			echo '<tr><td>'.get_label('People moderated').':</td><td>' . $counter . '</td></tr>';
 			
 			list ($a_game, $s_game, $l_game) = Db::record(
 				get_label('game'),
 				'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) ' .
-					'FROM games g WHERE g.result > 0 AND club_id = ?', 
+					'FROM games g JOIN events e ON g.event_id = e.id WHERE g.result > 0 AND e.address_id = ?', 
 				$this->id, $this->season_condition);
 			echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';
@@ -95,7 +95,7 @@ class Page extends ClubPageBase
 		
 		if ($games_count > 0)
 		{
-			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.club_id = ? AND g.result > 0', $this->id, $this->season_condition);
+			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.result > 0', $this->id, $this->season_condition);
 			$query->add(' GROUP BY p.kill_type, p.role');
 			$killed = array();
 			while ($row = $query->next())
@@ -162,6 +162,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Club'), PERM_ALL);
+$page->run(get_label('Address'), PERM_ALL);
 
 ?>

@@ -9,7 +9,7 @@ class Page extends UserPageBase
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->_title = get_label('[0] stats', $this->title);
+		$this->_title = get_label('[0]. General stats.', $this->name);
 	}
 	
 	protected function show_body()
@@ -372,6 +372,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0] stats', get_label('User')), PERM_ALL);
+$page->run(get_label('[0]. General stats.', get_label('User')), PERM_ALL);
 
 ?>

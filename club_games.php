@@ -38,7 +38,7 @@ class Page extends ClubPageBase
 		echo '<form method="get" name="form" action="club_games.php">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		$season = show_seasons_select($this->id, $season, 'document.form.submit()', get_label('Show [0] of a specific season.', get_label('games')));
+		$season = show_seasons_select($this->id, $season, 'document.form.submit()', get_label('Show games of a specific season.'));
 		echo ' <select name="results" onChange="document.form.submit()">';
 		show_option(-1, $result_filter, get_label('All games'));
 		show_option(1, $result_filter, get_label('Games won by town'));

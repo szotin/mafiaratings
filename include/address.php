@@ -274,10 +274,14 @@ class AddressPageBase extends PageBase
 		$menu = array(
 			new MenuItem('address_info.php?id=' . $this->id, get_label('Address'), get_label('[0] information', $this->name)),
 			new MenuItem('address_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
-			new MenuItem('address_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name)),
-			new MenuItem('address_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
+			new MenuItem('#stats', get_label('Stats'), NULL, array(
+				new MenuItem('address_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
+				new MenuItem('address_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+				new MenuItem('address_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')))),
 			new MenuItem('address_games.php?id=' . $this->id, get_label('Games'), get_label('Games list at [0]', $this->name)),
-			new MenuItem('address_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name)));
+			new MenuItem('address_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
+			new MenuItem('address_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name)),
+			new MenuItem('address_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name)));
 		
 		echo '<table class="head" width="100%">';
 		
