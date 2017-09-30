@@ -245,7 +245,7 @@ class ClubPageBase extends PageBase
 			
 		if ($this->is_manager || $this->is_moder)
 		{
-			$managment_menu = array(new MenuItem('club_players.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name)));
+			$managment_menu = array(new MenuItem('club_users.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name)));
 			if ($this->is_manager)
 			{
 				$managment_menu[] = new MenuItem('club_upcoming.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name));

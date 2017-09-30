@@ -6,15 +6,6 @@ require_once 'include/user_location.php';
 $result = array();
 ob_start();
 
-function check_admin_permission($user_id)
-{
-	global $_profile;
-	if ($_profile == NULL && !$_profile->is_admin())
-	{
-		throw new FatalExc(get_label('No permissions'));
-	}
-}
-	
 try
 {
 	initiate_session();
@@ -78,66 +69,161 @@ try
 	}
 	else if (isset($_REQUEST['ban']))
 	{
-		check_admin_permission($_REQUEST['ban']);
-		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . U_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['ban']);
-		if (Db::affected_rows() > 0)
+		if ($_profile == NULL)
 		{
-			db_log('user', 'Banned', NULL, $_REQUEST['ban']);
+			throw new FatalExc(get_label('No permissions'));
+		}
+		
+		$user_id = (int)$_REQUEST['ban'];
+		if (isset($_REQUEST['club']))
+		{
+			$club_id = (int)$_REQUEST['club'];
+			if (!$_profile->is_manager($club_id))
+			{
+				throw new FatalExc(get_label('No permissions'));
+			}
+			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . UC_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+			if (Db::affected_rows() > 0)
+			{
+				db_log('user', 'Banned', NULL, $user_id, $club_id);
+			}
+		}
+		else 
+		{
+			if (!$_profile->is_admin())
+			{
+				throw new FatalExc(get_label('No permissions'));
+			}
+			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . U_FLAG_BANNED . ') WHERE id = ?', $user_id);
+			if (Db::affected_rows() > 0)
+			{
+				db_log('user', 'Banned', NULL, $user_id);
+			}
 		}
 	}
 	else if (isset($_REQUEST['unban']))
 	{
-		check_admin_permission($_REQUEST['unban']);
-		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . U_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['unban']);
-		if (Db::affected_rows() > 0)
+		if ($_profile == NULL)
 		{
-			db_log('user', 'Unbanned', NULL, $_REQUEST['unban']);
+			throw new FatalExc(get_label('No permissions'));
+		}
+		
+		$user_id = (int)$_REQUEST['unban'];
+		if (isset($_REQUEST['club']))
+		{
+			$club_id = (int)$_REQUEST['club'];
+			if (!$_profile->is_manager($club_id))
+			{
+				throw new FatalExc(get_label('No permissions'));
+			}
+			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . UC_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+			if (Db::affected_rows() > 0)
+			{
+				db_log('user', 'Unbanned', NULL, $user_id, $club_id);
+			}
+		}
+		else 
+		{
+			if (!$_profile->is_admin())
+			{
+				throw new FatalExc(get_label('No permissions'));
+			}
+			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . U_FLAG_BANNED . ') WHERE id = ?', $user_id);
+			if (Db::affected_rows() > 0)
+			{
+				db_log('user', 'Unbanned', NULL, $user_id);
+			}
 		}
 	}
-	else if (isset($_REQUEST['update']))
+	else if (isset($_REQUEST['access']))
 	{
+		if ($_profile == NULL)
+		{
+			throw new FatalExc(get_label('No permissions'));
+		}
+		
 		if (!isset($_REQUEST['id']))
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('user')));
 		}
 		$user_id = (int)$_REQUEST['id'];
-		check_admin_permission($user_id);
-
-		list($flags, $langs) = Db::record(get_label('user'), 'SELECT flags, languages FROM users WHERE id = ?', $user_id);
-		if (isset($_REQUEST['male']))
+		
+		if (isset($_REQUEST['club']))
 		{
-			if ((int)$_REQUEST['male'])
+			$club_id = (int)$_REQUEST['club'];
+			if (!$_profile->is_manager($club_id))
 			{
-				$flags |= U_FLAG_MALE;
+				throw new FatalExc(get_label('No permissions'));
 			}
-			else
+			
+			list($flags) = Db::record(get_label('user'), 'SELECT flags FROM user_clubs uc WHERE uc.user_id = ? AND uc.club_id = ?', $user_id, $club_id);
+			if (isset($_REQUEST['manager']))
 			{
-				$flags &= ~U_FLAG_MALE;
+				if ((int)$_REQUEST['manager'])
+				{
+					$flags |= UC_PERM_MANAGER;
+				}
+				else
+				{
+					$flags &= ~UC_PERM_MANAGER;
+				}
+			}
+			
+			if (isset($_REQUEST['moder']))
+			{
+				if ((int)$_REQUEST['moder'])
+				{
+					$flags |= UC_PERM_MODER;
+				}
+				else
+				{
+					$flags &= ~UC_PERM_MODER;
+				}
+			}
+			
+			if (isset($_REQUEST['player']))
+			{
+				if ((int)$_REQUEST['player'])
+				{
+					$flags |= UC_PERM_PLAYER;
+				}
+				else
+				{
+					$flags &= ~UC_PERM_PLAYER;
+				}
+			}
+			
+			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
+			if (Db::affected_rows() > 0)
+			{
+				$log_details = 'flags=' . $flags;
+				db_log('user', 'Changed', $log_details, $user_id, $club_id);
 			}
 		}
-		
-		if (isset($_REQUEST['admin']))
+		else
 		{
-			if ((int)$_REQUEST['admin'])
+			if (!$_profile->is_admin())
 			{
-				$flags |= U_PERM_ADMIN;
+				throw new FatalExc(get_label('No permissions'));
 			}
-			else
+			list($flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $user_id);
+			if (isset($_REQUEST['admin']))
 			{
-				$flags &= ~U_PERM_ADMIN;
+				if ((int)$_REQUEST['admin'])
+				{
+					$flags |= U_PERM_ADMIN;
+				}
+				else
+				{
+					$flags &= ~U_PERM_ADMIN;
+				}
 			}
-		}
-		
-		if (isset($_REQUEST['langs']))
-		{
-			$langs = (int)$_REQUEST['langs'];
-		}
-		
-		Db::exec(get_label('user'), 'UPDATE users SET flags = ?, languages = ? WHERE id = ?', $flags, $langs, $user_id);
-		if (Db::affected_rows() > 0)
-		{
-			$log_details = 'flags=' . $flags . "<br>langs=" . $langs;
-			db_log('user', 'Changed', $log_details, $user_id);
+			Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $user_id);
+			if (Db::affected_rows() > 0)
+			{
+				$log_details = 'flags=' . $flags;
+				db_log('user', 'Changed', $log_details, $user_id);
+			}
 		}
 	}
 }

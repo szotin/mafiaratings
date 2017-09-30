@@ -584,19 +584,34 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// user
 	//--------------------------------------------------------------------------------------
-	this.banUser = function(userId)
+	this.banUser = function(userId, clubId)
 	{
-		json.post("user_ops.php", { 'ban': userId  }, refr);
+		var params = { 'ban': userId  };
+		if (typeof clubId != "undefined")
+		{
+			params['club'] = clubId;
+		}
+		json.post("user_ops.php", params, refr);
 	}
 	
-	this.unbanUser = function(userId)
+	this.unbanUser = function(userId, clubId)
 	{
-		json.post("user_ops.php", { 'unban': userId  }, refr);
+		var params = { 'unban': userId  };
+		if (typeof clubId != "undefined")
+		{
+			params['club'] = clubId;
+		}
+		json.post("user_ops.php", params, refr);
 	}
 	
-	this.editUser = function(userId)
+	this.editUserAccess = function(userId, clubId)
 	{
-		dlg.form("user_edit.php?id=" + userId, refr, 400);
+		var url = "user_access.php?id=" + userId;
+		if (typeof clubId != "undefined")
+		{
+			url += "&club=" + clubId;
+		}
+		dlg.form(url, refr, 400);
 	}
 }
 
