@@ -86,7 +86,7 @@ function show_event_pic($id, $flags, $alt_id, $alt_flags, $dir, $width = 0, $hei
 /*		echo '<span style="position:relative; left:0px; top:0px;">';
 		show_address_pic($addr_id, $addr_flags, $dir, $width, $height);
 		echo '<span style="position:absolute;right:0px;bottom:0px;">';
-		show_club_pic($club_id, $club_flags, $dir, $width / 2, $height / 2);
+		show_club_pic($club_id, $club_name, $club_flags, $dir, $width / 2, $height / 2);
 		echo '</span></span>';*/
 	echo '" border="0"';
 	if ($width > 0)
@@ -630,7 +630,7 @@ class Event
 						}
 						
 						echo '<td width="16.66%" class="lighter" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						show_user_pic($user_id, $user_flags, ICONS_DIR, 50, 50);
+						show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
 						echo '</a><br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -667,7 +667,7 @@ class Event
 						}
 						
 						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						show_user_pic($user_id, $user_flags, ICONS_DIR, 50, 50);
+						show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
 						echo '</a><br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -732,7 +732,7 @@ class Event
 							echo 'class="lighter"';
 						}
 						echo 'align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						show_user_pic($user_id, $user_flags, ICONS_DIR, 50, 50);
+						show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
 						echo '</a><br>' . $name;
 						if ($bringing > 0)
 						{
@@ -785,7 +785,7 @@ class Event
 						}
 						
 						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						show_user_pic($user_id, $user_flags, ICONS_DIR, 50, 50);
+						show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
 						echo '</a><br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -838,7 +838,7 @@ class Event
 					}
 					
 					echo '<td width="50"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-					show_user_pic($user_id, $user_flags, ICONS_DIR, 50, 50);
+					show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
 					echo '</a></td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . cut_long_name($name, 80) . '</a></td><td width="280" align="center"><b>';
 					echo Event::odds_str($odds, $bringing, $late) . '</b></td></tr>';
 				}
@@ -1176,7 +1176,7 @@ class EventPageBase extends PageBase
 		echo '<td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom"><a href="club_main.php?bck=1&id=' . $this->event->club_id . '" title="' . $this->event->club_name . '"><table><tr><td align="center">' . $this->event->club_name . '</td></tr><tr><td align="center">';
-		show_club_pic($this->event->club_id, $this->event->club_flags, ICONS_DIR);
+		show_club_pic($this->event->club_id, $this->event->club_name, $this->event->club_flags, ICONS_DIR);
 		echo '</td></tr></table></a></td></tr>';
 		
 		echo '</table>';

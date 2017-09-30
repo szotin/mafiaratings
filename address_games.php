@@ -85,7 +85,7 @@ class Page extends AddressPageBase
 			
 			echo '<td class="dark" width="90" align="center"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 			echo '<td align="center">';
-			show_user_pic($moder_id, $moder_flags, ICONS_DIR, 32, 32, ' title="' . $moder_name . '" style="opacity: 0.8;"');
+			show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
 			echo '</td>';
 			echo '<td>' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
 			echo '<td align="center">' . format_time($duration) . '</td>';

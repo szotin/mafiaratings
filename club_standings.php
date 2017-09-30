@@ -131,9 +131,10 @@ class Page extends ClubPageBase
 		
 		list ($count) = Db::record(get_label('points'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.club_id = ?', $this->id, $condition);
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+			'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags FROM players p' . 
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON p.user_id = u.id' .
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' WHERE g.club_id = ?',
 			$this->scoring_id, $this->id, $condition);
 		$query->add(' GROUP BY p.user_id ORDER BY score DESC, won DESC, games DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -141,7 +142,7 @@ class Page extends ClubPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="2">'.get_label('Player').'</td>';
+		echo '<td colspan="3">'.get_label('Player').'</td>';
 		echo '<td width="80" align="center">'.get_label('Points').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games won').'</td>';
@@ -153,7 +154,7 @@ class Page extends ClubPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $points, $games_played, $games_won, $flags) = $row;
+			list ($id, $name, $points, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $row;
 
 			if ($id == $this->user_id)
 			{
@@ -165,8 +166,11 @@ class Page extends ClubPageBase
 			}
 			echo '<td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
-			show_user_pic($id, $flags, ICONS_DIR, 50, 50);
+			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+			echo '<td width="50" align="center">';
+			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
+			echo '</td>';
 			echo '<td align="center" class="dark">' . format_score($points) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';

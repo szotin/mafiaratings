@@ -34,7 +34,7 @@ try
 		show_option($cid, $club_id, $cname);
 	}
 	echo '</td><td align="center" valign="top" rowspan=5>';
-	show_user_pic($_profile->user_id, $_profile->user_flags, ICONS_DIR);
+	show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td></tr>';

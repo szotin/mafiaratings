@@ -101,7 +101,7 @@ class Page extends ClubPageBase
 			$min_games -= $min_games % 10;
 		}
 	
-		echo '<form name="filter" method="get"><input type="hidden" name="id" value="' . $this->id . '">';
+		echo '<p><form name="filter" method="get"><input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<input type="hidden" name="sort" id="sort" value="' . $sort . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		$this->season = show_seasons_select($this->id, $this->season, 'document.filter.submit()', get_label('Show stats of a specific season.'));
@@ -128,13 +128,15 @@ class Page extends ClubPageBase
 			show_option($i, $nom, $noms[$i][0]);
 		}
 		echo '</select>';
-		echo '</td></tr></table></form>';
+		echo '</td></tr></table></form></p>';
 		
 		$condition = get_roles_condition($roles);
 		$condition->add($this->season_condition);
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val' .
-				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id' .
+			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags' .
+				' FROM players p JOIN games g ON p.game_id = g.id' .
+				' JOIN users u ON u.id = p.user_id' .
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' WHERE g.club_id = ? AND g.result > 0',
 			$this->id, $condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $min_games);
@@ -161,7 +163,7 @@ class Page extends ClubPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="2">' . get_label('Player') . '</td>';
+		echo '<td colspan="3">' . get_label('Player') . '</td>';
 		echo '<td width="100" align="center">' . get_label('Games played') . '</td>';
 		echo '<td width="100" align="center">';
 		if ($sort & 2)
@@ -210,12 +212,15 @@ class Page extends ClubPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $games_played, $abs, $val) = $row;
+			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags) = $row;
 
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
-			show_user_pic($id, $flags, ICONS_DIR, 50, 50);
+			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+			echo '<td width="50" align="center">';
+			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
+			echo '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td width="100" align="center">' . number_format($abs, 0) . '</td>';
 			echo '<td width="100" align="center">';

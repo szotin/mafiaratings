@@ -108,7 +108,7 @@ function create_user($name, $email, $flags = U_NEW_PLAYER_FLAGS, $club_id = NULL
 	return $user_id;
 }
 
-function show_user_pic($user_id, $user_flags, $dir, $width = 0, $height = 0, $attributes = NULL)
+function show_user_pic($user_id, $user_name, $user_flags, $dir, $width = 0, $height = 0, $attributes = NULL)
 {
 	if ($width <= 0 && $height <= 0)
 	{
@@ -150,6 +150,10 @@ function show_user_pic($user_id, $user_flags, $dir, $width = 0, $height = 0, $at
 	if ($attributes != NULL)
 	{
 		echo $attributes;
+	}
+	if (!empty($user_name))
+	{
+		echo ' title="' . $user_name . '"';
 	}
 	echo '>';
 }
@@ -223,7 +227,7 @@ class UserPageBase extends PageBase
 			// echo '<button class="icon" onclick="mr.editAccountPassword()" title="' . get_label('Change password') . '"><img src="images/key.png" border="0"></button>';
 		}
 		echo '</td><td style="padding: 4px 2px 4px 1px;">';
-		show_user_pic($this->id, $this->flags, TNAILS_DIR);
+		show_user_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
 		echo '</td></tr></table><td valign="top"rowspan="2" >' . $this->standard_title() . '<p class="subtitle">';
 		echo $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
@@ -231,7 +235,7 @@ class UserPageBase extends PageBase
 		if ($this->club != NULL)
 		{
 			echo '<table><tr><td align="center">' . $this->club . '</td></tr><tr><td align="center">';
-			show_club_pic($this->club_id, $this->club_flags, ICONS_DIR);
+			show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR);
 			echo '</td></tr></table>';
 		}
 		echo '</a></td></tr></table>';

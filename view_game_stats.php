@@ -50,7 +50,7 @@ class Page extends PageBase
 		if ($this->user_id > 0)
 		{
 			echo '<td width="1"><a href="user_info.php?id=' . $this->user_id . '&bck=1">';
-			show_user_pic($this->user_id, $this->user_flags, ICONS_DIR);
+			show_user_pic($this->user_id, $this->user_name, $this->user_flags, ICONS_DIR);
 			echo '</td>';
 		}
 		echo '<td valign="top">' . $this->standard_title() . '</td><td valign="top" align="right">';

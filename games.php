@@ -99,10 +99,10 @@ class Page extends GeneralPageBase
 			
 			echo '<td class="dark" width="90" align="center"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 			echo '<td>';
-			show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48, ' title="' . $club_name . '"');
+			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 48, 48);
 			echo '</td>';
 			echo '<td align="center">';
-			show_user_pic($moder_id, $moder_flags, ICONS_DIR, 32, 32, ' title="' . $moder_name . '" style="opacity: 0.8;"');
+			show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
 			echo '</td>';
 			echo '<td>' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
 			echo '<td align="center">' . format_time($duration) . '</td>';

@@ -145,7 +145,7 @@ class ViewGamePageBase extends PageBase
 		echo '<td width="48"><a href="view_game_stats.php?num=' . $player->number . '&bck=1" title="' . $player->nick . '">';
 		if ($player_score != NULL)
 		{
-			show_user_pic($player->id, $player_score->user_flags, ICONS_DIR, 48, 48);
+			show_user_pic($player->id, $player->nick, $player_score->user_flags, ICONS_DIR, 48, 48);
 		}
 		else if ($player->id < 0)
 		{
@@ -300,7 +300,7 @@ class ViewGamePageBase extends PageBase
 			echo '<td width="100">'.get_label('Civs odds').'</td>';
 		}
 		echo '<tr align="center" class="light"><td><a href="club_main.php?id=' . $vg->club_id . '&bck=1" title="' . $vg->club . '">';
-		show_club_pic($vg->club_id, $vg->club_flags, ICONS_DIR, 48);
+		show_club_pic($vg->club_id, $vg->club_name, $vg->club_flags, ICONS_DIR, 48);
 		echo '</a></td><td>';
 		if ($vg->event != NULL)
 		{
@@ -318,7 +318,7 @@ class ViewGamePageBase extends PageBase
 		if ($gs->moder_id > 0)
 		{
 			echo '<a href="user_info.php?id=' . $gs->moder_id . '&bck=1" title="' . $vg->moder . '">';
-			show_user_pic($gs->moder_id, $vg->moder_flags, ICONS_DIR, 48, 48);
+			show_user_pic($gs->moder_id, $vg->moder, $vg->moder_flags, ICONS_DIR, 48, 48);
 			echo '</a>';
 		}
 		else

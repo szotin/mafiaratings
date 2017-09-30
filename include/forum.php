@@ -68,7 +68,7 @@ class ForumMessage
 		{
 			echo '<td rowspan="2" width="' . ICON_WIDTH . '" valign="top" align="center">';
 			echo '<a href="user_messages.php?id=' . $this->user_id . '&bck=1">';
-			show_user_pic($this->user_id, $this->user_flags, ICONS_DIR);
+			show_user_pic($this->user_id, $this->user_name, $this->user_flags, ICONS_DIR);
 			echo '</a>';
 			if ($can_send)
 			{

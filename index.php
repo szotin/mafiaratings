@@ -159,7 +159,7 @@ class Page extends GeneralPageBase
 				list ($club_id, $club_name, $club_flags, $timezone, $id, $timestamp, $message) = $row;
 				echo '<tr>';
 				echo '<td width="100" class="dark" align="center" valign="top"><a href="club_main.php?id=' . $club_id . '&bck=1">' . $club_name . '<br>';
-				show_club_pic($club_id, $club_flags, ICONS_DIR);
+				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR);
 				echo '</a></td><td valign="top"><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
 				
 				
@@ -215,7 +215,7 @@ class Page extends GeneralPageBase
 
 				echo '<td width="20" class="dark" align="center">' . $number . '</td>';
 				echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
-				show_user_pic($id, $flags, ICONS_DIR, 50, 50);
+				show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';

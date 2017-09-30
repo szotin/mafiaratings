@@ -117,9 +117,11 @@ class Page extends EventPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM players p' . 
+			'SELECT p.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags' .
+				' FROM players p' . 
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON p.user_id = u.id' .
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' LEFT OUTER JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
 				' WHERE g.event_id = ?',
 			$this->scoring_id, $this->event->id, $condition);
@@ -128,7 +130,7 @@ class Page extends EventPageBase
 		$number = $_page * PAGE_SIZE;
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="2">'.get_label('Player').'</td>';
+		echo '<td colspan="3">'.get_label('Player').'</td>';
 		echo '<td width="80" align="center">'.get_label('Points').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games won').'</td>';
@@ -138,7 +140,7 @@ class Page extends EventPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $nick, $points, $games_played, $games_won, $flags) = $row;
+			list ($id, $name, $nick, $points, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $row;
 				
 			if (!empty($nick) && $nick != $name)
 			{
@@ -155,8 +157,11 @@ class Page extends EventPageBase
 			}
 			echo '<td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
-			show_user_pic($id, $flags, ICONS_DIR, 50, 50);
+			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . $name . '</a></td>';
+			echo '<td width="50" align="center">';
+			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
+			echo '</td>';
 			echo '<td align="center" class="dark">';
 			echo format_score($points);
 			echo '</td>';

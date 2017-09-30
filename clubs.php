@@ -144,7 +144,7 @@ class Page extends GeneralPageBase
 			
 			echo '<tr><td align="center"><a href="club_main.php?bck=1&id=' . $id . '">';
 			echo '<b>' . $name . '</b><br>';
-			show_club_pic($id, $flags, ICONS_DIR);
+			show_club_pic($id, $name, $flags, ICONS_DIR);
 			echo '<br></a>' . $city_name . '<br>';
 			
 			echo '</td></tr></table>';

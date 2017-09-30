@@ -317,7 +317,7 @@ class AddressPageBase extends PageBase
 		echo '<td rowspan="2" valign="top">' . $this->standard_title() . '<p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom" width="' . ICON_WIDTH . '"><a href="club_main.php?bck=1&id=' . $this->club_id . '"><table><tr><td align="center">' . $this->club_name . '</td></tr><tr><td>';
-		show_club_pic($this->club_id, $this->club_flags, ICONS_DIR);
+		show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR);
 		echo '</td></tr></table></a></td></tr>';
 		
 		echo '</table>';

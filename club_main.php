@@ -84,7 +84,7 @@ class Page extends ClubPageBase
 
 		echo '<tr><td width="20" align="center">' . $number . '</td>';
 		echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
-		show_user_pic($id, $flags, ICONS_DIR, 50, 50);
+		show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
 		echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 		echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 		echo '</tr>';
@@ -327,7 +327,7 @@ class Page extends ClubPageBase
 				}
 				echo '<td width="' . MANAGER_COLUMN_WIDTH . '%" align="center">';
 				echo '<a href="user_info.php?bck=1&id=' . $manager_id . '">' . $manager_name . '<br>';
-				show_user_pic($manager_id, $manager_flags, ICONS_DIR);
+				show_user_pic($manager_id, $manager_name, $manager_flags, ICONS_DIR);
 				echo '</a></td>';
 				
 				++$columns_count;
@@ -363,7 +363,7 @@ class Page extends ClubPageBase
 
 				echo '<td width="20" align="center">' . $number . '</td>';
 				echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
-				show_user_pic($id, $flags, ICONS_DIR, 50, 50);
+				show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';

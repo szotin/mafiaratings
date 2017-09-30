@@ -28,7 +28,7 @@ function check_manager_permission($id)
 	return false;
 }
 
-function show_club_pic($club_id, $flags, $dir, $width = 0, $height = 0, $attributes = NULL)
+function show_club_pic($club_id, $club_name, $flags, $dir, $width = 0, $height = 0, $attributes = NULL)
 {
 	global $_lang_code;
 	$w = $width;
@@ -76,7 +76,7 @@ function show_club_pic($club_id, $flags, $dir, $width = 0, $height = 0, $attribu
 	{
 		echo 'images/' . $dir . 'club.png';
 	}
-	echo '" border="0"';
+	echo '" title="' . $club_name . '" border="0"';
 
 	if ($width > 0)
 	{
@@ -88,7 +88,7 @@ function show_club_pic($club_id, $flags, $dir, $width = 0, $height = 0, $attribu
 	}
 	if ($attributes != NULL)
 	{
-		echo $attributes;
+		echo ' ' . $attributes;
 	}
 	echo '>';
 	if ($flags & CLUB_FLAG_RETIRED)
@@ -282,12 +282,12 @@ class ClubPageBase extends PageBase
 		if ($this->url != '')
 		{
 			echo '<a href="' . $this->url . '" target="blank">';
-			show_club_pic($this->id, $this->flags, TNAILS_DIR);
+			show_club_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
 			echo '</a>';
 		}
 		else
 		{
-			show_club_pic($this->id, $this->flags, TNAILS_DIR);
+			show_club_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
 		}
 		echo '</td></tr></table><td valign="top">' . $this->standard_title() . '<p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();

@@ -135,7 +135,7 @@ class Page extends UserPageBase
 				echo '</table>';
 				echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
 				echo '<table class="transp" width="100%"><tr><td width="52"><a href="club_main.php?bck=1&id=' . $club_id . '">';
-				show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48);
+				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 48, 48);
 				echo '</a></td><td>' . $club_name . '</td><td align="right">';
 				show_permissions($user_flags);
 				echo '</td></tr></table>';
@@ -160,7 +160,7 @@ class Page extends UserPageBase
 				echo '</table>';
 				echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
 				echo '<table class="transp" width="100%"><tr><td width="52"><a href="club_main.php?bck=1&id=' . $club_id . '">';
-				show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48);
+				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 48, 48);
 				echo '</a></td><td>' . $club_name . '</td></tr></table>';
 				echo '</td><td width="100">' . get_label('Games played');
 				echo ':</td><td width="100">' . get_label('Games won') . ':</td><td width="100">' . get_label('Points') . ':</td></tr>';
@@ -179,7 +179,7 @@ class Page extends UserPageBase
 			echo '</table>';
 			echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
 			echo '<table class="transp" width="100%"><tr><td width="52"><a href="club_main.php?bck=1&id=' . $club_id . '">';
-			show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48);
+			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 48, 48);
 			echo '</a></td><td>' . $club_name . '</td><td align="right">';
 			show_permissions($user_flags);
 			echo '</td></tr></table>';
@@ -218,7 +218,7 @@ class Page extends UserPageBase
 				
 				echo '<td width="20" align="center">' . $number . '</td>';
 				echo '<td width="52"><a href="user_info.php?id=' . $id . '">';
-				show_user_pic($id, $flags, ICONS_DIR, 48, 48);
+				show_user_pic($id, $name, $flags, ICONS_DIR, 48, 48);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';

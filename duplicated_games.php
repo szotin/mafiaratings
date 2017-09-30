@@ -28,7 +28,7 @@ class Page extends GeneralPageBase
 		
 			echo '<tr>';
 			echo '<td>';
-			show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48, ' title="' . $club_name . '"');
+			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 48, 48);
 			echo '</td>';
 			echo '<td align="center" width="90"><a href="view_game.php?id=' . $game1_id . '&bck=1">' . get_label('Game #[0]', $game1_id) . '</a></td>';
 			echo '<td align="center" width="90"><a href="view_game.php?id=' . $game2_id . '&bck=1">' . get_label('Game #[0]', $game2_id) . '</a></td>';

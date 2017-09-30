@@ -231,11 +231,11 @@ class PageBase
 					{
 						echo 'setCurrentMenu(null)">';
 					}
-					show_club_pic($club->id, $club->club_flags, ICONS_DIR, 48);
+					show_club_pic($club->id, $club->name, $club->club_flags, ICONS_DIR, 48);
 					echo '</a>';
 				}
 				echo '<a id="user" onMouseEnter="javascript:showUserMenu()" href="user_info.php?id=' . $_profile->user_id . '" title="' . $_profile->user_name . '">';
-				show_user_pic($_profile->user_id, $_profile->user_flags, ICONS_DIR, 48);
+				show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR, 48);
 				echo '</a>';
 				
 				echo '<ul id="user-menu" style="display:none;position:absolute;width:150px;text-align:left;">';
@@ -253,7 +253,7 @@ class PageBase
 						if ($c->id != $club->id)
 						{
 							echo '<li><a href="club_main.php?id=' . $c->id . '">';
-							show_club_pic($c->id, $c->club_flags, ICONS_DIR, 48, 48, ' class="menu_image"');
+							show_club_pic($c->id, $c->name, $c->club_flags, ICONS_DIR, 48, 48, ' class="menu_image"');
 							echo ' ' . $c->name . '</a></li>';
 						}
 					}
