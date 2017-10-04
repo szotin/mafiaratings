@@ -250,7 +250,7 @@ class PageBase
 					echo '<ul id="club-menu" style="display:none;position:absolute;text-align:left;">';
 					foreach ($_profile->clubs as $c)
 					{
-						if ($c->id != $club->id)
+						if ($c->id != $club->id && ($c->club_flags & CLUB_FLAG_RETIRED) == 0)
 						{
 							echo '<li><a href="club_main.php?id=' . $c->id . '">';
 							show_club_pic($c->id, $c->name, $c->club_flags, ICONS_DIR, 48, 48, ' class="menu_image"');
