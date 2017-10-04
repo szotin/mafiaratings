@@ -93,7 +93,7 @@ function show_club_pic($club_id, $club_name, $flags, $dir, $width = 0, $height =
 	echo '>';
 	if ($flags & CLUB_FLAG_RETIRED)
 	{
-		echo '<img src="images/' . $dir . $_lang_code . '/closed.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
+		echo '<img src="images/' . $dir . $_lang_code . '/closed.png" title="' . $club_name . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
 		if ($width > 0)
 		{
 			echo ' width="' . $width . '"';
