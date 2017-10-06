@@ -449,7 +449,7 @@ class Page extends UserPageBase
 		echo '<tr class="darker"><td>'.get_label('Games played').':</td><td colspan="2" align="center">' . $games_played . '</td></tr>';
 		if ($games_played > 0)
 		{
-			row(get_label('Games won'), $won1, $won2, $games_played, $games_played);
+			row(get_label('Victories'), $won1, $won2, $games_played, $games_played);
 			row(get_label('Rating'), $rating1, $rating2, $games_played, $games_played);
 			row(get_label('Best player'), $best_player1, $best_player2, $games_played, $games_played);
 			row(get_label('Survived'), $survived1, $survived2, $games_played, $games_played);

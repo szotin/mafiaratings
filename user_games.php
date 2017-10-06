@@ -138,10 +138,10 @@ class Page extends UserPageBase
 					case 0:
 						break;
 					case 1: // civils won
-						echo '<img src="images/civ.png" title="' . get_label('civilians won') . '" style="opacity: 0.5;">';
+						echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
 						break;
 					case 2: // mafia won
-						echo '<img src="images/maf.png" title="' . get_label('mafia won') . '" style="opacity: 0.5;">';
+						echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 						break;
 				}
 				echo '</td>';
@@ -328,10 +328,10 @@ class Page extends UserPageBase
 				switch ($win)
 				{
 					case 1:
-						echo '<img src="images/won.png" title="' . get_label('won') . '" style="opacity: 0.8;">';
+						echo '<img src="images/won.png" title="' . get_label('victory') . '" style="opacity: 0.8;">';
 						break;
 					case 2:
-						echo '<img src="images/lost.png" title="' . get_label('lost') . '" style="opacity: 0.8;">';
+						echo '<img src="images/lost.png" title="' . get_label('loss') . '" style="opacity: 0.8;">';
 						break;
 				}
 				echo '</td>';

@@ -125,10 +125,10 @@ class ViewGame
 				$state = get_label('Still playing.');
 				break;
 			case 1:
-				$state = get_label('Civilians won.');
+				$state = get_label('Town\'s victory.');
 				break;
 			case 2:
-				$state = get_label('Mafia won.');
+				$state = get_label('Mafia\'s victory.');
 				break;
 		}
 		return get_label('Game [0]. [1]', $this->gs->id, $state);

@@ -104,7 +104,7 @@ class Page extends UserPageBase
 			echo '<tr><td class="dark" width="300">'.get_label('Games played').':</td><td>' . $stats->games_played . '</td></tr>';
 			if ($stats->games_played > 0)
 			{
-				echo '<tr><td class="dark" width="300">'.get_label('Games won').':</td><td>' . $stats->games_won . ' (' . number_format($stats->games_won*100.0/$stats->games_played, 1) . '%)</td></tr>';
+				echo '<tr><td class="dark" width="300">'.get_label('Victories').':</td><td>' . $stats->games_won . ' (' . number_format($stats->games_won*100.0/$stats->games_played, 1) . '%)</td></tr>';
 				echo '<tr><td class="dark">'.get_label('Rating').':</td><td>' . get_label('[0] ([1] per game)', $stats->rating, number_format($stats->rating/$stats->games_played, 2)) . '</td></tr>';
 				echo '<tr><td class="dark">'.get_label('Best player').':</td><td>' . $stats->best_player . '</td></tr>';
 				echo '</table>';
@@ -346,8 +346,8 @@ class Page extends UserPageBase
 			echo '<tr><td class="dark" width="300">'.get_label('Games moderated').':</td><td>' . ($civils_win_count + $mafia_win_count) . '</td></tr>';
 			if ($civils_win_count + $mafia_win_count > 0)
 			{
-				echo '<tr><td class="dark">'.get_label('Mafia won in').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
-				echo '<tr><td class="dark">'.get_label('Civilians won in').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Mafia victories').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Town victories').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
 			}
 			if ($playing_count > 0)
 			{

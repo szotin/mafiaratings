@@ -42,8 +42,8 @@ class Page extends ClubPageBase
 		$season = show_seasons_select($this->id, $season, 'document.form.submit()', get_label('Show games of a specific season.'));
 		echo ' <select name="results" onChange="document.form.submit()">';
 		show_option(-1, $result_filter, get_label('All games'));
-		show_option(1, $result_filter, get_label('Games won by town'));
-		show_option(2, $result_filter, get_label('Games won by mafia'));
+		show_option(1, $result_filter, get_label('Town victories'));
+		show_option(2, $result_filter, get_label('Mafia victories'));
 		show_option(3, $result_filter, get_label('Games with video'));
 		if ($this->is_manager)
 		{
@@ -121,10 +121,10 @@ class Page extends ClubPageBase
 				case 0:
 					break;
 				case 1: // civils won
-					echo '<img src="images/civ.png" title="' . get_label('civilians won') . '" style="opacity: 0.5;">';
+					echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
 					break;
 				case 2: // mafia won
-					echo '<img src="images/maf.png" title="' . get_label('mafia won') . '" style="opacity: 0.5;">';
+					echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 					break;
 			}
 			echo '</td><td>';

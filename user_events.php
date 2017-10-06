@@ -74,7 +74,7 @@ class Page extends UserPageBase
 		echo '<td width="60" align="center">'.get_label('Rating earned').'</td>';
 		echo '<td width="60" align="center">'.get_label('Points').'</td>';
 		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="60" align="center">'.get_label('Games won').'</td>';
+		echo '<td width="60" align="center">'.get_label('Victories').'</td>';
 		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
 		echo '<td width="60" align="center">'.get_label('Rating per game').'</td></tr>';
 		

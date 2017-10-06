@@ -127,10 +127,10 @@ class Page extends GeneralPageBase
 				case 0:
 					break;
 				case 1: // civils won
-					echo '<img src="images/civ.png" title="' . get_label('civilians won') . '" style="opacity: 0.5;">';
+					echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
 					break;
 				case 2: // mafia won
-					echo '<img src="images/maf.png" title="' . get_label('mafia won') . '" style="opacity: 0.5;">';
+					echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 					break;
 			}
 			echo '</td><td>';
@@ -147,8 +147,8 @@ class Page extends GeneralPageBase
 	{
 		echo '<select id="results" onChange="filter()" title="' . get_label('Filter games by result.') . '">';
 		show_option(-1, $this->result_filter, get_label('All games'));
-		show_option(1, $this->result_filter, get_label('Games won by town'));
-		show_option(2, $this->result_filter, get_label('Games won by mafia'));
+		show_option(1, $this->result_filter, get_label('Town victories'));
+		show_option(2, $this->result_filter, get_label('Mafia victories'));
 		show_option(3, $this->result_filter, get_label('Games with video'));
 		if ($this->is_admin)
 		{

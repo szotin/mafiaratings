@@ -200,7 +200,7 @@ try
 					echo '<td colspan="3">'.get_label('Player').'</td>';
 					echo '<td width="60" align="center">'.get_label('Points').'</td>';
 					echo '<td width="60" align="center">'.get_label('Games played').'</td>';
-					echo '<td width="60" align="center">'.get_label('Games won').'</td>';
+					echo '<td width="60" align="center">'.get_label('Victories').'</td>';
 					echo '</tr>';
 				}
 				

@@ -140,7 +140,7 @@ class Page extends UserPageBase
 				show_permissions($user_flags);
 				echo '</td></tr></table>';
 				echo '</td><td width="100">' . get_label('Games played');
-				echo ':</td><td width="100">' . get_label('Games won') . ':</td><td width="100">' . get_label('Points') . ':</td></tr>';
+				echo ':</td><td width="100">' . get_label('Victories') . ':</td><td width="100">' . get_label('Points') . ':</td></tr>';
 				$prev_club_id = $club_id;
 			}
 			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_score($points), format_score($points/$games, 1)) . '</td></tr>';
@@ -163,7 +163,7 @@ class Page extends UserPageBase
 				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 48, 48);
 				echo '</a></td><td>' . $club_name . '</td></tr></table>';
 				echo '</td><td width="100">' . get_label('Games played');
-				echo ':</td><td width="100">' . get_label('Games won') . ':</td><td width="100">' . get_label('Points') . ':</td></tr>';
+				echo ':</td><td width="100">' . get_label('Victories') . ':</td><td width="100">' . get_label('Points') . ':</td></tr>';
 				$prev_club_id = $club_id;
 			}
 			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_score($points), format_score($points/$games, 1)) . '</td></tr>';
