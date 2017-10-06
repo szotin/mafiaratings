@@ -32,7 +32,7 @@ try
 		{
 			$code = substr($url, $pos + 2, $end - $pos - 2);
 		}
-		echo '<p><iframe title="YouTube video player" width="780" height="460" src="http://www.youtube.com/embed/' . $code . '" frameborder="0" allowfullscreen></iframe></p>';
+		echo '<p><iframe title="YouTube video player" width="780" height="460" src="https://www.youtube.com/embed/' . $code . '" frameborder="0" allowfullscreen></iframe></p>';
 	}
 	echo '<ok>';
 }

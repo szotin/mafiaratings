@@ -351,6 +351,14 @@ class ViewGamePageBase extends PageBase
 		{
 			echo '<button class="icon" onclick="deleteGame(' . $gs->id . ')" title="' . get_label('Delete game [0]', $gs->id) . '"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.editGame(' . $gs->id . ')" title="' . get_label('Edit game [0]', $gs->id) . '"><img src="images/edit.png" border="0"></button>';
+			if ($vg->video == NULL)
+			{
+				echo '<button class="icon" onclick="mr.setGameVideo(' . $gs->id . ')" title="' . get_label('Add game [0] video', $gs->id) . '"><img src="images/film-add.png" border="0"></button>';
+			}
+			else
+			{
+				echo '<button class="icon" onclick="mr.removeGameVideo(' . $gs->id . ')" title="' . get_label('Remove game [0] video', $gs->id) . '"><img src="images/film-delete.png" border="0"></button>';
+			}
 		}
 		echo '</td></tr><tr><td align="right" valign="bottom"><form method="get" name="gotoForm" action="' . get_page_name() . '">';
 		echo '<select name="gametime" onChange="document.gotoForm.submit()">';
