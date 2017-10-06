@@ -990,6 +990,10 @@ try
 	{
 		$game_id = (int)$_REQUEST['delete_game'];
 		list($club_id) = Db::record(get_label('game'), 'SELECT club_id FROM games WHERE id = ?', $game_id);
+		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
+		{
+			throw new Exc(get_label('No permissions'));
+		}
 		
 		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
@@ -1022,6 +1026,10 @@ try
 	{
 		$game_id = (int)$_REQUEST['edit_game'];
 		list($club_id, $club_name, $log) = Db::record(get_label('game'), 'SELECT c.id, c.name, g.log FROM games g JOIN clubs c ON c.id = g.club_id WHERE g.id = ?', $game_id);
+		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
+		{
+			throw new Exc(get_label('No permissions'));
+		}
 		$result['club_id'] = $club_id;
 		
 		$query = new DbQuery('SELECT id, log FROM games WHERE user_id = ? AND club_id = ? AND result = 0', $_profile->user_id, $club_id);
@@ -1072,6 +1080,45 @@ try
 		
 		db_log('game', 'changed', 'old_log: ' . $log, $game_id, $club_id);
 		$result['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
+	}
+	else if (isset($_REQUEST['set_video']))
+	{
+		$game_id = $_REQUEST['id'];
+		$video = $_REQUEST['set_video'];
+		list($club_id, $old_video) = Db::record(get_label('game'), 'SELECT club_id, video FROM games WHERE id = ?', $game_id);
+		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
+		{
+			throw new Exc(get_label('No permissions'));
+		}
+		
+		Db::exec(get_label('game'), 'UPDATE games SET video = ? WHERE id = ?', $video, $game_id);
+		if ($old_video == NULL)
+		{
+			db_log('game', 'changed', 'add_video', $game_id, $club_id);
+		}
+		else
+		{
+			db_log('game', 'changed', 'old_video: ' . $old_video, $game_id, $club_id);
+		}
+	}
+	else if (isset($_REQUEST['remove_video']))
+	{
+		$game_id = $_REQUEST['remove_video'];
+		list($club_id, $old_video) = Db::record(get_label('game'), 'SELECT club_id, video FROM games WHERE id = ?', $game_id);
+		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
+		{
+			throw new Exc(get_label('No permissions'));
+		}
+		
+		Db::exec(get_label('game'), 'UPDATE games SET video = NULL WHERE id = ?', $game_id);
+		if ($old_video == NULL)
+		{
+			db_log('game', 'changed', 'video_removed', $game_id, $club_id);
+		}
+		else
+		{
+			db_log('game', 'changed', 'video_removed: ' . $old_video, $game_id, $club_id);
+		}
 	}
 }
 catch (Exception $e)

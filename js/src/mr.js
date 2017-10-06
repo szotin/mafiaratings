@@ -144,9 +144,9 @@ var mr = new function()
 		json.post("note_ops.php", { 'id': id, up: "" }, refr);
 	}
 
-	this.createNote = function(club_id)
+	this.createNote = function(clubId)
 	{
-		dlg.form("note_create.php?club=" + club_id, refr);
+		dlg.form("note_create.php?club=" + clubId, refr);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -174,9 +174,9 @@ var mr = new function()
 		}
 	}
 
-	this.createAdvert = function(club_id)
+	this.createAdvert = function(clubId)
 	{
-		dlg.form("advert_create.php?club=" + club_id, refr);
+		dlg.form("advert_create.php?club=" + clubId, refr);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -204,34 +204,34 @@ var mr = new function()
 		}
 	}
 
-	this.createSeason = function(club_id)
+	this.createSeason = function(clubId)
 	{
-		dlg.form("season_create.php?club=" + club_id, refr);
+		dlg.form("season_create.php?club=" + clubId, refr);
 	}
 
 	//--------------------------------------------------------------------------------------
 	// address
 	//--------------------------------------------------------------------------------------
-	this.createAddr = function(club_id)
+	this.createAddr = function(clubId)
 	{
-		dlg.form("address_create.php?club=" + club_id, refr, 600);
+		dlg.form("address_create.php?club=" + clubId, refr, 600);
 	}
 
-	this.restoreAddr = function(addr_id)
+	this.restoreAddr = function(addrId)
 	{
-		json.post("address_ops.php", { id: addr_id, restore: "" }, refr);
+		json.post("address_ops.php", { id: addrId, restore: "" }, refr);
 	}
 
-	this.retireAddr = function(addr_id)
+	this.retireAddr = function(addrId)
 	{
-		json.post("address_ops.php", { id: addr_id, retire: "" }, refr);
+		json.post("address_ops.php", { id: addrId, retire: "" }, refr);
 	}
 
-	this.genAddr = function(addr_id, confirmMessage)
+	this.genAddr = function(addrId, confirmMessage)
 	{
 		function gen()
 		{
-			json.post("address_ops.php", { id: addr_id, gen: "" }, refr);
+			json.post("address_ops.php", { id: addrId, gen: "" }, refr);
 		}
 
 		if (typeof confirmMessage == "string")
@@ -348,9 +348,9 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// event
 	//--------------------------------------------------------------------------------------
-	this.createEvent = function(club_id)
+	this.createEvent = function(clubId)
 	{
-		dlg.form("event_create.php?club=" + club_id, function(obj)
+		dlg.form("event_create.php?club=" + clubId, function(obj)
 		{
 			var ids = obj.events;
 			var delim = '';
@@ -477,9 +477,9 @@ var mr = new function()
 		});
 	}
 
-	this.createScoringSystem = function(club_id)
+	this.createScoringSystem = function(clubId)
 	{
-		dlg.form("scoring_create.php?club=" + club_id, refr);
+		dlg.form("scoring_create.php?club=" + clubId, refr);
 	}
 
 	this.editScoringSystem = function(id)
@@ -490,26 +490,26 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// rules
 	//--------------------------------------------------------------------------------------
-	this.createRules = function(club_id, onSuccess)
+	this.createRules = function(clubId, onSuccess)
 	{
 		if (typeof onSuccess == "undefined")
 			onSuccess = refr;
-		dlg.form("rules_create.php?club=" + club_id, onSuccess);
+		dlg.form("rules_create.php?club=" + clubId, onSuccess);
 	}
 
-	this.editRules = function(club_id, rules_id)
+	this.editRules = function(clubId, rulesId)
 	{
-		var u = "rules_edit.php?club=" + club_id;
-		if (typeof rules_id != "undefined")
-			u += "&id=" + rules_id;
+		var u = "rules_edit.php?club=" + clubId;
+		if (typeof rulesId != "undefined")
+			u += "&id=" + rulesId;
 		dlg.form(u, refr);
 	}
 
-	this.deleteRules = function(club_id, rules_id, confirmMessage)
+	this.deleteRules = function(clubId, rulesId, confirmMessage)
 	{
 		function _delete()
 		{
-			json.post("rules_ops.php", { 'id': rules_id, 'club': club_id, 'delete': '' }, refr);
+			json.post("rules_ops.php", { 'id': rulesId, 'club': clubId, 'delete': '' }, refr);
 		}
 
 		if (typeof confirmMessage == "string")
@@ -525,30 +525,45 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// game
 	//--------------------------------------------------------------------------------------
-	this.deleteGame = function(game_id, confirmMessage, onSuccess)
+	this.deleteGame = function(gameId, confirmMessage, onSuccess)
 	{
 		if (typeof onSuccess == "undefined")
 			onSuccess = refr;
 		dlg.yesNo(confirmMessage, null, null, function()
 		{
-			json.post("game_ops.php", { 'delete_game': game_id }, onSuccess);
+			json.post("game_ops.php", { 'delete_game': gameId }, onSuccess);
 		});
 	}
 	
-	this.editGame = function(game_id)
+	this.editGame = function(gameId)
 	{
 		var gotoGame = function(data)
 		{
 			var link = "game.php?edit&back=" + encodeURIComponent(window.location.href);
-			if (typeof data.club_id !== "undefined")
-				link += "&club=" + data.club_id
+			if (typeof data.clubId !== "undefined")
+				link += "&club=" + data.clubId
 			window.location.replace(link);
 		}
 		
-		json.post("game_ops.php", { 'edit_game': game_id  }, gotoGame, function(errorMessage, data) 
+		json.post("game_ops.php", { 'edit_game': gameId  }, gotoGame, function(errorMessage, data) 
 		{
 			gotoGame(data);
 		});
+	}
+	
+	this.setGameVideo = function(gameId)
+	{
+		dlg.form("game_video_edit.php?game=" + gameId, refr, 600);
+	}
+	
+	this.removeGameVideo = function(gameId)
+	{
+		json.post("game_ops.php", { 'remove_video': gameId  }, refr);
+	}
+	
+	this.watchGameVideo = function(gameId)
+	{
+		dlg.page("game_video.php?game=" + gameId);
 	}
 	
 	//--------------------------------------------------------------------------------------
