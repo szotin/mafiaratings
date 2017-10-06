@@ -83,7 +83,7 @@ class Page extends ClubPageBase
 			}
 			
 			echo '<td width="50"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
-			show_event_pic($event_id, $event_flags, $address_id, $address_flags, ICONS_DIR, 50);
+			show_event_pic($event_id, $event_name, $event_flags, $address_id, $address, $address_flags, ICONS_DIR, 50);
 			echo '</a></td>';
 			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
 			

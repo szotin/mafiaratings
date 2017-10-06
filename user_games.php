@@ -4,6 +4,7 @@ require_once 'include/user.php';
 require_once 'include/player_stats.php';
 require_once 'include/pages.php';
 require_once 'include/scoring.php';
+require_once 'include/event.php';
 
 define("PAGE_SIZE", 20);
 
@@ -272,14 +273,16 @@ class Page extends UserPageBase
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="th darker"><td width="90" align="center">';
 			echo '<button class="icon" onclick="filterGames()" title="' . get_label('Filter [0]', get_label('games')) . '"><img src="images/filter.png" border="0"></button>';
-			echo '</td><td width="48" align="center">'.get_label('Club').'</td><td width="48" align="center">'.get_label('Moderator').'</td><td>'.get_label('Time').'</td><td width="60" align="center">'.get_label('Duration').'</td><td width="60" align="center">'.get_label('Role').'</td><td width="60" align="center">'.get_label('Result').'</td><td width="40" align="center">'.get_label('Rating berore the game').'</td><td width="40" align="center">'.get_label('Rating earned').'</td></tr>';
+			echo '</td><td width="48" align="center">'.get_label('Event').'</td><td width="48" align="center">'.get_label('Moderator').'</td><td>'.get_label('Time').'</td><td width="60" align="center">'.get_label('Duration').'</td><td width="60" align="center">'.get_label('Role').'</td><td width="60" align="center">'.get_label('Result').'</td><td width="40" align="center">'.get_label('Rating berore the game').'</td><td width="40" align="center">'.get_label('Rating earned').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, p.role, p.rating_before, p.rating_earned FROM players p' .
+				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, p.role, p.rating_before, p.rating_earned, e.id, e.name, e.flags FROM players p' .
 				' JOIN games g ON g.id = p.game_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
+				' JOIN events e ON e.id = g.event_id' .
+				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
-				' JOIN cities ct ON ct.id = c.city_id' .
+				' JOIN cities ct ON ct.id = a.city_id' .
 				' WHERE ', 
 				$condition);
 			$query->add(' ORDER BY g.start_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -287,11 +290,11 @@ class Page extends UserPageBase
 			{
 				list (
 					$game_id, $club_id, $club_name, $club_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, 
-					$game_result, $role, $rating_before, $rating_earned) = $row;
+					$game_result, $role, $rating_before, $rating_earned, $event_id, $event_name, $event_flags) = $row;
 			
 				echo '<tr><td class="dark"><a href="view_game.php?id=' . $game_id . '&pid=' . $this->id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 				echo '<td>';
-				show_club_pic($club_id, $club_flags, ICONS_DIR, 48, 48, ' title="' . $club_name . '"');
+				show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 48, 48, false);
 				echo '</td>';
 				echo '<td align="center">';
 				show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');

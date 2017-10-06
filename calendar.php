@@ -109,7 +109,7 @@ class Page extends GeneralPageBase
 			}
 			
 			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '">' . $club_name . '<br>';
-			show_event_pic($id, $flags, $club_id, $club_flags, ICONS_DIR, 0, 0, false);
+			show_event_pic($id, $name, $flags, $club_id, $club_name, $club_flags, ICONS_DIR, 0, 0, false);
 			echo '</a><br><b>' . format_date('H:i', $start_time, $event_timezone) . ' - ' . format_date('H:i', $start_time + $duration, $event_timezone) . '</b><br>';
 			
 //			echo '<a href="attend.php?bck=1&id=' . $id . '" title="' . get_label('I am coming') . '"><img src="images/accept.png" border="0"></a>&nbsp;';

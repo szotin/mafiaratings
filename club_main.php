@@ -40,7 +40,7 @@ class Page extends ClubPageBase
 			echo '<td width="' . COLUMN_WIDTH . '%" align="center">';
 			echo '<a href="event_info.php?bck=1&id=' . $event_id . '" title="' . get_label('View event details.') . '"><b>';
 			echo format_date('l, F d, Y, H:i', $event_time, $timezone) . '</b><br>';
-			show_event_pic($event_id, $event_flags, $addr_id, $addr_flags, ICONS_DIR, 0, 0, true);
+			show_event_pic($event_id, $event_name, $event_flags, $addr_id, $addr, $addr_flags, ICONS_DIR, 0, 0, true);
 			echo '</a><br>';
 			if ($addr_name == $event_name)
 			{

@@ -78,7 +78,7 @@ class Page extends GeneralPageBase
 			echo '<tr>';
 			
 			echo '<td width="50" class="dark"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
-			show_event_pic($event_id, $event_flags, $club_id, $club_flags, ICONS_DIR, 50, 50, false);
+			show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 50, 50, false);
 			echo '</a></td>';
 			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
 			

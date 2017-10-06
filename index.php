@@ -43,7 +43,7 @@ class Page extends GeneralPageBase
 			echo $club_name . '<br>';
 			echo '<a href="event_info.php?bck=1&id=' . $event_id . '" title="' . get_label('View event details.') . '"><b>';
 			echo format_date('l, F d, Y, H:i', $event_time, $timezone) . '</b><br>';
-			show_event_pic($event_id, $event_flags, $club_id, $club_flags, ICONS_DIR, 0, 0, false);
+			show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 0, 0, false);
 			echo '</a><br>' . $event_name . '</b></td>';
 			++$colunm_count;
 			++$event_count;

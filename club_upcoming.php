@@ -102,7 +102,7 @@ class Page extends ClubPageBase
 			}
 			
 			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '"><b>' . format_date('l, F d, Y <br> H:i', $start_time, $event_timezone) . '</b><br>';
-			show_event_pic($id, $flags, $addr_id, $addr_flags, ICONS_DIR);
+			show_event_pic($id, $name, $flags, $addr_id, $addr, $addr_flags, ICONS_DIR);
 			echo '</a><br>' . $name;
 			
 			if ($come_odds != NULL)

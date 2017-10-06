@@ -5,6 +5,7 @@ require_once 'include/image.php';
 require_once 'include/address.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
+require_once 'include/event.php';
 
 define("PAGE_SIZE", 20);
 
@@ -45,7 +46,7 @@ class Page extends AddressPageBase
 		echo '</select>';
 		echo '</td></tr></table></form>';
 
-		$condition = new SQL(' JOIN events e ON g.event_id = e.id WHERE e.address_id = ?', $this->id);
+		$condition = new SQL(' WHERE e.address_id = ?', $this->id);
 		if ($result_filter < 0)
 		{
 			$condition->add(' AND g.result <> 0');
@@ -59,7 +60,7 @@ class Page extends AddressPageBase
 			$condition->add(' AND g.result = ?', $result_filter);
 		}
 		
-		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
+		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		echo '<table class="bordered light" width="100%">';
@@ -68,17 +69,16 @@ class Page extends AddressPageBase
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video FROM games g' .
-			' JOIN clubs c ON c.id = g.club_id' .
-			' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
-			' JOIN cities ct ON ct.id = c.city_id',
+			'SELECT g.id, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video, e.id, e.name, e.flags FROM games g' .
+			' JOIN events e ON e.id = g.event_id' .
+			' LEFT OUTER JOIN users m ON m.id = g.moderator_id',
 			$condition);
 		$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video) = $row;
+			list ($game_id, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video, $event_id, $event_name, $event_flags) = $row;
 			
 			echo '<tr align="center">';
 			if ($this->is_manager)
@@ -99,9 +99,11 @@ class Page extends AddressPageBase
 			
 			echo '<td class="dark" width="90"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 			echo '<td>';
+			show_event_pic($event_id, $event_name, $event_flags, $this->id, $this->name, $this->flags, ICONS_DIR, 48, 48);
+			echo '</td><td>';
 			show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
 			echo '</td>';
-			echo '<td align="left">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
+			echo '<td align="left">' . format_date('M j Y, H:i', $start, $this->timezone) . '</td>';
 			echo '<td>' . format_time($duration) . '</td>';
 			
 			echo '<td>';

@@ -23,7 +23,7 @@ define('WEEK_FLAG_ALL', 127);
 
 define('BRIEF_ATTENDANCE', true);
 
-function show_event_pic($id, $flags, $alt_id, $alt_flags, $dir, $width = 0, $height = 0, $alt_addr = true)
+function show_event_pic($id, $name, $flags, $alt_id, $alt_name, $alt_flags, $dir, $width = 0, $height = 0, $alt_addr = true)
 {
 	global $_lang_code;
 
@@ -57,12 +57,17 @@ function show_event_pic($id, $flags, $alt_id, $alt_flags, $dir, $width = 0, $hei
 		$width = $w;
 		$height = $h;
 	}
-
+	
 	$origin = EVENT_PICS_DIR . $dir . $id . '.png';
 	echo '<span style="position:relative;"><img code="' . EVENT_PIC_CODE . $id . '" origin="' . $origin . '" src="';
 	if ($flags & EVENT_ICON_MASK)
 	{
 		echo $origin . '?' . (($flags & EVENT_ICON_MASK) >> EVENT_ICON_MASK_OFFSET);
+		$title = $name;
+		if (!$alt_addr)
+		{
+			$title .= ' (' . $alt_name . ')';
+		}
 	}
 	else if ($alt_addr)
 	{
@@ -74,21 +79,27 @@ function show_event_pic($id, $flags, $alt_id, $alt_flags, $dir, $width = 0, $hei
 		{
 			echo 'images/' . $dir . 'address.png';
 		}
+		$title = $name;
 	}
-	else if (($alt_flags & CLUB_ICON_MASK) != 0)
+	else 
 	{
-		echo CLUB_PICS_DIR . $dir . $alt_id . '.png?' . (($alt_flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET);
+		if (($alt_flags & CLUB_ICON_MASK) != 0)
+		{
+			echo CLUB_PICS_DIR . $dir . $alt_id . '.png?' . (($alt_flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET);
+		}
+		else
+		{
+			echo 'images/' . $dir . 'club.png';
+		}
+		$title = $alt_name;
 	}
-	else
-	{
-		echo 'images/' . $dir . 'club.png';
-	}
+	
 /*		echo '<span style="position:relative; left:0px; top:0px;">';
 		show_address_pic($addr_id, $addr_flags, $dir, $width, $height);
 		echo '<span style="position:absolute;right:0px;bottom:0px;">';
 		show_club_pic($club_id, $club_name, $club_flags, $dir, $width / 2, $height / 2);
 		echo '</span></span>';*/
-	echo '" border="0"';
+	echo '" border="0" title="' . $title . '"';
 	if ($width > 0)
 	{
 		echo ' width="' . $width . '"';
@@ -100,7 +111,7 @@ function show_event_pic($id, $flags, $alt_id, $alt_flags, $dir, $width = 0, $hei
 	echo '>';
 	if ($flags & EVENT_FLAG_CANCELED)
 	{
-		echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
+		echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
 		if ($width > 0)
 		{
 			echo ' width="' . $width . '"';
@@ -914,7 +925,7 @@ class Event
 	
 	function show_pic($dir, $width = 0, $height = 0, $alt_addr = true)
 	{
-		show_event_pic($this->id, $this->flags, $this->addr_id, $this->addr_flags, $dir, $width, $height, $alt_addr);
+		show_event_pic($this->id, $this->name, $this->flags, $this->addr_id, $this->addr, $this->addr_flags, $dir, $width, $height, $alt_addr);
 	}
 }
 

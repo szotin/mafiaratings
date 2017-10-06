@@ -3,6 +3,7 @@
 require_once 'include/general_page_base.php';
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
+require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/user.php';
@@ -81,17 +82,18 @@ class Page extends GeneralPageBase
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video FROM games g' .
+			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
+				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' JOIN cities ct ON ct.id = c.city_id',
 			$condition);
 		$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $club_id, $club_name, $club_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video) = $row;
+			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video) = $row;
 			echo '<tr align="center">';
 			if ($this->is_admin)
 			{
@@ -111,7 +113,7 @@ class Page extends GeneralPageBase
 			
 			echo '<td class="dark" width="90"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 			echo '<td>';
-			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 48, 48);
+			show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 48, 48, false);
 			echo '</td>';
 			echo '<td>';
 			show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');

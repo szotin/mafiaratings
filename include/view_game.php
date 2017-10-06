@@ -311,7 +311,7 @@ class ViewGamePageBase extends PageBase
 		if ($vg->event != NULL)
 		{
 			echo '<a href="event_standings.php?id=' . $vg->event_id . '&bck=1" title="' . $vg->event . '">';
-			show_event_pic($vg->event_id, $vg->event_flags, $vg->address_id, $vg->address_flags, ICONS_DIR, 48);
+			show_event_pic($vg->event_id, $vg->event, $vg->event_flags, $vg->address_id, $vg->address, $vg->address_flags, ICONS_DIR, 48);
 			echo '</a>';
 		}
 		else

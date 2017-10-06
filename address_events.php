@@ -71,7 +71,7 @@ class Page extends AddressPageBase
 			}
 			
 			echo '<td width="50" class="dark"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
-			show_event_pic($event_id, $event_flags, $this->id, $this->flags, ICONS_DIR, 50);
+			show_event_pic($event_id, $event_name, $event_flags, $this->id, $this->name, $this->flags, ICONS_DIR, 50);
 			echo '</a></td>';
 			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $this->timezone) . '</b></td>';
 			

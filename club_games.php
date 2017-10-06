@@ -2,6 +2,7 @@
 
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
+require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
 
@@ -75,17 +76,18 @@ class Page extends ClubPageBase
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video FROM games g' .
-				' JOIN clubs c ON c.id = g.club_id' .
+			'SELECT g.id, c.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video, e.id, e.name, e.flags, a.id, a.name, a.flags FROM games g' .
+				' JOIN events e ON e.id = g.event_id' .
+				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
-				' JOIN cities ct ON ct.id = c.city_id',
+				' JOIN cities c ON c.id = a.city_id',
 			$condition);
 		$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video) = $row;
+			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video, $event_id, $event_name, $event_flags, $adr_id, $adr_name, $adr_flags) = $row;
 			
 			echo '<tr class="light" align="center">';
 			if ($this->is_manager)
@@ -104,8 +106,9 @@ class Page extends ClubPageBase
 				echo '</td>';
 			}
 			
-			echo '<td class="dark" width="90"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
-			echo '<td>';
+			echo '<td class="dark" width="90"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td><td>';
+			show_event_pic($event_id, $event_name, $event_flags, $adr_id, $adr_name, $adr_flags, ICONS_DIR, 48, 48);
+			echo '</td><td>';
 			show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
 			echo '</td>';
 			

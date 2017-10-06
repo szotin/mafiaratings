@@ -235,7 +235,7 @@ class UserPageBase extends PageBase
 		if ($this->club != NULL)
 		{
 			echo '<table><tr><td align="center">' . $this->club . '</td></tr><tr><td align="center">';
-			show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR);
+			show_club_pic($this->club_id, $this->club, $this->club_flags, ICONS_DIR);
 			echo '</td></tr></table>';
 		}
 		echo '</a></td></tr></table>';
