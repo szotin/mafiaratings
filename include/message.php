@@ -284,7 +284,7 @@ function parse_message_urls($message)
 					{
 						$code = substr($url, $pos + 2, $end - $pos - 2);
 					}
-					$message .= '<iframe title="YouTube video player" width="400" height="300" src="http://www.youtube.com/v/' . $code . '" frameborder="0" allowfullscreen></iframe><br>';
+					$message .= '<iframe title="YouTube video player" width="400" height="300" src="http://www.youtube.com/embed/' . $code . '" frameborder="0" allowfullscreen></iframe><br>';
 				}
 			}
 			$message .= '<a href="' . $url . '" target="_blank">' . $inside . '</a>' . $after;

@@ -9,18 +9,17 @@ initiate_session();
 
 try
 {
-	if ($_profile == NULL || !$_profile->is_admin())
-	{
-		throw new FatalExc(get_label('No permissions'));
-	}
-	
 	if (!isset($_REQUEST['game']))
 	{
 		throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 	}
 	$id = $_REQUEST['game'];
 	
-	list($video) = Db::record(get_label('game'), 'SELECT video FROM games WHERE id = ?', $id);
+	list($club_id, $video) = Db::record(get_label('game'), 'SELECT club_id, video FROM games WHERE id = ?', $id);
+	if ($_profile == NULL || !isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
+	{
+		throw new FatalExc(get_label('No permissions'));
+	}
 		
 	dialog_title(get_label('Set game [0] video', $id));
 		

@@ -35,6 +35,7 @@ class ViewGame
 	public $moder_flags;
 	public $row;
 	public $civ_odds;
+	public $video;
 	
 	public $players;
 	
@@ -63,7 +64,7 @@ class ViewGame
 		}
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result FROM games g' .
+			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN clubs c ON c.id = g.club_id' . 
 				' JOIN addresses a ON a.id = e.address_id' .
@@ -74,7 +75,7 @@ class ViewGame
 		{
 			list (
 				$this->event_id, $event_name, $this->event_flags, $timezone, $event_time, $this->club_id, $this->club, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $start_time, $duration,
-				$this->language_code, $this->civ_odds, $this->result) = $row;
+				$this->language_code, $this->civ_odds, $this->result, $this->video) = $row;
 
 			$this->event = $event_name . format_date('. M j Y.', $event_time, $timezone);
 		}
@@ -91,6 +92,7 @@ class ViewGame
 						$id);
 				
 			$this->event = NULL;
+			$this->video = NULL;
 		}
 		
 		$this->start_time = format_date('M j Y H:i', $start_time, $timezone);
@@ -294,13 +296,17 @@ class ViewGamePageBase extends PageBase
 		}
 		
 		echo '<p><table class="transp" width="100%"><tr><td rowspan="2"><table class="bordered">';
-		echo '<tr align="center" class="th light" padding="5px"><td width="100">' . get_label('Club') . '</td><td width="100">' . get_label('Event') . '</td><td width="100">' . get_label('Address') . '</td><td width="100">' . get_label('Moderator') . '</td><td width="100">'.get_label('Time').'</td><td width="100">'.get_label('Duration').'</td><td width="100">'.get_label('Language').'</td>';
+		echo '<tr align="center" class="th light" padding="5px"><td width="90">' . get_label('Club') . '</td><td width="90">' . get_label('Event') . '</td><td width="90">' . get_label('Address') . '</td><td width="90">' . get_label('Moderator') . '</td><td width="90">'.get_label('Time').'</td><td width="90">'.get_label('Duration').'</td><td width="90">'.get_label('Language').'</td>';
 		if ($vg->civ_odds >= 0 && $vg->civ_odds <= 1)
 		{
-			echo '<td width="100">'.get_label('Civs odds').'</td>';
+			echo '<td width="90">'.get_label('Civs odds').'</td>';
 		}
-		echo '<tr align="center" class="light"><td><a href="club_main.php?id=' . $vg->club_id . '&bck=1" title="' . $vg->club . '">';
-		show_club_pic($vg->club_id, $vg->club_name, $vg->club_flags, ICONS_DIR, 48);
+		if ($vg->video != NULL)
+		{
+			echo '<td width="90">'.get_label('Video').'</td>';
+		}
+		echo '</tr><tr align="center" class="light"><td><a href="club_main.php?id=' . $vg->club_id . '&bck=1" title="' . $vg->club . '">';
+		show_club_pic($vg->club_id, $vg->club, $vg->club_flags, ICONS_DIR, 48);
 		echo '</a></td><td>';
 		if ($vg->event != NULL)
 		{
@@ -333,7 +339,12 @@ class ViewGamePageBase extends PageBase
 			$text = get_label('The chances to win for the town estimated by [0] before the game were [1].', PRODUCT_NAME, $odds_text);
 			$red_width = round(48 * $vg->civ_odds);
 			echo '</td><td>' . $odds_text . '<br><img src="images/red_dot.png" width="' . $red_width . '" height="12" title="' . $text . '"><img src="images/black_dot.png" width="' . (48 - $red_width) . '" height="12" title="' . $text . '">';
-			
+		}
+		if ($vg->video != NULL)
+		{
+			echo '<td><a href="javascript:mr.watchGameVideo(' . $gs->id . ')">';
+			echo '<img src="images/video.png" width="48" height="48" title="' . get_label('Watch game [0] video', $gs->id) . '">';
+			echo '</td>';
 		}
 		echo '</td></tr></table></td><td align="right" valign="top">';
 		if ($vg->can_edit())
