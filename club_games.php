@@ -36,7 +36,9 @@ class Page extends ClubPageBase
 			$season = (int)$_REQUEST['season'];
 		}
 		
-		echo '<form method="get" name="form" action="club_games.php">';
+		$with_video = isset($_REQUEST['video']);
+		
+		echo '<p><form method="get" name="form" action="club_games.php">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		$season = show_seasons_select($this->id, $season, 'document.form.submit()', get_label('Show games of a specific season.'));
@@ -44,26 +46,32 @@ class Page extends ClubPageBase
 		show_option(-1, $result_filter, get_label('All games'));
 		show_option(1, $result_filter, get_label('Town victories'));
 		show_option(2, $result_filter, get_label('Mafia victories'));
-		show_option(3, $result_filter, get_label('Games with video'));
 		if ($this->is_manager)
 		{
 			show_option(0, $result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
-		echo '</td></tr></table></form>';
+		echo ' <input type="checkbox" name="video" onclick="document.form.submit()"';
+		if ($with_video)
+		{
+			echo ' checked';
+		}
+		echo '> ' . get_label('show only games with video');
+		echo '</td></tr></table></form></p>';
 
 		$condition = new SQL(' WHERE g.club_id = ?', $this->id);
 		if ($result_filter < 0)
 		{
 			$condition->add(' AND g.result <> 0');
 		}
-		else if ($result_filter == 3)
-		{
-			$condition->add(' AND g.video IS NOT NULL');
-		}
 		else
 		{
 			$condition->add(' AND g.result = ?', $result_filter);
+		}
+		
+		if ($with_video)
+		{
+			$condition->add(' AND g.video IS NOT NULL');
 		}
 		$condition->add(get_season_condition($season, 'g.start_time', 'g.end_time'));
 		

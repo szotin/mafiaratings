@@ -31,33 +31,41 @@ class Page extends AddressPageBase
 			}
 		}
 		
-		echo '<form method="get" name="form" action="address_games.php">';
+		$with_video = isset($_REQUEST['video']);
+		
+		echo '<p><form method="get" name="form" action="address_games.php">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<select name="results" onChange="document.form.submit()">';
 		show_option(-1, $result_filter, get_label('All games'));
 		show_option(1, $result_filter, get_label('Town victories'));
 		show_option(2, $result_filter, get_label('Mafia victories'));
-		show_option(3, $result_filter, get_label('Games with video'));
 		if ($this->is_manager)
 		{
 			show_option(0, $result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
-		echo '</td></tr></table></form>';
+		echo ' <input type="checkbox" name="video" onclick="document.form.submit()"';
+		if ($with_video)
+		{
+			echo ' checked';
+		}
+		echo '> ' . get_label('show only games with video');
+		echo '</td></tr></table></form></p>';
 
 		$condition = new SQL(' WHERE e.address_id = ?', $this->id);
 		if ($result_filter < 0)
 		{
 			$condition->add(' AND g.result <> 0');
 		}
-		else if ($result_filter == 3)
-		{
-			$condition->add(' AND g.video IS NOT NULL');
-		}
 		else
 		{
 			$condition->add(' AND g.result = ?', $result_filter);
+		}
+		
+		if ($with_video)
+		{
+			$condition->add(' AND g.video IS NOT NULL');
 		}
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id', $condition);

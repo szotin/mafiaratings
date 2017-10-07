@@ -26,10 +26,17 @@ class Page extends UserPageBase
 			$moder = (int)$_REQUEST['moder'];
 		}
 		
-		$result_filter = -1;
+		$result_filter = 0;
 		if (isset($_REQUEST['result']))
 		{
 			$result_filter = (int)$_REQUEST['result'];
+		}
+		
+		$with_video = isset($_REQUEST['video']);
+		$condition = new SQL();
+		if ($with_video)
+		{
+			$condition->add(' AND g.video IS NOT NULL');
 		}
 		
 		echo '<p><form method="get" name="filterForm" action="user_games.php">';
@@ -38,31 +45,39 @@ class Page extends UserPageBase
 		show_option(0, $moder, get_label('As a player'));
 		show_option(1, $moder, get_label('As a moderator'));
 		echo '</select>';
-		echo ' <select name="result" onChange="document.filterForm.submit()">';
-		show_option(-1, $result_filter, get_label('All games'));
-		show_option(1, $result_filter, get_label('Town victories'));
-		show_option(2, $result_filter, get_label('Mafia victories'));
-		show_option(3, $result_filter, get_label('Games with video'));
-		echo '</select>';
-		
-		$condition = new SQL();
-		if ($result_filter <= 0)
-		{
-			$condition->add(' AND g.result <> 0');
-		}
-		else if ($result_filter == 3)
-		{
-			$condition->add(' AND g.video IS NOT NULL');
-		}
-		else
-		{
-			$condition->add(' AND g.result = ?', $result_filter);
-		}
-		
 		
 		if ($moder != 0)
 		{
+			if ($result_filter > 2 && $result_filter < 5)
+			{
+				$result_filter = 0;
+			}
+			
+			echo ' <select name="result" onChange="document.filterForm.submit()">';
+			show_option(0, $result_filter, get_label('All games'));
+			show_option(1, $result_filter, get_label('Town victories'));
+			show_option(2, $result_filter, get_label('Mafia victories'));
+			echo '</select>';
+			echo ' <input type="checkbox" name="video" onclick="document.filterForm.submit()"';
+			if ($with_video)
+			{
+				echo ' checked';
+			}
+			echo '> ' . get_label('show only games with video');
 			echo '</form></p>';
+			
+			switch ($result_filter)
+			{
+				case 1:
+					$condition->add(' AND g.result = 1');
+					break;
+				case 2:
+					$condition->add(' AND g.result = 2');
+					break;
+				default:
+					$condition->add(' AND g.result <> 0');
+					break;
+			}
 			
 			list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.moderator_id = ?', $this->id, $condition);
 			show_pages_navigation(PAGE_SIZE, $count);
@@ -120,29 +135,39 @@ class Page extends UserPageBase
 				$roles = (int)$_REQUEST['roles'];
 			}
 
-			$mood = 0;
-			if (isset($_REQUEST['mood']))
-			{
-				$mood = (int)$_REQUEST['mood'];
-			}
-			
-			echo ' ';
+			echo ' <select name="result" onChange="document.filterForm.submit()">';
+			show_option(0, $result_filter, get_label('All games'));
+			show_option(1, $result_filter, get_label('Town victories'));
+			show_option(2, $result_filter, get_label('Mafia victories'));
+			show_option(3, $result_filter, get_label('[0] victories', $this->name));
+			show_option(4, $result_filter, get_label('[0] losses', $this->name));
+			echo '</select> ';
 			show_roles_select($roles, 'document.filterForm.submit()', get_label('Games where [0] was in a specific role.', $this->name), ROLE_NAME_FLAG_SINGLE);
-			echo ' <select name="mood" onChange = "document.filterForm.submit()">';
-			show_option(0, $mood, get_label('All games'));
-			show_option(1, $mood, get_label('[0] victories', $this->name));
-			show_option(2, $mood, get_label('[0] losses', $this->name));
-			echo '</select>';
+			echo ' <input type="checkbox" name="video" onclick="document.filterForm.submit()"';
+			if ($with_video)
+			{
+				echo ' checked';
+			}
+			echo '> ' . get_label('show only games with video');
 			echo '</form></p>';
 			
 			$condition->add(get_roles_condition($roles));
-			switch ($mood)
+			switch ($result_filter)
 			{
 				case 1:
-					$condition->add(' AND p.won > 0');
+					$condition->add(' AND g.result = 1');
 					break;
 				case 2:
+					$condition->add(' AND g.result = 2');
+					break;
+				case 3:
+					$condition->add(' AND p.won > 0');
+					break;
+				case 4:
 					$condition->add(' AND p.won = 0');
+					break;
+				default:
+					$condition->add(' AND g.result <> 0');
 					break;
 			}
 			

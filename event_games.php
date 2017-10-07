@@ -8,39 +8,41 @@ define("PAGE_SIZE", 20);
 
 class Page extends EventPageBase
 {
-	private $result_filter;
-
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->result_filter = -1;
-		if (isset($_REQUEST['results']))
-		{
-			$this->result_filter = (int)$_REQUEST['results'];
-			if ($this->result_filter == 0 && !$this->is_manager)
-			{
-				$this->result_filter = -1;
-			}
-		}
 		$this->_title = get_label('[0]: games', $this->event->name);
 	}
 	
 	protected function show_body()
 	{
 		global $_page;
+		
+		$result_filter = -1;
+		if (isset($_REQUEST['results']))
+		{
+			$result_filter = (int)$_REQUEST['results'];
+			if ($result_filter == 0 && !$this->is_manager)
+			{
+				$result_filter = -1;
+			}
+		}
+		
+		$with_video = isset($_REQUEST['video']);
 	
 		$condition = new SQL(' WHERE g.event_id = ?', $this->event->id);
-		if ($this->result_filter < 0)
+		if ($result_filter < 0)
 		{
 			$condition->add(' AND g.result <> 0');
 		}
-		else if ($this->result_filter == 3)
-		{
-			$condition->add(' AND g.video IS NOT NULL');
-		}
 		else
 		{
-			$condition->add(' AND g.result = ?', $this->result_filter);
+			$condition->add(' AND g.result = ?', $result_filter);
+		}
+		
+		if ($with_video)
+		{
+			$condition->add(' AND g.video IS NOT NULL');
 		}
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
@@ -50,15 +52,20 @@ class Page extends EventPageBase
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
 		echo '<select name="results" onChange="document.form.submit()">';
-		show_option(-1, $this->result_filter, get_label('All games'));
-		show_option(1, $this->result_filter, get_label('Town victories'));
-		show_option(2, $this->result_filter, get_label('Mafia victories'));
-		show_option(3, $this->result_filter, get_label('Games with video'));
+		show_option(-1, $result_filter, get_label('All games'));
+		show_option(1, $result_filter, get_label('Town victories'));
+		show_option(2, $result_filter, get_label('Mafia victories'));
 		if ($this->is_manager)
 		{
-			show_option(0, $this->result_filter, get_label('Unfinished games'));
+			show_option(0, $result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
+		echo ' <input type="checkbox" name="video" onclick="document.form.submit()"';
+		if ($with_video)
+		{
+			echo ' checked';
+		}
+		echo '> ' . get_label('show only games with video');
 		echo '</td></tr></table></form></p>';
 		
 		echo '<table class="bordered light" width="100%">';

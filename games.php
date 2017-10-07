@@ -13,6 +13,7 @@ define("PAGE_SIZE", 20);
 class Page extends GeneralPageBase
 {
 	private $result_filter;
+	private $with_video;
 	private $is_admin;
 
 	protected function prepare()
@@ -32,6 +33,8 @@ class Page extends GeneralPageBase
 				$this->result_filter = -1;
 			}
 		}
+		
+		$this->with_video = isset($_REQUEST['video']);
 	}
 
 	protected function show_body()
@@ -43,13 +46,14 @@ class Page extends GeneralPageBase
 		{
 			$condition->add(' WHERE g.result <> 0');
 		}
-		else if ($this->result_filter == 3)
-		{
-			$condition->add(' WHERE g.video IS NOT NULL');
-		}
 		else
 		{
 			$condition->add(' WHERE g.result = ?', $this->result_filter);
+		}
+		
+		if ($this->with_video)
+		{
+			$condition->add(' AND g.video IS NOT NULL');
 		}
 		
 		$ccc_id = $this->ccc_filter->get_id();
@@ -149,17 +153,22 @@ class Page extends GeneralPageBase
 		show_option(-1, $this->result_filter, get_label('All games'));
 		show_option(1, $this->result_filter, get_label('Town victories'));
 		show_option(2, $this->result_filter, get_label('Mafia victories'));
-		show_option(3, $this->result_filter, get_label('Games with video'));
 		if ($this->is_admin)
 		{
 			show_option(0, $this->result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
+		echo ' <input type="checkbox" id="video" onclick="filter()"';
+		if ($this->with_video)
+		{
+			echo ' checked';
+		}
+		echo '> ' . get_label('show only games with video');
 	}
 	
 	protected function get_filter_js()
 	{
-		return '+ "&results=" + $("#results").val()';
+		return '+ "&results=" + $("#results").val() + ($("#video").attr("checked") ? "&video" : "")';
 	}
 }
 
