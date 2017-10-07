@@ -200,19 +200,19 @@ class UserPageBase extends PageBase
 		
 		$menu = array(
 			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information')),
-			new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('[0] statistics', $this->title)),
-			new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('[0] statistics on different numbers', $this->title)),
-			new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)),
+			new MenuItem('#stats', get_label('Stats'), NULL, array(
+				new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('General statistics. How many games played, winning percentage, nominating/voting, etc.')),
+				new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+				new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)))),
+			new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title)),
+			new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title)),
+			new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->name)),
 			new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title)),
 			new MenuItem('user_messages.php?id=' . $this->id, get_label('Messages'), get_label('Forum messages of [0]', $this->title)));
 		if ($_profile != NULL && $_profile->user_id == $this->id)
 		{
 			$menu[] = new MenuItem('user_albums.php?id=' . $this->id, get_label('Photo albums'), get_label('Photo albums of [0]', $this->title));
 		}
-		$menu[] = new MenuItem('#history', get_label('History'), NULL, array(
-			new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title)),
-			new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title)),
-			new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->name))));
 			
 		echo '<table class="head" width="100%">';
 
