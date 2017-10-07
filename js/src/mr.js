@@ -540,8 +540,8 @@ var mr = new function()
 		var gotoGame = function(data)
 		{
 			var link = "game.php?edit&back=" + encodeURIComponent(window.location.href);
-			if (typeof data.clubId !== "undefined")
-				link += "&club=" + data.clubId
+			if (typeof data.club_id !== "undefined")
+				link += "&club=" + data.club_id;
 			window.location.replace(link);
 		}
 		

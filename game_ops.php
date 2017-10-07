@@ -4,6 +4,7 @@ require_once 'include/session.php';
 require_once 'include/game_stats.php';
 require_once 'include/event.php';
 require_once 'include/email.php';
+require_once 'include/view_game.php';
 
 define('EVENTS_FUTURE_LIMIT', 1209600); // 2 weeks
 
@@ -705,6 +706,15 @@ class CommandQueue
 		$this->correct_game($game);
 		$game->save();
 		save_game_results($game);
+		
+		if (isset($_SESSION['view_game']))
+		{
+			$vg = $_SESSION['view_game'];
+			if ($vg->gs->id == $game->id)
+			{
+				$vg->refresh();
+			}
+		}
 	}
 	
 	function extend_event($rec)
@@ -816,6 +826,7 @@ try
 		// $console = array();
 		if (isset($_REQUEST['game']))
 		{
+			
 			$game_str = str_replace('\"', '"', $_REQUEST['game']);
 			$game = new GameState();
 			$game->create_from_json(json_decode($game_str));
@@ -1019,6 +1030,14 @@ try
 			send_email($admin_email, $body, $text_body, $subj);
 		}
 		
+		if (isset($_SESSION['view_game']))
+		{
+			$vg = $_SESSION['view_game'];
+			if ($vg->gs->id == $game_id)
+			{
+				unset($_SESSION['view_game']);
+			}
+		}
 		db_log('game', 'deleted', '', $game_id, $club_id);
 		$result['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
 	}
