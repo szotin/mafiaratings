@@ -242,7 +242,7 @@ class Page extends GeneralPageBase
 	protected function show_search_fields()
 	{
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', '', get_label('Go to the page where a specific user is located.'));
+		show_user_input('page', $this->user_name, get_label('Go to the page where a specific user is located.'));
 	}
 	
 	protected function get_filter_js()

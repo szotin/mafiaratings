@@ -110,7 +110,7 @@ class Page extends EventPageBase
 		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', '', get_label('Go to the page where a specific player is located.'));
+		show_user_input('page', $this->user_name, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
 
 		list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?', $this->event->id, $condition);

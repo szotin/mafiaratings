@@ -78,7 +78,7 @@ class Page extends ClubPageBase
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', '', get_label('Go to the page where a specific user is located.'));
+		show_user_input('page', $this->user_name, get_label('Go to the page where a specific user is located.'));
 		echo '</td></tr></table></form>';
 		
 		$is_manager = $_profile->is_manager($this->id);

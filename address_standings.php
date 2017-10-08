@@ -115,7 +115,7 @@ class Page extends AddressPageBase
 		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', '', get_label('Go to the page where a specific player is located.'));
+		show_user_input('page', $this->user_name, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
 
 		list ($count) = Db::record(get_label('points'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ?', $this->id, $condition);
