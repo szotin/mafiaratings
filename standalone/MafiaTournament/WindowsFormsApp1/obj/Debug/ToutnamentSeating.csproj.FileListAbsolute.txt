@@ -1,0 +1,10 @@
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\obj\Debug\ToutnamentSeating.csprojResolveAssemblyReference.cache
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\obj\Debug\TournamentSeating.SeatingForm.resources
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\obj\Debug\ToutnamentSeating.csproj.GenerateResource.Cache
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\obj\Debug\ToutnamentSeating.csproj.CoreCompileInputs.cache
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\bin\Debug\TournamentSeating.exe.config
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\bin\Debug\TournamentSeating.exe
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\bin\Debug\TournamentSeating.pdb
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\obj\Debug\TournamentSeating.Properties.Resources.resources
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\obj\Debug\TournamentSeating.exe
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\MafiaTournament\WindowsFormsApp1\obj\Debug\TournamentSeating.pdb

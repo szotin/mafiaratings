@@ -1075,6 +1075,7 @@ $labelMenu = array (
 '[0] victories' => 'Победы [0]', // user_games.php
 '[0] losses' => 'Поражения [0]', // user_games.php
 'General statistics. How many games played, winning percentage, nominating/voting, etc.' => 'Общая статистика. Сколько игр сыграно, процент побед, выставление/голосование и тд.', // ./include/user.php
+'show only games with video' => 'показать только игры где есть видео', // address_games.php, club_games.php, event_games.php, games.php, user_games.php, user_games.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'Town\'s victory.' => 'Победа города.', // ./include/view_game.php
@@ -1083,7 +1084,7 @@ $labelMenu = array (
 'The Don\'s check' => 'Проверка дона', // view_game.php
 'The Don\'s game' => 'Игра доном', // view_game_stats.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
-'show only games with video' => 'показать только игры где есть видео', // address_games.php, club_games.php, event_games.php, games.php, user_games.php, user_games.php
+'Are you sure you want to remove video from the game [0]?' => 'Вы уверены, что хотите удалить видео игры [0]?', // address_games.php, club_games.php, event_games.php, games.php, ./include/view_game.php
 );
 
 return $labelMenu;

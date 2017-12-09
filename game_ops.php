@@ -359,6 +359,25 @@ class GUser
 	}
 }
 
+function reset_viewed_game($game_id, $keep = true)
+{
+	if (isset($_SESSION['view_game']))
+	{
+		$vg = $_SESSION['view_game'];
+		if ($vg->gs->id == $game_id)
+		{
+			if ($keep)
+			{
+				$vg->refresh();
+			}
+			else
+			{
+				unset($_SESSION['view_game']);
+			}
+		}
+	}
+}
+
 class CommandQueue
 {
 	public $events_map;
@@ -706,15 +725,7 @@ class CommandQueue
 		$this->correct_game($game);
 		$game->save();
 		save_game_results($game);
-		
-		if (isset($_SESSION['view_game']))
-		{
-			$vg = $_SESSION['view_game'];
-			if ($vg->gs->id == $game->id)
-			{
-				$vg->refresh();
-			}
-		}
+		reset_viewed_game($game->id);
 	}
 	
 	function extend_event($rec)
@@ -915,12 +926,12 @@ try
 					' JOIN registrations r ON r.user_id = u.id' .
 					' WHERE r.nick_name <> u.name AND (u.flags & ' . U_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ?',
 				'%' . $name . '%',
-				'%' . $name . '%');
+				'%' . $name . '% ORDER BY name');
 		}
 		
 		if ($num > 0)
 		{
-			$query->add(' ORDER BY name LIMIT ' . $num);
+			$query->add(' LIMIT ' . $num);
 		}
 		
 		$list = array();
@@ -1030,14 +1041,7 @@ try
 			send_email($admin_email, $body, $text_body, $subj);
 		}
 		
-		if (isset($_SESSION['view_game']))
-		{
-			$vg = $_SESSION['view_game'];
-			if ($vg->gs->id == $game_id)
-			{
-				unset($_SESSION['view_game']);
-			}
-		}
+		reset_viewed_game($game_id, false);
 		db_log('game', 'deleted', '', $game_id, $club_id);
 		$result['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
 	}
@@ -1119,6 +1123,7 @@ try
 		{
 			db_log('game', 'changed', 'old_video: ' . $old_video, $game_id, $club_id);
 		}
+		reset_viewed_game($game_id);
 	}
 	else if (isset($_REQUEST['remove_video']))
 	{
@@ -1138,6 +1143,7 @@ try
 		{
 			db_log('game', 'changed', 'video_removed: ' . $old_video, $game_id, $club_id);
 		}
+		reset_viewed_game($game_id);
 	}
 }
 catch (Exception $e)

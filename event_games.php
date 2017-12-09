@@ -98,7 +98,7 @@ class Page extends EventPageBase
 				}
 				else
 				{
-					echo '<button class="icon" onclick="mr.removeGameVideo(' . $game_id . ')" title="' . get_label('Remove game [0] video', $game_id) . '"><img src="images/film-delete.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.removeGameVideo(' . $game_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $game_id) . '\')" title="' . get_label('Remove game [0] video', $game_id) . '"><img src="images/film-delete.png" border="0"></button>';
 				}
 				echo '</td>';
 			}

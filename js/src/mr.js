@@ -556,9 +556,12 @@ var mr = new function()
 		dlg.form("game_video_edit.php?game=" + gameId, refr, 600);
 	}
 	
-	this.removeGameVideo = function(gameId)
+	this.removeGameVideo = function(gameId, confirmMessage)
 	{
-		json.post("game_ops.php", { 'remove_video': gameId  }, refr);
+		dlg.yesNo(confirmMessage, null, null, function()
+		{
+			json.post("game_ops.php", { 'remove_video': gameId  }, refr);
+		});
 	}
 	
 	this.watchGameVideo = function(gameId)

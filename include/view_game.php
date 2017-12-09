@@ -357,7 +357,7 @@ class ViewGamePageBase extends PageBase
 			}
 			else
 			{
-				echo '<button class="icon" onclick="mr.removeGameVideo(' . $gs->id . ')" title="' . get_label('Remove game [0] video', $gs->id) . '"><img src="images/film-delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.removeGameVideo(' . $gs->id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $gs->id) . '\')" title="' . get_label('Remove game [0] video', $gs->id) . '"><img src="images/film-delete.png" border="0"></button>';
 			}
 		}
 		echo '</td></tr><tr><td align="right" valign="bottom"><form method="get" name="gotoForm" action="' . get_page_name() . '">';
