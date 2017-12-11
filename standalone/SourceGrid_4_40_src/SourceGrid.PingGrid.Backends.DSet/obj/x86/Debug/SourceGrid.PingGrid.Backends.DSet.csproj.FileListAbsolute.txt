@@ -1,0 +1,9 @@
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.PingGrid.Backends.DSet.dll
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.PingGrid.Backends.DSet.pdb
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.dll
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.pdb
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.xml
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.csprojResolveAssemblyReference.cache
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.csproj.CoreCompileInputs.cache
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.dll
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.pdb

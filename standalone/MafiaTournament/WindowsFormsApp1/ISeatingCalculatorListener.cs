@@ -8,7 +8,7 @@ namespace TournamentSeating
 {
     interface ISeatingCalculatorListener
     {
-        void SeatingsUpdated();
+        void SeatingsUpdated(int[,] seatings);
         void CalculationFinished();
     }
 }

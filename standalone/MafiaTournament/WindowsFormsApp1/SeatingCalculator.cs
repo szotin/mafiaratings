@@ -20,7 +20,7 @@ namespace TournamentSeating
         private bool m_running;
 
         private int[,] m_seatings = null;
-        Random m_rnd = new Random((int)DateTimeOffset.Now.ToUnixTimeSeconds());
+        Random m_rnd = new Random(0); // (int)DateTimeOffset.Now.ToUnixTimeSeconds());
 
         public SeatingCalculator(int a_players, int a_games, int a_tables, ISeatingCalculatorListener a_listener)
         {
@@ -35,29 +35,33 @@ namespace TournamentSeating
         {
             m_seatings = null;
             int seats_per_round = 10 * m_tables;
+            m_tablesInLastRound = m_tables;
             if (seats_per_round >= m_players)
             {
                 m_rounds = m_games;
+                m_maxPlaceholders = m_minPlaceholders = (seats_per_round - m_players) / m_tables;
+                if (m_minPlaceholders * m_tables < seats_per_round - m_players)
+                {
+                    ++m_maxPlaceholders;
+                }
             }
             else
             {
                 m_rounds = ((m_players * m_games + seats_per_round - 1) / (10 * m_tables));
-            }
+                int totalTables = m_rounds * m_tables;
+                int totalPlaceholders = totalTables * 10 - m_players * m_games;
+                while (totalPlaceholders >= 10 && m_tablesInLastRound > 1)
+                {
+                    totalPlaceholders -= 10;
+                    --totalTables;
+                    --m_tablesInLastRound;
+                }
 
-            m_tablesInLastRound = m_tables;
-            int totalTables = m_rounds * m_tables;
-            int totalPlaceholders = totalTables * 10 - m_players * m_games;
-            while (totalPlaceholders >= 10 && m_tablesInLastRound > 1)
-            {
-                totalPlaceholders -= 10;
-                --totalTables;
-                --m_tablesInLastRound;
-            }
-
-            m_maxPlaceholders = m_minPlaceholders = totalPlaceholders / totalTables;
-            if (m_minPlaceholders * totalTables < totalPlaceholders)
-            {
-                ++m_maxPlaceholders;
+                m_maxPlaceholders = m_minPlaceholders = totalPlaceholders / totalTables;
+                if (m_minPlaceholders * totalTables < totalPlaceholders)
+                {
+                    ++m_maxPlaceholders;
+                }
             }
         }
 
@@ -160,19 +164,6 @@ namespace TournamentSeating
 
         #region Calculate player tables
 
-        private int[] CalculateTableFreq(int player)
-        {
-            int[] tables = new int[m_tables];
-            for (int r = 0; r < m_rounds; ++r)
-            {
-                if (m_seatings[player, r] > 0)
-                {
-                    ++tables[m_seatings[player, r] - 1];
-                }
-            }
-            return tables;
-        }
-
         private int[] generateAvailableSeats()
         {
             int totalGames = (m_rounds - 1) * m_tables + m_tablesInLastRound;
@@ -200,35 +191,203 @@ namespace TournamentSeating
             int moreSeats = totalGames * (10 - m_minPlaceholders) - m_players * m_games;
             while (moreSeats > 0)
             {
-                for (int r = 0; r < m_rounds && moreSeats > 0; ++r,--moreSeats)
+                for (int r = 0; r < m_rounds && moreSeats > 0; ++r)
                 {
                     int tables = m_tables;
                     int round = rnd_rounds[r];
+                    int offset = round * m_tables;
                     if (round == m_rounds - 1)
                     {
                         tables = m_tablesInLastRound;
                     }
                     int t = m_rnd.Next(tables);
-                    while (availableSeats[round * m_tables + t] != 10 - m_minPlaceholders)
+                    while (availableSeats[offset + t] != 10 - m_minPlaceholders)
                     {
-                        t = m_rnd.Next(m_tables);
+                        t = m_rnd.Next(tables);
+
+                        int i;
+                        for (i = 0; i < tables; ++i)
+                        {
+                            if (availableSeats[offset + i] == 10 - m_minPlaceholders)
+                            {
+                                break;
+                            }
+                        }
+                        if (i >= tables)
+                        {
+                            t = tables;
+                            break;
+                        }
                     }
-                    --availableSeats[round * m_tables + t];
+
+                    if (t < tables)
+                    {
+                        --availableSeats[round * m_tables + t];
+                        --moreSeats;
+                    }
                 }
             }
             return availableSeats;
         }
 
-        private void InitPlayerTables()
+        private bool resolveDeadEnd(int player, int[] availableSeats)
         {
+            for (int r = 0; r < m_rounds; ++r)
+            {
+                if (m_seatings[player, r] != 0)
+                {
+                    continue;
+                }
+
+                for (int p1 = 0; p1 < player; ++p1)
+                {
+                    int t = m_seatings[p1, r];
+                    if (t <= 0)
+                    {
+                        continue;
+                    }
+
+                    for (int r1 = 0; r1 < m_rounds; ++r1)
+                    {
+                        if (r1 == r)
+                        {
+                            continue;
+                        }
+
+                        int g = r1 * m_tables + t - 1;
+                        if (g >= availableSeats.Length || availableSeats[g] <= 0)
+                        {
+                            continue;
+                        }
+
+                        int t1 = m_seatings[p1, r1];
+                        if (t1 == t)
+                        {
+                            continue;
+                        }
+
+                        if (t1 > 0)
+                        {
+                            int g1 = r * m_tables + t1 - 1;
+                            if (availableSeats[g1] <= 0)
+                            {
+                                continue;
+                            }
+                            --availableSeats[g1];
+                            ++availableSeats[r1 * m_tables + t1 - 1];
+                        }
+
+                        m_seatings[p1, r1] = t;
+                        m_seatings[p1, r] = t1;
+                        --availableSeats[g];
+                        ++availableSeats[r * m_tables + t - 1];
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool PlacePlayer(int player, int table, int[] availableTables, int[] availableSeats)
+        {
+            int count = 0;
+            while (true)
+            {
+                for (int g = table, r = 0; g < availableSeats.Length; g += m_tables, ++r)
+                {
+                    if (availableSeats[g] > 0 && m_seatings[player, r] == 0)
+                    {
+                        ++count;
+                    }
+                }
+                if (count > 0)
+                {
+                    break;
+                }
+                if (!resolveDeadEnd(player, availableSeats))
+                {
+                    return false;
+                }
+            }
+
+            count = m_rnd.Next(count);
+            for (int g = table, r = 0; g < availableSeats.Length; g += m_tables, ++r)
+            {
+                if (availableSeats[g] > 0 && m_seatings[player, r] == 0 && count-- <= 0)
+                {
+                    m_seatings[player, r] = table + 1;
+                    --availableTables[table];
+                    --availableSeats[g];
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void InitPlayerTables(int recursion)
+        {
+            m_seatings = new int[m_players, m_rounds];
             int[] availableSeats = generateAvailableSeats();
+            int[] availableTables = new int[m_tables];
+            for (int t = 0, g = 0; g < availableSeats.Length; ++g, ++t)
+            {
+                if (t >= m_tables)
+                {
+                    t = 0;
+                }
+                availableTables[t] += availableSeats[g];
+            }
+
+            for (int p = 0; p < m_players; ++p)
+            {
+                int gamesRemaining = m_games;
+                while (gamesRemaining >= m_tables)
+                {
+                    for (int t = 0; t < m_tables; ++t)
+                    {
+                        if (!PlacePlayer(p, t, availableTables, availableSeats))
+                        {
+                            if (recursion == 100)
+                            {
+                                throw new Exception("DEATH");
+                            }
+
+                            InitPlayerTables(recursion + 1);
+                            return;
+                        }
+                    }
+                    gamesRemaining -= m_tables;
+                }
+
+                while (gamesRemaining > 0)
+                {
+                    int t = m_rnd.Next(m_tables);
+                    while (availableTables[t] == 0)
+                    {
+                        t = m_rnd.Next(m_tables);
+                    }
+                    if (!PlacePlayer(p, t, availableTables, availableSeats))
+                    {
+                        if (recursion == 100)
+                        {
+                            throw new Exception("DEATH");
+                        }
+
+                        InitPlayerTables(recursion + 1);
+                        return;
+                    }
+                    --gamesRemaining;
+                }
+            }
+
+            m_listener.SeatingsUpdated((int[,])m_seatings.Clone());
         }
 
         private void CalculatePlayerTables()
         {
             //while (IsRunning)
             //{
-                InitPlayerTables();
+                InitPlayerTables(0);
             //}
             lock (this)
             {

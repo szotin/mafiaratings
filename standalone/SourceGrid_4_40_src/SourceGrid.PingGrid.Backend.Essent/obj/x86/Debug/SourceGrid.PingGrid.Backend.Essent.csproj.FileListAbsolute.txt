@@ -1,0 +1,12 @@
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\bin\Debug\SourceGrid.PingGrid.Backend.Essent.dll
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\bin\Debug\SourceGrid.PingGrid.Backend.Essent.pdb
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\bin\Debug\Esent.Collections.dll
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\bin\Debug\SourceGrid.dll
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\bin\Debug\Esent.Interop.dll
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\bin\Debug\SourceGrid.pdb
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\bin\Debug\SourceGrid.xml
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\bin\Debug\Esent.Collections.xml
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\obj\x86\Debug\SourceGrid.PingGrid.Backend.Essent.csprojResolveAssemblyReference.cache
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\obj\x86\Debug\SourceGrid.PingGrid.Backend.Essent.csproj.CoreCompileInputs.cache
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\obj\x86\Debug\SourceGrid.PingGrid.Backend.Essent.dll
+C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.Essent\obj\x86\Debug\SourceGrid.PingGrid.Backend.Essent.pdb

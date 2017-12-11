@@ -13,6 +13,7 @@ namespace TournamentSeating
     public partial class SeatingForm : Form, ISeatingCalculatorListener
     {
         private SeatingCalculator m_calculator = null;
+        private int[,] m_seatings = null;
 
         public SeatingForm()
         {
@@ -146,12 +147,48 @@ namespace TournamentSeating
             }
         }
 
-        void ISeatingCalculatorListener.SeatingsUpdated()
+        private void _SeatingsUpdated()
         {
-
+            lock (this)
+            {
+                int p = 0, r = 0;
+                for (int s = 0; s < m_seatings.Length; ++s)
+                {
+                    int value = m_seatings[p, r];
+                    if (value > 0)
+                    {
+                        grid.Rows[p].Cells[r + 1].Value = value;
+                    }
+                    else
+                    {
+                        grid.Rows[p].Cells[r + 1].Value = "";
+                    }
+                    if (++p >= m_calculator.PlayerCount)
+                    {
+                        p = 0;
+                        ++r;
+                    }
+                }
+            }
         }
 
-        private void CalculationEnd()
+        void ISeatingCalculatorListener.SeatingsUpdated(int[,] seatings)
+        {
+            lock (this)
+            {
+                m_seatings = seatings;
+            }
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(delegate () { _SeatingsUpdated(); }));
+            }
+            else
+            {
+                _SeatingsUpdated();
+            }
+        }
+
+        private void _CalculationFinished()
         {
             tablesUpDown.Enabled = gamesUpDown.Enabled = playersUpDown.Enabled = true;
             calculateButton.Text = "Calculate";
@@ -162,11 +199,11 @@ namespace TournamentSeating
         {
             if (InvokeRequired)
             {
-                Invoke(new MethodInvoker(delegate () { CalculationEnd(); }));
+                Invoke(new MethodInvoker(delegate () { _CalculationFinished(); }));
             }
             else
             {
-                CalculationEnd();
+                _CalculationFinished();
             }
         }
     }
