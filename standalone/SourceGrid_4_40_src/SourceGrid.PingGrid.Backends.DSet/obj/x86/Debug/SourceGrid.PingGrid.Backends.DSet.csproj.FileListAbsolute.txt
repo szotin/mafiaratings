@@ -7,3 +7,12 @@ C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet
 C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.csproj.CoreCompileInputs.cache
 C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.dll
 C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.pdb
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.PingGrid.Backends.DSet.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.PingGrid.Backends.DSet.pdb
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.pdb
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\bin\Debug\SourceGrid.xml
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.csprojResolveAssemblyReference.cache
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.csproj.CoreCompileInputs.cache
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backends.DSet\obj\x86\Debug\SourceGrid.PingGrid.Backends.DSet.pdb

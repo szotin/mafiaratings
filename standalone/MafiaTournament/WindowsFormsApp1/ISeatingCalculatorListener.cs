@@ -10,5 +10,6 @@ namespace TournamentSeating
     {
         void SeatingsUpdated(int[,] seatings);
         void CalculationFinished();
+        void Error(Exception exception);
     }
 }

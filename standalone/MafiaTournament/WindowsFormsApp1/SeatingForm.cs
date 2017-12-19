@@ -66,72 +66,6 @@ namespace TournamentSeating
 
         private void calculateButton_Click(object sender, EventArgs e)
         {
-            StringBuilder text = new StringBuilder();
-            if (m_calculator.TableCount > 1)
-            {
-                text.Append(String.Format("You are about to generate seatings for {0} players tournament using {1} tables.", m_calculator.PlayerCount, m_calculator.TableCount));
-            }
-            else
-            {
-                text.Append(String.Format("You are about to generate seatings for {0} players tournament using 1 table.", m_calculator.PlayerCount));
-            }
-
-            if (m_calculator.GamesPerPlayer > 1)
-            {
-                text.Append(String.Format(" Every player will play {0} games.", m_calculator.GamesPerPlayer));
-            }
-            else
-            {
-                text.Append(String.Format(" Every player will play {0} games.", m_calculator.GamesPerPlayer));
-            }
-
-            if (m_calculator.RoundCount > 1)
-            {
-                text.Append(String.Format("\n\nIt will take {0} rounds", m_calculator.RoundCount));
-            }
-            else
-            {
-                text.Append(String.Format("\n\nIt will take 1 round", m_calculator.RoundCount));
-            }
-
-            if (m_calculator.MaxPlaceholders > 0)
-            {
-                if (m_calculator.MinPlaceholders == 0)
-                {
-                    text.Append(String.Format(" and you will need 1 placeholder in some games"));
-                }
-                else if (m_calculator.MaxPlaceholders != m_calculator.MinPlaceholders)
-                {
-                    text.Append(String.Format(" and you will need from {0} to {1} placeholders in every game", m_calculator.MinPlaceholders, m_calculator.MaxPlaceholders));
-                }
-                else if (m_calculator.MaxPlaceholders > 1)
-                {
-                    text.Append(String.Format(" and you will need from {0} placeholders in every game", m_calculator.MaxPlaceholders));
-                }
-                else
-                {
-                    text.Append(String.Format(" and you will need 1 placeholder in every game", m_calculator.MaxPlaceholders));
-                }
-            }
-
-            if (m_calculator.GamesInLastRound != m_calculator.TableCount)
-            {
-                if (m_calculator.GamesInLastRound > 1)
-                {
-                    text.Append(String.Format(". There will be only {0} games in the last round", m_calculator.GamesInLastRound));
-                }
-                else
-                {
-                    text.Append(String.Format(". There will be only 1 game in the last round", m_calculator.GamesInLastRound));
-                }
-            }
-
-            text.Append(".\n\nIs this what you need?");
-            if (MessageBox.Show(text.ToString(), "Calculating tournament", MessageBoxButtons.YesNo) != DialogResult.Yes)
-            {
-                return;
-            }
-
             if (m_calculator.IsRunning)
             {
                 m_calculator.Stop();
@@ -140,6 +74,72 @@ namespace TournamentSeating
             }
             else
             {
+                StringBuilder text = new StringBuilder();
+                if (m_calculator.TableCount > 1)
+                {
+                    text.Append(String.Format("You are about to generate seatings for {0} players tournament using {1} tables.", m_calculator.PlayerCount, m_calculator.TableCount));
+                }
+                else
+                {
+                    text.Append(String.Format("You are about to generate seatings for {0} players tournament using 1 table.", m_calculator.PlayerCount));
+                }
+
+                if (m_calculator.GamesPerPlayer > 1)
+                {
+                    text.Append(String.Format(" Every player will play {0} games.", m_calculator.GamesPerPlayer));
+                }
+                else
+                {
+                    text.Append(String.Format(" Every player will play {0} games.", m_calculator.GamesPerPlayer));
+                }
+
+                if (m_calculator.RoundCount > 1)
+                {
+                    text.Append(String.Format("\n\nIt will take {0} rounds", m_calculator.RoundCount));
+                }
+                else
+                {
+                    text.Append(String.Format("\n\nIt will take 1 round", m_calculator.RoundCount));
+                }
+
+                if (m_calculator.MaxPlaceholders > 0)
+                {
+                    if (m_calculator.MinPlaceholders == 0)
+                    {
+                        text.Append(String.Format(" and you will need 1 placeholder in some games"));
+                    }
+                    else if (m_calculator.MaxPlaceholders != m_calculator.MinPlaceholders)
+                    {
+                        text.Append(String.Format(" and you will need from {0} to {1} placeholders in every game", m_calculator.MinPlaceholders, m_calculator.MaxPlaceholders));
+                    }
+                    else if (m_calculator.MaxPlaceholders > 1)
+                    {
+                        text.Append(String.Format(" and you will need {0} placeholders in every game", m_calculator.MaxPlaceholders));
+                    }
+                    else
+                    {
+                        text.Append(String.Format(" and you will need 1 placeholder in every game", m_calculator.MaxPlaceholders));
+                    }
+                }
+
+                if (m_calculator.GamesInLastRound != m_calculator.TableCount)
+                {
+                    if (m_calculator.GamesInLastRound > 1)
+                    {
+                        text.Append(String.Format(". There will be only {0} games in the last round", m_calculator.GamesInLastRound));
+                    }
+                    else
+                    {
+                        text.Append(String.Format(". There will be only 1 game in the last round", m_calculator.GamesInLastRound));
+                    }
+                }
+
+                text.Append(".\n\nIs this what you need?");
+                if (MessageBox.Show(text.ToString(), "Calculating tournament", MessageBoxButtons.YesNo) != DialogResult.Yes)
+                {
+                    return;
+                }
+
                 calculateButton.Text = "Stop";
                 calculateButton.Enabled = true;
                 tablesUpDown.Enabled = gamesUpDown.Enabled = playersUpDown.Enabled = false;
@@ -205,6 +205,11 @@ namespace TournamentSeating
             {
                 _CalculationFinished();
             }
+        }
+
+        void ISeatingCalculatorListener.Error(Exception exception)
+        {
+            MessageBox.Show(exception.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

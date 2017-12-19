@@ -14,3 +14,19 @@ C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibe
 C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\obj\x86\Debug\SourceGrid.PingGrid.Backend.NHibernate.csproj.CoreCompileInputs.cache
 C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\obj\x86\Debug\SourceGrid.PingGrid.Backend.NHibernate.dll
 C:\Users\Serguei\Downloads\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\obj\x86\Debug\SourceGrid.PingGrid.Backend.NHibernate.pdb
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\SourceGrid.PingGrid.Backend.NHibernate.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\SourceGrid.PingGrid.Backend.NHibernate.pdb
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\NHibernate.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\SourceGrid.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\Iesi.Collections.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\Antlr3.Runtime.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\log4net.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\SourceGrid.pdb
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\SourceGrid.xml
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\NHibernate.xml
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\Iesi.Collections.xml
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\bin\Debug\log4net.xml
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\obj\x86\Debug\SourceGrid.PingGrid.Backend.NHibernate.csprojResolveAssemblyReference.cache
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\obj\x86\Debug\SourceGrid.PingGrid.Backend.NHibernate.csproj.CoreCompileInputs.cache
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\obj\x86\Debug\SourceGrid.PingGrid.Backend.NHibernate.dll
+C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\standalone\SourceGrid_4_40_src\SourceGrid.PingGrid.Backend.NHibernate\obj\x86\Debug\SourceGrid.PingGrid.Backend.NHibernate.pdb
