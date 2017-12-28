@@ -55,7 +55,7 @@ try
 		list ($cid, $cname) = $row;
 		show_option($cid, $club_id, $cname);
 	}
-	echo '</td></tr>';
+	echo '</select></td></tr>';
 	
 	echo '<tr><td class="dark" valign="top">' . get_label('Gender') . ':</td><td class="light">';
 	if ($_profile->user_flags & U_FLAG_MALE)

@@ -50,7 +50,7 @@ class GeneralPageBase extends PageBase
 				new MenuItem('by_numbers.php' . $ccc, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('nominations.php' . $ccc, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')))),
 			new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games')),
-			new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
+			new MenuItem('events.php' . $ccc, get_label('Tournaments'), get_label('Tournaments and events history')),
 			// new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),
 			new MenuItem('moderators.php' . $ccc, get_label('Moderators'), get_label('Moderators statistics')),
 			new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums'))

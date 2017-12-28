@@ -67,7 +67,6 @@ class Page extends ClubPageBase
 		global $_page, $_lang_code;
 		
 		$condition = get_roles_condition($this->roles);
-		$condition->add(get_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		
 		if ($this->user_id > 0)
 		{
@@ -128,6 +127,8 @@ class Page extends ClubPageBase
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
+		
+		$condition->add(get_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		
 		list ($count) = Db::record(get_label('points'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.club_id = ?', $this->id, $condition);
 		$query = new DbQuery(

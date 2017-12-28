@@ -10,14 +10,23 @@ require_once 'include/scoring.php';
 
 define("PAGE_SIZE",15);
 
+define('ETYPE_TOURNAMENT', 0);
+define('ETYPE_ALL', 1);
+
 class Page extends UserPageBase
 {
 	private $ccc_filter;
+	private $events_type;
 
 	protected function prepare()
 	{
 		parent::prepare();
 		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$this->events_type = ETYPE_ALL;
+		if (isset($_REQUEST['etype']))
+		{
+			$this->events_type = (int)$_REQUEST['etype'];
+		}
 		$this->_title = get_label('[0] events', $this->title);
 	}
 	
@@ -28,6 +37,10 @@ class Page extends UserPageBase
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		$this->ccc_filter->show('onCCC', get_label('Filter events by club, city, or country.'));
+		echo ' <select id="etype" onchange="filter()">';
+		show_option(ETYPE_TOURNAMENT, $this->events_type, get_label('Tournaments'));
+		show_option(ETYPE_ALL, $this->events_type, get_label('Events'));
+		echo '</select>';
 		echo '</td></tr></table>';
 		
 		$condition = new SQL(
@@ -57,6 +70,14 @@ class Page extends UserPageBase
 		case CCCF_COUNTRY:
 			$condition->add(' AND ct.country_id = ?', $ccc_id);
 			break;
+		}
+		switch ($this->events_type)
+		{
+			case ETYPE_TOURNAMENT:
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CHAMPIONSHIP . ') <> 0');
+				break;
+			default:
+				break;
 		}
 			
 		list ($count) = Db::record(get_label('event'), 'SELECT count(DISTINCT e.id)', $condition);
@@ -120,11 +141,7 @@ class Page extends UserPageBase
 
 		function filter()
 		{
-			var loc = "?id=<?php echo $this->id; ?>&ccc=" + code;
-			if ($("#emp").attr('checked'))
-			{
-				loc += "&emp=";
-			}
+			var loc = "?id=<?php echo $this->id; ?>&ccc=" + code + "&etype=" + $("#etype").val();
 			window.location.replace(loc);
 		}
 <?php	

@@ -9,6 +9,11 @@ require_once 'include/event.php';
 define("CUT_NAME",45);
 define("PAGE_SIZE",15);
 
+define('ETYPE_TOURNAMENT', 0);
+define('ETYPE_WITH_GAMES', 1);
+define('ETYPE_NOT_CANCELED', 2);
+define('ETYPE_ALL', 3);
+
 class Page extends ClubPageBase
 {
 	protected function prepare()
@@ -26,19 +31,23 @@ class Page extends ClubPageBase
 		{
 			$season = (int)$_REQUEST['season'];
 		}
-		$show_empty = isset($_REQUEST['emp']);
+		
+		$events_type = ETYPE_WITH_GAMES;
+		if (isset($_REQUEST['etype']))
+		{
+			$events_type = (int)$_REQUEST['etype'];
+		}
 		
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		$season = show_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show events of a specific season.'));
-		echo '</td><td align="right">';
-		echo '<input type="checkbox" name="emp"';
-		if ($show_empty)
-		{
-			echo ' checked';
-		}
-		echo ' onclick="document.clubForm.submit()"> ' . get_label('Show events with no games');
+		echo ' <select name="etype" onchange="document.clubForm.submit()">';
+		show_option(ETYPE_TOURNAMENT, $events_type, get_label('Tournaments'));
+		show_option(ETYPE_WITH_GAMES, $events_type, get_label('Events'));
+		show_option(ETYPE_NOT_CANCELED, $events_type, get_label('Events including empty'));
+		show_option(ETYPE_ALL, $events_type, get_label('Events including canceled'));
+		echo '</select>';
 		echo '</td></tr></table></form>';
 		
 		$condition = new SQL(
@@ -47,11 +56,21 @@ class Page extends ClubPageBase
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' WHERE e.start_time < UNIX_TIMESTAMP() AND e.club_id = ?',
 			$this->id);
-		if (!$show_empty)
-		{
-			$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
-		}
 		$condition->add(get_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
+		switch ($events_type)
+		{
+			case ETYPE_TOURNAMENT:
+				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_CHAMPIONSHIP) . ') = ' . EVENT_FLAG_CHAMPIONSHIP);
+				break;
+			case ETYPE_NOT_CANCELED:
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');
+				break;
+			case ETYPE_ALL:
+				break;
+			default:
+				$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
+				break;
+		}
 		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);

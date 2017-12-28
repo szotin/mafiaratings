@@ -9,14 +9,23 @@ require_once 'include/ccc_filter.php';
 
 define("PAGE_SIZE",15);
 
+define('ETYPE_TOURNAMENT', 0);
+define('ETYPE_WITH_GAMES', 1);
+define('ETYPE_NOT_CANCELED', 2);
+define('ETYPE_ALL', 3);
+
 class Page extends GeneralPageBase
 {
-	private $show_empty;
+	private $events_type;
 	
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->show_empty = isset($_REQUEST['emp']);
+		$this->events_type = ETYPE_TOURNAMENT;
+		if (isset($_REQUEST['etype']))
+		{
+			$this->events_type = (int)$_REQUEST['etype'];
+		}
 		$this->ccc_title = get_label('Filter events by club, city, or country.');
 	}
 
@@ -47,9 +56,20 @@ class Page extends GeneralPageBase
 			break;
 		}
 		
-		if (!$this->show_empty)
+		
+		switch ($this->events_type)
 		{
-			$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
+			case ETYPE_WITH_GAMES:
+				$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
+				break;
+			case ETYPE_NOT_CANCELED:
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');
+				break;
+			case ETYPE_ALL:
+				break;
+			default:
+				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_CHAMPIONSHIP) . ') = ' . EVENT_FLAG_CHAMPIONSHIP);
+				break;
 		}
 		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
@@ -94,17 +114,17 @@ class Page extends GeneralPageBase
 	
 	protected function show_filter_fields()
 	{
-		echo '<input type="checkbox" id="emp"';
-		if ($this->show_empty)
-		{
-			echo ' checked';
-		}
-		echo ' onclick="filter()"> ' . get_label('Show events with no games');
+		echo '<select id="etype" onchange="filter()">';
+		show_option(ETYPE_TOURNAMENT, $this->events_type, get_label('Tournaments'));
+		show_option(ETYPE_WITH_GAMES, $this->events_type, get_label('Events'));
+		show_option(ETYPE_NOT_CANCELED, $this->events_type, get_label('Events including empty'));
+		show_option(ETYPE_ALL, $this->events_type, get_label('Events including canceled'));
+		echo '</select>';
 	}
 	
 	protected function get_filter_js()
 	{
-		return '+ ($("#emp").attr("checked") ? "&emp=" : "")';
+		return '+ "&etype=" + $("#etype").val()';
 	}
 }
 
