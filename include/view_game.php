@@ -113,6 +113,10 @@ class ViewGame
 	function can_edit()
 	{
 		global $_profile;
+		if ($_profile == NULL)
+		{
+			return false;
+		}
 		return $_profile->is_admin() || $_profile->is_manager($this->gs->club_id);
 	}
 	
