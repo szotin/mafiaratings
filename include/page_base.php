@@ -205,7 +205,9 @@ class PageBase
 				echo get_label('Password') . ':&nbsp;<input type="password" id="password" class="in-header short">&nbsp;';
 				echo '<input value="Login" class="in-header" type="submit"><br>';
 				echo '<input class="in-header" type="checkbox" id="remember" checked>'.get_label('remember me').'</form></td>';
-				echo '<td  class="header" align="right"><a href="javascript:mr.resetPassword()" title="' . get_label('I forgot my password. Please help me!') . '"><img src="images/password.png"></a>';
+				echo '<td  class="header" align="right">';
+				echo '<a href="index.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('Home') . '"><img src="images/home.png" /></a></>';
+				echo '<a href="javascript:mr.resetPassword()" title="' . get_label('I forgot my password. Please help me!') . '"><img src="images/password.png"></a>';
 				echo '<a href="javascript:mr.createAccount()" title="' . get_label('Create user account') . '"><img src="images/create_user.png"></a></td>';
 			}
 			else if ($_profile != NULL)
