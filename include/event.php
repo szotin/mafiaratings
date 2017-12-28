@@ -895,6 +895,7 @@ class Event
 			if ($_profile->is_manager($club_id))
 			{
 				echo '<button class="icon" onclick="mr.eventMailing(' . $id . ')" title="' . get_label('Manage event emails') . '"><img src="images/email.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.editEvent(' . $id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
 				if ($start_time >= $now)
 				{
 					if (($flags & EVENT_FLAG_CANCELED) != 0)
@@ -903,7 +904,6 @@ class Event
 					}
 					else
 					{
-						echo '<button class="icon" onclick="mr.editEvent(' . $id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
 						echo '<button class="icon" onclick="mr.cancelEvent(' . $id . ', \'' . get_label('Are you sure you want to cancel the event?') . '\')" title="' . get_label('Cancel the event') . '"><img src="images/delete.png" border="0"></button>';
 					}
 				}
