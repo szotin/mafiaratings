@@ -6,6 +6,7 @@ require_once 'include/languages.php';
 require_once 'include/address.php';
 require_once 'include/user_location.php';
 require_once 'include/club.php';
+require_once 'include/event.php';
 
 define('COLUMN_COUNT', 5);
 define('ROW_COUNT', 2);
