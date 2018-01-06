@@ -96,3 +96,14 @@ div.flash { width: 375px; margin: 10px 5px; border-color: #222222;
 
 img.menu_image { vertical-align:middle; border: 0; text-align: left; }
 
+textarea.comment
+{
+	width:240px;
+	height:16px;
+	overflow:hidden;
+	border-radius:10px;
+	padding:5px;
+	resize: none;
+	font: 12px Arial;
+}
+

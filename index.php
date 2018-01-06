@@ -4,7 +4,6 @@ require_once 'include/general_page_base.php';
 require_once 'include/user.php';
 require_once 'include/languages.php';
 require_once 'include/address.php';
-require_once 'include/forum.php';
 require_once 'include/user_location.php';
 require_once 'include/club.php';
 
@@ -174,10 +173,6 @@ class Page extends GeneralPageBase
 				$have_tables = true;
 			}
 		}
-		
-		// echo '<p>';
-		// ForumMessage::show_messages(array('ccc' => $this->ccc_filter->get_code()), FORUM_OBJ_NO, -1, $this->ccc_filter);
-		// echo '</p>';
 		
 		// ratings
 		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags FROM users u WHERE u.games > 0');

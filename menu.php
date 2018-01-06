@@ -57,7 +57,7 @@ class Page extends PageBase
 			// User preferences and Game
 			if (count($_profile->clubs) > 0)
 			{
-				echo '<tr><th class="menu dark" width="50%">' . get_label('Game') . '</th><th class="menu dark" width="50%">' . $_profile->user_name . '</th></tr>';
+				echo '<tr><th class="menu dark" width="67%">' . get_label('Game') . '</th><th class="menu dark" width="33%">' . $_profile->user_name . '</th></tr>';
 				echo '<tr><td><table class="transp" width="100%"><tr>';
 			
 				echo '<td width="33%" align="center"><a href="game.php?bck=0" title="' . get_label('Start the game') . '">' . get_label('The game');
@@ -66,13 +66,10 @@ class Page extends PageBase
 				echo '<td>&nbsp;</td></tr></table></td>';
 				echo '<td><table class="transp" width="100%"><tr>';
 				
-				echo '<td width="33%" align="center"><a href="profile.php?bck=0" title="' . get_label('Change my profile options') . '">' . get_label('My profile');
+				echo '<td width="50%" align="center"><a href="profile.php?bck=0" title="' . get_label('Change my profile options') . '">' . get_label('My profile');
 				echo '<br><img src="images/profile_big.png" border="0"></a></td>';
 				
-				echo '<td width="33%" align="center"><a href="inbox.php?bck=0" title="' . get_label('Private messages to me') . '">' . get_label('Messages');
-				echo '<br><img src="images/email_big.png" border="0"></a></td>';
-				
-				echo '<td width="34%" align="center"><a href="#" onclick="logout()" title="' . get_label('Logout from [0]', PRODUCT_NAME) . '">' . get_label('Log out');
+				echo '<td width="50%" align="center"><a href="#" onclick="logout()" title="' . get_label('Logout from [0]', PRODUCT_NAME) . '">' . get_label('Log out');
 				echo '<br><img src="images/logout_big.png" border="0"></a></td>';
 				
 				echo '<td>&nbsp;</td></tr></table></td></tr>';
@@ -85,9 +82,6 @@ class Page extends PageBase
 				
 				echo '<td width="17%" align="center"><a href="profile.php?bck=0" title="' . get_label('Change my profile options') . '">' . get_label('My profile');
 				echo '<br><img src="images/profile_big.png" border="0"></a></td>';
-				
-				echo '<td width="17%" align="center"><a href="inbox.php?bck=0" title="' . get_label('Private messages to me') . '">' . get_label('Messages');
-				echo '<br><img src="images/email_big.png" border="0"></a></td>';
 				
 				echo '<td>&nbsp;</td>';
 				

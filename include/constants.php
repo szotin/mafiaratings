@@ -42,8 +42,8 @@ define('UC_PERM_MASK', 0x7); // UC_PERM_PLAYER | UC_PERM_MODER | UC_PERM_MANAGER
 // 06 - 0x0020 -     32 - state mask
 // 07 - 0x0040 -     64 - male
 // 08 - 0x0080 -    128 - banned
-// 09 - 0x0100 -    256 - forum notify
-// 10 - 0x0200 -    512 - photo notify
+// 09 - 0x0100 -    256 - notify on comments
+// 10 - 0x0200 -    512 - notify on photo
 // 11 - 0x0400 -   1024 - immunity
 // 12 - 0x0800 -   2048 - icon mask
 // 13 - 0x1000 -   4096 - icon mask

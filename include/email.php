@@ -6,7 +6,6 @@ require_once 'include/message.php';
 require_once 'include/db.php';
 
 define('EMAIL_OBJ_EVENT', 0);
-define('EMAIL_OBJ_MESSAGE', 1);
 define('EMAIL_OBJ_PHOTO', 2);
 define('EMAIL_OBJ_SIGN_IN', 3);
 define('EMAIL_OBJ_CREATE_CLUB', 4);

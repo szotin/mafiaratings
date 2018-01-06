@@ -207,8 +207,7 @@ class UserPageBase extends PageBase
 			new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title)),
 			new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title)),
 			new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->name)),
-			new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title)),
-			new MenuItem('user_messages.php?id=' . $this->id, get_label('Messages'), get_label('Forum messages of [0]', $this->title)));
+			new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title)));
 		if ($_profile != NULL && $_profile->user_id == $this->id)
 		{
 			$menu[] = new MenuItem('user_albums.php?id=' . $this->id, get_label('Photo albums'), get_label('Photo albums of [0]', $this->title));

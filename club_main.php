@@ -5,7 +5,6 @@ require_once 'include/player_stats.php';
 require_once 'include/pages.php';
 require_once 'include/address.php';
 require_once 'include/user.php';
-require_once 'include/forum.php';
 require_once 'include/scoring.php';
 
 define('COLUMN_COUNT', 5);
@@ -68,14 +67,6 @@ class Page extends ClubPageBase
 			return true;
 		}
 		return false;
-	}
-	
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = $this->name;
-		
-		ForumMessage::proceed_send(FORUM_OBJ_NO, 0, $this->id);
 	}
 	
 	protected function rating_row($row, $number)

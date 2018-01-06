@@ -2,16 +2,9 @@
 
 require_once 'include/event.php';
 require_once 'include/club.php';
-require_once 'include/forum.php';
 
 class Page extends EventPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		ForumMessage::proceed_send(FORUM_OBJ_EVENT, $this->event->id, $this->event->club_id);
-	}
-	
 	protected function show_body()
 	{
 		global $_profile;
@@ -24,11 +17,14 @@ class Page extends EventPageBase
 			echo '</tr></table>';
 		}
 		
+		echo '<table width="100%"><tr valign="top"><td width="70%">';
 		$this->event->show_details();
-		
-		$params = array('id' => $this->event->id);
-		ForumMessage::show_messages($params, FORUM_OBJ_EVENT, $this->event->id);
-		ForumMessage::show_send_form($params, get_label('Comment this event') . ':');
+		echo '</td><td id="comments"></td></tr></table>';
+?>
+		<script type="text/javascript">
+			mr.showComments("event", <?php echo $this->event->id; ?>, 5);
+		</script>
+<?php
 	}
 }
 

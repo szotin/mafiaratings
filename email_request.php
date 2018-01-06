@@ -76,17 +76,14 @@ class Page extends PageBase
 						throw new RedirectExc('attend.php?id=' . $row1[0]);
 					}
 				}
-				throw new RedirectExc('/');
+				throw new RedirectExc('event_info.php?id=' . $obj_id);
 				
-			case EMAIL_OBJ_MESSAGE:
-				throw new RedirectExc('forum.php?id=' . $obj_id);
-			
 			case EMAIL_OBJ_PHOTO:
 				if (isset($_REQUEST['pid']))
 				{
 					throw new RedirectExc('photo.php?id=' . $_REQUEST['pid']);
 				}
-				throw new RedirectExc('user_photos.php?id=' . $user_id);
+				throw new RedirectExc('photo.php?id=' . $obj_id);
 				
 			case EMAIL_OBJ_SIGN_IN:
 				if ($this->message == NULL)

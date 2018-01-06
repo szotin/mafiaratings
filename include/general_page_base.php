@@ -55,7 +55,6 @@ class GeneralPageBase extends PageBase
 			new MenuItem('moderators.php' . $ccc, get_label('Moderators'), get_label('Moderators statistics')),
 			new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums'))
 			// new MenuItem('calendar.php' . $ccc, get_label('Calendar'), get_label('Where and when can I play')),
-			// new MenuItem('forum.php' . $ccc, get_label('Forum'), get_label('Mafia forum'))
 			);
 			
 		if ($_profile != NULL && $_profile->is_admin())

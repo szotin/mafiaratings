@@ -284,7 +284,7 @@ function parse_message_urls($message)
 					{
 						$code = substr($url, $pos + 2, $end - $pos - 2);
 					}
-					$message .= '<iframe title="YouTube video player" width="400" height="300" src="https://www.youtube.com/embed/' . $code . '" frameborder="0" allowfullscreen></iframe><br>';
+					$message .= '<iframe title="YouTube video player" width="200" height="150" src="https://www.youtube.com/embed/' . $code . '" frameborder="0" allowfullscreen></iframe><br>';
 				}
 			}
 			$message .= '<a href="' . $url . '" target="_blank">' . $inside . '</a>' . $after;
@@ -293,11 +293,14 @@ function parse_message_urls($message)
 	return $message;
 }
 
-function prepare_message($message, $tags)
+function prepare_message($message, $tags = NULL)
 {
 	$message = stripslashes($message);
 	$message = htmlspecialchars($message, ENT_QUOTES, "UTF-8");
-	$message = parse_tags($message, $tags);
+	if ($tags != NULL)
+	{
+		$message = parse_tags($message, $tags);
+	}
 	$message = parse_message_urls($message);
 	$message = replace_returns($message);
 	return $message;

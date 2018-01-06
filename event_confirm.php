@@ -24,7 +24,7 @@ class Page extends PageBase
 			$new_user_id = -$incomer_id;
 		}
 		
-		$query = Db::exec('SELECT id, log FROM games WHERE result > 0 AND result < 3 AND event_id = ?', $this->event->id);
+		$query = Db::exec(get_label('event'), 'SELECT id, log FROM games WHERE result > 0 AND result < 3 AND event_id = ?', $this->event->id);
 		while($row = $query->next())
 		{
 			$gs = new GameState();

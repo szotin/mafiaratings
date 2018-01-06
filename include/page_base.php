@@ -601,27 +601,6 @@ class MenuItem
 	}
 }
 
-class MailPageBase extends PageBase
-{
-	protected function show_title()
-	{
-		$menu = array(
-			new MenuItem('inbox.php', get_label('Inbox'), get_label('Private messages to you')),
-			new MenuItem('outbox.php', get_label('Outbox'), get_label('Your private messages')),
-			new MenuItem('send_private.php', get_label('Send'), get_label('Send a private message')));
-
-		echo '<table class="head" width="100%">';
-		
-		echo '<tr><td colspan="2">';
-		PageBase::show_menu($menu);
-		echo '</td></tr>';	
-		
-		echo '<tr><td valign="top">' . $this->standard_title() . '</td><td align="right" valign="top">';
-		show_back_button();
-		echo '</td></tr></table>';	
-	}
-}
-	
 /* template
 
 class Page extends PageBase

@@ -5,7 +5,6 @@ require_once 'include/image.php';
 require_once 'include/pages.php';
 require_once 'include/constants.php';
 require_once 'include/club.php';
-require_once 'include/forum.php';
 
 define('ALBUM_SHOW_CLUB', 1);
 define('ALBUM_SHOW_OWNER', 2);
@@ -156,55 +155,6 @@ class PhotoAlbum
 			throw new Exc(get_label('Duplicate photo album name. Please try something else.'));
 		}
 		
-/*		list ($old_viewers) = Db::record(get_label('photo album'), 'SELECT viewers FROM photo_albums WHERE id = ?', $this->id);
-		
-		if ($old_viewers != $this->viewers)
-		{
-			$query = new DbQuery(
-				'SELECT m.id, m.viewers FROM messages m' .
-				' JOIN photos p ON m.obj = ' . FORUM_OBJ_PHOTO . ' AND m.obj_id = p.id' .
-				' JOIN photo_albums a ON p.album_id = a.id' .
-				' WHERE a.id = ?', $this->id);
-			if ($old_viewers < $this->viewers)
-			{
-				// reduce forum messages access
-				while ($row = $query->next())
-				{
-					list($message_id, $message_viewers) = $row;
-					echo $message_id . '<br>';
-					if ($message_viewers < $this->viewers)
-					{
-						ForumMessage::set_viewers($message_id, $this->viewers, $message_viewers);
-					}
-				}
-				
-				// reduce photo access
-				Db::exec(
-					get_label('photo'),
-					'UPDATE photos SET viewers = ? WHERE album_id = ? AND viewers < ?',
-					$this->viewers, $this->id, $this->viewers);
-			}
-			else
-			{
-				// raise forum messages access
-				while ($row = $query->next())
-				{
-					list($message_id, $message_viewers) = $row;
-					echo $message_id . '<br>';
-					if ($message_viewers == $old_viewers)
-					{
-						ForumMessage::set_viewers($message_id, $this->viewers, $message_viewers);
-					}
-				}
-				
-				// raise photo access
-				Db::exec(
-					get_label('photo'),
-					'UPDATE photos SET viewers = ? WHERE album_id = ? AND viewers = ?',
-					$this->viewers, $this->id, $old_viewers);
-			}
-		}*/
-		
 		// update album
 		Db::exec(
 			get_label('photo album'), 
@@ -233,15 +183,10 @@ class PhotoAlbum
 		{
 			throw new Exc(get_label('No permissions'));
 		}
-		
-		$query = new DbQuery('SELECT id FROM messages WHERE obj = ' . FORUM_OBJ_PHOTO . ' AND obj_id IN (SELECT id FROM photos WHERE album_id = ?)', $id);
-		while ($row = $query->next())
-		{
-			ForumMessage::delete($id);
-		}
-		
+
 		list($club_id) = Db::record(get_label('photo album'), 'SELECT club_id FROM photo_albums WHERE id = ?', $id);
 		
+		Db::exec(get_label('photo'), 'DELETE FROM photo_comments WHERE photo_id IN (SELECT id FROM photos WHERE album_id = ?)', $id);
 		Db::exec(get_label('photo'), 'DELETE FROM user_photos WHERE photo_id IN (SELECT id FROM photos WHERE album_id = ?)', $id);
 		Db::exec(get_label('photo'), 'DELETE FROM photos WHERE album_id = ?', $id);
 		Db::exec(get_label('photo album'), 'DELETE FROM photo_albums WHERE id = ?', $id);

@@ -631,6 +631,58 @@ var mr = new function()
 		}
 		dlg.form(url, refr, 400);
 	}
+	
+	//--------------------------------------------------------------------------------------
+	// comments
+	//--------------------------------------------------------------------------------------
+	this.showComments = function(object_name, object_id, limit, show_all)
+	{
+		var url = "show_comments.php?" + object_name + "=" + object_id;
+		if (typeof limit == "number")
+		{
+			url += "&limit=" + limit;
+		}
+		
+		if (typeof show_all != "undefined" && show_all)
+		{
+			url += "&all";
+		}
+		
+		html.get(url, function(text, title)
+		{
+			$('#comments').html(text);
+			$("#comment").keypress(function (e)
+			{
+				if (e.which == 13 && !e.shiftKey) 
+				{
+					var message = $("#comment").val().trim();
+					if (message.length > 0)
+					{
+						json.post("comment_ops.php", { object: object_name, id: object_id, comment: $("#comment").val() }, function()
+						{
+							$("#comment").val("");
+							mr.showComments(object_name, object_id, limit, show_all);
+						});
+					}
+					return false;
+				}
+			});			
+		});
+	}
+	
+    this.checkCommentArea = function()
+	{
+		var elem = document.getElementById("comment");
+		var val = elem.scrollHeight;
+		var h = elem.offsetHeight;
+		var cal = parseInt(h) - 2;
+		if(val > cal)
+		{
+			var fontSize = parseInt($('#comment').css("fontSize"));
+			cal = cal + fontSize;
+			$('#comment').css('height', cal + 'px');
+		}
+    }
 }
 
 var swfu = null;

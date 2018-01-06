@@ -2,7 +2,6 @@
 
 require_once 'include/page_base.php';
 require_once 'include/image.php';
-require_once 'include/forum.php';
 require_once 'include/photo_album.php';
 
 define('MAX_WIDTH', 700);
@@ -25,7 +24,6 @@ class Page extends PageBase
 	private $my_photo;
 	private $link_str;
 	private $filename;
-	private $forum_send_array;
 	private $show_delete_confirm;
 	
 	private $next_id;
@@ -47,7 +45,6 @@ class Page extends PageBase
 		$this->event_id = -1;
 		$this->link_str = '';
 		$this->filename = PHOTOS_DIR . $this->id . '.jpg';
-		$this->forum_send_array = array('id' => $this->id);
 		$this->show_delete_confirm = false;
 		
 		$query_base = NULL;
@@ -57,14 +54,12 @@ class Page extends PageBase
 			$this->album_id = $_REQUEST['album'];
 			$query_base = new SQL('SELECT p.id FROM photos p JOIN photo_albums a ON p.album_id = a.id WHERE p.album_id = ?', $this->album_id);
 			$this->link_str = '&album=' . $this->album_id;
-			$this->forum_send_array['album'] = $this->album_id;
 		}
 		else if (isset($_REQUEST['event']))
 		{
 			$this->event_id = $_REQUEST['event'];
 			$query_base = new SQL('SELECT p.id FROM photos p JOIN photo_albums a ON p.album_id = a.id WHERE a.event_id = ?', $this->event_id);
 			$this->link_str = '&event=' . $this->event_id;
-			$this->forum_send_array['event'] = $this->event_id;
 		}
 		else if (isset($_REQUEST['user']))
 		{
@@ -73,7 +68,6 @@ class Page extends PageBase
 			$this->link_str = '&user=' . $user_id;
 			$row = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
 			$this->_title = get_label('[0]: photo', $row[0]);
-			$this->forum_send_array['user'] = $user_id;
 		}
 
 		$this->next_id = -1;
@@ -191,8 +185,6 @@ class Page extends PageBase
 						' JOIN clubs c ON c.id = a.club_id' .
 						' WHERE p.id = ? AND ',
 					$this->id, PhotoAlbum::photo_viewers_condition());
-					
-		ForumMessage::proceed_send(FORUM_OBJ_PHOTO, $this->id, $this->club_id, $this->viewers);
 	}
 	
 	protected function show_body()
@@ -203,10 +195,6 @@ class Page extends PageBase
 		{
 			echo '<form method="post" action="photo.php">';
 			echo '<input type="hidden" name="id" value="' . $this->id . '">';
-			foreach ($this->forum_send_array as $h_name => $h_value)
-			{
-				echo '<input type="hidden" name="' . $h_name . '" value="' . $h_value . '">';
-			}
 			echo '<p>'.get_label('Are you sure you want to delete this photo?').'</p>';
 			echo '<input type="submit" name="confirm_delete" value="'.get_label('Yes').'" class="btn norm"><input type="submit" name="cancel" value="'.get_label('No').'" class="btn norm">';
 			echo '</form>';
@@ -268,10 +256,6 @@ class Page extends PageBase
 		
 		echo '<form method="post" action="photo.php">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		foreach ($this->forum_send_array as $h_name => $h_value)
-		{
-			echo '<input type="hidden" name="' . $h_name . '" value="' . $h_value . '">';
-		}
 				
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr><td>' . get_label('In this photo') . ':</td><td>';
@@ -307,7 +291,7 @@ class Page extends PageBase
 		
 		echo '</tr></table></td></tr>';
 		
-		if ($_profile != NULL && ($this->owner_id == $_profile->user_id || $this->album_owner_id == $_profile->user_id))
+		if ($_profile != NULL && ($this->owner_id == $_profile->user_id || $this->album_owner_id == $_profile->user_id || $_profile->is_admin()))
 		{
 			echo '<tr><td>'.get_label('Action').':</td><td><select name="action">';
 			echo '<option value="-2"></option>';
@@ -364,10 +348,9 @@ class Page extends PageBase
 		echo '<tr><td>'.get_label('Uploaded by').':</td><td>';
 		if ($_profile != NULL && $_profile->user_id != $this->owner_id)
 		{
-			echo '<a href="user_messages.php?id=' . $this->owner_id . '&bck=1">' . cut_long_name($this->owner_name, 45) . '</a> *';
+			echo '<a href="user_info.php?id=' . $this->owner_id . '&bck=1">' . cut_long_name($this->owner_name, 45) . '</a> *';
 			echo '</td></tr>';
 			echo '</table>';
-			echo '* '.get_label('Send him/her a private message if you do not like this photo. He/she can remove it or reduce its visibility.');
 		}
 		else
 		{
@@ -376,35 +359,20 @@ class Page extends PageBase
 			echo '</table>';
 		}
 		
-		ForumMessage::show_messages($this->forum_send_array, FORUM_OBJ_PHOTO, $this->id);
-		if ($this->viewers < FOR_MANAGERS)
-		{
-			ForumMessage::show_send_form($this->forum_send_array, get_label('Comment this photo') . ':');
-		}
+		echo '<div id="comments">'
+?>
+		<script type="text/javascript">
+			mr.showComments("photo", <?php echo $this->id; ?>, 5);
+		</script>
+<?php
 	}
 	
 	function delete_photo()
 	{
 		Db::begin();
 		Db::exec(get_label('photo'), 'DELETE FROM user_photos WHERE photo_id = ?', $this->id);
+		Db::exec(get_label('comment'), 'DELETE FROM photo_comments WHERE photo_id = ?', $this->id);
 		Db::exec(get_label('photo'), 'DELETE FROM photos WHERE id = ?', $this->id);
-		
-		$comments = array();
-		$query = new DbQuery('SELECT id FROM messages WHERE obj = ' . FORUM_OBJ_PHOTO . ' AND obj_id = ?', $this->id);
-		while ($row = $query->next())
-		{
-			$comments[] = $row[0];
-		}
-		
-		foreach ($comments as $message_id)
-		{
-			ForumMessage::delete($message_id);
-		}
-	
-//  We do not delete the actual files. They have to be garbage collected instead.	
-//		unlink(PHOTOS_DIR . $this->id . '.jpg');
-//		unlink(PHOTOS_DIR . TNAILS_DIR . $this->id . '.jpg');
-		
 		Db::commit();
 	}
 }

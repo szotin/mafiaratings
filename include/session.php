@@ -71,7 +71,6 @@ class Profile
 	public $timezone;
 	public $user_club_flags; // combination of all clubs flags that this user is member of. This is just an optimization. If we want to know if user is moderator in one of the clubs we check it here instead of looping through all his clubs.
 	public $clubs;
-	public $forum_last_view;
 	public $user_last_active;
 	
 	function __construct($user_id)
@@ -79,11 +78,11 @@ class Profile
 		global $_lang_code;
 		list(
 			$this->user_id, $this->user_name, $this->user_langs, $this->user_def_lang,
-			$this->user_email, $this->user_phone, $this->user_flags, $this->user_club_id, $this->forum_last_view,
+			$this->user_email, $this->user_phone, $this->user_flags, $this->user_club_id,
 			$this->city_id, $this->city, $this->region_id, $this->region, $this->country_id, $this->country, $this->timezone) = 
 				Db::record(
 					get_label('user'), 
-					'SELECT u.id, u.name, u.languages, u.def_lang, u.email, u.phone, u.flags, u.club_id, u.forum_last_view, i.id, i.name_' . $_lang_code .
+					'SELECT u.id, u.name, u.languages, u.def_lang, u.email, u.phone, u.flags, u.club_id, i.id, i.name_' . $_lang_code .
 						', r.id, r.name_' . $_lang_code .
 						', i.country_id, o.name_' . $_lang_code . ', i.timezone FROM users u' .
 						' JOIN cities i ON u.city_id = i.id' .
@@ -107,11 +106,11 @@ class Profile
 		global $_lang_code;
 		list(
 			$this->user_id, $this->user_name, $this->user_langs, $this->user_def_lang,
-			$this->user_email, $this->user_phone, $this->user_flags, $this->user_club_id, $this->forum_last_view,
+			$this->user_email, $this->user_phone, $this->user_flags, $this->user_club_id,
 			$this->city_id, $this->city, $this->country_id, $this->country, $this->timezone) = 
 				Db::record(
 					get_label('user'), 
-					'SELECT u.id, u.name, u.languages, u.def_lang, u.email, u.phone, u.flags, u.club_id, u.forum_last_view, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone FROM users u' .
+					'SELECT u.id, u.name, u.languages, u.def_lang, u.email, u.phone, u.flags, u.club_id, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone FROM users u' .
 						' JOIN cities i ON u.city_id = i.id' .
 						' JOIN countries o ON o.id = i.country_id' .
 						' WHERE u.id = ?',
