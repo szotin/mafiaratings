@@ -7,6 +7,7 @@ require_once 'include/user.php';
 require_once 'include/scoring.php';
 
 define("PAGE_SIZE",15);
+define('COMMENTS_WIDTH', 300);
 
 class Page extends EventPageBase
 {
@@ -56,65 +57,9 @@ class Page extends EventPageBase
 		}
 	}
 	
-	protected function show_body()
+	private function show_standings($condition)
 	{
 		global $_profile, $_page;
-		
-		$condition = get_roles_condition($this->roles);
-		if ($this->user_id > 0)
-		{
-			$pos_query = new DbQuery(
-				'SELECT IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
-					' JOIN games g ON p.game_id = g.id' .
-					' JOIN users u ON p.user_id = u.id' .
-					' WHERE g.event_id = ?',
-			$this->scoring_id, $this->event->id, $condition);
-			$pos_query->add(' AND u.id = ? GROUP BY u.id', $this->user_id);
-			
-			if ($row = $pos_query->next())
-			{
-				list ($uscore, $ugames, $uwon) = $row;
-				if ($ugames > 0)
-				{
-					$pos_query = new DbQuery(
-						'SELECT count(*) FROM (SELECT u.id, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, SUM(p.won) as won, COUNT(p.game_id) as games' .
-							' FROM players p' .
-							' JOIN users u ON p.user_id = u.id' .
-							' JOIN games g ON g.id = p.game_id' .
-							' WHERE g.event_id = ?', $this->scoring_id, $this->event->id, $condition);
-					$pos_query->add(
-						' AND u.id <> ? GROUP BY u.id ' . 
-						' HAVING score > ? OR (score = ? AND (won > ? OR (won = ? AND (games > ? OR (games = ? AND u.id < ?)))))'  . 
-						') as upper',
-						$this->user_id, $uscore, $uscore, $uwon, $uwon, $ugames, $ugames, $this->user_id);
-					list($user_pos) = $pos_query->next();
-					$_page = floor($user_pos / PAGE_SIZE);
-				}
-				else
-				{
-					$this->no_user_error();
-				}
-			}
-			else
-			{
-				$this->no_user_error();
-			}
-		}
-		
-		echo '<form method="get" name="viewForm">';
-		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
-		echo '<table class="transp" width="100%">';
-		echo '<tr><td>';
-		show_scoring_select($this->event->club_id, $this->scoring_id, 'viewForm', get_label('Scoring system'));
-		echo ' ';
-		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
-		echo '</td><td align="right">';
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, get_label('Go to the page where a specific player is located.'));
-		echo '</td></tr></table></form>';
-
-		list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?', $this->event->id, $condition);
-		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
 			'SELECT p.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags' .
@@ -131,11 +76,11 @@ class Page extends EventPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
 		echo '<td colspan="3">'.get_label('Player').'</td>';
-		echo '<td width="80" align="center">'.get_label('Points').'</td>';
-		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="80" align="center">'.get_label('Victories').'</td>';
-		echo '<td width="80" align="center">'.get_label('Winning %').'</td>';
-		echo '<td width="80" align="center">'.get_label('Points per game').'</td>';
+		echo '<td width="50" align="center">'.get_label('Points').'</td>';
+		echo '<td width="50" align="center">'.get_label('Games played').'</td>';
+		echo '<td width="50" align="center">'.get_label('Victories').'</td>';
+		echo '<td width="50" align="center">'.get_label('Winning %').'</td>';
+		echo '<td width="50" align="center">'.get_label('Points per game').'</td>';
 		echo '</tr>';
 		while ($row = $query->next())
 		{
@@ -181,6 +126,76 @@ class Page extends EventPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+	}
+	
+	protected function show_body()
+	{
+		echo '<form method="get" name="viewForm">';
+		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
+		echo '<table class="transp" width="100%">';
+		echo '<tr><td>';
+		show_scoring_select($this->event->club_id, $this->scoring_id, 'viewForm', get_label('Scoring system'));
+		echo ' ';
+		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
+		echo '</td><td align="right">';
+		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, get_label('Go to the page where a specific player is located.'));
+		echo '</td></tr></table></form>';
+		
+		global $_profile, $_page;
+		
+		$condition = get_roles_condition($this->roles);
+		if ($this->user_id > 0)
+		{
+			$pos_query = new DbQuery(
+				'SELECT IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
+					' JOIN games g ON p.game_id = g.id' .
+					' JOIN users u ON p.user_id = u.id' .
+					' WHERE g.event_id = ?',
+			$this->scoring_id, $this->event->id, $condition);
+			$pos_query->add(' AND u.id = ? GROUP BY u.id', $this->user_id);
+			
+			if ($row = $pos_query->next())
+			{
+				list ($uscore, $ugames, $uwon) = $row;
+				if ($ugames > 0)
+				{
+					$pos_query = new DbQuery(
+						'SELECT count(*) FROM (SELECT u.id, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, SUM(p.won) as won, COUNT(p.game_id) as games' .
+							' FROM players p' .
+							' JOIN users u ON p.user_id = u.id' .
+							' JOIN games g ON g.id = p.game_id' .
+							' WHERE g.event_id = ?', $this->scoring_id, $this->event->id, $condition);
+					$pos_query->add(
+						' AND u.id <> ? GROUP BY u.id ' . 
+						' HAVING score > ? OR (score = ? AND (won > ? OR (won = ? AND (games > ? OR (games = ? AND u.id < ?)))))'  . 
+						') as upper',
+						$this->user_id, $uscore, $uscore, $uwon, $uwon, $ugames, $ugames, $this->user_id);
+					list($user_pos) = $pos_query->next();
+					$_page = floor($user_pos / PAGE_SIZE);
+				}
+				else
+				{
+					$this->no_user_error();
+				}
+			}
+			else
+			{
+				$this->no_user_error();
+			}
+		}
+		
+		list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?', $this->event->id, $condition);
+		show_pages_navigation(PAGE_SIZE, $count);
+		
+		echo '<table width="100%"><tr valign="top"><td>';
+		$this->show_standings($condition);
+		echo '</td><td id="comments" width="' . COMMENTS_WIDTH . '"></td></tr></table>';
+?>
+		<script type="text/javascript">
+			mr.showComments("event", <?php echo $this->event->id; ?>, 5);
+		</script>
+<?php
 	}
 	
 	

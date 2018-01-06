@@ -3,6 +3,8 @@
 require_once 'include/event.php';
 require_once 'include/club.php';
 
+define('COMMENTS_WIDTH', 300);
+
 class Page extends EventPageBase
 {
 	protected function show_body()
@@ -17,9 +19,9 @@ class Page extends EventPageBase
 			echo '</tr></table>';
 		}
 		
-		echo '<table width="100%"><tr valign="top"><td width="70%">';
+		echo '<table width="100%"><tr valign="top"><td>';
 		$this->event->show_details();
-		echo '</td><td id="comments"></td></tr></table>';
+		echo '</td><td id="comments" width="' . COMMENTS_WIDTH . '"></td></tr></table>';
 ?>
 		<script type="text/javascript">
 			mr.showComments("event", <?php echo $this->event->id; ?>, 5);

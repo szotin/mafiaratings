@@ -60,13 +60,10 @@ try
 		while ($row = $query->next())
 		{
 			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
-			echo $user_name;
 			if ($user_id == $_profile->user_id || ($user_flags & U_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
 			{
-				echo ' -<br>';
 				continue;
 			}
-			echo ' +<br>';
 		
 			$code = generate_email_code();
 			$request_base = get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id;

@@ -6,6 +6,7 @@ require_once 'include/pages.php';
 require_once 'include/address.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/event.php';
 
 define('COLUMN_COUNT', 5);
 define('ROW_COUNT', 2);
