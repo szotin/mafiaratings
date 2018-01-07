@@ -18,6 +18,11 @@ try
 		$object_type = 'photo';
 		$id = $_REQUEST['photo'];
 	}
+	else if (isset($_REQUEST['game']))
+	{
+		$object_type = 'game';
+		$id = $_REQUEST['game'];
+	}
 	else
 	{
 		throw new Exception(get_label('Unknown [0]', get_label('object')));

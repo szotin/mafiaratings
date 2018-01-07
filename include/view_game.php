@@ -380,10 +380,18 @@ class ViewGamePageBase extends PageBase
 			}
 		}
 		echo '</select></form></td></tr></table></p>';
+		echo '<table width="100%"><tr valign="top"><td>';
 	}
 	
 	protected function show_body()
 	{
+		echo '</td><td id="comments" width="250"></td></tr></table>';
+?>
+		<script type="text/javascript">
+			mr.showComments("game", <?php echo $this->vg->gs->id; ?>, 5);
+		</script>
+<?php
+		
 		echo '<p><form method="post" action="' . get_page_name() . '">';
 		echo '<input type="hidden" name="gametime" value="' . $this->gametime . '">';
 		echo '<table class="transp" width="100%">';

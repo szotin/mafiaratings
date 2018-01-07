@@ -9,12 +9,12 @@ class Page extends ViewGamePageBase
 		echo '<table class="bordered" width="100%" id="players">';
 		echo '<tr class="th darker"><td width="30">&nbsp;</td>';
 		echo '<td colspan="2">'.get_label('Player').'</td>';
-		echo '<td width="80" align="center">'.get_label('The Sheriff\'s check').'</td>';
-		echo '<td width="80" align="center">'.get_label('The Don\'s check').'</td>';
-		echo '<td width="80" align="center">'.get_label('Mafia arrangement').'</td>';
-		echo '<td width="80" align="center">'.get_label('Killed').'</td>';
-		echo '<td width="80" align="center">'.get_label('Warnings').'</td>';
-		echo '<td width="80" align="center">'.get_label('Role').'</td></tr>';
+		echo '<td width="50" align="center">'.get_label('The Sheriff\'s check').'</td>';
+		echo '<td width="50" align="center">'.get_label('The Don\'s check').'</td>';
+		echo '<td width="50" align="center">'.get_label('Mafia arrangement').'</td>';
+		echo '<td width="50" align="center">'.get_label('Killed').'</td>';
+		echo '<td width="50" align="center">'.get_label('Warnings').'</td>';
+		echo '<td width="50" align="center">'.get_label('Role').'</td></tr>';
 		for ($i = 0; $i < 10; ++$i)
 		{
 			$player = $this->vg->gs->players[$i];

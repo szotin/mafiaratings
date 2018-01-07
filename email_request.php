@@ -78,6 +78,9 @@ class Page extends PageBase
 				}
 				throw new RedirectExc('event_info.php?id=' . $obj_id);
 				
+			case EMAIL_OBJ_GAME:
+				throw new RedirectExc('view_game.php?id=' . $obj_id);
+				
 			case EMAIL_OBJ_PHOTO:
 				if (isset($_REQUEST['pid']))
 				{
