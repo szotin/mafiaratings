@@ -53,7 +53,14 @@ class GeneralPageBase extends PageBase
 			new MenuItem('events.php' . $ccc, get_label('Tournaments'), get_label('Tournaments and events history')),
 			// new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),
 			new MenuItem('moderators.php' . $ccc, get_label('Moderators'), get_label('Moderators statistics')),
-			new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums'))
+			new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums')),
+			// new MenuItem('#resources', get_label('Resources'), NULL, array(
+				// new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums')),
+				// new MenuItem('game_videos.php' . $ccc, get_label('Game videos'), get_label('Game videos from various tournaments.')),
+				// new MenuItem('videos.php' . $ccc, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.')),
+				// new MenuItem('articles.php' . $ccc, get_label('Articles'), get_label('Books and articles.')),
+				// new MenuItem('links.php' . $ccc, get_label('Links'), get_label('Links to custom mafia web sites.')),
+				// new MenuItem('rulebook.php' . $ccc, get_label('Rules'), get_label('Mafia rulebook'))))
 			// new MenuItem('calendar.php' . $ccc, get_label('Calendar'), get_label('Where and when can I play')),
 			);
 			
@@ -70,13 +77,13 @@ class GeneralPageBase extends PageBase
 				new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log'))));
 		}
 		
-		$menu[] = new MenuItem('#about', get_label('About'), NULL, array(
+		// $menu[] = new MenuItem('#about', get_label('About'), NULL, array(
 //			new MenuItem('welcome.php' . $ccc, get_label('Welcome'), get_label('Welcome to the [0]!', PRODUCT_NAME)),
 //			new MenuItem('about.php' . $ccc, get_label('About'), get_label('About [0]', PRODUCT_NAME)),
-			new MenuItem('rulebook.php' . $ccc, get_label('Rules'), get_label('Mafia rulebook')),
-			new MenuItem('tactics.php' . $ccc, get_label('Tactics'), get_label('Game tactics')),
+			// new MenuItem('rulebook.php' . $ccc, get_label('Rules'), get_label('Mafia rulebook')),
+// 			new MenuItem('tactics.php' . $ccc, get_label('Tactics'), get_label('Game tactics')),
 //			new MenuItem('downloads.php' . $ccc, get_label('Downloads'), get_label('Download client software for Mafia.'))
-		));
+		// ));
 		
 		echo '<p><table class="head" width="100%">';
 		

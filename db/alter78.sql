@@ -5,14 +5,16 @@ CREATE TABLE `videos` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(256) NOT NULL,
   `video` VARCHAR(1024) NOT NULL,
+  `type` INT(11) NOT NULL,
   `club_id` INT(11) NOT NULL,
   `event_id` INT(11) NULL,
   `lang` INT(11) NOT NULL,
   `time` INT(11) NOT NULL,
 
   PRIMARY KEY (`id`),
-  KEY `video_club` (`club_id`, `time`),
-  KEY `video_event` (`event_id`, `time`),
+  KEY `video_club` (`club_id`, `type`, `time`),
+  KEY `video_event` (`event_id`, `type`, `time`),
+  KEY `video_type` (`type`, `time`),
   KEY `video_time` (`time`),
   CONSTRAINT `video_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
   CONSTRAINT `video_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)

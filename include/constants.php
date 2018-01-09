@@ -211,4 +211,7 @@ define('CCCF_NO_MY_CLUBS', 0x0010);
 
 define('EMAIL_EXPIRATION_TIME', 1209600); // two weeks
 
+define('VIDEO_TYPE_GAME', 0);
+define('VIDEO_TYPE_MASTERCLASS', 1);
+
 ?>

@@ -1114,6 +1114,20 @@ try
 			throw new Exc(get_label('No permissions'));
 		}
 		
+		$pos = strpos($video, 'v=');
+		if ($pos !== false)
+		{
+			$end = strpos($video, '&', $pos + 2);
+			if ($end === false)
+			{
+				$video = substr($video, $pos + 2);
+			}
+			else
+			{
+				$video = substr($video, $pos + 2, $end - $pos - 2);
+			}
+		}
+		
 		Db::exec(get_label('game'), 'UPDATE games SET video = ? WHERE id = ?', $video, $game_id);
 		if ($old_video == NULL)
 		{
