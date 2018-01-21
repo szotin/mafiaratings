@@ -54,7 +54,7 @@ class Page extends GeneralPageBase
 			$id = (int)$_REQUEST['time'];
 		}
 		
-		$interval = 8;
+		$interval = 2;
 		if (isset($_REQUEST['interval']))
 		{
 			$interval = (int)$_REQUEST['interval'];

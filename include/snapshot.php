@@ -12,16 +12,13 @@ function compare_players($player1, $player2)
 		{
 			return $player1->dst - $player2->dst;
 		}
-		else
-		{
-			return -1;
-		}
+		return -1;
 	}
 	else if (isset($player2->dst))
 	{
 		return 1;
 	}
-	return 0;
+	return $player1->src - $player2->src;
 }
 
 class SnapshotPlayer

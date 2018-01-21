@@ -7,6 +7,8 @@ require_once 'include/address.php';
 require_once 'include/user_location.php';
 require_once 'include/club.php';
 require_once 'include/event.php';
+require_once 'include/snapshot.php';
+require_once 'include/scoring.php';
 
 define('COLUMN_COUNT', 5);
 define('ROW_COUNT', 2);
@@ -62,6 +64,108 @@ class Page extends GeneralPageBase
 			return true;
 		}
 		return false;
+	}
+	
+	private function show_changes()
+	{
+		$interval = 2;
+		$snapshot = new Snapshot(time());
+		$snapshot->shot();
+		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT ' . $interval);
+		
+		$prev_time = 0;
+		$prev_snapshot = NULL;
+		for ($i = 0; $i < $interval; ++$i)
+		{
+			$row = $query->next();
+			if (!$row)
+			{
+				$prev_snapshot = new Snapshot($prev_time);
+				break;
+			}
+			list($prev_time, $json) = $row;
+		}
+		
+		if ($prev_snapshot == NULL)
+		{
+			list($prev_time, $json) = $row;
+			$prev_snapshot = new Snapshot($prev_time, $json);
+			$prev_snapshot->load_user_details();
+		}
+		
+		$diff = $snapshot->compare($prev_snapshot);
+		echo '<table class="bordered light" width="100%">';
+		echo '<tr class="darker"><td><b>' . get_label('Latest changes in the rating') . '</b></a></td></tr>';
+		echo '<tr><td><table class="transp" width="100%">';
+		foreach ($diff as $player)
+		{
+			echo '<tr>';
+			echo '<td width="48" align="center"><a href="user_info.php?id=' . $player->id . '&bck=1">';
+			show_user_pic($player->id, $player->user_name, $player->user_flags, ICONS_DIR, 36, 36);
+			echo '</a></td><td width="48"><a href="club_main.php?id=' . $player->club_id . '&bck=1">';
+			show_club_pic($player->club_id, $player->club_name, $player->club_flags, ICONS_DIR, 36, 36);
+			echo '</a></td><td width="30">';
+			if (isset($player->src))
+			{
+				if (isset($player->dst))
+				{
+					if ($player->src > $player->dst)
+					{
+						echo '<img src="images/up.png">';
+						if ($player->user_flags & U_FLAG_MALE)
+						{
+							echo '</td><td>' . get_label('[0] moved up from [1] place to [2].', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+						}
+						else
+						{
+							// the space in the end of a string means female gender for the languages where it matters
+							echo '</td><td>' . get_label('[0] moved up from [1] place to [2]. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+						}
+					}
+					else if ($player->src < $player->dst)
+					{
+						echo '<img src="images/down_red.png">';
+						if ($player->user_flags & U_FLAG_MALE)
+						{
+							echo '</td><td>' . get_label('[0] moved down from [1] place to [2].', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+						}
+						else
+						{
+							// the space in the end of a string means female gender for the languages where it matters
+							echo '</td><td>' . get_label('[0] moved down from [1] place to [2]. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+						}
+					}
+				}
+				else
+				{
+					echo '<img src="images/down_red.png"></td><td>';
+					if ($player->user_flags & U_FLAG_MALE)
+					{
+						echo get_label('[0] left top 100.', '<b>' . $player->user_name . '</b>', $player->src);
+					}
+					else
+					{
+						// the space in the end of a string means female gender for the languages where it matters
+						echo get_label('[0] left top 100. ', '<b>' . $player->user_name . '</b>', $player->src);
+					}
+				}
+			}
+			else
+			{
+				echo '<img src="images/up.png"></td><td>';
+				if ($player->user_flags & U_FLAG_MALE)
+				{
+					echo get_label('[0] entered top 100 and gained [1] place.', '<b>' . $player->user_name . '</b>', $player->dst);
+				}
+				else
+				{
+					// the space in the end of a string means female gender for the languages where it matters
+					echo get_label('[0] entered top 100 and gained [1] place. ', '<b>' . $player->user_name . '</b>', $player->dst);
+				}
+			}
+			echo '</td></tr>';
+		}
+		echo '</td></tr></table></table>';
 	}
 
 	protected function show_body()
@@ -174,6 +278,8 @@ class Page extends GeneralPageBase
 				$have_tables = true;
 			}
 		}
+		
+		$this->show_changes();
 		
 		// ratings
 		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags FROM users u WHERE u.games > 0');
