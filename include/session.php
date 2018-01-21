@@ -656,9 +656,12 @@ function lock_site($lock)
 {
 	if ($lock)
 	{
-		mkdir('lock');
+		if (!is_dir('lock'))
+		{
+			mkdir('lock');
+		}
 	}
-	else
+	else if (is_dir('lock'))
 	{
 		rmdir('lock');
 	}

@@ -3,6 +3,7 @@
 require_once 'include/session.php';
 require_once 'include/image.php';
 require_once 'include/game_stats.php';
+require_once 'include/snapshot.php';
 
 ob_start();
 $result = array();
@@ -211,7 +212,7 @@ try
 	else if (isset($_REQUEST['stats']))
 	{
 		$last_id = 0;
-		$query = new DbQuery('SELECT id, log FROM games WHERE result > 0');
+		$query = new DbQuery('SELECT id, log, end_time FROM games WHERE result > 0');
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
@@ -229,14 +230,52 @@ try
 			Db::exec(get_label('mafioso'), 'DELETE FROM mafiosos');
 			Db::exec(get_label('sheriff'), 'DELETE FROM sheriffs');
 			Db::exec(get_label('player'), 'DELETE FROM players');
+			Db::exec(get_label('player'), 'DELETE FROM snapshots');
 			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = 0, rating = ' . USER_INITIAL_RATING . ', games = 0, games_won = 0');
 			Db::commit();
 		}
 		$query->add(' ORDER BY start_time, id LIMIT 10');
 		$c = 0;
+		$games = array();
 		while ($row = $query->next())
 		{
-			list($id, $log) = $row;
+			$games[] = $row;
+		}
+		
+		$snapshot_time = 0;
+		$query = new DbQuery('SELECT time FROM snapshots ORDER BY time DESC LIMIT 1');
+		if ($row = $query->next())
+		{
+			list($snapshot_time) = $row;
+			$snapshot_time = Snapshot::snapshot_time($snapshot_time) + SNAPSHOT_INTERVAL;
+		}
+		
+		foreach ($games as $row)
+		{
+			list($id, $log, $end_time) = $row;
+			if ($snapshot_time == 0)
+			{
+				$snapshot_time = Snapshot::snapshot_time($end_time) + SNAPSHOT_INTERVAL;
+			}
+			
+			if ($end_time >= $snapshot_time)
+			{
+				try
+				{
+					$snapshot = new Snapshot($snapshot_time);
+					Db::begin();
+					$snapshot->shot();
+					$snapshot->save();
+					Db::commit();
+				}
+				catch (Exception $e)
+				{
+					Db::rollback();
+					echo $e->getMessage() . '<br>';
+				}
+				$snapshot_time = Snapshot::snapshot_time($end_time) + SNAPSHOT_INTERVAL;
+			}
+			
 			$last_id = $id;
 			++$c;
 			try
