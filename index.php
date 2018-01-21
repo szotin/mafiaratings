@@ -66,9 +66,8 @@ class Page extends GeneralPageBase
 		return false;
 	}
 	
-	private function show_changes()
+	private function show_changes($interval, $rows, $columns)
 	{
-		$interval = 2;
 		$snapshot = new Snapshot(time());
 		$snapshot->shot();
 		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT ' . $interval);
@@ -94,78 +93,98 @@ class Page extends GeneralPageBase
 		}
 		
 		$diff = $snapshot->compare($prev_snapshot);
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td><b>' . get_label('Latest changes in the rating') . '</b></a></td></tr>';
-		echo '<tr><td><table class="transp" width="100%">';
-		foreach ($diff as $player)
+		if (count($diff) == 0)
 		{
-			echo '<tr>';
-			echo '<td width="48" align="center"><a href="user_info.php?id=' . $player->id . '&bck=1">';
-			show_user_pic($player->id, $player->user_name, $player->user_flags, ICONS_DIR, 36, 36);
-			echo '</a></td><td width="48"><a href="club_main.php?id=' . $player->club_id . '&bck=1">';
-			show_club_pic($player->club_id, $player->club_name, $player->club_flags, ICONS_DIR, 36, 36);
-			echo '</a></td><td width="30">';
-			if (isset($player->src))
+			return;
+		}
+		
+		echo '<table class="bordered light" width="100%">';
+		echo '<tr class="darker"><td colspan="' . $columns . '"><b>' . get_label('Latest changes in the rating') . '</b></a></td></tr><tr>';
+		for ($i = 0; $i < $columns; ++$i)
+		{
+			$count = 0;
+			$row_count = 0;
+			echo '<td width="' . floor(100 / $columns) . '%" valign="top"><table class="transp" width="100%">';
+			foreach ($diff as $player)
 			{
-				if (isset($player->dst))
+				if ($count++ % $columns != $i)
 				{
-					if ($player->src > $player->dst)
+					continue;
+				}
+				
+				if ($row_count++ >= $rows)
+				{
+					break;
+				}
+				
+				echo '<tr>';
+				echo '<td width="48" align="center"><a href="user_info.php?id=' . $player->id . '&bck=1">';
+				show_user_pic($player->id, $player->user_name, $player->user_flags, ICONS_DIR, 36, 36);
+				echo '</a></td><td width="48"><a href="club_main.php?id=' . $player->club_id . '&bck=1">';
+				show_club_pic($player->club_id, $player->club_name, $player->club_flags, ICONS_DIR, 36, 36);
+				echo '</a></td><td width="30">';
+				if (isset($player->src))
+				{
+					if (isset($player->dst))
 					{
-						echo '<img src="images/up.png">';
-						if ($player->user_flags & U_FLAG_MALE)
+						if ($player->src > $player->dst)
 						{
-							echo '</td><td>' . get_label('[0] moved up from [1] place to [2].', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+							echo '<img src="images/up.png">';
+							if ($player->user_flags & U_FLAG_MALE)
+							{
+								echo '</td><td>' . get_label('[0] moved up from [1] place to [2].', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+							}
+							else
+							{
+								// the space in the end of a string means female gender for the languages where it matters
+								echo '</td><td>' . get_label('[0] moved up from [1] place to [2]. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+							}
 						}
-						else
+						else if ($player->src < $player->dst)
 						{
-							// the space in the end of a string means female gender for the languages where it matters
-							echo '</td><td>' . get_label('[0] moved up from [1] place to [2]. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+							echo '<img src="images/down_red.png">';
+							if ($player->user_flags & U_FLAG_MALE)
+							{
+								echo '</td><td>' . get_label('[0] moved down from [1] place to [2].', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+							}
+							else
+							{
+								// the space in the end of a string means female gender for the languages where it matters
+								echo '</td><td>' . get_label('[0] moved down from [1] place to [2]. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+							}
 						}
 					}
-					else if ($player->src < $player->dst)
+					else
 					{
-						echo '<img src="images/down_red.png">';
+						echo '<img src="images/down_red.png"></td><td>';
 						if ($player->user_flags & U_FLAG_MALE)
 						{
-							echo '</td><td>' . get_label('[0] moved down from [1] place to [2].', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+							echo get_label('[0] left top 100.', '<b>' . $player->user_name . '</b>', $player->src);
 						}
 						else
 						{
 							// the space in the end of a string means female gender for the languages where it matters
-							echo '</td><td>' . get_label('[0] moved down from [1] place to [2]. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+							echo get_label('[0] left top 100. ', '<b>' . $player->user_name . '</b>', $player->src);
 						}
 					}
 				}
 				else
 				{
-					echo '<img src="images/down_red.png"></td><td>';
+					echo '<img src="images/up.png"></td><td>';
 					if ($player->user_flags & U_FLAG_MALE)
 					{
-						echo get_label('[0] left top 100.', '<b>' . $player->user_name . '</b>', $player->src);
+						echo get_label('[0] entered top 100 and gained [1] place.', '<b>' . $player->user_name . '</b>', $player->dst);
 					}
 					else
 					{
 						// the space in the end of a string means female gender for the languages where it matters
-						echo get_label('[0] left top 100. ', '<b>' . $player->user_name . '</b>', $player->src);
+						echo get_label('[0] entered top 100 and gained [1] place. ', '<b>' . $player->user_name . '</b>', $player->dst);
 					}
 				}
 			}
-			else
-			{
-				echo '<img src="images/up.png"></td><td>';
-				if ($player->user_flags & U_FLAG_MALE)
-				{
-					echo get_label('[0] entered top 100 and gained [1] place.', '<b>' . $player->user_name . '</b>', $player->dst);
-				}
-				else
-				{
-					// the space in the end of a string means female gender for the languages where it matters
-					echo get_label('[0] entered top 100 and gained [1] place. ', '<b>' . $player->user_name . '</b>', $player->dst);
-				}
-			}
-			echo '</td></tr>';
+			echo '</table></td>';
 		}
-		echo '</td></tr></table></table>';
+		echo '</tr></table>';
 	}
 
 	protected function show_body()
@@ -279,10 +298,10 @@ class Page extends GeneralPageBase
 			}
 		}
 		
-		$this->show_changes();
+		$this->show_changes(2, 10, 1);
 		
 		// ratings
-		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags FROM users u WHERE u.games > 0');
+		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE u.games > 0');
 		switch($ccc_type)
 		{
 		case CCCF_CLUB:
@@ -307,18 +326,20 @@ class Page extends GeneralPageBase
 		$number = 1;
 		if ($row = $query->next())
 		{
-			echo '</td><td width="280" valign="top">';
+			echo '</td><td width="320" valign="top">';
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="4"><b>' . get_label('Best players') . '</b></td></tr>';
+			echo '<tr class="darker"><td colspan="5"><b>' . get_label('Best players') . '</b></td></tr>';
 			
 			do
 			{
-				list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
+				list ($id, $name, $rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $row;
 
 				echo '<td width="20" class="dark" align="center">' . $number . '</td>';
-				echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
+				echo '<td width="50" valign="top"><a href="user_info.php?id=' . $id . '&bck=1">';
 				show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
-				echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+				echo '</a></td><td width="36"><a href="club_main.php?id=' . $club_id . '&bck=1">';
+				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 36, 36);
+				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';
 				
