@@ -140,12 +140,12 @@ class Page extends GeneralPageBase
 							echo '<img src="images/up.png">';
 							if ($player->user_flags & U_FLAG_MALE)
 							{
-								echo '</td><td>' . get_label('[0] moved up from [1] place to [2].', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+								echo '</td><td>' . get_label('[0] moved up from [1] to [2] place.', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
 							}
 							else
 							{
 								// the space in the end of a string means female gender for the languages where it matters
-								echo '</td><td>' . get_label('[0] moved up from [1] place to [2]. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+								echo '</td><td>' . get_label('[0] moved up from [1] to [2] place. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
 							}
 						}
 						else if ($player->src < $player->dst)
@@ -153,12 +153,12 @@ class Page extends GeneralPageBase
 							echo '<img src="images/down_red.png">';
 							if ($player->user_flags & U_FLAG_MALE)
 							{
-								echo '</td><td>' . get_label('[0] moved down from [1] place to [2].', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+								echo '</td><td>' . get_label('[0] moved down from [1] to [2] place.', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
 							}
 							else
 							{
 								// the space in the end of a string means female gender for the languages where it matters
-								echo '</td><td>' . get_label('[0] moved down from [1] place to [2]. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
+								echo '</td><td>' . get_label('[0] moved down from [1] to [2] place. ', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
 							}
 						}
 					}
