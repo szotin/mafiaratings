@@ -106,10 +106,15 @@ class Page extends GeneralPageBase
 			$timezone = $_profile->timezone;
 		}
 		
+		$firstDark = false;
+		$dark = false;
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td colspan="' . $columns . '"><b>' . get_label('Latest changes in the rating (sinse [0])', format_date('j M Y', $prev_time, $timezone)) . '</b></a></td></tr><tr>';
 		for ($i = 0; $i < $columns; ++$i)
 		{
+			$dark = $firstDark;
+			$firstDark = !$firstDark;
+			
 			$count = 0;
 			$row_count = 0;
 			echo '<td width="' . floor(100 / $columns) . '%" valign="top"><table class="transp" width="100%">';
@@ -125,7 +130,15 @@ class Page extends GeneralPageBase
 					break;
 				}
 				
-				echo '<tr>';
+				if ($dark)
+				{
+					echo '<tr>';
+				}
+				else
+				{
+					echo '<tr class="dark">';
+				}
+				$dark = !$dark;
 				echo '<td width="48" align="center"><a href="user_info.php?id=' . $player->id . '&bck=1">';
 				show_user_pic($player->id, $player->user_name, $player->user_flags, ICONS_DIR, 36, 36);
 				echo '</a></td><td width="48"><a href="club_main.php?id=' . $player->club_id . '&bck=1">';
