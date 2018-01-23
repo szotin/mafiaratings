@@ -68,6 +68,8 @@ class Page extends GeneralPageBase
 	
 	private function show_changes($interval, $rows, $columns)
 	{
+		global $_profile;
+		
 		$snapshot = new Snapshot(time());
 		$snapshot->shot();
 		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT ' . $interval);
@@ -98,8 +100,14 @@ class Page extends GeneralPageBase
 			return;
 		}
 		
+		$timezone = 'America/Vancouver';
+		if ($_profile != NULL)
+		{
+			$timezone = $_profile->timezone;
+		}
+		
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td colspan="' . $columns . '"><b>' . get_label('Latest changes in the rating') . '</b></a></td></tr><tr>';
+		echo '<tr class="darker"><td colspan="' . $columns . '"><b>' . get_label('Latest changes in the rating (sinse [0])', format_date('j M Y', $prev_time, $timezone)) . '</b></a></td></tr><tr>';
 		for ($i = 0; $i < $columns; ++$i)
 		{
 			$count = 0;

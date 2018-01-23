@@ -216,8 +216,8 @@ try
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
-			list($last_start) = Db::record(get_label('game'), 'SELECT start_time FROM games WHERE id = ?', $last_id);
-			$query->add(' AND (start_time > ? OR (start_time = ? AND id > ?))', $last_start, $last_start, $last_id);
+			list($last_end) = Db::record(get_label('game'), 'SELECT end_time FROM games WHERE id = ?', $last_id);
+			$query->add(' AND (end_time > ? OR (end_time = ? AND id > ?))', $last_end, $last_end, $last_id);
 		}
 		else
 		{
@@ -234,7 +234,7 @@ try
 			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = 0, rating = ' . USER_INITIAL_RATING . ', games = 0, games_won = 0');
 			Db::commit();
 		}
-		$query->add(' ORDER BY start_time, id LIMIT 10');
+		$query->add(' ORDER BY end_time, id LIMIT 10');
 		$c = 0;
 		$games = array();
 		while ($row = $query->next())
