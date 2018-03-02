@@ -26,7 +26,7 @@ try
 		$num = 16;
 		if (isset($_REQUEST['num']) && is_numeric($_REQUEST['num']))
 		{
-			$num = $_REQUEST['mc'];
+			$num = $_REQUEST['num'];
 		}
 		
 		if ($term == '')

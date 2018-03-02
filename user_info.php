@@ -66,12 +66,7 @@ class Page extends UserPageBase
 		
         echo '<table class="bordered light" width="100%">';
 		
-		$timezone = 'America/Vancouver';
-		if ($_profile != NULL)
-		{
-			$timezone = $_profile->timezone;
-		}
-		
+		$timezone = get_timezone();
 		echo '<tr><td width="150" class="dark">'.get_label('Languages').':</td><td>' . get_langs_str($this->langs, ', ') . '</td><tr>';
 		echo '<tr><td class="dark">'.get_label('Registered since').':</td><td>' . format_date('F d, Y', $this->reg_date, $timezone) . '</td></tr>';
 		

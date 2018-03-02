@@ -7,7 +7,6 @@ require_once 'include/user.php';
 require_once 'include/scoring.php';
 
 define("PAGE_SIZE",15);
-define('COMMENTS_WIDTH', 300);
 
 class Page extends EventPageBase
 {
@@ -188,9 +187,9 @@ class Page extends EventPageBase
 		list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?', $this->event->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		echo '<table width="100%"><tr valign="top"><td>';
 		$this->show_standings($condition);
-		echo '</td><td id="comments" width="' . COMMENTS_WIDTH . '"></td></tr></table>';
+		echo '<table width="100%"><tr valign="top"><td>';
+		echo '</td><td id="comments"></td></tr></table>';
 ?>
 		<script type="text/javascript">
 			mr.showComments("event", <?php echo $this->event->id; ?>, 5);

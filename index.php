@@ -100,16 +100,11 @@ class Page extends GeneralPageBase
 			return;
 		}
 		
-		$timezone = 'America/Vancouver';
-		if ($_profile != NULL)
-		{
-			$timezone = $_profile->timezone;
-		}
-		
+		$timezone = get_timezone();
 		$firstDark = false;
 		$dark = false;
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td colspan="' . $columns . '"><b>' . get_label('Latest changes in the rating (sinse [0])', format_date('j M Y', $prev_time, $timezone)) . '</b></a></td></tr><tr>';
+		echo '<tr class="darker"><td colspan="' . $columns . '"><b>' . get_label('Latest changes in the rating (since [0])', format_date('j M Y', $prev_time, $timezone)) . '</b></a></td></tr><tr>';
 		for ($i = 0; $i < $columns; ++$i)
 		{
 			$dark = $firstDark;
@@ -132,11 +127,11 @@ class Page extends GeneralPageBase
 				
 				if ($dark)
 				{
-					echo '<tr>';
+					echo '<tr class="dark">';
 				}
 				else
 				{
-					echo '<tr class="dark">';
+					echo '<tr>';
 				}
 				$dark = !$dark;
 				echo '<td width="48" align="center"><a href="user_info.php?id=' . $player->id . '&bck=1">';

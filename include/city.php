@@ -12,7 +12,7 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 	
 	if ($timezone == NULL)
 	{
-		$timezone = $_profile->timezone;
+		$timezone = get_timezone();
 	}
 	
 	$city = trim($city);

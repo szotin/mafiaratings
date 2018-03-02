@@ -87,11 +87,11 @@ class Page extends GeneralPageBase
 			echo '<td class="dark">';
 			if ($page != '')
 			{
-				echo '<a href="' . $page . '">' . format_date('d/m/y H:i', $time, $_profile->timezone) . '</a>';
+				echo '<a href="' . $page . '">' . format_date('d/m/y H:i', $time, get_timezone()) . '</a>';
 			}
 			else
 			{
-				echo format_date('d/m/y H:i', $time, $_profile->timezone);
+				echo format_date('d/m/y H:i', $time, get_timezone());
 			}
 			echo '</td>';
 			

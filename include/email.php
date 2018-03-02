@@ -12,6 +12,7 @@ define('EMAIL_OBJ_SIGN_IN', 3);
 define('EMAIL_OBJ_CREATE_CLUB', 4);
 define('EMAIL_OBJ_CONFIRM_EVENT', 5);
 define('EMAIL_OBJ_EVENT_NO_USER', 6);
+define('EMAIL_OBJ_VIDEO', 7);
 
 function show_email_tags($event_tags)
 {
@@ -92,10 +93,10 @@ function send_email($email, $body, $text_body, $subject, $unsubs_url = NULL)
 		{
 			echo '<tr><td>' . $body . '</td></tr>';
 		}
-		if ($text_body != NULL)
-		{
-			echo '<tr><td><pre>' . $text_body . '</pre></td></tr>';
-		}
+		// if ($text_body != NULL)
+		// {
+			// echo '<tr><td><pre>' . $text_body . '</pre></td></tr>';
+		// }
 		echo '</table></center>';
 	}
 }

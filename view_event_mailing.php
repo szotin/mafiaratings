@@ -40,10 +40,11 @@ class Page extends PageBase
 		
 		list($p_body, $p_subj, $this->lang) = $this->event->parse_sample_email($_profile->user_email, $this->body, $this->subj, $this->lang);
 		
+		$timezone = get_timezone();
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td>' . $p_subj . '</td>';
 		echo '<td width="100">' . get_lang_str($this->lang) . '</td>';
-		echo '<td width="160">' . format_date('F d, Y, H:i', $this->send_time, $_profile->timezone) . '</td></tr>';
+		echo '<td width="160">' . format_date('F d, Y, H:i', $this->send_time, $timezone) . '</td></tr>';
 		echo '<tr><td colspan="3">' . $p_body . '</td></tr>';
 		echo '</table>';
 
@@ -62,7 +63,7 @@ class Page extends PageBase
 				$this->id);
 			while ($row = $query->next())
 			{
-				echo '<tr><td class="dark">' . format_date('F d, Y, H:i', $row[2], $_profile->timezone) . '</td>';
+				echo '<tr><td class="dark">' . format_date('F d, Y, H:i', $row[2], $timezone) . '</td>';
 				echo '<td><a href="user_info.php?id=' . $row[0] . '&bck=1">' . $row[1] . '</a></td></tr>';
 			}
 			

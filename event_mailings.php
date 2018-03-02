@@ -105,7 +105,7 @@ class Page extends PageBase
 					break;
 			}
 			
-			echo '<td><a href="view_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('View') . '">' . format_date('F d, Y, H:i', $send_time, $_profile->timezone) . '</a></td>';
+			echo '<td><a href="view_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('View') . '">' . format_date('F d, Y, H:i', $send_time, get_timezone()) . '</a></td>';
 			echo '<td>' . get_email_recipients($flags, $lang) . '</td>';
 			echo '<td>' . get_lang_str($lang) . '</td>';
 			

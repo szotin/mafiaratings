@@ -17,7 +17,11 @@ class Page extends GeneralPageBase
 		
 		parent::prepare();
 		
-		date_default_timezone_set($_profile->timezone);
+		$timezone = 'America/Vancouver';
+		if (isset($_profile))
+		{
+			date_default_timezone_set(get_timezone());
+		}
 		
 		$this->season = 0;
 		if (isset($_REQUEST['season']))

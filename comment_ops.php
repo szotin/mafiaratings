@@ -174,6 +174,46 @@ try
 			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_GAME, $id, $code);
 		}
 	}
+	else if ($object == 'video')
+	{
+		Db::exec(get_label('comment'), 'INSERT INTO video_comments (time, user_id, comment, video_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $id, $lang);
+		
+		list($video, $video_title) = Db::record(get_label('video'), 'SELECT video, name FROM videos WHERE id = ?' , $id);
+		$query = new DbQuery(
+			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM user_videos uv JOIN users u ON u.id = uv.user_id WHERE uv.video_id = ?)' .
+			' UNION DISTINCT' .
+			' (SELECT DISTINCT u.id, u.name, u.email, u.flags, u.def_lang FROM video_comments c JOIN users u ON c.user_id = u.id WHERE c.video_id = ?)',
+			$id, $id);
+		while ($row = $query->next())
+		{
+			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
+		
+			if ($user_id == $_profile->user_id || ($user_flags & U_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			{
+				continue;
+			}
+			
+			$code = generate_email_code();
+			$server = get_server_url() . '/';
+			$request_base = $server . 'email_request.php?code=' . $code . '&uid=' . $user_id;
+			$video_image = 'https://img.youtube.com/vi/' . $video . '/0.jpg';
+			
+			$tags = array(
+				'uid' => new Tag($user_id),
+				'code' => new Tag($code),
+				'uname' => new Tag($user_name),
+				'sender' => new Tag($_profile->user_name),
+				'message' => new Tag($comment),
+				'url' => new Tag($request_base),
+				'video' => new Tag('<a href="' . $request_base . '"><img src="' . $video_image . '" border="0" width="' . EVENT_PHOTO_WIDTH . '" title="' . $video_title . '"></a>'),
+				'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
+			
+			list($subj, $body, $text_body) = include 'include/languages/' . get_lang_code($user_lang) . '/email_comment_video.php';
+			$body = parse_tags($body, $tags);
+			$text_body = parse_tags($text_body, $tags);
+			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_VIDEO, $id, $code);
+		}
+	}
 	else
 	{
 		throw new Exception(get_label('Unknown [0]', get_label('object')));

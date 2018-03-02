@@ -225,23 +225,36 @@ class ClubPageBase extends PageBase
 					'LEFT OUTER JOIN user_clubs u ON u.club_id = c.id AND u.user_id = ? ' .
 					'WHERE c.id = ?',
 				$user_id, $this->id);
+		$this->_title = $this->name;
 	}
 
 	protected function show_title()
 	{
 		global $_profile;
 		
-		$menu = array(
-			new MenuItem('club_main.php?id=' . $this->id, get_label('Club'), get_label('[0] main page', $this->name)),
-			new MenuItem('club_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
-			new MenuItem('#stats', get_label('Stats'), NULL, array(
-				new MenuItem('club_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
-				new MenuItem('club_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
-				new MenuItem('club_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')))),
-			new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)),
-			new MenuItem('club_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
-			new MenuItem('club_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name)),
-			new MenuItem('club_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name)));
+		$menu = array
+		(
+			new MenuItem('club_main.php?id=' . $this->id, get_label('Club'), get_label('[0] main page', $this->name))
+			, new MenuItem('club_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name))
+			, new MenuItem('#stats', get_label('Stats'), NULL, array
+			(
+				new MenuItem('club_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
+				, new MenuItem('club_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
+				, new MenuItem('club_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
+				, new MenuItem('club_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name))
+			))
+			, new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name))
+			, new MenuItem('club_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
+			, new MenuItem('#resources', get_label('Resources'), NULL, array
+			(
+				new MenuItem('club_albums.php?id=' . $this->id, get_label('Photos'), get_label('Photo albums'))
+				, new MenuItem('club_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.'))
+				, new MenuItem('club_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.'))
+				// , new MenuItem('club_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.'))
+				// , new MenuItem('club_articles.php?id=' . $this->id, get_label('Articles'), get_label('Books and articles.'))
+				// , new MenuItem('club_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.'))
+			))
+		);
 			
 		if ($this->is_manager || $this->is_moder)
 		{
@@ -289,7 +302,7 @@ class ClubPageBase extends PageBase
 		{
 			show_club_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
 		}
-		echo '</td></tr></table><td valign="top">' . $this->standard_title() . '<p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
+		echo '</td></tr></table><td valign="top"><h2 class="club">' . get_label('Club') . '</h2><br>' . $this->standard_title() . '<p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr></table>';
 	}
@@ -321,7 +334,7 @@ function show_seasons_select($club_id, $option, $on_change, $title)
 	}
 	echo '<select name="season" id="season" onChange="' . $on_change . '" title="' . $title . '">';
 	show_option(-1, $option, get_label('All time'));
-	show_option(-2, $option, get_label('Last year'), get_label('Sinse the same day a year ago.'));
+	show_option(-2, $option, get_label('Last year'), get_label('Since the same day a year ago.'));
 	if (count($seasons) > 0)
 	{
 		foreach ($seasons as $season)

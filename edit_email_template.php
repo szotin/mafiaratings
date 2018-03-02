@@ -91,7 +91,7 @@ class Page extends PageBase
 		$event->id = 0;
 		$event->name = get_label('My event');
 		$event->timestamp = time();
-		$event->timezone = $_profile->timezone;
+		$event->timezone = get_timezone();
 		$event->duration = 6 * 3600;
 		$event->addr_id = 0;
 		$event->addr = get_label('111 My Street, My City, My Country');

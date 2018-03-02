@@ -5,6 +5,7 @@ require_once 'include/game_stats.php';
 require_once 'include/event.php';
 require_once 'include/email.php';
 require_once 'include/view_game.php';
+require_once 'include/video.php';
 
 define('EVENTS_FUTURE_LIMIT', 1209600); // 2 weeks
 
@@ -355,25 +356,6 @@ class GUser
 		foreach ($_profile->clubs as $club)
 		{
 			$this->clubs[] = new GClubMin($club->id, $club->name);
-		}
-	}
-}
-
-function reset_viewed_game($game_id, $keep = true)
-{
-	if (isset($_SESSION['view_game']))
-	{
-		$vg = $_SESSION['view_game'];
-		if ($vg->gs->id == $game_id)
-		{
-			if ($keep)
-			{
-				$vg->refresh();
-			}
-			else
-			{
-				unset($_SESSION['view_game']);
-			}
 		}
 	}
 }
@@ -1103,61 +1085,6 @@ try
 		
 		db_log('game', 'changed', 'old_log: ' . $log, $game_id, $club_id);
 		$result['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
-	}
-	else if (isset($_REQUEST['set_video']))
-	{
-		$game_id = $_REQUEST['id'];
-		$video = $_REQUEST['set_video'];
-		list($club_id, $old_video) = Db::record(get_label('game'), 'SELECT club_id, video FROM games WHERE id = ?', $game_id);
-		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
-		{
-			throw new Exc(get_label('No permissions'));
-		}
-		
-		$pos = strpos($video, 'v=');
-		if ($pos !== false)
-		{
-			$end = strpos($video, '&', $pos + 2);
-			if ($end === false)
-			{
-				$video = substr($video, $pos + 2);
-			}
-			else
-			{
-				$video = substr($video, $pos + 2, $end - $pos - 2);
-			}
-		}
-		
-		Db::exec(get_label('game'), 'UPDATE games SET video = ? WHERE id = ?', $video, $game_id);
-		if ($old_video == NULL)
-		{
-			db_log('game', 'changed', 'add_video', $game_id, $club_id);
-		}
-		else
-		{
-			db_log('game', 'changed', 'old_video: ' . $old_video, $game_id, $club_id);
-		}
-		reset_viewed_game($game_id);
-	}
-	else if (isset($_REQUEST['remove_video']))
-	{
-		$game_id = $_REQUEST['remove_video'];
-		list($club_id, $old_video) = Db::record(get_label('game'), 'SELECT club_id, video FROM games WHERE id = ?', $game_id);
-		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
-		{
-			throw new Exc(get_label('No permissions'));
-		}
-		
-		Db::exec(get_label('game'), 'UPDATE games SET video = NULL WHERE id = ?', $game_id);
-		if ($old_video == NULL)
-		{
-			db_log('game', 'changed', 'video_removed', $game_id, $club_id);
-		}
-		else
-		{
-			db_log('game', 'changed', 'video_removed: ' . $old_video, $game_id, $club_id);
-		}
-		reset_viewed_game($game_id);
 	}
 }
 catch (Exception $e)

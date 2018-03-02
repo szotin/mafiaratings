@@ -575,7 +575,10 @@ class AlbumPageBase extends PageBase
 		echo '<table class="head" width="100%">';
 		if ($can_edit || $can_add)
 		{
-			$menu = array(new MenuItem('album_photos.php?id=' . $this->album->id, get_label('Photos'), get_label('Games statistics')));
+			$menu = array
+			(
+				new MenuItem('album_photos.php?id=' . $this->album->id, get_label('Photos'), get_label('Games statistics'))
+			);
 			if ($can_edit)	
 			{
 				$menu[] = new MenuItem('album_edit.php?id=' . $this->album->id, get_label('Change'), get_label('Edit photo album'));

@@ -84,7 +84,7 @@ try
 			$tags['aurl'] = new Tag($addr_url);
 			$tags['aid'] = new Tag($addr_id);
 			$tags['aimage'] = new Tag($image_base . $addr_id . '.jpg');
-			$tags['langs'] = new Tag(get_langs_str($event_langs, ', ', $email_lang));
+			$tags['langs'] = new Tag(get_langs_str($event_langs, ', ', LOWERCASE, $email_lang));
 			$tags['cname'] = new Tag($club_name);
 			$tags['cid'] = new Tag($club_id);
 			$tags['accept_btn'] = new Tag('<input type="submit" name="accept" value="#">');

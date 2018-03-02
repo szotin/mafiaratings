@@ -239,6 +239,7 @@ class AddressPageBase extends PageBase
 	protected $flags;
 	protected $club_id;
 	protected $club_name;
+	protected $club_langs;
 	protected $scoring_id;
 	protected $city_id;
 	protected $city_name;
@@ -257,10 +258,10 @@ class AddressPageBase extends PageBase
 		}
 		$this->id = $_REQUEST['id'];
 
-		list ($this->name, $this->address, $this->url, $this->flags, $this->club_id, $this->club_name, $this->scoring_id, $this->club_flags, $this->city_id, $this->city_name, $this->timezone, $this->country_id, $this->country_name) = 
+		list ($this->name, $this->address, $this->url, $this->flags, $this->club_id, $this->club_name, $this->club_langs, $this->scoring_id, $this->club_flags, $this->city_id, $this->city_name, $this->timezone, $this->country_id, $this->country_name) = 
 			Db::record(
 				get_label('address'),
-				'SELECT a.name, a.address, a.map_url, a.flags, a.club_id, c.name, c.scoring_id, c.flags, a.city_id, ct.name_' . $_lang_code . ', ct.timezone, ct.country_id, cr.name_' . $_lang_code . ' FROM addresses a' .
+				'SELECT a.name, a.address, a.map_url, a.flags, a.club_id, c.name, c.langs, c.scoring_id, c.flags, a.city_id, ct.name_' . $_lang_code . ', ct.timezone, ct.country_id, cr.name_' . $_lang_code . ' FROM addresses a' .
 				' JOIN clubs c ON c.id = a.club_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN countries cr ON cr.id = ct.country_id' .
@@ -271,17 +272,29 @@ class AddressPageBase extends PageBase
 
 	protected function show_title()
 	{
-		$menu = array(
-			new MenuItem('address_info.php?id=' . $this->id, get_label('Address'), get_label('[0] information', $this->name)),
-			new MenuItem('address_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
-			new MenuItem('#stats', get_label('Stats'), NULL, array(
+		$menu = array
+		(
+			new MenuItem('address_info.php?id=' . $this->id, get_label('Address'), get_label('[0] information', $this->name))
+			, new MenuItem('address_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name))
+			, new MenuItem('#stats', get_label('Stats'), NULL, array
+			(
 				new MenuItem('address_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
 				new MenuItem('address_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
-				new MenuItem('address_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')))),
-			new MenuItem('address_games.php?id=' . $this->id, get_label('Games'), get_label('Games list at [0]', $this->name)),
-			new MenuItem('address_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
-			new MenuItem('address_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name)),
-			new MenuItem('address_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name)));
+				new MenuItem('address_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
+			))
+			, new MenuItem('address_games.php?id=' . $this->id, get_label('Games'), get_label('Games list at [0]', $this->name))
+			, new MenuItem('address_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
+			, new MenuItem('address_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name))
+			, new MenuItem('#resources', get_label('Resources'), NULL, array
+			(
+				new MenuItem('address_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name))
+				, new MenuItem('address_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.'))
+				, new MenuItem('address_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.'))
+				// , new MenuItem('address_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.'))
+				// , new MenuItem('address_articles.php?id=' . $this->id, get_label('Articles'), get_label('Books and articles.'))
+				// , new MenuItem('address_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.'))
+			))
+		);
 		
 		echo '<table class="head" width="100%">';
 		
@@ -314,7 +327,7 @@ class AddressPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		echo '<td rowspan="2" valign="top">' . $this->standard_title() . '<p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
+		echo '<td rowspan="2" valign="top"><h2 class="address">' . get_label('Address') . '</h2><br>' . $this->standard_title() . '<p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom" width="' . ICON_WIDTH . '"><a href="club_main.php?bck=1&id=' . $this->club_id . '"><table><tr><td align="center">' . $this->club_name . '</td></tr><tr><td>';
 		show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR);

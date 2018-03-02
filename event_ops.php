@@ -116,11 +116,6 @@ try
 				$e->addr_image = $base . ADDRESS_PICS_DIR . TNAILS_DIR . $e->addr_id . '.jpg';
 			}
 			
-			$e->page = $base . 'event_info.php?id=' . $e->id;
-			$e->attend_page = $base . 'attend.php?id=' . $e->id;
-			$e->decline_page = $base . 'pass.php?id=' . $e->id;
-			$e->club_page = $base . 'club_main.php?id=' . $e->club_id;
-			
 			$e->date_str = format_date($date_format, $e->start, $e->timezone);
 			$e->time_str = format_date($time_format, $e->start, $e->timezone);
 			

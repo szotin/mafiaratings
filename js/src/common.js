@@ -512,9 +512,64 @@ function showMenuBar()
 	}
 } // showMenuBar()
 
-function refr()
+function setUrlParam(url, key, value)
 {
-	var url = document.URL;
+	var str = key;
+	if (typeof value != "undefined")
+		str += '=' + value;
+	
+	var beg = url.indexOf('?') + 1;
+	if (beg <= 0)
+		return url + '?' + str;
+	
+	while (true)
+	{
+		var end = url.indexOf('&', beg);
+		if (end < 0)
+		{
+			var s = url.substr(beg);
+			var k = s;
+			var epos = s.indexOf('=');
+			if (epos >= 0)
+				k = s.substr(0, epos);
+			if (k == key)
+				return url.substr(0, beg) + str;
+			return url + '&' + str;
+		}
+		else
+		{
+			var s = url.substr(beg, end);
+			var k = s;
+			var epos = s.indexOf('=');
+			if (epos >= 0)
+				k = s.substr(0, epos);
+			if (k == key)
+				return url.substr(0, beg) + str + url.substr(end);
+		}
+		beg = end + 1;
+	}
+}
+
+function setUrlParams(url, params)
+{
+	if (typeof params == "object")
+		for (var key in params)
+			url = setUrlParam(url, key, params[key]);
+	return url;
+}
+
+function refr(url, params)
+{
+	if (typeof url == "object")
+	{
+		params = url;
+		url = document.URL;
+	}
+	else if (typeof url != "string")
+		url = document.URL;
+	
+	url = setUrlParams(url, params);
+	
 	var p = url.indexOf('#');
 	if (p >= 0)
 		url = url.substr(0, p);

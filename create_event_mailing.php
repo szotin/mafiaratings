@@ -243,14 +243,9 @@ class Page extends PageBase
 		{
 			echo ' checked';
 		}
-		echo '> ' . get_label('Auto-detect') . ' <select name="lang">';
-		
-		$l = LANG_NO;
-		while (($l = get_next_lang($l)) != LANG_NO)
-		{
-			show_option($l, $this->lang, get_lang_str($l));
-		}
-		echo '</select></td></tr>';
+		echo '> ' . get_label('Auto-detect') . ' ';
+		show_lang_select('lang', $this->lang);
+		echo '</td></tr>';
 		
 		echo '<tr><td class="dark" valign="top">' . get_label('Preview') . ':</td><td align="right">';
 		echo '<table class="bordered lighter" width="100%">';

@@ -416,14 +416,23 @@ var mr = new function()
 		window.location.replace("event_mailings.php?bck=1&id=" + id);
 	}
 
-	this.attendEvent = function(id)
+	this.attendEvent = function(id, url)
 	{
-		dlg.form("event_attend.php?id=" + id, refr);
+		dlg.form("event_attend.php?id=" + id, function()
+		{
+			refr(url);
+		});
 	}
 
-	this.passEvent = function(id)
+	this.passEvent = function(id, url, message)
 	{
-		json.post("event_ops.php", { 'id': id, odds: 0, attend: "" }, refr);
+		json.post("event_ops.php", { 'id': id, odds: 0, attend: "" }, function()
+		{
+			if (typeof message == "undefined")
+				refr(url);
+			else
+				dlg.info(message, null, null, function() { refr(url); });
+		});
 	}
 
 	this.playEvent = function(id)
@@ -683,6 +692,79 @@ var mr = new function()
 			$('#comment').css('height', cal + 'px');
 		}
     }
+	
+	//--------------------------------------------------------------------------------------
+	// videos
+	//--------------------------------------------------------------------------------------
+	this.createVideo = function(vtype, clubId, eventId)
+	{
+		if (typeof eventId != "undefined")
+		{
+			dlg.form("video_create.php?event=" + eventId + "&vtype=" + vtype, refr, 600);
+		}
+		else
+		{
+			dlg.form("video_create.php?club=" + clubId + "&vtype=" + vtype, refr, 600);
+		}
+	}
+	
+	this.editVideo = function(videoId)
+	{
+		dlg.form("video_edit.php?id=" + videoId, refr, 600);
+	}
+	
+	this.deleteVideo = function(videoId, confirmMessage, urlToGo)
+	{
+		dlg.yesNo(confirmMessage, null, null, function()
+		{
+			json.post("video_ops.php", { 'remove': videoId  }, function() { refr(urlToGo); });
+		});
+	}
+	
+	this.showVideoUsers = function(videoId)
+	{
+		var url = "video_users.php?id=" + videoId;
+		html.get(url, function(text, title)
+		{
+			$('#tagged').html(text);
+			var tagControl = $("#tag_user");
+			if (typeof tagControl == "object")
+			{
+				console.log("val = " + tagControl.val());
+				tagControl.autocomplete(
+				{ 
+					source: function( request, response )
+					{
+						$.getJSON("user_ops.php",
+						{
+							list: '',
+							num: 8,
+							term: tagControl.val()
+						}, response);
+					}
+					, select: function(event, ui) { mr.tagVideo(ui.item.id, videoId); }
+					, minLength: 0
+				})
+				.on("focus", function () { $(this).autocomplete("search", ''); });
+			}
+		});
+	}
+	
+	this.tagVideo = function(userId, videoId)
+	{
+		json.post("video_ops.php", { 'tag': videoId, 'user_id': userId }, function() 
+		{ 
+			mr.showVideoUsers(videoId);
+		});
+	}
+	
+	this.untagVideo = function(userId, videoId)
+	{
+		json.post("video_ops.php", { 'untag': videoId, 'user_id': userId }, function() 
+		{ 
+			mr.showVideoUsers(videoId);
+		});
+	}
 }
 
 var swfu = null;

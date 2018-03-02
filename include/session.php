@@ -639,6 +639,16 @@ function show_option($option_value, $current_value, $text, $title = NULL)
 	return $result;
 }
 
+function get_timezone()
+{
+	global $_profile;
+	if ($_profile != NULL)
+	{
+		return $_profile->timezone;
+	}
+	return 'America/Vancouver'; // Later we can do something smarter
+}
+
 function dialog_title($title)
 {
 	echo '<title=' . $title . '>';

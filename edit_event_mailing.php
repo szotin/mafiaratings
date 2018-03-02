@@ -68,7 +68,7 @@ class Page extends PageBase
 			throw new FatalExc(get_label('No permissions'));
 		}
 			
-		$this->parse_event_time($send_time, $_profile->timezone);
+		$this->parse_event_time($send_time, get_timezone());
 		
 		if (isset($_POST['subj']))
 		{
@@ -88,7 +88,7 @@ class Page extends PageBase
 			$this->flags += isset($_POST['to_declined']) ? MAILING_FLAG_TO_DECLINED : 0;
 			$this->flags += isset($_POST['to_desiding']) ? MAILING_FLAG_TO_DESIDING : 0;
 			
-			date_default_timezone_set($_profile->timezone);
+			date_default_timezone_set(get_timezone());
 			$send_time = mktime($this->hour, $this->minute, 0, $this->month, $this->day, $this->year);
 		}
 

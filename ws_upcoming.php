@@ -60,8 +60,8 @@ class Event
 		}
 		
 		$this->page = $base . 'event_info.php?id=' . $this->id;
-		$this->attend_page = $base . 'attend.php?id=' . $this->id;
-		$this->decline_page = $base . 'pass.php?id=' . $this->id;
+		$this->attend_page = $base . 'event_info.php?attend&id=' . $this->id;
+		$this->decline_page = $base . 'event_info.php?decline&id=' . $this->id;
 		$this->club_page = $base . 'club_main.php?id=' . $this->club_id;
 		
 		$this->coming = array();

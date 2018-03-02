@@ -65,7 +65,7 @@ class Page extends AddressPageBase
 		
 		if ($with_video)
 		{
-			$condition->add(' AND g.video IS NOT NULL');
+			$condition->add(' AND g.video_id IS NOT NULL');
 		}
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id', $condition);
@@ -79,14 +79,14 @@ class Page extends AddressPageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video, e.id, e.name, e.flags FROM games g' .
+			'SELECT g.id, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, e.id, e.name, e.flags FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
 			' LEFT OUTER JOIN users m ON m.id = g.moderator_id',
 			$condition);
 		$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video, $event_id, $event_name, $event_flags) = $row;
+			list ($game_id, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $event_id, $event_name, $event_flags) = $row;
 			
 			echo '<tr align="center">';
 			if ($this->is_manager)
@@ -94,13 +94,13 @@ class Page extends AddressPageBase
 				echo '<td class="dark" width="90">';
 				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editGame(' . $game_id . ')" title="' . get_label('Edit game [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
-				if ($video == NULL)
+				if ($video_id == NULL)
 				{
 					echo '<button class="icon" onclick="mr.setGameVideo(' . $game_id . ')" title="' . get_label('Add game [0] video', $game_id) . '"><img src="images/film-add.png" border="0"></button>';
 				}
 				else
 				{
-					echo '<button class="icon" onclick="mr.removeGameVideo(' . $game_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $game_id) . '\')" title="' . get_label('Remove game [0] video', $game_id) . '"><img src="images/film-delete.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.deleteVideo(' . $video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $game_id) . '\')" title="' . get_label('Remove game [0] video', $game_id) . '"><img src="images/film-delete.png" border="0"></button>';
 				}
 				echo '</td>';
 			}
@@ -127,7 +127,7 @@ class Page extends AddressPageBase
 					break;
 			}
 			echo '</td><td>';
-			if ($video != NULL)
+			if ($video_id != NULL)
 			{
 				echo '<button class="icon" onclick="mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/film.png" border="0"></button>';
 			}

@@ -25,7 +25,7 @@ try
 	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Time zone') . ':</td><td>';
-	show_timezone_input($_profile->timezone);
+	show_timezone_input(get_timezone());
 	echo '</td></tr>';
 	
 	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', i.timezone, o.id, o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.area_id == i.id ORDER BY i.name_' . $_lang_code);

@@ -52,6 +52,12 @@ input.dropdown { height: 12px; margin: 0px; padding: 3px; border: 0px; }
 
 
 
+h2 { padding-left: 16px;  margin: 0px; }
+h2.event { color: #168fec; }
+h2.club { color: #c42b0d; }
+h2.address { color: #06aba1; }
+h2.user { color: #b042aa; }
+
 h3 { padding-left: 16px;  margin: 0px; }
 h4 { padding-left: 16px;  margin: 0px; }
 

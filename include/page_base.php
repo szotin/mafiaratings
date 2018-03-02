@@ -240,7 +240,7 @@ class PageBase
 				show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR, 48);
 				echo '</a>';
 				
-				echo '<ul id="user-menu" style="display:none;position:absolute;width:150px;text-align:left;">';
+				echo '<ul id="user-menu" style="display:none;position:absolute;width:150px;text-align:left;z-index:2147483647;">';
 				echo '<li><a href="user_info.php?id=' . $_profile->user_id . '" title="' . get_label('Statistics for [0]', $_profile->user_name) . '"><img src="images/user.png" class="menu_image"> ' . get_label('My statistics') . '</a></li>';
 				echo '<li><a href="javascript:mr.editAccount()" title="' . get_label('Account settings') . '"><img src="images/settings.png" class="menu_image"> ' . get_label('My account') . '</a></li>';
 				echo '<li><a href="javascript:mr.changePassword()" title="' . get_label('Change password') . '"><img src="images/key.png" class="menu_image"> ' . get_label('Change password') . '</a></li>';
@@ -249,7 +249,7 @@ class PageBase
 
 				if (count($_profile->clubs) > 1)
 				{
-					echo '<ul id="club-menu" style="display:none;position:absolute;text-align:left;">';
+					echo '<ul id="club-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';
 					foreach ($_profile->clubs as $c)
 					{
 						if ($c->id != $club->id && ($c->club_flags & CLUB_FLAG_RETIRED) == 0)
@@ -413,7 +413,7 @@ class PageBase
 			// ...
 		}
 		echo '<div id="dlg"></div>';
-		echo '<div id="loading"><img style="margin-top:20px;" src="images/loading.gif" alt="' . get_label('Loading..') . '"/><h4>' . get_label('Please wait..') . '</h4></div>';
+		echo '<div id="loading"><img style="margin-top:20px;z-index:2147483647;" src="images/loading.gif" alt="' . get_label('Loading..') . '"/><h4>' . get_label('Please wait..') . '</h4></div>';
 		echo '</body></html>';
 		$this->_state = PAGE_STATE_FOOTER;
 	}

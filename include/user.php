@@ -198,16 +198,28 @@ class UserPageBase extends PageBase
 	{
 		global $_profile;
 		
-		$menu = array(
-			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information')),
-			new MenuItem('#stats', get_label('Stats'), NULL, array(
-				new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('General statistics. How many games played, winning percentage, nominating/voting, etc.')),
-				new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
-				new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)))),
-			new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title)),
-			new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title)),
-			new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->name)),
-			new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title)));
+		$menu = array
+		(
+			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information'))
+			, new MenuItem('#stats', get_label('Stats'), NULL, array
+			(
+				new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('General statistics. How many games played, winning percentage, nominating/voting, etc.'))
+				, new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
+				, new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title))
+			))
+			, new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title))
+			, new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title))
+			, new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->name))
+			, new MenuItem('#resources', get_label('Resources'), NULL, array
+			(
+				new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title))
+				, new MenuItem('user_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.'))
+				, new MenuItem('user_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.'))
+				// , new MenuItem('club_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.'))
+				// , new MenuItem('club_articles.php?id=' . $this->id, get_label('Articles'), get_label('Books and articles.'))
+				// , new MenuItem('club_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.'))
+			))
+		);
 		if ($_profile != NULL && $_profile->user_id == $this->id)
 		{
 			$menu[] = new MenuItem('user_albums.php?id=' . $this->id, get_label('Photo albums'), get_label('Photo albums of [0]', $this->title));
@@ -227,7 +239,7 @@ class UserPageBase extends PageBase
 		}
 		echo '</td><td style="padding: 4px 2px 4px 1px;">';
 		show_user_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
-		echo '</td></tr></table><td valign="top"rowspan="2" >' . $this->standard_title() . '<p class="subtitle">';
+		echo '</td></tr></table><td valign="top"rowspan="2" ><h2 class="user">' . get_label('Player') . '</h2><br>' . $this->standard_title() . '<p class="subtitle">';
 		echo $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom"><a href="club_main.php?bck=1&id=' . $this->club_id . '">';
@@ -241,7 +253,7 @@ class UserPageBase extends PageBase
 	}
 }
 
-function show_user_input($name, $value, $title)
+function show_user_input($name, $value, $title, $js_function = 'mr.gotoFind')
 {
 	global $_profile, $_lang_code;
 
@@ -258,7 +270,7 @@ function show_user_input($name, $value, $title)
 					term: $("#<?php echo $name; ?>").val()
 				}, response);
 			}
-			, select: function(event, ui) { mr.gotoFind(ui.item); }
+			, select: function(event, ui) { <?php echo $js_function; ?>(ui.item); }
 			, minLength: 0
 		})
 		.on("focus", function () { $(this).autocomplete("search", ''); });

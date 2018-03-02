@@ -184,7 +184,7 @@ class Event
 		
 		if ($_profile != NULL)
 		{
-			$timezone = $_profile->timezone;
+			$timezone = get_timezone();
 			foreach ($_profile->clubs as $club)
 			{
 				if (($club->flags & UC_PERM_MANAGER) != 0)
@@ -495,7 +495,7 @@ class Event
 		$tags['edate'] = new Tag(format_date('l, F d, Y', $this->timestamp, $this->timezone, $lang));
 		$tags['etime'] = new Tag(format_date('H:i', $this->timestamp, $this->timezone, $lang));
 		$tags['notes'] = new Tag($this->notes);
-		$tags['langs'] = new Tag(get_langs_str($this->langs, ', ', $lang));
+		$tags['langs'] = new Tag(get_langs_str($this->langs, ', ', LOWERCASE, $lang));
 		$tags['addr'] = new Tag($this->addr);
 		$tags['aurl'] = new Tag($this->addr_url);
 		$tags['aid'] = new Tag($this->addr_id);
@@ -1136,16 +1136,28 @@ class EventPageBase extends PageBase
 
 		if ($this->event->timestamp < time())
 		{
-			$menu = array(
-				new MenuItem('event_info.php?id=' . $this->event->id, get_label('Event'), get_label('General event information')),
-				new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings')),
-				new MenuItem('#stats', get_label('Stats'), NULL, array(
-					new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
-					new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
-					new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')))),
-				new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event')),
-				new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event')),
-				new MenuItem('event_albums.php?id=' . $this->event->id, get_label('Photos'), get_label('Event photo albums')));
+			$menu = array
+			(
+				new MenuItem('event_info.php?id=' . $this->event->id, get_label('Event'), get_label('General event information'))
+				, new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings'))
+				, new MenuItem('#stats', get_label('Stats'), NULL, array
+				(
+					new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
+					, new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
+					, new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
+				))
+				, new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event'))
+				, new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event'))
+				, new MenuItem('#resources', get_label('Resources'), NULL, array
+				(
+					new MenuItem('event_albums.php?id=' . $this->event->id, get_label('Photos'), get_label('Event photo albums'))
+					, new MenuItem('event_videos.php?id=' . $this->event->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.'))
+					, new MenuItem('event_videos.php?id=' . $this->event->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.'))
+					// , new MenuItem('event_tasks.php?id=' . $this->event->id, get_label('Tasks'), get_label('Learning tasks and puzzles.'))
+					// , new MenuItem('event_articles.php?id=' . $this->event->id, get_label('Articles'), get_label('Books and articles.'))
+					// , new MenuItem('event_links.php?id=' . $this->event->id, get_label('Links'), get_label('Links to custom mafia web sites.'))
+				))
+			);
 			echo '<tr><td colspan="4">';
 			PageBase::show_menu($menu);
 			echo '</td></tr>';
@@ -1183,7 +1195,7 @@ class EventPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		echo '<td rowspan="2" valign="top">' . $this->standard_title() . '<p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
+		echo '<td rowspan="2" valign="top"><h2 class="event">' . get_label('Event') . '</h2><br>' . $this->standard_title() . '<p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
 		echo '<td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom"><a href="club_main.php?bck=1&id=' . $this->event->club_id . '" title="' . $this->event->club_name . '"><table><tr><td align="center">' . $this->event->club_name . '</td></tr><tr><td align="center">';

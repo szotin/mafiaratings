@@ -64,7 +64,7 @@ class ViewGame
 		}
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video FROM games g' .
+			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN clubs c ON c.id = g.club_id' . 
 				' JOIN addresses a ON a.id = e.address_id' .
@@ -75,7 +75,7 @@ class ViewGame
 		{
 			list (
 				$this->event_id, $event_name, $this->event_flags, $timezone, $event_time, $this->club_id, $this->club, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $start_time, $duration,
-				$this->language_code, $this->civ_odds, $this->result, $this->video) = $row;
+				$this->language_code, $this->civ_odds, $this->result, $this->video_id) = $row;
 
 			$this->event = $event_name . format_date('. M j Y.', $event_time, $timezone);
 		}
@@ -92,7 +92,7 @@ class ViewGame
 						$id);
 				
 			$this->event = NULL;
-			$this->video = NULL;
+			$this->video_id = NULL;
 		}
 		
 		$this->start_time = format_date('M j Y H:i', $start_time, $timezone);
@@ -305,7 +305,7 @@ class ViewGamePageBase extends PageBase
 		{
 			echo '<td width="90">'.get_label('Civs odds').'</td>';
 		}
-		if ($vg->video != NULL)
+		if ($vg->video_id != NULL)
 		{
 			echo '<td width="90">'.get_label('Video').'</td>';
 		}
@@ -344,7 +344,7 @@ class ViewGamePageBase extends PageBase
 			$red_width = round(48 * $vg->civ_odds);
 			echo '</td><td>' . $odds_text . '<br><img src="images/red_dot.png" width="' . $red_width . '" height="12" title="' . $text . '"><img src="images/black_dot.png" width="' . (48 - $red_width) . '" height="12" title="' . $text . '">';
 		}
-		if ($vg->video != NULL)
+		if ($vg->video_id != NULL)
 		{
 			echo '<td><a href="javascript:mr.watchGameVideo(' . $gs->id . ')">';
 			echo '<img src="images/video.png" width="48" height="48" title="' . get_label('Watch game [0] video', $gs->id) . '">';
@@ -355,13 +355,13 @@ class ViewGamePageBase extends PageBase
 		{
 			echo '<button class="icon" onclick="deleteGame(' . $gs->id . ')" title="' . get_label('Delete game [0]', $gs->id) . '"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.editGame(' . $gs->id . ')" title="' . get_label('Edit game [0]', $gs->id) . '"><img src="images/edit.png" border="0"></button>';
-			if ($vg->video == NULL)
+			if ($vg->video_id == NULL)
 			{
 				echo '<button class="icon" onclick="mr.setGameVideo(' . $gs->id . ')" title="' . get_label('Add game [0] video', $gs->id) . '"><img src="images/film-add.png" border="0"></button>';
 			}
 			else
 			{
-				echo '<button class="icon" onclick="mr.removeGameVideo(' . $gs->id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $gs->id) . '\')" title="' . get_label('Remove game [0] video', $gs->id) . '"><img src="images/film-delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.deleteVideo(' . $vg->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $gs->id) . '\')" title="' . get_label('Remove game [0] video', $gs->id) . '"><img src="images/film-delete.png" border="0"></button>';
 			}
 		}
 		echo '</td></tr><tr><td align="right" valign="bottom"><form method="get" name="gotoForm" action="' . get_page_name() . '">';
@@ -380,18 +380,10 @@ class ViewGamePageBase extends PageBase
 			}
 		}
 		echo '</select></form></td></tr></table></p>';
-		echo '<table width="100%"><tr valign="top"><td>';
 	}
 	
 	protected function show_body()
 	{
-		echo '</td><td id="comments" width="250"></td></tr></table>';
-?>
-		<script type="text/javascript">
-			mr.showComments("game", <?php echo $this->vg->gs->id; ?>, 5);
-		</script>
-<?php
-		
 		echo '<p><form method="post" action="' . get_page_name() . '">';
 		echo '<input type="hidden" name="gametime" value="' . $this->gametime . '">';
 		echo '<table class="transp" width="100%">';
@@ -407,6 +399,15 @@ class ViewGamePageBase extends PageBase
 		}
 		echo '></td></tr></table>';
 		echo '</form></p>';
+		echo '<table width="100%"><tr valign="top"><td>';
+		echo '</td><td id="comments"></td></tr></table>';
+	}
+	
+	protected function js_on_load()
+	{
+?>
+		mr.showComments("game", <?php echo $this->vg->gs->id; ?>, 20);
+<?php
 	}
 	
 	protected function js()
@@ -419,6 +420,25 @@ class ViewGamePageBase extends PageBase
 			});
 		}
 <?php
+	}
+}
+
+function reset_viewed_game($game_id, $keep = true)
+{
+	if (isset($_SESSION['view_game']))
+	{
+		$vg = $_SESSION['view_game'];
+		if ($vg->gs->id == $game_id)
+		{
+			if ($keep)
+			{
+				$vg->refresh();
+			}
+			else
+			{
+				unset($_SESSION['view_game']);
+			}
+		}
 	}
 }
 

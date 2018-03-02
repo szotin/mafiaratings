@@ -60,7 +60,7 @@ class Page extends GeneralPageBase
 			$this->roles = (int)$_REQUEST['roles'];
 		}
 		
-		date_default_timezone_set($_profile->timezone);
+		date_default_timezone_set(get_timezone());
 		$this->condition = get_season_condition($this->season, 'g.start_time', 'g.end_time');
 		
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.result > 0 ', $this->condition);

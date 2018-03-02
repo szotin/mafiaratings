@@ -47,12 +47,14 @@ class Page extends PageBase
 		if ($_profile->user_flags & U_FLAG_DEACTIVATED)
 		{
 			$flags = $_profile->user_flags & ~U_FLAG_DEACTIVATED;
+			Db::begin();
 			Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $_profile->user_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = 'flags=' . $flags;
 				db_log('user', 'Activated', $log_details, $_profile->user_id);
 			}
+			Db::commit();
 			$_profile->user_flags = $flags;
 			$this->message = get_label('Hi [0]! Thank you for activating your account. Click Ok to start using [1].', $_profile->user_name, PRODUCT_NAME);
 		}
@@ -65,7 +67,7 @@ class Page extends PageBase
 					$query1 = new DbQuery('SELECT event_id FROM event_emails WHERE id = ?', $obj_id);
 					if ($row1 = $query1->next())
 					{
-						throw new RedirectExc('pass.php?id=' . $row1[0]);
+						throw new RedirectExc('event_info.php?decline&id=' . $row1[0]);
 					}
 				}
 				else if (isset($_REQUEST['accept']))
@@ -73,7 +75,7 @@ class Page extends PageBase
 					$query1 = new DbQuery('SELECT event_id FROM event_emails WHERE id = ?', $obj_id);
 					if ($row1 = $query1->next())
 					{
-						throw new RedirectExc('attend.php?id=' . $row1[0]);
+						throw new RedirectExc('event_info.php?attend&id=' . $row1[0]);
 					}
 				}
 				throw new RedirectExc('event_info.php?id=' . $obj_id);
@@ -87,6 +89,13 @@ class Page extends PageBase
 					throw new RedirectExc('photo.php?id=' . $_REQUEST['pid']);
 				}
 				throw new RedirectExc('photo.php?id=' . $obj_id);
+				
+			case EMAIL_OBJ_VIDEO:
+				if (isset($_REQUEST['pid']))
+				{
+					throw new RedirectExc('video.php?id=' . $_REQUEST['pid']);
+				}
+				throw new RedirectExc('video.php?id=' . $obj_id);
 				
 			case EMAIL_OBJ_SIGN_IN:
 				if ($this->message == NULL)

@@ -13,6 +13,7 @@ define('ROW_COUNT', 2);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 define('MANAGER_COLUMNS', 5);
 define('MANAGER_COLUMN_WIDTH', 100 / MANAGER_COLUMNS);
+define('RATING_POSITIONS', 15);
 
 class Page extends ClubPageBase
 {
@@ -342,9 +343,7 @@ class Page extends ClubPageBase
 		if ($games_count > 0)
 		{
 			echo '</td><td width="280" valign="top">';
-			
-			// last year only
-			$query = new DbQuery('SELECT id, name, rating, games, games_won, flags FROM users WHERE club_id = ? ORDER BY rating DESC, games, games_won DESC, id LIMIT 10', $this->id);
+			$query = new DbQuery('SELECT id, name, rating, games, games_won, flags FROM users WHERE club_id = ? ORDER BY rating DESC, games, games_won DESC, id LIMIT ' . RATING_POSITIONS, $this->id);
 					
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="4"><b>' . get_label('Best players') . '</b></td></tr>';
@@ -369,6 +368,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Club'), PERM_ALL);
+$page->run('', PERM_ALL);
 
 ?>

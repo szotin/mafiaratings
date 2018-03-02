@@ -22,7 +22,6 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		var languages = mr.getLangs();
 		json.post("profile_ops.php",
 		{
 			name: $("#form-name").val(),

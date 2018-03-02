@@ -3,6 +3,8 @@
 require_once 'include/page_base.php';
 require_once 'include/event.php';
 
+define('COMMENTS_WIDTH', 300);
+
 class Page extends PageBase
 {
 	private $event_id;
@@ -104,7 +106,11 @@ class Page extends PageBase
 			if (isset($_POST['odds']))
 			{
 				$this->odds = $_POST['odds'];
-				$this->friends = $_POST['friends'];
+				$this->friends = 0;
+				if (isset($_POST['friends']))
+				{
+					$this->friends = (int)$_POST['friends'];
+				}
 				$this->late = $_POST['late'];
 				$query = new DbQuery('SELECT user_id FROM event_users WHERE event_id = ? AND user_id = ?', $this->event_id, $this->user_id);
 				if ($query->next())
@@ -189,7 +195,14 @@ class Page extends PageBase
 		echo '<br><input value="'.get_label('Attend').'" type="submit" class="btn norm" name="' . $this->submit_name . '"><input value="'.get_label('Cancel').'" type="submit" class="btn norm" name="cancel"></form>';
 		echo '</form>';
 		
+		echo '<table width="100%"><tr valign="top"><td>';
 		$this->event->show_details();
+		echo '</td><td id="comments" width="' . COMMENTS_WIDTH . '"></td></tr></table>';
+?>
+		<script type="text/javascript">
+			mr.showComments("event", <?php echo $this->event->id; ?>, 5);
+		</script>
+<?php
 	}
 }
 

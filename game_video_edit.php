@@ -15,7 +15,7 @@ try
 	}
 	$id = $_REQUEST['game'];
 	
-	list($club_id, $video) = Db::record(get_label('game'), 'SELECT club_id, video FROM games WHERE id = ?', $id);
+	list($club_id, $video) = Db::record(get_label('game'), 'SELECT g.club_id, v.video FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $id);
 	if ($_profile == NULL || !isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
 	{
 		throw new FatalExc(get_label('No permissions'));
@@ -31,10 +31,10 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("game_ops.php",
+		json.post("video_ops.php",
 		{
-			id: <?php echo $id; ?>,
-			set_video: $("#form-video").val()
+			game_id: <?php echo $id; ?>,
+			set_game_video: $("#form-video").val()
 		},
 		onSuccess);
 	}

@@ -33,7 +33,10 @@ function get_lang($langs, $default_lang = -1)
 	return 0;
 }
 
-function get_lang_str($lang, $browser_lang = LANG_NO)
+define('LOWERCASE', 0);
+define('UPPERCASE', 1);
+define('CAPITAL_LETTER', 2);
+function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 {
 	switch ($lang)
 	{
@@ -41,9 +44,30 @@ function get_lang_str($lang, $browser_lang = LANG_NO)
 			switch ($browser_lang)
 			{
 				case LANG_ENGLISH:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'english';
+						case UPPERCASE:
+							return 'ENGLISH';
+					}
 					return 'English';
 				case LANG_RUSSIAN:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'английский';
+						case UPPERCASE:
+							return 'АНГЛИЙСКИЙ';
+					}
 					return 'Английский';
+			}
+			switch ($case)
+			{
+				case LOWERCASE:
+					return get_label('english');
+				case UPPERCASE:
+					return get_label('ENGLISH');
 			}
 			return get_label('English');
 			
@@ -51,9 +75,30 @@ function get_lang_str($lang, $browser_lang = LANG_NO)
 			switch ($browser_lang)
 			{
 				case LANG_ENGLISH:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'russian';
+						case UPPERCASE:
+							return 'RUSSIAN';
+					}
 					return 'Russian';
 				case LANG_RUSSIAN:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'русский';
+						case UPPERCASE:
+							return 'РУССКИЙ';
+					}
 					return 'Русский';
+			}
+			switch ($case)
+			{
+				case LOWERCASE:
+					return get_label('russian');
+				case UPPERCASE:
+					return get_label('RUSSIAN');
 			}
 			return get_label('Russian');
 	}
@@ -61,9 +106,30 @@ function get_lang_str($lang, $browser_lang = LANG_NO)
 	switch ($browser_lang)
 	{
 		case LANG_ENGLISH:
+			switch ($case)
+			{
+				case LOWERCASE:
+					return 'unknown';
+				case UPPERCASE:
+					return 'UNKNOWN';
+			}
 			return 'Unknown';
 		case LANG_RUSSIAN:
+			switch ($case)
+			{
+				case LOWERCASE:
+					return 'неизвестный';
+				case UPPERCASE:
+					return 'НЕИЗВЕСТНЫЙ';
+			}
 			return 'Неизвестный';
+	}
+	switch ($case)
+	{
+		case LOWERCASE:
+			return get_label('unknown');
+		case UPPERCASE:
+			return get_label('UNKNOWN');
 	}
 	return get_label('Unknown');
 }
@@ -127,14 +193,14 @@ function get_next_lang($lang, $langs = LANG_ALL)
 	return $langs;
 }
 
-function get_langs_str($langs, $separator, $browser_lang = LANG_NO)
+function get_langs_str($langs, $separator, $case = LOWERCASE, $browser_lang = LANG_NO)
 {
 	$str = '';
 	$sep = '';
 	$lang = LANG_NO;
 	while (($lang = get_next_lang($lang, $langs)) != LANG_NO)
 	{
-		$str .= $sep . get_lang_str($lang, $browser_lang);
+		$str .= $sep . get_lang_str($lang, $case, $browser_lang);
 		$sep = $separator;
 	}
 	return $str;
@@ -185,7 +251,7 @@ function get_browser_lang()
 	return $row;
 }
 
-function langs_checkboxes($langs, $filter = LANG_ALL, $form_name = NULL, $separator = '<br>', $prefix='')
+function langs_checkboxes($langs, $filter = LANG_ALL, $form_name = NULL, $separator = '<br>', $prefix='', $on_click = NULL)
 {
 	if (is_valid_lang($filter))
 	{
@@ -193,11 +259,16 @@ function langs_checkboxes($langs, $filter = LANG_ALL, $form_name = NULL, $separa
 		return;
 	}
 	
+	if ($on_click == NULL && $form_name != NULL)
+	{
+		$on_click = 'document.' . $form_name . '.submit()';
+	}
+	
 	echo '<input type="hidden" name="langs_set" value="">';
 	
-	if ($form_name != NULL)
+	if ($on_click != NULL)
 	{
-		$input_beg = '<input type="checkbox" onClick="document.' . $form_name . '.submit()" ';
+		$input_beg = '<input type="checkbox" onClick="' . $on_click . '" ';
 	}
 	else
 	{
@@ -333,5 +404,32 @@ function show_language_pic($lang, $dir, $width = 0, $height = 0)
 	echo '>';
 }
 
+function show_lang_select($name, $lang, $lang_mask = LANG_ALL)
+{
+	if ($lang_mask & ($lang_mask - 1))
+	{
+		echo '<select name="' . $name . '" id="' . $name . '">';
+			
+		$l = LANG_NO;
+		while (($l = get_next_lang($l)) != LANG_NO)
+		{
+			
+			show_option($l, $lang, get_lang_str($l));
+		}
+		echo '</select>';
+	}
+	else
+	{		
+		if ($lang_mask != 0)
+		{
+			$lang = $lang_mask;
+		}
+		else if ($lang == 0 || ($lang & ($lang - 1)) != 0)
+		{
+			$lang = get_browser_lang();
+		}
+		echo '<input type="hidden" name="' . $name . '" id="' . $name . '" value="' .  $lang. '">';
+	}
+}
 
 ?>

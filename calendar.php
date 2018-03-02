@@ -112,7 +112,7 @@ class Page extends GeneralPageBase
 			show_event_pic($id, $name, $flags, $club_id, $club_name, $club_flags, ICONS_DIR, 0, 0, false);
 			echo '</a><br><b>' . format_date('H:i', $start_time, $event_timezone) . ' - ' . format_date('H:i', $start_time + $duration, $event_timezone) . '</b><br>';
 			
-//			echo '<a href="attend.php?bck=1&id=' . $id . '" title="' . get_label('I am coming') . '"><img src="images/accept.png" border="0"></a>&nbsp;';
+//			echo '<a href="event_info.php?attend&bck=1&id=' . $id . '" title="' . get_label('I am coming') . '"><img src="images/accept.png" border="0"></a>&nbsp;';
 //			echo '<a href="?decline=' . $id . '" title="' . get_label('I am not coming') . '"><img src="images/delete.png" border="0"></a>';
 			
 			if ($addr_url != '')
@@ -149,12 +149,7 @@ class Page extends GeneralPageBase
 		}
 		else 
 		{
-			$timezone = 'Europe/Moscow';
-			if ($_profile != NULL)
-			{
-				$timezone = $_profile->timezone;
-			}
-			
+			$timezone = get_timezone();
 			$date = format_date('j M', $time, $timezone);
 			$end_date = format_date('j M Y', $end_time, $timezone);
 		

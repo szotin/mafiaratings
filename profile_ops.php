@@ -117,7 +117,7 @@ try
 			$log_message = 'Activated';
 			Db::begin();
 			$country_id = retrieve_country_id($_POST['country']);
-			$city_id = retrieve_city_id($_POST['city'], $country_id, $_profile->timezone);
+			$city_id = retrieve_city_id($_POST['city'], $country_id, get_timezone());
 			
 			$club_id = NULL;
 			$club_name = 'no';
@@ -204,7 +204,7 @@ try
 			$phone = $_POST['phone'];
 			
 			Db::begin();
-			$city_id = retrieve_city_id($_POST['city'], retrieve_country_id($_POST['country']), $_profile->timezone);
+			$city_id = retrieve_city_id($_POST['city'], retrieve_country_id($_POST['country']), get_timezone());
 			
 			Db::exec(
 				get_label('club'), 
@@ -315,7 +315,7 @@ try
 				$club_id = NULL;
 			}
 			
-			$city_id = retrieve_city_id($_POST['city'], retrieve_country_id($_POST['country']), $_profile->timezone);
+			$city_id = retrieve_city_id($_POST['city'], retrieve_country_id($_POST['country']), get_timezone());
 			$langs = $_POST['langs'];
 			$phone = $_POST['phone'];
 			$flags = $_profile->user_flags;
@@ -383,8 +383,8 @@ try
 			if ($_profile->city_id != $city_id)
 			{
 				$_profile->city_id = $city_id;
-				list ($_profile->country_id, $_profile->timezone) =
-					Db::record(get_label('city'), 'SELECT country_id, timezone FROM cities WHERE id = ?', $city_id);
+				list ($_profile->country_id) =
+					Db::record(get_label('city'), 'SELECT country_id FROM cities WHERE id = ?', $city_id);
 			}
 			if ($update_clubs)
 			{

@@ -23,6 +23,11 @@ try
 		$object_type = 'game';
 		$id = $_REQUEST['game'];
 	}
+	else if (isset($_REQUEST['video']))
+	{
+		$object_type = 'video';
+		$id = $_REQUEST['video'];
+	}
 	else
 	{
 		throw new Exception(get_label('Unknown [0]', get_label('object')));

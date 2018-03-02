@@ -36,7 +36,7 @@ class Page extends UserPageBase
 		$condition = new SQL();
 		if ($with_video)
 		{
-			$condition->add(' AND g.video IS NOT NULL');
+			$condition->add(' AND g.video_id IS NOT NULL');
 		}
 		
 		echo '<p><form method="get" name="filterForm" action="user_games.php">';
@@ -86,11 +86,12 @@ class Page extends UserPageBase
 			echo '<tr class="th darker" align="center"><td width="90"></td><td width="48">'.get_label('Club').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, g.video, e.id, e.name, e.flags FROM games g' .
+				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, v.video, e.id, e.name, e.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
+				' LEFT OUTER JOIN videos v ON v.id = g.video_id' .
 				' WHERE g.moderator_id = ?',
 				$this->id, $condition);
 			$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -177,13 +178,14 @@ class Page extends UserPageBase
 			echo '<tr class="th darker" align="center"><td width="90"></td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Role').'</td><td width="60">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td><td width="60">'.get_label('Video').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, p.role, p.rating_before, p.rating_earned, g.video, e.id, e.name, e.flags FROM players p' .
+				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, p.role, p.rating_before, p.rating_earned, v.video, e.id, e.name, e.flags FROM players p' .
 				' JOIN games g ON g.id = p.game_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
+				' LEFT OUTER JOIN videos v ON v.id = g.video_id' .
 				' WHERE p.user_id = ?', 
 				$this->id, $condition);
 			$query->add(' ORDER BY g.start_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
