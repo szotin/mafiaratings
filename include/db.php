@@ -151,6 +151,11 @@ class SQL
 		}
 		return $this->parsed_sql;
 	}
+	
+	function is_empty()
+	{
+		return empty($this->sql);
+	}
 }
 
 class DbQuery extends SQL

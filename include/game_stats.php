@@ -9,12 +9,10 @@ class GamePlayerStats
     public $gs;
     public $player_num;
 	public $won;
-	public $flags;
+	public $scoring_flags;
 	
     public $rating_before;
     public $rating_earned;
-    public $club_points;
-    public $event_points;
    
     public $voted_civil;
     public $voted_mafia;
@@ -53,124 +51,174 @@ class GamePlayerStats
 	
 	private $timestamp;
 	
-	private function calculate_flags()
+	private function calculate_scoring_flags()
 	{
 		$gs = $this->gs;
         $player = $gs->players[$this->player_num];
-		$this->flags = 0;
+		$this->scoring_flags = SCORING_FLAG_PLAY;
+		
+		$maf_day_kills = 0;
+		$civ_day_kills = 0;
+		foreach ($gs->players as $p)
+		{
+			if ($p->state == PLAYER_STATE_KILLED_DAY)
+			{
+				if ($p->role == PLAYER_ROLE_MAFIA || $p->role == PLAYER_ROLE_DON)
+				{
+					++$maf_day_kills;
+				}
+				else
+				{
+					++$civ_day_kills;
+				}
+			}
+		}
+		
+		if ($player->role >= PLAYER_ROLE_MAFIA)
+		{
+			if ($gs->gamestate == GAME_CIVIL_WON)
+			{
+				$this->scoring_flags |= SCORING_FLAG_LOOSE;
+				if ($civ_day_kills == 0)
+				{
+					$this->scoring_flags |= SCORING_FLAG_CLEAR_LOOSE;
+				}
+			}
+			else
+			{
+				$this->scoring_flags |= SCORING_FLAG_WIN;
+				if ($maf_day_kills == 0)
+				{
+					$this->scoring_flags |= SCORING_FLAG_CLEAR_WIN;
+				}
+				if ($player->state == PLAYER_STATE_ALIVE)
+				{
+					$this->scoring_flags |= SCORING_FLAG_SURVIVE;
+				}
+			}
+		}
+		else if ($gs->gamestate == GAME_CIVIL_WON)
+		{
+			$this->scoring_flags |= SCORING_FLAG_WIN;
+			if ($civ_day_kills == 0)
+			{
+				$this->scoring_flags |= SCORING_FLAG_CLEAR_WIN;
+			}
+			if ($player->state == PLAYER_STATE_ALIVE)
+			{
+				$this->scoring_flags |= SCORING_FLAG_SURVIVE;
+			}
+		}
+		else
+		{
+			$this->scoring_flags |= SCORING_FLAG_LOOSE;
+			if ($maf_day_kills == 0)
+			{
+				$this->scoring_flags |= SCORING_FLAG_CLEAR_LOOSE;
+			}
+		}
+		
 		if ($gs->best_player == $this->player_num)
 		{
-			$this->flags |= SCORING_BEST_PLAYER;
+			$this->scoring_flags |= SCORING_FLAG_BEST_PLAYER;
 		}
 		if ($gs->best_move == $this->player_num)
 		{
-			$this->flags |= SCORING_BEST_MOVE;
-		}
-		if ($gs->is_good_guesser($this->player_num))
-		{
-			$this->flags |= SCORING_GUESS_ALL_MAF;
+			$this->scoring_flags |= SCORING_FLAG_BEST_MOVE;
 		}
 		
-		switch ($player->role)
+		if ($player->state == PLAYER_STATE_KILLED_NIGHT)
 		{
-		case PLAYER_ROLE_CIVILIAN:
-			if ($gs->gamestate == GAME_CIVIL_WON)
+			if ($player->kill_round == 0)
 			{
-				$this->flags |= SCORING_WIN_CIV;
+				$this->scoring_flags |= SCORING_FLAG_KILLED_FIRST_NIGHT;
 			}
-			else
+			$this->scoring_flags |= SCORING_FLAG_KILLED_NIGHT;
+		}
+		
+		$mafs_guessed = $gs->mafs_guessed($this->player_num);
+		if ($mafs_guessed >= 3)
+		{
+			$this->scoring_flags |= SCORING_FLAG_GUESSED_3;
+		}
+		else if ($mafs_guessed >= 2)
+		{
+			$this->scoring_flags |= SCORING_FLAG_GUESSED_2;
+		}
+		
+        switch ($player->kill_reason)
+        {
+            case KILL_REASON_SUICIDE:
+				$this->scoring_flags |= SCORING_FLAG_SURRENDERED;
+                break;
+            case KILL_REASON_WARNINGS:
+				$this->scoring_flags |= SCORING_FLAG_WARNINGS_4;
+                break;
+            case KILL_REASON_KICK_OUT:
+				$this->scoring_flags |= SCORING_FLAG_KICK_OUT;
+                break;
+        }
+		
+		if ($this->voted_civil + $this->voted_sheriff == 0 && $this->voted_mafia >= 3)
+		{
+			$this->scoring_flags |= SCORING_FLAG_ALL_VOTES_VS_MAF;
+		}
+		
+		if ($this->voted_mafia == 0 && $this->voted_civil + $this->voted_sheriff >= 3)
+		{
+			$this->scoring_flags |= SCORING_FLAG_ALL_VOTES_VS_CIV;
+		}
+		
+		foreach ($gs->players as $p)
+		{
+			if ($p->role == PLAYER_ROLE_SHERIFF)
 			{
-				$this->flags |= SCORING_LOS_CIV;
-			}
-			
-			if ($this->voted_civil + $this->voted_sheriff == 0 && $this->voted_mafia >= 3)
-			{
-				$this->flags |= SCORING_NO_VOTE_FOR_RED;
-			}
-			break;
-			
-		case PLAYER_ROLE_SHERIFF:
-			if ($gs->gamestate == GAME_CIVIL_WON)
-			{
-				$this->flags |= SCORING_WIN_SRF;
-			}
-			else
-			{
-				$this->flags |= SCORING_LOS_SRF;
-			}
-			
-			if ($this->mafia_found == 3)
-			{
-				$three_dark_checks = true;
-				foreach ($gs->players as $player)
+				if ($p->state == PLAYER_STATE_KILLED_NIGHT)
 				{
-					if ($player->role == PLAYER_ROLE_MAFIA || $player->role == PLAYER_ROLE_DON)
+					if ($p->kill_round == $p->don_check + 1 && $p->arranged != $p->kill_round)
 					{
-						if ($player->sheriff_check < 0 || $player->sheriff_check > 2)
-						{
-							$three_dark_checks = false;
-							break;
-						}
+						$this->scoring_flags |= SCORING_FLAG_SHERIFF_KILLED_AFTER_FINDING;
 					}
-				}
-				if ($three_dark_checks)
-				{
-					$this->flags |= SCORING_THREE_DARK_CHECKS;
-				}
-			}
-			break;
-			
-		case PLAYER_ROLE_MAFIA:
-			if ($gs->gamestate == GAME_CIVIL_WON)
-			{
-				$this->flags |= SCORING_LOS_MAF;
-			}
-			else
-			{
-				$this->flags |= SCORING_WIN_MAF;
-			}
-			for ($i = 0; $i < 10; ++$i)
-			{
-				$p = $gs->players[$i];
-				if ($p->role == PLAYER_ROLE_SHERIFF && $p->kill_round == 1 && $p->state == PLAYER_STATE_KILLED_NIGHT && $p->don_check == 0 && $p->arranged != 1)
-				{
-					$this->flags |= SCORING_FIND_AND_KILL_SRF_MAF;
-					break;
-				}
-			}
-			break;
-			
-		case PLAYER_ROLE_DON:
-			if ($gs->gamestate == GAME_CIVIL_WON)
-			{
-				$this->flags |= SCORING_LOS_DON;
-			}
-			else
-			{
-				$this->flags |= SCORING_WIN_DON;
-			}
-			
-			for ($i = 0; $i < 10; ++$i)
-			{
-				$p = $gs->players[$i];
-				if ($p->role == PLAYER_ROLE_SHERIFF)
-				{
-					if ($p->arranged == 0)
+					
+					if ($p->kill_round == 0)
 					{
-						$this->flags |= SCORING_ARRANGED_SRF;
+						$this->scoring_flags |= SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT;
 					}
+					
 					if ($p->don_check == 0)
 					{
-						$this->flags |= SCORING_FIND_SRF;
-						if ($p->role == PLAYER_ROLE_SHERIFF && $p->kill_round == 1 && $p->state == PLAYER_STATE_KILLED_NIGHT && $p->arranged != 1)
-						{
-							$this->flags |= SCORING_FIND_AND_KILL_SRF_DON;
-						}
+						$this->scoring_flags |= SCORING_FLAG_SHERIFF_FOUND_FIRST_NIGHT;
 					}
-					break;
 				}
+				break;
 			}
-			break;
+		}
+		
+		$black_checks = 0;
+		$red_checks = 0;
+		foreach ($gs->players as $p)
+		{
+			if ($p->sheriff_check < 0 || $p->sheriff_check > 2)
+			{
+				continue;
+			}
+			
+			if ($p->role >= PLAYER_ROLE_MAFIA)
+			{
+				++$black_checks;
+			}
+			else
+			{
+				++$red_checks;
+			}
+		}
+		if ($black_checks >= 3)
+		{
+			$this->scoring_flags |= SCORING_FLAG_BLACK_CHECKS;
+		}
+		else if ($red_checks >= 3)
+		{
+			$this->scoring_flags |= SCORING_FLAG_RED_CHECKS;
 		}
 	}
 
@@ -495,13 +543,11 @@ class GamePlayerStats
             }
         }
 		
-		$this->calculate_flags();
+		$this->calculate_scoring_flags();
 
 		// init points and ratings
 		$this->rating_before = 0;
 		$this->rating_earned = 0;
-		$this->club_points = 0;
-		$this->event_points = 0;
         $player = $gs->players[$this->player_num];
 		if ($player->id <= 0)
 		{
@@ -523,9 +569,6 @@ class GamePlayerStats
 		{
 			list($this->rating_earned) = $row;
 		}
-		
-		list($this->event_points) = Db::record(get_label('event'), 'SELECT IFNULL(SUM(o.points), 0) FROM scoring_points o WHERE o.scoring_id = (SELECT e.scoring_id FROM events e WHERE e.id = ?) AND (o.flag & ?) <> 0', $gs->event_id, $this->flags);
-		list($this->club_points) = Db::record(get_label('event'), 'SELECT IFNULL(SUM(o.points), 0) FROM scoring_points o WHERE o.scoring_id = (SELECT c.scoring_id FROM clubs c WHERE c.id = ?) AND (o.flag & ?) <> 0', $gs->club_id, $this->flags);
     }
 	
 	function calculate_rating($civ_odds)
@@ -583,12 +626,12 @@ class GamePlayerStats
 		
         Db::exec(
 			get_label('player'), 
-            'INSERT INTO players (game_id, user_id, nick_name, number, role, rating_before, rating_earned, club_points, event_points, flags, ' .
+            'INSERT INTO players (game_id, user_id, nick_name, number, role, rating_before, rating_earned, flags, ' .
 				'voted_civil, voted_mafia, voted_sheriff, voted_by_civil, voted_by_mafia, voted_by_sheriff, ' .
 				'nominated_civil, nominated_mafia, nominated_sheriff, nominated_by_civil, nominated_by_mafia, nominated_by_sheriff, ' .
 				'kill_round, kill_type, warns, was_arranged, checked_by_don, checked_by_sheriff, won) ' .
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$gs->id, $player->id, $player->nick, $this->player_num + 1, $player->role, $this->rating_before, $this->rating_earned, $this->club_points, $this->event_points, $this->flags,
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$gs->id, $player->id, $player->nick, $this->player_num + 1, $player->role, $this->rating_before, $this->rating_earned, $this->scoring_flags,
 			$this->voted_civil, $this->voted_mafia, $this->voted_sheriff, $this->voted_by_civil, $this->voted_by_mafia, $this->voted_by_sheriff,
 			$this->nominated_civil, $this->nominated_mafia, $this->nominated_sheriff, $this->nominated_by_civil, $this->nominated_by_mafia, $this->nominated_by_sheriff,
 			$player->kill_round, $this->kill_type, $player->warnings, $player->arranged, $player->don_check, $player->sheriff_check, $this->won);

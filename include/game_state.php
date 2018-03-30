@@ -523,27 +523,29 @@ class GameState
 		}
 	}
 	
-	function is_good_guesser($num)
+	function mafs_guessed($num)
 	{
 		$player = $this->players[$num];
-		if ($player->kill_round == 0 && $player->state == PLAYER_STATE_KILLED_NIGHT && $this->guess3 != NULL && count($this->guess3) >= 3)
+		if ($player->kill_round == 0 && $player->state == PLAYER_STATE_KILLED_NIGHT && $this->guess3 != NULL)
 		{
-			for ($i = 0; $i < 3; ++$i)
+			$mafs = 0;
+			for ($i = 0; $i < count($this->guess3); ++$i)
 			{
 				$n = $this->guess3[$i];
 				if ($n < 0 || $n >= 10)
 				{
-					return false;
+					continue;
 				}
+				
 				$g = $this->players[$n];
-				if ($g->role != PLAYER_ROLE_DON && $g->role != PLAYER_ROLE_MAFIA)
+				if ($g->role == PLAYER_ROLE_DON || $g->role == PLAYER_ROLE_MAFIA)
 				{
-					return false;
+					++$mafs;
 				}
 			}
-			return true;
+			return $mafs;
 		}
-		return false;
+		return -1;
 	}
 
 	function get_last_gametime($log_num = -1) // returns when last gametime and round: 0 - not started; 1 - initial night; 2 - day 1; 3 - night 1; etc

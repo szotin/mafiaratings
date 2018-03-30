@@ -3,6 +3,7 @@
 require_once 'include/user.php';
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
+require_once 'include/scoring.php';
 
 class Page extends UserPageBase
 {
@@ -105,8 +106,10 @@ class Page extends UserPageBase
 			if ($stats->games_played > 0)
 			{
 				echo '<tr><td class="dark" width="300">'.get_label('Victories').':</td><td>' . $stats->games_won . ' (' . number_format($stats->games_won*100.0/$stats->games_played, 1) . '%)</td></tr>';
-				echo '<tr><td class="dark">'.get_label('Rating').':</td><td>' . get_label('[0] ([1] per game)', $stats->rating, number_format($stats->rating/$stats->games_played, 2)) . '</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Rating').':</td><td>' . get_label('[0] ([1] per game)', number_format($stats->rating, 2), number_format($stats->rating/$stats->games_played, 2)) . '</td></tr>';
 				echo '<tr><td class="dark">'.get_label('Best player').':</td><td>' . $stats->best_player . '</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Best move').':</td><td>' . $stats->best_move . '</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Guessed all mafia').':</td><td>' . $stats->guess3maf . '</td></tr>';
 				echo '</table>';
 			
 				echo '<p><table class="bordered light" width="100%">';

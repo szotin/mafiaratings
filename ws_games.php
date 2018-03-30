@@ -29,7 +29,7 @@ class WSPlayer
 	public $checked_by_srf;
 	public $best_player;
 	public $best_move;
-	public $guessed_all_maf;
+	public $mafs_guessed;
 	
 	function normalize()
 	{
@@ -97,9 +97,9 @@ class WSPlayer
 			unset($this->best_move);
 		}
 		
-		if (!$this->guessed_all_maf)
+		if ($this->mafs_guessed < 0)
 		{
-			unset($this->guessed_all_maf);
+			unset($this->mafs_guessed);
 		}
 	}
 	
@@ -142,7 +142,7 @@ class WSPlayer
 		$this->checked_by_srf = $player->sheriff_check;
 		$this->best_player = ($gs->best_player == $index);
 		$this->best_move = ($gs->best_move == $index);
-		$this->guessed_all_maf = $gs->is_good_guesser($index);
+		$this->mafs_guessed = $gs->mafs_guessed($index);
 		
 		$this->normalize();
 	}
@@ -357,8 +357,8 @@ class WSGame
 					<dd>True if this is the best player. <i>Optional:</i> missing when false.</dd>
 				<dt>best_move</td>
 					<dd>True if the player did the best move of the game. <i>Optional:</i> missing when false.</dd>
-				<dt>guessed_all_maf</td>
-					<dd>True if the player guessed all 3 mafs right. <i>Optional:</i> missing when player was not killed in night 0, or when they guessed wrong.</dd>
+				<dt>mafs_guessed</td>
+					<dd>Number of mafs guessed right by the player killed the first night. <i>Optional:</i> missing when player was not killed in night 0, or when they guessed wrong.</dd>
 				<dt>voting</td>
 					<dd>How the player was voting. An assotiated array in the form <i>round_N: M</i>. Where N is day number (starting from 0); M is the number of player for whom he/she voted (0 to 9).</dd>
 				<dt>nominating</td>

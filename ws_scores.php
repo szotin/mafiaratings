@@ -12,29 +12,30 @@ class WSScore
 	public $id;
 	public $name;
 	public $languages;
-	public $score;
+	public $points;
 	public $num_games;
 	public $games_won;
 	public $club_id;
 	
-	function __construct($row, $num)
+	function __construct($score, $num)
 	{
-		list($this->id, $this->name, $user_flags, $this->languages, $this->score, $this->num_games, $this->games_won, $this->club_id) = $row;
+		$this->id = $score->id;
+		$this->name = $score->name;
+		$this->languages = $score->langs;
+		$this->points = $score->points;
+		$this->num_games = $score->get_count(SCORING_MATTER_PLAY);
+		$this->games_won = $score->get_count(SCORING_MATTER_WIN);
+		$this->club_id = $score->club_id;
 		$this->num = (int)$num;
-		$this->id = (int)$this->id;
-		$this->languages = (int)$this->languages;
-		$this->score = (float)$this->score/100;
-		$this->num_games = (int)$this->num_games;
-		$this->games_won = (int)$this->games_won;
-		$this->club_id = (int)$this->club_id;
-		if (($user_flags & U_FLAG_MALE) != 0)
+		
+		if (($score->flags & U_FLAG_MALE) != 0)
 		{
 			$this->male = true;
 		}
-		if (($user_flags & U_ICON_MASK) != 0)
+		if (($score->flags & U_ICON_MASK) != 0)
 		{
-			$this->image = USER_PICS_DIR . TNAILS_DIR . $this->id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
-			$this->icon = USER_PICS_DIR . ICONS_DIR . $this->id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
+			$this->image = USER_PICS_DIR . TNAILS_DIR . $this->id . '.png?' . (($score->flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
+			$this->icon = USER_PICS_DIR . ICONS_DIR . $this->id . '.png?' . (($score->flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
 		}
 	}
 }
@@ -150,7 +151,7 @@ try
 			  <dd>A link to the user image at mafiaratings.com. Not set when the image is not uploaded by the user.</dd>
 			<dt>icon</dt>
 			  <dd>A link to the user icon at mafiaratings.com. Not set when the icon is not uploaded by the user.</dd>
-			<dt>score</dt>
+			<dt>points</dt>
 			  <dd>The score.</dd>
 			<dt>num_games</dt>
 			  <dd>Number of games played by the player.</dd>
@@ -323,9 +324,8 @@ try
 		}
 		$result->scoring_id = (int)$scoring;
 		
-		$condition = new SQL(' WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 AND u.games > 0');
+		$condition = new SQL(' AND (u.flags & ' . U_FLAG_BANNED . ') = 0 AND u.games > 0');
 		$result->role = $role;
-		$condition->add(get_roles_condition($role));
 		
 		if (isset($contains))
 		{
@@ -392,35 +392,29 @@ try
 			$condition->add(' AND (g.language & ?) <> 0', $langs);
 		}
 			
-		$query = new DbQuery(
-			'SELECT p.user_id, u.name, u.flags, u.languages, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won, u.club_id FROM players p' . 
-				' JOIN games g ON p.game_id = g.id' .
-				' JOIN users u ON p.user_id = u.id',
-			$scoring, $condition);
-		$count_query = new DbQuery(
-			'SELECT count(DISTINCT u.id) FROM players p' . 
-				' JOIN games g ON p.game_id = g.id' .
-				' JOIN users u ON p.user_id = u.id' .
-				' JOIN events e ON g.event_id = e.id',
-			$condition);
+		$scoring_system = new ScoringSystem($scoring);
+		$scores = new Scores($scoring_system, $condition, get_roles_condition($role));
+		$players_count = count($scores->players);
 		
-		$query->add(' GROUP BY p.user_id ORDER BY points DESC, games, won DESC, u.id');
-		$num = 0;
-		if ($page_size > 0)
-		{
-			$num = $page * $page_size;
-			$query->add(' LIMIT ' . $num . ',' . $page_size);
-		}
-		
-		list($count) = Db::record('rating', $count_query);
-		$result->count = (int)$count;
+		$result->count = $players_count;
 		if (!$count_only)
 		{
 			$result->scores = array();
-			while ($row = $query->next())
+			if ($page_size > 0)
 			{
-				$score = new WSScore($row, ++$num);
-				$result->scores[] = $score;
+				$page_start = $page * $page_size;
+				if ($players_count > $page_start + $page_size)
+				{
+					$players_count = $page_start + $page_size;
+				}
+			}
+			else
+			{
+				$page_start = 0;
+			}
+			for ($number = $page_start; $number < $players_count; ++$number)
+			{
+				$result->scores[] = new WSScore($scores->players[$number], $number + 1);
 			}
 		}
 	}

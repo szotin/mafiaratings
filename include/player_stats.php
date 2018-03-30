@@ -38,6 +38,8 @@ class PlayerStats
 	public $games_won;
 	public $rating;
 	public $best_player;
+	public $best_move;
+	public $guess3maf;
 	
 	public $roles;
 	
@@ -191,7 +193,8 @@ class PlayerStats
 				'SUM(p.nominated_by_civil), SUM(p.nominated_by_mafia), SUM(p.nominated_by_sheriff), ' .
 				'SUM(p.warns), SUM(IF(p.was_arranged >= 0, 1, 0)), ' .
 				'SUM(IF(p.checked_by_don >= 0, 1, 0)), SUM(IF(p.checked_by_sheriff >= 0, 1, 0)), ' .
-				'SUM(IF(g.log_version > 0, 1, 0)), SUM(IF(g.best_player_id = p.user_id, 1, 0)) ',
+				'SUM(IF(g.log_version > 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_BEST_PLAYER . ') <> 0, 1, 0)), ' .
+				'SUM(IF((p.flags & ' . SCORING_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_GUESS_ALL_MAF . ') <> 0, 1, 0))',
 			$where);
 		
 		$row = $query->record(get_label('player'));
@@ -218,6 +221,8 @@ class PlayerStats
 			$this->checked_by_sheriff = $row[18] / $count;
 			$this->version1_games_played = $row[19] / $count;
 			$this->best_player = $row[20] / $count;
+			$this->best_move = $row[21] / $count;
+			$this->guess3maf = $row[22] / $count;
 		}
 		
 		$query = new DbQuery('SELECT p.kill_round, p.kill_type, count(*) ', $where);

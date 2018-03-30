@@ -63,48 +63,7 @@ class Page extends AddressPageBase
 	{
 		global $_page, $_lang_code;
 		
-		$condition = get_roles_condition($this->roles);
-		if ($this->user_id > 0)
-		{
-			$pos_query = new DbQuery(
-				'SELECT IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
-					' JOIN games g ON p.game_id = g.id' .
-					' JOIN events e ON g.event_id = e.id' .
-					' JOIN users u ON p.user_id = u.id' .
-					' WHERE e.address_id = ?',
-			$this->scoring_id, $this->id, $condition);
-			$pos_query->add(' AND u.id = ? GROUP BY u.id', $this->user_id);
-			
-			if ($row = $pos_query->next())
-			{
-				list ($uscore, $ugames, $uwon) = $row;
-				if ($ugames > 0)
-				{
-					$pos_query = new DbQuery(
-						'SELECT count(*) FROM (SELECT u.id, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as score, SUM(p.won) as won, COUNT(p.game_id) as games' .
-							' FROM players p' .
-							' JOIN users u ON p.user_id = u.id' .
-							' JOIN games g ON g.id = p.game_id' .
-							' JOIN events e ON g.event_id = e.id' .
-							' WHERE e.address_id = ?', $this->scoring_id, $this->id, $condition);
-					$pos_query->add(
-						' AND u.id <> ? GROUP BY u.id ' . 
-						' HAVING score > ? OR (score = ? AND (won > ? OR (won = ? AND (games > ? OR (games = ? AND u.id < ?)))))'  . 
-						') as upper',
-						$this->user_id, $uscore, $uscore, $uwon, $uwon, $ugames, $ugames, $this->user_id);
-					list($user_pos) = $pos_query->next();
-					$_page = floor($user_pos / PAGE_SIZE);
-				}
-				else
-				{
-					$this->no_user_error();
-				}
-			}
-			else
-			{
-				$this->no_user_error();
-			}
-		}
+		$condition = new SQL(' AND g.event_id IN (SELECT id FROM events WHERE address_id = ?)', $this->id);
 		
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
@@ -117,20 +76,21 @@ class Page extends AddressPageBase
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
-
-		list ($count) = Db::record(get_label('points'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ?', $this->id, $condition);
-		$query = new DbQuery(
-			'SELECT p.user_id, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as points, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags' .
-				' FROM players p' . 
-				' JOIN games g ON p.game_id = g.id' .
-				' JOIN users u ON p.user_id = u.id' .
-				' JOIN events e ON g.event_id = e.id' .
-				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' WHERE e.address_id = ?',
-			$this->scoring_id, $this->id, $condition);
-		$query->add(' GROUP BY p.user_id ORDER BY points DESC, won DESC, games DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
-		show_pages_navigation(PAGE_SIZE, $count);
+		$scoring_system = new ScoringSystem($this->scoring_id);
+		$scores = new Scores($scoring_system, $condition, get_roles_condition($this->roles));
+		$players_count = count($scores->players);
+		if ($this->user_id > 0)
+		{
+			$_page = $scores->get_user_page($this->user_id, PAGE_SIZE);
+			if ($_page < 0)
+			{
+				$_page = 0;
+				$this->no_user_error();
+			}
+		}
+
+		show_pages_navigation(PAGE_SIZE, $players_count);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
 		echo '<td colspan="3">'.get_label('Player').'</td>';
@@ -141,34 +101,41 @@ class Page extends AddressPageBase
 		echo '<td width="80" align="center">'.get_label('Points per game').'</td>';
 		echo '</tr>';
 
-		$number = $_page * PAGE_SIZE;
-		while ($row = $query->next())
+		$page_start = $_page * PAGE_SIZE;
+		if ($players_count > $page_start + PAGE_SIZE)
 		{
-			++$number;
-			list ($id, $name, $points, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $row;
+			$players_count = $page_start + PAGE_SIZE;
+		}
+		for ($number = $page_start; $number < $players_count; ++$number)
+		{
+			$score = $scores->players[$number];
+			$games_count = $score->get_count(SCORING_MATTER_PLAY);
+			$wins_count = $score->get_count(SCORING_MATTER_WIN);
 
-			if ($id == $this->user_id)
+			if ($score->id == $this->user_id)
 			{
-				echo '<tr class="dark">';
+				echo '<tr class="darker">';
+				$highlight = 'darker';
 			}
 			else
 			{
 				echo '<tr>';
+				$highlight = 'dark';
 			}
-			echo '<td align="center" class="dark">' . $number . '</td>';
-			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
-			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
-			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+			echo '<td align="center" class="' . $highlight . '">' . $number . '</td>';
+			echo '<td width="50"><a href="user_info.php?id=' . $score->id . '&bck=1">';
+			show_user_pic($score->id, $score->name, $score->flags, ICONS_DIR, 50, 50);
+			echo '</a></td><td><a href="user_info.php?id=' . $score->id . '&bck=1">' . cut_long_name($score->name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
-			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
+			show_club_pic($score->club_id, $score->club_name, $score->club_flags, ICONS_DIR, 40, 40);
 			echo '</td>';
-			echo '<td class="dark" align="center">' . format_score($points) . '</td>';
-			echo '<td align="center">' . $games_played . '</td>';
-			echo '<td align="center">' . $games_won . '</td>';
-			if ($games_played != 0)
+			echo '<td class="' . $highlight . '" align="center">' . $score->points_str() . '</td>';
+			echo '<td align="center">' . $games_count . '</td>';
+			echo '<td align="center">' . $wins_count . '</td>';
+			if ($games_count != 0)
 			{
-				echo '<td align="center">' . number_format(($games_won*100.0)/$games_played, 1) . '%</td>';
-				echo '<td align="center">' . format_score($points/$games_played) . '</td>';
+				echo '<td align="center">' . number_format(($wins_count * 100.0) / $games_count, 1) . '%</td>';
+				echo '<td align="center">' . $score->points_per_game_str() . '</td>';
 			}
 			else
 			{

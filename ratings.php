@@ -235,14 +235,16 @@ class Page extends GeneralPageBase
 
 			if ($id == $this->user_id)
 			{
-				echo '<tr class="dark">';
+				echo '<tr class="darker">';
+				$highlight = 'darker';
 			}
 			else
 			{
 				echo '<tr>';
+				$highlight = 'dark';
 			}
 
-			echo '<td align="center" class="dark">' . $number . '</td>';
+			echo '<td align="center" class="' . $highlight . '">' . $number . '</td>';
 			echo '<td width="60" align="center"><a href="user_info.php?id=' . $id . '&bck=1">';
 			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td>';
@@ -250,7 +252,7 @@ class Page extends GeneralPageBase
 			echo '<td width="50" align="center">';
 			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
 			echo '</td>';
-			echo '<td align="center" class="dark">' . format_rating($rating) . '</td>';
+			echo '<td align="center" class="' . $highlight . '">' . format_rating($rating) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)

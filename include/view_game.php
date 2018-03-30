@@ -10,8 +10,6 @@ class ViewGamePlayer
 {
 	public $rating_before;
 	public $rating_earned;
-	public $club_points;
-	public $event_points;
 	public $user_flags;
 }
 
@@ -99,11 +97,11 @@ class ViewGame
 		$this->duration = format_time($duration);
 		$this->language = get_lang_str($this->language_code);
 		$this->players = array(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-		$query = new DbQuery('SELECT p.number, p.rating_before, p.rating_earned, p.club_points, p.event_points, u.flags FROM players p JOIN users u ON p.user_id = u.id WHERE p.game_id = ?', $id);
+		$query = new DbQuery('SELECT p.number, p.rating_before, p.rating_earned, u.flags FROM players p JOIN users u ON p.user_id = u.id WHERE p.game_id = ?', $id);
 		while ($row = $query->next())
 		{
 			$player_stats = new ViewGamePlayer();
-			list ($number, $player_stats->rating_before, $player_stats->rating_earned, $player_stats->club_points, $player_stats->event_points, $player_stats->user_flags) = $row;
+			list ($number, $player_stats->rating_before, $player_stats->rating_earned, $player_stats->user_flags) = $row;
 			--$number;
 			$player = $this->gs->players[$number];
 			$this->players[$number] = $player_stats;

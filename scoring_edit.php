@@ -13,13 +13,29 @@ try
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('scoring system')));
 	}
-	$system = new ScoringSystem($_REQUEST['id']);
-	if ($_profile == NULL || !$_profile->is_manager($system->club_id))
+	$id = (int)$_REQUEST['id'];
+	
+	list ($name, $club_id) = Db::record(get_label('scoring system'), 'SELECT name, club_id FROM scorings WHERE id = ?', $id);
+	if ($_profile == NULL)
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}
 	
-	$system->show_edit_form();
+	if ($club_id == NULL)
+	{
+		if (!$_profile->is_admin())
+		{
+			throw new FatalExc(get_label('No permissions'));
+		}
+	}
+	else if (!$_profile->is_manager($club_id))
+	{
+		throw new FatalExc(get_label('No permissions'));
+	}
+	
+	echo '<table class="dialog_form" width="100%">';
+	echo '<tr><td width="200">'.get_label('Scoring system name').':</td><td><input id="form-name" value="' . $name . '"></td></tr>';
+	echo '</table>';
 	
 ?>	
 	<script>
@@ -27,14 +43,10 @@ try
 	{
 		var params =
 		{
-			id: <?php echo $system->id; ?>,
+			id: <?php echo $id; ?>,
 			name: $("#form-name").val(),
 			update: ''
 		};
-		for (var flag = 1; flag < <?php echo SCORING_FIRST_AVAILABLE_FLAG; ?>; flag <<= 1)
-		{
-			params[flag] = $("#form-" + flag).val() * <?php echo SCORING_DIVIDE; ?>;
-		}
 		json.post("scoring_ops.php", params, onSuccess);
 	}
 	</script>

@@ -111,21 +111,6 @@ try
 	{
 		$page_size = $rows * $cols;
 		
-		$query = new DbQuery(
-			'SELECT p.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags FROM players p' . 
-			' JOIN games g ON p.game_id = g.id' .
-			' JOIN users u ON p.user_id = u.id' .
-			' LEFT OUTER JOIN registrations r ON r.event_id = g.event_id AND r.user_id = p.user_id' .
-			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-			' WHERE g.event_id = ? GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT ' . $page_size,
-			$event->scoring_id, $event->id);
-		
-		$players = array();
-		while ($row = $query->next())
-		{
-			$players[] = $row;
-		}
-		
 		if ($title)
 		{
 			echo '<table width="100%"><tr><td><h2>' . $event->name . '</h2>';
@@ -137,20 +122,24 @@ try
 			}
 			echo '</td></tr></table>';
 		}
+		
+		$condition = new SQL(' AND g.event_id = ?', $event->id);
+		$scoring_system = new ScoringSystem($event->scoring_id);
+		$scores = new Scores($scoring_system, $condition);
+		$players_count = count($scores->players);
 			
-		if (count($players) == 0)
+		if ($players_count == 0)
 		{
+			$players = array();
 			$page_size = $rows * $cols;
 		
 			echo '<center><h2>' . get_label('The event hasn\'t started yet. Current ratings:') . '</h2></center>';
 			$query = new DbQuery(
-				'SELECT r.user_id, u.name, r.nick_name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags FROM players p' . 
-					' JOIN games g ON p.game_id = g.id' .
-					' LEFT OUTER JOIN registrations r ON r.event_id = ? AND r.user_id = p.user_id' .
-					' JOIN users u ON r.user_id = u.id' .
-					' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-					' WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - 31536000 GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT 10',
-				$event->scoring_id, $event->id, $event->club_id);
+				'SELECT u.id, u.name, r.nick_name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM registrations r' . 
+				' JOIN users u ON r.user_id = u.id' .
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' WHERE r.event_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
+				$event->id);
 			
 			while ($row = $query->next())
 			{
@@ -160,68 +149,112 @@ try
 			if (count($players) == 0)
 			{
 				$query = new DbQuery(
-					'SELECT u.id, u.name, u.name, IFNULL(SUM((SELECT SUM(o.points) FROM scoring_points o WHERE o.scoring_id = ? AND (o.flag & p.flags) <> 0)), 0) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags FROM players p' . 
-						' JOIN games g ON p.game_id = g.id' .
-						' JOIN events e ON g.event_id = e.id' .
-						' JOIN users u ON p.user_id = u.id' .
-						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-						' WHERE g.club_id = ? AND g.end_time > UNIX_TIMESTAMP() - 31536000 GROUP BY p.user_id ORDER BY rating DESC, games, won DESC, u.id LIMIT 10',
-					$event->scoring_id, $event->club_id);
+					'SELECT u.id, u.name, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM users u' . 
+					' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+					' WHERE c.id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
+					$event->club_id);
 				while ($row = $query->next())
 				{
 					$players[] = $row;
 				}
 			}
-		}
-		
-		$number = 0;
-		echo '<table width="100%"><tr>';
-		for ($i = 0; $i < $cols; ++$i)
-		{
-			for ($j = 0; $j < $rows; ++$j)
+			
+			$number = 0;
+			echo '<table width="100%"><tr>';
+			for ($i = 0; $i < $cols; ++$i)
 			{
-				
-				if ($number >= count($players))
+				for ($j = 0; $j < $rows; ++$j)
 				{
-					break;
-				}
-				list ($id, $name, $nick, $points, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $players[$number++];
-				
-				if (!empty($nick) && $nick != $name)
-				{
-					$name = $nick . ' (' . $name . ')';
-				}
-				
-				if ($j == 0)
-				{
-					echo '<td width="' . (100 / $cols) . '%" valign="top"><table class="bordered light" width="100%">';
-					echo '<tr class="th-long darker">';
-					echo '<td width="20"><button class="icon" onclick="window.location.replace(\'event_screen.php?id=' . $event->id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button></td>';
-					echo '<td colspan="3">'.get_label('Player').'</td>';
-					echo '<td width="60" align="center">'.get_label('Points').'</td>';
-					echo '<td width="60" align="center">'.get_label('Games played').'</td>';
-					echo '<td width="60" align="center">'.get_label('Victories').'</td>';
+					
+					if ($number >= count($players))
+					{
+						break;
+					}
+					list ($id, $name, $nick, $points, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $players[$number++];
+					
+					if (!empty($nick) && $nick != $name)
+					{
+						$name = $nick . ' (' . $name . ')';
+					}
+					
+					if ($j == 0)
+					{
+						echo '<td width="' . (100 / $cols) . '%" valign="top"><table class="bordered light" width="100%">';
+						echo '<tr class="th-long darker">';
+						echo '<td width="20"><button class="icon" onclick="window.location.replace(\'event_screen.php?id=' . $event->id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button></td>';
+						echo '<td colspan="3">'.get_label('Player').'</td>';
+						echo '<td width="60" align="center">'.get_label('Rating').'</td>';
+						echo '<td width="60" align="center">'.get_label('Games played').'</td>';
+						echo '<td width="60" align="center">'.get_label('Victories').'</td>';
+						echo '</tr>';
+					}
+					
+					echo '<tr>';
+					echo '<td align="center" class="dark">' . $number . '</td>';
+					echo '<td width="50">';
+					show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
+					echo '</td><td>' . $name . '</td>';
+					echo '<td width="50" align="center">';
+					show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
+					echo '</td>';
+					echo '<td align="center" class="lighter">';
+					echo format_rating($points);
+					echo '</td>';
+					echo '<td align="center">' . $games_played . '</td>';
+					echo '<td align="center">' . $games_won . '</td>';
 					echo '</tr>';
 				}
-				
-				echo '<tr>';
-				echo '<td align="center" class="dark">' . $number . '</td>';
-				echo '<td width="50">';
-				show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
-				echo '</td><td>' . $name . '</td>';
-				echo '<td width="50" align="center">';
-				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
-				echo '</td>';
-				echo '<td align="center" class="lighter">';
-				echo format_score($points);
-				echo '</td>';
-				echo '<td align="center">' . $games_played . '</td>';
-				echo '<td align="center">' . $games_won . '</td>';
-				echo '</tr>';
+				echo '</table></td>';
 			}
-			echo '</table></td>';
+			echo '</tr></table>';
 		}
-		echo '</tr></table>';
+		else
+		{
+			$number = 0;
+			echo '<table width="100%"><tr>';
+			for ($i = 0; $i < $cols; ++$i)
+			{
+				for ($j = 0; $j < $rows; ++$j)
+				{
+					if ($number >= $players_count)
+					{
+						break;
+					}
+					$score = $scores->players[$number++];
+					$games_count = $score->get_count(SCORING_MATTER_PLAY);
+					$wins_count = $score->get_count(SCORING_MATTER_WIN);
+					
+					if ($j == 0)
+					{
+						echo '<td width="' . (100 / $cols) . '%" valign="top"><table class="bordered light" width="100%">';
+						echo '<tr class="th-long darker">';
+						echo '<td width="20"><button class="icon" onclick="window.location.replace(\'event_screen.php?id=' . $event->id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button></td>';
+						echo '<td colspan="3">'.get_label('Player').'</td>';
+						echo '<td width="60" align="center">'.get_label('Points').'</td>';
+						echo '<td width="60" align="center">'.get_label('Games played').'</td>';
+						echo '<td width="60" align="center">'.get_label('Victories').'</td>';
+						echo '</tr>';
+					}
+					
+					echo '<tr>';
+					echo '<td align="center" class="dark">' . $number . '</td>';
+					echo '<td width="50">';
+					show_user_pic($score->id, $score->name, $score->flags, ICONS_DIR, 50, 50);
+					echo '</td><td>' . $score->name . '</td>';
+					echo '<td width="50" align="center">';
+					show_club_pic($score->club_id, $score->club_name, $score->club_flags, ICONS_DIR, 40, 40);
+					echo '</td>';
+					echo '<td align="center" class="lighter">';
+					echo $score->points_str();
+					echo '</td>';
+					echo '<td align="center">' . $games_count . '</td>';
+					echo '<td align="center">' . $wins_count . '</td>';
+					echo '</tr>';
+				}
+				echo '</table></td>';
+			}
+			echo '</tr></table>';
+		}
 		echo '</body>';
 	}
 }

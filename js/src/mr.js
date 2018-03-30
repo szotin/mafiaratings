@@ -488,14 +488,37 @@ var mr = new function()
 
 	this.createScoringSystem = function(clubId)
 	{
-		dlg.form("scoring_create.php?club=" + clubId, refr);
+		dlg.form("scoring_create.php?club=" + clubId, refr, 400);
 	}
 
 	this.editScoringSystem = function(id)
 	{
-		dlg.form("scoring_edit.php?id=" + id, refr);
+		dlg.form("scoring_edit.php?id=" + id, refr, 400);
 	}
 	
+	this.createScoringRule = function(systemId, category)
+	{
+		dlg.form("scoring_rule_create.php?scoring=" + systemId + '&category=' + category, refr);
+	}
+	
+	this.deleteScoringRule = function(systemId, category, matter, confirmMessage)
+	{
+		dlg.yesNo(confirmMessage, null, null, function()
+		{
+			json.post("scoring_ops.php", { 'id': systemId, 'delete_rule': matter, 'category': category }, refr);
+		});
+	}
+	
+	this.editScoringSorting = function(systemId)
+	{
+		dlg.form("scoring_sorting_edit.php?scoring=" + systemId, refr, 600);
+	}
+	
+	this.showScoring = function(systemId)
+	{
+		dlg.infoForm("scoring_show.php?id=" + systemId);
+	}
+
 	//--------------------------------------------------------------------------------------
 	// rules
 	//--------------------------------------------------------------------------------------

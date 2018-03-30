@@ -197,6 +197,31 @@ var dlg = new function()
 		}
 		html.get(formPage, formLoaded);
 	}
+	
+	
+	this.infoForm = function(formPage, width)
+	{
+		var id = null;
+		function formLoaded(text, title)
+		{
+			id = '#dlg' + _lastId;
+			dlg.custom(text, title, width, 
+			{
+				ok: { id:"dlg-ok", text: l("Ok"), click: function() { $(this).dialog("close"); } }
+			});
+		}
+		
+		if (typeof width != "number")
+		{
+			width = parseInt(width);
+			if (isNaN(width) || width <= 0)
+			{
+				width = 800;
+			}
+		}
+		html.get(formPage, formLoaded);
+	}
+	
 } // dlg
 
 var dialogWaiter = new function()

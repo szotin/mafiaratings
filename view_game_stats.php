@@ -126,8 +126,6 @@ class Page extends PageBase
 		echo '<tr class="th-short darker"><td colspan="2"><b>' . get_label('General') . '</b></td></tr>';
 		echo '<tr class="light"><td class="dark" width="200">'.get_label('Role').':</td><td>' . $player->role_text(true) . '</td></tr>';
 		echo '<tr class="light"><td class="dark">'.get_label('Rating earned').':</td><td>' . $stats->rating_earned . '</td></tr>';
-		echo '<tr class="light"><td class="dark">'.get_label('Club points earned').':</td><td>' . $stats->club_points . '</td></tr>';
-		echo '<tr class="light"><td class="dark">'.get_label('Event points earned').':</td><td>' . $stats->event_points . '</td></tr>';
 		echo '<tr class="light"><td class="dark">'.get_label('Warnings').':</td><td>' . $player->warnings_text() . '</td></tr>';
 		echo '<tr class="light"><td class="dark">'.get_label('Killed').':</td><td>' . $player->killed_text() . '</td></tr>';
 		echo '<tr class="light"><td class="dark">'.get_label('Was arranged by mafia at').':</td><td>' . $player->arranged_text() . '</td></tr>';
