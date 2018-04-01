@@ -207,6 +207,7 @@ class UserPageBase extends PageBase
 				, new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
 				, new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title))
 			))
+			, new MenuItem('user_competition.php?id=' . $this->id, get_label('Competition'), get_label('How [0] competes with the other players', $this->title))
 			, new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title))
 			, new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title))
 			, new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->name))

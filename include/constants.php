@@ -1,8 +1,7 @@
 <?php
 
 define('PAGE_WIDTH', 1020);
-define('MENU_WIDTH', 120);
-define('CONTENT_WIDTH', 900);
+define('CONTENT_WIDTH', 986);
 
 define('PAGE_STATE_EMPTY', 0);
 define('PAGE_STATE_HEADER', 1);

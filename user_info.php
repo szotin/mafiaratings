@@ -4,6 +4,10 @@ require_once 'include/languages.php';
 require_once 'include/user.php';
 require_once 'include/club.php';
 require_once 'include/scoring.php';
+require_once 'include/chart.php';
+
+define('MAX_POINTS_ON_GRAPH', 50);
+define('MIN_PERIOD_ON_GRAPH', 10*24*60*60);
 
 function show_permissions($user_flags)
 {
@@ -45,6 +49,12 @@ class Page extends UserPageBase
 		$this->_title = $this->title;
 	}
 	
+	protected function add_headers()
+	{
+		parent::add_headers();
+		add_chart_headers();
+	}
+	
 	protected function show_body()
 	{
 		global $_profile;
@@ -61,9 +71,9 @@ class Page extends UserPageBase
 		
 		if ($rating_pos >= 0)
 		{
-			echo '<table width="100%"><tr><td valign="top">';
+			echo '<table width="100%"><tr><td valign="top" align="center">';
 		}
-		
+		show_chart(640, 396); // fibonacci golden ratio 1.618:1
         echo '<table class="bordered light" width="100%">';
 		
 		$timezone = get_timezone();
@@ -222,6 +232,43 @@ class Page extends UserPageBase
 			
 			echo '</td></tr></table>';
 		}
+	}
+	
+	protected function js_on_load()
+	{
+		parent::js();
+		
+		list($min_time, $max_time) = Db::record(get_label('game'), 'SELECT MIN(g.end_time), MAX(g.end_time) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ?', $this->id);
+		if ($min_time == NULL || $max_time == NULL || $max_time - $min_time < MIN_PERIOD_ON_GRAPH)
+		{
+			hide_chart();
+			return;
+		}
+		
+		$period = floor(($max_time - $min_time) / MAX_POINTS_ON_GRAPH);
+		$query = new DbQuery('SELECT CEILING(g.end_time/' . $period . ') * ' . $period . ' as period, AVG(p.rating_before+p.rating_earned), MAX(p.rating_before+p.rating_earned), count(g.id) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? GROUP BY period ORDER BY period', $this->id);
+		
+		$dataset = array();
+		$data = new ChartData($this->name, 48, 156, 192);
+		$dataset[] = $data;
+		
+		$first = true;
+		$labels = '';
+		$total_games_count = 0;
+		date_default_timezone_set(get_timezone());
+		while ($row = $query->next())
+		{
+			list ($timestamp, $avg, $max, $games_count) = $row;
+			if ($first)
+			{
+				$data->add_point($timestamp - $period, 0);
+				$first = false;
+			}
+			$data->add_point($timestamp, $max);
+			$total_games_count += $games_count;
+		}
+		
+		init_chart($dataset);
 	}
 }
 

@@ -89,7 +89,7 @@ $labelMenu = array (
 'Duration' => 'Длительность', // address_games.php, club_games.php, duplicated_games.php, edit_event.php, event_create.php, event_games.php, games.php, user_games.php, user_games.php, ./include/view_game.php
 'Result' => 'Результат', // address_games.php, club_games.php, event_games.php, games.php, user_games.php, user_games.php, view_game_day.php, view_game_night.php
 'Games list of the event' => 'Список игр игрового дня', // ./include/event.php
-'Rating' => 'Рейтинг', // event_screen.php, nominations.php, player_compare.php, player_compare.php, ratings.php, user_games.php, user_stats.php
+'Rating' => 'Рейтинг', // event_screen.php, nominations.php, player_compare.php, player_compare.php, ratings.php, user_games.php, user_stats.php, ./include/chart.php
 'Games played' => 'Сыграно игр', // address_by_numbers.php, address_events.php, address_info.php, address_nominations.php, address_standings.php, address_stats.php, by_numbers.php, club_by_numbers.php, club_events.php, club_main.php, club_nominations.php, club_standings.php, club_stats.php, events.php, event_by_numbers.php, event_nominations.php, event_screen.php, event_screen.php, event_standings.php, event_stats.php, iratings.php, nominations.php, player_compare.php, player_compare.php, player_compare_select.php, ratings.php, stats.php, user_by_numbers.php, user_events.php, user_info.php, user_info.php, user_moderators.php, user_stats.php
 'Victories' => 'Победы', // address_standings.php, club_standings.php, event_screen.php, event_screen.php, event_standings.php, iratings.php, player_compare.php, ratings.php, user_events.php, user_info.php, user_info.php, user_moderators.php, user_stats.php
 'Winning %' => '% побед', // address_standings.php, club_standings.php, event_standings.php, iratings.php, ratings.php, user_events.php, user_moderators.php
@@ -357,7 +357,7 @@ $labelMenu = array (
 'All clubs' => 'Все клубы', // user_by_numbers.php, user_stats.php
 'At [0]' => '[0]', // ./include/event.php, ./include/event.php
 'event' => 'игровой день', // address_events.php, address_info.php, attend.php, attend.php, club_events.php, club_upcoming.php, club_upcoming.php, comment_ops.php, create_event_mailing.php, create_event_mailing.php, edit_event.php, events.php, event_attend.php, event_attend.php, event_confirm.php, event_confirm.php, event_correct_players.php, event_create.php, event_extend.php, event_extend.php, event_mailings.php, event_nominations.php, event_ops.php, event_ops.php, event_ops.php, event_ops.php, event_ops.php, event_ops.php, event_screen.php, event_screen.php, event_stats.php, game.php, game_ops.php, pass.php, pass.php, pass.php, photo.php, rules_ops.php, send_emails.php, upload.php, upload.php, user_events.php, video_create.php, ws_upcoming.php, ./include/event.php, ./include/event.php, ./include/event.php, ./include/event.php, ./include/event.php, ./include/event.php, ./include/event.php, ./include/event_mailing.php, ./include/event_mailing.php, ./include/game_rules.php, ./include/game_rules.php
-'game' => 'игра', // address_games.php, address_info.php, address_info.php, address_info.php, address_nominations.php, address_stats.php, address_stats.php, address_stats.php, address_stats.php, club_games.php, club_main.php, club_main.php, club_main.php, club_nominations.php, club_stats.php, club_stats.php, club_stats.php, club_stats.php, comment_ops.php, event_games.php, event_nominations.php, event_stats.php, event_stats.php, event_stats.php, event_stats.php, games.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_video.php, game_video.php, game_video_edit.php, game_video_edit.php, nominations.php, repair_ops.php, stats.php, stats.php, stats.php, stats.php, user_games.php, video_ops.php, video_ops.php, video_ops.php, view_game_stats.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_stats.php, ./include/game_stats.php, ./include/view_game.php, ./include/view_game.php
+'game' => 'игра', // address_games.php, address_info.php, address_info.php, address_info.php, address_nominations.php, address_stats.php, address_stats.php, address_stats.php, address_stats.php, club_games.php, club_main.php, club_main.php, club_main.php, club_nominations.php, club_stats.php, club_stats.php, club_stats.php, club_stats.php, comment_ops.php, event_games.php, event_nominations.php, event_stats.php, event_stats.php, event_stats.php, event_stats.php, games.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_ops.php, game_video.php, game_video.php, game_video_edit.php, game_video_edit.php, nominations.php, repair_ops.php, stats.php, stats.php, stats.php, stats.php, user_competition.php, user_games.php, user_info.php, video_ops.php, video_ops.php, video_ops.php, view_game_stats.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_state.php, ./include/game_stats.php, ./include/game_stats.php, ./include/view_game.php, ./include/view_game.php
 'Emails' => 'Письма', // ./include/club.php
 'Template name' => 'Название', // club_emails.php
 'New template' => 'Новый бланк', // club_emails.php
@@ -1164,6 +1164,7 @@ $labelMenu = array (
 'The one who has [0] 4 warinings' => 'Тот у кого [0] уходов замечаниями', // ./include/scoring.php
 'The one who has [0] kick outs' => 'Тот у кого [0] нарушений наказываемых удалением', // ./include/scoring.php
 'The one who has [0] surrenders' => 'Тот у кого [0] игр где игрок сдался', // ./include/scoring.php
+'Show [0] scoring rules.' => 'Показать правила начисления очков для [0]', // ./include/scoring.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'Town\'s victory.' => 'Победа города.', // ./include/view_game.php
@@ -1175,7 +1176,10 @@ $labelMenu = array (
 'For clear loosing (all day-kills were from the player\'s team)' => 'За чистое поражение (ни один из членов противоположной команды не ушел дневным голосованием)', // ./include/scoring.php
 'when player\'s first-night-killed rate is 0%' => 'когда игрок никогда не убиваелся в первую ночь', // ./include/scoring.php
 'when player\'s first-night-killed rate is lower than [0]%' => 'когда процент убийств в первую ночь был ниже [0]%', // ./include/scoring.php
-'Show [0] scoring rules.' => 'Показать правила начисления очков для [0]', // ./include/scoring.php
+'[0]: competition' => '[0]: соревнование', // user_competition.php
+'Not enought data to show [0] competition' => 'Недостаточно данных, чтобы показать как проходило соревнование [0] с другими игроками', // user_competition.php
+'Competition' => 'Соревнование', // ./include/user.php
+'How [0] competes with the other players' => 'Как проходило соревнование [0] с соседними по рейтингу игроками', // ./include/user.php
 );
 
 return $labelMenu;
