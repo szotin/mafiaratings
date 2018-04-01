@@ -249,7 +249,7 @@ class Page extends UserPageBase
 		$query = new DbQuery('SELECT CEILING(g.end_time/' . $period . ') * ' . $period . ' as period, AVG(p.rating_before+p.rating_earned), MAX(p.rating_before+p.rating_earned), count(g.id) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? GROUP BY period ORDER BY period', $this->id);
 		
 		$dataset = array();
-		$data = new ChartData($this->name, 48, 156, 192);
+		$data = new ChartData($this->name, 51, 153, 255);
 		$dataset[] = $data;
 		
 		$first = true;
