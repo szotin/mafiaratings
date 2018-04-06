@@ -515,7 +515,7 @@ mafia.ui = new function()
 				{
 					var s = true;
 					_gCounter = 0;
-					if (http.connected() && mafia.globalDirty())
+					if (mafia.globalDirty())
 					{
 						var w = http.waiter(statusWaiter);
 						mafia.sync();
