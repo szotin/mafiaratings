@@ -1851,15 +1851,7 @@ var regForm = new function()
 	{
 		_num = num;
 		
-		var html = '<table class="dialog_form" width="100%"><tr><td><table class="invis" width="100%"><tr><td>';
-		if (mafia.ui.mobile())
-		{
-			html += '<input type="checkbox" id="form-club" onclick="regForm.nameChange()"> ' + l('Incomer') +  '</td><td align="right"><input id="form-name" onkeyup="regForm.nameChange()">';
-		}
-		else
-		{
-			html += '<input id="form-name" onkeyup="regForm.nameChange()"></td><td align="right"><input type="checkbox" id="form-club" onclick="regForm.nameChange()"> ' + l('Incomer');
-		}
+		var html = '<table class="dialog_form" width="100%"><tr><td><table class="invis" width="100%"><tr><td><input id="form-name" onkeyup="regForm.nameChange()">';
 		html += '</td></tr></table></td></tr><tr><td><table class="reg-list" width="100%">';
 		for (var i = 0; i < 10; ++i)
 		{
@@ -1886,13 +1878,9 @@ var regForm = new function()
 				{
 					_register(p.id);
 				}
-				else if ($('#form-club').attr('checked'))
-				{
-					_regIncomer(name, '', 0, 0);
-				}
 				else
 				{
-					dlg.error(l('ErrUserNotFound', name));
+					_regIncomer(name, '', 0, 0);
 				}
 			}
 		});
@@ -1908,7 +1896,7 @@ var regForm = new function()
 		var club = mafia.data().club;
 		var name = $('#form-name').val().toLocaleLowerCase();
 		var num = 0;
-		if ($('#form-club').attr('checked'))
+		if (http.connected())
 		{
 			for (; num < /*NUM_USERS*/50; ++num)
 			{
@@ -1928,7 +1916,7 @@ var regForm = new function()
 						nick = nck;
 						break;
 					}
-					var h = '<a href="#" onclick="regForm.regIncomer(\'' + p.name + '\', \'' + nick + '\', ' + p.id + ', ' + p.flags  + ')">' + p.name;
+					var h = '<a href="#" onclick="regForm.regIncomer(\'' + p.name + '\', \'' + nick + '\', ' + p.id + ', ' + p.flags  + ')" title="' + p.club + '">' + p.name;
 					if (nick != '')
 					{
 						h += ' (' + nick + ')';
@@ -1951,7 +1939,7 @@ var regForm = new function()
 			{
 				if (name == '')
 				{
-					$('#form-u' + num).html('<a href="#" onclick="regForm.register(' + player.id + ')">' + player.name + '</a>');
+					$('#form-u' + num).html('<a href="#" onclick="regForm.register(' + player.id + ')" title="' + player.club + '">' + player.name + '</a>');
 					++num;
 				}
 				else
@@ -1959,7 +1947,7 @@ var regForm = new function()
 					var p = player.name.toLocaleLowerCase();
 					if (match(name, p))
 					{
-						$('#form-u' + num).html('<a href="#" onclick="regForm.register(' + player.id + ')">' + player.name + '</a>');
+						$('#form-u' + num).html('<a href="#" onclick="regForm.register(' + player.id + ')" title="' + player.club + '">' + player.name + '</a>');
 						if (++num >= /*NUM_USERS*/50) return num;
 					}
 					for (var nick in player.nicks)
@@ -1967,7 +1955,7 @@ var regForm = new function()
 						var n = nick.toLocaleLowerCase();
 						if (p != n && match(name, n))
 						{
-							$('#form-u' + num).html('<a href="#" onclick="regForm.register(' + player.id + ')">' + player.name + ' (' + nick + ')</a>');
+							$('#form-u' + num).html('<a href="#" onclick="regForm.register(' + player.id + ')" title="' + player.club + '">' + player.name + ' (' + nick + ')</a>');
 							if (++num >= /*NUM_USERS*/50) return num;
 						}
 					}

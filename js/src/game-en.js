@@ -112,7 +112,6 @@ _l['male']='male';
 _l['female']='female';
 _l['Club']='Club';
 _l['SelectClub']='Select a club';
-_l['Incomer']='a player of another club';
 _l['Register']='Register player';
 _l['ConfirmSuicide']='Are you sure {1} is leaving the game?';
 _l['ConfirmKickOut']='Are you sure you want to kick out {1}?';

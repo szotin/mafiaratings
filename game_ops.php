@@ -59,13 +59,15 @@ class GPlayer
 {
 	public $id;
 	public $name;
+	public $club;
 	public $flags;
 	public $nicks;
 
-	function __construct($id, $name, $u_flags, $uc_flags)
+	function __construct($id, $name, $club, $u_flags, $uc_flags)
 	{
 		$this->id = (int)$id;
-		$this->name = $name; 
+		$this->name = $name;
+		$this->club = $club; 
 		$this->nicks = array();
 		$this->flags = (int)(($uc_flags & (UC_PERM_PLAYER | UC_PERM_MODER)) + ($u_flags & (U_FLAG_MALE | U_FLAG_IMMUNITY)));
 	}
@@ -193,18 +195,19 @@ class GClub
 		$this->haunters = array();
 		$this->players = array();
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, c.flags FROM user_clubs c' .
-				' JOIN users u ON u.id = c.user_id' .
-				' WHERE (c.flags & ' . UC_FLAG_BANNED .
-					') = 0 AND (c.flags & ' . (UC_PERM_PLAYER | UC_PERM_MODER) .
+			'SELECT u.id, u.name, c.name, u.flags, uc.flags FROM user_clubs uc' .
+				' JOIN users u ON u.id = uc.user_id' .
+				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+				' WHERE (uc.flags & ' . UC_FLAG_BANNED .
+					') = 0 AND (uc.flags & ' . (UC_PERM_PLAYER | UC_PERM_MODER) .
 					') <> 0 AND (u.flags & ' . U_FLAG_BANNED .
-					') = 0 AND c.club_id = ?' .
+					') = 0 AND uc.club_id = ?' .
 				' ORDER BY u.rating DESC',
 			$id);
 		while ($row = $query->next())
 		{
-			list ($user_id, $user_name, $u_flags, $uc_flags) = $row;
-			$this->players[$user_id] = new GPlayer($user_id, $user_name, $u_flags, $uc_flags);
+			list ($user_id, $user_name, $user_club, $u_flags, $uc_flags) = $row;
+			$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $u_flags, $uc_flags);
 			if ($haunters_count < 50)
 			{
 				$this->haunters[] = (int)$user_id;
@@ -235,15 +238,15 @@ class GClub
 			}
 			$events_str .= ')';
 			
-			$query = new DbQuery('SELECT r.user_id, r.event_id, r.nick_name, u.name, u.flags FROM registrations r JOIN users u ON u.id = r.user_id  WHERE r.event_id IN ' . $events_str);
+			$query = new DbQuery('SELECT r.user_id, r.event_id, r.nick_name, u.name, c.name, u.flags FROM registrations r JOIN users u ON u.id = r.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE r.event_id IN ' . $events_str);
 			while ($row = $query->next())
 			{
-				list ($user_id, $event_id, $nick, $user_name, $user_flags) = $row;
+				list ($user_id, $event_id, $nick, $user_name, $club_name, $user_flags) = $row;
 				if (isset($this->events[$event_id]))
 				{
 					if (!isset($this->players[$user_id]))
 					{
-						$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_flags, UC_PERM_PLAYER);
+						$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $user_flags, UC_PERM_PLAYER);
 						if ($haunters_count < 50)
 						{
 							$this->haunters[] = (int)$user_id;
@@ -268,7 +271,7 @@ class GClub
 				$incomer_id = -$incomer_id;
 				if (isset($this->events[$event_id]))
 				{
-					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, U_NEW_PLAYER_FLAGS, $incomer_flags | UC_PERM_PLAYER);
+					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, $this->name, U_NEW_PLAYER_FLAGS, $incomer_flags | UC_PERM_PLAYER);
 					if (!is_array($this->events[$event_id]->reg))
 					{
 						$this->events[$event_id]->reg = array($incomer_id => $nick);
@@ -896,19 +899,23 @@ try
 		array();
 		if ($name == '')
 		{
-			$query = new DbQuery('SELECT id, name, NULL, flags FROM users ORDER BY rating DESC');
+			$query = new DbQuery('SELECT u.id, u.name, NULL, u.flags, c.name FROM users u JOIN user_clubs uc ON u.id = uc.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE uc.club_id = ? AND (uc.flags & ' . UC_FLAG_BANNED . ') = 0 AND (u.flags & ' . U_FLAG_BANNED . ') = 0 ORDER BY rating DESC', $club_id);
 		}
 		else
 		{
+			$name_wildcard = '%' . $name . '%';
 			$query = new DbQuery(
-				'SELECT id, name, NULL, flags FROM users ' .
-					' WHERE name LIKE ? AND (flags & ' . U_FLAG_BANNED . ') = 0' .
+				'SELECT u.id, u.name as _name, NULL, u.flags, c.name FROM users u' .
+					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+					' WHERE (u.name LIKE ? OR u.email LIKE ?) AND (u.flags & ' . U_FLAG_BANNED . ') = 0' .
 					' UNION' .
-					' SELECT DISTINCT u.id, u.name, r.nick_name, u.flags FROM users u' . 
+					' SELECT DISTINCT u.id, u.name as _name, r.nick_name, u.flags, c.name FROM users u' .
+					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 					' JOIN registrations r ON r.user_id = u.id' .
-					' WHERE r.nick_name <> u.name AND (u.flags & ' . U_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ?',
-				'%' . $name . '%',
-				'%' . $name . '% ORDER BY name');
+					' WHERE r.nick_name <> u.name AND (u.flags & ' . U_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ? ORDER BY _name',
+				$name_wildcard,
+				$name_wildcard,
+				$name_wildcard);
 		}
 		
 		if ($num > 0)
@@ -919,8 +926,8 @@ try
 		$list = array();
 		while ($row = $query->next())
 		{
-			list ($uid, $uname, $nick, $uflags) = $row;
-			$p = new GPlayer($uid, $uname, $uflags, UC_PERM_PLAYER);
+			list ($uid, $uname, $nick, $uflags, $club_name) = $row;
+			$p = new GPlayer($uid, $uname, $club_name, $uflags, UC_PERM_PLAYER);
 			if ($nick != NULL && $nick != $uname)
 			{
 				$p->nicks[$nick] = 1; 
