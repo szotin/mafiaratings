@@ -2,10 +2,102 @@
 
 require_once('include/localization.php');
 
+define('MAX_CHARTS_COUNT', 5);
+
+$_chart_colors = array(
+	new ChartColor(51, 153, 255),
+	new ChartColor(186, 140, 220),
+	new ChartColor(146, 208, 80),
+	new ChartColor(215, 160, 100),
+	new ChartColor(122, 124, 192));
+
+
 // Put it where the chart has to be.
 function show_chart($width, $height)
 {
-	echo '<span id="chatPlace"><canvas id="chart" width="' . $width . '" height="' . $height . '"></canvas></span>';
+	echo '<canvas id="chart" width="' . $width . '" height="' . $height . '"></canvas>';
+}
+
+function show_chart_legend()
+{
+	echo '<span id="chart-legend"></span>';
+}
+
+function chart_list_to_array($player_list, $chart_count)
+{
+	$players = explode(',', $player_list);
+	$count = count($players);
+	$result = array();
+	if ($chart_count <= 0)
+	{
+		for ($i = 0; $i < $count; ++$i)
+		{
+			$id = (int)$players[$i];
+			if ($id > 0)
+			{
+				$result[] = $id;
+			}
+		}
+	}
+	else
+	{
+		for ($i = 0; $i < $count && $i < $chart_count; ++$i)
+		{
+			$result[] = (int)$players[$i];
+		}
+		for (; $i < $chart_count; ++$i)
+		{
+			$result[] = 0;
+		}
+	}
+	return $result;
+}
+
+function chart_array_to_list($player_array, $chart_count)
+{
+	$player_list = '';
+	$count = 0;
+	if ($chart_count <= 0)
+	{
+		foreach ($player_array as $id)
+		{
+			if ($id > 0)
+			{
+				if ($count > 0)
+				{
+					$player_list .= ',';
+				}
+				$player_list .= $id;
+				++$count;
+			}
+		}
+	}
+	else
+	{
+		foreach ($player_array as $id)
+		{
+			if ($count > 0)
+			{
+				$player_list .= ',';
+			}
+			
+			if ($id > 0)
+			{
+				$player_list .= $id;
+			}
+			
+			if (++$count >= $chart_count)
+			{
+				break;
+			}
+		}
+		
+		for (; $count < $chart_count; ++$count)
+		{
+			$player_list .= ',';
+		}
+	}
+	return $player_list;
 }
 
 // Put it to the overriden PageBase::add_headers() function.
@@ -13,112 +105,67 @@ function add_chart_headers()
 {
 	echo '<script src="js/moment.js"></script>';
 	echo '<script src="js/Chart.min.js"></script>';
+	echo '<script src="js/mr.chart.js"></script>';
 }
 
-// Put it to the overriden PageBase::js_on_load() function in case of error or inaplicable chart. It removes the whole chart area from the html.
-function hide_chart($message = '')
+class ChartPoint
 {
-	echo '$("#chatPlace").html("' . $message . '");';
+	public $x;
+	public $y;
+	
+	function __construct($timestamp, $y)
+	{
+		$this->x = date('m/d/Y H:i', $timestamp);
+		$this->y = (float)$y;
+	}
+}
+
+class ChartColor
+{
+	public $r;
+	public $g;
+	public $b;
+	
+	function __construct($r, $g, $b)
+	{
+		$this->r = (int)$r;
+		$this->g = (int)$g;
+		$this->b = (int)$b;
+	}
 }
 
 class ChartData
 {
 	public $label;
-	public $color; // This is a string. The format is 'rgb(100,200,100)' or 'rgba(100,200,100,0.2)'
-	public $back_color; // This is a string. The format is 'rgb(100,200,100)' or 'rgba(100,200,100,0.2)'
-	public $x; // array of x values
-	public $y; // array of y values (timestamps expected)
+	public $lineTension;
+	public $fill;
+	public $backgroundColor; // This is a string. The format is 'rgb(100,200,100)' or 'rgba(100,200,100,0.2)'
+	public $borderColor; // This is a string. The format is 'rgb(100,200,100)' or 'rgba(100,200,100,0.2)'
+	public $data; // array of ChartPoint
 	
-	function __construct ($label, $r, $g, $b)
+	function __construct ($label, $color) // $color is ChartColor
 	{
 		$this->label = $label;
-		$this->back_color = $this->color = 'rgba(' . $r . ',' . $g . ',' . $b . ',0.7)';
-		$this->x = array();
-		$this->y = array();
+		$this->lineTension = 0;
+		$this->fill = false;
+		$this->backgroundColor = $this->borderColor = 'rgba(' . $color->r . ',' . $color->g . ',' . $color->b . ',0.7)';
+		$this->data = array();
 	}
 	
-	function add_point($x, $y)
+	function add_point($timestamp, $delta)
 	{
-		$this->x[] = $x;
-		$this->y[] = $y;
+		$count = count($this->data);
+		if ($count > 0)
+		{
+			$delta += $this->data[$count - 1]->y;
+		}
+		$this->data[] = new ChartPoint($timestamp, $delta);
 	}
 	
 	function point_count()
 	{
-		return min(count($this->x), count($this->y));
+		return count($data);
 	}
-}
-
-// Put it to the overriden PageBase::js_on_load() function
-function init_chart($data_array)
-{
-	
-?>	
-	var ctx = document.getElementById("chart");
-	var myChart = new Chart(ctx,
-	{
-		type: 'line',
-		data:
-		{
-			datasets: 
-			[
-<?php
-				foreach ($data_array as $chart_data)
-				{
-?>
-					{
-						label: '<?php echo $chart_data->label; ?>',
-						lineTension: 0,
-						fill: false,					
-						backgroundColor: '<?php echo $chart_data->back_color; ?>',
-						borderColor: '<?php echo $chart_data->color; ?>',
-						data: 
-						[
-<?php
-							for ($i = 0; $i < $chart_data->point_count(); ++$i)
-							{
-								echo '{ x: "' . date('m/d/Y H:i', $chart_data->x[$i]) . '", y: ' . $chart_data->y[$i] . ' }, ';
-							}
-?>
-						],
-					},
-<?php
-				}
-?>
-			],
-			borderWidth: 1
-		},
-		options: 
-		{
-			responsive: false,
-			scales: 
-			{
-				xAxes: 
-				[
-					{
-						type: 'time',
-						time: 
-						{
-							format: 'MM/DD/YYYY HH:mm',
-							//  round: 'day',
-							tooltipFormat: 'MM/DD/YYYY HH:mm'
-						}
-					}
-				],
-				yAxes: 
-				[
-					{
-					scaleLabel: 
-					{
-						display: true,
-						labelString: '<?php echo get_label('Rating'); ?>'
-					}
-				}]
-			},
-			maintainAspectRatio: false
-		}
-	});
-<?php
 }
 
 ?>

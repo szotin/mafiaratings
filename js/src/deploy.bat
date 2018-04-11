@@ -13,6 +13,7 @@ copy build\labels_en.js "%target%"
 copy build\labels_ru.js "%target%"
 copy build\md5.js "%target%"
 copy build\mr.js "%target%"
+copy build\mr.chart.js "%target%"
 copy build\fileprogress.js "%target%"
 
 echo Android files

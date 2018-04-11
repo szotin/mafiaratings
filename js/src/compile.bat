@@ -10,6 +10,7 @@ java -jar compiler.jar --js labels_en.js --js_output_file build\labels_en.js
 copy labels_ru.js build
 java -jar compiler.jar --js md5.js --js_output_file build\md5.js
 java -jar compiler.jar --js mr.js --js_output_file build\mr.js
+java -jar compiler.jar --js mr.chart.js --js_output_file build\mr.chart.js
 copy fileprogress.js build
 java -jar compiler.jar --js local.js --js_output_file build\local.js
 java -jar compiler.jar --js editor.js --js_output_file build\editor.js

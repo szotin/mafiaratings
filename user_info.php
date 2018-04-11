@@ -65,7 +65,7 @@ class Page extends UserPageBase
 		{
 			list ($rating, $games, $won) = $row;
 			list ($rating_pos) = Db::record(get_label('rating'), 
-				'SELECT count(*) FROM users WHERE rating > ? AND games > 0 OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND id < ?)))))', 
+				'SELECT count(*) FROM users WHERE games > 0 AND (rating > ? OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND id < ?))))))', 
 				$rating, $rating, $games, $games, $won, $won, $this->id);
 		}
 		
@@ -237,38 +237,7 @@ class Page extends UserPageBase
 	protected function js_on_load()
 	{
 		parent::js();
-		
-		list($min_time, $max_time) = Db::record(get_label('game'), 'SELECT MIN(g.end_time), MAX(g.end_time) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ?', $this->id);
-		if ($min_time == NULL || $max_time == NULL || $max_time - $min_time < MIN_PERIOD_ON_GRAPH)
-		{
-			hide_chart();
-			return;
-		}
-		
-		$period = floor(($max_time - $min_time) / MAX_POINTS_ON_GRAPH);
-		$query = new DbQuery('SELECT CEILING(g.end_time/' . $period . ') * ' . $period . ' as period, AVG(p.rating_before+p.rating_earned), MAX(p.rating_before+p.rating_earned), count(g.id) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? GROUP BY period ORDER BY period', $this->id);
-		
-		$dataset = array();
-		$data = new ChartData($this->name, 51, 153, 255);
-		$dataset[] = $data;
-		
-		$first = true;
-		$labels = '';
-		$total_games_count = 0;
-		date_default_timezone_set(get_timezone());
-		while ($row = $query->next())
-		{
-			list ($timestamp, $avg, $max, $games_count) = $row;
-			if ($first)
-			{
-				$data->add_point($timestamp - $period, 0);
-				$first = false;
-			}
-			$data->add_point($timestamp, $max);
-			$total_games_count += $games_count;
-		}
-		
-		init_chart($dataset);
+		echo 'initChart("' . get_label('Rating') . '", { type: "rating", name: "' . get_label('[0] rating chart', $this->name) . '", players: "' . $this->id . '", charts:1 });';
 	}
 }
 

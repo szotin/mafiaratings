@@ -18,13 +18,14 @@ class WSResult
 	
 	function init($row)
 	{
-		list ($games, $won, $rating, $best_player, $best_move, $guess_all_maf, $warinigs, $voted_civ, $voted_maf, $voted_sheriff, $voted_by_civ, $voted_by_maf, $voted_by_sheriff, $nominated_civ, $nominated_maf, $nominated_sheriff, $nominated_by_civ, $nominated_by_maf, $nominated_by_sheriff, $arranged, $arranged_1_night, $checked_by_don, $checked_by_sheriff) = $row;
+		list ($games, $won, $rating, $best_player, $best_move, $guess_3_maf, $guess_2_maf, $warinigs, $voted_civ, $voted_maf, $voted_sheriff, $voted_by_civ, $voted_by_maf, $voted_by_sheriff, $nominated_civ, $nominated_maf, $nominated_sheriff, $nominated_by_civ, $nominated_by_maf, $nominated_by_sheriff, $arranged, $arranged_1_night, $checked_by_don, $checked_by_sheriff) = $row;
 		$this->games = (int)$games;
 		$this->won = (int)$won;
 		$this->rating = (float)$rating;
 		$this->best_player = (int)$best_player;
 		$this->best_move = (int)$best_move;
-		$this->guess_all_maf = (int)$guess_all_maf;
+		$this->guess_3_maf  = (int)$guess_3_maf;
+		$this->guess_2_maf  = (int)$guess_2_maf;
 		$this->warinigs = (int)$warinigs;
 		$this->voted_civ = (int)$voted_civ;
 		$this->voted_maf = (int)$voted_maf;
@@ -234,8 +235,8 @@ try
 		}
 		
 		$query = new DbQuery(
-			'SELECT COUNT(*), SUM(p.won), SUM(p.rating_earned), SUM(IF((p.flags & ' . SCORING_BEST_PLAYER . ') <> 0, 1, 0)),' .
-			' SUM(IF((p.flags & ' . SCORING_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_GUESS_ALL_MAF . ') <> 0, 1, 0)), SUM(p.warns),' .
+			'SELECT COUNT(*), SUM(p.won), SUM(p.rating_earned), SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)),' .
+			' SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_GUESSED_3 . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_GUESSED_2 . ') <> 0, 1, 0)), SUM(p.warns),' .
 			' SUM(p.voted_civil), SUM(p.voted_mafia), SUM(p.voted_sheriff), SUM(p.voted_by_civil), SUM(p.voted_by_mafia), SUM(p.voted_by_sheriff),' .
 			' SUM(p.nominated_civil), SUM(p.nominated_mafia), SUM(p.nominated_sheriff), SUM(p.nominated_by_civil), SUM(p.nominated_by_mafia), SUM(p.nominated_by_sheriff),' .
 			' SUM(IF(p.was_arranged < 0, 0, 1)), SUM(IF(p.was_arranged <> 0, 0, 1)), SUM(IF(p.checked_by_don < 0, 0, 1)), SUM(IF(p.checked_by_sheriff < 0, 0, 1))' .

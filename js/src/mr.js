@@ -753,7 +753,6 @@ var mr = new function()
 			var tagControl = $("#tag_user");
 			if (typeof tagControl == "object")
 			{
-				console.log("val = " + tagControl.val());
 				tagControl.autocomplete(
 				{ 
 					source: function( request, response )
