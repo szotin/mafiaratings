@@ -80,7 +80,12 @@ try
 				$player_list = chart_array_to_list($player_array, $chart_count);
 				$player_array[$i] = $user_id;
 				
-				$a_open = '<a href="#" onclick="updateChart({ type: \'' . $type . '\', name: \'' . $name . '\', players: \'' . $player_list . '\', charts: ' . $chart_count . ' })" title="' . get_label('Remove [0] from the chart', $user_name) . '">';
+				$a_open = '<a href="#" onclick="updateChart({ type: \'' . $type . '\', name: \'' . $name . '\', players: \'' . $player_list . '\', charts: ' . $chart_count;
+				if ($main_player > 0)
+				{
+					$a_open .= ', main: ' . $main_player;
+				}
+				$a_open .= ' })" title="' . get_label('Remove [0] from the chart', $user_name) . '">';
 				$a_close = '</a>';
 			}
 			else
