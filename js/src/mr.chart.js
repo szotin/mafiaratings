@@ -32,12 +32,49 @@ function updateChart(params)
 								select: function(event, ui) 
 								{
 									var index = event.target.id.substring(13);
+									var players = params.players;
+									var newPlayers = "";
+									var id = "" + ui.item.id;
+									var currentId;
 									var pos = 0;
-									for (j = 0; j < index; ++j)
+									while (true)
 									{
-										pos = params.players.indexOf(',', pos) + 1;
+										var end = players.indexOf(',', pos);
+										if (pos > 0)
+										{
+											newPlayers += ",";
+										}
+										
+										if (index == 0)
+										{
+											newPlayers += id;
+											if (end < 0)
+											{
+												break;
+											}
+										}
+										else if (end < 0)
+										{
+											currentId = players.substring(pos);
+											if (currentId != id)
+											{
+												newPlayers += currentId;
+											}
+											break;
+										}
+										else
+										{
+											currentId = players.substring(pos, end);
+											if (currentId != id)
+											{
+												newPlayers += currentId;
+											}
+										}
+										--index;
+										pos = end + 1;
 									}
-									params.players = params.players.substring(0, pos) + ui.item.id + params.players.substring(pos);
+									console.log(newPlayers);
+									params.players = newPlayers;
 									updateChart(params);
 								},
 								minLength: 0
