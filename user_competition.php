@@ -3,9 +3,6 @@
 require_once 'include/user.php';
 require_once 'include/chart.php';
 
-define('MAX_POINTS_ON_GRAPH', 50);
-define('MIN_PERIOD_ON_GRAPH', 10*24*60*60);
-		
 class Page extends UserPageBase
 {
 	private $players_list;
