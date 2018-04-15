@@ -201,16 +201,16 @@ class UserPageBase extends PageBase
 		$menu = array
 		(
 			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information'))
+			, new MenuItem('user_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How [0] competes with the other players', $this->title))
+			, new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title))
+			, new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title))
 			, new MenuItem('#stats', get_label('Stats'), NULL, array
 			(
 				new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('General statistics. How many games played, winning percentage, nominating/voting, etc.'))
 				, new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
 				, new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title))
+				, new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->name))
 			))
-			, new MenuItem('user_competition.php?id=' . $this->id, get_label('Competition'), get_label('How [0] competes with the other players', $this->title))
-			, new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title))
-			, new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title))
-			, new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->name))
 			, new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
 				new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title))
@@ -254,22 +254,24 @@ class UserPageBase extends PageBase
 	}
 }
 
-function show_user_input($name, $value, $title, $js_function = 'mr.gotoFind')
+function show_user_input($name, $value, $condition, $title, $js_function = 'mr.gotoFind')
 {
 	global $_profile, $_lang_code;
 
 	echo '<input type="text" id="' . $name . '" value="' . $value . '" title="' . $title . '"/>';
+	$url = 'user_ops.php?list';
+	if (!empty($condition))
+	{
+		$url .= '&' . $condition;
+	}
+	$url .= '&term=';
 ?>
 		<script>
 		$("#<?php echo $name; ?>").autocomplete(
 		{ 
 			source: function( request, response )
 			{
-				$.getJSON("user_ops.php",
-				{
-					list: '',
-					term: $("#<?php echo $name; ?>").val()
-				}, response);
+				$.getJSON("<?php echo $url; ?>" + $("#<?php echo $name; ?>").val(), null, response);
 			}
 			, select: function(event, ui) { <?php echo $js_function; ?>(ui.item); }
 			, minLength: 0

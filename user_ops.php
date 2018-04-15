@@ -31,7 +31,16 @@ try
 		
 		if ($term == '')
 		{
-			$query = new DbQuery('SELECT u.id, u.name, NULL FROM users u WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 ORDER BY rating DESC');
+			$query = new DbQuery('SELECT u.id, u.name, NULL FROM users u WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0');
+			if (isset($_REQUEST['event']))
+			{
+				$query->add(' AND u.id IN (SELECT DISTINCT p.user_id FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?)', $_REQUEST['event']);
+			}
+			else if (isset($_REQUEST['club']))
+			{
+				$query->add(' AND u.id IN (SELECT user_id FROM user_clubs WHERE club_id = ?)', $_REQUEST['club']);
+			}
+			$query->add(' ORDER BY rating DESC');
 		}
 		else
 		{

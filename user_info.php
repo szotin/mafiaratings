@@ -237,7 +237,13 @@ class Page extends UserPageBase
 	protected function js_on_load()
 	{
 		parent::js();
-		echo 'initChart("' . get_label('Rating') . '", { type: "rating", name: "' . get_label('[0] rating chart', $this->name) . '", players: "' . $this->id . '", charts:1 });';
+?>
+		chartParams.type = "rating";
+		chartParams.name = "<?php echo get_label('[0] rating chart', $this->name); ?>";
+		chartParams.players = "<?php echo $this->id; ?>";
+		chartParams.charts = 1;
+		initChart("<?php echo get_label('Rating'); ?>");
+<?php
 	}
 }
 

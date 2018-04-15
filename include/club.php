@@ -5,6 +5,9 @@ require_once 'include/page_base.php';
 define('ALL_CLUBS', -1);
 define('MY_CLUBS', 0);
 
+define('SEASON_ALL_TIME', -1);
+define('SEASON_LAST_YEAR', -2);
+
 function check_manager_permission($id)
 {
 	global $_profile;
@@ -236,6 +239,9 @@ class ClubPageBase extends PageBase
 		(
 			new MenuItem('club_main.php?id=' . $this->id, get_label('Club'), get_label('[0] main page', $this->name))
 			, new MenuItem('club_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name))
+			, new MenuItem('club_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing in the club.'))
+			, new MenuItem('club_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
+			, new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name))
 			, new MenuItem('#stats', get_label('Stats'), NULL, array
 			(
 				new MenuItem('club_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
@@ -243,8 +249,6 @@ class ClubPageBase extends PageBase
 				, new MenuItem('club_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
 				, new MenuItem('club_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name))
 			))
-			, new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name))
-			, new MenuItem('club_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
 			, new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
 				new MenuItem('club_albums.php?id=' . $this->id, get_label('Photos'), get_label('Photo albums'))
@@ -308,10 +312,35 @@ class ClubPageBase extends PageBase
 	}
 }
 
+function get_current_season($club_id)
+{
+	$condition = new SQL();
+	if ($club_id > 0)
+	{
+		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
+		while ($row = $query->next())
+		{
+			return (int)$row[0];
+		}
+		$condition->add(' AND g.club_id = ?', $club_id);
+	}
+	
+	$query = new DbQuery('SELECT g.end_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE result > 0', $condition);
+	$query->add(' ORDER BY g.end_time DESC LIMIT 1');
+	if ($row = $query->next())
+	{
+		list($timestamp, $timezone) = $row;
+		date_default_timezone_set($timezone);
+		$last_year = (int)date('Y', $timestamp);
+		return -$last_year;
+	}
+	return SEASON_LAST_YEAR;
+}
+
 function show_seasons_select($club_id, $option, $on_change, $title)
 {
 	$seasons = array();
-	$now = time();
+	$condition = new SQL();
 	if ($club_id > 0)
 	{
 		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
@@ -319,22 +348,16 @@ function show_seasons_select($club_id, $option, $on_change, $title)
 		{
 			$seasons[] = $row;
 		}
+		$condition->add(' AND g.club_id = ?', $club_id);
 	}
 	
-	if ($option == 0)
+	if ($option == 0 && count($seasons) > 0)
 	{
-		if (count($seasons) > 0)
-		{
-			$option = $seasons[0][0];
-		}
-		else
-		{
-			$option = -1;
-		}
+		$option = $seasons[0][0];
 	}
 	echo '<select name="season" id="season" onChange="' . $on_change . '" title="' . $title . '">';
-	show_option(-1, $option, get_label('All time'));
-	show_option(-2, $option, get_label('Last year'), get_label('Since the same day a year ago.'));
+	show_option(SEASON_ALL_TIME, $option, get_label('All time'));
+	show_option(SEASON_LAST_YEAR, $option, get_label('Last year'), get_label('Since the same day a year ago.'));
 	if (count($seasons) > 0)
 	{
 		foreach ($seasons as $season)
@@ -345,23 +368,29 @@ function show_seasons_select($club_id, $option, $on_change, $title)
 	}
 	else
 	{
-		if ($club_id > 0)
-		{
-			$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE g.club_id = ? and result > 0 ORDER BY g.start_time LIMIT 1', $club_id);
-		}
-		else
-		{
-			$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE result > 0 ORDER BY g.start_time LIMIT 1');
-		}
+		$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE result > 0', $condition);
+		$query->add(' ORDER BY g.start_time LIMIT 1');
 		if ($row = $query->next())
 		{
-			list($first_game_time, $first_game_timezone) = $row;
-			date_default_timezone_set($first_game_timezone);
-			$first_year = (int)date('Y', $first_game_time);
-			$this_year = (int)date('Y', $now);
-			for ($y = $this_year; $y >= $first_year; --$y)
+			list($timestamp, $timezone) = $row;
+			date_default_timezone_set($timezone);
+			$first_year = (int)date('Y', $timestamp);
+			
+			$query = new DbQuery('SELECT g.end_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE result > 0', $condition);
+			$query->add(' ORDER BY g.end_time DESC LIMIT 1');
+			if ($row = $query->next())
 			{
-				show_option(-$y, $option, $y);
+				list($timestamp, $timezone) = $row;
+				date_default_timezone_set($timezone);
+				$last_year = (int)date('Y', $timestamp);
+				if ($option == 0)
+				{
+					$option = -$last_year;
+				}
+				for ($y = $last_year; $y >= $first_year; --$y)
+				{
+					show_option(-$y, $option, $y);
+				}
 			}
 		}
 	}
@@ -376,9 +405,9 @@ function get_season_condition($season, $start_field, $end_field)
 	{
 		$condition->add(' AND EXISTS(SELECT _s.id FROM seasons _s WHERE _s.start_time <= ' . $end_field . ' AND _s.end_time > ' . $start_field . ' AND _s.id = ?)', $season);
 	}
-	else if ($season < -1)
+	else if ($season < SEASON_ALL_TIME)
 	{
-		if ($season == -2)
+		if ($season == SEASON_LAST_YEAR)
 		{
 			$condition->add(' AND ' . $end_field . ' >= UNIX_TIMESTAMP() - 31536000');
 		}

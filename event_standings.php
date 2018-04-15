@@ -64,12 +64,12 @@ class Page extends EventPageBase
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->event->club_id, $this->scoring_id, 'viewForm', get_label('Scoring system'));
+		show_scoring_select($this->event->club_id, $this->scoring_id, 'document.viewForm.submit()', get_label('Scoring system'));
 		echo ' ';
 		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, get_label('Go to the page where a specific player is located.'));
+		show_user_input('page', $this->user_name, 'event=' . $this->event->id, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
 		
 		global $_profile, $_page;

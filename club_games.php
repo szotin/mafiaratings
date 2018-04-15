@@ -92,7 +92,7 @@ class Page extends ClubPageBase
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' JOIN cities c ON c.id = a.city_id',
 			$condition);
-		$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
 			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $event_id, $event_name, $event_flags, $adr_id, $adr_name, $adr_flags) = $row;

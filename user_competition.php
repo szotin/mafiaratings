@@ -3,6 +3,8 @@
 require_once 'include/user.php';
 require_once 'include/chart.php';
 
+define('NUM_PLAYERS', 5);
+
 class Page extends UserPageBase
 {
 	private $players_list;
@@ -54,7 +56,14 @@ class Page extends UserPageBase
 	protected function js_on_load()
 	{
 		parent::js();
-		echo 'initChart("' . get_label('Rating') . '", { type: "rating", name: "' . get_label('[0] competition', $this->name) . '", players: "' . $this->players_list . '", main: ' . $this->id . ', charts:5 });';
+?>
+		chartParams.type = "rating";
+		chartParams.name = "<?php echo get_label('Competition chart'); ?>";
+		chartParams.players = "<?php echo $this->players_list; ?>";
+		chartParams.charts = "<?php echo NUM_PLAYERS; ?>";
+		chartParams.main = <?php echo $this->id; ?>;
+		initChart("<?php echo get_label('Rating'); ?>");
+<?php
 	}
 }
 

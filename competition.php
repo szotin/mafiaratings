@@ -3,6 +3,8 @@
 require_once 'include/general_page_base.php';
 require_once 'include/chart.php';
 
+define('NUM_PLAYERS', 5);
+
 class Page extends GeneralPageBase
 {
 	private $players_list;
@@ -36,7 +38,7 @@ class Page extends GeneralPageBase
 		
 		$separator = '';
 		$this->players_list = '';
-		$query->add(' ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT 5');
+		$query->add(' ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . NUM_PLAYERS);
 		while ($row = $query->next())
 		{
 			list ($user_id) = $row;
@@ -59,12 +61,18 @@ class Page extends GeneralPageBase
 	
 	protected function js_on_load()
 	{
-		parent::js();
-		echo 'initChart("' . get_label('Rating') . '", { type: "rating", name: "' . get_label('Competition') . '", players: "' . $this->players_list . '", charts:5 });';
+		parent::js_on_load();
+?>
+		chartParams.type = "rating";
+		chartParams.name = "<?php echo get_label('Competition chart'); ?>";
+		chartParams.players = "<?php echo $this->players_list; ?>";
+		chartParams.charts = "<?php echo NUM_PLAYERS; ?>";
+		initChart("<?php echo get_label('Rating'); ?>");
+<?php
 	}
 }
 
 $page = new Page();
-$page->run(get_label('Competition'), PERM_ALL);
+$page->run(get_label('Competition chart'), PERM_ALL);
 
 ?>

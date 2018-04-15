@@ -131,7 +131,7 @@ function format_rating($rating)
 	return number_format($rating, $digits);
 }
 
-function show_scoring_select($club_id, $scoring_id, $form_name, $title)
+function show_scoring_select($club_id, $scoring_id, $on_change, $title)
 {
 	$scorings = array();
 	$scoring_name = '';
@@ -148,7 +148,7 @@ function show_scoring_select($club_id, $scoring_id, $form_name, $title)
 	
 	
 	echo '<a href="#" onclick="mr.showScoring(' . $scoring_id . ')" title="' . get_label('Show [0] scoring rules.', $scoring_name) . '">' . get_label('Scoring system') . ':</a> ';
-	echo '<select name="scoring" onChange="document.' . $form_name . '.submit()" title="' . $title . '">';
+	echo '<select name="scoring" id="scoring" onChange="' . $on_change . '" title="' . $title . '">';
 	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
 	foreach ($scorings as $row)
 	{
@@ -794,6 +794,20 @@ class ScoringSystem
 	}
 }
 
+class PlayerHistoryPoint
+{
+	public $timestamp;
+	public $points;
+	public $additional_points; // convert points to an array by category later. Now there are only 2 categories, so we'd rather keep it in a separate var.
+	
+	function __construct($timestamp, $points, $additional_points)
+	{
+		$this->timestamp = $timestamp;
+		$this->points = $points;
+		$this->additional_points = $additional_points;
+	}
+}
+
 class PlayerScore
 {
 	public $id;
@@ -806,18 +820,37 @@ class PlayerScore
 	public $points;
 	public $additional_points; // convert points to an array by category later. Now there are only 2 categories, so we'd rather keep it in a separate var.
 	public $counters;
-	public $all_scores;
+	public $scores;
+	public $history;
+	public $timestamp;
 	
-	function __construct($all_scores)
+	function __construct($scores, $start_time)
 	{
 		$this->points = 0.0;
 		$this->additional_points = 0.0;
 		$this->counters = array_fill(0, SCORING_MATTER_COUNT * 4, 0);
-		$this->all_scores = $all_scores;
+		$this->scores = $scores;
+		if ($start_time > 0)
+		{
+			$this->history = array();
+			$this->timestamp = $start_time;
+		}
+		else
+		{
+			$this->history = NULL;
+			$this->timestamp = 0;
+		}
 	}
 	
-	function add_counters($scoring_flags, $player_role)
+	function add_counters($scoring_flags, $player_role, $timestamp)
 	{
+		if (is_array($this->history) && $this->timestamp != $timestamp)
+		{
+			$this->calculate_points();
+			$this->history[] = new PlayerHistoryPoint($this->timestamp, $this->points, $this->additional_points);
+			$this->timestamp = $timestamp;
+		}
+		
 		$offset = $player_role * SCORING_MATTER_COUNT;
 		$flag = 1;
 		for ($i = 0; $i < SCORING_MATTER_COUNT; ++$i)
@@ -831,8 +864,25 @@ class PlayerScore
 		}
 	}
 	
-	function calculate_points($scoring_system, $stats)
+	function finalize_points($timestamp)
 	{
+		$this->calculate_points();
+		if ($this->history != NULL)
+		{
+			if ($this->timestamp != $timestamp)
+			{
+				$this->history[] = new PlayerHistoryPoint($this->timestamp, $this->points, $this->additional_points);
+				$this->timestamp = $timestamp;
+			}
+			$this->history[] = new PlayerHistoryPoint($this->timestamp, $this->points, $this->additional_points);
+		}
+	}
+	
+	function calculate_points()
+	{
+		$scoring_system = $this->scores->scoring_system;
+		$stats = $this->scores->stats;
+		
 		$this->points = 0.0;
 		$this->additional_points = 0.0;
 		foreach ($scoring_system->rules as $rule)
@@ -924,7 +974,7 @@ function compare_scores($score1, $score2)
 		return -1;
 	}
 	
-	$sorting = $score1->all_scores->scoring_system->sorting;
+	$sorting = $score1->scores->scoring_system->sorting;
 	$r = 1;
 	for ($i = 0; $i < strlen($sorting); ++$i)
 	{
@@ -1037,6 +1087,7 @@ class Scores
 {
 	public $players;
 	public $scoring_system;
+	public $stats;
 	
 	// 
 	// $condition - query condition that limits the scope of the scores with a club, or event, or address, or country. 
@@ -1045,15 +1096,34 @@ class Scores
 	// $scope_condition - query condition that limits the players/games we are interested in. For example 
 	//                      'p.user_id IN (SELECT id FROM users WHERE club_id = 1)' calculates only the scores for players
 	//                      of a specific club. It can also filter games - for example 'p.role = 1' will calculate only sherifs points for players.
+	// $history - integer. If history is greater than 0, then all timeline is divided to the appropriate quantity of time intervals, and points earned in each interval are saved into the player's history member.
 	// Examples:
 	// new Scores($system, new SQL('AND g.event_id = 10')); // scores for the event 10
 	// new Scores($system, new SQL('AND g.event_id = 10'), new SQL('AND g.id = 982')); // what scores for the event 10 were earned in the game 982
 	// new Scores($system, new SQL('AND g.club_id = 1'), new SQL('AND g.id = 982')); // what scores for the club 1 were earned in the game 982
-	function __construct($scoring_system, $condition, $scope_condition = NULL)
+	function __construct($scoring_system, $condition, $scope_condition = NULL, $history = 0)
 	{
 		$this->scoring_system = $scoring_system;
+		
+		$start_time = 0;
+		$end_time = 0;
+		$interval = 0;
+		if ($history > 0)
+		{
+			if ($scope_condition != NULL)
+			{
+				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id', $condition, $scope_condition);
+			}
+			else
+			{
+				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id', $condition);
+			}
+			$interval = ($end_time - $start_time) / $history;
+		}
+		
+		$this->scoring_system = $scoring_system;
 		$players = array();
-		$stats = array();
+		$this->stats = array();
 		if ($scoring_system->stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
 		{
 			$query = new DbQuery('SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE 1', $condition);
@@ -1066,7 +1136,7 @@ class Scores
 					$difficulty = $civ_wins / $count;
 				}
 			}
-			$stats[SCORING_STAT_FLAG_GAME_DIFFICULTY] = (float)$difficulty;
+			$this->stats[SCORING_STAT_FLAG_GAME_DIFFICULTY] = (float)$difficulty;
 		}
 		
 		if ($scoring_system->stat_flags & SCORING_STAT_FLAG_FIRST_NIGHT_KILLING)
@@ -1076,7 +1146,7 @@ class Scores
 			while ($row = $query->next())
 			{
 				list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $games_count, $first_night_kill_count) = $row;
-				$player_score = new PlayerScore($this);
+				$player_score = new PlayerScore($this, $start_time);
 				$player_score->id = (int)$user_id;
 				$player_score->name = $user_name;
 				$player_score->flags = (int)$user_flags;
@@ -1096,22 +1166,26 @@ class Scores
 			}
 		}
 		
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE 1', $condition);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE 1', $condition);
 		if ($scope_condition != NULL)
 		{
 			$query->add($scope_condition);
 		}
+		if ($history > 0)
+		{
+			$query->add(' ORDER BY g.end_time');
+		}
 		// echo $query->get_parsed_sql();
 		while ($row = $query->next())
 		{
-			list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $scoring_flags, $player_role) = $row;
+			list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $scoring_flags, $player_role, $timestamp) = $row;
 			if (isset($players[$user_id]))
 			{
 				$player_score = $players[$user_id];
 			}
 			else
 			{
-				$player_score = new PlayerScore($this);
+				$player_score = new PlayerScore($this, $start_time);
 				$player_score->id = (int)$user_id;
 				$player_score->name = $user_name;
 				$player_score->flags = (int)$user_flags;
@@ -1122,7 +1196,11 @@ class Scores
 				
 				$players[$user_id] = $player_score;
 			}
-			$player_score->add_counters($scoring_flags, $player_role);
+			if ($interval > 0)
+			{
+				$timestamp = $start_time + round(ceil(($timestamp - $start_time) / $interval) * $interval);
+			}
+			$player_score->add_counters($scoring_flags, $player_role, $timestamp);
 		}
 		
 		$this->players = array();
@@ -1133,11 +1211,15 @@ class Scores
 			// echo '</pre><br>';
 			if ($player->get_count(SCORING_MATTER_PLAY) > 0)
 			{
-				$player->calculate_points($scoring_system, $stats);
+				$player->finalize_points($end_time);
 				$this->players[] = $player;
 			}
 		}
-		usort($this->players, 'compare_scores');
+		
+		if ($history <= 0)
+		{
+			usort($this->players, 'compare_scores');
+		}
 	}
 	
 	function get_user_page($user_id, $page_size)

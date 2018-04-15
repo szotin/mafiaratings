@@ -1140,14 +1140,15 @@ class EventPageBase extends PageBase
 			(
 				new MenuItem('event_info.php?id=' . $this->event->id, get_label('Event'), get_label('General event information'))
 				, new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings'))
+				, new MenuItem('event_competition.php?id=' . $this->event->id, get_label('Competition chart'), get_label('How players were competing on this event.'))
+				, new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event'))
 				, new MenuItem('#stats', get_label('Stats'), NULL, array
 				(
 					new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
 					, new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
 					, new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
+					, new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event'))
 				))
-				, new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event'))
-				, new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event'))
 				, new MenuItem('#resources', get_label('Resources'), NULL, array
 				(
 					new MenuItem('event_albums.php?id=' . $this->event->id, get_label('Photos'), get_label('Event photo albums'))

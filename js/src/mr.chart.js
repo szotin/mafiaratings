@@ -1,8 +1,22 @@
 var theChart = null;
-
-function updateChart(params)
+var chartParams =
 {
-	json.post("chart_ops.php", params, 
+	type: "",
+	name: "", 
+	players: "", 
+	id: 0,
+	scoring: 0,
+	season: 0,
+	charts:5
+};
+
+function updateChart(players)
+{
+	if (typeof players == "string")
+	{
+		chartParams.players = players;
+	}
+	json.post("chart_ops.php", chartParams, 
 		function(data)
 		{
 			theChart.data.datasets = data;
@@ -11,10 +25,10 @@ function updateChart(params)
 			var ctx = $("#chart-legend");
 			if (ctx.length > 0)
 			{
-				html.post("chart_legend.php", params, function(text, title)
+				html.post("chart_legend.php", chartParams, function(text, title)
 				{
 					ctx.html(text);
-					for (var i = 0; i < params.charts; ++i)
+					for (var i = 0; i < chartParams.charts; ++i)
 					{
 						var ctrl = $("#chart-player-" + i);
 						if (ctrl.length > 0)
@@ -23,16 +37,25 @@ function updateChart(params)
 							{ 
 								source: function( request, response )
 								{
-									$.getJSON("user_ops.php",
+									var autocompleteParams = 
 									{
 										list: '',
 										term: request.term
-									}, response);
+									};
+									if (chartParams.type == "event")
+									{
+										autocompleteParams["event"] = chartParams.id;
+									}
+									else if (chartParams.type == "club")
+									{
+										autocompleteParams["club"] = chartParams.id;
+									}
+									$.getJSON("user_ops.php", autocompleteParams, response);
 								},
 								select: function(event, ui) 
 								{
 									var index = event.target.id.substring(13);
-									var players = params.players;
+									var players = chartParams.players;
 									var newPlayers = "";
 									var id = "" + ui.item.id;
 									var currentId;
@@ -74,8 +97,8 @@ function updateChart(params)
 										pos = end + 1;
 									}
 									console.log(newPlayers);
-									params.players = newPlayers;
-									updateChart(params);
+									chartParams.players = newPlayers;
+									updateChart();
 								},
 								minLength: 0
 							})
@@ -88,7 +111,7 @@ function updateChart(params)
 	);
 }
 
-function initChart(name, params)
+function initChart(name)
 {
 	var ctx = document.getElementById("chart");
 	theChart = new Chart(ctx,
@@ -134,5 +157,5 @@ function initChart(name, params)
 		}
 	});
 	
-	updateChart(params);
+	updateChart();
 }

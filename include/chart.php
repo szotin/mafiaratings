@@ -6,7 +6,8 @@ define('MAX_CHARTS_COUNT', 5);
 
 $_chart_colors = array(
 	new ChartColor(51, 153, 255),
-	new ChartColor(186, 140, 220),
+	// new ChartColor(186, 140, 220),
+	new ChartColor(175, 121, 215),
 	new ChartColor(146, 208, 80),
 	new ChartColor(215, 160, 100),
 	new ChartColor(122, 124, 192));
