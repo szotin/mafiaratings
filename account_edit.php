@@ -45,7 +45,6 @@ try
 	// echo '<tr><td>' . get_label('Main club') . ':</td><td>';
 	// show_city_input('form-club', $_profile->city, 'form-country');
 	// echo '</td></tr>';
-	
 	echo '<tr><td class="dark" valign="top">'.get_label('Main club').':</td><td class="light">';
 	echo '<select id="form-club">';
 	show_option(0, $club_id, '');
@@ -151,7 +150,7 @@ try
 catch (Exception $e)
 {
 	Exc::log($e);
-	echo $e->getMessage();
+	echo '<error=' . $e->getMessage() . '>';
 }
 
 ?>

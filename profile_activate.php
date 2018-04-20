@@ -37,7 +37,7 @@ try
 catch (Exception $e)
 {
 	Exc::log($e);
-	echo $e->getMessage();
+	echo '<error=' . $e->getMessage() . '>';
 }
 
 ?>

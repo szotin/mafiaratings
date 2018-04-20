@@ -435,7 +435,7 @@ var html = new function()
 			}
 			return text.substring(pos);
 		}
-		return "Unknown error";
+		return text;
 	}
 	
 	this.post = function(page, params, onSuccess, onError)

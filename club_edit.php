@@ -103,7 +103,7 @@ try
 catch (Exception $e)
 {
 	Exc::log($e, true);
-	echo $e->getMessage();
+	echo '<error=' . $e->getMessage() . '>';
 }
 
 ?>
