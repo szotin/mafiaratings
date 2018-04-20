@@ -144,13 +144,14 @@ function show_country_buttons($id, $name, $flags)
 
 	if ($_profile != NULL && $_profile->is_admin())
 	{
-		echo '<button class="icon" onclick="mr.deleteCountry(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
 		if (($flags & COUNTRY_FLAG_NOT_CONFIRMED) != 0)
 		{
-			echo '<button class="icon" onclick="mr.editCountry(' . $id . ')" title="' . get_label('Confirm [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.declineCountry(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.acceptCountry(' . $id . ')" title="' . get_label('Confirm [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
 		}
 		else
 		{
+			echo '<button class="icon" onclick="mr.deleteCountry(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.editCountry(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
 		}
 	}

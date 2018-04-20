@@ -404,12 +404,13 @@ var http = new function()
 
 var html = new function()
 {
-	function _success(text, onSuccess)
+	function _success(text, onSuccess, onError)
 	{
 		var title = "";
+		var pos;
 		if (text.substring(0, 7) == "<title=")
 		{
-			var pos = text.indexOf(">");
+			pos = text.indexOf(">");
 			if (pos > 0)
 			{
 				title = text.substring(7, pos);
@@ -423,21 +424,28 @@ var html = new function()
 			return onSuccess(text, title);
 		}
 		
-		if (text != '')
+		pos = text.lastIndexOf("<error=");
+		if (pos > 0)
 		{
-			console.log(text);
+			pos += 7;
+			var end = text.lastIndexOf(">");
+			if (end > 0)
+			{
+				return text.substring(pos, end);
+			}
+			return text.substring(pos);
 		}
-		return text;
+		return "Unknown error";
 	}
 	
 	this.post = function(page, params, onSuccess, onError)
 	{
-		http.post(page, params, function(text) { return _success(text, onSuccess); }, onError);
+		http.post(page, params, function(text) { return _success(text, onSuccess, onError); }, onError);
 	}
 	
 	this.get = function(page, onSuccess, onError)
 	{
-		http.get(page, function(text) { return _success(text, onSuccess); }, onError);
+		http.get(page, function(text) { return _success(text, onSuccess, onError); }, onError);
 	}
 } // html
 

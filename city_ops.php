@@ -33,7 +33,7 @@ try
 	else if (isset($_REQUEST['cname']))
 	{
 		$cname = $_REQUEST['cname'];
-		$query = new DbQuery('SELECT id FROM countries WHERE name_en = ? OR name_ru = ? ORDER BY id LIMIT 1', $cname, $cname);
+		$query = new DbQuery('SELECT country_id FROM country_names WHERE name = ? ORDER BY country_id LIMIT 1', $cname);
 		if ($row = $query->next())
 		{
 			list($country_id) = $row;
@@ -43,7 +43,7 @@ try
 	$cities = array();
 
 	$delim = ' WHERE ';
-	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id');
+	$query = new DbQuery('SELECT DISTINCT i.id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM city_names n JOIN cities i ON i.id = n.city_id JOIN countries o ON o.id = i.country_id');
 	if ($country_id > 0)
 	{
 		$query->add($delim . 'i.country_id = ?', $country_id);
@@ -52,7 +52,7 @@ try
 	if ($term != '')
 	{
 		$term = '%' . $term . '%';
-		$query->add($delim . '(i.name_en LIKE(?) OR i.name_ru LIKE(?))', $term, $term);
+		$query->add($delim . 'n.name LIKE(?)', $term);
 	}
 	$query->add(' ORDER BY i.name_' . $_lang_code . ' LIMIT 10');
 	

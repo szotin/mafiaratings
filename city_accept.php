@@ -9,36 +9,50 @@ initiate_session();
 
 try
 {
-	dialog_title(get_label('Create [0]', get_label('city')));
-
+	dialog_title(get_label('Accept city'));
+		
 	if ($_profile == NULL || !$_profile->is_admin())
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}
 	
+	if (!isset($_REQUEST['id']))
+	{
+		throw new FatalExc(get_label('Unknown [0]', get_label('city')));
+	}
+	$id = $_REQUEST['id'];
+	
+	list($country_id, $country_name, $name_en, $name_ru, $timezone, $flags, $area_id) = Db::record(
+		get_label('city'), 
+		'SELECT i.country_id, o.name_' . $_lang_code . ', i.name_en, i.name_ru, i.timezone, i.flags, i.area_id FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.id = ?',
+		$id);
+		
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="200">'.get_label('City name in English').':</td><td><input id="form-name_en"></td></tr>';
-	echo '<tr><td>'.get_label('City name in Russian').':</td><td><input id="form-name_ru"></td></tr>';
+	echo '<tr><td width="200">'.get_label('City name in English').':</td><td><input id="form-name_en" value="' . htmlspecialchars($name_en, ENT_QUOTES) . '"></td></tr>';
+	echo '<tr><td>'.get_label('City name in Russian').':</td><td><input id="form-name_ru" value="' . htmlspecialchars($name_ru, ENT_QUOTES) . '"></td></tr>';
 	
 	echo '<tr><td>'.get_label('Country').':</td><td>';
-	show_country_input('form-country', COUNTRY_DETECT);
+	show_country_input('form-country', $country_name);
 	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Time zone') . ':</td><td>';
-	show_timezone_input(get_timezone());
+	show_timezone_input($timezone);
 	echo '</td></tr>';
 	
-	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', i.timezone, o.id, o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.area_id = i.id ORDER BY i.name_' . $_lang_code);
+	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', i.timezone, o.id, o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.area_id = i.id AND i.id <> ? ORDER BY i.name_' . $_lang_code, $id);
 	echo '<tr><td>' . get_label('Is near bigger city') . ':</td><td>';
 	echo '<select id="form-near" onChange="nearChange()"><option value="-1"></option>';
 	while ($row = $query->next())
 	{
 		list ($cid, $cname, $ctimezone, $ccid, $ccname) = $row;
-		echo '<option value="' . $cid . ';' . $ctimezone . ';' . $ccid . ';' . $ccname . '">' . $cname . '</option>';
+		echo '<option value="' . $cid . ';' . $ctimezone . ';' . $ccid . ';' . $ccname . '"';
+		if ($cid == $area_id)
+		{
+			echo ' selected';
+		}
+		echo '>' . $cname . '</option>';
 	}
 	echo '<select></td></tr>';
-	
-	echo '<tr><td colspan="2" align="right"><input type="checkbox" id="form-confirm" checked> ' . get_label('confirm') . '</td></tr>';
 	echo '</table>';
 	
 ?>
@@ -82,13 +96,14 @@ try
 		var data = parseNearVal($("#form-near").val());
 		json.post("location_ops.php",
 		{
+			id: <?php echo $id; ?>,
 			name_en: $("#form-name_en").val(),
 			name_ru: $("#form-name_ru").val(),
 			country: $("#form-country").val(),
 			timezone: getTimezone(),
+			confirm: 1,
 			near: data.id,
-			confirm: ($('#form-confirm').attr('checked') ? 1 : 0),
-			new_city: ""
+			edit_city: ""
 		},
 		onSuccess);
 	}
@@ -99,7 +114,7 @@ try
 catch (Exception $e)
 {
 	Exc::log($e);
-	echo '<error=' . $e->getMessage() . '>';
+	echo $e->getMessage();
 }
 
 ?>

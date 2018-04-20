@@ -32,6 +32,7 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 			'INSERT INTO cities (country_id, name_en, name_ru, flags, timezone) VALUES (?, ?, ?, ' . CITY_FLAG_NOT_CONFIRMED . ', ?)',
 			$country_id, $city, $city, $timezone);
 		list($city_id) = Db::record(get_label('city'), 'SELECT LAST_INSERT_ID()');
+		Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $city);
 		list ($country_name) = Db::record(get_label('country'), 'SELECT id, name_' . $_lang_code . ' FROM countries WHERE id = ?', $country_id);
 		$log_details = 
 			'country=' . $country_name . ' (' . $country_id . ')' .
@@ -149,13 +150,14 @@ function show_city_buttons($id, $name, $flags)
 
 	if ($_profile != NULL && $_profile->is_admin())
 	{
-		echo '<button class="icon" onclick="mr.deleteCity(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
 		if (($flags & CITY_FLAG_NOT_CONFIRMED) != 0)
 		{
-			echo '<button class="icon" onclick="mr.editCity(' . $id . ')" title="' . get_label('Confirm [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.declineCity(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.acceptCity(' . $id . ')" title="' . get_label('Confirm [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
 		}
 		else
 		{
+			echo '<button class="icon" onclick="mr.deleteCity(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.editCity(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
 		}
 	}

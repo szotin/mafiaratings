@@ -26,11 +26,11 @@ try
 	
 	$countries = array();
 	
-	$query = new DbQuery('SELECT id, name_' . $_lang_code . ' FROM countries');
+	$query = new DbQuery('SELECT DISTINCT c.id, c.name_' . $_lang_code . ' FROM country_names n JOIN countries c ON c.id = n.country_id');
 	if ($term != '')
 	{
 		$term = '%' . $term . '%';
-		$query->add(' WHERE name_en LIKE ? OR name_ru LIKE ?', $term, $term);
+		$query->add(' WHERE n.name LIKE ?', $term);
 	}
 	$query->add(' ORDER BY name_' . $_lang_code . ' LIMIT 10');
 	

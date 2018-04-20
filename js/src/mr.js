@@ -267,6 +267,16 @@ var mr = new function()
 		dlg.form("city_edit.php?id=" + id, refr);
 	}
 
+	this.acceptCity = function(id)
+	{
+		dlg.form("city_accept.php?id=" + id, refr);
+	}
+
+	this.declineCity = function(id)
+	{
+		dlg.form("city_decline.php?id=" + id, refr);
+	}
+
 	//--------------------------------------------------------------------------------------
 	// club
 	//--------------------------------------------------------------------------------------
@@ -343,6 +353,16 @@ var mr = new function()
 	this.editCountry = function(id)
 	{
 		dlg.form("country_edit.php?id=" + id, refr);
+	}
+
+	this.declineCountry = function(id)
+	{
+		dlg.form("country_decline.php?id=" + id, refr);
+	}
+
+	this.acceptCountry = function(id)
+	{
+		dlg.form("country_accept.php?id=" + id, refr);
 	}
 
 	//--------------------------------------------------------------------------------------

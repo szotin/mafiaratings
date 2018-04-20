@@ -71,6 +71,14 @@ try
 		}
 		
 		$op = 'Changed';
+		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ? AND name = (SELECT name_en FROM cities WHERE id = ?)', $id, $id);
+		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ? AND name = (SELECT name_ru FROM cities WHERE id = ?)', $id, $id);
+		Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $id, $name_en);
+		if ($name_en != $name_ru)
+		{
+			Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $id, $name_ru);
+		}
+		
 		$query = new DbQuery('UPDATE cities SET country_id = ?, name_en = ?, name_ru = ?, area_id = ?, timezone = ?', $country_id, $name_en, $name_ru, $area_id, $timezone);
 		if ($confirm)
 		{
@@ -148,6 +156,13 @@ try
 		{
 			Db::exec(get_label('city'), 'UPDATE cities SET area_id = id WHERE id = ?', $city_id);
 		}
+		
+		Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_en);
+		if ($name_ru != $name_en)
+		{
+			Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_ru);
+		}
+		
 		$log_details =
 			'country=' . $country . ' (' . $country_id .
 			")<br>name_en=" . $name_en .
@@ -169,11 +184,46 @@ try
 		
 		Db::begin();
 		
-		list($new_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $repl_id);
+		list($new_name, $new_area_id) = Db::record(get_label('city'), 'SELECT name_en, area_id FROM cities WHERE id = ?', $repl_id);
 		Db::exec(get_label('club'), 'UPDATE clubs SET city_id = ? WHERE city_id = ?', $repl_id, $id);
 		Db::exec(get_label('club'), 'UPDATE club_requests SET city_id = ? WHERE city_id = ?', $repl_id, $id);
 		Db::exec(get_label('address'), 'UPDATE addresses SET city_id = ? WHERE city_id = ?', $repl_id, $id);
 		Db::exec(get_label('user'), 'UPDATE users SET city_id = ? WHERE city_id = ?', $repl_id, $id);
+		Db::exec(get_label('city'), 'UPDATE cities SET area_id = ? WHERE area_id = ?', $new_area_id, $id);
+		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ?', $id);
+		Db::exec(get_label('city'), 'DELETE FROM cities WHERE id = ?', $id);
+
+		$log_details = 'replaced with=' . $new_name . ' (' . $repl_id . ')';
+		db_log('city', 'Deleted', $log_details, $id);
+		Db::commit();
+		
+		if ($id == $_profile->city_id)
+		{
+			$_profile->city_id = $repl_id;
+			list ($_profile->country_id, $_profile->timezone) =
+				Db::record(get_label('city'), 'SELECT country_id, timezone FROM cities WHERE id = ?', $repl_id);
+		}
+		$_profile->update_clubs();
+	}
+	else if (isset($_POST['decline_city']))
+	{
+		if (!isset($_POST['id']))
+		{
+			throw new FatalExc(get_label('Unknown [0]', get_label('city')));
+		}
+		$id = $_POST['id'];
+		$repl_id = $_POST['repl'];
+		
+		Db::begin();
+		
+		list($new_name, $new_area_id) = Db::record(get_label('city'), 'SELECT name_en, area_id FROM cities WHERE id = ?', $repl_id);
+		Db::exec(get_label('club'), 'UPDATE clubs SET city_id = ? WHERE city_id = ?', $repl_id, $id);
+		Db::exec(get_label('club'), 'UPDATE club_requests SET city_id = ? WHERE city_id = ?', $repl_id, $id);
+		Db::exec(get_label('address'), 'UPDATE addresses SET city_id = ? WHERE city_id = ?', $repl_id, $id);
+		Db::exec(get_label('user'), 'UPDATE users SET city_id = ? WHERE city_id = ?', $repl_id, $id);
+		Db::exec(get_label('city'), 'UPDATE cities SET area_id = ? WHERE area_id = ?', $new_area_id, $id);
+		Db::exec(get_label('city'), 'UPDATE city_names n1 SET n1.city_id = ? WHERE n1.city_id = ? AND n1.name NOT IN (SELECT * FROM (SELECT n2.name FROM city_names n2 WHERE n2.city_id = ?) as t)', $repl_id, $id, $repl_id);
+		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ?', $id);
 		Db::exec(get_label('city'), 'DELETE FROM cities WHERE id = ?', $id);
 
 		$log_details = 'replaced with=' . $new_name . ' (' . $repl_id . ')';
@@ -232,6 +282,14 @@ try
 		if ($query->next())
 		{
 			throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('Country code'), $code));
+		}
+		
+		Db::exec(get_label('country'), 'DELETE FROM country_names WHERE country_id = ? AND name = (SELECT name_en FROM countries WHERE id = ?)', $id, $id);
+		Db::exec(get_label('country'), 'DELETE FROM country_names WHERE country_id = ? AND name = (SELECT name_ru FROM countries WHERE id = ?)', $id, $id);
+		Db::exec(get_label('country'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $id, $name_en);
+		if ($name_en != $name_ru)
+		{
+			Db::exec(get_label('country'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $id, $name_ru);
 		}
 		
 		$op = 'Changed';
@@ -302,6 +360,13 @@ try
 			'INSERT INTO countries (name_en, name_ru, code, flags) VALUES (?, ?, ?, ?)',
 			$name_en, $name_ru, $code, $flags);
 		list ($country_id) = Db::record(get_label('country'), 'SELECT LAST_INSERT_ID()');
+		
+		Db::exec(get_label('country'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $name_en);
+		if ($name_en != $name_ru)
+		{
+			Db::exec(get_label('country'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $name_ru);
+		}
+		
 		$log_details = 
 			'name_en=' . $name_en .
 			"<br>name_ru=" . $name_ru .
@@ -324,6 +389,34 @@ try
 		
 		list($new_name) = Db::record(get_label('country'), 'SELECT name_en FROM countries WHERE id = ?', $repl_id);
 		Db::exec(get_label('city'), 'UPDATE cities SET country_id = ? WHERE country_id = ?', $repl_id, $id);
+		Db::exec(get_label('country'), 'DELETE FROM country_names WHERE country_id = ?', $id);
+		Db::exec(get_label('country'), 'DELETE FROM countries WHERE id = ?', $id);
+		
+		$log_details = 'replaced by=' . $new_name . ' (' . $repl_id . ')';
+		db_log('country', 'Deleted', $log_details, $id);
+		Db::commit();
+		
+		if ($id == $_profile->country_id)
+		{
+			$_profile->country_id = $repl_id;
+		}
+		$_profile->update_clubs();
+	}
+	else if (isset($_POST['decline_country']))
+	{
+		if (!isset($_POST['id']))
+		{
+			throw new FatalExc(get_label('Unknown [0]', get_label('country')));
+		}
+		$id = $_POST['id'];
+		$repl_id = $_POST['repl'];
+		
+		Db::begin();
+		
+		list($new_name) = Db::record(get_label('country'), 'SELECT name_en FROM countries WHERE id = ?', $repl_id);
+		Db::exec(get_label('city'), 'UPDATE cities SET country_id = ? WHERE country_id = ?', $repl_id, $id);
+		Db::exec(get_label('country'), 'UPDATE country_names n1 SET n1.country_id = ? WHERE n1.country_id = ? AND n1.name NOT IN (SELECT * FROM (SELECT n2.name FROM country_names n2 WHERE n2.country_id = ?) as t)', $repl_id, $id, $repl_id);
+		Db::exec(get_label('country'), 'DELETE FROM country_names WHERE country_id = ?', $id);
 		Db::exec(get_label('country'), 'DELETE FROM countries WHERE id = ?', $id);
 		
 		$log_details = 'replaced by=' . $new_name . ' (' . $repl_id . ')';
