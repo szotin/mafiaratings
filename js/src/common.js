@@ -336,9 +336,14 @@ var http = new function()
 	
 	this.errorMsg = function(response, page)
 	{
+		console.log(response);
 		if (typeof response.responseText != "undefined" && response.responseText.length > 0)
 		{
 			return response.responseText;
+		}
+		if (typeof response.statusText != "undefined" && response.statusText.length > 0)
+		{
+			return response.statusText;
 		}
 		return l('URLNotFound', page);
 	}

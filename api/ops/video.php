@@ -81,7 +81,15 @@ class ApiPage extends OpsApiPageBase
 			$lang -= $lang & ($lang - 1);
 		}
 		
-		$title = get_youtube_info($video)['title'];
+		$info = get_youtube_info($video);
+		if (isset($info['title']))
+		{
+			$title = $info['title'];
+		}
+		else
+		{
+			$title = 'Video';
+		}
 		
 		Db::begin();
 		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -269,7 +277,16 @@ class ApiPage extends OpsApiPageBase
 		
 		$game_id = (int)get_required_param('game_id');
 		$video = get_youtube_id(get_required_param('video'));
-		$title = get_youtube_info($video)['title'];
+		$info = get_youtube_info($video);
+		if (isset($info['title']))
+		{
+			$title = $info['title'];
+		}
+		else
+		{
+			$title = 'Video';
+		}
+		
 		$post_time = time();
 		
 		Db::begin();
