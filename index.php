@@ -66,36 +66,25 @@ class Page extends GeneralPageBase
 		return false;
 	}
 	
-	private function show_changes($interval, $rows, $columns)
+	private function show_changes($rows, $columns)
 	{
 		global $_profile;
 		
 		$snapshot = new Snapshot(time());
 		$snapshot->shot();
-		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT ' . $interval);
-		
-		$prev_time = 0;
-		$prev_snapshot = NULL;
-		for ($i = 0; $i < $interval; ++$i)
-		{
-			$row = $query->next();
-			if (!$row)
-			{
-				$prev_snapshot = new Snapshot($prev_time);
-				break;
-			}
-			list($prev_time, $json) = $row;
-		}
-		
-		if ($prev_snapshot == NULL)
+		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT 2');
+		while ($row = $query->next())
 		{
 			list($prev_time, $json) = $row;
 			$prev_snapshot = new Snapshot($prev_time, $json);
 			$prev_snapshot->load_user_details();
+			$diff = $snapshot->compare($prev_snapshot);
+			if (count($diff) > 0)
+			{
+				break;
+			}
 		}
-		
-		$diff = $snapshot->compare($prev_snapshot);
-		if (count($diff) == 0)
+		if (!isset($diff) || count($diff) == 0)
 		{
 			return;
 		}
@@ -314,7 +303,7 @@ class Page extends GeneralPageBase
 			}
 		}
 		
-		$this->show_changes(2, 10, 1);
+		$this->show_changes(10, 1);
 		
 		// ratings
 		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE u.games > 0');
