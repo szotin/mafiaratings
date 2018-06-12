@@ -97,16 +97,12 @@ try
 		echo '</td></tr>';
 	}
 	
+	echo '<tr class=' . $class . '><td width="32" valign="top" class="darker" align="center">';
 	if ($_profile != NULL)
 	{
-		echo '<tr class=' . $class . '><td width="32" valign="top" class="darker" align="center">';
 		show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR, 32);
-		echo '</td><td style="padding:5px;"><textarea class="comment" id="comment" onkeyup="mr.checkCommentArea()" placeholder="' . get_label('Write a comment...') . '"></textarea></td><tr>';
 	}
-	else if ($no_content)
-	{
-		echo '<tr><td>' . get_label('No comments') . '</td></tr>';
-	}
+	echo '</td><td style="padding:5px;"><textarea class="comment" id="comment" onkeyup="mr.checkCommentArea()" placeholder="' . get_label('Write a comment...') . '"></textarea></td><tr>';
 	
 	echo '</table></td></tr></table><ok>';
 }

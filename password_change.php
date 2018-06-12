@@ -16,20 +16,20 @@ try
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td class="dark" width="160">' . get_label('Enter old password') . ':</td><td class="light"><input type="password" id="old_pwd"></td></tr>';
-	echo '<tr><td class="dark">' . get_label('Enter new password') . ':</td><td class="light"><input type="password" id="new_pwd"></td></tr>';
-	echo '<tr><td class="dark">' . get_label('Confirm new password') . ':</td><td class="light"><input type="password" id="confirm_pwd"></td></tr>';
+	echo '<tr><td class="dark">' . get_label('Enter new password') . ':</td><td class="light"><input type="password" id="pwd1"></td></tr>';
+	echo '<tr><td class="dark">' . get_label('Confirm new password') . ':</td><td class="light"><input type="password" id="pwd2"></td></tr>';
 	echo '</table>';
 ?>
 	<script>
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
-		json.post("profile_ops.php",
+		json.post("api/ops/account.php",
 		{
-			old_pwd: $("#old_pwd").val(),
-			new_pwd: $("#new_pwd").val(),
-			confirm_pwd: $("#confirm_pwd").val(),
-			change_pwd: ""
+			op: 'password_change'
+			, old_pwd: $("#old_pwd").val()
+			, pwd1: $("#pwd1").val()
+			, pwd2: $("#pwd2").val()
 		},
 		onSuccess);
 	}

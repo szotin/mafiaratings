@@ -47,16 +47,16 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("club_ops.php",
-			{
-				id: <?php echo $club_id; ?>,
-				name: $("#form-name").val(),
-				address: $("#form-address").val(),
-				city: $("#form-city").val(),
-				country: $("#form-country").val(),
-				new_address: ""
-			},
-			onSuccess);
+		json.post("api/ops/address.php",
+		{
+			op: "create"
+			, club_id: <?php echo $club_id; ?>
+			, name: $("#form-name").val()
+			, address: $("#form-address").val()
+			, city: $("#form-city").val()
+			, country: $("#form-country").val()
+		},
+		onSuccess);
 	}
 	</script>
 <?php

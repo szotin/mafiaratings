@@ -1,10 +1,10 @@
 <?php
 
-require_once 'include/db.php';
-require_once 'include/game_log.php';
-require_once 'include/game_player.php';
-require_once 'include/game_voting.php';
-require_once 'include/game_rules.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/game_log.php';
+require_once __DIR__ . '/game_player.php';
+require_once __DIR__ . '/game_voting.php';
+require_once __DIR__ . '/game_rules.php';
 
 define('GAME_FLAG_SIMPLIFIED_CLIENT', 2);
 

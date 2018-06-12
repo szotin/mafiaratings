@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/error.php';
-require_once 'include/server.php';
+require_once __DIR__ . '/error.php';
+require_once __DIR__ . '/server.php';
 
 class SQL
 {

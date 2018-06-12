@@ -35,7 +35,7 @@ try
 	
 	$langs = $club->langs;
 	
-	date_default_timezone_set($club->timezone);
+	date_default_timezone_set(get_timezone());
 	$date = date('m/d/Y', $time);
 	$hour = date('G', $time);
 	$minute = 0;
@@ -84,12 +84,13 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("video_ops.php",
+		json.post("api/ops/video.php",
 		{
-			vtype: $("#form-type").val(),
-			lang: $("#form-lang").val(),
-			time: $("#form-date").val() + " " + $("#form-hour").val() + ":" + $("#form-minute").val(),
-			edit: <?php echo $video_id; ?>
+			op: "change"
+			, video_id: <?php echo $video_id; ?>
+			, vtype: $("#form-type").val()
+			, lang: $("#form-lang").val()
+			, time: $("#form-date").val() + " " + $("#form-hour").val() + ":" + $("#form-minute").val()
 		},
 		onSuccess);
 	}

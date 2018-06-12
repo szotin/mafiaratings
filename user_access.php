@@ -37,14 +37,14 @@ try
 		
 		function commit(onSuccess)
 		{
-			json.post("user_ops.php",
+			json.post("api/ops/user.php",
 			{
-				id: <?php echo $user_id; ?>,
-				club: <?php echo $club_id; ?>,
+				op: 'access',
+				user_id: <?php echo $user_id; ?>,
+				club_id: <?php echo $club_id; ?>,
 				manager: ($("#form-manager").attr("checked") ? 1 : 0),
 				moder: ($("#form-moder").attr("checked") ? 1 : 0),
-				player: ($("#form-player").attr("checked") ? 1 : 0),
-				access: ""
+				player: ($("#form-player").attr("checked") ? 1 : 0)
 			},
 			onSuccess);
 		}
@@ -59,11 +59,11 @@ try
 		
 		function commit(onSuccess)
 		{
-			json.post("user_ops.php",
+			json.post("api/ops/user.php",
 			{
-				id: <?php echo $user_id; ?>,
-				admin: ($("#form-admin").attr("checked") ? 1 : 0),
-				access: ""
+				op: 'site_access',
+				user_id: <?php echo $user_id; ?>,
+				admin: ($("#form-admin").attr("checked") ? 1 : 0)
 			},
 			onSuccess);
 		}

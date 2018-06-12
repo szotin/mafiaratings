@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/session.php';
-require_once 'include/user_location.php';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/user_location.php';
 
 class CCCFilter
 {
@@ -130,7 +130,7 @@ class CCCFilter
 		{ 
 			source: function( request, response )
 			{
-				$.getJSON("ccc_ops.php",
+				$.getJSON("api/control/ccc.php",
 				{
 					flags: "<?php echo $this->flags; ?>",
 					term: $("#<?php echo $this->name; ?>").val()

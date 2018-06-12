@@ -32,18 +32,20 @@ try
 		$club_id = 0;
 	}
 	
+	list ($city_name, $country_name) = Db::record(get_label('city'), 'SELECT ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ' FROM cities ct JOIN countries cr ON cr.id = ct.country_id WHERE ct.id = ?', $_profile->city_id);
+	
 	echo '<tr><td class="dark">' . get_label('Email') . ':</td><td class="light"><input id="form-email" value="' . $_profile->user_email . '"></td></tr>';
 	
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
-	show_country_input('form-country', $_profile->country, 'form-city');
+	show_country_input('form-country', $country_name, 'form-city');
 	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('City') . ':</td><td>';
-	show_city_input('form-city', $_profile->city, 'form-country');
+	show_city_input('form-city', $city_name, 'form-country');
 	echo '</td></tr>';
 	
 	// echo '<tr><td>' . get_label('Main club') . ':</td><td>';
-	// show_city_input('form-club', $_profile->city, 'form-country');
+	// show_city_input('form-club', $city_name, 'form-country');
 	// echo '</td></tr>';
 	echo '<tr><td class="dark" valign="top">'.get_label('Main club').':</td><td class="light">';
 	echo '<select id="form-club">';
@@ -96,7 +98,7 @@ try
 		echo ' checked';
 	}
 	echo '>'.get_label('I would like to receive emails when someone replies to me or sends me a private message.');
-	echo '<br><input type="checkbox" id="form-private_message_notify"';
+	echo '<br><input type="checkbox" id="form-photo_notify"';
 	if (($_profile->user_flags & U_FLAG_PHOTO_NOTIFY) != 0)
 	{
 		echo ' checked';
@@ -107,41 +109,24 @@ try
 	show_upload_script(USER_PIC_CODE, $_profile->user_id);
 ?>
 	<script>
-	function doCommit(onSuccess)
-	{
-		var languages = mr.getLangs();
-		json.post("profile_ops.php",
-		{
-			name: $("#form-name").val(),
-			email: $("#form-email").val(),
-			club: $("#form-club").val(),
-			male: ($("#form-male").attr("checked") ? 1 : 0),
-			country: $("#form-country").val(),
-			city: $("#form-city").val(),
-			phone: $("#form-phone").val(),
-			langs: languages,
-			message_notify: ($("#form-message_notify").attr("checked") ? 1 : 0),
-			private_message_notify: ($("#form-private_message_notify").attr('checked') ? 1 : 0),
-			edit_account: ""
-		},
-		onSuccess);
-	}
-	
 	function commit(onSuccess)
 	{
-		if ($("#form-email").val() != "<?php echo $_profile->user_email; ?>")
+		var languages = mr.getLangs();
+		json.post("api/ops/account.php",
 		{
-			dlg.yesNo(
-				"<?php echo get_label('<p>Changing your email address deactivates your account. You will need to activate it back using your new email address.</p><p>Do you want to change it?</p>'); ?>", null, null,
-				function()
-				{
-					doCommit(onSuccess);
-				});
-		}
-		else
-		{
-			doCommit(onSuccess);
-		}
+			op: 'edit'
+			, name: $("#form-name").val()
+			, email: $("#form-email").val()
+			, club_id: $("#form-club").val()
+			, male: ($("#form-male").attr("checked") ? 1 : 0)
+			, country: $("#form-country").val()
+			, city: $("#form-city").val()
+			, phone: $("#form-phone").val()
+			, langs: languages
+			, message_notify: ($("#form-message_notify").attr("checked") ? 1 : 0)
+			, photo_notify: ($("#form-photo_notify").attr('checked') ? 1 : 0)
+		},
+		onSuccess);
 	}
 	</script>
 <?php

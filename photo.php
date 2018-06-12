@@ -378,6 +378,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Photo'), PERM_ALL);
+$page->run(get_label('Photo'));
 
 ?>

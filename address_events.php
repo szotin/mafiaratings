@@ -16,17 +16,11 @@ define('ETYPE_ALL', 3);
 
 class Page extends AddressPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0] events', $this->name);
-	}
-
 	protected function show_body()
 	{
 		global $_profile, $_page;
 		
-		$season = 0;
+		$season = SEASON_ALL_TIME;
 		if (isset($_REQUEST['season']))
 		{
 			$season = (int)$_REQUEST['season'];
@@ -76,7 +70,7 @@ class Page extends AddressPageBase
 				' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users',
 			$condition);
 		$query->add(' ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
-			
+		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
 		echo '<td colspan="2">' . get_label('Event') . '</td>';
@@ -114,6 +108,6 @@ class Page extends AddressPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Events'), PERM_ALL);
+$page->run(get_label('Events'));
 
 ?>

@@ -1,7 +1,7 @@
 <?php
 
-require_once('include/languages.php');
-require_once('include/db.php');
+require_once __DIR__ . '/languages.php';
+require_once __DIR__ . '/db.php';
 
 // Example:
 // get_label('Hi [1]! You scored [0] points! [2] [aaa]', 40, 'Vasya');
@@ -74,7 +74,7 @@ function format_date($format, $timestamp, $timezone, $lang = LANG_NO)
 	{
 		if (!isset($_date_translations[$lang_code]))
 		{
-			$_date_translations[$lang_code] = include('include/languages/' . $lang_code . '/date.php');
+			$_date_translations[$lang_code] = include(__DIR__ . '/languages/' . $lang_code . '/date.php');
 		}
 		$translations = $_date_translations[$lang_code];
 	}

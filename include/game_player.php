@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/db.php';
-require_once 'include/game_log.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/game_log.php';
 
 // roles
 define('PLAYER_ROLE_CIVILIAN', 0);

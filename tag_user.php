@@ -130,6 +130,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Tag player'), PERM_ALL);
+$page->run(get_label('Tag player'));
 
 ?>

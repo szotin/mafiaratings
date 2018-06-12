@@ -14,7 +14,6 @@ class Page extends UserPageBase
 		global $_profile;
 	
 		parent::prepare();
-		$this->_title = get_label('[0] compare', $this->title);
 		
 		$this->my_id = -1;
 		if ($_profile != NULL)
@@ -77,6 +76,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0] compare', get_label('User')), PERM_ALL);
+$page->run(get_label('Сomparison'));
 
 ?>

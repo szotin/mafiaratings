@@ -43,12 +43,6 @@ function show_permissions($user_flags)
 
 class Page extends UserPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = $this->title;
-	}
-	
 	protected function add_headers()
 	{
 		parent::add_headers();
@@ -248,6 +242,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0] info', get_label('User')), PERM_ALL);
+$page->run(get_label('Main Page'));
 
 ?>

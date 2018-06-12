@@ -10,14 +10,6 @@ define("PAGE_SIZE",10);
 
 class Page extends ClubPageBase
 {
-	protected function prepare()
-	{
-		global $_profile;
-	
-		parent::prepare();
-		$this->_title = get_label('[0] adverts', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		global $_profile, $_page;
@@ -64,6 +56,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Club adverts'), UC_PERM_MANAGER);
+$page->run(get_label('Adverts'), UC_PERM_MANAGER);
 
 ?>

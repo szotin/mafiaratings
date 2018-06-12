@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/languages.php';
-require_once 'include/url.php';
+require_once __DIR__ . '/languages.php';
+require_once __DIR__ . '/url.php';
 
 class Tag
 {

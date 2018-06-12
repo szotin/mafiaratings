@@ -84,6 +84,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('The game'), PERM_ALL);
+$page->run(get_label('The game'));
 
 ?>

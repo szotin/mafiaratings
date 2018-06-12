@@ -160,7 +160,7 @@ function get_langs($def)
 	
 	if (isset($_REQUEST['langs']))
 	{
-		return 'langs=' . $_REQUEST['langs'];
+		return (int)$_REQUEST['langs'];
 	}
 	
 	if (isset($_REQUEST['langs_set']))
@@ -249,6 +249,16 @@ function get_browser_lang()
 		}
 	}
 	return $row;
+}
+
+function correct_lang($lang_code)
+{
+	$lang_code = strtolower($lang_code);
+	if ($lang_code == 'en' || $lang_code == 'ru')
+	{
+		return $lang_code;
+	}
+	return get_lang_code(get_browser_lang());
 }
 
 function langs_checkboxes($langs, $filter = LANG_ALL, $form_name = NULL, $separator = '<br>', $prefix='', $on_click = NULL)

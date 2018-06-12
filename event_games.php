@@ -8,12 +8,6 @@ define("PAGE_SIZE", 20);
 
 class Page extends EventPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0]: games', $this->event->name);
-	}
-	
 	protected function show_body()
 	{
 		global $_page;
@@ -134,6 +128,6 @@ class Page extends EventPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Event games'), PERM_ALL);
+$page->run(get_label('Games'));
 
 ?>

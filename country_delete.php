@@ -34,19 +34,20 @@ try
 	{
 		show_option($row[0], -1, $row[1]);
 	}
-	echo '</select>';
-	
-	echo '</td></tr></table>';
+	echo '</select></td></tr>';
+	echo '<tr><td colspan="2" align="right"><input type="checkbox" id="form-keep" checked> ' . get_label('keep the deleted city names as possible alternatives to the replacement country name') . '</td></tr>';
+	echo '</table>';
 	
 ?>
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("location_ops.php",
+		json.post("api/ops/country.php",
 			{
-				id: <?php echo $id; ?>,
-				repl: $("#form-repl").val(),
-				delete_country: ""
+				op: 'delete'
+				, country_id: <?php echo $id; ?>
+				, repl_id: $("#form-repl").val()
+				, keep_name: ($('#form-keep').attr('checked') ? 1 : 0)
 			},
 			onSuccess);
 	}

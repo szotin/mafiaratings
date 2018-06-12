@@ -232,7 +232,7 @@ try
 	
 	function copyEvent()
 	{
-		json.get("event_ops.php?get&id=" + $("#form-copy").val(), function(json)
+		json.get("api/ops/event.php?op=get&event_id=" + $("#form-copy").val(), function(json)
 		{
 			$("#form-name").val(json.name);
 			$("#form-hour").val(json.hour);
@@ -264,24 +264,24 @@ try
 		
 		var params =
 		{
-			id: <?php echo $club_id; ?>,
-			name: $("#form-name").val(),
-			hour: $("#form-hour").val(),
-			minute: $("#form-minute").val(),
-			duration: $("#form-duration").val(),
-			price: $("#form-price").val(),
-			addr: _addr,
-			rules: $("#form-rules").val(),
-			scoring: $("#form-scoring").val(),
-			notes: $("#form-notes").val(),
-			flags: _flags,
-			langs: _langs,
-			new_event: ''
+			op: "create"
+			, club_id: <?php echo $club_id; ?>
+			, name: $("#form-name").val()
+			, hour: $("#form-hour").val()
+			, minute: $("#form-minute").val()
+			, duration: $("#form-duration").val()
+			, price: $("#form-price").val()
+			, address_id: _addr
+			, rules_id: $("#form-rules").val()
+			, scoring_id: $("#form-scoring").val()
+			, notes: $("#form-notes").val()
+			, flags: _flags
+			, langs: _langs
 		};
 		
 		if (_addr <= 0)
 		{
-			params['new_addr'] = $("#form-new_addr").val();
+			params['address'] = $("#form-new_addr").val();
 			params['country'] = $("#form-country").val();
 			params['city'] = $("#form-city").val();
 		}
@@ -312,7 +312,7 @@ try
 			params['year'] = $("#form-year").val();
 		}
 		
-		json.post("club_ops.php", params, onSuccess);
+		json.post("api/ops/event.php", params, onSuccess);
 	}
 	</script>
 <?php

@@ -23,11 +23,11 @@ try
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
-		json.post("profile_ops.php",
+		json.post("api/ops/account.php",
 		{
-			name: $("#form-name").val(),
-			email: $("#form-email").val(),
-			reset_pwd: ""
+			op: 'password_reset'
+			, name: $("#form-name").val()
+			, email: $("#form-email").val()
 		},
 		onSuccess);
 	}

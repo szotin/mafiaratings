@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/db.php';
+require_once __DIR__ . '/db.php';
 
 define('SNAPSHOT_INTERVAL', 604800); // one week
 

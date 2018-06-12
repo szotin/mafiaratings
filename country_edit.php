@@ -45,16 +45,16 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("location_ops.php",
-			{
-				id: <?php echo $id; ?>,
-				name_en: $("#form-name_en").val(),
-				name_ru: $("#form-name_ru").val(),
-				code: $("#form-code").val(),
-				confirm: ($('#form-confirm').attr('checked') ? 1 : 0),
-				edit_country: ""
-			},
-			onSuccess);
+		json.post("api/ops/country.php",
+		{
+			op: 'change'
+			, country_id: <?php echo $id; ?>
+			, name_en: $("#form-name_en").val()
+			, name_ru: $("#form-name_ru").val()
+			, code: $("#form-code").val()
+			, confirm: ($('#form-confirm').attr('checked') ? 1 : 0)
+		},
+		onSuccess);
 	}
 	</script>
 <?php

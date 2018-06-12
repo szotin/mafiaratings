@@ -18,7 +18,6 @@ class Page extends UserPageBase
 		parent::prepare();
 		$this->link_params = array('id' => $this->id);
 		PhotoAlbum::prepare_list($this->link_params);
-		$this->_title = get_label('[0] photo albums', $this->title);
 	}
 	
 	protected function show_body()
@@ -37,6 +36,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run('', PERM_ALL);
+$page->run(get_label('Photo Albums'));
 
 ?>

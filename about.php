@@ -14,6 +14,6 @@ class Page extends InfoPageBase
 }
 
 $page = new Page();
-$page->run(get_label('About Mafia'), PERM_ALL);
+$page->run(get_label('About Mafia'));
 
 ?>

@@ -8,11 +8,6 @@ var mr = new function()
 		dlg.form("account_create.php", function(){}, 400);
 	}
 
-	this.activateProfile = function()
-	{
-		dlg.form("profile_activate.php", logout);
-	}
-
 	this.initProfile = function()
 	{
 		dlg.form("profile_init.php", refr, 600);
@@ -25,12 +20,12 @@ var mr = new function()
 
 	this.mobileStyleChange = function()
 	{
-		json.post("login_ops.php", { mobile: $('#mobile').val() }, refr);
+		json.post("api/ops/account.php", { op: "site_style", style: $('#mobile').val() }, refr);
 	}
 
 	this.browserLangChange = function()
 	{
-		json.post("login_ops.php", { browser_lang: $('#browser_lang').val() }, refr);
+		json.post("api/ops/account.php", { op: "browser_lang", lang: $('#browser_lang').val() }, refr);
 	}
 
 	this.resetPassword = function()
@@ -43,11 +38,6 @@ var mr = new function()
 		dlg.form("account_edit.php", refr, 600);
 	}
 	
-	this.editAccountPassword = function()
-	{
-		dlg.form("account_password.php", refr, 600);
-	}
-	
 	//--------------------------------------------------------------------------------------
 	// administration
 	//--------------------------------------------------------------------------------------
@@ -55,11 +45,11 @@ var mr = new function()
 	{
 		if (val)
 		{
-			json.post("repair_ops.php", { lock: "" }, refr);
+			json.post("api/ops/repair.php", { op: 'lock' }, refr);
 		}
 		else
 		{
-			json.post("repair_ops.php", { unlock: "" }, refr);
+			json.post("api/ops/repair.php", { op: 'unlock' }, refr);
 		}
 	}
 	
@@ -126,7 +116,7 @@ var mr = new function()
 	{
 		function _delete()
 		{
-			json.post("note_ops.php", { 'id': id, 'delete': "" }, refr);
+			json.post("api/ops/note.php", { op: 'delete', note_id: id }, refr);
 		}
 
 		if (typeof confirmMessage == "string")
@@ -141,7 +131,7 @@ var mr = new function()
 
 	this.upNote = function(id)
 	{
-		json.post("note_ops.php", { 'id': id, up: "" }, refr);
+		json.post("api/ops/note.php", { op: 'up', note_id: id, up: "" }, refr);
 	}
 
 	this.createNote = function(clubId)
@@ -161,7 +151,7 @@ var mr = new function()
 	{
 		function _delete()
 		{
-			json.post("advert_ops.php", { 'id': id, 'delete': "" }, refr);
+			json.post("api/ops/advert.php", { op: 'delete', advert_id: id }, refr);
 		}
 
 		if (typeof confirmMessage == "string")
@@ -191,7 +181,7 @@ var mr = new function()
 	{
 		function _delete()
 		{
-			json.post("season_ops.php", { 'id': id, 'delete': "" }, refr);
+			json.post("api/ops/season.php", { op: 'delete', season_id: id }, refr);
 		}
 
 		if (typeof confirmMessage == "string")
@@ -219,19 +209,19 @@ var mr = new function()
 
 	this.restoreAddr = function(addrId)
 	{
-		json.post("address_ops.php", { id: addrId, restore: "" }, refr);
+		json.post("api/ops/address.php", { op: "restore", address_id: addrId }, refr);
 	}
 
 	this.retireAddr = function(addrId)
 	{
-		json.post("address_ops.php", { id: addrId, retire: "" }, refr);
+		json.post("api/ops/address.php", { op: "retire", address_id: addrId }, refr);
 	}
 
 	this.genAddr = function(addrId, confirmMessage)
 	{
 		function gen()
 		{
-			json.post("address_ops.php", { id: addrId, gen: "" }, refr);
+			json.post("api/ops/address.php", { op: "google_map", address_id: addrId }, refr);
 		}
 
 		if (typeof confirmMessage == "string")
@@ -267,32 +257,22 @@ var mr = new function()
 		dlg.form("city_edit.php?id=" + id, refr);
 	}
 
-	this.acceptCity = function(id)
-	{
-		dlg.form("city_accept.php?id=" + id, refr);
-	}
-
-	this.declineCity = function(id)
-	{
-		dlg.form("city_decline.php?id=" + id, refr);
-	}
-
 	//--------------------------------------------------------------------------------------
 	// club
 	//--------------------------------------------------------------------------------------
 	this.createClub = function()
 	{
-		dlg.form("club_create.php", function(){}, 600);
+		dlg.form("club_create.php", refr, 600);
 	}
 
 	this.restoreClub = function(id)
 	{
-		json.post("club_ops.php", { 'id': id, restore: "" }, refr);
+		json.post("api/ops/club.php", { op: "restore", club_id: id }, refr);
 	}
 
 	this.retireClub = function(id)
 	{
-		json.post("club_ops.php", { 'id': id, retire: "" }, refr);
+		json.post("api/ops/club.php", { op: "retire", club_id: id }, refr);
 	}
 
 	this.editClub = function(id)
@@ -302,14 +282,14 @@ var mr = new function()
 
 	this.joinClub = function(id)
 	{
-		json.post("profile_ops.php", { 'id': id, join_club: "" }, refr);
+		json.post("api/ops/account.php", { op: 'join_club', club_id: id }, refr);
 	}
 
 	this.quitClub = function(id, confirmMessage)
 	{
 		function proceed()
 		{
-			json.post("profile_ops.php", { 'id': id, quit_club: "" }, refr);
+			json.post("api/ops/account.php", { op: 'quit_club', club_id: id }, refr);
 		}
 		
 		if (typeof confirmMessage == "string")
@@ -355,16 +335,6 @@ var mr = new function()
 		dlg.form("country_edit.php?id=" + id, refr);
 	}
 
-	this.declineCountry = function(id)
-	{
-		dlg.form("country_decline.php?id=" + id, refr);
-	}
-
-	this.acceptCountry = function(id)
-	{
-		dlg.form("country_accept.php?id=" + id, refr);
-	}
-
 	//--------------------------------------------------------------------------------------
 	// event
 	//--------------------------------------------------------------------------------------
@@ -386,7 +356,7 @@ var mr = new function()
 	
 	this.restoreEvent = function(id)
 	{
-		json.post("event_ops.php", { 'id': id, restore: "" }, function(obj)
+		json.post("api/ops/event.php", { op: "restore", event_id: id }, function(obj)
 		{
 			if (typeof obj.question == "string")
 			{
@@ -403,7 +373,7 @@ var mr = new function()
 	{
 		function _cancel()
 		{
-			json.post("event_ops.php", { 'id': id, cancel: "" }, function(obj)
+			json.post("api/ops/event.php", { op: "cancel", event_id: id }, function(obj)
 			{
 				if (typeof obj.question == "string")
 				{
@@ -446,7 +416,7 @@ var mr = new function()
 
 	this.passEvent = function(id, url, message)
 	{
-		json.post("event_ops.php", { 'id': id, odds: 0, attend: "" }, function()
+		json.post("api/ops/event.php", { op: "attend", event_id: id, odds: 0 }, function()
 		{
 			if (typeof message == "undefined")
 				refr(url);
@@ -466,43 +436,13 @@ var mr = new function()
 	}
 	
 	//--------------------------------------------------------------------------------------
-	// changelist
-	//--------------------------------------------------------------------------------------
-	this.viewChangelist = function(id)
-	{
-		html.get('changelist_view.php?id=' + id, function(text, title)
-		{
-			dlg.custom(text, title, 600, 
-			{
-				accept: { text: l("Accept"), click: function()
-				{
-					$(this).dialog("close");
-					json.post("game_ops.php", { 'accept_cl': id }, refr);
-				}},
-				decline: { text: l("Decline"), click: function()
-				{
-					$(this).dialog("close");
-					dlg.yesNo(l('DeleteCL'), null, null, function()
-					{
-						json.post("game_ops.php", { 'decline_cl': id }, refr);
-					});
-				}},
-				close: { text: l("Close"), click: function()
-				{
-					$(this).dialog("close");
-				}}
-			});
-		});
-	}
-	
-	//--------------------------------------------------------------------------------------
 	// scoring system
 	//--------------------------------------------------------------------------------------
 	this.deleteScoringSystem = function(id, confirmMessage)
 	{
 		dlg.yesNo(confirmMessage, null, null, function()
 		{
-			json.post("scoring_ops.php", { 'id': id, 'delete': "" }, refr);
+			json.post("api/ops/scoring.php", { op: 'delete', scoring_id: id }, refr);
 		});
 	}
 
@@ -525,7 +465,7 @@ var mr = new function()
 	{
 		dlg.yesNo(confirmMessage, null, null, function()
 		{
-			json.post("scoring_ops.php", { 'id': systemId, 'delete_rule': matter, 'category': category }, refr);
+			json.post("api/ops/scoring.php", { op: 'delete_rule', scoring_id: systemId, matter: matter, category: category }, refr);
 		});
 	}
 	
@@ -561,7 +501,7 @@ var mr = new function()
 	{
 		function _delete()
 		{
-			json.post("rules_ops.php", { 'id': rulesId, 'club': clubId, 'delete': '' }, refr);
+			json.post("api/ops/rules.php", { op: 'delete', club_id: clubId, rules_id: rulesId }, refr);
 		}
 
 		if (typeof confirmMessage == "string")
@@ -583,7 +523,7 @@ var mr = new function()
 			onSuccess = refr;
 		dlg.yesNo(confirmMessage, null, null, function()
 		{
-			json.post("game_ops.php", { 'delete_game': gameId }, onSuccess);
+			json.post("api/ops/game.php", { op: 'delete', game_id: gameId }, onSuccess);
 		});
 	}
 	
@@ -597,7 +537,7 @@ var mr = new function()
 			window.location.replace(link);
 		}
 		
-		json.post("game_ops.php", { 'edit_game': gameId  }, gotoGame, function(errorMessage, data) 
+		json.post("api/ops/game.php", { op: 'change', game_id: gameId  }, gotoGame, function(errorMessage, data) 
 		{
 			gotoGame(data);
 		});
@@ -606,14 +546,6 @@ var mr = new function()
 	this.setGameVideo = function(gameId)
 	{
 		dlg.form("game_video_edit.php?game=" + gameId, refr, 600);
-	}
-	
-	this.removeGameVideo = function(gameId, confirmMessage)
-	{
-		dlg.yesNo(confirmMessage, null, null, function()
-		{
-			json.post("game_ops.php", { 'remove_video': gameId  }, refr);
-		});
 	}
 	
 	this.watchGameVideo = function(gameId)
@@ -656,22 +588,28 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.banUser = function(userId, clubId)
 	{
-		var params = { 'ban': userId  };
+		var params = { op: 'ban', user_id: userId  };
 		if (typeof clubId != "undefined")
 		{
-			params['club'] = clubId;
+			json.post("api/ops/user.php", { op: 'ban', user_id: userId, club_id: clubId }, refr);
 		}
-		json.post("user_ops.php", params, refr);
+		else
+		{
+			json.post("api/ops/user.php", { op: 'site_ban', user_id: userId }, refr);
+		}
 	}
 	
 	this.unbanUser = function(userId, clubId)
 	{
-		var params = { 'unban': userId  };
+		var params = { op: 'ban', user_id: userId  };
 		if (typeof clubId != "undefined")
 		{
-			params['club'] = clubId;
+			json.post("api/ops/user.php", { op: 'unban', user_id: userId, club_id: clubId }, refr);
 		}
-		json.post("user_ops.php", params, refr);
+		else
+		{
+			json.post("api/ops/user.php", { op: 'site_unban', user_id: userId }, refr);
+		}
 	}
 	
 	this.editUserAccess = function(userId, clubId)
@@ -710,7 +648,7 @@ var mr = new function()
 					var message = $("#comment").val().trim();
 					if (message.length > 0)
 					{
-						json.post("comment_ops.php", { object: object_name, id: object_id, comment: $("#comment").val() }, function()
+						json.post("api/ops/" + object_name + ".php", { op: "comment", id: object_id, comment: message }, function()
 						{
 							$("#comment").val("");
 							mr.showComments(object_name, object_id, limit, show_all);
@@ -760,7 +698,7 @@ var mr = new function()
 	{
 		dlg.yesNo(confirmMessage, null, null, function()
 		{
-			json.post("video_ops.php", { 'remove': videoId  }, function() { refr(urlToGo); });
+			json.post("api/ops/video.php", { 'op': 'delete', 'video_id': videoId  }, function() { refr(urlToGo); });
 		});
 	}
 	
@@ -777,9 +715,8 @@ var mr = new function()
 				{ 
 					source: function( request, response )
 					{
-						$.getJSON("user_ops.php",
+						$.getJSON("api/control/user.php",
 						{
-							list: '',
 							num: 8,
 							term: tagControl.val()
 						}, response);
@@ -794,7 +731,7 @@ var mr = new function()
 	
 	this.tagVideo = function(userId, videoId)
 	{
-		json.post("video_ops.php", { 'tag': videoId, 'user_id': userId }, function() 
+		json.post("api/ops/video.php", { 'op': 'tag', 'video_id': videoId, 'user_id': userId }, function() 
 		{ 
 			mr.showVideoUsers(videoId);
 		});
@@ -802,7 +739,7 @@ var mr = new function()
 	
 	this.untagVideo = function(userId, videoId)
 	{
-		json.post("video_ops.php", { 'untag': videoId, 'user_id': userId }, function() 
+		json.post("api/ops/video.php", { 'op': 'untag', 'video_id': videoId, 'user_id': userId }, function() 
 		{ 
 			mr.showVideoUsers(videoId);
 		});

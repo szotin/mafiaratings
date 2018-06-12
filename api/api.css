@@ -1,0 +1,17 @@
+table.bordered, table.bordered tr, table.bordered th, table.bordered td { border: 2px ridge #dcdccc; border-spacing:0; border-collapse:collapse; padding: 4px; }
+
+.light, .light a:link, .light a:visited, .light a:active { background-color: #e8e8d8; }
+.lighter , .lighter a:link, .lighter a:visited, .lighter a:active{ background-color: #fdfded; }
+.lightest , .lightest a:link, .lightest a:visited, .lightest a:active{ background-color: #ffffef; }
+
+.dark , .dark a:link, .dark a:visited, .dark a:active{ background-color: #d9d9c9; }
+.darker , .darker a:link, .darker a:visited, .darker a:active{ background-color: #c0c0b0; }
+.darkest , .darkest  a:link, .darkest  a:visited, .darkest  a:active{ background-color: #a0a090; }
+
+dt { font-style: italic; font-size: large; }
+dt.plain { font-size: initial; }
+dd { margin-bottom: 8px; }
+h3 { font-style: italic; font-size: large; }
+
+em::before { content:"["; }
+em::after { content:"]"; }

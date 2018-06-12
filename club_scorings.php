@@ -6,12 +6,6 @@ define('PAGE_SIZE', 20);
 
 class Page extends ClubPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('Scoring systems in [0]', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		global $_lang_code, $_page;
@@ -36,6 +30,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(NULL, UC_PERM_MANAGER);
+$page->run(get_label('Scoring Systems'), UC_PERM_MANAGER);
 
 ?>

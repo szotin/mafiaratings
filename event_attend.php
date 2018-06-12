@@ -52,14 +52,14 @@ try
 		<script>
 		function commit(onSuccess)
 		{
-			json.post("event_ops.php",
+			json.post("api/ops/event.php",
 				{
-					id: <?php echo $id; ?>,
-					odds: 100,
-					friends: 0,
-					nick: $("#nick").val(),
-					late: 0,
-					attend: ""
+					op: "attend"
+					, event_id: <?php echo $id; ?>
+					, odds: 100
+					, friends: 0
+					, nick: $("#nick").val()
+					, late: 0
 				},
 				onSuccess);
 		}
@@ -144,14 +144,14 @@ try
 		
 		function commit(onSuccess)
 		{
-			json.post("event_ops.php",
+			json.post("api/ops/event.php",
 				{
-					id: <?php echo $id; ?>,
-					odds: $("#odds").val(),
-					friends: $("#friends").val(),
-					nick: $("#nick").val(),
-					late: $("#late").val(),
-					attend: ""
+					op: "attend"
+					, event_id: <?php echo $id; ?>
+					, odds: $("#odds").val()
+					, friends: $("#friends").val()
+					, nick: $("#nick").val()
+					, late: $("#late").val()
 				},
 				onSuccess);
 		}

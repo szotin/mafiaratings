@@ -14,7 +14,6 @@ class Page extends EventPageBase
 	{
 		parent::prepare();
 		
-		$this->_title = get_label('[0]. General stats.', $this->event->name);
 		list($timezone) = Db::record(get_label('event'), 'SELECT c.timezone FROM events e JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE e.id = ?', $this->event->id);
 		date_default_timezone_set($timezone);
 	}
@@ -148,6 +147,6 @@ class Page extends EventPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Event'), PERM_ALL);
+$page->run(get_label('General Stats'));
 
 ?>

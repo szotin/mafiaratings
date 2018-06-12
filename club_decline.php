@@ -42,13 +42,13 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("club_ops.php",
-			{
-				id: <?php echo $id; ?>,
-				reason: $("#reason").val(),
-				decline: ""
-			},
-			onSuccess);
+		json.post("api/ops/club.php",
+		{
+			op: "decline"
+			, request_id: <?php echo $id; ?>
+			, reason: $("#reason").val()
+		},
+		onSuccess);
 	}
 	</script>
 <?php

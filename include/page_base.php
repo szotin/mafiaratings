@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/session.php';
-require_once 'include/user.php';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/user.php';
 
 class PageBase
 {
@@ -9,6 +9,8 @@ class PageBase
 	
 	protected $_title;
 	protected $_permissions;
+	protected $_locked;
+	protected $_admin;
 	
 	private $_err_message;
 	
@@ -19,20 +21,21 @@ class PageBase
 		initiate_session();
 	}
 	
-	final function run($title, $permissions)
+	final function run($title = '', $permissions = PERM_ALL)
 	{
+		global $_profile;
+		
 		$this->_err_message = NULL;
 		$title_shown = false;
 		$this->_facebook = true;
 		$this->_permissions = $permissions;
 		$this->_title = $title;
 		$this->_state = PAGE_STATE_EMPTY;
+		$this->_locked = is_site_locked();
+		$this->_admin = ($_profile != NULL && $_profile->is_admin());
 		try
 		{
-			if (!check_permissions($this->_permissions))
-			{
-				throw new FatalExc(get_label('No permissions'));
-			}
+			check_permissions($this->_permissions);
 			
 			try
 			{
@@ -47,7 +50,9 @@ class PageBase
 			
 			if ($this->show_header())
 			{
-				if (is_dir('lock'))
+				// We are not showing lock page for administrators. They should be able to work even in the locked state.
+				// They have fully functional site with the icon in the corner signalling that the site is locked.
+				if ($this->_locked && !$this->_admin)
 				{
 					$this->show_lock_page();
 				}
@@ -190,6 +195,10 @@ class PageBase
 			
 			echo '<table border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
 			echo '<tr class="header">';
+			if ($this->_locked && $this->_admin)
+			{
+				echo '<td class="header" width="48"><a onclick="mr.lockSite(false)"><img src="images/repairs.png" title="The site is locked" width="48"/></a></td>';
+			}
 			if (is_ratings_server())
 			{
 				echo '<td class="header"><img src="images/title_r.png" /></td>';
@@ -555,16 +564,9 @@ class PageBase
 			echo "\n\t\tdlg.error(\"" . $this->_err_message . "\");";
 		}
 		echo "\n\t\tshowMenuBar();\n\n";
-		if ($_profile != NULL)
+		if ($_profile != NULL && ($_profile->user_flags & U_FLAG_NO_PASSWORD) != 0)
 		{
-			if ($_profile->user_flags & U_FLAG_NO_PASSWORD)
-			{
-				echo "\n\t\tmr.initProfile();\n\n";
-			}
-			else if ($_profile->user_flags & U_FLAG_DEACTIVATED)
-			{
-				echo "\n\t\tmr.activateProfile();\n\n";
-			}
+			echo "\n\t\tmr.initProfile();\n\n";
 		}
 		$this->js_on_load();
 		echo "\n\t});\n";
@@ -617,7 +619,7 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label(''), PERM_ALL);
+$page->run(get_label(''));
 
 */
 

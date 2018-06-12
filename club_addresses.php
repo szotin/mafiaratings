@@ -12,12 +12,6 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends ClubPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0] addresses', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		global $_profile, $_lang_code;
@@ -116,6 +110,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Club'), PERM_ALL);
+$page->run(get_label('Addresses'));
 
 ?>

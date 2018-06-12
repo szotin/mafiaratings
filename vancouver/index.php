@@ -4,7 +4,7 @@ require_once('include/ui.php');
 
 show_header('Vancouver Mafia');
 
-$upcoming = get_json('ws_upcoming.php?club=1&df=D%20F%20d%20H:i&lang=en');
+$upcoming = get_json('api/get/upcoming.php?club=1&df=D%20F%20d%20H:i&lang=en');
 
 echo '<table border="1" cellpadding="20" cellspacing="0"  width="100%">';
 echo '<tr><td>Looking for volonteers for designing this web site!!!</td>';

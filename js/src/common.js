@@ -425,7 +425,7 @@ var html = new function()
 		}
 		
 		pos = text.lastIndexOf("<error=");
-		if (pos > 0)
+		if (pos >= 0)
 		{
 			pos += 7;
 			var end = text.lastIndexOf(">");
@@ -451,48 +451,60 @@ var html = new function()
 
 var json = new function()
 {
-	var _userName = '';
-
 	function _success(text, onSuccess, onError, retry)
 	{
 		var result = null;
 		try
 		{
 			var obj = jQuery.parseJSON(text);
-			if (typeof obj.uname == "string")
+			console.log(obj);
+			if (obj != null)
 			{
-				_userName = obj.uname;
-			}
-			
-			if (typeof obj.login != "undefined")
-			{
-				var html = 
-					'<table class="dialog_form" width="100%">' +
-					'<tr><td width="140">' + l('UserName') + ':</td><td><input id="lf-name" value="' + _userName + '"></td>' +
-					'<tr><td>' + l('Password') + ':</td><td><input type="password" id="lf-pwd"></td>' +
-					'<tr><td colspan="2"><input type="checkbox" id="lf-rem" checked> ' + l('remember') +
-					'</td></tr></table>';
-/*				if (_userName != '')
+				if (typeof obj.login != "undefined")
 				{
-					html += '<script>$(function(){$("#lf-pwd").focus();});</script>';
-				}*/
-				
-				var d = dlg.okCancel(html, l('Login'), null, function()
-				{
-					login($('#lf-name').val(), $('#lf-pwd').val(), $('#lf-rem').attr('checked') ? 1 : 0, function()
+					if (obj.login != "string")
 					{
-						retry();
-						refr();
+						obj.login = '';
+					}
+					var html = 
+						'<table class="dialog_form" width="100%">' +
+						'<tr><td width="140">' + l('UserName') + ':</td><td><input id="lf-name" value="' + obj.login + '"></td>' +
+						'<tr><td>' + l('Password') + ':</td><td><input type="password" id="lf-pwd"></td>' +
+						'<tr><td colspan="2"><input type="checkbox" id="lf-rem" checked> ' + l('remember') +
+						'</td></tr></table>';
+	/*				if (obj.login != '')
+					{
+						html += '<script>$(function(){$("#lf-pwd").focus();});</script>';
+					}*/
+					
+					var d = dlg.okCancel(html, l('Login'), null, function()
+					{
+						login($('#lf-name').val(), $('#lf-pwd').val(), $('#lf-rem').attr('checked') ? 1 : 0, function()
+						{
+							retry();
+							refr();
+						}, onError);
 					}, onError);
-				}, onError);
-			}
-			else if (typeof obj.error == "string")
-			{
-				result = obj.error;
-			}
-			else if (typeof obj.message == "string")
-			{
-				http.waiter().info(obj.message, obj.title, function() { if (typeof onSuccess != "undefined") onSuccess(obj); });
+				}
+				else if (typeof obj.error == "string")
+				{
+					if (obj.error.length <= 0 && typeof obj.message == "string")
+					{
+						result = obj.message;
+					}
+					else
+					{
+						result = obj.error;
+					}
+				}
+				else if (typeof obj.message == "string")
+				{
+					http.waiter().info(obj.message, obj.title, function() { if (typeof onSuccess != "undefined") onSuccess(obj); });
+				}
+				else if (typeof onSuccess != "undefined")
+				{
+					onSuccess(obj);
+				}
 			}
 			else if (typeof onSuccess != "undefined")
 			{
@@ -611,7 +623,7 @@ function refr(url, params)
 
 function login(name, pwd, rem, onSuccess, onError)
 {
-	json.post("login_ops.php", { token: "" }, function(token_resp)
+	json.post("api/ops/account.php", { op: "get_token" }, function(token_resp)
 	{
 		if (typeof rem == "undefined") rem = $('#remember').attr('checked') ? 1 : 0;
 		if (typeof pwd == "undefined") pwd = $("#password").val();
@@ -621,19 +633,19 @@ function login(name, pwd, rem, onSuccess, onError)
 		var token = token_resp.token;
 		var rawId = md5(pwd) + token + name;
 		var secId = md5(rawId);
-		json.post("login_ops.php",
+		json.post("api/ops/account.php",
 		{
-			username: name,
-			id: secId,
-			remember: rem,
-			login: ""
+			op: "login"
+			, username: name
+			, id: secId
+			, remember: rem
 		}, onSuccess, onError);
 	}, onError);
 } // login(name, pwd, rem, onSuccess)
 
 function logout()
 {
-	json.post("login_ops.php", { logout: "" }, function() { window.location.replace("/"); });
+	json.post("api/ops/account.php", { op: "logout" }, function() { window.location.replace("/"); });
 } // logout()
 
 // function printStackTrace() { console.log((new Error('stack trace')).stack); }

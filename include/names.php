@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/db.php';
+require_once __DIR__ . '/db.php';
 
 function cut_long_name($name, $length)
 {
@@ -124,7 +124,7 @@ function check_nickname($nick, $event_id)
 	}
 	if ($count > 0)
 	{
-		throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('nick-name'), $nick));
+		throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Nick-name'), $nick));
 	}
 }
 
@@ -140,7 +140,7 @@ function check_user_name($name)
 	$query = new DbQuery('SELECT name FROM users WHERE name = ?', $name);
 	if ($query->next())
 	{
-        throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('user name'), $name));
+        throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('User name'), $name));
 	}
 }
 
@@ -163,7 +163,7 @@ function check_club_name($name, $club_id = -1)
 	}
 	if ($query->next())
 	{
-        throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('club name'), $name));
+        throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Club name'), $name));
 	}
 }
 
@@ -186,7 +186,7 @@ function check_address_name($name, $club_id, $address_id = -1)
 	}
 	if ($query->next())
 	{
-        throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('address name'), $name));
+        throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Address name'), $name));
 	}
 }
 
@@ -211,7 +211,7 @@ function check_email_template_name($name, $club_id, $template_id = -1)
 	}
 	if ($query->next())
 	{
-        throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('email template name'), $name));
+        throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Email template name'), $name));
 	}
 }
 
@@ -236,7 +236,7 @@ function check_scoring_name($name, $club_id, $id = -1)
 	}
 	if ($query->next())
 	{
-        throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('scoring system name'), $name));
+        throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Scoring system name'), $name));
 	}
 }
 
@@ -261,7 +261,7 @@ function check_season_name($name, $club_id, $id = -1)
 	}
 	if ($query->next())
 	{
-        throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('season name'), $name));
+        throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Season name'), $name));
 	}
 }
 

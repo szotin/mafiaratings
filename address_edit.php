@@ -63,14 +63,14 @@ try
 	{
 		var params = 
 		{
-			id: <?php echo $id; ?>,
-			name: $("#form-name").val(),
-			address: $("#form-address").val(),
-			city: $("#form-city").val(),
-			country: $("#form-country").val(),
-			update: ""
+			op: "change"
+			, address_id: <?php echo $id; ?>
+			, name: $("#form-name").val()
+			, address: $("#form-address").val()
+			, city: $("#form-city").val()
+			, country: $("#form-country").val()
 		};
-		json.post("address_ops.php", params, onSuccess);
+		json.post("api/ops/address.php", params, onSuccess);
 	}
 	</script>
 <?php	

@@ -1,12 +1,12 @@
 <?php
 
-require_once 'include/branding.php';
-require_once 'include/db.php';
-require_once 'include/names.php';
-require_once 'include/rand_str.php';
-require_once 'include/constants.php';
-require_once 'include/languages.php';
-require_once 'include/localization.php';
+require_once __DIR__ . '/branding.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/names.php';
+require_once __DIR__ . '/rand_str.php';
+require_once __DIR__ . '/constants.php';
+require_once __DIR__ . '/languages.php';
+require_once __DIR__ . '/localization.php';
 
 $_session_state = SESSION_NO_USER;
 $_agent = AGENT_BROWSER;
@@ -63,11 +63,8 @@ class Profile
 	public $user_flags;
 	public $user_club_id;
 	public $city_id;
-	public $city;
 	public $region_id;
-	public $region;
 	public $country_id;
-	public $country;
 	public $timezone;
 	public $user_club_flags; // combination of all clubs flags that this user is member of. This is just an optimization. If we want to know if user is moderator in one of the clubs we check it here instead of looping through all his clubs.
 	public $clubs;
@@ -79,21 +76,16 @@ class Profile
 		list(
 			$this->user_id, $this->user_name, $this->user_langs, $this->user_def_lang,
 			$this->user_email, $this->user_phone, $this->user_flags, $this->user_club_id,
-			$this->city_id, $this->city, $this->region_id, $this->region, $this->country_id, $this->country, $this->timezone) = 
+			$this->city_id, $this->region_id, $this->country_id, $this->timezone) = 
 				Db::record(
 					get_label('user'), 
-					'SELECT u.id, u.name, u.languages, u.def_lang, u.email, u.phone, u.flags, u.club_id, i.id, i.name_' . $_lang_code .
-						', r.id, r.name_' . $_lang_code .
-						', i.country_id, o.name_' . $_lang_code . ', i.timezone FROM users u' .
-						' JOIN cities i ON u.city_id = i.id' .
-						' LEFT OUTER JOIN cities r ON i.area_id = r.id' .
-						' JOIN countries o ON o.id = i.country_id' .
+					'SELECT u.id, u.name, u.languages, u.def_lang, u.email, u.phone, u.flags, u.club_id, c.id, c.area_id, c.country_id, c.timezone FROM users u' .
+						' JOIN cities c ON u.city_id = c.id' .
 						' WHERE u.id = ?', 
 					$user_id);
 		if ($this->region_id == NULL)
 		{
 			$this->region_id = $this->city_id;
-			$this->region = $this->city;
 		}
 			
 		$this->update_clubs();
@@ -107,12 +99,11 @@ class Profile
 		list(
 			$this->user_id, $this->user_name, $this->user_langs, $this->user_def_lang,
 			$this->user_email, $this->user_phone, $this->user_flags, $this->user_club_id,
-			$this->city_id, $this->city, $this->country_id, $this->country, $this->timezone) = 
+			$this->city_id, $this->country_id, $this->timezone) = 
 				Db::record(
 					get_label('user'), 
-					'SELECT u.id, u.name, u.languages, u.def_lang, u.email, u.phone, u.flags, u.club_id, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone FROM users u' .
-						' JOIN cities i ON u.city_id = i.id' .
-						' JOIN countries o ON o.id = i.country_id' .
+					'SELECT u.id, u.name, u.languages, u.def_lang, u.email, u.phone, u.flags, u.club_id, c.id, c.country_id, c.timezone FROM users u' .
+						' JOIN cities c ON u.city_id = c.id' .
 						' WHERE u.id = ?',
 					$this->user_id);
 			
@@ -257,7 +248,7 @@ function remember_user($remember = 1)
 	if ($remember == 0)
 	{
 		$auth_key = '';
-		setcookie("auth_key", $auth_key, time() - 360);
+		setcookie("auth_key", $auth_key);
 	}
 	else
 	{
@@ -274,26 +265,19 @@ function login($user_id, $remember = 1)
 {
 	global $_profile;
 
-	try
+	$_profile = new Profile($user_id);
+	remember_user($remember);
+	
+	session_unset();
+	// Assign variables to session
+	session_regenerate_id(true);
+	
+	$_SESSION['profile'] = $_profile;
+	$_SESSION['lang_code'] = get_lang_code($_profile->user_def_lang);
+	
+	if (defined('REDIRECT_ON_LOGIN'))
 	{
-		$_profile = new Profile($user_id);
-		remember_user($remember);
-		
-		session_unset();
-		// Assign variables to session
-		session_regenerate_id(true);
-		
-		$_SESSION['profile'] = $_profile;
-		$_SESSION['lang_code'] = get_lang_code($_profile->user_def_lang);
-		
-		if (defined('REDIRECT_ON_LOGIN'))
-		{
-			header('location: index.php');
-		}
-	}
-	catch (Exception $e)
-	{
-		Exc::log($e, true, 'login');
+		header('location: index.php');
 	}
 	return true;
 }
@@ -369,18 +353,25 @@ function get_session_state()
     return SESSION_NO_USER;
 }
 
-function initiate_session()
+function initiate_session($lang_code = NULL)
 {
 	global $_session_state, $_profile, $_agent, $_lang_code;
 	global $_default_date_translations, $_http_agent, $labelMenu;
 
     session_start();
 	// localization
-	if (!isset($_SESSION['lang_code']))
+	if ($lang_code != NULL)
 	{
-		$_SESSION['lang_code'] = get_lang_code(get_browser_lang());
+		$_lang_code = correct_lang($lang_code);
 	}
-	$_lang_code = $_SESSION['lang_code'];
+	else if (isset($_SESSION['lang_code']))
+	{
+		$_lang_code = $_SESSION['lang_code'];
+	}
+	else
+	{
+		$_lang_code = $_SESSION['lang_code'] = get_lang_code(get_browser_lang());
+	}
 
 	$_session_state = get_session_state();
 	$_profile = NULL;
@@ -426,8 +417,8 @@ function initiate_session()
 		header('location: ' . $uri);
 	}
 
-	require_once 'include/languages/' . $_lang_code . '/labels.php';
-	$_default_date_translations = include('include/languages/' . $_lang_code . '/date.php');
+	require_once __DIR__ . '/languages/' . $_lang_code . '/labels.php';
+	$_default_date_translations = include(__DIR__ . '/languages/' . $_lang_code . '/date.php');
 
 	if (stripos($_http_agent,"iPod"))
 	{
@@ -607,19 +598,20 @@ function check_permissions($permissions, $club_id = -1)
 
 	if ($_profile == NULL)
 	{
-		return ($permissions & PERM_STRANGER) != 0;
+		if (($permissions & PERM_STRANGER) != 0)
+		{
+			return;
+		}
+		throw new LoginExc();
 	}
 	
-	if (($permissions & PERM_USER) != 0)
+	if (
+		($permissions & PERM_USER) == 0 && 
+		($permissions & $_profile->user_flags & U_PERM_MASK) == 0 &&
+		!$_profile->has_perm($permissions & UC_PERM_MASK, $club_id))
 	{
-		return true;
+		throw new FatalExc(get_label('No permissions'));
 	}
-	
-	if (($permissions & $_profile->user_flags & U_PERM_MASK) != 0)
-	{
-		return true;
-	}
-	return $_profile->has_perm($permissions & UC_PERM_MASK, $club_id);
 }
 
 function show_option($option_value, $current_value, $text, $title = NULL)
@@ -654,9 +646,19 @@ function dialog_title($title)
 	echo '<title=' . $title . '>';
 }
 
+function get_lock_path()
+{
+	return $_SERVER['DOCUMENT_ROOT'] . '/lock';
+}
+
+function is_site_locked()
+{
+	return is_dir(get_lock_path());
+}
+
 function check_maintenance()
 {
-	if (is_dir('lock'))
+	if (is_site_locked())
 	{
 		throw new FatalExc(get_label('[0] is under maintenance. Please repeat the request later.', PRODUCT_NAME));
 	}
@@ -664,16 +666,17 @@ function check_maintenance()
 
 function lock_site($lock)
 {
+	$path = get_lock_path();
 	if ($lock)
 	{
-		if (!is_dir('lock'))
+		if (!is_dir($path))
 		{
-			mkdir('lock');
+			mkdir($path);
 		}
 	}
-	else if (is_dir('lock'))
+	else if (is_dir($path))
 	{
-		rmdir('lock');
+		rmdir($path);
 	}
 }
 

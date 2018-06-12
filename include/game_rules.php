@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/db.php';
-require_once 'include/names.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/names.php';
 
 define('RULES_FLAG_DEFENSIVE_ROUND', 0x1); // all nominated players speak once again before voting
 define('RULES_FLAG_FREE_ROUND', 0x2); // players have a short non moderated discussion every day
@@ -132,7 +132,7 @@ class GameRules
 		$query = new DbQuery('SELECT rules_id FROM club_rules WHERE club_id = ? AND name = ?', $club_id, $rules_name);
 		if ($query->next())
 		{
-			throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('rules name'), $rules_name));
+			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Rules name'), $rules_name));
 		}
 		
 		$query = new DbQuery('SELECT r.name, c.name FROM club_rules r, clubs c WHERE c.id = r.club_id AND r.club_id = ? AND r.rules_id = ?', $club_id, $rules_id);
@@ -197,7 +197,7 @@ class GameRules
 				$query = new DbQuery('SELECT rules_id FROM club_rules WHERE club_id = ? AND name = ? AND rules_id <> ?', $club_id, $rules_name, $rules_id);
 				if ($query->next())
 				{
-					throw new Exc(get_label('The [0] "[1]" is already used. Please try another one.', get_label('rules name'), $rules_name));
+					throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Rules name'), $rules_name));
 				}
 				
 				$update = new DbQuery('UPDATE club_rules SET name = ?', $rules_name);
@@ -281,7 +281,7 @@ class GameRules
 		<script>
 		function copyRules()
 		{
-			json.post("rules_ops.php", { 'get': $('#form-copy').val() }, setFormRules);
+			json.post("api/ops/rules.php", { op: 'get', rules_id: $('#form-copy').val() }, setFormRules);
 		}
 		</script>
 <?php

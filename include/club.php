@@ -1,35 +1,12 @@
 <?php
 
-require_once 'include/page_base.php';
+require_once __DIR__ . '/page_base.php';
 
 define('ALL_CLUBS', -1);
 define('MY_CLUBS', 0);
 
 define('SEASON_ALL_TIME', -1);
 define('SEASON_LAST_YEAR', -2);
-
-function check_manager_permission($id)
-{
-	global $_profile;
-	if ($_profile == NULL)
-	{
-		return false;
-	}
-	
-	if (check_permissions(U_PERM_ADMIN) || $_profile->is_manager($id))
-	{
-		return true;
-	}
-	
-	$query = new DbQuery(
-		'SELECT * FROM user_clubs WHERE user_id = ? AND club_id = ? AND (flags & ' . UC_PERM_MANAGER . ') <> 0',
-		$_profile->user_id, $id);
-	if ($query->next())
-	{
-		return true;
-	}
-	return false;
-}
 
 function show_club_pic($club_id, $club_name, $flags, $dir, $width = 0, $height = 0, $attributes = NULL)
 {
@@ -228,7 +205,6 @@ class ClubPageBase extends PageBase
 					'LEFT OUTER JOIN user_clubs u ON u.club_id = c.id AND u.user_id = ? ' .
 					'WHERE c.id = ?',
 				$user_id, $this->id);
-		$this->_title = $this->name;
 	}
 
 	protected function show_title()
@@ -306,7 +282,7 @@ class ClubPageBase extends PageBase
 		{
 			show_club_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
 		}
-		echo '</td></tr></table><td valign="top"><h2 class="club">' . get_label('Club') . '</h2><br>' . $this->standard_title() . '<p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
+		echo '</td></tr></table><td valign="top"><h2 class="club">' . get_label('Club [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr></table>';
 	}
@@ -420,59 +396,5 @@ function get_season_condition($season, $start_field, $end_field)
 	}
 	return $condition;
 }
-
-// define('CLUB_FROM_PROFILE', 0);
-// define('CLUB_DETECT', 1);
-// function show_club_input($name, $value, $city_id = -1)
-// {
-	// global $_profile, $_lang_code;
-
-	// if ($value === CLUB_FROM_PROFILE)
-	// {
-		// $value = $_profile->clubs[$_profile->user_club]->name;
-	// }
-
-	// echo '<input type="text" id="' . $name . '" value="' . $value . '"/>';
-	// if (is_numeric($city_id))
-	// {
-// ***>
-		// <script>
-		// $("#<***php echo $name; ***>").autocomplete(
-		// { 
-			// source: function(request, response)
-			// {
-				// $.getJSON("club_ops.php",
-				// {
-					// list: "",
-					// term: $("#<***php echo $name; ***>").val(),
-					// cid: <***php echo $city_id; ***>
-				// }, response);
-			// }
-			// , minLength: 0
-		// });
-		// </script>
-// <***php
-	// }
-	// else
-	// {
-// ***>
-		// <script>
-		// $("#<***php echo $name; ***>").autocomplete(
-		// { 
-			// source: function(request, response)
-			// {
-				// $.getJSON("club_ops.php",
-				// {
-					// list: ""
-					// term: $("#<***php echo $name; ***>").val(),
-					// cname: $("#<***php echo $city_id; ***>").val()
-				// }, response);
-			// }
-			// , select: function(event, ui) { $("#<***php echo $city_id; ***>").val(ui.item.city); }
-			// , minLength: 0
-		// });
-		// </script>
-// <***php
-	// }
 
 ?>

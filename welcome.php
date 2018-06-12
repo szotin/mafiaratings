@@ -91,6 +91,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Welcome to the [0]!', PRODUCT_NAME), PERM_ALL);
+$page->run(get_label('Welcome to the [0]!', PRODUCT_NAME));
 
 ?>

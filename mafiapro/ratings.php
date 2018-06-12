@@ -16,7 +16,7 @@ if (isset($_REQUEST['p']))
 	$p = (int)$_REQUEST['p'];
 }
 
-$ratings = get_json('/ws_ratings.php?club=2&page=' . $p . '&page_size=' . PAGE_SIZE . '&role=' . $role);
+$ratings = get_json('api/get/ratings.php?club=2&page=' . $p . '&page_size=' . PAGE_SIZE . '&role=' . $role);
 
 echo '<form method="get" name="viewForm" action="index.php">';
 echo '<input type="hidden" name="page" value="ratings">';

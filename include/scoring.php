@@ -1,8 +1,8 @@
 <?php
 
-require_once 'include/db.php';
-require_once 'include/names.php';
-require_once 'include/constants.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/names.php';
+require_once __DIR__ . '/constants.php';
 
 define('SCORING_DEFAULT_ID', 10); // Default scoring system is hardcoded here to ФИИМ (FIGM)
 
@@ -674,7 +674,7 @@ class ScoringSystem
 				if ($edit)
 				{
 					echo '<td width="32" align="center">';
-					echo '<a href="#" onclick="mr.createScoringRule(' . $this->id . ', ' . $current_category . ')" title="' . get_label('New scoring system') . '">';
+					echo '<a href="#" onclick="mr.createScoringRule(' . $this->id . ', ' . $current_category . ')" title="' . get_label('New scoring rule') . '">';
 					echo '<img src="images/create.png" border="0"></a>';
 					echo '</td>';
 				}
@@ -764,6 +764,15 @@ class ScoringSystem
 			}
 			echo '<br>';
 			
+		}
+		if ($edit && $current_category < 0)
+		{
+			echo '<tr class="darker">';
+			echo '<td width="32" align="center">';
+			echo '<a href="#" onclick="mr.createScoringRule(' . $this->id . ', ' . SCORING_CATEGORY_MAIN . ')" title="' . get_label('New scoring rule') . '">';
+			echo '<img src="images/create.png" border="0"></a>';
+			echo '</td>';
+			echo '<td colspan="2"><h4>' . get_label('Scoring rules') . '</h4></td></tr>';
 		}
 		echo '</td></tr>';
 		
@@ -1112,11 +1121,11 @@ class Scores
 		{
 			if ($scope_condition != NULL)
 			{
-				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id', $condition, $scope_condition);
+				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id', $condition, $scope_condition);
 			}
 			else
 			{
-				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id', $condition);
+				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id', $condition);
 			}
 			$interval = ($end_time - $start_time) / $history;
 		}

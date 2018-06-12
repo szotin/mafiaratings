@@ -280,6 +280,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Statistics by numbers'), PERM_ALL);
+$page->run(get_label('Statistics by numbers'));
 
 ?>

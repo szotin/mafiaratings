@@ -45,14 +45,14 @@ try
 	
 	function commit(onSuccess)
 	{
-		json.post("note_ops.php",
-			{
-				id: <?php echo $club_id; ?>,
-				name: $("#form-name").val(),
-				note: editor.getData(),
-				create: ""
-			},
-			onSuccess);
+		json.post("api/ops/note.php",
+		{
+			op: "create"
+			, club_id: <?php echo $club_id; ?>
+			, name: $("#form-name").val()
+			, note: editor.getData()
+		},
+		onSuccess);
 	}
 	</script>
 <?php

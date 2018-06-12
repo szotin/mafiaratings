@@ -159,13 +159,11 @@ class Page extends AddressPageBase
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->season = 0;
+		$this->season = SEASON_ALL_TIME;
 		if (isset($_REQUEST['season']))
 		{
 			$this->season = $_REQUEST['season'];
 		}
-		
-		$this->_title = get_label('[0]. Stats by numbers.', $this->name);
 	}
 	
 	protected function show_body()
@@ -266,6 +264,6 @@ class Page extends AddressPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0]. Stats by numbers.', get_label('Address')), PERM_ALL);
+$page->run(get_label('Stats by Numbers'));
 
 ?>

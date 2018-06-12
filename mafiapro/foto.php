@@ -12,8 +12,9 @@ if (isset($_REQUEST['p']))
 
 try
 {
-	$albums = get_json('ws_albums.php?club=2&pos=' . ($p * PAGE_SIZE) . '&len=' . PAGE_SIZE);
+	$albums = get_json('api/get/albums.php?club=2&pos=' . ($p * PAGE_SIZE) . '&len=' . PAGE_SIZE);
 
+	
 	echo '<h4>Фото и видео</h4><hr>';
 
 	$column_count = 0;

@@ -10,7 +10,7 @@ if (isset($_REQUEST['p']))
 	$p = (int)$_REQUEST['p'];
 }
 
-$adverts = get_json('/ws_adverts.php?club=2&page=' . $p . '&page_size=' . PAGE_SIZE);
+$adverts = get_json('api/get/adverts.php?club=2&page=' . $p . '&page_size=' . PAGE_SIZE);
 
 echo '<h4>Новости</h4><hr>';
 foreach ($adverts->messages as $message)

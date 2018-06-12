@@ -1,7 +1,7 @@
 ﻿<?php
 
 require_once('include/ui.php');
-$upcoming = get_json('ws_upcoming.php?club=2&len=7&df=D%20F%20d%20H:i');
+$upcoming = get_json('api/get/upcoming.php?club=2&len=7&df=D%20F%20d%20H:i');
 
 echo '<table border="1" cellpadding="20" cellspacing="0"  width="100%">';
 

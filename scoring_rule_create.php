@@ -130,7 +130,9 @@ try
 		{
 			params =
 			{
-				id: <?php echo $id; ?>
+				op: 'create_rule'
+				, id: <?php echo $id; ?>
+				, matter: $("#form-matter").val()
 				, category: $("#form-category").val()
 				, roles: role_flags
 				, policy: $("#form-policy").val()
@@ -138,14 +140,15 @@ try
 				, min_points: $("#form-points").val()
 				, max_dep: 0
 				, max_points: $("#form-points").val()
-				, create_rule: $("#form-matter").val()
 			};
 		}
 		else
 		{
 			params =
 			{
-				id: <?php echo $id; ?>
+				op: 'create_rule'
+				, scoring_id: <?php echo $id; ?>
+				, matter: $("#form-matter").val()
 				, category: $("#form-category").val()
 				, roles: role_flags
 				, policy: $("#form-policy").val()
@@ -153,10 +156,9 @@ try
 				, min_points: $("#form-min-points").val()
 				, max_dep: $("#form-max-dep").val() / 100
 				, max_points: $("#form-max-points").val()
-				, create_rule: $("#form-matter").val()
 			};
 		}
-		json.post("scoring_ops.php", params, onSuccess);
+		json.post("api/ops/scoring.php", params, onSuccess);
 	}
 	</script>
 <?php

@@ -151,10 +151,11 @@ try
 		}
 		params =
 		{
-			id: <?php echo $id; ?>
-			, update_sorting: sorting
+			op: 'change_sorting'
+			, scoring_id: <?php echo $id; ?>
+			, sorting: sorting
 		};
-		json.post("scoring_ops.php", params, onSuccess);
+		json.post("api/ops/scoring.php", params, onSuccess);
 	}
 	</script>
 <?php

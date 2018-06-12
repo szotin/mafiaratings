@@ -163,8 +163,6 @@ class Page extends ClubPageBase
 		{
 			$this->season = $_REQUEST['season'];
 		}
-		
-		$this->_title = get_label('[0]. Stats by numbers.', $this->name);
 	}
 	
 	protected function show_body()
@@ -265,6 +263,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0]. Stats by numbers.', get_label('Club')), PERM_ALL);
+$page->run(get_label('Stats by Numbers'));
 
 ?>

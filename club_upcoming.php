@@ -12,14 +12,6 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends ClubPageBase
 {
-	protected function prepare()
-	{
-		global $_profile;
-	
-		parent::prepare();
-		$this->_title = get_label('[0] upcoming events', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		global $_page, $_lang_code, $_profile;
@@ -132,6 +124,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(NULL, PERM_ALL);
+$page->run(get_label('Upcoming Events'));
 
 ?>

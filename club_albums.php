@@ -15,7 +15,6 @@ class Page extends ClubPageBase
 		parent::prepare();
 		$this->link_params = array('id' => $this->id);
 		PhotoAlbum::prepare_list($this->link_params);
-		$this->_title = get_label('[0] photo albums', $this->name);
 	}
 	
 	protected function show_body()
@@ -34,6 +33,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run('', PERM_ALL);
+$page->run(get_label('Photo Albums'));
 
 ?>

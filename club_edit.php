@@ -80,19 +80,19 @@ try
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
-		json.post("club_ops.php",
+		json.post("api/ops/club.php",
 		{
-			id: <?php echo $id; ?>,
-			name: $("#form-club_name").val(),
-			url: $("#form-url").val(),
-			email: $("#form-email").val(),
-			phone: $("#form-phone").val(),
-			price: $("#form-price").val(),
-			city: $("#form-city").val(),
-			country: $("#form-country").val(),
-			scoring: $("#form-scoring").val(),
-			langs: languages,
-			edit: ""
+			op: "change"
+			, club_id: <?php echo $id; ?>
+			, name: $("#form-club_name").val()
+			, url: $("#form-url").val()
+			, email: $("#form-email").val()
+			, phone: $("#form-phone").val()
+			, price: $("#form-price").val()
+			, city: $("#form-city").val()
+			, country: $("#form-country").val()
+			, scoring_id: $("#form-scoring").val()
+			, langs: languages
 		},
 		onSuccess);
 	}

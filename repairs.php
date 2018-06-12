@@ -9,7 +9,15 @@ class Page extends GeneralPageBase
 	{
 		echo '<div id="progr"></div>';
 		
-		echo '<p><input type="submit" class="btn long" value="Lock the site" onclick="mr.lockSite(true)"></p>';
+		if ($this->_locked)
+		{
+			echo '<p><input type="submit" class="btn long" value="Unlock the site" onclick="mr.lockSite(false)"></p>';
+		}
+		else
+		{
+			echo '<p><input type="submit" class="btn long" value="Lock the site" onclick="mr.lockSite(true)"></p>';
+		}
+			
 		echo '<p>';
 		echo '<input type="submit" class="btn long" value="Rebuild address icons" onclick="rebuildAddrIcons()">';
 		echo '<input type="submit" class="btn long" value="Rebuild user icons" onclick="rebuildUserIcons()">';
@@ -63,7 +71,11 @@ class Page extends GeneralPageBase
 				$("#progr").progressbar("option", "max", 100);
 				$("#progr").progressbar("option", "value", 100);
 				$("#loading").hide();
-				dlg.info(repairLog, 'Complete');
+				if (repairLog.length == 0)
+				{
+					repairLog = 'Success!!!';
+				}
+				dlg.info(repairLog, 'Complete', null, refr);
 			}
 		}
 		
@@ -77,13 +89,13 @@ class Page extends GeneralPageBase
 		
 		function addrIconsNext(id)
 		{
-			json.post("repair_ops.php", { addr_icons: "", last_id: id }, function(data) { updateProgress(data, addrIconsNext); });
+			json.post("api/ops/repair.php", { op: 'addr_icons', last_id: id }, function(data) { updateProgress(data, addrIconsNext); });
 		}
 
 		function rebuildAddrIcons()
 		{
 			startRepairing();
-			json.post("repair_ops.php", { addr_icons: "" }, function (data)
+			json.post("api/ops/repair.php", { op: 'addr_icons' }, function (data)
 			{
 				$("#progr").progressbar("option", "max", data.count);
 				updateProgress(data, addrIconsNext);
@@ -92,13 +104,13 @@ class Page extends GeneralPageBase
 		
 		function userIconsNext(id)
 		{
-			json.post("repair_ops.php", { user_icons: "", last_id: id }, function(data) { updateProgress(data, userIconsNext); });
+			json.post("api/ops/repair.php", { op: 'user_icons', last_id: id }, function(data) { updateProgress(data, userIconsNext); });
 		}
 
 		function rebuildUserIcons()
 		{
 			startRepairing();
-			json.post("repair_ops.php", { user_icons: "" }, function (data)
+			json.post("api/ops/repair.php", { op: 'user_icons' }, function (data)
 			{
 				$("#progr").progressbar("option", "max", data.count);
 				updateProgress(data, userIconsNext);
@@ -107,13 +119,13 @@ class Page extends GeneralPageBase
 		
 		function clubIconsNext(id)
 		{
-			json.post("repair_ops.php", { club_icons: "", last_id: id }, function(data) { updateProgress(data, clubIconsNext); });
+			json.post("api/ops/repair.php", { op: 'club_icons', last_id: id }, function(data) { updateProgress(data, clubIconsNext); });
 		}
 
 		function rebuildClubIcons()
 		{
 			startRepairing();
-			json.post("repair_ops.php", { club_icons: "" }, function (data)
+			json.post("api/ops/repair.php", { op: 'club_icons' }, function (data)
 			{
 				$("#progr").progressbar("option", "max", data.count);
 				updateProgress(data, clubIconsNext);
@@ -122,13 +134,13 @@ class Page extends GeneralPageBase
 		
 		function albumIconsNext(id)
 		{
-			json.post("repair_ops.php", { album_icons: "", last_id: id }, function(data) { updateProgress(data, albumIconsNext); });
+			json.post("api/ops/repair.php", { op: 'album_icons', last_id: id }, function(data) { updateProgress(data, albumIconsNext); });
 		}
 
 		function rebuildAlbumIcons()
 		{
 			startRepairing();
-			json.post("repair_ops.php", { album_icons: "" }, function (data)
+			json.post("api/ops/repair.php", { op: 'album_icons' }, function (data)
 			{
 				$("#progr").progressbar("option", "max", data.count);
 				updateProgress(data, albumIconsNext);
@@ -137,13 +149,13 @@ class Page extends GeneralPageBase
 		
 		function photoIconsNext(id)
 		{
-			json.post("repair_ops.php", { photo_icons: "", last_id: id }, function(data) { updateProgress(data, photoIconsNext); });
+			json.post("api/ops/repair.php", { op: 'photo_icons', last_id: id }, function(data) { updateProgress(data, photoIconsNext); });
 		}
 
 		function rebuildPhotoIcons()
 		{
 			startRepairing();
-			json.post("repair_ops.php", { photo_icons: "" }, function (data)
+			json.post("api/ops/repair.php", { op: 'photo_icons' }, function (data)
 			{
 				$("#progr").progressbar("option", "max", data.count);
 				updateProgress(data, photoIconsNext);
@@ -152,13 +164,13 @@ class Page extends GeneralPageBase
 		
 		function statsNext(id)
 		{
-			json.post("repair_ops.php", { stats: "", last_id: id }, function(data) { updateProgress(data, statsNext); });
+			json.post("api/ops/repair.php", { op: 'stats', last_id: id }, function(data) { updateProgress(data, statsNext); });
 		}
 
 		function rebuildStats()
 		{
 			startRepairing();
-			json.post("repair_ops.php", { stats: "" }, function (data)
+			json.post("api/ops/repair.php", { op: 'stats' }, function (data)
 			{
 				$("#progr").progressbar("option", "max", data.count);
 				updateProgress(data, statsNext);

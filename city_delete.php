@@ -33,19 +33,22 @@ try
 		show_option($row[0], -1, $row[1]);
 	}
 	echo '</select>';
-	echo '</td></tr></table>';
+	echo '</td></tr>';
+	echo '<tr><td colspan="2" align="right"><input type="checkbox" id="form-keep" checked> ' . get_label('keep the deleted city names as possible alternatives to the replacement city name') . '</td></tr>';
+	echo '</table>';
 	
 ?>
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("location_ops.php",
-			{
-				id: <?php echo $id; ?>,
-				repl: $("#form-repl").val(),
-				delete_city: ""
-			},
-			onSuccess);
+		json.post("api/ops/city.php",
+		{
+			op: 'delete'
+			, city_id: <?php echo $id; ?>
+			, repl_id: $("#form-repl").val()
+			, keep_name: ($('#form-keep').attr('checked') ? 1 : 0)
+		},
+		onSuccess);
 	}
 	</script>
 <?php

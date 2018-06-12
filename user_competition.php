@@ -12,7 +12,6 @@ class Page extends UserPageBase
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->_title = get_label('[0]: competition', $this->title);
 		
 		$rating_pos = -1;
 		$query = new DbQuery('SELECT rating, games, games_won FROM users WHERE id = ?', $this->id);
@@ -68,6 +67,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run('', PERM_ALL);
+$page->run(get_label('Competition Chart'));
 
 ?>

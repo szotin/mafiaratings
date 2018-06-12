@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/session.php';
-require_once 'include/location.php';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/location.php';
 
 define('UNDEFINED_COUNTRY', -1);
 define('ALL_COUNTRIES', 0);
@@ -11,7 +11,7 @@ function retrieve_country_id($country)
 	global $_profile, $_lang_code;
 
 	$country = trim($country);
-	if ($country == '')
+	if (empty($country))
 	{
 		throw new Exc(get_label('Please enter [0].', get_label('country')));
 	}
@@ -23,14 +23,19 @@ function retrieve_country_id($country)
 	}
 	else
 	{
+		Db::begin();
 		Db::exec(get_label('country'), 'INSERT INTO countries (name_en, name_ru, flags, code) VALUES (?, ?, ' . COUNTRY_FLAG_NOT_CONFIRMED . ', \'\')', $country, $country);
-		list($country_id) = Db::record(get_label('country'), 'SELECT LAST_INSERT_ID()');
+		list ($country_id) = Db::record(get_label('country'), 'SELECT LAST_INSERT_ID()');
+		
+		Db::exec(get_label('country'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $country);
+		
 		$log_details =
 			'name_en=' . $country .
 			"<br>name_ru=" . $country .
 			"<br>code=" .
 			"<br>flags=" . COUNTRY_FLAG_NOT_CONFIRMED;
 		db_log('country', 'Created', $log_details, $country_id);
+		Db::commit();
 		
 		$query = new DbQuery('SELECT id, name, email FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
 		while ($row = $query->next())
@@ -105,7 +110,7 @@ function show_country_input($name, $value, $city_input = NULL, $on_select = NULL
 		{ 
 			source: function( request, response )
 			{
-				$.getJSON("country_ops.php",
+				$.getJSON("api/control/country.php",
 				{
 					term: $("#<?php echo $name; ?>").val()
 				}, response);
@@ -125,7 +130,7 @@ function show_country_input($name, $value, $city_input = NULL, $on_select = NULL
 		{ 
 			source: function( request, response )
 			{
-				$.getJSON("country_ops.php",
+				$.getJSON("api/control/country.php",
 				{
 					term: $("#<?php echo $name; ?>").val()
 				}, response);
@@ -144,16 +149,8 @@ function show_country_buttons($id, $name, $flags)
 
 	if ($_profile != NULL && $_profile->is_admin())
 	{
-		if (($flags & COUNTRY_FLAG_NOT_CONFIRMED) != 0)
-		{
-			echo '<button class="icon" onclick="mr.declineCountry(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.acceptCountry(' . $id . ')" title="' . get_label('Confirm [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
-		}
-		else
-		{
-			echo '<button class="icon" onclick="mr.deleteCountry(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.editCountry(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
-		}
+		echo '<button class="icon" onclick="mr.deleteCountry(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
+		echo '<button class="icon" onclick="mr.editCountry(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
 	}
 }
 

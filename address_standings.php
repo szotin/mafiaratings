@@ -39,8 +39,6 @@ class Page extends AddressPageBase
 			$this->scoring_id = $_REQUEST['scoring'];
 		}
 		
-		$this->_title = get_label('[0]. Standings.', $this->name);
-		
 		$this->user_id = 0;
 		if ($_page < 0)
 		{
@@ -161,6 +159,6 @@ class Page extends AddressPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Address'), PERM_ALL);
+$page->run(get_label('Standings'));
 
 ?>

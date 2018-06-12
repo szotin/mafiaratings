@@ -23,6 +23,6 @@ class Page extends GeneralPageBase
 
 $page = new Page();
 $page->set_ccc(CCCS_NO);
-$page->run(get_label('Download client software'), PERM_ALL);
+$page->run(get_label('Download client software'));
 
 ?>

@@ -153,12 +153,6 @@ function sorting_link($ref, $sort, $text)
 
 class Page extends EventPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0]. Stats by numbers.', $this->event->name);
-	}
-	
 	protected function show_body()
 	{
 		global $sort_type;
@@ -254,6 +248,6 @@ class Page extends EventPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0]. Stats by numbers.', get_label('Event')), PERM_ALL);
+$page->run(get_label('Stats by Numbers'));
 
 ?>

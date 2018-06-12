@@ -135,6 +135,6 @@ class Page extends GeneralPageBase
 
 $page = new Page();
 $page->set_ccc(CCCS_ALL);
-$page->run('', PERM_ALL);
+$page->run();
 
 ?>

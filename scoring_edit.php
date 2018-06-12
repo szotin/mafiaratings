@@ -43,11 +43,11 @@ try
 	{
 		var params =
 		{
-			id: <?php echo $id; ?>,
-			name: $("#form-name").val(),
-			update: ''
+			op: 'change'
+			, scoring_id: <?php echo $id; ?>
+			, name: $("#form-name").val()
 		};
-		json.post("scoring_ops.php", params, onSuccess);
+		json.post("api/ops/scoring.php", params, onSuccess);
 	}
 	</script>
 <?php

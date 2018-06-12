@@ -228,7 +228,7 @@ class Page extends PageBase
 		echo 'mr.showVideoUsers(' . $this->video_id . ");\n";
 		if ($this->game_id != NULL)
 		{
-			echo 'mr.showComments("game", ' . $this->game_id . ", 20)\n";
+			echo 'mr.showComments("game1", ' . $this->game_id . ", 20)\n";
 		}
 		else
 		{
@@ -238,6 +238,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run('Video', PERM_ALL);
+$page->run('Video');
 
 ?>

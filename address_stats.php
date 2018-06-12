@@ -16,11 +16,10 @@ class Page extends AddressPageBase
 	{
 		parent::prepare();
 		
-		$this->_title = get_label('[0]. General stats.', $this->name);
 		list($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 		
-		$this->season = 0;
+		$this->season = SEASON_ALL_TIME;
 		if (isset($_REQUEST['season']))
 		{
 			$this->season = $_REQUEST['season'];
@@ -162,6 +161,6 @@ class Page extends AddressPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Address'), PERM_ALL);
+$page->run(get_label('General Stats'));
 
 ?>

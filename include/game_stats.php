@@ -1,8 +1,8 @@
 <?php
 
-require_once 'include/game_state.php';
-require_once 'include/localization.php';
-require_once 'include/scoring.php';
+require_once __DIR__ . '/game_state.php';
+require_once __DIR__ . '/localization.php';
+require_once __DIR__ . '/scoring.php';
 
 class GamePlayerStats
 {

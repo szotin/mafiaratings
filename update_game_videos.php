@@ -22,6 +22,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run('Update videos', PERM_ALL);
+$page->run('Update videos');
 
 ?>

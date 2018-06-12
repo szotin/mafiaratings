@@ -32,7 +32,7 @@ try
 	
 	if (!isset($_profile->clubs[$club_id]))
 	{
-		throw new FatalExc(get_label('No permissions'));
+		// throw new FatalExc(get_label('No permissions'));
 	}
 	$club = $_profile->clubs[$club_id];
 	
@@ -101,8 +101,9 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("video_ops.php",
+		json.post("api/ops/video.php",
 		{
+			op: "create",
 <?php
 			if (isset($event_id))
 			{
@@ -116,8 +117,7 @@ try
 			video: $("#form-video").val(),
 			vtype: $("#form-type").val(),
 			lang: $("#form-lang").val(),
-			time: $("#form-date").val() + " " + $("#form-hour").val() + ":" + $("#form-minute").val(),
-			create: ""
+			time: $("#form-date").val() + " " + $("#form-hour").val() + ":" + $("#form-minute").val()
 		},
 		onSuccess);
 	}

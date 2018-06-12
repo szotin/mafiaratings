@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/constants.php';
+require_once __DIR__ . '/constants.php';
 
 define('TNAIL_OPTION_SCALE', 0);
 define('TNAIL_OPTION_CUT', 1);
@@ -207,11 +207,11 @@ function upload_image($input_name, $dst_filename)
 	return $img;
 }
 
-function build_photo_tnail($id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
+function build_photo_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
 {
 	if ($img == NULL)
 	{
-		$img = imagecreatefromjpeg(PHOTOS_DIR . $id . '.jpg');
+		$img = imagecreatefromjpeg($dir . $id . '.jpg');
 		if (!$img)
 		{
 			throw new Exc(get_label('Bad image format'));
@@ -219,7 +219,7 @@ function build_photo_tnail($id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
 	}
 
 	$t_img = generate_thumbnail($img, EVENT_PHOTO_WIDTH, 0, $t_option);
-	$t_dir = PHOTOS_DIR . TNAILS_DIR;
+	$t_dir = $dir . TNAILS_DIR;
 	if (!is_dir($t_dir))
 	{
 		mkdir($t_dir);
@@ -235,7 +235,7 @@ function upload_photo($input_name, $id, $t_option = TNAIL_OPTION_FIT)
 		mkdir(PHOTOS_DIR);
 	}
 	$img = upload_image($input_name, PHOTOS_DIR . $id . '.jpg');
-	build_photo_tnail($id, $t_option, $img);
+	build_photo_tnail(PHOTOS_DIR, $id, $t_option, $img);
 	imagedestroy($img);
 }
 

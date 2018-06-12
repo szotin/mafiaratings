@@ -42,8 +42,6 @@ class Page extends ClubPageBase
 			$this->scoring_id = (int)$_REQUEST['scoring'];
 		}
 		
-		$this->_title = get_label('[0]. Standings.', $this->name);
-		
 		$this->user_id = 0;
 		if ($_page < 0)
 		{
@@ -166,6 +164,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Club standings'), PERM_ALL);
+$page->run(get_label('Standings'));
 
 ?>

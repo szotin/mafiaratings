@@ -45,18 +45,18 @@ try
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
-		json.post("profile_ops.php",
-			{
-				name: $("#form-name").val(),
-				url: $("#form-url").val(),
-				email: $("#form-email").val(),
-				phone: $("#form-phone").val(),
-				country: $("#form-country").val(),
-				city: $("#form-city").val(),
-				langs: languages,
-				create_club: ""
-			},
-			onSuccess);
+		json.post("api/ops/club.php",
+		{
+			op: 'create'
+			, name: $("#form-name").val()
+			, url: $("#form-url").val()
+			, email: $("#form-email").val()
+			, phone: $("#form-phone").val()
+			, country: $("#form-country").val()
+			, city: $("#form-city").val()
+			, langs: languages
+		},
+		onSuccess);
 	}
 	</script>
 <?php

@@ -42,11 +42,11 @@ try
 	
 	function commit(onSuccess)
 	{
-		json.post("note_ops.php",
+		json.post("api/ops/note.php",
 			{
-				id: <?php echo $note_id; ?>,
-				note: editor.getData(),
-				update: ""
+				op: 'change'
+				, note_id: <?php echo $note_id; ?>
+				, note: editor.getData()
 			},
 			onSuccess);
 	}

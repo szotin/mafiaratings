@@ -24,7 +24,6 @@ class Page extends EventPageBase
 		global $_page;
 		
 		parent::prepare();
-		$this->_title = get_label('[0]. Standings.', $this->event->name);
 		
 		$this->scoring_id = $this->event->scoring_id;
 		if (isset($_REQUEST['scoring']))
@@ -173,6 +172,6 @@ class Page extends EventPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Event players'), PERM_ALL);
+$page->run(get_label('Standings'));
 
 ?>

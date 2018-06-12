@@ -37,8 +37,8 @@ define('UC_PERM_MASK', 0x7); // UC_PERM_PLAYER | UC_PERM_MODER | UC_PERM_MANAGER
 // 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag moder)
 // 03 - 0x0004 -      4 - reserved (not to interfere with user-club perm flag manager)
 // 04 - 0x0008 -      8 - perm admin
-// 05 - 0x0010 -     16 - state mask
-// 06 - 0x0020 -     32 - state mask
+// 05 - 0x0010 -     16 - reserved for future use
+// 06 - 0x0020 -     32 - user never logged in so the password is not set. Account is not activated.
 // 07 - 0x0040 -     64 - male
 // 08 - 0x0080 -    128 - banned
 // 09 - 0x0100 -    256 - notify on comments
@@ -49,7 +49,6 @@ define('UC_PERM_MASK', 0x7); // UC_PERM_PLAYER | UC_PERM_MODER | UC_PERM_MANAGER
 // 14 - 0x2000 -   8192 - icon mask
 // 15 - 0x4000 -  16384 - name was changed during registration
 define('U_PERM_ADMIN', 0x8);
-define('U_FLAG_DEACTIVATED', 0x10);
 define('U_FLAG_NO_PASSWORD', 0x20);
 define('U_FLAG_MALE', 0x40);
 define('U_FLAG_BANNED', 0x80);
@@ -213,6 +212,13 @@ define('EMAIL_EXPIRATION_TIME', 1209600); // two weeks
 define('VIDEO_TYPE_LEARNING', 0);
 define('VIDEO_TYPE_GAME', 1);
 
-
+function set_flag($flags, $flag, $value)
+{
+	if ($value)
+	{
+		return $flags | $flag;
+	}
+	return $flags & ~$flag;
+}
 
 ?>

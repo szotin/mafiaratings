@@ -14,7 +14,6 @@ class Page extends EventPageBase
 		parent::prepare();
 		$this->link_params = array('id' => $this->event->id);
 		PhotoAlbum::prepare_list($this->link_params);
-		$this->_title = get_label('[0] photo albums', $this->event->name);
 	}
 
 	protected function show_body()
@@ -33,6 +32,6 @@ class Page extends EventPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Photo albums'), PERM_ALL);
+$page->run(get_label('Photo Albums'));
 
 ?>

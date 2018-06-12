@@ -21,16 +21,28 @@ try
 				'SELECT g.id, v.club_id, v.user_id FROM videos v ' .
 				' LEFT OUTER JOIN games g ON g.video_id = v.id' .
 				' WHERE v.id = ?', $video_id);
+				
+	$can_manage = false;
+	$self_id = 0;
+	if ($_profile != NULL)
+	{
+		$self_id = $_profile->user_id;
+		$can_manage = ($self_id == $user_id || $_profile->is_manager($club_id));
+	}
 	
-	$can_manage = ($_profile != NULL && ($_profile->user_id == $user_id || $_profile->is_manager($club_id)));
 	
 	echo '<table class="bordered light" width="100%">';
-	echo '<tr><td class="darker" colspan="' . COLUMN_COUNT . '">' . get_label('On this video: ');
 	if ($can_manage && $game_id == NULL)
 	{
+		echo '<tr><td class="darker" colspan="' . COLUMN_COUNT . '">' . get_label('On this video: ');
 		echo '<input type="text" id="tag_user" title="' . get_label('Tag a user on this video.') . '"/>';
+		echo '</td></tr>';
+		$show_title = false;
 	}
-	echo '</td></tr>';
+	else
+	{
+		$show_title = true;
+	}
 	
 	$remaining_columns = 0;
 	if ($game_id == NULL)
@@ -45,6 +57,11 @@ try
 	}
 	while ($row = $query->next())
 	{
+		if ($show_title)
+		{
+			echo '<tr><td class="darker" colspan="' . COLUMN_COUNT . '">' . get_label('On this video: ') . '</td></tr>';
+			$show_title = false;
+		}
 		if ($remaining_columns <= 0)
 		{
 			$remaining_columns = COLUMN_COUNT;
@@ -53,10 +70,29 @@ try
 		--$remaining_columns;
 		
 		list ($user_id, $user_name, $user_flags, $tagged_by) = $row;
-		echo '<td width="' . COLUMN_WIDTH . '%" align="center"><a href="user_info.php?bck=1&id=' . $user_id . '">';
+		
+		echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
+		$can_untag = false;
+		if ($game_id == NULL)
+		{
+			$can_untag = ($can_manage || $user_id == $self_id);
+		}
+		
+		if ($can_untag)
+		{
+			echo '<table class="transp" width="100%"><tr><td align="center">';
+		}
+		echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
 		show_user_pic($user_id, $user_name, $user_flags, ICONS_DIR, 48, 48);
 		echo '<br>' . $user_name;
-		echo '</a></td>';
+		echo '</a>';
+		if ($can_untag)
+		{
+			echo '</tr><tr><td align="center">';
+			echo '<br><button class="icon" onclick="mr.untagVideo(' . $user_id . ', ' . $video_id . ')" title="' . get_label('Untag [0]', $user_name) . '"><img src="images/delete.png" border="0"></button>';
+			echo '</td></tr></table>';
+		}
+		echo '</td>';
 	}
 	if ($remaining_columns > 0)
 	{

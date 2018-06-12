@@ -8,12 +8,6 @@ define("PAGE_SIZE",15);
 
 class Page extends ClubPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0] moderators', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		global $_page;
@@ -89,6 +83,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Moderators'), PERM_ALL);
+$page->run(get_label('Moderators'));
 
 ?>

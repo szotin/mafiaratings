@@ -67,6 +67,8 @@ try
 			$event_id, $event_name, $event_start_time, $event_notes, $event_langs,
 			$addr_id, $addr, $addr_url, $timezone, $club_id,
 			$club_name) = $row;
+			
+		// echo '<br>$email_id=' . $email_id . '<br>$email_lang=' . $email_lang . '<br>$event_langs=' . $event_langs . '<br>$event_id=' . $event_id . '<br>$club_name=' . $club_name . '<br>';
 		
 		$count = 0;
 		$to_flags = ($email_flags & MAILING_FLAG_TO_ALL);
@@ -148,9 +150,8 @@ try
 		
 			$query1 = new DbQuery('SELECT u.id, u.name, u.email FROM users u, user_clubs uc WHERE ', $condition);
 			$query1->add(' ORDER BY u.id LIMIT ' . $emails_remaining);
-			echo $query1->get_parsed_sql();
-			echo '</br>';
-			
+			// echo $query1->get_parsed_sql();
+			// echo '</br>';
 			while ($row1 = $query1->next())
 			{
 				list($user_id, $user_name, $user_email) = $row1;

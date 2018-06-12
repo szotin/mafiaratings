@@ -27,7 +27,6 @@ class Page extends UserPageBase
 		{
 			$this->events_type = (int)$_REQUEST['etype'];
 		}
-		$this->_title = get_label('[0] events', $this->title);
 	}
 	
 	protected function show_body()
@@ -146,6 +145,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Events history'), PERM_ALL);
+$page->run(get_label('Events'));
 
 ?>

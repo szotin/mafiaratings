@@ -153,12 +153,6 @@ function sorting_link($ref, $sort, $text)
 
 class Page extends UserPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0]. Stats by numbers.', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		global $sort_type;
@@ -274,6 +268,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0]. Stats by numbers.', get_label('User')), PERM_ALL);
+$page->run(get_label('Stats by Numbers'));
 
 ?>

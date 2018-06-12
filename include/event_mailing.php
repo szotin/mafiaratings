@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/session.php';
+require_once __DIR__ . '/session.php';
 
 function create_event_mailing($events, $body, $subj, $send_time, $lang, $flags)
 {

@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/session.php';
-require_once 'include/email.php';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/email.php';
 
 define('UNDEFINED_CITY', -1);
 define('ALL_CITIES', 0);
@@ -16,7 +16,7 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 	}
 	
 	$city = trim($city);
-	if ($city == '')
+	if (empty($city))
 	{
 		throw new Exc(get_label('Please enter [0].', get_label('city')));
 	}
@@ -111,7 +111,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 		{ 
 			source: function(request, response)
 			{
-				$.getJSON("city_ops.php",
+				$.getJSON("api/control/city.php",
 				{
 					term: $("#<?php echo $name; ?>").val(),
 					cid: <?php echo $country_id; ?>
@@ -130,7 +130,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 		{ 
 			source: function(request, response)
 			{
-				$.getJSON("city_ops.php",
+				$.getJSON("api/control/city.php",
 				{
 					term: $("#<?php echo $name; ?>").val(),
 					cname: $("#<?php echo $country_id; ?>").val()
@@ -150,16 +150,8 @@ function show_city_buttons($id, $name, $flags)
 
 	if ($_profile != NULL && $_profile->is_admin())
 	{
-		if (($flags & CITY_FLAG_NOT_CONFIRMED) != 0)
-		{
-			echo '<button class="icon" onclick="mr.declineCity(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.acceptCity(' . $id . ')" title="' . get_label('Confirm [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
-		}
-		else
-		{
-			echo '<button class="icon" onclick="mr.deleteCity(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.editCity(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
-		}
+		echo '<button class="icon" onclick="mr.deleteCity(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
+		echo '<button class="icon" onclick="mr.editCity(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
 	}
 }
 

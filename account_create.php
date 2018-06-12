@@ -22,11 +22,11 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("profile_ops.php",
+		json.post("api/ops/account.php",
 		{
-			name: $("#form-name").val(),
-			email: $("#form-email").val(),
-			create_account: ""
+			op: 'create'
+			, name: $("#form-name").val()
+			, email: $("#form-email").val()
 		},
 		onSuccess);
 	}

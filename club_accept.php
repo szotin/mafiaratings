@@ -46,13 +46,13 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("club_ops.php",
-			{
-				id: <?php echo $id; ?>,
-				name: $("#form-name").val(),
-				accept: ""
-			},
-			onSuccess);
+		json.post("api/ops/club.php",
+		{
+			op: "accept"
+			, request_id: <?php echo $id; ?>
+			, name: $("#form-name").val()
+		},
+		onSuccess);
 	}
 	</script>
 <?php

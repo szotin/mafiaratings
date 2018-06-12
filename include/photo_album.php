@@ -1,10 +1,10 @@
 <?php
 
-require_once 'include/page_base.php';
-require_once 'include/image.php';
-require_once 'include/pages.php';
-require_once 'include/constants.php';
-require_once 'include/club.php';
+require_once __DIR__ . '/page_base.php';
+require_once __DIR__ . '/image.php';
+require_once __DIR__ . '/pages.php';
+require_once __DIR__ . '/constants.php';
+require_once __DIR__ . '/club.php';
 
 define('ALBUM_SHOW_CLUB', 1);
 define('ALBUM_SHOW_OWNER', 2);

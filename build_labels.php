@@ -2,6 +2,7 @@
 
 $labels=array();
 $comments=array();
+$dirs = array('.', 'include', 'api', 'api/ops', 'api/get', 'api/control');
 
 function write_labels($lang, $backup = false)
 {
@@ -70,6 +71,11 @@ function insert_label($label, $filename)
 	
 	$label = rtrim($label, '"\'');
 	$label = trim($label, '"\'');
+	
+	if (strncmp($filename, "./", 2) === 0)
+	{
+		$filename = substr($filename, 2);
+	}
 	
 	if (array_key_exists($label, $labels))
 	{
@@ -156,6 +162,7 @@ function build_labels($lang)
 {
 	global $labels;
 	global $comments;
+	global $dirs;
 
 	$labels = include 'include/languages/'.$lang.'/labels.php';
 
@@ -183,25 +190,19 @@ function build_labels($lang)
 	}
 	echo " DONE!\r\n";
 
-	$dh = opendir('.');
-    while (false !== ($file = readdir($dh))) 
-    {
-    	if (!is_dir($file))
-    	{
-    		process_file_labels($file);
-    	}
-    }
-	closedir($dh);
-	
-	$dh = opendir('./include');
-    while (false !== ($file = readdir($dh))) 
-    {
-    	if (!is_dir('./include/'.$file))
-    	{
-			process_file_labels('./include/'.$file);
-    	}
-    }
-	closedir($dh);
+	foreach($dirs as $dir)
+	{
+		$dh = opendir($dir);
+		while (false !== ($file = readdir($dh))) 
+		{
+			$path = $dir . '/' . $file;
+			if (!is_dir($path))
+			{
+				process_file_labels($path);
+			}
+		}
+		closedir($dh);
+	}
 	
 	write_labels($lang);
 	return;

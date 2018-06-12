@@ -56,13 +56,13 @@ try
 	function commit(onSuccess)
 	{
 		var new_duration = <?php echo $time - $start_time; ?> + parseInt($("#duration").val());
-		json.post("event_ops.php",
-			{
-				id: <?php echo $id; ?>,
-				duration: new_duration,
-				extend: ""
-			},
-			onSuccess);
+		json.post("api/ops/event.php",
+		{
+			op: "extend"
+			, event_id: <?php echo $id; ?>
+			, duration: new_duration
+		},
+		onSuccess);
 	}
 	</script>
 <?php

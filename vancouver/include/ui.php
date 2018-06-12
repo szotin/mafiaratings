@@ -21,12 +21,13 @@ function page_name()
 
 function service_host()
 {
-	$server = $_SERVER['SERVER_NAME'];
-	if ($server == 'localhost' || $server == '127.0.0.1')
+	$url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+	$pos = strpos($url, '/vancouver');
+	if ($pos === false)
 	{
-		return 'http://' . $server . ':' . $_SERVER['SERVER_PORT'];
+		return 'https://mafiaratings.com';
 	}
-	return 'http://mafiaratings.com';
+	return substr($url, 0, $pos);
 }
 
 function show_header($title, $show_ratings = true)

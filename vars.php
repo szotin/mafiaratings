@@ -32,6 +32,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run('Vars for ' . get_server_url(), U_PERM_ADMIN);
+$page->run('Vars for ' . get_server_url());
 
 ?>

@@ -56,27 +56,27 @@ class Page extends GeneralPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT i.id, i.name_' . $_lang_code . ', i.flags, o.name_' . $_lang_code . ', i.timezone, n.name_' . $_lang_code . ' FROM cities i' . 
+			'SELECT i.id, i.name_' . $_lang_code . ', i.flags, o.name_' . $_lang_code . ', i.timezone, i.area_id, a.name_' . $_lang_code . ' FROM cities i' . 
 				' JOIN countries o ON i.country_id = o.id' .
-				' LEFT OUTER JOIN cities n ON i.area_id = n.id',
+				' LEFT OUTER JOIN cities a ON i.area_id = a.id',
 			$condition);
 		$query->add(' ORDER BY i.name_' . $_lang_code . ' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';
 		echo '<td width="56">';
 		echo '<button class="icon" onclick="mr.createCity()" title="' . get_label('Create [0]', get_label('city')) . '"><img src="images/create.png" border="0"></button>';
-		echo '<td>'.get_label('City').'</td><td width="180">'.get_label('Near').'</td><td width="180">'.get_label('Country').'</td><td width="180">'.get_label('Time zone').'</td></tr>';
+		echo '<td>'.get_label('City').'</td><td width="180">'.get_label('Area').'</td><td width="180">'.get_label('Country').'</td><td width="180">'.get_label('Time zone').'</td></tr>';
 		while ($row = $query->next())
 		{
-			list($id, $city_name, $flags, $country_name, $timezone, $near) = $row;
-			if ($near == NULL)
+			list($id, $city_name, $flags, $country_name, $timezone, $area_id, $area_name) = $row;
+			if ($area_id == NULL || $area_id == $id)
 			{
-				$near = '&nbsp;';
+				$area_name = '';
 			}
 			
 			echo '<tr><td class="dark">';
 			show_city_buttons($id, $city_name, $flags);
-			echo '</td><td>' . $city_name . '</td><td>' . $near . '</td><td>' . $country_name . '</td><td width="180">' . $timezone . '</td></tr>';
+			echo '</td><td>' . $city_name . '</td><td>' . $area_name . '</td><td>' . $country_name . '</td><td width="180">' . $timezone . '</td></tr>';
 		}
 		echo '</table>';
 	}

@@ -136,6 +136,6 @@ class Page extends AlbumPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Photos'), PERM_ALL);
+$page->run(get_label('Photos'));
 
 ?>

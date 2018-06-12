@@ -16,7 +16,6 @@ class Page extends ClubPageBase
 	{
 		parent::prepare();
 		
-		$this->_title = get_label('[0]. General stats.', $this->name);
 		list($timezone) = Db::record(get_label('club'), 'SELECT i.timezone FROM clubs c JOIN cities i ON c.city_id = i.id WHERE c.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 		
@@ -162,6 +161,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Club'), PERM_ALL);
+$page->run(get_label('General Stats'));
 
 ?>

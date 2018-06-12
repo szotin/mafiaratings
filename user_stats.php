@@ -7,12 +7,6 @@ require_once 'include/scoring.php';
 
 class Page extends UserPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0]. General stats.', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		$club_id = 0;
@@ -376,6 +370,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0]. General stats.', get_label('User')), PERM_ALL);
+$page->run(get_label('General Stats'));
 
 ?>

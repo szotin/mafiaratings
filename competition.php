@@ -73,6 +73,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Competition chart'), PERM_ALL);
+$page->run(get_label('Competition chart'));
 
 ?>

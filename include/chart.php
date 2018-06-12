@@ -1,6 +1,6 @@
 <?php
 
-require_once('include/localization.php');
+require_once __DIR__ . '/localization.php';
 
 define('MAX_CHARTS_COUNT', 5);
 

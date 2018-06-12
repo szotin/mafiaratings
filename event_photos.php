@@ -15,6 +15,6 @@ class Page extends EventPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Event photos'), PERM_ALL);
+$page->run(get_label('Photos'));
 
 ?>

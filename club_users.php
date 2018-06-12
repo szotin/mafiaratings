@@ -58,7 +58,6 @@ class Page extends ClubPageBase
 				db_log('user', 'Unbanned', NULL, $_REQUEST['unban'], $this->id);
 			}
 		}
-		$this->_title = get_label('[0] members', $this->name);
 	}
 	
 	protected function show_body()
@@ -73,7 +72,6 @@ class Page extends ClubPageBase
 			$_page = floor($user_pos / PAGE_SIZE);
 		}
 		
-		$is_admin = check_permissions(U_PERM_ADMIN);
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td align="right">';
@@ -81,7 +79,7 @@ class Page extends ClubPageBase
 		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific user is located.'));
 		echo '</td></tr></table></form>';
 		
-		$is_manager = $_profile->is_manager($this->id);
+		$can_edit = $_profile->is_manager($this->id);
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users u, user_clubs uc WHERE ', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -103,19 +101,6 @@ class Page extends ClubPageBase
 		{
 			list($id, $name, $flags, $uc_flags, $club_id, $club_name, $club_flags) = $row;
 		
-			if ($is_admin)
-			{
-				$can_edit = true;
-			}
-			else if ($is_manager)
-			{
-				$can_edit = (($flags & U_PERM_ADMIN) == 0);
-			}
-			else
-			{
-				$can_edit = (($uc_flags & PERM_OFFICER) == 0);
-			}
-			
 			if ($id == $this->user_id)
 			{
 				echo '<tr class="dark">';
@@ -201,6 +186,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(NULL, UC_PERM_MODER | UC_PERM_MANAGER);
+$page->run(get_label('Members'), UC_PERM_MODER | UC_PERM_MANAGER);
 
 ?>

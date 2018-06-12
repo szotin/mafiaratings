@@ -31,10 +31,11 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("video_ops.php",
+		json.post("api/ops/video.php",
 		{
+			op: "game_video",
 			game_id: <?php echo $id; ?>,
-			set_game_video: $("#form-video").val()
+			video: $("#form-video").val()
 		},
 		onSuccess);
 	}

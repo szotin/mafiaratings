@@ -17,6 +17,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Reset password'), PERM_ALL);
+$page->run(get_label('Reset password'));
 
 ?>

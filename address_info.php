@@ -12,12 +12,6 @@ define('ADDR_COLUMN_WIDTH', (100 / ADDR_COLUMN_COUNT));
 
 class Page extends AddressPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = $this->name;
-	}
-	
 	protected function show_body()
 	{
 		$playing_count = 0;
@@ -79,6 +73,6 @@ class Page extends AddressPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Address'), PERM_ALL);
+$page->run(get_label('Main Page'));
 
 ?>

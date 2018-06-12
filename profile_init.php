@@ -11,20 +11,15 @@ initiate_session();
 
 try
 {
-	dialog_title(get_label('New user account'));
+	dialog_title(get_label('Please answer a few questions about yourself'));
 	if ($_profile == NULL)
 	{
 		throw new FatalExc('No permissions');
 	}
 	
 	echo '<table class="bordered" width="100%">';
-	echo '<tr class="light"><td class="light" colspan="3">';
-	echo get_label('Your account is activated. Please answer a few questions about yourself');
-	echo ':</td></tr>';
-		
-	echo '<tr>';
 	
-	echo '<td>' . get_label('Country') . ':</td><td>';
+	echo '<tr><td>' . get_label('Country') . ':</td><td>';
 	show_country_input('form-country', COUNTRY_DETECT, 'form-city', 'updateClub');
 	echo '</td>';
 	
@@ -93,15 +88,16 @@ try
 		if (!clubSetManually)
 		{
 			var languages = mr.getLangs();
-			json.post("profile_ops.php", 
+			json.post("api/ops/account.php", 
 			{ 
-				suggest_club: "", 
-				langs: languages, 
-				city: $("#form-city").val(),
-				country: $("#form-country").val()
+				op: 'suggest_club'
+				, langs: languages
+				, city: $("#form-city").val()
+				, country: $("#form-country").val()
 			}, 
 			function(obj)
 			{
+				console.log(obj);
 				$("#form-club").val(obj['club_id']);
 			});
 		}
@@ -130,25 +126,20 @@ try
 	{
 		var languages = mr.getLangs();
 		var isMale = $("#form-male").attr("checked") ? 1 : 0;
-		var club = parseInt($("#form-club").val());
+		var clubId = parseInt($("#form-club").val());
 		var params =
 		{
-			pwd: $("#form-pwd").val(),
-			confirm: $("#form-confirm").val(),
-			country: $("#form-country").val(),
-			city: $("#form-city").val(),
-			phone: $("#form-phone").val(),
-			langs: languages,
-			male: isMale,
-			init: ""
+			op: 'edit'
+			, pwd1: $("#form-pwd").val()
+			, pwd2: $("#form-confirm").val()
+			, country: $("#form-country").val()
+			, city: $("#form-city").val()
+			, phone: $("#form-phone").val()
+			, langs: languages
+			, male: isMale
+			, club_id: clubId
 		};
-		
-		if (club > 0)
-		{
-			params["club"] = club;
-		}
-		
-		json.post("profile_ops.php", params, onSuccess);
+		json.post("api/ops/account.php", params, onSuccess);
 	}
 	
 	$("#form-club").change(function() { clubSetManually = true; });

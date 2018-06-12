@@ -16,12 +16,6 @@ define('ETYPE_ALL', 3);
 
 class Page extends ClubPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0] events', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		global $_profile, $_page;
@@ -118,6 +112,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Club history'), PERM_ALL);
+$page->run(get_label('Events'));
 
 ?>

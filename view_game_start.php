@@ -35,6 +35,6 @@ class Page extends ViewGamePageBase
 }
 
 $page = new Page();
-$page->run(get_label('Game'), PERM_ALL);
+$page->run(get_label('Game'));
 
 ?>

@@ -1,10 +1,10 @@
 <?php
 
-require_once 'include/game_stats.php';
-require_once 'include/page_base.php';
-require_once 'include/club.php';
-require_once 'include/event.php';
-require_once 'include/address.php';
+require_once __DIR__ . '/game_stats.php';
+require_once __DIR__ . '/page_base.php';
+require_once __DIR__ . '/club.php';
+require_once __DIR__ . '/event.php';
+require_once __DIR__ . '/address.php';
 
 class ViewGamePlayer
 {

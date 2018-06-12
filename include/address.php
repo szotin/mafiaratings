@@ -1,9 +1,9 @@
 <?php
 
-require_once 'include/page_base.php';
-require_once 'include/db.php';
-require_once 'include/club.php';
-require_once 'include/image.php';
+require_once __DIR__ . '/page_base.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/club.php';
+require_once __DIR__ . '/image.php';
 
 function addr_label($addr, $addr_city, $addr_country)
 {
@@ -103,12 +103,13 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 			return get_label('Failed to get map image from google maps');
 		}
 		
-		if (file_put_contents(ADDRESS_PICS_DIR . $addr_id . '.png', $image) === false)
+		$dir = '../../' . ADDRESS_PICS_DIR; // this function is called from api/ops only. Make it a param if it is not so.
+		if (file_put_contents($dir . $addr_id . '.png', $image) === false)
 		{
 			return get_label('Failed to get map image from google maps');
 		}
 		
-		build_pic_tnail(ADDRESS_PICS_DIR, $addr_id);
+		build_pic_tnail($dir, $addr_id);
 		
 		$icon_version = (($flags & ADDR_ICON_MASK) >> ADDR_ICON_MASK_OFFSET) + 1;
 		if ($icon_version > ADDR_ICON_MAX_VERSION)
@@ -276,15 +277,15 @@ class AddressPageBase extends PageBase
 		(
 			new MenuItem('address_info.php?id=' . $this->id, get_label('Address'), get_label('[0] information', $this->name))
 			, new MenuItem('address_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name))
+			, new MenuItem('address_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
+			, new MenuItem('address_games.php?id=' . $this->id, get_label('Games'), get_label('Games list at [0]', $this->name))
 			, new MenuItem('#stats', get_label('Stats'), NULL, array
 			(
-				new MenuItem('address_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
-				new MenuItem('address_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
-				new MenuItem('address_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
+				new MenuItem('address_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
+				, new MenuItem('address_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
+				, new MenuItem('address_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
+				, new MenuItem('address_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name))
 			))
-			, new MenuItem('address_games.php?id=' . $this->id, get_label('Games'), get_label('Games list at [0]', $this->name))
-			, new MenuItem('address_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
-			, new MenuItem('address_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name))
 			, new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
 				new MenuItem('address_albums.php?id=' . $this->id, get_label('Photos'), get_label('[0] photo albums', $this->name))
@@ -327,7 +328,7 @@ class AddressPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		echo '<td rowspan="2" valign="top"><h2 class="address">' . get_label('Address') . '</h2><br>' . $this->standard_title() . '<p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
+		echo '<td rowspan="2" valign="top"><h2 class="address">' . get_label('Address [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom" width="' . ICON_WIDTH . '"><a href="club_main.php?bck=1&id=' . $this->club_id . '"><table><tr><td align="center">' . $this->club_name . '</td></tr><tr><td>';
 		show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR);

@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/log.php';
-require_once 'include/server.php';
+require_once __DIR__ . '/log.php';
+require_once __DIR__ . '/server.php';
 
 class FatalExc extends Exception
 {
@@ -20,7 +20,7 @@ class FatalExc extends Exception
 			$this->details = $details;
 			$this->for_log = $for_log;
 		}
-		if (is_testing_server())
+		if (is_testing_server() && !empty($this->details))
 		{
 			$message .= '<p>' . $this->details . '</p>';
 		}
@@ -103,6 +103,21 @@ class RedirectExc extends Exception
 	public function get_url()
 	{
 		return $this->url;
+	}
+}
+
+class LoginExc extends Exception
+{
+	private $user_name;
+	
+    public function __construct($user_name = NULL)
+	{
+		$this->user_name = $user_name;
+    }
+	
+	public function get_user_name()
+	{
+		return $this->user_name;
 	}
 }
 

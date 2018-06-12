@@ -1,9 +1,9 @@
 <?php
 
-require_once 'include/rand_str.php';
-require_once 'include/server.php';
-require_once 'include/message.php';
-require_once 'include/db.php';
+require_once __DIR__ . '/rand_str.php';
+require_once __DIR__ . '/server.php';
+require_once __DIR__ . '/message.php';
+require_once __DIR__ . '/db.php';
 
 define('EMAIL_OBJ_EVENT', 0);
 define('EMAIL_OBJ_GAME', 1);

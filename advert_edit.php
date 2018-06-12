@@ -42,15 +42,15 @@ try
 	
 	function commit(onSuccess)
 	{
-		json.post("advert_ops.php",
-			{
-				id: <?php echo $advert_id; ?>,
-				message: editor.getData(),
-				starts: <?php echo $starts; ?>,
-				expires: <?php echo $expires; ?>,
-				update: ""
-			},
-			onSuccess);
+		json.post("api/ops/advert.php",
+		{
+			op: "change"
+			, advert_id: <?php echo $advert_id; ?>
+			, message: editor.getData()
+			, starts: <?php echo $starts; ?>
+			, expires: <?php echo $expires; ?>
+		},
+		onSuccess);
 	}
 	</script>
 <?php

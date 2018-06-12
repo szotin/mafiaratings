@@ -14,6 +14,6 @@ class Page extends GeneralPageBase
 
 $page = new Page();
 $page->set_ccc(CCCS_NO);
-$page->run(get_label('Game rules'), PERM_ALL);
+$page->run(get_label('Game rules'));
 
 ?>

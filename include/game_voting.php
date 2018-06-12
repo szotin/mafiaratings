@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/game_log.php';
+require_once __DIR__ . '/game_log.php';
 
 class Nominant
 {

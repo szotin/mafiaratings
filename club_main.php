@@ -368,6 +368,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run('', PERM_ALL);
+$page->run(get_label('Main Page'));
 
 ?>

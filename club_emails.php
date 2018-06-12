@@ -10,12 +10,6 @@ class Page extends ClubPageBase
 {
 	private $filter;
 
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0] email templates', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		global $_profile;
@@ -90,6 +84,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(NULL, UC_PERM_MANAGER);
+$page->run(get_label('Emails'), UC_PERM_MANAGER);
 
 ?>

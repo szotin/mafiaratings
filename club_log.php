@@ -20,8 +20,6 @@ class Page extends ClubPageBase
 		{
 			$this->obj_filter = $_REQUEST['obj'];
 		}
-		
-		$this->_title = get_label('[0] log', $this->name);
 	}
 
 	protected function show_body()
@@ -140,6 +138,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(NULL, UC_PERM_MANAGER);
+$page->run(get_label('Log'), UC_PERM_MANAGER);
 
 ?>

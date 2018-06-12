@@ -44,21 +44,6 @@ class Page extends PageBase
 			throw new RedirectExc('unsubscribe.php');
 		}
 		
-		if ($_profile->user_flags & U_FLAG_DEACTIVATED)
-		{
-			$flags = $_profile->user_flags & ~U_FLAG_DEACTIVATED;
-			Db::begin();
-			Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $_profile->user_id);
-			if (Db::affected_rows() > 0)
-			{
-				$log_details = 'flags=' . $flags;
-				db_log('user', 'Activated', $log_details, $_profile->user_id);
-			}
-			Db::commit();
-			$_profile->user_flags = $flags;
-			$this->message = get_label('Hi [0]! Thank you for activating your account. Click Ok to start using [1].', $_profile->user_name, PRODUCT_NAME);
-		}
-	
 		switch ($obj)
 		{
 			case EMAIL_OBJ_EVENT:
@@ -98,9 +83,26 @@ class Page extends PageBase
 				throw new RedirectExc('video.php?id=' . $obj_id);
 				
 			case EMAIL_OBJ_SIGN_IN:
+				if (isset($_REQUEST['email']))
+				{
+					$email = urldecode($_REQUEST['email']);
+					if ( $email != $_profile->user_email)
+					{
+						Db::begin();
+						Db::exec(get_label('user'), 'UPDATE users SET email = ? WHERE id = ?', $email, $_profile->user_id);
+						if (Db::affected_rows() > 0)
+						{
+							$log_details = 'email=' . $email;
+							db_log('user', 'Changed', $log_details, $_profile->user_id);
+						}
+						$_profile->user_email = $email;
+						Db::commit();
+						$this->message = '<p>' . get_label('Your email has been changed to [0]', $email) . '</p>';
+					}
+				}
 				if ($this->message == NULL)
 				{
-					throw new RedirectExc('/');
+					throw new RedirectExc('index.php');
 				}
 				break;
 				
@@ -133,12 +135,12 @@ class Page extends PageBase
 	{
 		if ($this->message != NULL)
 		{
-			echo 'dlg.info("' . $this->message . '", null, null, function() { window.location.replace("/"); });';
+			echo 'dlg.info("' . $this->message . '", null, null, function() { window.location.replace("index.php"); });';
 		}
 	}
 }
 
 $page = new Page();
-$page->run(get_label('Email request'), PERM_ALL);
+$page->run(get_label('Email request'));
 
 ?>

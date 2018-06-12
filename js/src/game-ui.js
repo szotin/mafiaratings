@@ -1904,7 +1904,7 @@ var regForm = new function()
 			}
 			
 			var w = http.waiter(silentWaiter);
-			json.post('game_ops.php', { ulist: '', 'club': club.id, 'name': name, num: /*NUM_USERS*/50 }, function(data)
+			json.post('api/ops/game.php', { op: 'ulist', club_id: club.id, name: name, num: /*NUM_USERS*/50 }, function(data)
 			{
 				num = 0;
 				for (var i in data.list)

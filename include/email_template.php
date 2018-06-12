@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/db.php';
-require_once 'include/names.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/names.php';
 
 define('EMAIL_DEFAULT_FOR_NOTHING', 0);
 define('EMAIL_DEFAULT_FOR_INVITE', 1);

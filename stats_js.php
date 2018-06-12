@@ -196,7 +196,7 @@ class Page extends PageBase
 		var requestsComplete = 0;
 		function next(page)
 		{
-			json.post("ws_games.php?page_size=20&page=" + page, {}, function (data)
+			json.post("api/get/games.php?page_size=20&page=" + page, {}, function (data)
 			{
 				for (var i = 0; i < data.games.length; ++i)
 				{
@@ -213,7 +213,7 @@ class Page extends PageBase
 
 		function calculate()
 		{
-			json.post("ws_games.php?count", {}, function (data)
+			json.post("api/get/games.php?count", {}, function (data)
 			{
 				requestsToGo = Math.ceil(data.count / 20);
 				for (var page = 0; page < requestsToGo; ++page)
@@ -228,7 +228,7 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run('Custom games stats', PERM_ALL);
+$page->run('Custom games stats');
 
 ?>
 

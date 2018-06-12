@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/session.php';
+require_once __DIR__ . '/session.php';
 
 function show_single_editor($name, $text, $tags = NULL, $rows = 8, $cols = 80)
 {

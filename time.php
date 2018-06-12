@@ -14,6 +14,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run('Time', PERM_ALL);
+$page->run('Time');
 
 ?>

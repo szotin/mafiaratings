@@ -48,12 +48,12 @@ try
 	{
 		var params =
 		{
-			name: $("#form-name").val(),
-			copy: $("#form-copy").val(),
-			club: <?php echo $club_id; ?>,
-			create: ''
+			op: 'create'
+			, name: $("#form-name").val()
+			, copy_id: $("#form-copy").val()
+			, club_id: <?php echo $club_id; ?>
 		};
-		json.post("scoring_ops.php", params, onSuccess);
+		json.post("api/ops/scoring.php", params, onSuccess);
 	}
 	</script>
 <?php

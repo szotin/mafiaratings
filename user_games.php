@@ -10,12 +10,6 @@ define("PAGE_SIZE", 20);
 
 class Page extends UserPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0]: games', $this->title);
-	}
-	
 	protected function show_body()
 	{
 		global $_page;
@@ -262,6 +256,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0]: games', get_label('User')), PERM_ALL);
+$page->run(get_label('Games'));
 
 ?>

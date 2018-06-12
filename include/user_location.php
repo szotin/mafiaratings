@@ -1,7 +1,7 @@
 <?php
 
-require_once 'include/session.php';
-require_once 'include/location.php';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/location.php';
 
 class UserLocation
 {

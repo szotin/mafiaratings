@@ -37,14 +37,14 @@ try
 	
 	function commit(onSuccess)
 	{
-		json.post("advert_ops.php",
-			{
-				id: <?php echo $club_id; ?>,
-				message: editor.getData(),
-				expires: <?php echo (time() + 604800); ?>,
-				create: ""
-			},
-			onSuccess);
+		json.post("api/ops/advert.php",
+		{
+			op: "create"
+			, club_id: <?php echo $club_id; ?>
+			, message: editor.getData()
+			, expires: <?php echo (time() + 604800); ?>
+		},
+		onSuccess);
 	}
 	</script>
 <?php

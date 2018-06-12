@@ -1,9 +1,9 @@
 <?php
 
-require_once 'include/page_base.php';
-require_once 'include/image.php';
-require_once 'include/club.php';
-require_once 'include/ccc_filter.php';
+require_once __DIR__ . '/page_base.php';
+require_once __DIR__ . '/image.php';
+require_once __DIR__ . '/club.php';
+require_once __DIR__ . '/ccc_filter.php';
 
 define('CCCS_MY', 0);
 define('CCCS_ALL', 1);

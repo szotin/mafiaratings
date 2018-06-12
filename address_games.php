@@ -11,12 +11,6 @@ define("PAGE_SIZE", 20);
 
 class Page extends AddressPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0]: games', $this->name);
-	}
-	
 	protected function show_body()
 	{
 		global $_page;
@@ -138,6 +132,6 @@ class Page extends AddressPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Address games'), PERM_ALL);
+$page->run(get_label('Games'));
 
 ?>

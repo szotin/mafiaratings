@@ -48,7 +48,7 @@ try
 	
 	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', i.timezone, o.id, o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.area_id = i.id AND i.id <> ? ORDER BY i.name_' . $_lang_code, $id);
 	echo '<tr><td>' . get_label('Is near bigger city') . ':</td><td>';
-	echo '<select id="form-near" onChange="nearChange()"><option value="-1"></option>';
+	echo '<select id="form-area" onChange="areaChange()"><option value="-1"></option>';
 	while ($row = $query->next())
 	{
 		list ($cid, $cname, $ctimezone, $ccid, $ccname) = $row;
@@ -69,7 +69,7 @@ try
 	
 ?>
 	<script>
-	function parseNearVal(val)
+	function parseAreaVal(val)
 	{
 		var result = {};
 		var beg = 0;
@@ -93,9 +93,9 @@ try
 		return result;
 	}
 	
-	function nearChange()
+	function areaChange()
 	{
-		var data = parseNearVal($("#form-near").val());
+		var data = parseAreaVal($("#form-area").val());
 		if (data.id > 0)
 		{
 			setTimezone(data.tzone);
@@ -105,17 +105,17 @@ try
 	
 	function commit(onSuccess)
 	{
-		var data = parseNearVal($("#form-near").val());
-		json.post("location_ops.php",
+		var data = parseAreaVal($("#form-area").val());
+		json.post("api/ops/city.php",
 		{
-			id: <?php echo $id; ?>,
-			name_en: $("#form-name_en").val(),
-			name_ru: $("#form-name_ru").val(),
-			country: $("#form-country").val(),
-			timezone: getTimezone(),
-			confirm: ($('#form-confirm').attr('checked') ? 1 : 0),
-			near: data.id,
-			edit_city: ""
+			op: 'change'
+			, city_id: <?php echo $id; ?>
+			, name_en: $("#form-name_en").val()
+			, name_ru: $("#form-name_ru").val()
+			, country: $("#form-country").val()
+			, timezone: getTimezone()
+			, confirm: ($('#form-confirm').attr('checked') ? 1 : 0)
+			, area_id: data.id
 		},
 		onSuccess);
 	}

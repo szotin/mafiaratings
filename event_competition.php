@@ -17,8 +17,6 @@ class Page extends EventPageBase
 		global $_profile;
 		parent::prepare();
 		
-		$this->_title = get_label('[0]: competition', $this->event->name);
-		
 		$this->scoring_id = $this->event->scoring_id;
 		if (isset($_REQUEST['scoring']))
 		{
@@ -93,6 +91,6 @@ class Page extends EventPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Competition'), PERM_ALL);
+$page->run(get_label('Competition Chart'));
 
 ?>

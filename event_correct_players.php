@@ -84,16 +84,16 @@ class Page extends PageBase
 			var i = c.attr("id").substring(1);
 			c.autocomplete(
 			{ 
-				source: function(request, response) { $.getJSON("user_ops.php", { list: 0, term: c.val()" }, response); },
+				source: function(request, response) { $.getJSON("api/control/user.php", { term: c.val() }, response); },
 				select: function(event, ui)
 				{
 					if (ui.item.id != users[i])
 					{
-						json.post("game_ops.php",
+						json.post("api/ops/game.php",
 						{
-							id: i,
-							user: ui.item.id,
-							replace_incomer: ""
+							op: 'replace_incomer'
+							, incomer_id: i
+							, user_id: ui.item.id
 						}, function() { users[i] = ui.item.id; });
 					}
 				},
@@ -116,6 +116,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Unknown players'), PERM_ALL);
+$page->run(get_label('Unknown players'));
 
 ?>

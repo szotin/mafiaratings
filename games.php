@@ -173,6 +173,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Games list'), PERM_ALL);
+$page->run(get_label('Games list'));
 
 ?>

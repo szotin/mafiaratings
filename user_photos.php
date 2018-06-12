@@ -6,12 +6,6 @@ require_once 'include/photo_album.php';
 
 class Page extends UserPageBase
 {
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->_title = get_label('[0] photos', $this->title);
-	}
-	
 	protected function show_body()
 	{
 		PhotoAlbum::show_thumbnails(new SQL('JOIN user_photos u ON u.photo_id = p.id WHERE u.tag = TRUE AND u.user_id = ?', $this->id), '&user=' . $this->id);
@@ -19,6 +13,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0] photos', get_label('User')), PERM_ALL);
+$page->run(get_label('Photos'));
 
 ?>

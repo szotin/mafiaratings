@@ -33,17 +33,17 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("season_ops.php",
+		json.post("api/ops/season.php",
 		{
-			id: <?php echo $club_id; ?>,
-			name: $("#form-name").val(),
-			start_month: $("#form-start_month").val(),
-			start_day: $("#form-start_day").val(),
-			start_year: $("#form-start_year").val(),
-			end_month: $("#form-end_month").val(),
-			end_day: $("#form-end_day").val(),
-			end_year: $("#form-end_year").val(),
-			create: ""
+			op: 'create'
+			, club_id: <?php echo $club_id; ?>
+			, name: $("#form-name").val()
+			, start_month: $("#form-start_month").val()
+			, start_day: $("#form-start_day").val()
+			, start_year: $("#form-start_year").val()
+			, end_month: $("#form-end_month").val()
+			, end_day: $("#form-end_day").val()
+			, end_year: $("#form-end_year").val()
 		},
 		onSuccess);
 	}

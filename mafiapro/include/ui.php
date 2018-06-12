@@ -2,12 +2,13 @@
 
 function service_host()
 {
-	$server = $_SERVER['SERVER_NAME'];
-	if ($server == 'localhost' || $server == '127.0.0.1')
+	$url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+	$pos = strpos($url, '/mafiapro');
+	if ($pos === false)
 	{
-		return 'http://' . $server . ':' . $_SERVER['SERVER_PORT'];
+		return 'https://mafiaratings.com';
 	}
-	return 'https://mafiaratings.com';
+	return substr($url, 0, $pos);
 }
 
 function get_json($page)

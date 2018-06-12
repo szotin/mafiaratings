@@ -12,7 +12,7 @@ if (isset($_REQUEST['p']))
 
 $id = $_REQUEST['id'];
 
-$album = get_json('ws_album.php?id=' . $id . '&pos=' . ($p * PAGE_SIZE) . '&len=' . PAGE_SIZE);
+$album = get_json('api/get/album.php?id=' . $id . '&pos=' . ($p * PAGE_SIZE) . '&len=' . PAGE_SIZE);
 
 echo '<h4>Фото и видео</h4><hr>Вы в папке: ' . $album->name;
 echo '<br><a href="index.php?page=foto">&lt;&lt; назад в корень</a> из папки ' . $album->name . '<br>';

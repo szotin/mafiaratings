@@ -36,12 +36,12 @@ try
 	{
 		var params =
 		{
-			club: <?php echo $club->id; ?>,
-			name: $("#form-name").val(),
-			create: ''
+			op: 'create'
+			, club_id: <?php echo $club->id; ?>
+			, name: $("#form-name").val()
 		};
 		getFormRules(params);
-		json.post("rules_ops.php", params, onSuccess);
+		json.post("api/ops/rules.php", params, onSuccess);
 	}
 	</script>
 <?php

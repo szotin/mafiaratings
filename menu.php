@@ -128,6 +128,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Menu'), PERM_ALL);
+$page->run(get_label('Menu'));
 
 ?>

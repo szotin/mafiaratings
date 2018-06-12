@@ -23,10 +23,14 @@ class Page extends GeneralPageBase
 			$video_type = (int)$_REQUEST['vtype'];
 		}
 		
-		$langs = $_profile->user_langs;
+		$langs = LANG_ALL;
 		if (isset($_REQUEST['langs']))
 		{
 			$langs = (int)$_REQUEST['langs'];
+		}
+		else if ($_profile != NULL)
+		{
+			$langs = $_profile->user_langs;
 		}
 		
 		$page_size = NUM_COLUMNS * COLUMN_COUNT;
@@ -139,6 +143,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Videos'), PERM_ALL);
+$page->run(get_label('Videos'));
 
 ?>

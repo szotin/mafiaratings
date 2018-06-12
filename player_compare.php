@@ -478,8 +478,6 @@ class Page extends UserPageBase
 
 		list ($this->name, $this->flags) = get_player_info($this->id);
 		list ($this->name2, $this->flags2) = get_player_info($this->id2);
-	
-		$this->_title = get_label('Comparing [0] with [1]', cut_long_name($this->name, 20), cut_long_name($this->name2, 20));
 	}
 	
 	protected function show_body()
@@ -561,6 +559,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Compare players'), PERM_ALL);
+$page->run(get_label('Сomparison'));
 
 ?>

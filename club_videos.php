@@ -13,15 +13,32 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends ClubPageBase
 {
+	private $video_type;
+	
+	protected function prepare()
+	{
+		parent::prepare();
+		
+		$this->video_type = VIDEO_TYPE_LEARNING;
+		if (isset($_REQUEST['vtype']))
+		{
+			$this->video_type = (int)$_REQUEST['vtype'];
+		}
+		
+		switch ($this->video_type)
+		{
+			case VIDEO_TYPE_LEARNING:
+				$this->_title = get_label('Learning Videos');
+				break;
+			case VIDEO_TYPE_GAME:
+				$this->_title = get_label('Game Videos');
+				break;
+		}
+	}
+	
 	protected function show_body()
 	{
 		global $_profile, $_page;
-		
-		$video_type = VIDEO_TYPE_LEARNING;
-		if (isset($_REQUEST['vtype']))
-		{
-			$video_type = (int)$_REQUEST['vtype'];
-		}
 		
 		$langs = $this->langs;
 		if (isset($_REQUEST['langs']))
@@ -45,7 +62,7 @@ class Page extends ClubPageBase
 			++$column_count;
 		}
 		
-		list ($count) = Db::record(get_label('video'), 'SELECT count(*) FROM videos WHERE club_id = ? AND type = ? AND (lang & ?) <> 0', $this->id, $video_type, $langs);
+		list ($count) = Db::record(get_label('video'), 'SELECT count(*) FROM videos WHERE club_id = ? AND type = ? AND (lang & ?) <> 0', $this->id, $this->video_type, $langs);
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		show_pages_navigation($page_size, $count);
@@ -59,7 +76,7 @@ class Page extends ClubPageBase
 		if ($can_add)
 		{
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr><td align="center" width="' . COLUMN_WIDTH . '%"><a href="#" onclick="mr.createVideo(' . $video_type . ', ' . $this->id , ')">';
+			echo '<tr><td align="center" width="' . COLUMN_WIDTH . '%"><a href="#" onclick="mr.createVideo(' . $this->video_type . ', ' . $this->id , ')">';
 			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '" title="' . get_label('Add [0]', get_label('video')) . '">';
 			echo '</td>';
 		}
@@ -69,7 +86,7 @@ class Page extends ClubPageBase
 			' JOIN clubs c ON c.id = v.club_id' .
 			' LEFT OUTER JOIN events e ON e.id = v.event_id' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
-			' WHERE v.club_id = ? AND v.type = ? AND (v.lang & ?) <> 0 ORDER BY v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size, $this->id, $video_type, $langs);
+			' WHERE v.club_id = ? AND v.type = ? AND (v.lang & ?) <> 0 ORDER BY v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size, $this->id, $this->video_type, $langs);
 		while ($row = $query->next())
 		{
 			list($video_id, $video, $title, $lang, $game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags) = $row;
@@ -110,7 +127,7 @@ class Page extends ClubPageBase
 			
 			// echo '<h4>' . $title . '</h4>';
 			echo '<p><span style="position:relative;">';
-			echo '<a href="video.php?bck=1&id=' . $video_id . '&club_id=' . $this->id . '&vtype=' . $video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="200" title="' . $title . '">';
+			echo '<a href="video.php?bck=1&id=' . $video_id . '&club_id=' . $this->id . '&vtype=' . $this->video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="200" title="' . $title . '">';
 			if (!is_valid_lang($this->langs))
 			{
 				echo '<img src="images/' . ICONS_DIR . 'lang' . $lang . '.png" title="' . $title . '" width="24" style="position:absolute; margin-left:-28px;">';
@@ -149,6 +166,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Videos'), PERM_ALL);
+$page->run(get_label('Videos'));
 
 ?>

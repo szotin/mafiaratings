@@ -64,18 +64,18 @@ try
 	{
 		var params =
 		{
-			update: '',
-			club: 
+			op: 'change'
+			, club_id: 
 <?php
 			echo $club->id;
 			if ($rules_id > 0)
 			{
-				echo ', name: $("#form-name").val(), id: ' . $rules_id;
+				echo ', name: $("#form-name").val(), rules_id: ' . $rules_id;
 			}
 ?>
 		};
 		getFormRules(params);
-		json.post("rules_ops.php", params, onSuccess);
+		json.post("api/ops/rules.php", params, onSuccess);
 	}
 	</script>
 <?php

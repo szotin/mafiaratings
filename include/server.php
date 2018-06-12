@@ -1,52 +1,6 @@
 <?php
 
-require_once 'include/branding.php';
-
-function get_server_url()
-{
-	if (!isset($_SESSION['root_url']))
-	{
-		$port = '';
-		if (isset($_SERVER['HTTPS']))
-		{
-			$url = 'https://';
-			if ($_SERVER['SERVER_PORT'] != "443")
-			{
-				$port = $_SERVER["SERVER_PORT"];
-			}
-		}
-		else
-		{
-			$url = 'http://';
-			if ($_SERVER['SERVER_PORT'] != "80")
-			{
-				$port = $_SERVER["SERVER_PORT"];
-			}
-		}
-		
-		if (isset($_SERVER['SERVER_NAME']))
-		{
-			$url .= $_SERVER['SERVER_NAME'];
-		}
-		else
-		{
-			$url .= PRODUCT_SITE;
-		}
-		$url .= $port;
-		
-		if (isset($_SERVER['REQUEST_URI']))
-		{
-			$uri = $_SERVER['REQUEST_URI'];
-			$pos = strrpos($uri, '/');
-			if ($pos !== false && $pos > 0)
-			{
-				$url .= substr($uri, 0, $pos);
-			}
-		}
-		$_SESSION['root_url'] = $url;
-	}
-	return $_SESSION['root_url'];
-}
+require_once __DIR__ . '/branding.php';
 
 function get_server_protocol()
 {
@@ -88,6 +42,15 @@ function is_production_server()
 function is_ratings_server()
 {
 	return true;
+}
+
+function get_server_url()
+{
+	if (is_testing_server())
+	{
+		return 'http://127.0.0.1/projects/mafiaratings';
+	}
+	return PRODUCT_URL;
 }
 
 ?>

@@ -392,7 +392,7 @@ var mafia = new function()
 			mafia.load();
 		}
 	
-		request = { sync: "" };
+		request = { op: 'sync' };
 		if (_data != null)
 		{
 			if (clubId <= 0)
@@ -417,11 +417,11 @@ var mafia = new function()
 		
 		if (clubId > 0)
 		{
-			request['club'] = clubId;
+			request['club_id'] = clubId;
 		}
 		
 		var oldDirty = _gDirty;
-		json.post('game_ops.php', request, function(data)
+		json.post('api/ops/game.php', request, function(data)
 		{
 			//if (typeof data.console == "object")
 			//	for (var i = 0; i < data.console.length; ++i)

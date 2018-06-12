@@ -17,8 +17,6 @@ class Page extends ClubPageBase
 		global $_profile;
 		parent::prepare();
 		
-		$this->_title = get_label('[0]: competition chart', $this->name);
-		
 		$this->season = 0;
 		if (isset($_REQUEST['season']))
 		{
@@ -103,6 +101,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Competition'), PERM_ALL);
+$page->run(get_label('Competition Chart'));
 
 ?>

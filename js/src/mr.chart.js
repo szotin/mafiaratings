@@ -16,7 +16,7 @@ function updateChart(players)
 	{
 		chartParams.players = players;
 	}
-	json.post("chart_ops.php", chartParams, 
+	json.post("api/control/chart.php", chartParams, 
 		function(data)
 		{
 			theChart.data.datasets = data;
@@ -39,7 +39,6 @@ function updateChart(players)
 								{
 									var autocompleteParams = 
 									{
-										list: '',
 										term: request.term
 									};
 									if (chartParams.type == "event")
@@ -50,7 +49,7 @@ function updateChart(players)
 									{
 										autocompleteParams["club"] = chartParams.id;
 									}
-									$.getJSON("user_ops.php", autocompleteParams, response);
+									$.getJSON("api/control/user.php", autocompleteParams, response);
 								},
 								select: function(event, ui) 
 								{
@@ -153,6 +152,10 @@ function initChart(name)
 					}
 				}]
 			},
+			animation: 
+			{
+				duration: 0
+			},		
 			maintainAspectRatio: false
 		}
 	});

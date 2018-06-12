@@ -1,16 +1,16 @@
 <?php
 
-require_once 'include/page_base.php';
-require_once 'include/constants.php';
-require_once 'include/email.php';
-require_once 'include/languages.php';
-require_once 'include/image.php';
-require_once 'include/names.php';
-require_once 'include/address.php';
-require_once 'include/club.php';
-require_once 'include/city.php';
-require_once 'include/country.php';
-require_once 'include/user.php';
+require_once __DIR__ . '/page_base.php';
+require_once __DIR__ . '/constants.php';
+require_once __DIR__ . '/email.php';
+require_once __DIR__ . '/languages.php';
+require_once __DIR__ . '/image.php';
+require_once __DIR__ . '/names.php';
+require_once __DIR__ . '/address.php';
+require_once __DIR__ . '/club.php';
+require_once __DIR__ . '/city.php';
+require_once __DIR__ . '/country.php';
+require_once __DIR__ . '/user.php';
 
 define('WEEK_FLAG_SUN', 1);
 define('WEEK_FLAG_MON', 2);
@@ -1126,8 +1126,6 @@ class EventPageBase extends PageBase
 		$this->event = new Event();
 		$this->event->load($_REQUEST['id']);
 		$this->is_manager = ($_profile != NULL && $_profile->is_manager($this->event->club_id));
-		
-		$this->_title = $this->event->name;
 	}
 	
 	protected function show_title()
@@ -1196,7 +1194,16 @@ class EventPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		echo '<td rowspan="2" valign="top"><h2 class="event">' . get_label('Event') . '</h2><br>' . $this->standard_title() . '<p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
+		if ($this->event->flags & EVENT_FLAG_CHAMPIONSHIP)
+		{
+			$title = get_label('Tournament [0]', $this->_title);
+		}
+		else
+		{
+			$title = get_label('Event [0]', $this->_title);
+		}
+		
+		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->name . '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
 		echo '<td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom"><a href="club_main.php?bck=1&id=' . $this->event->club_id . '" title="' . $this->event->club_name . '"><table><tr><td align="center">' . $this->event->club_name . '</td></tr><tr><td align="center">';
