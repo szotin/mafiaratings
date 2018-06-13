@@ -404,7 +404,7 @@ class ViewGamePageBase extends PageBase
 	protected function js_on_load()
 	{
 ?>
-		mr.showComments("game", <?php echo $this->vg->gs->id; ?>, 20);
+		mr.showComments("game", <?php echo $this->vg->gs->id; ?>, 20, false, "wide_comment");
 <?php
 	}
 	

@@ -625,12 +625,17 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// comments
 	//--------------------------------------------------------------------------------------
-	this.showComments = function(object_name, object_id, limit, show_all)
+	this.showComments = function(object_name, object_id, limit, show_all, edit_class)
 	{
 		var url = "show_comments.php?" + object_name + "=" + object_id;
 		if (typeof limit == "number")
 		{
 			url += "&limit=" + limit;
+		}
+		
+		if (typeof edit_class != "undefined")
+		{
+			url += "&class=" + edit_class;
 		}
 		
 		if (typeof show_all != "undefined" && show_all)

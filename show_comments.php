@@ -43,6 +43,12 @@ try
 		}
 	}
 	
+	$edit_class = "comment";
+	if (isset($_REQUEST['class']))
+	{
+		$edit_class = $_REQUEST['class'];
+	}
+	
 	$show_all = isset($_REQUEST['all']);
 	$no_content = true;
 	$more_than_max = false;
@@ -102,7 +108,7 @@ try
 	{
 		show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR, 32);
 	}
-	echo '</td><td style="padding:5px;"><textarea class="comment" id="comment" onkeyup="mr.checkCommentArea()" placeholder="' . get_label('Write a comment...') . '"></textarea></td><tr>';
+	echo '</td><td style="padding:5px;"><textarea class="' . $edit_class . '" id="comment" onkeyup="mr.checkCommentArea()" placeholder="' . get_label('Write a comment...') . '"></textarea></td><tr>';
 	
 	echo '</table></td></tr></table><ok>';
 }

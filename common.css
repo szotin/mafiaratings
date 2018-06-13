@@ -113,3 +113,14 @@ textarea.comment
 	font: 12px Arial;
 }
 
+textarea.wide_comment
+{
+	width:900px;
+	height:16px;
+	overflow:hidden;
+	border-radius:10px;
+	padding:5px;
+	resize: none;
+	font: 12px Arial;
+}
+
