@@ -108,7 +108,7 @@ class Page extends ClubPageBase
 				echo '</td>';
 			}
 			
-			echo '<td class="dark" width="90"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td><td>';
+			echo '<td class="dark" width="90"><a href="view_game.php?club_id=' . $this->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td><td>';
 			show_event_pic($event_id, $event_name, $event_flags, $adr_id, $adr_name, $adr_flags, ICONS_DIR, 48, 48);
 			echo '</td><td>';
 			show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');

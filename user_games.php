@@ -93,7 +93,7 @@ class Page extends UserPageBase
 			{
 				list ($game_id, $club_id, $club_name, $club_flags, $timezone, $start, $duration, $game_result, $video, $event_id, $event_name, $event_flags) = $row;
 				
-				echo '<tr align="center"><td class="dark"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
+				echo '<tr align="center"><td class="dark"><a href="view_game.php?moderator_id=' . $this->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 				echo '<td>';
 				show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 48, 48, false);
 				echo '</td>';
@@ -189,7 +189,7 @@ class Page extends UserPageBase
 					$game_id, $club_id, $club_name, $club_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, 
 					$game_result, $role, $rating_before, $rating_earned, $video, $event_id, $event_name, $event_flags) = $row;
 			
-				echo '<tr align="center"><td class="dark"><a href="view_game.php?id=' . $game_id . '&pid=' . $this->id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
+				echo '<tr align="center"><td class="dark"><a href="view_game.php?user_id=' . $this->id . '&id=' . $game_id . '&pid=' . $this->id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 				echo '<td>';
 				show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 48, 48, false);
 				echo '</td>';

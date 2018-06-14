@@ -97,7 +97,7 @@ class Page extends EventPageBase
 				echo '</td>';
 			}
 			
-			echo '<td class="dark" width="90"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
+			echo '<td class="dark" width="90"><a href="view_game.php?event_id=' . $this->event->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 			echo '<td>';
 			show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
 			echo '</td>';

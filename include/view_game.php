@@ -143,6 +143,10 @@ class ViewGamePageBase extends PageBase
 	protected $gametime;
 	private $last_gametime;
 	
+	private $prev_game_id;
+	private $next_game_id;
+	private $url_base;
+	
 	protected function show_player_name($player, $player_score)
 	{
 		$gs = $this->vg->gs;
@@ -277,6 +281,65 @@ class ViewGamePageBase extends PageBase
 		{
 			throw new RedirectExc($right_page . '?gametime=' . $this->gametime);
 		}
+		
+		// Find next and prev games
+		$this->url_base = 'view_game.php';
+		$separator = '?';
+		$condition = new SQL();
+		if (isset($_REQUEST['event_id']))
+		{
+			$event_id = (int)$_REQUEST['event_id'];
+			$condition->add(' AND g.event_id = ?', $event_id);
+			$this->url_base .= $separator . 'event_id=' . $event_id;
+			$separator = '&';
+		}
+		else if (isset($_REQUEST['address_id']))
+		{
+			$address_id = (int)$_REQUEST['address_id'];
+			$condition->add(' AND g.event_id IN (SELECT id FROM events WHERE address_id = ?)', $address_id);
+			$this->url_base .= $separator . 'address_id=' . $address_id;
+			$separator = '&';
+		}
+		else if (isset($_REQUEST['club_id']))
+		{
+			$club_id = (int)$_REQUEST['club_id'];
+			$condition->add(' AND g.club_id = ?', $club_id);
+			$this->url_base .= $separator . 'club_id=' . $club_id;
+			$separator = '&';
+		}
+		
+		if (isset($_REQUEST['user_id']))
+		{
+			$user_id = (int)$_REQUEST['user_id'];
+			$condition->add(' AND g.id IN (SELECT game_id FROM players WHERE user_id = ?)', $user_id);
+			$this->url_base .= $separator . 'user_id=' . $user_id;
+			$separator = '&';
+		}
+		
+		if (isset($_REQUEST['moderator_id']))
+		{
+			$moderator_id = (int)$_REQUEST['moderator_id'];
+			$condition->add(' AND g.moderator_id = ?', $moderator_id);
+			$this->url_base .= $separator . 'moderator_id=' . $moderator_id;
+			$separator = '&';
+		}
+		
+		$this->url_base .= $separator . 'id=';
+		$gs = $this->vg->gs;
+		$this->prev_game_id = $this->next_game_id = 0;
+		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id <> ? AND g.start_time <= ? AND g.result > 0', $gs->id, $gs->start_time, $condition);
+		$query->add(' ORDER BY g.start_time DESC, g.id DESC');
+		if ($row = $query->next())
+		{
+			list($this->prev_game_id) = $row;
+		}
+		
+		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id <> ? AND g.start_time >= ? AND g.result > 0', $gs->id, $gs->start_time, $condition);
+		$query->add(' ORDER BY g.start_time, g.id');
+		if ($row = $query->next())
+		{
+			list($this->next_game_id) = $row;
+		}
 	}
 	
 	protected function show_title()
@@ -285,9 +348,17 @@ class ViewGamePageBase extends PageBase
 		
 		$vg = $this->vg;
 		$gs = $vg->gs;
-		echo '<table class="head" width="100%"><tr><td width="1">';
-		echo '</td><td valign="top">' . $this->standard_title() . '</td><td align="right" valign="top">';
+		echo '<table class="head" width="100%"><tr>';
+		if ($this->prev_game_id > 0)
+		{
+			echo '<td width="24"><a href="' . $this->url_base . $this->prev_game_id . '" title="' . get_label('Previous game #[0]', $this->prev_game_id) . '"><img src="images/prev.png"></a></td>';
+		}
+		echo '<td>' . $this->standard_title() . '</td><td align="right" valign="top">';
 		show_back_button();
+		if ($this->next_game_id > 0)
+		{
+			echo '<td width="24"><a href="' . $this->url_base . $this->next_game_id . '" title="' . get_label('Next game #[0]', $this->next_game_id) . '"><img src="images/next.png"></a></td>';
+		}
 		echo '</tr></table>';
 		
 //		parent::show_title();
@@ -297,7 +368,8 @@ class ViewGamePageBase extends PageBase
 			echo '<p><b>'.get_label('Error').': ' . $gs->error . '</b></p>';
 		}
 		
-		echo '<p><table class="transp" width="100%"><tr><td rowspan="2"><table class="bordered">';
+		echo '<p><table class="transp" width="100%"><tr>';
+		echo '<td rowspan="2"><table class="bordered">';
 		echo '<tr align="center" class="th light" padding="5px"><td width="90">' . get_label('Club') . '</td><td width="90">' . get_label('Event') . '</td><td width="90">' . get_label('Address') . '</td><td width="90">' . get_label('Moderator') . '</td><td width="90">'.get_label('Time').'</td><td width="90">'.get_label('Duration').'</td><td width="90">'.get_label('Language').'</td>';
 		if ($vg->civ_odds >= 0 && $vg->civ_odds <= 1)
 		{

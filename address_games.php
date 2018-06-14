@@ -99,7 +99,7 @@ class Page extends AddressPageBase
 				echo '</td>';
 			}
 			
-			echo '<td class="dark" width="90"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
+			echo '<td class="dark" width="90"><a href="view_game.php?address_id=' . $this->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 			echo '<td>';
 			show_event_pic($event_id, $event_name, $event_flags, $this->id, $this->name, $this->flags, ICONS_DIR, 48, 48);
 			echo '</td><td>';
