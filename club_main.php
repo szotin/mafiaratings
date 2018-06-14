@@ -120,6 +120,34 @@ class Page extends ClubPageBase
 			echo '<table width="100%"><tr><td valign="top">';
 		}
 		
+		// adverts
+		$query = new DbQuery(
+			'SELECT ct.timezone, n.id, n.timestamp, n.message FROM news n' . 
+				' JOIN clubs c ON c.id = n.club_id' .
+				' JOIN cities ct ON ct.id = c.city_id' .
+				' WHERE n.club_id = ? AND n.expires >= UNIX_TIMESTAMP() AND n.timestamp <= UNIX_TIMESTAMP()' .
+				' ORDER BY n.timestamp DESC LIMIT 5',
+			$this->id);
+		if ($row = $query->next())
+		{
+			echo '<table class="bordered light" width="100%">';
+			echo '<tr class="darker"><td><b>' . get_label('Adverts') . '</b></td></tr>';
+			
+			do
+			{
+				list ($timezone, $id, $timestamp, $message) = $row;
+				echo '<tr>';
+				echo '<td><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
+			} while ($row = $query->next());
+			echo '</table>';
+			$have_tables = true;
+		}
+		
+		$had_tables = $have_tables;
+		if ($have_tables)
+		{
+			echo '<p>';
+		}
 		// your events
 		if ($_profile != NULL)
 		{
@@ -164,38 +192,11 @@ class Page extends ClubPageBase
 		}
 		$query->add(' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
 		$have_tables = $this->show_events_list($query, get_label('Coming soon')) || $have_tables;
-			
-		// adverts
-		$query = new DbQuery(
-			'SELECT ct.timezone, n.id, n.timestamp, n.message FROM news n' . 
-				' JOIN clubs c ON c.id = n.club_id' .
-				' JOIN cities ct ON ct.id = c.city_id' .
-				' WHERE n.club_id = ? AND n.expires >= UNIX_TIMESTAMP()' .
-				' ORDER BY n.timestamp DESC LIMIT 5',
-			$this->id);
-		if ($row = $query->next())
+		if ($had_tables)
 		{
-			if ($have_tables)
-			{
-				echo '<p>';
-			}
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td><b>' . get_label('Adverts') . '</b></td></tr>';
-			
-			do
-			{
-				list ($timezone, $id, $timestamp, $message) = $row;
-				echo '<tr>';
-				echo '<td><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
-			} while ($row = $query->next());
-			echo '</table>';
-			if ($have_tables)
-			{
-				echo '</p>';
-			}
-			$have_tables = true;
+			echo '</p>';
 		}
-		
+			
 		// info
 		if ($have_tables)
 		{

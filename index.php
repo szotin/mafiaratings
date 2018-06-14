@@ -223,6 +223,37 @@ class Page extends GeneralPageBase
 		echo '<table width="100%"><tr><td valign="top">';
 		$have_tables = false;
 	
+		// adverts
+		$query = new DbQuery(
+			'SELECT c.id, c.name, c.flags, ct.timezone, n.id, n.timestamp, n.message FROM news n' . 
+				' JOIN clubs c ON c.id = n.club_id' .
+				' JOIN cities ct ON ct.id = c.city_id WHERE n.expires >= UNIX_TIMESTAMP() AND n.timestamp <= UNIX_TIMESTAMP()', $condition);
+		$query->add(' ORDER BY n.timestamp DESC LIMIT 3');
+		
+		if ($row = $query->next())
+		{
+			echo '<table class="bordered light" width="100%">';
+			echo '<tr class="darker"><td colspan="2"><b>' . get_label('Adverts') . '</b></a></td></tr>';
+			
+			do
+			{
+				list ($club_id, $club_name, $club_flags, $timezone, $id, $timestamp, $message) = $row;
+				echo '<tr>';
+				echo '<td width="100" class="dark" align="center" valign="top"><a href="club_main.php?id=' . $club_id . '&bck=1">' . $club_name . '<br>';
+				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR);
+				echo '</a></td><td valign="top"><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
+				
+				
+			} while ($row = $query->next());
+			echo '</table>';
+			$have_tables = true;
+		}
+		
+		$had_tables = $have_tables;
+		if ($have_tables)
+		{
+			echo '<p>';
+		}
 		// my events
 		if ($_profile != NULL)
 		{
@@ -265,44 +296,11 @@ class Page extends GeneralPageBase
 		}
 		$query->add(' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
 		$have_tables = $this->show_events_list($query, get_label('Coming soon')) || $have_tables;
-
-		// adverts
-		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, ct.timezone, n.id, n.timestamp, n.message FROM news n' . 
-				' JOIN clubs c ON c.id = n.club_id' .
-				' JOIN cities ct ON ct.id = c.city_id WHERE n.expires >= UNIX_TIMESTAMP()', $condition);
-		$query->add(' ORDER BY n.timestamp DESC LIMIT 3');
-		
-		if ($row = $query->next())
+		if ($had_tables)
 		{
-			if ($have_tables)
-			{
-				echo '<p>';
-			}
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="2"><b>' . get_label('Adverts') . '</b></a></td></tr>';
-			
-			do
-			{
-				list ($club_id, $club_name, $club_flags, $timezone, $id, $timestamp, $message) = $row;
-				echo '<tr>';
-				echo '<td width="100" class="dark" align="center" valign="top"><a href="club_main.php?id=' . $club_id . '&bck=1">' . $club_name . '<br>';
-				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR);
-				echo '</a></td><td valign="top"><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
-				
-				
-			} while ($row = $query->next());
-			echo '</table>';
-			if ($have_tables)
-			{
-				echo '</p>';
-			}
-			else
-			{
-				$have_tables = true;
-			}
+			echo '</p>';
 		}
-		
+
 		$this->show_changes(10, 1);
 		
 		// ratings

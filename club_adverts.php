@@ -22,7 +22,7 @@ class Page extends ClubPageBase
 			$condition->add(' AND n.expires >= UNIX_TIMESTAMP()');
 		}
 		
-		$query = new DbQuery('SELECT ct.timezone, n.id, n.timestamp, n.message FROM news n JOIN clubs c ON c.id = n.club_id JOIN cities ct ON ct.id = c.city_id', $condition);
+		$query = new DbQuery('SELECT ct.timezone, n.id, n.timestamp, n.expires, n.message FROM news n JOIN clubs c ON c.id = n.club_id JOIN cities ct ON ct.id = c.city_id', $condition);
 		$query->add(' ORDER BY n.timestamp DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
 		list ($count) = Db::record(get_label('advert'), 'SELECT count(*) FROM news n', $condition);
@@ -43,13 +43,13 @@ class Page extends ClubPageBase
 		echo '<button class="icon" onclick="mr.createAdvert(' . $this->id . ')" title="' . get_label('Create [0]', get_label('advert')) . '"><img src="images/create.png" border="0"></button></th><th>&nbsp;</th>';
 		while ($row = $query->next())
 		{
-			list ($timezone, $id, $timestamp, $message) = $row;
+			list ($timezone, $id, $start, $end, $message) = $row;
 			echo '<tr class="light">';
 			echo '<td width="56" valign="top" align="center">';
 			echo '<button class="icon" onclick="mr.editAdvert(' . $id . ')" title="' . get_label('Edit [0]', get_label('advert')) . '"><img src="images/edit.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.deleteAdvert(' . $id . ', \'' . get_label('Are you sure you want to delete the advert?') . '\')" title="' . get_label('Delete [0]', get_label('advert')) . '"><img src="images/delete.png" border="0"></button>';
 			echo '</td>';
-			echo '<td><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
+			echo '<td><b>' . format_date('l, F d, Y', $start, $timezone) . ' - ' . format_date('l, F d, Y', $end, $timezone) . ':</b><p>' . $message . '</p></td></tr>';
 		}
 		echo '</table>';
 	}
