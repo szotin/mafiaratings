@@ -462,7 +462,7 @@ var json = new function()
 		try
 		{
 			var obj = jQuery.parseJSON(text);
-			console.log(obj);
+			// console.log(obj);
 			if (obj != null)
 			{
 				if (typeof obj.login != "undefined")
@@ -628,6 +628,14 @@ function refr(url, params)
 
 function login(name, pwd, rem, onSuccess, onError)
 {
+	// json.post("api/ops/account.php",
+	// {
+		// op: "login"
+		// , username: name
+		// , password: pwd
+		// , remember: rem
+	// }, onSuccess, onError);
+	
 	json.post("api/ops/account.php", { op: "get_token" }, function(token_resp)
 	{
 		if (typeof rem == "undefined") rem = $('#remember').attr('checked') ? 1 : 0;
@@ -636,13 +644,13 @@ function login(name, pwd, rem, onSuccess, onError)
 		if (typeof onSuccess == "undefined") onSuccess = refr;
 		
 		var token = token_resp.token;
-		var rawId = md5(pwd) + token + name;
-		var secId = md5(rawId);
+		var rawProof = md5(pwd) + token + name;
+		var secProof = md5(rawProof);
 		json.post("api/ops/account.php",
 		{
 			op: "login"
 			, username: name
-			, id: secId
+			, proof: secProof
 			, remember: rem
 		}, onSuccess, onError);
 	}, onError);

@@ -13,8 +13,7 @@ require_once '../../include/api.php';
 <h1>Changing <?php echo PRODUCT_NAME; ?> data</h1>
 <p><a href="..">Back to the <?php echo PRODUCT_NAME; ?> API reference</a></p>
 
-<p>These services require authentification. Set http request headers "username" and "password" to a valid values.
-The resonse returns session cookie. It can be used for sequencial requests. When a valid session cookie is available, there is no need to set "username" and "password" headers.</p>
+<p>These services require authentification. Use <a href="account.php?help">User Account Operations</a> to log in.</p>
 
 <p>Some of the functions require permissions. The required permissions will always be specified in this help pages. Permissions are always related to the operated object.</p>
 <p>Possible permissions are:</p>
@@ -33,6 +32,14 @@ The resonse returns session cookie. It can be used for sequencial requests. When
 
 <table class="bordered light" width="100%">
 <tr class="darker"><th width="200">Service</th><th>Link</th><th>Description</th></tr>
+
+<tr>
+	<td>User Account Operations</td>
+	<td><a href="account.php?help"><?php echo PRODUCT_URL; ?>/api/ops/account.php</a></td>
+	<td>
+		<p>Creating, and configuring user account in <?php echo PRODUCT_NAME; ?>.</p>
+	</td>
+</tr>
 
 <tr>
 	<td>Club Operations</td>
@@ -95,14 +102,6 @@ The resonse returns session cookie. It can be used for sequencial requests. When
 	<td><a href="rules.php?help"><?php echo PRODUCT_URL; ?>/api/ops/rules.php</a></td>
 	<td>
 		<p>Creating, editing, deleting, and manipulating game rules. All clubs use slighly different rules. The best example is killing 2 when 4 players left. Some clubs allow it, some do not. These operations are configuring rules for a club. Club can have many rule sets and use different rules for different events.</p>
-	</td>
-</tr>
-
-<tr>
-	<td>User Account Operations</td>
-	<td><a href="account.php?help"><?php echo PRODUCT_URL; ?>/api/ops/account.php</a></td>
-	<td>
-		<p>Creating, and configuring user account in <?php echo PRODUCT_NAME; ?>.</p>
 	</td>
 </tr>
 
