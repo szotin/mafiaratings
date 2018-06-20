@@ -3,7 +3,7 @@
 return array
 (
 	PRODUCT_NAME,
-	'<p>Здравствуйте [uname],</p><p>Ваш запрос на создание клуба [club_name] отклонен.</p><p>Причина:<br>[reason]<p>',
+	"<p>Здравствуйте [uname],</p>\r\n<p>Ваш запрос на создание клуба [club_name] отклонен.</p>\r\n<p>Причина:\r\n<br>[reason]<p>",
 	"Здравствуйте [uname],\r\n\r\nВаш запрос на создание клуба [club_name] отклонен.\r\n\r\nПричина:\r\n[reason]\r\n"
 );
 

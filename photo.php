@@ -362,7 +362,7 @@ class Page extends PageBase
 		echo '<div id="comments">'
 ?>
 		<script type="text/javascript">
-			mr.showComments("photo", <?php echo $this->id; ?>, 5);
+			mr.showComments("photo", <?php echo $this->id; ?>, 5, false, "wide_comment");
 		</script>
 <?php
 	}

@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/message.php';
+require_once '../../include/email.php';
 
 define('CURRENT_VERSION', 0);
 
