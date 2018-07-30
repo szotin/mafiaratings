@@ -896,7 +896,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function sync_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return API_PERM_FLAG_MODERATOR;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
