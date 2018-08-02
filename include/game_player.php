@@ -59,7 +59,7 @@ class Player
 	{
 		$this->id = $data->id;
 		$this->number = $data->number;
-    	$this->nick = $data->nick;
+		$this->nick = $data->nick;
     	$this->is_male = $data->is_male;
 		$this->has_immunity = $data->has_immunity;
     	$this->role = $data->role;

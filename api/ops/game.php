@@ -514,6 +514,11 @@ class CommandQueue
 		}
 		
 		$event_id = $rec->event;
+		if ($event_id == 0)
+		{
+			return true;
+		}
+		
 		if (isset($this->events_map[$event_id]))
 		{
 			$event_id = $this->events_map[$event_id];
@@ -541,6 +546,11 @@ class CommandQueue
 		$nick = $rec->nick;
 		$user_id = $rec->id;
 		$event_id = $rec->event;
+		if ($event_id == 0)
+		{
+			return;
+		}
+		
 		if (isset($this->events_map[$event_id]))
 		{
 			$event_id = $this->events_map[$event_id];
@@ -616,6 +626,11 @@ class CommandQueue
 		}
 		
 		$event_id = $rec->event;
+		if ($event_id == 0)
+		{
+			return;
+		}
+		
 		if (isset($this->events_map[$event_id]))
 		{
 			$event_id = $this->events_map[$event_id];
@@ -704,10 +719,17 @@ class CommandQueue
 		}
 		$game = new GameState();
 		$game->create_from_json($rec->game);
-		$this->correct_game($game);
-		$game->save();
-		save_game_results($game);
-		reset_viewed_game($game->id);
+		if ($game->event_id > 0)
+		{
+			$this->correct_game($game);
+			$game->save();
+			save_game_results($game);
+			reset_viewed_game($game->id);
+		}
+		else
+		{
+			unset($_SESSION['demo_game']);
+		}
 	}
 	
 	function extend_event($rec)
@@ -754,29 +776,6 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
-	function accept_data($data, $game)
-	{
-		$output = false;
-		if ($data != NULL)
-		{
-			$output = true;
-			$queue = new CommandQueue($game->club_id);
-			$fail = $queue->exec($data, $game);
-			if ($fail != NULL)
-			{
-				$this->response['fail'] = $fail;
-			}
-		}
-		
-		$gid = $game->id;
-		$game->save();
-		if ($game->id != $gid)
-		{
-			$output = true;
-		}
-		return $output;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// sync
 	//-------------------------------------------------------------------------------------------------------
@@ -794,13 +793,13 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$output = true;
-		$game = NULL;
-		// $console = array();
+		$game = new GameState();
+		$console = array();
 		if (isset($_REQUEST['game']))
 		{
 			$game_str = str_replace('\"', '"', $_REQUEST['game']);
-			$game = new GameState();
 			$game->create_from_json(json_decode($game_str));
+
 			$output = ($club_id != $game->club_id);
 			$data = NULL;
 			if (isset($_REQUEST['data']))
@@ -812,7 +811,32 @@ class ApiPage extends OpsApiPageBase
 				}
 			}
 			
-			if ($this->accept_data($data, $game))
+			if ($data != NULL)
+			{
+				$output = true;
+				$queue = new CommandQueue($game->club_id);
+				$fail = $queue->exec($data, $game);
+				if ($fail != NULL)
+				{
+					$this->response['fail'] = $fail;
+				}
+			}
+			
+			$gid = $game->id;
+			if ($game->event_id > 0)
+			{
+				$game->save();
+			}
+			else if ($game->club_id == $club_id)
+			{
+				$_SESSION['demo_game'] = $game_str;
+			}
+			else
+			{
+				unset($_SESSION['demo_game']);
+			}
+			
+			if ($game->id != $gid)
 			{
 				$output = true;
 			}
@@ -824,13 +848,10 @@ class ApiPage extends OpsApiPageBase
 		}
 		catch (LoginExc $e)
 		{
-			if ($game != NULL)
+			$query = new DbQuery('SELECT name FROM users WHERE id = ?', $game->user_id);
+			if ($row = $query->next())
 			{
-				$query = new DbQuery('SELECT name FROM users WHERE id = ?', $game->user_id);
-				if ($row = $query->next())
-				{
-					$e->user_name = $row[0];
-				}
+				$e->user_name = $row[0];
 			}
 			throw $e;
 		}
@@ -848,12 +869,14 @@ class ApiPage extends OpsApiPageBase
 				list($game_id, $log) = $row;
 				// $console[] = 'game id = ' . $game_id;
 				// $console[] = 'log = ' . $log;
-                $game = new GameState();
 				$game->init_existing($game_id, $log);
+			}
+			else if (isset($_SESSION['demo_game']))
+			{
+				$game->create_from_json(json_decode($_SESSION['demo_game']));
 			}
 			else
 			{
-				$game = new GameState();
 				$game->init_new($_profile->user_id, $club_id);
 			}
 			
@@ -863,10 +886,10 @@ class ApiPage extends OpsApiPageBase
 			$this->response['time'] = time();
 		}
 		
-		// if (count($console) > 0)
-		// {
-			// $this->response['console'] = $console;
-		// }
+		if (count($console) > 0)
+		{
+			$this->response['console'] = $console;
+		}
 	}
 	
 	function sync_op_help()
@@ -896,7 +919,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function sync_op_permissions()
 	{
-		return API_PERM_FLAG_MODERATOR;
+		return API_PERM_FLAG_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------

@@ -1355,7 +1355,7 @@ mafia.ui = new function()
 			{
 				var user_id = sReg[i];
 				var u = club.players[user_id];
-				if ((u.flags & /*U_PERM_PLAYER*/1) && (game.moder_id != user_id || (game.gamestate == /*GAME_STATE_NOT_STARTED*/0 && (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8))))
+				if (typeof u == "object" && (u.flags & /*U_PERM_PLAYER*/1) && (game.moder_id != user_id || (game.gamestate == /*GAME_STATE_NOT_STARTED*/0 && (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8))))
 				{
 					html += _option(user_id, -1, mafia.userTitle(user_id));
 				}
@@ -2010,6 +2010,7 @@ var regForm = new function()
 				onSuccess();
 			}
 			
+			
 			nickForm.show(players[id], function(nick)
 			{
 				try
@@ -2029,7 +2030,8 @@ var regForm = new function()
 	function _regIncomer(pname, pnick, pid, pflags)
 	{
 		var data = mafia.data();
-		var event = data.club.events[data.game.event_id];
+		var club = data.club;
+		var event = club.events[data.game.event_id];
 		if (typeof event.reg[pid] != "undefined")
 		{
 			$('#player' + _num).val(pid);
@@ -2037,20 +2039,29 @@ var regForm = new function()
 		}
 		else
 		{
-			var pnicks = {};
-			if (pnick != '')
+			var players = club.players;
+			var p = null;
+			if (pid > 0 && typeof players[pid] == "object")
 			{
-				pnicks[pnick] = 1;
+				p = players[pid];
 			}
-			var p =
+			else
 			{
-				name: pname,
-				nicks: pnicks
-			};
-			if (pid != 0)
-			{
-				p['id'] = pid;
-				p['flags'] = pflags;
+				var pnicks = {};
+				if (pnick != '')
+				{
+					pnicks[pnick] = 1;
+				}
+				p =
+				{
+					name: pname,
+					nicks: pnicks
+				};
+				if (pid != 0)
+				{
+					p['id'] = pid;
+					p['flags'] = pflags;
+				}
 			}
 			
 			nickForm.show(p, function(nick, flags)

@@ -143,15 +143,19 @@ var mafia = new function()
 		}
 	}
 	
-	this.load = function()
+	this.load = function(clubId)
 	{
 		if (typeof localStorage == "object")
 		{
 			var str = localStorage['data'];
 			if (typeof str != "undefined" && str != null)
 			{
-				mafia.data(jQuery.parseJSON(str));
-				_dirty(0, _data.dirty);
+				var data = jQuery.parseJSON(str);
+				if (clubId <= 0 || data.clubId == clubId)
+				{
+					mafia.data(data);
+					_dirty(0, _data.dirty);
+				}
 			}
 		}
 	}
@@ -389,7 +393,7 @@ var mafia = new function()
 		
 		if (_data == null)
 		{
-			mafia.load();
+			mafia.load(clubId);
 		}
 	
 		request = { op: 'sync' };
@@ -397,7 +401,7 @@ var mafia = new function()
 		{
 			if (clubId <= 0)
 			{
-				clubId = _data.game.club_id;
+				clubId = _data.club.id;
 			}
 			
 			if (eventId <= 0)
@@ -423,9 +427,9 @@ var mafia = new function()
 		var oldDirty = _gDirty;
 		json.post('api/ops/game.php', request, function(data)
 		{
-			//if (typeof data.console == "object")
-			//	for (var i = 0; i < data.console.length; ++i)
-			//		console.log('Sync log: ' + data.console[i]);
+			if (typeof data.console == "object")
+				for (var i = 0; i < data.console.length; ++i)
+					console.log('Sync log: ' + data.console[i]);
 				
 			_dirty(_lDirty, _gDirty - oldDirty);
 			_syncCount = 0;
@@ -702,7 +706,7 @@ var mafia = new function()
 	{
 		var club = _data.club;
 		var event = club.events[_data.game.event_id];
-		if (typeof event != "undefined" && event.id != 0)
+		if (typeof event != "undefined")
 		{
 			if (typeof user_id == "undefined" || user_id == 0)
 			{
