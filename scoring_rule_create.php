@@ -131,7 +131,7 @@ try
 			params =
 			{
 				op: 'create_rule'
-				, id: <?php echo $id; ?>
+				, scoring_id: <?php echo $id; ?>
 				, matter: $("#form-matter").val()
 				, category: $("#form-category").val()
 				, roles: role_flags
