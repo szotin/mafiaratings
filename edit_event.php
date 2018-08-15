@@ -167,13 +167,13 @@ class Page extends PageBase
 			}
 			if ($_profile->is_admin())
 			{
-				if (isset($_REQUEST['champ']))
+				if (isset($_REQUEST['tournament']))
 				{
-					$this->event->flags |= EVENT_FLAG_CHAMPIONSHIP;
+					$this->event->flags |= EVENT_FLAG_TOURNAMENT;
 				}
 				else
 				{
-					$this->event->flags &= ~EVENT_FLAG_CHAMPIONSHIP;
+					$this->event->flags &= ~EVENT_FLAG_TOURNAMENT;
 				}
 			}
 			
@@ -318,8 +318,8 @@ class Page extends PageBase
 		}
 		echo '> '.get_label('everyone can moderate games.').'<br>';
 		
-		echo '<input type="checkbox" name="champ" value="1"';
-		if (($this->event->flags & EVENT_FLAG_CHAMPIONSHIP) != 0)
+		echo '<input type="checkbox" name="tournament" value="1"';
+		if (($this->event->flags & EVENT_FLAG_TOURNAMENT) != 0)
 		{
 			echo ' checked';
 		}

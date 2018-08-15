@@ -269,19 +269,19 @@ class Page extends GeneralPageBase
 			$have_tables = $this->show_events_list($query, get_label('Your events')) || $have_tables;
 		}
 		
-		// championships
+		// tournaments
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, c.id, c.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM events e' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CHAMPIONSHIP . ') = ' . EVENT_FLAG_CHAMPIONSHIP);
+			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_TOURNAMENT . ') = ' . EVENT_FLAG_TOURNAMENT);
 		if ($_profile != NULL)
 		{
 			$query->add(' AND e.id NOT IN (SELECT event_id FROM event_users WHERE user_id = ? AND coming_odds > 0)', $_profile->user_id);
 		}
 		$query->add(' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
-		$have_tables = $this->show_events_list($query, get_label('Upcoming championships')) || $have_tables;
+		$have_tables = $this->show_events_list($query, get_label('Upcoming tournaments')) || $have_tables;
 		
 		// upcoming
 		$query = new DbQuery(
@@ -289,7 +289,7 @@ class Page extends GeneralPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CHAMPIONSHIP . ') = 0', $condition);
+			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_TOURNAMENT . ') = 0', $condition);
 		if ($_profile != NULL)
 		{
 			$query->add(' AND e.id NOT IN (SELECT event_id FROM event_users WHERE user_id = ? AND coming_odds > 0)', $_profile->user_id);

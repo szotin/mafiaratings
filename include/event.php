@@ -620,7 +620,7 @@ class Event
 				}
 			}
 			
-			if ($this->flags & EVENT_FLAG_CHAMPIONSHIP)
+			if ($this->flags & EVENT_FLAG_TOURNAMENT)
 			{
 				$found = false;
 				$col = 0;
@@ -1194,7 +1194,7 @@ class EventPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		if ($this->event->flags & EVENT_FLAG_CHAMPIONSHIP)
+		if ($this->event->flags & EVENT_FLAG_TOURNAMENT)
 		{
 			$title = get_label('Tournament [0]', $this->_title);
 		}

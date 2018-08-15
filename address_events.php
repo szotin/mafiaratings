@@ -49,7 +49,7 @@ class Page extends AddressPageBase
 		switch ($events_type)
 		{
 			case ETYPE_TOURNAMENT:
-				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_CHAMPIONSHIP) . ') = ' . EVENT_FLAG_CHAMPIONSHIP);
+				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_TOURNAMENT) . ') = ' . EVENT_FLAG_TOURNAMENT);
 				break;
 			case ETYPE_NOT_CANCELED:
 				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');

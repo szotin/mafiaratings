@@ -43,7 +43,7 @@ try
 	}
 
 	echo '<table class="dialog_form" width="100%">';
-	if ($event_flags & EVENT_FLAG_CHAMPIONSHIP)
+	if ($event_flags & EVENT_FLAG_TOURNAMENT)
 	{
 		echo '<tr id="nick_tr"><td>'.get_label('My nickname for this event is').':</td><td>';
 		nick_name_chooser($_profile->user_id, $_profile->user_name, $nickname);

@@ -16,7 +16,7 @@ define('RULES_VOTING_CANCEL_BY_NOM', 0x80); // voting is canceled when someone i
 define('RULES_BEST_PLAYER', 0x100); // moderator chooses best player after the game
 define('RULES_BEST_MOVE', 0x200); // moderator chooses best move after the game
 define('RULES_GUESS_MAFIA', 0x400); // a player killed first night guesses 3 mafiosi
-define('RULES_SIMPLIFIED_CLIENT', 0x800); // moderators must use simplified client (does not work on championships)
+define('RULES_SIMPLIFIED_CLIENT', 0x800); // moderators must use simplified client (does not work on tournaments)
 define('RULES_ANY_CLIENT', 0x1000); // it is up to moderators whether to use simplified client or not. If both RULES_SIMPLIFIED_CLIENT and RULES_ANY_CLIENT are set, RULES_SIMPLIFIED_CLIENT wins.
 define('RULES_MUTE_NEXT', 0x2000); // if a player gets third warning during a day he misses his speech only next day (not this day)
 define('RULES_MUTE_CRIT', 0x4000); // a player with 3 warnings is allowed to speak 30 sec in a critical round with 3 or 4 players left.

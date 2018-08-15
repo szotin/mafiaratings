@@ -150,7 +150,7 @@ class Page extends PageBase
 		echo '<form method="post" name="playerForm">';
 		echo '<input type="hidden" name="id" value="' . $this->event_id . '">';
 		echo '<table class="bordered" width="100%">';
-		if ($this->event->flags & EVENT_FLAG_CHAMPIONSHIP)
+		if ($this->event->flags & EVENT_FLAG_TOURNAMENT)
 		{
 			echo '<tr><td>'.get_label('My nickname for this event is').':</td><td>';
 			nick_name_chooser($this->user_id, $_profile->user_name, $this->nickname);

@@ -68,7 +68,7 @@ class Page extends GeneralPageBase
 			case ETYPE_ALL:
 				break;
 			default:
-				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_CHAMPIONSHIP) . ') = ' . EVENT_FLAG_CHAMPIONSHIP);
+				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_TOURNAMENT) . ') = ' . EVENT_FLAG_TOURNAMENT);
 				break;
 		}
 		

@@ -73,7 +73,7 @@ class Page extends UserPageBase
 		switch ($this->events_type)
 		{
 			case ETYPE_TOURNAMENT:
-				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CHAMPIONSHIP . ') <> 0');
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_TOURNAMENT . ') <> 0');
 				break;
 			default:
 				break;
