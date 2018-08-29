@@ -7,7 +7,6 @@ CREATE TABLE `rounds` (
   `sort_order` INT(11) NOT NULL,
   `scoring_id` INT(11) NOT NULL,
   `scoring_weight` FLOAT NOT NULL,
-  
 
   PRIMARY KEY (`id`),
   KEY(`event_id`, `sort_order`),

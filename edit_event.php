@@ -191,9 +191,9 @@ class Page extends PageBase
 		echo '<form method="post" name="editForm" action="edit_event.php">';
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr><td class="dark" width="80">'.get_label('Event name').':</td><td><input name="name" value="' . htmlspecialchars($this->event->name, ENT_QUOTES) . '"></td>';
+		echo '<tr><td class="dark" width="160">'.get_label('Event name').':</td><td><input name="name" value="' . htmlspecialchars($this->event->name, ENT_QUOTES) . '"></td>';
 		
-		echo '<td width="100" align="center" valign="top" rowspan="9">';
+		echo '<td width="100" align="center" valign="top" rowspan="12">';
 		$this->event->show_pic(ICONS_DIR);
 		echo '<p>';
 		show_upload_button();
@@ -266,7 +266,7 @@ class Page extends PageBase
 				}
 				echo '>' . $rules_name . '</option>';
 			} while ($row = $query->next());
-			echo '</select> <a href ="javascript:mr.createRules(' . $club->id . ', rulesCreated)" title="' . get_label('Create [0]', get_label('rules')) . '"><img src="images/rules.png" border="0"></a></td></tr>';
+			echo '</select> <a href="javascript:mr.createRules(' . $club->id . ', rulesCreated)" title="' . get_label('Create [0]', get_label('rules')) . '"><img src="images/rules.png" border="0"></a></td></tr>';
 		}
 		
 		$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $this->event->club_id);
@@ -295,6 +295,11 @@ class Page extends PageBase
 		}
 		
 		echo '<tr><td class="dark" valign="top">' . get_label('Notes') . ':</td><td><textarea name="notes" cols="80" rows="4">' . htmlspecialchars($this->event->notes, ENT_QUOTES) . '</textarea></td></tr>';
+		
+		echo '<tr><td class="dark" valign="top">' . get_label('Rounds') . ':</td><td>';
+		echo '<a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a><span id="rounds"></span>';
+		echo '</td></tr>';
+		
 
 		echo '<tr><td class="dark">&nbsp;</td><td>';
 		echo '<input type="checkbox" name="reg_att" value="1"';
@@ -338,18 +343,62 @@ class Page extends PageBase
 		
 		show_upload_script(EVENT_PIC_CODE, $this->event->id);
 	}
+	
+	protected function js()
+	{
+		parent::js();
+		$separator = '';
+		echo "var rounds = [\n";
+		foreach ($this->event->rounds as $round)
+		{
+			echo $separator . '[ "' . $round->name . '", ' . $round->scoring_id . ', ' . $round->scoring_weight . ']';
+			$separator = ",\n";
+		}
+		echo '];';
+		
+?>
+		var delRoundStr = "<?php echo get_label('Delete round'); ?>";
+		
+		function rulesCreated(data)
+		{
+			var r = $('#rules');
+			r.html(r.html() + '<option value=' + data.id + '>' + data.name + '</option>');
+			r.val(data.id);
+		}
+		
+		function refreshRounds()
+		{
+			var html = '<table width="100%" class="transp">';
+			for (var i = 0; i < rounds.length; ++i)
+			{
+				var round = rounds[i];
+				html += '<tr><td width="32"><a href="javascript:deleteRound(' + i + ')" title="' + delRoundStr + '"><img src="images/delete.png"></a></td><td><input  name="round' + i + '_name" id="round' + i + '_name" value="' + round[0] + '" onchange="setRoundName(' + i + ')"></td></tr>';
+			}
+			html += '</table>';
+			$('#rounds').html(html);
+		}
+	
+		function addRound()
+		{
+			rounds.push(["", 0, 1]);
+			refreshRounds();
+		}
+	
+		function deleteRound(roundNumber)
+		{
+			rounds = rounds.slice(0, roundNumber).concat(rounds.slice(roundNumber + 1));
+			refreshRounds();
+		}
+		
+		function setRoundName(roundNumber)
+		{
+			rounds[roundNumber][0] = $('#round' + roundNumber + '_name').val();
+		}
+<?php	
+	}
 }
 
 $page = new Page();
 $page->run(get_label('Change event'), UC_PERM_MANAGER);
 
 ?>
-
-<script>
-function rulesCreated(data)
-{
-	var r = $('#rules');
-	r.html(r.html() + '<option value=' + data.id + '>' + data.name + '</option>');
-	r.val(data.id);
-}
-</script>
