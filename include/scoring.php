@@ -131,8 +131,13 @@ function format_rating($rating)
 	return number_format($rating, $digits);
 }
 
-function show_scoring_select($club_id, $scoring_id, $on_change, $title)
+function show_scoring_select($club_id, $scoring_id, $on_change, $title, $name = NULL, $show_prefix = true)
 {
+	if ($name == NULL)
+	{
+		$name = 'scoring';
+	}
+	
 	$scorings = array();
 	$scoring_name = '';
 	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
@@ -146,9 +151,11 @@ function show_scoring_select($club_id, $scoring_id, $on_change, $title)
 		}
 	}
 	
-	
-	echo '<a href="#" onclick="mr.showScoring(' . $scoring_id . ')" title="' . get_label('Show [0] scoring rules.', $scoring_name) . '">' . get_label('Scoring system') . ':</a> ';
-	echo '<select name="scoring" id="scoring" onChange="' . $on_change . '" title="' . $title . '">';
+	if ($show_prefix)
+	{
+		echo '<a href="#" onclick="mr.showScoring(' . $scoring_id . ')" title="' . get_label('Show [0] scoring rules.', $scoring_name) . '">' . get_label('Scoring system') . ':</a> ';
+	}
+	echo '<select name="' . $name . '" id="' . $name . '" onChange="' . $on_change . '" title="' . $title . '">';
 	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
 	foreach ($scorings as $row)
 	{

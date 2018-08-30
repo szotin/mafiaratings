@@ -4,6 +4,7 @@ require_once 'include/page_base.php';
 require_once 'include/event.php';
 require_once 'include/image.php';
 require_once 'include/email_template.php';
+require_once 'include/scoring.php';
 
 class Page extends PageBase
 {
@@ -177,6 +178,15 @@ class Page extends PageBase
 				}
 			}
 			
+			if (isset($_REQUEST['rounds-changed']))
+			{
+				$this->event->clear_rounds();
+				for ($i = 0; isset($_REQUEST['round' . $i . '_name']); ++$i)
+				{
+					echo $i . ', ';
+				}
+			}
+			
 			$this->event->update();
 			throw new RedirectExc('create_event_mailing.php?msg=1&events=' . $this->event->id . '&template=' . $email_template_id . '&for=' . $template_for);
 		}
@@ -270,18 +280,9 @@ class Page extends PageBase
 		}
 		
 		$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $this->event->club_id);
-		echo '<tr><td class="dark">' . get_label('Scoring system') . ':</td><td><select name="scoring">';
-		while ($row = $query->next())
-		{
-			list ($scoring_id, $scoring_name) = $row;
-			echo '<option value="' . $scoring_id . '"';
-			if ($scoring_id == $this->event->scoring_id)
-			{
-				echo ' selected';
-			}
-			echo '>' . $scoring_name . '</option>';
-		} 
-		echo '</select></td></tr>';
+		echo '<tr><td class="dark">' . get_label('Scoring system') . ':</td><td>';
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, '', get_label('Scoring system'), 'scoring', false);
+		echo '</td></tr>';
 		
 		if (is_valid_lang($club->langs))
 		{
@@ -296,9 +297,7 @@ class Page extends PageBase
 		
 		echo '<tr><td class="dark" valign="top">' . get_label('Notes') . ':</td><td><textarea name="notes" cols="80" rows="4">' . htmlspecialchars($this->event->notes, ENT_QUOTES) . '</textarea></td></tr>';
 		
-		echo '<tr><td class="dark" valign="top">' . get_label('Rounds') . ':</td><td>';
-		echo '<a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a><span id="rounds"></span>';
-		echo '</td></tr>';
+		echo '<tr><td class="dark" valign="top">' . get_label('Rounds') . ':</td><td><span id="rounds"></span></td></tr>';
 		
 
 		echo '<tr><td class="dark">&nbsp;</td><td>';
@@ -354,10 +353,25 @@ class Page extends PageBase
 			echo $separator . '[ "' . $round->name . '", ' . $round->scoring_id . ', ' . $round->scoring_weight . ']';
 			$separator = ",\n";
 		}
-		echo '];';
+		echo "];\n";
 		
+		echo "var roundHead = '<tr>";
+		echo '<td width="48"><a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a></td>';
+		echo '<td width="160">' . get_label('Name') . '</td>';
+		echo '<td width="320">' . get_label('Scoring system') . '</td>';
+		echo '<td>' . get_label('Multiply by') . '</td>';
+		echo "</tr>';\n";
+		
+		echo "var roundRow = '<tr>";
+		echo '<td><a href="javascript:deleteRound({num})" title="' . get_label('Delete round') . '"><img src="images/delete.png"></a></td>';
+		echo '<td><input  name="round{num}_name" id="round{num}_name" value="" onchange="setRoundValues({num})"></td>';
+		echo '<td>';
+		show_scoring_select($this->event->club_id, 0, 'setRoundValues({num})', get_label('Scoring system'), 'round{num}_scoring', false);
+		echo '</td>';
+		echo '<td><input id="round{num}_weight" name="round{num}_weight" onchange="setRoundValues({num})"></td>';
+		echo "</tr>';\n";
 ?>
-		var delRoundStr = "<?php echo get_label('Delete round'); ?>";
+		var roundsChanged = false;
 		
 		function rulesCreated(data)
 		{
@@ -369,32 +383,64 @@ class Page extends PageBase
 		function refreshRounds()
 		{
 			var html = '<table width="100%" class="transp">';
+			html += roundHead;
+			for (var i = 0; i < rounds.length; ++i)
+			{
+				html += roundRow.replace(new RegExp('\\{num\\}', 'g'), i);
+			}
+			html += '</table>';
+			if (roundsChanged)
+			{
+				html += '<input type="hidden" name="rounds-changed" value="1">';
+			}
+			$('#rounds').html(html);
+			
 			for (var i = 0; i < rounds.length; ++i)
 			{
 				var round = rounds[i];
-				html += '<tr><td width="32"><a href="javascript:deleteRound(' + i + ')" title="' + delRoundStr + '"><img src="images/delete.png"></a></td><td><input  name="round' + i + '_name" id="round' + i + '_name" value="' + round[0] + '" onchange="setRoundName(' + i + ')"></td></tr>';
+				$('#round' + i + '_name').val(round[0]);
+				$('#round' + i + '_scoring').val(round[1]);
+				$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setValues }).width(30).val(round[2]);
 			}
-			html += '</table>';
-			$('#rounds').html(html);
 		}
 	
 		function addRound()
 		{
-			rounds.push(["", 0, 1]);
+			rounds.push(["", <?php echo $this->event->scoring_id; ?>, 1]);
+			roundsChanged = true;
 			refreshRounds();
 		}
 	
 		function deleteRound(roundNumber)
 		{
 			rounds = rounds.slice(0, roundNumber).concat(rounds.slice(roundNumber + 1));
+			roundsChanged = true;
 			refreshRounds();
 		}
 		
-		function setRoundName(roundNumber)
+		function setRoundValues(roundNumber)
 		{
-			rounds[roundNumber][0] = $('#round' + roundNumber + '_name').val();
+			var round = rounds[roundNumber];
+			round[0] = $('#round' + roundNumber + '_name').val();
+			round[1] = $('#round' + roundNumber + '_scoring').val();
+			round[2] = $('#round' + roundNumber + '_weight').val();
+		}
+		
+		function setValues()
+		{
+			for (var i = 0; i < rounds.length; ++i)
+			{
+				setRoundValues(i);
+			}
 		}
 <?php	
+	}
+	
+	protected function js_on_load()
+	{
+?>
+		refreshRounds();
+<?php
 	}
 }
 
