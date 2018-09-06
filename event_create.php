@@ -4,6 +4,7 @@ require_once 'include/session.php';
 require_once 'include/city.php';
 require_once 'include/country.php';
 require_once 'include/event.php';
+require_once 'include/timespan.php';
 
 initiate_session();
 
@@ -51,16 +52,7 @@ try
 	show_time_controls($event->hour, $event->minute, 'form-');
 	echo '</td></tr>';
 		
-	echo '<tr><td>'.get_label('Duration').':</td><td><select id="form-duration">';
-	for ($i = 1; $i <= 12; ++$i)
-	{
-		show_option($i * 3600, $event->duration, $i);
-	}
-	for ($i = 24; $i <= 120; $i += 24)
-	{
-		show_option($i * 3600, $event->duration, $i);
-	}
-	echo '</select> '.get_label('hours').'</td></tr>';
+	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($event->duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 		
 	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDR_FLAG_NOT_USED . ') = 0 ORDER BY name', $event->club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
@@ -237,7 +229,7 @@ try
 			$("#form-name").val(json.name);
 			$("#form-hour").val(json.hour);
 			$("#form-minute").val(json.minute);
-			$("#form-duration").val(json.duration);
+			$("#form-duration").val(timespanToStr(json.duration));
 			$("#form-addr_id").val(json.addr_id);
 			$("#form-price").val(json.price);
 			$("#form-rules").val(json.rules_id);
@@ -269,7 +261,7 @@ try
 			, name: $("#form-name").val()
 			, hour: $("#form-hour").val()
 			, minute: $("#form-minute").val()
-			, duration: $("#form-duration").val()
+			, duration: strToTimespan($("#form-duration").val())
 			, price: $("#form-price").val()
 			, address_id: _addr
 			, rules_id: $("#form-rules").val()
@@ -314,6 +306,12 @@ try
 		
 		json.post("api/ops/event.php", params, onSuccess);
 	}
+	
+	function checkDuration()
+	{
+		$("#dlg-ok").button("option", "disabled", strToTimespan($("#form-duration").val()) <= 0);
+	}
+	
 	</script>
 <?php
 	echo '<ok>';

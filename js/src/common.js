@@ -661,4 +661,99 @@ function logout()
 	json.post("api/ops/account.php", { op: "logout" }, function() { window.location.replace("/"); });
 } // logout()
 
+function strToTimespan(str)
+{
+	var timespan = 0;
+	var recordExpected = true;
+	var number = 0;
+	var lastUnit = 0;
+	for (var pos = 0; pos < str.length; ++pos) 
+	{
+		var c = str.charAt(pos);
+		if (recordExpected)
+		{
+			var n = parseInt(c);
+			if (!isNaN(n))
+			{
+				number *= 10;
+				number += n;
+			}
+			else
+			{
+				recordExpected = false;
+				if (number <= 0)
+				{
+					return 0;
+				}
+				
+				var currentUnit = 0;
+				var multiplier = 1;
+				switch (c)
+				{
+					case 'w':
+						currentUnit = 1;
+						multiplier = 60 * 60 * 24 * 7;
+						break;
+					case 'd':
+						currentUnit = 2;
+						multiplier = 60 * 60 * 24;
+						break;
+					case 'h':
+						currentUnit = 3;
+						multiplier = 60 * 60;
+						break;
+					case 'm':
+						currentUnit = 4;
+						multiplier = 60;
+						break;
+					case 's':
+						currentUnit = 5;
+						break;
+				}
+				
+				if (lastUnit >= currentUnit)
+				{
+					return 0;
+				}
+				lastUnit = currentUnit;
+				timespan += number * multiplier;
+				number = 0;
+			}
+		}
+		else if (c == ' ')
+		{
+			recordExpected = true;
+			number = 0;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	if (recordExpected)
+	{
+		return 0;
+	}
+	return timespan;
+}
+
+function timespanToStr(timespan)
+{
+	var items = [['w', 60 * 60 * 24 * 7], ['d', 60 * 60 * 24], ['h', 60 * 60], ['m', 60], ['s', 1]];
+	var str = '';
+	var separator = '';
+	for (var i in items)
+	{
+		var item = items[i];
+		if (timespan >= item[1])
+		{
+			var value = Math.floor(timespan / item[1]);
+			str += separator + value + item[0];
+			timespan -= value * item[1];
+			separator = ' ';
+		}
+	}
+	return str;
+}
+
 // function printStackTrace() { console.log((new Error('stack trace')).stack); }
