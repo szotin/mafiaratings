@@ -5,6 +5,7 @@ require_once 'include/event.php';
 require_once 'include/image.php';
 require_once 'include/email_template.php';
 require_once 'include/scoring.php';
+require_once 'include/timespan.php';
 
 class Page extends PageBase
 {
@@ -116,7 +117,11 @@ class Page extends PageBase
 		}
 		if (isset($_REQUEST['duration']))
 		{
-			$this->event->duration = $_REQUEST['duration'];
+			$this->event->duration = string_to_timespan($_REQUEST['duration']);
+			if ($this->event->duration <= 0)
+			{
+				throw new Exc(get_label('Incorrect duration format.'));
+			}
 		}
 		if (isset($_REQUEST['rules']))
 		{
@@ -232,16 +237,7 @@ class Page extends PageBase
 			echo '<input type="hidden" name="minute" value="' . $this->event->minute . '">';
 		}
 		
-		echo '<tr><td class="dark">'.get_label('Duration').':</td><td><select name="duration">';
-		for ($i = 1; $i <= 12; ++$i)
-		{
-			show_option($i * 3600, $this->event->duration, $i);
-		}
-		for ($i = 24; $i <= 120; $i += 24)
-		{
-			show_option($i * 3600, $this->event->duration, $i);
-		}
-		echo '</select> '.get_label('hours').'</td></tr>';
+		echo '<tr><td class="dark">'.get_label('Duration').':</td><td><input value="' . timespan_to_string($this->event->duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" name="duration" id="duration" onkeyup="checkDuration()"></td></tr>';
 			
 		echo '<tr><td class="dark" valign="top">'.get_label('Address').':</td><td>';
 		echo '<select name="addr_id"">';
@@ -336,7 +332,7 @@ class Page extends PageBase
 			echo '<input type="hidden" name="canceled" value="1">';
 		}
 		
-		echo '<p><input type="submit" class="btn norm" value="'.get_label('Save').'" name="update">';
+		echo '<p><input type="submit" class="btn norm" value="'.get_label('Save').'" id="update" name="update">';
 		echo '<input type="submit" class="btn norm" value="'.get_label('Cancel').'" name="cancel">';
 		echo '</p></form>';
 		
@@ -373,6 +369,14 @@ class Page extends PageBase
 ?>
 		var roundsChanged = false;
 		
+		function checkDuration()
+		{
+			if (strToTimespan($("#duration").val()) > 0)
+				$('#update').removeAttr('disabled');
+			else
+				$('#update').attr('disabled','disabled');
+		}
+	
 		function rulesCreated(data)
 		{
 			var r = $('#rules');
