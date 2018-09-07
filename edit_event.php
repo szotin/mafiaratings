@@ -186,9 +186,9 @@ class Page extends PageBase
 			if (isset($_REQUEST['rounds-changed']))
 			{
 				$this->event->clear_rounds();
-				for ($i = 0; isset($_REQUEST['round' . $i . '_name']); ++$i)
+				for ($round = 0; isset($_REQUEST['round' . $round . '_name']); ++$round)
 				{
-					echo $i . ', ';
+					$this->event->add_round($_REQUEST['round' . $round . '_name'], $_REQUEST['round' . $round . '_scoring'], $_REQUEST['round' . $round . '_weight']);
 				}
 			}
 			

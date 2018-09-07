@@ -467,9 +467,11 @@ class Event
 		
 		if ($this->rounds_changed)
 		{
+			Db::exec(get_label('event'), 'UPDATE events SET round_id = NULL  WHERE id = ?', $this->id);
 			Db::exec(get_label('round'), 'DELETE FROM rounds WHERE event_id = ?', $this->id);
 			for ($i = 0; $i < count($this->rounds); ++$i)
 			{
+				$round = $this->rounds[$i];
 				Db::exec(get_label('round'), 'INSERT INTO rounds (name, event_id, sort_order, scoring_id, scoring_weight) VALUES (?, ?, ?, ?, ?)',
 					$round->name, $this->id, $i, $round->scoring_id, $round->scoring_weight);
 				list ($round->id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');
@@ -491,7 +493,7 @@ class Event
 			get_label('event'), 
 			'UPDATE events SET ' .
 				'name = ?, price = ?, club_id = ?, rules_id = ?, scoring_id = ?, scoring_weight = ?, ' .
-				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, round_id = ? ' .
+				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, round_id = ?, ' .
 				'languages = ? WHERE id = ?',
 			$this->name, $this->price, $this->club_id, $this->rules_id, $this->scoring_id, $this->scoring_weight, 
 			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags, $round_id,
@@ -621,6 +623,26 @@ class Event
 		}
 			
 		$this->set_datetime($timestamp, $timezone);
+	}
+	
+	function clear_rounds()
+	{
+		if (count($this->rounds) > 0)
+		{
+			$this->rounds = array();
+			$this->rounds_changed = true;
+		}
+	}
+	
+	function add_round($name, $scoring_id, $scoring_weight)
+	{
+		$round = new stdClass();
+		$round->name = $name;
+		$round->scoring_id = $scoring_id;
+		$round->scoring_weight = $scoring_weight;
+		
+		$this->rounds[] = $round;
+		$this->rounds_changed = true;
 	}
 	
 	function show_details($show_attendance = true, $show_details = true)
