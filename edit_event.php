@@ -404,7 +404,7 @@ class Page extends PageBase
 				var round = rounds[i];
 				$('#round' + i + '_name').val(round[0]);
 				$('#round' + i + '_scoring').val(round[1]);
-				$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setValues }).width(30).val(round[2]);
+				$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round[2]);
 			}
 		}
 	
@@ -430,7 +430,7 @@ class Page extends PageBase
 			round[2] = $('#round' + roundNumber + '_weight').val();
 		}
 		
-		function setValues()
+		function setAllRoundValues()
 		{
 			for (var i = 0; i < rounds.length; ++i)
 			{

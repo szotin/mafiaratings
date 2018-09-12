@@ -416,6 +416,7 @@ class Event
 		
 		for ($i = 0; $i < count($this->rounds); ++$i)
 		{
+			$round = $this->rounds[$i];
 			Db::exec(get_label('round'), 'INSERT INTO rounds (name, event_id, sort_order, scoring_id, scoring_weight) VALUES (?, ?, ?, ?, ?)',
 				$round->name, $this->id, $i, $round->scoring_id, $round->scoring_weight);
 			list ($round->id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');

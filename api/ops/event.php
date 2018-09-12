@@ -54,6 +54,16 @@ class ApiPage extends OpsApiPageBase
 			$event->langs = $club->langs;
 		}
 		
+		if (isset($_REQUEST['rounds']))
+		{
+			$rounds = $_REQUEST['rounds'];
+			$event->clear_rounds();
+			foreach ($rounds as $round)
+			{
+				$event->add_round($round[0], $round[1], $round[2]);
+			}
+		}
+		
 		$event->addr_id = (int)get_required_param('address_id');
 		if ($event->addr_id <= 0)
 		{
@@ -143,6 +153,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('to_month', 'When creating multiple events (<q>weekdays</q> is set) this is the month of the end date.', '<q>weekdays</q> must also be not set');
 		$help->request_param('to_day', 'When creating multiple events (<q>weekdays</q> is set) this is the day of the month of the end date.', '<q>weekdays</q> must also be not set');
 		$help->request_param('to_year', 'When creating multiple events (<q>weekdays</q> is set) this is the year of the end date.', '<q>weekdays</q> must also be not set');
+		$help->request_param('rounds', 'Event rounds in a form of a json array. For example: [["Quater final", 17, 1], ["Semi final", 17, 1.5], ["Final", 17, 2]]. Where the first parameter in each record is round name, second is scoring system id, and the third is scoring weight (all scores of this round are multiplied by this weight).');
 		$help->response_param('events', 'Array of ids of the newly created events.');
 		return $help;
 	}
@@ -280,6 +291,22 @@ class ApiPage extends OpsApiPageBase
 		date_default_timezone_set($event->timezone);
 		$this->response['hour'] = date('G', $event->timestamp);
 		$this->response['minute'] = round(date('i', $event->timestamp) / 10) * 10;
+		
+		if (count($event->rounds) > 0)
+		{
+			$rounds = array();
+			for ($i = 0; $i < count($event->rounds); ++$i)
+			{
+				$round = new stdClass();
+				$r = $event->rounds[$i];
+				$round->id = $r->id;
+				$round->name = $r->name;
+				$round->scoring_id = $r->scoring_id;
+				$round->scoring_weight = $r->scoring_weight;
+				$rounds[] = $round;
+			}
+			$this->response['rounds'] = $rounds;
+		}
 	}
 	
 	function get_op_help()
