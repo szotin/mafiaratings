@@ -324,6 +324,7 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('addr_id', 'Address id.');
 		$help->response_param('addr', 'Event address.');
 		$help->response_param('addr_url', 'Address url.');
+		$help->response_param('rounds', 'Event rounds. For example: [{ name: "Semi final", scoring_id: 17, scoring_weight: 1.5 }, { name: "Final", scoring_id: 17, scoring_weight: 2 }]. Where <q>name</q> is round name; <q>scoring_id</q> is scoring system id; <q>scoring_weight</q> is a weight of the round - all scores of this round are multiplied by this weight.');
 		
 		$timezone_help = 'Event timezone. One of: <select>';
 		$zones = DateTimeZone::listIdentifiers();
