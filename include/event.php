@@ -151,7 +151,7 @@ class Event
 	public $scoring_id;
 	public $scoring_weight;
 	
-	public $current_round;
+	public $round_num;
 	public $rounds;
 	public $rounds_changed;
 	
@@ -187,7 +187,7 @@ class Event
 		$this->rules_id = -1;
 		$this->scoring_id = -1;
 		$this->scoring_weight = 1;
-		$this->current_round = 0;
+		$this->round_num = NULL;
 		$this->rounds = array();
 		$this->rounds_changed = false;
 		$this->coming_odds = NULL;
@@ -388,13 +388,22 @@ class Event
 			$this->timestamp = $row[0] + 1;
 		}
 		
+		if (count($this->rounds) > 0)
+		{
+			$this->round_num = 0;
+		}
+		else
+		{
+			$this->round_num = NULL;
+		}
+		
 		Db::exec(
 			get_label('event'), 
-			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id, scoring_weight) ' .
-			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id, scoring_weight, round_num) ' .
+			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$this->name, $this->price, $this->addr_id, $this->club_id, $this->timestamp, 
 			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_id, 
-			$this->scoring_id, $this->scoring_weight);
+			$this->scoring_id, $this->scoring_weight, $this->round_num);
 		list ($this->id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 		list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
 		$log_details = 
@@ -409,23 +418,12 @@ class Event
 			"<br>scoring=" . $this->scoring_id;
 		db_log('event', 'Created', $log_details, $this->id, $this->club_id);
 		
-		if ($this->current_round >= count($this->rounds))
-		{
-			$this->current_round = 0;
-		}
-		
 		for ($i = 0; $i < count($this->rounds); ++$i)
 		{
 			$round = $this->rounds[$i];
-			Db::exec(get_label('round'), 'INSERT INTO rounds (name, event_id, sort_order, scoring_id, scoring_weight) VALUES (?, ?, ?, ?, ?)',
-				$round->name, $this->id, $i, $round->scoring_id, $round->scoring_weight);
-			list ($round->id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');
-			if ($this->current_round == $i)
-			{
-				Db::exec(get_label('event'), 'UPDATE events SET round_id = ? WHERE id = ?', $round->id, $this->id);
-			}
+			Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, games) VALUES (?, ?, ?, ?, ?, ?)',
+				$this->id, $i, $round->name, $round->scoring_id, $round->scoring_weight, $round->games);
 		}
-		
 		Db::commit();
 		
 		return $this->id;
@@ -468,36 +466,24 @@ class Event
 		
 		if ($this->rounds_changed)
 		{
-			Db::exec(get_label('event'), 'UPDATE events SET round_id = NULL  WHERE id = ?', $this->id);
 			Db::exec(get_label('round'), 'DELETE FROM rounds WHERE event_id = ?', $this->id);
 			for ($i = 0; $i < count($this->rounds); ++$i)
 			{
 				$round = $this->rounds[$i];
-				Db::exec(get_label('round'), 'INSERT INTO rounds (name, event_id, sort_order, scoring_id, scoring_weight) VALUES (?, ?, ?, ?, ?)',
-					$round->name, $this->id, $i, $round->scoring_id, $round->scoring_weight);
-				list ($round->id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');
+				Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, games) VALUES (?, ?, ?, ?, ?, ?)',
+					$this->id, $i, $round->name, $round->scoring_id, $round->scoring_weight, $round->games);
 			}
 		}
 		
-		$round_id = NULL;
-		if ($this->current_round < count($this->rounds))
-		{
-			$round_id = $this->rounds[$this->current_round]->id;
-		}
-		else if (count($this->rounds) > 0)
-		{
-			$this->current_round = 0;
-			$round_id = $this->rounds[0]->id;
-		}
-		
+		$this->normalize_round_num();
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
 				'name = ?, price = ?, club_id = ?, rules_id = ?, scoring_id = ?, scoring_weight = ?, ' .
-				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, round_id = ?, ' .
+				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, round_num = ?, ' .
 				'languages = ? WHERE id = ?',
 			$this->name, $this->price, $this->club_id, $this->rules_id, $this->scoring_id, $this->scoring_weight, 
-			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags, $round_id,
+			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags, $this->round_num,
 			$this->langs, $this->id);
 		if (Db::affected_rows() > 0)
 		{
@@ -596,10 +582,10 @@ class Event
 		list (
 			$this->name, $this->price, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
 			$this->addr_id, $this->addr, $this->addr_url, $timezone, $this->addr_flags,
-			$this->notes, $this->langs, $this->flags, $this->rules_id, $this->scoring_id, $this->scoring_weight, $round_id, $this->coming_odds, $this->city, $this->country) =
+			$this->notes, $this->langs, $this->flags, $this->rules_id, $this->scoring_id, $this->scoring_weight, $this->round_num, $this->coming_odds, $this->city, $this->country) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules_id, e.scoring_id, e.scoring_weight, e.round_id, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
+					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules_id, e.scoring_id, e.scoring_weight, e.round_num, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .
@@ -610,7 +596,6 @@ class Event
 					
 		$this->rounds = array();
 		$this->rounds_changed = false;
-		$this->current_round = 0;
 		$query = new DbQuery('SELECT id, name, scoring_id, scoring_weight FROM rounds WHERE event_id = ? ORDER BY sort_order', $this->id);
 		while ($row = $query->next())
 		{
@@ -618,12 +603,36 @@ class Event
 			list($round->id, $round->name, $round->scoring_id, $round->scoring_weight) = $row;
 			if ($round_id == $round->id)
 			{
-				$this->current_round = count($this->rounds);
+				$this->round_num = count($this->rounds);
 			}
 			$this->rounds[] = $round;
 		}
-			
 		$this->set_datetime($timestamp, $timezone);
+	}
+	
+	function normalize_round_num()
+	{
+		if (count($this->rounds) > 0)
+		{
+			if ($this->round_num == NULL || $this->round_num >= count($this->rounds))
+			{
+				list($games_count) = Db::record(get_label('round'), 'SELECT count(*) FROM games WHERE event_id = ? AND result IN(1,2)', $this->id);
+				for ($i = 0; $i < count($this->rounds); ++$i)
+				{
+					$round = $this->rounds[$i];
+					if ($games_count < $round->games)
+					{
+						break;
+					}
+					$games_count -= $round->games;
+				}
+				$this->round_num = $i;
+			}
+		}
+		else
+		{
+			$this->round_num = NULL;
+		}
 	}
 	
 	function clear_rounds()
@@ -631,6 +640,7 @@ class Event
 		if (count($this->rounds) > 0)
 		{
 			$this->rounds = array();
+			$this->round_num = NULL;
 			$this->rounds_changed = true;
 		}
 	}
@@ -643,6 +653,10 @@ class Event
 		$round->scoring_weight = $scoring_weight;
 		
 		$this->rounds[] = $round;
+		if ($this->round_num == NULL)
+		{
+			normalize_round_num();
+		}
 		$this->rounds_changed = true;
 	}
 	

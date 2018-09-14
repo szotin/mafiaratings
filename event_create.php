@@ -226,16 +226,18 @@ try
 	
 	var rounds = [];
 	var roundHead = 
-		'<tr><td width="48"><a href="javascript:addRound()" title="<?php echo get_label('Add round'); ?>"><img src="images/create.png"></a></td>' +
-		'<td width="160"><?php echo get_label('Name'); ?></td>' +
-		'<td width="320"><?php echo get_label('Scoring system'); ?></td>' +
-		'<td><?php echo get_label('Multiply by'); ?></td></tr>';
+		'<tr><td width="44"><a href="javascript:addRound()" title="<?php echo get_label('Add round'); ?>"><img src="images/create.png"></a></td>' +
+		'<td width="90"><?php echo get_label('Name'); ?></td>' +
+		'<td><?php echo get_label('Scoring system'); ?></td>' +
+		'<td width="70"><?php echo get_label('Multiply by'); ?></td>' + 
+		'<td width="70"><?php echo get_label('Games count'); ?></td></tr>';
 		
 	var roundRow = 
 		'<tr><td><a href="javascript:deleteRound({num})" title="<?php echo get_label('Delete round'); ?>"><img src="images/delete.png"></a></td>' +
-		'<td><input id="round{num}_name" value="" onchange="setRoundValues({num})"></td>' +
+		'<td><input id="round{num}_name" class="short" value="" onchange="setRoundValues({num})"></td>' +
 		'<td><?php show_scoring_select($event->club_id, 0, 'setRoundValues({num})', get_label('Scoring system'), 'round{num}_scoring', false); ?></td>' +
-		'<td><input id="round{num}_weight" onchange="setRoundValues({num})"></td></tr>';
+		'<td><input id="round{num}_weight" onchange="setRoundValues({num})"></td>' +
+		'<td><input id="round{num}_games" onchange="setRoundValues({num})"></td></tr>';
 	
 	function refreshRounds()
 	{
@@ -251,15 +253,16 @@ try
 		for (var i = 0; i < rounds.length; ++i)
 		{
 			var round = rounds[i];
-			$('#round' + i + '_name').val(round[0]);
-			$('#round' + i + '_scoring').val(round[1]);
-			$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round[2]);
+			$('#round' + i + '_name').val(round.name);
+			$('#round' + i + '_scoring').val(round.scoring_id);
+			$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round.scoring_weight);
+			$('#round' + i + '_games').spinner({ step:1, max:1000, min:1, change:setAllRoundValues }).width(30).val(round.games);
 		}
 	}
 
 	function addRound()
 	{
-		rounds.push(["", <?php echo $event->scoring_id; ?>, 1]);
+		rounds.push({ name: "", scoring_id: <?php echo $event->scoring_id; ?>, scoring_weight: 1, games: 5});
 		refreshRounds();
 	}
 
@@ -272,9 +275,10 @@ try
 	function setRoundValues(roundNumber)
 	{
 		var round = rounds[roundNumber];
-		round[0] = $('#round' + roundNumber + '_name').val();
-		round[1] = $('#round' + roundNumber + '_scoring').val();
-		round[2] = $('#round' + roundNumber + '_weight').val();
+		round.name = $('#round' + roundNumber + '_name').val();
+		round.scoring_id = $('#round' + roundNumber + '_scoring').val();
+		round.scoring_weight = $('#round' + roundNumber + '_weight').val();
+		round.games = $('#round' + roundNumber + '_games').val();
 	}
 	
 	function setAllRoundValues()
@@ -295,7 +299,7 @@ try
 				for (var i in json.rounds)
 				{
 					var round = json.rounds[i];
-					rounds.push([round.name, round.scoring_id, round.scoring_weight]);
+					rounds.push(round);
 				}
 			}
 			refreshRounds();
