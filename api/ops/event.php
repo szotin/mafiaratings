@@ -60,7 +60,7 @@ class ApiPage extends OpsApiPageBase
 			$event->clear_rounds();
 			foreach ($rounds as $round)
 			{
-				$event->add_round($round[0], $round[1], $round[2]);
+				$event->add_round($round->name, $round->scoring_id, $round->scoring_weight, $round->games);
 			}
 		}
 		
@@ -153,7 +153,11 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('to_month', 'When creating multiple events (<q>weekdays</q> is set) this is the month of the end date.', '<q>weekdays</q> must also be not set');
 		$help->request_param('to_day', 'When creating multiple events (<q>weekdays</q> is set) this is the day of the month of the end date.', '<q>weekdays</q> must also be not set');
 		$help->request_param('to_year', 'When creating multiple events (<q>weekdays</q> is set) this is the year of the end date.', '<q>weekdays</q> must also be not set');
-		$help->request_param('rounds', 'Event rounds in a form of a json array. For example: [["Quater final", 17, 1], ["Semi final", 17, 1.5], ["Final", 17, 2]]. Where the first parameter in each record is round name, second is scoring system id, and the third is scoring weight (all scores of this round are multiplied by this weight).');
+		$param = $help->request_param('rounds', 'Event rounds in a form of a json array. For example: [{name: "Quater final", scoring_id: 17, scoring_weight: 1, games: 10}, {name: "Semi final", scoring_id: 17, scoring_weight: 1.5, games: 5}, {name: "Final", scoring_id: 17, scoring_weight: 2, games: 2}].', 'Event does not have rounds.'); 
+			$param->sub_param('name', 'Round name.');
+			$param->sub_param('scoring_id', 'Scoring system id used in this round. All points from different scoring systems accumulate in final result. If a one needs to clear them, they should create a new event.');
+			$param->sub_param('scoring_weight', 'Weight of the points in this round. All scores in this round are multiplied by it.', 'is set to 1');
+			$param->sub_param('games', 'How many games should be played in this round. The system will automaticaly change round after this number of games is played. Send 0 for changing rounds manually.', 'is set to 0');
 		$help->response_param('events', 'Array of ids of the newly created events.');
 		return $help;
 	}
@@ -294,18 +298,7 @@ class ApiPage extends OpsApiPageBase
 		
 		if (count($event->rounds) > 0)
 		{
-			$rounds = array();
-			for ($i = 0; $i < count($event->rounds); ++$i)
-			{
-				$round = new stdClass();
-				$r = $event->rounds[$i];
-				$round->id = $r->id;
-				$round->name = $r->name;
-				$round->scoring_id = $r->scoring_id;
-				$round->scoring_weight = $r->scoring_weight;
-				$rounds[] = $round;
-			}
-			$this->response['rounds'] = $rounds;
+			$this->response['rounds'] = $event->rounds;
 		}
 	}
 	
@@ -324,7 +317,11 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('addr_id', 'Address id.');
 		$help->response_param('addr', 'Event address.');
 		$help->response_param('addr_url', 'Address url.');
-		$help->response_param('rounds', 'Event rounds. For example: [{ name: "Semi final", scoring_id: 17, scoring_weight: 1.5 }, { name: "Final", scoring_id: 17, scoring_weight: 2 }]. Where <q>name</q> is round name; <q>scoring_id</q> is scoring system id; <q>scoring_weight</q> is a weight of the round - all scores of this round are multiplied by this weight.');
+		$param = $help->response_param('rounds', 'Event rounds in a form of a json array. For example: [{name: "Quater final", scoring_id: 17, scoring_weight: 1, games: 10}, {name: "Semi final", scoring_id: 17, scoring_weight: 1.5, games: 5}, {name: "Final", scoring_id: 17, scoring_weight: 2, games: 2}].'); 
+			$param->sub_param('name', 'Round name.');
+			$param->sub_param('scoring_id', 'Scoring system id used in this round. All points from different scoring systems accumulate in final result. If a one needs to clear them, they should create a new event.');
+			$param->sub_param('scoring_weight', 'Weight of the points in this round. All scores in this round are multiplied by it.');
+			$param->sub_param('games', 'How many games should be played in this round. The system will automaticaly change round after this number of games is played. Send 0 for changing rounds manually.');
 		
 		$timezone_help = 'Event timezone. One of: <select>';
 		$zones = DateTimeZone::listIdentifiers();

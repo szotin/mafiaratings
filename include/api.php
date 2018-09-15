@@ -444,29 +444,15 @@ class OpsApiPageBase extends ApiPageBase
 		echo '<h2>Request Parameters:</h2><dl>';
 		foreach ($help->request as $param)
 		{
-			$when_missing = NULL;
-			if (isset($param->when_missing))
-			{
-				$when_missing = $param->when_missing;
-			}
-			echo '<dt>' . $param->name;
-			if ($when_missing == NULL)
-			{
-				echo ' <small>(required)</small>';
-			}
-			echo '</dt><dd>' . $param->description;
-			if ($when_missing != NULL && $when_missing != '-')
-			{
-				echo '<p><dfn>When missing:</dfn> ' . $when_missing . '</p>';
-			}
-			echo '</dd>';
+			$param->show();
 		}
 		echo '</dl>';
 		
 		echo '<h2>Response Parameters:</h2><dl>';
 		foreach ($help->response as $param)
 		{
-			echo '<dt>' . $param->name . '</dt><dd>' . $param->description . '</dd>';
+			$param->show();
+			// echo '<dt>' . $param->name . '</dt><dd>' . $param->description . '</dd>';
 		}
 		echo '</dl>';
 	}

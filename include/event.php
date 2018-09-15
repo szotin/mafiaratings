@@ -596,15 +596,11 @@ class Event
 					
 		$this->rounds = array();
 		$this->rounds_changed = false;
-		$query = new DbQuery('SELECT id, name, scoring_id, scoring_weight FROM rounds WHERE event_id = ? ORDER BY sort_order', $this->id);
+		$query = new DbQuery('SELECT name, scoring_id, scoring_weight, games FROM rounds WHERE event_id = ? ORDER BY num', $this->id);
 		while ($row = $query->next())
 		{
 			$round = new stdClass();
-			list($round->id, $round->name, $round->scoring_id, $round->scoring_weight) = $row;
-			if ($round_id == $round->id)
-			{
-				$this->round_num = count($this->rounds);
-			}
+			list($round->name, $round->scoring_id, $round->scoring_weight, $round->games) = $row;
 			$this->rounds[] = $round;
 		}
 		$this->set_datetime($timestamp, $timezone);
@@ -612,12 +608,13 @@ class Event
 	
 	function normalize_round_num()
 	{
-		if (count($this->rounds) > 0)
+		$round_count = count($this->rounds);
+		if ($round_count > 0)
 		{
-			if ($this->round_num == NULL || $this->round_num >= count($this->rounds))
+			if ($this->round_num == NULL || $this->round_num >= $round_count)
 			{
 				list($games_count) = Db::record(get_label('round'), 'SELECT count(*) FROM games WHERE event_id = ? AND result IN(1,2)', $this->id);
-				for ($i = 0; $i < count($this->rounds); ++$i)
+				for ($i = 0; $i < $round_count; ++$i)
 				{
 					$round = $this->rounds[$i];
 					if ($games_count < $round->games)
@@ -627,6 +624,11 @@ class Event
 					$games_count -= $round->games;
 				}
 				$this->round_num = $i;
+				if ($i >= $round_count)
+				{
+					// End the event
+					$this->duration = time() - $this->timestamp;
+				}
 			}
 		}
 		else
@@ -645,12 +647,13 @@ class Event
 		}
 	}
 	
-	function add_round($name, $scoring_id, $scoring_weight)
+	function add_round($name, $scoring_id, $scoring_weight, $games)
 	{
 		$round = new stdClass();
 		$round->name = $name;
 		$round->scoring_id = $scoring_id;
 		$round->scoring_weight = $scoring_weight;
+		$round->games = $games;
 		
 		$this->rounds[] = $round;
 		if ($this->round_num == NULL)
