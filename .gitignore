@@ -12,3 +12,7 @@ js/game.js
 js/labels_en.js
 js/common.js
 js/mr.chart.js
+standalone/MafiaTournament/.vs/
+standalone/MafiaTournament/ToutnamentSeating/bin/
+standalone/MafiaTournament/ToutnamentSeating/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
+standalone/MafiaTournament/ToutnamentSeating/obj/
