@@ -201,10 +201,10 @@ class ApiPage extends OpsApiPageBase
 		$op = 'Changed';
 		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ? AND name = (SELECT name_en FROM cities WHERE id = ?)', $city_id, $city_id);
 		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ? AND name = (SELECT name_ru FROM cities WHERE id = ?)', $city_id, $city_id);
-		Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_en);
+		Db::exec(get_label('city'), 'INSERT IGNORE INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_en);
 		if ($name_en != $name_ru)
 		{
-			Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_ru);
+			Db::exec(get_label('city'), 'INSERT IGNORE INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_ru);
 		}
 		
 		$query = new DbQuery('UPDATE cities SET country_id = ?, name_en = ?, name_ru = ?, area_id = ?, timezone = ?', $country_id, $name_en, $name_ru, $area_id, $timezone);
