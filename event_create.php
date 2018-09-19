@@ -226,7 +226,7 @@ try
 	
 	var rounds = [];
 	var roundHead = 
-		'<tr><td width="44"><a href="javascript:addRound()" title="<?php echo get_label('Add round'); ?>"><img src="images/create.png"></a></td>' +
+		'<tr><td width="48"><a href="javascript:addRound()" title="<?php echo get_label('Add round'); ?>"><img src="images/create.png"></a></td>' +
 		'<td width="90"><?php echo get_label('Name'); ?></td>' +
 		'<td><?php echo get_label('Scoring system'); ?></td>' +
 		'<td width="70"><?php echo get_label('Multiply by'); ?></td>' + 
@@ -234,7 +234,7 @@ try
 		
 	var roundRow = 
 		'<tr><td><a href="javascript:deleteRound({num})" title="<?php echo get_label('Delete round'); ?>"><img src="images/delete.png"></a></td>' +
-		'<td><input id="round{num}_name" class="short" value="" onchange="setRoundValues({num})"></td>' +
+		'<td><input id="round{num}_name" class="short" onchange="setRoundValues({num})"></td>' +
 		'<td><?php show_scoring_select($event->club_id, 0, 'setRoundValues({num})', get_label('Scoring system'), 'round{num}_scoring', false); ?></td>' +
 		'<td><input id="round{num}_weight" onchange="setRoundValues({num})"></td>' +
 		'<td><input id="round{num}_games" onchange="setRoundValues({num})"></td></tr>';

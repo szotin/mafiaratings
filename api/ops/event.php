@@ -57,11 +57,13 @@ class ApiPage extends OpsApiPageBase
 		if (isset($_REQUEST['rounds']))
 		{
 			$rounds = $_REQUEST['rounds'];
+			//throw new Exc(json_encode($rounds));
 			$event->clear_rounds();
 			foreach ($rounds as $round)
 			{
-				$event->add_round($round->name, $round->scoring_id, $round->scoring_weight, $round->games);
+				$event->add_round($round["name"], $round["scoring_id"], $round["scoring_weight"], $round["games"]);
 			}
+			//throw new Exc(json_encode($event->rounds));
 		}
 		
 		$event->addr_id = (int)get_required_param('address_id');

@@ -475,7 +475,7 @@ class Event
 			}
 		}
 		
-		$this->normalize_round_num();
+		$this->calculate_round_num();
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
@@ -606,29 +606,57 @@ class Event
 		$this->set_datetime($timestamp, $timezone);
 	}
 	
-	function normalize_round_num()
+	function calculate_round_num()
 	{
 		$round_count = count($this->rounds);
 		if ($round_count > 0)
 		{
-			if ($this->round_num == NULL || $this->round_num >= $round_count)
+			$count = 0;
+			$result = 0;
+			$query = new DbQuery('SELECT round_num FROM games WHERE event_id = ? AND result IN(1,2)', $this->id);
+			while ($row = $query->next())
 			{
-				list($games_count) = Db::record(get_label('round'), 'SELECT count(*) FROM games WHERE event_id = ? AND result IN(1,2)', $this->id);
-				for ($i = 0; $i < $round_count; ++$i)
+				list ($round_num) = $row;
+				$round_num = (int)$round_num;
+				if ($round_num >= $round_count || $round_num < $result)
 				{
-					$round = $this->rounds[$i];
-					if ($games_count < $round->games)
+					continue;
+				}
+				
+				if ($round_num == $result)
+				{
+					++$count;
+					$round = $this->rounds[$result];
+					if ($round->games > 0 && $round->games <= $count)
 					{
-						break;
+						$count = 0;
+						++$result;
 					}
-					$games_count -= $round->games;
 				}
-				$this->round_num = $i;
-				if ($i >= $round_count)
+				else
 				{
-					// End the event
-					$this->duration = time() - $this->timestamp;
+					$count = 1;
+					$result = $round_num;
 				}
+			}
+
+			if ($result < $round_count)
+			{
+				$round = $this->rounds[$result];
+				if ($round->games > 0 || $this->round_num != $result + 1)
+				{
+					$this->round_num = $result;
+				}
+			}
+			else
+			{
+				$this->round_num = $round_count;
+			}
+			
+			if ($this->round_num >= $round_count)
+			{
+				// End the event
+				$this->duration = time() - $this->timestamp;
 			}
 		}
 		else
@@ -656,10 +684,6 @@ class Event
 		$round->games = $games;
 		
 		$this->rounds[] = $round;
-		if ($this->round_num == NULL)
-		{
-			normalize_round_num();
-		}
 		$this->rounds_changed = true;
 	}
 	

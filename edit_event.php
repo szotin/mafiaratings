@@ -346,25 +346,27 @@ class Page extends PageBase
 		echo "var rounds = [\n";
 		foreach ($this->event->rounds as $round)
 		{
-			echo $separator . '[ "' . $round->name . '", ' . $round->scoring_id . ', ' . $round->scoring_weight . ']';
+			echo $separator . '{ name: "' . $round->name . '", scoring_id: ' . $round->scoring_id . ', scoring_weight: ' . $round->scoring_weight . ', games: ' . $round->games . ' }';
 			$separator = ",\n";
 		}
 		echo "];\n";
 		
 		echo "var roundHead = '<tr>";
 		echo '<td width="48"><a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a></td>';
-		echo '<td width="160">' . get_label('Name') . '</td>';
-		echo '<td width="320">' . get_label('Scoring system') . '</td>';
-		echo '<td>' . get_label('Multiply by') . '</td>';
+		echo '<td width="90">' . get_label('Name') . '</td>';
+		echo '<td>' . get_label('Scoring system') . '</td>';
+		echo '<td width="70">' . get_label('Multiply by') . '</td>';
+		echo '<td width="70">' . get_label('Games count') . '</td>';
 		echo "</tr>';\n";
 		
 		echo "var roundRow = '<tr>";
 		echo '<td><a href="javascript:deleteRound({num})" title="' . get_label('Delete round') . '"><img src="images/delete.png"></a></td>';
-		echo '<td><input  name="round{num}_name" id="round{num}_name" value="" onchange="setRoundValues({num})"></td>';
+		echo '<td><input name="round{num}_name" id="round{num}_name" class="short" onchange="setRoundValues({num})"></td>';
 		echo '<td>';
 		show_scoring_select($this->event->club_id, 0, 'setRoundValues({num})', get_label('Scoring system'), 'round{num}_scoring', false);
 		echo '</td>';
 		echo '<td><input id="round{num}_weight" name="round{num}_weight" onchange="setRoundValues({num})"></td>';
+		echo '<td><input id="round{num}_games" name="round{num}_games" onchange="setRoundValues({num})"></td>';
 		echo "</tr>';\n";
 ?>
 		var roundsChanged = false;
@@ -399,18 +401,21 @@ class Page extends PageBase
 			}
 			$('#rounds').html(html);
 			
+			console.log(rounds);
 			for (var i = 0; i < rounds.length; ++i)
 			{
 				var round = rounds[i];
-				$('#round' + i + '_name').val(round[0]);
-				$('#round' + i + '_scoring').val(round[1]);
-				$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round[2]);
+				console.log(round);
+				$('#round' + i + '_name').val(round.name);
+				$('#round' + i + '_scoring').val(round.scoring_id);
+				$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round.scoring_weight);
+				$('#round' + i + '_games').spinner({ step:1, max:1000, min:1, change:setAllRoundValues }).width(30).val(round.games);
 			}
 		}
 	
 		function addRound()
 		{
-			rounds.push(["", <?php echo $this->event->scoring_id; ?>, 1]);
+			rounds.push({ name: "", scoring_id: <?php echo $this->event->scoring_id; ?>, scoring_weight: 1, games: 5});
 			roundsChanged = true;
 			refreshRounds();
 		}
@@ -425,9 +430,10 @@ class Page extends PageBase
 		function setRoundValues(roundNumber)
 		{
 			var round = rounds[roundNumber];
-			round[0] = $('#round' + roundNumber + '_name').val();
-			round[1] = $('#round' + roundNumber + '_scoring').val();
-			round[2] = $('#round' + roundNumber + '_weight').val();
+			round.name = $('#round' + roundNumber + '_name').val();
+			round.scoring_id = $('#round' + roundNumber + '_scoring').val();
+			round.scoring_weight = $('#round' + roundNumber + '_weight').val();
+			round.games = $('#round' + roundNumber + '_games').val();
 		}
 		
 		function setAllRoundValues()
