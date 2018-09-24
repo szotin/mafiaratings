@@ -26,13 +26,11 @@ class ApiPage extends OpsApiPageBase
 		$event->hour = get_required_param('hour');
 		$event->minute = get_required_param('minute');
 		$event->duration = get_required_param('duration');
-		$event->price = '';
-		if (isset($_REQUEST['price']))
-		{
-			$event->price = get_required_param('price');
-		}
-		$event->rules_id = get_required_param('rules_id');
-		$event->scoring_id = get_required_param('scoring_id');
+		$event->price = get_optional_param('price', '');
+		$event->rules_id = get_optional_param('rules_id', $club->rules_id);
+		$event->scoring_id = get_optional_param('scoring_id', $club->scoring_id);
+		$event->scoring_weight = get_optional_param('scoring_weight', 1);
+		$event->planned_games = get_optional_param('planned_games', 0);
 		$event->notes = '';
 		if (isset($_REQUEST['notes']))
 		{
@@ -61,7 +59,7 @@ class ApiPage extends OpsApiPageBase
 			$event->clear_rounds();
 			foreach ($rounds as $round)
 			{
-				$event->add_round($round["name"], $round["scoring_id"], $round["scoring_weight"], $round["games"]);
+				$event->add_round($round["name"], $round["scoring_id"], $round["scoring_weight"], $round["planned_games"]);
 			}
 			//throw new Exc(json_encode($event->rounds));
 		}
@@ -284,6 +282,8 @@ class ApiPage extends OpsApiPageBase
 		$this->response['flags'] = $event->flags;
 		$this->response['rules_id'] = $event->rules_id;
 		$this->response['scoring_id'] = $event->scoring_id;
+		$this->response['scoring_weight'] = $event->scoring_weight;
+		$this->response['planned_games'] = $event->planned_games;
 		
 		$base = get_server_url() . '/';
 		if (($event->addr_flags & ADDR_ICON_MASK) != 0)

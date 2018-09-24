@@ -106,19 +106,20 @@ try
 		echo '<input type="hidden" id="form-rules" value="' . $club->rules_id . '">';
 	}
 	
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $event->club_id);
-	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
-	while ($row = $query->next())
-	{
-		list ($scoring_id, $scoring_name) = $row;
-		echo '<option value="' . $scoring_id . '"';
-		if ($scoring_id == $event->scoring_id)
-		{
-			echo ' selected';
-		}
-		echo '>' . $scoring_name . '</option>';
-	} 
-	echo '</select></td></tr>';
+	echo '<tr><td class="dark">' . get_label('Rounds') . ':</td><td><table width="100%" class="transp">';
+	echo '<tr><td width="48"><a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a></td>';
+	echo '<td width="90">' . get_label('Name') . '</td>';
+	echo '<td>' . get_label('Scoring system') . '</td>';
+	echo '<td width="70">' . get_label('Scoring weight') . '</td>'; 
+	echo '<td width="70" align="center">' . get_label('Planned games count') . '</td></tr>';
+	echo '<tr><td></td>';
+	echo '<td>' . get_label('Main round') . '</td>';
+	echo '<td>';
+	show_scoring_select($event->club_id, $event->scoring_id, '', get_label('Scoring system'), 'event_scoring', false);
+	echo '</td>';
+	echo '<td><input id="form-scoring_weight" value="' . $event->scoring_weight . '"></td>';
+	echo '<td><input id="form-planned_games" value="' . ($event->planned_games > 0 ? $event->planned_games : '') . '"></td></tr>';
+	echo '</table><span id="form-rounds"></span></td></tr>';
 	
 	if (is_valid_lang($club->langs))
 	{
@@ -132,7 +133,6 @@ try
 	}
 		
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4">' . htmlspecialchars($event->notes, ENT_QUOTES) . '</textarea></td></tr>';
-	echo '<tr><td class="dark" valign="top">' . get_label('Rounds') . ':</td><td><span id="rounds"></span></td></tr>';
 		
 	echo '<tr><td colspan="2">';
 	echo '<input type="checkbox" id="form-reg_att"';
@@ -225,44 +225,36 @@ try
 	addressClick();
 	
 	var rounds = [];
-	var roundHead = 
-		'<tr><td width="48"><a href="javascript:addRound()" title="<?php echo get_label('Add round'); ?>"><img src="images/create.png"></a></td>' +
-		'<td width="90"><?php echo get_label('Name'); ?></td>' +
-		'<td><?php echo get_label('Scoring system'); ?></td>' +
-		'<td width="70"><?php echo get_label('Multiply by'); ?></td>' + 
-		'<td width="70"><?php echo get_label('Games count'); ?></td></tr>';
-		
 	var roundRow = 
-		'<tr><td><a href="javascript:deleteRound({num})" title="<?php echo get_label('Delete round'); ?>"><img src="images/delete.png"></a></td>' +
-		'<td><input id="round{num}_name" class="short" onchange="setRoundValues({num})"></td>' +
-		'<td><?php show_scoring_select($event->club_id, 0, 'setRoundValues({num})', get_label('Scoring system'), 'round{num}_scoring', false); ?></td>' +
-		'<td><input id="round{num}_weight" onchange="setRoundValues({num})"></td>' +
-		'<td><input id="round{num}_games" onchange="setRoundValues({num})"></td></tr>';
+		'<tr><td width="48"><a href="javascript:deleteRound({num})" title="<?php echo get_label('Delete round'); ?>"><img src="images/delete.png"></a></td>' +
+		'<td width="90"><input id="form-round{num}_name" class="short" onchange="setRoundValues({num})"></td>' +
+		'<td><?php show_scoring_select($event->club_id, $event->scoring_id, 'setRoundValues({num})', get_label('Scoring system'), 'form-round{num}_scoring', false); ?></td>' +
+		'<td width="70"><input id="form-round{num}_weight" onchange="setRoundValues({num})"></td>' +
+		'<td width="70"><input id="form-round{num}_games" onchange="setRoundValues({num})"></td></tr>';
 	
 	function refreshRounds()
 	{
 		var html = '<table width="100%" class="transp">';
-		html += roundHead;
 		for (var i = 0; i < rounds.length; ++i)
 		{
 			html += roundRow.replace(new RegExp('\\{num\\}', 'g'), i);
 		}
 		html += '</table>';
-		$('#rounds').html(html);
+		$('#form-rounds').html(html);
 		
 		for (var i = 0; i < rounds.length; ++i)
 		{
 			var round = rounds[i];
-			$('#round' + i + '_name').val(round.name);
-			$('#round' + i + '_scoring').val(round.scoring_id);
-			$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round.scoring_weight);
-			$('#round' + i + '_games').spinner({ step:1, max:1000, min:1, change:setAllRoundValues }).width(30).val(round.games);
+			$('#form-round' + i + '_name').val(round.name);
+			$('#form-round' + i + '_scoring').val(round.scoring_id);
+			$('#form-round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round.scoring_weight);
+			$('#form-round' + i + '_games').spinner({ step:1, max:1000, min:0, change:setAllRoundValues }).width(30).val(round.planned_games);
 		}
 	}
 
 	function addRound()
 	{
-		rounds.push({ name: "", scoring_id: <?php echo $event->scoring_id; ?>, scoring_weight: 1, games: 5});
+		rounds.push({ name: "", scoring_id: <?php echo $event->scoring_id; ?>, scoring_weight: 1, planned_games: 0});
 		refreshRounds();
 	}
 
@@ -275,10 +267,18 @@ try
 	function setRoundValues(roundNumber)
 	{
 		var round = rounds[roundNumber];
-		round.name = $('#round' + roundNumber + '_name').val();
-		round.scoring_id = $('#round' + roundNumber + '_scoring').val();
-		round.scoring_weight = $('#round' + roundNumber + '_weight').val();
-		round.games = $('#round' + roundNumber + '_games').val();
+		round.name = $('#form-round' + roundNumber + '_name').val();
+		round.scoring_id = $('#form-round' + roundNumber + '_scoring').val();
+		round.scoring_weight = $('#form-round' + roundNumber + '_weight').val();
+		round.planned_games = $('#form-round' + roundNumber + '_games').val();
+		if (round.planned_games == 0)
+		{
+			$('#form-round' + roundNumber + '_games').val('');
+		}
+		else if (isNaN(round.planned_games))
+		{
+			round.planned_games = 0;
+		}
 	}
 	
 	function setAllRoundValues()
@@ -286,6 +286,14 @@ try
 		for (var i = 0; i < rounds.length; ++i)
 		{
 			setRoundValues(i);
+		}
+	}
+	
+	function eventGamesChange()
+	{
+		if ($('#form-planned_games').val() <= 0)
+		{
+			$('#form-planned_games').val('');
 		}
 	}
 	
@@ -312,6 +320,15 @@ try
 			$("#form-price").val(json.price);
 			$("#form-rules").val(json.rules_id);
 			$("#form-scoring").val(json.scoring_id);
+			$('#form-scoring_weight').val(json.scoring_weight);
+			if (json.planned_games > 0)
+			{
+				$('#form-planned_games').val(json.planned_games);
+			}
+			else
+			{
+				$('#form-planned_games').val('');
+			}
 			$("#form-notes").val(json.notes);
 			$("#form-reg_att").prop('checked', (json.flags & <?php echo EVENT_FLAG_REG_ON_ATTEND; ?>) != 0);
 			$("#form-pwd_req").prop('checked', (json.flags & <?php echo EVENT_FLAG_PWD_REQUIRED; ?>) != 0);
@@ -344,6 +361,8 @@ try
 			, address_id: _addr
 			, rules_id: $("#form-rules").val()
 			, scoring_id: $("#form-scoring").val()
+			, scoring_weight: $("#form-scoring_weight").val()
+			, planned_games: $("#form-planned_games").val()
 			, notes: $("#form-notes").val()
 			, flags: _flags
 			, langs: _langs
@@ -391,6 +410,8 @@ try
 		$("#dlg-ok").button("option", "disabled", strToTimespan($("#form-duration").val()) <= 0);
 	}
 	
+	$('#form-scoring_weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
+	$('#form-planned_games').spinner({ step:1, max:1000, min:0, change:eventGamesChange }).width(30);
 	refreshRounds();
 	
 	</script>

@@ -6,7 +6,7 @@ CREATE TABLE `rounds` (
   `name` VARCHAR(128) NOT NULL,
   `scoring_id` INT(11) NOT NULL,
   `scoring_weight` FLOAT NOT NULL,
-  `games` INT(11) NOT NULL,
+  `planned_games` INT(11) NOT NULL DEFAULT 0,
 
   PRIMARY KEY (`event_id`, `num`),
   CONSTRAINT `round_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`),
@@ -32,4 +32,5 @@ ALTER TABLE `games` DROP INDEX `game_best_player`;
 
 ALTER TABLE `events` ADD COLUMN `round_num` INT(11) NULL;
 ALTER TABLE `events` ADD COLUMN `scoring_weight` FLOAT NOT NULL DEFAULT 1;
+ALTER TABLE `events` ADD COLUMN `planned_games` INT(11) NOT NULL DEFAULT 0;
 

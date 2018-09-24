@@ -275,10 +275,20 @@ class Page extends PageBase
 			echo '</select> <a href="javascript:mr.createRules(' . $club->id . ', rulesCreated)" title="' . get_label('Create [0]', get_label('rules')) . '"><img src="images/rules.png" border="0"></a></td></tr>';
 		}
 		
-		$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $this->event->club_id);
-		echo '<tr><td class="dark">' . get_label('Scoring system') . ':</td><td>';
-		show_scoring_select($this->event->club_id, $this->event->scoring_id, '', get_label('Scoring system'), 'scoring', false);
-		echo '</td></tr>';
+		echo '<tr><td class="dark">' . get_label('Rounds') . ':</td><td><table width="100%" class="transp">';
+		echo '<tr><td width="48"><a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a></td>';
+		echo '<td width="90">' . get_label('Name') . '</td>';
+		echo '<td>' . get_label('Scoring system') . '</td>';
+		echo '<td width="70">' . get_label('Scoring weight') . '</td>'; 
+		echo '<td width="70" align="center">' . get_label('Planned games count') . '</td></tr>';
+		echo '<tr><td></td>';
+		echo '<td>' . get_label('Main round') . '</td>';
+		echo '<td>';
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, '', get_label('Scoring system'), 'event_scoring', false);
+		echo '</td>';
+		echo '<td><input id="scoring_weight" name="scoring_weight" value="' . $this->event->scoring_weight . '"></td>';
+		echo '<td><input id="planned_games" id="planned_games" value="' . ($this->event->planned_games > 0 ? $this->event->planned_games : '') . '"></td></tr>';
+		echo '</table><span id="form-rounds"></span></td></tr>';
 		
 		if (is_valid_lang($club->langs))
 		{
@@ -292,8 +302,6 @@ class Page extends PageBase
 		}
 		
 		echo '<tr><td class="dark" valign="top">' . get_label('Notes') . ':</td><td><textarea name="notes" cols="80" rows="4">' . htmlspecialchars($this->event->notes, ENT_QUOTES) . '</textarea></td></tr>';
-		
-		echo '<tr><td class="dark" valign="top">' . get_label('Rounds') . ':</td><td><span id="rounds"></span></td></tr>';
 		
 
 		echo '<tr><td class="dark">&nbsp;</td><td>';
@@ -351,14 +359,6 @@ class Page extends PageBase
 		}
 		echo "];\n";
 		
-		echo "var roundHead = '<tr>";
-		echo '<td width="48"><a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a></td>';
-		echo '<td width="90">' . get_label('Name') . '</td>';
-		echo '<td>' . get_label('Scoring system') . '</td>';
-		echo '<td width="70">' . get_label('Multiply by') . '</td>';
-		echo '<td width="70">' . get_label('Games count') . '</td>';
-		echo "</tr>';\n";
-		
 		echo "var roundRow = '<tr>";
 		echo '<td><a href="javascript:deleteRound({num})" title="' . get_label('Delete round') . '"><img src="images/delete.png"></a></td>';
 		echo '<td><input name="round{num}_name" id="round{num}_name" class="short" onchange="setRoundValues({num})"></td>';
@@ -389,7 +389,6 @@ class Page extends PageBase
 		function refreshRounds()
 		{
 			var html = '<table width="100%" class="transp">';
-			html += roundHead;
 			for (var i = 0; i < rounds.length; ++i)
 			{
 				html += roundRow.replace(new RegExp('\\{num\\}', 'g'), i);
@@ -409,13 +408,13 @@ class Page extends PageBase
 				$('#round' + i + '_name').val(round.name);
 				$('#round' + i + '_scoring').val(round.scoring_id);
 				$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round.scoring_weight);
-				$('#round' + i + '_games').spinner({ step:1, max:1000, min:1, change:setAllRoundValues }).width(30).val(round.games);
+				$('#round' + i + '_games').spinner({ step:1, max:1000, min:1, change:setAllRoundValues }).width(30).val(round.planned_games);
 			}
 		}
 	
 		function addRound()
 		{
-			rounds.push({ name: "", scoring_id: <?php echo $this->event->scoring_id; ?>, scoring_weight: 1, games: 5});
+			rounds.push({ name: "", scoring_id: <?php echo $this->event->scoring_id; ?>, scoring_weight: 1, planned_games: 0});
 			roundsChanged = true;
 			refreshRounds();
 		}
@@ -443,12 +442,22 @@ class Page extends PageBase
 				setRoundValues(i);
 			}
 		}
+		
+		function eventGamesChange()
+		{
+			if ($('#planned_games').val() <= 0)
+			{
+				$('#planned_games').val('');
+			}
+		}
 <?php	
 	}
 	
 	protected function js_on_load()
 	{
 ?>
+		$('#form-scoring_weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
+		$('#form-planned_games').spinner({ step:1, max:1000, min:0, change:eventGamesChange }).width(30);
 		refreshRounds();
 <?php
 	}
