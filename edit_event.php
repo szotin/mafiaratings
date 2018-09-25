@@ -127,9 +127,17 @@ class Page extends PageBase
 		{
 			$this->event->rules_id = $_REQUEST['rules'];
 		}
-		if (isset($_REQUEST['scoring']))
+		if (isset($_REQUEST['scoring_id']))
 		{
-			$this->event->scoring_id = $_REQUEST['scoring'];
+			$this->event->scoring_id = $_REQUEST['scoring_id'];
+		}
+		if (isset($_REQUEST['scoring_weight']))
+		{
+			$this->event->scoring_weight = $_REQUEST['scoring_weight'];
+		}
+		if (isset($_REQUEST['planned_games']))
+		{
+			$this->event->planned_games = $_REQUEST['planned_games'];
 		}
 		$this->event->langs = get_langs($this->event->langs);
 		
@@ -186,9 +194,16 @@ class Page extends PageBase
 			if (isset($_REQUEST['rounds-changed']))
 			{
 				$this->event->clear_rounds();
-				for ($round = 0; isset($_REQUEST['round' . $round . '_name']); ++$round)
+				$round = 0;
+				while (true)
 				{
-					$this->event->add_round($_REQUEST['round' . $round . '_name'], $_REQUEST['round' . $round . '_scoring'], $_REQUEST['round' . $round . '_scoring_weight'], $_REQUEST['round' . $round . '_planned_games']);
+					$prefix = 'round' . $round;
+					if (!isset($_REQUEST[$prefix . '_name']))
+					{
+						break;
+					}
+					$this->event->add_round($_REQUEST[$prefix . '_name'], $_REQUEST[$prefix . '_scoring'], $_REQUEST[$prefix . '_scoring_weight'], $_REQUEST[$prefix . '_planned_games']);
+					++$round;
 				}
 			}
 			
@@ -284,10 +299,10 @@ class Page extends PageBase
 		echo '<tr><td></td>';
 		echo '<td>' . get_label('Main round') . '</td>';
 		echo '<td>';
-		show_scoring_select($this->event->club_id, $this->event->scoring_id, '', get_label('Scoring system'), 'event_scoring', false);
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, '', get_label('Scoring system'), 'scoring_id', false);
 		echo '</td>';
 		echo '<td><input id="scoring_weight" name="scoring_weight" value="' . $this->event->scoring_weight . '"></td>';
-		echo '<td><input id="planned_games" id="planned_games" value="' . ($this->event->planned_games > 0 ? $this->event->planned_games : '') . '"></td></tr>';
+		echo '<td><input id="planned_games" name="planned_games" value="' . ($this->event->planned_games > 0 ? $this->event->planned_games : '') . '"></td></tr>';
 		echo '</table><span id="rounds"></span></td></tr>';
 		
 		if (is_valid_lang($club->langs))
@@ -354,7 +369,7 @@ class Page extends PageBase
 		echo "var rounds = [\n";
 		foreach ($this->event->rounds as $round)
 		{
-			echo $separator . '{ name: "' . $round->name . '", scoring_id: ' . $round->scoring_id . ', scoring_weight: ' . $round->scoring_weight . ', games: ' . $round->planned_games . ' }';
+			echo $separator . '{ name: "' . $round->name . '", scoring_id: ' . $round->scoring_id . ', scoring_weight: ' . $round->scoring_weight . ', planned_games: ' . $round->planned_games . ' }';
 			$separator = ",\n";
 		}
 		echo "];\n";

@@ -473,7 +473,7 @@ class Event
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
-				'name = ?, price = ?, club_id = ?, rules_id = ?, scoring_id = ?, scoring_weight = ?, planned_games = ?' .
+				'name = ?, price = ?, club_id = ?, rules_id = ?, scoring_id = ?, scoring_weight = ?, planned_games = ?, ' .
 				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, round_num = ?, ' .
 				'languages = ? WHERE id = ?',
 			$this->name, $this->price, $this->club_id, $this->rules_id, $this->scoring_id, $this->scoring_weight, $this->planned_games,
