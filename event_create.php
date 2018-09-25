@@ -115,7 +115,7 @@ try
 	echo '<tr><td></td>';
 	echo '<td>' . get_label('Main round') . '</td>';
 	echo '<td>';
-	show_scoring_select($event->club_id, $event->scoring_id, '', get_label('Scoring system'), 'event_scoring', false);
+	show_scoring_select($event->club_id, $event->scoring_id, '', get_label('Scoring system'), 'form-scoring', false);
 	echo '</td>';
 	echo '<td><input id="form-scoring_weight" value="' . $event->scoring_weight . '"></td>';
 	echo '<td><input id="form-planned_games" value="' . ($event->planned_games > 0 ? $event->planned_games : '') . '"></td></tr>';
@@ -248,7 +248,7 @@ try
 			$('#form-round' + i + '_name').val(round.name);
 			$('#form-round' + i + '_scoring').val(round.scoring_id);
 			$('#form-round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round.scoring_weight);
-			$('#form-round' + i + '_games').spinner({ step:1, max:1000, min:0, change:setAllRoundValues }).width(30).val(round.planned_games);
+			$('#form-round' + i + '_games').spinner({ step:1, max:1000, min:0, change:setAllRoundValues }).width(30).val(round.planned_games > 0 ? round.planned_games : '');
 		}
 	}
 

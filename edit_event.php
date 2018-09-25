@@ -188,7 +188,7 @@ class Page extends PageBase
 				$this->event->clear_rounds();
 				for ($round = 0; isset($_REQUEST['round' . $round . '_name']); ++$round)
 				{
-					$this->event->add_round($_REQUEST['round' . $round . '_name'], $_REQUEST['round' . $round . '_scoring'], $_REQUEST['round' . $round . '_weight'], $_REQUEST['round' . $round . '_games']);
+					$this->event->add_round($_REQUEST['round' . $round . '_name'], $_REQUEST['round' . $round . '_scoring'], $_REQUEST['round' . $round . '_scoring_weight'], $_REQUEST['round' . $round . '_planned_games']);
 				}
 			}
 			
@@ -288,7 +288,7 @@ class Page extends PageBase
 		echo '</td>';
 		echo '<td><input id="scoring_weight" name="scoring_weight" value="' . $this->event->scoring_weight . '"></td>';
 		echo '<td><input id="planned_games" id="planned_games" value="' . ($this->event->planned_games > 0 ? $this->event->planned_games : '') . '"></td></tr>';
-		echo '</table><span id="form-rounds"></span></td></tr>';
+		echo '</table><span id="rounds"></span></td></tr>';
 		
 		if (is_valid_lang($club->langs))
 		{
@@ -354,19 +354,19 @@ class Page extends PageBase
 		echo "var rounds = [\n";
 		foreach ($this->event->rounds as $round)
 		{
-			echo $separator . '{ name: "' . $round->name . '", scoring_id: ' . $round->scoring_id . ', scoring_weight: ' . $round->scoring_weight . ', games: ' . $round->games . ' }';
+			echo $separator . '{ name: "' . $round->name . '", scoring_id: ' . $round->scoring_id . ', scoring_weight: ' . $round->scoring_weight . ', games: ' . $round->planned_games . ' }';
 			$separator = ",\n";
 		}
 		echo "];\n";
 		
 		echo "var roundRow = '<tr>";
-		echo '<td><a href="javascript:deleteRound({num})" title="' . get_label('Delete round') . '"><img src="images/delete.png"></a></td>';
-		echo '<td><input name="round{num}_name" id="round{num}_name" class="short" onchange="setRoundValues({num})"></td>';
+		echo '<td width="48"><a href="javascript:deleteRound({num})" title="' . get_label('Delete round') . '"><img src="images/delete.png"></a></td>';
+		echo '<td width="90"><input name="round{num}_name" id="round{num}_name" class="short" onchange="setRoundValues({num})"></td>';
 		echo '<td>';
 		show_scoring_select($this->event->club_id, 0, 'setRoundValues({num})', get_label('Scoring system'), 'round{num}_scoring', false);
 		echo '</td>';
-		echo '<td><input id="round{num}_weight" name="round{num}_weight" onchange="setRoundValues({num})"></td>';
-		echo '<td><input id="round{num}_games" name="round{num}_games" onchange="setRoundValues({num})"></td>';
+		echo '<td width="70"><input id="round{num}_scoring_weight" name="round{num}_scoring_weight" onchange="setRoundValues({num})"></td>';
+		echo '<td width="70"><input id="round{num}_planned_games" name="round{num}_planned_games" onchange="setRoundValues({num})"></td>';
 		echo "</tr>';\n";
 ?>
 		var roundsChanged = false;
@@ -400,15 +400,13 @@ class Page extends PageBase
 			}
 			$('#rounds').html(html);
 			
-			console.log(rounds);
 			for (var i = 0; i < rounds.length; ++i)
 			{
 				var round = rounds[i];
-				console.log(round);
 				$('#round' + i + '_name').val(round.name);
 				$('#round' + i + '_scoring').val(round.scoring_id);
-				$('#round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round.scoring_weight);
-				$('#round' + i + '_games').spinner({ step:1, max:1000, min:1, change:setAllRoundValues }).width(30).val(round.planned_games);
+				$('#round' + i + '_scoring_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round.scoring_weight);
+				$('#round' + i + '_planned_games').spinner({ step:1, max:1000, min:0, change:setAllRoundValues }).width(30).val(round.planned_games > 0 ? round.planned_games : '');
 			}
 		}
 	
@@ -431,8 +429,16 @@ class Page extends PageBase
 			var round = rounds[roundNumber];
 			round.name = $('#round' + roundNumber + '_name').val();
 			round.scoring_id = $('#round' + roundNumber + '_scoring').val();
-			round.scoring_weight = $('#round' + roundNumber + '_weight').val();
-			round.games = $('#round' + roundNumber + '_games').val();
+			round.scoring_weight = $('#round' + roundNumber + '_scoring_weight').val();
+			round.planned_games = $('#round' + roundNumber + '_planned_games').val();
+			if (round.planned_games == 0)
+			{
+				$('#round' + roundNumber + '_planned_games').val('');
+			}
+			else if (isNaN(round.planned_games))
+			{
+				round.planned_games = 0;
+			}
 		}
 		
 		function setAllRoundValues()
@@ -456,8 +462,8 @@ class Page extends PageBase
 	protected function js_on_load()
 	{
 ?>
-		$('#form-scoring_weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
-		$('#form-planned_games').spinner({ step:1, max:1000, min:0, change:eventGamesChange }).width(30);
+		$('#scoring_weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
+		$('#planned_games').spinner({ step:1, max:1000, min:0, change:eventGamesChange }).width(30);
 		refreshRounds();
 <?php
 	}

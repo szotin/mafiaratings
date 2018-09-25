@@ -325,6 +325,8 @@ class Event
 		$this->price = $club->price;
 		$this->city = $club->city;
 		$this->country = $club->country;
+		$this->scoring_id = $club->scoring_id;
+		$this->rules_id = $club->rules_id;
 	}
 
 	function create()
