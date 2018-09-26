@@ -1031,7 +1031,7 @@ class Event
 				}
 				else if ($start_time + $duration + EVENT_ALIVE_TIME >= $now)
 				{
-					echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Extend the event') . '"><img src="images/time.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, extend event, set current round.') . '"><img src="images/time.png" border="0"></button>';
 				}
 				$no_buttons = false;
 			}

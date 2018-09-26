@@ -388,6 +388,61 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// set_round
+	//-------------------------------------------------------------------------------------------------------
+	function set_round_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		$event = new Event();
+		$event->load($event_id);
+		$this->check_permissions($event->club_id);
+		
+		$time = time();
+		if ($event->timestamp + $event->duration < $time)
+		{
+			throw new Exc(get_label('The event over. Please extend it first.'));
+		}
+		
+		$round = (int)get_required_param('round') - 1;
+		$finish_event = false;
+		if ($round < 0)
+		{
+			$round = NULL;
+		}
+		else if ($round >= count($event->rounds))
+		{
+			$finish_event = true;
+			$round = count($event->rounds);
+		}
+		
+		Db::begin();
+		Db::exec(get_label('event'), 'UPDATE events SET round_num = ? WHERE id = ?', $round, $event->id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = 'round=' . $round;
+			db_log('event', 'Round changed', $log_details, $event->id, $event->club_id);
+		}
+		if ($finish_event)
+		{
+			Db::exec(get_label('event'), 'UPDATE events SET duration = ? WHERE id = ?', $time - $event->timestamp, $event->id);
+		}
+		Db::commit();
+	}
+	
+	function set_round_op_help()
+	{
+		$help = new ApiHelp('Change current round for the event. Note that round changes automatically when a number of games for the round exceeds round.planned_games count. However when planned_games is 0, manual change using this function is required.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('round', 'Round number. 0 for main round, and consecutive numbers for the next rounds. If round number is greater than number of rounds, the event becomes finished.');
+		return $help;
+	}
+	
+	function set_round_op_permissions()
+	{
+		return API_PERM_FLAG_MODERATOR | API_PERM_FLAG_MANAGER;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// cancel
 	//-------------------------------------------------------------------------------------------------------
 	function cancel_op()
