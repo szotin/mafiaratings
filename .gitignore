@@ -19,3 +19,8 @@ standalone/MafiaTournament/ToutnamentSeating/obj/
 standalone/SourceGrid_4_40_src/SourceGrid/bin/Debug/SourceGrid.dll
 standalone/SourceGrid_4_40_src/SourceGrid/bin/
 standalone/SourceGrid_4_40_src/SourceGrid/obj/
+standalone/MafiaTournament/Debug/Numbers.exe
+standalone/MafiaTournament/Debug/
+standalone/MafiaTournament/Numbers/Debug/
+standalone/MafiaTournament/Sitting/Debug/
+*.user
