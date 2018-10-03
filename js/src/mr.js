@@ -432,7 +432,7 @@ var mr = new function()
 
 	this.extendEvent = function(id)
 	{
-		dlg.form("event_extend.php?id=" + id, refr);
+		dlg.form("event_extend.php?id=" + id, refr, 400);
 	}
 	
 	//--------------------------------------------------------------------------------------
