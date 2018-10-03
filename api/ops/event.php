@@ -403,15 +403,10 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('The event over. Please extend it first.'));
 		}
 		
-		$round = (int)get_required_param('round') - 1;
+		$round = (int)get_required_param('round');
 		$finish_event = false;
-		if ($round < 0)
+		if ($round < 0 || $round > count($event->rounds))
 		{
-			$round = NULL;
-		}
-		else if ($round >= count($event->rounds))
-		{
-			$finish_event = true;
 			$round = count($event->rounds);
 		}
 		
@@ -421,10 +416,6 @@ class ApiPage extends OpsApiPageBase
 		{
 			$log_details = 'round=' . $round;
 			db_log('event', 'Round changed', $log_details, $event->id, $event->club_id);
-		}
-		if ($finish_event)
-		{
-			Db::exec(get_label('event'), 'UPDATE events SET duration = ? WHERE id = ?', $time - $event->timestamp, $event->id);
 		}
 		Db::commit();
 	}

@@ -16,15 +16,6 @@ try
 	$id = $_REQUEST['id'];
 	
 	list($club_id, $start_time, $duration, $round_num) = Db::record(get_label('event'), 'SELECT club_id, start_time, duration, round_num FROM events WHERE id = ?', $id);
-	if (is_null($round_num))
-	{
-		$round_num = 0;
-	}
-	else
-	{
-		++$round_num;
-	}
-	
 	if ($_profile == NULL || !$_profile->is_manager($club_id))
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('user')));
@@ -61,7 +52,7 @@ try
 	
 	if ($time < $start_time + $duration)
 	{
-		if ($round_count > 0)
+		if ($round_count > 1)
 		{
 			for ($i = 0; $i < $round_count; ++$i)
 			{
