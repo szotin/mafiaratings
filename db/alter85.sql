@@ -29,8 +29,9 @@ ALTER TABLE `games` DROP INDEX `game_moderator_result`;
 ALTER TABLE `games` DROP INDEX `game_event_id`;
 ALTER TABLE `games` DROP INDEX `user_id`;
 ALTER TABLE `games` DROP INDEX `game_best_player`;
+UPDATE games SET round_num = 0 WHERE result <> 0;
 
-ALTER TABLE `events` ADD COLUMN `round_num` INT(11) NULL;
+ALTER TABLE `events` ADD COLUMN `round_num` INT(11) NOT NULL DEFAULT 0;
 ALTER TABLE `events` ADD COLUMN `scoring_weight` FLOAT NOT NULL DEFAULT 1;
 ALTER TABLE `events` ADD COLUMN `planned_games` INT(11) NOT NULL DEFAULT 0;
 

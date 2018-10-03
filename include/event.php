@@ -189,7 +189,7 @@ class Event
 		$this->scoring_id = -1;
 		$this->scoring_weight = 1;
 		$this->planned_games = 0;
-		$this->round_num = NULL;
+		$this->round_num = 0;
 		$this->rounds = array();
 		$this->rounds_changed = false;
 		$this->coming_odds = NULL;
@@ -417,7 +417,7 @@ class Event
 		{
 			$round = $this->rounds[$i];
 			Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, planned_games) VALUES (?, ?, ?, ?, ?, ?)',
-				$this->id, $i, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
+				$this->id, $i + 1, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
 		}
 		Db::commit();
 		
@@ -466,7 +466,7 @@ class Event
 			{
 				$round = $this->rounds[$i];
 				Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, planned_games) VALUES (?, ?, ?, ?, ?, ?)',
-					$this->id, $i, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
+					$this->id, $i + 1, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
 			}
 		}
 		
@@ -600,71 +600,12 @@ class Event
 		$this->set_datetime($timestamp, $timezone);
 	}
 	
-	function calculate_round_num()
-	{
-		$round_count = count($this->rounds);
-		if ($round_count > 0)
-		{
-			$count = 0;
-			$result = 0;
-			$query = new DbQuery('SELECT round_num FROM games WHERE event_id = ? AND result IN(1,2)', $this->id);
-			while ($row = $query->next())
-			{
-				list ($round_num) = $row;
-				$round_num = (int)$round_num;
-				if ($round_num >= $round_count || $round_num < $result)
-				{
-					continue;
-				}
-				
-				if ($round_num == $result)
-				{
-					++$count;
-					$round = $this->rounds[$result];
-					if ($round->planned_games > 0 && $round->planned_games <= $count)
-					{
-						$count = 0;
-						++$result;
-					}
-				}
-				else
-				{
-					$count = 1;
-					$result = $round_num;
-				}
-			}
-
-			if ($result < $round_count)
-			{
-				$round = $this->rounds[$result];
-				if ($round->planned_games > 0 || $this->round_num != $result + 1)
-				{
-					$this->round_num = $result;
-				}
-			}
-			else
-			{
-				$this->round_num = $round_count;
-			}
-			
-			if ($this->round_num >= $round_count)
-			{
-				// End the event
-				$this->duration = time() - $this->timestamp;
-			}
-		}
-		else
-		{
-			$this->round_num = NULL;
-		}
-	}
-	
 	function clear_rounds()
 	{
 		if (count($this->rounds) > 0)
 		{
 			$this->rounds = array();
-			$this->round_num = NULL;
+			$this->round_num = 0;
 			$this->rounds_changed = true;
 		}
 	}
