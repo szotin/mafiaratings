@@ -220,6 +220,17 @@ try
 		}
 		else
 		{
+			if (count($event->rounds) > 0)
+			{
+				if ($event->round_num == 0)
+				{
+					echo '<center><h2>' . get_label('Main round') . '</h2></center>';
+				}
+				else if ($event->round_num <= count($event->rounds))
+				{
+					echo '<center><h2>' . $event->rounds[$event->round_num - 1]->name . '</h2></center>';
+				}
+			}
 			$number = 0;
 			echo '<table width="100%"><tr>';
 			for ($i = 0; $i < $cols; ++$i)

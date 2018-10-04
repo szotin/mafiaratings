@@ -1266,7 +1266,24 @@ class EventPageBase extends PageBase
 			$title = get_label('Event [0]', $this->_title);
 		}
 		
-		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->name . '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
+		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->name;
+		$time = time();
+		if ($this->event->timestamp <= $time && $this->event->timestamp + $this->event->duration > $time)
+		{
+			if (count($this->event->rounds) > 0)
+			{
+				if ($this->event->round_num == 0)
+				{
+					echo ' (' . get_label('Main round') . ')';
+				}
+				else if ($this->event->round_num <= count($this->event->rounds))
+				{
+					echo ' (' . $this->event->rounds[$this->event->round_num - 1]->name . ')';
+				}
+			}
+		}
+		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
+		
 		echo '<td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom"><a href="club_main.php?bck=1&id=' . $this->event->club_id . '" title="' . $this->event->club_name . '"><table><tr><td align="center">' . $this->event->club_name . '</td></tr><tr><td align="center">';
