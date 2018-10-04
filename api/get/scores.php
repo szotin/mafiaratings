@@ -242,11 +242,11 @@ class ApiPage extends GetApiPageBase
 		
 		$scope_condition->add(get_roles_condition($role));
 		
-		$this->response['condition'] = $condition->get_parsed_sql();
-		$this->response['scope_condition'] = $scope_condition->get_parsed_sql();
+		// $this->response['condition'] = $condition->get_parsed_sql();
+		// $this->response['scope_condition'] = $scope_condition->get_parsed_sql();
 			
 		$scoring_system = new ScoringSystem($scoring);
-		$scores = new Scores($scoring_system, $condition, $scope_condition);
+		$scores = new Scores($scoring_system, NULL, $condition, $scope_condition);
 		$players_count = count($scores->players);
 		
 		$this->response['count'] = $players_count;
@@ -273,8 +273,8 @@ class ApiPage extends GetApiPageBase
 				$dst_score->name = $score->name;
 				$dst_score->languages = $score->langs;
 				$dst_score->points = $score->points;
-				$dst_score->num_games = $score->get_count(SCORING_MATTER_PLAY);
-				$dst_score->games_won = $score->get_count(SCORING_MATTER_WIN);
+				$dst_score->num_games = $score->games_played;
+				$dst_score->games_won = $score->games_won;
 				$dst_score->club_id = $score->club_id;
 				$dst_score->num = (int)$number + 1;
 				

@@ -108,7 +108,7 @@ class ApiPage extends ControlApiPageBase
 				}
 				$event_id = (int)$_REQUEST['id'];
 				
-				list($scoring_id, $timezone) = Db::record(get_label('event'), 'SELECT e.scoring_id, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE e.id = ?', $event_id);
+				list($scoring_id, $scoring_weight, $timezone) = Db::record(get_label('event'), 'SELECT e.scoring_id, e.scoring_weight, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE e.id = ?', $event_id);
 				if (isset($_REQUEST['scoring']))
 				{
 					$sid = (int)$_REQUEST['scoring'];
@@ -119,8 +119,21 @@ class ApiPage extends ControlApiPageBase
 				}
 				date_default_timezone_set($timezone);
 				
+				$rounds = array();
+				$round = new stdClass();
+				$round->scoring_weight = $scoring_weight;
+				$round->scoring_id = $scoring_id;
+				$rounds[] = $round;
+				$query = new DbQuery('SELECT scoring_id, scoring_weight FROM rounds r WHERE event_id = ? ORDER BY num', $event_id);
+				while ($row = $query->next())
+				{
+					$round = new stdClass();
+					list($round->scoring_id, $round->scoring_weight) = $row;
+					$rounds[] = $round;
+				}
+				
 				$scoring_system = new ScoringSystem($scoring_id);
-				$scores = new Scores($scoring_system, new SQL(' AND g.event_id = ?', $event_id), new SQL(' AND p.user_id IN(' . $player_list . ')'), MAX_POINTS_ON_GRAPH);
+				$scores = new Scores($scoring_system, $rounds, new SQL(' AND g.event_id = ?', $event_id), new SQL(' AND p.user_id IN(' . $player_list . ')'), MAX_POINTS_ON_GRAPH);
 		
 				$players_count = count($scores->players);
 				foreach ($user_ids as $user_id)
@@ -189,7 +202,7 @@ class ApiPage extends ControlApiPageBase
 				}
 				
 				$scoring_system = new ScoringSystem($scoring_id);
-				$scores = new Scores($scoring_system, new SQL(' AND g.club_id = ?', $club_id), new SQL(' AND p.user_id IN(' . $player_list . ')', get_season_condition($season, 'g.start_time', 'g.end_time')), MAX_POINTS_ON_GRAPH);
+				$scores = new Scores($scoring_system, NULL, new SQL(' AND g.club_id = ?', $club_id), new SQL(' AND p.user_id IN(' . $player_list . ')', get_season_condition($season, 'g.start_time', 'g.end_time')), MAX_POINTS_ON_GRAPH);
 		
 				$players_count = count($scores->players);
 				foreach ($user_ids as $user_id)

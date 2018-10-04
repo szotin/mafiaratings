@@ -33,7 +33,7 @@ class Page extends ClubPageBase
 		}
 		
 		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, new SQL(' AND g.club_id = ?', $this->id), get_season_condition($this->season, 'g.start_time', 'g.end_time'));
+		$scores = new Scores($scoring_system, NULL, new SQL(' AND g.club_id = ?', $this->id), get_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		$players_count = count($scores->players);
 		$separator = '';
 		if ($players_count > NUM_PLAYERS)

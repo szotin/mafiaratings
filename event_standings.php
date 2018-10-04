@@ -71,12 +71,20 @@ class Page extends EventPageBase
 		show_user_input('page', $this->user_name, 'event=' . $this->event->id, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
 		
-		global $_profile, $_page;
+		$rounds = array();
+		$round = new stdClass();
+		$round->scoring_weight = $this->event->scoring_weight;
+		$round->scoring_id = $this->event->scoring_id;
+		$rounds[] = $round;
+		foreach ($this->event->rounds as $round)
+		{
+			$rounds[] = $round;
+		}
 		
 		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
 		
 		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, $condition, get_roles_condition($this->roles));
+		$scores = new Scores($scoring_system, $rounds, $condition, get_roles_condition($this->roles));
 		$players_count = count($scores->players);
 		if ($this->user_id > 0)
 		{
@@ -108,8 +116,6 @@ class Page extends EventPageBase
 		for ($number = $page_start; $number < $players_count; ++$number)
 		{
 			$score = $scores->players[$number];
-			$games_count = $score->get_count(SCORING_MATTER_PLAY);
-			$wins_count = $score->get_count(SCORING_MATTER_WIN);
 			if ($score->id == $this->user_id)
 			{
 				echo '<tr class="darker">';
@@ -130,11 +136,11 @@ class Page extends EventPageBase
 			echo '<td align="center" class="' . $highlight . '">';
 			echo $score->points_str();
 			echo '</td>';
-			echo '<td align="center">' . $games_count . '</td>';
-			echo '<td align="center">' . $wins_count . '</td>';
-			if ($games_count != 0)
+			echo '<td align="center">' . $score->games_played . '</td>';
+			echo '<td align="center">' . $score->games_won . '</td>';
+			if ($score->games_played != 0)
 			{
-				echo '<td align="center">' . number_format(($wins_count*100.0)/$games_count, 1) . '%</td>';
+				echo '<td align="center">' . number_format(($score->games_won*100.0)/$score->games_played, 1) . '%</td>';
 				echo '<td align="center">';
 				echo $score->points_per_game_str();
 				echo '</td>';

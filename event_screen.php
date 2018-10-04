@@ -123,9 +123,19 @@ try
 			echo '</td></tr></table>';
 		}
 		
+		$rounds = array();
+		$round = new stdClass();
+		$round->scoring_weight = $event->scoring_weight;
+		$round->scoring_id = $event->scoring_id;
+		$rounds[] = $round;
+		foreach ($event->rounds as $round)
+		{
+			$rounds[] = $round;
+		}
+		
 		$condition = new SQL(' AND g.event_id = ?', $event->id);
 		$scoring_system = new ScoringSystem($event->scoring_id);
-		$scores = new Scores($scoring_system, $condition);
+		$scores = new Scores($scoring_system, $rounds, $condition);
 		$players_count = count($scores->players);
 			
 		if ($players_count == 0)
@@ -221,8 +231,6 @@ try
 						break;
 					}
 					$score = $scores->players[$number++];
-					$games_count = $score->get_count(SCORING_MATTER_PLAY);
-					$wins_count = $score->get_count(SCORING_MATTER_WIN);
 					
 					if ($j == 0)
 					{
@@ -247,8 +255,8 @@ try
 					echo '<td align="center" class="lighter">';
 					echo $score->points_str();
 					echo '</td>';
-					echo '<td align="center">' . $games_count . '</td>';
-					echo '<td align="center">' . $wins_count . '</td>';
+					echo '<td align="center">' . $score->games_played . '</td>';
+					echo '<td align="center">' . $score->games_won . '</td>';
 					echo '</tr>';
 				}
 				echo '</table></td>';

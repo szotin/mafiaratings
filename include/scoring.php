@@ -836,6 +836,8 @@ class PlayerScore
 	public $points;
 	public $additional_points; // convert points to an array by category later. Now there are only 2 categories, so we'd rather keep it in a separate var.
 	public $counters;
+	public $games_played;
+	public $games_won;
 	public $scores;
 	public $history;
 	public $timestamp;
@@ -846,6 +848,8 @@ class PlayerScore
 		$this->additional_points = 0.0;
 		$this->counters = array_fill(0, SCORING_MATTER_COUNT * 4, 0);
 		$this->scores = $scores;
+		$this->games_played = 0;
+		$this->games_won = 0;
 		if ($start_time > 0)
 		{
 			$this->history = array();
@@ -858,7 +862,7 @@ class PlayerScore
 		}
 	}
 	
-	function add_counters($scoring_flags, $player_role, $timestamp)
+	function add_counters($scoring_flags, $player_role, $timestamp, $weight)
 	{
 		if (is_array($this->history) && $this->timestamp != $timestamp)
 		{
@@ -867,13 +871,19 @@ class PlayerScore
 			$this->timestamp = $timestamp;
 		}
 		
+		++$this->games_played;
+		if ($scoring_flags & SCORING_FLAG_WIN)
+		{
+			++$this->games_won;
+		}
+		
 		$offset = $player_role * SCORING_MATTER_COUNT;
 		$flag = 1;
 		for ($i = 0; $i < SCORING_MATTER_COUNT; ++$i)
 		{
 			if ($scoring_flags & $flag)
 			{
-				++$this->counters[$offset];
+				$this->counters[$offset] += $weight;
 			}
 			$flag <<= 1;
 			++$offset;
@@ -954,12 +964,11 @@ class PlayerScore
 	
 	function points_per_game_str()
 	{
-		$games_count = $this->get_count(SCORING_MATTER_PLAY);
-		if ($games_count <= 0)
+		if ($this->games_count <= 0)
 		{
 			return 0;
 		}
-		return format_score($this->points / $games_count);
+		return format_score($this->points / $this->games_count);
 	}
 	
 	function get_count($matter, $role_flags = SCORING_ROLE_FLAGS_ALL)
@@ -1099,6 +1108,18 @@ function compare_scores($score1, $score2)
 	return 0;
 }
 
+class ScoringRound
+{
+	public $scoring_system;
+	public $weight;
+	
+	function __construct($scoring_system, $weight)
+	{
+		$this->scoring_system = $scoring_system;
+		$this->weight = $weight;
+	}
+}
+
 class Scores
 {
 	public $players;
@@ -1117,7 +1138,7 @@ class Scores
 	// new Scores($system, new SQL('AND g.event_id = 10')); // scores for the event 10
 	// new Scores($system, new SQL('AND g.event_id = 10'), new SQL('AND g.id = 982')); // what scores for the event 10 were earned in the game 982
 	// new Scores($system, new SQL('AND g.club_id = 1'), new SQL('AND g.id = 982')); // what scores for the club 1 were earned in the game 982
-	function __construct($scoring_system, $condition, $scope_condition = NULL, $history = 0)
+	function __construct($scoring_system, $rounds, $condition, $scope_condition = NULL, $history = 0)
 	{
 		$this->scoring_system = $scoring_system;
 		
@@ -1137,7 +1158,6 @@ class Scores
 			$interval = ($end_time - $start_time) / $history;
 		}
 		
-		$this->scoring_system = $scoring_system;
 		$players = array();
 		$this->stats = array();
 		if ($scoring_system->stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
@@ -1182,7 +1202,7 @@ class Scores
 			}
 		}
 		
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE 1', $condition);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role, g.end_time, g.round_num FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE 1', $condition);
 		if ($scope_condition != NULL)
 		{
 			$query->add($scope_condition);
@@ -1194,7 +1214,18 @@ class Scores
 		// echo $query->get_parsed_sql();
 		while ($row = $query->next())
 		{
-			list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $scoring_flags, $player_role, $timestamp) = $row;
+			list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $scoring_flags, $player_role, $timestamp, $round_num) = $row;
+			$weight = 1;
+			if ($rounds != null)
+			{
+				if (is_null($round_num) || $round_num < 0 || $round_num >= count($rounds))
+				{
+					continue;
+				}
+				$round = $rounds[$round_num];
+				$weight = $round->scoring_weight;
+			}
+			
 			if (isset($players[$user_id]))
 			{
 				$player_score = $players[$user_id];
@@ -1216,7 +1247,7 @@ class Scores
 			{
 				$timestamp = $start_time + round(ceil(($timestamp - $start_time) / $interval) * $interval);
 			}
-			$player_score->add_counters($scoring_flags, $player_role, $timestamp);
+			$player_score->add_counters($scoring_flags, $player_role, $timestamp, $weight);
 		}
 		
 		$this->players = array();

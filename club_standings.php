@@ -89,7 +89,7 @@ class Page extends ClubPageBase
 		$condition->add(get_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		
 		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, $condition, get_roles_condition($this->roles));
+		$scores = new Scores($scoring_system, NULL, $condition, get_roles_condition($this->roles));
 		$players_count = count($scores->players);
 		if ($this->user_id > 0)
 		{
@@ -120,8 +120,6 @@ class Page extends ClubPageBase
 		for ($number = $page_start; $number < $players_count; ++$number)
 		{
 			$score = $scores->players[$number];
-			$games_count = $score->get_count(SCORING_MATTER_PLAY);
-			$wins_count = $score->get_count(SCORING_MATTER_WIN);
 			if ($score->id == $this->user_id)
 			{
 				echo '<tr class="darker">';
@@ -140,9 +138,9 @@ class Page extends ClubPageBase
 			show_club_pic($score->club_id, $score->club_name, $score->club_flags, ICONS_DIR, 40, 40);
 			echo '</td>';
 			echo '<td align="center" class="' . $highlight . '">' . $score->points_str() . '</td>';
-			echo '<td align="center">' . $games_count . '</td>';
-			echo '<td align="center">' . $wins_count . '</td>';
-			echo '<td align="center">' . number_format(($wins_count * 100.0)/$games_count, 1) . '%</td>';
+			echo '<td align="center">' . $score->games_played . '</td>';
+			echo '<td align="center">' . $score->games_won . '</td>';
+			echo '<td align="center">' . number_format(($score->games_won * 100.0)/$score->games_played, 1) . '%</td>';
 			echo '<td align="center">' . $score->points_per_game_str() . '</td>';
 			echo '</tr>';
 		}
