@@ -964,11 +964,11 @@ class PlayerScore
 	
 	function points_per_game_str()
 	{
-		if ($this->games_count <= 0)
+		if ($this->games_played <= 0)
 		{
 			return 0;
 		}
-		return format_score($this->points / $this->games_count);
+		return format_score($this->points / $this->games_played);
 	}
 	
 	function get_count($matter, $role_flags = SCORING_ROLE_FLAGS_ALL)
