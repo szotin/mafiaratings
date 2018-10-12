@@ -125,13 +125,15 @@ class Page extends PageBase
 		echo '<p><table width="100%" class="bordered light"><tr><td>';
 		echo '<div id="results">...</div>';
 		echo '</td></tr></table></p>';
+		
+		echo '<script>';
+		echo $this->code;
+		echo '</script>';
 	}
 	
 	protected function js()
 	{
-		echo $this->code;
 ?>
-
 		var requestsToGo = 0;
 		var requestsComplete = 0;
 		
@@ -155,7 +157,6 @@ class Page extends PageBase
 							var player = game.players[j];
 							if (typeof player.user_id !== "number")
 							{
-								console.log('dsd');
 								proceed = false;
 								break;
 							}
@@ -294,4 +295,3 @@ $page = new Page();
 $page->run(get_label('Stats calculator'), PERM_USER);
 
 ?>
-
