@@ -1,6 +1,7 @@
 <?php
 
 require_once 'include/general_page_base.php';
+require_once 'include/ccc_filter.php';
 
 class Page extends PageBase
 {
@@ -9,6 +10,10 @@ class Page extends PageBase
 	private $description;
 	private $code;
 	private $owner_id;
+	
+	private $page_size;
+	private $chair;
+	private $ccc_filter;
 	
 	protected function prepare()
 	{
@@ -21,16 +26,32 @@ class Page extends PageBase
 			$this->id = (int)$_REQUEST['id'];
 		}
 		
+		$this->page_size = 16;
+		if (isset($_REQUEST['page_size']))
+		{
+			$this->page_size = (int)$_REQUEST['page_size'];
+		}
+		
+		$this->chair = isset($_REQUEST['chair']);
+		
+		$filter_str = CCCF_CLUB . CCCF_ALL;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter_str = $_REQUEST['filter'];
+		}
+		$this->ccc_filter = new CCCFilter('filter', $filter_str, CCCF_NO_MY_CLUBS);
+		
 		if ($this->id > 0)
 		{
-			list($this->name, $this->description, $this->code, $this->owner_id) = Db::record('stats code', 'SELECT name, description, code, owner_id FROM stats_calculators WHERE id = ? ORDER BY name', $this->id);
+			list($this->name, $this->description, $this->code, $this->owner_id) = Db::record(get_label('stats calculator'), 'SELECT name, description, code, owner_id FROM stats_calculators WHERE id = ? ORDER BY name', $this->id);
 		}
 		else
 		{
-			$this->name = 'New stats calculator';
-			$this->description = '';
-			$this->code = "var mafiaWins;\n\nfunction reset()\n{\n\tmafiaWins = 0;\n}\n\nfunction proceedGame(game, num)\n{\n\tif(game.winner == 'maf')\n\t{\n\t\t++mafiaWins;\n\t}\n}\n\nfunction complete()\n{\n\treturn 'Mafia wins: ' + mafiaWins;\n}";
-			$this->owner_id = $_profile->user_id;
+			$query = new DbQuery('SELECT id, name, description, code, owner_id FROM stats_calculators ORDER BY id DESC LIMIT 1', $_profile->user_id);
+			if ($row = $query->next())
+			{
+				list($this->id, $this->name, $this->description, $this->code, $this->owner_id) = $row;
+			}
 		}
 	}
 	
@@ -38,29 +59,50 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
-		echo '<table width="100%" class="bordered light">';
+		echo '<p><table width="100%" class="bordered light">';
 		
 		echo '<tr><td colspan="2">';
-		echo '<div id="count"></div><p><input type="submit" class="btn long" value="Calculate" onclick="calculate()"></p>';
+		echo '<table width="100%" class="transp"><tr>';
+		echo '<td width="200">' . get_label('Page size') . ': <select id="page_size">';
+		show_option(8, $this->page_size, 8);
+		show_option(16, $this->page_size, 16);
+		show_option(32, $this->page_size, 32);
+		show_option(48, $this->page_size, 48);
+		show_option(64, $this->page_size, 64);
+		show_option(128, $this->page_size, 128);
+		show_option(256, $this->page_size, 256);
+		show_option(512, $this->page_size, 512);
+		show_option(1024, $this->page_size, 1024);
+		echo '</select></td>';
+		
+		echo '<td width="240">' . get_label('Filter') . ': ';
+		$this->ccc_filter->show('filterSelect', get_label('Filter games by club/city/country.'));
+		echo '</td>';
+		
+		echo '<td><input type="checkbox" id="chair"';
+		if ($this->chair)
+		{
+			echo ' checked';
+		}
+		echo '> ' . get_label('include games with empty chair') . '</td>';
+		
+		echo '</tr></table>';
+		
+		echo '<p><input type="submit" class="btn long" value="' . get_label('Calculate') . '" onclick="calculate()"></p>';
 		echo '</td></tr>';
 		
 		echo '<tr class="darker">';
-		if ($_profile->user_id == $this->owner_id)
+		
+		echo '<td width="84">';
+		echo '<button class="icon" onclick="editCalculator(0)" title="' . get_label('Create new calculator') . '"><img src="images/create.png" border="0"></button>';
+		if ($this->id > 0 && ($_profile->user_id == $this->owner_id || $_profile->is_admin()))
 		{
-			echo '<td width="64">';
-			echo '<button class="icon" onclick="editCalculator(' . $this->id . ')" title="' . get_label('Edit calculator [0]', $this->name) . '"><img src="images/edit.png" border="0"></button>';
-			if ($this->id > 0)
-			{
-				echo '<button class="icon" onclick="deleteCalculator(' . $this->id . ')" title="' . get_label('Delete calculator [0]', $this->name) . '"><img src="images/delete.png" border="0"></button>';
-			}
-			echo '</td><td>';
+			echo '<button class="icon" onclick="editCalculator(' . $this->id . ')" title="' . get_label('Edit calculator \'[0]\'.', $this->name) . '"><img src="images/edit.png" border="0"></button>';
+			echo '<button class="icon" onclick="deleteCalculator(' . $this->id . ')" title="' . get_label('Delete calculator \'[0]\'.', $this->name) . '"><img src="images/delete.png" border="0"></button>';
 		}
-		else
-		{
-			echo '<td colspan="2">';
-		}
+		echo '</td><td>';
+
 		echo '<select id="calculator" onchange="refresh()">';
-		show_option(0, $this->id, get_label('New stats calculator'));
 		$query = new DbQuery('SELECT id, name FROM stats_calculators WHERE owner_id = ? OR published = TRUE ORDER BY name', $_profile->user_id);
 		while ($row = $query->next())
 		{
@@ -77,14 +119,12 @@ class Page extends PageBase
 			echo $this->description;
 			echo '</pre></td></tr>';
 		}
+		echo '</table></p>';
 		
-		echo '<tr class="darker"><td colspan="2">' . get_label('Results') . ':</td></tr><tr><td colspan="2">';
-		echo '<div id="content">...</div>';
-		echo '</td></tr>';
-		
-		echo '<tr class="darker"><td colspan="2">' . get_label('Code') . ':</td></tr><tr><td colspan="2"><pre>';
-		echo htmlspecialchars($this->code, ENT_QUOTES);
-		echo '</pre></td></tr></table>';
+		echo '<h3>' . get_label('Results') . '</h3>';
+		echo '<p><table width="100%" class="bordered light"><tr><td>';
+		echo '<div id="results">...</div>';
+		echo '</td></tr></table></p>';
 	}
 	
 	protected function js()
@@ -94,43 +134,97 @@ class Page extends PageBase
 
 		var requestsToGo = 0;
 		var requestsComplete = 0;
+		
+		var gamesUrlBase;
+		var filterCode = '';
+		var emptyChair = true;
+		var pageSize = 16;
+		
 		function next(page)
 		{
-			json.post("api/get/games.php?page_size=20&page=" + page, {}, function (data)
+			json.post(gamesUrlBase + "&page=" + page, {}, function (data)
 			{
 				for (var i = 0; i < data.games.length; ++i)
 				{
-					proceedGame(data.games[i], page * 20 + i);
+					var game = data.games[i];
+					var proceed = true;
+					if (!emptyChair)
+					{
+						for (var j = 0; j < game.players.length; ++j)
+						{
+							var player = game.players[j];
+							if (typeof player.user_id !== "number")
+							{
+								console.log('dsd');
+								proceed = false;
+								break;
+							}
+						}					
+					}
+					if (proceed)
+					{
+						proceedGame(game, page * page_size + i);
+					}
 				}
 				++requestsComplete;
-				$('#count').html('Page: ' + requestsComplete + ' out of ' + requestsToGo);
+				$('#results').html('Proceeding page: ' + (requestsComplete + 1) + ' out of ' + requestsToGo);
 				if (requestsComplete >= requestsToGo)
 				{
-					$('#content').html(complete());
+					$('#results').html(complete());
 					requestsToGo = requestsComplete = 0;
 				}
 			});
 		}
-
+		
 		function calculate()
 		{
 			var errorMessage = null;
 			try
 			{
-				reset();
-				json.post("api/get/games.php?count", {}, function (data)
+				$('#results').html('Obtaining number of games...');
+				
+				pageSize = $('#page_size').val();
+				gamesUrlBase = "api/get/games.php?page_size=" + pageSize;
+				emptyChair = $("#chair").prop('checked');
+				if (filterCode.length > 0)
 				{
-					requestsToGo = Math.ceil(data.count / 20);
-					requestsComplete = 0;
-					for (var page = 0; page < requestsToGo; ++page)
+					switch (filterCode[0])
 					{
-						next(page);
+						case 'L':
+							gamesUrlBase += '&club=' + filterCode.substring(1);
+							break;
+						case 'I':
+							gamesUrlBase += '&city=' + filterCode.substring(1);
+							break;
+						case 'O':
+							gamesUrlBase += '&country=' + filterCode.substring(1);
+							break;
+					}
+				}
+				
+				reset();
+				
+				json.post(gamesUrlBase + "&count", {}, function (data)
+				{
+					requestsToGo = Math.ceil(data.count / pageSize);
+					if (requestsToGo > 0)
+					{
+						$('#results').html('Proceeding page: 1 out of ' + requestsToGo);
+						requestsComplete = 0;
+						for (var page = 0; page < requestsToGo; ++page)
+						{
+							next(page, gamesUrlBase);
+						}
+					}
+					else
+					{
+						$('#results').html('No games found');
 					}
 				});
 			}
 			catch (err)
 			{
-				dlg.error(err.message);
+				$('#results').html(err.message);
 			}
 		}
 		
@@ -138,7 +232,7 @@ class Page extends PageBase
 		{
 			dlg.form("stats_calculator_edit.php?id=" + id, function(data)
 			{
-				refr("stats_calculator.php?id=" + data.id);
+				refresh(data.id);
 			});
 		}
 		
@@ -148,18 +242,52 @@ class Page extends PageBase
 			{
 				json.post("api/ops/stats_calculator.php", { op: "delete", id: id }, function()
 				{
-					refr("stats_calculator.php");
+					refresh(0);
 				});
 			});
 		}
 		
-		function refresh()
+		function refresh(id)
 		{
-			refr("stats_calculator.php?id=" + $("#calculator").val());
+			var url = "stats_calculator.php";
+			var sep = "?"
+			if (typeof id == "undefined")
+			{
+				id = $("#calculator").val();
+			}
+			if (id > 0)
+			{
+				url += sep + "id=" + id;
+				sep = "&";
+			}
+			
+			pageSize = $('#page_size').val();
+			if (pageSize != 16)
+			{
+				url += sep + "page_size" + pageSize;
+				sep = "&";
+			}
+			
+			if ($("#chair").prop('checked'))
+			{
+				url += sep + "chair";
+				sep = "&";
+			}
+			
+			if (filterCode.length > 0)
+			{
+				url += sep + "filter=" + filterCode;
+			}
+			refr(url);
 		}
+		
+		function filterSelect(code)
+		{
+			filterCode = code;
+		}
+	
 <?php
 	}
-	
 }
 
 $page = new Page();
