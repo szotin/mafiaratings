@@ -42,6 +42,14 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
+	<td>League Operations</td>
+	<td><a href="tournament.php?help"><?php echo PRODUCT_URL; ?>/api/ops/league.php</a></td>
+	<td>
+		<p>Manipulating leagues. League unites clubs to a group. League can do tournaments, unite them to a season, and make a competiotion between clubs and their members.</p> 
+	</td>
+</tr>
+
+<tr>
 	<td>Club Operations</td>
 	<td><a href="club.php?help"><?php echo PRODUCT_URL; ?>/api/ops/club.php</a></td>
 	<td>
@@ -54,6 +62,16 @@ require_once '../../include/api.php';
 	<td><a href="event.php?help"><?php echo PRODUCT_URL; ?>/api/ops/event.php</a></td>
 	<td>
 		<p>Manipulating events.</p>
+	</td>
+</tr>
+
+<tr>
+	<td>Tournament Operations</td>
+	<td><a href="tournament.php?help"><?php echo PRODUCT_URL; ?>/api/ops/tournament.php</a></td>
+	<td>
+		<p>Manipulating tournaments. Tournament is normally a set of events.</p> 
+		<p>For example a Regular Season Championship consists on weekly events. The scoring is a sum of scoring in these events.</p>
+		<p>Another example: An Alcatraz tournament consists of 3 events: Main Round, Semi-final and Final. Every event has a scoring weight. The scoring in the tournament is a sum of scoring in every event multiplied by weight.</p>
 	</td>
 </tr>
 
