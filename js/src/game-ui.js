@@ -625,6 +625,8 @@ mafia.ui = new function()
 			var eStyle = dStyle + 'empty';
 			$('#r-1').removeClass().addClass(eStyle);
 			$('#head').removeClass().addClass(eStyle);
+			st = mafia.gameRules.st_killed;
+			spt = mafia.gameRules.spt_killed;
 			for (var i = 0; i < 10; ++i)
 			{
 				var player = game.players[i];
