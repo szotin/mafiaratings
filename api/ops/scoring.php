@@ -8,6 +8,31 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	private function check_name($name, $club_id, $id = -1)
+	{
+		global $_profile;
+
+		if ($name == '')
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('scoring system name')));
+		}
+
+		check_name($name, get_label('scoring system name'));
+
+		if ($id > 0)
+		{
+			$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND (club_id = ? OR club_id IS NULL) AND id <> ?', $name, $club_id, $id);
+		}
+		else
+		{
+			$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND (club_id = ? OR club_id IS NULL)', $name, $club_id);
+		}
+		if ($query->next())
+		{
+			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Scoring system name'), $name));
+		}
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -33,7 +58,7 @@ class ApiPage extends OpsApiPageBase
 		$name = trim(get_required_param('name'));
 		
 		Db::begin();
-		check_scoring_name($name, $club_id);
+		$this->check_name($name, $club_id);
 		
 		if ($copy_id > 0)
 		{
@@ -86,7 +111,7 @@ class ApiPage extends OpsApiPageBase
 
 		Db::begin();
 		$name = trim(get_optioanl_param('name', $name));
-		check_scoring_name($name, $club_id, $scoring_id);
+		$this->check_name($name, $club_id, $scoring_id);
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
 		db_log('scoring system', 'Changed', 'name=' . $name, $scoring_id, $club_id);
 		Db::commit();

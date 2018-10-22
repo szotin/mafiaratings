@@ -43,7 +43,7 @@ require_once '../../include/api.php';
 
 <tr>
 	<td>League Operations</td>
-	<td><a href="tournament.php?help"><?php echo PRODUCT_URL; ?>/api/ops/league.php</a></td>
+	<td><a href="league.php?help"><?php echo PRODUCT_URL; ?>/api/ops/league.php</a></td>
 	<td>
 		<p>Manipulating leagues. League unites clubs to a group. League can do tournaments, unite them to a season, and make a competiotion between clubs and their members.</p> 
 	</td>

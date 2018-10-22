@@ -8,6 +8,31 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	private function check_name($name, $club_id, $id = -1)
+	{
+		global $_profile;
+
+		if ($name == '')
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('season name')));
+		}
+
+		check_name($name, get_label('season name'));
+
+		if ($id > 0)
+		{
+			$query = new DbQuery('SELECT name FROM seasons WHERE name = ? AND club_id = ? AND id <> ?', $name, $club_id, $id);
+		}
+		else
+		{
+			$query = new DbQuery('SELECT name FROM seasons WHERE name = ? AND club_id = ?', $name, $club_id);
+		}
+		if ($query->next())
+		{
+			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Season name'), $name));
+		}
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -20,7 +45,7 @@ class ApiPage extends OpsApiPageBase
 		$club = $_profile->clubs[$club_id];
 		
 		$name = get_required_param('name');
-		check_season_name($name, $club->id);
+		$this->check_name($name, $club->id);
 		
 		$start_month = (int)get_required_param('start_month');
 		$start_day = (int)get_required_param('start_day');
@@ -79,7 +104,7 @@ class ApiPage extends OpsApiPageBase
 		$club = $_profile->clubs[$club_id];
 		
 		$name = get_optional_param('name', $name);
-		check_season_name($name, $club->id, $season_id);
+		$this->check_name($name, $club->id, $season_id);
 		
 		$start_month = get_required_param('start_month');
 		$start_day = get_required_param('start_day');

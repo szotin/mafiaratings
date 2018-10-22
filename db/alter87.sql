@@ -9,6 +9,7 @@ CREATE TABLE `leagues` (
   `phone` VARCHAR(256) NOT NULL,
   `rules_id` INT(11) NOT NULL,
   `scoring_id` INT(11) NOT NULL,
+  `flags` INT(11) NOT NULL, // ******
 
   PRIMARY KEY (`id`),
   KEY (`name`),

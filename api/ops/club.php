@@ -15,6 +15,29 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	private function check_name($name, $club_id = -1)
+	{
+		if ($name == '')
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('club name')));
+		}
+
+		check_name($name, get_label('club name'));
+
+		if ($club_id > 0)
+		{
+			$query = new DbQuery('SELECT name FROM clubs WHERE name = ? AND id <> ?', $name, $club_id);
+		}
+		else
+		{
+			$query = new DbQuery('SELECT name FROM clubs WHERE name = ?', $name);
+		}
+		if ($query->next())
+		{
+			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Club name'), $name));
+		}
+	}
+
 	private function create_event_email_templates($club_id, $langs)
 	{
 		$l = LANG_NO;
@@ -50,7 +73,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$name = trim(get_required_param('name'));
-		check_club_name($name);
+		$this->check_name($name);
 
 		$url = get_optional_param('url');
 		$phone = get_optional_param('phone');
@@ -183,7 +206,7 @@ class ApiPage extends OpsApiPageBase
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
 		{
-			check_club_name($name, $club_id);
+			$this->check_name($name, $club_id);
 		}
 		
 		$url = check_url(get_optional_param('url', $old_url));
@@ -282,7 +305,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$name = $_REQUEST['name'];
 		}
-		check_club_name($name);
+		$this->check_name($name);
 		
 		$rules = new GameRules();
 		$rules_id = $rules->save();
