@@ -16,7 +16,7 @@ class Page extends ClubPageBase
 	{
 		global $_page, $_lang_code, $_profile;
 		
-		$is_manager = ($_profile != NULL && $_profile->is_manager($this->id));
+		$is_manager = ($_profile != NULL && $_profile->is_club_manager($this->id));
 		$page_size = PAGE_SIZE;
 		$event_count = 0;
 		$column_count = 0;

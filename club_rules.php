@@ -35,6 +35,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Game Rules'), UC_PERM_MANAGER);
+$page->run(get_label('Game Rules'), USER_CLUB_PERM_MANAGER);
 
 ?>

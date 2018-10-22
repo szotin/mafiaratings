@@ -83,6 +83,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Cities'), U_PERM_ADMIN);
+$page->run(get_label('Cities'), PERMISSION_ADMIN);
 
 ?>

@@ -292,6 +292,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Stats calculator'), PERM_USER);
+$page->run(get_label('Stats calculator'), PERMISSION_USER);
 
 ?>

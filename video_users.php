@@ -27,7 +27,7 @@ try
 	if ($_profile != NULL)
 	{
 		$self_id = $_profile->user_id;
-		$can_manage = ($self_id == $user_id || $_profile->is_manager($club_id));
+		$can_manage = ($self_id == $user_id || $_profile->is_club_manager($club_id));
 	}
 	
 	

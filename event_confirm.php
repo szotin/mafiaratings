@@ -104,7 +104,7 @@ class Page extends PageBase
 				$to = $_profile->user_name . '<' . $_profile->user_email . '>';
 				list($user_name, $user_email) = Db::record(get_label('user'), 'SELECT name, email FROM users WHERE id = ?', $user_id);
 				$to .= ', ' . $user_name . '<' . $user_email . '>';
-				$query = new DbQuery('SELECT u.name, u.email FROM users u WHERE (u.flags & ' . U_PERM_ADMIN . ') <> 0 OR u.id IN (SELECT c.user_id FROM user_clubs c WHERE c.club_id = ? AND (c.flags & ' . UC_PERM_MANAGER . ') <> 0)', $this->event->club_id);
+				$query = new DbQuery('SELECT u.name, u.email FROM users u WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 OR u.id IN (SELECT c.user_id FROM user_clubs c WHERE c.club_id = ? AND (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0)', $this->event->club_id);
 				while ($row = $query->next())
 				{
 					list($uname, $uemail) = $row;
@@ -160,7 +160,7 @@ class Page extends PageBase
 			list($count) = Db::record(get_label('user'), 'SELECT count(*) FROM user_clubs WHERE user_id = ? AND club_id = ?', $_profile->user_id, $this->event->club_id);
 			if ($count == 0)
 			{
-				Db::exec(get_label('user'), 'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . UC_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $this->event->club_id);
+				Db::exec(get_label('user'), 'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $this->event->club_id);
 				db_log('user', 'Joined the club', NULL, $_profile->user_id, $this->event->club_id);
 				$_profile->update_clubs();
 			}
@@ -196,6 +196,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Confirm event'), PERM_USER);
+$page->run(get_label('Confirm event'), PERMISSION_USER);
 
 ?>

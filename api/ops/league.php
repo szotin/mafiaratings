@@ -2,8 +2,6 @@
 
 require_once '../../include/api.php';
 require_once '../../include/email.php';
-require_once '../../include/city.php';
-require_once '../../include/country.php';
 require_once '../../include/address.php';
 require_once '../../include/game_rules.php';
 require_once '../../include/event.php';
@@ -36,6 +34,25 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('League name'), $name));
 		}
 	}
+	
+	private function check_league_permissions($league_id)
+	{
+		global $_profile;
+		if ($_profile != NULL)
+		{
+			if ($_profile->is_admin())
+			{
+				return;
+			}
+			
+			list ($count) = Db::record(get_label('league'), 'SELECT count(*) FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $_profile->user_id);
+			if ($count == 1)
+			{
+				return;
+			}
+		}
+		throw new FatalExc(get_label('No permissions'));
+	}
 
 	//-------------------------------------------------------------------------------------------------------
 	// create
@@ -44,6 +61,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		$this->check_permissions();
 		$name = trim(get_required_param('name'));
 		$this->check_name($name);
 
@@ -70,44 +88,39 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('league'),
-				'INSERT INTO leagues (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
-				$name, $langs, $rules_id, $url, $email, $phone, $city_id);
+				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules_id, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
+				$name, $langs, $url, $email, $phone, $rules_id);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details =
 				'name=' . $name .
 				"<br>langs=" . $langs .
 				"<br>rules=" . $rules_id .
-				"<br>flags=" . NEW_CLUB_FLAGS .
+				"<br>flags=" . NEW_LEAGUE_FLAGS .
 				"<br>url=" . $url . 
 				"<br>email=" . $email .
-				"<br>phone=" . $phone .
-				"<br>city=" . $city_name . ' (' . $city_id . ')';
+				"<br>phone=" . $phone;
 			db_log('league', 'Created', $log_details, $league_id, $league_id);
-
-			$this->create_event_email_templates($league_id, $langs);
 			$this->response['league_id'] = $league_id;
 		}
 		else
 		{
 			Db::exec(
 				get_label('league'), 
-				'INSERT INTO league_requests (user_id, name, langs, web_site, email, phone, city_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-				$_profile->user_id, $name, $langs, $url, $email, $phone, $city_id);
+				'INSERT INTO league_requests (user_id, name, langs, web_site, email, phone) VALUES (?, ?, ?, ?, ?, ?)',
+				$_profile->user_id, $name, $langs, $url, $email, $phone);
 				
 			list ($request_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
-			list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
 			$log_details = 
 				'name=' . $name .
 				"<br>langs=" . $langs .
 				"<br>url=" . $url .
 				"<br>email=" . $email .
-				"<br>phone=" . $phone .
-				"<br>city=" . $city_name . ' (' . $city_id . ')';
+				"<br>phone=" . $phone;
 			db_log('league_request', 'Created', $log_details, $request_id);
 			
 			// send request to admin
-			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
+			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
 			while ($row = $query->next())
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
@@ -124,7 +137,7 @@ class ApiPage extends OpsApiPageBase
 			
 			echo  
 				'<p>' .
-				get_label('Your request for creating the league has been sent to the administration. Site administrators will review your league information.') .
+				get_label('Your request for creating the league "[0]" has been sent to the administration. [1] administrators will review your league information.', $name, PRODUCT_NAME) .
 				'</p><p>' .
 				get_label('Please wait for the confirmation email. It takes from a few hours to three days depending on administrators load.') .
 				'</p>';
@@ -140,15 +153,12 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('langs', 'Languages used in the league. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'user profile languages are used.');
 		$help->request_param('email', 'League email.', 'user email is used.');
 		$help->request_param('phone', 'League phone. Just a text.', 'empty.');
-		$help->request_param('city_id', 'City id.', '<q>city</q> and <q>country</q> must be set.');
-		$help->request_param('city', 'City name. Used only when <q>city_id</q> is not set. If a city with this name is not found, new city is created.', '<q>city_id</q> must be set.');
-		$help->request_param('country', 'Country name. Used only when <q>city_id</q> is not set. If a country with this name is not found, new country is created.', '<q>city_id</q> must be set.');
 		return $help;
 	}
 	
 	function create_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -159,11 +169,11 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$league_id = (int)get_required_param('league_id');
-		$this->check_permissions($league_id);
+		$this->check_league_permissions($league_id);
 		
 		Db::begin();
-		list($old_name, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id, $old_city_id, $timezone) = Db::record(get_label('league'),
-			'SELECT c.name, c.web_site, c.email, c.phone, c.price, c.langs, c.scoring_id, ct.id, ct.timezone FROM leagues c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $league_id);
+		list($old_name, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id) = Db::record(get_label('league'),
+			'SELECT name, web_site, email, phone, price, langs, scoring_id FROM leagues c WHERE id = ?', $league_id);
 		
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
@@ -187,36 +197,19 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('[0] is not a valid email address.', $email));
 		}
 		
-		$city_id = (int)get_optional_param('city_id', -1);
-		
-		if ($city_id <= 0)
-		{
-			$city = get_optional_param('city');
-			if (!empty($city))
-			{
-				$city_id = retrieve_city_id($city, retrieve_country_id(get_optional_param('country')), $timezone);
-			}
-			if ($city_id <= 0)
-			{
-				$city_id = $old_city_id;
-			}
-		}
-		
 		Db::exec(
 			get_label('league'), 
-			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, city_id = ?, scoring_id = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $price, $city_id, $scoring_id, $league_id);
+			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, scoring_id = ? WHERE id = ?',
+			$name, $url, $langs, $email, $phone, $price, $scoring_id, $league_id);
 		if (Db::affected_rows() > 0)
 		{
-			list($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
 			$log_details =
 				'name=' . $name .
 				"<br>web_site=" . $url .
 				"<br>langs=" . $langs .
 				"<br>email=" . $email .
 				"<br>phone=" . $phone .
-				"<br>price=" . $price .
-				"<br>city=" . $city_name . ' (' . $city_id . ')';
+				"<br>price=" . $price;
 			db_log('league', 'Changed', $log_details, $league_id, $league_id);
 		}
 		Db::commit();
@@ -231,15 +224,12 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('langs', 'Languages used in the league. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
 		$help->request_param('email', 'League email.', 'remains the same.');
 		$help->request_param('phone', 'League phone. Just a text.', 'remains the same.');
-		$help->request_param('city_id', 'City id.', 'remains the same unless <q>city</q> and <q>country</q> are set.');
-		$help->request_param('city', 'City name. Used only when <q>city_id</q> is not set. If a city with this name is not found, new city is created.', 'city remains the same unless <q>city_id</q> is set.');
-		$help->request_param('country', 'Country name. Used only when <q>city_id</q> is not set. If a country with this name is not found, new country is created.', 'city remains the same unless <q>city_id</q> is set.');
 		return $help;
 	}
 	
 	function change_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -274,7 +264,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
+			'INSERT INTO leagues (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
 			$name, $langs, $rules_id, $url, $email, $phone, $city_id);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
@@ -283,18 +273,18 @@ class ApiPage extends OpsApiPageBase
 			'name=' . $name .
 			"<br>langs=" . $langs .
 			"<br>rules=" . $rules_id .
-			"<br>flags=" . NEW_CLUB_FLAGS .
+			"<br>flags=" . NEW_LEAGUE_FLAGS .
 			"<br>url=" . $url . 
 			"<br>email=" . $email .
 			"<br>phone=" . $phone .
 			"<br>city=" . $city_name . ' (' . $city_id . ')';
 		db_log('league', 'Created', $log_details, $league_id, $league_id);
 
-		if (($user_flags & U_PERM_ADMIN) == 0)
+		if (($user_flags & USER_PERM_ADMIN) == 0)
 		{
 			Db::exec(
 				get_label('user'), 
-				'INSERT INTO user_leagues (user_id, league_id, flags) VALUES (?, ?, ' . (UC_NEW_PLAYER_FLAGS | UC_PERM_MODER | UC_PERM_MANAGER) . ')',
+				'INSERT INTO user_leagues (user_id, league_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ')',
 				$user_id, $league_id);
 			db_log('user', 'Became a manager of the league', NULL, $user_id, $league_id);
 			
@@ -326,7 +316,7 @@ class ApiPage extends OpsApiPageBase
 		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_league.php';
 		$body = parse_tags($body, $tags);
 		$text_body = parse_tags($text_body, $tags);
-		send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_CREATE_CLUB, $club_id, $code);
+		send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_CREATE_LEAGUE, $league_id, $code);
 		
 		Db::commit();
 		
@@ -344,7 +334,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function accept_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -364,7 +354,7 @@ class ApiPage extends OpsApiPageBase
 	
 		Db::begin();
 		list($name, $url, $langs, $user_id, $user_name, $user_email, $user_lang) = Db::record(
-			get_label('club'),
+			get_label('league'),
 			'SELECT c.name, c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang FROM league_requests c JOIN users u ON c.user_id = u.id WHERE c.id = ?',
 			$request_id);
 		
@@ -395,7 +385,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function decline_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -409,7 +399,7 @@ class ApiPage extends OpsApiPageBase
 		$this->check_permissions($league_id);
 		
 		Db::begin();
-		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags | ' . CLUB_FLAG_RETIRED . ' WHERE id = ?', $league_id);
+		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags | ' . LEAGUE_FLAG_RETIRED . ' WHERE id = ?', $league_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log('league', 'Retired', NULL, $league_id, $league_id);
@@ -426,7 +416,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function retire_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -441,7 +431,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			// it is possible that the permission is missing because the league is retired
 			$query = new DbQuery(
-				'SELECT * FROM user_leagues WHERE user_id = ? AND league_id = ? AND (flags & ' . UC_PERM_MANAGER . ') <> 0',
+				'SELECT * FROM user_leagues WHERE user_id = ? AND league_id = ? AND (flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0',
 				$_profile->user_id, $league_id);
 			if (!$query->next())
 			{
@@ -454,7 +444,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags & ~' . CLUB_FLAG_RETIRED . ' WHERE id = ?', $league_id);
+		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags & ~' . LEAGUE_FLAG_RETIRED . ' WHERE id = ?', $league_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log('league', 'Restored', NULL, $league_id, $league_id);
@@ -471,7 +461,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 }
 

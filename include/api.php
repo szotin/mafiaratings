@@ -3,42 +3,6 @@
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/api_help.php';
 
-define('API_PERM_FLAG_EVERYONE', 0x0001);
-define('API_PERM_FLAG_USER', 0x0002);
-define('API_PERM_FLAG_OWNER', 0x0004);
-define('API_PERM_FLAG_MEMBER', 0x0008);
-define('API_PERM_FLAG_OFFICIAL', 0x0010);
-define('API_PERM_FLAG_PLAYER', 0x0020);
-define('API_PERM_FLAG_MODERATOR', 0x0040);
-define('API_PERM_FLAG_MANAGER', 0x0080);
-define('API_PERM_FLAG_ADMIN', 0x0100);
-
-function api_permission_name($flag)
-{
-	switch($flag)
-	{
-		case API_PERM_FLAG_EVERYONE:
-			return 'everyone';
-		case API_PERM_FLAG_USER:
-			return 'user';
-		case API_PERM_FLAG_OWNER:
-			return 'object-owner';
-		case API_PERM_FLAG_MEMBER:
-			return 'club-member';
-		case API_PERM_FLAG_OFFICIAL:
-			return 'club-official';
-		case API_PERM_FLAG_PLAYER:
-			return 'club-player';
-		case API_PERM_FLAG_MODERATOR:
-			return 'club-moderator';
-		case API_PERM_FLAG_MANAGER:
-			return 'club-manager';
-		case API_PERM_FLAG_ADMIN:
-			return 'admin';
-	}
-	return '?';
-}
-
 class ApiPageBase
 {
 	protected $version;
@@ -241,7 +205,7 @@ class GetApiPageBase extends ApiPageBase
 
 class ControlApiPageBase extends ApiPageBase
 {
-	final function run($title, $version = -1, $permissions = PERM_ALL)
+	final function run($title, $version = -1, $permissions = PERMISSION_EVERYONE)
 	{
 		$this->_run($title, $version, $permissions);
 	}
@@ -249,7 +213,7 @@ class ControlApiPageBase extends ApiPageBase
 
 class OpsApiPageBase extends ApiPageBase
 {
-	final function run($title, $version, $permissions = PERM_USER)
+	final function run($title, $version, $permissions = PERMISSION_USER)
 	{
 		$this->_run($title, $version, $permissions);
 	}
@@ -261,14 +225,14 @@ class OpsApiPageBase extends ApiPageBase
 		{
 			return $this->$permission_func();
 		}
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	protected function is_allowed($op, $club_id = 0, $owner_id = 0)
 	{
 		global $_profile;
 		$perm = $this->get_permissions($op);
-		if (($perm & API_PERM_FLAG_EVERYONE) != 0)
+		if (($perm & PERMISSION_EVERYONE) != 0)
 		{
 			return true;
 		}
@@ -288,46 +252,53 @@ class OpsApiPageBase extends ApiPageBase
 			$next_perm = ($perm & ($perm - 1));
 			switch ($perm - $next_perm)
 			{
-				case API_PERM_FLAG_USER:
+				case PERMISSION_USER:
 					return true;
 					
-				case API_PERM_FLAG_OWNER:
+				case PERMISSION_OWNER:
 					if ($owner_id == $_profile->user_id)
 					{
 						return true;
 					}
 					break;
 					
-				case API_PERM_FLAG_MEMBER:
+				case PERMISSION_CLUB_MEMBER:
 					if (isset($_profile->clubs[$club_id]))
 					{
 						return true;
 					}
 					break;
 					
-				case API_PERM_FLAG_OFFICIAL:
+				case PERMISSION_CLUB_REPRESENTATIVE:
 					if ($_profile->user_club_id == $club_id)
 					{
 						return true;
 					}
 					break;
 					
-				case API_PERM_FLAG_PLAYER:
-					if ($_profile->is_player($club_id))
+				case PERMISSION_CLUB_PLAYER:
+					if ($_profile->is_club_player($club_id))
 					{
 						return true;
 					}
 					break;
 					
-				case API_PERM_FLAG_MODERATOR:
-					if ($_profile->is_moder($club_id))
+				case PERMISSION_CLUB_MODERATOR:
+					if ($_profile->is_club_moder($club_id))
 					{
 						return true;
 					}
 					break;
 					
-				case API_PERM_FLAG_MANAGER:
-					if ($_profile->is_manager($club_id))
+				case PERMISSION_CLUB_MANAGER:
+					if ($_profile->is_club_manager($club_id))
+					{
+						return true;
+					}
+					break;
+					
+				case PERMISSION_LEAGUE_MANAGER:
+					if ($_profile->is_league_manager($club_id))
 					{
 						return true;
 					}
@@ -430,12 +401,12 @@ class OpsApiPageBase extends ApiPageBase
 		$next_perm = ($perm & ($perm - 1));
 		if ($perm != $next_perm)
 		{
-			echo '<em>' . api_permission_name($perm - $next_perm) . '</em>';
+			echo '<em>' . permission_name($perm - $next_perm) . '</em>';
 			$perm = $next_perm;
 			while ($perm != 0)
 			{
 				$next_perm = ($perm & ($perm - 1));
-				echo ', or <em>' . api_permission_name($perm - $next_perm) . '</em>';
+				echo ', or <em>' . permission_name($perm - $next_perm) . '</em>';
 				$perm = $next_perm;
 			}
 		}

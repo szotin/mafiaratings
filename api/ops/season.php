@@ -88,7 +88,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 }
 

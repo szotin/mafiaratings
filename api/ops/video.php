@@ -142,7 +142,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_permissions()
 	{
-		return API_PERM_FLAG_MEMBER;
+		return PERMISSION_CLUB_MEMBER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -155,7 +155,7 @@ class ApiPage extends OpsApiPageBase
 		$video_id = (int)get_required_param('video_id');
 		
 		list ($club_id, $user_id, $game_id, $type, $lang, $time) = Db::record(get_label('video'), 'SELECT v.club_id, v.user_id, g.id, v.type, v.lang, v.video_time FROM videos v LEFT OUTER JOIN games g ON g.video_id = v.id WHERE v.id = ?', $video_id);
-		if (!$_profile->is_manager($club_id) && $_profile->user_id != $user_id)
+		if (!$_profile->is_club_manager($club_id) && $_profile->user_id != $user_id)
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
@@ -223,7 +223,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_OWNER;
+		return PERMISSION_CLUB_MANAGER | PERMISSION_OWNER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -265,7 +265,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_OWNER;
+		return PERMISSION_CLUB_MANAGER | PERMISSION_OWNER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -320,7 +320,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function game_video_op_permissions()
 	{
-		return API_PERM_FLAG_MODERATOR | API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -357,7 +357,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function tag_op_permissions()
 	{
-		return API_PERM_FLAG_OWNER | API_PERM_FLAG_MANAGER;
+		return PERMISSION_OWNER | PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -391,7 +391,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function untag_op_permissions()
 	{
-		return API_PERM_FLAG_OWNER | API_PERM_FLAG_MANAGER;
+		return PERMISSION_OWNER | PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -421,7 +421,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
 		
-			if ($user_id == $_profile->user_id || ($user_flags & U_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
 			{
 				continue;
 			}
@@ -458,7 +458,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function ban_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 }
 

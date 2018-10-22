@@ -12,6 +12,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Logout'), PERM_USER);
+$page->run(get_label('Logout'), PERMISSION_USER);
 
 ?>

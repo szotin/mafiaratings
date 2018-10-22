@@ -24,7 +24,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function xxx_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 }
 

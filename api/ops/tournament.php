@@ -164,7 +164,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -322,7 +322,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -361,7 +361,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function extend_op_permissions()
 	{
-		return API_PERM_FLAG_MODERATOR | API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -407,7 +407,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function set_round_op_permissions()
 	{
-		return API_PERM_FLAG_MODERATOR | API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -474,7 +474,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function cancel_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -507,7 +507,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -546,7 +546,7 @@ class ApiPage extends OpsApiPageBase
 		while ($row = $query->next())
 		{
 			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
-			if ($user_id == $_profile->user_id || ($user_flags & U_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
 			{
 				continue;
 			}
@@ -584,7 +584,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function comment_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 }
 

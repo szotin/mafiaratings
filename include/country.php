@@ -37,7 +37,7 @@ function retrieve_country_id($country)
 		db_log('country', 'Created', $log_details, $country_id);
 		Db::commit();
 		
-		$query = new DbQuery('SELECT id, name, email FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
+		$query = new DbQuery('SELECT id, name, email FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
 		while ($row = $query->next())
 		{
 			list($admin_id, $admin_name, $admin_email) = $row;

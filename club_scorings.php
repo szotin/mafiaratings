@@ -30,6 +30,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Scoring Systems'), UC_PERM_MANAGER);
+$page->run(get_label('Scoring Systems'), USER_CLUB_PERM_MANAGER);
 
 ?>

@@ -31,6 +31,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Scoring systems'), U_PERM_ADMIN);
+$page->run(get_label('Scoring systems'), PERMISSION_ADMIN);
 
 ?>

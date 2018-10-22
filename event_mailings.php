@@ -18,7 +18,7 @@ class Page extends PageBase
 		}
 		$this->event = new Event();
 		$this->event->load($_REQUEST['id']);
-		if ($_profile == NULL || !$_profile->is_manager($this->event->club_id))
+		if ($_profile == NULL || !$_profile->is_club_manager($this->event->club_id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
@@ -131,6 +131,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run('Mailing', UC_PERM_MANAGER);
+$page->run('Mailing', USER_CLUB_PERM_MANAGER);
 
 ?>

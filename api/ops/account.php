@@ -115,7 +115,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function login_op_permissions()
 	{
-		return API_PERM_FLAG_EVERYONE;
+		return PERMISSION_EVERYONE;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function logout_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -158,7 +158,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function get_token_op_permissions()
 	{
-		return API_PERM_FLAG_EVERYONE;
+		return PERMISSION_EVERYONE;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -195,7 +195,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_permissions()
 	{
-		return API_PERM_FLAG_EVERYONE;
+		return PERMISSION_EVERYONE;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -280,11 +280,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($_REQUEST['message_notify'])
 			{
-				$flags |= U_FLAG_MESSAGE_NOTIFY;
+				$flags |= USER_FLAG_MESSAGE_NOTIFY;
 			}
 			else
 			{
-				$flags &= ~U_FLAG_MESSAGE_NOTIFY;
+				$flags &= ~USER_FLAG_MESSAGE_NOTIFY;
 			}
 		}
 		
@@ -292,11 +292,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($_REQUEST['photo_notify'])
 			{
-				$flags |= U_FLAG_PHOTO_NOTIFY;
+				$flags |= USER_FLAG_PHOTO_NOTIFY;
 			}
 			else
 			{
-				$flags &= ~U_FLAG_PHOTO_NOTIFY;
+				$flags &= ~USER_FLAG_PHOTO_NOTIFY;
 			}
 		}
 		
@@ -304,11 +304,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($_REQUEST['male'])
 			{
-				$flags |= U_FLAG_MALE;
+				$flags |= USER_FLAG_MALE;
 			}
 			else
 			{
-				$flags &= ~U_FLAG_MALE;
+				$flags &= ~USER_FLAG_MALE;
 			}
 		}
 		
@@ -319,9 +319,9 @@ class ApiPage extends OpsApiPageBase
 			$password2 = get_required_param('pwd2');
 			check_password($password1, $password2);
 			Db::exec(get_label('user'), 'UPDATE users SET password = ? WHERE id = ?', md5($password1), $_profile->user_id);
-			if ($flags & U_FLAG_NO_PASSWORD)
+			if ($flags & USER_FLAG_NO_PASSWORD)
 			{
-				$flags = $flags & ~U_FLAG_NO_PASSWORD;
+				$flags = $flags & ~USER_FLAG_NO_PASSWORD;
 			}
 			else
 			{
@@ -338,7 +338,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($club_id != NULL && !isset($_profile->clubs[$club_id]))
 			{
-				Db::exec(get_label('membership'), 'INSERT INTO user_clubs (user_id, club_id, flags) values (?, ?, ' . UC_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $club_id);
+				Db::exec(get_label('membership'), 'INSERT INTO user_clubs (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $club_id);
 				db_log('user', 'Joined the club', NULL, $_profile->user_id, $club_id);
 				$update_clubs = true;
 			}
@@ -416,7 +416,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function edit_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -460,7 +460,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function password_reset_op_permissions()
 	{
-		return API_PERM_FLAG_EVERYONE;
+		return PERMISSION_EVERYONE;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -499,7 +499,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function password_change_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -514,7 +514,7 @@ class ApiPage extends OpsApiPageBase
 		if ($count == 0)
 		{
 			Db::begin();
-			Db::exec(get_label('membership'), 'INSERT INTO user_clubs (user_id, club_id, flags) values (?, ?, ' . UC_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $club_id);
+			Db::exec(get_label('membership'), 'INSERT INTO user_clubs (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $club_id);
 			db_log('user', 'Joined the club', NULL, $_profile->user_id, $club_id);
 			Db::commit();
 			$_profile->update_clubs();
@@ -530,7 +530,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function join_club_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -561,7 +561,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function quit_club_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -740,7 +740,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function suggest_club_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -775,7 +775,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function site_style_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -811,7 +811,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function browser_lang_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 }
 

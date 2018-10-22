@@ -16,9 +16,95 @@ class PageBase
 	
 	protected $_facebook;
 	
+	protected $club_id;
+	protected $league_id;
+	protected $owner_id;
+	
 	function __construct()
 	{
 		initiate_session();
+	}
+	
+	protected function is_permitted()
+	{
+		global $_profile;
+		
+		$perm = $this->_permissions;
+		if (($perm & PERMISSION_EVERYONE) != 0)
+		{
+			return true;
+		}
+		
+		if ($_profile == NULL)
+		{
+			return false;
+		}
+		
+		if ($_profile->is_admin())
+		{
+			return true;
+		}
+		
+		while ($perm)
+		{
+			$next_perm = ($perm & ($perm - 1));
+			switch ($perm - $next_perm)
+			{
+				case PERMISSION_USER:
+					return true;
+					
+				case PERMISSION_OWNER:
+					if ($this->owner_id == $_profile->user_id)
+					{
+						return true;
+					}
+					break;
+					
+				case PERMISSION_CLUB_MEMBER:
+					if (isset($_profile->clubs[$this->club_id]))
+					{
+						return true;
+					}
+					break;
+					
+				case PERMISSION_CLUB_REPRESENTATIVE:
+					if ($_profile->user_club_id == $this->club_id)
+					{
+						return true;
+					}
+					break;
+					
+				case PERMISSION_CLUB_PLAYER:
+					if ($_profile->is_club_player($this->club_id))
+					{
+						return true;
+					}
+					break;
+					
+				case PERMISSION_CLUB_MODERATOR:
+					if ($_profile->is_club_moder($this->club_id))
+					{
+						return true;
+					}
+					break;
+					
+				case PERMISSION_CLUB_MANAGER:
+					if ($_profile->is_club_manager($this->club_id))
+					{
+						return true;
+					}
+					break;
+					
+				case PERMISSION_LEAGUE_MANAGER:
+					if ($_profile->is_league_manager($this->league_id))
+					{
+						return true;
+					}
+					break;
+			}
+			$perm = $next_perm;
+		}
+		return false;
 	}
 	
 	final function run($title = '', $permissions = PERM_ALL)
@@ -33,10 +119,18 @@ class PageBase
 		$this->_state = PAGE_STATE_EMPTY;
 		$this->_locked = is_site_locked();
 		$this->_admin = ($_profile != NULL && $_profile->is_admin());
+		
+		$this->club_id = 0;
+		$this->league_id = 0;
+		$this->owner_id = 0;
+		
 		try
 		{
-			check_permissions($this->_permissions);
-			
+			if ($_profile == NULL && ($this->_permissions & PERMISSION_EVERYONE) == 0)
+			{
+				throw new LoginExc();
+			}
+	
 			try
 			{
 				$this->prepare();
@@ -46,6 +140,11 @@ class PageBase
 				Db::rollback();
 				Exc::log($e);
 				$this->error($e);
+			}
+			
+			if (!$this->is_permitted())
+			{
+				throw new FatalExc(get_label('No permissions'));
 			}
 			
 			if ($this->show_header())
@@ -163,12 +262,6 @@ class PageBase
 			}
 		}
 
-		$permissions = PERM_STRANGER;
-		if ($_session_state == SESSION_OK)
-		{
-			$permissions = PERM_USER | ($_profile->user_flags & U_PERM_MASK) | ($_profile->user_club_flags & UC_PERM_MASK);
-		}
-		
 		if (is_mobile())
 		{
 			echo '<body class="main">';
@@ -291,17 +384,7 @@ class PageBase
 			case SESSION_LOGIN_FAILED:
 				throw new FatalExc(get_label('Login attempt failed. Wrong username or password.'));
 		}
-
-		if (($permissions & $this->_permissions) == 0)
-		{
-			if (($permissions & PERM_STRANGER) == 0)
-			{
-				throw new FatalExc(get_label('No permissions'));
-			}
-			
-			echo '<h3>'.get_label('You have to login to view this page').'.</h3>';
-			return false;
-		}
+		
 		return true;
 	}
 
@@ -564,7 +647,7 @@ class PageBase
 			echo "\n\t\tdlg.error(\"" . $this->_err_message . "\");";
 		}
 		echo "\n\t\tshowMenuBar();\n\n";
-		if ($_profile != NULL && ($_profile->user_flags & U_FLAG_NO_PASSWORD) != 0)
+		if ($_profile != NULL && ($_profile->user_flags & USER_FLAG_NO_PASSWORD) != 0)
 		{
 			echo "\n\t\tmr.initProfile();\n\n";
 		}

@@ -217,7 +217,7 @@ class ApiPage extends GetApiPageBase
 		
 		$count_only = isset($_REQUEST['count']);
 		
-		$condition = new SQL(' WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 AND u.games > 0');
+		$condition = new SQL(' WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND u.games > 0');
 		
 		if (isset($contains))
 		{
@@ -377,14 +377,14 @@ class ApiPage extends GetApiPageBase
 				$rating->num_games = (int)$rating->num_games;
 				$rating->games_won = (int)$rating->games_won;
 				$rating->club_id = (int)$rating->club_id;
-				if (($user_flags & U_FLAG_MALE) != 0)
+				if (($user_flags & USER_FLAG_MALE) != 0)
 				{
 					$rating->male = true;
 				}
-				if (($user_flags & U_ICON_MASK) != 0)
+				if (($user_flags & USER_ICON_MASK) != 0)
 				{
-					$rating->image = USER_PICS_DIR . TNAILS_DIR . $rating->id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
-					$rating->icon = USER_PICS_DIR . ICONS_DIR . $rating->id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
+					$rating->image = USER_PICS_DIR . TNAILS_DIR . $rating->id . '.png?' . (($user_flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET);
+					$rating->icon = USER_PICS_DIR . ICONS_DIR . $rating->id . '.png?' . (($user_flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET);
 				}
 				$ratings[] = $rating;
 			}

@@ -135,7 +135,7 @@ class Page extends GeneralPageBase
 						if ($player->src > $player->dst)
 						{
 							echo '<img src="images/up.png">';
-							if ($player->user_flags & U_FLAG_MALE)
+							if ($player->user_flags & USER_FLAG_MALE)
 							{
 								echo '</td><td>' . get_label('[0] moved up from [1] to [2] place.', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
 							}
@@ -148,7 +148,7 @@ class Page extends GeneralPageBase
 						else if ($player->src < $player->dst)
 						{
 							echo '<img src="images/down_red.png">';
-							if ($player->user_flags & U_FLAG_MALE)
+							if ($player->user_flags & USER_FLAG_MALE)
 							{
 								echo '</td><td>' . get_label('[0] moved down from [1] to [2] place.', '<b>' . $player->user_name . '</b>', $player->src, $player->dst);
 							}
@@ -162,7 +162,7 @@ class Page extends GeneralPageBase
 					else
 					{
 						echo '<img src="images/down_red.png"></td><td>';
-						if ($player->user_flags & U_FLAG_MALE)
+						if ($player->user_flags & USER_FLAG_MALE)
 						{
 							echo get_label('[0] left top 100.', '<b>' . $player->user_name . '</b>', $player->src);
 						}
@@ -176,7 +176,7 @@ class Page extends GeneralPageBase
 				else
 				{
 					echo '<img src="images/up.png"></td><td>';
-					if ($player->user_flags & U_FLAG_MALE)
+					if ($player->user_flags & USER_FLAG_MALE)
 					{
 						echo get_label('[0] entered top 100 and gained [1] place.', '<b>' . $player->user_name . '</b>', $player->dst);
 					}

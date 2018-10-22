@@ -16,7 +16,7 @@ class ApiPage extends OpsApiPageBase
 		$club_id = (int)get_required_param('club_id');
 		$this->check_permissions($club_id);
 		
-		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . UC_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log('user', 'Banned', NULL, $user_id, $club_id);
@@ -33,7 +33,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function ban_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		$club_id = (int)get_required_param('club_id');
 		$this->check_permissions($club_id);
-		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . UC_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log('user', 'Unbanned', NULL, $user_id, $club_id);
@@ -61,7 +61,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function unban_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -78,11 +78,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ((int)$_REQUEST['manager'])
 			{
-				$flags |= UC_PERM_MANAGER;
+				$flags |= USER_CLUB_PERM_MANAGER;
 			}
 			else
 			{
-				$flags &= ~UC_PERM_MANAGER;
+				$flags &= ~USER_CLUB_PERM_MANAGER;
 			}
 		}
 		
@@ -90,11 +90,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ((int)$_REQUEST['moder'])
 			{
-				$flags |= UC_PERM_MODER;
+				$flags |= USER_CLUB_PERM_MODER;
 			}
 			else
 			{
-				$flags &= ~UC_PERM_MODER;
+				$flags &= ~USER_CLUB_PERM_MODER;
 			}
 		}
 		
@@ -102,11 +102,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ((int)$_REQUEST['player'])
 			{
-				$flags |= UC_PERM_PLAYER;
+				$flags |= USER_CLUB_PERM_PLAYER;
 			}
 			else
 			{
-				$flags &= ~UC_PERM_PLAYER;
+				$flags &= ~USER_CLUB_PERM_PLAYER;
 			}
 		}
 		
@@ -131,7 +131,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function access_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -141,7 +141,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$user_id = (int)get_required_param('user_id');
 		$this->check_permissions();
-		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . U_FLAG_BANNED . ') WHERE id = ?', $user_id);
+		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . USER_FLAG_BANNED . ') WHERE id = ?', $user_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log('user', 'Banned', NULL, $user_id);
@@ -157,7 +157,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function site_ban_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -168,7 +168,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		$this->check_permissions();
 
-		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . U_FLAG_BANNED . ') WHERE id = ?', $user_id);
+		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . USER_FLAG_BANNED . ') WHERE id = ?', $user_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log('user', 'Unbanned', NULL, $user_id);
@@ -184,7 +184,7 @@ class ApiPage extends OpsApiPageBase
 
 	function site_unban_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -200,11 +200,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ((int)$_REQUEST['admin'])
 			{
-				$flags |= U_PERM_ADMIN;
+				$flags |= USER_PERM_ADMIN;
 			}
 			else
 			{
-				$flags &= ~U_PERM_ADMIN;
+				$flags &= ~USER_PERM_ADMIN;
 			}
 		}
 		Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $user_id);
@@ -225,7 +225,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function site_access_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 }
 

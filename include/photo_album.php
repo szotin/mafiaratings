@@ -214,7 +214,7 @@ class PhotoAlbum
 		{
 			return false;
 		}
-		return $_profile->is_manager($this->club_id);
+		return $_profile->is_club_manager($this->club_id);
 	}
 	
 	function can_add()
@@ -234,7 +234,7 @@ class PhotoAlbum
 		}
 		else if ($this->adders == FOR_MANAGERS)
 		{
-			return $_profile->is_manager($this->club_id);
+			return $_profile->is_club_manager($this->club_id);
 		}
 		return false;
 	}
@@ -259,7 +259,7 @@ class PhotoAlbum
 		{
 			return false;
 		}
-		return $_profile->is_manager($club_id);
+		return $_profile->is_club_manager($club_id);
 	}
 	
 	public static function prepare_list($link_params)
@@ -461,14 +461,6 @@ class PhotoAlbum
 					' OR (a.viewers = ' . FOR_MEMBERS . 
 					' AND a.club_id IN (SELECT club_id FROM user_clubs WHERE user_id = ?))',
 					$_profile->user_id);
-				if ($_profile->is_manager())
-				{
-					$condition->add(
-						' OR (a.viewers = ' . FOR_MANAGERS . 
-						' AND a.club_id IN (SELECT club_id FROM user_clubs WHERE user_id = ? AND (flags & ' . 
-						UC_PERM_MANAGER . ') <> 0))', 
-						$_profile->user_id);
-				}
 			}
 			$condition->add(')');
 		}
@@ -489,14 +481,6 @@ class PhotoAlbum
 			if (count($_profile->clubs) > 0)
 			{
 				$condition->add(' OR (p.viewers = ' . FOR_MEMBERS . ' AND a.club_id IN (SELECT club_id FROM user_clubs WHERE user_id = ?))', $_profile->user_id);
-				if ($_profile->is_manager())
-				{
-					$condition->add(
-						' OR (p.viewers = ' . FOR_MANAGERS .
-						' AND a.club_id IN (SELECT club_id FROM user_clubs WHERE user_id = ?' .
-						' AND (flags & ' . UC_PERM_MANAGER . ') <> 0))', 
-						$_profile->user_id);
-				}
 			}
 			$condition->add(')');
 		}

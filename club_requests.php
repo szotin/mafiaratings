@@ -28,6 +28,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Club requests'), U_PERM_ADMIN);
+$page->run(get_label('Club requests'), PERMISSION_ADMIN);
 
 ?>

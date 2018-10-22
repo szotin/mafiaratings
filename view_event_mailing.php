@@ -73,6 +73,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('view event mailing'), UC_PERM_MANAGER);
+$page->run(get_label('view event mailing'), USER_CLUB_PERM_MANAGER);
 
 ?>

@@ -66,6 +66,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Pass'), PERM_USER);
+$page->run(get_label('Pass'), PERMISSION_USER);
 
 ?>

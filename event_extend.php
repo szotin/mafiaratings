@@ -16,7 +16,7 @@ try
 	$id = $_REQUEST['id'];
 	
 	list($club_id, $start_time, $duration, $round_num) = Db::record(get_label('event'), 'SELECT club_id, start_time, duration, round_num FROM events WHERE id = ?', $id);
-	if ($_profile == NULL || !$_profile->is_manager($club_id))
+	if ($_profile == NULL || !$_profile->is_club_manager($club_id))
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('user')));
 	}

@@ -166,7 +166,7 @@ class ApiPage extends GetApiPageBase
 		$this->response['scoring_id'] = (int)$scoring;
 		
 		$condition = new SQL();
-		$scope_condition = new SQL(' AND (u.flags & ' . U_FLAG_BANNED . ') = 0 AND u.games > 0');
+		$scope_condition = new SQL(' AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND u.games > 0');
 		$this->response['role']	= $role;
 		
 		$scope_condition->add(get_roles_condition($role));
@@ -278,14 +278,14 @@ class ApiPage extends GetApiPageBase
 				$dst_score->club_id = $score->club_id;
 				$dst_score->num = (int)$number + 1;
 				
-				if (($score->flags & U_FLAG_MALE) != 0)
+				if (($score->flags & USER_FLAG_MALE) != 0)
 				{
 					$dst_score->male = true;
 				}
-				if (($score->flags & U_ICON_MASK) != 0)
+				if (($score->flags & USER_ICON_MASK) != 0)
 				{
-					$dst_score->image = USER_PICS_DIR . TNAILS_DIR . $score->id . '.png?' . (($score->flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
-					$dst_score->icon = USER_PICS_DIR . ICONS_DIR . $score->id . '.png?' . (($score->flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
+					$dst_score->image = USER_PICS_DIR . TNAILS_DIR . $score->id . '.png?' . (($score->flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET);
+					$dst_score->icon = USER_PICS_DIR . ICONS_DIR . $score->id . '.png?' . (($score->flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET);
 				}
 				$dst_scores[] = $dst_score;
 			}

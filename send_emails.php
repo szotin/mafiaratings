@@ -100,7 +100,7 @@ try
 				' AND u.email <> \'\'' .
 				' AND uc.user_id = u.id' .
 				' AND uc.club_id = ?' .
-				' AND (uc.flags & ' . (UC_PERM_PLAYER | UC_FLAG_BANNED | UC_FLAG_SUBSCRIBED) . ') = ' . (UC_PERM_PLAYER | UC_FLAG_SUBSCRIBED) .
+				' AND (uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_BANNED | USER_CLUB_FLAG_SUBSCRIBED) . ') = ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED) .
 				' AND u.id NOT IN (SELECT user_id FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT . ' AND obj_id = ?)',
 				$event_langs, $club_id, $email_id);
 		
@@ -286,7 +286,7 @@ try
 			
 			if ($unknown_players != '')
 			{
-				$query1 = new DbQuery('SELECT u.id, u.name, u.def_lang, u.email FROM user_clubs c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . UC_PERM_MANAGER . ') <> 0 AND c.club_id = ?', $c_id);
+				$query1 = new DbQuery('SELECT u.id, u.name, u.def_lang, u.email FROM user_clubs c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0 AND c.club_id = ?', $c_id);
 				while ($row1 = $query1->next())
 				{
 					list ($u_id, $u_name, $u_lang, $u_email) = $row1;

@@ -138,6 +138,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Log'), UC_PERM_MANAGER);
+$page->run(get_label('Log'), USER_CLUB_PERM_MANAGER);
 
 ?>

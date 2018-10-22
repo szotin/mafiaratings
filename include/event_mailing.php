@@ -9,7 +9,7 @@ function create_event_mailing($events, $body, $subj, $send_time, $lang, $flags)
 	foreach ($events as $id)
 	{
 		list ($start_time, $club_id) = Db::record(get_label('event'), 'SELECT start_time, club_id FROM events WHERE id = ?', $id);
-		if ($_profile == NULL || !$_profile->is_manager($club_id))
+		if ($_profile == NULL || !$_profile->is_club_manager($club_id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}

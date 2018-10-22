@@ -22,7 +22,7 @@ class Page extends ClubPageBase
 				if ($row = $query->next())
 				{
 					$club_id = $row[0];
-					if ($_profile == NULL || !$_profile->is_manager($club_id))
+					if ($_profile == NULL || !$_profile->is_club_manager($club_id))
 					{
 						throw new FatalExc(get_label('No permissions'));
 					}
@@ -84,6 +84,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Emails'), UC_PERM_MANAGER);
+$page->run(get_label('Emails'), USER_CLUB_PERM_MANAGER);
 
 ?>

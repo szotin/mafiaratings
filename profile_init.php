@@ -41,14 +41,14 @@ try
 	
 	echo '<tr><td width="120" valign="top">' . get_label('Gender') . ':</td><td>';
 	echo '<input type="radio" name="form-is_male" id="form-male" value="1" onClick="maleClick(true)"';
-	if ($_profile->user_flags & U_FLAG_MALE)
+	if ($_profile->user_flags & USER_FLAG_MALE)
 	{
 		echo ' checked';
 	}
 	echo '/>'.get_label('male').'<br>';
 		
 	echo '<input type="radio" name="form-is_male" id="form-female" value="0" onClick="maleClick(false)"';
-	if (($_profile->user_flags & U_FLAG_MALE) == 0)
+	if (($_profile->user_flags & USER_FLAG_MALE) == 0)
 	{
 		echo ' checked';
 	}

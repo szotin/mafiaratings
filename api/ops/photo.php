@@ -34,7 +34,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
 		
-			if ($user_id == $_profile->user_id || ($user_flags & U_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
 			{
 				continue;
 			}
@@ -71,7 +71,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function ban_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 }
 

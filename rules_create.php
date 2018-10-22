@@ -14,7 +14,7 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('club')));
 	}
 	$club = $_profile->clubs[$_REQUEST['club']];
-	if ($_profile == NULL || !$_profile->is_manager($club->id))
+	if ($_profile == NULL || !$_profile->is_club_manager($club->id))
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}

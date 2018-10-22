@@ -72,6 +72,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		$this->check_permissions();
 		$name = trim(get_required_param('name'));
 		$this->check_name($name);
 
@@ -145,7 +146,7 @@ class ApiPage extends OpsApiPageBase
 			db_log('club_request', 'Created', $log_details, $request_id);
 			
 			// send request to admin
-			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
+			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
 			while ($row = $query->next())
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
@@ -186,7 +187,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_permissions()
 	{
-		return API_PERM_FLAG_USER;
+		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -279,7 +280,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -330,11 +331,11 @@ class ApiPage extends OpsApiPageBase
 			"<br>city=" . $city_name . ' (' . $city_id . ')';
 		db_log('club', 'Created', $log_details, $club_id, $club_id);
 
-		if (($user_flags & U_PERM_ADMIN) == 0)
+		if (($user_flags & USER_PERM_ADMIN) == 0)
 		{
 			Db::exec(
 				get_label('user'), 
-				'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . (UC_NEW_PLAYER_FLAGS | UC_PERM_MODER | UC_PERM_MANAGER) . ')',
+				'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ')',
 				$user_id, $club_id);
 			db_log('user', 'Became a manager of the club', NULL, $user_id, $club_id);
 			
@@ -388,7 +389,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function accept_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -439,7 +440,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function decline_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -471,7 +472,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function retire_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -486,7 +487,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			// it is possible that the permission is missing because the club is retired
 			$query = new DbQuery(
-				'SELECT * FROM user_clubs WHERE user_id = ? AND club_id = ? AND (flags & ' . UC_PERM_MANAGER . ') <> 0',
+				'SELECT * FROM user_clubs WHERE user_id = ? AND club_id = ? AND (flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0',
 				$_profile->user_id, $club_id);
 			if (!$query->next())
 			{
@@ -517,7 +518,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 }
 

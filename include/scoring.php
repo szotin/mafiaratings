@@ -657,9 +657,9 @@ class ScoringSystem
 			{
 				$edit = $_profile->is_admin();
 			}
-			else if (!$_profile->is_manager($this->club_id))
+			else if (!$_profile->is_club_manager($this->club_id))
 			{
-				$edit = $_profile->is_manager($this->club_id);
+				$edit = $_profile->is_club_manager($this->club_id);
 			}
 		}
 		

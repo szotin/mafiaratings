@@ -38,7 +38,7 @@ class Page extends GeneralPageBase
 		
 		if (isset($_REQUEST['ban']))
 		{
-			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . U_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['ban']);
+			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . USER_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['ban']);
 			if (Db::affected_rows() > 0)
 			{
 				db_log('user', 'Banned', NULL, $_REQUEST['ban']);
@@ -47,7 +47,7 @@ class Page extends GeneralPageBase
 		}
 		else if (isset($_REQUEST['unban']))
 		{
-			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . U_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['unban']);
+			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . USER_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['unban']);
 			if (Db::affected_rows() > 0)
 			{
 				db_log('user', 'Unbanned', NULL, $_REQUEST['unban']);
@@ -73,7 +73,7 @@ class Page extends GeneralPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM user_clubs WHERE (flags & ' . UC_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
+				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM user_clubs WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
 				$sep = ' AND ';
 			}
 			break;
@@ -104,10 +104,11 @@ class Page extends GeneralPageBase
 		echo '<td colspan="3">' . get_label('User name') . '</td><td width="40"></td></tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, c.id, c.name, c.flags' . 
-			', SUM(IF((uc.flags & ' . (UC_PERM_PLAYER | UC_PERM_MODER | UC_PERM_MANAGER) . ') = ' . UC_PERM_PLAYER . ', 1, 0))' . 
-			', SUM(IF((uc.flags & ' . (UC_PERM_MODER | UC_PERM_MANAGER) . ') = ' . UC_PERM_MODER . ', 1, 0))' . 
-			', SUM(IF((uc.flags & ' . UC_PERM_MANAGER . ') <> 0, 1, 0))' . 
+			'SELECT u.id, u.name, u.flags, c.id,
+			c.name, c.flags' . 
+			', SUM(IF((uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ') = ' . USER_CLUB_PERM_PLAYER . ', 1, 0))' . 
+			', SUM(IF((uc.flags & ' . (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ') = ' . USER_CLUB_PERM_MODER . ', 1, 0))' . 
+			', SUM(IF((uc.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0, 1, 0))' . 
 			' FROM users u' .
 			' LEFT OUTER JOIN user_clubs uc ON uc.user_id = u.id' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id', $condition);
@@ -127,7 +128,7 @@ class Page extends GeneralPageBase
 
 			echo '<td class="dark">';
 			$ref = '<a href ="?page=' . $_page . '&ccc=' . $this->ccc_filter->get_code();
-			if ($flags & U_FLAG_BANNED)
+			if ($flags & USER_FLAG_BANNED)
 			{
 				echo '<button class="icon" onclick="mr.unbanUser(' . $id . ')" title="' . get_label('Unban [0]', $name) . '"><img src="images/undelete.png" border="0"></button>';
 			}
@@ -150,7 +151,7 @@ class Page extends GeneralPageBase
 			$image_title = '';
 			// echo $clubs_manager . ':' . $clubs_moder . ':' . $clubs_player;
 			echo '<img width="32" height="32" src="images/';
-			if ($flags & U_PERM_ADMIN)
+			if ($flags & USER_PERM_ADMIN)
 			{
 				echo 'admin.png';
 				$image_title = get_label('Admin');
@@ -257,6 +258,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0] users', PRODUCT_NAME), U_PERM_ADMIN);
+$page->run(get_label('[0] users', PRODUCT_NAME), PERMISSION_ADMIN);
 
 ?>

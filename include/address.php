@@ -173,7 +173,7 @@ function show_address_buttons($id, $name, $flags, $club_id)
 	global $_profile;
 
 	$no_buttons = true;
-	if ($id > 0 && $_profile != NULL && $_profile->is_manager($club_id))
+	if ($id > 0 && $_profile != NULL && $_profile->is_club_manager($club_id))
 	{
 		if (($flags & ADDR_FLAG_NOT_USED) != 0)
 		{
@@ -268,7 +268,7 @@ class AddressPageBase extends PageBase
 				' JOIN countries cr ON cr.id = ct.country_id' .
 				' WHERE a.id = ?', $this->id);
 				
-		$this->is_manager = ($_profile != NULL && $_profile->is_manager($this->club_id));
+		$this->is_manager = ($_profile != NULL && $_profile->is_club_manager($this->club_id));
 	}
 
 	protected function show_title()

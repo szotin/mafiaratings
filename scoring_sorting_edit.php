@@ -75,7 +75,7 @@ try
 			throw new FatalExc(get_label('No permissions'));
 		}
 	}
-	else if (!$_profile->is_manager($club_id))
+	else if (!$_profile->is_club_manager($club_id))
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}

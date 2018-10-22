@@ -26,7 +26,7 @@ try
 				' LEFT OUTER JOIN clubs c ON c.id = l.club_id WHERE l.id = ?',
 			$id);
 
-	if (!$_profile->is_admin() && ($club_id == NULL || !$_profile->is_manager($club_id)))
+	if (!$_profile->is_admin() && ($club_id == NULL || !$_profile->is_club_manager($club_id)))
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}

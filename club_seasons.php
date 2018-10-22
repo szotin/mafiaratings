@@ -43,6 +43,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Seasons'), UC_PERM_MANAGER);
+$page->run(get_label('Seasons'), USER_CLUB_PERM_MANAGER);
 
 ?>

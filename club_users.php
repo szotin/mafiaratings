@@ -44,7 +44,7 @@ class Page extends ClubPageBase
 		
 		if (isset($_REQUEST['ban']))
 		{
-			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . UC_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['ban'], $this->id);
+			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['ban'], $this->id);
 			if (Db::affected_rows() > 0)
 			{
 				db_log('user', 'Banned', NULL, $_REQUEST['ban'], $this->id);
@@ -52,7 +52,7 @@ class Page extends ClubPageBase
 		}
 		else if (isset($_REQUEST['unban']))
 		{
-			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . UC_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['unban'], $this->id);
+			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['unban'], $this->id);
 			if (Db::affected_rows() > 0)
 			{
 				db_log('user', 'Unbanned', NULL, $_REQUEST['unban'], $this->id);
@@ -79,7 +79,7 @@ class Page extends ClubPageBase
 		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific user is located.'));
 		echo '</td></tr></table></form>';
 		
-		$can_edit = $_profile->is_manager($this->id);
+		$can_edit = $_profile->is_club_manager($this->id);
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users u, user_clubs uc WHERE ', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -99,7 +99,7 @@ class Page extends ClubPageBase
 			$this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $flags, $uc_flags, $club_id, $club_name, $club_flags) = $row;
+			list($id, $name, $flags, $user_club_flags, $club_id, $club_name, $club_flags) = $row;
 		
 			if ($id == $this->user_id)
 			{
@@ -113,7 +113,7 @@ class Page extends ClubPageBase
 			if ($can_edit)
 			{
 				// $ref = '<a href ="?id=' . $this->id . '&page=' . $_page;
-				// if ($uc_flags & UC_FLAG_BANNED)
+				// if ($user_club_flags & USER_CLUB_FLAG_BANNED)
 				// {
 					// echo $ref . '&unban=' . $id . '" title="' .get_label('Unban [0]', $name) . '"><img src="images/undelete.png" border="0"></a>';
 				// }
@@ -122,7 +122,7 @@ class Page extends ClubPageBase
 					// echo $ref . '&ban=' . $id . '" title="' .get_label('Ban [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
 					// echo ' <a href ="edit_user.php?id=' . $id . '&club=' . $this->id . '&bck=1" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
 				// }
-				if ($uc_flags & UC_FLAG_BANNED)
+				if ($user_club_flags & USER_CLUB_FLAG_BANNED)
 				{
 					echo '<button class="icon" onclick="mr.unbanUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Unban [0]', $name) . '"><img src="images/undelete.png" border="0"></button>';
 				}
@@ -147,7 +147,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			if ($uc_flags & UC_FLAG_SUBSCRIBED)
+			if ($user_club_flags & USER_CLUB_FLAG_SUBSCRIBED)
 			{	
 				echo '<img src="images/email.png" width="24" title="' . get_label('Subscribed') . '">';
 			}
@@ -155,7 +155,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="24">';
 			}
-			if ($uc_flags & UC_PERM_PLAYER)
+			if ($user_club_flags & USER_CLUB_PERM_PLAYER)
 			{
 				echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
 			}
@@ -163,7 +163,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($uc_flags & UC_PERM_MODER)
+			if ($user_club_flags & USER_CLUB_PERM_MODER)
 			{
 				echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
 			}
@@ -171,7 +171,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($uc_flags & UC_PERM_MANAGER)
+			if ($user_club_flags & USER_CLUB_PERM_MANAGER)
 			{
 				echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
 			}
@@ -186,6 +186,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Members'), UC_PERM_MODER | UC_PERM_MANAGER);
+$page->run(get_label('Members'), USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER);
 
 ?>

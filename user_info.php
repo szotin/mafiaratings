@@ -14,21 +14,21 @@ function show_permissions($user_flags)
 	$sep = '';
 	$title = '';
 	$image = NULL;
-	if (($user_flags & UC_PERM_PLAYER) != 0)
+	if (($user_flags & USER_CLUB_PERM_PLAYER) != 0)
 	{
 		$title .= $sep . get_label('player');
 		$sep = '; ';
 		$image = 'player.png';
 	}
 	
-	if (($user_flags & UC_PERM_MODER) != 0)
+	if (($user_flags & USER_CLUB_PERM_MODER) != 0)
 	{
 		$title .= $sep . get_label('moderator');
 		$sep = '; ';
 		$image = 'moderator.png';
 	}
 	
-	if (($user_flags & UC_PERM_MANAGER) != 0)
+	if (($user_flags & USER_CLUB_PERM_MANAGER) != 0)
 	{
 		$title .= $sep . get_label('manager');
 		$sep = '; ';
@@ -74,7 +74,7 @@ class Page extends UserPageBase
 		echo '<tr><td width="150" class="dark">'.get_label('Languages').':</td><td>' . get_langs_str($this->langs, ', ') . '</td><tr>';
 		echo '<tr><td class="dark">'.get_label('Registered since').':</td><td>' . format_date('F d, Y', $this->reg_date, $timezone) . '</td></tr>';
 		
-        if (($this->flags & U_FLAG_MALE) != 0)
+        if (($this->flags & USER_FLAG_MALE) != 0)
         {
             echo '<tr><td class="dark">'.get_label('Gender').':</td><td>'.get_label('male').'</td></tr>';
         }
@@ -82,7 +82,7 @@ class Page extends UserPageBase
         {
             echo '<tr><td class="dark">'.get_label('Gender').':</td><td>'.get_label('female').'</td></tr>';
         }
-        if (($this->flags & U_FLAG_BANNED) != 0)
+        if (($this->flags & USER_FLAG_BANNED) != 0)
         {
             echo '<tr><td class="dark">'.get_label('Banned').':</td><td>'.get_label('yes').'</td></tr>';
         }

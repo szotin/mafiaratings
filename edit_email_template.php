@@ -36,7 +36,7 @@ class Page extends PageBase
 		list($this->name, $this->subj, $this->body, $this->club_id, $this->default_for) = 
 			Db::record(get_label('email template'), 'SELECT name, subject, body, club_id, default_for FROM email_templates WHERE id = ?', $this->id);
 			
-		if ($_profile == NULL || !$_profile->is_manager($this->club_id))
+		if ($_profile == NULL || !$_profile->is_club_manager($this->club_id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
@@ -118,6 +118,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Edit email template'), UC_PERM_MANAGER);
+$page->run(get_label('Edit email template'), USER_CLUB_PERM_MANAGER);
 
 ?>

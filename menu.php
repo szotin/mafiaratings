@@ -14,45 +14,10 @@ class Page extends PageBase
 
 	protected function show_body()
 	{
-		global $_profile, $_session_state, $_lang_code, $_agent;
-		
-		$permissions = PERM_STRANGER;
-		if ($_session_state == SESSION_OK)
-		{
-			$permissions = PERM_USER | ($_profile->user_flags & U_PERM_MASK) | ($_profile->user_club_flags & UC_PERM_MASK);
-		}
+		global $_profile, $_lang_code, $_agent;
 		
 		echo '<table class="bordered" width="100%">';
-		if (($permissions & PERM_STRANGER) != 0)
-		{
-			// General
-			echo '<tr><th class="menu dark" colspan="2">' . get_label('General') . '</th></tr>';
-			echo '<tr><td colspan="2"><table class="transp" width="100%"><tr>';
-			
-			echo '<td width="17%" align="center"><a href="index.php?bck=0">' . get_label('Home');
-			echo '<br><img src="images/blank.png" border="0"></a></td>';
-			
-			echo '<td width="17%" align="center"><a href="calendar.php?bck=0" title="' . get_label('Where and when can I play') . '">' . get_label('Calendar');
-			echo '<br><img src="images/calendar_big.png" border="0"></a></td>';
-			
-			echo '<td width="17%" align="center"><a href="ratings.php?bck=0" title="' . get_label('Players ratings') . '">' . get_label('Ratings');
-			echo '<br><img src="images/ratings_big.png" border="0"></a></td>';
-			
-			echo '<td width="17%" align="center"><a href="clubs.php?bck=0" title="' . get_label('Clubs list') . '">' . get_label('Clubs');
-			echo '<br><img src="images/clubs_big.png" border="0"></a></td>';
-			
-			echo '<td width="16%" align="center"><a href="photo_albums.php?bck=0" title="' . get_label('Photo albums') . '">' . get_label('Photo albums');
-			echo '<br><img src="images/album_big.png" border="0"></a></td>';
-			
-			echo '<td width="17%" align="center"><a href="events.php?bck=0" title="' . get_label('Events history') . '">' . get_label('History');
-			echo '<br><img src="images/history_big.png" border="0"></a></td>';
-			
-//			echo '<td width="16%" align="center"><a href="welcome.php?bck=0" title="' . get_label('About Mafia: rules, tactics, general information.') . '">' . get_label('About');
-//			echo '<br><img src="images/about_big.png" border="0"></a></td>';
-			
-			echo '</tr></table></td></tr>';
-		}
-		else
+		if ($_profile != NULL)
 		{
 			// User preferences and Game
 			if (count($_profile->clubs) > 0)
@@ -118,7 +83,35 @@ class Page extends PageBase
 			
 			echo '</tr></table></td></tr>';
 		}
-
+		else
+		{
+			// General
+			echo '<tr><th class="menu dark" colspan="2">' . get_label('General') . '</th></tr>';
+			echo '<tr><td colspan="2"><table class="transp" width="100%"><tr>';
+			
+			echo '<td width="17%" align="center"><a href="index.php?bck=0">' . get_label('Home');
+			echo '<br><img src="images/blank.png" border="0"></a></td>';
+			
+			echo '<td width="17%" align="center"><a href="calendar.php?bck=0" title="' . get_label('Where and when can I play') . '">' . get_label('Calendar');
+			echo '<br><img src="images/calendar_big.png" border="0"></a></td>';
+			
+			echo '<td width="17%" align="center"><a href="ratings.php?bck=0" title="' . get_label('Players ratings') . '">' . get_label('Ratings');
+			echo '<br><img src="images/ratings_big.png" border="0"></a></td>';
+			
+			echo '<td width="17%" align="center"><a href="clubs.php?bck=0" title="' . get_label('Clubs list') . '">' . get_label('Clubs');
+			echo '<br><img src="images/clubs_big.png" border="0"></a></td>';
+			
+			echo '<td width="16%" align="center"><a href="photo_albums.php?bck=0" title="' . get_label('Photo albums') . '">' . get_label('Photo albums');
+			echo '<br><img src="images/album_big.png" border="0"></a></td>';
+			
+			echo '<td width="17%" align="center"><a href="events.php?bck=0" title="' . get_label('Events history') . '">' . get_label('History');
+			echo '<br><img src="images/history_big.png" border="0"></a></td>';
+			
+//			echo '<td width="16%" align="center"><a href="welcome.php?bck=0" title="' . get_label('About Mafia: rules, tactics, general information.') . '">' . get_label('About');
+//			echo '<br><img src="images/about_big.png" border="0"></a></td>';
+			
+			echo '</tr></table></td></tr>';
+		}
 		echo '</table>';
 	}
 	

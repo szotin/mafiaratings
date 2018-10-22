@@ -103,7 +103,7 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 		$can_manage = false;
 		if (($flags & CLUB_FLAG_RETIRED) != 0)
 		{
-			if ($_profile->is_admin() || ($memb_flags != NULL && ($memb_flags & UC_PERM_MANAGER) != 0))
+			if ($_profile->is_admin() || ($memb_flags != NULL && ($memb_flags & USER_CLUB_PERM_MANAGER) != 0))
 			{
 				echo '<button class="icon" onclick="mr.restoreClub(' . $id . ')" title="' . get_label('Restore [0]', $name) . '"><img src="images/undelete.png" border="0"></button>';
 				$no_buttons = false;
@@ -115,18 +115,18 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 			if ($memb_flags != NULL)
 			{
 				$quit_params = $id;
-				if ($memb_flags & UC_PERM_MANAGER)
+				if ($memb_flags & USER_CLUB_PERM_MANAGER)
 				{
 					$quit_params .= ', \'' . get_label('You are a manager of this club. You loose your status once you leave it. Are you sure you want to quit?') . '\'';
 				}
-				else if ($memb_flags & UC_PERM_MODER)
+				else if ($memb_flags & USER_CLUB_PERM_MODER)
 				{
 					$quit_params .= ', \'' . get_label('You are a moderator of this club. You loose your status once you leave it. Are you sure you want to quit?') . '\'';
 				}
 			
 				echo '<button class="icon" onclick="mr.quitClub(' . $quit_params . ')" title="' . get_label('Quit [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
 				$no_buttons = false;
-				if ($memb_flags & UC_PERM_MANAGER)
+				if ($memb_flags & USER_CLUB_PERM_MANAGER)
 				{
 					$can_manage = true;
 				}
@@ -144,7 +144,7 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 				$no_buttons = false;
 			}
 			
-			if ($_profile->is_admin() || ($memb_flags & UC_PERM_MODER) != 0)
+			if ($_profile->is_admin() || ($memb_flags & USER_CLUB_PERM_MODER) != 0)
 			{
 				echo '<button class="icon" onclick="mr.playClub(' . $id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
 				$no_buttons = false;
@@ -192,8 +192,8 @@ class ClubPageBase extends PageBase
 		if ($_profile != NULL)
 		{
 			$user_id = $_profile->user_id;
-			$this->is_manager = $_profile->is_manager($this->id);
-			$this->is_moder = $_profile->is_moder($this->id);
+			$this->is_manager = $_profile->is_club_manager($this->id);
+			$this->is_moder = $_profile->is_club_moder($this->id);
 		}
 		
 		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags, $this->scoring_id, $this->timezone) = 

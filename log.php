@@ -183,7 +183,7 @@ class Page extends GeneralPageBase
 
 $page = new Page();
 $page->set_ccc(CCCS_ALL);
-$page->run(get_label('Log'), U_PERM_ADMIN);
+$page->run(get_label('Log'), PERMISSION_ADMIN);
 
 ?>
 

@@ -34,7 +34,7 @@ try
 	{
 	case ADDR_PIC_CODE:
 		list ($club_id, $flags) = Db::record(get_label('address'), 'SELECT club_id, flags FROM addresses WHERE id = ?', $id);
-		if (!$_profile->is_manager($club_id))
+		if (!$_profile->is_club_manager($club_id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
@@ -58,18 +58,18 @@ try
 		
 	case USER_PIC_CODE:
 		list ($club_id, $flags) = Db::record(get_label('user'), 'SELECT club_id, flags FROM users WHERE id = ?', $id);
-		if ($_profile->user_id != $id && !$_profile->is_manager($club_id))
+		if ($_profile->user_id != $id && !$_profile->is_club_manager($club_id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
 	
 		upload_pic('Filedata', USER_PICS_DIR, $id);
-		$icon_version = (($flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET) + 1;
-		if ($icon_version > U_ICON_MAX_VERSION)
+		$icon_version = (($flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET) + 1;
+		if ($icon_version > USER_ICON_MAX_VERSION)
 		{
 			$icon_version = 1;
 		}
-		$flags = ($flags & ~U_ICON_MASK) + ($icon_version << U_ICON_MASK_OFFSET);
+		$flags = ($flags & ~USER_ICON_MASK) + ($icon_version << USER_ICON_MASK_OFFSET);
 		Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $id);
 		if ($_profile->user_id == $id)
 		{
@@ -82,7 +82,7 @@ try
 		break;
 	
 	case CLUB_PIC_CODE:
-		if (!$_profile->is_manager($id))
+		if (!$_profile->is_club_manager($id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
@@ -106,7 +106,7 @@ try
 	
 	case ALBUM_PIC_CODE:
 		list ($owner_id, $club_id, $flags) = Db::record(get_label('photo album'),'SELECT user_id, club_id, flags FROM photo_albums WHERE id = ?', $id);
-		if ($owner_id != $_profile->user_id && !$_profile->is_manager($club_id))
+		if ($owner_id != $_profile->user_id && !$_profile->is_club_manager($club_id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
@@ -129,7 +129,7 @@ try
 		
 	case EVENT_PIC_CODE:
 		list ($club_id, $flags) = Db::record(get_label('event'), 'SELECT club_id, flags FROM events WHERE id = ?', $id);
-		if (!$_profile->is_manager($club_id))
+		if (!$_profile->is_club_manager($club_id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}

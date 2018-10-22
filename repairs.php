@@ -182,7 +182,7 @@ class Page extends GeneralPageBase
 
 $page = new Page();
 $page->set_ccc(CCCS_NO);
-$page->run('Repairs', U_PERM_ADMIN);
+$page->run('Repairs', PERMISSION_ADMIN);
 
 ?>
 

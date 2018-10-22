@@ -207,6 +207,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Attend event'), PERM_USER);
+$page->run(get_label('Attend event'), PERMISSION_USER);
 
 ?>

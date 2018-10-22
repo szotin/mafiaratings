@@ -17,7 +17,7 @@ class Page extends PageBase
 	private $name;
 	private $flags;
 	private $langs;
-	private $uc_flags;
+	private $user_club_flags;
 
 	function permissions()
 	{
@@ -25,16 +25,16 @@ class Page extends PageBase
 		
 		if (!$_profile->is_admin())
 		{
-			if ($this->club_id <= 0 || ($this->flags & U_PERM_ADMIN) != 0)
+			if ($this->club_id <= 0 || ($this->flags & USER_PERM_ADMIN) != 0)
 			{
 				throw new FatalExc(get_label('No permissions'));
 			}
 			
-			if (!$_profile->is_manager($this->club_id))
+			if (!$_profile->is_club_manager($this->club_id))
 			{
 				if (
-					!$_profile->is_moder($this->club_id) ||
-					($this->uc_flags & (UC_PERM_MANAGER | UC_PERM_MODER)) != 0)
+					!$_profile->is_club_moder($this->club_id) ||
+					($this->user_club_flags & (USER_CLUB_PERM_MANAGER | USER_CLUB_PERM_MODER)) != 0)
 				{
 					throw new FatalExc(get_label('No permissions'));
 				}
@@ -68,19 +68,19 @@ class Page extends PageBase
 		{
 			$this->role = ADMIN;
 		}
-		else if ($_profile->is_manager($this->club_id))
+		else if ($_profile->is_club_manager($this->club_id))
 		{
 			$this->role = MANAGER;
 		}
 	
 		if ($this->club_id > 0)
 		{
-			list($this->name, $this->flags, $this->langs, $this->uc_flags) =
+			list($this->name, $this->flags, $this->langs, $this->user_club_flags) =
 				Db::record(get_label('user'), 'SELECT u.name, u.flags, u.languages, uc.flags FROM users u JOIN user_clubs uc ON u.id = uc.user_id WHERE uc.club_id = ? AND uc.user_id = ?', $this->club_id, $this->id);
 		}
 		else
 		{
-			$this->uc_flags = 0;
+			$this->user_club_flags = 0;
 			list($this->name, $this->flags, $this->langs) =
 				Db::record(get_label('user'), 'SELECT u.name, u.flags, u.languages FROM users u WHERE u.id = ?', $this->id);
 		}
@@ -93,39 +93,39 @@ class Page extends PageBase
 			case ADMIN:
 				if (isset($_POST['admin']))
 				{
-					$this->flags |= U_PERM_ADMIN;
+					$this->flags |= USER_PERM_ADMIN;
 				}
 				else
 				{
-					$this->flags &= ~U_PERM_ADMIN;
+					$this->flags &= ~USER_PERM_ADMIN;
 				}
 				
 			case MANAGER:
 				if (isset($_POST['player']))
 				{
-					$this->uc_flags |= UC_PERM_PLAYER;
+					$this->user_club_flags |= USER_CLUB_PERM_PLAYER;
 				}
 				else
 				{
-					$this->uc_flags &= ~UC_PERM_PLAYER;
+					$this->user_club_flags &= ~USER_CLUB_PERM_PLAYER;
 				}
 			
 				if (isset($_POST['moder']))
 				{
-					$this->uc_flags |= UC_PERM_MODER;
+					$this->user_club_flags |= USER_CLUB_PERM_MODER;
 				}
 				else
 				{
-					$this->uc_flags &= ~UC_PERM_MODER;
+					$this->user_club_flags &= ~USER_CLUB_PERM_MODER;
 				}
 				
 				if (isset($_POST['manager']))
 				{
-					$this->uc_flags |= UC_PERM_MANAGER;
+					$this->user_club_flags |= USER_CLUB_PERM_MANAGER;
 				}
 				else
 				{
-					$this->uc_flags &= ~UC_PERM_MANAGER;
+					$this->user_club_flags &= ~USER_CLUB_PERM_MANAGER;
 				}
 				
 			default:
@@ -133,20 +133,20 @@ class Page extends PageBase
 
 				if ($_POST['male'])
 				{
-					$this->flags |= U_FLAG_MALE;
+					$this->flags |= USER_FLAG_MALE;
 				}
 				else
 				{
-					$this->flags &= ~U_FLAG_MALE;
+					$this->flags &= ~USER_FLAG_MALE;
 				}
 
 				if (isset($_POST['banned']))
 				{
-					$this->flags |= U_FLAG_BANNED;
+					$this->flags |= USER_FLAG_BANNED;
 				}
 				else
 				{
-					$this->flags &= ~U_FLAG_BANNED;
+					$this->flags &= ~USER_FLAG_BANNED;
 				}
 				break;
 			}
@@ -166,10 +166,10 @@ class Page extends PageBase
 				Db::exec(
 					get_label('user'),
 					'UPDATE user_clubs SET flags = ? WHERE user_id = ? AND club_id = ?',
-					$this->uc_flags, $this->id, $this->club_id);
+					$this->user_club_flags, $this->id, $this->club_id);
 				if (Db::affected_rows() > 0)
 				{
-					$log_details = 'club-flags=' . $this->uc_flags;
+					$log_details = 'club-flags=' . $this->user_club_flags;
 					db_log('user', 'Club flags changed', $log_details, $this->id, $this->club_id);
 				}
 			}
@@ -181,8 +181,7 @@ class Page extends PageBase
 				$_profile->user_langs = $this->langs;
 				if ($this->club_id > 0)
 				{
-					$_profile->clubs[$this->club_id]->flags = $this->uc_flags;
-					$_profile->update_club_flags();
+					$_profile->clubs[$this->club_id]->flags = $this->user_club_flags;
 				}
 			}
 			redirect_back();
@@ -216,18 +215,18 @@ class Page extends PageBase
 			echo '<tr><td valign="top" class="dark">' . get_label('Permissions') . ':</td><td class="light">';
 			if ($this->role == ADMIN)
 			{
-				echo '<input type="checkbox" name="admin" value="1"' . ((($this->flags & U_PERM_ADMIN) != 0) ? ' checked' : '') . '> '.get_label('Admin').'<br>';
+				echo '<input type="checkbox" name="admin" value="1"' . ((($this->flags & USER_PERM_ADMIN) != 0) ? ' checked' : '') . '> '.get_label('Admin').'<br>';
 			}
 			if ($this->club_id > 0)
 			{
-				echo '<input type="checkbox" name="manager" value="1"' . ((($this->uc_flags & UC_PERM_MANAGER) != 0) ? ' checked' : '') . '> '.get_label('Manager').'<br>';
-				echo '<input type="checkbox" name="moder" value="1"' . ((($this->uc_flags & UC_PERM_MODER) != 0) ? ' checked' : '') . '> '.get_label('Moderator').'<br>';
-				echo '<input type="checkbox" name="player" value="1"' . ((($this->uc_flags & UC_PERM_PLAYER) != 0) ? ' checked' : '') . '> '.get_label('Player').'</td></tr>';
+				echo '<input type="checkbox" name="manager" value="1"' . ((($this->user_club_flags & USER_CLUB_PERM_MANAGER) != 0) ? ' checked' : '') . '> '.get_label('Manager').'<br>';
+				echo '<input type="checkbox" name="moder" value="1"' . ((($this->user_club_flags & USER_CLUB_PERM_MODER) != 0) ? ' checked' : '') . '> '.get_label('Moderator').'<br>';
+				echo '<input type="checkbox" name="player" value="1"' . ((($this->user_club_flags & USER_CLUB_PERM_PLAYER) != 0) ? ' checked' : '') . '> '.get_label('Player').'</td></tr>';
 			}
 		}
 		
 		echo '<tr><td class="dark" valign="top">' . get_label('Gender') . ':</td><td class="light">';
-		if ((($this->flags & U_FLAG_MALE) != 0))
+		if ((($this->flags & USER_FLAG_MALE) != 0))
 		{
 			echo '<input type="radio" name="male" value="1" checked/>'.get_label('male').'<br />';
 			echo '<input type="radio" name="male" value="0" />'.get_label('female');
@@ -241,7 +240,7 @@ class Page extends PageBase
 
 		if ($this->role == ADMIN)
 		{
-			echo '<tr><td class="dark">' . get_label('Ban') . ':</td><td class="light"><input type="checkbox" name="banned"' . ((($this->flags & U_FLAG_BANNED) != 0) ? ' checked' : '') . '>'.get_label('ban [0] from [1]', $this->name, PRODUCT_NAME).'</td></tr>';
+			echo '<tr><td class="dark">' . get_label('Ban') . ':</td><td class="light"><input type="checkbox" name="banned"' . ((($this->flags & USER_FLAG_BANNED) != 0) ? ' checked' : '') . '>'.get_label('ban [0] from [1]', $this->name, PRODUCT_NAME).'</td></tr>';
 		}
 		echo '</table>';
 		

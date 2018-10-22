@@ -56,6 +56,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Adverts'), UC_PERM_MANAGER);
+$page->run(get_label('Adverts'), USER_CLUB_PERM_MANAGER);
 
 ?>

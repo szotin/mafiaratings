@@ -73,6 +73,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Countries'), U_PERM_ADMIN);
+$page->run(get_label('Countries'), PERMISSION_ADMIN);
 
 ?>

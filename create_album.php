@@ -109,7 +109,7 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('New photo album'), PERM_USER);
+$page->run(get_label('New photo album'), PERMISSION_USER);
 
 ?>
 

@@ -115,7 +115,7 @@ class Page extends AlbumPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Edit photo album'), PERM_USER);
+$page->run(get_label('Edit photo album'), PERMISSION_USER);
 
 ?>
 
