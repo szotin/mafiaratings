@@ -35,25 +35,6 @@ class ApiPage extends OpsApiPageBase
 		}
 	}
 	
-	private function check_league_permissions($league_id)
-	{
-		global $_profile;
-		if ($_profile != NULL)
-		{
-			if ($_profile->is_admin())
-			{
-				return;
-			}
-			
-			list ($count) = Db::record(get_label('league'), 'SELECT count(*) FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $_profile->user_id);
-			if ($count == 1)
-			{
-				return;
-			}
-		}
-		throw new FatalExc(get_label('No permissions'));
-	}
-
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -61,7 +42,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		$this->check_permissions();
+		check_permissions(PERMISSION_USER);
 		$name = trim(get_required_param('name'));
 		$this->check_name($name);
 
@@ -147,18 +128,13 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create league. If user is admin, league is just created. If not, league request is created and email is sent to admin. Admin has to accept it.');
+		$help = new ApiHelp(PERMISSION_USER, 'Create league. If user is admin, league is just created. If not, league request is created and email is sent to admin. Admin has to accept it.');
 		$help->request_param('name', 'League name.');
 		$help->request_param('url', 'League web site URL.');
 		$help->request_param('langs', 'Languages used in the league. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'user profile languages are used.');
 		$help->request_param('email', 'League email.', 'user email is used.');
 		$help->request_param('phone', 'League phone. Just a text.', 'empty.');
 		return $help;
-	}
-	
-	function create_op_permissions()
-	{
-		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -169,7 +145,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$league_id = (int)get_required_param('league_id');
-		$this->check_league_permissions($league_id);
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
 		list($old_name, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id) = Db::record(get_label('league'),
@@ -217,7 +193,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change league record.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Change league record.');
 		$help->request_param('league_id', 'League id.');
 		$help->request_param('name', 'League name.', 'remains the same.');
 		$help->request_param('url', 'League web site URL.', 'remains the same.');
@@ -227,11 +203,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function change_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// accept
 	//-------------------------------------------------------------------------------------------------------
@@ -239,7 +210,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile, $_lang_code;
 		
-		$this->check_permissions();
+		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
 		
 		Db::begin();
@@ -325,16 +296,11 @@ class ApiPage extends OpsApiPageBase
 	
 	function accept_op_help()
 	{
-		$help = new ApiHelp('Accept league. Admin accepts league request created by a user. The user becomes the a manager of the league. An email is sent to the user notifying that the league is accepted.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Accept league. Admin accepts league request created by a user. The user becomes the a manager of the league. An email is sent to the user notifying that the league is accepted.');
 		$help->request_param('request_id', 'Id of the user request');
 		$help->request_param('name', 'Name of the league. If set, it is used as a new name for this league instead of the one used in request.', 'name from the request is used');
 		$help->response_param('league_id', 'League id.');
 		return $help;
-	}
-	
-	function accept_op_permissions()
-	{
-		return PERMISSION_ADMIN;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -344,7 +310,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		$this->check_permissions();
+		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
 		$reason = '';
 		if (isset($_REQUEST['reason']))
@@ -377,15 +343,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function decline_op_help()
 	{
-		$help = new ApiHelp('Decline league create request. An email is sent to the user notifying that the request is declined.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Decline league create request. An email is sent to the user notifying that the request is declined.');
 		$help->request_param('request_id', 'Id of the user request');
 		$help->request_param('reason', 'Text explaining why it is declined.', 'empty.');
 		return $help;
-	}
-	
-	function decline_op_permissions()
-	{
-		return PERMISSION_ADMIN;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -396,7 +357,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$league_id = (int)get_required_param('league_id');
-		$this->check_permissions($league_id);
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
 		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags | ' . LEAGUE_FLAG_RETIRED . ' WHERE id = ?', $league_id);
@@ -409,14 +370,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function retire_op_help()
 	{
-		$help = new ApiHelp('Close/retire the existing league.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Close/retire the existing league.');
 		$help->request_param('league_id', 'League id.');
 		return $help;
-	}
-	
-	function retire_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -427,21 +383,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$league_id = (int)get_required_param('league_id');
-		if (!$this->is_allowed($_REQUEST['op'], $league_id))
-		{
-			// it is possible that the permission is missing because the league is retired
-			$query = new DbQuery(
-				'SELECT * FROM user_leagues WHERE user_id = ? AND league_id = ? AND (flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0',
-				$_profile->user_id, $league_id);
-			if (!$query->next())
-			{
-				if ($_profile == NULL)
-				{
-					throw new LoginExc();
-				}
-				throw new FatalExc(get_label('No permissions'));
-			}
-		}
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
 		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags & ~' . LEAGUE_FLAG_RETIRED . ' WHERE id = ?', $league_id);
@@ -454,14 +396,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp('Reopen/restore closed/retired league.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Reopen/restore closed/retired league.');
 		$help->request_param('league_id', 'League id.');
 		return $help;
-	}
-	
-	function restore_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 }
 

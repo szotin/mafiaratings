@@ -219,7 +219,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('user', 'User id. This is a mandatory parameter. For example: <a href="player_stats.php?user=25"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php?user=25</a> returns stats for Fantomas.', '-');
 		$help->request_param('before', 'Unix timestamp for the end of a period. For example: <a href="player_stats.php?user=25&before=1483228800"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php?user=25&before=1483228800</a> returns Fantomas stats in the games played before 2017.', '-');
 		$help->request_param('after', 'Unix timestamp for the beginning of a period. For example: <a href="player_stats.php?user=25&after=1483228800"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php?user=25&after=1483228800</a> returns Fantomas stats in the games starting from January 1 2017; <a href="player_stats.php?user=25&after=1483228800&before=1485907200"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php?user=25&after=1483228800&before=1485907200</a> returns Fantomas stats in the games played in January 2017. (If the game ended in February but started in January it is still a January game).', '-');

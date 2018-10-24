@@ -14,7 +14,7 @@ class ApiPage extends OpsApiPageBase
 	function create_op()
 	{
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	
 		$note_name = trim(get_required_param('name'));
 		if (empty($note_name))
@@ -55,17 +55,12 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create new note.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create new note.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('name', 'Name of the note.');
 		$help->request_param('note', 'Note content text.');
 		$help->response_param('note_id', 'New note id.');
 		return $help;
-	}
-	
-	function create_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -82,7 +77,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list ($club_id) = Db::record(get_label('note'), 'SELECT club_id FROM club_info WHERE id = ?', $note_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::exec(get_label('note'), 'UPDATE club_info SET value = ? WHERE id = ? AND club_id = ?', $note, $note_id, $club_id);
 		if (Db::affected_rows() > 0)
@@ -95,15 +90,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change the existing note.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change the existing note.');
 		$help->request_param('note_id', 'Note id.');
 		$help->request_param('note', 'Note content text.');
 		return $help;
-	}
-	
-	function change_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -116,7 +106,7 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		
 		list ($club_id) = Db::record(get_label('note'), 'SELECT club_id FROM club_info WHERE id = ?', $note_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		list ($pos) = Db::record(get_label('note'), 'SELECT pos FROM club_info WHERE club_id = ? AND id = ?', $club_id, $note_id);
 		list ($note_id1, $pos1) = Db::record(get_label('note'), 'SELECT id, pos FROM club_info WHERE club_id = ? AND pos < ? ORDER BY pos DESC LIMIT 1', $club_id, $pos);
@@ -129,14 +119,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function up_op_help()
 	{
-		$help = new ApiHelp('Move the note up in the list of notes.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Move the note up in the list of notes.');
 		$help->request_param('note_id', 'Note id.');
 		return $help;
-	}
-	
-	function up_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -148,7 +133,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list ($club_id) = Db::record(get_label('note'), 'SELECT club_id FROM club_info WHERE id = ?', $note_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::exec(get_label('note'), 'DELETE FROM club_info WHERE club_id = ? AND id = ?', $club_id, $note_id);
 		if (Db::affected_rows() > 0)
@@ -160,14 +145,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete note.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete note.');
 		$help->request_param('note_id', 'Note id.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 }
 

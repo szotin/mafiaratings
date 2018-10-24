@@ -13,7 +13,7 @@ class ApiPage extends OpsApiPageBase
 	function create_op()
 	{
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		$name = trim($_REQUEST['name']);
 		$rules = new GameRules();
@@ -28,7 +28,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create game rules. This part will be reworked very soon. I don\'t want to waste time commenting deprecated code.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create game rules. This part will be reworked very soon. I don\'t want to waste time commenting deprecated code.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('name', 'Rules name. Should be unique in the club.');
 		$help->request_param('flags', '');
@@ -43,11 +43,6 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('rules_id', 'Newly created rules id.');
 		return $help;
 	}
-	
-	function create_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
-	}
 
 	//-------------------------------------------------------------------------------------------------------
 	// change
@@ -55,7 +50,7 @@ class ApiPage extends OpsApiPageBase
 	function change_op()
 	{
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		$rules_id = -1;
 		if (isset($_REQUEST['rules_id']))
@@ -79,7 +74,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change game rules. This part will be reworked very soon. I don\'t want to waste time commenting deprecated code.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change game rules. This part will be reworked very soon. I don\'t want to waste time commenting deprecated code.');
 		$help->request_param('club_id', 'Club id of the club that will be using these rules.');
 		$help->request_param('rules_id', 'Rules id.', 'default club rules are changed.');
 		$help->request_param('name', 'Rules name. Should be unique in the club.');
@@ -94,11 +89,6 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('spt_free', '');
 		return $help;
 	}
-	
-	function change_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
-	}
 
 	//-------------------------------------------------------------------------------------------------------
 	// delete
@@ -110,7 +100,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($rules_name) = Db::record(get_label('rules'), 'SELECT name FROM club_rules WHERE club_id = ? AND rules_id = ?', $club_id, $rules_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::exec(get_label('rules'), 'DELETE FROM club_rules WHERE club_id = ? AND rules_id = ?', $club_id, $rules_id);
 		Db::exec(get_label('event'), 'UPDATE events e, clubs c SET e.rules_id = c.rules_id WHERE e.club_id = c.id AND c.id = ? AND e.rules_id = ? AND e.start_time + e.duration > UNIX_TIMESTAMP()', $club_id, $rules_id);
@@ -121,14 +111,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete game rules.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete game rules.');
 		$help->request_param('rules_id', 'Rules id.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -136,6 +121,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function get_op()
 	{
+		check_permissions(PERMISSION_USER);
 		$rules_id = (int)get_required_param('rules_id');
 		
 		$rules = new GameRules();
@@ -155,14 +141,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function get_op_help()
 	{
-		$help = new ApiHelp('Get game rules. This part will be reworked very soon. I don\'t want to waste time commenting deprecated code.');
+		$help = new ApiHelp(PERMISSION_USER, 'Get game rules. This part will be reworked very soon. I don\'t want to waste time commenting deprecated code.');
 		$help->request_param('rules_id', 'Rules id.');
 		return $help;
-	}
-	
-	function get_op_permissions()
-	{
-		return PERMISSION_USER;
 	}
 }
 

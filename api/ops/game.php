@@ -844,7 +844,7 @@ class ApiPage extends OpsApiPageBase
 		
 		try
 		{
-			$this->check_permissions($club_id);
+			check_permissions(PERMISSION_CLUB_MODERATOR, $club_id);
 		}
 		catch (LoginExc $e)
 		{
@@ -894,7 +894,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function sync_op_help()
 	{
-		$help = new ApiHelp('Sychronize game client data with the server.');
+		$help = new ApiHelp(PERMISSION_CLUB_MODERATOR, 'Sychronize game client data with the server.');
 		$help->request_param('club_id', 'Club id.', 'default club is used, which is the main club of the logged user. If logged user does not have main club, then a random club where he/she has permissions is used.');
 		$help->request_param('game', 'Json string fully describing current game state. TODO!!! Explain it is a separate document.');
 		$help->request_param('data', 'Command queue with some additional actions.  TODO!!! Provide more details.
@@ -915,11 +915,6 @@ class ApiPage extends OpsApiPageBase
 						<dd></dd>
 				<dl>');
 		return $help;
-	}
-	
-	function sync_op_permissions()
-	{
-		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -992,7 +987,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function ulist_op_help()
 	{
-		$help = new ApiHelp('Get user list for the game client application. TODO!!! Move it to get-API.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Get user list for the game client application. TODO!!! Move it to get-API.');
 		$help->request_param('club_id', 'Club id. It is used to filter users when <q>name</q> is missing or empty. Not required.');
 		$help->request_param('num', 'Number of users to return.', 'all matching users are returned.');
 		$help->request_param('name', 'Name filter. Only the users with matching nicknames are returned.', 'all users are returned.');
@@ -1010,11 +1005,6 @@ class ApiPage extends OpsApiPageBase
 						<dd>Array of nicknames that were used by the user.</dd>
 				<dl>');
 		return $help;
-	}
-	
-	function ulist_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -1092,7 +1082,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, moderator_id FROM games WHERE id = ?', $game_id);
-		$this->check_permissions($club_id, $moderator_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		
 		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
@@ -1127,14 +1117,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete game.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete game.');
 		$help->request_param('game_id', 'Game id.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER | PERMISSION_OWNER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -1148,7 +1133,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id, $club_name, $log, $moderator_id) = Db::record(get_label('game'), 'SELECT c.id, c.name, g.log, g.moderator_id FROM games g JOIN clubs c ON c.id = g.club_id WHERE g.id = ?', $game_id);
-		$this->check_permissions($club_id, $moderator_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MODER) == 0)
 		{
 			throw new Exc(get_label('No permissions'));
@@ -1214,11 +1199,6 @@ class ApiPage extends OpsApiPageBase
 		// $this->show_help_response_params_head();
 	// }
 	
-	function change_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER | PERMISSION_OWNER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------
@@ -1226,6 +1206,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_USER);
 		$game_id = (int)get_required_param('id');
 		$comment = prepare_message(get_required_param('comment'));
 		$lang = detect_lang($comment);
@@ -1283,15 +1264,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function comment_op_help()
 	{
-		$help = new ApiHelp('Comment game.');
+		$help = new ApiHelp(PERMISSION_USER, 'Comment game.');
 		$help->request_param('id', 'Game id.');
 		$help->request_param('comment', 'Comment text.');
 		return $help;
-	}
-	
-	function ban_op_permissions()
-	{
-		return PERMISSION_USER;
 	}
 }
 

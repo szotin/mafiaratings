@@ -15,6 +15,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_USER);
 		$photo_id = (int)get_required_param('id');
 		$comment = prepare_message(get_required_param('comment'));
 		$lang = detect_lang($comment);
@@ -63,15 +64,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function comment_op_help()
 	{
-		$help = new ApiHelp('Comment photo.');
+		$help = new ApiHelp(PERMISSION_USER, 'Comment photo.');
 		$help->request_param('id', 'Photo id.');
 		$help->request_param('comment', 'Comment text.');
 		return $help;
-	}
-	
-	function ban_op_permissions()
-	{
-		return PERMISSION_USER;
 	}
 }
 

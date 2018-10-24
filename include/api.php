@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/api_help.php';
 
 class ApiPageBase
@@ -15,7 +16,7 @@ class ApiPageBase
 		initiate_session();
 	}
 	
-	protected function _run($title, $version, $permissions)
+	protected function _run($title, $version)
 	{
 		global $_profile;
 		
@@ -61,8 +62,6 @@ class ApiPageBase
 			ob_start();
 			try
 			{
-				check_permissions($permissions);
-				
 				// Admins should able to make requests during the maintanence. 
 				// Because they are the ones who is doing the maintanence.
 				if ($_profile == NULL || !$_profile->is_admin())
@@ -188,9 +187,9 @@ class GetApiPageBase extends ApiPageBase
 		}
 	}
 	
-	final function run($title, $version, $permissions = PERM_ALL)
+	final function run($title, $version)
 	{
-		$this->_run($title, $version, $permissions);
+		$this->_run($title, $version);
 	}
 	
 	protected function show_help_request_params_head()
@@ -205,122 +204,17 @@ class GetApiPageBase extends ApiPageBase
 
 class ControlApiPageBase extends ApiPageBase
 {
-	final function run($title, $version = -1, $permissions = PERMISSION_EVERYONE)
+	final function run($title, $version = -1)
 	{
-		$this->_run($title, $version, $permissions);
+		$this->_run($title, $version);
 	}
 }
 
 class OpsApiPageBase extends ApiPageBase
 {
-	final function run($title, $version, $permissions = PERMISSION_USER)
+	final function run($title, $version)
 	{
-		$this->_run($title, $version, $permissions);
-	}
-	
-	private function get_permissions($op)
-	{
-		$permission_func = $op . '_op_permissions';
-		if (method_exists($this, $permission_func))
-		{
-			return $this->$permission_func();
-		}
-		return PERMISSION_USER;
-	}
-	
-	protected function is_allowed($op, $club_id = 0, $owner_id = 0)
-	{
-		global $_profile;
-		$perm = $this->get_permissions($op);
-		if (($perm & PERMISSION_EVERYONE) != 0)
-		{
-			return true;
-		}
-		
-		if ($_profile == NULL)
-		{
-			return false;
-		}
-		
-		if ($_profile->is_admin())
-		{
-			return true;
-		}
-		
-		while ($perm)
-		{
-			$next_perm = ($perm & ($perm - 1));
-			switch ($perm - $next_perm)
-			{
-				case PERMISSION_USER:
-					return true;
-					
-				case PERMISSION_OWNER:
-					if ($owner_id == $_profile->user_id)
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_MEMBER:
-					if (isset($_profile->clubs[$club_id]))
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_REPRESENTATIVE:
-					if ($_profile->user_club_id == $club_id)
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_PLAYER:
-					if ($_profile->is_club_player($club_id))
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_MODERATOR:
-					if ($_profile->is_club_moder($club_id))
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_MANAGER:
-					if ($_profile->is_club_manager($club_id))
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_LEAGUE_MANAGER:
-					if ($_profile->is_league_manager($club_id))
-					{
-						return true;
-					}
-					break;
-			}
-			$perm = $next_perm;
-		}
-		return false;
-	}
-	
-	protected function check_permissions($club_id = 0, $owner_id = 0)
-	{
-		global $_profile;
-		
-		if (!$this->is_allowed($_REQUEST['op'], $club_id, $owner_id))
-		{
-			if ($_profile == NULL)
-			{
-				throw new LoginExc();
-			}
-			throw new FatalExc(get_label('No permissions'));
-		}
+		$this->_run($title, $version);
 	}
 	
 	protected function prepare_response()
@@ -397,7 +291,7 @@ class OpsApiPageBase extends ApiPageBase
 		echo '<p>' . $help->text . '</p>';
 		
 		echo '<p><strong>Required permissions:</strong> ';
-		$perm = $this->get_permissions($current_op);
+		$perm = $help->permissions;
 		$next_perm = ($perm & ($perm - 1));
 		if ($perm != $next_perm)
 		{

@@ -394,7 +394,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('contains', 'Search pattern. For example: <a href="ratings.php?contains=al">' . PRODUCT_URL . '/api/get/ratings.php?contains=al</a> returns players containing "al" in their name.', '-');
 		$help->request_param('starts', 'Search pattern. For example: <a href="ratings.php?starts=bo">' . PRODUCT_URL . '/api/get/ratings.php?starts=bo</a> returns players with names starting with "bo". Note that "Bad Boy" is also returned.', '-');
 		$help->request_param('club', 'Club id. For example: <a href="ratings.php?club=1">' . PRODUCT_URL . '/api/get/ratings.php?club=1</a> returns ratings for all players of Vancouver Mafia Club. If missing, all players for all clubs are returned.', '-');

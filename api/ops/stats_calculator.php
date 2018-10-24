@@ -41,6 +41,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_USER);
 		$name = get_required_param('name');
 		$description = get_optional_param('description');
 		$published = (int)get_optional_param('published', 0);
@@ -60,16 +61,11 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create javascript stats code.');
+		$help = new ApiHelp(PERMISSION_USER, 'Create javascript stats code.');
 		$help->request_param('name', 'Name of the stats.');
 		$help->request_param('description', 'Description.', 'empty');
 		$help->request_param('code', 'Javascript code for gathering stats. It should contain two functions:<br>proceedGame(game, num) - stats page calls this function once per game sending game object as it is described in /api/get/games.php?help<br>function complete() is called by stats page to output the results. It should return html with the calculated results.');
 		return $help;
-	}
-	
-	function create_op_permissions()
-	{
-		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -83,7 +79,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($name, $description, $code, $owner_id, $published) = Db::record(get_label('stats'), 'SELECT name, description, code, owner_id, published FROM stats_calculators WHERE id = ?', $id);
-		$this->check_permissions(0, $owner_id);
+		check_permissions(PERMISSION_OWNER, $owner_id);
 		
 		$name = get_optional_param('name', $name);
 		ApiPage::check_name($name, $id);
@@ -107,17 +103,12 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change javascript stats code.');
+		$help = new ApiHelp(PERMISSION_OWNER, 'Change javascript stats code.');
 		$help->request_param('id', 'Stats id.');
 		$help->request_param('name', 'Name of the stats.');
 		$help->request_param('description', 'Description.', 'empty');
 		$help->request_param('code', 'Javascript code for gathering stats. It should contain two functions:<br>proceedGame(game, num) - stats page calls this function once per game sending game object as it is described in /api/get/games.php?help<br>function complete() is called by stats page to output the results. It should return html with the calculated results.');
 		return $help;
-	}
-	
-	function change_op_permissions()
-	{
-		return PERMISSION_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -129,7 +120,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($owner_id, $name) = Db::record(get_label('stats'), 'SELECT owner_id, name FROM stats_calculators WHERE id = ?', $id);
-		$this->check_permissions(0, $owner_id);
+		check_permissions(PERMISSION_OWNER, $owner_id);
 		
 		Db::exec(
 			get_label('stats'), 
@@ -144,14 +135,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete javascript stats code.');
+		$help = new ApiHelp(PERMISSION_OWNER, 'Delete javascript stats code.');
 		$help->request_param('id', 'Stats id.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return PERMISSION_USER;
 	}
 }
 

@@ -16,7 +16,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
 		$event = new Event();
@@ -119,7 +119,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create event.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('name', 'Event name.');
 		$help->request_param('month', 'Month of the event.');
@@ -162,11 +162,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function create_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// change
 	//-------------------------------------------------------------------------------------------------------
@@ -174,7 +169,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
 		$event = new Event();
@@ -277,7 +272,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Create event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create event.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('name', 'Event name.');
 		$help->request_param('month', 'Month of the event.');
@@ -320,11 +315,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function change_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// extend
 	//-------------------------------------------------------------------------------------------------------
@@ -333,7 +323,7 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		$event = new Event();
 		$event->load($event_id);
-		$this->check_permissions($event->club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $event->club_id);
 		
 		if ($event->timestamp + $event->duration + EVENT_ALIVE_TIME < time())
 		{
@@ -353,61 +343,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function extend_op_help()
 	{
-		$help = new ApiHelp('Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('duration', 'New event duration. Send 0 if you want to end event now.');
 		return $help;
-	}
-	
-	function extend_op_permissions()
-	{
-		return PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER;
-	}
-
-	//-------------------------------------------------------------------------------------------------------
-	// set_round
-	//-------------------------------------------------------------------------------------------------------
-	function set_round_op()
-	{
-		$event_id = (int)get_required_param('event_id');
-		$event = new Event();
-		$event->load($event_id);
-		$this->check_permissions($event->club_id);
-		
-		$time = time();
-		if ($event->timestamp + $event->duration < $time)
-		{
-			throw new Exc(get_label('The event over. Please extend it first.'));
-		}
-		
-		$round = (int)get_required_param('round');
-		$finish_event = false;
-		if ($round < 0 || $round > count($event->rounds))
-		{
-			$round = count($event->rounds);
-		}
-		
-		Db::begin();
-		Db::exec(get_label('event'), 'UPDATE events SET round_num = ? WHERE id = ?', $round, $event->id);
-		if (Db::affected_rows() > 0)
-		{
-			$log_details = 'round=' . $round;
-			db_log('event', 'Round changed', $log_details, $event->id, $event->club_id);
-		}
-		Db::commit();
-	}
-	
-	function set_round_op_help()
-	{
-		$help = new ApiHelp('Change current round for the event. Note that round changes automatically when a number of games for the round exceeds round.planned_games count. However when planned_games is 0, manual change using this function is required.');
-		$help->request_param('event_id', 'Event id.');
-		$help->request_param('round', 'Round number. 0 for main round, and consecutive numbers for the next rounds. If round number is greater than number of rounds, the event becomes finished.');
-		return $help;
-	}
-	
-	function set_round_op_permissions()
-	{
-		return PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -418,7 +357,7 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		$event = new Event();
 		$event->load($event_id);
-		$this->check_permissions($event->club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $event->club_id);
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
@@ -467,14 +406,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function cancel_op_help()
 	{
-		$help = new ApiHelp('Cancel event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Cancel event.');
 		$help->request_param('event_id', 'Event id.');
 		return $help;
-	}
-	
-	function cancel_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -485,7 +419,7 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		$event = new Event();
 		$event->load($event_id);
-		$this->check_permissions($event->club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $event->club_id);
 		
 		Db::begin();
 		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_CANCELED . ') WHERE id = ?', $event_id);
@@ -500,14 +434,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp('Restore canceled event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Restore canceled event.');
 		$help->request_param('event_id', 'Event id.');
 		return $help;
-	}
-	
-	function restore_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -517,6 +446,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_CLUB_USER);
 		$event_id = (int)get_required_param('id');
 		$comment = prepare_message(get_required_param('comment'));
 		$lang = detect_lang($comment);
@@ -576,15 +506,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function comment_op_help()
 	{
-		$help = new ApiHelp('Leave a comment on the event.');
+		$help = new ApiHelp(PERMISSION_USER, 'Leave a comment on the event.');
 		$help->request_param('id', 'Event id.');
 		$help->request_param('comment', 'Comment text.');
 		return $help;
-	}
-	
-	function comment_op_permissions()
-	{
-		return PERMISSION_USER;
 	}
 }
 

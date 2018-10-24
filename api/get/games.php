@@ -413,7 +413,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('before', 'Unix timestamp for the latest game to return. For example: <a href="games.php?before=1483228800"><?php echo PRODUCT_URL; ?>/api/get/games.php?before=1483228800</a> returns all games started before 2017', '-');
 		$help->request_param('after', 'Unix timestamp for the earliest game to return. For example: <a href="games.php?after=1483228800"><?php echo PRODUCT_URL; ?>/api/get/games.php?after=1483228800</a> returns all games started after January 1, 2017 inclusive; <a href="games.php?after=1483228800&before=1485907200"><?php echo PRODUCT_URL; ?>/api/get/games.php?after=1483228800&before=1485907200</a> returns all games played in January 2017. (Using start time - if the game ended in February but started in January it is still a January game).', '-');
 		$help->request_param('club', 'Club id. For example: <a href="games.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1</a> returns all games for Vancouver Mafia Club. If missing, all games for all clubs are returned.', '-');

@@ -295,7 +295,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('contains', 'Search pattern. For example: <a href="scores.php?contains=al"><?php echo PRODUCT_URL; ?>/api/get/scores.php?contains=al</a> returns players containing "al" in their name.', '-');
 		$help->request_param('starts', 'Search pattern. For example: <a href="scores.php?starts=bo"><?php echo PRODUCT_URL; ?>/api/get/scores.php?starts=bo</a> returns players with names starting with "bo". Note that "Bad Boy" is also returned.', '-');
 		$help->request_param('scoring', 'Scoring system id. For example: <a href="scores.php?club=1&scoring=13"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=1&scoring=13</a> returns scores for all players of Vancouver Mafia Club using 3-4-4-5 scoring system. If missing, the club scoring system (if club is specified) or event scoring system (if event is specified) or default scoring system is used.', '-');

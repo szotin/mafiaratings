@@ -14,7 +14,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$user_id = (int)get_required_param('user_id');
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
@@ -25,15 +25,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function ban_op_help()
 	{
-		$help = new ApiHelp('Ban user from the club.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Ban user from the club.');
 		$help->request_param('user_id', 'User id.');
 		$help->request_param('club_id', 'Club id.');
 		return $help;
-	}
-	
-	function ban_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -43,7 +38,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$user_id = (int)get_required_param('user_id');
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
@@ -53,15 +48,10 @@ class ApiPage extends OpsApiPageBase
 
 	function unban_op_help()
 	{
-		$help = new ApiHelp('Unban user from the club.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Unban user from the club.');
 		$help->request_param('user_id', 'User id.');
 		$help->request_param('club_id', 'Club id.');
 		return $help;
-	}
-	
-	function unban_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -71,7 +61,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$user_id = (int)get_required_param('user_id');
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		list($flags) = Db::record(get_label('user'), 'SELECT flags FROM user_clubs uc WHERE uc.user_id = ? AND uc.club_id = ?', $user_id, $club_id);
 		if (isset($_REQUEST['manager']))
@@ -120,7 +110,7 @@ class ApiPage extends OpsApiPageBase
 
 	function access_op_help()
 	{
-		$help = new ApiHelp('Set user permissions in the club.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Set user permissions in the club.');
 		$help->request_param('user_id', 'User id.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('player', 'Player permission in the club. 1 to grand the permission, 0 to revoke it.', 'remains the same');
@@ -129,18 +119,13 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function access_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// site_ban
 	//-------------------------------------------------------------------------------------------------------
 	function site_ban_op()
 	{
 		$user_id = (int)get_required_param('user_id');
-		$this->check_permissions();
+		check_permissions(PERMISSION_ADMIN);
 		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . USER_FLAG_BANNED . ') WHERE id = ?', $user_id);
 		if (Db::affected_rows() > 0)
 		{
@@ -150,14 +135,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function site_ban_op_help()
 	{
-		$help = new ApiHelp('Ban user from ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Ban user from ' . PRODUCT_NAME . '.');
 		$help->request_param('user_id', 'User id.');
 		return $help;
-	}
-	
-	function site_ban_op_permissions()
-	{
-		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -166,7 +146,7 @@ class ApiPage extends OpsApiPageBase
 	function site_unban_op()
 	{
 		$user_id = (int)get_required_param('user_id');
-		$this->check_permissions();
+		check_permissions(PERMISSION_ADMIN);
 
 		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . USER_FLAG_BANNED . ') WHERE id = ?', $user_id);
 		if (Db::affected_rows() > 0)
@@ -177,14 +157,9 @@ class ApiPage extends OpsApiPageBase
 
 	function site_unban_op_help()
 	{
-		$help = new ApiHelp('Unban user from ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Unban user from ' . PRODUCT_NAME . '.');
 		$help->request_param('user_id', 'User id.');
 		return $help;
-	}
-
-	function site_unban_op_permissions()
-	{
-		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -193,7 +168,7 @@ class ApiPage extends OpsApiPageBase
 	function site_access_op()
 	{
 		$user_id = (int)get_required_param('user_id');
-		$this->check_permissions();
+		check_permissions(PERMISSION_ADMIN);
 		
 		list($flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $user_id);
 		if (isset($_REQUEST['admin']))
@@ -217,15 +192,10 @@ class ApiPage extends OpsApiPageBase
 
 	function site_access_op_help()
 	{
-		$help = new ApiHelp('Set user permissions in ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Set user permissions in ' . PRODUCT_NAME . '.');
 		$help->request_param('user_id', 'User id.');
 		$help->request_param('admin', 'Administrator permission in ' . PRODUCT_NAME . '. 1 to grand the permission, 0 to revoke it.', 'remains the same');
 		return $help;
-	}
-	
-	function site_access_op_permissions()
-	{
-		return PERMISSION_ADMIN;
 	}
 }
 

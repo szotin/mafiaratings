@@ -17,17 +17,6 @@ define('AGENT_WEBOS', 5);
 define('SITE_STYLE_DESKTOP', 0);
 define('SITE_STYLE_MOBILE', 1);
 
-define('PERMISSION_EVERYONE', 0x0001);            // Does not even have to login
-define('PERMISSION_USER', 0x0002);                // Any logged-in user
-define('PERMISSION_OWNER', 0x0004);               // An owner of the object represented by the page or API
-define('PERMISSION_CLUB_MEMBER', 0x0008);         // Any user who has a club membership
-define('PERMISSION_CLUB_REPRESENTATIVE', 0x0010); // Club users who tread this club as their main club
-define('PERMISSION_CLUB_PLAYER', 0x0020);         // Users having player permission in the club
-define('PERMISSION_CLUB_MODERATOR', 0x0040);      // Users having moderator permission in the club
-define('PERMISSION_CLUB_MANAGER', 0x0080);        // Users having manager permission in the club
-define('PERMISSION_LEAGUE_MANAGER', 0x0100);      // Users having manager permission in the league
-define('PERMISSION_ADMIN', 0x0200);               // Mafia Ratings administrators
-
 // user-league flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
 // 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag moder)

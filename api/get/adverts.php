@@ -116,7 +116,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('club', 'Club id.</i> For example: <a href="adverts.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=1</a> returns all advertizements of Vancouver Mafia Club. If missing, all players for all clubs are returned.', '-');
 		$help->request_param('city', 'City id. For example: <a href="adverts.php?city=2"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?city=2</a> returns all adverts from Moscow clubs. List of the cities and their ids can be obtained using <a href="cities.php?help"><?php echo PRODUCT_URL; ?>/api/get/cities.php</a>.', '-');
 		$help->request_param('area', 'City id. The difference with city is that when area is set, the adverts from all nearby cities are also returned. For example: <a href="adverts.php?area=1"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?area=1</a> returns all adverts published in Vancouver and nearby cities. Though <a href="adverts.php?city=1"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?city=1</a> returns only the adverts published in Vancouver itself.', '-');

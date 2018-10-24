@@ -649,32 +649,4 @@ function lock_site($lock)
 	}
 }
 
-function permission_name($perm)
-{
-	switch($perm)
-	{
-		case PERMISSION_EVERYONE:
-			return 'everyone';
-		case PERMISSION_USER:
-			return 'user';
-		case PERMISSION_OWNER:
-			return 'object-owner';
-		case PERMISSION_CLUB_MEMBER:
-			return 'club-member';
-		case PERMISSION_CLUB_REPRESENTATIVE:
-			return 'club-representative';
-		case PERMISSION_CLUB_PLAYER:
-			return 'club-player';
-		case PERMISSION_CLUB_MODERATOR:
-			return 'club-moderator';
-		case PERMISSION_CLUB_MANAGER:
-			return 'club-manager';
-		case PERMISSION_LEAGUE_MANAGER:
-			return 'league-manager';
-		case PERMISSION_ADMIN:
-			return 'admin';
-	}
-	return '?';
-}
-
 ?>
