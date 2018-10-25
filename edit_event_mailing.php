@@ -49,7 +49,10 @@ class Page extends PageBase
 		$send_time = time();
 		$this->subj = '';
 		$this->body = '';
-		$this->lang = $_profile->user_def_lang;
+		if ($_profile != NULL)
+		{
+			$this->lang = $_profile->user_def_lang;
+		}
 		$this->flags = MAILING_FLAG_AUTODETECT_LANG | MAILING_FLAG_TO_ALL;
 		$this->hour = 0;
 		$this->minute = 0;
@@ -63,10 +66,7 @@ class Page extends PageBase
 			
 		$this->event = new Event();
 		$this->event->load($event_id);
-		if ($_profile == NULL || !$_profile->is_club_manager($this->event->club_id))
-		{
-			throw new FatalExc(get_label('No permissions'));
-		}
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
 			
 		$this->parse_event_time($send_time, get_timezone());
 		
@@ -220,6 +220,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Edit mailing'), USER_CLUB_PERM_MANAGER);
+$page->run(get_label('Edit mailing'));
 
 ?>

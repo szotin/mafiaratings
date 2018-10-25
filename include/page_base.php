@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/user.php';
 
 class PageBase
@@ -8,161 +9,56 @@ class PageBase
 	private $_state;
 	
 	protected $_title;
-	protected $_permissions;
 	protected $_locked;
 	protected $_admin;
 	
 	private $_err_message;
+	private $_login;
 	
 	protected $_facebook;
-	
-	protected $club_id;
-	protected $league_id;
-	protected $owner_id;
 	
 	function __construct()
 	{
 		initiate_session();
 	}
 	
-	protected function is_permitted()
-	{
-		global $_profile;
-		
-		$perm = $this->_permissions;
-		if (($perm & PERMISSION_EVERYONE) != 0)
-		{
-			return true;
-		}
-		
-		if ($_profile == NULL)
-		{
-			return false;
-		}
-		
-		if ($_profile->is_admin())
-		{
-			return true;
-		}
-		
-		while ($perm)
-		{
-			$next_perm = ($perm & ($perm - 1));
-			switch ($perm - $next_perm)
-			{
-				case PERMISSION_USER:
-					return true;
-					
-				case PERMISSION_OWNER:
-					if ($this->owner_id == $_profile->user_id)
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_MEMBER:
-					if (isset($_profile->clubs[$this->club_id]))
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_REPRESENTATIVE:
-					if ($_profile->user_club_id == $this->club_id)
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_PLAYER:
-					if ($_profile->is_club_player($this->club_id))
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_MODERATOR:
-					if ($_profile->is_club_moder($this->club_id))
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_CLUB_MANAGER:
-					if ($_profile->is_club_manager($this->club_id))
-					{
-						return true;
-					}
-					break;
-					
-				case PERMISSION_LEAGUE_MANAGER:
-					if ($_profile->is_league_manager($this->league_id))
-					{
-						return true;
-					}
-					break;
-			}
-			$perm = $next_perm;
-		}
-		return false;
-	}
-	
-	final function run($title = '', $permissions = PERM_ALL)
+	final function run($title = '')
 	{
 		global $_profile;
 		
 		$this->_err_message = NULL;
-		$title_shown = false;
+		$this->_login = false;
 		$this->_facebook = true;
-		$this->_permissions = $permissions;
 		$this->_title = $title;
 		$this->_state = PAGE_STATE_EMPTY;
 		$this->_locked = is_site_locked();
 		$this->_admin = ($_profile != NULL && $_profile->is_admin());
 		
-		$this->club_id = 0;
-		$this->league_id = 0;
-		$this->owner_id = 0;
+		$title_shown = false;
+		$header_shown = false;
+		$footer_shown = false;
 		
 		try
 		{
-			if ($_profile == NULL && ($this->_permissions & PERMISSION_EVERYONE) == 0)
+			$this->prepare();
+			$this->show_header();
+			$header_shown = true;
+			// We are not showing lock page for administrators. They should be able to work even in the locked state.
+			// They have fully functional site with the icon in the corner signalling that the site is locked.
+			if ($this->_locked && !$this->_admin)
 			{
-				throw new LoginExc();
+				$title_shown = true;
+				$this->show_lock_page();
 			}
-	
-			try
+			else
 			{
-				$this->prepare();
-			}
-			catch (Exc $e)
-			{
-				Db::rollback();
-				Exc::log($e);
-				$this->error($e);
-			}
-			
-			if (!$this->is_permitted())
-			{
-				throw new FatalExc(get_label('No permissions'));
+				$this->show_title();
+				$title_shown = true;
+				$this->show_body();
 			}
 			
-			if ($this->show_header())
-			{
-				// We are not showing lock page for administrators. They should be able to work even in the locked state.
-				// They have fully functional site with the icon in the corner signalling that the site is locked.
-				if ($this->_locked && !$this->_admin)
-				{
-					$this->show_lock_page();
-				}
-				else
-				{
-					$this->show_title();
-					$title_shown = true;
-					$this->show_body();
-				}
-			}
 			$this->show_footer();
+			$footer_shown = true;
 		}
 		catch (RedirectExc $e)
 		{
@@ -177,15 +73,18 @@ class PageBase
 			$this->error($e);
 			try
 			{
-				$this->show_header();
-			}
-			catch (Exception $e)
-			{
-				Exc::log($e);
-			}
-			try
-			{
-				$this->show_footer();
+				if (!$header_shown)
+				{
+					$this->show_header();
+				}
+				if (!$title_shown)
+				{
+					$this->show_title();
+				}
+				if (!$footer_shown)
+				{
+					$this->show_footer();
+				}
 			}
 			catch (Exception $e)
 			{
@@ -212,7 +111,7 @@ class PageBase
 		
 		if ($this->_state != PAGE_STATE_EMPTY)
 		{
-			return true;
+			return;
 		}
 		
 		echo '<!DOCTYPE HTML>';
@@ -384,8 +283,6 @@ class PageBase
 			case SESSION_LOGIN_FAILED:
 				throw new FatalExc(get_label('Login attempt failed. Wrong username or password.'));
 		}
-		
-		return true;
 	}
 
 	final function show_footer()
@@ -568,18 +465,26 @@ class PageBase
 	
 	protected function error($exc)
 	{
-		$this->errorMessage(str_replace('"', '\\"', $exc->getMessage()));
+		$this->errorMessage(str_replace('"', '\\"', $exc->getMessage()), $exc instanceof LoginExc);
 	}
 	
-	protected function errorMessage($message)
+	protected function errorMessage($message, $login)
 	{
 		if ($this->_state != PAGE_STATE_EMPTY)
 		{
-			echo '<script> $(function() { dlg.error("' . $message . '"); }); </script>';
+			if ($login)
+			{
+				echo '<script> $(function() { loginDialog("' . $message . '"); }); </script>';
+			}
+			else
+			{
+				echo '<script> $(function() { dlg.error("' . $message . '"); }); </script>';
+			}
 		}
 		else
 		{
 			$this->_err_message = $message;
+			$this->_login = $login;
 		}
 	}
 	
@@ -642,7 +547,11 @@ class PageBase
 		}
 		echo "\n\t$(function()";
 		echo "\n\t{\n";
-		if ($this->_err_message != NULL)
+		if ($this->_login)
+		{
+			echo "\n\t\tloginDialog(\"" . $this->_err_message . "\");";
+		}
+		else if ($this->_err_message != NULL)
 		{
 			echo "\n\t\tdlg.error(\"" . $this->_err_message . "\");";
 		}

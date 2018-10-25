@@ -26,6 +26,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run('', USER_CLUB_PERM_MANAGER);
+$page->run('');
 
 ?>

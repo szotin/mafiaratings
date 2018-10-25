@@ -10,6 +10,7 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_page;
 		
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->id);
 		list ($count) = Db::record(get_label('rules'), 'SELECT count(*) FROM club_rules r WHERE r.club_id = ?', $this->id);
 		++$count;
 
@@ -35,6 +36,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Game Rules'), USER_CLUB_PERM_MANAGER);
+$page->run(get_label('Game Rules'));
 
 ?>

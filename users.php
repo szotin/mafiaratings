@@ -20,6 +20,7 @@ class Page extends GeneralPageBase
 	
 		parent::prepare();
 		
+		check_permissions(PERMISSION_ADMIN);
 		$this->user_id = 0;
 		if ($_page < 0)
 		{
@@ -258,6 +259,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('[0] users', PRODUCT_NAME), PERMISSION_ADMIN);
+$page->run(get_label('[0] users', PRODUCT_NAME));
 
 ?>

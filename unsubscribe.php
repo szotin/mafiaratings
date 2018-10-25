@@ -11,6 +11,7 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_USER);
 		if ($_profile->is_admin())
 		{
 			$this->clubs = array();
@@ -125,6 +126,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Email subscription'), PERMISSION_USER);
+$page->run(get_label('Email subscription'));
 
 ?>

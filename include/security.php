@@ -148,13 +148,13 @@ function check_permissions($permissions, $id1 = 0, $id2 = 0, $id3 = 0)
 {
 	global $_profile;
 	
-	if (!$this->is_allowed())
+	if (!is_permitted($permissions, $id1, $id2, $id3))
 	{
 		if ($_profile == NULL)
 		{
-			throw new LoginExc();
+			throw new LoginExc(get_label('You do not have enough permissions. Please sign in.'));
 		}
-		throw new FatalExc(get_label('No permissions'));
+		throw new LoginExc(get_label('You do not have enough permissions. Please sign in as a different user.'));
 	}
 }
 

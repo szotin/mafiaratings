@@ -144,13 +144,32 @@ class ApiPageBase
 		return $help;
 	}
 	
+	protected function show_permissions($help)
+	{
+		echo '<p><strong>Permitted to:</strong> ';
+		$perm = $help->permissions;
+		$next_perm = ($perm & ($perm - 1));
+		if ($perm != $next_perm)
+		{
+			echo '<em>' . permission_name($perm - $next_perm) . '</em>';
+			$perm = $next_perm;
+			while ($perm != 0)
+			{
+				$next_perm = ($perm & ($perm - 1));
+				echo ', or <em>' . permission_name($perm - $next_perm) . '</em>';
+				$perm = $next_perm;
+			}
+		}
+		echo '.</p>';
+	}
+	
 	protected function show_help()
 	{
 		echo '<h1>' . $this->title . ' API</h1>';
 		echo '<p><a href="index.php">Back to the service list.</a></p>';
-		
 		$help = $this->add_default_help_params($this->get_help());
 		
+		$this->show_permissions($help);
 		echo '<p>' . $help->text . '</p>';
 		echo '<h2>Request Parameters:</h2><dl>';
 		foreach ($help->request as $param)
@@ -190,15 +209,6 @@ class GetApiPageBase extends ApiPageBase
 	final function run($title, $version)
 	{
 		$this->_run($title, $version);
-	}
-	
-	protected function show_help_request_params_head()
-	{
-		parent::show_help_request_params_head();
-?>
-		<dt>lang</dt>
-			<dd>What is the preferable language for returning results. Currently two languages are supported: Russian and English. This parameter should be either "ru" or "en" respectively. Profile language is used when this param is not set.</dd>
-<?php
 	}
 }
 
@@ -290,21 +300,7 @@ class OpsApiPageBase extends ApiPageBase
 		echo '<h1>Operation: ' . $current_op . '</h1>';
 		echo '<p>' . $help->text . '</p>';
 		
-		echo '<p><strong>Required permissions:</strong> ';
-		$perm = $help->permissions;
-		$next_perm = ($perm & ($perm - 1));
-		if ($perm != $next_perm)
-		{
-			echo '<em>' . permission_name($perm - $next_perm) . '</em>';
-			$perm = $next_perm;
-			while ($perm != 0)
-			{
-				$next_perm = ($perm & ($perm - 1));
-				echo ', or <em>' . permission_name($perm - $next_perm) . '</em>';
-				$perm = $next_perm;
-			}
-		}
-		echo '.</p>';
+		$this->show_permissions($help);
 		
 		echo '<h2>Request Parameters:</h2><dl>';
 		foreach ($help->request as $param)

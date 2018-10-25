@@ -19,6 +19,7 @@ class Page extends ClubPageBase
 	
 		parent::prepare();
 		
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $this->id);
 		$this->user_id = 0;
 		if ($_page < 0)
 		{
@@ -186,6 +187,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Members'), USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER);
+$page->run(get_label('Members'));
 
 ?>

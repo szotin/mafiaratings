@@ -27,6 +27,7 @@ class Page extends PageBase
 			throw new FatalExc(get_label('Unknown [0]', get_label('photo')));
 		}
 		$this->id = $_REQUEST['id'];
+		check_permissions(PERMISSION_USER);
 	}
 	
 	protected function show_body()

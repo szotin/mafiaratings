@@ -10,6 +10,7 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_lang_code, $_page;
 		
+		check_permissions(PERMISSION_ADMIN);
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="darker"><td width="52">&nbsp;</td>';
 		echo '<td>'.get_label('Club name').'</td><td width="120">'.get_label('User').'</td><td width="120">'.get_label('Country').'</td><td width="120">'.get_label('City').'</td></tr>';
@@ -28,6 +29,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Club requests'), PERMISSION_ADMIN);
+$page->run(get_label('Club requests'));
 
 ?>

@@ -13,6 +13,7 @@ class Page extends GeneralPageBase
 	{
 		global $_lang_code, $_page;
 		
+		check_permissions(PERMISSION_ADMIN);
 		$query = new DbQuery(
 			'SELECT i.id, i.name_' . $_lang_code . ', i.flags, o.name_' . $_lang_code . ', i.timezone FROM cities i' . 
 			' JOIN countries o ON i.country_id = o.id' .
@@ -83,6 +84,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Cities'), PERMISSION_ADMIN);
+$page->run(get_label('Cities'));
 
 ?>

@@ -538,7 +538,7 @@ class AlbumPageBase extends PageBase
 	{
 		if (!isset($_REQUEST['id']))
 		{
-			throw new FatalExc('Unknown [0]', get_label('photo album'));
+			throw new FatalExc(get_label('Unknown [0]', get_label('photo album')));
 		}
 		$this->album = new PhotoAlbum($_REQUEST['id']);
 		$this->_title = $this->album->name;

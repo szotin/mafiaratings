@@ -13,6 +13,7 @@ class Page extends GeneralPageBase
 	protected function prepare()
 	{
 		parent::prepare();
+		check_permissions(PERMISSION_ADMIN);
 		$this->objects = prepare_log_objects();
 		
 		$this->obj_filter = '';
@@ -183,7 +184,7 @@ class Page extends GeneralPageBase
 
 $page = new Page();
 $page->set_ccc(CCCS_ALL);
-$page->run(get_label('Log'), PERMISSION_ADMIN);
+$page->run(get_label('Log'));
 
 ?>
 

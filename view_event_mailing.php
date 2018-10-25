@@ -32,6 +32,7 @@ class Page extends PageBase
 		$this->event = new Event();
 		$this->event->load($event_id);
 		$this->_title = get_label('Mailing for [0]', $this->event->get_full_name());
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
 	}
 	
 	protected function show_body()
@@ -73,6 +74,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('view event mailing'), USER_CLUB_PERM_MANAGER);
+$page->run(get_label('view event mailing'));
 
 ?>

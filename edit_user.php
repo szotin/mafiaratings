@@ -19,29 +19,6 @@ class Page extends PageBase
 	private $langs;
 	private $user_club_flags;
 
-	function permissions()
-	{
-		global $_profile;
-		
-		if (!$_profile->is_admin())
-		{
-			if ($this->club_id <= 0 || ($this->flags & USER_PERM_ADMIN) != 0)
-			{
-				throw new FatalExc(get_label('No permissions'));
-			}
-			
-			if (!$_profile->is_club_manager($this->club_id))
-			{
-				if (
-					!$_profile->is_club_moder($this->club_id) ||
-					($this->user_club_flags & (USER_CLUB_PERM_MANAGER | USER_CLUB_PERM_MODER)) != 0)
-				{
-					throw new FatalExc(get_label('No permissions'));
-				}
-			}
-		}
-	}
-
 	protected function prepare()
 	{
 		global $_profile;
@@ -63,16 +40,6 @@ class Page extends PageBase
 			$this->club_id = $_REQUEST['club'];
 		}
 		
-		$this->role = MODER;
-		if ($_profile->is_admin())
-		{
-			$this->role = ADMIN;
-		}
-		else if ($_profile->is_club_manager($this->club_id))
-		{
-			$this->role = MANAGER;
-		}
-	
 		if ($this->club_id > 0)
 		{
 			list($this->name, $this->flags, $this->langs, $this->user_club_flags) =
@@ -84,7 +51,17 @@ class Page extends PageBase
 			list($this->name, $this->flags, $this->langs) =
 				Db::record(get_label('user'), 'SELECT u.name, u.flags, u.languages FROM users u WHERE u.id = ?', $this->id);
 		}
-		$this->permissions();
+		check_permissions(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, $this->club_id);
+		
+		$this->role = MODER;
+		if ($_profile->is_admin())
+		{
+			$this->role = ADMIN;
+		}
+		else if ($_profile->is_club_manager($this->club_id))
+		{
+			$this->role = MANAGER;
+		}
 	
 		if (isset($_POST['update']))
 		{
@@ -249,6 +226,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Edit user'), PERM_OFFICER);
+$page->run(get_label('Edit user'));
 
 ?>

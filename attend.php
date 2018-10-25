@@ -48,6 +48,9 @@ class Page extends PageBase
 	protected function prepare()
 	{
 		global $_profile;
+		
+		check_permissions(PERMISSION_USER);
+		
 		if (!isset($_REQUEST['id']))
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('event')));
@@ -207,6 +210,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Attend event'), PERMISSION_USER);
+$page->run(get_label('Attend event'));
 
 ?>

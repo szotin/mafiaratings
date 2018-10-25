@@ -40,6 +40,7 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_USER);
 		if (!isset($_REQUEST['event']))
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('event')));
@@ -196,6 +197,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Confirm event'), PERMISSION_USER);
+$page->run(get_label('Confirm event'));
 
 ?>
