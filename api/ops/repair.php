@@ -22,7 +22,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function lock_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function unlock_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function addr_icons_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -105,12 +105,12 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			list ($count) = Db::record('user', 'SELECT count(*) FROM users WHERE (flags & ' . U_ICON_MASK . ') <> 0');
+			list ($count) = Db::record('user', 'SELECT count(*) FROM users WHERE (flags & ' . USER_ICON_MASK . ') <> 0');
 			$this->response['count'] = $count;
 			lock_site(true);
 		}
 		$c = 0;
-		$query = new DbQuery('SELECT id FROM users WHERE (flags & ' . U_ICON_MASK . ') <> 0 AND id > ? ORDER BY id LIMIT 10', $last_id);
+		$query = new DbQuery('SELECT id FROM users WHERE (flags & ' . USER_ICON_MASK . ') <> 0 AND id > ? ORDER BY id LIMIT 10', $last_id);
 		while ($row = $query->next())
 		{
 			list($id) = $row;
@@ -140,7 +140,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function user_icons_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -190,7 +190,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function club_icons_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function album_icons_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -290,7 +290,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function photo_icons_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -398,12 +398,12 @@ class ApiPage extends OpsApiPageBase
 	
 	function stats_op_permissions()
 	{
-		return API_PERM_FLAG_ADMIN;
+		return PERMISSION_ADMIN;
 	}
 }
 
 // No version support. We want to keep this API internal.
 $page = new ApiPage();
-$page->run('Repair Operations', -1, U_PERM_ADMIN);
+$page->run('Repair Operations', -1, PERMISSION_ADMIN);
 
 ?>

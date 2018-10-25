@@ -164,7 +164,7 @@ class Page extends PageBase
 		echo '<p><iframe title="' . $this->title . '" width="720" height="405" src="https://www.youtube.com/embed/' . $this->video . '" frameborder="0" allowfullscreen></iframe></p>';
 		echo '</td><td valign="top">';
 		$game_icon = ($this->game_id != NULL);
-		$can_manage = ($_profile != NULL && ($_profile->user_id == $this->user_id || $_profile->is_manager($this->club_id)));
+		$can_manage = ($_profile != NULL && ($_profile->user_id == $this->user_id || $_profile->is_club_manager($this->club_id)));
 		if ($game_icon || $can_manage)
 		{
 			echo '<table class="bordered darker" width="100%"><tr><td>';

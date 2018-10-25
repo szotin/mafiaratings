@@ -31,7 +31,7 @@ try
 	$event = new Event();
 	$event->load($_REQUEST['id']);
 	
-	$is_manager = ($_profile != NULL && $_profile->is_manager());
+	$is_manager = ($_profile != NULL && $_profile->is_club_manager($event->club_id));
 	$rows = 10;
 	$cols = 2;
 	$title = 1;

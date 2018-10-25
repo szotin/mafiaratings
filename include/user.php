@@ -26,7 +26,7 @@ function send_activation_email($user_id, $name, $email)
 	send_notification($email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_SIGN_IN, 0, $email_code);
 }
 
-function create_user($name, $email, $flags = U_NEW_PLAYER_FLAGS, $club_id = NULL, $city_id = -1, $lang = 0)
+function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $city_id = -1, $lang = 0)
 {
 	if ($club_id != NULL && $club_id <= 0)
 	{
@@ -100,7 +100,7 @@ function create_user($name, $email, $flags = U_NEW_PLAYER_FLAGS, $club_id = NULL
 	
 	if ($club_id != NULL)
 	{
-		Db::exec(get_label('user'), 'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . UC_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
+		Db::exec(get_label('user'), 'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
 		db_log('user', 'Joined the club', NULL, $user_id, $club_id);
 	}
 	
@@ -126,11 +126,11 @@ function show_user_pic($user_id, $user_name, $user_flags, $dir, $width = 0, $hei
 
 	$origin = USER_PICS_DIR . $dir . $user_id . '.png';
 	echo '<img code="' . USER_PIC_CODE . $user_id .  '" origin="' . $origin . '" src="';
-	if (($user_flags & U_ICON_MASK) != 0)
+	if (($user_flags & USER_ICON_MASK) != 0)
 	{
-		echo $origin . '?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
+		echo $origin . '?' . (($user_flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET);
 	}
-	else if (($user_flags & U_FLAG_MALE) != 0)
+	else if (($user_flags & USER_FLAG_MALE) != 0)
 	{
 		echo 'images/' . $dir . 'male.png';
 	}

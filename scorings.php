@@ -11,6 +11,7 @@ class Page extends GeneralPageBase
 	{
 		global $_lang_code, $_page;
 		
+		check_permissions(PERMISSION_ADMIN);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48" align="center"><a href="#" onclick="mr.createScoringSystem(-1)" title="'.get_label('New scoring system').'">';
 		echo '<img src="images/create.png" border="0"></a></td>';
@@ -31,6 +32,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Scoring systems'), U_PERM_ADMIN);
+$page->run(get_label('Scoring systems'));
 
 ?>

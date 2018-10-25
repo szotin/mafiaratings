@@ -30,10 +30,7 @@ class Page extends PageBase
 			throw new FatalExc(get_label('Unknown [0]', get_label('club')));
 		}
 		$id = $_REQUEST['club'];
-		if (!$_profile->is_manager())
-		{
-			throw new FatalExc(get_label('No permissions', get_label('club')));
-		}
+		check_permissions(PERMISSION_CLUB_MANAGER, $id);
 		
 		$this->club = $_profile->clubs[$id];
 
@@ -112,6 +109,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(NULL, UC_PERM_MANAGER);
+$page->run(NULL, USER_CLUB_PERM_MANAGER);
 
 ?>

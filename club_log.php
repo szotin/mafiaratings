@@ -13,7 +13,10 @@ class Page extends ClubPageBase
 	protected function prepare()
 	{
 		parent::prepare();
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->id);
+		
 		$this->objects = prepare_log_objects();
+		
 		
 		$this->obj_filter = '';
 		if (isset($_REQUEST['obj']))
@@ -138,6 +141,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Log'), UC_PERM_MANAGER);
+$page->run(get_label('Log'));
 
 ?>

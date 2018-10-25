@@ -10,6 +10,8 @@ class Page extends PageBase
 
 	protected function prepare()
 	{
+		check_permissions(PERMISSION_ADMIN);
+		
 		$this->email = '';
 		if (isset($_POST['email']))
 		{

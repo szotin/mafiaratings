@@ -10,7 +10,8 @@ class Page extends GeneralPageBase
 	protected function show_body()
 	{
 		global $_page, $_lang_code;
-		
+
+		check_permissions(PERMISSION_ADMIN);
 		$query = new DbQuery(
 			'SELECT id, name_' . $_lang_code .
 			', flags, code FROM  countries WHERE (flags & ' . COUNTRY_FLAG_NOT_CONFIRMED .
@@ -73,6 +74,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Countries'), U_PERM_ADMIN);
+$page->run(get_label('Countries'));
 
 ?>

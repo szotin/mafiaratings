@@ -14,6 +14,7 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_page;
 		
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->id);
 		$expired = isset($_REQUEST['expired']);
 		
 		$condition = new SQL(' WHERE n.club_id = ?', $this->id);
@@ -56,6 +57,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Adverts'), UC_PERM_MANAGER);
+$page->run(get_label('Adverts'));
 
 ?>

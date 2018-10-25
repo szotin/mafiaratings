@@ -34,7 +34,7 @@ function update_template($id, $name, $subj, $body, $default_for)
 	global $_profile;
 	
 	list ($club_id) = Db::record(get_label('email template'), 'SELECT club_id FROM email_templates WHERE id = ?', $id);
-	if ($_profile == NULL || !$_profile->is_manager($club_id))
+	if ($_profile == NULL || !$_profile->is_club_manager($club_id))
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}

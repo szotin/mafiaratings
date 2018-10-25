@@ -217,7 +217,7 @@ class ApiPage extends GetApiPageBase
 		
 		$count_only = isset($_REQUEST['count']);
 		
-		$condition = new SQL(' WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 AND u.games > 0');
+		$condition = new SQL(' WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND u.games > 0');
 		
 		if (isset($contains))
 		{
@@ -377,14 +377,14 @@ class ApiPage extends GetApiPageBase
 				$rating->num_games = (int)$rating->num_games;
 				$rating->games_won = (int)$rating->games_won;
 				$rating->club_id = (int)$rating->club_id;
-				if (($user_flags & U_FLAG_MALE) != 0)
+				if (($user_flags & USER_FLAG_MALE) != 0)
 				{
 					$rating->male = true;
 				}
-				if (($user_flags & U_ICON_MASK) != 0)
+				if (($user_flags & USER_ICON_MASK) != 0)
 				{
-					$rating->image = USER_PICS_DIR . TNAILS_DIR . $rating->id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
-					$rating->icon = USER_PICS_DIR . ICONS_DIR . $rating->id . '.png?' . (($user_flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
+					$rating->image = USER_PICS_DIR . TNAILS_DIR . $rating->id . '.png?' . (($user_flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET);
+					$rating->icon = USER_PICS_DIR . ICONS_DIR . $rating->id . '.png?' . (($user_flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET);
 				}
 				$ratings[] = $rating;
 			}
@@ -394,7 +394,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('contains', 'Search pattern. For example: <a href="ratings.php?contains=al">' . PRODUCT_URL . '/api/get/ratings.php?contains=al</a> returns players containing "al" in their name.', '-');
 		$help->request_param('starts', 'Search pattern. For example: <a href="ratings.php?starts=bo">' . PRODUCT_URL . '/api/get/ratings.php?starts=bo</a> returns players with names starting with "bo". Note that "Bad Boy" is also returned.', '-');
 		$help->request_param('club', 'Club id. For example: <a href="ratings.php?club=1">' . PRODUCT_URL . '/api/get/ratings.php?club=1</a> returns ratings for all players of Vancouver Mafia Club. If missing, all players for all clubs are returned.', '-');

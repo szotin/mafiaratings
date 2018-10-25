@@ -19,7 +19,7 @@ class Page extends ClubPageBase
 		$is_manager = false;
 		if ($_profile != NULL)
 		{
-			$is_manager = $_profile->is_manager($this->id);
+			$is_manager = $_profile->is_club_manager($this->id);
 		}
 		
 		echo '<p><table class="bordered light" width="100%"><tr class="darker"><td colspan="5"><b>' . get_label('Addresses') . '</b></td></tr>';

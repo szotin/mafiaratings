@@ -17,6 +17,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
+		check_permission(PERMISSION_ADMIN);
 		$name_en = get_required_param('name_en');
 		$name_ru = get_required_param('name_ru');
 		$timezone = get_required_param('timezone');
@@ -105,7 +106,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create city.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Create city.');
 		$help->request_param('name_en', 'City name in English.');
 		$help->request_param('name_ru', 'City name in Russian.');
 		$timezone_text = 'City timezone. One of: <select>';
@@ -124,17 +125,13 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('city_id', 'City id.');
 		return $help;
 	}
-	
-	function create_op_permissions()
-	{
-		return API_PERM_FLAG_ADMIN;
-	}
 
 	//-------------------------------------------------------------------------------------------------------
 	// change
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
+		check_permission(PERMISSION_ADMIN);
 		$city_id = (int)get_required_param('city_id');
 		list($name_en, $name_ru, $country_id, $country, $timezone, $area_id) = Db::record(get_label('city'), 'SELECT ct.name_en, ct.name_ru, ct.country_id, cr.name_en, ct.timezone, ct.area_id FROM cities ct JOIN countries cr ON cr.id = ct.country_id WHERE ct.id = ?', $city_id);
 		
@@ -230,7 +227,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change city information.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Change city information.');
 		$help->request_param('city_id', 'City id.');
 		$help->request_param('name_en', 'City name in English.', 'remains the same.');
 		$help->request_param('name_ru', 'City name in Russian.', 'remains the same.');
@@ -248,11 +245,6 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('confirm', 'If it is set and non zero, the city is marked as confirmed by admin.', '-');
 		return $help;
 	}
-	
-	function change_op_permissions()
-	{
-		return API_PERM_FLAG_ADMIN;
-	}
 
 	//-------------------------------------------------------------------------------------------------------
 	// delete
@@ -261,6 +253,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		check_permission(PERMISSION_ADMIN);
 		$city_id = (int)get_required_param('city_id');
 		$repl_id = (int)get_required_param('repl_id');
 		$keep_name = (isset($_REQUEST['keep_name']) && $_REQUEST['keep_name']);
@@ -295,16 +288,11 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete city.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Delete city.');
 		$help->request_param('city_id', 'City id.');
 		$help->request_param('repl_id', 'City id that is used as a replacement. The city is replaced by this city everywhere it is used.');
 		$help->request_param('keep_name', 'If set and non-zero, the city names are still used as alternative names to the replacement city.', 'city name is not used any more.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return API_PERM_FLAG_ADMIN;
 	}
 }
 

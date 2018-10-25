@@ -29,9 +29,9 @@ try
 	if ($club_id > 0)
 	{
 		list($user_flags) = Db::record(get_label('user'), 'SELECT uc.flags FROM user_clubs uc WHERE uc.user_id = ? AND uc.club_id = ?', $user_id, $club_id);
-		echo '<input type="checkbox" id="form-manager" value="1"' . ((($user_flags & UC_PERM_MANAGER) != 0) ? ' checked' : '') . '> '.get_label('Manager');
-		echo '<br><input type="checkbox" id="form-moder" value="1"' . ((($user_flags & UC_PERM_MODER) != 0) ? ' checked' : '') . '> '.get_label('Moderator');
-		echo '<br><input type="checkbox" id="form-player" value="1"' . ((($user_flags & UC_PERM_PLAYER) != 0) ? ' checked' : '') . '> '.get_label('Player');
+		echo '<input type="checkbox" id="form-manager" value="1"' . ((($user_flags & USER_CLUB_PERM_MANAGER) != 0) ? ' checked' : '') . '> '.get_label('Manager');
+		echo '<br><input type="checkbox" id="form-moder" value="1"' . ((($user_flags & USER_CLUB_PERM_MODER) != 0) ? ' checked' : '') . '> '.get_label('Moderator');
+		echo '<br><input type="checkbox" id="form-player" value="1"' . ((($user_flags & USER_CLUB_PERM_PLAYER) != 0) ? ' checked' : '') . '> '.get_label('Player');
 ?>	
 		<script>
 		
@@ -53,7 +53,7 @@ try
 	}
 	else
 	{
-		echo '<input type="checkbox" id="form-admin" value="1"' . ((($user_flags & U_PERM_ADMIN) != 0) ? ' checked' : '') . '> '.get_label('Admin');
+		echo '<input type="checkbox" id="form-admin" value="1"' . ((($user_flags & USER_PERM_ADMIN) != 0) ? ' checked' : '') . '> '.get_label('Admin');
 ?>	
 		<script>
 		

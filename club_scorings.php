@@ -10,6 +10,7 @@ class Page extends ClubPageBase
 	{
 		global $_lang_code, $_page;
 		
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->id);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48" align="center"><a href="#" onclick="mr.createScoringSystem(' . $this->id . ')" title="'.get_label('New scoring system').'">';
 		echo '<img src="images/create.png" border="0"></a></td>';
@@ -30,6 +31,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Scoring Systems'), UC_PERM_MANAGER);
+$page->run(get_label('Scoring Systems'));
 
 ?>

@@ -59,9 +59,9 @@ try
 	echo '</select></td></tr>';
 	
 	echo '<tr><td class="dark" valign="top">' . get_label('Gender') . ':</td><td class="light">';
-	if ($_profile->user_flags & U_FLAG_MALE)
+	if ($_profile->user_flags & USER_FLAG_MALE)
 	{
-		if ($_profile->user_flags & U_ICON_MASK)
+		if ($_profile->user_flags & USER_ICON_MASK)
 		{
 			echo '<input type="radio" id="form-male" name="is_male" value="1" checked/>'.get_label('male').'<br>';
 			echo '<input type="radio" name="is_male" value="0"/>'.get_label('female');
@@ -72,7 +72,7 @@ try
 			echo '<input type="radio" name="is_male" value="0" onClick="document.profileForm.submit()"/>'.get_label('female');
 		}
 	}
-	else if ($_profile->user_flags & U_ICON_MASK)
+	else if ($_profile->user_flags & USER_ICON_MASK)
 	{
 		echo '<input type="radio" id="form-male" name="is_male" value="1"/>'.get_label('male').'<br>';
 		echo '<input type="radio" name="is_male" value="0" checked/>'.get_label('female');
@@ -93,13 +93,13 @@ try
 	echo '</table>';
 	
 	echo '<p><input type="checkbox" id="form-message_notify"';
-	if (($_profile->user_flags & U_FLAG_MESSAGE_NOTIFY) != 0)
+	if (($_profile->user_flags & USER_FLAG_MESSAGE_NOTIFY) != 0)
 	{
 		echo ' checked';
 	}
 	echo '>'.get_label('I would like to receive emails when someone replies to me or sends me a private message.');
 	echo '<br><input type="checkbox" id="form-photo_notify"';
-	if (($_profile->user_flags & U_FLAG_PHOTO_NOTIFY) != 0)
+	if (($_profile->user_flags & USER_FLAG_PHOTO_NOTIFY) != 0)
 	{
 		echo ' checked';
 	}

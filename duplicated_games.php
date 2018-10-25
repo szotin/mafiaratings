@@ -10,6 +10,7 @@ class Page extends GeneralPageBase
 	{
 		global $_page;
 	
+		check_permissions(PERMISSION_ADMIN);
 		$query = new DbQuery(
 			'SELECT g1.id, g2.id, g1.start_time, g1.end_time - g1.start_time, c.id, c.name, c.flags, i.timezone FROM games g1' . 
 			' JOIN games g2 ON g1.start_time = g2.start_time AND g1.end_time = g2.end_time AND g1.club_id = g2.club_id' .
@@ -41,6 +42,6 @@ class Page extends GeneralPageBase
 
 $page = new Page();
 $page->set_ccc(CCCS_NO);
-$page->run('Duplicated games', U_PERM_ADMIN);
+$page->run('Duplicated games');
 
 ?>

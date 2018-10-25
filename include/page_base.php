@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/user.php';
 
 class PageBase
@@ -8,11 +9,11 @@ class PageBase
 	private $_state;
 	
 	protected $_title;
-	protected $_permissions;
 	protected $_locked;
 	protected $_admin;
 	
 	private $_err_message;
+	private $_login;
 	
 	protected $_facebook;
 	
@@ -21,49 +22,43 @@ class PageBase
 		initiate_session();
 	}
 	
-	final function run($title = '', $permissions = PERM_ALL)
+	final function run($title = '')
 	{
 		global $_profile;
 		
 		$this->_err_message = NULL;
-		$title_shown = false;
+		$this->_login = false;
 		$this->_facebook = true;
-		$this->_permissions = $permissions;
 		$this->_title = $title;
 		$this->_state = PAGE_STATE_EMPTY;
 		$this->_locked = is_site_locked();
 		$this->_admin = ($_profile != NULL && $_profile->is_admin());
+		
+		$title_shown = false;
+		$header_shown = false;
+		$footer_shown = false;
+		
 		try
 		{
-			check_permissions($this->_permissions);
+			$this->prepare();
+			$this->show_header();
+			$header_shown = true;
+			// We are not showing lock page for administrators. They should be able to work even in the locked state.
+			// They have fully functional site with the icon in the corner signalling that the site is locked.
+			if ($this->_locked && !$this->_admin)
+			{
+				$title_shown = true;
+				$this->show_lock_page();
+			}
+			else
+			{
+				$this->show_title();
+				$title_shown = true;
+				$this->show_body();
+			}
 			
-			try
-			{
-				$this->prepare();
-			}
-			catch (Exc $e)
-			{
-				Db::rollback();
-				Exc::log($e);
-				$this->error($e);
-			}
-			
-			if ($this->show_header())
-			{
-				// We are not showing lock page for administrators. They should be able to work even in the locked state.
-				// They have fully functional site with the icon in the corner signalling that the site is locked.
-				if ($this->_locked && !$this->_admin)
-				{
-					$this->show_lock_page();
-				}
-				else
-				{
-					$this->show_title();
-					$title_shown = true;
-					$this->show_body();
-				}
-			}
 			$this->show_footer();
+			$footer_shown = true;
 		}
 		catch (RedirectExc $e)
 		{
@@ -78,15 +73,18 @@ class PageBase
 			$this->error($e);
 			try
 			{
-				$this->show_header();
-			}
-			catch (Exception $e)
-			{
-				Exc::log($e);
-			}
-			try
-			{
-				$this->show_footer();
+				if (!$header_shown)
+				{
+					$this->show_header();
+				}
+				if (!$title_shown)
+				{
+					$this->show_title();
+				}
+				if (!$footer_shown)
+				{
+					$this->show_footer();
+				}
 			}
 			catch (Exception $e)
 			{
@@ -113,7 +111,7 @@ class PageBase
 		
 		if ($this->_state != PAGE_STATE_EMPTY)
 		{
-			return true;
+			return;
 		}
 		
 		echo '<!DOCTYPE HTML>';
@@ -163,12 +161,6 @@ class PageBase
 			}
 		}
 
-		$permissions = PERM_STRANGER;
-		if ($_session_state == SESSION_OK)
-		{
-			$permissions = PERM_USER | ($_profile->user_flags & U_PERM_MASK) | ($_profile->user_club_flags & UC_PERM_MASK);
-		}
-		
 		if (is_mobile())
 		{
 			echo '<body class="main">';
@@ -291,18 +283,6 @@ class PageBase
 			case SESSION_LOGIN_FAILED:
 				throw new FatalExc(get_label('Login attempt failed. Wrong username or password.'));
 		}
-
-		if (($permissions & $this->_permissions) == 0)
-		{
-			if (($permissions & PERM_STRANGER) == 0)
-			{
-				throw new FatalExc(get_label('No permissions'));
-			}
-			
-			echo '<h3>'.get_label('You have to login to view this page').'.</h3>';
-			return false;
-		}
-		return true;
 	}
 
 	final function show_footer()
@@ -485,18 +465,26 @@ class PageBase
 	
 	protected function error($exc)
 	{
-		$this->errorMessage(str_replace('"', '\\"', $exc->getMessage()));
+		$this->errorMessage(str_replace('"', '\\"', $exc->getMessage()), $exc instanceof LoginExc);
 	}
 	
-	protected function errorMessage($message)
+	protected function errorMessage($message, $login)
 	{
 		if ($this->_state != PAGE_STATE_EMPTY)
 		{
-			echo '<script> $(function() { dlg.error("' . $message . '"); }); </script>';
+			if ($login)
+			{
+				echo '<script> $(function() { loginDialog("' . $message . '"); }); </script>';
+			}
+			else
+			{
+				echo '<script> $(function() { dlg.error("' . $message . '"); }); </script>';
+			}
 		}
 		else
 		{
 			$this->_err_message = $message;
+			$this->_login = $login;
 		}
 	}
 	
@@ -559,12 +547,16 @@ class PageBase
 		}
 		echo "\n\t$(function()";
 		echo "\n\t{\n";
-		if ($this->_err_message != NULL)
+		if ($this->_login)
+		{
+			echo "\n\t\tloginDialog(\"" . $this->_err_message . "\");";
+		}
+		else if ($this->_err_message != NULL)
 		{
 			echo "\n\t\tdlg.error(\"" . $this->_err_message . "\");";
 		}
 		echo "\n\t\tshowMenuBar();\n\n";
-		if ($_profile != NULL && ($_profile->user_flags & U_FLAG_NO_PASSWORD) != 0)
+		if ($_profile != NULL && ($_profile->user_flags & USER_FLAG_NO_PASSWORD) != 0)
 		{
 			echo "\n\t\tmr.initProfile();\n\n";
 		}

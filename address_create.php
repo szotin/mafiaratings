@@ -17,7 +17,7 @@ try
 	}
 	$club_id = $_REQUEST['club'];
 	
-	if ($_profile == NULL || !$_profile->is_manager($club_id))
+	if ($_profile == NULL || !$_profile->is_club_manager($club_id))
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}

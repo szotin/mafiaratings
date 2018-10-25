@@ -8,6 +8,31 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	private function check_name($name, $club_id, $id = -1)
+	{
+		global $_profile;
+
+		if ($name == '')
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('season name')));
+		}
+
+		check_name($name, get_label('season name'));
+
+		if ($id > 0)
+		{
+			$query = new DbQuery('SELECT name FROM seasons WHERE name = ? AND club_id = ? AND id <> ?', $name, $club_id, $id);
+		}
+		else
+		{
+			$query = new DbQuery('SELECT name FROM seasons WHERE name = ? AND club_id = ?', $name, $club_id);
+		}
+		if ($query->next())
+		{
+			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Season name'), $name));
+		}
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -16,11 +41,11 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
 		$name = get_required_param('name');
-		check_season_name($name, $club->id);
+		$this->check_name($name, $club->id);
 		
 		$start_month = (int)get_required_param('start_month');
 		$start_day = (int)get_required_param('start_day');
@@ -48,7 +73,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create a season in the club.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create a season in the club.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('name', 'Season name.');
 		$help->request_param('start_month', 'The month when the season starts. Integer 1-12.');
@@ -61,11 +86,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function create_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// change
 	//-------------------------------------------------------------------------------------------------------
@@ -75,11 +95,11 @@ class ApiPage extends OpsApiPageBase
 		
 		$season_id = (int)get_required_param('season_id');
 		list ($club_id, $name) = Db::record(get_label('season'), 'SELECT club_id, name FROM seasons WHERE id = ?', $season_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
 		$name = get_optional_param('name', $name);
-		check_season_name($name, $club->id, $season_id);
+		$this->check_name($name, $club->id, $season_id);
 		
 		$start_month = get_required_param('start_month');
 		$start_day = get_required_param('start_day');
@@ -104,7 +124,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change the season.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change the season.');
 		$help->request_param('season_id', 'Season id.');
 		$help->request_param('name', 'Season name.', 'remains the same');
 		$help->request_param('start_month', 'The month when the season starts. Integer 1-12.');
@@ -115,11 +135,6 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('end_year', 'The year when the season ends. 4 digit integer like 2018.');
 		$help->response_param('season_id', 'Id of the newly created season.');
 		return $help;
-	}
-	
-	function change_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -132,7 +147,7 @@ class ApiPage extends OpsApiPageBase
 		$season_id = (int)get_required_param('season_id');
 	
 		list ($club_id) = Db::record(get_label('season'), 'SELECT club_id FROM seasons WHERE id = ?', $season_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
 		Db::begin();
@@ -143,14 +158,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete season.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete season.');
 		$help->request_param('season_id', 'Season id.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER;
 	}
 }
 

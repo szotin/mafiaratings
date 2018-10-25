@@ -154,7 +154,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('contains', 'Search pattern. For example: <a href="clubs.php?contains=co"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?contains=co</a> returns clubs containing "co" in their name.', '-');
 		$help->request_param('starts', 'Search pattern. For example: <a href="clubs.php?starts=co"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?starts=co</a> returns clubs with names starting with "co".', '-');
 		$help->request_param('club', 'Club id or club name. For example: <a href="clubs.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?club=1</a> returns information Vancouver Mafia Club.', '-');

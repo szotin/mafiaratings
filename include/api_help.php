@@ -101,9 +101,11 @@ class ApiHelp
 	public $text;
 	public $request;
 	public $response;
+	public $permissions;
 	
-	function __construct($text = '')
+	function __construct($permissions, $text = '')
 	{
+		$this->permissions = $permissions;
 		$this->text = $text;
 		$this->request = array();
 		$this->response = array();

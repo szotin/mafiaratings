@@ -6,6 +6,7 @@ class Page extends PageBase
 {
 	protected function show_body()
 	{
+		check_permissions(PERMISSION_ADMIN);
 		$var = '_SESSION';
 		if (isset($_REQUEST['var']))
 		{

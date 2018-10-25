@@ -8,6 +8,31 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	private function check_name($name, $club_id, $id = -1)
+	{
+		global $_profile;
+
+		if ($name == '')
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('scoring system name')));
+		}
+
+		check_name($name, get_label('scoring system name'));
+
+		if ($id > 0)
+		{
+			$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND (club_id = ? OR club_id IS NULL) AND id <> ?', $name, $club_id, $id);
+		}
+		else
+		{
+			$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND (club_id = ? OR club_id IS NULL)', $name, $club_id);
+		}
+		if ($query->next())
+		{
+			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Scoring system name'), $name));
+		}
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -22,7 +47,7 @@ class ApiPage extends OpsApiPageBase
 				$club_id = NULL;
 			}
 		}
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		$copy_id = 0;
 		if (isset($_REQUEST['copy_id']))
@@ -33,7 +58,7 @@ class ApiPage extends OpsApiPageBase
 		$name = trim(get_required_param('name'));
 		
 		Db::begin();
-		check_scoring_name($name, $club_id);
+		$this->check_name($name, $club_id);
 		
 		if ($copy_id > 0)
 		{
@@ -61,17 +86,12 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create scoring system in the club. Or create a global scoring system. "Global" means that it can be used in any club. Creating global scoring system requires <em>admin</em> permissions.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create scoring system in the club. Or create a global scoring system. "Global" means that it can be used in any club. Creating global scoring system requires <em>admin</em> permissions.');
 		$help->request_param('club_id', 'Club id.', 'global scoring system is created.');
 		$help->request_param('name', 'Scoring system name.');
 		$help->request_param('copy_id', 'Id of the existing scoring system to be used as an initial template. If set, all the rules from this system are copied to the new system.', 'empty scoring system is created.');
 		$help->response_param('scoring_id', 'Id of the newly created scoring system.');
 		return $help;
-	}
-	
-	function create_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_ADMIN;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -82,11 +102,11 @@ class ApiPage extends OpsApiPageBase
 		$scoring_id = get_required_param('scoring_id');
 		
 		list ($club_id, $name) = Db::record(get_label('scoring system'), 'SELECT club_id, name FROM scorings WHERE id = ?', $scoring_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 
 		Db::begin();
 		$name = trim(get_optioanl_param('name', $name));
-		check_scoring_name($name, $club_id, $scoring_id);
+		$this->check_name($name, $club_id, $scoring_id);
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
 		db_log('scoring system', 'Changed', 'name=' . $name, $scoring_id, $club_id);
 		Db::commit();
@@ -94,15 +114,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change scoring system.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change scoring system.');
 		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) updating requires <em>admin</em> permissions.');
 		$help->request_param('name', 'Scoring system name.', 'remains the same.');
 		return $help;
-	}
-	
-	function change_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -113,7 +128,7 @@ class ApiPage extends OpsApiPageBase
 		$scoring_id = (int)get_required_param('scoring_id');
 		
 		list ($club_id) = Db::record(get_label('scoring system'), 'SELECT club_id FROM scorings WHERE id = ?', $scoring_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 
 		Db::begin();
 		Db::exec(get_label('scoring system'), 'DELETE FROM scoring_rules WHERE scoring_id = ?', $scoring_id);
@@ -124,14 +139,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete scoring system.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete scoring system.');
 		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) deleting requires <em>admin</em> permissions.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_ADMIN;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -142,7 +152,7 @@ class ApiPage extends OpsApiPageBase
 		$scoring_id = (int)get_required_param('scoring_id');
 		
 		list ($club_id) = Db::record(get_label('scoring system'), 'SELECT club_id FROM scorings WHERE id = ?', $scoring_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 
 		$matter = (int)get_required_param('matter');
 		if ($matter < 0 || $matter >= SCORING_MATTER_COUNT)
@@ -225,7 +235,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_rule_op_help()
 	{
-		$help = new ApiHelp(
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER,
 			'Create a scoring rule. Scoring system consists of the rules. Once the game result matches the scoring rule, a player gets some points defined by the rule. Examples:
 			<dl>
 				<dt class="plain">{ matter:1, category:0, roles:12, policy:0, min_dep:0, max_dep:0, min_points:3, max_points:3}</dt>
@@ -301,11 +311,6 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('max_points', 'Maximum number of poins that players can get out of this policy (float). Please refer to the <q>policy</q> parameter to understand how to use it.');
 		return $help;
 	}
-	
-	function create_rule_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_ADMIN;
-	}
 
 	//-------------------------------------------------------------------------------------------------------
 	// delete_rule
@@ -315,7 +320,7 @@ class ApiPage extends OpsApiPageBase
 		$scoring_id = (int)get_required_param('scoring_id');
 		
 		list ($club_id) = Db::record(get_label('scoring system'), 'SELECT club_id FROM scorings WHERE id = ?', $scoring_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 
 		$matter = (int)get_required_param('matter');
 		$category = (int)get_required_param('category');
@@ -327,7 +332,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_rule_op_help()
 	{
-		$help = new ApiHelp('Delete a number of scoring rules. Note that there are only two parameters identifying scoring rule - <q>matter</q> and <q>category</q>. All rules with this matter in this category are deleted.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete a number of scoring rules. Note that there are only two parameters identifying scoring rule - <q>matter</q> and <q>category</q>. All rules with this matter in this category are deleted.');
 		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) deleting a rule requires <em>admin</em> permissions.');
 		$help->request_param('matter', 
 			'What happens with a player in the game in order to trigger this rule. If the rule is triggered the player gains the points specified by the rule. Possible values are:
@@ -363,11 +368,6 @@ class ApiPage extends OpsApiPageBase
 				</ul>');
 		return $help;
 	}
-	
-	function delete_rule_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_ADMIN;
-	}
 
 	//-------------------------------------------------------------------------------------------------------
 	// change_sorting
@@ -377,7 +377,7 @@ class ApiPage extends OpsApiPageBase
 		$scoring_id = (int)get_required_param('scoring_id');
 		
 		list ($club_id) = Db::record(get_label('scoring system'), 'SELECT club_id FROM scorings WHERE id = ?', $scoring_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 
 		$sorting = get_required_param('sorting');
 		Db::begin();
@@ -388,7 +388,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_sorting_op_help()
 	{
-		$help = new ApiHelp('Change sorting rules for the scoring system. Sorting rule is what happens when two or more players have the same number of points. How are they sorted in the scoring table. When a system is created, sorting rules by default are "acgk".');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change sorting rules for the scoring system. Sorting rule is what happens when two or more players have the same number of points. How are they sorted in the scoring table. When a system is created, sorting rules by default are "acgk".');
 		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) changing sorting requires <em>admin</em> permissions.');
 		$help->request_param('sorting', 
 			'A string that describes sorting. Every letter in the string means some sorting parameter. The order of letters mean sorting priority. Dash '-' before the character reverses it. For example:
@@ -417,11 +417,6 @@ class ApiPage extends OpsApiPageBase
 					<li>q - a player who surrendered more often wins.</li>
 				</ul>');
 		return $help;
-	}
-	
-	function change_sorting_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_ADMIN;
 	}
 }
 

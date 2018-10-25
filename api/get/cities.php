@@ -149,7 +149,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('contains', 'Search pattern. For example: <a href="cities.php?contains=va"><?php echo PRODUCT_URL; ?>/api/get/cities.php?contains=va</a> returns cities containing "va" in their name.', '-');
 		$help->request_param('starts', 'Search pattern. For example: <a href="cities.php?starts=va"><?php echo PRODUCT_URL; ?>/api/get/cities.php?starts=va</a> returns cities with names starting with "va".', '-');
 		$help->request_param('city', 'City id or city name. For example: <a href="cities.php?city=1"><?php echo PRODUCT_URL; ?>/api/get/cities.php?city=1</a> returns information about Vancouver; <a href="cities.php?city=moscow"><?php echo PRODUCT_URL; ?>/api/get/cities.php?city=moscow</a> returns information about Moscow.', '-');

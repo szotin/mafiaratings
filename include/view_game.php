@@ -115,7 +115,7 @@ class ViewGame
 		{
 			return false;
 		}
-		return $_profile->is_admin() || $_profile->is_manager($this->gs->club_id);
+		return $_profile->is_admin() || $_profile->is_club_manager($this->gs->club_id);
 	}
 	
 	function get_title()

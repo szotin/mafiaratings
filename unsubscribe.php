@@ -11,6 +11,7 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_USER);
 		if ($_profile->is_admin())
 		{
 			$this->clubs = array();
@@ -33,27 +34,27 @@ class Page extends PageBase
 			{
 				if (isset($_REQUEST['club' . $club->id]))
 				{
-					if (($club->flags & UC_FLAG_SUBSCRIBED) == 0)
+					if (($club->flags & USER_CLUB_FLAG_SUBSCRIBED) == 0)
 					{
 						Db::begin();
-						Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . UC_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
+						Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
 						if (Db::affected_rows() > 0)
 						{
 							db_log('user', 'Subscribed', NULL, $_profile->user_id, $club->id);
 						}
-						$club->flags |= UC_FLAG_SUBSCRIBED;
+						$club->flags |= USER_CLUB_FLAG_SUBSCRIBED;
 						Db::commit();
 					}
 				}
-				else if (($club->flags & UC_FLAG_SUBSCRIBED) != 0)
+				else if (($club->flags & USER_CLUB_FLAG_SUBSCRIBED) != 0)
 				{
 					Db::begin();
-					Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . UC_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
+					Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
 					if (Db::affected_rows() > 0)
 					{
 						db_log('user', 'Unsubscribed', NULL, $_profile->user_id, $club->id);
 					}
-					$club->flags &= ~UC_FLAG_SUBSCRIBED;
+					$club->flags &= ~USER_CLUB_FLAG_SUBSCRIBED;
 					Db::commit();
 				}
 			}
@@ -61,17 +62,17 @@ class Page extends PageBase
 			$flags = 0;
 			if (isset($_REQUEST['mnot']))
 			{
-				$flags |= U_FLAG_MESSAGE_NOTIFY;
+				$flags |= USER_FLAG_MESSAGE_NOTIFY;
 			}
 			if (isset($_REQUEST['pnot']))
 			{
-				$flags |= U_FLAG_PHOTO_NOTIFY;
+				$flags |= USER_FLAG_PHOTO_NOTIFY;
 			}
-			if (($_profile->user_flags & (U_FLAG_PHOTO_NOTIFY | U_FLAG_MESSAGE_NOTIFY)) != $flags)
+			if (($_profile->user_flags & (USER_FLAG_PHOTO_NOTIFY | USER_FLAG_MESSAGE_NOTIFY)) != $flags)
 			{
 				Db::begin();
-				Db::exec(get_label('user'), 'UPDATE users SET flags = ((flags & ~' . (U_FLAG_PHOTO_NOTIFY | U_FLAG_MESSAGE_NOTIFY) . ') | ' . $flags . ') WHERE id = ?', $_profile->user_id);
-				$_profile->user_flags &= ~(U_FLAG_PHOTO_NOTIFY | U_FLAG_MESSAGE_NOTIFY);
+				Db::exec(get_label('user'), 'UPDATE users SET flags = ((flags & ~' . (USER_FLAG_PHOTO_NOTIFY | USER_FLAG_MESSAGE_NOTIFY) . ') | ' . $flags . ') WHERE id = ?', $_profile->user_id);
+				$_profile->user_flags &= ~(USER_FLAG_PHOTO_NOTIFY | USER_FLAG_MESSAGE_NOTIFY);
 				$_profile->user_flags |= $flags;
 				if (Db::affected_rows() > 0)
 				{
@@ -98,7 +99,7 @@ class Page extends PageBase
 		foreach ($this->clubs as $club)
 		{
 			echo '<input type="checkbox" name="club' . $club->id . '"';
-			if (($club->flags & UC_FLAG_SUBSCRIBED) != 0)
+			if (($club->flags & USER_CLUB_FLAG_SUBSCRIBED) != 0)
 			{
 				echo ' checked';
 			}
@@ -107,14 +108,14 @@ class Page extends PageBase
 		echo '</td></tr>';
 		
 		echo '<tr><td><input type="checkbox" name="mnot"';
-		if (($_profile->user_flags & U_FLAG_MESSAGE_NOTIFY) != 0)
+		if (($_profile->user_flags & USER_FLAG_MESSAGE_NOTIFY) != 0)
 		{
 			echo ' checked';
 		}
 		echo '>' . get_label('I would like to receive emails when someone replies to me or sends me a private message.') . '<br>';
 		
 		echo '<input type="checkbox" name="pnot"';
-		if (($_profile->user_flags & U_FLAG_PHOTO_NOTIFY) != 0)
+		if (($_profile->user_flags & USER_FLAG_PHOTO_NOTIFY) != 0)
 		{
 			echo ' checked';
 		}
@@ -125,6 +126,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Email subscription'), PERM_USER);
+$page->run(get_label('Email subscription'));
 
 ?>

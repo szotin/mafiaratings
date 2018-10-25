@@ -17,20 +17,30 @@ define('AGENT_WEBOS', 5);
 define('SITE_STYLE_DESKTOP', 0);
 define('SITE_STYLE_MOBILE', 1);
 
+// user-league flags
+// 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
+// 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag moder)
+// 03 - 0x0004 -      4 - reserved (not to interfere with user-club perm flag manager)
+// 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
+// 16 - 0x8000 -  32768 - perm manager
+define('USER_LEAGUE_PERM_MANAGER', 0x8000);
+define('USER_LEAGUE_PERM_MASK', 0x8000); // USER_LEAGUE_PERM_MANAGER
+
 // user-club flags
-// 1 - 0x0001 -      1 - perm player
-// 2 - 0x0002 -      2 - perm mod
-// 3 - 0x0004 -      4 - perm manager
-// 4 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
-// 5 - 0x0010 -     16 - subscribed
-// 6 - 0x0020 -     32 - banned
-define('UC_PERM_PLAYER', 0x1);
-define('UC_PERM_MODER', 0x2);
-define('UC_PERM_MANAGER', 0x4);
-define('UC_FLAG_SUBSCRIBED', 0x10);
-define('UC_FLAG_BANNED', 0x20); 
-define('UC_NEW_PLAYER_FLAGS', 0x11); // UC_PERM_PLAYER | UC_FLAG_SUBSCRIBED
-define('UC_PERM_MASK', 0x7); // UC_PERM_PLAYER | UC_PERM_MODER | UC_PERM_MANAGER
+// 01 - 0x0001 -      1 - perm player
+// 02 - 0x0002 -      2 - perm mod
+// 03 - 0x0004 -      4 - perm manager
+// 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
+// 05 - 0x0010 -     16 - subscribed
+// 06 - 0x0020 -     32 - banned
+// 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
+define('USER_CLUB_PERM_PLAYER', 0x1);
+define('USER_CLUB_PERM_MODER', 0x2);
+define('USER_CLUB_PERM_MANAGER', 0x4);
+define('USER_CLUB_FLAG_SUBSCRIBED', 0x10);
+define('USER_CLUB_FLAG_BANNED', 0x20); 
+define('USER_CLUB_NEW_PLAYER_FLAGS', 0x11); // USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED
+define('USER_CLUB_PERM_MASK', 0x7); // USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER
 
 // user flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
@@ -48,29 +58,28 @@ define('UC_PERM_MASK', 0x7); // UC_PERM_PLAYER | UC_PERM_MODER | UC_PERM_MANAGER
 // 13 - 0x1000 -   4096 - icon mask
 // 14 - 0x2000 -   8192 - icon mask
 // 15 - 0x4000 -  16384 - name was changed during registration
-define('U_PERM_ADMIN', 0x8);
-define('U_FLAG_NO_PASSWORD', 0x20);
-define('U_FLAG_MALE', 0x40);
-define('U_FLAG_BANNED', 0x80);
-define('U_FLAG_MESSAGE_NOTIFY', 0x100);
-define('U_FLAG_PHOTO_NOTIFY', 0x200);
-define('U_FLAG_IMMUNITY', 0x400);
-define('U_FLAG_NAME_CHANGED', 0x4000);
-define('U_PERM_MASK', 0x8); // U_PERM_ADMIN
+// 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
+define('USER_PERM_ADMIN', 0x8);
+define('USER_FLAG_NO_PASSWORD', 0x20);
+define('USER_FLAG_MALE', 0x40);
+define('USER_FLAG_BANNED', 0x80);
+define('USER_FLAG_MESSAGE_NOTIFY', 0x100);
+define('USER_FLAG_PHOTO_NOTIFY', 0x200);
+define('USER_FLAG_IMMUNITY', 0x400);
+define('USER_FLAG_NAME_CHANGED', 0x4000);
+define('USER_PERM_MASK', 0x8); // USER_PERM_ADMIN
 
 define('USER_INITIAL_RATING', 0);
 
-define('U_ICON_MASK', 0x3800);
-define('U_ICON_MASK_OFFSET', 11);
-define('U_ICON_MAX_VERSION', 7);
+define('USER_ICON_MASK', 0x3800);
+define('USER_ICON_MASK_OFFSET', 11);
+define('USER_ICON_MAX_VERSION', 7);
 
-define('U_NEW_PLAYER_FLAGS', 0x320); // U_FLAG_MESSAGE_NOTIFY | U_FLAG_PHOTO_NOTIFY | U_FLAG_NO_PASSWORD
+define('NEW_USER_FLAGS', 0x320); // USER_FLAG_MESSAGE_NOTIFY | USER_FLAG_PHOTO_NOTIFY | USER_FLAG_NO_PASSWORD
 
-define('INCOMER_FLAGS_MALE', U_FLAG_MALE);
+define('INCOMER_FLAGS_MALE', USER_FLAG_MALE);
 define('INCOMER_FLAGS_EXISTING', 0x80);
 
-define('PERM_STRANGER', 0x8000000);
-define('PERM_USER', 0x4000000);
 define('PERM_OFFICER', 14); // admin, manager or moderator
 define('PERM_ALL', 0xffffffff);
 
@@ -179,6 +188,18 @@ define('NEW_CLUB_FLAGS', 0);
 define('CLUB_ICON_MASK', 0xe);
 define('CLUB_ICON_MASK_OFFSET', 1);
 define('CLUB_ICON_MAX_VERSION', 7);
+
+// league flags
+// 1 - 0x0001 -      1 - retired
+// 2 - 0x0002 -      2 - icon mask
+// 3 - 0x0004 -      4 - icon mask
+// 4 - 0x0008 -      8 - icon mask
+define('LEAGUE_FLAG_RETIRED', 1);
+define('NEW_LEAGUE_FLAGS', 0);
+
+define('LEAGUE_ICON_MASK', 0xe);
+define('LEAGUE_ICON_MASK_OFFSET', 1);
+define('LEAGUE_ICON_MAX_VERSION', 7);
 
 define('CITY_FLAG_NOT_CONFIRMED', 1);
 define('COUNTRY_FLAG_NOT_CONFIRMED', 1);

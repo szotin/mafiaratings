@@ -12,6 +12,8 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_page;
 		
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->id);
+		
 		list ($count) = Db::record(get_label('season'), 'SELECT count(*) FROM seasons WHERE club_id = ?', $this->id);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
@@ -43,6 +45,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Seasons'), UC_PERM_MANAGER);
+$page->run(get_label('Seasons'));
 
 ?>

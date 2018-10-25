@@ -25,7 +25,7 @@ class ApiPage extends ControlApiPageBase
 		
 		if ($term == '')
 		{
-			$query = new DbQuery('SELECT u.id, u.name, NULL FROM users u WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0');
+			$query = new DbQuery('SELECT u.id, u.name, NULL FROM users u WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0');
 			if (isset($_REQUEST['event']))
 			{
 				$query->add(' AND u.id IN (SELECT DISTINCT p.user_id FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?)', $_REQUEST['event']);
@@ -40,11 +40,11 @@ class ApiPage extends ControlApiPageBase
 		{
 			$query = new DbQuery(
 				'SELECT id, name, NULL FROM users ' .
-					' WHERE name LIKE ? AND (flags & ' . U_FLAG_BANNED . ') = 0' .
+					' WHERE name LIKE ? AND (flags & ' . USER_FLAG_BANNED . ') = 0' .
 					' UNION' .
 					' SELECT DISTINCT u.id, u.name, r.nick_name FROM users u' . 
 					' JOIN registrations r ON r.user_id = u.id' .
-					' WHERE r.nick_name <> u.name AND (u.flags & ' . U_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ? ORDER BY name',
+					' WHERE r.nick_name <> u.name AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ? ORDER BY name',
 				'%' . $term . '%',
 				'%' . $term . '%');
 		}

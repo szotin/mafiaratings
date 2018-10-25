@@ -29,12 +29,12 @@ function def_club()
 		$priority = 0;
 		foreach ($_profile->clubs as $club)
 		{
-			if ($club->flags & (UC_PERM_MODER | UC_PERM_MANAGER) == (UC_PERM_MODER | UC_PERM_MANAGER))
+			if ($club->flags & (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) == (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER))
 			{
 				$club_id = $club->id;
 				break;
 			}
-			else if ($club->flags & UC_PERM_MODER)
+			else if ($club->flags & USER_CLUB_PERM_MODER)
 			{
 				$priority = 1;
 				$club_id = $club->id;
@@ -60,13 +60,13 @@ class GPlayer
 	public $flags;
 	public $nicks;
 
-	function __construct($id, $name, $club, $u_flags, $uc_flags)
+	function __construct($id, $name, $club, $u_flags, $user_club_flags)
 	{
 		$this->id = (int)$id;
 		$this->name = $name;
 		$this->club = $club; 
 		$this->nicks = array();
-		$this->flags = (int)(($uc_flags & (UC_PERM_PLAYER | UC_PERM_MODER)) + ($u_flags & (U_FLAG_MALE | U_FLAG_IMMUNITY)));
+		$this->flags = (int)(($user_club_flags & (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
 	}
 }
 
@@ -195,16 +195,16 @@ class GClub
 			'SELECT u.id, u.name, c.name, u.flags, uc.flags FROM user_clubs uc' .
 				' JOIN users u ON u.id = uc.user_id' .
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-				' WHERE (uc.flags & ' . UC_FLAG_BANNED .
-					') = 0 AND (uc.flags & ' . (UC_PERM_PLAYER | UC_PERM_MODER) .
-					') <> 0 AND (u.flags & ' . U_FLAG_BANNED .
+				' WHERE (uc.flags & ' . USER_CLUB_FLAG_BANNED .
+					') = 0 AND (uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER) .
+					') <> 0 AND (u.flags & ' . USER_FLAG_BANNED .
 					') = 0 AND uc.club_id = ?' .
 				' ORDER BY u.rating DESC',
 			$id);
 		while ($row = $query->next())
 		{
-			list ($user_id, $user_name, $user_club, $u_flags, $uc_flags) = $row;
-			$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $u_flags, $uc_flags);
+			list ($user_id, $user_name, $user_club, $u_flags, $user_club_flags) = $row;
+			$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $u_flags, $user_club_flags);
 			if ($haunters_count < 50)
 			{
 				$this->haunters[] = (int)$user_id;
@@ -223,7 +223,7 @@ class GClub
 		}
 
 		$this->events = array();
-		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & UC_PERM_MODER))
+		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & USER_CLUB_PERM_MODER))
 		{
 			$events_str = '(0';
 			$query = new DbQuery('SELECT id, rules_id, name, start_time, languages, duration, flags, address_id FROM events WHERE (start_time + duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?) OR id = ?', $id, $game->event_id);
@@ -243,7 +243,7 @@ class GClub
 				{
 					if (!isset($this->players[$user_id]))
 					{
-						$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $user_flags, UC_PERM_PLAYER);
+						$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $user_flags, USER_CLUB_PERM_PLAYER);
 						if ($haunters_count < 50)
 						{
 							$this->haunters[] = (int)$user_id;
@@ -268,7 +268,7 @@ class GClub
 				$incomer_id = -$incomer_id;
 				if (isset($this->events[$event_id]))
 				{
-					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, $this->name, U_NEW_PLAYER_FLAGS, $incomer_flags | UC_PERM_PLAYER);
+					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, $this->name, NEW_USER_FLAGS, $incomer_flags | USER_CLUB_PERM_PLAYER);
 					if (!is_array($this->events[$event_id]->reg))
 					{
 						$this->events[$event_id]->reg = array($incomer_id => $nick);
@@ -347,7 +347,7 @@ class GUser
 		$this->id = (int)$_profile->user_id;
 		$this->name = $_profile->user_name;
 		$this->flags = (int)$_profile->user_flags;
-		$this->manager = ($_profile->clubs[$club_id]->flags & UC_PERM_MANAGER) ? 1 : 0;
+		$this->manager = ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MANAGER) ? 1 : 0;
 		
 		$query = new DbQuery('SELECT flags, l_autosave, g_autosave FROM game_settings WHERE user_id = ?', $this->id);
 		$this->settings = new GUserSettings($query->next());
@@ -463,7 +463,7 @@ class CommandQueue
 		}
 		
 		$club = $_profile->clubs[$this->club_id];
-		if (($club->flags & UC_PERM_MANAGER) == 0)
+		if (($club->flags & USER_CLUB_PERM_MANAGER) == 0)
 		{
 			throw new Exc(get_label('No permissions'));
 		}
@@ -648,10 +648,10 @@ class CommandQueue
 			$email = trim($rec->email);
 		}
 		
-		$flags = U_NEW_PLAYER_FLAGS;
+		$flags = NEW_USER_FLAGS;
 		if ($rec->flags & INCOMER_FLAGS_MALE)
 		{
-			$flags |= U_FLAG_MALE;
+			$flags |= USER_FLAG_MALE;
 		}
 		
 		$message = NULL;
@@ -659,7 +659,7 @@ class CommandQueue
 		if (!is_valid_name($name))
 		{
 			$name = correct_name($name);
-			$flags |= U_FLAG_NAME_CHANGED;
+			$flags |= USER_FLAG_NAME_CHANGED;
 			$message = get_label('User name [0] has been changed to [1] - illegal characters.', $rec->name, $name);
 		}
 		
@@ -683,7 +683,7 @@ class CommandQueue
 				}
 				$n = $name . $i;
 				++$i;
-				$flags |= U_FLAG_NAME_CHANGED;
+				$flags |= USER_FLAG_NAME_CHANGED;
 				$message = get_label('User name [0] has been changed to [1] - name already exists.', $rec->name, $n);
 			}
 		
@@ -844,7 +844,7 @@ class ApiPage extends OpsApiPageBase
 		
 		try
 		{
-			$this->check_permissions($club_id);
+			check_permissions(PERMISSION_CLUB_MODERATOR, $club_id);
 		}
 		catch (LoginExc $e)
 		{
@@ -894,7 +894,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function sync_op_help()
 	{
-		$help = new ApiHelp('Sychronize game client data with the server.');
+		$help = new ApiHelp(PERMISSION_CLUB_MODERATOR, 'Sychronize game client data with the server.');
 		$help->request_param('club_id', 'Club id.', 'default club is used, which is the main club of the logged user. If logged user does not have main club, then a random club where he/she has permissions is used.');
 		$help->request_param('game', 'Json string fully describing current game state. TODO!!! Explain it is a separate document.');
 		$help->request_param('data', 'Command queue with some additional actions.  TODO!!! Provide more details.
@@ -915,11 +915,6 @@ class ApiPage extends OpsApiPageBase
 						<dd></dd>
 				<dl>');
 		return $help;
-	}
-	
-	function sync_op_permissions()
-	{
-		return API_PERM_FLAG_USER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -952,23 +947,23 @@ class ApiPage extends OpsApiPageBase
 			$query = new DbQuery(
 				'SELECT u.id, u.name as _name, NULL, u.flags, c.name FROM users u' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-					' WHERE (u.name LIKE ? OR u.email LIKE ?) AND (u.flags & ' . U_FLAG_BANNED . ') = 0' .
+					' WHERE (u.name LIKE ? OR u.email LIKE ?) AND (u.flags & ' . USER_FLAG_BANNED . ') = 0' .
 					' UNION' .
 					' SELECT DISTINCT u.id, u.name as _name, r.nick_name, u.flags, c.name FROM users u' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 					' JOIN registrations r ON r.user_id = u.id' .
-					' WHERE r.nick_name <> u.name AND (u.flags & ' . U_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ? ORDER BY _name',
+					' WHERE r.nick_name <> u.name AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ? ORDER BY _name',
 				$name_wildcard,
 				$name_wildcard,
 				$name_wildcard);
 		}
 		else if ($club_id > 0)
 		{
-			$query = new DbQuery('SELECT u.id, u.name, NULL, u.flags, c.name FROM users u JOIN user_clubs uc ON u.id = uc.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE uc.club_id = ? AND (uc.flags & ' . UC_FLAG_BANNED . ') = 0 AND (u.flags & ' . U_FLAG_BANNED . ') = 0 ORDER BY rating DESC', $club_id);
+			$query = new DbQuery('SELECT u.id, u.name, NULL, u.flags, c.name FROM users u JOIN user_clubs uc ON u.id = uc.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE uc.club_id = ? AND (uc.flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 ORDER BY rating DESC', $club_id);
 		}
 		else
 		{
-			$query = new DbQuery('SELECT u.id, u.name, NULL, u.flags, c.name FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE (u.flags & ' . U_FLAG_BANNED . ') = 0 ORDER BY rating DESC');
+			$query = new DbQuery('SELECT u.id, u.name, NULL, u.flags, c.name FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0 ORDER BY rating DESC');
 		}
 		
 		if ($num > 0)
@@ -980,7 +975,7 @@ class ApiPage extends OpsApiPageBase
 		while ($row = $query->next())
 		{
 			list ($uid, $uname, $nick, $uflags, $club_name) = $row;
-			$p = new GPlayer($uid, $uname, $club_name, $uflags, UC_PERM_PLAYER);
+			$p = new GPlayer($uid, $uname, $club_name, $uflags, USER_CLUB_PERM_PLAYER);
 			if ($nick != NULL && $nick != $uname)
 			{
 				$p->nicks[$nick] = 1; 
@@ -992,7 +987,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function ulist_op_help()
 	{
-		$help = new ApiHelp('Get user list for the game client application. TODO!!! Move it to get-API.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Get user list for the game client application. TODO!!! Move it to get-API.');
 		$help->request_param('club_id', 'Club id. It is used to filter users when <q>name</q> is missing or empty. Not required.');
 		$help->request_param('num', 'Number of users to return.', 'all matching users are returned.');
 		$help->request_param('name', 'Name filter. Only the users with matching nicknames are returned.', 'all users are returned.');
@@ -1012,11 +1007,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function ulist_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// replace_incomer
 	//-------------------------------------------------------------------------------------------------------
@@ -1026,7 +1016,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		
 		list ($reg_id, $old_user_id, $event_id, $club_id, $name) = Db::record(get_label('player'), 'SELECT r.id, r.user_id, e.id, e.club_id, i.name FROM incomers i JOIN registrations r ON r.incomer_id = i.id JOIN events e ON r.event_id = e.id WHERE i.id = ?', $incomer_id);
-		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
+		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MODER) == 0)
 		{
 			throw new Exc(get_label('No permissions'));
 		}
@@ -1078,7 +1068,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function replace_incomer_op_permissions()
 	{
-		return API_PERM_FLAG_MANAGER;
+		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -1092,7 +1082,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, moderator_id FROM games WHERE id = ?', $game_id);
-		$this->check_permissions($club_id, $moderator_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		
 		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
@@ -1101,7 +1091,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
 		
 		// send notification to admin
-		$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
+		$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
 		while ($row = $query->next())
 		{
 			list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
@@ -1127,14 +1117,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete game.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete game.');
 		$help->request_param('game_id', 'Game id.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_OWNER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -1148,8 +1133,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id, $club_name, $log, $moderator_id) = Db::record(get_label('game'), 'SELECT c.id, c.name, g.log, g.moderator_id FROM games g JOIN clubs c ON c.id = g.club_id WHERE g.id = ?', $game_id);
-		$this->check_permissions($club_id, $moderator_id);
-		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MODER) == 0)
 		{
 			throw new Exc(get_label('No permissions'));
 		}
@@ -1184,7 +1169,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'UPDATE games SET result = 0, user_id = ? WHERE id = ?', $_profile->user_id, $game_id);
 		
 		// send notification to admin
-		$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
+		$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
 		while ($row = $query->next())
 		{
 			list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
@@ -1214,11 +1199,6 @@ class ApiPage extends OpsApiPageBase
 		// $this->show_help_response_params_head();
 	// }
 	
-	function change_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_OWNER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------
@@ -1226,6 +1206,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_USER);
 		$game_id = (int)get_required_param('id');
 		$comment = prepare_message(get_required_param('comment'));
 		$lang = detect_lang($comment);
@@ -1252,7 +1233,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
 		
-			if ($user_id == $_profile->user_id || ($user_flags & U_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
 			{
 				continue;
 			}
@@ -1283,15 +1264,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function comment_op_help()
 	{
-		$help = new ApiHelp('Comment game.');
+		$help = new ApiHelp(PERMISSION_USER, 'Comment game.');
 		$help->request_param('id', 'Game id.');
 		$help->request_param('comment', 'Comment text.');
 		return $help;
-	}
-	
-	function ban_op_permissions()
-	{
-		return API_PERM_FLAG_USER;
 	}
 }
 

@@ -679,11 +679,11 @@ class GamePlayerStats
 			$query = new DbQuery('UPDATE users SET rating = ?, games = games + 1, games_won = games_won + ?', $this->rating_before + $this->rating_earned, $this->won);
 			if ($player->kill_round == 0 && $player->state == PLAYER_STATE_KILLED_NIGHT)
 			{
-				$query->add(', flags = (flags | ' . U_FLAG_IMMUNITY . ')');
+				$query->add(', flags = (flags | ' . USER_FLAG_IMMUNITY . ')');
 			}
 			else
 			{
-				$query->add(', flags = (flags & ' . ~U_FLAG_IMMUNITY . ')');
+				$query->add(', flags = (flags & ' . ~USER_FLAG_IMMUNITY . ')');
 			}
 			$query->add(' WHERE id = ?', $player->id);
 			Db::exec(get_label('user'), $query);

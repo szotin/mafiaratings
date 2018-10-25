@@ -36,7 +36,7 @@ class ApiPage extends OpsApiPageBase
 			// No localization because this is an assert. The calling code must fix it.
 			throw new Exc('Neither "event_id" nor "club_id" are set in ' . $this->title . ': create');
 		}
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MEMBER, $club_id);
 		
 		$club = $_profile->clubs[$club_id];
 		
@@ -103,7 +103,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create a new youtube video reference on ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_CLUB_MEMBER, 'Create a new youtube video reference on ' . PRODUCT_NAME . '.');
 		
 		$help->request_param(
 			'club_id', 
@@ -140,11 +140,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function create_op_permissions()
-	{
-		return API_PERM_FLAG_MEMBER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// change
 	//-------------------------------------------------------------------------------------------------------
@@ -155,11 +150,11 @@ class ApiPage extends OpsApiPageBase
 		$video_id = (int)get_required_param('video_id');
 		
 		list ($club_id, $user_id, $game_id, $type, $lang, $time) = Db::record(get_label('video'), 'SELECT v.club_id, v.user_id, g.id, v.type, v.lang, v.video_time FROM videos v LEFT OUTER JOIN games g ON g.video_id = v.id WHERE v.id = ?', $video_id);
-		if (!$_profile->is_manager($club_id) && $_profile->user_id != $user_id)
+		if (!$_profile->is_club_manager($club_id) && $_profile->user_id != $user_id)
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
-		$this->check_permissions($club_id, $user_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
 		
 		if ($game_id != NULL)
 		{
@@ -203,7 +198,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change an existing youtube video reference on ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Change an existing youtube video reference on ' . PRODUCT_NAME . '.');
 		
 		$help->request_param('video_id', 'Id of the video.');
 		$help->request_param('lang', 'Language of the video. 1 for English; 2 for Russian. Other languages/values are not supported.', 'remains the same');
@@ -221,11 +216,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function change_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_OWNER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// delete
 	//-------------------------------------------------------------------------------------------------------
@@ -235,7 +225,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list ($club_id, $user_id, $old_video, $game_id) = Db::record(get_label('video'), 'SELECT v.club_id, v.user_id, v.video, g.id FROM videos v LEFT OUTER JOIN games g ON g.video_id = v.id WHERE v.id = ?', $video_id);
-		$this->check_permissions($club_id, $user_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
 
 		Db::exec(get_label('game'), 'UPDATE games SET video_id = NULL WHERE video_id = ?', $video_id);
 		Db::exec(get_label('video'), 'DELETE FROM user_videos WHERE video_id = ?', $video_id);
@@ -258,14 +248,9 @@ class ApiPage extends OpsApiPageBase
 
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete youtube video reference on ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete youtube video reference on ' . PRODUCT_NAME . '.');
 		$help->request_param('video_id', 'Id of the video.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER | API_PERM_FLAG_OWNER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -291,7 +276,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id, $event_id, $video_time, $lang, $old_video) = Db::record(get_label('game'), 'SELECT g.club_id, g.event_id, g.start_time, g.language, v.video FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $game_id);
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, $club_id);
 		
 		if ($old_video != NULL)
 		{
@@ -311,16 +296,11 @@ class ApiPage extends OpsApiPageBase
 	
 	function game_video_op_help()
 	{
-		$help = new ApiHelp('Create and assign new video to the existing game in ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, 'Create and assign new video to the existing game in ' . PRODUCT_NAME . '.');
 		$help->request_param('game_id', 'Game id.');
 		$help->request_param('video', 'Youtube URL of the video, or youtube id of the video. Youtube id can be found in the youtube URL - this is "v" parameter. For example: the id for this video <a href="https://www.youtube.com/watch?v=PtS2YqyKAwI" target="_blank">https://www.youtube.com/watch?v=PtS2YqyKAwI</a> is <q>PtS2YqyKAwI</q>.');
 		$help->response_param('video_id', 'Id of the newly created video.');
 		return $help;
-	}
-	
-	function game_video_op_permissions()
-	{
-		return API_PERM_FLAG_MODERATOR | API_PERM_FLAG_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -334,7 +314,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		
 		list ($club_id, $owner_id) = Db::record(get_label('video'), 'SELECT club_id, user_id FROM videos WHERE id = ?', $video_id);
-		$this->check_permissions($club_id, $owner_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $club_id, $owner_id);
 		
 		list($count) = Db::record(get_label('user'), 'SELECT count(*) FROM user_videos WHERE video_id = ? AND user_id = ?', $video_id, $user_id);
 		if ($count <= 0)
@@ -349,15 +329,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function tag_op_help()
 	{
-		$help = new ApiHelp('Tag a user on the video.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Tag a user on the video.');
 		$help->request_param('video_id', 'Id of the video.');
 		$help->request_param('user_id', 'Id of the user.');
 		return $help;
-	}
-	
-	function tag_op_permissions()
-	{
-		return API_PERM_FLAG_OWNER | API_PERM_FLAG_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -369,7 +344,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		
 		list ($club_id, $owner_id) = Db::record(get_label('video'), 'SELECT club_id, user_id FROM videos WHERE id = ?', $video_id);
-		$this->check_permissions($club_id, $owner_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $club_id, $owner_id);
 		
 		list($count) = Db::record(get_label('user'), 'SELECT count(*) FROM user_videos WHERE video_id = ? AND user_id = ?', $video_id, $user_id);
 		if ($count > 0)
@@ -383,15 +358,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function untag_op_help()
 	{
-		$help = new ApiHelp('Untag a user from the video.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Untag a user from the video.');
 		$help->request_param('video_id', 'Id of the video.');
 		$help->request_param('user_id', 'Id of the user.');
 		return $help;
-	}
-	
-	function untag_op_permissions()
-	{
-		return API_PERM_FLAG_OWNER | API_PERM_FLAG_MANAGER;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -401,6 +371,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_USER);
 		$id = (int)get_required_param('id');
 		$comment = prepare_message(get_required_param('comment'));
 		$lang = detect_lang($comment);
@@ -421,7 +392,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
 		
-			if ($user_id == $_profile->user_id || ($user_flags & U_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
 			{
 				continue;
 			}
@@ -450,15 +421,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function comment_op_help()
 	{
-		$help = new ApiHelp('Comment video.');
+		$help = new ApiHelp(PERMISSION_USER, 'Comment video.');
 		$help->request_param('id', 'Id of the video.');
 		$help->request_param('comment', 'Comment text.');
 		return $help;
-	}
-	
-	function ban_op_permissions()
-	{
-		return API_PERM_FLAG_USER;
 	}
 }
 

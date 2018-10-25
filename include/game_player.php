@@ -104,8 +104,8 @@ class Player
 				throw new FatalExc(get_label('Registration has expired for player [0]', $number + 1));
 			}
 			list ($this->nick, $flags) = $row;
-			$this->is_male = (($flags & U_FLAG_MALE) != 0);
-			$this->has_immunity = (($flags & U_FLAG_IMMUNITY) != 0);
+			$this->is_male = (($flags & USER_FLAG_MALE) != 0);
+			$this->has_immunity = (($flags & USER_FLAG_IMMUNITY) != 0);
 		}
 		else
 		{

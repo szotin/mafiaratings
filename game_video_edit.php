@@ -16,7 +16,7 @@ try
 	$id = $_REQUEST['game'];
 	
 	list($club_id, $video) = Db::record(get_label('game'), 'SELECT g.club_id, v.video FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $id);
-	if ($_profile == NULL || !isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & UC_PERM_MODER) == 0)
+	if ($_profile == NULL || !isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MODER) == 0)
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}

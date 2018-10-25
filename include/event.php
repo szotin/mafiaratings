@@ -199,7 +199,7 @@ class Event
 			$timezone = get_timezone();
 			foreach ($_profile->clubs as $club)
 			{
-				if (($club->flags & UC_PERM_MANAGER) != 0)
+				if (($club->flags & USER_CLUB_PERM_MANAGER) != 0)
 				{
 					$this->club_id = $club->id;
 					$timezone = $club->timezone;
@@ -955,7 +955,7 @@ class Event
 				$no_buttons = false;
 			}
 			
-			if ($_profile->is_manager($club_id))
+			if ($_profile->is_club_manager($club_id))
 			{
 				echo '<button class="icon" onclick="mr.eventMailing(' . $id . ')" title="' . get_label('Manage event emails') . '"><img src="images/email.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editEvent(' . $id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
@@ -977,7 +977,7 @@ class Event
 				$no_buttons = false;
 			}
 			
-			if ($_profile->is_moder($club_id) && $start_time < $now && $start_time + $duration >= $now)
+			if ($_profile->is_club_moder($club_id) && $start_time < $now && $start_time + $duration >= $now)
 			{
 				echo '<button class="icon" onclick="mr.playEvent(' . $id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
 				$no_buttons = false;
@@ -1188,7 +1188,7 @@ class EventPageBase extends PageBase
 		
 		$this->event = new Event();
 		$this->event->load($_REQUEST['id']);
-		$this->is_manager = ($_profile != NULL && $_profile->is_manager($this->event->club_id));
+		$this->is_manager = ($_profile != NULL && $_profile->is_club_manager($this->event->club_id));
 	}
 	
 	protected function show_title()

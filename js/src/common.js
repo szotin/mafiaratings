@@ -454,6 +454,37 @@ var html = new function()
 	}
 } // html
 
+function loginDialog(message, userName, onError, actionAfterLogin)
+{
+	if (typeof userName != "string")
+	{
+		userName = "";
+	}
+	
+	var html = '<p>' + message + '</p>' +
+		'<table class="dialog_form" width="100%">' +
+		'<tr><td width="140">' + l('UserName') + ':</td><td><input id="lf-name" value="' + userName + '"></td>' +
+		'<tr><td>' + l('Password') + ':</td><td><input type="password" id="lf-pwd"></td>' +
+		'<tr><td colspan="2"><input type="checkbox" id="lf-rem" checked> ' + l('remember') +
+		'</td></tr></table>';
+/*	if (userName != '')
+	{
+		html += '<script>$(function(){$("#lf-pwd").focus();});</script>';
+	}*/
+	
+	var d = dlg.okCancel(html, l('Login'), null, function()
+	{
+		login($('#lf-name').val(), $('#lf-pwd').val(), $('#lf-rem').attr('checked') ? 1 : 0, function()
+		{
+			if (typeof actionAfterLogin != "undefined")
+			{
+				actionAfterLogin();
+			}
+			refr();
+		}, onError);
+	}, onError);
+}
+
 var json = new function()
 {
 	function _success(text, onSuccess, onError, retry)
@@ -467,29 +498,7 @@ var json = new function()
 			{
 				if (typeof obj.login != "undefined")
 				{
-					if (obj.login != "string")
-					{
-						obj.login = '';
-					}
-					var html = 
-						'<table class="dialog_form" width="100%">' +
-						'<tr><td width="140">' + l('UserName') + ':</td><td><input id="lf-name" value="' + obj.login + '"></td>' +
-						'<tr><td>' + l('Password') + ':</td><td><input type="password" id="lf-pwd"></td>' +
-						'<tr><td colspan="2"><input type="checkbox" id="lf-rem" checked> ' + l('remember') +
-						'</td></tr></table>';
-	/*				if (obj.login != '')
-					{
-						html += '<script>$(function(){$("#lf-pwd").focus();});</script>';
-					}*/
-					
-					var d = dlg.okCancel(html, l('Login'), null, function()
-					{
-						login($('#lf-name').val(), $('#lf-pwd').val(), $('#lf-rem').attr('checked') ? 1 : 0, function()
-						{
-							retry();
-							refr();
-						}, onError);
-					}, onError);
+					loginDialog('', obj.login, onError, retry);
 				}
 				else if (typeof obj.error == "string")
 				{

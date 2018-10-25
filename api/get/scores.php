@@ -166,7 +166,7 @@ class ApiPage extends GetApiPageBase
 		$this->response['scoring_id'] = (int)$scoring;
 		
 		$condition = new SQL();
-		$scope_condition = new SQL(' AND (u.flags & ' . U_FLAG_BANNED . ') = 0 AND u.games > 0');
+		$scope_condition = new SQL(' AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND u.games > 0');
 		$this->response['role']	= $role;
 		
 		$scope_condition->add(get_roles_condition($role));
@@ -278,14 +278,14 @@ class ApiPage extends GetApiPageBase
 				$dst_score->club_id = $score->club_id;
 				$dst_score->num = (int)$number + 1;
 				
-				if (($score->flags & U_FLAG_MALE) != 0)
+				if (($score->flags & USER_FLAG_MALE) != 0)
 				{
 					$dst_score->male = true;
 				}
-				if (($score->flags & U_ICON_MASK) != 0)
+				if (($score->flags & USER_ICON_MASK) != 0)
 				{
-					$dst_score->image = USER_PICS_DIR . TNAILS_DIR . $score->id . '.png?' . (($score->flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
-					$dst_score->icon = USER_PICS_DIR . ICONS_DIR . $score->id . '.png?' . (($score->flags & U_ICON_MASK) >> U_ICON_MASK_OFFSET);
+					$dst_score->image = USER_PICS_DIR . TNAILS_DIR . $score->id . '.png?' . (($score->flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET);
+					$dst_score->icon = USER_PICS_DIR . ICONS_DIR . $score->id . '.png?' . (($score->flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET);
 				}
 				$dst_scores[] = $dst_score;
 			}
@@ -295,7 +295,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('contains', 'Search pattern. For example: <a href="scores.php?contains=al"><?php echo PRODUCT_URL; ?>/api/get/scores.php?contains=al</a> returns players containing "al" in their name.', '-');
 		$help->request_param('starts', 'Search pattern. For example: <a href="scores.php?starts=bo"><?php echo PRODUCT_URL; ?>/api/get/scores.php?starts=bo</a> returns players with names starting with "bo". Note that "Bad Boy" is also returned.', '-');
 		$help->request_param('scoring', 'Scoring system id. For example: <a href="scores.php?club=1&scoring=13"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=1&scoring=13</a> returns scores for all players of Vancouver Mafia Club using 3-4-4-5 scoring system. If missing, the club scoring system (if club is specified) or event scoring system (if event is specified) or default scoring system is used.', '-');

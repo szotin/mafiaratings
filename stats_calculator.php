@@ -20,6 +20,9 @@ class Page extends PageBase
 		global $_profile;
 		
 		parent::prepare();
+		
+		check_permissions(PERMISSION_USER);
+		
 		$this->id = 0;
 		if (isset($_REQUEST['id']))
 		{
@@ -292,6 +295,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Stats calculator'), PERM_USER);
+$page->run(get_label('Stats calculator'));
 
 ?>

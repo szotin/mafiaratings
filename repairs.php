@@ -9,6 +9,7 @@ class Page extends GeneralPageBase
 	{
 		echo '<div id="progr"></div>';
 		
+		check_permissions(PERMISSION_ADMIN);
 		if ($this->_locked)
 		{
 			echo '<p><input type="submit" class="btn long" value="Unlock the site" onclick="mr.lockSite(false)"></p>';
@@ -182,7 +183,7 @@ class Page extends GeneralPageBase
 
 $page = new Page();
 $page->set_ccc(CCCS_NO);
-$page->run('Repairs', U_PERM_ADMIN);
+$page->run('Repairs');
 
 ?>
 

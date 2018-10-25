@@ -17,6 +17,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
+		check_permission(PERMISSION_ADMIN);
+		
 		$name_en = get_required_param('name_en');
 		$name_ru = get_required_param('name_ru');
 		$code = get_required_param('code');
@@ -83,7 +85,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
 		$help->request_param('name_en', 'Country name in English.');
 		$help->request_param('name_ru', 'Country name in Russian.');
 		$help->request_param('code', 'Two letter country code.');
@@ -92,17 +94,13 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('country_id', 'Country id.');
 		return $help;
 	}
-	
-	function create_op_permissions()
-	{
-		return API_PERM_FLAG_ADMIN;
-	}
 
 	//-------------------------------------------------------------------------------------------------------
 	// change
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
+		check_permission(PERMISSION_ADMIN);
 		$country_id = (int)get_required_param('country_id');
 		list($name_en, $name_ru, $code) = Db::record(get_label('country'), 'SELECT name_en, name_ru, code FROM countries WHERE id = ?', $country_id);
 		
@@ -185,7 +183,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change country.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Change country.');
 		
 		$help->request_param('country_id', 'Country id.');
 		$help->request_param('name_en', 'Country name in English.', 'remains the same.');
@@ -195,11 +193,6 @@ class ApiPage extends OpsApiPageBase
 
 		return $help;
 	}
-	
-	function change_op_permissions()
-	{
-		return API_PERM_FLAG_ADMIN;
-	}
 
 	//-------------------------------------------------------------------------------------------------------
 	// delete
@@ -208,6 +201,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		check_permission(PERMISSION_ADMIN);
 		$country_id = (int)get_required_param('country_id');
 		$repl_id = (int)get_required_param('repl_id');
 		$keep_name = (isset($_REQUEST['keep_name']) && $_REQUEST['keep_name']);
@@ -236,16 +230,11 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp('Delete country.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Delete country.');
 		$help->request_param('country_id', 'Country id.');
 		$help->request_param('repl_id', 'Country id that is used as a replacement. The country is replaced by this country everywhere it is used.');
 		$help->request_param('keep_name', 'If set and non-zero, the country names are still used as alternative names to the replacement country.', 'country name is not used in search any more.');
 		return $help;
-	}
-	
-	function delete_op_permissions()
-	{
-		return API_PERM_FLAG_ADMIN;
 	}
 }
 

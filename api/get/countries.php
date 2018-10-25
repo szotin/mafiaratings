@@ -98,7 +98,7 @@ class ApiPage extends GetApiPageBase
 	
 	protected function get_help()
 	{
-		$help = new ApiHelp();
+		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('contains', 'Search pattern. For example: <a href="countries.php?contains=us"><?php echo PRODUCT_URL; ?>/api/get/countries.php?contains=us</a> returns countries containing "us" in their name.', '-');
 		$help->request_param('starts', 'Search pattern. For example: <a href="countries.php?starts=us"><?php echo PRODUCT_URL; ?>/api/get/countries.php?starts=us</a> returns countries with names starting with "us".', '-');
 		$help->request_param('country', 'Country id or country name. For example: <a href="countries.php?country=1"><?php echo PRODUCT_URL; ?>/api/get/countries.php?country=1</a> returns information about Canada; <a href="countries.php?country=russia"><?php echo PRODUCT_URL; ?>/api/get/countries.php?country=russia</a> returns information about Russia.', '-');

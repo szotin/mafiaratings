@@ -11,6 +11,8 @@ class Page extends PageBase
 	
 	protected function prepare()
 	{
+		check_permissions(PERMISSION_USER);
+		
 		$this->album = new PhotoAlbum();
 		$this->album->get_data();
 		if (isset($_POST['create']))
@@ -109,7 +111,7 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('New photo album'), PERM_USER);
+$page->run(get_label('New photo album'));
 
 ?>
 

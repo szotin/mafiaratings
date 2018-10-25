@@ -3,7 +3,7 @@
 define('REDIRECT_ON_LOGIN', true);
 require_once 'include/page_base.php';
 
-class Page extends InfoPageBase
+class Page extends PageBase
 {
 	protected function show_body()
 	{

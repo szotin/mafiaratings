@@ -15,6 +15,29 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	private function check_name($name, $club_id = -1)
+	{
+		if ($name == '')
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('club name')));
+		}
+
+		check_name($name, get_label('club name'));
+
+		if ($club_id > 0)
+		{
+			$query = new DbQuery('SELECT name FROM clubs WHERE name = ? AND id <> ?', $name, $club_id);
+		}
+		else
+		{
+			$query = new DbQuery('SELECT name FROM clubs WHERE name = ?', $name);
+		}
+		if ($query->next())
+		{
+			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Club name'), $name));
+		}
+	}
+
 	private function create_event_email_templates($club_id, $langs)
 	{
 		$l = LANG_NO;
@@ -49,8 +72,9 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		check_permissions(PERMISSION_USER);
 		$name = trim(get_required_param('name'));
-		check_club_name($name);
+		$this->check_name($name);
 
 		$url = get_optional_param('url');
 		$phone = get_optional_param('phone');
@@ -122,7 +146,7 @@ class ApiPage extends OpsApiPageBase
 			db_log('club_request', 'Created', $log_details, $request_id);
 			
 			// send request to admin
-			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
+			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
 			while ($row = $query->next())
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
@@ -149,7 +173,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp('Create club. If user is admin, club is just created. If not, club request is created and email is sent to admin. Admin has to accept it.');
+		$help = new ApiHelp(PERMISSION_USER, 'Create club. If user is admin, club is just created. If not, club request is created and email is sent to admin. Admin has to accept it.');
 		$help->request_param('name', 'Club name.');
 		$help->request_param('url', 'Club web site URL.');
 		$help->request_param('langs', 'Languages used in the club. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'user profile languages are used.');
@@ -161,11 +185,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function create_op_permissions()
-	{
-		return API_PERM_FLAG_USER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// change
 	//-------------------------------------------------------------------------------------------------------
@@ -174,7 +193,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
 		list($old_name, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id, $old_city_id, $timezone) = Db::record(get_label('club'),
@@ -183,7 +202,7 @@ class ApiPage extends OpsApiPageBase
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
 		{
-			check_club_name($name, $club_id);
+			$this->check_name($name, $club_id);
 		}
 		
 		$url = check_url(get_optional_param('url', $old_url));
@@ -241,7 +260,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp('Change club record.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change club record.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('name', 'Club name.', 'remains the same.');
 		$help->request_param('url', 'Club web site URL.', 'remains the same.');
@@ -254,11 +273,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	function change_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// accept
 	//-------------------------------------------------------------------------------------------------------
@@ -266,7 +280,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile, $_lang_code;
 		
-		$this->check_permissions();
+		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
 		
 		Db::begin();
@@ -282,7 +296,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$name = $_REQUEST['name'];
 		}
-		check_club_name($name);
+		$this->check_name($name);
 		
 		$rules = new GameRules();
 		$rules_id = $rules->save();
@@ -307,11 +321,11 @@ class ApiPage extends OpsApiPageBase
 			"<br>city=" . $city_name . ' (' . $city_id . ')';
 		db_log('club', 'Created', $log_details, $club_id, $club_id);
 
-		if (($user_flags & U_PERM_ADMIN) == 0)
+		if (($user_flags & USER_PERM_ADMIN) == 0)
 		{
 			Db::exec(
 				get_label('user'), 
-				'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . (UC_NEW_PLAYER_FLAGS | UC_PERM_MODER | UC_PERM_MANAGER) . ')',
+				'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ')',
 				$user_id, $club_id);
 			db_log('user', 'Became a manager of the club', NULL, $user_id, $club_id);
 			
@@ -356,16 +370,11 @@ class ApiPage extends OpsApiPageBase
 	
 	function accept_op_help()
 	{
-		$help = new ApiHelp('Accept club. Admin accepts club request created by a user. The user becomes the a manager of the club. An email is sent to the user notifying that the club is accepted.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Accept club. Admin accepts club request created by a user. The user becomes the a manager of the club. An email is sent to the user notifying that the club is accepted.');
 		$help->request_param('request_id', 'Id of the user request');
 		$help->request_param('name', 'Name of the club. If set, it is used as a new name for this club instead of the one used in request.', 'name from the request is used');
 		$help->response_param('club_id', 'Club id.');
 		return $help;
-	}
-	
-	function accept_op_permissions()
-	{
-		return API_PERM_FLAG_ADMIN;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -375,7 +384,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		$this->check_permissions();
+		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
 		$reason = '';
 		if (isset($_REQUEST['reason']))
@@ -408,15 +417,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function decline_op_help()
 	{
-		$help = new ApiHelp('Decline club create request. An email is sent to the user notifying that the request is declined.');
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Decline club create request. An email is sent to the user notifying that the request is declined.');
 		$help->request_param('request_id', 'Id of the user request');
 		$help->request_param('reason', 'Text explaining why it is declined.', 'empty.');
 		return $help;
-	}
-	
-	function decline_op_permissions()
-	{
-		return API_PERM_FLAG_ADMIN;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -427,7 +431,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$club_id = (int)get_required_param('club_id');
-		$this->check_permissions($club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
 		Db::exec(get_label('club'), 'UPDATE clubs SET flags = flags | ' . CLUB_FLAG_RETIRED . ' WHERE id = ?', $club_id);
@@ -441,14 +445,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function retire_op_help()
 	{
-		$help = new ApiHelp('Close/retire the existing club.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Close/retire the existing club.');
 		$help->request_param('club_id', 'Club id.');
 		return $help;
-	}
-	
-	function retire_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -459,11 +458,11 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$club_id = (int)get_required_param('club_id');
-		if (!$this->is_allowed($_REQUEST['op'], $club_id))
+		if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 		{
 			// it is possible that the permission is missing because the club is retired
 			$query = new DbQuery(
-				'SELECT * FROM user_clubs WHERE user_id = ? AND club_id = ? AND (flags & ' . UC_PERM_MANAGER . ') <> 0',
+				'SELECT * FROM user_clubs WHERE user_id = ? AND club_id = ? AND (flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0',
 				$_profile->user_id, $club_id);
 			if (!$query->next())
 			{
@@ -487,14 +486,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp('Reopen/restore closed/retired club.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Reopen/restore closed/retired club.');
 		$help->request_param('club_id', 'Club id.');
 		return $help;
-	}
-	
-	function restore_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER;
 	}
 }
 

@@ -108,6 +108,7 @@ class Page extends PageBase
 		
 		$this->event = new Event();
 		$this->event->load($this->events[0]);
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
 		
 		if (isset($_REQUEST['for']))
 		{
@@ -118,7 +119,7 @@ class Page extends PageBase
 			}
 		}
 		
-		if ($_profile == NULL || !$_profile->is_manager($this->event->club_id))
+		if ($_profile == NULL || !$_profile->is_club_manager($this->event->club_id))
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
@@ -262,6 +263,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Create mailing'), UC_PERM_MANAGER);
+$page->run(get_label('Create mailing'));
 
 ?>

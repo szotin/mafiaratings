@@ -12,19 +12,19 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function xxx_op()
 	{
+		$club_id = (int)get_required_param('club_id');
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		
+		// do xxx
+		// ...
 	}
 	
 	function xxx_op_help()
 	{
-		$help = new ApiHelp('');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, '');
 		$help->request_param('', '');
 		$help->response_param('', '');
 		return $help;
-	}
-	
-	function xxx_op_permissions()
-	{
-		return API_PERM_FLAG_MANAGER;
 	}
 }
 

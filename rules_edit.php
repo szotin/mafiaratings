@@ -21,7 +21,7 @@ try
 		$rules_id = $_REQUEST['id'];
 	}
 	
-	if ($_profile == NULL || !$_profile->is_manager($club->id))
+	if ($_profile == NULL || !$_profile->is_club_manager($club->id))
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}

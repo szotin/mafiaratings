@@ -14,6 +14,7 @@ class Page extends AlbumPageBase
 		}
 		
 		parent::prepare();
+		check_permissions(PERMISSION_USER);
 		$this->album->get_data();
 		if (isset($_POST['update']))
 		{
@@ -115,7 +116,7 @@ class Page extends AlbumPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Edit photo album'), PERM_USER);
+$page->run(get_label('Edit photo album'));
 
 ?>
 

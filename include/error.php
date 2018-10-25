@@ -110,8 +110,9 @@ class LoginExc extends Exception
 {
 	private $user_name;
 	
-    public function __construct($user_name = NULL)
+    public function __construct($message = '', $user_name = NULL)
 	{
+		parent::__construct($message);
 		$this->user_name = $user_name;
     }
 	

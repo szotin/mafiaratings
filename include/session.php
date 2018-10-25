@@ -66,7 +66,6 @@ class Profile
 	public $region_id;
 	public $country_id;
 	public $timezone;
-	public $user_club_flags; // combination of all clubs flags that this user is member of. This is just an optimization. If we want to know if user is moderator in one of the clubs we check it here instead of looping through all his clubs.
 	public $clubs;
 	public $user_last_active;
 	
@@ -116,13 +115,12 @@ class Profile
 	{
 		global $_lang_code;
 	
-		$this->user_club_flags = 0;
 		$this->clubs = array();
 		$sep = '';
 		if ($this->is_admin())
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, ' . (UC_PERM_PLAYER | UC_PERM_MODER| UC_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules_id, c.scoring_id, c.price FROM clubs c' .
+				'SELECT c.id, c.name, ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules_id, c.scoring_id, c.price FROM clubs c' .
 					' JOIN cities i ON c.city_id = i.id ' .
 					' JOIN countries o ON i.country_id = o.id ' .
 					' ORDER BY c.name');
@@ -135,7 +133,7 @@ class Profile
 					' JOIN cities i ON i.id = c.city_id' .
 					' JOIN countries o ON i.country_id = o.id ' .
 					' WHERE uc.user_id = ?' .
-					' AND (uc.flags & ' . UC_FLAG_BANNED . ') = 0' .
+					' AND (uc.flags & ' . USER_CLUB_FLAG_BANNED . ') = 0' .
 					' ORDER BY c.name',
 				$this->user_id, $this->user_club_id);
 		}
@@ -146,51 +144,33 @@ class Profile
 				$pc = new ProfileClub();
 				list($pc->id, $pc->name, $pc->flags, $pc->club_flags, $pc->langs, $pc->city_id, $pc->city, $pc->country_id, $pc->country, $pc->timezone, $pc->rules_id, $pc->scoring_id, $pc->price) = $row;
 				$this->clubs[$pc->id] = $pc;
-				$this->user_club_flags |= $pc->flags;
 			}
-		}
-	}
-	
-	function update_club_flags()
-	{
-		$this->user_club_flags = 0;
-		foreach ($this->clubs as $club)
-		{
-			$this->user_club_flags |= $club->flags;
 		}
 	}
 	
 	function is_admin()
 	{
-		return ($this->user_flags & U_PERM_ADMIN) != 0;
+		return ($this->user_flags & USER_PERM_ADMIN) != 0;
 	}
 	
-	function has_perm($perm, $club_id = -1)
+	function has_club_perm($perm, $club_id)
 	{
-		if ($club_id > 0)
-		{
-			if (isset($this->clubs[$club_id]))
-			{
-				return ($this->clubs[$club_id]->flags & $perm) != 0;
-			}
-			return false;
-		}
-		return ($this->user_club_flags & $perm) != 0;
+		return isset($this->clubs[$club_id]) && ($this->clubs[$club_id]->flags & $perm) != 0;
 	}
 	
-	function is_moder($club_id = -1)
+	function is_club_moder($club_id)
 	{
-		return $this->has_perm(UC_PERM_MODER, $club_id);
+		return $this->has_club_perm(USER_CLUB_PERM_MODER, $club_id);
 	}
 	
-	function is_manager($club_id = -1)
+	function is_club_manager($club_id)
 	{
-		return $this->has_perm(UC_PERM_MANAGER, $club_id);
+		return $this->has_club_perm(USER_CLUB_PERM_MANAGER, $club_id);
 	}
 	
-	function is_player($club_id = -1)
+	function is_club_player($club_id)
 	{
-		return $this->has_perm(UC_PERM_PLAYER, $club_id);
+		return $this->has_club_perm(USER_CLUB_PERM_PLAYER, $club_id);
 	}
 	
 	function get_clubs_count($permission = 0)
@@ -228,6 +208,17 @@ class Profile
 			return -1;
 		}
 		return $csc;
+	}
+	
+	function is_league_manager($league_id)
+	{
+		if ($_profile->is_admin())
+		{
+			return true;
+		}
+			
+		list ($count) = Db::record(get_label('league'), 'SELECT count(*) FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $_profile->user_id);
+		return $count > 0;
 	}
 }
 
@@ -590,28 +581,6 @@ function redirect_back($params = NULL)
 		$_SESSION['back_list'] = $list;
 	}
 	throw new RedirectExc($list[$current_back][1]);
-}
-
-function check_permissions($permissions, $club_id = -1)
-{
-	global $_profile;
-
-	if ($_profile == NULL)
-	{
-		if (($permissions & PERM_STRANGER) != 0)
-		{
-			return;
-		}
-		throw new LoginExc();
-	}
-	
-	if (
-		($permissions & PERM_USER) == 0 && 
-		($permissions & $_profile->user_flags & U_PERM_MASK) == 0 &&
-		!$_profile->has_perm($permissions & UC_PERM_MASK, $club_id))
-	{
-		throw new FatalExc(get_label('No permissions'));
-	}
 }
 
 function show_option($option_value, $current_value, $text, $title = NULL)

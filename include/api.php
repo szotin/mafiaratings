@@ -1,43 +1,8 @@
 <?php
 
 require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/api_help.php';
-
-define('API_PERM_FLAG_EVERYONE', 0x0001);
-define('API_PERM_FLAG_USER', 0x0002);
-define('API_PERM_FLAG_OWNER', 0x0004);
-define('API_PERM_FLAG_MEMBER', 0x0008);
-define('API_PERM_FLAG_OFFICIAL', 0x0010);
-define('API_PERM_FLAG_PLAYER', 0x0020);
-define('API_PERM_FLAG_MODERATOR', 0x0040);
-define('API_PERM_FLAG_MANAGER', 0x0080);
-define('API_PERM_FLAG_ADMIN', 0x0100);
-
-function api_permission_name($flag)
-{
-	switch($flag)
-	{
-		case API_PERM_FLAG_EVERYONE:
-			return 'everyone';
-		case API_PERM_FLAG_USER:
-			return 'user';
-		case API_PERM_FLAG_OWNER:
-			return 'object-owner';
-		case API_PERM_FLAG_MEMBER:
-			return 'club-member';
-		case API_PERM_FLAG_OFFICIAL:
-			return 'club-official';
-		case API_PERM_FLAG_PLAYER:
-			return 'club-player';
-		case API_PERM_FLAG_MODERATOR:
-			return 'club-moderator';
-		case API_PERM_FLAG_MANAGER:
-			return 'club-manager';
-		case API_PERM_FLAG_ADMIN:
-			return 'admin';
-	}
-	return '?';
-}
 
 class ApiPageBase
 {
@@ -51,7 +16,7 @@ class ApiPageBase
 		initiate_session();
 	}
 	
-	protected function _run($title, $version, $permissions)
+	protected function _run($title, $version)
 	{
 		global $_profile;
 		
@@ -97,8 +62,6 @@ class ApiPageBase
 			ob_start();
 			try
 			{
-				check_permissions($permissions);
-				
 				// Admins should able to make requests during the maintanence. 
 				// Because they are the ones who is doing the maintanence.
 				if ($_profile == NULL || !$_profile->is_admin())
@@ -181,13 +144,32 @@ class ApiPageBase
 		return $help;
 	}
 	
+	protected function show_permissions($help)
+	{
+		echo '<p><strong>Permitted to:</strong> ';
+		$perm = $help->permissions;
+		$next_perm = ($perm & ($perm - 1));
+		if ($perm != $next_perm)
+		{
+			echo '<em>' . permission_name($perm - $next_perm) . '</em>';
+			$perm = $next_perm;
+			while ($perm != 0)
+			{
+				$next_perm = ($perm & ($perm - 1));
+				echo ', or <em>' . permission_name($perm - $next_perm) . '</em>';
+				$perm = $next_perm;
+			}
+		}
+		echo '.</p>';
+	}
+	
 	protected function show_help()
 	{
 		echo '<h1>' . $this->title . ' API</h1>';
 		echo '<p><a href="index.php">Back to the service list.</a></p>';
-		
 		$help = $this->add_default_help_params($this->get_help());
 		
+		$this->show_permissions($help);
 		echo '<p>' . $help->text . '</p>';
 		echo '<h2>Request Parameters:</h2><dl>';
 		foreach ($help->request as $param)
@@ -224,132 +206,25 @@ class GetApiPageBase extends ApiPageBase
 		}
 	}
 	
-	final function run($title, $version, $permissions = PERM_ALL)
+	final function run($title, $version)
 	{
-		$this->_run($title, $version, $permissions);
-	}
-	
-	protected function show_help_request_params_head()
-	{
-		parent::show_help_request_params_head();
-?>
-		<dt>lang</dt>
-			<dd>What is the preferable language for returning results. Currently two languages are supported: Russian and English. This parameter should be either "ru" or "en" respectively. Profile language is used when this param is not set.</dd>
-<?php
+		$this->_run($title, $version);
 	}
 }
 
 class ControlApiPageBase extends ApiPageBase
 {
-	final function run($title, $version = -1, $permissions = PERM_ALL)
+	final function run($title, $version = -1)
 	{
-		$this->_run($title, $version, $permissions);
+		$this->_run($title, $version);
 	}
 }
 
 class OpsApiPageBase extends ApiPageBase
 {
-	final function run($title, $version, $permissions = PERM_USER)
+	final function run($title, $version)
 	{
-		$this->_run($title, $version, $permissions);
-	}
-	
-	private function get_permissions($op)
-	{
-		$permission_func = $op . '_op_permissions';
-		if (method_exists($this, $permission_func))
-		{
-			return $this->$permission_func();
-		}
-		return API_PERM_FLAG_USER;
-	}
-	
-	protected function is_allowed($op, $club_id = 0, $owner_id = 0)
-	{
-		global $_profile;
-		$perm = $this->get_permissions($op);
-		if (($perm & API_PERM_FLAG_EVERYONE) != 0)
-		{
-			return true;
-		}
-		
-		if ($_profile == NULL)
-		{
-			return false;
-		}
-		
-		if ($_profile->is_admin())
-		{
-			return true;
-		}
-		
-		while ($perm)
-		{
-			$next_perm = ($perm & ($perm - 1));
-			switch ($perm - $next_perm)
-			{
-				case API_PERM_FLAG_USER:
-					return true;
-					
-				case API_PERM_FLAG_OWNER:
-					if ($owner_id == $_profile->user_id)
-					{
-						return true;
-					}
-					break;
-					
-				case API_PERM_FLAG_MEMBER:
-					if (isset($_profile->clubs[$club_id]))
-					{
-						return true;
-					}
-					break;
-					
-				case API_PERM_FLAG_OFFICIAL:
-					if ($_profile->user_club_id == $club_id)
-					{
-						return true;
-					}
-					break;
-					
-				case API_PERM_FLAG_PLAYER:
-					if ($_profile->is_player($club_id))
-					{
-						return true;
-					}
-					break;
-					
-				case API_PERM_FLAG_MODERATOR:
-					if ($_profile->is_moder($club_id))
-					{
-						return true;
-					}
-					break;
-					
-				case API_PERM_FLAG_MANAGER:
-					if ($_profile->is_manager($club_id))
-					{
-						return true;
-					}
-					break;
-			}
-			$perm = $next_perm;
-		}
-		return false;
-	}
-	
-	protected function check_permissions($club_id = 0, $owner_id = 0)
-	{
-		global $_profile;
-		
-		if (!$this->is_allowed($_REQUEST['op'], $club_id, $owner_id))
-		{
-			if ($_profile == NULL)
-			{
-				throw new LoginExc();
-			}
-			throw new FatalExc(get_label('No permissions'));
-		}
+		$this->_run($title, $version);
 	}
 	
 	protected function prepare_response()
@@ -425,21 +300,7 @@ class OpsApiPageBase extends ApiPageBase
 		echo '<h1>Operation: ' . $current_op . '</h1>';
 		echo '<p>' . $help->text . '</p>';
 		
-		echo '<p><strong>Required permissions:</strong> ';
-		$perm = $this->get_permissions($current_op);
-		$next_perm = ($perm & ($perm - 1));
-		if ($perm != $next_perm)
-		{
-			echo '<em>' . api_permission_name($perm - $next_perm) . '</em>';
-			$perm = $next_perm;
-			while ($perm != 0)
-			{
-				$next_perm = ($perm & ($perm - 1));
-				echo ', or <em>' . api_permission_name($perm - $next_perm) . '</em>';
-				$perm = $next_perm;
-			}
-		}
-		echo '.</p>';
+		$this->show_permissions($help);
 		
 		echo '<h2>Request Parameters:</h2><dl>';
 		foreach ($help->request as $param)

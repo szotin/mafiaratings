@@ -42,7 +42,7 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 			"<br>flags=" . CITY_FLAG_NOT_CONFIRMED;
 		db_log('city', 'Created', $log_details, $city_id);
 		
-		$query = new DbQuery('SELECT id, name, email FROM users WHERE (flags & ' . U_PERM_ADMIN . ') <> 0 and email <> \'\'');
+		$query = new DbQuery('SELECT id, name, email FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
 		while ($row = $query->next())
 		{
 			list($admin_id, $admin_name, $admin_email) = $row;

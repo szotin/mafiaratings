@@ -29,11 +29,7 @@ class Page extends PageBase
 		
 		$this->event = new Event();
 		$this->event->load($_REQUEST['id']);
-		
-		if ($_profile == NULL || !$_profile->is_manager($this->event->club_id))
-		{
-			throw new FatalExc(get_label('No permissions'));
-		}
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
 
 //		$this->event->init($this->event->club_id, -1);
 		
@@ -485,6 +481,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Change event'), UC_PERM_MANAGER);
+$page->run(get_label('Change event'));
 
 ?>
