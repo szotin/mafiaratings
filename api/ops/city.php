@@ -17,7 +17,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		check_permission(PERMISSION_ADMIN);
+		check_permissions(PERMISSION_ADMIN);
 		$name_en = get_required_param('name_en');
 		$name_ru = get_required_param('name_ru');
 		$timezone = get_required_param('timezone');
@@ -131,7 +131,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
-		check_permission(PERMISSION_ADMIN);
+		check_permissions(PERMISSION_ADMIN);
 		$city_id = (int)get_required_param('city_id');
 		list($name_en, $name_ru, $country_id, $country, $timezone, $area_id) = Db::record(get_label('city'), 'SELECT ct.name_en, ct.name_ru, ct.country_id, cr.name_en, ct.timezone, ct.area_id FROM cities ct JOIN countries cr ON cr.id = ct.country_id WHERE ct.id = ?', $city_id);
 		
@@ -253,7 +253,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		check_permission(PERMISSION_ADMIN);
+		check_permissions(PERMISSION_ADMIN);
 		$city_id = (int)get_required_param('city_id');
 		$repl_id = (int)get_required_param('repl_id');
 		$keep_name = (isset($_REQUEST['keep_name']) && $_REQUEST['keep_name']);

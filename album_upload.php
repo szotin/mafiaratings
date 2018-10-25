@@ -6,7 +6,7 @@ class Page extends AlbumPageBase
 {
 	protected function show_body()
 	{
-		check_permission(PERMISSION_USER);
+		check_permissions(PERMISSION_USER);
 		
 		echo '<table class="transp" width="100%"><tr>';
 		echo '<td width="120" valign="top" align="center">' . get_label('Upload photos') . '<span id="spanButtonPlaceHolder"></span></td>';

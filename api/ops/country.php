@@ -17,7 +17,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		check_permission(PERMISSION_ADMIN);
+		check_permissions(PERMISSION_ADMIN);
 		
 		$name_en = get_required_param('name_en');
 		$name_ru = get_required_param('name_ru');
@@ -100,7 +100,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
-		check_permission(PERMISSION_ADMIN);
+		check_permissions(PERMISSION_ADMIN);
 		$country_id = (int)get_required_param('country_id');
 		list($name_en, $name_ru, $code) = Db::record(get_label('country'), 'SELECT name_en, name_ru, code FROM countries WHERE id = ?', $country_id);
 		
@@ -201,7 +201,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		check_permission(PERMISSION_ADMIN);
+		check_permissions(PERMISSION_ADMIN);
 		$country_id = (int)get_required_param('country_id');
 		$repl_id = (int)get_required_param('repl_id');
 		$keep_name = (isset($_REQUEST['keep_name']) && $_REQUEST['keep_name']);
