@@ -64,7 +64,22 @@ class PageBase
 		{
 			$url = $e->get_url();
 			header('location: ' . $url);
-			echo get_label('Redirecting to [0]', $url);
+			try
+			{
+				if (!$header_shown)
+				{
+					$this->show_header();
+				}
+				echo '<a href="' . $url . '">' . get_label('Click here if you were not redirected.') . '</a>';
+				if (!$footer_shown)
+				{
+					$this->show_footer();
+				}
+			}
+			catch (Exception $e)
+			{
+				Exc::log($e);
+			}
 		}
 		catch (Exception $e)
 		{

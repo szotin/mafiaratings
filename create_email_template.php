@@ -40,7 +40,7 @@ class Page extends PageBase
 			$this->name = $_POST['name'];
 		}
 		
-		$this->subj = '[cname]';
+		$this->subj = '[club_name]';
 		if (isset($_POST['subj']))
 		{
 			$this->subj = $_POST['subj'];

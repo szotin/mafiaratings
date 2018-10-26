@@ -12,7 +12,7 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
-	private function check_name($name, $league_id = -1)
+	private function check_name($name, $league_id = 0)
 	{
 		if ($name == '')
 		{
@@ -32,6 +32,15 @@ class ApiPage extends OpsApiPageBase
 		if ($query->next())
 		{
 			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('League name'), $name));
+		}
+		
+		if ($league_id >= 0)
+		{
+			$query = new DbQuery('SELECT name FROM league_requests WHERE name = ?', $name);
+			if ($query->next())
+			{
+				throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('League name'), $name));
+			}
 		}
 	}
 	
@@ -109,7 +118,8 @@ class ApiPage extends OpsApiPageBase
 				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_create_league.php';
 				
 				$tags = array(
-					'uname' => new Tag($admin_name),
+					'root' => new Tag(get_server_url()),
+					'user_name' => new Tag($admin_name),
 					'sender' => new Tag($_profile->user_name));
 				$body = parse_tags($body, $tags);
 				$text_body = parse_tags($text_body, $tags);
@@ -216,27 +226,24 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		list($url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone, $city_id, $city_name) = Db::record(
 			get_label('league'),
-			'SELECT c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang, u.flags, c.email, c.phone, c.city_id, i.name_en FROM league_requests c' .
-				' JOIN users u ON c.user_id = u.id' .
-				' JOIN cities i ON c.city_id = i.id' .
-				' WHERE c.id = ?',
+			'SELECT l.web_site, l.langs, l.user_id, u.name, u.email, u.def_lang, u.flags, l.email, l.phone FROM league_requests l' .
+				' JOIN users u ON l.user_id = u.id' .
+				' WHERE l.id = ?',
 			$request_id);
 			
 		if (isset($_REQUEST['name']))
 		{
 			$name = $_REQUEST['name'];
 		}
-		$this->check_name($name);
+		$this->check_name($name, -1);
 		
 		$rules = new GameRules();
 		$rules_id = $rules->save();
 		
-		list ($city_name) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $city_id);
-		
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
-			$name, $langs, $rules_id, $url, $email, $phone, $city_id);
+			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules_id, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
+			$name, $langs, $url, $email, $phone, $rules_id);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		
@@ -253,37 +260,23 @@ class ApiPage extends OpsApiPageBase
 
 		if (($user_flags & USER_PERM_ADMIN) == 0)
 		{
-			Db::exec(
-				get_label('user'), 
-				'INSERT INTO user_leagues (user_id, league_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ')',
-				$user_id, $league_id);
+			Db::exec(get_label('user'), 'INSERT INTO league_managers (league_id, user_id) VALUES (?, ?)', $league_id, $user_id);
 			db_log('user', 'Became a manager of the league', NULL, $user_id, $league_id);
-			
-			Db::exec(
-				get_label('user'), 
-				'UPDATE users SET city_id = ? WHERE id = ?',
-				$city_id, $user_id);
-			if (Db::affected_rows() > 0)
-			{
-				$log_details = 'city=' . $city_name . ' (' . $city_id . ')';
-				db_log('user', 'Changed', $log_details, $user_id);
-			}
 		}
 			
 		Db::exec(get_label('league'), 'DELETE FROM league_requests WHERE id = ?', $request_id);
 		db_log('league_request', 'Accepted', NULL, $request_id, $league_id);
 		
-		$this->create_event_email_templates($league_id, $langs);
-		
 		// send email
 		$lang = get_lang_code($user_lang);
 		$code = generate_email_code();
 		$tags = array(
-			'uid' => new Tag($user_id),
+			'root' => new Tag(get_server_url()),
+			'user_id' => new Tag($user_id),
 			'code' => new Tag($code),
-			'uname' => new Tag($user_name),
-			'cname' => new Tag($name),
-			'url' => new Tag(get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id));
+			'user_name' => new Tag($user_name),
+			'league_name' => new Tag($name),
+			'url' => new Tag(get_server_url() . '/email_request.php?code=' . $code . '&user_id=' . $user_id));
 		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_league.php';
 		$body = parse_tags($body, $tags);
 		$text_body = parse_tags($text_body, $tags);
@@ -332,7 +325,8 @@ class ApiPage extends OpsApiPageBase
 			$lang = get_lang_code($user_lang);
 			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_decline_league.php';
 			$tags = array(
-				'uname' => new Tag($user_name),
+				'root' => new Tag(get_server_url()),
+				'user_name' => new Tag($user_name),
 				'reason' => new Tag($reason),
 				'league_name' => new Tag($name));
 			$body = parse_tags($body, $tags);

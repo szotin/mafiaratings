@@ -105,7 +105,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 
 		Db::begin();
-		$name = trim(get_optioanl_param('name', $name));
+		$name = trim(get_optional_param('name', $name));
 		$this->check_name($name, $club_id, $scoring_id);
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
 		db_log('scoring system', 'Changed', 'name=' . $name, $scoring_id, $club_id);

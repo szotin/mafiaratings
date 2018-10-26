@@ -53,8 +53,8 @@ class Page extends UserPageBase
 		show_option(ALL_CLUBS, $club_id, get_label('All clubs'));
 		while ($row = $query->next())
 		{
-			list($cid, $cname) = $row;
-			show_option($cid, $club_id, $cname);
+			list($c_id, $c_name) = $row;
+			show_option($c_id, $club_id, $c_name);
 		}
 		echo '</select>';
 		

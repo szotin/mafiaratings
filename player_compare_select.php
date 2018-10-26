@@ -58,8 +58,8 @@ class Page extends UserPageBase
 		$query->add(' ORDER BY u.rating DESC, u.games LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($uid, $uname, $urating, $ugames) = $row;
-			if ($uid == $this->my_id)
+			list ($u_id, $u_name, $u_rating, $u_games) = $row;
+			if ($u_id == $this->my_id)
 			{
 				echo '<tr class="light">';
 			}
@@ -67,9 +67,9 @@ class Page extends UserPageBase
 			{
 				echo '<tr>';
 			}
-			echo '<td><a href="player_compare.php?id1=' . $this->id . '&id2=' . $uid . '">' . cut_long_name($uname, 80) . '</a></td>';
-			echo '<td>' . $urating . '</td>';
-			echo '<td>' . $ugames . '</td></tr>';
+			echo '<td><a href="player_compare.php?id1=' . $this->id . '&id2=' . $u_id . '">' . cut_long_name($u_name, 80) . '</a></td>';
+			echo '<td>' . $u_rating . '</td>';
+			echo '<td>' . $u_games . '</td></tr>';
 		}
 		echo '</table>';
 	}

@@ -399,13 +399,14 @@ class ApiPage extends OpsApiPageBase
 			
 			$code = generate_email_code();
 			$server = get_server_url() . '/';
-			$request_base = $server . 'email_request.php?code=' . $code . '&uid=' . $user_id;
+			$request_base = $server . 'email_request.php?code=' . $code . '&user_id=' . $user_id;
 			$video_image = 'https://img.youtube.com/vi/' . $video . '/0.jpg';
 			
 			$tags = array(
-				'uid' => new Tag($user_id),
+				'root' => new Tag(get_server_url()),
+				'user_id' => new Tag($user_id),
 				'code' => new Tag($code),
-				'uname' => new Tag($user_name),
+				'user_name' => new Tag($user_name),
 				'sender' => new Tag($_profile->user_name),
 				'message' => new Tag($comment),
 				'url' => new Tag($request_base),

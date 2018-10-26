@@ -110,9 +110,9 @@ class Page extends PageBase
 		$query->add(' ORDER BY u.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($uid, $uname) = $row;
+			list ($u_id, $u_name) = $row;
 		
-			if ($uid == $my_id)
+			if ($u_id == $my_id)
 			{
 				echo '<tr class="lighter">';
 			}
@@ -120,7 +120,7 @@ class Page extends PageBase
 			{
 				echo '<tr class="light">';
 			}
-			echo '<td><a href="' . $link_str . $uid . '">' . cut_long_name($uname, 80) . '</a></td></tr>';
+			echo '<td><a href="' . $link_str . $u_id . '">' . cut_long_name($u_name, 80) . '</a></td></tr>';
 		}
 		echo '</table>';
 		echo '<form method="get" name="form" action="photo.php">';

@@ -77,18 +77,19 @@ try
 			date_default_timezone_set($timezone);
 			
 			$tags = get_bbcode_tags();
-			$tags['ename'] = new Tag($event_name);
-			$tags['eid'] = new Tag($event_id);
-			$tags['edate'] = new Tag(format_date('l, F d, Y', $event_start_time, $timezone, $email_lang));
-			$tags['etime'] = new Tag(format_date('H:i', $event_start_time, $timezone, $email_lang));
+			$tags['root'] = new Tag(get_server_url());
+			$tags['event_name'] = new Tag($event_name);
+			$tags['event_id'] = new Tag($event_id);
+			$tags['event_date'] = new Tag(format_date('l, F d, Y', $event_start_time, $timezone, $email_lang));
+			$tags['event_time'] = new Tag(format_date('H:i', $event_start_time, $timezone, $email_lang));
 			$tags['notes'] = new Tag($event_notes);
-			$tags['addr'] = new Tag($addr);
-			$tags['aurl'] = new Tag($addr_url);
-			$tags['aid'] = new Tag($addr_id);
-			$tags['aimage'] = new Tag($image_base . $addr_id . '.jpg');
+			$tags['address'] = new Tag($addr);
+			$tags['address_url'] = new Tag($addr_url);
+			$tags['address_id'] = new Tag($addr_id);
+			$tags['address_image'] = new Tag($image_base . $addr_id . '.jpg');
 			$tags['langs'] = new Tag(get_langs_str($event_langs, ', ', LOWERCASE, $email_lang));
-			$tags['cname'] = new Tag($club_name);
-			$tags['cid'] = new Tag($club_id);
+			$tags['club_name'] = new Tag($club_name);
+			$tags['club_id'] = new Tag($club_id);
 			$tags['accept_btn'] = new Tag('<input type="submit" name="accept" value="#">');
 			$tags['decline_btn'] = new Tag('<input type="submit" name="decline" value="#">');
 			$tags['unsub_btn'] = new Tag('<input type="submit" name="unsub" value="#">');
@@ -157,11 +158,11 @@ try
 				list($user_id, $user_name, $user_email) = $row1;
 				
 				$code = generate_email_code();
-				$base_url = get_server_url() . '/email_request.php?uid=' . $user_id . '&code=' . $code;
+				$base_url = get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $code;
 				
 				$tags = array(
-					'uname' => new Tag($user_name),
-					'uid' => new Tag($user_id),
+					'user_name' => new Tag($user_name),
+					'user_id' => new Tag($user_id),
 					'email' => new Tag($user_email),
 					'code' => new Tag($code),
 					'accept' => new Tag('<a href="' . $base_url . '&accept=1" target="_blank">', '</a>'),
@@ -223,12 +224,13 @@ try
 		{
 			list($e_id, $e_name, $e_start_time, $e_duration, $e_notes, $e_languages, $a_id, $a_address, $a_map_url, $i_timezone, $c_id, $c_name) = $row;
 			$tags = array(
-				'ename' => new Tag($e_name),
-				'eid' => new Tag($e_id),
-				'addr' => new Tag($a_address),
-				'aurl' => new Tag($a_map_url),
-				'cname' => new Tag($c_name),
-				'cid' => new Tag($c_id),
+				'root' => new Tag(get_server_url()),
+				'event_name' => new Tag($e_name),
+				'event_id' => new Tag($e_id),
+				'address' => new Tag($a_address),
+				'address_url' => new Tag($a_map_url),
+				'club_name' => new Tag($c_name),
+				'club_id' => new Tag($c_id),
 				'join_chk' => new Tag('<input type="checkbox" name="join" checked>'),
 				'yes_btn' => new Tag('<input type="submit" name="yes" value="#">'),
 				'no_btn' => new Tag('<input type="submit" name="no" value="#">'));
@@ -260,13 +262,13 @@ try
 				list ($u_id, $u_name, $u_lang, $u_email, $u_nick) = $row1;
 				$lang = get_lang_code($u_lang);
 				$code = generate_email_code();
-				// echo '<a href="email_request.php?uid=' . $u_id . '&code=' . $code .'&yes=" target="_balnk">' . $u_name . '</a><br><br>';
+				// echo '<a href="email_request.php?user_id=' . $u_id . '&code=' . $code .'&yes=" target="_balnk">' . $u_name . '</a><br><br>';
 				$tags['code'] = new Tag($code);
-				$tags['uid'] = new Tag($u_id);
-				$tags['uname'] = new Tag($u_name);
+				$tags['user_id'] = new Tag($u_id);
+				$tags['user_name'] = new Tag($u_name);
 				$tags['nick'] = new Tag($u_nick);
-				$tags['edate'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
-				$tags['etime'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
+				$tags['event_date'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
+				$tags['event_time'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
 				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_confirm_event.php';
 				$body = parse_tags($body, $tags);
 				$text_body = parse_tags($text_body, $tags);
@@ -294,11 +296,11 @@ try
 					$code = generate_email_code();
 					$tags['incomers'] = new Tag($unknown_players);
 					$tags['code'] = new Tag($code);
-					$tags['uid'] = new Tag($u_id);
-					$tags['uname'] = new Tag($u_name);
-					$tags['url'] = new Tag(get_server_url() . '/email_request.php?uid=' . $u_id . '&code=' . $code);
-					$tags['edate'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
-					$tags['etime'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
+					$tags['user_id'] = new Tag($u_id);
+					$tags['user_name'] = new Tag($u_name);
+					$tags['url'] = new Tag(get_server_url() . '/email_request.php?user_id=' . $u_id . '&code=' . $code);
+					$tags['event_date'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
+					$tags['event_time'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
 						
 					list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_event_no_user.php';
 					$body = parse_tags($body, $tags);
@@ -340,7 +342,7 @@ try
 			$count = count($user_photos);
 			$code = generate_email_code();
 			
-			$request_base = $server_name . '/email_request.php?uid=' . $user_id . '&code=' . $code;
+			$request_base = $server_name . '/email_request.php?user_id=' . $user_id . '&code=' . $code;
 			
 			$counter = 1;
 			$photos = '';
@@ -358,13 +360,14 @@ try
 			}
 			
 			$tags = array(
-				'uid' => new Tag($user_id),
+				'root' => new Tag(get_server_url()),
+				'user_id' => new Tag($user_id),
 				'code' => new Tag($code),
-				'uname' => new Tag($user_name),
+				'user_name' => new Tag($user_name),
 				'pcount' => new Tag($count),
 				'photos' => new Tag($photos),
 				'url' => new Tag($request_base),
-				'unsub' => new Tag('<a href="' . get_server_url() . '/email_request.php?uid=' . $user_id . '&code=' . $code . '&unsub=1" target="_blank">', '</a>'));
+				'unsub' => new Tag('<a href="' . get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $code . '&unsub=1" target="_blank">', '</a>'));
 				
 			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_photo.php';
 			$body = parse_tags($body, $tags);

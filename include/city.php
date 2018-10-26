@@ -114,7 +114,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 				$.getJSON("api/control/city.php",
 				{
 					term: $("#<?php echo $name; ?>").val(),
-					cid: <?php echo $country_id; ?>
+					country_id: <?php echo $country_id; ?>
 				}, response);
 			}
 			, minLength: 0
@@ -133,7 +133,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 				$.getJSON("api/control/city.php",
 				{
 					term: $("#<?php echo $name; ?>").val(),
-					cname: $("#<?php echo $country_id; ?>").val()
+					country_name: $("#<?php echo $country_id; ?>").val()
 				}, response);
 			}
 			, select: function(event, ui) { $("#<?php echo $country_id; ?>").val(ui.item.country); <?php if ($on_select != NULL) echo $on_select . '();'; ?> }

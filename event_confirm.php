@@ -108,8 +108,8 @@ class Page extends PageBase
 				$query = new DbQuery('SELECT u.name, u.email FROM users u WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 OR u.id IN (SELECT c.user_id FROM user_clubs c WHERE c.club_id = ? AND (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0)', $this->event->club_id);
 				while ($row = $query->next())
 				{
-					list($uname, $uemail) = $row;
-					$to .= ', ' . $uname . '<' . $uemail . '>';
+					list($u_name, $u_email) = $row;
+					$to .= ', ' . $u_name . '<' . $u_email . '>';
 				}
 				
 				$l = get_next_lang(LANG_NO, $this->event->langs);
@@ -119,19 +119,20 @@ class Page extends PageBase
 				}
 				$lang = get_lang_code($l);
 				$tags = array(
-					'ename' => new Tag($this->event->name),
-					'eid' => new Tag($this->event->id),
-					'edate' => new Tag(format_date('l, F d, Y', $this->event->timestamp, $this->event->timezone, $l)),
-					'etime' => new Tag(format_date('H:i', $this->event->timestamp, $this->event->timezone, $l)),
-					'addr' => new Tag($this->event->addr),
-					'aurl' => new Tag($this->event->addr_url),
-					'cname' => new Tag($this->event->club_name),
-					'cid' => new Tag($this->event->club_id),
+					'root' => new Tag(get_server_url()),
+					'event_name' => new Tag($this->event->name),
+					'event_id' => new Tag($this->event->id),
+					'event_date' => new Tag(format_date('l, F d, Y', $this->event->timestamp, $this->event->timezone, $l)),
+					'event_time' => new Tag(format_date('H:i', $this->event->timestamp, $this->event->timezone, $l)),
+					'address' => new Tag($this->event->addr),
+					'address_url' => new Tag($this->event->addr_url),
+					'club_name' => new Tag($this->event->club_name),
+					'club_id' => new Tag($this->event->club_id),
 					'nick' => new Tag($nick),
-					'uid1' => new Tag($user_id),
-					'uid2' => new Tag($_profile->user_id),
-					'uname1' => new Tag($user_name),
-					'uname2' => new Tag($_profile->user_name));
+					'user_id1' => new Tag($user_id),
+					'user_id2' => new Tag($_profile->user_id),
+					'user_name1' => new Tag($user_name),
+					'user_name2' => new Tag($_profile->user_name));
 					
 				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_event_conflict.php';
 				$body = parse_tags($body, $tags);

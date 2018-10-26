@@ -48,7 +48,7 @@ class ApiPage extends OpsApiPageBase
 			$event_emails = include '../../include/languages/' . $lang . '/event_emails.php';
 			foreach ($event_emails as $event_email)
 			{
-				list($ename, $esubj, $ebody, $default_for) = $event_email;
+				list($e_name, $e_subj, $e_body, $default_for) = $event_email;
 				if ($second_lang)
 				{
 					$default_for = 0;
@@ -56,9 +56,9 @@ class ApiPage extends OpsApiPageBase
 				Db::exec(
 					get_label('email'),
 					'INSERT INTO email_templates (club_id, name, subject, body, default_for) VALUES (?, ?, ?, ?, ?)',
-					$club_id, $ename, $esubj, $ebody, $default_for);
+					$club_id, $e_name, $e_subj, $e_body, $default_for);
 				list ($template_id) = Db::record(get_label('email'), 'SELECT LAST_INSERT_ID()');
-				$log_details = 'name=' . $ename . "<br>subject=" . $esubj . "<br>body=<br>" . $ebody;
+				$log_details = 'name=' . $e_name . "<br>subject=" . $e_subj . "<br>body=<br>" . $e_body;
 				db_log('email_template', 'Created', $log_details, $template_id, $club_id);
 			}
 			$second_lang = true;
@@ -154,7 +154,8 @@ class ApiPage extends OpsApiPageBase
 				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_create_club.php';
 				
 				$tags = array(
-					'uname' => new Tag($admin_name),
+					'root' => new Tag(get_server_url()),
+					'user_name' => new Tag($admin_name),
 					'sender' => new Tag($_profile->user_name));
 				$body = parse_tags($body, $tags);
 				$text_body = parse_tags($text_body, $tags);
@@ -349,11 +350,12 @@ class ApiPage extends OpsApiPageBase
 		$lang = get_lang_code($user_lang);
 		$code = generate_email_code();
 		$tags = array(
-			'uid' => new Tag($user_id),
+			'root' => new Tag(get_server_url()),
+			'user_id' => new Tag($user_id),
 			'code' => new Tag($code),
-			'uname' => new Tag($user_name),
-			'cname' => new Tag($name),
-			'url' => new Tag(get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id));
+			'user_name' => new Tag($user_name),
+			'club_name' => new Tag($name),
+			'url' => new Tag(get_server_url() . '/email_request.php?code=' . $code . '&user_id=' . $user_id));
 		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_club.php';
 		$body = parse_tags($body, $tags);
 		$text_body = parse_tags($text_body, $tags);
@@ -406,7 +408,8 @@ class ApiPage extends OpsApiPageBase
 			$lang = get_lang_code($user_lang);
 			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_decline_club.php';
 			$tags = array(
-				'uname' => new Tag($user_name),
+				'root' => new Tag(get_server_url()),
+				'user_name' => new Tag($user_name),
 				'reason' => new Tag($reason),
 				'club_name' => new Tag($name));
 			$body = parse_tags($body, $tags);

@@ -183,8 +183,8 @@ class Page extends UserPageBase
 		show_option(0, $club_id, get_label('All clubs'));
 		while ($row = $query->next())
 		{
-			list($cid, $cname) = $row;
-			show_option($cid, $club_id, $cname);
+			list($c_id, $c_name) = $row;
+			show_option($c_id, $club_id, $c_name);
 		}
 		echo '</select> ';
 		show_roles_select($roles, 'document.form.submit()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);

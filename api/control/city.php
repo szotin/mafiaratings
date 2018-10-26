@@ -16,14 +16,14 @@ class ApiPage extends ControlApiPageBase
 		}
 		
 		$country_id = -1;
-		if (isset($_REQUEST['cid']))
+		if (isset($_REQUEST['country_id']))
 		{
-			$country_id = $_REQUEST['cid'];
+			$country_id = $_REQUEST['country_id'];
 		}
-		else if (isset($_REQUEST['cname']))
+		else if (isset($_REQUEST['country_name']))
 		{
-			$cname = $_REQUEST['cname'];
-			$query = new DbQuery('SELECT country_id FROM country_names WHERE name = ? ORDER BY country_id LIMIT 1', $cname);
+			$country_name = $_REQUEST['country_name'];
+			$query = new DbQuery('SELECT country_id FROM country_names WHERE name = ? ORDER BY country_id LIMIT 1', $country_name);
 			if ($row = $query->next())
 			{
 				list($country_id) = $row;
@@ -61,10 +61,10 @@ class ApiPage extends ControlApiPageBase
 ?>
 		<dt>term</dt>
 			<dd>Search string. Only the cities with the matching names are returned. For example: <a href="city.php?term=ro">/api/control/city.php?term=ro</a> returns the cites with "ro" in their names.</dd>
-		<dt>cid</dt>
-			<dd>Country id. Only the cities from this country are returned. For example: <a href="city.php?cid=1">/api/control/city.php?cid=1</a> returns only Canadian cites.</dd>
-		<dt>cname</dt>
-			<dd>Country name. Only the cities from this country are returned. For example: <a href="city.php?cname=россия">/api/control/city.php?cname=россия</a> returns only Russian cites.</dd>
+		<dt>country_id</dt>
+			<dd>Country id. Only the cities from this country are returned. For example: <a href="city.php?country_id=1">/api/control/city.php?country_id=1</a> returns only Canadian cites.</dd>
+		<dt>country_name</dt>
+			<dd>Country name. Only the cities from this country are returned. For example: <a href="city.php?country_name=россия">/api/control/city.php?country_name=россия</a> returns only Russian cites.</dd>
 <?php
 	}
 }

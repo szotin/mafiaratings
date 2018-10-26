@@ -53,8 +53,8 @@ try
 	$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_RETIRED . ') = 0 ORDER BY name');
 	while ($row = $query->next())
 	{
-		list ($cid, $cname) = $row;
-		show_option($cid, $club_id, $cname);
+		list ($c_id, $c_name) = $row;
+		show_option($c_id, $club_id, $c_name);
 	}
 	echo '</select></td></tr>';
 	

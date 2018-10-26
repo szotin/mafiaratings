@@ -169,11 +169,11 @@ class Page extends GeneralPageBase
 				$pos_query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won FROM users u WHERE u.id = ?', $this->user_id);
 				if ($row = $pos_query->next())
 				{
-					list ($uid, $uname, $urating, $ugames, $uwon) = $row;
-					if ($ugames > 0)
+					list ($u_id, $u_name, $u_rating, $u_games, $u_won) = $row;
+					if ($u_games > 0)
 					{
 						$pos_query = new DbQuery('SELECT count(*) FROM users u', $condition);
-						$pos_query->add(' AND u.id <> ? AND (u.rating > ? OR (u.rating = ? AND (u.games_won > ? OR (u.games_won = ? AND (u.games > ? OR (u.games = ? AND u.id < ?))))))', $uid, $urating, $urating, $uwon, $uwon, $ugames, $ugames, $uid);
+						$pos_query->add(' AND u.id <> ? AND (u.rating > ? OR (u.rating = ? AND (u.games_won > ? OR (u.games_won = ? AND (u.games > ? OR (u.games = ? AND u.id < ?))))))', $u_id, $u_rating, $u_rating, $u_won, $u_won, $u_games, $u_games, $u_id);
 						list($user_pos) = $pos_query->next();
 						$_page = floor($user_pos / PAGE_SIZE);
 					}
@@ -200,9 +200,9 @@ class Page extends GeneralPageBase
 				
 				if ($row = $pos_query->next())
 				{
-					list ($uid, $uname, $urating, $ugames, $uwon) = $row;
+					list ($u_id, $u_name, $u_rating, $u_games, $u_won) = $row;
 					$pos_query = new DbQuery('SELECT count(*) FROM (SELECT u.id FROM players p JOIN users u ON p.user_id = u.id ', $condition);
-					$pos_query->add(' AND u.id <> ? GROUP BY u.id HAVING (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) > ? OR (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) = ? AND (SUM(p.won) > ? OR (SUM(p.won) = ? AND (count(p.game_id) > ? OR (count(p.game_id) = ? AND u.id < ?))))))) as upper', $uid, $urating, $urating, $uwon, $uwon, $ugames, $ugames, $uid);
+					$pos_query->add(' AND u.id <> ? GROUP BY u.id HAVING (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) > ? OR (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) = ? AND (SUM(p.won) > ? OR (SUM(p.won) = ? AND (count(p.game_id) > ? OR (count(p.game_id) = ? AND u.id < ?))))))) as upper', $u_id, $u_rating, $u_rating, $u_won, $u_won, $u_games, $u_games, $u_id);
 					list($user_pos) = $pos_query->next();
 					$_page = floor($user_pos / PAGE_SIZE);
 				}

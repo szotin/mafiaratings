@@ -229,9 +229,9 @@ class GClub
 			$query = new DbQuery('SELECT id, rules_id, name, start_time, languages, duration, flags, address_id FROM events WHERE (start_time + duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?) OR id = ?', $id, $game->event_id);
 			while ($row = $query->next())
 			{
-				$eid = $row[0];
-				$this->events[$eid] = new GEvent($row);
-				$events_str .= ', ' . $eid;
+				$e_id = $row[0];
+				$this->events[$e_id] = new GEvent($row);
+				$events_str .= ', ' . $e_id;
 			}
 			$events_str .= ')';
 			
@@ -566,9 +566,9 @@ class CommandQueue
 			$query = new DbQuery('SELECT id FROM users WHERE name = ?', $rec->name);
 			if ($row = $query->next())
 			{
-				list($uid) = $row;
-				$this->users_map[$user_id] = $uid;
-				$user_id = $uid;
+				list($u_id) = $row;
+				$this->users_map[$user_id] = $u_id;
+				$user_id = $u_id;
 			}
 			else
 			{
@@ -974,9 +974,9 @@ class ApiPage extends OpsApiPageBase
 		$list = array();
 		while ($row = $query->next())
 		{
-			list ($uid, $uname, $nick, $uflags, $club_name) = $row;
-			$p = new GPlayer($uid, $uname, $club_name, $uflags, USER_CLUB_PERM_PLAYER);
-			if ($nick != NULL && $nick != $uname)
+			list ($u_id, $u_name, $nick, $u_flags, $club_name) = $row;
+			$p = new GPlayer($u_id, $u_name, $club_name, $u_flags, USER_CLUB_PERM_PLAYER);
+			if ($nick != NULL && $nick != $u_name)
 			{
 				$p->nicks[$nick] = 1; 
 			}
@@ -1099,8 +1099,9 @@ class ApiPage extends OpsApiPageBase
 			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_game_changed.php';
 			
 			$tags = array(
+				'root' => new Tag(get_server_url()),
 				'action' => new Tag(get_label('deleted')),
-				'uname' => new Tag($admin_name),
+				'user_name' => new Tag($admin_name),
 				'game' => new Tag($game_id),
 				'sender' => new Tag($_profile->user_name));
 			$body = parse_tags($body, $tags);
@@ -1177,8 +1178,9 @@ class ApiPage extends OpsApiPageBase
 			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_game_changed.php';
 			
 			$tags = array(
+				'root' => new Tag(get_server_url()),
 				'action' => new Tag(get_label('changed')),
-				'uname' => new Tag($admin_name),
+				'user_name' => new Tag($admin_name),
 				'game' => new Tag($game_id),
 				'sender' => new Tag($_profile->user_name));
 			$body = parse_tags($body, $tags);
@@ -1239,17 +1241,18 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			$code = generate_email_code();
-			$request_base = get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id;
+			$request_base = get_server_url() . '/email_request.php?code=' . $code . '&user_id=' . $user_id;
 			$tags = array(
-				'uid' => new Tag($user_id),
+				'root' => new Tag(get_server_url()),
+				'user_id' => new Tag($user_id),
 				'gid' => new Tag($game_id),
-				'eid' => new Tag($event_id),
-				'ename' => new Tag($event_name),
-				'edate' => new Tag(format_date('l, F d, Y', $event_start_time, $event_timezone, $user_lang)),
-				'etime' => new Tag(format_date('H:i', $event_start_time, $event_timezone, $user_lang)),
+				'event_id' => new Tag($event_id),
+				'event_name' => new Tag($event_name),
+				'event_date' => new Tag(format_date('l, F d, Y', $event_start_time, $event_timezone, $user_lang)),
+				'event_time' => new Tag(format_date('H:i', $event_start_time, $event_timezone, $user_lang)),
 				'addr' => new Tag($event_addr),
 				'code' => new Tag($code),
-				'uname' => new Tag($user_name),
+				'user_name' => new Tag($user_name),
 				'sender' => new Tag($_profile->user_name),
 				'message' => new Tag($comment),
 				'url' => new Tag($request_base),

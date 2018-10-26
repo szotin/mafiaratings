@@ -33,8 +33,8 @@ try
 	echo '<select id="form-area" onChange="areaChange()"><option value="-1"></option>';
 	while ($row = $query->next())
 	{
-		list ($cid, $cname, $ctimezone, $ccid, $ccname) = $row;
-		echo '<option value="' . $cid . ';' . $ctimezone . ';' . $ccid . ';' . $ccname . '">' . $cname . '</option>';
+		list ($area_id, $area_name, $area_timezone, $area_country_id, $area_country_name) = $row;
+		echo '<option value="' . $area_id . ';' . $area_timezone . ';' . $area_country_id . ';' . $area_country_name . '">' . $area_name . '</option>';
 	}
 	echo '<select></td></tr>';
 	
@@ -53,12 +53,12 @@ try
 			result['id'] = val.substring(beg, end);
 			beg = end + 1;
 			end = val.indexOf(';', beg);
-			result['tzone'] = val.substring(beg, end);
+			result['timezone'] = val.substring(beg, end);
 			beg = end + 1;
 			end = val.indexOf(';', beg);
-			result['cid'] = val.substring(beg, end);
+			result['country_id'] = val.substring(beg, end);
 			beg = end + 1;
-			result['cname'] = val.substring(beg);
+			result['country_name'] = val.substring(beg);
 		}
 		else
 		{
@@ -72,8 +72,8 @@ try
 		var data = parseAreaVal($("#form-area").val());
 		if (data.id > 0)
 		{
-			setTimezone(data.tzone);
-			$("#form-country").val(data.cname);
+			setTimezone(data.timezone);
+			$("#form-country").val(data.country_name);
 		}
 	}
 	

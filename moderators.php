@@ -74,11 +74,11 @@ class Page extends GeneralPageBase
 			$pos_query->add(' GROUP BY u.id');
 			if ($row = $pos_query->next())
 			{
-				list ($uid, $ugames) = $row;
-				if ($ugames > 0)
+				list ($u_id, $u_games) = $row;
+				if ($u_games > 0)
 				{
 					$pos_query = new DbQuery('SELECT count(*) FROM (SELECT u.id FROM users u JOIN games g ON g.moderator_id = u.id WHERE g.result > 0', $condition);
-					$pos_query->add(' GROUP BY u.id HAVING count(g.id) > ? OR (count(g.id) = ? AND u.id < ?)) as prev', $ugames, $ugames, $uid);
+					$pos_query->add(' GROUP BY u.id HAVING count(g.id) > ? OR (count(g.id) = ? AND u.id < ?)) as prev', $u_games, $u_games, $u_id);
 					list($user_pos) = $pos_query->next();
 					$_page = floor($user_pos / PAGE_SIZE);
 				}

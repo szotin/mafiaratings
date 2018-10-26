@@ -19,11 +19,11 @@ class Page extends PageBase
 		}
 		$code = $_REQUEST['code'];
 
-		if (!isset($_REQUEST['uid']))
+		if (!isset($_REQUEST['user_id']))
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('user')));
 		}
-		$user_id = $_REQUEST['uid'];
+		$user_id = $_REQUEST['user_id'];
 
 		$query = new DbQuery(
 			'SELECT e.obj, e.obj_id, u.flags, u.auth_key FROM emails e, users u WHERE e.user_id = u.id AND u.id = ? AND e.code = ? AND e.send_time >= UNIX_TIMESTAMP() - ' . EMAIL_EXPIRATION_TIME, 
@@ -108,6 +108,9 @@ class Page extends PageBase
 				
 			case EMAIL_OBJ_CREATE_CLUB:
 				throw new RedirectExc('clubs.php');
+				
+			case EMAIL_OBJ_CREATE_LEAGUE:
+				throw new RedirectExc('leagues.php');
 				
 			case EMAIL_OBJ_CONFIRM_EVENT:
 				$url = 'event_confirm.php?event=' . $obj_id;

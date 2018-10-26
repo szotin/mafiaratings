@@ -50,7 +50,6 @@ function update_template($id, $name, $subj, $body, $default_for)
 	}
 	else
 	{
-		echo $default_for . ' --<br>';
 		Db::exec(get_label('email template'), 'UPDATE email_templates SET default_for = 0 WHERE club_id = ? AND default_for = ?', $club_id, $default_for);
 		Db::exec(get_label('email template'), 
 			'UPDATE email_templates SET name = ?, subject = ?, body = ?, default_for = ? WHERE id = ?',

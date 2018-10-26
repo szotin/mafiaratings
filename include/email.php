@@ -13,6 +13,7 @@ define('EMAIL_OBJ_CREATE_CLUB', 4);
 define('EMAIL_OBJ_CONFIRM_EVENT', 5);
 define('EMAIL_OBJ_EVENT_NO_USER', 6);
 define('EMAIL_OBJ_VIDEO', 7);
+define('EMAIL_OBJ_CREATE_LEAGUE', 8);
 
 function show_email_tags($event_tags)
 {
@@ -23,21 +24,21 @@ function show_email_tags($event_tags)
 	{
 		echo '<tr><td>'.get_label('Accept button').'</td><td><b>[accept]</b>'.get_label('Button text').'<b>[/accept]</b></td></tr>';
 		echo '<tr><td>'.get_label('Decline button').'</td><td><b>[decline]</b>'.get_label('Button text').'<b>[/decline]</b></td></tr>';
-		echo '<tr><td>'.get_label('Event name').'</td><td><b>[ename]</b></td></tr>';
-		echo '<tr><td>'.get_label('Event id').'</td><td><b>[eid]</b></td></tr>';
-		echo '<tr><td>'.get_label('Event date').'</td><td><b>[edate]</b></td></tr>';
-		echo '<tr><td>'.get_label('Event time').'</td><td><b>[etime]</b></td></tr>';
-		echo '<tr><td>'.get_label('Event address').'</td><td><b>[addr]</b></td></tr>';
-		echo '<tr><td>'.get_label('Event address URL').'</td><td><b>[aurl]</b></td></tr>';
-		echo '<tr><td>'.get_label('Event address id').'</td><td><b>[aid]</b></td></tr>';
-		echo '<tr><td>'.get_label('Event address image').'</td><td><b>[aimage]</b></td></tr>';
+		echo '<tr><td>'.get_label('Event name').'</td><td><b>[event_name]</b></td></tr>';
+		echo '<tr><td>'.get_label('Event id').'</td><td><b>[event_id]</b></td></tr>';
+		echo '<tr><td>'.get_label('Event date').'</td><td><b>[event_date]</b></td></tr>';
+		echo '<tr><td>'.get_label('Event time').'</td><td><b>[event_time]</b></td></tr>';
+		echo '<tr><td>'.get_label('Event address').'</td><td><b>[address]</b></td></tr>';
+		echo '<tr><td>'.get_label('Event address URL').'</td><td><b>[address_url]</b></td></tr>';
+		echo '<tr><td>'.get_label('Event address id').'</td><td><b>[address_id]</b></td></tr>';
+		echo '<tr><td>'.get_label('Event address image').'</td><td><b>[address_image]</b></td></tr>';
 		echo '<tr><td>'.get_label('Event notes').'</td><td><b>[notes]</b></td></tr>';
 	}
-	echo '<tr><td>'.get_label('User name').'</td><td><b>[uname]</b></td></tr>';
-	echo '<tr><td>'.get_label('User id').'</td><td><b>[uid]</b></td></tr>';
+	echo '<tr><td>'.get_label('User name').'</td><td><b>[user_name]</b></td></tr>';
+	echo '<tr><td>'.get_label('User id').'</td><td><b>[user_id]</b></td></tr>';
 	echo '<tr><td>'.get_label('User email').'</td><td><b>[email]</b></td></tr>';
-	echo '<tr><td>'.get_label('Club name').'</td><td><b>[cname]</b></td></tr>';
-	echo '<tr><td>'.get_label('Club id').'</td><td><b>[cid]</b></td></tr>';
+	echo '<tr><td>'.get_label('Club name').'</td><td><b>[club_name]</b></td></tr>';
+	echo '<tr><td>'.get_label('Club id').'</td><td><b>[club_id]</b></td></tr>';
 	echo '<tr><td>'.get_label('Email code').'</td><td><b>[code]</b></td></tr>';
 	echo '</table>';
 }
@@ -138,10 +139,10 @@ function send_notification($email, $body, $text_body, $subject, $user_id, $obj, 
 	}
 
 	$url = get_server_url() . '/email_request.php';
-	$unsubs_url = $url . '?uid=' . $user_id . '&code=' . $code . '&unsub=1';
+	$unsubs_url = $url . '?user_id=' . $user_id . '&code=' . $code . '&unsub=1';
 	$body =
 		'<form method="get" action="' . $url . '">' . 
-		'<input type="hidden" name="uid" value="' . $user_id . '">' .
+		'<input type="hidden" name="user_id" value="' . $user_id . '">' .
 		'<input type="hidden" name="code" value="' . $code . '">' . $body .
 		'</form>';
 		

@@ -510,7 +510,7 @@ class Event
 	{
 		global $_profile;
 		$code = generate_email_code();
-		$base_url = get_server_url() . '/email_request.php?uid=' . $_profile->user_id . '&code=' . $code;
+		$base_url = get_server_url() . '/email_request.php?user_id=' . $_profile->user_id . '&code=' . $code;
 		
 		if (!is_valid_lang($lang))
 		{
@@ -522,28 +522,29 @@ class Event
 		}
 
 		$tags = get_bbcode_tags();
-		$tags['ename'] = new Tag($this->name);
-		$tags['eid'] = new Tag($this->id);
-		$tags['edate'] = new Tag(format_date('l, F d, Y', $this->timestamp, $this->timezone, $lang));
-		$tags['etime'] = new Tag(format_date('H:i', $this->timestamp, $this->timezone, $lang));
+		$tags['root'] = new Tag(get_server_url());
+		$tags['event_name'] = new Tag($this->name);
+		$tags['event_id'] = new Tag($this->id);
+		$tags['event_date'] = new Tag(format_date('l, F d, Y', $this->timestamp, $this->timezone, $lang));
+		$tags['event_time'] = new Tag(format_date('H:i', $this->timestamp, $this->timezone, $lang));
 		$tags['notes'] = new Tag($this->notes);
 		$tags['langs'] = new Tag(get_langs_str($this->langs, ', ', LOWERCASE, $lang));
-		$tags['addr'] = new Tag($this->addr);
-		$tags['aurl'] = new Tag($this->addr_url);
-		$tags['aid'] = new Tag($this->addr_id);
+		$tags['address'] = new Tag($this->addr);
+		$tags['address_url'] = new Tag($this->addr_url);
+		$tags['address_id'] = new Tag($this->addr_id);
 		if ($this->id > 0)
 		{
-			$tags['aimage'] = new Tag('<img src="' . get_server_url() . '/' . ADDRESS_PICS_DIR . TNAILS_DIR . $this->addr_id . '.jpg">');
+			$tags['address_image'] = new Tag('<img src="' . get_server_url() . '/' . ADDRESS_PICS_DIR . TNAILS_DIR . $this->addr_id . '.jpg">');
 		}
 		else
 		{
-			$tags['aimage'] = new Tag('<img src="images/sample_address.jpg">');
+			$tags['address_image'] = new Tag('<img src="images/sample_address.jpg">');
 		}
-		$tags['uname'] = new Tag($_profile->user_name);
-		$tags['uid'] = new Tag($_profile->user_id);
+		$tags['user_name'] = new Tag($_profile->user_name);
+		$tags['user_id'] = new Tag($_profile->user_id);
 		$tags['email'] = new Tag($email_addr);
-		$tags['cname'] = new Tag($this->club_name);
-		$tags['cid'] = new Tag($this->club_id);
+		$tags['club_name'] = new Tag($this->club_name);
+		$tags['club_id'] = new Tag($this->club_id);
 		$tags['code'] = new Tag($code);
 		$tags['accept'] = new Tag('<a href="' . $base_url . '&accept=1" target="_blank">', '</a>');
 		$tags['decline'] = new Tag('<a href="' . $base_url . '&decline=1" target="_blank">', '</a>');
@@ -1001,22 +1002,22 @@ function event_tags()
 		array('[accept]' . get_label('Coming') . '[/accept]', get_label('Accept link')),
 		array('[decline]' . get_label('Not coming') . '[/decline]', get_label('Decline link')),
 		array('[unsub]' . get_label('Unsubscribe') . '[/unsub]', get_label('Unsubscribe link')),
-		array('[ename]', get_label('Event name')),
-		array('[eid]', get_label('Event id')),
-		array('[edate]', get_label('Event date')),
-		array('[etime]', get_label('Event time')),
-		array('[addr]', get_label('Event address')),
-		array('[aurl]', get_label('Event address URL')),
-		array('[aid]', get_label('Event address id')),
-		array('[aimage]', get_label('Event address image')),
+		array('[event_name]', get_label('Event name')),
+		array('[event_id]', get_label('Event id')),
+		array('[event_date]', get_label('Event date')),
+		array('[event_time]', get_label('Event time')),
+		array('[address]', get_label('Event address')),
+		array('[address_url]', get_label('Event address URL')),
+		array('[address_id]', get_label('Event address id')),
+		array('[address_image]', get_label('Event address image')),
 		array('[notes]', get_label('Event notes')),
 		array('[langs]', get_label('Event languages')),
-		array('[uname]', get_label('User name')),
-		array('[uid]', get_label('User id')),
+		array('[user_name]', get_label('User name')),
+		array('[user_id]', get_label('User id')),
 		array('[email]', get_label('User email')),
 		array('[score]', get_label('User score')),
-		array('[cname]', get_label('Club name')),
-		array('[cid]', get_label('Club id')),
+		array('[club_name]', get_label('Club name')),
+		array('[club_id]', get_label('Club id')),
 		array('[code]', get_label('Email code')));
 }
 
@@ -1088,10 +1089,10 @@ function show_event_selector($event_id, $form_name, $select_name, $perm_flags, $
 	$now = time();
 	while ($row = $query->next())
 	{
-		list($eid, $event_name, $event_start_time, $event_duration, $event_timezone, $club_name) = $row;
+		list($e_id, $event_name, $event_start_time, $event_duration, $event_timezone, $club_name) = $row;
 		
-		echo '<option value="' . $eid . '"';
-		if ($eid == $event_id)
+		echo '<option value="' . $e_id . '"';
+		if ($e_id == $event_id)
 		{
 			echo ' selected';
 		}

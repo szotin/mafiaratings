@@ -42,18 +42,19 @@ class ApiPage extends OpsApiPageBase
 			
 			$code = generate_email_code();
 			$server = get_server_url() . '/';
-			$request_base = $server . 'email_request.php?code=' . $code . '&uid=' . $user_id;
+			$request_base = $server . 'email_request.php?code=' . $code . '&user_id=' . $user_id;
 			$image_url = $server . PHOTOS_DIR . TNAILS_DIR . $photo_id . '.jpg';
 			
 			$tags = array(
-				'uid' => new Tag($user_id),
+				'root' => new Tag(get_server_url()),
+				'user_id' => new Tag($user_id),
 				'code' => new Tag($code),
-				'uname' => new Tag($user_name),
+				'user_name' => new Tag($user_name),
 				'sender' => new Tag($_profile->user_name),
 				'message' => new Tag($comment),
-				'url' => new Tag($request_base . '/email_request.php?code=' . $code . '&uid=' . $user_id),
+				'url' => new Tag($request_base . '/email_request.php?code=' . $code . '&user_id=' . $user_id),
 				'photo' => new Tag('<a href="' . $request_base . '&pid=' . $photo_id . '"><img src="' . $image_url . '" border="0" width="' . EVENT_PHOTO_WIDTH . '"></a>'),
-				'unsub' => new Tag('<a href="' . $request_base . '/email_request.php?code=' . $code . '&uid=' . $user_id . '&unsub=1" target="_blank">', '</a>'));
+				'unsub' => new Tag('<a href="' . $request_base . '/email_request.php?code=' . $code . '&user_id=' . $user_id . '&unsub=1" target="_blank">', '</a>'));
 			
 			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_comment_photo.php';
 			$body = parse_tags($body, $tags);

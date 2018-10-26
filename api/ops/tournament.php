@@ -482,16 +482,17 @@ class ApiPage extends OpsApiPageBase
 			}
 		
 			$code = generate_email_code();
-			$request_base = get_server_url() . '/email_request.php?code=' . $code . '&uid=' . $user_id;
+			$request_base = get_server_url() . '/email_request.php?code=' . $code . '&user_id=' . $user_id;
 			$tags = array(
-				'uid' => new Tag($user_id),
-				'eid' => new Tag($event_id),
-				'ename' => new Tag($event_name),
-				'edate' => new Tag(format_date('l, F d, Y', $event_start_time, $event_timezone, $user_lang)),
-				'etime' => new Tag(format_date('H:i', $event_start_time, $event_timezone, $user_lang)),
+				'root' => new Tag(get_server_url()),
+				'user_id' => new Tag($user_id),
+				'event_id' => new Tag($event_id),
+				'event_name' => new Tag($event_name),
+				'event_date' => new Tag(format_date('l, F d, Y', $event_start_time, $event_timezone, $user_lang)),
+				'event_time' => new Tag(format_date('H:i', $event_start_time, $event_timezone, $user_lang)),
 				'addr' => new Tag($event_addr),
 				'code' => new Tag($code),
-				'uname' => new Tag($user_name),
+				'user_name' => new Tag($user_name),
 				'sender' => new Tag($_profile->user_name),
 				'message' => new Tag($comment),
 				'url' => new Tag($request_base),
