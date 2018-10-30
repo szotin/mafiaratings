@@ -204,6 +204,13 @@ define('LEAGUE_ICON_MAX_VERSION', 7);
 define('CITY_FLAG_NOT_CONFIRMED', 1);
 define('COUNTRY_FLAG_NOT_CONFIRMED', 1);
 
+// league-club flags
+// 1 - 0x0001 -      1 - club membership is not approved by the league
+// 2 - 0x0002 -      2 - club membership is not approved by the club
+define('LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED', 0x0001);
+define('LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED', 0x0002);
+
+
 // album flags
 // 1 - 0x0001 -      1 - icon mask
 // 2 - 0x0002 -      2 - icon mask

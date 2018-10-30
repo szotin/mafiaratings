@@ -131,6 +131,17 @@ function is_permitted($permissions, $id1 = 0, $id2 = 0, $id3 = 0)
 	return false;
 }
 
+function no_permission()
+{
+	global $_profile;
+	
+	if ($_profile == NULL)
+	{
+		throw new LoginExc(get_label('You do not have enough permissions. Please sign in.'));
+	}
+	throw new LoginExc(get_label('You do not have enough permissions. Please sign in as a different user.'));
+}
+
 // Ids are club_id, league_id, and owner_id depending on what is needed by the permission mask.
 // Owner always go last.
 // League always go after club.
@@ -146,15 +157,9 @@ function is_permitted($permissions, $id1 = 0, $id2 = 0, $id3 = 0)
 // check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_CLUB_REPRESENTATIVE |  PERMISSION_OWNER, $club_id, $league_id, $user_id);
 function check_permissions($permissions, $id1 = 0, $id2 = 0, $id3 = 0)
 {
-	global $_profile;
-	
 	if (!is_permitted($permissions, $id1, $id2, $id3))
 	{
-		if ($_profile == NULL)
-		{
-			throw new LoginExc(get_label('You do not have enough permissions. Please sign in.'));
-		}
-		throw new LoginExc(get_label('You do not have enough permissions. Please sign in as a different user.'));
+		no_permission();
 	}
 }
 

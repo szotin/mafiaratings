@@ -90,7 +90,7 @@ class ApiPage extends OpsApiPageBase
 				"<br>url=" . $url . 
 				"<br>email=" . $email .
 				"<br>phone=" . $phone;
-			db_log('league', 'Created', $log_details, $league_id, $league_id);
+			db_log('league', 'Created', $log_details, $league_id);
 			$this->response['league_id'] = $league_id;
 		}
 		else
@@ -120,6 +120,7 @@ class ApiPage extends OpsApiPageBase
 				$tags = array(
 					'root' => new Tag(get_server_url()),
 					'user_name' => new Tag($admin_name),
+					'league_name' => new Tag($name),
 					'sender' => new Tag($_profile->user_name));
 				$body = parse_tags($body, $tags);
 				$text_body = parse_tags($text_body, $tags);
@@ -196,7 +197,7 @@ class ApiPage extends OpsApiPageBase
 				"<br>email=" . $email .
 				"<br>phone=" . $phone .
 				"<br>price=" . $price;
-			db_log('league', 'Changed', $log_details, $league_id, $league_id);
+			db_log('league', 'Changed', $log_details, $league_id);
 		}
 		Db::commit();
 	}
@@ -256,16 +257,16 @@ class ApiPage extends OpsApiPageBase
 			"<br>email=" . $email .
 			"<br>phone=" . $phone .
 			"<br>city=" . $city_name . ' (' . $city_id . ')';
-		db_log('league', 'Created', $log_details, $league_id, $league_id);
+		db_log('league', 'Created', $log_details, $league_id);
 
 		if (($user_flags & USER_PERM_ADMIN) == 0)
 		{
 			Db::exec(get_label('user'), 'INSERT INTO league_managers (league_id, user_id) VALUES (?, ?)', $league_id, $user_id);
-			db_log('user', 'Became a manager of the league', NULL, $user_id, $league_id);
+			db_log('user', 'Became a manager of the league', $user_name . ' (' . $user_id . ')', $league_id);
 		}
 			
 		Db::exec(get_label('league'), 'DELETE FROM league_requests WHERE id = ?', $request_id);
-		db_log('league_request', 'Accepted', NULL, $request_id, $league_id);
+		db_log('league_request', 'Accepted', $name . ' (' . $league_id . ')', $request_id);
 		
 		// send email
 		$lang = get_lang_code($user_lang);
@@ -318,7 +319,7 @@ class ApiPage extends OpsApiPageBase
 			$request_id);
 		
 		Db::exec(get_label('league'), 'DELETE FROM league_requests WHERE id = ?', $request_id);
-		db_log('league_request', 'Declined', NULL, $request_id);
+		db_log('league_request', 'Declined', $name, $request_id);
 		Db::commit();
 		if ($reason != '')
 		{
@@ -392,6 +393,146 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Reopen/restore closed/retired league.');
 		$help->request_param('league_id', 'League id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// add_manager
+	//-------------------------------------------------------------------------------------------------------
+	function add_manager_op()
+	{
+		global $_profile;
+		
+		$league_id = (int)get_required_param('league_id');
+		$user_id = (int)get_required_param('user_id');
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		
+		Db::begin();
+		Db::exec(get_label('league'), 'INSERT IGNORE INTO league_managers (league_id, user_id) VALUES (?, ?)', $league_id, $user_id);
+		if (Db::affected_rows() > 0)
+		{
+			db_log('league', 'Manager added', $user_id, $league_id, $league_id);
+		}
+		Db::commit();
+	}
+	
+	function add_manager_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Grand league manager permission to a user.');
+		$help->request_param('league_id', 'League id.');
+		$help->request_param('user_id', 'User id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// remove_manager
+	//-------------------------------------------------------------------------------------------------------
+	function remove_manager_op()
+	{
+		global $_profile;
+		
+		$league_id = (int)get_required_param('league_id');
+		$user_id = (int)get_required_param('user_id');
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		
+		Db::begin();
+		Db::exec(get_label('league'), 'DELETE FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $user_id);
+		if (Db::affected_rows() > 0)
+		{
+			db_log('league', 'Manager removed', $user_id, $league_id, $league_id);
+		}
+		Db::commit();
+	}
+	
+	function remove_manager_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Revoke league manager permission from a user.');
+		$help->request_param('league_id', 'League id.');
+		$help->request_param('user_id', 'User id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// add_club
+	//-------------------------------------------------------------------------------------------------------
+	function add_club_op()
+	{
+		global $_profile;
+		
+		$league_id = (int)get_required_param('league_id');
+		$user_id = (int)get_required_param('club_id');
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_CLUB_MANAGER, $club_id, $league_id);
+		
+		Db::begin();
+		$insert = true;
+		$old_flags = LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED | LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED;
+		$query = new DbQuery('SELECT flags FROM league_clubs WHERE league_id = ? AND club_id = ?', $league_id, $club_id);
+		if ($row = $query->next())
+		{
+			list ($old_flags) = $row;
+			$insert = false;
+		}
+		
+		$flags = $old_flags;
+		if (is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
+		{
+			$flags = $old_flags & ~LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED;
+		}
+		if (is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
+		{
+			$flags = $old_flags & ~LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED;
+		}
+		
+		if ($flags != $old_flags)
+		{
+			if ($insert)
+			{
+				Db::exec(get_label('league'), 'INSERT INTO league_clubs (league_id, club_id, flags) VALUES (?, ?, ?)', $league_id, $club_id, $flags);
+			}
+			else
+			{
+				Db::exec(get_label('league'), 'UPDATE league_clubs SET flags = ? WHERE league_id = ? AND club_id = ?', $flags, $league_id, $club_id);
+			}
+			
+			if ($flags & LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED)
+			{
+				list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+				$lang = get_lang_code($admin_def_lang);
+				$query = new DbQuery('SELECT u.id, u.name, u.email FROM league_admins l JOIN users u ON u.id = l.user_id WHERE l.id = ?', $league_id);
+				while ($row = $query->next())
+				{
+					list($user_id, $user_name, $user_email) = $row;
+					list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_league_accept_club.php';
+					
+					$tags = array(
+						'root' => new Tag(get_server_url()),
+						'user_id' => new Tag($user_id),
+						'user_name' => new Tag($user_name),
+						'league_id' => new Tag($league_id),
+						'league_name' => new Tag($league_name),
+						'club_id' => new Tag($club_id),
+						'club_name' => new Tag($club_name),
+						'sender' => new Tag($_profile->user_name));
+					$body = parse_tags($body, $tags);
+					$text_body = parse_tags($text_body, $tags);
+					send_email($admin_email, $body, $text_body, $subj);
+				}
+			}
+			
+			if ($flags & LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED)
+			{
+			}
+			$this->response['flags'] = $flags;
+		}
+		Db::commit();
+	}
+	
+	function add_club_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Grand league manager permission to a user.');
+		$help->request_param('league_id', 'League id.');
+		$help->request_param('user_id', 'User id.');
 		return $help;
 	}
 }

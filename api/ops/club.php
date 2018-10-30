@@ -156,6 +156,7 @@ class ApiPage extends OpsApiPageBase
 				$tags = array(
 					'root' => new Tag(get_server_url()),
 					'user_name' => new Tag($admin_name),
+					'club_name' => new Tag($name),
 					'sender' => new Tag($_profile->user_name));
 				$body = parse_tags($body, $tags);
 				$text_body = parse_tags($text_body, $tags);
