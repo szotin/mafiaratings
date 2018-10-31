@@ -18,12 +18,19 @@ class Page extends PageBase
 			throw new Exc(get_label('Unknown [0]', get_label('email code')));
 		}
 		$code = $_REQUEST['code'];
-
-		if (!isset($_REQUEST['user_id']))
+		
+		if (isset($_REQUEST['user_id']))
+		{
+			$user_id = $_REQUEST['user_id'];
+		}
+		else if (isset($_REQUEST['uid'])) // Remove it. It is a temporary fix, because some emails with uid are already sent in October 2018. If you are reading it in November 2018 or later, remove it.
+		{
+			$user_id = $_REQUEST['uid'];
+		}
+		else
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('user')));
 		}
-		$user_id = $_REQUEST['user_id'];
 
 		$query = new DbQuery(
 			'SELECT e.obj, e.obj_id, u.flags, u.auth_key FROM emails e, users u WHERE e.user_id = u.id AND u.id = ? AND e.code = ? AND e.send_time >= UNIX_TIMESTAMP() - ' . EMAIL_EXPIRATION_TIME, 
