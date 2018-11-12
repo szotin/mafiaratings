@@ -460,7 +460,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$league_id = (int)get_required_param('league_id');
-		$user_id = (int)get_required_param('club_id');
+		$club_id = (int)get_required_param('club_id');
 		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_CLUB_MANAGER, $club_id, $league_id);
 		
 		Db::begin();
@@ -496,14 +496,21 @@ class ApiPage extends OpsApiPageBase
 			
 			if ($flags & LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED)
 			{
-				list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+				list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
 				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-				$lang = get_lang_code($admin_def_lang);
-				$query = new DbQuery('SELECT u.id, u.name, u.email FROM league_admins l JOIN users u ON u.id = l.user_id WHERE l.id = ?', $league_id);
+				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_admins l JOIN users u ON u.id = l.user_id WHERE l.id = ?', $league_id);
 				while ($row = $query->next())
 				{
-					list($user_id, $user_name, $user_email) = $row;
-					list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_league_accept_club.php';
+					list($user_id, $user_name, $user_email, $user_lang) = $row;
+					if (!is_valid_lang($user_lang))
+					{
+						$user_lang = get_lang($league_langs);
+						if (!is_valid_lang($user_lang))
+						{
+							$user_lang = LANG_RUSSIAN;
+						}
+					}
+					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_club_add_league.php';
 					
 					$tags = array(
 						'root' => new Tag(get_server_url()),
@@ -522,6 +529,35 @@ class ApiPage extends OpsApiPageBase
 			
 			if ($flags & LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED)
 			{
+				list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_CLUB_PERM_MANAGER, $club_id);
+				while ($row = $query->next())
+				{
+					list($user_id, $user_name, $user_email, $user_lang) = $row;
+					if (!is_valid_lang($user_lang))
+					{
+						$user_lang = get_lang($league_langs);
+						if (!is_valid_lang($user_lang))
+						{
+							$user_lang = LANG_RUSSIAN;
+						}
+					}
+					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_league_add_club.php';
+					
+					$tags = array(
+						'root' => new Tag(get_server_url()),
+						'user_id' => new Tag($user_id),
+						'user_name' => new Tag($user_name),
+						'league_id' => new Tag($league_id),
+						'league_name' => new Tag($league_name),
+						'club_id' => new Tag($club_id),
+						'club_name' => new Tag($club_name),
+						'sender' => new Tag($_profile->user_name));
+					$body = parse_tags($body, $tags);
+					$text_body = parse_tags($text_body, $tags);
+					send_email($admin_email, $body, $text_body, $subj);
+				}
 			}
 			$this->response['flags'] = $flags;
 		}
@@ -530,9 +566,116 @@ class ApiPage extends OpsApiPageBase
 	
 	function add_club_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Grand league manager permission to a user.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_CLUB_MANAGER, 'Adds club to a league. Both club manager and league manager have to approve it. When a club manager sends this request, all league managers are notified. One of them has to approve it. In order to do this he sends the same request as a league manager. Once both club manager and league manager send it, the club becomes a member. If user who is sending it is a club manager and a league manager at the same time, the club is just added without sending any emails.');
 		$help->request_param('league_id', 'League id.');
-		$help->request_param('user_id', 'User id.');
+		$help->request_param('club_id', 'Club id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// remove_club
+	//-------------------------------------------------------------------------------------------------------
+	function remove_club_op()
+	{
+		global $_profile;
+		
+		$league_id = (int)get_required_param('league_id');
+		$club_id = (int)get_required_param('club_id');
+		$message = get_optional_param('message');
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_CLUB_MANAGER, $club_id, $league_id);
+		
+		Db::begin();
+		$insert = true;
+		$old_flags = LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED | LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED;
+		$query = new DbQuery('SELECT flags FROM league_clubs WHERE league_id = ? AND club_id = ?', $league_id, $club_id);
+		if ($row = $query->next())
+		{
+			list ($old_flags) = $row;
+		}
+		else
+		{
+			return;
+		}
+		
+		Db::exec(get_label('league'), 'DELETE FROM league_clubs WHERE league_id = ? AND club_id = ?', $league_id, $club_id);
+		
+		$flags = $old_flags;
+		if (!is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
+		{
+			list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
+			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_admins l JOIN users u ON u.id = l.user_id WHERE l.id = ?', $league_id);
+			while ($row = $query->next())
+			{
+				list($user_id, $user_name, $user_email, $user_lang) = $row;
+				if (!is_valid_lang($user_lang))
+				{
+					$user_lang = get_lang($league_langs);
+					if (!is_valid_lang($user_lang))
+					{
+						$user_lang = LANG_RUSSIAN;
+					}
+				}
+				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_club_remove_league.php';
+				
+				$tags = array(
+					'root' => new Tag(get_server_url()),
+					'user_id' => new Tag($user_id),
+					'user_name' => new Tag($user_name),
+					'league_id' => new Tag($league_id),
+					'league_name' => new Tag($league_name),
+					'club_id' => new Tag($club_id),
+					'club_name' => new Tag($club_name),
+					'message' => new Tag($message),
+					'sender' => new Tag($_profile->user_name));
+				$body = parse_tags($body, $tags);
+				$text_body = parse_tags($text_body, $tags);
+				send_email($admin_email, $body, $text_body, $subj);
+			}
+		}
+		
+		if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
+		{
+			list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_CLUB_PERM_MANAGER, $club_id);
+			while ($row = $query->next())
+			{
+				list($user_id, $user_name, $user_email, $user_lang) = $row;
+				if (!is_valid_lang($user_lang))
+				{
+					$user_lang = get_lang($league_langs);
+					if (!is_valid_lang($user_lang))
+					{
+						$user_lang = LANG_RUSSIAN;
+					}
+				}
+				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_league_remove_club.php';
+				
+				$tags = array(
+					'root' => new Tag(get_server_url()),
+					'user_id' => new Tag($user_id),
+					'user_name' => new Tag($user_name),
+					'league_id' => new Tag($league_id),
+					'league_name' => new Tag($league_name),
+					'club_id' => new Tag($club_id),
+					'club_name' => new Tag($club_name),
+					'message' => new Tag($message),
+					'sender' => new Tag($_profile->user_name));
+				$body = parse_tags($body, $tags);
+				$text_body = parse_tags($text_body, $tags);
+				send_email($admin_email, $body, $text_body, $subj);
+			}
+		}
+		Db::commit();
+	}
+	
+	function remove_club_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_CLUB_MANAGER, 'Removes a club to a league. If this is request of a club manager, all league managers are notified. It it is a request of a league manager, all club managers are notified. If a user has both priviledges, club is just removed without any notifications.');
+		$help->request_param('league_id', 'League id.');
+		$help->request_param('club_id', 'Club id.');
+		$help->request_param('message', 'Message containing explanation why club was removed.', 'empty.');
 		return $help;
 	}
 }
