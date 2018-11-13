@@ -21,10 +21,10 @@ class Page extends ClubPageBase
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show moderators who moderated in a specific season.'));
+		$season = show_club_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show moderators who moderated in a specific season.'));
 		echo '</td></tr></table></form>';
 		
-		$condition = get_season_condition($season, 'g.start_time', 'g.end_time');
+		$condition = get_club_season_condition($season, 'g.start_time', 'g.end_time');
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ?', $this->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		

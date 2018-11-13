@@ -318,6 +318,39 @@ var mr = new function()
 	}
 
 	//--------------------------------------------------------------------------------------
+	// league
+	//--------------------------------------------------------------------------------------
+	this.createLeague = function()
+	{
+		dlg.form("league_create.php", refr, 600);
+	}
+
+	this.restoreLeague = function(id)
+	{
+		json.post("api/ops/league.php", { op: "restore", league_id: id }, refr);
+	}
+
+	this.retireLeague = function(id)
+	{
+		json.post("api/ops/league.php", { op: "retire", league_id: id }, refr);
+	}
+
+	this.editLeague = function(id)
+	{
+		dlg.form("league_edit.php?id=" + id, refr, 600);
+	}
+
+	this.acceptLeague = function(id)
+	{
+		dlg.form("league_accept.php?id=" + id, refr, 600);
+	}
+
+	this.declineLeague = function(id)
+	{
+		dlg.form("league_decline.php?id=" + id, refr);
+	}
+	
+	//--------------------------------------------------------------------------------------
 	// country
 	//--------------------------------------------------------------------------------------
 	this.createCountry = function()

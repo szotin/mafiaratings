@@ -35,7 +35,7 @@ class Page extends ClubPageBase
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show events of a specific season.'));
+		$season = show_club_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show events of a specific season.'));
 		echo ' <select name="etype" onchange="document.clubForm.submit()">';
 		show_option(ETYPE_TOURNAMENT, $events_type, get_label('Tournaments'));
 		show_option(ETYPE_WITH_GAMES, $events_type, get_label('Events'));
@@ -50,7 +50,7 @@ class Page extends ClubPageBase
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' WHERE e.start_time < UNIX_TIMESTAMP() AND e.club_id = ?',
 			$this->id);
-		$condition->add(get_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
+		$condition->add(get_club_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
 		switch ($events_type)
 		{
 			case ETYPE_TOURNAMENT:

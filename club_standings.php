@@ -80,13 +80,13 @@ class Page extends ClubPageBase
 		echo ' ';
 		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
 		echo ' ';
-		$this->season = show_seasons_select($this->id, $this->season, 'document.viewForm.submit()', get_label('Standings by season.'));	
+		$this->season = show_club_seasons_select($this->id, $this->season, 'document.viewForm.submit()', get_label('Standings by season.'));	
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
 		
-		$condition->add(get_season_condition($this->season, 'g.start_time', 'g.end_time'));
+		$condition->add(get_club_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		
 		$scoring_system = new ScoringSystem($this->scoring_id);
 		$scores = new Scores($scoring_system, NULL, $condition, get_roles_condition($this->roles));

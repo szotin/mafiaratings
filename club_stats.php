@@ -32,10 +32,10 @@ class Page extends ClubPageBase
 		
 		echo '<form name="filter" method="get"><input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$this->season = show_seasons_select($this->id, $this->season, 'document.filter.submit()', get_label('Show stats of a specific season.'));
+		$this->season = show_club_seasons_select($this->id, $this->season, 'document.filter.submit()', get_label('Show stats of a specific season.'));
 		echo '</td></tr></table>';
 		
-		$this->season_condition = get_season_condition($this->season, 'g.start_time', 'g.end_time');
+		$this->season_condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.club_id = ? AND g.result > 0', $this->id, $this->season_condition);
 		
 		$playing_count = 0;

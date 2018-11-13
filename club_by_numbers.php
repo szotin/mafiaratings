@@ -183,7 +183,7 @@ class Page extends ClubPageBase
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<input type="hidden" name="sort" value="' . $sort_type . '">';
-		$this->season = show_seasons_select($this->id, $this->season, 'document.form.submit()', get_label('Show stats of a specific season.'));
+		$this->season = show_club_seasons_select($this->id, $this->season, 'document.form.submit()', get_label('Show stats of a specific season.'));
 		echo ' ';
 		show_roles_select($roles, 'document.form.submit()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
 		echo '</td></tr></table></form>';
@@ -193,7 +193,7 @@ class Page extends ClubPageBase
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
 			' FROM players p JOIN games g ON p.game_id = g.id WHERE g.club_id = ?', $this->id);
 		$query->add(get_roles_condition($roles));
-		$query->add(get_season_condition($this->season, 'g.start_time', 'g.end_time'));
+		$query->add(get_club_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		$query->add(' GROUP BY p.number');
 		while ($row = $query->next())
 		{

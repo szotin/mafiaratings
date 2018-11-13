@@ -24,7 +24,7 @@ class Page extends ClubPageBase
 		}
 		if ($this->season == 0)
 		{
-			$this->season = get_current_season($this->id);
+			$this->season = get_current_club_season($this->id);
 		}
 		
 		if (isset($_REQUEST['scoring']))
@@ -33,7 +33,7 @@ class Page extends ClubPageBase
 		}
 		
 		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, NULL, new SQL(' AND g.club_id = ?', $this->id), get_season_condition($this->season, 'g.start_time', 'g.end_time'));
+		$scores = new Scores($scoring_system, NULL, new SQL(' AND g.club_id = ?', $this->id), get_club_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		$players_count = count($scores->players);
 		$separator = '';
 		if ($players_count > NUM_PLAYERS)
@@ -66,7 +66,7 @@ class Page extends ClubPageBase
 		echo '<p>';
 		show_scoring_select($this->id, $this->scoring_id, 'doUpdateChart()', get_label('Scoring system'));		
 		echo ' ';
-		$this->season = show_seasons_select($this->id, $this->season, 'doUpdateChart()', get_label('Standings by season.'));	
+		$this->season = show_club_seasons_select($this->id, $this->season, 'doUpdateChart()', get_label('Standings by season.'));	
 		echo '</p>';
 		
 		show_chart_legend();

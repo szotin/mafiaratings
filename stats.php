@@ -35,7 +35,7 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_lang_code;
 		
-		$condition = get_season_condition($this->season, 'g.start_time', 'g.end_time');
+		$condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
 		$ccc_id = $this->ccc_filter->get_id();
 		switch ($this->ccc_filter->get_type())
 		{
@@ -181,7 +181,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_filter_fields()
 	{
-		$this->season = show_seasons_select(0, $this->season, 'filter()', get_label('Show stats of a specific season.'));
+		$this->season = show_club_seasons_select(0, $this->season, 'filter()', get_label('Show stats of a specific season.'));
 	}
 	
 	protected function get_filter_js()

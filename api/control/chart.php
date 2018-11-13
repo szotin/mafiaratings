@@ -198,11 +198,11 @@ class ApiPage extends ControlApiPageBase
 				}
 				if ($season == 0)
 				{
-					$season = get_current_season($club_id);
+					$season = get_current_club_season($club_id);
 				}
 				
 				$scoring_system = new ScoringSystem($scoring_id);
-				$scores = new Scores($scoring_system, NULL, new SQL(' AND g.club_id = ?', $club_id), new SQL(' AND p.user_id IN(' . $player_list . ')', get_season_condition($season, 'g.start_time', 'g.end_time')), MAX_POINTS_ON_GRAPH);
+				$scores = new Scores($scoring_system, NULL, new SQL(' AND g.club_id = ?', $club_id), new SQL(' AND p.user_id IN(' . $player_list . ')', get_club_season_condition($season, 'g.start_time', 'g.end_time')), MAX_POINTS_ON_GRAPH);
 		
 				$players_count = count($scores->players);
 				foreach ($user_ids as $user_id)

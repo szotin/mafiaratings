@@ -35,7 +35,7 @@ class Page extends ClubPageBase
 		echo '<p><form method="get" name="form" action="club_games.php">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		$season = show_seasons_select($this->id, $season, 'document.form.submit()', get_label('Show games of a specific season.'));
+		$season = show_club_seasons_select($this->id, $season, 'document.form.submit()', get_label('Show games of a specific season.'));
 		echo ' <select name="results" onChange="document.form.submit()">';
 		show_option(-1, $result_filter, get_label('All games'));
 		show_option(1, $result_filter, get_label('Town victories'));
@@ -67,7 +67,7 @@ class Page extends ClubPageBase
 		{
 			$condition->add(' AND g.video_id IS NOT NULL');
 		}
-		$condition->add(get_season_condition($season, 'g.start_time', 'g.end_time'));
+		$condition->add(get_club_season_condition($season, 'g.start_time', 'g.end_time'));
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);

@@ -212,6 +212,8 @@ class Profile
 	
 	function is_league_manager($league_id)
 	{
+		global $_profile;
+	
 		if ($_profile->is_admin())
 		{
 			return true;

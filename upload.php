@@ -89,6 +89,25 @@ try
 		}
 		break;
 	
+	case LEAGUE_PIC_CODE:
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $id);
+		upload_pic('Filedata', LEAGUE_PICS_DIR, $id);
+		
+		list ($flags) = Db::record(get_label('league'), 'SELECT flags FROM leagues WHERE id = ?', $id);
+		$icon_version = (($flags & LEAGUE_ICON_MASK) >> LEAGUE_ICON_MASK_OFFSET) + 1;
+		if ($icon_version > LEAGUE_ICON_MAX_VERSION)
+		{
+			$icon_version = 1;
+		}
+		$flags = ($flags & ~LEAGUE_ICON_MASK) + ($icon_version << LEAGUE_ICON_MASK_OFFSET);
+		
+		Db::exec(get_label('league'), 'UPDATE leagues SET flags = ? WHERE id = ?', $flags, $id);
+		if (Db::affected_rows() > 0)
+		{
+			db_log('league', 'Logo uploaded', 'flags=' . $flags, $id, $id);
+		}
+		break;
+	
 	case ALBUM_PIC_CODE:
 		list ($owner_id, $club_id, $flags) = Db::record(get_label('photo album'),'SELECT user_id, club_id, flags FROM photo_albums WHERE id = ?', $id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $owner_id);

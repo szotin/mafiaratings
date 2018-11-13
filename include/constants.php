@@ -97,6 +97,7 @@ define('PHOTOS_DIR', 'pics/photo/');
 define('ADDRESS_PICS_DIR', 'pics/address/');
 define('USER_PICS_DIR', 'pics/user/');
 define('CLUB_PICS_DIR', 'pics/club/');
+define('LEAGUE_PICS_DIR', 'pics/league/');
 define('ALBUM_PICS_DIR', 'pics/album/');
 define('EVENT_PICS_DIR', 'pics/event/');
 
@@ -108,6 +109,7 @@ define('PHOTO_COL_COUNT',5);
 define('ADDR_PIC_CODE', 'a');
 define('USER_PIC_CODE', 'u');
 define('CLUB_PIC_CODE', 'c');
+define('LEAGUE_PIC_CODE', 'l');
 define('ALBUM_PIC_CODE', 'p');
 define('EVENT_PIC_CODE', 'e');
 define('PHOTO_CODE', 'h');

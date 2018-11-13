@@ -225,7 +225,7 @@ class ApiPage extends OpsApiPageBase
 		$request_id = (int)get_required_param('request_id');
 		
 		Db::begin();
-		list($url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone, $city_id, $city_name) = Db::record(
+		list($url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone) = Db::record(
 			get_label('league'),
 			'SELECT l.web_site, l.langs, l.user_id, u.name, u.email, u.def_lang, u.flags, l.email, l.phone FROM league_requests l' .
 				' JOIN users u ON l.user_id = u.id' .
@@ -255,8 +255,7 @@ class ApiPage extends OpsApiPageBase
 			"<br>flags=" . NEW_LEAGUE_FLAGS .
 			"<br>url=" . $url . 
 			"<br>email=" . $email .
-			"<br>phone=" . $phone .
-			"<br>city=" . $city_name . ' (' . $city_id . ')';
+			"<br>phone=" . $phone . ')';
 		db_log('league', 'Created', $log_details, $league_id);
 
 		if (($user_flags & USER_PERM_ADMIN) == 0)
@@ -306,11 +305,7 @@ class ApiPage extends OpsApiPageBase
 		
 		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
-		$reason = '';
-		if (isset($_REQUEST['reason']))
-		{
-			$reason = $_REQUEST['reason'];
-		}
+		$reason = prepare_message(get_optional_param('reason'));;
 	
 		Db::begin();
 		list($name, $url, $langs, $user_id, $user_name, $user_email, $user_lang) = Db::record(
@@ -581,7 +576,7 @@ class ApiPage extends OpsApiPageBase
 		
 		$league_id = (int)get_required_param('league_id');
 		$club_id = (int)get_required_param('club_id');
-		$message = get_optional_param('message');
+		$message = prepare_message(get_optional_param('message'));
 		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_CLUB_MANAGER, $club_id, $league_id);
 		
 		Db::begin();

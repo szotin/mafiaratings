@@ -288,7 +288,7 @@ class ClubPageBase extends PageBase
 	}
 }
 
-function get_current_season($club_id)
+function get_current_club_season($club_id)
 {
 	$condition = new SQL();
 	if ($club_id > 0)
@@ -313,7 +313,7 @@ function get_current_season($club_id)
 	return SEASON_LAST_YEAR;
 }
 
-function show_seasons_select($club_id, $option, $on_change, $title)
+function show_club_seasons_select($club_id, $option, $on_change, $title)
 {
 	$seasons = array();
 	$condition = new SQL();
@@ -374,7 +374,7 @@ function show_seasons_select($club_id, $option, $on_change, $title)
 	return $option;
 }
 
-function get_season_condition($season, $start_field, $end_field)
+function get_club_season_condition($season, $start_field, $end_field)
 {
 	$condition = new SQL('');
 	if ($season > 0)

@@ -61,7 +61,7 @@ class Page extends GeneralPageBase
 		}
 		
 		date_default_timezone_set(get_timezone());
-		$this->condition = get_season_condition($this->season, 'g.start_time', 'g.end_time');
+		$this->condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
 		
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.result > 0 ', $this->condition);
 		$this->condition->add(get_roles_condition($this->roles));
@@ -204,7 +204,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_filter_fields()
 	{
-		$this->season = show_seasons_select(0, $this->season, 'filter()', get_label('Show nomimations of a specific season.'));
+		$this->season = show_club_seasons_select(0, $this->season, 'filter()', get_label('Show nomimations of a specific season.'));
 		show_roles_select($this->roles, 'filter()', get_label('Use only the stats of a specific role.'));
 		
 		echo ' <select id="min" onchange="filter()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
