@@ -337,12 +337,15 @@ class Page extends PageBase
 		}
 		echo '> '.get_label('everyone can moderate games.').'<br>';
 		
-		echo '<input type="checkbox" name="tournament" value="1"';
-		if (($this->event->flags & EVENT_FLAG_TOURNAMENT) != 0)
+		if ($_profile->is_admin())
 		{
-			echo ' checked';
+			echo '<input type="checkbox" name="tournament" value="1"';
+			if (($this->event->flags & EVENT_FLAG_TOURNAMENT) != 0)
+			{
+				echo ' checked';
+			}
+			echo '> '.get_label('official tournament').'</td></tr>';
 		}
-		echo '> '.get_label('official tournament').'</td></tr>';
 		
 		echo '</table>';
 		
