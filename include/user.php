@@ -163,6 +163,7 @@ class UserPageBase extends PageBase
 {
 	protected $id;
 	protected $name;
+	protected $email;
 	protected $flags;
 	protected $games_moderated;
 	protected $reg_date;
@@ -184,9 +185,9 @@ class UserPageBase extends PageBase
 		}
 		$this->id = $_REQUEST['id'];
 
-		list ($this->name, $this->flags, $this->games_moderated, $this->reg_date, $this->langs, $this->city, $this->country, $this->club_id, $this->club, $this->club_flags) = 
+		list ($this->name, $this->email, $this->flags, $this->games_moderated, $this->reg_date, $this->langs, $this->city, $this->country, $this->club_id, $this->club, $this->club_flags) = 
 			Db::record(get_label('user'),
-				'SELECT u.name, u.flags, u.games_moderated, u.reg_time, u.languages, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', c.id, c.name, c.flags FROM users u' .
+				'SELECT u.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', c.id, c.name, c.flags FROM users u' .
 					' JOIN cities i ON i.id = u.city_id' .
 					' JOIN countries o ON o.id = i.country_id' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .

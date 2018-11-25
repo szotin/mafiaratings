@@ -68,6 +68,7 @@ class Profile
 	public $timezone;
 	public $clubs;
 	public $user_last_active;
+	public $user_accounts_count;
 	
 	function __construct($user_id)
 	{
@@ -86,6 +87,8 @@ class Profile
 		{
 			$this->region_id = $this->city_id;
 		}
+		
+		list($this->user_accounts_count) = Db::record(get_label('user'), 'SELECT count(*) FROM users WHERE email = ?', $this->user_email);
 			
 		$this->update_clubs();
 		$this->user_last_active = time();

@@ -622,6 +622,11 @@ class GameState
 		for ($i = 0; $i < 10; ++$i)
 		{
 			$player = $this->players[$i];
+			if ($player->id == $new_user_id)
+			{
+				throw new Exc('Unable to change one user to another in the game because they both were playing.');
+			}
+			
 			if ($player->id == $user_id)
 			{
 				$player->id = $new_user_id;

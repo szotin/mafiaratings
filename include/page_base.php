@@ -260,6 +260,10 @@ class PageBase
 				echo '<li><a href="user_info.php?id=' . $_profile->user_id . '" title="' . get_label('Statistics for [0]', $_profile->user_name) . '"><img src="images/user.png" class="menu_image"> ' . get_label('My statistics') . '</a></li>';
 				echo '<li><a href="javascript:mr.editAccount()" title="' . get_label('Account settings') . '"><img src="images/settings.png" class="menu_image"> ' . get_label('My account') . '</a></li>';
 				echo '<li><a href="javascript:mr.changePassword()" title="' . get_label('Change password') . '"><img src="images/key.png" class="menu_image"> ' . get_label('Change password') . '</a></li>';
+				if ($_profile->user_accounts_count > 1)
+				{
+					echo '<li><a href="merge_user.php?id=' . $_profile->user_id . '" title="' . get_label('Merge accounts with the same email to current account.') . '"><img src="images/merge.png" class="menu_image"> ' . get_label('Merge my accounts') . '</a></li>';
+				}
 				echo '<li><a href="javascript:logout()" title="' . get_label('Logout from [0]', PRODUCT_NAME) . '"><img src="images/logout.png" class="menu_image"> ' . get_label('Log out') . '</a></li>';
 				echo '</ul>';
 
@@ -514,10 +518,8 @@ class PageBase
 			var currentMenu = null;
 			var setCurrentMenu = function(menu)
 			{
-				console.log(currentMenu + ': ' + menu);
 				if (currentMenu != null)
 				{
-					console.log('hide');
 					$(currentMenu).hide();
 				}
 				currentMenu = menu;

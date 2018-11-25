@@ -85,6 +85,7 @@ class GeneralPageBase extends PageBase
 				, new MenuItem('club_requests.php' . $ccc, get_label('Club requests'), get_label('Requests for creating a club'))
 				, new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things'))
 				, new MenuItem('duplicated_games.php' . $ccc, get_label('Duplicated games'), get_label('Search for duplicated games suspects.'))
+				, new MenuItem('duplicated_users.php' . $ccc, get_label('Duplicated users'), get_label('Merge duplicated user accounts.'))
 				, new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log'))
 			));
 		}
