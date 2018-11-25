@@ -35,7 +35,7 @@ class Page extends GeneralPageBase
 			echo '<td align="center" width="90"><a href="view_game.php?id=' . $game2_id . '&bck=1">' . get_label('Game #[0]', $game2_id) . '</a></td>';
 			echo '<td>' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
 			echo '<td>' . format_time($duration) . '</td>';
-			echo '</tr>'
+			echo '</tr>';
 		}
 		echo '</table>';
 	}
