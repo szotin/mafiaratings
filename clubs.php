@@ -29,17 +29,17 @@ class Page extends GeneralPageBase
 		}
 		echo '> ' . get_label('Show retired clubs');
 		
-		echo ' <input type="checkbox" id="children" onclick="filter()"';
-		if (isset($_REQUEST['children']))
+		echo ' <input type="checkbox" id="root" onclick="filter()"';
+		if (isset($_REQUEST['root']))
 		{
 			echo ' checked';
 		}
-		echo '> ' . get_label('Show descendant clubs');
+		echo '> ' . get_label('Root clubs only');
 	}
 	
 	protected function get_filter_js()
 	{
-		return '+ ($("#retired").attr("checked") ? "&retired=" : "") + ($("#children").attr("checked") ? "&children=" : "")';
+		return '+ ($("#retired").attr("checked") ? "&retired=" : "") + ($("#root").attr("checked") ? "&root=" : "")';
 	}
 
 	protected function show_body()
@@ -47,24 +47,19 @@ class Page extends GeneralPageBase
 		global $_profile, $_lang_code, $_page;
 		
 		$retired = isset($_REQUEST['retired']);
-		$children = isset($_REQUEST['children']);
+		$root_only = isset($_REQUEST['root']);
 		
-		$condition = new SQL(' WHERE (c.flags & ' . CLUB_FLAG_RETIRED);
-		if ($retired)
+		$delimiter = ' WHERE ';
+		$condition = new SQL();
+		if (!$retired)
 		{
-			$condition->add(') <> 0');
+			$condition->add($delimiter . '(c.flags & ' . CLUB_FLAG_RETIRED . ') = 0');
+			$delimiter = ' AND ';
 		}
-		else
+		if ($root_only)
 		{
-			$condition->add(') = 0');
-		}
-		if ($children)
-		{
-			$condition->add(' AND c.parent_id IS NOT NULL');
-		}
-		else
-		{
-			$condition->add(' AND c.parent_id IS NULL');
+			$condition->add($delimiter . 'c.parent_id IS NULL');
+			$delimiter = ' AND ';
 		}
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
@@ -72,18 +67,18 @@ class Page extends GeneralPageBase
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
 			{
-				$condition->add(' AND c.id = ?', $ccc_id);
+				$condition->add($delimiter . 'c.id = ?', $ccc_id);
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add(' AND u.user_id = ?', $_profile->user_id);
+				$condition->add($delimiter . 'u.user_id = ?', $_profile->user_id);
 			}
 			break;
 		case CCCF_CITY:
-			$condition->add(' AND c.city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)', $ccc_id, $ccc_id);
+			$condition->add($delimiter . 'c.city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)', $ccc_id, $ccc_id);
 			break;
 		case CCCF_COUNTRY:
-			$condition->add(' AND i.country_id = ?', $ccc_id);
+			$condition->add($delimiter . 'i.country_id = ?', $ccc_id);
 			break;
 		}
 		
