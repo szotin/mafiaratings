@@ -108,18 +108,13 @@ class RedirectExc extends Exception
 
 class LoginExc extends Exception
 {
-	private $user_name;
+	public $user_name;
 	
     public function __construct($message = '', $user_name = NULL)
 	{
 		parent::__construct($message);
 		$this->user_name = $user_name;
     }
-	
-	public function get_user_name()
-	{
-		return $this->user_name;
-	}
 }
 
 ?>

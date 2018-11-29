@@ -80,7 +80,7 @@ class ApiPageBase
 			}
 			catch (LoginExc $e)
 			{
-				$this->response['login'] = $e->get_user_name();
+				$this->response['login'] = $e->user_name;
 			}
 			catch (RedirectExc $e)
 			{

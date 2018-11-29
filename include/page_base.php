@@ -505,7 +505,7 @@ class PageBase
 		$login = 0;
 		if ($exc instanceof LoginExc)
 		{
-			$login = $exc->get_user_name();
+			$login = $exc->user_name;
 			if ($login == NULL)
 			{
 				$login = -1;
