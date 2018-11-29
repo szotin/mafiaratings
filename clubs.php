@@ -28,11 +28,18 @@ class Page extends GeneralPageBase
 			echo ' checked';
 		}
 		echo '> ' . get_label('Show retired clubs');
+		
+		echo ' <input type="checkbox" id="children" onclick="filter()"';
+		if (isset($_REQUEST['children']))
+		{
+			echo ' checked';
+		}
+		echo '> ' . get_label('Show descendant clubs');
 	}
 	
 	protected function get_filter_js()
 	{
-		return '+ ($("#retired").attr("checked") ? "&retired=" : "")';
+		return '+ ($("#retired").attr("checked") ? "&retired=" : "") + ($("#children").attr("checked") ? "&children=" : "")';
 	}
 
 	protected function show_body()
@@ -40,6 +47,7 @@ class Page extends GeneralPageBase
 		global $_profile, $_lang_code, $_page;
 		
 		$retired = isset($_REQUEST['retired']);
+		$children = isset($_REQUEST['children']);
 		
 		$condition = new SQL(' WHERE (c.flags & ' . CLUB_FLAG_RETIRED);
 		if ($retired)
@@ -49,6 +57,14 @@ class Page extends GeneralPageBase
 		else
 		{
 			$condition->add(') = 0');
+		}
+		if ($children)
+		{
+			$condition->add(' AND c.parent_id IS NOT NULL');
+		}
+		else
+		{
+			$condition->add(' AND c.parent_id IS NULL');
 		}
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())

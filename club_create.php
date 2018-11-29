@@ -20,7 +20,7 @@ try
 	echo '<tr><td width="140">'.get_label('Club name').':</td><td><input class="longest" id="form-name"> </td></tr>';
 	echo '<tr><td>'.get_label('Web site').':</td><td><input class="longest" id="form-url"> </td></tr>';
 				
-	echo '<tr><td>' . get_label('Parent club') . ':</td><td>';
+	echo '<tr><td>' . get_label('Club system') . ':</td><td>';
 	echo '<select id="form-parent">';
 	show_option(0, $profile->user_club_id, '');
 	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_RETIRED . ') = 0 ORDER BY name');

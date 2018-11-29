@@ -13,6 +13,8 @@ define('ROW_COUNT', 2);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 define('MANAGER_COLUMNS', 5);
 define('MANAGER_COLUMN_WIDTH', 100 / MANAGER_COLUMNS);
+define('SUBCLUB_COLUMNS', 5);
+define('SUBCLUB_COLUMN_WIDTH', 100 / MANAGER_COLUMNS);
 define('RATING_POSITIONS', 15);
 
 class Page extends ClubPageBase
@@ -336,6 +338,46 @@ class Page extends ClubPageBase
 			if ($columns_count > 0)
 			{
 				echo '<td colspan="' . (MANAGER_COLUMNS - $columns_count) . '">&nbsp;</td>';
+			}
+			echo '</tr></table></p>';
+		}
+		
+		// sub clubs
+		$query = new DbQuery('SELECT id, name, flags FROM clubs WHERE parent_id = ?', $this->id);
+		if ($row = $query->next())
+		{
+			$subclubs_count = 0;
+			$columns_count = 0;
+			echo '<p><table class="bordered light" width="100%">';
+			echo '<tr class="darker"><td colspan="' . SUBCLUB_COLUMNS . '"><b>' . get_label('Descendant clubs') . '</b></td></tr>';
+			do
+			{
+				list($subclub_id, $subclub_name, $subclub_flags) = $row;
+				if ($columns_count == 0)
+				{
+					if ($subclubs_count > 0)
+					{
+						echo '</tr>';
+					}
+					echo '<tr>';
+				}
+				echo '<td width="' . SUBCLUB_COLUMN_WIDTH . '%" align="center">';
+				echo '<a href="club_main.php?bck=1&id=' . $subclub_id . '">' . $subclub_name . '<br>';
+				show_club_pic($subclub_id, $subclub_name, $subclub_flags, ICONS_DIR);
+				echo '</a></td>';
+				
+				++$columns_count;
+				++$subclubs_count;
+				if ($columns_count >= SUBCLUB_COLUMNS)
+				{
+					$columns_count = 0;
+				}
+				
+			} while ($row = $query->next());
+			
+			if ($columns_count > 0)
+			{
+				echo '<td colspan="' . (SUBCLUB_COLUMNS - $columns_count) . '">&nbsp;</td>';
 			}
 			echo '</tr></table></p>';
 		}

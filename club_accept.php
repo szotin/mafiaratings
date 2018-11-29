@@ -56,7 +56,7 @@ try
 	
 	if ($parent_name != NULL)
 	{
-		echo '<tr><td>' . get_label('Parent club') . ':</td><td>';
+		echo '<tr><td>' . get_label('Club system') . ':</td><td>';
 		echo '<table class="transp" width="100%"><tr><td width="50">';
 		show_club_pic($parent_id, $parent_name, $parent_flags, ICONS_DIR, 36, 36);
 		echo '</td><td>' . $parent_name . '</td></tr></table>';

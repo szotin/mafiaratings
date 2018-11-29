@@ -52,7 +52,7 @@ class Page extends GeneralPageBase
 			{
 				if ($club_id > 0)
 				{
-					echo get_label('Move [0] to the [1] club system', $request_club_name, $_profile->clubs[$club_id]->name);
+					echo get_label('Move [0] to [1] club system', $request_club_name, $_profile->clubs[$club_id]->name);
 				}
 				else
 				{
