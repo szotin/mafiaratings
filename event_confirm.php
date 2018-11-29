@@ -141,20 +141,18 @@ class Page extends PageBase
 			}
 		}
 		
-		$log_details = 
-			'event id=' . $this->event->id .
-			'<br>event name=' . $this->event->name .
-			'<br>event date=' . format_date('d/m/y H:i', $this->event->timestamp, $this->event->timezone) . ' (' . $this->event->timezone . ')' .
-			'<br>reg id=' . $reg_id .
-			'<br>incomer id=' . $incomer_id .
-			'<br>nick=' . $nick;
+		$log_details = new stdClass();
+		$log_details->event_id = $this->event->id;
+		$log_details->registration_id = $reg_id;
+		$log_details->incomer_id = $incomer_id;
+		$log_details->nick = $nick;
 		if ($this->yes)
 		{
-			db_log('user', 'Confirmed the event', $log_details, $_profile->user_id, $this->event->club_id);
+			db_log(LOG_OBJECT_USER, 'confirmed event', $log_details, $_profile->user_id, $this->event->club_id);
 		}
 		else
 		{
-			db_log('user', 'Denied the event', $log_details, $_profile->user_id, $this->event->club_id);
+			db_log(LOG_OBJECT_USER, 'declined event', $log_details, $_profile->user_id, $this->event->club_id);
 		}
 		
 		if ($this->yes && $this->join)
@@ -163,7 +161,7 @@ class Page extends PageBase
 			if ($count == 0)
 			{
 				Db::exec(get_label('user'), 'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $this->event->club_id);
-				db_log('user', 'Joined the club', NULL, $_profile->user_id, $this->event->club_id);
+				db_log(LOG_OBJECT_USER, 'joined club', NULL, $_profile->user_id, $this->event->club_id);
 				$_profile->update_clubs();
 			}
 			else

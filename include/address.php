@@ -87,8 +87,9 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 		Db::exec(get_label('address'), 'UPDATE addresses SET map_url = ? WHERE id = ?', $google_url, $addr_id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 'map_url=' . $google_url;
-			db_log('address', 'Generated', $log_details, $addr_id, $club_id);
+			$log_details = new stdClass();
+			$log_details->map_url = $google_url;
+			db_log(LOG_OBJECT_ADDRESS, 'generated', $log_details, $addr_id, $club_id);
 		}
 	}
 	
@@ -122,8 +123,9 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 		Db::exec(get_label('address'), 'UPDATE addresses SET flags = ? WHERE id = ?', $flags, $addr_id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 'flags=' . $flags;
-			db_log('address', 'Generated', $log_details, $addr_id, $club_id);
+			$log_details = new stdClass(); 
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_ADDRESS, 'generated', $log_details, $addr_id, $club_id);
 		}
 	}
 	return NULL;

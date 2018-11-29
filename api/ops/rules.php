@@ -99,13 +99,12 @@ class ApiPage extends OpsApiPageBase
 		$rules_id = (int)get_required_param('rules_id');
 		
 		Db::begin();
-		list($rules_name) = Db::record(get_label('rules'), 'SELECT name FROM club_rules WHERE club_id = ? AND rules_id = ?', $club_id, $rules_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::exec(get_label('rules'), 'DELETE FROM club_rules WHERE club_id = ? AND rules_id = ?', $club_id, $rules_id);
 		Db::exec(get_label('event'), 'UPDATE events e, clubs c SET e.rules_id = c.rules_id WHERE e.club_id = c.id AND c.id = ? AND e.rules_id = ? AND e.start_time + e.duration > UNIX_TIMESTAMP()', $club_id, $rules_id);
 		
-		db_log('rules', 'Deleted', $rules_name, $rules_id, $club_id);
+		db_log(LOG_OBJECT_RULES, 'deleted', NULL, $rules_id, $club_id);
 		Db::commit();
 	}
 	

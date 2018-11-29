@@ -103,17 +103,19 @@ class GameRules
 				$this->flags, $this->st_free, $this->st_reg, $this->st_killed, $this->st_def, 
 				$this->spt_free, $this->spt_reg, $this->spt_killed, $this->spt_def);
 			$row = Db::record(get_label('rules'), 'SELECT LAST_INSERT_ID()');
-			$log_details = 
-				'flags=' . $this->flags . 
-				', st_free=' . $this->st_free . 
-				"<br>st_reg=" . $this->st_reg . 
-				"<br>st_killed=" . $this->st_killed . 
-				"<br>st_def=" . $this->st_def . 
-				"<br>spt_free=" . $this->spt_free . 
-				"<br>spt_reg=" . $this->spt_reg . 
-				"<br>spt_killed=" . $this->spt_killed . 
-				"<br>spt_def=" . $this->spt_def;
-			db_log('rules', 'Created', $log_details, $row[0]);
+			
+			$log_details = new stdClass();
+			$log_details->flags = $this->flags;
+			$log_details->st_free = $this->st_free;
+			$log_details->st_reg = $this->st_reg;
+			$log_details->st_killed = $this->st_killed;
+			$log_details->st_def = $this->st_def;
+			$log_details->spt_free = $this->spt_free;
+			$log_details->spt_reg = $this->spt_reg;
+			$log_details->spt_killed = $this->spt_killed;
+			$log_details->spt_def = $this->spt_def;
+			db_log(LOG_OBJECT_RULES, 'created', $log_details, $row[0]);
+			
 			Db::commit();
 		}
 		return $row[0];
@@ -152,10 +154,10 @@ class GameRules
 			get_label('rules'), 
 			'INSERT INTO club_rules (rules_id, club_id, name) VALUES (?, ?, ?)',
 			$rules_id, $club_id, $rules_name);
-		$log_details = 
-			'name=' . $rules_name .
-			"<br>rules_id=" . $rules_id;
-		db_log('rules', 'Created', $log_details, $rules_id, $club_id);
+			
+		$log_details = new stdClass();
+		$log_details->name = $rules_name;
+		db_log(LOG_OBJECT_RULES, 'created', $log_details, $rules_id, $club_id);
 		
 		Db::commit();
 		$this->id = $rules_id;
@@ -181,8 +183,9 @@ class GameRules
 			Db::exec(get_label('club'), 'UPDATE clubs SET rules_id = ? WHERE id = ?', $new_rules_id, $club_id);
 			if (Db::affected_rows() > 0)
 			{
-				$log_details = 'rules_id=' . $new_rules_id;
-				db_log('club', 'Changed', $log_details, $club_id, $club_id);
+				$log_details = new stdClass();
+				$log_details->rules_id = $new_rules_id;
+				db_log(LOG_OBJECT_CLUB, 'changed', $log_details, $club_id, $club_id);
 			}
 		}
 		else
@@ -190,7 +193,7 @@ class GameRules
 			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
 			$update = NULL;
 		
-			$log_details = '';
+			$log_details = new stdClass();
 			if ($rules_name != NULL)
 			{
 				check_name($rules_name, get_label('rules name'));
@@ -201,7 +204,7 @@ class GameRules
 				}
 				
 				$update = new DbQuery('UPDATE club_rules SET name = ?', $rules_name);
-				$log_details .= "<br>name=" . $rules_name;
+				$log_details->name = $rules_name;
 			}
 			
 			if ($rules_id != $new_rules_id)
@@ -223,13 +226,12 @@ class GameRules
 				if ($update == NULL)
 				{
 					$update = new DbQuery('UPDATE club_rules SET rules_id = ?', $new_rules_id);
-					$log_details .= "<br>rules_id=" . $new_rules_id;
 				}
 				else
 				{
 					$update->add(', rules_id = ?', $new_rules_id);
-					$log_details .= "<br>rules_id=" . $new_rules_id;
 				}
+				$log_details->rules_id = $new_rules_id;
 			}
 			
 			if ($update != NULL)
@@ -238,7 +240,7 @@ class GameRules
 				$update->exec(get_label('rules'));
 				if (Db::affected_rows() > 0)
 				{
-					db_log('club', 'Rules changed', $log_details, $club_id, $club_id);
+					db_log(LOG_OBJECT_CLUB, 'rules changed', $log_details, $club_id, $club_id);
 				}
 			}
 		}

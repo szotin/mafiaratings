@@ -58,8 +58,11 @@ class ApiPage extends OpsApiPageBase
 					'INSERT INTO email_templates (club_id, name, subject, body, default_for) VALUES (?, ?, ?, ?, ?)',
 					$club_id, $e_name, $e_subj, $e_body, $default_for);
 				list ($template_id) = Db::record(get_label('email'), 'SELECT LAST_INSERT_ID()');
-				$log_details = 'name=' . $e_name . "<br>subject=" . $e_subj . "<br>body=<br>" . $e_body;
-				db_log('email_template', 'Created', $log_details, $template_id, $club_id);
+				$log_details = new stdClass();
+				$log_details->name = $e_name;
+				$log_details->subject = $e_subj;
+				$log_details->body = $e_body;
+				db_log(LOG_OBJECT_EMAIL_TEMPLATE, 'created', $log_details, $template_id, $club_id);
 			}
 			$second_lang = true;
 		}
@@ -76,6 +79,7 @@ class ApiPage extends OpsApiPageBase
 		$name = trim(get_required_param('name'));
 		$this->check_name($name);
 
+		$parent_id = (int)get_optional_param('parent_id', 0);
 		$url = get_optional_param('url');
 		$phone = get_optional_param('phone');
 		$city_id = (int)get_optional_param('city_id', -1);
@@ -99,33 +103,107 @@ class ApiPage extends OpsApiPageBase
 		}
 		list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
 		
-		if ($_profile->is_admin())
+		$is_admin = $_profile->is_admin();
+		$is_parent_manager = $parent_id > 0 && $_profile->is_club_manager($parent_id);
+		if ($is_admin || $is_parent_manager)
 		{
 			// Admin does not have to send a confirmation request. The club is confirmed instantly.
 			$rules = new GameRules();
 			$rules_id = $rules->save();
 			
-			Db::exec(
-				get_label('club'),
-				'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
-				$name, $langs, $rules_id, $url, $email, $phone, $city_id);
+			if ($parent_id > 0)
+			{
+				Db::exec(
+					get_label('club'),
+					'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id, parent_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
+					$name, $langs, $rules_id, $url, $email, $phone, $city_id, $parent_id);
+			}
+			else
+			{
+				Db::exec(
+					get_label('club'),
+					'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
+					$name, $langs, $rules_id, $url, $email, $phone, $city_id);
+			}
 			list ($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 			
-			$log_details =
-				'name=' . $name .
-				"<br>langs=" . $langs .
-				"<br>rules=" . $rules_id .
-				"<br>flags=" . NEW_CLUB_FLAGS .
-				"<br>url=" . $url . 
-				"<br>email=" . $email .
-				"<br>phone=" . $phone .
-				"<br>city=" . $city_name . ' (' . $city_id . ')';
-			db_log('club', 'Created', $log_details, $club_id, $club_id);
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			$log_details->langs = $langs;
+			$log_details->rules = $rules_id;
+			$log_details->flags = NEW_CLUB_FLAGS;
+			$log_details->url = $url;
+			$log_details->email = $email;
+			$log_details->phone = $phone;
+			$log_details->city = $city_name;
+			$log_details->city_id = $city_id;
+			if ($parent_id > 0)
+			{
+				$log_details->parent_id = $parent_id;
+			}
+			db_log(LOG_OBJECT_CLUB, 'created', $log_details, $club_id, $club_id);
 
 			$this->create_event_email_templates($club_id, $langs);
 			$this->response['club_id'] = $club_id;
+			
+			if (!$is_admin)
+			{
+				Db::exec(
+					get_label('user'), 
+					'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ')',
+					$_profile->user_id, $club_id);
+				db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $_profile->user_id, $club_id);
+			}
+			
 			$_profile->update_clubs();
-
+		}
+		else if ($parent_id > 0)
+		{
+			Db::exec(
+				get_label('club'), 
+				'INSERT INTO club_requests (user_id, name, parent_id, langs, web_site, email, phone, city_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+				$_profile->user_id, $name, $parent_id, $langs, $url, $email, $phone, $city_id);
+			list ($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+			
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			$log_details->langs = $langs;
+			$log_details->url = $url;
+			$log_details->email = $email;
+			$log_details->phone = $phone;
+			$log_details->city = $city_name;
+			$log_details->city_id = $city_id;
+			db_log(LOG_OBJECT_CLUB_REQUEST, 'created', $log_details, $request_id, $parent_id);
+			
+			list ($parent_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $parent_id);
+			
+			// send request to parent club managers
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0 AND u.email <> \'\' AND c.club_id = ?', $parent_id);
+			while ($row = $query->next())
+			{
+				list($manager_id, $manager_name, $manager_email, $manager_def_lang) = $row;
+				$lang = get_lang_code($manager_def_lang);
+				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_create_subclub.php';
+				
+				$tags = array(
+					'root' => new Tag(get_server_url()),
+					'user_name' => new Tag($manager_name),
+					'user_id' => new Tag($manager_id),
+					'club_name' => new Tag($name),
+					'parent_name' => new Tag($parent_name),
+					'parent_id' => new Tag($parent_id),
+					'sender' => new Tag($_profile->user_name));
+				$body = parse_tags($body, $tags);
+				$text_body = parse_tags($text_body, $tags);
+				send_email($manager_email, $body, $text_body, $subj);
+			}
+			
+			echo  
+				'<p>' .
+				get_label('Your request for creating the club has been sent to [0] managers. They will review your club information.', $parent_name) .
+				'</p><p>' .
+				get_label('Please wait for the confirmation email. It takes from a few hours to three days depending on administrators load.') .
+				'</p>';
 		}
 		else
 		{
@@ -136,14 +214,16 @@ class ApiPage extends OpsApiPageBase
 				
 			list ($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 			list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
-			$log_details = 
-				'name=' . $name .
-				"<br>langs=" . $langs .
-				"<br>url=" . $url .
-				"<br>email=" . $email .
-				"<br>phone=" . $phone .
-				"<br>city=" . $city_name . ' (' . $city_id . ')';
-			db_log('club_request', 'Created', $log_details, $request_id);
+			
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			$log_details->langs = $langs;
+			$log_details->url = $url;
+			$log_details->email = $email;
+			$log_details->phone = $phone;
+			$log_details->city = $city_name;
+			$log_details->city_id = $city_id;
+			db_log(LOG_OBJECT_CLUB_REQUEST, 'created', $log_details, $request_id);
 			
 			// send request to admin
 			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
@@ -156,6 +236,7 @@ class ApiPage extends OpsApiPageBase
 				$tags = array(
 					'root' => new Tag(get_server_url()),
 					'user_name' => new Tag($admin_name),
+					'user_id' => new Tag($admin_id),
 					'club_name' => new Tag($name),
 					'sender' => new Tag($_profile->user_name));
 				$body = parse_tags($body, $tags);
@@ -176,6 +257,7 @@ class ApiPage extends OpsApiPageBase
 	function create_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_USER, 'Create club. If user is admin, club is just created. If not, club request is created and email is sent to admin. Admin has to accept it.');
+		$help->request_param('parent_id', 'Id of the parent club. 0 or negative for creating top level club.', 'top level club is created');
 		$help->request_param('name', 'Club name.');
 		$help->request_param('url', 'Club web site URL.');
 		$help->request_param('langs', 'Languages used in the club. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'user profile languages are used.');
@@ -198,8 +280,8 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
-		list($old_name, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id, $old_city_id, $timezone) = Db::record(get_label('club'),
-			'SELECT c.name, c.web_site, c.email, c.phone, c.price, c.langs, c.scoring_id, ct.id, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+		list($old_name, $old_parent_id, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id, $old_city_id, $timezone) = Db::record(get_label('club'),
+			'SELECT c.name, c.parent_id, c.web_site, c.email, c.phone, c.price, c.langs, c.scoring_id, ct.id, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 		
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
@@ -207,6 +289,7 @@ class ApiPage extends OpsApiPageBase
 			$this->check_name($name, $club_id);
 		}
 		
+		$parent_id = (int)get_optional_param('parent_id', $old_parent_id);
 		$url = check_url(get_optional_param('url', $old_url));
 		$phone = get_optional_param('phone', $old_phone);
 		$price = get_optional_param('price', $old_price);
@@ -245,16 +328,137 @@ class ApiPage extends OpsApiPageBase
 		if (Db::affected_rows() > 0)
 		{
 			list($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
-			$log_details =
-				'name=' . $name .
-				"<br>web_site=" . $url .
-				"<br>langs=" . $langs .
-				"<br>email=" . $email .
-				"<br>phone=" . $phone .
-				"<br>price=" . $price .
-				"<br>city=" . $city_name . ' (' . $city_id . ')';
-			db_log('club', 'Changed', $log_details, $club_id, $club_id);
+			$log_details = new stdClass();
+			if ($old_name != $name)
+			{
+				$log_details->name = $name;
+			}
+			if ($old_url != $url)
+			{
+				$log_details->url = $url;
+			}
+			if ($old_langs != $langs)
+			{
+				$log_details->langs = $langs;
+			}
+			if ($old_email != $email)
+			{
+				$log_details->email = $email;
+			}
+			if ($old_price != $price)
+			{
+				$log_details->price = $price;
+			}
+			if ($old_city_id != $city_id)
+			{
+				$log_details->city = $city_name;
+				$log_details->city_id = $city_id;
+			}
+			if ($old_scoring_id != $scoring_id)
+			{
+				$log_details->scoring_id = $scoring_id;
+			}
+			db_log(LOG_OBJECT_CLUB, 'changed', $log_details, $club_id, $club_id);
 		}
+		
+		if ($old_parent_id != $parent_id)
+		{
+			if ($parent_id > 0)
+			{
+				if ($_profile->is_club_manager($parent_id))
+				{
+					Db::exec(get_label('club'), 'UPDATE clubs SET parent_id = ? WHERE id = ?', $parent_id, $club_id);
+					$log_details = new stdClass();
+					$log_details->parent_id = $parent_id;
+					$log_details->parent_name = $_profile->clubs[$parent_id]->name;
+					db_log(LOG_OBJECT_CLUB, 'became subclub', $log_details, $club_id, $club_id);
+					db_log(LOG_OBJECT_CLUB, 'became subclub', NULL, $club_id, $parent_id);
+				}
+				else
+				{
+					Db::exec(get_label('club'), 'INSERT INTO club_requests (user_id, club_id, parent_id) VALUES (?, ?, ?)', $_profile->user_id, $club_id, $parent_id);
+					list ($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+					
+					list($parent_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $parent_id);
+					$log_details = new stdClass();
+					$log_details->parent_name = $parent_name;
+					$log_details->parent_id = $parent_id;
+					db_log(LOG_OBJECT_CLUB_REQUEST, 'subclub request created', $log_details, $request_id, $club_id);
+					db_log(LOG_OBJECT_CLUB, 'subclub request created', NULL, $club_id, $parent_id);
+					
+					// send request to parent club managers
+					$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0 AND u.email <> \'\' AND c.club_id = ?', $parent_id);
+					while ($row = $query->next())
+					{
+						list($manager_id, $manager_name, $manager_email, $manager_def_lang) = $row;
+						$lang = get_lang_code($manager_def_lang);
+						list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_make_subclub.php';
+						
+						$tags = array(
+							'root' => new Tag(get_server_url()),
+							'user_name' => new Tag($manager_name),
+							'user_id' => new Tag($manager_id),
+							'club_name' => new Tag($name),
+							'club_id' => new Tag($club_id),
+							'parent_name' => new Tag($parent_name),
+							'parent_id' => new Tag($parent_id),
+							'sender' => new Tag($_profile->user_name));
+						$body = parse_tags($body, $tags);
+						$text_body = parse_tags($text_body, $tags);
+						send_email($manager_email, $body, $text_body, $subj);
+					}
+					
+					echo  
+						'<p>' .
+						get_label('Request for adding your club "[0]" to "[1]" system has been sent to [1] managers. They will review the request.', $name, $parent_name) .
+						'</p><p>' .
+						get_label('Please wait for the confirmation email. It takes from a few hours to three days depending on administrators load.') .
+						'</p>';
+				}
+			}
+			else if ($old_parent_id > 0)
+			{
+				if ($_profile->is_admin())
+				{
+					Db::exec(get_label('club'), 'UPDATE clubs SET parent_id = NULL WHERE id = ?', $club_id);
+					db_log(LOG_OBJECT_CLUB, 'became a club system', NULL, $club_id, $club_id);
+				}
+				else
+				{
+					Db::exec(get_label('club'), 'INSERT INTO club_requests (user_id, club_id) VALUES (?, ?)', $_profile->user_id, $club_id);
+					list ($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+					db_log(LOG_OBJECT_CLUB_REQUEST, 'root club request created', NULL, $request_id, $club_id);
+					
+					// send request to admin
+					$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
+					while ($row = $query->next())
+					{
+						list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
+						$lang = get_lang_code($admin_def_lang);
+						list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_make_club.php';
+						
+						$tags = array(
+							'root' => new Tag(get_server_url()),
+							'user_name' => new Tag($admin_name),
+							'user_id' => new Tag($admin_id),
+							'club_name' => new Tag($name),
+							'club_id' => new Tag($club_id),
+							'sender' => new Tag($_profile->user_name));
+						$body = parse_tags($body, $tags);
+						$text_body = parse_tags($text_body, $tags);
+						send_email($admin_email, $body, $text_body, $subj);
+					}
+					
+					echo  
+						'<p>' .
+						get_label('Your request for making [0] a club system has been sent to the administration. Site administrators will review your club information.') .
+						'</p><p>' .
+						get_label('Please wait for the confirmation email. It takes from a few hours to three days depending on administrators load.') .
+						'</p>';
+				}
+			}
+		}
+		
 		Db::commit();
 			
 		$_profile->update_clubs();
@@ -265,6 +469,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change club record.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('name', 'Club name.', 'remains the same.');
+		$help->request_param('parent_id', 'Id of the parent club. 0 or negative for changing to top level club.', 'remains the same');
 		$help->request_param('url', 'Club web site URL.', 'remains the same.');
 		$help->request_param('langs', 'Languages used in the club. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
 		$help->request_param('email', 'Club email.', 'remains the same.');
@@ -282,85 +487,118 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile, $_lang_code;
 		
-		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
 		
 		Db::begin();
-		list($url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone, $city_id, $city_name) = Db::record(
+		list($name, $url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone, $city_id, $city_name, $club_id, $club_name, $parent_id, $parent_name) = Db::record(
 			get_label('club'),
-			'SELECT c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang, u.flags, c.email, c.phone, c.city_id, i.name_en FROM club_requests c' .
+			'SELECT c.name, c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang, u.flags, c.email, c.phone, c.city_id, i.name_en, c.club_id, cl.name, c.parent_id, p.name FROM club_requests c' .
 				' JOIN users u ON c.user_id = u.id' .
-				' JOIN cities i ON c.city_id = i.id' .
+				' LEFT OUTER JOIN cities i ON c.city_id = i.id' .
+				' LEFT OUTER JOIN clubs cl ON c.club_id = cl.id' .
+				' LEFT OUTER JOIN clubs p ON c.parent_id = p.id' .
 				' WHERE c.id = ?',
 			$request_id);
 			
-		if (isset($_REQUEST['name']))
+		if ($parent_id == NULL)
 		{
-			$name = $_REQUEST['name'];
+			check_permissions(PERMISSION_ADMIN);
 		}
-		$this->check_name($name);
-		
-		$rules = new GameRules();
-		$rules_id = $rules->save();
-		
-		list ($city_name) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $city_id);
-		
-		Db::exec(
-			get_label('club'),
-			'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
-			$name, $langs, $rules_id, $url, $email, $phone, $city_id);
-			
-		list ($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
-		
-		$log_details =
-			'name=' . $name .
-			"<br>langs=" . $langs .
-			"<br>rules=" . $rules_id .
-			"<br>flags=" . NEW_CLUB_FLAGS .
-			"<br>url=" . $url . 
-			"<br>email=" . $email .
-			"<br>phone=" . $phone .
-			"<br>city=" . $city_name . ' (' . $city_id . ')';
-		db_log('club', 'Created', $log_details, $club_id, $club_id);
-
-		if (($user_flags & USER_PERM_ADMIN) == 0)
+		else
 		{
-			Db::exec(
-				get_label('user'), 
-				'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ')',
-				$user_id, $club_id);
-			db_log('user', 'Became a manager of the club', NULL, $user_id, $club_id);
-			
-			Db::exec(
-				get_label('user'), 
-				'UPDATE users SET city_id = ? WHERE id = ?',
-				$city_id, $user_id);
-			if (Db::affected_rows() > 0)
-			{
-				$log_details = 'city=' . $city_name . ' (' . $city_id . ')';
-				db_log('user', 'Changed', $log_details, $user_id);
-			}
+			check_permissions(PERMISSION_CLUB_MANAGER, $parent_id);
 		}
 			
-		Db::exec(get_label('club'), 'DELETE FROM club_requests WHERE id = ?', $request_id);
-		db_log('club_request', 'Accepted', NULL, $request_id, $club_id);
-		
-		$this->create_event_email_templates($club_id, $langs);
-		
-		// send email
 		$lang = get_lang_code($user_lang);
-		$code = generate_email_code();
-		$tags = array(
-			'root' => new Tag(get_server_url()),
-			'user_id' => new Tag($user_id),
-			'code' => new Tag($code),
-			'user_name' => new Tag($user_name),
-			'club_name' => new Tag($name),
-			'url' => new Tag(get_server_url() . '/email_request.php?code=' . $code . '&user_id=' . $user_id));
-		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_club.php';
+		if ($club_id == NULL)
+		{
+			$name = get_optional_param('name', $name);
+			$this->check_name($name);
+			
+			$rules = new GameRules();
+			$rules_id = $rules->save();
+			
+			list ($city_name) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $city_id);
+			
+			Db::exec(
+				get_label('club'),
+				'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id, parent_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ', ?)',
+				$name, $langs, $rules_id, $url, $email, $phone, $city_id, $parent_id);
+				
+			list ($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+			
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			$log_details->langs = $langs;
+			$log_details->rules = $rules_id;
+			$log_details->flags = NEW_CLUB_FLAGS;
+			$log_details->url = $url;
+			$log_details->phone = $phone;
+			$log_details->city = $city_name;
+			$log_details->city_id = $city_id;
+			$log_details->scoring_id = SCORING_DEFAULT_ID;
+			if ($parent_id != NULL)
+			{
+				$log_details->parent_id = $parent_id;
+				$log_details->parent = $parent_name;
+			}
+			db_log(LOG_OBJECT_CLUB, 'created', $log_details, $club_id, $club_id);
+
+			if (($user_flags & USER_PERM_ADMIN) == 0)
+			{
+				Db::exec(
+					get_label('user'), 
+					'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ')',
+					$user_id, $club_id);
+				db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $user_id, $club_id);
+			}
+			
+			$this->create_event_email_templates($club_id, $langs);
+			
+			// send email
+			$tags = array(
+				'root' => new Tag(get_server_url()),
+				'user_id' => new Tag($user_id),
+				'user_name' => new Tag($user_name),
+				'club_id' => new Tag($club_id),
+				'club_name' => new Tag($name));
+			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_club.php';
+		}
+		else if ($parent_id == NULL)
+		{
+			Db::exec(get_label('club'), 'UPDATE clubs SET parent_id = NULL WHERE id = ?', $club_id);
+			
+			// send email
+			$tags = array(
+				'root' => new Tag(get_server_url()),
+				'user_id' => new Tag($user_id),
+				'user_name' => new Tag($user_name),
+				'club_id' => new Tag($club_id),
+				'club_name' => new Tag($club_name));
+			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_root_club.php';
+		}
+		else
+		{
+			Db::exec(get_label('club'), 'UPDATE clubs SET parent_id = ? WHERE id = ?', $parent_id, $club_id);
+			
+			// send email
+			$tags = array(
+				'root' => new Tag(get_server_url()),
+				'user_id' => new Tag($user_id),
+				'user_name' => new Tag($user_name),
+				'club_id' => new Tag($club_id),
+				'club_name' => new Tag($club_name),
+				'parent_id' => new Tag($parent_id),
+				'parent_name' => new Tag($parent_name));
+			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_subclub.php';
+		}
+		$subj = parse_tags($subj, $tags);
 		$body = parse_tags($body, $tags);
 		$text_body = parse_tags($text_body, $tags);
-		send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_CREATE_CLUB, $club_id, $code);
+		send_email($user_email, $body, $text_body, $subj);
+			
+		Db::exec(get_label('club'), 'DELETE FROM club_requests WHERE id = ?', $request_id);
+		db_log(LOG_OBJECT_CLUB_REQUEST, 'accepted', NULL, $request_id, $club_id);
 		
 		Db::commit();
 		
@@ -373,9 +611,9 @@ class ApiPage extends OpsApiPageBase
 	
 	function accept_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_ADMIN, 'Accept club. Admin accepts club request created by a user. The user becomes the a manager of the club. An email is sent to the user notifying that the club is accepted.');
+		$help = new ApiHelp(PERMISSION_ADMIN | PERMISSION_CLUB_MANAGER, 'Accept club. Accepting creating a root level club or making existing club a root level (admin permission required). Or accepting creating subclub of a parent club or making existing club a subclub (manager permission for the parent club required). An email is sent to the user notifying that the club is accepted.');
 		$help->request_param('request_id', 'Id of the user request');
-		$help->request_param('name', 'Name of the club. If set, it is used as a new name for this club instead of the one used in request.', 'name from the request is used');
+		$help->request_param('name', 'Name of the club. If set, it is used as a new name for this club instead of the one used in request. It is used only for creating a club.', 'name from the request is used');
 		$help->response_param('club_id', 'Club id.');
 		return $help;
 	}
@@ -387,7 +625,6 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
 		$reason = '';
 		if (isset($_REQUEST['reason']))
@@ -396,23 +633,47 @@ class ApiPage extends OpsApiPageBase
 		}
 	
 		Db::begin();
-		list($name, $url, $langs, $user_id, $user_name, $user_email, $user_lang) = Db::record(
+		list($name, $url, $langs, $user_id, $user_name, $user_email, $user_lang, $club_id, $parent_id) = Db::record(
 			get_label('club'),
-			'SELECT c.name, c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang FROM club_requests c JOIN users u ON c.user_id = u.id WHERE c.id = ?',
+			'SELECT c.name, c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang, c.club_id, c.parent_id FROM club_requests c JOIN users u ON c.user_id = u.id WHERE c.id = ?',
 			$request_id);
+			
+		if ($parent_id == NULL)
+		{
+			check_permissions(PERMISSION_ADMIN);
+		}
+		else
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $parent_id);
+		}
 		
 		Db::exec(get_label('club'), 'DELETE FROM club_requests WHERE id = ?', $request_id);
-		db_log('club_request', 'Declined', NULL, $request_id);
+		$log_details = new stdClass();
+		$log_details->reason = $reason;
+		db_log(LOG_OBJECT_CLUB_REQUEST, 'declined', NULL, $request_id);
 		Db::commit();
 		if ($reason != '')
 		{
 			$lang = get_lang_code($user_lang);
-			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_decline_club.php';
-			$tags = array(
-				'root' => new Tag(get_server_url()),
-				'user_name' => new Tag($user_name),
-				'reason' => new Tag($reason),
-				'club_name' => new Tag($name));
+			if ($club_id == NULL)
+			{
+				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_decline_create_club.php';
+				$tags = array(
+					'root' => new Tag(get_server_url()),
+					'user_name' => new Tag($user_name),
+					'reason' => new Tag($reason),
+					'club_name' => new Tag($name));
+			}
+			else
+			{
+				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_decline_update_club.php';
+				$tags = array(
+					'root' => new Tag(get_server_url()),
+					'user_name' => new Tag($user_name),
+					'reason' => new Tag($reason),
+					'club_id' => new Tag($reason),
+					'club_name' => new Tag($name));
+			}
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
 			send_email($user_email, $body, $text_body, $subj);
@@ -441,7 +702,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('club'), 'UPDATE clubs SET flags = flags | ' . CLUB_FLAG_RETIRED . ' WHERE id = ?', $club_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('club', 'Retired', NULL, $club_id, $club_id);
+			db_log(LOG_OBJECT_CLUB, 'retired', NULL, $club_id, $club_id);
 		}
 		Db::commit();
 		$_profile->update_clubs();
@@ -482,7 +743,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('club'), 'UPDATE clubs SET flags = flags & ~' . CLUB_FLAG_RETIRED . ' WHERE id = ?', $club_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('club', 'Restored', NULL, $club_id, $club_id);
+			db_log(LOG_OBJECT_CLUB, 'restored', NULL, $club_id, $club_id);
 		}
 		Db::commit();
 		$_profile->update_clubs();

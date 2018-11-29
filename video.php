@@ -16,6 +16,7 @@ class Page extends PageBase
 	private $video_id;
 	private $video;
 	private $title;
+	private $type;
 	private $post_time;
 	private $video_time;
 	private $club_id;
@@ -37,10 +38,10 @@ class Page extends PageBase
 		
 		$this->video_id = (int)$_REQUEST['id'];
 		list(
-			$this->video, $this->title, $this->post_time, $this->video_time, $this->club_id, $this->club_name, $this->club_flags, 
+			$this->video, $this->title, $this->type, $this->post_time, $this->video_time, $this->club_id, $this->club_name, $this->club_flags, 
 			$this->event_id, $this->event_name, $this->event_flags, $this->game_id, $this->lang, $this->user_id) = 
 			Db::record(get_label('video'), 
-				'SELECT v.video, v.name, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, g.id, v.lang, v.user_id FROM videos v ' .
+				'SELECT v.video, v.name, type, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, g.id, v.lang, v.user_id FROM videos v ' .
 				' JOIN clubs c ON c.id = v.club_id' .
 				' LEFT OUTER JOIN events e ON e.id = v.event_id' .
 				' LEFT OUTER JOIN games g ON g.video_id = v.id' .
@@ -88,12 +89,12 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
-		$type = VIDEO_TYPE_LEARNING;
+		$type = $this->type;
 		if (isset($_REQUEST['vtype']))
 		{
 			$type = (int)$_REQUEST['vtype'];
 		}
-		$condition = new SQL(' AND type = ?', (int)$_REQUEST['vtype']);
+		$condition = new SQL(' AND type = ?', $type);
 
 		if (isset($_REQUEST['langs']))
 		{

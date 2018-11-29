@@ -72,12 +72,12 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('country'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $name_ru);
 		}
 		
-		$log_details = 
-			'name_en=' . $name_en .
-			"<br>name_ru=" . $name_ru .
-			"<br>code=" . $code .
-			"<br>flags=" . $flags;
-		db_log('country', 'Created', $log_details, $country_id);
+		$log_details = new stdClass();
+		$log_details->name_en = $name_en;
+		$log_details->name_ru = $name_ru;
+		$log_details->code = $code;
+		$log_details->flags = $flags;
+		db_log(LOG_OBJECT_COUNTRY, 'created', $log_details, $country_id);
 			
 		Db::commit();
 		$this->response['country_id'] = $country_id;
@@ -160,23 +160,23 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('country'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $name_ru);
 		}
 		
-		$op = 'Changed';
+		$op = 'changed';
 		$query = new DbQuery('UPDATE countries SET name_en = ?, name_ru = ?, code = ?', $name_en, $name_ru, $code);
 		if ($confirm)
 		{
 			$query->add(', flags = (flags & ~' . COUNTRY_FLAG_NOT_CONFIRMED . ')');
-			$op = 'Confirmed';
+			$op = 'confirmed';
 		}
 		$query->add(' WHERE id = ?', $country_id);
 		
 		$query->exec(get_label('country'));
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 
-				'code=' . $code .
-				"<br>name_en=" . $name_en .
-				"<br>name_ru=" . $name_ru;
-			db_log('country', $op, $log_details, $country_id);
+			$log_details = new stdClass();
+			$log_details->code = $code;
+			$log_details->name_en = $name_en;
+			$log_details->name_ru = $name_ru;
+			db_log(LOG_OBJECT_COUNTRY, $op, $log_details, $country_id);
 		}	
 		Db::commit();
 	}
@@ -217,8 +217,11 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('country'), 'DELETE FROM country_names WHERE country_id = ?', $country_id);
 		Db::exec(get_label('country'), 'DELETE FROM countries WHERE id = ?', $country_id);
 		
-		$log_details = 'replaced by=' . $new_name . ' (' . $repl_id . ')';
-		db_log('country', 'Deleted', $log_details, $country_id);
+		$log_details = new stdClass();
+		$log_details->replaced_by = new stdClass();
+		$log_details->replaced_by->country = $new_name;
+		$log_details->replaced_by->country_id = $repl_id;
+		db_log(LOG_OBJECT_COUNTRY, 'deleted', $log_details, $country_id);
 		Db::commit();
 		
 		if ($country_id == $_profile->country_id)

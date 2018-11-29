@@ -36,14 +36,15 @@ function create_event_mailing($events, $body, $subj, $send_time, $lang, $flags)
 					' JOIN cities ct ON ct.id = a.city_id' .
 					' WHERE e.id = ?',
 				$id);
-		$log_details = 
-			'event=' . $event_name . ' ' . format_date('d/m/y H:i', $event_start, $timezone) . ' (' . $id .
-			")<br>subj=" . $subj .
-			"<br>send_time=" . format_date('d/m/y H:i', $time, $timezone) . ' (' . $timezone .
-			")<br>flags=" . $flags .
-			"<br>lang=" . $lang .
-			"<br>body=<br>" . $body;
-		db_log('event_emails', 'Created', $log_details, $email_id, $club_id);
+				
+		$log_details = new stdClass();
+		$log_details->event_id = $id;
+		$log_details->subj = $subj;
+		$log_details->send_time = format_date('d/m/y H:i', $time, $timezone);
+		$log_details->flags = $flags;
+		$log_details->lang = $lang;
+		$log_details->body = $body;
+		db_log(LOG_OBJECT_EVENT_EMAILS, 'created', $log_details, $email_id, $club_id);
 	}
 	Db::commit();
 }
@@ -58,13 +59,13 @@ function update_event_mailing($id, $body, $subj, $send_time, $lang, $flags)
 	if (Db::affected_rows() > 0)
 	{
 		list($club_id, $timezone) = Db::record(get_label('email'), 'SELECT e.club_id, c.timezone FROM event_emails m JOIN events e ON e.id = m.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE m.id = ?', $id);
-		$log_details = 
-			'subj=' . $subj .
-			"<br>send_time=" . format_date('d/m/y H:i', $send_time, $timezone) . ' (' . $timezone .
-			")<br>lang=" . $lang .
-			"<br>flags=" . $flags .
-			"<br>body=<br>" . $body;
-		db_log('event_emails', 'Changed', $log_details, $id, $club_id);
+		$log_details = new stdClass();
+		$log_details->send_time = format_date('d/m/y H:i', $send_time, $timezone);
+		$log_details->lang = $lang;
+		$log_details->flags = $flags;
+		$log_details->subj = $subj;
+		$log_details->body = $body;
+		db_log(LOG_OBJECT_EVENT_EMAILS, 'changed', $log_details, $id, $club_id);
 	}
 	Db::commit();
 }

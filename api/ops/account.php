@@ -37,17 +37,18 @@ class ApiPage extends OpsApiPageBase
 	{
 		if (!isset($_REQUEST['username']))
 		{
-			db_log('login', 'No user name', NULL);
+			db_log(LOG_DETAILS_LOGIN, 'no user name');
 			throw new Exc(get_label('Login attempt failed'));
 		}
 		$user_name = $_REQUEST['username'];
+		$user_id = NULL;
 		
-		$log_message = 'User not found';
+		$log_message = 'user not found';
 		if (isset($_REQUEST['proof']))
 		{
 			if (!isset($_SESSION['login_token']))
 			{
-				db_log('login', 'No token', NULL, $user_id);
+				db_log(LOG_OBJECT_LOGIN, 'no token', NULL, $user_id);
 				throw new Exc(get_label('Login attempt failed'), 'No token');
 			}
 			$proof = $_REQUEST['proof'];
@@ -70,7 +71,7 @@ class ApiPage extends OpsApiPageBase
 				}
 				else
 				{
-					$log_message = 'Invalid password';
+					$log_message = 'invalid password';
 				}
 			}
 		}
@@ -89,17 +90,19 @@ class ApiPage extends OpsApiPageBase
 				}
 				else
 				{
-					$log_message = 'Invalid password';
+					$log_message = 'invalid password';
 				}
 			}
 		}
 		else
 		{
-			db_log('login', 'No proof, no password', NULL, $user_id);
+			db_log(LOG_OBJECT_LOGIN, 'no proof, no password', NULL, $user_id);
 			throw new Exc(get_label('Login attempt failed'), 'No proof, no password');
 		}
 		
-		db_log('login', $log_message, 'name=' . $user_name);
+		$log_details = new stdClass();
+		$log_details->name = $user_name;
+		db_log(LOG_OBJECT_LOGIN, $log_message, $log_details);
 		throw new Exc(get_label('Login attempt failed'), $log_message);
 	}
 	
@@ -306,7 +309,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			else
 			{
-				db_log('user', 'Changed password', NULL, $_profile->user_id);
+				db_log(LOG_OBJECT_USER, 'changed password', NULL, $_profile->user_id);
 			}
 		}
 		
@@ -320,42 +323,38 @@ class ApiPage extends OpsApiPageBase
 			if ($club_id != NULL && !isset($_profile->clubs[$club_id]))
 			{
 				Db::exec(get_label('membership'), 'INSERT INTO user_clubs (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $club_id);
-				db_log('user', 'Joined the club', NULL, $_profile->user_id, $club_id);
+				db_log(LOG_OBJECT_USER, 'joined club', NULL, $_profile->user_id, $club_id);
 				$update_clubs = true;
 			}
 			
-			$log_details = '';
-			$delim = '';
+			$log_details = new stdClass();
 			if ($_profile->user_flags != $flags)
 			{
-				$log_details .= $delim . 'flags=' . $flags;
-				$delim = '<br>';
+				$log_details->flags = $flags;
 			}
 			
 			if ($_profile->user_name != $name)
 			{
-				$log_details .= $delim . 'flags=' . $flags;
-				$delim = '<br>';
+				$log_details->flags = $flags;
 			}
 			
 			if ($_profile->city_id != $city_id)
 			{
-				$log_details .= $delim . 'city_id=' . $city_id;
-				$delim = '<br>';
+				$log_details->city_id = $city_id;
 			}
 			
 			if ($_profile->user_langs != $langs)
 			{
-				$log_details .= $delim . 'langs=' . $langs;
-				$delim = '<br>';
+				$log_details->langs = $langs;
 			}
 				
 			if (!is_null($club_id))
 			{
 				list ($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-				$log_details .= $delim . 'club=' . $club_name . ' (' . $club_id . ')';
+				$log_details->club_id = $club_id;
+				$log_details->club = $club_name;
 			}
-			db_log('user', 'Changed', $log_details, $_profile->user_id);
+			db_log(LOG_OBJECT_USER, 'changed', $log_details, $_profile->user_id);
 		}
 		Db::commit();
 				
@@ -415,7 +414,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('user'), 'UPDATE users SET password = ? WHERE id = ?', md5($password), $id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('user', 'Reset password', NULL, $id);
+			db_log(LOG_OBJECT_USER, 'reset password', NULL, $id);
 		}
 		Db::commit();
 		
@@ -454,7 +453,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('Wrong password.'));
 		}
-		db_log('user', 'Changed password', NULL, $_profile->user_id);
+		db_log(LOG_OBJECT_USER, 'changed password', NULL, $_profile->user_id);
 		Db::commit();
 		
 		echo get_label('Your password has been changed.');
@@ -484,7 +483,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			Db::begin();
 			Db::exec(get_label('membership'), 'INSERT INTO user_clubs (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $_profile->user_id, $club_id);
-			db_log('user', 'Joined the club', NULL, $_profile->user_id, $club_id);
+			db_log(LOG_OBJECT_USER, 'joined club', NULL, $_profile->user_id, $club_id);
 			Db::commit();
 			$_profile->update_clubs();
 		}
@@ -511,7 +510,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('membership'), 'DELETE FROM user_clubs WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('user', 'Left the club', NULL, $_profile->user_id, $club_id);
+			db_log(LOG_OBJECT_USER, 'left club', NULL, $_profile->user_id, $club_id);
 		}
 		Db::commit();
 		$_profile->update_clubs();
@@ -745,8 +744,9 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('user'), 'UPDATE users SET def_lang = ? WHERE id = ?', $_profile->user_def_lang, $_profile->user_id);
 			if (Db::affected_rows() > 0)
 			{
-				$log_details = 'def_lang=' . $_profile->user_def_lang;
-				db_log('user', 'Changed', $log_details, $_profile->user_id);
+				$log_details = new stdClass();
+				$log_details->def_lang = $_profile->user_def_lang;
+				db_log(LOG_OBJECT_USER, 'changed', $log_details, $_profile->user_id);
 			}
 			Db::commit();
 			$_profile->update();

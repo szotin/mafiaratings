@@ -82,15 +82,15 @@ class ApiPage extends OpsApiPageBase
 				$name, $langs, $url, $email, $phone, $rules_id);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			
-			$log_details =
-				'name=' . $name .
-				"<br>langs=" . $langs .
-				"<br>rules=" . $rules_id .
-				"<br>flags=" . NEW_LEAGUE_FLAGS .
-				"<br>url=" . $url . 
-				"<br>email=" . $email .
-				"<br>phone=" . $phone;
-			db_log('league', 'Created', $log_details, $league_id);
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			$log_details->langs = $langs;
+			$log_details->rules = $rules_id;
+			$log_details->flags = NEW_LEAGUE_FLAGS;
+			$log_details->url = $url;
+			$log_details->email = $email;
+			$log_details->phone = $phone;
+			db_log(LOG_OBJECT_LEAGUE, 'created', $log_details, $league_id, NULL, $league_id);
 			$this->response['league_id'] = $league_id;
 		}
 		else
@@ -101,13 +101,13 @@ class ApiPage extends OpsApiPageBase
 				$_profile->user_id, $name, $langs, $url, $email, $phone);
 				
 			list ($request_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
-			$log_details = 
-				'name=' . $name .
-				"<br>langs=" . $langs .
-				"<br>url=" . $url .
-				"<br>email=" . $email .
-				"<br>phone=" . $phone;
-			db_log('league_request', 'Created', $log_details, $request_id);
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			$log_details->langs = $langs;
+			$log_details->url = $url;
+			$log_details->email = $email;
+			$log_details->phone = $phone;
+			db_log(LOG_OBJECT_LEAGUE_REQUEST, 'created', $log_details, $request_id);
 			
 			// send request to admin
 			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
@@ -119,6 +119,7 @@ class ApiPage extends OpsApiPageBase
 				
 				$tags = array(
 					'root' => new Tag(get_server_url()),
+					'user_id' => new Tag($admin_id),
 					'user_name' => new Tag($admin_name),
 					'league_name' => new Tag($name),
 					'sender' => new Tag($_profile->user_name));
@@ -159,8 +160,8 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
-		list($old_name, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id) = Db::record(get_label('league'),
-			'SELECT name, web_site, email, phone, price, langs, scoring_id FROM leagues c WHERE id = ?', $league_id);
+		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id) = Db::record(get_label('league'),
+			'SELECT name, web_site, email, phone, langs, scoring_id FROM leagues c WHERE id = ?', $league_id);
 		
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
@@ -170,7 +171,6 @@ class ApiPage extends OpsApiPageBase
 		
 		$url = check_url(get_optional_param('url', $old_url));
 		$phone = get_optional_param('phone', $old_phone);
-		$price = get_optional_param('price', $old_price);
 		$scoring_id = get_optional_param('scoring_id', $old_scoring_id);
 		$langs = (int)get_optional_param('langs', $old_langs);
 		if ($langs == 0)
@@ -186,18 +186,17 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'), 
-			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, scoring_id = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $price, $scoring_id, $league_id);
+			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ? WHERE id = ?',
+			$name, $url, $langs, $email, $phone, $scoring_id, $league_id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details =
-				'name=' . $name .
-				"<br>web_site=" . $url .
-				"<br>langs=" . $langs .
-				"<br>email=" . $email .
-				"<br>phone=" . $phone .
-				"<br>price=" . $price;
-			db_log('league', 'Changed', $log_details, $league_id);
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			$log_details->url = $url;
+			$log_details->langs = $langs;
+			$log_details->email = $email;
+			$log_details->phone = $phone;
+			db_log(LOG_OBJECT_LEAGUE, 'changed', $log_details, $league_id, NULL, $league_id);
 		}
 		Db::commit();
 	}
@@ -248,39 +247,39 @@ class ApiPage extends OpsApiPageBase
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		
-		$log_details =
-			'name=' . $name .
-			"<br>langs=" . $langs .
-			"<br>rules=" . $rules_id .
-			"<br>flags=" . NEW_LEAGUE_FLAGS .
-			"<br>url=" . $url . 
-			"<br>email=" . $email .
-			"<br>phone=" . $phone . ')';
-		db_log('league', 'Created', $log_details, $league_id);
+		$log_details = new stdClass();
+		$log_details->name = $name;
+		$log_details->langs = $langs;
+		$log_details->rules = $rules_id;
+		$log_details->flags = NEW_LEAGUE_FLAGS;
+		$log_details->url = $url;
+		$log_details->email = $email;
+		$log_details->phone = $phone;
+		db_log(LOG_OBJECT_LEAGUE, 'created', $log_details, $league_id, NULL, $league_id);
 
 		if (($user_flags & USER_PERM_ADMIN) == 0)
 		{
 			Db::exec(get_label('user'), 'INSERT INTO league_managers (league_id, user_id) VALUES (?, ?)', $league_id, $user_id);
-			db_log('user', 'Became a manager of the league', $user_name . ' (' . $user_id . ')', $league_id);
+			$log_details = new stdClass();
+			$log_details->user = $user_name;
+			$log_details->user_id = $user_id;
+			db_log(LOG_OBJECT_USER, 'becomes league manager', $log_details, $league_id, NULL, $league_id);
 		}
 			
 		Db::exec(get_label('league'), 'DELETE FROM league_requests WHERE id = ?', $request_id);
-		db_log('league_request', 'Accepted', $name . ' (' . $league_id . ')', $request_id);
+		db_log(LOG_OBJECT_LEAGUE_REQUEST, 'accepted', NULL, $request_id, NULL, $league_id);
 		
 		// send email
 		$lang = get_lang_code($user_lang);
-		$code = generate_email_code();
 		$tags = array(
 			'root' => new Tag(get_server_url()),
 			'user_id' => new Tag($user_id),
-			'code' => new Tag($code),
 			'user_name' => new Tag($user_name),
-			'league_name' => new Tag($name),
-			'url' => new Tag(get_server_url() . '/email_request.php?code=' . $code . '&user_id=' . $user_id));
+			'league_name' => new Tag($name));
 		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_league.php';
 		$body = parse_tags($body, $tags);
 		$text_body = parse_tags($text_body, $tags);
-		send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_CREATE_LEAGUE, $league_id, $code);
+		send_email($user_email, $body, $text_body, $subj);
 		
 		Db::commit();
 		
@@ -314,7 +313,7 @@ class ApiPage extends OpsApiPageBase
 			$request_id);
 		
 		Db::exec(get_label('league'), 'DELETE FROM league_requests WHERE id = ?', $request_id);
-		db_log('league_request', 'Declined', $name, $request_id);
+		db_log(LOG_OBJECT_LEAGUE_REQUEST, 'declined', NULL, $request_id);
 		Db::commit();
 		if ($reason != '')
 		{
@@ -353,7 +352,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags | ' . LEAGUE_FLAG_RETIRED . ' WHERE id = ?', $league_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('league', 'Retired', NULL, $league_id, $league_id);
+			db_log(LOG_OBJECT_LEAGUE, 'retired', NULL, $league_id, NULL, $league_id);
 		}
 		Db::commit();
 	}
@@ -379,7 +378,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags & ~' . LEAGUE_FLAG_RETIRED . ' WHERE id = ?', $league_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('league', 'Restored', NULL, $league_id, $league_id);
+			db_log(LOG_OBJECT_LEAGUE, 'restored', NULL, $league_id, NULL, $league_id);
 		}
 		Db::commit();
 	}
@@ -406,7 +405,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('league'), 'INSERT IGNORE INTO league_managers (league_id, user_id) VALUES (?, ?)', $league_id, $user_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('league', 'Manager added', $user_id, $league_id, $league_id);
+			db_log(LOG_OBJECT_USER, 'becomes league manager', NULL, $user_id, NULL, $league_id);
 		}
 		Db::commit();
 	}
@@ -434,7 +433,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('league'), 'DELETE FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $user_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('league', 'Manager removed', $user_id, $league_id, $league_id);
+			db_log(LOG_OBJECT_USER, 'removed from league managers', NULL, $user_id, NULL, $league_id);
 		}
 		Db::commit();
 	}

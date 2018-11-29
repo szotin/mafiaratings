@@ -20,6 +20,18 @@ try
 	echo '<tr><td width="140">'.get_label('Club name').':</td><td><input class="longest" id="form-name"> </td></tr>';
 	echo '<tr><td>'.get_label('Web site').':</td><td><input class="longest" id="form-url"> </td></tr>';
 				
+	echo '<tr><td>' . get_label('Parent club') . ':</td><td>';
+	echo '<select id="form-parent">';
+	show_option(0, $profile->user_club_id, '');
+	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_RETIRED . ') = 0 ORDER BY name');
+	while ($row = $query->next())
+	{
+		list($c_id, $c_name) = $row;
+		show_option($c_id, $profile->user_club_id, $c_name);
+	}
+	echo '</select>';
+	echo '</td></tr>';
+	
 	echo '<tr><td>'.get_label('Languages').':</td><td>';
 	langs_checkboxes($langs);
 	echo '</td></tr>';
@@ -39,7 +51,8 @@ try
 	echo '<tr><td>' . get_label('City') . ':</td><td>';
 	show_city_input('form-city', CITY_DETECT, 'form-country');
 	echo '</td></tr>';
-				
+	
+	echo '</table>';
 ?>	
 	<script>
 	function commit(onSuccess)
@@ -49,6 +62,7 @@ try
 		{
 			op: 'create'
 			, name: $("#form-name").val()
+			, parent_id: $("#form-parent").val()
 			, url: $("#form-url").val()
 			, email: $("#form-email").val()
 			, phone: $("#form-phone").val()

@@ -135,8 +135,10 @@ class Page extends PageBase
 				$this->flags, $this->langs, $this->id);
 			if (Db::affected_rows() > 0)
 			{
-				$log_details = 'flags=' . $this->flags . "<br>langs=" . $this->langs;
-				db_log('user', 'Changed', $log_details, $this->id);
+				$log_details = new stdClass();
+				$log_details->flags = $flags;
+				$log_details->langs = $langs;
+				db_log(LOG_OBJECT_USER, 'changed', $log_details, $this->id);
 			}
 			if ($this->club_id > 0)
 			{
@@ -146,8 +148,9 @@ class Page extends PageBase
 					$this->user_club_flags, $this->id, $this->club_id);
 				if (Db::affected_rows() > 0)
 				{
-					$log_details = 'club-flags=' . $this->user_club_flags;
-					db_log('user', 'Club flags changed', $log_details, $this->id, $this->club_id);
+					$log_details = new stdClass();
+					$log_details->club_flags = $this->user_club_flags;
+					db_log(LOG_OBJECT_USER, 'club flags changed', $log_details, $this->id, $this->club_id);
 				}
 			}
 			Db::commit();

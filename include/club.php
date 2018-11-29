@@ -175,6 +175,9 @@ class ClubPageBase extends PageBase
 	protected $is_manager;
 	protected $is_moder;
 	protected $timezone;
+	protected $parent_id;
+	protected $parent_name;
+	protected $parent_flags;
 	
 	protected function prepare()
 	{
@@ -196,13 +199,14 @@ class ClubPageBase extends PageBase
 			$this->is_moder = $_profile->is_club_moder($this->id);
 		}
 		
-		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags, $this->scoring_id, $this->timezone) = 
+		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags, $this->scoring_id, $this->timezone, $this->parent_id, $this->parent_name, $this->parent_flags) = 
 			Db::record(
 				get_label('club'),
-				'SELECT c.name, c.flags, c.web_site, c.langs, c.email, c.phone, c.price, cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', u.flags, c.scoring_id, ct.timezone FROM clubs c ' .
+				'SELECT c.name, c.flags, c.web_site, c.langs, c.email, c.phone, c.price, cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', u.flags, c.scoring_id, ct.timezone, p.id, p.name, p.flags FROM clubs c ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
 					'LEFT OUTER JOIN user_clubs u ON u.club_id = c.id AND u.user_id = ? ' .
+					'LEFT OUTER JOIN clubs p ON c.parent_id = p.id ' .
 					'WHERE c.id = ?',
 				$user_id, $this->id);
 	}
@@ -269,7 +273,7 @@ class ClubPageBase extends PageBase
 			$light = 'light';
 		}
 		
-		echo '<tr><td width="1"><table class="bordered"><tr><td class="' . $dark . '" valign="top" style="min-width:28px; padding:4px;">';
+		echo '<tr><td width="1" rowspan="2"><table class="bordered"><tr><td class="' . $dark . '" valign="top" style="min-width:28px; padding:4px;">';
 		show_club_buttons($this->id, $this->name, $this->flags, $this->memb_flags);
 		echo '</td><td class="' . $light . '" style="min-width:' . TNAIL_WIDTH . 'px; padding: 4px 3px 1px 4px;">';
 		if ($this->url != '')
@@ -282,9 +286,18 @@ class ClubPageBase extends PageBase
 		{
 			show_club_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
 		}
-		echo '</td></tr></table><td valign="top"><h2 class="club">' . get_label('Club [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
+		echo '</td></tr></table><td valign="top" rowspan="2"><h2 class="club">' . get_label('Club [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
-		echo '</td></tr></table>';
+		echo '</td></tr>';
+		echo '</tr><td align="right" valign="bottom">';
+		if ($this->parent_id != NULL)
+		{
+			echo '<a href="club_main.php?bck=1&id=' . $this->parent_id . '">';
+			show_club_pic($this->parent_id, get_label('[0] is a member of [1] club system.', $this->name, $this->parent_name), $this->parent_flags, ICONS_DIR);
+			echo '</a>';
+		}
+		echo '</td></tr>';
+		echo '</table>';
 	}
 }
 
@@ -395,6 +408,23 @@ function get_club_season_condition($season, $start_field, $end_field)
 		}
 	}
 	return $condition;
+}
+
+function get_club_request_action($name, $club_id, $club_name, $parent_id, $parent_name)
+{
+	if ($club_id != NULL)
+	{
+		if ($parent_id > 0)
+		{
+			return get_label('Move [0] to [1] club system', $club_name, $parent_name);
+		}
+		return get_label('Make [0] a top level club', $club_name);
+	}
+	else if ($parent_id > 0)
+	{
+		return get_label('Create a club [0] in [1] club system', $name, $parent_name);
+	}
+	return get_label('Create a top level club [0]', $name);
 }
 
 ?>

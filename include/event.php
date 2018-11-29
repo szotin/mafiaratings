@@ -367,11 +367,13 @@ class Event
 				'INSERT INTO addresses (name, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
 				$sc_address, $this->club_id, $sc_address, $city_id);
 			list ($this->addr_id) = Db::record(get_label('address'), 'SELECT LAST_INSERT_ID()');
-			$log_details =
-				'name=' . $sc_address .
-				"<br>address=" . $sc_address .
-				"<br>city=" . $this->city . ' (' . $city_id . ')';
-			db_log('address', 'Created', $log_details, $this->addr_id, $this->club_id);
+			
+			$log_details = new stdClass();
+			$log_details->name = $sc_address;
+			$log_details->address = $sc_address;
+			$log_details->city = $this->city;
+			$log_details->city_id = $city_id;
+			db_log(LOG_OBJECT_ADDRESS, 'created', $log_details, $this->addr_id, $this->club_id);
 	
 			$warning = load_map_info($this->addr_id);
 			if ($warning != NULL)
@@ -401,17 +403,19 @@ class Event
 			$this->scoring_id, $this->scoring_weight, $this->planned_games, $this->round_num);
 		list ($this->id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 		list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
-		$log_details = 
-			'name=' . $this->name .
-			"<br>price=" . $this->price .
-			"<br>address=" . $addr_name . ' (' . $this->addr_id .
-			")<br>start=" . format_date('d/m/y H:i', $this->timestamp, $timezone) . ' (' . $timezone .
-			")<br>duration=" . $this->duration .
-			"<br>flags=" . $this->flags .
-			"<br>langs=" . $this->langs .
-			"<br>rules=" . $this->rules_id .
-			"<br>scoring=" . $this->scoring_id;
-		db_log('event', 'Created', $log_details, $this->id, $this->club_id);
+		
+		$log_details = new stdClass();
+		$log_details->name = $this->name;
+		$log_details->price = $this->price;
+		$log_details->address_name = $addr_name;
+		$log_details->address_id = $this->addr_id;
+		$log_details->start = format_date('d/m/y H:i', $this->timestamp, $timezone);
+		$log_details->duration = $this->duration;
+		$log_details->flags = $this->flags;
+		$log_details->langs = $this->langs;
+		$log_details->rules_id = $this->rules_id;
+		$log_details->scoring_id = $this->scoring_id;
+		db_log(LOG_OBJECT_EVENT, 'created', $log_details, $this->id, $this->club_id);
 		
 		for ($i = 0; $i < count($this->rounds); ++$i)
 		{
@@ -482,17 +486,18 @@ class Event
 		if (Db::affected_rows() > 0)
 		{
 			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
-			$log_details =
-				'name=' . $this->name .
-				"<br>price=" . $this->price .
-				"<br>address=" . $addr_name . ' (' . $this->addr_id .
-				")<br>start=" . format_date('d/m/y H:i', $this->timestamp, $timezone) . ' (' . $timezone .
-				")<br>duration=" . $this->duration .
-				"<br>flags=" . $this->flags .
-				"<br>langs=" . $this->langs .
-				"<br>rules=" . $this->rules_id .
-				"<br>scoring=" . $this->scoring_id;
-			db_log('event', 'Changed', $log_details, $this->id, $this->club_id);
+			$log_details = new stdClass();
+			$log_details->name = $this->name;
+			$log_details->price = $this->price;
+			$log_details->address_name = $addr_name;
+			$log_details->address_id = $this->addr_id;
+			$log_details->start = format_date('d/m/y H:i', $this->timestamp, $timezone);
+			$log_details->duration = $this->duration;
+			$log_details->flags = $this->flags;
+			$log_details->langs = $this->langs;
+			$log_details->rules_id = $this->rules_id;
+			$log_details->scoring_id = $this->scoring_id;
+			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $this->id, $this->club_id);
 		}
 		
 		if ($this->timestamp != $old_timestamp || $this->duration != $old_duration)
@@ -851,7 +856,7 @@ class Event
 							{
 								$found = true;
 								echo '<table class="bordered" width="100%">';
-								echo '<tr class="darker"><td><b>' . get_label('[0] declined', $declined) . ':</b></td></tr></table><table width="100%" class="bordered"><tr>';
+								echo '<tr class="darker"><td><b>' . get_label('[0] can not come', $declined) . ':</b></td></tr></table><table width="100%" class="bordered"><tr>';
 							}
 							else
 							{

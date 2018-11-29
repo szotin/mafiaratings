@@ -34,13 +34,14 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 		list($city_id) = Db::record(get_label('city'), 'SELECT LAST_INSERT_ID()');
 		Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $city);
 		list ($country_name) = Db::record(get_label('country'), 'SELECT id, name_' . $_lang_code . ' FROM countries WHERE id = ?', $country_id);
-		$log_details = 
-			'country=' . $country_name . ' (' . $country_id . ')' .
-			"<br>name_en=" . $city . 
-			"<br>name_ru=" . $city . 
-			"<br>timezone=" . $timezone . 
-			"<br>flags=" . CITY_FLAG_NOT_CONFIRMED;
-		db_log('city', 'Created', $log_details, $city_id);
+		
+		$log_details = new stdClass();
+		$log_details->country = $country_name;
+		$log_details->name_en = $city;
+		$log_details->name_ru = $city;
+		$log_details->timezone = $timezone;
+		$log_details->flags = CITY_FLAG_NOT_CONFIRMED;
+		db_log(LOG_OBJECT_CITY, 'created', $log_details, $city_id);
 		
 		$query = new DbQuery('SELECT id, name, email FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
 		while ($row = $query->next())

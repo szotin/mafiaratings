@@ -30,7 +30,10 @@ class Page extends ClubPageBase
 					}
 					Db::begin();
 					Db::exec(get_label('email template'), 'DELETE FROM email_templates WHERE id = ?', $id);
-					db_log('email_template', 'Deleted', NULL, $id, $club_id);
+					if (Db::affected_rows() > 0)
+					{
+						db_log(LOG_OBJECT_EMAIL_TEMPLATE, 'deleted', NULL, $id, $club_id);
+					}
 					Db::commit();
 				}
 			}

@@ -90,19 +90,21 @@ function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $c
 			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?, 0, 0, ' . USER_INITIAL_RATING . ', ' . USER_INITIAL_RATING . ', UNIX_TIMESTAMP())',
 		$name, md5(rand_string(8)), '', $email, $flags, $club_id, $langs, $lang, $city_id);
 	list ($user_id) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
-	$log_details = 
-		'name=' . $name .
-		"<br>email=" . $email .
-		"<br>flags=" . $flags .
-		"<br>langs=" . $langs .
-		"<br>def_lang=" . $lang .
-		"<br>city=" . $city_name .' (' . $city_id . ')';
-	db_log('user', 'Created', $log_details, $user_id);
+	
+	$log_details = new stdClass();
+	$log_details->name = $name;
+	$log_details->email = $email;
+	$log_details->flags = $flags;
+	$log_details->langs = $langs;
+	$log_details->def_lang = $lang;
+	$log_details->city = $city_name;
+	$log_details->city_id = $city_id;
+	db_log(LOG_OBJECT_USER, 'created', $log_details, $user_id);
 	
 	if ($club_id != NULL)
 	{
 		Db::exec(get_label('user'), 'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
-		db_log('user', 'Joined the club', NULL, $user_id, $club_id);
+		db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
 	}
 	
 	send_activation_email($user_id, $name, $email);

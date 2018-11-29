@@ -40,7 +40,7 @@ class Page extends PageBase
 						Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
 						if (Db::affected_rows() > 0)
 						{
-							db_log('user', 'Subscribed', NULL, $_profile->user_id, $club->id);
+							db_log(LOG_OBJECT_USER, 'subscribed', NULL, $_profile->user_id, $club->id);
 						}
 						$club->flags |= USER_CLUB_FLAG_SUBSCRIBED;
 						Db::commit();
@@ -52,7 +52,7 @@ class Page extends PageBase
 					Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
 					if (Db::affected_rows() > 0)
 					{
-						db_log('user', 'Unsubscribed', NULL, $_profile->user_id, $club->id);
+						db_log(LOG_OBJECT_USER, 'unsubscribed', NULL, $_profile->user_id, $club->id);
 					}
 					$club->flags &= ~USER_CLUB_FLAG_SUBSCRIBED;
 					Db::commit();
@@ -76,7 +76,9 @@ class Page extends PageBase
 				$_profile->user_flags |= $flags;
 				if (Db::affected_rows() > 0)
 				{
-					db_log('user', 'Changed subscription', 'flags=' . $_profile->user_flags, $_profile->user_id);
+					$log_details = new stdClass();
+					$log_details->flags = $_profile->user_flags;
+					db_log(LOG_OBJECT_USER, 'changed subscription', $log_details, $_profile->user_id);
 				}
 				Db::commit();
 			}

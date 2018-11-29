@@ -27,7 +27,15 @@ class PageBase
 		global $_profile;
 		
 		$this->_err_message = NULL;
-		$this->_login = false;
+		$this->_login = 0;
+		if (isset($_REQUEST['_login_']))
+		{
+			$this->_login = $_REQUEST['_login_'];
+			if (is_numeric($this->_login))
+			{
+				$this->_login = (int)$this->_login;
+			}
+		}
 		$this->_facebook = true;
 		$this->_title = $title;
 		$this->_state = PAGE_STATE_EMPTY;
@@ -106,6 +114,16 @@ class PageBase
 				Exc::log($e);
 			}
 		}
+		
+		// Javascript
+		try
+		{
+			$this->_js();
+		}
+		catch (Exception $e)
+		{
+			Exc::log($e);
+		}
 	}
 	
 	private function show_lock_page()
@@ -157,7 +175,6 @@ class PageBase
 		}
 		echo '<link rel="stylesheet" href="common.css" type="text/css" media="screen" />';
 		$this->add_headers();
-		$this->_js();
 		echo '</head>';
 		
 		$uri = get_page_url();
@@ -484,25 +501,24 @@ class PageBase
 	
 	protected function error($exc)
 	{
-		$this->errorMessage(str_replace('"', '\\"', $exc->getMessage()), $exc instanceof LoginExc);
-	}
-	
-	protected function errorMessage($message, $login)
-	{
-		if ($this->_state != PAGE_STATE_EMPTY)
+		$message = str_replace('"', '\\"', $exc->getMessage());
+		$login = 0;
+		if ($exc instanceof LoginExc)
 		{
-			if ($login)
+			$login = $exc->get_user_name();
+			if ($login == NULL)
 			{
-				echo '<script> $(function() { loginDialog("' . $message . '"); }); </script>';
-			}
-			else
-			{
-				echo '<script> $(function() { dlg.error("' . $message . '"); }); </script>';
+				$login = -1;
 			}
 		}
-		else
+		$this->errorMessage($message, $login);
+	}
+	
+	protected function errorMessage($message, $login = 0)
+	{
+		$this->_err_message = $message;
+		if ($this->_login == 0)
 		{
-			$this->_err_message = $message;
 			$this->_login = $login;
 		}
 	}
@@ -511,7 +527,7 @@ class PageBase
 	{
 		global $_profile;
 	
-		echo "\n<script>";
+		echo "\n<script>\n";
 		if ($_profile != NULL)
 		{
 ?>
@@ -564,9 +580,22 @@ class PageBase
 		}
 		echo "\n\t$(function()";
 		echo "\n\t{\n";
-		if ($this->_login)
+		if ($this->_login && ($_profile == NULL || ($_profile->user_id != $this->_login && strtolower($_profile->user_name) != strtolower($this->_login))))
 		{
-			echo "\n\t\tloginDialog(\"" . $this->_err_message . "\");";
+			$login_name = '';
+			if (is_string($this->_login))
+			{
+				$login_name = $this->_login;
+			}
+			else if ($this->_login > 0)
+			{
+				$query = new DbQuery('SELECT name FROM users WHERE id = ?', $this->_login);
+				if ($row = $query->next())
+				{
+					list ($login_name) = $row;
+				}
+			}
+			echo "\n\t\tloginDialog(\"" . $this->_err_message . '", "' . $login_name . '");';
 		}
 		else if ($this->_err_message != NULL)
 		{

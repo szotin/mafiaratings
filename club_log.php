@@ -8,7 +8,10 @@ define("PAGE_SIZE", 60);
 class Page extends ClubPageBase
 {
 	private $objects;
-	private $obj_filter;
+	private $filter_obj;
+	private $filter_obj_id;
+	private $filter_user_id;
+	private $filter_user_name;
 	
 	protected function prepare()
 	{
@@ -17,11 +20,23 @@ class Page extends ClubPageBase
 		
 		$this->objects = prepare_log_objects();
 		
-		
-		$this->obj_filter = '';
+		$this->filter_obj = '';
+		$this->filter_obj_id = 0;
+		$this->filter_user_id = 0;
+		$this->filter_user_name = '';
 		if (isset($_REQUEST['obj']))
 		{
-			$this->obj_filter = $_REQUEST['obj'];
+			$this->filter_obj = $_REQUEST['obj'];
+			if (isset($_REQUEST['obj_id']))
+			{
+				$this->filter_obj_id = $_REQUEST['obj_id'];
+			}
+		}
+		
+		if (isset($_REQUEST['user_id']))
+		{
+			$this->filter_user_id = (int)$_REQUEST['user_id'];
+			list($this->filter_user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->filter_user_id);
 		}
 	}
 
@@ -29,25 +44,44 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_page;
 		
-		echo '<select id="obj" onChange="filter()">';
-		show_option('', $this->obj_filter, 'All objects');
+		$filtered = false;
+		$condition = new SQL(' WHERE l.club_id = ?', $this->id);
+		if ($this->filter_obj != '')
+		{
+			$condition->add(' AND l.obj = ?', $this->filter_obj);
+			$filtered = true;
+		}
+		if ($this->filter_obj_id > 0)
+		{
+			$condition->add(' AND l.obj_id = ?', $this->filter_obj_id);
+			$filtered = true;
+		}
+		if ($this->filter_user_id > 0)
+		{
+			$condition->add(' AND l.user_id = ?', $this->filter_user_id);
+			$filtered = true;
+		}
+		
+		echo '<table class="transp" width="100%"><tr>';
+		if ($filtered)
+		{
+			echo '<td width="36"><button class="icon" onclick="unfilter()" title="' . get_label('Remove all filters') . '"><img src="images/no_filter.png"></button></td>';
+		}
+		echo '<td><select id="obj" onChange="filterObj()">';
+		show_option('', $this->filter_obj, 'All objects');
 		foreach ($this->objects as $key => $value)
 		{
-			show_option($key, $this->obj_filter, $key);
+			show_option($key, $this->filter_obj, $key);
 		}
-		echo '</select>';
-		
-		$condition = new SQL(' WHERE l.club_id = ?', $this->id);
-		if ($this->obj_filter != '')
-		{
-			$condition->add(' AND l.obj = ?', $this->obj_filter);
-		}
+		echo '</select> ';
+		show_user_input('use', $this->filter_user_name, '', get_label('Show actions of a specific user.'), 'filterUser');
+		echo '</td></tr></table>';
 		
 		list ($count) = Db::record('log', 'SELECT count(*) FROM log l', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT l.id, u.id, u.name, l.time, l.obj, l.obj_id, l.message, c.id, c.name, l.page, (l.details IS NOT NULL) FROM log l' .
+			'SELECT l.id, u.id, u.name, l.time, l.obj, l.obj_id, l.message, l.page, (l.details IS NOT NULL) FROM log l' .
 				' LEFT OUTER JOIN users u ON u.id = l.user_id' .
 				' LEFT OUTER JOIN clubs c ON c.id = l.club_id',
 			$condition);
@@ -55,27 +89,37 @@ class Page extends ClubPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker">';
-		echo '<td width="120">' . get_label('Time') . '</td>';
-		echo '<td>' . get_label('User') . '</td>';
-		echo '<td width="200">' . get_label('Object') . '</td>';
-		echo '<td width="200">' . get_label('Message') . '</td>';
+		echo '<td width="52"></td>';
+		echo '<td width="90">' . get_label('Time') . '</td>';
+		echo '<td>' . get_label('Page') . '</td>';
+		echo '<td width="100">' . get_label('User') . '</td>';
+		echo '<td width="120">' . get_label('Object') . '</td>';
+		echo '<td width="120">' . get_label('Action') . '</td>';
 		echo '</tr>';
 
 		while ($row = $query->next())
 		{
-			list($log_id, $user_id, $user_name, $time, $obj, $obj_id, $message, $page, $has_details) = $row;
+			list($log_id, $user_id, $user_name, $time, $obj, $obj_id, $message, $link, $has_details) = $row;
 			echo '<tr>';
 			
-			echo '<td class="dark">';
-			if ($page != '')
+			echo '<td>';
+			if ($has_details)
 			{
-				echo '<a href="' . $page . '">' . format_date('d/m/y H:i', $time, get_timezone()) . '</a>';
+				echo '<button class="icon" onclick="showDetails(' . $log_id . ')" title="' . get_label('Show details') . '"><img src="images/details.png" width="24"></button>';
 			}
 			else
 			{
-				echo format_date('d/m/y H:i', $time, get_timezone());
+				echo '<img src="images/transp.png" width="24">';
+			}
+			if ($obj_id != NULL)
+			{
+				echo '<a href="club_log.php?bck=1&id=' . $this->id . '&obj=' . $obj . '&obj_id=' . $obj_id . '" title="' . get_label('Show all log records of [0] [1]', $obj, $obj_id) . '"><img src="images/filter.png" width="24"></a>';
 			}
 			echo '</td>';
+			
+			echo '<td class="dark">' . format_date('d/m/y H:i', $time, get_timezone()) . '</td>';
+			
+			echo '<td>' . $link . '</td>';
 			
 			echo '<td>';
 			if ($user_id != NULL)
@@ -106,22 +150,35 @@ class Page extends ClubPageBase
 			}
 			echo '</td>';
 			
-			echo '<td>';
-			if ($has_details)
-			{
-				echo '<a href="#" onclick="showDetails(' . $log_id . ')">' . $message . '</a>';
-			}
-			else
-			{
-				echo $message;
-			}
-			echo '</td>';
+			echo '<td>' . short_log_message($message) . '</td>';
 		}
 		echo '</table>';
 	}
 	
 	protected function js()
 	{
+		parent::js();
+		
+		$no_filter = '?id=' . $this->id;
+		
+		$obj_filter = $no_filter;
+		if ($this->filter_user_id > 0)
+		{
+			$obj_filter .= '&user_id=' . $this->filter_user_id;
+		}
+		$obj_filter .= '&obj=';
+		
+		$user_filter = $no_filter;
+		if ($this->filter_obj != '')
+		{
+			$user_filter .= '&obj=' . $this->filter_obj;
+		}
+		if ($this->filter_obj_id > 0)
+		{
+			$user_filter .= '&obj_id=' . $this->filter_obj_id;
+		}
+		$user_filter .= '&user_id=';
+		
 ?>
 		function showDetails(id)
 		{
@@ -132,9 +189,19 @@ class Page extends ClubPageBase
 			html.get("log_details.php?id=" + id, loaded);
 		}
 
-		function filter()
+		function filterUser(data)
 		{
-			window.location.replace("?id=" + <?php echo $this->id; ?> + "&obj=" + $("#obj").val());
+			window.location.replace("<?php echo $user_filter; ?>" + data.id);
+		}
+
+		function filterObj()
+		{
+			window.location.replace("<?php echo $obj_filter; ?>" + $("#obj").val());
+		}
+
+		function unfilter()
+		{
+			window.location.replace("<?php echo $no_filter; ?>");
 		}
 	<?php
 	}

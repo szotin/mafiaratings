@@ -95,7 +95,14 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$title, $video, $vtype, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id);
 		list ($video_id) = Db::record(get_label('video'), 'SELECT LAST_INSERT_ID()');
-		db_log('video', 'created', 'video: ' . $video . '; type: ' . $vtype . '; lang: ' . $lang, $video_id, $club_id);
+		
+		$log_details = new stdClass();
+		$log_details->video = $video;
+		$log_details->type = $vtype;
+		$log_details->lang = $lang;
+		$log_details->time = $video_time;
+		db_log(LOG_OBJECT_VIDEO, 'created', $log_details, $video_id, $club_id);
+		
 		Db::commit();
 		
 		$this->response['video_id'] = $video_id;
@@ -149,7 +156,7 @@ class ApiPage extends OpsApiPageBase
 		
 		$video_id = (int)get_required_param('video_id');
 		
-		list ($club_id, $user_id, $game_id, $type, $lang, $time) = Db::record(get_label('video'), 'SELECT v.club_id, v.user_id, g.id, v.type, v.lang, v.video_time FROM videos v LEFT OUTER JOIN games g ON g.video_id = v.id WHERE v.id = ?', $video_id);
+		list ($club_id, $user_id, $game_id, $old_type, $old_lang, $old_time) = Db::record(get_label('video'), 'SELECT v.club_id, v.user_id, g.id, v.type, v.lang, v.video_time FROM videos v LEFT OUTER JOIN games g ON g.video_id = v.id WHERE v.id = ?', $video_id);
 		if (!$_profile->is_club_manager($club_id) && $_profile->user_id != $user_id)
 		{
 			throw new FatalExc(get_label('No permissions'));
@@ -161,6 +168,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('This video [1] is attached to the game #[0]. It can not be edited.', $game_id, $video_id));
 		}
 		
+		$type = $old_type;
 		if (isset($_REQUEST['vtype']))
 		{
 			$t = (int)$_REQUEST['vtype'];
@@ -172,6 +180,8 @@ class ApiPage extends OpsApiPageBase
 					break;
 			}
 		}
+		
+		$lang = $old_lang;
 		if (isset($_REQUEST['lang']))
 		{
 			$l = (int)$_REQUEST['lang'];
@@ -180,6 +190,8 @@ class ApiPage extends OpsApiPageBase
 				$lang = $l;
 			}
 		}
+		
+		$time = $old_time;
 		if (isset($_REQUEST['time']))
 		{
 			date_default_timezone_set(get_timezone());
@@ -192,7 +204,23 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		Db::exec(get_label('video'), 'UPDATE videos SET type = ?, lang = ?, video_time = ? WHERE id = ?', $type, $lang, $time, $video_id);
-		db_log('video', 'edited', 'type: ' . $type . '; lang: ' . $lang . '; time: ' . $time, $video_id, $club_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			if ($time != $old_time)
+			{
+				$log_details->time = $time;
+			}
+			if ($type != $old_type)
+			{
+				$log_details->type = $vtype;
+			}
+			if ($lang != $old_lang)
+			{
+				$log_details->lang = $lang;
+			}
+			db_log(LOG_OBJECT_VIDEO, 'changed', $log_details, $video_id, $club_id);
+		}
 		Db::commit();
 	}
 	
@@ -230,13 +258,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'UPDATE games SET video_id = NULL WHERE video_id = ?', $video_id);
 		Db::exec(get_label('video'), 'DELETE FROM user_videos WHERE video_id = ?', $video_id);
 		Db::exec(get_label('video'), 'DELETE FROM videos WHERE id = ?', $video_id);
-		if ($game_id == NULL)
+		if (Db::affected_rows() > 0)
 		{
-			db_log('video', 'deleted', 'Old video: ' . $old_video, $video_id, $club_id);
-		}
-		else
-		{
-			db_log('video', 'deleted', 'Old video: ' . $old_video . '; game: ' . $game_id, $video_id, $club_id);
+			db_log(LOG_OBJECT_VIDEO, 'deleted', NULL, $video_id, $club_id);
 		}
 		Db::commit();
 		
@@ -286,7 +310,13 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', $title, $video, VIDEO_TYPE_GAME, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id);
 		list ($video_id) = Db::record(get_label('video'), 'SELECT LAST_INSERT_ID()');
 		Db::exec(get_label('game'), 'UPDATE games SET video_id = ? WHERE id = ?', $video_id, $game_id);
-		db_log('video', 'created', 'video: ' . $video . '; game: ' . $game_id, $video_id, $club_id);
+		
+		$log_details = new stdClass();
+		$log_details->video = $video;
+		$log_details->game_id = $game_id;
+		$log_details->title = $title;
+		db_log(LOG_OBJECT_VIDEO, 'created', $log_details, $video_id, $club_id);
+		
 		Db::commit();
 		
 		$this->response['video_id'] = $video_id;
@@ -322,7 +352,11 @@ class ApiPage extends OpsApiPageBase
 			Db::begin();
 			
 			Db::exec(get_label('video'), 'INSERT INTO user_videos (user_id, video_id, tagged_by_id) VALUES (?, ?, ?)', $user_id, $video_id, $_profile->user_id);
-			db_log('video', 'tagged', 'user_id: ' . $user_id, $video_id, $club_id);
+			
+			$log_details = new stdClass();
+			$log_details->user_id = $user_id;
+			db_log(LOG_OBJECT_VIDEO, 'tagged', $log_details, $video_id, $club_id);
+			
 			Db::commit();
 		}
 	}
@@ -351,7 +385,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			Db::begin();
 			Db::exec(get_label('video'), 'DELETE FROM user_videos WHERE user_id = ? AND video_id = ?', $user_id, $video_id);
-			db_log('video', 'untagged', 'user_id: ' . $user_id, $video_id, $club_id);
+			
+			$log_details = new stdClass();
+			$log_details->user_id = $user_id;
+			db_log(LOG_OBJECT_VIDEO, 'untagged', $log_details, $video_id, $club_id);
+			
 			Db::commit();
 		}
 	}
@@ -404,8 +442,8 @@ class ApiPage extends OpsApiPageBase
 			
 			$tags = array(
 				'root' => new Tag(get_server_url()),
-				'user_id' => new Tag($user_id),
 				'code' => new Tag($code),
+				'user_id' => new Tag($user_id),
 				'user_name' => new Tag($user_name),
 				'sender' => new Tag($_profile->user_name),
 				'message' => new Tag($comment),

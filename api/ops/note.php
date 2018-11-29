@@ -45,10 +45,12 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(get_label('note'), 'INSERT INTO club_info (club_id, name, value, pos) VALUES (?, ?, ?, ?)', $club_id, $note_name, $note, $pos);
 		list ($note_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
-		$log_details =
-			'name=' . $note_name .
-			"<br>note=<br>" . $note;
-		db_log('note', 'Created', $log_details, $note_id, $club_id);
+		
+		$log_details = new stdClass();
+		$log_details->name = $note_name;
+		$log_details->note = $note;
+		db_log(LOG_OBJECT_NOTE, 'created', $log_details, $note_id, $club_id);
+		
 		Db::commit();
 		$this->response['note_id'] = $note_id;
 	}
@@ -82,8 +84,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('note'), 'UPDATE club_info SET value = ? WHERE id = ? AND club_id = ?', $note, $note_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = "note=<br>" . $note;
-			db_log('note', 'Changed', $log_details, $note_id, $club_id);
+			$log_details = new stdClass(); 
+			$log_details->note = $note;
+			db_log(LOG_OBJECT_NOTE, 'changed', $log_details, $note_id, $club_id);
 		}
 		Db::commit();
 	}
@@ -138,7 +141,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('note'), 'DELETE FROM club_info WHERE club_id = ? AND id = ?', $club_id, $note_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('note', 'Deleted', NULL, $note_id, $club_id);
+			db_log(LOG_OBJECT_NOTE, 'deleted', NULL, $note_id, $club_id);
 		}
 		Db::commit();
 	}

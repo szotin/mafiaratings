@@ -38,10 +38,7 @@ try
 		$code = "var mafiaWins;\n\nfunction reset()\n{\n\tmafiaWins = 0;\n}\n\nfunction proceedGame(game, num)\n{\n\tif(game.winner == 'maf')\n\t{\n\t\t++mafiaWins;\n\t}\n}\n\nfunction complete()\n{\n\treturn 'Mafia wins: ' + mafiaWins;\n}";
 	}
 
-	if ($owner_id != $_profile->user_id)
-	{
-		throw new FatalExc(get_label('No permissions'));
-	}
+	check_permissions(PERMISSION_OWNER, $owner_id);
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="120" valign="top">' . get_label('Name') . ':</td><td><input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td></tr>';

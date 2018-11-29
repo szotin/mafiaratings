@@ -123,17 +123,18 @@ class PhotoAlbum
 			$this->name, $this->event_id, $this->viewers, $this->adders, $this->club_id, $this->flags, $this->user_id);
 		list ($album_id) = Db::record(get_label('photo album'), 'SELECT LAST_INSERT_ID()');
 		
-		$log_details = 
-			'name=' . $this->name .
-			"<br>viewers=" . $this->viewers .
-			"<br>adders=" . $this->adders .
-			"<br>flags=" . $this->flags .
-			"<br>owner=" . $this->user_name . ' (' . $this->user_id . ')';
+		$log_details = new stdClass();
+		$log_details->name = $this->name;
+		$log_details->viewers = $this->viewers;
+		$log_details->adders = $this->adders;
+		$log_details->flags = $this->flags;
+		$log_details->owner = $this->user_name;
+		$log_details->owner_id = $this->user_id;
 		if ($this->event_id)
 		{
-			$log_details .= "<br>event=" . $this->event_name . ' (' . $this->event_id . ')';
+			$log_details->event_id = $this->event_id;
 		}
-		db_log('album', 'Created', $log_details, $album_id, $this->club_id);
+		db_log(LOG_OBJECT_PHOTO_ALBUM, 'created', $log_details, $album_id, $this->club_id);
 		
 		Db::commit();
 			
@@ -162,16 +163,16 @@ class PhotoAlbum
 			$this->name, $this->event_id, $this->viewers, $this->adders, $this->flags, $this->club_id, $this->id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 
-				'name=' . $this->name .
-				"<br>viewers=" . $this->viewers .
-				"<br>adders=" . $this->adders .
-				"<br>flags=" . $this->flags;
+			$log_details = new stdClass();
+			$log_details->name = $this->name;
+			$log_details->viewers = $this->viewers;
+			$log_details->adders = $this->adders;
+			$log_details->flags = $this->flags;
 			if ($this->event_id)
 			{
-				$log_details .= "<br>event= " . $this->event_name . ' (' . $this->event_id . ')';
+				$log_details->event_id = $this->event_id;
 			}
-			db_log('album', 'Changed', $log_details, $this->id, $this->club_id);
+			db_log(LOG_OBJECT_PHOTO_ALBUM, 'changed', $log_details, $this->id, $this->club_id);
 		}
 		Db::commit();
 	}
@@ -191,7 +192,7 @@ class PhotoAlbum
 		Db::exec(get_label('photo'), 'DELETE FROM photos WHERE album_id = ?', $id);
 		Db::exec(get_label('photo album'), 'DELETE FROM photo_albums WHERE id = ?', $id);
 
-		db_log('album', 'Deleted', NULL, $id, $club_id);
+		db_log(LOG_OBJECT_PHOTO_ALBUM, 'deleted', NULL, $id, $club_id);
 		
 		// Note that we are not deleting photo files and album icon. They can be garbage collected later.
 		// There are some other peaces of the code that delete files when the associated db record is deleted. It is wrong. Garbage collection is better.

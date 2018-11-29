@@ -34,7 +34,7 @@ class Page extends PageBase
 				Db::exec(get_label('email'), 'UPDATE event_emails SET status = ' . MAILING_CANCELED . ' WHERE id = ?', $mailing_id);
 				if (Db::affected_rows() > 0)
 				{
-					db_log('event_emails', 'Canceled', NULL, $mailing_id, $this->event->club_id);
+					db_log(LOG_OBJECT_EVENT_EMAILS, 'canceled', NULL, $mailing_id, $this->event->club_id);
 				}
 				Db::commit();
 			}
@@ -49,7 +49,7 @@ class Page extends PageBase
 				Db::exec(get_label('email'), 'UPDATE event_emails SET status = ' . MAILING_WAITING . ' WHERE id = ?', $mailing_id);
 				if (Db::affected_rows() > 0)
 				{
-					db_log('event_emails', 'Restored', NULL, $mailing_id, $this->event->club_id);
+					db_log(LOG_OBJECT_EVENT_EMAILS, 'restored', NULL, $mailing_id, $this->event->club_id);
 				}
 				Db::commit();
 			}

@@ -54,11 +54,13 @@ class ApiPage extends OpsApiPageBase
 			$name, $club_id, $address, $city_id);
 		list ($addr_id) = Db::record(get_label('address'), 'SELECT LAST_INSERT_ID()');
 		list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
-		$log_details =
-			'name=' . $name .
-			"<br>address=" . $address .
-			"<br>city=" . $city_name . ' (' . $city_id . ')';
-		db_log('address', 'Created', $log_details, $addr_id, $club_id);
+		
+		$log_details = new stdClass();
+		$log_details->name = $name;
+		$log_details->address = $address;
+		$log_details->city = $city_name;
+		$log_details->city_id = $city_id;
+		db_log(LOG_OBJECT_ADDRESS, 'created', $log_details, $addr_id, $club_id);
 
 		$warning = load_map_info($addr_id);
 		if ($warning != NULL)
@@ -131,11 +133,12 @@ class ApiPage extends OpsApiPageBase
 		if (Db::affected_rows() > 0)
 		{
 			list($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
-			$log_details =
-				'name=' . $name .
-				"<br>address=" . $address .
-				"<br>city=" . $city_name . ' (' . $city_id . ')';
-			db_log('address', 'Changed', $log_details, $address_id, $club_id);
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			$log_details->address = $address;
+			$log_details->city = $city_name;
+			$log_details->city_id = $city_id;
+			db_log(LOG_OBJECT_ADDRESS, 'changed', $log_details, $address_id, $club_id);
 		}
 	
 		Db::commit();
@@ -167,7 +170,7 @@ class ApiPage extends OpsApiPageBase
 		if (Db::affected_rows() > 0)
 		{
 			list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM addresses WHERE id = ?', $address_id);
-			db_log('address', 'Marked as not used', NULL, $address_id, $club_id);
+			db_log(LOG_OBJECT_ADDRESS, 'marked as not used', NULL, $address_id, $club_id);
 		}
 		Db::commit();
 	}
@@ -193,7 +196,7 @@ class ApiPage extends OpsApiPageBase
 		if (Db::affected_rows() > 0)
 		{
 			list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM addresses WHERE id = ?', $address_id);
-			db_log('address', 'Marked as used', NULL, $address_id, $club_id);
+			db_log(LOG_OBJECT_ADDRESS, 'marked as used', NULL, $address_id, $club_id);
 		}
 		Db::commit();
 	}

@@ -354,8 +354,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('event'), 'UPDATE events SET duration = ? WHERE id = ?', $duration, $event->id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 'duration=' . $duration;
-			db_log('event', 'Extended', $log_details, $event->id, $event->club_id);
+			$log_details = new stdClass();
+			$log_details->duration = $duration;
+			db_log(LOG_OBJECT_EVENT, 'extended', $log_details, $event->id, $event->club_id);
 		}
 		Db::commit();
 	}
@@ -395,8 +396,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('event'), 'UPDATE events SET round_num = ? WHERE id = ?', $round, $event->id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 'round=' . $round;
-			db_log('event', 'Round changed', $log_details, $event->id, $event->club_id);
+			$log_details = new stdClass();
+			$log_details->round = $round;
+			db_log(LOG_OBJECT_EVENT, 'round changed', $log_details, $event->id, $event->club_id);
 		}
 		Db::commit();
 	}
@@ -425,7 +427,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags | ' . EVENT_FLAG_CANCELED . ') WHERE id = ?', $event_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('event', 'Canceled', NULL, $event_id, $club_id);
+			db_log(LOG_OBJECT_EVENT, 'canceled', NULL, $event_id, $club_id);
 		}
 		
 		$some_sent = false;
@@ -439,7 +441,7 @@ class ApiPage extends OpsApiPageBase
 					Db::exec(get_label('email'), 'UPDATE event_emails SET status = ' . MAILING_CANCELED . ' WHERE id = ?', $mailing_id);
 					if (Db::affected_rows() > 0)
 					{
-						db_log('event_emails', 'Canceled', NULL, $mailing_id, $club_id);
+						db_log(LOG_OBJECT_EVENT_EMAILS, 'canceled', NULL, $mailing_id, $club_id);
 					}
 					break;
 				case MAILING_SENDING:
@@ -486,7 +488,7 @@ class ApiPage extends OpsApiPageBase
 		if (Db::affected_rows() > 0)
 		{
 			list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
-			db_log('event', 'Restored', NULL, $event_id, $club_id);
+			db_log(LOG_OBJECT_EVENT, 'restored', NULL, $event_id, $club_id);
 		}
 		Db::commit();
 		$this->response['question'] = get_label('The event is restored. Do you want to change event mailing?');

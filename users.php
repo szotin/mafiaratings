@@ -42,7 +42,7 @@ class Page extends GeneralPageBase
 			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . USER_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['ban']);
 			if (Db::affected_rows() > 0)
 			{
-				db_log('user', 'Banned', NULL, $_REQUEST['ban']);
+				db_log(LOG_OBJECT_USER, 'banned', NULL, $_REQUEST['ban']);
 			}
 			throw new RedirectExc('?page=' . $_page . '&ccc=' . $this->ccc_filter->get_code());
 		}
@@ -51,7 +51,7 @@ class Page extends GeneralPageBase
 			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . USER_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['unban']);
 			if (Db::affected_rows() > 0)
 			{
-				db_log('user', 'Unbanned', NULL, $_REQUEST['unban']);
+				db_log(LOG_OBJECT_USER, 'unbanned', NULL, $_REQUEST['unban']);
 			}
 			throw new RedirectExc('?page=' . $_page . '&ccc=' . $this->ccc_filter->get_code());
 		}

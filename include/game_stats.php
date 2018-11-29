@@ -880,7 +880,7 @@ function rebuild_game_stats($gs)
 	
 	$gs->save();
 	save_game_results($gs);
-	db_log('game', 'Stats rebuilt', NULL, $gs->id, $gs->club_id);
+	db_log(LOG_OBJECT_GAME, 'stats rebuilt', NULL, $gs->id, $gs->club_id);
 	Db::commit();
 }
 

@@ -21,7 +21,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('user', 'Banned', NULL, $user_id, $club_id);
+			db_log(LOG_OBJECT_USER, 'banned', NULL, $user_id, $club_id);
 		}
 		Db::commit();
 	}
@@ -54,6 +54,9 @@ class ApiPage extends OpsApiPageBase
 			// todo let admin know that stats should be rebuilt
 		}
 		
+		list($src_name, $src_games_moderated, $src_games, $src_rating, $src_reg_time, $src_city_id, $src_club_id, $src_flags) = 
+			Db::record(get_label('user'), 'SELECT name, games_moderated, games, rating, reg_time, city_id, club_id, flags FROM users WHERE id = ?', $src_id);
+		
 		Db::exec(get_label('email'), 'UPDATE emails SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('registration'), 'DELETE FROM registrations WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM registrations WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
@@ -64,9 +67,23 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('log'), 'UPDATE log SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('user'), 'DELETE FROM users WHERE id = ?', $src_id);
 		
-		// TODO change log to the new implementation
-		$log_details = 'to = ' . $dst_id;
-		db_log('user', 'merged', $log_details, $src_id);
+		$log_details = new stdClass();
+		$log_details->id = (int)$src_id;
+		$log_details->name = $src_name;
+		if ($src_games_moderated > 0)
+		{
+			$log_details->games_moderated = (int)$src_games_moderated;
+		}
+		if ($src_games > 0)
+		{
+			$log_details->games_played = (int)$src_games;
+			$log_details->rating = (float)$src_rating;
+		}
+		$log_details->reg_time = (int)$src_reg_time;
+		$log_details->city_id = (int)$src_city_id;
+		$log_details->club_id = (int)$src_club_id;
+		$log_details->flags = (int)$src_flags;
+		db_log(LOG_OBJECT_USER, 'merged', $log_details, $dst_id);
 	}
 	
 	function delete_user($user_id)
@@ -96,8 +113,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('log'), 'DELETE FROM log WHERE user_id = ?', $user_id);
 		Db::exec(get_label('user'), 'DELETE FROM users WHERE id = ?', $user_id);
 		
-		// TODO change log to the new implementation
-		db_log('user', 'deleted', NULL, $user_id);
+		db_log(LOG_OBJECT_USER, 'deleted', NULL, $user_id);
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -113,7 +129,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('user', 'Unbanned', NULL, $user_id, $club_id);
+			db_log(LOG_OBJECT_USER, 'unbanned', NULL, $user_id, $club_id);
 		}
 		Db::commit();
 	}
@@ -176,8 +192,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 'flags=' . $flags;
-			db_log('user', 'Changed', $log_details, $user_id, $club_id);
+			$log_details = new stdClass();
+			$log_details->club_flags = $flags;
+			db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id);
 		}
 		Db::commit();
 	}
@@ -205,7 +222,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . USER_FLAG_BANNED . ') WHERE id = ?', $user_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('user', 'Banned', NULL, $user_id);
+			db_log(LOG_OBJECT_USER, 'banned', NULL, $user_id);
 		}
 		Db::commit();
 	}
@@ -229,7 +246,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . USER_FLAG_BANNED . ') WHERE id = ?', $user_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('user', 'Unbanned', NULL, $user_id);
+			db_log(LOG_OBJECT_USER, 'unbanned', NULL, $user_id);
 		}
 		Db::commit();
 	}
@@ -265,8 +282,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $user_id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 'flags=' . $flags;
-			db_log('user', 'Changed', $log_details, $user_id);
+			$log_details = new stdClass();
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_USER, 'site permissions changed', $log_details, $user_id);
 		}
 		Db::commit();
 	}

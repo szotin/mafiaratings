@@ -1102,6 +1102,7 @@ class ApiPage extends OpsApiPageBase
 				'root' => new Tag(get_server_url()),
 				'action' => new Tag(get_label('deleted')),
 				'user_name' => new Tag($admin_name),
+				'user_id' => new Tag($admin_id),
 				'game' => new Tag($game_id),
 				'sender' => new Tag($_profile->user_name));
 			$body = parse_tags($body, $tags);
@@ -1110,7 +1111,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		reset_viewed_game($game_id, false);
-		db_log('game', 'deleted', '', $game_id, $club_id);
+		db_log(LOG_OBJECT_GAME, 'deleted', NULL, $game_id, $club_id);
 		Db::commit();
 		
 		$this->response['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
@@ -1181,6 +1182,7 @@ class ApiPage extends OpsApiPageBase
 				'root' => new Tag(get_server_url()),
 				'action' => new Tag(get_label('changed')),
 				'user_name' => new Tag($admin_name),
+				'user_id' => new Tag($admin_id),
 				'game' => new Tag($game_id),
 				'sender' => new Tag($_profile->user_name));
 			$body = parse_tags($body, $tags);
@@ -1188,7 +1190,9 @@ class ApiPage extends OpsApiPageBase
 			send_email($admin_email, $body, $text_body, $subj);
 		}
 		
-		db_log('game', 'changed', 'old_log: ' . $log, $game_id, $club_id);
+		$log_details = new stdClass();
+		$log_details->old_log = $log;
+		db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id);
 		Db::commit();
 		
 		$this->response['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');

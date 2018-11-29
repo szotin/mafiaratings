@@ -49,19 +49,19 @@ class FatalExc extends Exception
 		}
 	}
 	
-	public static function log($e, $force = false, $log_obj = 'error')
+	public static function log($e, $force = false, $log_obj = LOG_OBJECT_ERROR)
 	{
-		$details = '';
-		$trace = $e->getTrace();
-		foreach ($trace as $rec)
-		{
-			$details .= $rec['file'] . ': ' . $rec['line'] . '<br>';
-		}
-		
+		$log_details = new stdClass();
 		if (method_exists($e, 'get_details'))
 		{
-			$details .= $e->get_details();
+			$log_details->details = $e->get_details();
 		}
+		
+		$log_details->trace = $e->getTrace();
+		// foreach ($trace as $rec)
+		// {
+			// $details .= $rec['file'] . ': ' . $rec['line'] . '<br>';
+		// }
 		
 		if (!$force && method_exists($e, 'for_log'))
 		{
@@ -72,7 +72,7 @@ class FatalExc extends Exception
 		{
 			try
 			{
-				db_log($log_obj, $e->getMessage(), $details);
+				db_log($log_obj, $e->getMessage(), $log_details);
 			}
 			catch (Exception $exc)
 			{

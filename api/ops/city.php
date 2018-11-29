@@ -92,13 +92,15 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_ru);
 		}
 		
-		$log_details =
-			'country=' . $country . ' (' . $country_id .
-			")<br>name_en=" . $name_en .
-			"<br>name_ru=" . $name_ru .
-			"<br>timezone=" . $timezone .
-			"<br>flags=" . $flags;
-		db_log('city', 'Created', $log_details, $city_id);
+		$log_details = new stdClass();
+		$log_details->country = $country;
+		$log_details->country_id = $country_id;
+		$log_details->name_en = $name_en;
+		$log_details->name_ru = $name_ru;
+		$log_details->area_id = $area_id;
+		$log_details->timezone = $timezone;
+		$log_details->flags = $flags;
+		db_log(LOG_OBJECT_CITY, 'created', $log_details, $city_id);
 			
 		Db::commit();
 		$this->response['city_id'] = $city_id;
@@ -195,7 +197,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('City name in English'), $name_en));
 		}
 		
-		$op = 'Changed';
+		$op = 'changed';
 		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ? AND name = (SELECT name_en FROM cities WHERE id = ?)', $city_id, $city_id);
 		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ? AND name = (SELECT name_ru FROM cities WHERE id = ?)', $city_id, $city_id);
 		Db::exec(get_label('city'), 'INSERT IGNORE INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_en);
@@ -208,19 +210,20 @@ class ApiPage extends OpsApiPageBase
 		if ($confirm)
 		{
 			$query->add(', flags = (flags & ~' . CITY_FLAG_NOT_CONFIRMED . ')');
-			$op = 'Confirmed';
+			$op = 'confirmed';
 		}
 		$query->add(' WHERE id = ?', $city_id);
 		
 		$query->exec(get_label('city'));
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 
-				'country=' . $country . ' (' . $country_id .
-				")<br>name_en=" . $name_en .
-				"<br>name_ru=" . $name_ru .
-				"<br>timezone=" . $timezone;
-			db_log('city', $op, $log_details, $city_id);
+			$log_details = new stdClass();
+			$log_details->country = $country;
+			$log_details->name_en = $name_en;
+			$log_details->name_ru = $name_ru;
+			$log_details->area_id = $area_id;
+			$log_details->timezone = $timezone;
+			db_log(LOG_OBJECT_CITY, $op, $log_details, $city_id);
 		}
 		Db::commit();
 	}
@@ -273,8 +276,11 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ?', $city_id);
 		Db::exec(get_label('city'), 'DELETE FROM cities WHERE id = ?', $city_id);
 
-		$log_details = 'replaced with=' . $new_name . ' (' . $repl_id . ')';
-		db_log('city', 'Deleted', $log_details, $city_id);
+		$log_details = new stdClass();
+		$log_details->replaced_with = new stdClass();
+		$log_details->replaced_with->city = $new_name;
+		$log_details->replaced_with->city_id = $repl_id;
+		db_log(LOG_OBJECT_CITY, 'deleted', $log_details, $city_id);
 		Db::commit();
 		
 		if ($city_id == $_profile->city_id)

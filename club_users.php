@@ -48,7 +48,7 @@ class Page extends ClubPageBase
 			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['ban'], $this->id);
 			if (Db::affected_rows() > 0)
 			{
-				db_log('user', 'Banned', NULL, $_REQUEST['ban'], $this->id);
+				db_log(LOG_OBJECT_USER, 'banned', NULL, $_REQUEST['ban'], $this->id);
 			}
 		}
 		else if (isset($_REQUEST['unban']))
@@ -56,7 +56,7 @@ class Page extends ClubPageBase
 			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['unban'], $this->id);
 			if (Db::affected_rows() > 0)
 			{
-				db_log('user', 'Unbanned', NULL, $_REQUEST['unban'], $this->id);
+				db_log(LOG_OBJECT_USER, 'unbanned', NULL, $_REQUEST['unban'], $this->id);
 			}
 		}
 	}

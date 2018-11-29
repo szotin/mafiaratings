@@ -48,8 +48,8 @@ class ApiPage extends OpsApiPageBase
 			$tags = array(
 				'root' => new Tag(get_server_url()),
 				'user_id' => new Tag($user_id),
-				'code' => new Tag($code),
 				'user_name' => new Tag($user_name),
+				'code' => new Tag($code),
 				'sender' => new Tag($_profile->user_name),
 				'message' => new Tag($comment),
 				'url' => new Tag($request_base . '/email_request.php?code=' . $code . '&user_id=' . $user_id),

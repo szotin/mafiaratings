@@ -21,11 +21,13 @@ function create_template($name, $subj, $body, $club_id)
 		'INSERT INTO email_templates (club_id, name, subject, body) VALUES (?, ?, ?, ?)',
 		$club_id, $name, $subj, $body);
 	list ($id) = Db::record(get_label('email template'), 'SELECT LAST_INSERT_ID()');
-	$log_details =
-		'name=' . $name .
-		"<br>subj=" . $subj .
-		"<br>body=<br>" . $body;
-	db_log('email_template', 'Created', $log_details, $id, $club_id);
+	
+	$log_details = new stdClass();
+	$log_details->name = $name;
+	$log_details->subj = $subj;
+	$log_details->body = $body;
+	db_log(LOG_OBJECT_EMAIL_TEMPLATE, 'created', $log_details, $id, $club_id);
+	
 	Db::commit();
 }
 
@@ -57,11 +59,11 @@ function update_template($id, $name, $subj, $body, $default_for)
 	}
 	if (Db::affected_rows() > 0)
 	{
-		$log_details =
-			'name=' . $name .
-			"<br>subj=" . $subj .
-			"<br>body=<br>" . $body;
-		db_log('email_template', 'Changed', $log_details, $id, $club_id);
+		$log_details = new stdClass();
+		$log_details->name = $name;
+		$log_details->subj = $subj;
+		$log_details->body = $body;
+		db_log(LOG_OBJECT_EMAIL_TEMPLATE, 'changed', $log_details, $id, $club_id);
 	}
 	Db::commit();
 }

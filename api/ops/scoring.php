@@ -72,13 +72,15 @@ class ApiPage extends OpsApiPageBase
 			list ($scoring_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
 		}
 		
+		$log_details = new stdClass();
+		$log_details->name = $name;
 		if ($club_id > 0)
 		{
-			db_log('scoring system', 'Created', 'name=' . $name, $scoring_id, $club_id);
+			db_log(LOG_OBJECT_SCORING_SYSTEM, 'created', $log_details, $scoring_id, $club_id);
 		}
 		else
 		{
-			db_log('scoring system', 'Created', 'name=' . $name, $scoring_id);
+			db_log(LOG_OBJECT_SCORING_SYSTEM, 'created', $log_details, $scoring_id);
 		}
 		Db::commit();
 		$this->result['scoring_id'] = (int)$scoring_id;
@@ -108,7 +110,12 @@ class ApiPage extends OpsApiPageBase
 		$name = trim(get_optional_param('name', $name));
 		$this->check_name($name, $club_id, $scoring_id);
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
-		db_log('scoring system', 'Changed', 'name=' . $name, $scoring_id, $club_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			db_log(LOG_OBJECT_SCORING_SYSTEM, 'changed', $log_details, $scoring_id, $club_id);
+		}
 		Db::commit();
 	}
 	
@@ -133,7 +140,7 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		Db::exec(get_label('scoring system'), 'DELETE FROM scoring_rules WHERE scoring_id = ?', $scoring_id);
 		Db::exec(get_label('scoring system'), 'DELETE FROM scorings WHERE id = ?', $scoring_id);
-		db_log('scoring system', 'Deleted', '', $scoring_id, $club_id);
+		db_log(LOG_OBJECT_SCORING_SYSTEM, 'deleted', NULL, $scoring_id, $club_id);
 		Db::commit();
 	}
 	
@@ -229,7 +236,17 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		Db::exec(get_label('scoring rule'), 'INSERT INTO scoring_rules (scoring_id, category, matter, roles, policy, min_dependency, min_points, max_dependency, max_points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
 			$scoring_id, $category, $matter, $roles, $policy, $min_dependency, $min_points, $max_dependency, $max_points);
-		db_log('scoring system', 'Rule created', 'matter=' . $matter . '; roles=' . $roles . '; policy=' . $policy . '; min_dependency=' . $min_dependency . '; min_points=' . $min_points . '; max_dependency=' . $max_dependency . '; max_points=' . $max_points, $scoring_id, $club_id);
+		
+		$log_details = new stdClass();
+		$log_details->matter = $matter;
+		$log_details->roles = $roles;
+		$log_details->policy = $policy;
+		$log_details->min_dependency = $min_dependency;
+		$log_details->min_points = $min_points;
+		$log_details->max_dependency = $max_dependency;
+		$log_details->max_points = $max_points;
+		db_log(LOG_OBJECT_SCORING_SYSTEM, 'rule created', $log_details, $scoring_id, $club_id);
+		
 		Db::commit();
 	}
 	
@@ -326,7 +343,12 @@ class ApiPage extends OpsApiPageBase
 		$category = (int)get_required_param('category');
 		Db::begin();
 		Db::exec(get_label('scoring rule'), 'DELETE FROM scoring_rules WHERE scoring_id = ? AND matter = ? AND category = ?', $scoring_id, $matter, $category);
-		db_log('scoring system', 'Rule deleted', '', $scoring_id, $club_id);
+		
+		$log_details = new stdClass();
+		$log_details->matter = $matter;
+		$log_details->category = $category;
+		db_log(LOG_OBJECT_SCORING_SYSTEM, 'rule deleted', $log_details, $scoring_id, $club_id);
+		
 		Db::commit();
 	}
 	
@@ -382,7 +404,11 @@ class ApiPage extends OpsApiPageBase
 		$sorting = get_required_param('sorting');
 		Db::begin();
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET sorting = ? WHERE id = ?', $sorting, $scoring_id);
-		db_log('scoring system', 'Changed sorting', 'sorting=' . $sorting, $scoring_id, $club_id);
+		
+		$log_details = new stdClass();
+		$log_details->sorting = $sorting;
+		db_log(LOG_OBJECT_SCORING_SYSTEM, 'changed sorting', $log_details, $scoring_id, $club_id);
+		
 		Db::commit();
 	}
 	

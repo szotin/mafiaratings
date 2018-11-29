@@ -44,7 +44,9 @@ try
 		if (Db::affected_rows() > 0)
 		{
 			list($club_id, $flags) = Db::record(get_label('address'), 'SELECT club_id, flags FROM addresses WHERE id = ?', $id);
-			db_log('address', 'Photo uploaded', 'flags=' . $flags, $id, $club_id);
+			$log_details = new stdClass();
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_PHOTO, 'uploaded', $log_details, $id, $club_id);
 		}
 		break;
 		
@@ -66,7 +68,9 @@ try
 		}
 		if (Db::affected_rows() > 0)
 		{
-			db_log('user', 'Avatar uploaded', 'flags=' . $flags, $id);
+			$log_details = new stdClass();
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_USER, 'photo uploaded', $log_details, $id);
 		}
 		break;
 	
@@ -85,7 +89,9 @@ try
 		Db::exec(get_label('club'), 'UPDATE clubs SET flags = ? WHERE id = ?', $flags, $id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('club', 'Logo uploaded', 'flags=' . $flags, $id, $id);
+			$log_details = new stdClass();
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_CLUB, 'logo uploaded', $log_details, $id, $id);
 		}
 		break;
 	
@@ -104,7 +110,9 @@ try
 		Db::exec(get_label('league'), 'UPDATE leagues SET flags = ? WHERE id = ?', $flags, $id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('league', 'Logo uploaded', 'flags=' . $flags, $id, $id);
+			$log_details = new stdClass();
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_LEAGUE, 'logo uploaded', 'flags=' . $flags, $id, $id);
 		}
 		break;
 	
@@ -124,7 +132,9 @@ try
 		Db::exec(get_label('photo album'), 'UPDATE photo_albums SET flags = ? WHERE id = ?', $flags, $id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('album', 'Icon uploaded', 'flags=' . $flags, $id, $club_id);
+			$log_details = new stdClass();
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_PHOTO_ALBUM, 'logo uploaded', $log_details, $id, $club_id);
 		}
 		break;
 		
@@ -144,7 +154,9 @@ try
 		Db::exec(get_label('event'), 'UPDATE events SET flags = ? WHERE id = ?', $flags, $id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log('event', 'Logo uploaded', 'flags=' . $flags, $id, $club_id);
+			$log_details = new stdClass();
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_EVENT, 'logo uploaded', $log_details, $id, $club_id);
 		}
 		break;
 		

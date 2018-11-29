@@ -202,7 +202,7 @@ try
 			if (Db::affected_rows() > 0)
 			{
 				list ($club_id) = Db::record(get_label('club'), 'SELECT e.club_id FROM event_emails m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $email_id);
-				db_log('event_emails', 'Sending complete', NULL, $email_id, $club_id);
+				db_log(LOG_OBJECT_EVENT_EMAILS, 'sending complete', NULL, $email_id, $club_id);
 			}
 		}
 		else

@@ -61,8 +61,9 @@ class ApiPage extends OpsApiPageBase
 			'INSERT INTO news (club_id, timestamp, raw_message, message, lang, expires) VALUES (?, ?, ?, ?, ?, ?)', 
 			$club_id, $start, $raw_message, $message, $lang, $end);
 		list ($advert_id) = Db::record(get_label('advert'), 'SELECT LAST_INSERT_ID()');
-		$log_details = 'lang=' . $lang;
-		db_log('advert', 'Created', $log_details, $advert_id, $club_id);
+		$log_details = new stdClass();
+		$log_details->lang = $lang;
+		db_log(LOG_OBJECT_ADVERT, 'created', $log_details, $advert_id, $club_id);
 		Db::commit();
 		$this->response['advert_id'] = $advert_id;
 	}
@@ -125,8 +126,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('advert'), 'UPDATE news SET raw_message = ?, message = ?, lang = ?, timestamp = ?, expires = ? WHERE id = ?', $raw_message, $message, $lang, $start, $end, $advert_id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 'lang=' . $lang;
-			db_log('advert', 'Changed', $log_details, $advert_id, $club_id);
+			$log_details = new stdClass();
+			$log_details->lang = $lang;
+			db_log(LOG_OBJECT_ADVERT, 'changed', $log_details, $advert_id, $club_id);
 		}
 		Db::commit();
 	}
@@ -153,7 +155,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		Db::exec(get_label('advert'), 'DELETE FROM news WHERE id = ?', $advert_id);
-		db_log('advert', 'Deleted', NULL, $advert_id, $club_id);
+		db_log(LOG_OBJECT_ADVERT, 'deleted', NULL, $advert_id, $club_id);
 		Db::commit();
 	}
 	

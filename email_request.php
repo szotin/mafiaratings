@@ -99,8 +99,9 @@ class Page extends PageBase
 						Db::exec(get_label('user'), 'UPDATE users SET email = ? WHERE id = ?', $email, $_profile->user_id);
 						if (Db::affected_rows() > 0)
 						{
-							$log_details = 'email=' . $email;
-							db_log('user', 'Changed', $log_details, $_profile->user_id);
+							$log_details = new stdClass();
+							$log_details->email = $email;
+							db_log(LOG_OBJECT_USER, 'changed', $log_details, $_profile->user_id);
 						}
 						$_profile->user_email = $email;
 						Db::commit();
@@ -112,12 +113,6 @@ class Page extends PageBase
 					throw new RedirectExc('index.php');
 				}
 				break;
-				
-			case EMAIL_OBJ_CREATE_CLUB:
-				throw new RedirectExc('clubs.php');
-				
-			case EMAIL_OBJ_CREATE_LEAGUE:
-				throw new RedirectExc('leagues.php');
 				
 			case EMAIL_OBJ_CONFIRM_EVENT:
 				$url = 'event_confirm.php?event=' . $obj_id;

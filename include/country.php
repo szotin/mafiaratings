@@ -29,12 +29,13 @@ function retrieve_country_id($country)
 		
 		Db::exec(get_label('country'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $country);
 		
-		$log_details =
-			'name_en=' . $country .
-			"<br>name_ru=" . $country .
-			"<br>code=" .
-			"<br>flags=" . COUNTRY_FLAG_NOT_CONFIRMED;
-		db_log('country', 'Created', $log_details, $country_id);
+		$log_details = new stdClass();
+		$log_details->name_en = $country;
+		$log_details->name_ru = $country;
+		$log_details->code = '';
+		$log_details->flags = COUNTRY_FLAG_NOT_CONFIRMED;
+		db_log(LOG_OBJECT_COUNTRY, 'created', $log_details, $country_id);
+		
 		Db::commit();
 		
 		$query = new DbQuery('SELECT id, name, email FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');

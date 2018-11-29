@@ -75,6 +75,7 @@ class ApiPageBase
 					throw new FatalExc('Version ' . $this->version . ' is not supported by ' . $title . ' API. Current version is ' . $version . '.');
 				}
 				
+				$this->response = array();
 				$this->prepare_response();
 			}
 			catch (LoginExc $e)

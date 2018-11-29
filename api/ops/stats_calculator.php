@@ -52,8 +52,12 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(get_label('stats'), 'INSERT INTO stats_calculators (name, description, code, owner_id, published) values (?, ?, ?, ?, ?)', $name, $description, $code, $_profile->user_id, $published);
 		list ($id) = Db::record(get_label('stats'), 'SELECT LAST_INSERT_ID()');
-		$log_details = 'name=' . $name . '<br>description=' . $description . '<br>published=' . $published . '<br>code=' . $code;
-		db_log('address', 'Created', $log_details, $id);
+		$log_details = new stdClass();
+		$log_details->name = $name;
+		$log_details->description = $description;
+		$log_details->published = $published;
+		$log_details->code = $code;
+		db_log(LOG_OBJECT_STATS_CALCULATOR, 'created', $log_details, $id);
 		Db::commit();
 		
 		$this->response['id'] = $id;
@@ -78,23 +82,39 @@ class ApiPage extends OpsApiPageBase
 		$id = (int)get_required_param('id');
 		
 		Db::begin();
-		list($name, $description, $code, $owner_id, $published) = Db::record(get_label('stats'), 'SELECT name, description, code, owner_id, published FROM stats_calculators WHERE id = ?', $id);
+		list($old_name, $old_description, $old_code, $owner_id, $old_published) = Db::record(get_label('stats'), 'SELECT name, description, code, owner_id, published FROM stats_calculators WHERE id = ?', $id);
 		check_permissions(PERMISSION_OWNER, $owner_id);
 		
-		$name = get_optional_param('name', $name);
+		$name = get_optional_param('name', $old_name);
 		ApiPage::check_name($name, $id);
 		
-		$description = get_optional_param('description', $description);
-		$code = get_optional_param('code', $code);
-		$published = (int)get_optional_param('published', $published);
+		$description = get_optional_param('description', $old_description);
+		$code = get_optional_param('code', $old_code);
+		$published = (int)get_optional_param('published', $old_published);
 		
 		Db::exec(
 			get_label('stats'), 
 			'UPDATE stats_calculators SET name = ?, description = ?, code = ?, published = ? WHERE id = ?', $name, $description, $code, $published, $id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 'name=' . $name . '<br>description=' . $description . '<br>published=' . $published . '<br>code=' . $code;
-			db_log('stats', 'Changed', $log_details, $id);
+			$log_details = new stdClass();
+			if ($old_name != $name)
+			{
+				$log_details->name = $name;
+			}
+			if ($old_description != $description)
+			{
+				$log_details->description = $description;
+			}
+			if ($old_published != $published)
+			{
+				$log_details->published = $published;
+			}
+			if ($old_code != $code)
+			{
+				$log_details->code = $code;
+			}
+			db_log(LOG_OBJECT_STATS_CALCULATOR, 'changed', $log_details, $id);
 		}
 		Db::commit();
 		
@@ -127,8 +147,7 @@ class ApiPage extends OpsApiPageBase
 			'DELETE FROM stats_calculators WHERE id = ?', $id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details = 'name=' . $name;
-			db_log('stats', 'Deleted', $log_details, $id);
+			db_log(LOG_OBJECT_STATS_CALCULATOR, 'deleted', NULL, $id);
 		}
 		Db::commit();
 	}
