@@ -1089,26 +1089,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM players WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
-		
-		// send notification to admin
-		$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
-		while ($row = $query->next())
-		{
-			list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
-			$lang = get_lang_code($admin_def_lang);
-			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_game_changed.php';
-			
-			$tags = array(
-				'root' => new Tag(get_server_url()),
-				'action' => new Tag(get_label('deleted')),
-				'user_name' => new Tag($admin_name),
-				'user_id' => new Tag($admin_id),
-				'game' => new Tag($game_id),
-				'sender' => new Tag($_profile->user_name));
-			$body = parse_tags($body, $tags);
-			$text_body = parse_tags($text_body, $tags);
-			send_email($admin_email, $body, $text_body, $subj);
-		}
+		Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is deleted');
 		
 		reset_viewed_game($game_id, false);
 		db_log(LOG_OBJECT_GAME, 'deleted', NULL, $game_id, $club_id);
@@ -1169,26 +1150,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM players WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'UPDATE games SET result = 0, user_id = ? WHERE id = ?', $_profile->user_id, $game_id);
-		
-		// send notification to admin
-		$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
-		while ($row = $query->next())
-		{
-			list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
-			$lang = get_lang_code($admin_def_lang);
-			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_game_changed.php';
-			
-			$tags = array(
-				'root' => new Tag(get_server_url()),
-				'action' => new Tag(get_label('changed')),
-				'user_name' => new Tag($admin_name),
-				'user_id' => new Tag($admin_id),
-				'game' => new Tag($game_id),
-				'sender' => new Tag($_profile->user_name));
-			$body = parse_tags($body, $tags);
-			$text_body = parse_tags($text_body, $tags);
-			send_email($admin_email, $body, $text_body, $subj);
-		}
+		Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
 		
 		$log_details = new stdClass();
 		$log_details->old_log = $log;

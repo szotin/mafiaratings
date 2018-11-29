@@ -385,6 +385,40 @@ try
 		}
 		Db::exec(get_label('photo'), 'UPDATE user_photos SET email_sent = TRUE');
 	}
+	
+	// rebuild stats emails
+	if ($emails_remaining > 0)
+	{
+		$changes = '';
+		$query = new DbQuery('SELECT time, action FROM rebuild_stats WHERE email_sent = 0');
+		while ($row = $query->next())
+		{
+			list($time, $action) = $row;
+			$changes .= format_date('Y-m-d H:i:s', $time, 'America/Vancouver', LANG_ENGLISH) . ': ' . $action . "\n";
+		}
+		
+		if ($changes != '')
+		{
+			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
+			while ($row = $query->next())
+			{
+				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
+				$lang = get_lang_code($admin_def_lang);
+				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_rebuild_stats.php';
+				
+				$tags = array(
+					'root' => new Tag(get_server_url()),
+					'user_name' => new Tag($admin_name),
+					'user_id' => new Tag($admin_id),
+					'changes' => new Tag($changes));
+				$body = parse_tags($body, $tags);
+				$text_body = parse_tags($text_body, $tags);
+				send_email($admin_email, $body, $text_body, $subj);
+				--$emails_remaining;
+			}
+			Db::exec('stats', 'UPDATE rebuild_stats SET email_sent = 1');
+		}
+	}
 
 	Db::commit();
 	

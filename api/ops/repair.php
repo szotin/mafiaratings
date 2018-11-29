@@ -387,6 +387,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['last_id'] = $last_id;
 		if ($c <= 0)
 		{
+			Db::exec('stats', 'DELETE FROM rebuild_stats');
 			lock_site(false);
 		}
 	}
