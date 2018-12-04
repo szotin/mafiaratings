@@ -100,6 +100,7 @@ define('CLUB_PICS_DIR', 'pics/club/');
 define('LEAGUE_PICS_DIR', 'pics/league/');
 define('ALBUM_PICS_DIR', 'pics/album/');
 define('EVENT_PICS_DIR', 'pics/event/');
+define('TOURNAMENT_PICS_DIR', 'pics/tournament/');
 
 define('TNAILS_DIR', 'tnails/');
 define('ICONS_DIR', 'icons/');
@@ -112,9 +113,11 @@ define('CLUB_PIC_CODE', 'c');
 define('LEAGUE_PIC_CODE', 'l');
 define('ALBUM_PIC_CODE', 'p');
 define('EVENT_PIC_CODE', 'e');
+define('TOURNAMENT_PIC_CODE', 't');
 define('PHOTO_CODE', 'h');
 
 define('EVENT_PHOTO_WIDTH', (CONTENT_WIDTH / PHOTO_COL_COUNT - 20));
+define('TOURNAMENT_PHOTO_WIDTH', (CONTENT_WIDTH / PHOTO_COL_COUNT - 20));
 define('TNAIL_WIDTH', 280);
 define('TNAIL_HEIGHT', 160);
 define('ICON_WIDTH', 70);
@@ -151,6 +154,19 @@ define('EVENT_ICON_MAX_VERSION', 7);
 
 define('EVENT_ALIVE_TIME', 28800); // event can be extended during this time after being finished (8 hours)
 define('EVENT_NOT_DONE_TIME', 1209600);
+
+// tournament flags
+// 1 - 0x0001 -      1 - icon mask
+// 2 - 0x0002 -      2 - icon mask
+// 3 - 0x0004 -      4 - icon mask
+// 4 - 0x0008 -      8 - canceled
+// 5 - 0x0010 -     16 - reserved
+// 6 - 0x0020 -     32 - reserved
+define('TOURNAMENT_FLAG_CANCELED', 0x8);
+
+define('TOURNAMENT_ICON_MASK', 0x7);
+define('TOURNAMENT_ICON_MASK_OFFSET', 0);
+define('TOURNAMENT_ICON_MAX_VERSION', 7);
 
 // address flags
 // 1 - 0x0001 -      1 - not used

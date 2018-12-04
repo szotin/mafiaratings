@@ -425,7 +425,7 @@ var mr = new function()
 		}
 		else
 		{
-			_delete();
+			_cancel();
 		}
 	}
 
@@ -468,6 +468,50 @@ var mr = new function()
 		dlg.form("event_extend.php?id=" + id, refr, 400);
 	}
 	
+	//--------------------------------------------------------------------------------------
+	// tournament
+	//--------------------------------------------------------------------------------------
+	this.createTournament = function(clubId, leagueId)
+	{
+		var formLink = "tournament_create.php?";
+		if (typeof clubId == "number" && clubId > 0)
+		{
+			formLink += "club_id=" + clubId;
+		}
+		else
+		{
+			formLink += "league_id=" + leagueId;
+		}
+		dlg.form(formLink, refr);
+	}
+	
+	this.restoreTournament = function(id)
+	{
+		json.post("api/ops/tournament.php", { op: "restore", tournament_id: id }, refr);
+	}
+
+	this.cancelTournament = function(id, confirmMessage)
+	{
+		function _cancel()
+		{
+			json.post("api/ops/tournament.php", { op: "cancel", tournament_id: id }, r)
+		}
+		
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _cancel);
+		}
+		else
+		{
+			_cancel();
+		}
+	}
+
+	this.editTournament = function(id)
+	{
+		dlg.form("tournament_edit.php?id=" + id, refr, 600);
+	}
+
 	//--------------------------------------------------------------------------------------
 	// scoring system
 	//--------------------------------------------------------------------------------------
