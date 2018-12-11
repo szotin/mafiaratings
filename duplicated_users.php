@@ -61,7 +61,7 @@ class Page extends GeneralPageBase
 			show_pages_navigation(PAGE_SIZE, $count);
 			
 			$query = new DbQuery(
-				'SELECT email, count(*) as cnt FROM users GROUP BY email HAVING cnt > 1 ORDER BY cnt DESC, email');
+				'SELECT email, count(*) as cnt FROM users GROUP BY email HAVING cnt > 1 ORDER BY cnt DESC, email LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="th darker"><td>' . get_label('Email') . '</td><td width="80">' . get_label('Count') . '</td></tr>';
