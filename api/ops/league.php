@@ -3,7 +3,6 @@
 require_once '../../include/api.php';
 require_once '../../include/email.php';
 require_once '../../include/address.php';
-require_once '../../include/game_rules.php';
 require_once '../../include/event.php';
 require_once '../../include/url.php';
 require_once '../../include/scoring.php';
@@ -73,19 +72,16 @@ class ApiPage extends OpsApiPageBase
 		if ($_profile->is_admin())
 		{
 			// Admin does not have to send a confirmation request. The league is confirmed instantly.
-			$rules = new GameRules();
-			$rules_id = $rules->save();
 			
 			Db::exec(
 				get_label('league'),
-				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules_id, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
-				$name, $langs, $url, $email, $phone, $rules_id);
+				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, '{}', ' . SCORING_DEFAULT_ID . ')',
+				$name, $langs, $url, $email, $phone);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
 			$log_details->name = $name;
 			$log_details->langs = $langs;
-			$log_details->rules = $rules_id;
 			$log_details->flags = NEW_LEAGUE_FLAGS;
 			$log_details->url = $url;
 			$log_details->email = $email;
@@ -237,20 +233,16 @@ class ApiPage extends OpsApiPageBase
 		}
 		$this->check_name($name, -1);
 		
-		$rules = new GameRules();
-		$rules_id = $rules->save();
-		
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules_id, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
-			$name, $langs, $url, $email, $phone, $rules_id);
+			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, '{}', ' . SCORING_DEFAULT_ID . ')',
+			$name, $langs, $url, $email, $phone);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
 		$log_details->name = $name;
 		$log_details->langs = $langs;
-		$log_details->rules = $rules_id;
 		$log_details->flags = NEW_LEAGUE_FLAGS;
 		$log_details->url = $url;
 		$log_details->email = $email;

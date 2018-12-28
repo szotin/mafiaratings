@@ -21,7 +21,7 @@ try
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		$club = $_profile->clubs[$club_id];
-		$def_rules_id = $club->rules_id;
+		$def_rules_code = $club->rules_code;
 		$def_country = $club->country;
 		$def_city = $club->country;
 		$def_langs = $club->langs;
@@ -76,12 +76,12 @@ try
 	
 	if ($club_id > 0)
 	{
-		$query = new DbQuery('SELECT rules_id, name FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
+		$query = new DbQuery('SELECT rules, name FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
 		if ($row = $query->next())
 		{
 			$custom_rules = true;
-			echo '<tr><td>' . get_label('Game rules') . ':</td><td><select id="form-rules"><option value="' . $def_rules_id . '"';
-			if ($def_rules_id == $def_rules_id)
+			echo '<tr><td>' . get_label('Game rules') . ':</td><td><select id="form-rules"><option value="' . $def_rules_code . '"';
+			if ($def_rules_code == $def_rules_code)
 			{
 				echo ' selected';
 				$custom_rules = false;
@@ -89,9 +89,9 @@ try
 			echo '>' . get_label('[default]') . '</option>';
 			do
 			{
-				list ($rules_id, $rules_name) = $row;
-				echo '<option value="' . $rules_id . '"';
-				if ($custom_rules && $rules_id == $def_rules_id)
+				list ($rules_code, $rules_name) = $row;
+				echo '<option value="' . $rules_code . '"';
+				if ($custom_rules && $rules_code == $def_rules_code)
 				{
 					echo ' selected';
 				}
@@ -102,7 +102,7 @@ try
 		}
 		else
 		{
-			echo '<input type="hidden" id="form-rules" value="' . $def_rules_id . '">';
+			echo '<input type="hidden" id="form-rules" value="' . $def_rules_code . '">';
 		}
 	}
 	
@@ -160,7 +160,7 @@ try
 			, name: $("#form-name").val()
 			, price: $("#form-price").val()
 			, address_id: _addr
-			, rules_id: $("#form-rules").val()
+			, rules_code: $("#form-rules").val()
 			, scoring_id: $("#form-scoring").val()
 			, notes: $("#form-notes").val()
 			, flags: _flags

@@ -124,7 +124,7 @@ class LeaguePageBase extends PageBase
 	protected $phone;
 	protected $scoring_id;
 	protected $is_manager;
-	protected $timezone;
+	protected $rules_filter;
 	
 	protected function prepare()
 	{
@@ -138,10 +138,11 @@ class LeaguePageBase extends PageBase
 
 		$this->is_manager = $_profile != NULL ? $_profile->is_league_manager($this->id) : false;
 		
-		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->scoring_id, $this->timezone) = 
+		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->scoring_id, $rules) = 
 			Db::record(
 				get_label('league'),
-				'SELECT l.name, l.flags, l.web_site, l.langs, l.email, l.phone, l.scoring_id, l.rules_id FROM leagues l WHERE l.id = ?', $this->id);
+				'SELECT l.name, l.flags, l.web_site, l.langs, l.email, l.phone, l.scoring_id, l.rules FROM leagues l WHERE l.id = ?', $this->id);
+		$this->rules_filter = json_decode($rules);
 	}
 
 	protected function show_title()

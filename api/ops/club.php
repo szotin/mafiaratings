@@ -6,7 +6,6 @@ require_once '../../include/email.php';
 require_once '../../include/city.php';
 require_once '../../include/country.php';
 require_once '../../include/address.php';
-require_once '../../include/game_rules.php';
 require_once '../../include/event.php';
 require_once '../../include/url.php';
 require_once '../../include/scoring.php';
@@ -108,29 +107,28 @@ class ApiPage extends OpsApiPageBase
 		if ($is_admin || $is_parent_manager)
 		{
 			// Admin does not have to send a confirmation request. The club is confirmed instantly.
-			$rules = new GameRules();
-			$rules_id = $rules->save();
-			
 			if ($parent_id > 0)
 			{
+				list($rules_code) = Db::record(get_label('club'), 'SELECT rules FROM clubs WHERE id = ?', $parent_id);
 				Db::exec(
 					get_label('club'),
-					'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id, parent_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
-					$name, $langs, $rules_id, $url, $email, $phone, $city_id, $parent_id);
+					'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, parent_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
+					$name, $langs, $rules_code, $url, $email, $phone, $city_id, $parent_id);
 			}
 			else
 			{
+				$rules_code = default_rules_code();
 				Db::exec(
 					get_label('club'),
-					'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
-					$name, $langs, $rules_id, $url, $email, $phone, $city_id);
+					'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, scoring_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ')',
+					$name, $langs, $rules_code, $url, $email, $phone, $city_id);
 			}
 			list ($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
 			$log_details->name = $name;
 			$log_details->langs = $langs;
-			$log_details->rules = $rules_id;
+			$log_details->rules_code = $rules_code;
 			$log_details->flags = NEW_CLUB_FLAGS;
 			$log_details->url = $url;
 			$log_details->email = $email;
@@ -515,22 +513,28 @@ class ApiPage extends OpsApiPageBase
 			$name = get_optional_param('name', $name);
 			$this->check_name($name);
 			
-			$rules = new GameRules();
-			$rules_id = $rules->save();
+			if ($parent_id != NULL)
+			{
+				list($rules_code) = Db::record(get_label('club'), 'SELECT rules FROM clubs WHERE id = ?', $parent_id);
+			}
+			else
+			{
+				$rules_code = default_rules_code();
+			}
 			
 			list ($city_name) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $city_id);
 			
 			Db::exec(
 				get_label('club'),
-				'INSERT INTO clubs (name, langs, rules_id, flags, web_site, email, phone, city_id, scoring_id, parent_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ', ?)',
-				$name, $langs, $rules_id, $url, $email, $phone, $city_id, $parent_id);
+				'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, scoring_id, parent_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ' . SCORING_DEFAULT_ID . ', ?)',
+				$name, $langs, $rules_code, $url, $email, $phone, $city_id, $parent_id);
 				
 			list ($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
 			$log_details->name = $name;
 			$log_details->langs = $langs;
-			$log_details->rules = $rules_id;
+			$log_details->rules_code = $rules_code;
 			$log_details->flags = NEW_CLUB_FLAGS;
 			$log_details->url = $url;
 			$log_details->phone = $phone;

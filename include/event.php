@@ -11,6 +11,7 @@ require_once __DIR__ . '/club.php';
 require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
+require_once __DIR__ . '/rules.php';
 
 define('WEEK_FLAG_SUN', 1);
 define('WEEK_FLAG_MON', 2);
@@ -146,7 +147,7 @@ class Event
 	public $notes;
 	public $flags;
 	public $langs;
-	public $rules_id;
+	public $rules_code;
 	
 	public $scoring_id;
 	public $scoring_weight;
@@ -185,7 +186,7 @@ class Event
 		$this->notes = '';
 		$this->flags = EVENT_FLAG_REG_ON_ATTEND | EVENT_FLAG_ALL_MODERATE;
 		$this->langs = LANG_ALL;
-		$this->rules_id = -1;
+		$this->rules_code = default_rules_code();
 		$this->scoring_id = -1;
 		$this->scoring_weight = 1;
 		$this->planned_games = 0;
@@ -203,7 +204,7 @@ class Event
 				{
 					$this->club_id = $club->id;
 					$timezone = $club->timezone;
-					$this->rules_id = $club->rules_id;
+					$this->rules_code = $club->rules_code;
 					$this->scoring_id = $club->scoring_id;
 					$this->langs = $club->langs;
 					break;
@@ -326,7 +327,7 @@ class Event
 		$this->city = $club->city;
 		$this->country = $club->country;
 		$this->scoring_id = $club->scoring_id;
-		$this->rules_id = $club->rules_id;
+		$this->rules_code = $club->rules_code;
 	}
 
 	function create()
@@ -396,10 +397,10 @@ class Event
 		
 		Db::exec(
 			get_label('event'), 
-			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id, scoring_weight, planned_games, round_num) ' .
+			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_weight, planned_games, round_num) ' .
 			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$this->name, $this->price, $this->addr_id, $this->club_id, $this->timestamp, 
-			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_id, 
+			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_code, 
 			$this->scoring_id, $this->scoring_weight, $this->planned_games, $this->round_num);
 		list ($this->id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 		list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
@@ -413,7 +414,7 @@ class Event
 		$log_details->duration = $this->duration;
 		$log_details->flags = $this->flags;
 		$log_details->langs = $this->langs;
-		$log_details->rules_id = $this->rules_id;
+		$log_details->rules_code = $this->rules_code;
 		$log_details->scoring_id = $this->scoring_id;
 		db_log(LOG_OBJECT_EVENT, 'created', $log_details, $this->id, $this->club_id);
 		
@@ -477,10 +478,10 @@ class Event
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
-				'name = ?, price = ?, club_id = ?, rules_id = ?, scoring_id = ?, scoring_weight = ?, planned_games = ?, ' .
+				'name = ?, price = ?, club_id = ?, rules = ?, scoring_id = ?, scoring_weight = ?, planned_games = ?, ' .
 				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, round_num = ?, ' .
 				'languages = ? WHERE id = ?',
-			$this->name, $this->price, $this->club_id, $this->rules_id, $this->scoring_id, $this->scoring_weight, $this->planned_games,
+			$this->name, $this->price, $this->club_id, $this->rules_code, $this->scoring_id, $this->scoring_weight, $this->planned_games,
 			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags, $this->round_num,
 			$this->langs, $this->id);
 		if (Db::affected_rows() > 0)
@@ -495,7 +496,7 @@ class Event
 			$log_details->duration = $this->duration;
 			$log_details->flags = $this->flags;
 			$log_details->langs = $this->langs;
-			$log_details->rules_id = $this->rules_id;
+			$log_details->rules_code = $this->rules_code;
 			$log_details->scoring_id = $this->scoring_id;
 			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $this->id, $this->club_id);
 		}
@@ -582,10 +583,10 @@ class Event
 		list (
 			$this->name, $this->price, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
 			$this->addr_id, $this->addr, $this->addr_url, $timezone, $this->addr_flags,
-			$this->notes, $this->langs, $this->flags, $this->rules_id, $this->scoring_id, $this->scoring_weight, $this->planned_games, $this->round_num, $this->coming_odds, $this->city, $this->country) =
+			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_weight, $this->planned_games, $this->round_num, $this->coming_odds, $this->city, $this->country) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules_id, e.scoring_id, e.scoring_weight, e.planned_games, e.round_num, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
+					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.round_num, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .
@@ -1205,26 +1206,28 @@ class EventPageBase extends PageBase
 		{
 			$menu = array
 			(
-				new MenuItem('event_info.php?id=' . $this->event->id, get_label('Event'), get_label('General event information'))
-				, new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings'))
-				, new MenuItem('event_competition.php?id=' . $this->event->id, get_label('Competition chart'), get_label('How players were competing on this event.'))
-				, new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event'))
-				, new MenuItem('#stats', get_label('Stats'), NULL, array
+				new MenuItem('event_info.php?id=' . $this->event->id, get_label('Event'), get_label('General event information')),
+				new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings')),
+				new MenuItem('event_competition.php?id=' . $this->event->id, get_label('Competition chart'), get_label('How players were competing on this event.')),
+				new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event')),
+				new MenuItem('#stats', get_label('Stats'), NULL, array
 				(
-					new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
-					, new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
-					, new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
-					, new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event'))
-				))
-				, new MenuItem('#resources', get_label('Resources'), NULL, array
+					new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
+					new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+					new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
+					new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event')),
+				)),
+				new MenuItem('#resources', get_label('Resources'), NULL, array
 				(
-					new MenuItem('event_albums.php?id=' . $this->event->id, get_label('Photos'), get_label('Event photo albums'))
-					, new MenuItem('event_videos.php?id=' . $this->event->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.'))
-					, new MenuItem('event_videos.php?id=' . $this->event->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.'))
-					// , new MenuItem('event_tasks.php?id=' . $this->event->id, get_label('Tasks'), get_label('Learning tasks and puzzles.'))
-					// , new MenuItem('event_articles.php?id=' . $this->event->id, get_label('Articles'), get_label('Books and articles.'))
-					// , new MenuItem('event_links.php?id=' . $this->event->id, get_label('Links'), get_label('Links to custom mafia web sites.'))
-				))
+				
+					new MenuItem('event_rules.php?id=' . $this->event->id, get_label('Rulebook'), get_label('Rules of the game in [0]', $this->event->name)),
+					new MenuItem('event_albums.php?id=' . $this->event->id, get_label('Photos'), get_label('Event photo albums')),
+					new MenuItem('event_videos.php?id=' . $this->event->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.')),
+					new MenuItem('event_videos.php?id=' . $this->event->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.')),
+					// new MenuItem('event_tasks.php?id=' . $this->event->id, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
+					// new MenuItem('event_articles.php?id=' . $this->event->id, get_label('Articles'), get_label('Books and articles.')),
+					// new MenuItem('event_links.php?id=' . $this->event->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
+				)),
 			);
 			echo '<tr><td colspan="4">';
 			PageBase::show_menu($menu);

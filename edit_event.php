@@ -121,7 +121,7 @@ class Page extends PageBase
 		}
 		if (isset($_REQUEST['rules']))
 		{
-			$this->event->rules_id = $_REQUEST['rules'];
+			$this->event->rules_code = $_REQUEST['rules'];
 		}
 		if (isset($_REQUEST['scoring_id']))
 		{
@@ -262,28 +262,30 @@ class Page extends PageBase
 		
 		echo '<tr><td class="dark">'.get_label('Admission rate').':</td><td><input name="price" value="' . $this->event->price . '"></td></tr>';
 		
-		$query = new DbQuery('SELECT rules_id, name FROM club_rules WHERE club_id = ? ORDER BY name', $this->event->club_id);
+		$query = new DbQuery('SELECT rules, name FROM club_rules WHERE club_id = ? ORDER BY name', $this->event->club_id);
+		$custom_rules = true;
 		while ($row = $query->next())
 		{
 			$custom_rules = true;
-			echo '<tr><td class="dark">' . get_label('Game rules') . ':</td><td><select id="rules" name="rules"><option value="' . $club->rules_id . '"';
-			if ($club->rules_id == $this->event->rules_id)
+			echo '<tr><td class="dark">' . get_label('Game rules') . ':</td><td><select id="rules" name="rules">';
+			if (show_option($club->rules_code, $this->event->rules_code, $club->name))
 			{
-				echo ' selected';
 				$custom_rules = false;
 			}
-			echo '>' . get_label('[default]') . '</option>';
-			do
+
+			while ($row = $query->next())
 			{
-				list ($rules_id, $rules_name) = $row;
-				echo '<option value="' . $rules_id . '"';
-				if ($custom_rules && $rules_id == $this->event->rules_id)
+				list ($rules_code, $rules_name) = $row;
+				if (show_option($rules_code, $this->event->rules_code, $rules_name))
 				{
-					echo ' selected';
+					$custom_rules = false;
 				}
-				echo '>' . $rules_name . '</option>';
-			} while ($row = $query->next());
-			echo '</select> <a href="javascript:mr.createRules(' . $club->id . ', rulesCreated)" title="' . get_label('Create [0]', get_label('rules')) . '"><img src="images/rules.png" border="0"></a></td></tr>';
+			}
+			if ($custom_rules)
+			{
+				show_option($this->event->rules_code, $this->event->rules_code, get_label('Custom'));
+			}
+			echo '</select></td></tr>';
 		}
 		
 		echo '<tr><td class="dark">' . get_label('Rounds') . ':</td><td><table width="100%" class="transp">';
@@ -393,13 +395,6 @@ class Page extends PageBase
 				$('#update').attr('disabled','disabled');
 		}
 	
-		function rulesCreated(data)
-		{
-			var r = $('#rules');
-			r.html(r.html() + '<option value=' + data.id + '>' + data.name + '</option>');
-			r.val(data.id);
-		}
-		
 		function refreshRounds()
 		{
 			var html = '<table width="100%" class="transp">';

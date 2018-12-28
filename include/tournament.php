@@ -146,7 +146,7 @@ class Tournament
 	public $notes;
 	public $flags;
 	public $langs;
-	public $rules_id;
+	public $rules_code;
 	
 	public $scoring_id;
 	
@@ -171,7 +171,7 @@ class Tournament
 		$this->notes = '';
 		$this->flags = 0;
 		$this->langs = LANG_ALL;
-		$this->rules_id = -1;
+		$this->rules_code = default_rules_code();
 		$this->scoring_id = -1;
 		
 		if ($_profile != NULL)
@@ -183,7 +183,7 @@ class Tournament
 				{
 					$this->club_id = $club->id;
 					$timezone = $club->timezone;
-					$this->rules_id = $club->rules_id;
+					$this->rules_code = $club->rules_code;
 					$this->scoring_id = $club->scoring_id;
 					$this->langs = $club->langs;
 					break;
@@ -241,7 +241,7 @@ class Tournament
 		$this->city = $club->city;
 		$this->country = $club->country;
 		$this->scoring_id = $club->scoring_id;
-		$this->rules_id = $club->rules_id;
+		$this->rules_code = $club->rules_code;
 	}
 
 	function create()
@@ -311,10 +311,10 @@ class Tournament
 		
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id) ' .
+			'INSERT INTO tournaments (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_code, scoring_id) ' .
 			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$this->name, $this->price, $this->addr_id, $this->club_id, $this->timestamp, 
-			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_id, 
+			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_code, 
 			$this->scoring_id);
 		list ($this->id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
@@ -328,7 +328,7 @@ class Tournament
 		$log_details->duration = $this->duration;
 		$log_details->flags = $this->flags;
 		$log_details->langs = $this->langs;
-		$log_details->rules_id = $this->rules_id;
+		$log_details->rules_code = $this->rules_code;
 		$log_details->scoring_id = $this->scoring_id;
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $this->id, $this->club_id);
 		
@@ -375,10 +375,10 @@ class Tournament
 		Db::exec(
 			get_label('tournament'), 
 			'UPDATE tournaments SET ' .
-				'name = ?, price = ?, club_id = ?, rules_id = ?, scoring_id = ?, ' .
+				'name = ?, price = ?, club_id = ?, rules = ?, scoring_id = ?, ' .
 				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
 				'languages = ? WHERE id = ?',
-			$this->name, $this->price, $this->club_id, $this->rules_id, $this->scoring_id,
+			$this->name, $this->price, $this->club_id, $this->rules_code, $this->scoring_id,
 			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags,
 			$this->langs, $this->id);
 		if (Db::affected_rows() > 0)
@@ -393,7 +393,7 @@ class Tournament
 			$log_details->duration = $this->duration;
 			$log_details->flags = $this->flags;
 			$log_details->langs = $this->langs;
-			$log_details->rules_id = $this->rules_id;
+			$log_details->rules_code = $this->rules_code;
 			$log_details->scoring_id = $this->scoring_id;
 			db_log(LOG_OBJECT_TOURNAMENT, 'changed', $log_details, $this->id, $this->club_id);
 		}
@@ -479,10 +479,10 @@ class Tournament
 		list (
 			$this->name, $this->price, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
 			$this->addr_id, $this->addr, $this->addr_url, $timezone, $this->addr_flags,
-			$this->notes, $this->langs, $this->flags, $this->rules_id, $this->scoring_id, $this->city, $this->country) =
+			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->city, $this->country) =
 				Db::record(
 					get_label('tournament'), 
-					'SELECT t.name, t.price, c.id, c.name, c.flags, c.web_site, t.start_time, t.duration, a.id, a.address, a.map_url, i.timezone, a.flags, t.notes, t.languages, t.flags, t.rules_id, t.scoring_id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM tournaments t' .
+					'SELECT t.name, t.price, c.id, c.name, c.flags, c.web_site, t.start_time, t.duration, a.id, a.address, a.map_url, i.timezone, a.flags, t.notes, t.languages, t.flags, t.rules, t.scoring_id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM tournaments t' .
 						' JOIN addresses a ON t.address_id = a.id' .
 						' JOIN clubs c ON t.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .

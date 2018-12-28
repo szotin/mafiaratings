@@ -45,6 +45,22 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
+	<td>Get Rules</td>
+	<td><a href="rules.php?help"><?php echo PRODUCT_URL; ?>/api/get/rules.php</a></td>
+	<td>
+		<p>Returns game rules descriptions for different clubs, events, tournaments.</p>
+	</td>
+</tr>
+
+<tr>
+	<td>Get Club Rules</td>
+	<td><a href="club_rules.php?help"><?php echo PRODUCT_URL; ?>/api/get/club_rules.php</a></td>
+	<td>
+		<p>Returns the list of custom game rules used in a specific club.</p>
+	</td>
+</tr>
+
+<tr>
 	<td>Get Player Statistics</td>
 	<td><a href="player_stats.php?help"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php</a></td>
 	<td>

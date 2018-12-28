@@ -77,22 +77,22 @@ try
 	
 	echo '<tr><td>'.get_label('Admission rate').':</td><td><input id="form-price" value="' . $event->price . '"></td></tr>';
 		
-	$query = new DbQuery('SELECT rules_id, name FROM club_rules WHERE club_id = ? ORDER BY name', $event->club_id);
+	$query = new DbQuery('SELECT rules, name FROM club_rules WHERE club_id = ? ORDER BY name', $event->club_id);
 	if ($row = $query->next())
 	{
 		$custom_rules = true;
-		echo '<tr><td>' . get_label('Game rules') . ':</td><td><select id="form-rules"><option value="' . $club->rules_id . '"';
-		if ($club->rules_id == $event->rules_id)
+		echo '<tr><td>' . get_label('Game rules') . ':</td><td><select id="form-rules"><option value="' . $club->rules_code . '"';
+		if ($club->rules_code == $event->rules_code)
 		{
 			echo ' selected';
 			$custom_rules = false;
 		}
-		echo '>' . get_label('[default]') . '</option>';
+		echo '>' . $club->name . '</option>';
 		do
 		{
-			list ($rules_id, $rules_name) = $row;
-			echo '<option value="' . $rules_id . '"';
-			if ($custom_rules && $rules_id == $event->rules_id)
+			list ($rules_code, $rules_name) = $row;
+			echo '<option value="' . $rules_code . '"';
+			if ($custom_rules && $rules_code == $event->rules_code)
 			{
 				echo ' selected';
 			}
@@ -103,7 +103,7 @@ try
 	}
 	else
 	{
-		echo '<input type="hidden" id="form-rules" value="' . $club->rules_id . '">';
+		echo '<input type="hidden" id="form-rules" value="' . $club->rules_code . '">';
 	}
 	
 	echo '<tr><td class="dark">' . get_label('Rounds') . ':</td><td><table width="100%" class="transp">';
@@ -318,7 +318,7 @@ try
 			$("#form-duration").val(timespanToStr(json.duration));
 			$("#form-addr_id").val(json.addr_id);
 			$("#form-price").val(json.price);
-			$("#form-rules").val(json.rules_id);
+			$("#form-rules").val(json.rules_code);
 			$("#form-scoring").val(json.scoring_id);
 			$('#form-scoring_weight').val(json.scoring_weight);
 			if (json.planned_games > 0)
@@ -359,7 +359,7 @@ try
 			, duration: strToTimespan($("#form-duration").val())
 			, price: $("#form-price").val()
 			, address_id: _addr
-			, rules_id: $("#form-rules").val()
+			, rules_code: $("#form-rules").val()
 			, scoring_id: $("#form-scoring").val()
 			, scoring_weight: $("#form-scoring_weight").val()
 			, planned_games: $("#form-planned_games").val()

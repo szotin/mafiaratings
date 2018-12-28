@@ -89,7 +89,7 @@ class GEmptyReg
 class GEvent
 {
 	public $id;
-	public $rules_id;
+	public $rules_code;
 	public $name;
 	public $start_time;
 	public $langs;
@@ -99,44 +99,13 @@ class GEvent
 
 	function __construct($row)
 	{
-		list ($this->id, $this->rules_id, $this->name, $this->start_time, $this->langs, $this->duration, $this->flags, $addr_id) = $row;
+		list ($this->id, $this->rules_code, $this->name, $this->start_time, $this->langs, $this->duration, $this->flags, $addr_id) = $row;
 		$this->id = (int)$this->id;
-		$this->rules_id = (int)$this->rules_id;
 		$this->start_time = (int)$this->start_time;
 		$this->langs = (int)$this->langs;
 		$this->duration = (int)$this->duration;
 		$this->flags = (int)$this->flags;
 		$this->reg = new GEmptyReg();
-	}
-}
-
-class GRules
-{
-	public $id;
-	public $name;
-	public $flags;
-	public $st_free;
-	public $spt_free;
-	public $st_reg;
-	public $spt_reg;
-	public $st_killed;
-	public $spt_killed;
-	public $st_def;
-	public $spt_def;
-	
-	function __construct($row)
-	{
-		$this->name = $row[0];
-		$this->id = (int)$row[1];
-		$this->flags = (int)$row[2];
-		$this->st_free = (int)$row[3];
-		$this->spt_free = (int)$row[4];
-		$this->st_reg = (int)$row[5];
-		$this->spt_reg = (int)$row[6];
-		$this->st_killed = (int)$row[7];
-		$this->spt_killed = (int)$row[8];
-		$this->st_def = (int)$row[9];
-		$this->spt_def = (int)$row[10];
 	}
 }
 
@@ -159,7 +128,6 @@ class GClub
 	public $city;
 	public $country;
 	public $langs;
-	public $rules_id;
 	public $players;
 	public $haunters;
 	public $events;
@@ -167,14 +135,19 @@ class GClub
 	public $addrs;
 	public $price;
 	public $icon;
+	public $rules_code;
 	
 	function __construct($id, $game)
 	{
 		global $_profile;
 		$club = $_profile->clubs[$id];
 		$this->id = (int)$club->id;
-		$this->name = $club->name;
-		$this->rules_id = (int)$club->rules_id;
+		
+		$club_rules = new stdClass();
+		$this->name = $club_rules->name = $club->name;
+		$this->rules_code = $club_rules->code = $club->rules_code;
+		$this->rules = array($club_rules);
+		
 		$this->city = $club->city;
 		$this->country = $club->country;
 		$this->price = $club->price;
@@ -226,7 +199,7 @@ class GClub
 		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & USER_CLUB_PERM_MODER))
 		{
 			$events_str = '(0';
-			$query = new DbQuery('SELECT id, rules_id, name, start_time, languages, duration, flags, address_id FROM events WHERE (start_time + duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?) OR id = ?', $id, $game->event_id);
+			$query = new DbQuery('SELECT id, rules, name, start_time, languages, duration, flags, address_id FROM events WHERE (start_time + duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?) OR id = ?', $id, $game->event_id);
 			while ($row = $query->next())
 			{
 				$e_id = $row[0];
@@ -286,11 +259,23 @@ class GClub
 			}
 		}
 		
-		$this->rules = array();
-		$query = new DbQuery('SELECT c.name, r.id, r.flags, r.st_free, r.spt_free, r.st_reg, r.spt_reg, r.st_killed, r.spt_killed, r.st_def, r.spt_def FROM rules r JOIN club_rules c ON r.id = c.rules_id WHERE c.club_id = ?', $id);
+		$query = new DbQuery('SELECT name, rules FROM club_rules WHERE club_id = ?', $id);
 		while ($row = $query->next())
 		{
-			$this->rules[$row[1]] = new GRules($row);
+			$rules = new stdClass();
+			list($rules->name, $rules->code) = $row;
+			$this->rules[] = $rules;
+		}
+		
+		$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ?', $id);
+		while ($row = $query->next())
+		{
+			$rules = new stdClass();
+			list($rules->name, $rules->code) = $row;
+			if ($rules->code != $club->rules_code)
+			{
+				$this->rules[] = $rules_code;
+			}
 		}
 		
 		$this->addrs = array();
@@ -299,12 +284,6 @@ class GClub
 		{
 			$this->addrs[] = new GAddr($row);
 		}
-		
-		$r = new GRules(Db::record(
-			get_label('rules'),
-			'SELECT \'\' AS name, r.id, r.flags, r.st_free, r.spt_free, r.st_reg, r.spt_reg, r.st_killed, r.spt_killed, r.st_def, r.spt_def FROM rules r JOIN clubs c ON r.id = c.rules_id WHERE c.id = ?', 
-			$id));
-		$this->rules[$r->id] = $r;
 	}
 }
 
@@ -355,7 +334,10 @@ class GUser
 		$this->clubs = array();
 		foreach ($_profile->clubs as $club)
 		{
-			$this->clubs[] = new GClubMin($club->id, $club->name);
+			if (($club->club_flags & CLUB_FLAG_RETIRED) == 0)
+			{
+				$this->clubs[] = new GClubMin($club->id, $club->name);
+			}
 		}
 	}
 }
@@ -457,7 +439,7 @@ class CommandQueue
 
 		if (
 			!isset($rec->name) || !isset($rec->duration) || !isset($rec->start) || !isset($rec->price) ||
-			!isset($rec->rules) || !isset($rec->flags) || !isset($rec->langs) || !isset($rec->id))
+			!isset($rec->flags) || !isset($rec->langs) || !isset($rec->id) || !isset($rec->rules_code))
 		{
 			throw new Exc(get_label('Invalid request'));
 		}
@@ -482,6 +464,7 @@ class CommandQueue
 			$event->duration = $rec->duration;
 			$event->timestamp = $rec->start;
 			$event->price = $rec->price;
+			$event->rules_code = $rec->rules_code;
 			if (isset($rec->addr_id))
 			{
 				$event->addr_id = $rec->addr_id;
@@ -497,7 +480,6 @@ class CommandQueue
 				$event->city = $rec->city;
 				$event->country = $rec->country;
 			}
-			$event->rules_id = $rec->rules;
 			$event->notes = '';
 			$event->flags = $rec->flags;
 			$event->langs = $rec->langs;
@@ -783,6 +765,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
+		$club_id = $jhkjk;
 		if (isset($_REQUEST['club_id']))
 		{
 			$club_id = $_REQUEST['club_id'];

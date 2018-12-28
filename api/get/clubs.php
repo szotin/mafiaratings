@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/user_location.php';
+require_once '../../include/rules.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -119,7 +120,7 @@ class ApiPage extends GetApiPageBase
 		if (!$count_only)
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, c.langs, c.web_site, c.email, c.phone, c.city_id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', rules_id, scoring_id FROM clubs c' . 
+				'SELECT c.id, c.name, c.langs, c.web_site, c.email, c.phone, c.city_id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', rules, scoring_id FROM clubs c' . 
 				' JOIN cities i ON i.id = c.city_id' .
 				' JOIN countries o ON o.id = i.country_id', $condition);
 			$query->add(' ORDER BY name');
@@ -132,8 +133,12 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$club = new stdClass();
-				list ($club->id, $club->name, $club->langs, $web, $email, $phone, $club->city_id, $club->city, $club->country, $club->rules_id, $club->scoring_id) = $row;
+				list ($club->id, $club->name, $club->langs, $web, $email, $phone, $club->city_id, $club->city, $club->country, $rules_code, $club->scoring_id) = $row;
 				$club->id = (int)$club->id;
+				$club->scoring_id = (int)$club->scoring_id;
+				$club->rules = rules_code_to_object($rules_code);
+				$club->city_id = (int)$club->city_id;
+				$club->langs = (int)$club->langs;
 				if ($web != NULL)
 				{
 					$club->web_site = $web;
@@ -177,7 +182,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('city_id', 'City id');
 			$param->sub_param('city', 'City name using default language for the profile.');
 			$param->sub_param('country', 'Country name using default language for the profile.');
-			$param->sub_param('rules_id', 'Default rules used in the club.');
+			$param->sub_param('rules', 'Game rules used in the club.');
 			$param->sub_param('scoring_id', 'Default scoring used in the club.');
 		$help->response_param('count', 'Total number of clubs satisfying the request parameters.');
 		return $help;

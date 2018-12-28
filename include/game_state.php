@@ -4,7 +4,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/game_log.php';
 require_once __DIR__ . '/game_player.php';
 require_once __DIR__ . '/game_voting.php';
-require_once __DIR__ . '/game_rules.php';
+require_once __DIR__ . '/rules.php';
 
 define('GAME_FLAG_SIMPLIFIED_CLIENT', 2);
 
@@ -30,7 +30,7 @@ define('GAME_MAFIA_WON', 17);
 define('GAME_CIVIL_WON', 18);
 //define('GAME_TERMINATED', 19); // no more terminated games - we just delete them
 define('GAME_DAY_FREE_DISCUSSION', 20);
-define('GAME_DAY_GUESS3', 21);
+define('GAME_DAY_GUESS3', 21); // deprecated the code should reach this only for the old logs
 define('GAME_CHOOSE_BEST_PLAYER', 22);
 define('GAME_CHOOSE_BEST_MOVE', 23);
 
@@ -66,8 +66,7 @@ class GameState
 	public $best_move; // number of the player who did the best move 0-9; any value otside the range means "no best move"
 	public $guess3; // array containing guess (who is mafia) of the player killed the first night. 3 player numbers.
 	
-	public $rules;
-	public $rules_id;
+	public $rules_code;
 	
 	public $error; // error message if log is corrupted (not localized - this is for admin only)
 	
@@ -88,7 +87,7 @@ class GameState
 		$this->error = NULL;
 		
 		$this->flags = 0;
-		$this->rules_id = 0;
+		$this->rules_code = default_rules_code();
 		$this->players = array(
 			new Player(0), new Player(1), new Player(2), new Player(3), new Player(4),
 			new Player(5), new Player(6), new Player(7), new Player(8), new Player(9));
@@ -180,27 +179,6 @@ class GameState
 		return 0;
 	}
 	
-	function create_from_log($user_id, $log)
-	{
-		$this->user_id = $user_id;
-		$this->read($log);
-		
-		$moder_id = $this->moder_id;
-		if ($moder_id <= 0)
-		{
-			$moder_id = NULL;
-		}
-	
-		$query = new DbQuery(
-			'INSERT INTO games (club_id, event_id, moderator_id, user_id, language, log, start_time, end_time, result, rules_id, flags, log_version) ' .
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . CURRENT_LOG_VERSION . ')',
-			$this->club_id, $this->event_id, $moder_id, $this->user_id, $this->lang,
-			$log, $this->start_time, $this->end_time, $this->result_code(), $this->rules_id,
-			$this->flags);
-		$query->exec(get_label('game'));
-		list ($this->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');
-	}
-	
 	function create_from_json($data)
 	{
 		//var_dump($data);
@@ -222,19 +200,12 @@ class GameState
 		$this->best_player = $data->best_player;
 		$this->best_move = $data->best_move;
 		$this->guess3 = $data->guess3;
-		$this->rules_id = $data->rules_id;
+		$this->rules_code = $data->rules_code;
 		
     	$this->shooting = array();
 		for ($i = 0; $i < count($data->shooting); ++$i)
 		{
 			$this->shooting[] = (array) $data->shooting[$i];
-		}
-		
-		$this->rules = NULL;
-		if ($this->rules_id > 0)
-		{
-			$this->rules = new GameRules();
-			$this->rules->load($this->rules_id);
 		}
 		
 		$this->current_voting = NULL;
@@ -277,7 +248,7 @@ class GameState
     {
         $out =
 			CURRENT_LOG_VERSION . GAME_PARAM_DELIMITER .
-			$this->rules_id . GAME_PARAM_DELIMITER .
+			$this->rules_code . GAME_PARAM_DELIMITER .
 			$this->club_id . GAME_PARAM_DELIMITER .
 			$this->event_id . GAME_PARAM_DELIMITER .
 			$this->user_id . GAME_PARAM_DELIMITER .
@@ -353,16 +324,13 @@ class GameState
 		
 		if ($version > 2)
 		{
-			$this->rules = new GameRules();
 			if ($version > 6)
 			{
-				$this->rules_id = (int) read_param($input, $offset);
-				$this->rules->load($this->rules_id);
+				$this->rules_code = read_param($input, $offset);
 			}
 			else
 			{
-				$this->rules->flags = RULES_FLAG_DAY1_NO_KILL | RULES_FLAG_NO_CRASH_4; // Only Vancouver Mafia rules were used before version 7
-				$this->rules_id = $this->rules->id = $this->rules->save();
+				$this->rules_code = set_rule(default_rules_code(), RULES_SPLIT_ON_FOUR, RULES_SPLIT_ON_FOUR_PROHIBITED); // Only Vancouver Mafia rules were used before version 7
 			}
 			$this->club_id = (int) read_param($input, $offset); 
 			$this->event_id = (int) read_param($input, $offset);
@@ -506,18 +474,18 @@ class GameState
 			Db::exec(get_label('game'),
 				'UPDATE games SET log = ?, end_time = ?, club_id = ?, event_id = ?, moderator_id = ?, ' .
 					'user_id = ?, language = ?, start_time = ?, end_time = ?, result = ?, ' .
-					'rules_id = ?, flags = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
+					'rules = ?, flags = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
 				$log, $this->end_time, $this->club_id, $this->event_id, $moder_id,
 				$this->user_id, $this->lang, $this->start_time, $this->end_time, $this->result_code(),
-				$this->rules_id, $this->flags, $this->id);
+				$this->rules_code, $this->flags, $this->id);
 		}
 		else
 		{
 			Db::exec(get_label('game'),
-				'INSERT INTO games (club_id, event_id, moderator_id, user_id, language, log, start_time, end_time, result, rules_id, flags, log_version) ' .
+				'INSERT INTO games (club_id, event_id, moderator_id, user_id, language, log, start_time, end_time, result, rules, flags, log_version) ' .
 					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . CURRENT_LOG_VERSION . ')',
 				$this->club_id, $this->event_id, $moder_id, $this->user_id, $this->lang,
-				$log, $this->start_time, $this->end_time, $this->result_code(), $this->rules_id,
+				$log, $this->start_time, $this->end_time, $this->result_code(), $this->rules_code,
 				$this->flags);
 			list ($this->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');
 		}

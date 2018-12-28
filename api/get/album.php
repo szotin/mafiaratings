@@ -66,18 +66,23 @@ if (isset($_REQUEST['len']))
 	$len = $_REQUEST['len'];
 }
 
+initiate_session();
+$response = NULL;
 try
 {
 	if (!isset($_REQUEST['id']))
 	{
 		throw new FatalExc(get_label('Unknown [0]', get_label('photo album')));
 	}
-	
-	echo json_encode(new Album($_REQUEST['id'], $pos, $len));
+	$response = new Album($_REQUEST['id'], $pos, $len);
 }
 catch (Exception $e)
 {
-	send_error($e);
+	Exc::log($e, true);
+	$response = new stdClass();
+	$response->error = $e->getMessage();
 }
+
+echo json_encode($response);
 
 ?>

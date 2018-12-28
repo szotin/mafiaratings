@@ -61,16 +61,18 @@ class ApiHelpResponseParam
 {
 	public $name;
 	public $description;
+	public $default_value;
 	
-	function __construct($name, $description)
+	function __construct($name, $description, $default_value = NULL)
 	{
 		$this->name = $name;
 		$this->description = $description;
+		$this->default_value = $default_value;
 	}
 	
-	function sub_param($name, $description)
+	function sub_param($name, $description, $default_value = NULL)
 	{
-		$param = new ApiHelpResponseParam($name, $description);
+		$param = new ApiHelpResponseParam($name, $description, $default_value);
 		if (!isset($this->params))
 		{
 			$this->params = array();
@@ -82,6 +84,10 @@ class ApiHelpResponseParam
 	function show()
 	{
 		echo '<dt>' . $this->name;
+		if ($this->default_value != NULL)
+		{
+			echo ' <small>(optional)</small>';
+		}
 		echo '</dt><dd>' . $this->description;
 		if (isset($this->params))
 		{
@@ -91,6 +97,10 @@ class ApiHelpResponseParam
 				$param->show();
 			}
 			echo '</dl>';
+		}
+		if ($this->default_value != NULL)
+		{
+			echo '<p><dfn>When missing use ' . $this->default_value . ' </dfn></p>';
 		}
 		echo '</dd>';
 	}
@@ -118,9 +128,9 @@ class ApiHelp
 		return $param;
 	}
 	
-	function response_param($name, $description)
+	function response_param($name, $description, $default_value = NULL)
 	{
-		$param = new ApiHelpResponseParam($name, $description);
+		$param = new ApiHelpResponseParam($name, $description, $default_value);
 		$this->response[] = $param;
 		return $param;
 	}

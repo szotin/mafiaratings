@@ -89,7 +89,7 @@ var timer = new function()
 		
 	}
 	
-	this.show = function(total, prompt, reset)
+	this.show = function(total, reset)
 	{
 		if (_hidden)
 		{
@@ -102,7 +102,7 @@ var timer = new function()
 		_pSnd = document.getElementById('prompt-snd').cloneNode(true);
 		
 		_blinkCount = 0;
-		_prompt = parseInt(prompt);
+		_prompt = total / 6;
 		if (reset)
 		{
 			if (_start > 0)
@@ -303,6 +303,7 @@ mafia.ui = new function()
 	var _gCounter = 0;
 	var _backPage = null;
 	var _oldState = -1;
+	var _errorDialog = false;
 
 	function _option(value, current, text)
 	{
@@ -405,7 +406,7 @@ mafia.ui = new function()
 					'<table class="transp" width="100%">' + 
 						'<tr>' +
 							'<td width="50">' +
-								'<button id="ops" class="ops"><img src="images/settings_big.png" border="0" height="54"></button>' +
+								'<button id="ops" class="ops"><img id="settings_img" src="images/settings_big.png" border="0" height="54"></button>' +
 								'<ul id="ops-menu" style="position:absolute;">' +
 									'<li id="club" class="ops-item"><a href="#" onclick="selectClubForm.show()"><img src="images/gun.png" class="text"> ' + l('ChangeClub') + '</a></li>' +
 									'<li type="separator"></li>' +
@@ -496,7 +497,21 @@ mafia.ui = new function()
 		mafia.editing((flags & this.FLAG_EDITING) != 0);
 		mafia.stateChange(mafia.ui.sync);
 		mafia.dirtyEvent(mafia.ui.updateButtons);
-		mafia.failEvent(function(message) { dlg.error(message); });
+		mafia.failEvent(function(message, reload) 
+		{ 
+			if (!_errorDialog)
+			{
+				_errorDialog = true;
+				dlg.error(message, undefined, undefined, function()
+				{
+					_errorDialog = false;
+					if (reload)
+					{
+						window.location.reload(true);
+					}
+				});
+			}
+		});
 		if (typeof localStorage != "object")
 		{
 			dlg.info(l('ErrNoStorage'));
@@ -506,6 +521,7 @@ mafia.ui = new function()
 		{
 			mafia.ui.fillUsers();
 
+			$('#settings_img').attr("src", mafia.data().club.icon);
 			setInterval(function()
 			{
 				var s = mafia.data().user.settings;
@@ -548,8 +564,7 @@ mafia.ui = new function()
 		var voting = mafia.curVoting();
 		var reset = ((flags & /*STATE_CHANGE_FLAG_RESET_TIMER*/1) != 0);
 		
-		var st = 0;
-		var spt;
+		var time = 0;
 		var clockHtml = '';
 		
 		if (reset) _shortSpeech = false;
@@ -584,19 +599,28 @@ mafia.ui = new function()
 			{
 				status += '<td><button class="icon" onclick="eventForm.show()"><img src="images/create.png" class="icon"></button></td>';
 			}
-			status += '<td><select id="events" onchange="mafia.ui.eventChange(false)"></select></td></td></tr></table></tr><tr><td align="left">' + l('Rules') + ': <select id="rules" onchange="mafia.ui.rulesChange()">';
-			var sRules = mafia.sRules();
-			for (var i in sRules)
+			status += '<td><select id="events" onchange="mafia.ui.eventChange(false)"></select></td></td></tr></table></tr><tr><td align="left">';
+			var clubRules = mafia.data().club.rules;
+			if (clubRules.length > 1)
 			{
-				var rules_id = sRules[i];
-				var name = club.rules[rules_id].name;
-				if (name.length == 0)
+				status += l('Rules') + ': <select id="rules" onchange="mafia.ui.rulesChange()">';
+				var custom = true;
+				for (var i = 0; i < clubRules.length; ++i)
 				{
-					name = l('DefRules');
+					var rules = clubRules[i];
+					status += _option(rules.code, game.rules_code, rules.name);
+					if (rules.code == game.rules_code)
+					{
+						custom = false;
+					}
 				}
-				status += _option(rules_id, game.rules_id, name);
+				if (custom)
+				{
+					status += _option(game.rules_code, game.rules_code, '');
+				}
+				status += '</select>';
 			}
-			status += '</select></td></tr></table>';
+			status += '</td></tr></table>';
 			
 			clockHtml = '<table width="100%"><tr><td align="right">' + l('Lang') + ': <select id="lang" onchange="mafia.ui.langChange()"></select></td></tr>';
 			clockHtml += '</select></td></tr><tr><td align="right"><table><tr><td>' + l('Moder') + ':</td><td><button id="reg-moder" class="icon" onclick="mafia.ui.register(10)"><img src="images/user.png" class="icon"></button></td><td><select id="player10" onchange="mafia.ui.playerChange(10)"></select></td></tr></table></td></tr></table></td></tr></table>';
@@ -625,8 +649,10 @@ mafia.ui = new function()
 			var eStyle = dStyle + 'empty';
 			$('#r-1').removeClass().addClass(eStyle);
 			$('#head').removeClass().addClass(eStyle);
-			st = mafia.gameRules.st_killed;
-			spt = mafia.gameRules.spt_killed;
+			time = 60;
+			var extraPointsRule = mafia.getRule(/*RULES_EXTRA_POINTS*/17);
+			var bestPlayer = (extraPointsRule != /*RULES_EXTRA_POINTS_FIGM*/0);
+			var bestMove = (extraPointsRule != /*RULES_EXTRA_POINTS_FIGM*/0 && extraPointsRule != /*RULES_EXTRA_POINTS_FIGM*/2);
 			for (var i = 0; i < 10; ++i)
 			{
 				var player = game.players[i];
@@ -654,7 +680,7 @@ mafia.ui = new function()
 				$('#panel' + i).html(html + '</center>').removeClass();
 				
 				html = '';
-				if ((mafia.gameRules.flags & /*RULES_BEST_PLAYER*/0x100) != 0)
+				if (bestPlayer)
 				{
 					html = '<button class="day-vote" onclick="mafia.bestPlayer(' + i + ')"';
 					if (i == game.best_player)
@@ -666,7 +692,7 @@ mafia.ui = new function()
 				$('#control' + i).html(html).removeClass();
 				
 				html = '';
-				if ((mafia.gameRules.flags & /*RULES_BEST_MOVE*/0x200) != 0)
+				if (bestMove)
 				{
 					html = '<button class="day-vote" onclick="mafia.bestMove(' + i + ')"';
 					if (i == game.best_move)
@@ -680,7 +706,7 @@ mafia.ui = new function()
 			status = '<h3>' + (n ? l('MafWin') : l('CivWin')) + '</h3>' + l('Finish');
 			
 			html = '';
-			if ((mafia.gameRules.flags & /*RULES_BEST_PLAYER*/0x100) != 0)
+			if (bestPlayer)
 			{
 				html = '<button class="day-vote" onclick="mafia.bestPlayer(-1)"';
 				if (game.best_player < 0 || game.best_player > 9)
@@ -690,7 +716,7 @@ mafia.ui = new function()
 			$('#control-1').html(html);
 			
 			html = '';
-			if ((mafia.gameRules.flags & /*RULES_BEST_MOVE*/0x200) != 0)
+			if (bestMove)
 			{
 				html = '<button class="day-vote" onclick="mafia.bestMove(-1)"';
 				if (game.best_move < 0 || game.best_move > 9)
@@ -812,8 +838,7 @@ mafia.ui = new function()
 							$('#r' + i).removeClass().addClass('night-mark');
 						}
 					}
-					st = mafia.gameRules.st_reg;
-					spt = mafia.gameRules.spt_reg;
+					time = 60;
 					info = 'Night0';
 					break;
 					
@@ -837,9 +862,24 @@ mafia.ui = new function()
 									' ' + l('NightKill', mafia.playerTitle(p.number), l('KilledFemale')) +
 									' ' + l('LastSpeech', l('She'), l('her'));
 							}
-							st = mafia.gameRules.st_killed;
-							spt = mafia.gameRules.spt_killed;
-							if (mafia.gameRules.flags & /*RULES_FLAG_NIGHT_KILL_CAN_NOMINATE*/16)
+							time = 60;
+							if (game.round == 1 && mafia.getRule(/*RULES_BEST_GUESS*/15) == /*RULES_BEST_GUESS_YES*/0)
+							{
+								for (var i = 0; i < 10; ++i)
+								{
+									p = game.players[i];
+									var c = $('#control' + i);
+									html = '<button class="day-vote" onclick="mafia.guess(' + i + ')"';
+									if (mafia.isGuessed(i))
+									{
+										html += ' checked';
+									}
+									html += '> ' + l('guess', i + 1) + '</button>';
+									c.html(html);
+								}
+								$('#control-1').html('<button class="day-vote" onclick="mafia.noGuess()">' + l('noGuess') + '</button>');
+							}
+							else if (mafia.getRule(/*RULES_KILLED_NOMINATE*/13) == /*RULES_KILLED_NOMINATE_ALLOWED*/1)
 							{
 								_votingRButtons(game);
 							}
@@ -849,34 +889,7 @@ mafia.ui = new function()
 							status += ' ' + l('NobodyKilled');
 						}
 					}
-					
-					if (mafia.gameRules.flags & /*RULES_FLAG_FREE_ROUND*/2)
-					{
-						status += ' ' + l('NextFree');
-					}
-					else
-					{
-						status += ' ' + l('NextFloor', mafia.playerTitle(mafia.nextPlayer(-1)));
-					}
-					break;
-					
-				case /*GAME_STATE_DAY_GUESS3*/21:
-					p = game.players[game.player_speaking];
-					status = l('DayGuess', mafia.playerTitle(p.number));
-					$('#r' + game.player_speaking).removeClass().addClass('day-mark');
-					for (var i = 0; i < 10; ++i)
-					{
-						p = game.players[i];
-						var c = $('#control' + i);
-						html = '<button class="day-vote" onclick="mafia.guess(' + i + ')"';
-						if (mafia.isGuessed(i))
-						{
-							html += ' checked';
-						}
-						html += '> ' + l('guess', i + 1) + '</button>';
-						c.html(html);
-					}
-					$('#control-1').html('<button class="day-vote" onclick="mafia.noGuess()">' + l('noGuess') + '</button>');
+					status += ' ' + l('NextFloor', mafia.playerTitle(mafia.nextPlayer(-1)));
 					break;
 					
 				case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
@@ -884,14 +897,12 @@ mafia.ui = new function()
 					if (p.mute != game.round)
 					{
 						status = l('Speaking', mafia.playerTitle(p.number));
-						st = mafia.gameRules.st_reg;
-						spt = mafia.gameRules.spt_reg;
+						time = 60;
 					}
-					else if (_shortSpeech || ((mafia.gameRules.flags & /*RULES_MUTE_CRIT*/0x4000) && mafia.playersCount() <= 4))
+					else if (_shortSpeech || mafia.playersCount() <= 4)
 					{
 						status = l('SpeakingShort', mafia.playerTitle(p.number));
-						st = mafia.gameRules.st_def;
-						spt = mafia.gameRules.spt_def;
+						time = 30;
 					}
 					else
 					{
@@ -936,14 +947,12 @@ mafia.ui = new function()
 							status = l('DayKill', mafia.playerTitle(p.number), l('KilledMale')) + ' ' + l('LastSpeech', l('He'), l('his'));
 						else
 							status = l('DayKill', mafia.playerTitle(p.number), l('KilledFemale')) + ' ' + l('LastSpeech', l('She'), l('her'));
-						st = mafia.gameRules.st_killed;
-						spt = mafia.gameRules.spt_killed;
+						time = 60;
 					}
 					else
 					{
 						status = l('DayKill', mafia.playerTitle(p.number), l('distrusted')) + ' ' + l('Speaking', p.is_male ? l('He') : l('She'));
-						st = mafia.gameRules.st_def;
-						spt = mafia.gameRules.spt_def;
+						time = 30;
 					}
 					
 					n = mafia.votingWinners();
@@ -1028,7 +1037,7 @@ mafia.ui = new function()
 					else
 					{
 						n = mafia.votingWinners();
-						if (mafia.playersCount() == 4 && n.length == 2 && (mafia.gameRules.flags & /*RULES_FLAG_NO_CRASH_4*/8) != 0)
+						if (mafia.playersCount() == 4 && n.length == 2 && mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11) == /*RULES_SPLIT_ON_FOUR_PROHIBITED*/1)
 						{
 							status = l('NoOneKilled');
 						}
@@ -1088,8 +1097,7 @@ mafia.ui = new function()
 							$('#num' + n[i].player_num).removeClass().addClass('day-mark');
 						}
 						$('#r' + game.player_speaking).removeClass().addClass('day-mark');
-						st = mafia.gameRules.st_def;
-						spt = mafia.gameRules.spt_def;
+						time = 30;
 						
 						status = l('Speaking', mafia.playerTitle(game.player_speaking)) + ' ';
 						p = game.current_nominant + 1;
@@ -1204,8 +1212,7 @@ mafia.ui = new function()
 					
 				case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
 					status = l('FreeDisc');
-					st = mafia.gameRules.st_free;
-					spt = mafia.gameRules.spt_free;
+					time = 180;
 					break;
 			}
 			
@@ -1220,9 +1227,9 @@ mafia.ui = new function()
 			}
 		}
 		
-		if (st > 0)
+		if (time > 0)
 		{
-			timer.show(st, spt, reset);
+			timer.show(time, reset);
 		}
 		else
 		{
@@ -1302,7 +1309,7 @@ mafia.ui = new function()
 		
 		if (!init)
 		{
-			mafia.setRules(event.rules_id);
+			mafia.rulesCode(event.rules_code);
 		}
 
 		var html = "";
@@ -1319,7 +1326,7 @@ mafia.ui = new function()
 			html += _option(/*RUSSIAN*/2, game.lang, l('Rus'));
 		}
 		_enable($('#lang').html(html), true);
-		_enable($('#rules').val(game.rules_id), true);
+		_enable($('#rules').val(game.rules_code), true);
 		
 		var sReg = mafia.sReg(event.id);
 		if (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8)
@@ -1396,7 +1403,7 @@ mafia.ui = new function()
 
 	this.rulesChange = function()
 	{
-		mafia.setRules($('#rules').val());
+		mafia.rulesCode($('#rules').val());
 	}
 
 	this.playerChange = function(num)
@@ -1473,11 +1480,12 @@ mafia.ui = new function()
 			else if (g.gamestate == /*GAME_STATE_END*/25)
 			{
 				var html = null;
-				if ((mafia.gameRules.flags & /*RULES_BEST_PLAYER*/0x100) != 0 && (g.best_player < 0 || g.best_player > 9))
+				var extraPointsRule = mafia.getRule(/*RULES_EXTRA_POINTS*/17);
+				if ((extraPointsRule != /*RULES_EXTRA_POINTS_FIGM*/0) && (g.best_player < 0 || g.best_player > 9))
 				{
 					html = l('NoBestPlayer')
 				}
-				else if ((mafia.gameRules.flags & /*RULES_BEST_MOVE*/0x200) != 0 && (g.best_move < 0 || g.best_move > 9))
+				else if (extraPointsRule != /*RULES_EXTRA_POINTS_FIGM*/0 && extraPointsRule != /*RULES_EXTRA_POINTS_FIGM*/2 && (g.best_move < 0 || g.best_move > 9))
 				{
 					html = l('NoBestMove')
 				}
@@ -1589,7 +1597,7 @@ mafia.ui = new function()
 		var game = mafia.data().game;
 		_shortSpeech = true;
 		$('#status').html(l('SpeakingShort', mafia.playerTitle(game.players[game.player_speaking].number)));
-		timer.show(mafia.gameRules.st_def, mafia.gameRules.spt_def, true);
+		timer.show(30, true);
 	}
 	
 	this.offline = function()
@@ -1723,7 +1731,7 @@ var eventForm = new function()
 					name: $('#form-name').val(),
 					duration: $('#form-duration').val(),
 					price: $('#form-price').val(),
-					rules: $('#form-rules').val(),
+					rules_code: $('#form-rules').val(),
 					langs: l,
 					flags: f
 				};
@@ -1816,17 +1824,12 @@ var eventForm = new function()
 		$('#form-country').val(club.country);
 		$('#form-city').val(club.city);
 		
+		var clubRules = mafia.data().club.rules;
 		str = "";
-		var sRules = mafia.sRules();
-		for (var i in sRules)
+		for (var i = 0; i < clubRules.length; ++i)
 		{
-			var rules_id = sRules[i];
-			var name = club.rules[rules_id].name;
-			if (name.length == 0)
-			{
-				name = l('DefRules');
-			}
-			str += '<option value="' + rules_id + '">' + name + '</option>';
+			var rules = clubRules[i];
+			str += '<option value="' + rules.code + '">' + rules.name + '</option>';
 		}
 		$('#form-rules').html(str);
 		
@@ -2012,14 +2015,12 @@ var regForm = new function()
 				onSuccess();
 			}
 			
-			
 			nickForm.show(players[id], function(nick)
 			{
 				try
 				{
 					mafia.register(nick, id);
 					mafia.player(_num, id);
-					mafia.ui.eventChange(false);
 				}
 				catch (e)
 				{
@@ -2177,6 +2178,7 @@ var selectClubForm = new function()
 			mafia.sync(parseInt($("#sc-club").val()), 0, function()
 			{
 				mafia.ui.fillUsers();
+				$('#settings_img').attr("src", mafia.data().club.icon);
 			});
 	}
 
@@ -2224,8 +2226,7 @@ var settingsForm = new function()
 			'<tr><td>' + l('TStart') + ':</td><td><select id="t-start"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>' +
 			'<tr><td>' + l('TSounds') + ':</td><td><select id="t-sound"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>' +
 			'<tr><td>' + l('TBlinking') + ':</td><td><select id="t-blink"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>';
-		if (mafia.gameRules.flags & /*RULES_ANY_CLIENT*/0x1000)
-			html += '<tr><td>' + l('SimpVoting') + ':</td><td><select id="s-client"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>';
+		html += '<tr><td>' + l('SimpVoting') + ':</td><td><select id="s-client"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>';
 		html += '</table><script>settingsForm.init()</script>';
 	
 		dlg.okCancel(html, l('Settings'), 500, function()
@@ -2292,22 +2293,6 @@ var gameStartForm = new function()
 			html += '</select></td></tr>';
 		}
 		
-		if (game.rules_id <= 0)
-		{
-			var sRules = mafia.sRules();
-			html += '<tr><td width="200">' + l('Rules') + ':</td><td><select id="form-rules" onchange="gameStartForm.rules()"><option value="0"></option>';
-			for (var i in sRules)
-			{
-				var rules_id = sRules[i];
-				var name = club.rules[rules_id].name;
-				if (name.length == 0)
-				{
-					name = l('DefRules');
-				}
-				status += '<option value="' + rules_id + '">' + name + '</option>';
-			}
-			status += '</select></td></tr>';
-		}
 		html += '</table><script>gameStartForm.init()</script>';
 		
 		dlg.okCancel(html, l('PleaseEnter'), 500, onOk);
@@ -2328,7 +2313,7 @@ var gameStartForm = new function()
 	
 	this.rules = function()
 	{
-		mafia.setRules($('#form-rules').val());
+		mafia.rulesCode($('#form-rules').val());
 		gameStartForm.init();
 	}
 	

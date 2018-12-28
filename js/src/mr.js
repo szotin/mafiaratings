@@ -559,26 +559,29 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// rules
 	//--------------------------------------------------------------------------------------
-	this.createRules = function(clubId, onSuccess)
+	this.createRules = function(clubId, leagueId)
 	{
-		if (typeof onSuccess == "undefined")
-			onSuccess = refr;
-		dlg.form("rules_create.php?club=" + clubId, onSuccess);
-	}
-
-	this.editRules = function(clubId, rulesId)
-	{
-		var u = "rules_edit.php?club=" + clubId;
-		if (typeof rulesId != "undefined")
-			u += "&id=" + rulesId;
+		var u = "rules_edit.php?create&club_id=" + clubId;
+		if (typeof leagueId != "undefined")
+			u += "&league_id=" + leagueId;
 		dlg.form(u, refr);
 	}
 
-	this.deleteRules = function(clubId, rulesId, confirmMessage)
+	this.editRules = function(clubId, leagueId, rulesId)
+	{
+		var u = "rules_edit.php?club_id=" + clubId;
+		if (typeof leagueId != "undefined")
+			u += "&league_id=" + leagueId;
+		if (typeof rulesId != "undefined")
+			u += "&rules_id=" + rulesId;
+		dlg.form(u, refr);
+	}
+
+	this.deleteRules = function(rulesId, confirmMessage)
 	{
 		function _delete()
 		{
-			json.post("api/ops/rules.php", { op: 'delete', club_id: clubId, rules_id: rulesId }, refr);
+			json.post("api/ops/rules.php", { op: 'delete', rules_id: rulesId }, refr);
 		}
 
 		if (typeof confirmMessage == "string")

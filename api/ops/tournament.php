@@ -27,7 +27,7 @@ class ApiPage extends OpsApiPageBase
 		$event->minute = get_required_param('minute');
 		$event->duration = get_required_param('duration');
 		$event->price = get_optional_param('price', '');
-		$event->rules_id = get_optional_param('rules_id', $club->rules_id);
+		$event->rules_code = get_optional_param('rules_code', $club->rules_code);
 		$event->scoring_id = get_optional_param('scoring_id', $club->scoring_id);
 		$event->scoring_weight = get_optional_param('scoring_weight', 1);
 		$event->planned_games = get_optional_param('planned_games', 0);
@@ -129,7 +129,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('minute', 'Minute when the event starts.');
 		$help->request_param('duration', 'Event duration in seconds.');
 		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'empty.');
-		$help->request_param('rules_id', 'Rules id for this event.', 'default club rules are used.');
+		$help->request_param('rules_code', 'Rules for this event.', 'default club rules are used.');
 		$help->request_param('scoring_id', 'Scoring id for this event.', 'default club scoring system is used.');
 		$help->request_param('notes', 'Event notes. Just a text.', 'empty.');
 		$help->request_param('reg_on_attend', 'When set, users can register by clicking attend event. We recomend to set it.', '-');
@@ -180,7 +180,7 @@ class ApiPage extends OpsApiPageBase
 		$event->minute = get_required_param('minute');
 		$event->duration = get_required_param('duration');
 		$event->price = get_optional_param('price', '');
-		$event->rules_id = get_optional_param('rules_id', $club->rules_id);
+		$event->rules_code = get_optional_param('rules_code', $club->rules_code);
 		$event->scoring_id = get_optional_param('scoring_id', $club->scoring_id);
 		$event->scoring_weight = get_optional_param('scoring_weight', 1);
 		$event->planned_games = get_optional_param('planned_games', 0);
@@ -282,7 +282,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('minute', 'Minute when the event starts.');
 		$help->request_param('duration', 'Event duration in seconds.');
 		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'empty.');
-		$help->request_param('rules_id', 'Rules id for this event.', 'default club rules are used.');
+		$help->request_param('rules_code', 'Rules code for this event.', 'default club rules are used.');
 		$help->request_param('scoring_id', 'Scoring id for this event.', 'default club scoring system is used.');
 		$help->request_param('notes', 'Event notes. Just a text.', 'empty.');
 		$help->request_param('reg_on_attend', 'When set, users can register by clicking attend event. We recomend to set it.', '-');

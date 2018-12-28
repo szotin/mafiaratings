@@ -103,6 +103,34 @@ class Page extends UserPageBase
 			echo '<tr><td class="dark">'.get_label('Games moderated').':</td><td>' . $this->games_moderated . '</td></tr>';
 		}
 		
+		if (is_permitted(PERMISSION_CLUB_MANAGER, $this->club_id))
+		{
+			echo '<tr><td class="dark">'.get_label('Email').':</td><td>' . $this->email . '</td></tr>';
+			if ($this->flags & USER_FLAG_NO_PASSWORD)
+			{
+				$status = get_label('not activated');
+			}
+			else
+			{
+				$status = get_label('activated');
+			}
+			$query = new DbQuery('SELECT flags FROM user_clubs WHERE user_id = ? AND club_id = ?', $this->id, $this->club_id);
+			if ($row = $query->next())
+			{
+				list($club_flags) = $row;
+				$status .= '; ';
+				if ($club_flags & USER_CLUB_FLAG_SUBSCRIBED)
+				{
+					$status .= get_label('subscribed');
+				}
+				else
+				{
+					$status .= get_label('not subscribed');
+				}
+			}
+			echo '<tr><td class="dark">'.get_label('Account status').':</td><td>' . $status . '</td></tr>';
+		}
+		
 		$prev_club_id = 0;
 		$role_titles = array(
 			get_label('Total'),

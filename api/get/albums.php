@@ -58,13 +58,19 @@ if (isset($_REQUEST['len']))
 	$len = $_REQUEST['len'];
 }
 
+initiate_session();
+$response = NULL;
 try
 {
-	echo json_encode(new Albums($pos, $len));
+	$response = new Albums($pos, $len);
 }
 catch (Exception $e)
 {
-	send_error($e);
+	Exc::log($e, true);
+	$response = new stdClass();
+	$response->error = $e->getMessage();
 }
+
+echo json_encode($response);
 
 ?>

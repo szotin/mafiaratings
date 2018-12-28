@@ -1,6 +1,7 @@
 <?php
 
 require_once '../../include/api.php';
+require_once '../../include/rules.php';
 
 class Coming
 {
@@ -39,7 +40,7 @@ class Event
 	public $country;
 	public $notes;
 	public $langs;
-	public $rules_id;
+	public $rules;
 	public $coming;
 	public $date_str;
 	public $time_str;
@@ -49,8 +50,15 @@ class Event
 		list(
 			$this->id, $this->name, $this->price, $this->club_id, $this->club_name, $club_flags, $this->club_url, $this->start, $this->duration,
 			$this->addr_id, $this->addr, $this->addr_url, $this->timezone, $addr_flags, $this->city, $this->country,
-			$this->notes, $this->langs, $flags, $this->rules_id) = $row;
+			$this->notes, $this->langs, $flags, $rules_code) = $row;
 		
+		$this->id = (int)$this->id;
+		$this->club_id = (int)$this->club_id;
+		$this->start = (int)$this->start;
+		$this->duration = (int)$this->duration;
+		$this->addr_id = (int)$this->addr_id;
+		$this->langs = (int)$this->langs;
+		$this->rules = rules_code_to_object($rules_code);
 		$base = get_server_url() . '/';
 			
 		$this->addr_image = '';
@@ -85,16 +93,23 @@ class Upcoming
 	{
 		global $club_id, $_lang_code;
 	
+		$condition = new SQL();
+		if ($club_id > 0)
+		{
+			$condition->add(' AND e.club_id = ?', $club_id);
+		}
+	
 		$time = time();
-		list($this->count) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE start_time + duration > ' . $time . ' AND club_id = ?', $club_id);
+		list($this->count) = Db::record(get_label('event'), 'SELECT count(*) FROM events e WHERE e.start_time + e.duration > ?', $time, $condition);
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, ct.timezone, a.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', e.notes, e.languages, e.flags, e.rules_id FROM events e' .
+			'SELECT e.id, e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, ct.timezone, a.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', e.notes, e.languages, e.flags, e.rules FROM events e' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
-			' WHERE e.start_time + e.duration > ' . $time . ' AND e.club_id = ? ORDER BY e.start_time LIMIT ' . $pos . ',' . $len, $club_id);
+			' WHERE e.start_time + e.duration > ?', $time, $condition);
+		$query->add(' ORDER BY e.start_time LIMIT ' . $pos . ',' . $len);
 
 		$this->events = array();
 		while ($row = $query->next())
@@ -107,13 +122,13 @@ class Upcoming
 $pos = 0;
 if (isset($_REQUEST['start']))
 {
-	$pos = $_REQUEST['start'];
+	$pos = (int)$_REQUEST['start'];
 }
 
 $len = 5;
 if (isset($_REQUEST['count']))
 {
-	$len = $_REQUEST['count'];
+	$len = (int)$_REQUEST['count'];
 }
 
 $date_format = '';
@@ -128,13 +143,25 @@ if (isset($_REQUEST['tf']))
 	$time_format = $_REQUEST['tf'];
 }
 
+$club_id = 0;
+if (isset($_REQUEST['club_id']))
+{
+	$club_id = $_REQUEST['club_id'];
+}
+
+initiate_session();
+$response = NULL;
 try
 {
-	echo json_encode(new Upcoming($pos, $len, $date_format, $time_format));
+	$response = new Upcoming($pos, $len, $date_format, $time_format);
 }
 catch (Exception $e)
 {
-	send_error($e);
+	Exc::log($e, true);
+	$response = new stdClass();
+	$response->error = $e->getMessage();
 }
+
+echo json_encode($response);
 
 ?>

@@ -58,29 +58,22 @@
 // /*GAME_STATE_MAFIA_WON*/17
 // /*GAME_STATE_CIVIL_WON*/18
 // /*GAME_STATE_DAY_FREE_DISCUSSION*/20
-// /*GAME_STATE_DAY_GUESS3*/21
+// /*GAME_STATE_DAY_GUESS3*/21 // deprecated
 // /*GAME_STATE_BEST_PLAYER*/22 // deprecated
 // /*GAME_STATE_BEST_MOVE*/23 // deprecated
 // /*GAME_STATE_END*/25
 
-
-// /*RULES_FLAG_DEFENSIVE_ROUND*/1
-// /*RULES_FLAG_FREE_ROUND*/2
-// /*RULES_FLAG_DAY1_NO_KILL*/4
-// /*RULES_FLAG_NO_CRASH_4*/8
-// /*RULES_FLAG_NIGHT_KILL_CAN_NOMINATE*/16
-// /*RULES_FLAG_DAY1_NO_DIFF*/32
-// /*RULES_MASK_VOTING_CANCEL_MASK*/0xc0
-// /*RULES_VOTING_CANCEL_YES*/0x0
-// /*RULES_VOTING_CANCEL_NO*/0x40
-// /*RULES_VOTING_CANCEL_BY_NOM*/0x80
-// /*RULES_BEST_PLAYER*/0x100
-// /*RULES_BEST_MOVE*/0x200
-// /*RULES_GUESS_MAFIA*/0x400
-// /*RULES_SIMPLIFIED_CLIENT*/0x800
-// /*RULES_ANY_CLIENT*/0x1000
-// /*RULES_MUTE_NEXT*/0x2000
-// /*RULES_MUTE_CRIT*/0x4000
+// /*RULES_FIRST_DAY_VOTING*/8
+// /*RULES_FIRST_DAY_VOTING_TO_TALK*/1
+// /*RULES_SPLIT_ON_FOUR*/11
+// /*RULES_SPLIT_ON_FOUR_PROHIBITED*/1
+// /*RULES_KILLED_NOMINATE*/13
+// /*RULES_KILLED_NOMINATE_ALLOWED*/1
+// /*RULES_ANTIMONSTER*/19
+// /*RULES_ANTIMONSTER_NO*/1
+// /*RULES_ANTIMONSTER_NOMINATED*/2
+// /*RULES_BEST_GUESS*/15
+// /*RULES_BEST_GUESS_YES*/0
 
 // /*STATE_CHANGE_FLAG_RESET_TIMER*/1
 // /*STATE_CHANGE_FLAG_CLUB_CHANGED*/2
@@ -91,6 +84,7 @@
 //------------------------------------------------------------------------------------------
 var mafia = new function()
 {
+	var _version = 0;
 	var _lDirty = 0;
 	var _gDirty = 0;
 	var _data = null;
@@ -99,7 +93,6 @@ var mafia = new function()
 	var _sortedPlayers;
 	var _sortedRegs;
 	var _sortedEvents;
-	var _sortedRules;
 	
 	var _stateChange = null;
 	var _dirtyEvent = null;
@@ -115,12 +108,9 @@ var mafia = new function()
 	var _syncCount = 0;
 	var _demoEvent = null;
 	
-	this.gameRules = null;
-	
 	this.sPlayers = function() { return _sortedPlayers; }
 	this.sReg = function(eventId) { return _sortedRegs[eventId]; }
 	this.sEvents = function() { return _sortedEvents; }
-	this.sRules = function() { return _sortedRules; }
 	
 	function _dirty(l, g)
 	{
@@ -260,7 +250,7 @@ var mafia = new function()
 				{
 					id: 0,
 					club_id: club.id,
-					rules_id: club.rules_id,
+					rules_code: club.rules_code,
 					name: l("DemoEvent"),
 					start_time: 0,
 					duration: 4294967295,
@@ -317,14 +307,6 @@ var mafia = new function()
 			}
 			_sortedEvents.sort(function(a, b) { return events[a].start_time - events[b].start_time; });
 			
-			var rules = club.rules;
-			_sortedRules = [];
-			for (var id in rules)
-			{
-				_sortedRules.push(id);
-			}
-			_sortedRules.sort(function(a, b) { return rules[a].name.toLocaleLowerCase().localeCompare(rules[b].name.toLocaleLowerCase()); });
-			
 			if (typeof _data['requests'] == "undefined")
 				_data['requests'] = [];
 			
@@ -332,13 +314,6 @@ var mafia = new function()
 			if (game.votings != null && game.votings.length > 0)
 			{
 				_curVoting = game.votings[game.votings.length - 1];
-			}
-			
-			mafia.gameRules = club.rules[game.rules_id];
-			if (typeof mafia.gameRules == "undefined")
-			{
-				game.rules_id = _sortedRules[0];
-				mafia.gameRules = club.rules[game.rules_id];
 			}
 			
 			if (game.lang == 0 || ((game.lang - 1) & game.lang) != 0)
@@ -366,7 +341,7 @@ var mafia = new function()
 			
 			if (typeof _data.fail == 'string' && _failEvent != null)
 			{
-				_failEvent(_data.fail);
+				_failEvent(_data.fail, false);
 			}
 		}
 		return _data;
@@ -430,6 +405,18 @@ var mafia = new function()
 			if (typeof data.console == "object")
 				for (var i = 0; i < data.console.length; ++i)
 					console.log('Sync log: ' + data.console[i]);
+				
+			if (_version != data.version)
+			{
+				if (_failEvent != null)
+				{
+					_failEvent(l('ErrVersion', _version, data.version), true);
+				}
+				else
+				{
+					window.location.reload(true);
+				}
+			}
 				
 			_dirty(_lDirty, _gDirty - oldDirty);
 			_syncCount = 0;
@@ -591,10 +578,7 @@ var mafia = new function()
 			game.event_id = event_id;
 			game.moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : _data.user.id;
 			game.lang = parseInt(event.langs);
-			if (typeof club.rules[event.rules_id] == "undefined")
-				game.rules_id = club.rules_id;
-			else
-				game.rules_id = event.rules_id;
+			game.rules_code = event.rules_code;
 			if ((game.lang - 1) & game.lang)
 			{
 				game.lang = 0;
@@ -631,7 +615,7 @@ var mafia = new function()
 		events[_curEventId] =
 		{
 			id: _curEventId,
-			rules_id: event.rules,
+			rules_code: event.rules_code,
 			name: event.name,
 			start_time: now,
 			langs: event.langs,
@@ -838,7 +822,7 @@ var mafia = new function()
 	this.canNext = function()
 	{
 		var game = _data.game;
-		return game.gamestate != /*GAME_STATE_NOT_STARTED*/0 || (game.moder_id != 0 && game.lang != 0 && game.rules_id > 0);
+		return game.gamestate != /*GAME_STATE_NOT_STARTED*/0 || (game.moder_id != 0 && game.lang != 0);
 	}
 	
 	this.canRestart = function()
@@ -846,17 +830,22 @@ var mafia = new function()
 		return _data.game.gamestate > /*GAME_STATE_NOT_STARTED*/0;
 	}
 	
-	this.setRules = function(rules_id)
+	this.getRule = function(ruleNum)
 	{
-		if (_data.game.rules_id != rules_id)
+		return _data.game.rules_code.substr(ruleNum, 1);
+	}
+	
+	this.rulesCode = function(code)
+	{
+		if (typeof code == "undefined")
 		{
-			var rules = _data.club.rules[rules_id]
-			if (typeof rules != "undefined")
-			{
-				_data.game.rules_id = rules_id;
-				mafia.gameRules = rules;
-				dirty();
-			}
+			return _data.game.rules_code;
+		}
+		
+		if (_data.game.rules_code != code)
+		{
+			_data.game.rules_code = code;
+			dirty();
 		}
 	}
 	
@@ -945,7 +934,6 @@ var mafia = new function()
 	function _onPlayerStateChange(player, reason)
 	{
 		var game = _data.game;
-		var cancelingRules = (mafia.gameRules.flags & /*RULES_MASK_VOTING_CANCEL_MASK*/0xc0);
 
 		// check if canceling/uncanceling voting needed
 		switch (reason)
@@ -964,9 +952,10 @@ var mafia = new function()
 						{
 							_curVoting.canceled += 2;
 							var nomIdx = _getNomIndex(player.number);
+							var antimonster = mafia.getRule(/*RULES_ANTIMONSTER*/19);
 							if (
-								cancelingRules == /*RULES_VOTING_CANCEL_NO*/0x40 ||
-								(cancelingRules == /*RULES_VOTING_CANCEL_BY_NOM*/0x80 && nomIdx < 0))
+								antimonster == /*RULES_ANTIMONSTER_NO*/1 ||
+								(antimonster == /*RULES_ANTIMONSTER_NOMINATED*/2 && nomIdx < 0))
 							{
 								if ((_curVoting.canceled & 1) == 0)
 									_duplicateVoting(true);
@@ -1411,7 +1400,7 @@ var mafia = new function()
 					throw l("ErrGameNotReady");
 				}
 
-				if (((mafia.gameRules.flags & /*RULES_SIMPLIFIED_CLIENT*/0x800) || ((mafia.gameRules.flags & /*RULES_ANY_CLIENT*/0x1000) && (_data.user.settings.flags & /*S_FLAG_SIMPLIFIED_CLIENT*/0x1))))
+				if (_data.user.settings.flags & /*S_FLAG_SIMPLIFIED_CLIENT*/0x1)
 				{
 					game.flags |= /*GAME_FLAG_SIMPLIFIED_CLIENT*/2;
 				}
@@ -1428,8 +1417,6 @@ var mafia = new function()
 				game.current_nominant = -1;
 				game.table_opener = 0;
 				
-				mafia.gameRules = _data.club.rules[game.rules_id];
-
 				game.votings = [];
 				_newVoting(0);
 				
@@ -1456,35 +1443,10 @@ var mafia = new function()
 					_addNominant();
 					game.current_nominant = -1;
 				}
-				if ((mafia.gameRules.flags & /*RULES_GUESS_MAFIA*/0x400) != 0 && game.round == 1 && game.player_speaking >= 0)
-				{
-					game.gamestate = /*GAME_STATE_DAY_GUESS3*/21;
-				}
-				else if ((mafia.gameRules.flags & /*RULES_FLAG_FREE_ROUND*/2) != 0)
-				{
-					game.gamestate = /*GAME_STATE_DAY_FREE_DISCUSSION*/20;
-					game.player_speaking = -1;
-				}
-				else
-				{
-					game.gamestate = /*GAME_STATE_DAY_PLAYER_SPEAKING*/5;
-					game.player_speaking = mafia.nextPlayer(-1);
-				}
+				game.gamestate = /*GAME_STATE_DAY_PLAYER_SPEAKING*/5;
+				game.player_speaking = mafia.nextPlayer(-1);
 				break;
 				
-			case /*GAME_STATE_DAY_GUESS3*/21:
-				if ((mafia.gameRules.flags & /*RULES_FLAG_FREE_ROUND*/2) != 0)
-				{
-					game.gamestate = /*GAME_STATE_DAY_FREE_DISCUSSION*/20;
-					game.player_speaking = -1;
-				}
-				else
-				{
-					game.gamestate = /*GAME_STATE_DAY_PLAYER_SPEAKING*/5;
-					game.player_speaking = mafia.nextPlayer(-1);
-				}
-				break;
-
 			case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
 				game.gamestate = /*GAME_STATE_DAY_PLAYER_SPEAKING*/5;
 				game.player_speaking = mafia.nextPlayer(-1);
@@ -1513,7 +1475,7 @@ var mafia = new function()
 							break;
 
 						case 1:
-							if ((mafia.gameRules.flags & /*RULES_FLAG_DAY1_NO_DIFF | RULES_FLAG_DAY1_NO_KILL*/36) == 0 && game.round == 0)
+							if (mafia.getRule(/*RULES_FIRST_DAY_VOTING*/8) != /*RULES_FIRST_DAY_VOTING_TO_TALK*/1 && game.round == 0)
 							{
 								game.gamestate = /*GAME_STATE_NIGHT_START*/11;
 								_newVoting(game.round + 1);
@@ -1533,15 +1495,7 @@ var mafia = new function()
 						default:
 							game.current_nominant = 0;
 							game.player_speaking = _curVoting.nominants[0].player_num;
-							if (!mafia.isDefenciveRoundThisDay())
-							{
-								game.gamestate = /*GAME_STATE_VOTING*/8;
-							}
-							else
-							{
-								game.gamestate = /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10;
-							}
-							//}
+							game.gamestate = /*GAME_STATE_VOTING*/8;
 							break;
 					}
 				}
@@ -1621,7 +1575,7 @@ var mafia = new function()
 							game.player_speaking = mafia.votingWinners()[game.current_nominant];
 						}
 					}
-					else if (_curVoting.canceled > 0 || (mafia.playersCount() == 4 && (mafia.gameRules.flags & /*RULES_FLAG_NO_CRASH_4*/8) != 0))
+					else if (_curVoting.canceled > 0 || (mafia.playersCount() == 4 && mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11) == /*RULES_SPLIT_ON_FOUR_PROHIBITED*/1))
 					{
 						// A special case: 4 players, multiple winners - no second voting. Nobody is killed.
 						game.gamestate = /*GAME_STATE_NIGHT_START*/11;
@@ -1791,20 +1745,12 @@ var mafia = new function()
 						switch (game.gamestate)
 						{
 							case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-								/*if ((mafia.gameRules.flags & 2) != 0)
-								{
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								}*/
 								if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
 								{
 									_removeNominant();
 								}
 								break;
 							case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-								/*if ((mafia.gameRules.flags & 2) == 0)
-								{
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								}*/
 								if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
 								{
 									_removeNominant();
@@ -1817,10 +1763,6 @@ var mafia = new function()
 						break;
 
 					case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-						/*if (game.gamestate != 5 || (mafia.gameRules.flags & 2) == 0)
-						{
-							_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-						}*/
 						if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
 						{
 							_removeNominant();
@@ -1854,21 +1796,6 @@ var mafia = new function()
 									_resurrectPlayer(winners[0]);
 								}
 								break;
-							/*case /GAME_STATE_VOTING/8:
-								if (mafia.isDefenciveRoundThisDay())
-								{
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								}
-								break;*/
-							/*case /GAME_STATE_VOTING_NOMINANT_SPEAKING/10:
-								if (!mafia.isDefenciveRoundThisDay())
-								{
-									_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								}
-								break;*/
-							/*default:
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								break;*/
 						}
 						if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
 						{
@@ -2295,14 +2222,9 @@ var mafia = new function()
 	
 	this.isKillingThisDay = function()
 	{
-		return _data.game.round > 0 || (mafia.gameRules.flags & /*RULES_FLAG_DAY1_NO_KILL*/4) == 0;
+		return _data.game.round > 0 || mafia.getRule(/*RULES_FIRST_DAY_VOTING*/8) != /*RULES_FIRST_DAY_VOTING_TO_TALK*/1;
 	}
 	
-	this.isDefenciveRoundThisDay = function()
-	{
-		return (mafia.gameRules.flags & /*RULES_FLAG_DEFENSIVE_ROUND*/1) != 0 && mafia.isKillingThisDay();
-	}
-
 	this.warnPlayer = function(num)
 	{
 		var game = _data.game;
@@ -2332,16 +2254,13 @@ var mafia = new function()
 			switch (++player.warnings)
 			{
 				case 3:
-					if (mafia.gameRules.flags & /*RULES_MUTE_NEXT*/0x2000)
-						player.mute = game.round + 1;
-					else switch (game.gamestate)
+					switch (game.gamestate)
 					{
 						case /*GAME_STATE_NOT_STARTED*/0:
 						case /*GAME_STATE_NIGHT0_START*/1:
 						case /*GAME_STATE_NIGHT0_ARRANGE*/2:
 						case /*GAME_STATE_DAY_START*/3:
 						case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-						case /*GAME_STATE_DAY_GUESS3*/21:
 							player.mute = game.round;
 							break;
 						
@@ -2377,7 +2296,7 @@ var mafia = new function()
 	this.nominatePlayer = function(num)
 	{
 		var game = _data.game;
-		if (game.gamestate == /*GAME_STATE_DAY_PLAYER_SPEAKING*/5 || (game.gamestate == /*GAME_STATE_DAY_START*/3 && (mafia.gameRules.flags & /*RULES_FLAG_NIGHT_KILL_CAN_NOMINATE*/16) != 0))
+		if (game.gamestate == /*GAME_STATE_DAY_PLAYER_SPEAKING*/5 || (game.gamestate == /*GAME_STATE_DAY_START*/3 && mafia.getRule(/*RULES_KILLED_NOMINATE*/13) == /*RULES_KILLED_NOMINATE_ALLOWED*/1))
 		{   
 			if (num < 0 || game.players[num].state == /*PLAYER_STATE_ALIVE*/0)
 			{
@@ -2609,7 +2528,7 @@ var mafia = new function()
 			best_player: -1,
 			best_move: -1,
 			guess3: null,
-			rules_id: _data.game.rules_id
+			rules_code: _data.game.rules_code
 		}
 		
 		for (var i = 0; i < 10; ++i)
