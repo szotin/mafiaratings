@@ -765,7 +765,6 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		$club_id = $jhkjk;
 		if (isset($_REQUEST['club_id']))
 		{
 			$club_id = $_REQUEST['club_id'];
