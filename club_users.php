@@ -88,10 +88,10 @@ class Page extends ClubPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker">';
 		echo '<td width="58"></td>';
-		echo '<td colspan="3">' . get_label('User name') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
+		echo '<td colspan="4">' . get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, uc.flags, c.id, c.name, c.flags' .
+			'SELECT u.id, u.name, u.email, u.flags, uc.flags, c.id, c.name, c.flags' .
 			' FROM user_clubs uc' .
 			' JOIN users u ON uc.user_id = u.id' .
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
@@ -100,7 +100,7 @@ class Page extends ClubPageBase
 			$this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $flags, $user_club_flags, $club_id, $club_name, $club_flags) = $row;
+			list($id, $name, $email, $flags, $user_club_flags, $club_id, $club_name, $club_flags) = $row;
 		
 			if ($id == $this->user_id)
 			{
@@ -143,6 +143,12 @@ class Page extends ClubPageBase
 			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
+			echo '<td width="200">';
+			if (is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
+			{
+				echo $email;
+			}
+			echo '</td>';
 			echo '<td width="50" align="center">';
 			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
 			echo '</td>';

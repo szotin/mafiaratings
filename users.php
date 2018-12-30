@@ -102,10 +102,10 @@ class Page extends GeneralPageBase
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="th darker">';
 		echo '<td width="58"></td>';
-		echo '<td colspan="3">' . get_label('User name') . '</td><td width="40"></td></tr>';
+		echo '<td colspan="4">' . get_label('User name') . '</td><td width="40"></td></tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, c.id,
+			'SELECT u.id, u.name, u.email, u.flags, c.id,
 			c.name, c.flags' . 
 			', SUM(IF((uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ') = ' . USER_CLUB_PERM_PLAYER . ', 1, 0))' . 
 			', SUM(IF((uc.flags & ' . (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ') = ' . USER_CLUB_PERM_MODER . ', 1, 0))' . 
@@ -116,7 +116,7 @@ class Page extends GeneralPageBase
 		$query->add(' GROUP BY u.id ORDER BY u.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list($id, $name, $flags, $club_id, $club_name, $club_flags, $clubs_player, $clubs_moder, $clubs_manager) = $row;
+			list($id, $name, $email, $flags, $club_id, $club_name, $club_flags, $clubs_player, $clubs_moder, $clubs_manager) = $row;
 		
 			if ($id == $this->user_id)
 			{
@@ -144,6 +144,7 @@ class Page extends GeneralPageBase
 			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
 			echo '</a></td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
+			echo '<td width="200">' . $email . '</td>';
 			echo '<td width="50" align="center">';
 			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
 			echo '</td>';
