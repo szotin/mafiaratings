@@ -637,7 +637,7 @@ function goTo(url, params)
 
 function refr()
 {
-	window.location.replace(document.URL);
+	window.location.reload();
 }
 
 function login(name, pwd, rem, onSuccess, onError)
