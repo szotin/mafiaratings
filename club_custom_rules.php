@@ -1,6 +1,7 @@
 <?php
 
 require_once 'include/club.php';
+require_once 'include/league.php';
 
 define('PAGE_SIZE', 20);
 
@@ -23,21 +24,23 @@ class Page extends ClubPageBase
 		echo '<tr><td><a href="#" onclick="mr.editRules(' . $this->id . ')" title="' . get_label('Edit [0] in [1]', get_label('[default]'), $this->name) . '"><img src="images/edit.png" border="0"></a>';
 		echo '</td><td>' . get_label('[default]') . '</td></tr>';
 		
-		$query = new DbQuery('SELECT l.id, l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $this->id);
+		$query = new DbQuery('SELECT l.id, l.name, l.flags FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $this->id);
 		while ($row = $query->next())
 		{
-			list ($league_id, $name) = $row;
-			echo '<tr><td class="dark"><a href="#" onclick="mr.editRules(' . $this->id . ', ' . $league_id . ')" title="' . get_label('Edit [0] in [1]', $name, $this->name) . '"><img src="images/edit.png" border="0"></a>';
-			echo '</td><td>' . $name . '</td></tr>';
+			list ($league_id, $league_name, $league_flags) = $row;
+			echo '<tr><td class="dark"><a href="#" onclick="mr.editRules(' . $this->id . ', ' . $league_id . ')" title="' . get_label('Edit [0] in [1]', $league_name, $this->name) . '"><img src="images/edit.png" border="0"></a>';
+			echo '</td><td><table class="transp" width="100%"><tr><td width="30">';
+			show_league_pic($league_id, $league_name, $league_flags, ICONS_DIR, 24, 24);
+			echo '</td><td>' . $league_name . '</td></tr></table></td></tr>';
 		}
 
 		$query = new DbQuery('SELECT id, name FROM club_rules WHERE club_id = ? ORDER BY name', $this->id);
 		while ($row = $query->next())
 		{
-			list ($rules_id, $name) = $row;
-			echo '<tr><td class="dark"><a href="#" onclick="mr.editRules(' . $this->id . ', undefined, ' . $rules_id . ')" title="' . get_label('Edit [0] in [1]', $name, $this->name) . '"><img src="images/edit.png" border="0"></a>';
-			echo '<a href="#" onclick="mr.deleteRules(' . $rules_id . ', \'' . get_label('Are you sure you want to delete rules [0]?', $name) . '\')" title="' . get_label('Delete [0] in [1]', $name, $this->name) . '"><img src="images/delete.png" border="0"></a>';
-			echo '</td><td>' . $name . '</td></tr>';
+			list ($rules_id, $rules_name) = $row;
+			echo '<tr><td class="dark"><a href="#" onclick="mr.editRules(' . $this->id . ', undefined, ' . $rules_id . ')" title="' . get_label('Edit [0] in [1]', $rules_name, $this->name) . '"><img src="images/edit.png" border="0"></a>';
+			echo '<a href="#" onclick="mr.deleteRules(' . $rules_id . ', \'' . get_label('Are you sure you want to delete rules [0]?', $rules_name) . '\')" title="' . get_label('Delete [0] in [1]', $rules_name, $this->name) . '"><img src="images/delete.png" border="0"></a>';
+			echo '</td><td>' . $rules_name . '</td></tr>';
 		}
 		echo '</table>';
 	}

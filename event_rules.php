@@ -28,7 +28,7 @@ class Page extends EventPageBase
 ?>
 		function filter(view)
 		{
-			refr({ view: view });
+			goTo({ view: view });
 		}
 <?php	
 	}

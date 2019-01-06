@@ -75,7 +75,7 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('league'),
-				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, '{}', ' . SCORING_DEFAULT_ID . ')',
+				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ' . SCORING_DEFAULT_ID . ')',
 				$name, $langs, $url, $email, $phone);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			
@@ -156,8 +156,8 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
-		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id) = Db::record(get_label('league'),
-			'SELECT name, web_site, email, phone, langs, scoring_id FROM leagues c WHERE id = ?', $league_id);
+		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_rules) = Db::record(get_label('league'),
+			'SELECT name, web_site, email, phone, langs, scoring_id, rules FROM leagues c WHERE id = ?', $league_id);
 		
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
@@ -169,6 +169,43 @@ class ApiPage extends OpsApiPageBase
 		$phone = get_optional_param('phone', $old_phone);
 		$scoring_id = get_optional_param('scoring_id', $old_scoring_id);
 		$langs = (int)get_optional_param('langs', $old_langs);
+		$rules = get_optional_param('rules', $old_rules);
+		if (!is_string($rules))
+		{
+			foreach ($rules as $rule => $values)
+			{
+				if (is_string($values))
+				{
+					switch (strtolower($values))
+					{
+						case 'true':
+							$rules[$rule] = true;
+							break;
+						case 'false':
+							$rules[$rule] = false;
+							break;
+					}
+				}
+				else
+				{
+					for ($i = 0; $i < count($values); ++$i)
+					{
+						switch (strtolower($values[$i]))
+						{
+							case 'true':
+								$values[$i] = true;
+								break;
+							case 'false':
+								$values[$i] = false;
+								break;
+						}
+					}
+				}
+			}
+			
+			$rules = json_encode($rules);
+		}
+		
 		if ($langs == 0)
 		{
 			throw new Exc(get_label('Please select at least one language.'));
@@ -182,16 +219,35 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'), 
-			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $scoring_id, $league_id);
+			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ?, rules = ? WHERE id = ?',
+			$name, $url, $langs, $email, $phone, $scoring_id, $rules, $league_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
-			$log_details->name = $name;
-			$log_details->url = $url;
-			$log_details->langs = $langs;
-			$log_details->email = $email;
-			$log_details->phone = $phone;
+			if ($name != $old_name)
+			{
+				$log_details->name = $name;
+			}
+			if ($url != $old_url)
+			{
+				$log_details->url = $url;
+			}
+			if ($langs != $old_langs)
+			{
+				$log_details->langs = $langs;
+			}
+			if ($email != $old_email)
+			{
+				$log_details->email = $email;
+			}
+			if ($phone != $old_phone)
+			{
+				$log_details->phone = $phone;
+			}
+			if ($rules != $old_rules)
+			{
+				$log_details->rules = $rules;
+			}
 			db_log(LOG_OBJECT_LEAGUE, 'changed', $log_details, $league_id, NULL, $league_id);
 		}
 		Db::commit();
@@ -235,7 +291,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, '{}', ' . SCORING_DEFAULT_ID . ')',
+			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ' . SCORING_DEFAULT_ID . ')',
 			$name, $langs, $url, $email, $phone);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
@@ -462,18 +518,22 @@ class ApiPage extends OpsApiPageBase
 		$flags = $old_flags;
 		if (is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
 		{
-			$flags = $old_flags & ~LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED;
+			$flags = $flags & ~LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED;
 		}
 		if (is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 		{
-			$flags = $old_flags & ~LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED;
+			$flags = $flags & ~LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED;
 		}
 		
 		if ($flags != $old_flags)
 		{
 			if ($insert)
 			{
-				Db::exec(get_label('league'), 'INSERT INTO league_clubs (league_id, club_id, flags) VALUES (?, ?, ?)', $league_id, $club_id, $flags);
+				list($rules_code) = Db::record(get_label('club'), 'SELECT rules FROM clubs WHERE id = ?', $club_id);
+				list($rules_filter) = Db::record(get_label('league'), 'SELECT rules FROM leagues WHERE id = ?', $league_id);
+				$rules_filter = json_decode($rules_filter);
+				$rules_code = correct_rules($rules_code, $rules_filter);
+				Db::exec(get_label('league'), 'INSERT INTO league_clubs (league_id, club_id, rules, flags) VALUES (?, ?, ?, ?)', $league_id, $club_id, $rules_code, $flags);
 			}
 			else
 			{
@@ -484,7 +544,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
 				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_admins l JOIN users u ON u.id = l.user_id WHERE l.id = ?', $league_id);
+				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_managers l JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $league_id);
 				while ($row = $query->next())
 				{
 					list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -509,7 +569,7 @@ class ApiPage extends OpsApiPageBase
 						'sender' => new Tag($_profile->user_name));
 					$body = parse_tags($body, $tags);
 					$text_body = parse_tags($text_body, $tags);
-					send_email($admin_email, $body, $text_body, $subj);
+					send_email($user_email, $body, $text_body, $subj);
 				}
 			}
 			
@@ -542,7 +602,7 @@ class ApiPage extends OpsApiPageBase
 						'sender' => new Tag($_profile->user_name));
 					$body = parse_tags($body, $tags);
 					$text_body = parse_tags($text_body, $tags);
-					send_email($admin_email, $body, $text_body, $subj);
+					send_email($user_email, $body, $text_body, $subj);
 				}
 			}
 			$this->response['flags'] = $flags;
@@ -590,41 +650,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
 			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_admins l JOIN users u ON u.id = l.user_id WHERE l.id = ?', $league_id);
-			while ($row = $query->next())
-			{
-				list($user_id, $user_name, $user_email, $user_lang) = $row;
-				if (!is_valid_lang($user_lang))
-				{
-					$user_lang = get_lang($league_langs);
-					if (!is_valid_lang($user_lang))
-					{
-						$user_lang = LANG_RUSSIAN;
-					}
-				}
-				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_club_remove_league.php';
-				
-				$tags = array(
-					'root' => new Tag(get_server_url()),
-					'user_id' => new Tag($user_id),
-					'user_name' => new Tag($user_name),
-					'league_id' => new Tag($league_id),
-					'league_name' => new Tag($league_name),
-					'club_id' => new Tag($club_id),
-					'club_name' => new Tag($club_name),
-					'message' => new Tag($message),
-					'sender' => new Tag($_profile->user_name));
-				$body = parse_tags($body, $tags);
-				$text_body = parse_tags($text_body, $tags);
-				send_email($admin_email, $body, $text_body, $subj);
-			}
-		}
-		
-		if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
-		{
-			list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
-			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_CLUB_PERM_MANAGER, $club_id);
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_managers l JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $league_id);
 			while ($row = $query->next())
 			{
 				list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -650,7 +676,41 @@ class ApiPage extends OpsApiPageBase
 					'sender' => new Tag($_profile->user_name));
 				$body = parse_tags($body, $tags);
 				$text_body = parse_tags($text_body, $tags);
-				send_email($admin_email, $body, $text_body, $subj);
+				send_email($user_email, $body, $text_body, $subj);
+			}
+		}
+		
+		if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
+		{
+			list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_CLUB_PERM_MANAGER, $club_id);
+			while ($row = $query->next())
+			{
+				list($user_id, $user_name, $user_email, $user_lang) = $row;
+				if (!is_valid_lang($user_lang))
+				{
+					$user_lang = get_lang($league_langs);
+					if (!is_valid_lang($user_lang))
+					{
+						$user_lang = LANG_RUSSIAN;
+					}
+				}
+				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_club_remove_league.php';
+				
+				$tags = array(
+					'root' => new Tag(get_server_url()),
+					'user_id' => new Tag($user_id),
+					'user_name' => new Tag($user_name),
+					'league_id' => new Tag($league_id),
+					'league_name' => new Tag($league_name),
+					'club_id' => new Tag($club_id),
+					'club_name' => new Tag($club_name),
+					'message' => new Tag($message),
+					'sender' => new Tag($_profile->user_name));
+				$body = parse_tags($body, $tags);
+				$text_body = parse_tags($text_body, $tags);
+				send_email($user_email, $body, $text_body, $subj);
 			}
 		}
 		Db::commit();

@@ -68,9 +68,6 @@ class Page extends GeneralPageBase
 			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="bottom" class="light">';
 			
 			echo '<table class="transp" width="100%">';
-			echo '<tr><td align="center">';
-			echo '<b>' . $name . '</b><br><img src="images/' . ICONS_DIR . 'league.png" width="' . ICON_WIDTH . '" height="' . ICON_HEIGHT . '">';
-			echo '</td></tr>';
 			if ($admin)
 			{
 				echo '<tr class="darker"><td align="left" style="padding:2px;">';
@@ -78,6 +75,9 @@ class Page extends GeneralPageBase
 				echo '<button class="icon" onclick="mr.declineLeague(' . $id . ')" title="' . get_label('Decline [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
 				echo '</td></tr>';
 			}
+			echo '<tr><td align="center">';
+			echo '<img src="images/' . ICONS_DIR . 'league.png" width="' . ICON_WIDTH . '" height="' . ICON_HEIGHT . '"><br><b>' . $name . '</b>';
+			echo '</td></tr>';
 			echo '</table>';
 			echo '</td>';
 			
@@ -164,17 +164,17 @@ class Page extends GeneralPageBase
 			
 			echo '<table class="transp" width="100%">';
 			
-			echo '<tr><td align="center"><a href="league_main.php?bck=1&id=' . $id . '">';
-			echo '<b>' . $name . '</b><br>';
-			show_league_pic($id, $name, $flags, ICONS_DIR);
-			echo '</a></td></tr>';
-			
 			if ($_profile != NULL)
 			{
 				echo '<tr class="darker"><td align="left" style="padding:2px;">';
 				show_league_buttons($id, $name, $flags);
 				echo '</td></tr>';
 			}
+			
+			echo '<tr><td align="center"><a href="league_main.php?bck=1&id=' . $id . '">';
+			show_league_pic($id, $name, $flags, ICONS_DIR);
+			echo '<br><b>' . $name . '</b>';
+			echo '</a></td></tr>';
 			
 			echo '</table>';
 			echo '</td>';

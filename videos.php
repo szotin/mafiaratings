@@ -136,7 +136,7 @@ class Page extends GeneralPageBase
 ?>
 		function filter()
 		{
-			refr({ 'langs': mr.getLangs() });
+			goTo({ 'langs': mr.getLangs() });
 		}
 <?php	
 	}

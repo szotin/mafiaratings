@@ -350,6 +350,48 @@ var mr = new function()
 		dlg.form("league_decline.php?id=" + id, refr);
 	}
 	
+	this.addLeagueManager = function(leagueId)
+	{
+		dlg.form("league_add_manager.php?league_id=" + leagueId, refr, 500);
+	}
+	
+	this.removeLeagueManager = function(leagueId, userId, confirmMessage)
+	{
+		function _remove()
+		{
+			json.post("api/ops/league.php", { op: "remove_manager", league_id: leagueId, user_id: userId }, refr);
+		}
+		
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _remove);
+		}
+		else
+		{
+			_remove();
+		}
+	}
+	
+	this.editLeagueRules = function(leagueId)
+	{
+		dlg.form("league_rules_edit.php?league_id=" + leagueId, refr);
+	}
+	
+	this.addLeagueClub = function(leagueId)
+	{
+		dlg.form("league_add_club.php?league_id=" + leagueId, refr, 500);
+	}
+	
+	this.removeLeagueClub = function(leagueId, clubId)
+	{
+		dlg.form("league_remove_club.php?league_id=" + leagueId + "&club_id=" + clubId, refr, 500);
+	}
+	
+	this.acceptLeagueClub = function(leagueId, clubId)
+	{
+		json.post("api/ops/league.php", { op: "add_club", league_id: leagueId, club_id: clubId}, refr);
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// country
 	//--------------------------------------------------------------------------------------
@@ -443,7 +485,7 @@ var mr = new function()
 	{
 		dlg.form("event_attend.php?id=" + id, function()
 		{
-			refr(url);
+			goTo(url);
 		});
 	}
 
@@ -452,9 +494,9 @@ var mr = new function()
 		json.post("api/ops/event.php", { op: "attend", event_id: id, odds: 0 }, function()
 		{
 			if (typeof message == "undefined")
-				refr(url);
+				goTo(url);
 			else
-				dlg.info(message, null, null, function() { refr(url); });
+				dlg.info(message, null, null, function() { goTo(url); });
 		});
 	}
 
@@ -783,7 +825,7 @@ var mr = new function()
 	{
 		dlg.yesNo(confirmMessage, null, null, function()
 		{
-			json.post("api/ops/video.php", { 'op': 'delete', 'video_id': videoId  }, function() { refr(urlToGo); });
+			json.post("api/ops/video.php", { 'op': 'delete', 'video_id': videoId  }, function() { goTo(urlToGo); });
 		});
 	}
 	

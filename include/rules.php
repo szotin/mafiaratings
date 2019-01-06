@@ -360,44 +360,68 @@ function set_rule($rules_code, $rule_index, $rule)
 	return substr($rules_code, 0, $rule_index) . $rule . substr($rules_code, $rule_index + 1);
 }
 
-// returns the list of the rules that violate rules filter
-function get_rules_violation_list($rules_code, $filter)
+function is_rule_allowed($rules_filter, $rule_num, $rule_value)
 {
 	global $_rules_options;
 	
-	if (is_string($filter))
+	if ($rules_filter == null)
 	{
-		$filter = json_decode($filter, true, 512, JSON_THROW_ON_ERROR);
+		return true;
 	}
 	
-	$delimiter = '';
-	$violated_rules = '';
-	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	$rule = $_rules_options[$rule_num];
+	$rule_name = $rule[RULE_OPTION_NAME];
+	if (!isset($rules_filter->$rule_name))
 	{
-		$rule = $_rules_options[$i];
-		$RULE_OPTION_NAME = $rule[RULE_OPTION_NAME];
-		if (isset($filter->$RULE_OPTION_NAME))
+		return true;
+	}
+	
+	$allowed_rules = $rules_filter->$rule_name;
+	if (count($allowed_rules) <= 0)
+	{
+		return true;
+	}
+	
+	$rule_value_name = $rule[RULE_OPTION_VALUES][$rule_value];
+	if (is_array($allowed_rules))
+	{
+		foreach ($allowed_rules as $option)
 		{
-			$rule_value = $rule[RULE_OPTION_VALUES][get_rule($rules_code, $i)];
-			$options = $filter->$RULE_OPTION_NAME;
-			$match = false;
-			foreach ($options as $option)
+			if ($option == $rule_value_name)
 			{
-				if ($option == $rule_value)
-				{
-					$match = true;
-					break;
-				}
-			}
-			
-			if (!$match)
-			{
-				$violated_rules .= $delimiter . ($rule[RULE_OPTION_PARAGRAPH] + 1) . '.' . ($rule[RULE_OPTION_ITEM] + 1) . '.';
-				$delimiter = ', ';
+				return true;
 			}
 		}
 	}
-	return $violated_rules;
+	else
+	{
+		return $allowed_rules == $rule_value_name;
+	}
+	return false;
+}
+
+// return the closes rules_code that matches the filter
+function correct_rules($rules_code, $rules_filter)
+{
+	global $_rules_options;
+	
+	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	{
+		$rule = $_rules_options[$i];
+		if (!is_rule_allowed($rules_filter, $i, get_rule($rules_code, $i)))
+		{
+			$options = $rule[RULE_OPTION_VALUES];
+			for ($j = 0; $j < count($options); ++$j)
+			{
+				if (is_rule_allowed($rules_filter, $i, $j))
+				{
+					$rules_code = set_rule($rules_code, $i, $j);
+					break;
+				}
+			}
+		}
+	}
+	return $rules_code;
 }
 
 function api_rules_help($rules_param, $show_code_param = false)
@@ -471,15 +495,60 @@ function show_rules($rules_code, $view)
 		{
 			$paragraph = $rules[$i];
 			$items = $paragraph[RULE_PARAGRAPH_ITEMS];
-			echo '<tr><td class="dark"><b>' . ($i + 1) . '. ' . $paragraph[RULE_PARAGRAPH_NAME] . '</b></td></tr><tr><td>';
+			echo '<tr><td class="darker"><b>' . ($i + 1) . '. ' . $paragraph[RULE_PARAGRAPH_NAME] . '</b></td></tr><tr><td>';
 			for ($j = 0; $j < count($items); ++$j)
 			{
 				$item = $items[$j];
 				if (!is_string($item))
 				{
 					$index = $item[RULE_ITEM_INDEX];
-					$rule_value = get_rule($rules_code, $index);
-					$item = $item[RULE_ITEM_OPTIONS][$rule_value];
+					if (is_string($rules_code))
+					{
+						$rule_value = get_rule($rules_code, $index);
+						$item = $item[RULE_ITEM_OPTIONS][$rule_value];
+					}
+					else
+					{
+						$options = $item[RULE_ITEM_OPTIONS];
+						$count = count($options);
+						$rule_value = 0;
+						if ($rules_code != NULL)
+						{
+							$count = 0;
+							for ($k = 0; $k < count($options); ++$k)
+							{
+								if (is_rule_allowed($rules_code, $index, $k))
+								{
+									++$count;
+									$rule_value = $k;
+								}
+							}
+						}
+						
+						$remainin_width = 100;
+						$width = floor(100 / $count);
+						if ($count == 1)
+						{
+							$item = $item[RULE_ITEM_OPTIONS][$rule_value];
+						}
+						else
+						{
+							$item = '<table class="bordered lighter" width="100%"><tr class="dark"><td colspan="' . count($options) . '">' . get_label('One of') . ':</td></tr><tr valign="top">';
+							for ($k = 1; $k < count($options); ++$k)
+							{
+								if (is_rule_allowed($rules_code, $index, $k - 1))
+								{
+									$item .= '<td width="' . $width . '%">' . $options[$k-1] . '</td>';
+									$remainin_width -= $width;
+								}
+							}
+							if (is_rule_allowed($rules_code, $index, $k - 1))
+							{
+								$item .= '<td width="' . $remainin_width . '%">' . $options[$k-1] . '</td>';
+							}
+							$item .= '</tr></table>';
+						}
+					}
 				}
 				echo '<p>' . ($i + 1) . '.' . ($j + 1) . '. ' . $item . '</p>';
 			}
@@ -490,17 +559,56 @@ function show_rules($rules_code, $view)
 	{
 		for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
 		{
-			$rule_value = get_rule($rules_code, $i);
 			$option = $_rules_options[$i];
-			if ($view >= RULES_VIEW_SHORTEST && $rule_value <= 0 && !$option[RULE_OPTION_IMPORTANCE])
-			{
-				continue;
-			}
-			
 			$paragraph_index = $option[RULE_OPTION_PARAGRAPH];
 			$item_index = $option[RULE_OPTION_ITEM];
 			$item = $rules[$paragraph_index][RULE_PARAGRAPH_ITEMS][$item_index];
-			echo '<tr><td class="dark"><b>' . ($paragraph_index + 1) . '.' . ($item_index + 1) . '. ' . $item[RULE_ITEM_NAME] . '</b></td></tr><tr><td><p>' . $item[RULE_ITEM_OPTIONS_SHORT][$rule_value] . '</p></td></tr>';
+			if (is_string($rules_code))
+			{
+				$rule_value = get_rule($rules_code, $i);
+				if ($view >= RULES_VIEW_SHORTEST && $rule_value <= 0 && !$option[RULE_OPTION_IMPORTANCE])
+				{
+					continue;
+				}
+				
+				echo '<tr><td class="dark"><b>' . ($paragraph_index + 1) . '.' . ($item_index + 1) . '. ' . $item[RULE_ITEM_NAME] . '</b></td></tr><tr><td><p>' . $item[RULE_ITEM_OPTIONS_SHORT][$rule_value] . '</p></td></tr>';
+			}
+			else
+			{
+				$options = $item[RULE_ITEM_OPTIONS_SHORT];
+				$count = count($options);
+				$rule_value = 0;
+				if ($rules_code != NULL)
+				{
+					$count = 0;
+					for ($k = 0; $k < count($options); ++$k)
+					{
+						if (is_rule_allowed($rules_code, $i, $k))
+						{
+							++$count;
+							$rule_value = $k;
+						}
+					}
+				}
+				
+				
+				$remainin_width = 100;
+				$width = floor(100 / $count);
+				echo '<tr class="dark"><td><b>' . ($paragraph_index + 1) . '.' . ($item_index + 1) . '. ' . $item[RULE_ITEM_NAME] . '</b><p><table class="bordered light" width="100%"><tr valign="top" align="center">';
+				for ($k = 1; $k < count($options); ++$k)
+				{
+					if (is_rule_allowed($rules_code, $i, $k - 1))
+					{
+						echo '<td width="' . $width . '%"><p>' . $options[$k-1] . '</p></td>';
+						$remainin_width -= $width;
+					}
+				}
+				if (is_rule_allowed($rules_code, $i, $k - 1))
+				{
+					echo '<td width="' . $remainin_width . '%"><p>' . $options[$k-1] . '</p></td>';
+				}
+				echo '</tr></table></p></td></tr>';
+			}
 		}
 	}
 	echo '</table></big>';

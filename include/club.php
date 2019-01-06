@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/page_base.php';
+require_once __DIR__ . '/league.php';
 
 define('ALL_CLUBS', -1);
 define('MY_CLUBS', 0);
@@ -296,7 +297,15 @@ class ClubPageBase extends PageBase
 		if ($this->parent_id != NULL)
 		{
 			echo '<a href="club_main.php?bck=1&id=' . $this->parent_id . '">';
-			show_club_pic($this->parent_id, get_label('[0] is a member of [1] club system.', $this->name, $this->parent_name), $this->parent_flags, ICONS_DIR);
+			show_club_pic($this->parent_id, get_label('[0] is a member of [1] club system.', $this->name, $this->parent_name), $this->parent_flags, ICONS_DIR, 36, 36);
+			echo '</a>';
+		}
+		$query = new DbQuery('SELECT l.id, l.name, l.flags FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.flags = 0 AND c.club_id = ? ORDER BY l.name', $this->id);
+		while ($row = $query->next())
+		{
+			list($league_id, $league_name, $league_flags) = $row;
+			echo ' <a href="league_main.php?bck=1&id=' . $league_id . '">';
+			show_league_pic($league_id, get_label('[0] is a member of [1].', $this->name, $league_name), $league_flags, ICONS_DIR, 36, 36);
 			echo '</a>';
 		}
 		echo '</td></tr>';

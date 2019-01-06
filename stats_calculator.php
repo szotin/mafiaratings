@@ -282,7 +282,7 @@ class Page extends PageBase
 			{
 				url += sep + "filter=" + filterCode;
 			}
-			refr(url);
+			goTo(url);
 		}
 		
 		function filterSelect(code)

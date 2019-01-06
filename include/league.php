@@ -151,30 +151,43 @@ class LeaguePageBase extends PageBase
 		
 		$menu = array
 		(
-			new MenuItem('league_main.php?id=' . $this->id, get_label('League'), get_label('[0] main page', $this->name))
-			, new MenuItem('league_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name))
-			, new MenuItem('league_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing in the league.'))
-			, new MenuItem('league_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
-			, new MenuItem('league_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name))
-			, new MenuItem('#stats', get_label('Stats'), NULL, array
+			new MenuItem('league_main.php?id=' . $this->id, get_label('League'), get_label('[0] main page', $this->name)),
+			// new MenuItem('league_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
+			// new MenuItem('league_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing in the league.')),
+			new MenuItem('league_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('Member clubs of [0].', $this->name)),
+			// new MenuItem('league_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
+			// new MenuItem('league_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)),
+			// new MenuItem('#stats', get_label('Stats'), NULL, array
+			// (
+				// new MenuItem('league_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
+				// new MenuItem('league_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+				// new MenuItem('league_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
+				// new MenuItem('league_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name)),
+			// )),
+			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
-				new MenuItem('league_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
-				, new MenuItem('league_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
-				, new MenuItem('league_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
-				, new MenuItem('league_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name))
-			))
+				new MenuItem('league_rules.php?id=' . $this->id, get_label('Rulebook'), get_label('Rules of the game in [0]', $this->name)),
+				// new MenuItem('league_albums.php?id=' . $this->id, get_label('Photos'), get_label('Photo albums')),
+				// new MenuItem('league_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.')),
+				// new MenuItem('league_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.')),
+				// new MenuItem('league_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
+				// new MenuItem('league_articles.php?id=' . $this->id, get_label('Articles'), get_label('Books and articles.')),
+				// new MenuItem('league_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
+			)),
 		);
 			
 		if ($this->is_manager)
 		{
-			$managment_menu = array(new MenuItem('league_managers.php?id=' . $this->id, get_label('Managers'), get_label('[0] managers', $this->name)));
-			$managment_menu[] = new MenuItem('league_upcoming.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name));
-			$managment_menu[] = new MenuItem('league_seasons.php?id=' . $this->id, get_label('Seasons'), get_label('[0] seasons', $this->name));
-			$managment_menu[] = new MenuItem('league_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name));
-			$managment_menu[] = new MenuItem('league_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name));
-			$managment_menu[] = new MenuItem('league_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name));
-			$managment_menu[] = new MenuItem('league_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name));
-			$menu[] = new MenuItem('#other', get_label('Management'), NULL, $managment_menu);
+			$menu[] = new MenuItem('#other', get_label('Management'), NULL, array
+			(
+				new MenuItem('league_managers.php?id=' . $this->id, get_label('Managers'), get_label('[0] managers', $this->name)),
+				// new MenuItem('league_upcoming.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name)),
+				// new MenuItem('league_seasons.php?id=' . $this->id, get_label('Seasons'), get_label('[0] seasons', $this->name)),
+				// new MenuItem('league_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name)),
+				// new MenuItem('league_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name)),
+				// new MenuItem('league_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name)),
+				// new MenuItem('league_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name)),
+			));
 		}
 		
 		echo '<table class="head" width="100%">';

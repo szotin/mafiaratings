@@ -617,7 +617,7 @@ function setUrlParams(url, params)
 	return url;
 }
 
-function refr(url, params)
+function goTo(url, params)
 {
 	if (typeof url == "object")
 	{
@@ -633,7 +633,12 @@ function refr(url, params)
 	if (p >= 0)
 		url = url.substr(0, p);
 	window.location.replace(url);
-} // refr()
+}
+
+function refr()
+{
+	window.location.replace(document.URL);
+}
 
 function login(name, pwd, rem, onSuccess, onError)
 {

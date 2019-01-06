@@ -76,7 +76,7 @@ class Page extends ClubPageBase
 ?>
 		function filter(view, option)
 		{
-			refr({ view: view, option: option });
+			goTo({ view: view, option: option });
 		}
 		
 		function rulesChange(view)
