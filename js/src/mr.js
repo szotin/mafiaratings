@@ -515,14 +515,10 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createTournament = function(clubId, leagueId)
 	{
-		var formLink = "tournament_create.php?";
-		if (typeof clubId == "number" && clubId > 0)
+		var formLink = "tournament_create.php?club_id=" + clubId;
+		if (typeof leagueId == "number")
 		{
-			formLink += "club_id=" + clubId;
-		}
-		else
-		{
-			formLink += "league_id=" + leagueId;
+			formLink += "&league_id=" + leagueId;
 		}
 		dlg.form(formLink, refr);
 	}

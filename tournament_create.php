@@ -12,111 +12,110 @@ initiate_session();
 try
 {
 	dialog_title(get_label('Create [0]', get_label('tournament')));
-
-	$club_id = 0;
-	$league_id = 0;
-	if (isset($_REQUEST['club_id']))
+	
+	if (!isset($_REQUEST['club_id']))
 	{
-		$club_id = (int)$_REQUEST['club_id'];
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		
-		$club = $_profile->clubs[$club_id];
-		$def_rules_code = $club->rules_code;
-		$def_country = $club->country;
-		$def_city = $club->country;
-		$def_langs = $club->langs;
+		throw new Exc(get_label('Unknown [0]', get_label('club')));
 	}
-	else if (isset($_REQUEST['league_id']))
+	
+	$club_id = (int)$_REQUEST['club_id'];
+	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+	$club = $_profile->clubs[$club_id];
+	
+	$league_id = 0;
+	if (isset($_REQUEST['league_id']))
 	{
 		$league_id = (int)$_REQUEST['league_id'];
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 	}
-	
+
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value=""></td></tr>';
-	
-	if ($club_id > 0)
-	{
-	}
-	else
-	{
-		echo '<tr><td>' . get_label('Club') . ':</td><td><select id="form-club"></select></td></tr>';
-	}
-	
 	if ($league_id > 0)
 	{
-		echo '<input type="hidden" id="form-league" value="' . $league_id . '">';
+		list($league_name, $league_flags) = Db::record(get_label('league'), 'SELECT name, flags FROM leagues WHERE id = ?', $league_id);
+		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="' . ICON_WIDTH . '">';
+		show_league_pic($league_id, $league_name, $league_flags, ICONS_DIR);
+		echo '</td><td align="center"><b>' . $league_name . '</b><input type="hidden" id="form-league" value="' . $league_id . '"></td></tr></table></td></tr>';
 	}
 	else
 	{
-		echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league"></select></td></tr>';
+		echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league">';
+		$query = new DbQuery('SELECT l.id, l.name FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER by l.name', $club_id);
+		while ($row = $query->next())
+		{
+			list($league_id, $league_name) = $row;
+			show_option($league_id, -1, $league_name);
+		}
+		show_option(0, -1, PRODUCT_NAME);
+		echo '</select></td></tr>';
 	}
 	
-	// $query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDR_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
-	// echo '<tr><td>'.get_label('Address').':</td><td>';
-	// echo '<select id="form-addr_id" onChange="addressClick()">';
-	// echo '<option value="-1">' . get_label('New address') . '</option>';
-	// $selected_address = '';
-	// while ($row = $query->next())
-	// {
-		// if (show_option($row[0], $def_addr_id, $row[1]))
-		// {
-			// $selected_address = $row[1];
-		// }
-	// }
-	// echo '</select><div id="form-new_addr_div">';
-// //	echo '<button class="icon" onclick="mr.createAddr(' . $club_id . ')" title="' . get_label('Create [0]', get_label('address')) . '"><img src="images/create.png" border="0"></button>';
-	// echo '<input id="form-new_addr" onkeyup="newAddressChange()"> ';
-	// show_country_input('form-country', $def_country, 'form-city');
-	// echo ' ';
-	// show_city_input('form-city', $def_city, 'form-country');
-	// echo '</div></td></tr>';
+	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value=""></td></tr>';
 	
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input id="form-price" value=""></td></tr>';
+	$time = time();
+	date_default_timezone_set($club->timezone);
+	$date = date('Y-m-d', $time);
 	
-	if ($club_id > 0)
+	echo '<tr><td>'.get_label('Dates').':</td><td>';
+	echo '<input type="text" id="form-start" value="' . $date . '">';
+	echo '  ' . get_label('to') . '  ';
+	echo '<input type="text" id="form-end" value="' . $date . '">';
+	echo '</td></tr>';
+	echo '</td></tr>';
+	
+	$addr_id = -1;
+	$scoring_id = -1;
+	$query = new DbQuery('SELECT address_id, scoring_id FROM tournaments WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
+	$row = $query->next();
+	if ($row = $query->next())
 	{
-		$query = new DbQuery('SELECT rules, name FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
+		list($addr_id, $scoring_id) = $row;
+		if ($scoring_id == NULL)
+		{
+			$scoring_id = -1;
+		}
+	}
+	else
+	{
+		$query = new DbQuery('SELECT address_id, scoring_id FROM events WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
 		if ($row = $query->next())
 		{
-			$custom_rules = true;
-			echo '<tr><td>' . get_label('Game rules') . ':</td><td><select id="form-rules"><option value="' . $def_rules_code . '"';
-			if ($def_rules_code == $def_rules_code)
-			{
-				echo ' selected';
-				$custom_rules = false;
-			}
-			echo '>' . get_label('[default]') . '</option>';
-			do
-			{
-				list ($rules_code, $rules_name) = $row;
-				echo '<option value="' . $rules_code . '"';
-				if ($custom_rules && $rules_code == $def_rules_code)
-				{
-					echo ' selected';
-				}
-				echo '>' . $rules_name . '</option>';
-			} while ($row = $query->next());
-			echo '</select>';
-			echo '</td></tr>';
-		}
-		else
-		{
-			echo '<input type="hidden" id="form-rules" value="' . $def_rules_code . '">';
+			list($addr_id, $scoring_id) = $row;
 		}
 	}
 	
-	if (is_valid_lang($def_langs))
+	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDR_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
+	echo '<tr><td>'.get_label('Address').':</td><td>';
+	echo '<select id="form-addr_id" onChange="addressClick()">';
+	show_option(-1, $addr_id, get_label('New address'));
+	$selected_address = '';
+	while ($row = $query->next())
 	{
-		echo '<input type="hidden" id="form-langs" value="' . $def_langs . '">';
+		if (show_option($row[0], $addr_id, $row[1]))
+		{
+			$selected_address = $row[1];
+		}
 	}
-	else
+	echo '</select><div id="form-new_addr_div">';
+//	echo '<button class="icon" onclick="mr.createAddr(' . $club_id . ')" title="' . get_label('Create [0]', get_label('address')) . '"><img src="images/create.png" border="0"></button>';
+	echo '<input id="form-new_addr" onkeyup="newAddressChange()"> ';
+	show_country_input('form-country', $club->country, 'form-city');
+	echo ' ';
+	show_city_input('form-city', $club->city, 'form-country');
+	echo '</span></td></tr>';
+	
+	echo '<tr><td>' . get_label('Admission rate') . ':</td><td><input id="form-price" value=""></td></tr>';
+	
+	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
+	echo '<select id="form-scoring" onChange="scoringChanged()" title="' . get_label('Scoring system') . '">';
+	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
+	show_option(-1, $scoring_id, get_label('[The sum of round scores]'));
+	while ($row = $query->next())
 	{
-		echo '<tr><td>'.get_label('Languages').':</td><td>';
-		langs_checkboxes($def_langs, $def_langs, NULL, '<br>', 'form-');
-		echo '</td></tr>';
+		list ($sid, $sname) = $row;
+		show_option($sid, $scoring_id, $sname);
 	}
-		
+	echo '</select></td></tr>';
+	
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 		
 	// echo '<tr><td colspan="2">';
@@ -146,9 +145,44 @@ try
 ?>	
 	<script>
 	
+	var dateFormat = "yy-mm-dd";
+	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
+	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
+	
+	var oldAddressValue = "<?php echo $selected_address; ?>";
+	function newAddressChange()
+	{
+		var text = $("#form-new_addr").val();
+		if ($("#form-name").val() == oldAddressValue)
+		{
+			$("#form-name").val(text);
+		}
+		oldAddressValue = text;
+	}
+	
+	function addressClick()
+	{
+		var text = '';
+		if ($("#form-addr_id").val() <= 0)
+		{
+			$("#form-new_addr_div").show();
+		}
+		else
+		{
+			$("#form-new_addr_div").hide();
+			text = $("#form-addr_id option:selected").text();
+		}
+		
+		if ($("#form-name").val() == oldAddressValue)
+		{
+			$("#form-name").val(text);
+		}
+		oldAddressValue = text;
+	}
+	addressClick();
+	
 	function commit(onSuccess)
 	{
-		var _langs = mr.getLangs('form-');
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
@@ -160,11 +194,11 @@ try
 			, name: $("#form-name").val()
 			, price: $("#form-price").val()
 			, address_id: _addr
-			, rules_code: $("#form-rules").val()
 			, scoring_id: $("#form-scoring").val()
 			, notes: $("#form-notes").val()
+			, start: startDate.val()
+			, end: ednDate.val()
 			, flags: _flags
-			, langs: _langs
 		};
 		
 		if (_addr <= 0)

@@ -181,7 +181,6 @@ class LeaguePageBase extends PageBase
 			$menu[] = new MenuItem('#other', get_label('Management'), NULL, array
 			(
 				new MenuItem('league_managers.php?id=' . $this->id, get_label('Managers'), get_label('[0] managers', $this->name)),
-				// new MenuItem('league_upcoming.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name)),
 				// new MenuItem('league_seasons.php?id=' . $this->id, get_label('Seasons'), get_label('[0] seasons', $this->name)),
 				// new MenuItem('league_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name)),
 				// new MenuItem('league_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name)),
