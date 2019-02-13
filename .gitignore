@@ -24,3 +24,8 @@ standalone/MafiaTournament/Debug/
 standalone/MafiaTournament/Numbers/Debug/
 standalone/MafiaTournament/Sitting/Debug/
 *.user
+js/local.js
+js/seating.js
+js/seating-ui.js
+js/seating-ru.js
+js/seating-en.js

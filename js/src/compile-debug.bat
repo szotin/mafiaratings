@@ -12,3 +12,7 @@ copy md5.js ..
 copy mr.js ..
 copy mr.chart.js ..
 copy fileprogress.js ..
+copy seating.js ..
+copy seating-en.js ..
+copy seating-ru.js ..
+copy seating-ui.js ..
