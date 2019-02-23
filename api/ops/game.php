@@ -274,7 +274,7 @@ class GClub
 			list($rules->name, $rules->code) = $row;
 			if ($rules->code != $club->rules_code)
 			{
-				$this->rules[] = $rules_code;
+				$this->rules[] = $rules->code;
 			}
 		}
 		

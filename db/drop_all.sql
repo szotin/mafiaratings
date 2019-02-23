@@ -42,7 +42,6 @@ ALTER TABLE `scorings` DROP FOREIGN KEY system_club;
 DROP TABLE `seasons`;
 DROP TABLE `clubs`;
 DROP TABLE `scorings`;
-DROP TABLE `rules`;
 DROP TABLE `city_names`;
 DROP TABLE `cities`;
 DROP TABLE `country_names`;
