@@ -46,14 +46,14 @@ class Page extends PageBase
 		
 		if ($this->id > 0)
 		{
-			list($this->name, $this->description, $this->code, $this->owner_id) = Db::record(get_label('stats calculator'), 'SELECT name, description, code, owner_id FROM stats_calculators WHERE id = ? ORDER BY name', $this->id);
+			list($this->name, $this->description, $this->code, $this->owner_id, $this->owner_name, $this->owner_flags) = Db::record(get_label('stats calculator'), 'SELECT s.name, s.description, s.code, s.owner_id, u.name, u.flags FROM stats_calculators s JOIN users u ON u.id = s.owner_id WHERE s.id = ?', $this->id);
 		}
 		else
 		{
-			$query = new DbQuery('SELECT id, name, description, code, owner_id FROM stats_calculators ORDER BY id DESC LIMIT 1', $_profile->user_id);
+			$query = new DbQuery('SELECT s.id, s.name, s.description, s.code, s.owner_id, u.name, u.flags FROM stats_calculators s JOIN users u ON u.id = s.owner_id WHERE s.owner_id = ? OR s.published = TRUE ORDER BY s.name LIMIT 1', $_profile->user_id);
 			if ($row = $query->next())
 			{
-				list($this->id, $this->name, $this->description, $this->code, $this->owner_id) = $row;
+				list($this->id, $this->name, $this->description, $this->code, $this->owner_id, $this->owner_name, $this->owner_flags) = $row;
 			}
 		}
 	}
@@ -103,6 +103,10 @@ class Page extends PageBase
 			echo '<button class="icon" onclick="editCalculator(' . $this->id . ')" title="' . get_label('Edit calculator \'[0]\'.', $this->name) . '"><img src="images/edit.png" border="0"></button>';
 			echo '<button class="icon" onclick="deleteCalculator(' . $this->id . ')" title="' . get_label('Delete calculator \'[0]\'.', $this->name) . '"><img src="images/delete.png" border="0"></button>';
 		}
+		else
+		{
+			echo '<button class="icon" onclick="viewCalculator(' . $this->id . ')" title="' . get_label('View the code of calculator \'[0]\'.', $this->name) . '"><img src="images/details.png" border="0"></button>';
+		}
 		echo '</td><td>';
 
 		echo '<select id="calculator" onchange="refresh()">';
@@ -115,13 +119,13 @@ class Page extends PageBase
 		echo '</select>';
 		echo '</td></tr>';
 		
-		if (!empty($this->description))
-		{
-			echo '<tr><td colspan="2"><pre>';
-			echo '<pre>';
-			echo $this->description;
-			echo '</pre></td></tr>';
-		}
+		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td><pre>';
+		echo '<pre>';
+		echo $this->description;
+		echo '</pre></td><td width="50">';
+		show_user_pic($this->owner_id, $this->owner_name, $this->owner_flags, ICONS_DIR);
+		echo '</td></tr></table></td></tr>';
+		
 		echo '</table></p>';
 		
 		echo '<h3>' . get_label('Results') . '</h3>';
@@ -237,6 +241,14 @@ class Page extends PageBase
 			dlg.form("stats_calculator_edit.php?id=" + id, function(data)
 			{
 				refresh(data.id);
+			});
+		}
+		
+		function viewCalculator(id)
+		{
+			dlg.form("stats_calculator_view.php?id=" + id, function()
+			{
+				calculate();
 			});
 		}
 		

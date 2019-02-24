@@ -200,23 +200,26 @@ class ApiGame
 				}
 			}
 			
-			for ($i = 0; $i < 10; ++$i)
+			if (isset($voting->votes))
 			{
-				$vote = $voting->votes[$i];
-				if ($vote >= 0)
+				for ($i = 0; $i < 10; ++$i)
 				{
-					$player = $this->players[$i];
-					if (!isset($player->voting) || !isset($player->voting[$round_key]))
+					$vote = $voting->votes[$i];
+					if ($vote >= 0)
 					{
-						$player->voting[$round_key] = $voting->nominants[$vote]->player_num;
-					}
-					else if (is_array($player->voting[$round_key]))
-					{
-						$player->voting[$round_key][] = $voting->nominants[$vote]->player_num;
-					}
-					else
-					{
-						$player->voting[$round_key] = array($player->voting[$round_key], $voting->nominants[$vote]->player_num);
+						$player = $this->players[$i];
+						if (!isset($player->voting) || !isset($player->voting[$round_key]))
+						{
+							$player->voting[$round_key] = $voting->nominants[$vote]->player_num;
+						}
+						else if (is_array($player->voting[$round_key]))
+						{
+							$player->voting[$round_key][] = $voting->nominants[$vote]->player_num;
+						}
+						else
+						{
+							$player->voting[$round_key] = array($player->voting[$round_key], $voting->nominants[$vote]->player_num);
+						}
 					}
 				}
 			}
