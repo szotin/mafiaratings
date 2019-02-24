@@ -119,10 +119,10 @@ class Page extends PageBase
 		echo '</select>';
 		echo '</td></tr>';
 		
-		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td><pre>';
-		echo '<pre>';
-		echo $this->description;
-		echo '</pre></td><td width="50">';
+		$descr = prepare_message($this->description);
+		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td>';
+		echo $descr;
+		echo '</td><td width="50">';
 		show_user_pic($this->owner_id, $this->owner_name, $this->owner_flags, ICONS_DIR);
 		echo '</td></tr></table></td></tr>';
 		

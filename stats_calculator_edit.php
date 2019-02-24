@@ -43,7 +43,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="120" valign="top">' . get_label('Name') . ':</td><td><input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td></tr>';
 	
-	echo '<tr><td valign="top">' . get_label('Description') . ':</td><td><textarea id="form-description" cols="93" rows="5">' . $description . '</textarea></td></tr>';
+	echo '<tr><td valign="top">' . get_label('Description') . ':</td><td><textarea id="form-description" cols="93" rows="5">' . htmlspecialchars($description, ENT_QUOTES) . '</textarea></td></tr>';
 	echo '<tr><td valign="top">' . get_label('Javascript code') . ':</td><td><textarea id="form-code" cols="93" rows="32">' . $code . '</textarea></td></tr>';
 	
 	echo '<tr><td colspan="2"><input type="checkbox" id="form-published"';
