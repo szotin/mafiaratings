@@ -450,7 +450,7 @@ class Event
 		{
 			$this->timestamp = $old_timestamp;
 		}
-		else
+		else if ($this->timestamp != $old_timestamp && $this->duration != $old_duration)
 		{
 			if ($this->timestamp + $this->duration < time())
 			{
@@ -460,7 +460,7 @@ class Event
 			$query = new DbQuery('SELECT max(start_time) FROM events WHERE start_time >= ? AND start_time < ?', $this->timestamp, $this->timestamp + 60);
 			if (($row = $query->next()) && $row[0] != NULL)
 			{
-				$this->timestamp = $row[0] + 1;
+				$this->timestamp = $old_timestamp + 1;
 			}
 		}
 		
