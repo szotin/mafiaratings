@@ -122,7 +122,7 @@ class Page extends PageBase
 		$descr = prepare_message($this->description);
 		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td>';
 		echo $descr;
-		echo '</td><td width="50">';
+		echo '</td><td width="50" valign="top">';
 		show_user_pic($this->owner_id, $this->owner_name, $this->owner_flags, ICONS_DIR);
 		echo '</td></tr></table></td></tr>';
 		
