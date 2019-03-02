@@ -1229,6 +1229,14 @@ class EventPageBase extends PageBase
 					// new MenuItem('event_links.php?id=' . $this->event->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 				)),
 			);
+			if ($this->is_manager)
+			{
+				$menu[] = new MenuItem('#management', get_label('Management'), NULL, array
+				(
+					new MenuItem('event_players.php?id=' . $this->event->id, get_label('Players'), get_label('Manage players paricipaing in [0]', $this->event->name)),
+				));
+			}
+			
 			echo '<tr><td colspan="4">';
 			PageBase::show_menu($menu);
 			echo '</td></tr>';

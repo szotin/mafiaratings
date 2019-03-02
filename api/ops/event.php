@@ -4,6 +4,7 @@ require_once '../../include/api.php';
 require_once '../../include/event.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
+require_once '../../include/game_stats.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -498,6 +499,86 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Restore canceled event.');
 		$help->request_param('event_id', 'Event id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// change_player
+	//-------------------------------------------------------------------------------------------------------
+	function change_player_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		$user_id = (int)get_required_param('user_id');
+		$new_user_id = (int)get_optional_param('new_user_id', $user_id);
+		$nickname = get_optional_param('nick', NULL);
+		$changed = false;
+		
+		list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		
+		Db::begin();
+		if ($nickname == NULL)
+		{
+			list($nickname) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $new_user_id);
+		}
+		
+		$query = new DbQuery('SELECT id, log FROM games WHERE event_id = ? AND result <> 0', $event_id);
+		while ($row = $query->next())
+		{
+			list ($game_id, $game_log) = $row;
+			$gs = new GameState();
+			$gs->init_existing($game_id, $game_log);
+			if ($gs->change_user($user_id, $new_user_id, $nickname))
+			{
+				rebuild_game_stats($gs);
+				Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
+				$changed = true;
+			}
+		}
+		
+		list($new_user_registration) = Db::record(get_label('registration'), 'SELECT count(*) FROM registrations WHERE user_id = ? AND event_id = ?', $new_user_id, $event_id);
+		if ($new_user_registration > 0)
+		{
+			Db::exec(get_label('registration'), 'UPDATE registrations SET nick_name = ? WHERE user_id = ? AND event_id = ?', $new_user_id, $event_id);
+			if (Db::affected_rows() > 0)
+			{
+				$changed = true;
+			}
+			
+			Db::exec(get_label('registration'), 'DELETE FROM registrations WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
+			if (Db::affected_rows() > 0)
+			{
+				$changed = true;
+			}
+		}
+		else
+		{
+			Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ?, nick_name = ? WHERE user_id = ? AND event_id = ?', $new_user_id, $nickname, $user_id, $event_id);
+			if (Db::affected_rows() == 0)
+			{
+				Db::exec(get_label('registration'), 'INSERT INTO registrations (club_id, user_id, nick_name, event_id) VALUES (?, ?, ?, ?)', $club_id, $new_user_id, $nickname, $event_id);
+			}
+			$changed = true;
+		}
+		
+		if ($changed)
+		{
+			$log_details = new stdClass();
+			$log_details->event_id = $event_id;
+			$log_details->old_user_id = $user_id;
+			$log_details->nickname = $nickname;
+			db_log(LOG_OBJECT_USER, 'replaced', $log_details, $new_user_id);
+		}
+		Db::commit();
+	}
+	
+	function change_player_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change player on the event.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('user_id', 'User id of a player who played on this event. It can be negative for temporary players.');
+		$help->request_param('new_user_id', 'If it is different from user_id, player is replaced in this event with the player new_user_id. If it is 0 or negative, user is replaced with a temporary player existing for this event only.', 'user_id is used.');
+		$help->request_param('nick', 'Nickname for this event. If it is empty, user name is used.', 'user name is used.');
 		return $help;
 	}
 

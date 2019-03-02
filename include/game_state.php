@@ -574,7 +574,7 @@ class GameState
 		return 0;
 	}
 	
-	function change_user($user_id, $new_user_id)
+	function change_user($user_id, $new_user_id, $nickname = NULL)
 	{
 		if ($user_id == -1)
 		{
@@ -590,7 +590,7 @@ class GameState
 		for ($i = 0; $i < 10; ++$i)
 		{
 			$player = $this->players[$i];
-			if ($player->id == $new_user_id)
+			if ($player->id == $new_user_id && $user_id != $new_user_id)
 			{
 				throw new Exc('Unable to change one user to another in the game because they both were playing.');
 			}
@@ -598,6 +598,10 @@ class GameState
 			if ($player->id == $user_id)
 			{
 				$player->id = $new_user_id;
+				if ($nickname != NULL)
+				{
+					$player->nick = $nickname;
+				}
 				$changed = true;
 			}
 		}
