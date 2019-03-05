@@ -56,6 +56,7 @@ class ApiPage extends OpsApiPageBase
 		list($src_name, $src_games_moderated, $src_games, $src_rating, $src_reg_time, $src_city_id, $src_club_id, $src_flags) = 
 			Db::record(get_label('user'), 'SELECT name, games_moderated, games, rating, reg_time, city_id, club_id, flags FROM users WHERE id = ?', $src_id);
 		
+		Db::exec(get_label('game'), 'UPDATE games SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('email'), 'UPDATE emails SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('registration'), 'DELETE FROM registrations WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM registrations WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
