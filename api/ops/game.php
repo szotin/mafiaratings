@@ -572,19 +572,6 @@ class CommandQueue
 						get_label('registration'), 
 						'INSERT INTO registrations (club_id, incomer_id, nick_name, event_id) values (?, ?, ?, ?)',
 						$this->club_id, $incomer_id, $nick, $event_id);
-					list ($reg_id) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
-				
-					$sql = new SQL(
-						'INSERT INTO incomer_suspects (user_id, reg_id, incomer_id)' .
-							' SELECT DISTINCT u.id, ?, ? FROM registrations r' .
-							' JOIN users u ON r.user_id = u.id' . 
-							' WHERE r.nick_name = ?',
-						$reg_id, $incomer_id, $rec->name);
-					if ($rec->name != $rec->nick)
-					{
-						$sql->add(' OR r.nick_name = ?', $rec->nick);
-					}
-					Db::exec(get_label('player'), $sql);
 				}
 				return;
 			}

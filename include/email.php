@@ -10,8 +10,8 @@ define('EMAIL_OBJ_GAME', 1);
 define('EMAIL_OBJ_PHOTO', 2);
 define('EMAIL_OBJ_SIGN_IN', 3);
 //define('EMAIL_OBJ_CREATE_CLUB', 4); 4 is available
-define('EMAIL_OBJ_CONFIRM_EVENT', 5);
-define('EMAIL_OBJ_EVENT_NO_USER', 6);
+define('EMAIL_JOIN_CLUB', 5);
+// define('EMAIL_OBJ_EVENT_NO_USER', 6); // 6 is available
 define('EMAIL_OBJ_VIDEO', 7);
 
 function show_email_tags($event_tags)

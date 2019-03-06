@@ -113,24 +113,13 @@ class Page extends PageBase
 					throw new RedirectExc('index.php');
 				}
 				break;
-				
-			case EMAIL_OBJ_CONFIRM_EVENT:
-				$url = 'event_confirm.php?event=' . $obj_id;
-				if (isset($_REQUEST['yes']))
-				{
-					$url .= '&yes=';
-					if (isset($_REQUEST['join']))
-					{
-						$url .= '&join=';
-					}
-				}
-				throw new RedirectExc($url);
-				break;
-				
-			case EMAIL_OBJ_EVENT_NO_USER:
-				throw new RedirectExc('event_correct_players.php?event=' . $obj_id);
-				break;
 			
+			// +-----------------------+
+			// | #SUGGEST_JOINING_CLUB |
+			// +-----------------------+
+			// case EMAIL_JOIN_CLUB:
+				// break;
+				
 			default:
 				throw new FatalExc(get_label('Invalid request.'));
 		}

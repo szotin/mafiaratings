@@ -213,103 +213,57 @@ try
 	
 	if ($emails_remaining > 0)
 	{
+		// +-----------------------+
+		// | #SUGGEST_JOINING_CLUB |
+		// +-----------------------+
+		// todo: merge everything to one query
+		// todo: implement a way to stop receiving these emails without joining club
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.start_time, e.duration, e.notes, e.languages, a.id, a.address, a.map_url, i.timezone, c.id, c.name FROM events e' . 
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities i ON a.city_id = i.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' WHERE (e.flags & ' . EVENT_FLAG_DONE . ') = 0 AND e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' < UNIX_TIMESTAMP() AND e.start_time + e.duration + ' . EVENT_NOT_DONE_TIME . ' >= UNIX_TIMESTAMP()');
-			
 		while (($row = $query->next()) && $emails_remaining > 0)
 		{
 			list($e_id, $e_name, $e_start_time, $e_duration, $e_notes, $e_languages, $a_id, $a_address, $a_map_url, $i_timezone, $c_id, $c_name) = $row;
-			$tags = array(
-				'root' => new Tag(get_server_url()),
-				'event_name' => new Tag($e_name),
-				'event_id' => new Tag($e_id),
-				'address' => new Tag($a_address),
-				'address_url' => new Tag($a_map_url),
-				'club_name' => new Tag($c_name),
-				'club_id' => new Tag($c_id),
-				'join_chk' => new Tag('<input type="checkbox" name="join" checked>'),
-				'yes_btn' => new Tag('<input type="submit" name="yes" value="#">'),
-				'no_btn' => new Tag('<input type="submit" name="no" value="#">'));
+			// $tags = array(
+				// 'root' => new Tag(get_server_url()),
+				// 'event_name' => new Tag($e_name),
+				// 'event_id' => new Tag($e_id),
+				// 'address' => new Tag($a_address),
+				// 'address_url' => new Tag($a_map_url),
+				// 'club_name' => new Tag($c_name),
+				// 'club_id' => new Tag($c_id),
+				// 'join_chk' => new Tag('<input type="checkbox" name="join" checked>'),
+				// 'yes_btn' => new Tag('<input type="submit" name="yes" value="#">'),
+				// 'no_btn' => new Tag('<input type="submit" name="no" value="#">'));
 				
 			
-			$to_confirm = array();
-			$query1 = new DbQuery(
-				'SELECT u.id, u.name, u.def_lang, u.email, r.nick_name FROM incomer_suspects s' .
-				' JOIN users u ON s.user_id = u.id' .
-				' JOIN registrations r ON s.reg_id = r.id' .
-				' WHERE r.event_id = ?',
-				$e_id);
-			while ($row1 = $query1->next())
-			{
-				$to_confirm[$row1[0]] = $row1;
-			}
-			$query1 = new DbQuery(
-				'SELECT u.id, u.name, u.def_lang, u.email, r.nick_name FROM registrations r' .
-				' JOIN users u ON r.user_id = u.id' .
-				' WHERE r.event_id = ? AND u.id NOT IN (SELECT user_id FROM user_clubs WHERE club_id = ?)',
-				$e_id, $c_id);
-			while ($row1 = $query1->next())
-			{
-				$to_confirm[$row1[0]] = $row1;
-			}
-			
-			foreach ($to_confirm as $row1)
-			{
-				list ($u_id, $u_name, $u_lang, $u_email, $u_nick) = $row1;
-				$lang = get_lang_code($u_lang);
-				$code = generate_email_code();
-				// echo '<a href="email_request.php?user_id=' . $u_id . '&code=' . $code .'&yes=" target="_balnk">' . $u_name . '</a><br><br>';
-				$tags['code'] = new Tag($code);
-				$tags['user_id'] = new Tag($u_id);
-				$tags['user_name'] = new Tag($u_name);
-				$tags['nick'] = new Tag($u_nick);
-				$tags['event_date'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
-				$tags['event_time'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
-				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_confirm_event.php';
-				$body = parse_tags($body, $tags);
-				$text_body = parse_tags($text_body, $tags);
-				send_notification($u_email, $body, $text_body, $subj, $u_id, EMAIL_OBJ_CONFIRM_EVENT, $e_id, $code);
-				--$emails_remaining;
-			}
-			
-			$unknown_players = '';
-			$delim = '';
-			$query1 = new DbQuery(
-				'SELECT i.name FROM incomers i WHERE i.event_id = ? AND (i.flags & ' . INCOMER_FLAGS_EXISTING . ') <> 0 AND NOT EXISTS (SELECT s.user_id FROM incomer_suspects s WHERE s.incomer_id = i.id)', $e_id);
-			while ($row1 = $query1->next())
-			{
-				$unknown_players .= $delim . $row1[0];
-				$delim = ', ';
-			}
-			
-			if ($unknown_players != '')
-			{
-				$query1 = new DbQuery('SELECT u.id, u.name, u.def_lang, u.email FROM user_clubs c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0 AND c.club_id = ?', $c_id);
-				while ($row1 = $query1->next())
-				{
-					list ($u_id, $u_name, $u_lang, $u_email) = $row1;
-					$lang = get_lang_code($u_lang);
-					$code = generate_email_code();
-					$tags['incomers'] = new Tag($unknown_players);
-					$tags['code'] = new Tag($code);
-					$tags['user_id'] = new Tag($u_id);
-					$tags['user_name'] = new Tag($u_name);
-					$tags['url'] = new Tag(get_server_url() . '/email_request.php?user_id=' . $u_id . '&code=' . $code);
-					$tags['event_date'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
-					$tags['event_time'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
-						
-					list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_event_no_user.php';
-					$body = parse_tags($body, $tags);
-					$text_body = parse_tags($text_body, $tags);
-					send_notification($u_email, $body, $text_body, $subj, $u_id, EMAIL_OBJ_EVENT_NO_USER, $e_id, $code);
-					
-					--$emails_remaining;
-				}
-			}
+			// $query1 = new DbQuery('SELECT DISTINCT u.id, u.name, u.def_lang, u.email FROM players p' .
+				// ' JOIN games g ON g.id = p.game_id' .
+				// ' JOIN users u ON u.id = p.user_id' .
+				// ' JOIN clubs c ON c.id = g.club_id' .
+				// ' JOIN cities c1 ON c1.id = u.city_id' .
+				// ' JOIN cities c2 ON c2.id = c.city_id' .
+				// ' WHERE g.event_id = ? AND c1.area_id = c2.area_id', $e_id);
+			// while ($row1 = $query1->next())
+			// {
+				// list ($u_id, $u_name, $u_lang, $u_email) = $row1;
+				// $lang = get_lang_code($u_lang);
+				// $code = generate_email_code();
+				// // echo '<a href="email_request.php?user_id=' . $u_id . '&code=' . $code .'&yes=" target="_balnk">' . $u_name . '</a><br><br>';
+				// $tags['code'] = new Tag($code);
+				// $tags['user_id'] = new Tag($u_id);
+				// $tags['user_name'] = new Tag($u_name);
+				// $tags['event_date'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
+				// $tags['event_time'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
+				// list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_join_club.php';
+				// $body = parse_tags($body, $tags);
+				// $text_body = parse_tags($text_body, $tags);
+				// send_notification($u_email, $body, $text_body, $subj, $u_id, EMAIL_JOIN_CLUB, $e_id, $code);
+				// --$emails_remaining;
+			// }
 			
 			Db::exec(get_label('event'), 'UPDATE events SET flags = (flags | ' . EVENT_FLAG_DONE . ') WHERE id = ?', $e_id);
 		}

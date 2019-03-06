@@ -8,7 +8,6 @@ DROP TABLE `event_emails`;
 DROP TABLE `event_users`;
 DROP TABLE `game_settings`;
 DROP TABLE `gate_sessions`;
-DROP TABLE `incomer_suspects`;
 DROP TABLE `log`;
 DROP TABLE `mafiosos`;
 DROP TABLE `news`;
