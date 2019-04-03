@@ -1,0 +1,26 @@
+<head>
+</head>
+<body>
+<h2>Windows development environment installation.</h2>
+
+<ol>
+	<li>Download and install <a href="https://www.easyphp.org/save-easyphp-devservervc11-latest.php">EasyPHP 14.1</a>.</li>
+	<li>Clone <a href="https://github.com/szotin/mafiaratings">mafiaratings.git</a> to <i>C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\</i><br>
+		Cloning should create mafiaratings directory inside projects.</li>
+	<li>Make sure mysql.exe (<i>C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\binaries\mysql\bin\mysql.exe</i>) is in the search path. </li>
+	<li>Download and extract file <a href="https://mafiaratings.com/downloads/mafia_data.zip">mafia_data.zip</a><br>
+		This file contains directory <i>pics</i> and sql script <i>mafiawor_mafia.sql</i>. </li>
+	<li>Copy directory <i>pics</i> to <i>C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings</i>.</li>
+	<li>Open local administration tools web site <a href="http://127.0.0.1/home/">http://127.0.0.1/home/</a><br>
+		Go to MySQL Administration.</li>
+	<li>Create database <i>mafia</i>.</li>
+	<li>Open command line. Go to the directory where your downloaded file <i>mafiawor_mafia.sql</i> is located.<br>
+		Run: <i>mysql -u root mafia < mafiawor_mafia.sql</i> <br>
+		It should create all the database tables and fill them with data.</li>
+	<li>Go to directory <i>C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings\js\src</i>.<br>
+		Run <i>compile-debug.bat</i>.</li>
+	<li>Open: <a href="http://127.0.0.1/projects/mafiaratings">http://127.0.0.1/projects/mafiaratings</a><br>
+		The site should be fully functional now.<br>
+		Source files are in <i>C:\Program Files (x86)\EasyPHP-DevServer-14.1VC9\data\localweb\projects\mafiaratings</i></li>
+</ol>	
+</body>
