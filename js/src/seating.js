@@ -253,11 +253,15 @@ class Seating
 			for (var r = 0; r < player.length; ++r)
 			{
 				var playerRound = player[r];
-				var n = playerRound % 10;
-				var t = (playerRound - n) / 10;
-				this.rounds[r][t][n] = p;
+				if (playerRound >= 0)
+				{
+					var n = playerRound % 10;
+					var t = (playerRound - n) / 10;
+					this.rounds[r][t][n] = p;
+				}
 			}
 		}
+		console.log(this.rounds);
 	}
 	
 	// _isDistrBetter(distr)
