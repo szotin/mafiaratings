@@ -583,6 +583,137 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// add_extra_points
+	//-------------------------------------------------------------------------------------------------------
+	function add_extra_points_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		$user_id = (int)get_required_param('user_id');
+		$reason = get_required_param('reason');
+		$details = get_optional_param('details');
+		$points = (float)get_required_param('points');
+		
+		if (empty($reason))
+		{
+			throw new Exc(get_label('Please enter reason.'));
+		}
+		
+		Db::begin();
+		list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		
+		Db::exec(get_label('points'), 'INSERT INTO event_extra_points (time, event_id, user_id, reason, details, points) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?, ?)', $event_id, $user_id, $reason, $details, $points);
+		list ($points_id) = Db::record(get_label('points'), 'SELECT LAST_INSERT_ID()');
+		
+		list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+		$log_details = new stdClass();
+		$log_details->user = $user_name;
+		$log_details->user_is = $user_id;
+		$log_details->event_id = $event_id;
+		$log_details->points = $points;
+		$log_details->reason = $reason;
+		if (!empty($details))
+		{
+			$log_details->details = $details;
+		}
+		db_log(LOG_OBJECT_EXTRA_POINTS, 'created', $log_details, $points_id, $club_id);
+		Db::commit();
+		
+		$this->response['points_id'] = $points_id;
+	}
+	
+	function add_extra_points_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_USER, 'Add extra points.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('user_id', 'User id. The user who is receiving or loosing points.');
+		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.');
+		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.');
+		$help->request_param('details', 'Detailed explanation why user recieves or looses points.', 'empty.');
+		
+		$help->response_param('points_id', 'Id of the created extra points object.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// change_extra_points
+	//-------------------------------------------------------------------------------------------------------
+	function change_extra_points_op()
+	{
+		$points_id = (int)get_required_param('points_id');
+		
+		Db::begin();
+		list($user_id, $event_id, $club_id, $old_reason, $old_details, $old_points) = 
+			Db::record(get_label('points'), 'SELECT p.user_id, p.event_id, e.club_id, p.reason, p.details, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		
+		$reason = get_optional_param('reason', $old_reason);
+		if (empty($reason))
+		{
+			throw new Exc(get_label('Please enter reason.'));
+		}
+		
+		$details = get_optional_param('details', $old_details);
+		$points = (float)get_optional_param('points', $old_points);
+		
+		Db::exec(get_label('points'), 'UPDATE event_extra_points SET reason = ?, details = ?, points = ? WHERE id = ?', $reason, $details, $points, $points_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			if ($reason != $old_reason)
+			{
+				$log_details->reason = $reason;
+			}
+			if ($details != $old_details)
+			{
+				$log_details->details = $details;
+			}
+			if ($points != $old_points)
+			{
+				$log_details->points = $points;
+			}
+			db_log(LOG_OBJECT_EXTRA_POINTS, 'changed', $log_details, $points_id, $club_id);
+		}
+		Db::commit();
+	}
+	
+	function change_extra_points_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_USER, 'Change extra points.');
+		$help->request_param('points_id', 'Id of extra points object.');
+		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.', 'remains the same');
+		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.', 'remains the same');
+		$help->request_param('details', 'Detailed explanation why user recieves or looses points.', 'remains the same');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// delete_extra_points
+	//-------------------------------------------------------------------------------------------------------
+	function delete_extra_points_op()
+	{
+		$points_id = (int)get_required_param('points_id');
+		
+		Db::begin();
+		list($club_id) = Db::record(get_label('points'), 'SELECT e.club_id FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		
+		Db::exec(get_label('points'), 'DELETE FROM event_extra_points WHERE id = ?', $points_id);
+		if (Db::affected_rows() > 0)
+		{
+			db_log(LOG_OBJECT_EXTRA_POINTS, 'deleted', NULL, $points_id, $club_id);
+		}
+		Db::commit();
+	}
+	
+	function delete_extra_points_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_USER, 'Delete extra points.');
+		$help->request_param('points_id', 'Id of extra points object.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()

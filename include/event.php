@@ -1234,6 +1234,7 @@ class EventPageBase extends PageBase
 				$menu[] = new MenuItem('#management', get_label('Management'), NULL, array
 				(
 					new MenuItem('event_players.php?id=' . $this->event->id, get_label('Players'), get_label('Manage players paricipaing in [0]', $this->event->name)),
+					new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name)),
 				));
 			}
 			

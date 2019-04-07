@@ -42,7 +42,7 @@ try
 	echo '</td></tr>';
 	
 	echo '<tr><td>'.get_label('Address').':</td><td><input id="form-address"></td></tr>';
-	echo '</td></tr></table>';
+	echo '</table>';
 ?>	
 	<script>
 	function commit(onSuccess)

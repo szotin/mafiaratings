@@ -34,6 +34,7 @@ try
 	echo '<input type="text" id="form-start-date" value="' . $start_date . '"> <input id="form-start-hour" value="' . $start_hour . '"> : <input id="form-start-minute" value="' . $start_minute . '"></td></tr>';
 	echo '<tr><td valign="top">' . get_label('Ending at').':</td><td>';
 	echo '<input type="text" id="form-end-date" value="' . $end_date . '"> <input id="form-end-hour" value="' . $end_hour . '"> : <input id="form-end-minute" value="' . $end_minute . '"></td></tr>';
+	echo '</table>';
 	
 ?>	
 	<script>

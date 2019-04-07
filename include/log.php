@@ -26,6 +26,7 @@ define('LOG_OBJECT_ADVERT', 'advert');
 define('LOG_OBJECT_EMAIL_TEMPLATE', 'email template');
 define('LOG_OBJECT_EVENT_EMAILS', 'event emails');
 define('LOG_OBJECT_STATS_CALCULATOR', 'stats calculator');
+define('LOG_OBJECT_EXTRA_POINTS', 'extra points');
 
 function prepare_log_objects()
 {
