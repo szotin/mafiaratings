@@ -125,3 +125,8 @@ textarea.wide_comment
 	font: 12px Arial;
 }
 
+.stars
+{
+	font-size: 35px;
+	color: rgb(136,105,0)
+}

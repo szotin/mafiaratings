@@ -29,6 +29,8 @@ try
 	}
 
 	echo '<table class="dialog_form" width="100%">';
+	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value=""></td></tr>';
+	
 	if ($league_id > 0)
 	{
 		list($league_name, $league_flags) = Db::record(get_label('league'), 'SELECT name, flags FROM leagues WHERE id = ?', $league_id);
@@ -39,17 +41,17 @@ try
 	else
 	{
 		echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league">';
+		show_option(0, 0, '');
 		$query = new DbQuery('SELECT l.id, l.name FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER by l.name', $club_id);
 		while ($row = $query->next())
 		{
-			list($league_id, $league_name) = $row;
-			show_option($league_id, -1, $league_name);
+			list($lid, $lname) = $row;
+			show_option($lid, 0, $lname);
 		}
-		show_option(0, -1, PRODUCT_NAME);
 		echo '</select></td></tr>';
 	}
 	
-	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value=""></td></tr>';
+	echo '<tr><td>' . get_label('Stars') . ':</td><td><div id="form-stars" class="stars"></div></td></tr>';
 	
 	$time = time();
 	date_default_timezone_set($club->timezone);
@@ -116,33 +118,28 @@ try
 	}
 	echo '</select></td></tr>';
 	
+	if (is_valid_lang($club->langs))
+	{
+		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
+	}
+	else
+	{
+		echo '<tr><td>'.get_label('Languages').':</td><td>';
+		langs_checkboxes(LANG_ALL, $club->langs, NULL, '<br>', 'form-');
+		echo '</td></tr>';
+	}
+	
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 		
-	// echo '<tr><td colspan="2">';
-	// echo '<input type="checkbox" id="form-reg_att"';
-	// if (($tournament->flags & tournament_FLAG_REG_ON_ATTEND) != 0)
-	// {
-		// echo ' checked';
-	// }
-	// echo '> '.get_label('allow users to register for the tournament when they click Attend button').'<br>';
-		
-	// echo '<input type="checkbox" id="form-pwd_req"';
-	// if (($tournament->flags & tournament_FLAG_PWD_REQUIRED) != 0)
-	// {
-		// echo ' checked';
-	// }
-	// echo '> '.get_label('user password is required when moderator is registering him for this tournament.').'<br>';
-
-	// echo '<input type="checkbox" id="form-all_mod"';
-	// if (($tournament->flags & tournament_FLAG_ALL_MODERATE) != 0)
-	// {
-		// echo ' checked';
-	// }
-	// echo '> '.get_label('everyone can moderate games.').'</td></tr>';
-	
+	echo '<tr><td colspan="2">';
+	echo '<input type="checkbox" id="form-long_term"> '.get_label('long term tournament. Like a seasonal club championship.').'<br>';
+	echo '<input type="checkbox" id="form-single_game"> '.get_label('single games from non-tournament events can be assigned to the tournament.').'<br>';
+	echo '<input type="checkbox" id="form-event_round"> '.get_label('club events can become tournament rounds if needed.').'<br>';
 	echo '</table>';
 	
 ?>	
+
+	<script type="text/javascript" src="js/rater.min.js"></script>
 	<script>
 	
 	var dateFormat = "yy-mm-dd";
@@ -181,27 +178,49 @@ try
 	}
 	addressClick();
 	
+	$("#form-stars").rate(
+	{
+		max_value: 5,
+		step_size: 0.5,
+		initial_value: 0,
+	});
+	
 	function commit(onSuccess)
 	{
+		console.log(startDate.val());
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
+		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
+		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
+		if ($("#form-event_round").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_EVENT_ROUND; ?>;
+		
+		var _end = strToDate(endDate.val());
+		_end.setDate(_end.getDate() + 1); // inclusive
 		
 		var params =
 		{
-			op: "create"
-			, club_id: <?php echo $club_id; ?>
-			, name: $("#form-name").val()
-			, price: $("#form-price").val()
-			, address_id: _addr
-			, scoring_id: $("#form-scoring").val()
-			, notes: $("#form-notes").val()
-			, start: startDate.val()
-			, end: ednDate.val()
-			, flags: _flags
+			op: "create",
+			club_id: <?php echo $club_id; ?>,
+			league_id: $("form-league").val(),
+			name: $("#form-name").val(),
+			price: $("#form-price").val(),
+			address_id: _addr,
+			scoring_id: $("#form-scoring").val(),
+			notes: $("#form-notes").val(),
+			start: startDate.val(),
+			end: dateToStr(_end),
+			langs: $("#form-langs").val(),
+			flags: _flags,
+			stars: $("#form-stars").rate("getValue"),
 		};
 		
-		if (_addr <= 0)
+		console.log(_addr);
+		if (_addr > 0)
+		{
+			params['address_id'] = _addr;
+		}
+		else
 		{
 			params['address'] = $("#form-new_addr").val();
 			params['country'] = $("#form-country").val();

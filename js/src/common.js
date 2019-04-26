@@ -770,4 +770,33 @@ function timespanToStr(timespan)
 	return str;
 }
 
+function strToDate(str)
+{
+	var date = new Date(str);
+	date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+	return date;
+}
+
+function dateToStr(date, withTime)
+{
+	function tz(val)
+	{
+		if (val < 10)
+		{
+			return "0" + val;
+		}
+		return val;
+	}
+	
+	var result = 
+		date.getFullYear() + "-" + 
+		tz(date.getMonth() + 1) + "-" + 
+		tz(date.getDate());
+	if (typeof withTime != "undefined" && withTime)
+	{
+		result += " " + tz(date.getHours()) + ":" + tz(date.getMinutes());
+	}
+	return result;
+}
+
 // function printStackTrace() { console.log((new Error('stack trace')).stack); }

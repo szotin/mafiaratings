@@ -159,10 +159,13 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 // 1 - 0x0001 -      1 - icon mask
 // 2 - 0x0002 -      2 - icon mask
 // 3 - 0x0004 -      4 - icon mask
-// 4 - 0x0008 -      8 - canceled
-// 5 - 0x0010 -     16 - reserved
-// 6 - 0x0020 -     32 - reserved
+// 4 - 0x0008 -      8 - long term tournament. Like a seasonal club championship.
+// 5 - 0x0010 -     16 - single games from non-tournament events can be assigned to the tournament.
+// 6 - 0x0020 -     32 - club events can become tournament rounds if needed.
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
+define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
+define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
+define('TOURNAMENT_FLAG_EVENT_ROUND', 0x40);
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);
@@ -257,6 +260,12 @@ define('EMAIL_EXPIRATION_TIME', 1209600); // two weeks
 
 define('VIDEO_TYPE_LEARNING', 0);
 define('VIDEO_TYPE_GAME', 1);
+
+define('COMPETITION_GAME', 0);
+define('COMPETITION_EVENT', 1);
+define('COMPETITION_TOURNAMENT', 2);
+define('COMPETITION_CLUB_SEASON', 3);
+define('COMPETITION_LEAGUE_SEASON', 4);
 
 function set_flag($flags, $flag, $value)
 {

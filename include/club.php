@@ -248,7 +248,7 @@ class ClubPageBase extends PageBase
 			$managment_menu = array(new MenuItem('club_users.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name)));
 			if ($this->is_manager)
 			{
-				$managment_menu[] = new MenuItem('club_upcoming_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] upcoming tournaments', $this->name));
+				//$managment_menu[] = new MenuItem('club_upcoming_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] upcoming tournaments', $this->name));
 				$managment_menu[] = new MenuItem('club_upcoming_events.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name));
 				$managment_menu[] = new MenuItem('club_addresses.php?id=' . $this->id, get_label('Addresses'), get_label('[0] addresses', $this->name));
 				$managment_menu[] = new MenuItem('club_seasons.php?id=' . $this->id, get_label('Seasons'), get_label('[0] seasons', $this->name));
