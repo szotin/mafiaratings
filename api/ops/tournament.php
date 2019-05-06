@@ -108,39 +108,7 @@ class ApiPage extends OpsApiPageBase
 			
 			if (!is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
 			{
-				// send emails to league managers asking for approval
-				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_managers l JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $league_id);
-				while ($row = $query->next())
-				{
-					list($user_id, $user_name, $user_email, $user_lang) = $row;
-					if (!is_valid_lang($user_lang))
-					{
-						$user_lang = get_lang($league_langs);
-						if (!is_valid_lang($user_lang))
-						{
-							$user_lang = LANG_RUSSIAN;
-						}
-					}
-					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_approve_tournament.php';
-					
-					$tags = array(
-						'root' => new Tag(get_server_url()),
-						'user_id' => new Tag($user_id),
-						'user_name' => new Tag($user_name),
-						'league_id' => new Tag($league_id),
-						'league_name' => new Tag($league_name),
-						'tournament_id' => new Tag($tournament_id),
-						'tournament_name' => new Tag($name),
-						'club_id' => new Tag($club_id),
-						'club_name' => new Tag($club->name),
-						'sender' => new Tag($_profile->user_name));
-					$body = parse_tags($body, $tags);
-					$text_body = parse_tags($text_body, $tags);
-					send_email($user_email, $body, $text_body, $subj);
-				}
-				
-				// set league_id to null until league managers approve it
-				$league_id = NULL;
+				$flags |= TOURNAMENT_FLAG_NOT_APROVED;
 			}
 		}
 		else if ($rules_code == NULL)
@@ -162,6 +130,55 @@ class ApiPage extends OpsApiPageBase
 				get_label('round'), 
 				'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_weight, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)',
 				$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $price, $scoring_id, $tournament_id, $rules_code);
+		}
+		
+		if ($flags & TOURNAMENT_FLAG_NOT_APROVED)
+		{
+			// send emails to league managers asking for approval
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_managers l JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $league_id);
+			while ($row = $query->next())
+			{
+				list($user_id, $user_name, $user_email, $user_lang) = $row;
+				if (!is_valid_lang($user_lang))
+				{
+					$user_lang = get_lang($league_langs);
+					if (!is_valid_lang($user_lang))
+					{
+						$user_lang = LANG_RUSSIAN;
+					}
+				}
+				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_tournament_approve.php';
+				$stars_str = '';
+				for ($i = 0; $i < floor($stars) && $i < 5; ++$i)
+				{
+					$stars_str .= '★';
+				}
+				for (; $i < $stars && $i < 5; ++$i)
+				{
+					$stars_str .= '✯';
+				}
+				for (; $i < 5; ++$i)
+				{
+					$stars_str .= '☆';
+				}
+				
+				$tags = array(
+					'root' => new Tag(get_server_url()),
+					'user_id' => new Tag($user_id),
+					'user_name' => new Tag($user_name),
+					'league_id' => new Tag($league_id),
+					'league_name' => new Tag($league_name),
+					'tournament_id' => new Tag($tournament_id),
+					'tournament_name' => new Tag($name),
+					'stars' => new Tag($stars),
+					'stars_str' => new Tag($stars_str),
+					'club_id' => new Tag($club_id),
+					'club_name' => new Tag($club->name),
+					'sender' => new Tag($_profile->user_name));
+				$body = parse_tags($body, $tags);
+				$text_body = parse_tags($text_body, $tags);
+				send_email($user_email, $body, $text_body, $subj);
+			}
 		}
 		
 		Db::commit();
@@ -476,8 +493,8 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		check_permissions(PERMISSION_CLUB_USER);
-		$event_id = (int)get_required_param('id');
+		check_permissions(PERMISSION_USER);
+		$tournament_id = (int)get_required_param('id');
 		$comment = prepare_message(get_required_param('comment'));
 		$lang = detect_lang($comment);
 		if ($lang == LANG_NO)
@@ -485,24 +502,24 @@ class ApiPage extends OpsApiPageBase
 			$lang = $_profile->user_def_lang;
 		}
 		
-		Db::exec(get_label('comment'), 'INSERT INTO event_comments (time, user_id, comment, event_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $event_id, $lang);
+		Db::exec(get_label('comment'), 'INSERT INTO tournament_comments (time, user_id, comment, tournament_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $tournament_id, $lang);
 		
-		list($event_id, $event_name, $event_start_time, $event_timezone, $event_addr) = 
-			Db::record(get_label('event'), 
-				'SELECT e.id, e.name, e.start_time, c.timezone, a.address FROM events e' .
+		list($tournament_id, $tournament_name, $tournament_start_time, $tournament_timezone, $tournament_addr) = 
+			Db::record(get_label('tournament'), 
+				'SELECT e.id, e.name, e.start_time, c.timezone, a.address FROM tournaments e' .
 				' JOIN addresses a ON a.id = e.address_id' . 
 				' JOIN cities c ON c.id = a.city_id' . 
-				' WHERE e.id = ?', $event_id);
+				' WHERE e.id = ?', $tournament_id);
 		
 		$query = new DbQuery(
 			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .
-			' JOIN event_users eu ON u.id = eu.user_id' .
-			' WHERE eu.coming_odds > 0 AND eu.event_id = ?)' .
+			' JOIN tournament_invitations ti ON u.id = ti.user_id' .
+			' WHERE ti.status <> ' . TOURNAMENT_INVITATION_STATUS_DECLINED . ')' .
 			' UNION DISTINCT ' .
 			' (SELECT DISTINCT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .
-			' JOIN event_comments c ON c.user_id = u.id' .
-			' WHERE c.event_id = ?)', $event_id, $event_id);
-		// echo $query->get_parsed_sql();
+			' JOIN tournament_comments c ON c.user_id = u.id' .
+			' WHERE c.tournament_id = ?)', $tournament_id, $tournament_id);
+		//echo $query->get_parsed_sql();
 		while ($row = $query->next())
 		{
 			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
@@ -517,34 +534,34 @@ class ApiPage extends OpsApiPageBase
 				'root' => new Tag(get_server_url()),
 				'user_id' => new Tag($user_id),
 				'user_name' => new Tag($user_name),
-				'event_id' => new Tag($event_id),
-				'event_name' => new Tag($event_name),
-				'event_date' => new Tag(format_date('l, F d, Y', $event_start_time, $event_timezone, $user_lang)),
-				'event_time' => new Tag(format_date('H:i', $event_start_time, $event_timezone, $user_lang)),
-				'addr' => new Tag($event_addr),
+				'tournament_id' => new Tag($tournament_id),
+				'tournament_name' => new Tag($tournament_name),
+				'tournament_date' => new Tag(format_date('l, F d, Y', $tournament_start_time, $tournament_timezone, $user_lang)),
+				'tournament_time' => new Tag(format_date('H:i', $tournament_start_time, $tournament_timezone, $user_lang)),
+				'addr' => new Tag($tournament_addr),
 				'code' => new Tag($code),
 				'sender' => new Tag($_profile->user_name),
 				'message' => new Tag($comment),
 				'url' => new Tag($request_base),
 				'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
 			
-			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_comment_event.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_comment_tournament.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
-			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_EVENT, $event_id, $code);
+			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_TOURNAMENT, $tournament_id, $code);
 		}
 	}
 	
 	function comment_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_USER, 'Leave a comment on the event.');
-		$help->request_param('id', 'Event id.');
+		$help = new ApiHelp(PERMISSION_USER, 'Leave a comment on the tournament.');
+		$help->request_param('id', 'Tournament id.');
 		$help->request_param('comment', 'Comment text.');
 		return $help;
 	}
 }
 
 $page = new ApiPage();
-$page->run('Event Operations', CURRENT_VERSION);
+$page->run('Tournament Operations', CURRENT_VERSION);
 
 ?>

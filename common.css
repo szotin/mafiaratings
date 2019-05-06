@@ -130,3 +130,8 @@ textarea.wide_comment
 	font-size: 35px;
 	color: rgb(136,105,0)
 }
+
+img.round
+{
+  border-radius: 50%;
+}

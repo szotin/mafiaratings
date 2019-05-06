@@ -202,7 +202,7 @@ try
 		{
 			op: "create",
 			club_id: <?php echo $club_id; ?>,
-			league_id: $("form-league").val(),
+			league_id: $("#form-league").val(),
 			name: $("#form-name").val(),
 			price: $("#form-price").val(),
 			address_id: _addr,

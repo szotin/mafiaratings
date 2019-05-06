@@ -257,7 +257,7 @@ class PageBase
 				echo '<a href="game.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('The game') . '"><img src="images/thegame.png" /></a>';
 				if ($club != NULL)
 				{
-					echo '<a href="club_main.php?id=' . $club->id . '" title="' . $club->name . '" id="club"  onMouseEnter="javascript:';
+					echo ' <a href="club_main.php?id=' . $club->id . '" title="' . $club->name . '" id="club"  onMouseEnter="javascript:';
 					if (count($_profile->clubs) > 1)
 					{
 						echo 'showClubMenu()">';
@@ -266,12 +266,12 @@ class PageBase
 					{
 						echo 'setCurrentMenu(null)">';
 					}
-					show_club_pic($club->id, $club->name, $club->club_flags, ICONS_DIR, 48);
-					echo '</a>';
+					show_club_pic($club->id, $club->name, $club->club_flags, ICONS_DIR, 48, 48); //, ' class="round"');
+					echo '</a> ';
 				}
-				echo '<a id="user" onMouseEnter="javascript:showUserMenu()" href="user_info.php?id=' . $_profile->user_id . '" title="' . $_profile->user_name . '">';
-				show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR, 48);
-				echo '</a>';
+				echo ' <a id="user" onMouseEnter="javascript:showUserMenu()" href="user_info.php?id=' . $_profile->user_id . '" title="' . $_profile->user_name . '">';
+				show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR, 48, 48); //, ' class="round"');
+				echo '</a> ';
 				
 				echo '<ul id="user-menu" style="display:none;position:absolute;width:150px;text-align:left;z-index:2147483647;">';
 				echo '<li><a href="user_info.php?id=' . $_profile->user_id . '" title="' . get_label('Statistics for [0]', $_profile->user_name) . '"><img src="images/user.png" class="menu_image"> ' . get_label('My statistics') . '</a></li>';

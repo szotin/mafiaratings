@@ -13,6 +13,11 @@ try
 		$object_type = 'event';
 		$id = $_REQUEST['event'];
 	}
+	else if (isset($_REQUEST['tournament']))
+	{
+		$object_type = 'tournament';
+		$id = $_REQUEST['tournament'];
+	}
 	else if (isset($_REQUEST['photo']))
 	{
 		$object_type = 'photo';
