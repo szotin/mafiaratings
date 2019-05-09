@@ -407,12 +407,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function delete_error_log_op()
 	{
-		$filename = get_required_param('file');
-		if (substr($filename, -9) != 'error_log')
-		{
-			throw new Exc($filename . ' is not an error log');
-		}
-		$filename = '../../' . $filename;
+		$dir = get_required_param('dir');
+		$filename = '../../' . $dir . 'error.log';
 		if (!unlink($filename))
 		{
 			throw new Exc('Failed to delete ' . $filename);
