@@ -128,7 +128,7 @@ class Page extends UserPageBase
 	function js()
 	{
 ?>
-		var code = "<?php echo $this->ccc_filter->get_code(); ?>";
+		var code = "<?php echo is_null($this->ccc_filter) ? '' : $this->ccc_filter->get_code(); ?>";
 		function onCCC(_code)
 		{
 			code = _code;
