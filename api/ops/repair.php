@@ -401,6 +401,35 @@ class ApiPage extends OpsApiPageBase
 	{
 		return PERMISSION_ADMIN;
 	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// delete_error_log
+	//-------------------------------------------------------------------------------------------------------
+	function delete_error_log_op()
+	{
+		$filename = get_required_param('file');
+		if (substr($filename, -9) != 'error_log')
+		{
+			throw new Exc($filename . ' is not an error log');
+		}
+		$filename = '../../' . $filename;
+		if (!unlink($filename))
+		{
+			throw new Exc('Failed to delete ' . $filename);
+		}
+	}
+	
+	// No help. We want to keep this API internal.
+	// function delete_error_log_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_ADMIN, 'Delete error log file.');
+		// return $help;
+	// }
+	
+	function delete_error_log_op_permissions()
+	{
+		return PERMISSION_ADMIN;
+	}
 }
 
 // No version support. We want to keep this API internal.

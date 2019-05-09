@@ -5,6 +5,40 @@ require_once 'include/image.php';
 
 class Page extends GeneralPageBase
 {
+	private function show_error_logs()
+	{
+		$all_logs = array(
+			'error_log',
+			'api/ops/error_log',
+			'api/control/error_log',
+			'api/get/error_log',
+			'include/error_log',
+			'include/languages/error_log',
+			'include/languages/en/error_log',
+			'include/languages/ru/error_log',
+		);
+		
+		$error_logs = array();
+		foreach ($all_logs as $filename)
+		{
+			if (file_exists($filename))
+			{
+				$error_logs[] = $filename;
+			}
+		}
+		
+		if (count($error_logs) > 0)
+		{
+			echo '<table class="bordered light" width="100%"><tr class="dark"><td colspan="2">There are some errors:</td></tr>';
+			foreach ($error_logs as $filename)
+			{
+				echo '<tr><td width="24"><button class="icon" onclick="deleteLog(\'' . $filename . '\')" title="Delete ' . $filename . '"><img src="images/delete.png" border="0"></button></td>';
+				echo '<td><a href="' . $filename . '">' . $filename . '</a></td></tr>';
+			}
+			echo '</table>';
+		}
+	}
+	
 	protected function show_body()
 	{
 		echo '<div id="progr"></div>';
@@ -28,6 +62,8 @@ class Page extends GeneralPageBase
 		echo '</p>';
 	
 		echo '<p><input type="submit" class="btn long" value="Rebuild stats" onclick="rebuildStats()"></p>';
+		
+		$this->show_error_logs();
 	}
 	
 	protected function js_on_load()
@@ -175,6 +211,14 @@ class Page extends GeneralPageBase
 			{
 				$("#progr").progressbar("option", "max", data.count);
 				updateProgress(data, statsNext);
+			});
+		}
+		
+		function deleteLog(filename)
+		{
+			dlg.yesNo("Are you sure you want to delete " + filename + "?", null, null, function()
+			{
+				json.post("api/ops/repair.php", { op: 'delete_error_log', file: filename }, refr);
 			});
 		}
 <?php

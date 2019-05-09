@@ -361,6 +361,7 @@ var http = new function()
 				var error = onSuccess(response.responseText);
 				if (typeof error == "string" && error.length > 0)
 				{
+					console.log(error);
 					w.error(error, onError, response.responseText);
 				}
 				else
@@ -371,6 +372,7 @@ var http = new function()
 			{
 				http.connected(false, w);
 				var msg = http.errorMsg(response, page);
+				console.log(msg);
 				w.error(msg, onError, response.responseText);
 			});
 			//}, 3000);
@@ -390,6 +392,7 @@ var http = new function()
 				var error = onSuccess(response.responseText);
 				if (typeof error == "string" && error.length > 0)
 				{
+					console.log(error);
 					w.error(error, onError, response.responseText);
 				}
 				else
@@ -400,6 +403,7 @@ var http = new function()
 			{
 				http.connected(false, w);
 				var msg = http.errorMsg(response, page);
+				console.log(msg);
 				w.error(msg, onError, response.responseText);
 			});
 			//}, 3000);
