@@ -20,10 +20,10 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
-		$league_id = (int)get_optional_param('league_id', NULL);
-		if ($league_id <= 0)
+		$request_league_id = (int)get_optional_param('league_id', NULL);
+		if ($request_league_id <= 0)
 		{
-			$league_id = NULL;
+			$request_league_id = NULL;
 		}
 		
 		$name = get_required_param('name');
@@ -90,12 +90,13 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Tournament ends before or right after the start.'));
 		}
 		
-		if ($league_id != NULL)
+		$league_id = $request_league_id;
+		if ($request_league_id != NULL)
 		{
-			list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
+			list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $request_league_id);
 			if ($rules_code == NULL)
 			{
-				$query = new DbQuery('SELECT rules FROM league_clubs WHERE club_id = ? AND league_id = ?', $club_id, $league_id);
+				$query = new DbQuery('SELECT rules FROM league_clubs WHERE club_id = ? AND league_id = ?', $club_id, $request_league_id);
 				if ($row = $query->next())
 				{
 					list($rules_code) = $row;
@@ -106,9 +107,9 @@ class ApiPage extends OpsApiPageBase
 				}
 			}
 			
-			if (!is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
+			if (!is_permitted(PERMISSION_LEAGUE_MANAGER, $request_league_id))
 			{
-				$flags |= TOURNAMENT_FLAG_NOT_APROVED;
+				$league_id = NULL;
 			}
 		}
 		else if ($rules_code == NULL)
@@ -118,9 +119,26 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, league_id, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $club_id, $address_id, $start, $end - $start, $langs, $notes, $price, $scoring_id, $rules_code, $flags);
+			'INSERT INTO tournaments (name, league_id, request_league_id, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $league_id, $request_league_id, $club_id, $address_id, $start, $end - $start, $langs, $notes, $price, $scoring_id, $rules_code, $flags, $stars);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
+		
+		$log_details = new stdClass();
+		$log_details->name = $name;
+		$log_details->league_id = $league_id;
+		$log_details->request_league_id = $request_league_id;
+		$log_details->club_id = $club_id; 
+		$log_details->address_id = $address_id; 
+		$log_details->start = $start;
+		$log_details->duration = $end - $start;
+		$log_details->langs = $langs;
+		$log_details->notes = $notes;
+		$log_details->price = $price;
+		$log_details->scoring_id = $scoring_id;
+		$log_details->rules_code = $rules_code;
+		$log_details->flags = $flags;
+		$log_details->stars = $stars;
+		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id, $request_league_id);
 		
 		if (($flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 		{
@@ -130,12 +148,27 @@ class ApiPage extends OpsApiPageBase
 				get_label('round'), 
 				'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_weight, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)',
 				$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $price, $scoring_id, $tournament_id, $rules_code);
+				
+			$log_details = new stdClass();
+			$log_details->name = $name;
+			$log_details->tournament_id = $tournament_id;
+			$log_details->club_id = $club_id; 
+			$log_details->address_id = $address_id; 
+			$log_details->start = $start;
+			$log_details->duration = $end - $start;
+			$log_details->langs = $langs;
+			$log_details->notes = $notes;
+			$log_details->price = $price;
+			$log_details->scoring_id = $scoring_id;
+			$log_details->rules_code = $rules_code;
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id, $request_league_id);
 		}
 		
-		if ($flags & TOURNAMENT_FLAG_NOT_APROVED)
+		if ($league_id != $request_league_id)
 		{
 			// send emails to league managers asking for approval
-			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_managers l JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $league_id);
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_managers l JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $request_league_id);
 			while ($row = $query->next())
 			{
 				list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -166,7 +199,7 @@ class ApiPage extends OpsApiPageBase
 					'root' => new Tag(get_server_url()),
 					'user_id' => new Tag($user_id),
 					'user_name' => new Tag($user_name),
-					'league_id' => new Tag($league_id),
+					'league_id' => new Tag($request_league_id),
 					'league_name' => new Tag($league_name),
 					'tournament_id' => new Tag($tournament_id),
 					'tournament_name' => new Tag($name),
@@ -179,6 +212,19 @@ class ApiPage extends OpsApiPageBase
 				$text_body = parse_tags($text_body, $tags);
 				send_email($user_email, $body, $text_body, $subj);
 			}
+		}
+		else if ($league_id != NULL && $league_id > 0)
+		{
+			Db::exec(
+				get_label('tournament'), 
+				'INSERT INTO tournament_approves (user_id, league_id, tournament_id, stars) values (?, ?, ?, ?)',
+				$_profile->user_id, $league_id, $tournament_id, $stars);
+				
+			$log_details = new stdClass();
+			$log_details->league_id = $league_id;
+			$log_details->tournament_id = $tournament_id;
+			$log_details->stars = $stars; 
+			db_log(LOG_OBJECT_TOURNAMENT, 'approved', $log_details, $tournament_id, $club_id, $league_id);
 		}
 		
 		Db::commit();
@@ -362,33 +408,81 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// extend
+	// approve
 	//-------------------------------------------------------------------------------------------------------
-	function extend_op()
+	function approve_op()
 	{
-		$event_id = (int)get_required_param('event_id');
-		$event = new Event();
-		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $event->club_id);
+		global $_profile;
 		
-		if ($event->timestamp + $event->duration + EVENT_ALIVE_TIME < time())
+		$tournament_id = (int)get_required_param('tournament_id');
+		$league_id = (int)get_required_param('league_id');
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		
+		Db::begin();
+		list ($request_league_id, $new_stars, $club_id) = Db::record(get_label('tournament'), 'SELECT request_league_id, stars, club_id FROM tournaments WHERE id = ?', $tournament_id);
+		
+		$stars = (float)get_optional_param('stars', $new_stars);
+		$approve = (bool)get_optional_param('approve', true);
+		
+		if ($approve)
 		{
-			throw new Exc(get_label('The event is too old. It can not be extended.'));
+			$new_stars = $stars = min(max($stars, 0), 5);
+			$new_league_id = $league_id;
+			
+			$query = new DbQuery('SELECT u.id, u.name, a.stars FROM tournament_approves a JOIN users u ON u.id = a.user_id WHERE a.league_id = ? AND a.tournament_id = ? ORDER BY a.stars', $league_id, $tournament_id);
+			while ($row = $query->next())
+			{
+				list ($user_id, $user_name, $user_stars) = $row;
+				if ($user_id == $_profile->user_id)
+				{
+					continue;
+				}
+				
+				if ($user_stars > 0)
+				{
+					if ($user_stars < $stars)
+					{
+						if ($new_league_id > 0)
+						{
+							echo get_label('Approved but it is still [0] stars. Because [1] did not give more.', $user_stars, $user_name);
+						}
+						$new_stars = $user_stars;
+					}
+					break;
+				}
+				
+				echo get_label('Approved but it is still disalowed because [0] denied it.', $user_name);
+				$new_league_id = NULL;
+			}
+		}
+		else
+		{
+			$stars = -1;
+			$new_league_id = NULL;
+			$update_tournament = 2; // update league_id
 		}
 		
-		$duration = (int)get_required_param('duration');
-		Db::begin();
-		Db::exec(get_label('event'), 'UPDATE events SET duration = ? WHERE id = ?', $duration, $event->id);
+		Db::exec(get_label('approve'), 'INSERT INTO tournament_approves (user_id, league_id, tournament_id, stars) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE stars = ?', $_profile->user_id, $league_id, $tournament_id, $stars, $stars);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
-			$log_details->duration = $duration;
-			db_log(LOG_OBJECT_TOURNAMENT, 'extended', $log_details, $event->id, $event->club_id);
+			$log_details->user_id = $_profile->user_id;
+			if ($approve)
+			{
+				$log_details->stars = $stars;
+				db_log(LOG_OBJECT_TOURNAMENT, 'approved', $log_details, $tournament_id, $club_id, $league_id);
+			}
+			else
+			{
+				db_log(LOG_OBJECT_TOURNAMENT, 'forbade', $log_details, $tournament_id, $club_id, $league_id);
+			}
 		}
+		
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET league_id = ?, stars = ? WHERE id = ?', $new_league_id, $new_stars, $tournament_id);
 		Db::commit();
 	}
 	
-	function extend_op_help()
+	function approve_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
 		$help->request_param('event_id', 'Event id.');

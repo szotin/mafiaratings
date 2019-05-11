@@ -150,6 +150,7 @@ class TournamentPageBase extends PageBase
 {
 	protected $id;
 	protected $name;
+	protected $request_league_id;
 	protected $league_id;
 	protected $league_name;
 	protected $league_flags;
@@ -186,14 +187,14 @@ class TournamentPageBase extends PageBase
 		}
 		$this->id = (int)$_REQUEST['id'];
 		list(
-			$this->name, $this->league_id, $this->league_name, $this->league_flags, $this->club_id, $this->club_name, $this->club_flags, 
+			$this->name, $this->request_league_id, $this->league_id, $this->league_name, $this->league_flags, $this->club_id, $this->club_name, $this->club_flags, 
 			$this->address_id, $this->address_name, $this->address, $this->address_url, $this->address_flags,
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->price, 
 			$this->scoring_id, $this->rules_code, $this->flags, $this->stars) =
 		Db::record(
 			get_label('tournament'),
-			'SELECT t.name, l.id, l.name, l.flags, c.id, c.name, c.flags,' . 
+			'SELECT t.name, t.request_league_id, l.id, l.name, l.flags, c.id, c.name, c.flags,' . 
 				' a.id, a.name, a.address, a.map_url, a.flags,' . 
 				' ct.id, ct.name_' . $_lang_code . ', cr.id, cr.name_' . $_lang_code . ', ct.timezone,' . 
 				' t.start_time, t.duration, t.langs, t.notes, t.price, t.scoring_id, t.rules, t.flags, t.stars' .
@@ -279,8 +280,15 @@ class TournamentPageBase extends PageBase
 		
 		echo '<td valign="top" align="right">';
 		show_back_button();
-		echo '</td></tr><tr><td align="right" valign="bottom"><a href="club_main.php?bck=1&id=' . $this->club_id . '" title="' . $this->club_name . '"><table><tr><td align="center">' . $this->club_name . '</td></tr><tr><td align="center">';
-		show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR);
+		echo '</td></tr><tr><td align="right" valign="bottom"><table><tr><td align="center"><a href="club_main.php?bck=1&id=' . $this->club_id . '">';
+		show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR, 48);
+		echo '</a>';
+		if ($this->league_id > 0)
+		{
+			echo ' <a href="league_main.php?bck=1&id=' . $this->league_id . '">';
+			show_league_pic($this->league_id, $this->league_name, $this->league_flags, ICONS_DIR, 48);
+			echo '</a>';
+		}
 		echo '</td></tr></table></a></td></tr>';
 		
 		echo '</table>';

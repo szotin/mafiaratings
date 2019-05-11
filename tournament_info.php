@@ -27,10 +27,21 @@ class Page extends TournamentPageBase
 	
 	protected function js_on_load()
 	{
+		global $_profile;
+		
 		echo 'mr.showComments("tournament", ' . $this->id . ", 5);\n";
-		if (isset($_REQUEST['approve']))
+		if (isset($_REQUEST['approve']) && $_profile != NULL && (!isset($_REQUEST['_login_']) || $_REQUEST['_login_'] == $_profile->user_id))
 		{
-			echo 'mr.approveTournament(' . $this->id . ', ' . $_REQUEST['approve'] . ');';
+			$league_id = (int)$_REQUEST['approve'];
+			if ($league_id > 0 && is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
+			{
+?>
+				dlg.form("tournament_approve.php?tournament_id=<?php echo $this->id; ?>&league_id=<?php echo $league_id; ?>", function ()
+				{
+					goTo("tournament_info.php?id=<?php echo $this->id; ?>");
+				}, 600);
+<?php
+			}
 		}
 	}
 	
