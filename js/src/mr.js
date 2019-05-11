@@ -549,6 +549,14 @@ var mr = new function()
 	{
 		dlg.form("tournament_edit.php?id=" + id, refr, 600);
 	}
+	
+	this.approveTournament = function(id, leagueId)
+	{
+		dlg.form("tournament_approve.php?tournament_id=" + id + "&league_id=" + leagueId, function ()
+		{
+			goTo("tournament_info.php?id=" + id);
+		}, 600);
+	}
 
 	//--------------------------------------------------------------------------------------
 	// scoring system

@@ -114,7 +114,7 @@ function show_tournament_pic($id, $name, $flags, $alt_id, $alt_name, $alt_flags,
 	echo '</span>';
 }
 
-function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags)
+function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $league_id)
 {
 	global $_profile;
 
@@ -143,6 +143,10 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 		}
 	}
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
+	if ($league_id > 0 && is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
+	{
+		echo '<button class="icon" onclick="mr.approveTournament(' . $id . ', ' . $league_id . ')" title="' . get_label('Open interactive standings page') . '"><img src="images/star-empty.png" border="0"></button>';
+	}
 }
 
 
@@ -259,7 +263,8 @@ class TournamentPageBase extends PageBase
 			$this->duration,
 			$this->flags,
 			$this->club_id,
-			$this->club_flags);
+			$this->club_flags,
+			$this->league_id);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		if ($this->address_url != '')
 		{
@@ -289,7 +294,20 @@ class TournamentPageBase extends PageBase
 			show_league_pic($this->league_id, $this->league_name, $this->league_flags, ICONS_DIR, 48);
 			echo '</a>';
 		}
-		echo '</td></tr></table></a></td></tr>';
+		echo '</td></tr><tr><td>';
+		for ($i = 0; $i < floor($this->stars); ++$i)
+		{
+			echo '<img src="images/star.png">';
+		}
+		for (; $i < $this->stars; ++$i)
+		{
+			echo '<img src="images/star-half.png">';
+		}
+		for (; $i < 5; ++$i)
+		{
+			echo '<img src="images/star-empty.png">';
+		}
+		echo '</td></tr></table></td></tr>';
 		
 		echo '</table>';
 	}

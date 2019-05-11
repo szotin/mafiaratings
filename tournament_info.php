@@ -36,10 +36,7 @@ class Page extends TournamentPageBase
 			if ($league_id > 0 && is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
 			{
 ?>
-				dlg.form("tournament_approve.php?tournament_id=<?php echo $this->id; ?>&league_id=<?php echo $league_id; ?>", function ()
-				{
-					goTo("tournament_info.php?id=<?php echo $this->id; ?>");
-				}, 600);
+				mr.approveTournament(<?php echo $this->id; ?>, <?php echo $league_id; ?>);
 <?php
 			}
 		}
