@@ -34,6 +34,7 @@ class ViewGame
 	public $row;
 	public $civ_odds;
 	public $video;
+	public $rules_code;
 	
 	public $players;
 	
@@ -62,7 +63,7 @@ class ViewGame
 		}
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id FROM games g' .
+			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN clubs c ON c.id = g.club_id' . 
 				' JOIN addresses a ON a.id = e.address_id' .
@@ -73,7 +74,7 @@ class ViewGame
 		{
 			list (
 				$this->event_id, $event_name, $this->event_flags, $timezone, $event_time, $this->club_id, $this->club, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $start_time, $duration,
-				$this->language_code, $this->civ_odds, $this->result, $this->video_id) = $row;
+				$this->language_code, $this->civ_odds, $this->result, $this->video_id, $this->rules) = $row;
 
 			$this->event = $event_name . format_date('. M j Y.', $event_time, $timezone);
 		}
@@ -150,7 +151,7 @@ class ViewGamePageBase extends PageBase
 	protected function show_player_name($player, $player_score)
 	{
 		$gs = $this->vg->gs;
-		echo '<td width="48"><a href="view_game_stats.php?num=' . $player->number . '&bck=1" title="' . $player->nick . '">';
+		echo '<td width="48"><a href="view_game_stats.php?id=' . $gs->id . '&num=' . $player->number . '&bck=1" title="' . $player->nick . '">';
 		if ($player_score != NULL)
 		{
 			show_user_pic($player->id, $player->nick, $player_score->user_flags, ICONS_DIR, 48, 48);
@@ -171,6 +172,14 @@ class ViewGamePageBase extends PageBase
 		else if ($gs->best_move == $player->number)
 		{
 			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right"><img src="images/best_move.png" title="' . get_label('Best move') . '"></td></tr></table>';
+		}
+		else if ($player->extra_points > 0)
+		{
+			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right"><big><b>+' . $player->extra_points . '</b></big></td></tr></table>';
+		}
+		else if ($player->extra_points < 0)
+		{
+			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right"><big><b>' . $player->extra_points . '</b></big></td></tr></table>';
 		}
 		else
 		{
@@ -202,34 +211,14 @@ class ViewGamePageBase extends PageBase
 		$id = -1;
 		if (isset($_REQUEST['id']))
 		{
-			$id = $_REQUEST['id'];
+			$id = (int)$_REQUEST['id'];
 		}
-		
-		$this->vg = NULL;
-		if (isset($_SESSION['view_game']))
-		{
-			$this->vg = $_SESSION['view_game'];
-			if ($id > 0 && $this->vg->gs->id != $id)
-			{
-				$this->vg = new ViewGame($id);
-				$_SESSION['view_game'] = $this->vg;
-			}
-			else if ($this->vg->result == 0)
-			{
-				$this->vg->refresh();
-			}
-		}
-		else if ($id > 0)
-		{
-			$this->vg = new ViewGame($id);
-			$_SESSION['view_game'] = $this->vg;
-		}
-		
-		if ($this->vg == NULL)
+		if ($id <= 0)
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 		}
 		
+		$this->vg = new ViewGame($id);
 		$this->gametime = 0;
 		if (isset($_REQUEST['gametime']))
 		{
@@ -279,7 +268,7 @@ class ViewGamePageBase extends PageBase
 		$right_page_len = strlen($right_page);
 		if ($right_page_len > $page_name_len || substr_compare($page_name, $right_page, $page_name_len - $right_page_len, $right_page_len) !== 0)
 		{
-			throw new RedirectExc($right_page . '?gametime=' . $this->gametime);
+			throw new RedirectExc($right_page . '?id=' . $id . '&gametime=' . $this->gametime);
 		}
 		
 		// Find next and prev games
@@ -435,6 +424,7 @@ class ViewGamePageBase extends PageBase
 			}
 		}
 		echo '</td></tr><tr><td align="right" valign="bottom"><form method="get" name="gotoForm" action="' . get_page_name() . '">';
+		echo '<input type="hidden" name="id" value="' . $gs->id . '">';
 		echo '<select name="gametime" onChange="document.gotoForm.submit()">';
 		show_option(0, $this->gametime, get_label('Game results'));
 		show_option(1, $this->gametime, get_label('Initial Night'));
@@ -456,6 +446,7 @@ class ViewGamePageBase extends PageBase
 	{
 		echo '<p><form method="post" action="' . get_page_name() . '">';
 		echo '<input type="hidden" name="gametime" value="' . $this->gametime . '">';
+		echo '<input type="hidden" name="id" value="' . $this->vg->gs->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td valign="top"><input value="'.get_label('Prev').'" class="btn norm" type="submit" name="prev"';
 		if ($this->gametime <= 0)
@@ -490,25 +481,6 @@ class ViewGamePageBase extends PageBase
 			});
 		}
 <?php
-	}
-}
-
-function reset_viewed_game($game_id, $keep = true)
-{
-	if (isset($_SESSION['view_game']))
-	{
-		$vg = $_SESSION['view_game'];
-		if ($vg->gs->id == $game_id)
-		{
-			if ($keep)
-			{
-				$vg->refresh();
-			}
-			else
-			{
-				unset($_SESSION['view_game']);
-			}
-		}
 	}
 }
 

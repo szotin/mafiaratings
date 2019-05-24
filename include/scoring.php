@@ -815,12 +815,14 @@ class PlayerHistoryPoint
 	public $timestamp;
 	public $points;
 	public $additional_points; // convert points to an array by category later. Now there are only 2 categories, so we'd rather keep it in a separate var.
+	public $extra_points;
 	
-	function __construct($timestamp, $points, $additional_points)
+	function __construct($timestamp, $points, $additional_points, $extra_points)
 	{
 		$this->timestamp = $timestamp;
 		$this->points = $points;
 		$this->additional_points = $additional_points;
+		$this->extra_points = $extra_points;
 	}
 }
 
@@ -835,6 +837,7 @@ class PlayerScore
 	public $club_flags;
 	public $points;
 	public $additional_points; // convert points to an array by category later. Now there are only 2 categories, so we'd rather keep it in a separate var.
+	public $extra_points;
 	public $counters;
 	public $games_played;
 	public $games_won;
@@ -846,6 +849,7 @@ class PlayerScore
 	{
 		$this->points = 0.0;
 		$this->additional_points = 0.0;
+		$this->extra_points = 0.0;
 		$this->counters = array_fill(0, SCORING_MATTER_COUNT * 4, 0);
 		$this->scores = $scores;
 		$this->games_played = 0;
@@ -862,12 +866,12 @@ class PlayerScore
 		}
 	}
 	
-	function add_counters($scoring_flags, $player_role, $timestamp, $weight)
+	function add_counters($scoring_flags, $extra_points, $player_role, $timestamp, $weight)
 	{
 		if (is_array($this->history) && $this->timestamp != $timestamp)
 		{
 			$this->calculate_points();
-			$this->history[] = new PlayerHistoryPoint($this->timestamp, $this->points, $this->additional_points);
+			$this->history[] = new PlayerHistoryPoint($this->timestamp, $this->points, $this->additional_points, $this->extra_points);
 			$this->timestamp = $timestamp;
 		}
 		
@@ -888,6 +892,7 @@ class PlayerScore
 			$flag <<= 1;
 			++$offset;
 		}
+		$this->extra_points += $extra_points;
 	}
 	
 	function finalize_points($timestamp)
@@ -897,10 +902,10 @@ class PlayerScore
 		{
 			if ($this->timestamp != $timestamp)
 			{
-				$this->history[] = new PlayerHistoryPoint($this->timestamp, $this->points, $this->additional_points);
+				$this->history[] = new PlayerHistoryPoint($this->timestamp, $this->points, $this->additional_points, $this->extra_points);
 				$this->timestamp = $timestamp;
 			}
-			$this->history[] = new PlayerHistoryPoint($this->timestamp, $this->points, $this->additional_points);
+			$this->history[] = new PlayerHistoryPoint($this->timestamp, $this->points, $this->additional_points, $this->extra_points);
 		}
 	}
 	
@@ -909,7 +914,7 @@ class PlayerScore
 		$scoring_system = $this->scores->scoring_system;
 		$stats = $this->scores->stats;
 		
-		$this->points = 0.0;
+		$this->points = $this->extra_points;
 		$this->additional_points = 0.0;
 		foreach ($scoring_system->rules as $rule)
 		{
@@ -1202,7 +1207,7 @@ class Scores
 			}
 		}
 		
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role, g.end_time, g.round_num FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE 1', $condition);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role, p.extra_points, g.end_time, g.round_num FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE 1', $condition);
 		if ($scope_condition != NULL)
 		{
 			$query->add($scope_condition);
@@ -1214,7 +1219,7 @@ class Scores
 		// echo $query->get_parsed_sql();
 		while ($row = $query->next())
 		{
-			list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $scoring_flags, $player_role, $timestamp, $round_num) = $row;
+			list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $scoring_flags, $player_role, $player_extra_points, $timestamp, $round_num) = $row;
 			$weight = 1;
 			if ($rounds != null)
 			{
@@ -1247,7 +1252,7 @@ class Scores
 			{
 				$timestamp = $start_time + round(ceil(($timestamp - $start_time) / $interval) * $interval);
 			}
-			$player_score->add_counters($scoring_flags, $player_role, $timestamp, $weight);
+			$player_score->add_counters($scoring_flags, $player_extra_points, $player_role, $timestamp, $weight);
 		}
 		
 		$this->players = array();

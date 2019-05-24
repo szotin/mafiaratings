@@ -629,12 +629,12 @@ class GamePlayerStats
             'INSERT INTO players (game_id, user_id, nick_name, number, role, rating_before, rating_earned, flags, ' .
 				'voted_civil, voted_mafia, voted_sheriff, voted_by_civil, voted_by_mafia, voted_by_sheriff, ' .
 				'nominated_civil, nominated_mafia, nominated_sheriff, nominated_by_civil, nominated_by_mafia, nominated_by_sheriff, ' .
-				'kill_round, kill_type, warns, was_arranged, checked_by_don, checked_by_sheriff, won) ' .
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				'kill_round, kill_type, warns, was_arranged, checked_by_don, checked_by_sheriff, won, extra_points) ' .
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$gs->id, $player->id, $player->nick, $this->player_num + 1, $player->role, $this->rating_before, $this->rating_earned, $this->scoring_flags,
 			$this->voted_civil, $this->voted_mafia, $this->voted_sheriff, $this->voted_by_civil, $this->voted_by_mafia, $this->voted_by_sheriff,
 			$this->nominated_civil, $this->nominated_mafia, $this->nominated_sheriff, $this->nominated_by_civil, $this->nominated_by_mafia, $this->nominated_by_sheriff,
-			$player->kill_round, $this->kill_type, $player->warnings, $player->arranged, $player->don_check, $player->sheriff_check, $this->won);
+			$player->kill_round, $this->kill_type, $player->warnings, $player->arranged, $player->don_check, $player->sheriff_check, $this->won, $player->extra_points);
 
 		switch ($player->role)
 		{

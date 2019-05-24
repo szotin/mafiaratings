@@ -263,11 +263,6 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_VIDEO, 'deleted', NULL, $video_id, $club_id);
 		}
 		Db::commit();
-		
-		if ($game_id != NULL)
-		{
-			reset_viewed_game($game_id);
-		}
 	}
 
 	function delete_op_help()
@@ -320,8 +315,6 @@ class ApiPage extends OpsApiPageBase
 		Db::commit();
 		
 		$this->response['video_id'] = $video_id;
-		
-		reset_viewed_game($game_id);
 	}
 	
 	function game_video_op_help()

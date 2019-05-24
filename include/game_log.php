@@ -1,6 +1,6 @@
 <?php
 
-define('CURRENT_LOG_VERSION', 10);
+define('CURRENT_LOG_VERSION', 11);
 
 // log record types
 define('LOGREC_NORMAL', 0);

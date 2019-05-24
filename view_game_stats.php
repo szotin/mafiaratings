@@ -19,11 +19,18 @@ class Page extends PageBase
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('player')));
 		}
-		if (!isset($_SESSION['view_game']))
+		
+		$id = -1;
+		if (isset($_REQUEST['id']))
+		{
+			$id = (int)$_REQUEST['id'];
+		}
+		if ($id <= 0)
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 		}
-		$this->vg = $_SESSION['view_game'];
+		
+		$this->vg = new ViewGame($id);
 		$this->stats = new GamePlayerStats($this->vg->gs, $_REQUEST['num']);
 		
 		$this->_title = $this->stats->get_title();

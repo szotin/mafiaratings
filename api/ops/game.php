@@ -693,7 +693,6 @@ class CommandQueue
 			$this->correct_game($game);
 			$game->save();
 			save_game_results($game);
-			reset_viewed_game($game->id);
 		}
 		else
 		{
@@ -1060,7 +1059,6 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
 		Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is deleted');
 		
-		reset_viewed_game($game_id, false);
 		db_log(LOG_OBJECT_GAME, 'deleted', NULL, $game_id, $club_id);
 		Db::commit();
 		
@@ -1135,6 +1133,50 @@ class ApiPage extends OpsApiPageBase
 		// $this->show_help_request_params_head();
 		// $this->show_help_response_params_head();
 	// }
+	
+//-------------------------------------------------------------------------------------------------------
+	// extra_points
+	//-------------------------------------------------------------------------------------------------------
+	function extra_points_op()
+	{
+		global $_profile;
+		
+		$game_id = (int)get_required_param('game_id');
+        $user_id = (int)get_required_param('user_id');
+        $points = (float)get_required_param('points');
+		
+        list($game_log, $club_id) = Db::record(get_label('game'), 'SELECT log, club_id FROM games WHERE id = ?', $game_id);
+
+        $gs = new GameState();
+        $gs->init_existing($game_id, $game_log);
+        foreach ($gs->players as $player)
+        {
+            if ($user_id == $player->id)
+            {
+				Db::begin();
+                $player->extra_points = $points;
+                rebuild_game_stats($gs);
+
+                $log_details = new stdClass();
+                $log_details->user_id = $user_id;
+                db_log(LOG_OBJECT_GAME, 'extra_points', $log_details, $game_id, $club_id);
+                Db::commit();
+				return;
+            }
+        }
+
+        list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+        throw new Exc(get_label('[0] did not play in the game [1]', $user_name, $game_id));
+	}
+	
+	function extra_points_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Add extra points for a player.');
+		$help->request_param('game_id', 'Game id.');
+		$help->request_param('user_id', 'User id. User must be a player in this game.');
+		$help->request_param('points', 'Extra points. Floating point number from -0.4 to 0.7');
+		return $help;
+    }
 	
 	//-------------------------------------------------------------------------------------------------------
 	// comment

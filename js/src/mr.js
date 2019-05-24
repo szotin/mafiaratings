@@ -679,6 +679,11 @@ var mr = new function()
 		dlg.page("game_video.php?game=" + gameId);
 	}
 	
+	this.gameExtraPoints = function(gameId, userId)
+	{
+		dlg.form("game_extra_points.php?game_id=" + gameId + '&user_id=' + userId, refr, 400);
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// find
 	//--------------------------------------------------------------------------------------

@@ -36,6 +36,7 @@ class Player
     public $don_check; // round num when don checked the player; -1 if he didn't
     public $sheriff_check; // round num when sheriff checked the player; -1 if he didn't
     public $mute; // number of round when player misses his speach because of warnings
+	public $extra_points;
 	
 	function __construct($number)
     {
@@ -53,6 +54,7 @@ class Player
 		$this->don_check = -1;
 		$this->sheriff_check = -1;
 		$this->mute = -1;
+		$this->extra_points = 0;
     }
 	
 	function create_from_json($data)
@@ -71,6 +73,10 @@ class Player
     	$this->don_check = $data->don_check;
     	$this->sheriff_check = $data->sheriff_check;
     	$this->mute = $data->mute;
+		if (isset($data->extra_points))
+		{
+			$this->extra_points = $data->extra_points;
+		}
 	}
 	
 	function init($id, $club_id, $event_id, $registered_only)
@@ -229,7 +235,8 @@ class Player
 			$this->arranged . GAME_PARAM_DELIMITER .
 			$this->don_check . GAME_PARAM_DELIMITER .
 			$this->sheriff_check . GAME_PARAM_DELIMITER .
-			$this->mute . GAME_PARAM_DELIMITER;
+			$this->mute . GAME_PARAM_DELIMITER .
+			$this->extra_points . GAME_PARAM_DELIMITER;
     }
 
     function read($input, $version, &$offset)
@@ -248,6 +255,10 @@ class Player
 		if ($version > 9)
 		{
 			$this->mute = (int) read_param($input, $offset);
+			if ($version > 10)
+			{
+				$this->extra_points = (float) read_param($input, $offset);
+			}
 		}
 		else
 		{
