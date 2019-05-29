@@ -530,8 +530,22 @@ var mafia = new function()
 	this.playerTitle = function(num)
 	{
 		var pid = _data.game.players[num].id;
-		if (pid == 0) return num + 1;
-		return mafia.userTitle(pid);
+		var title = num + 1;
+		if (pid > 0)
+		{
+			var t =  _data.club.players[pid].name;
+			var event = _data.club.events[_data.game.event_id];
+			if (typeof event != "undefined")
+			{
+				var nick = event.reg[pid];
+				if (typeof nick != "undefined")
+				{
+					t = nick;
+				}
+			}
+			title += ' (' + t + ')';
+		}
+		return title;
 	}
 	
 	this.findPlayer = function(name)
