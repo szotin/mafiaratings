@@ -4,14 +4,6 @@ require_once 'include/page_base.php';
 
 class Page extends PageBase
 {
-	protected function prepare()
-	{
-		if (!is_mobile())
-		{
-			throw new RedirectExc('index.php');
-		}
-	}
-
 	protected function show_body()
 	{
 		global $_profile, $_lang_code, $_agent;

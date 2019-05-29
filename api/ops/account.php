@@ -699,36 +699,6 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// site_style
-	//-------------------------------------------------------------------------------------------------------
-	function site_style_op()
-	{
-		global $_agent;
-		switch ((int)get_required_param('style'))
-		{
-			case SITE_STYLE_DESKTOP:
-				if ($_agent != AGENT_BROWSER || (isset($_SESSION['mobile']) && $_SESSION['mobile']))
-				{
-					$_SESSION['mobile'] = false;
-				}
-				break;
-			case SITE_STYLE_MOBILE:
-				if ($_agent == AGENT_BROWSER || (isset($_SESSION['mobile']) && !$_SESSION['mobile']))
-				{
-					$_SESSION['mobile'] = true;
-				}
-				break;
-		}
-	}
-	
-	function site_style_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_EVERYONE, 'Set prefered site style for user.');
-		$help->request_param('style', '0 for desktop style. 1 for mobile style.');
-		return $help;
-	}
-	
-	//-------------------------------------------------------------------------------------------------------
 	// browser_lang
 	//-------------------------------------------------------------------------------------------------------
 	function browser_lang_op()

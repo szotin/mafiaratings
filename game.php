@@ -64,10 +64,6 @@ class Page extends PageBase
 		if (!$this->error)
 		{
 			echo 'mafia.ui.start(mafia.ui.FLAG_ONLINE';
-			if (is_mobile())
-			{
-				echo ' | mafia.ui.FLAG_MOBILE';
-			}
 			if (isset($_REQUEST['edit']))
 			{
 				echo ' | mafia.ui.FLAG_EDITING';

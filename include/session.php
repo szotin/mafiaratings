@@ -443,17 +443,6 @@ function initiate_session($lang_code = NULL)
 	echo '</pre>';*/
 }
 
-function is_mobile()
-{
-	global $_agent;
-	
-	if (isset($_SESSION['mobile']))
-	{
-		return $_SESSION['mobile'];
-	}
-	return $_agent != AGENT_BROWSER;
-}
-
 function parse_request_params($params)
 {
 	$array = array();
@@ -530,11 +519,6 @@ function get_back_page($params = NULL)
 			return $list[$current_back][1];
 		}
 	}
-	
-	if (is_mobile())
-	{
-		return 'menu.php';
-	}
 	return '';
 }
 
@@ -555,16 +539,11 @@ function show_back_button($params = NULL)
 			return;
 		}
 	}
-	
-	if (is_mobile())
-	{
-		echo '<a class="back" href="menu.php" onclick="this.blur();"><span>' . get_label('Back to the [[0]]', get_label('Menu')) . '</span></a>';
-	}
 }
 
 function can_go_back()
 {
-	return is_mobile() || (isset($_SESSION['back_list']) && count($_SESSION['back_list']) >= 1);
+	return isset($_SESSION['back_list']) && count($_SESSION['back_list']) >= 1;
 }
 
 function redirect_back($params = NULL)

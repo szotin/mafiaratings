@@ -16,14 +16,7 @@ try
 	echo '<head>';
 	echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
 	echo '<script src="js/labels_' . $_lang_code . '.js"></script>';
-	if (is_mobile())
-	{
-		echo '<link rel="stylesheet" href="mobile.css" type="text/css" media="screen" />';
-	}
-	else
-	{
-		echo '<link rel="stylesheet" href="desktop.css" type="text/css" media="screen" />';
-	}
+	echo '<link rel="stylesheet" href="desktop.css" type="text/css" media="screen" />';
 	echo '<link rel="stylesheet" href="common.css" type="text/css" media="screen" />';
 	
 	echo '</head><body>';

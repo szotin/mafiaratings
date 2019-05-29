@@ -14,9 +14,6 @@ define('AGENT_IPAD', 3);
 define('AGENT_ANDROID', 4);
 define('AGENT_WEBOS', 5);
 
-define('SITE_STYLE_DESKTOP', 0);
-define('SITE_STYLE_MOBILE', 1);
-
 // user-league flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
 // 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag moder)
