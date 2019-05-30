@@ -23,9 +23,9 @@ var mr = new function()
 		json.post("api/ops/account.php", { op: "site_style", style: $('#mobile').val() }, refr);
 	}
 
-	this.browserLangChange = function()
+	this.browserLangChange = function(l)
 	{
-		json.post("api/ops/account.php", { op: "browser_lang", lang: $('#browser_lang').val() }, refr);
+		json.post("api/ops/account.php", { op: "browser_lang", lang: l }, refr);
 	}
 
 	this.resetPassword = function()

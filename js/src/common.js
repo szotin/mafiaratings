@@ -656,9 +656,9 @@ function login(name, pwd, rem, onSuccess, onError)
 	
 	json.post("api/ops/account.php", { op: "get_token" }, function(token_resp)
 	{
-		if (typeof rem == "undefined") rem = $('#remember').attr('checked') ? 1 : 0;
-		if (typeof pwd == "undefined") pwd = $("#password").val();
-		if (typeof name == "undefined") name = $("#username").val();
+		if (typeof rem == "undefined") rem = $('#header-remember').attr('checked') ? 1 : 0;
+		if (typeof pwd == "undefined") pwd = $("#header-password").val();
+		if (typeof name == "undefined") name = $("#header-username").val();
 		if (typeof onSuccess == "undefined") onSuccess = refr;
 		
 		var token = token_resp.token;

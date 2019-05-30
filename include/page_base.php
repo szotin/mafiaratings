@@ -207,14 +207,14 @@ class PageBase
 		if ($_session_state == SESSION_NO_USER || $_session_state == SESSION_LOGIN_FAILED)
 		{
 			echo '<td class="header" align="right"><form action="javascript:login()">';
-			echo get_label('User name') . ':&nbsp;<input id="username" class="in-header short">&nbsp;';
-			echo get_label('Password') . ':&nbsp;<input type="password" id="password" class="in-header short">&nbsp;';
+			echo get_label('User name') . ':&nbsp;<input id="header-username" class="in-header short">&nbsp;';
+			echo get_label('Password') . ':&nbsp;<input type="password" id="header-password" class="in-header short">&nbsp;';
 			echo '<input value="Login" class="in-header" type="submit"><br>';
-			echo '<input class="in-header" type="checkbox" id="remember" checked>'.get_label('remember me').'</form></td>';
+			echo '<input class="in-header" type="checkbox" id="header-remember" checked>'.get_label('remember me').'</form></td>';
 			echo '<td  class="header" align="right">';
 			echo '<a href="index.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('Home') . '"><img src="images/home.png" /></a></>';
 			echo '<a href="javascript:mr.resetPassword()" title="' . get_label('I forgot my password. Please help me!') . '"><img src="images/password.png"></a>';
-			echo '<a href="javascript:mr.createAccount()" title="' . get_label('Create user account') . '"><img src="images/create_user.png"></a></td>';
+			echo '<a href="javascript:mr.createAccount()" title="' . get_label('Create user account') . '"><img src="images/create_user.png"></a>';
 		}
 		else if ($_profile != NULL)
 		{
@@ -230,7 +230,7 @@ class PageBase
 			echo '<a href="game.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('The game') . '"><img src="images/thegame.png" /></a>';
 			if ($club != NULL)
 			{
-				echo ' <a href="club_main.php?id=' . $club->id . '" title="' . $club->name . '" id="club"  onMouseEnter="javascript:';
+				echo ' <a href="club_main.php?id=' . $club->id . '" title="' . $club->name . '" id="header-club"  onMouseEnter="javascript:';
 				if (count($_profile->clubs) > 1)
 				{
 					echo 'showClubMenu()">';
@@ -242,11 +242,11 @@ class PageBase
 				show_club_pic($club->id, $club->name, $club->club_flags, ICONS_DIR, 48, 48); //, ' class="round"');
 				echo '</a> ';
 			}
-			echo ' <a id="user" onMouseEnter="javascript:showUserMenu()" href="user_info.php?id=' . $_profile->user_id . '" title="' . $_profile->user_name . '">';
+			echo ' <a id="header-user" onMouseEnter="javascript:showUserMenu()" href="user_info.php?id=' . $_profile->user_id . '" title="' . $_profile->user_name . '">';
 			show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR, 48, 48); //, ' class="round"');
 			echo '</a> ';
 			
-			echo '<ul id="user-menu" style="display:none;position:absolute;width:150px;text-align:left;z-index:2147483647;">';
+			echo '<ul id="header-user-menu" style="display:none;position:absolute;width:150px;text-align:left;z-index:2147483647;">';
 			echo '<li><a href="user_info.php?id=' . $_profile->user_id . '" title="' . get_label('Statistics for [0]', $_profile->user_name) . '"><img src="images/user.png" class="menu_image"> ' . get_label('My statistics') . '</a></li>';
 			echo '<li><a href="javascript:mr.editAccount()" title="' . get_label('Account settings') . '"><img src="images/settings.png" class="menu_image"> ' . get_label('My account') . '</a></li>';
 			echo '<li><a href="javascript:mr.changePassword()" title="' . get_label('Change password') . '"><img src="images/key.png" class="menu_image"> ' . get_label('Change password') . '</a></li>';
@@ -259,7 +259,7 @@ class PageBase
 
 			if (count($_profile->clubs) > 1)
 			{
-				echo '<ul id="club-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';
+				echo '<ul id="header-club-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';
 				foreach ($_profile->clubs as $c)
 				{
 					if ($c->id != $club->id && ($c->club_flags & CLUB_FLAG_RETIRED) == 0)
@@ -271,9 +271,19 @@ class PageBase
 				}
 				echo '</ul>';
 			}
-			echo '</td>';
 		}
-		echo '</tr></table>';
+		echo '</td><td width="32"><a id="header-lang" onMouseEnter="setCurrentMenu(null)" href="javascript:mr.browserLangChange(\'';
+		if ($_lang_code == 'ru')
+		{
+			echo 'en';
+		}
+		else
+		{
+			echo 'ru';
+		}
+		echo '\')" title="' . get_label('Change language') . '"><img src="images/' . $_lang_code . '.png" width="32"></a>';
+		
+		echo '</td></tr></table>';
 		echo '<table class="main" border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
 		echo '<tr>';
 		echo '<td valign="top">';
@@ -284,9 +294,9 @@ class PageBase
 		{
 /*			case SESSION_TIMEOUT:
 				echo get_label('[0], your session has been expired. Please login to continue', cut_long_name($_profile->user_name, 110)) . ':<br>';
-				echo '<input type="hidden" id="username" value="' . $_profile->user_name . '">';
-				echo 'Password:&nbsp;<input type="password" id="password"><br>';
-				echo '<input type="checkbox" id="remember" checked> ' . get_label('remember me') . '<br>';
+				echo '<input type="hidden" id="header-username" value="' . $_profile->user_name . '">';
+				echo 'Password:&nbsp;<input type="password" id="header-password"><br>';
+				echo '<input type="checkbox" id="header-remember" checked> ' . get_label('remember me') . '<br>';
 				echo '<input value="Login" type="submit" class="btn norm" onclick="login()">';
 				return false;*/
 			case SESSION_LOGIN_FAILED:
@@ -324,14 +334,6 @@ class PageBase
 			{
 				echo '<input type="hidden" name="' . $key . '" value="' . $value . '">';
 			}
-			
-			echo get_label('Language') . ':&nbsp;<select id="browser_lang" class="in-header short" onChange="mr.browserLangChange()">';
-			$lang = LANG_NO;
-			while (($lang = get_next_lang($lang)) != LANG_NO)
-			{
-				show_option(get_lang_code($lang), $_lang_code, get_lang_str($lang));
-			}
-			echo '</select>';
 		}
 		
 		echo '</td></tr></table>';
@@ -430,30 +432,32 @@ class PageBase
 		global $_profile;
 	
 		echo "\n<script>\n";
+?>
+		var currentMenu = null;
+		var setCurrentMenu = function(menu)
+		{
+			if (currentMenu != null)
+			{
+				$(currentMenu).hide();
+			}
+			currentMenu = menu;
+		}
+		
+<?php		
 		if ($_profile != NULL)
 		{
 ?>
-			var currentMenu = null;
-			var setCurrentMenu = function(menu)
-			{
-				if (currentMenu != null)
-				{
-					$(currentMenu).hide();
-				}
-				currentMenu = menu;
-			}
-
 			var showUserMenu = function()
 			{
-				setCurrentMenu('#user-menu');
-				var userMenu = $('#user-menu').menu();
+				setCurrentMenu('#header-user-menu');
+				var userMenu = $('#header-user-menu').menu();
 				userMenu.show(0, function()
 				{
 					userMenu.position(
 					{
 						my: "right top",
 						at: "right bottom",
-						of: $('#user')
+						of: $('#header-user')
 					});
 					$(document).one("click", function() { setCurrentMenu(null); });
 				});
@@ -464,15 +468,15 @@ class PageBase
 ?>
 				var showClubMenu = function()
 				{
-					setCurrentMenu('#club-menu');
-					var clubMenu = $('#club-menu').menu();
+					setCurrentMenu('#header-club-menu');
+					var clubMenu = $('#header-club-menu').menu();
 					clubMenu.show(0, function()
 					{
 						clubMenu.position(
 						{
 							my: "right top",
 							at: "right bottom",
-							of: $('#club')
+							of: $('#header-club')
 						});
 						$(document).one("click", function() { setCurrentMenu(null); });
 					});
