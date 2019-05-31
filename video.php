@@ -4,6 +4,7 @@ require_once 'include/general_page_base.php';
 require_once 'include/event.php';
 require_once 'include/club.php';
 require_once 'include/user.php';
+require_once 'include/video.php';
 
 define('FILTER_NONE', 0);
 define('FILTER_USER', 1);
@@ -15,6 +16,7 @@ class Page extends PageBase
 {
 	private $video_id;
 	private $video;
+	private $vtime;
 	private $title;
 	private $type;
 	private $post_time;
@@ -39,9 +41,9 @@ class Page extends PageBase
 		$this->video_id = (int)$_REQUEST['id'];
 		list(
 			$this->video, $this->title, $this->type, $this->post_time, $this->video_time, $this->club_id, $this->club_name, $this->club_flags, 
-			$this->event_id, $this->event_name, $this->event_flags, $this->game_id, $this->lang, $this->user_id) = 
+			$this->event_id, $this->event_name, $this->event_flags, $this->game_id, $this->lang, $this->user_id, $this->vtime) = 
 			Db::record(get_label('video'), 
-				'SELECT v.video, v.name, type, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, g.id, v.lang, v.user_id FROM videos v ' .
+				'SELECT v.video, v.name, type, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, g.id, v.lang, v.user_id, v.vtime FROM videos v ' .
 				' JOIN clubs c ON c.id = v.club_id' .
 				' LEFT OUTER JOIN events e ON e.id = v.event_id' .
 				' LEFT OUTER JOIN games g ON g.video_id = v.id' .
@@ -162,7 +164,7 @@ class Page extends PageBase
 			echo '</a>';
 		}
 		echo '</td><td align="center" rowspan="2">';
-		echo '<p><iframe title="' . $this->title . '" width="720" height="405" src="https://www.youtube.com/embed/' . $this->video . '" frameborder="0" allowfullscreen></iframe></p>';
+		echo '<p><iframe title="' . $this->title . '" width="720" height="405" src="' . get_embed_video_url($this->video, $this->vtime) . '" frameborder="0" allowfullscreen></iframe></p>';
 		echo '</td><td valign="top">';
 		$game_icon = ($this->game_id != NULL);
 		$can_manage = ($_profile != NULL && ($_profile->user_id == $this->user_id || $_profile->is_club_manager($this->club_id)));

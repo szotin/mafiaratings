@@ -64,7 +64,7 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		$video = get_youtube_id(get_required_param('video'));
+		get_youtube_id(get_required_param('video'), $video, $vtime);
 		
 		$lang = 0;
 		if (isset($_REQUEST['lang']))
@@ -92,8 +92,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$title, $video, $vtype, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id);
+		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id, vtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$title, $video, $vtype, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id, $vtime);
 		list ($video_id) = Db::record(get_label('video'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -280,7 +280,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$game_id = (int)get_required_param('game_id');
-		$video = get_youtube_id(get_required_param('video'));
+		get_youtube_id(get_required_param('video'), $video, $vtime);
 		$info = get_youtube_info($video);
 		if (isset($info['title']))
 		{
@@ -302,7 +302,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please remove old video first'));
 		}
 		
-		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', $title, $video, VIDEO_TYPE_GAME, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id);
+		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id, vtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $title, $video, VIDEO_TYPE_GAME, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id, $vtime);
 		list ($video_id) = Db::record(get_label('video'), 'SELECT LAST_INSERT_ID()');
 		Db::exec(get_label('game'), 'UPDATE games SET video_id = ? WHERE id = ?', $video_id, $game_id);
 		

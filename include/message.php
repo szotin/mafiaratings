@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/languages.php';
 require_once __DIR__ . '/url.php';
+require_once __DIR__ . '/video.php';
 
 class Tag
 {
@@ -272,19 +273,14 @@ function parse_message_urls($message)
 			$message = $before;
 			if (($flags & IS_URL_VIDEO) != 0)
 			{
-				$pos = strpos($url, 'v=');
-				if ($pos !== false)
+				try
 				{
-					$end = strpos($url, '&', $pos + 2);
-					if ($end === false)
-					{
-						$code = substr($url, $pos + 2);
-					}
-					else
-					{
-						$code = substr($url, $pos + 2, $end - $pos - 2);
-					}
-					$message .= '<iframe title="YouTube video player" width="200" height="150" src="https://www.youtube.com/embed/' . $code . '" frameborder="0" allowfullscreen></iframe><br>';
+					get_youtube_id($url, $video, $vtime);
+					$message .= '<iframe title="YouTube video player" width="200" height="150" src="' . get_embed_video_url($video, $vtime) . '" frameborder="0" allowfullscreen></iframe><br>';
+				}
+				catch (Exception $e)
+				{
+					// just ignore
 				}
 			}
 			$message .= '<a href="' . $url . '" target="_blank">' . $inside . '</a>' . $after;

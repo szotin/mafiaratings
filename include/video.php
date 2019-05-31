@@ -1,19 +1,56 @@
 <?php
 
-function get_youtube_id($url)
+function get_youtube_id($url, &$id, &$time)
 {
-	$pos = strpos($url, 'v=');
-	if ($pos !== false)
+	$parsed_url = parse_url($url);
+	if (isset($parsed_url['query']))
 	{
-		$end = strpos($url, '&', $pos + 2);
-		if ($end === false)
-		{
-			$url = substr($url, $pos + 2);
-		}
-		else
-		{
-			$url = substr($url, $pos + 2, $end - $pos - 2);
-		}
+		parse_str($parsed_url['query'], $params);
+	}
+	else
+	{
+		$params = array();
+	}
+	
+	if (isset($params['v']))
+	{
+		$id = $params['v'];
+	}
+	else if (isset($parsed_url['path']))
+	{
+		$id = basename($parsed_url['path']);
+	}
+	else
+	{
+		throw new Exc(get_label('Please enter a valid youtube link or youtube video id.'));
+	}
+	
+	if (isset($params['t']))
+	{
+		$time = $params['t'];
+	}
+	else
+	{
+		$time = NULL;
+	}
+}
+
+function get_video_url($id, $vtime)
+{
+	$url = 'https://www.youtube.com/watch?v=' . $id;
+	if (!is_null($vtime))
+	{
+		$url .= '&t=' . $vtime;
+	}
+	return $url;
+}
+
+function get_embed_video_url($id, $vtime)
+{
+	$url = 'https://www.youtube.com/embed/' . $id;
+	if (!is_null($vtime))
+	{
+		$url .= '?start=' . $vtime;
 	}
 	return $url;
 }
