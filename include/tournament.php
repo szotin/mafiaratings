@@ -145,7 +145,7 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
 	if ($league_id > 0 && is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
 	{
-		echo '<button class="icon" onclick="mr.approveTournament(' . $id . ', ' . $league_id . ')" title="' . get_label('Open interactive standings page') . '"><img src="images/star-empty.png" border="0"></button>';
+		echo '<button class="icon" onclick="mr.approveTournament(' . $id . ', ' . $league_id . ')" title="' . get_label('Open interactive standings page') . '"><img src="images/stars.png" border="0"></button>';
 	}
 }
 

@@ -547,7 +547,7 @@ var mr = new function()
 
 	this.editTournament = function(id)
 	{
-		dlg.form("tournament_edit.php?id=" + id, refr, 600);
+		dlg.form("tournament_edit.php?id=" + id, refr);
 	}
 	
 	this.approveTournament = function(id, leagueId)

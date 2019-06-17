@@ -6,6 +6,7 @@ require_once 'include/country.php';
 require_once 'include/tournament.php';
 require_once 'include/timespan.php';
 require_once 'include/scoring.php';
+require_once 'include/datetime.php';
 
 initiate_session();
 
@@ -53,9 +54,8 @@ try
 	
 	echo '<tr><td>' . get_label('Stars') . ':</td><td><div id="form-stars" class="stars"></div></td></tr>';
 	
-	$time = time();
-	date_default_timezone_set($club->timezone);
-	$date = date('Y-m-d', $time);
+	$datetime = get_datetime(time(), $club->timezone);
+	$date = datetime_to_string($datetime, false);
 	
 	echo '<tr><td>'.get_label('Dates').':</td><td>';
 	echo '<input type="text" id="form-start" value="' . $date . '">';
@@ -118,6 +118,8 @@ try
 	}
 	echo '</select></td></tr>';
 	
+	echo '<tr><td>' . get_label('Scoring weight') . ':</td><td><input id="form-scoring-weight" value="1"></td></tr>';
+	
 	if (is_valid_lang($club->langs))
 	{
 		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
@@ -145,6 +147,7 @@ try
 	var dateFormat = "yy-mm-dd";
 	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
 	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
+	$('#form-scoring-weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
 	
 	var oldAddressValue = "<?php echo $selected_address; ?>";
 	function newAddressChange()
@@ -187,7 +190,7 @@ try
 	
 	function commit(onSuccess)
 	{
-		console.log(startDate.val());
+		var _langs = mr.getLangs('form-');
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
@@ -207,15 +210,15 @@ try
 			price: $("#form-price").val(),
 			address_id: _addr,
 			scoring_id: $("#form-scoring").val(),
+			scoring_weight: $("#form-scoring-weight").val(),
 			notes: $("#form-notes").val(),
 			start: startDate.val(),
 			end: dateToStr(_end),
-			langs: $("#form-langs").val(),
+			langs: _langs,
 			flags: _flags,
 			stars: $("#form-stars").rate("getValue"),
 		};
 		
-		console.log(_addr);
 		if (_addr > 0)
 		{
 			params['address_id'] = _addr;
