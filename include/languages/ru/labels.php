@@ -1179,7 +1179,7 @@ $labelMenu = array (
 'detailed' => 'детально', // club_rules.php, event_rules.php, league_rules.php, rules.php
 'shorter' => 'коротко', // club_rules.php, event_rules.php, league_rules.php, rules.php
 'shortest' => 'совсем коротко', // club_rules.php, event_rules.php
-'tournament' => 'турнир', // club_upcoming_tournaments.php, club_upcoming_tournaments.php, tournament_approve.php, tournament_approve.php, tournament_create.php, tournament_edit.php, tournament_edit.php, tournament_edit.php, include/tournament.php, include/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php
+'tournament' => 'турнир', // club_upcoming_tournaments.php, club_upcoming_tournaments.php, tournament_approve.php, tournament_approve.php, tournament_create.php, tournament_edit.php, tournament_edit.php, tournament_edit.php, include/tournament.php, include/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php
 'Custom' => 'Свои', // edit_event.php
 'rules [0]' => 'правила [0]', // league_rules_edit.php, rules_edit.php, rules_edit.php, rules_edit.php
 'Tournament name' => 'Название турнира', // tournament_create.php, tournament_edit.php
@@ -1264,6 +1264,7 @@ $labelMenu = array (
 'Extra points for [0] in game [1]' => '[0] - дополнительные баллы в игре [1]', // game_extra_points.php
 '[0] did not play in the game [1]' => '[0] не играл в игре [1]', // api/ops/game.php
 'Change language' => 'Сменить язык', // include/page_base.php
+'[0] upcoming tournaments' => 'Предстоящие турниры в [0]', // include/club.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'Town\'s victory.' => 'Победа города.', // include/view_game.php
@@ -1278,7 +1279,8 @@ $labelMenu = array (
 'Edit calculator \'[0]\'.' => 'Редактировать калькулятор статистик \'[0]\'.', // stats_calculator.php
 'Delete calculator \'[0]\'.' => 'Удалить калькулятор статистик \'[0]\'.', // stats_calculator.php
 'View the code of calculator \'[0]\'.' => 'Просмотр кода калькулятора \'[0]\'', // stats_calculator.php
-'[0] upcoming tournaments' => 'Предстоящие турниры в [0]', // include/club.php
+'Emails were sent to [0] managers to confirm the tournament.' => 'Менедерам [0] отправлены письма, чтобы они подтвердили турнир.', // api/ops/tournament.php, api/ops/tournament.php
+'Emails were sent to league managers to confirm changing tournament stars from [0] to [1]' => 'Менедерам лиги отправлены письма, чтобы они подтвердили изменение звезд турнира с [0] на [1].', // api/ops/tournament.php
 );
 
 return $labelMenu;

@@ -8,6 +8,25 @@ require_once '../../include/datetime.php';
 
 define('CURRENT_VERSION', 0);
 
+function stars_str($stars)
+{
+	$stars_str = '';
+	for ($i = 0; $i < floor($stars) && $i < 5; ++$i)
+	{
+		$stars_str .= '★';
+	}
+	for (; $i < $stars && $i < 5; ++$i)
+	{
+		$stars_str .= '✯';
+	}
+	for (; $i < 5; ++$i)
+	{
+		$stars_str .= '☆';
+	}
+	return $stars_str;
+}
+
+
 class ApiPage extends OpsApiPageBase
 {
 	//-------------------------------------------------------------------------------------------------------
@@ -187,20 +206,6 @@ class ApiPage extends OpsApiPageBase
 					}
 				}
 				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_tournament_approve.php';
-				$stars_str = '';
-				for ($i = 0; $i < floor($stars) && $i < 5; ++$i)
-				{
-					$stars_str .= '★';
-				}
-				for (; $i < $stars && $i < 5; ++$i)
-				{
-					$stars_str .= '✯';
-				}
-				for (; $i < 5; ++$i)
-				{
-					$stars_str .= '☆';
-				}
-				
 				$tags = array(
 					'root' => new Tag(get_server_url()),
 					'user_id' => new Tag($user_id),
@@ -210,7 +215,7 @@ class ApiPage extends OpsApiPageBase
 					'tournament_id' => new Tag($tournament_id),
 					'tournament_name' => new Tag($name),
 					'stars' => new Tag($stars),
-					'stars_str' => new Tag($stars_str),
+					'stars_str' => new Tag(stars_str($stars)),
 					'club_id' => new Tag($club_id),
 					'club_name' => new Tag($club->name),
 					'sender' => new Tag($_profile->user_name));
@@ -218,6 +223,7 @@ class ApiPage extends OpsApiPageBase
 				$text_body = parse_tags($text_body, $tags);
 				send_email($user_email, $body, $text_body, $subj);
 			}
+			echo get_label('Emails were sent to [0] managers to confirm the tournament.', $league_name);
 		}
 		else if ($league_id != NULL && $league_id > 0)
 		{
@@ -280,6 +286,10 @@ class ApiPage extends OpsApiPageBase
 		$club = $_profile->clubs[$club_id];
 		
 		$request_league_id = get_optional_param('league_id', $old_request_league_id);
+		if ($request_league_id <= 0)
+		{
+			$request_league_id = NULL;
+		}
 		$stars = get_optional_param('stars', $old_stars);
 		$name = get_optional_param('name', $old_name);
 		$price = get_optional_param('price', $old_price);
@@ -333,10 +343,10 @@ class ApiPage extends OpsApiPageBase
 				else
 				{
 					// send emails to league managers asking for approval
-					$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_managers l JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $request_league_id);
+					$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang, lg.name FROM league_managers l JOIN leagues lg ON lg.id = l.league_id JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $request_league_id);
 					while ($row = $query->next())
 					{
-						list($user_id, $user_name, $user_email, $user_lang) = $row;
+						list($user_id, $user_name, $user_email, $user_lang, $league_name) = $row;
 						if (!is_valid_lang($user_lang))
 						{
 							$user_lang = get_lang($league_langs);
@@ -346,20 +356,6 @@ class ApiPage extends OpsApiPageBase
 							}
 						}
 						list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_tournament_approve.php';
-						$stars_str = '';
-						for ($i = 0; $i < floor($stars) && $i < 5; ++$i)
-						{
-							$stars_str .= '★';
-						}
-						for (; $i < $stars && $i < 5; ++$i)
-						{
-							$stars_str .= '✯';
-						}
-						for (; $i < 5; ++$i)
-						{
-							$stars_str .= '☆';
-						}
-						
 						$tags = array(
 							'root' => new Tag(get_server_url()),
 							'user_id' => new Tag($user_id),
@@ -369,7 +365,7 @@ class ApiPage extends OpsApiPageBase
 							'tournament_id' => new Tag($tournament_id),
 							'tournament_name' => new Tag($name),
 							'stars' => new Tag($stars),
-							'stars_str' => new Tag($stars_str),
+							'stars_str' => new Tag(stars_str($stars)),
 							'club_id' => new Tag($club_id),
 							'club_name' => new Tag($club->name),
 							'sender' => new Tag($_profile->user_name));
@@ -377,10 +373,11 @@ class ApiPage extends OpsApiPageBase
 						$text_body = parse_tags($text_body, $tags);
 						send_email($user_email, $body, $text_body, $subj);
 					}
+					echo get_label('Emails were sent to [0] managers to confirm the tournament.', $league_name);
 				}
 			}
 			
-			Db::exec(get_label('tournament'), 'UPDATE tournaments SET request_league_id = ?, league_id = ? WHERE id = ?', $request_league_id, $league_id, $tournament_id);
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET request_league_id = ?, league_id = ?, stars = ? WHERE id = ?', $request_league_id, $league_id, $stars, $tournament_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = new stdClass();
@@ -392,7 +389,61 @@ class ApiPage extends OpsApiPageBase
 				{
 					$log_details->league_id = $league_id;
 				}
+				if ($old_stars != $stars)
+				{
+					$log_details->stars = $stars;
+				}
 				db_log(LOG_OBJECT_TOURNAMENT, 'changed league', $log_details, $tournament_id, $club_id, $request_league_id);
+			}
+		}
+		else if ($old_stars != $stars)
+		{
+			if ($request_league_id == NULL || is_permitted(PERMISSION_LEAGUE_MANAGER, $request_league_id))
+			{
+				Db::exec(get_label('tournament'), 'UPDATE tournaments SET stars = ? WHERE id = ?', $stars, $tournament_id);
+				if (Db::affected_rows() > 0)
+				{
+					$log_details = new stdClass();
+					$log_details->stars = $stars;
+					db_log(LOG_OBJECT_TOURNAMENT, 'changed stars', $log_details, $tournament_id, $club_id, $request_league_id);
+				}
+			}
+			else
+			{
+				// send emails to league managers asking for approval
+				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang, lg.name FROM league_managers l JOIN leagues lg ON lg.id = l.league_id JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $request_league_id);
+				while ($row = $query->next())
+				{
+					list($user_id, $user_name, $user_email, $user_lang, $league_name) = $row;
+					if (!is_valid_lang($user_lang))
+					{
+						$user_lang = get_lang($league_langs);
+						if (!is_valid_lang($user_lang))
+						{
+							$user_lang = LANG_RUSSIAN;
+						}
+					}
+					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_tournament_stars.php';
+					$tags = array(
+						'root' => new Tag(get_server_url()),
+						'user_id' => new Tag($user_id),
+						'user_name' => new Tag($user_name),
+						'league_id' => new Tag($request_league_id),
+						'league_name' => new Tag($league_name),
+						'tournament_id' => new Tag($tournament_id),
+						'tournament_name' => new Tag($name),
+						'stars' => new Tag($stars),
+						'stars_str' => new Tag(stars_str($stars)),
+						'old_stars' => new Tag($old_stars),
+						'old_stars_str' => new Tag(stars_str($old_stars)),
+						'club_id' => new Tag($club_id),
+						'club_name' => new Tag($club->name),
+						'sender' => new Tag($_profile->user_name));
+					$body = parse_tags($body, $tags);
+					$text_body = parse_tags($text_body, $tags);
+					send_email($user_email, $body, $text_body, $subj);
+				}
+				echo get_label('Emails were sent to league managers to confirm changing tournament stars from [0] to [1]', $old_stars, $stars);
 			}
 		}
 		
