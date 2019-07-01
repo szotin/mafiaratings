@@ -60,7 +60,7 @@ try
 	echo '<tr><td width="100">' . get_label('Email type').':</td><td><select id="form-type">';
 	show_option(EVENT_EMAIL_INVITE, $type, get_label('Invitation'));
 	show_option(EVENT_EMAIL_CANCEL, $type, get_label('Cancel event notification'));
-	show_option(EVENT_EMAIL_RESTORE, $type, get_label('Cancel event notification'));
+	show_option(EVENT_EMAIL_RESTORE, $type, get_label('Restore event notification'));
 	show_option(EVENT_EMAIL_CHANGE_ADDRESS, $type, get_label('Change address notification'));
 	show_option(EVENT_EMAIL_CHANGE_TIME, $type, get_label('Change time notification'));
 	echo '</select></td></tr>';

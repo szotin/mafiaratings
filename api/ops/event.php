@@ -431,40 +431,17 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_EVENT, 'canceled', NULL, $event_id, $club_id);
 		}
 		
-		$some_sent = false;
-		$query = new DbQuery('SELECT id, status FROM event_mailings WHERE event_id = ?', $event_id);
+		$query = new DbQuery('SELECT id FROM event_mailings WHERE event_id = ? AND status = ?', $event_id, MAILING_WAITING);
 		while ($row = $query->next())
 		{
-			list ($mailing_id, $mailing_status) = $row;
-			switch ($mailing_status)
+			list ($mailing_id) = $row;
+			Db::exec(get_label('mailing'), 'DELETE FROM event_mailings WHERE id = ?', $mailing_id);
+			if (Db::affected_rows() > 0)
 			{
-				case MAILING_WAITING:
-					Db::exec(get_label('mailing'), 'DELET FROM event_mailings WHERE id = ?', $mailing_id);
-					if (Db::affected_rows() > 0)
-					{
-						db_log(LOG_OBJECT_EVENT_MAILINGS, 'deleted', NULL, $mailing_id, $club_id);
-					}
-					break;
-				case MAILING_SENDING:
-				case MAILING_COMPLETE:
-					$some_sent = true;
-					break;
+				db_log(LOG_OBJECT_EVENT_MAILINGS, 'deleted', NULL, $mailing_id, $club_id);
 			}
 		}
 		Db::commit();
-		
-		if ($some_sent)
-		{
-			$this->response['question'] = get_label('Some event emails are already sent. Do you want to send cancellation email?'); 
-		}
-		else
-		{
-			list($reg_count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE event_id = ? AND coming_odds > 0', $event_id);
-			if ($reg_count > 0)
-			{
-				$this->response['question'] = get_label('Some users have already registered for this event. Do you want to send cancellation email?'); 
-			}
-		}
 	}
 	
 	function cancel_op_help()
@@ -491,8 +468,18 @@ class ApiPage extends OpsApiPageBase
 			list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
 			db_log(LOG_OBJECT_EVENT, 'restored', NULL, $event_id, $club_id);
 		}
+		
+		$query = new DbQuery('SELECT id FROM event_mailings WHERE event_id = ? AND status = ? AND type = ?', $event_id, MAILING_WAITING, EVENT_EMAIL_CANCEL);
+		while ($row = $query->next())
+		{
+			list ($mailing_id) = $row;
+			Db::exec(get_label('mailing'), 'DELETE FROM event_mailings WHERE id = ?', $mailing_id);
+			if (Db::affected_rows() > 0)
+			{
+				db_log(LOG_OBJECT_EVENT_MAILINGS, 'deleted', NULL, $mailing_id, $club_id);
+			}
+		}
 		Db::commit();
-		$this->response['question'] = get_label('The event is restored. Do you want to change event mailing?');
 	}
 	
 	function restore_op_help()
