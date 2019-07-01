@@ -113,16 +113,6 @@ class Page extends ClubPageBase
 			echo '<td class="dark">';
 			if ($can_edit)
 			{
-				// $ref = '<a href ="?id=' . $this->id . '&page=' . $_page;
-				// if ($user_club_flags & USER_CLUB_FLAG_BANNED)
-				// {
-					// echo $ref . '&unban=' . $id . '" title="' .get_label('Unban [0]', $name) . '"><img src="images/undelete.png" border="0"></a>';
-				// }
-				// else
-				// {
-					// echo $ref . '&ban=' . $id . '" title="' .get_label('Ban [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
-					// echo ' <a href ="edit_user.php?id=' . $id . '&club=' . $this->id . '&bck=1" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
-				// }
 				if ($user_club_flags & USER_CLUB_FLAG_BANNED)
 				{
 					echo '<button class="icon" onclick="mr.unbanUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Unban [0]', $name) . '"><img src="images/undelete.png" border="0"></button>';

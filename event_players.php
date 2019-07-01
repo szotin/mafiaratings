@@ -141,7 +141,7 @@ class Page extends EventPageBase
 ?>
 		function changeEventPlayer(eventId, userId, nickname)
 		{
-			dlg.form("event_change_player.php?event_id=" + eventId + "&user_id=" + userId + "&nick=" + nickname, refr);
+			dlg.form("form/event_change_player.php?event_id=" + eventId + "&user_id=" + userId + "&nick=" + nickname, refr);
 		}
 <?php	
 	}

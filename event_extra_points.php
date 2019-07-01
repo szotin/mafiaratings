@@ -69,7 +69,7 @@ class Page extends EventPageBase
 ?>
 		function addPoints(eventId)
 		{
-			dlg.form("event_extra_points_add.php?event_id=" + eventId, refr);
+			dlg.form("form/event_extra_points_add.php?event_id=" + eventId, refr);
 		}
 		
 		function deletePoints(pointsId)
@@ -82,7 +82,7 @@ class Page extends EventPageBase
 		
 		function editPoints(pointsId)
 		{
-			dlg.form("event_extra_points_edit.php?points_id=" + pointsId, refr);
+			dlg.form("form/event_extra_points_edit.php?points_id=" + pointsId, refr);
 		}
 <?php	
 	}

@@ -238,7 +238,7 @@ class Page extends PageBase
 		
 		function editCalculator(id)
 		{
-			dlg.form("stats_calculator_edit.php?id=" + id, function(data)
+			dlg.form("form/stats_calculator_edit.php?id=" + id, function(data)
 			{
 				refresh(data.id);
 			});
@@ -246,7 +246,7 @@ class Page extends PageBase
 		
 		function viewCalculator(id)
 		{
-			dlg.form("stats_calculator_view.php?id=" + id, function()
+			dlg.form("form/stats_calculator_view.php?id=" + id, function()
 			{
 				calculate();
 			});

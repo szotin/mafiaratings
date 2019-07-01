@@ -1,9 +1,9 @@
 <?php
 
 require_once 'include/session.php';
-require_once('include/user.php');
-require_once('include/club.php');
-require_once('include/chart.php');
+require_once 'include/user.php';
+require_once 'include/club.php';
+require_once 'include/chart.php';
 
 initiate_session();
 

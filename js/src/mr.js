@@ -5,17 +5,17 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createAccount = function(name, email)
 	{
-		dlg.form("account_create.php", function(){}, 400);
+		dlg.form("form/account_create.php", function(){}, 400);
 	}
 
 	this.initProfile = function()
 	{
-		dlg.form("profile_init.php", refr, 600);
+		dlg.form("form/profile_init.php", refr, 600);
 	}
 
 	this.changePassword = function()
 	{
-		dlg.form("password_change.php", refr, 400);
+		dlg.form("form/password_change.php", refr, 400);
 	}
 
 	this.mobileStyleChange = function()
@@ -30,12 +30,12 @@ var mr = new function()
 
 	this.resetPassword = function()
 	{
-		dlg.form("password_reset.php", refr, 400);
+		dlg.form("form/password_reset.php", refr, 400);
 	}
 
 	this.editAccount = function()
 	{
-		dlg.form("account_edit.php", refr, 600);
+		dlg.form("form/account_edit.php", refr, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.editNote = function(id)
 	{
-		dlg.form("note_edit.php?note=" + id, refr);
+		dlg.form("form/note_edit.php?note=" + id, refr);
 	}
 
 	this.deleteNote = function(id, confirmMessage)
@@ -136,7 +136,7 @@ var mr = new function()
 
 	this.createNote = function(clubId)
 	{
-		dlg.form("note_create.php?club=" + clubId, refr);
+		dlg.form("form/note_create.php?club=" + clubId, refr);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.editAdvert = function(id)
 	{
-		dlg.form("advert_edit.php?advert=" + id, refr);
+		dlg.form("form/advert_edit.php?advert=" + id, refr);
 	}
 
 	this.deleteAdvert = function(id, confirmMessage)
@@ -166,7 +166,7 @@ var mr = new function()
 
 	this.createAdvert = function(clubId)
 	{
-		dlg.form("advert_create.php?club=" + clubId, refr);
+		dlg.form("form/advert_create.php?club=" + clubId, refr);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.editSeason = function(id)
 	{
-		dlg.form("season_edit.php?season=" + id, refr);
+		dlg.form("form/season_edit.php?season=" + id, refr);
 	}
 
 	this.deleteSeason = function(id, confirmMessage)
@@ -196,7 +196,7 @@ var mr = new function()
 
 	this.createSeason = function(clubId)
 	{
-		dlg.form("season_create.php?club=" + clubId, refr);
+		dlg.form("form/season_create.php?club=" + clubId, refr);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -204,7 +204,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createAddr = function(clubId)
 	{
-		dlg.form("address_create.php?club=" + clubId, refr, 600);
+		dlg.form("form/address_create.php?club=" + clubId, refr, 600);
 	}
 
 	this.restoreAddr = function(addrId)
@@ -236,7 +236,7 @@ var mr = new function()
 
 	this.editAddr = function(id)
 	{
-		dlg.form("address_edit.php?id=" + id, refr, 600);
+		dlg.form("form/address_edit.php?id=" + id, refr, 600);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -244,17 +244,17 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createCity = function()
 	{
-		dlg.form("city_create.php", refr);
+		dlg.form("form/city_create.php", refr);
 	}
 
 	this.deleteCity = function(id)
 	{
-		dlg.form("city_delete.php?id=" + id, refr);
+		dlg.form("form/city_delete.php?id=" + id, refr);
 	}
 
 	this.editCity = function(id)
 	{
-		dlg.form("city_edit.php?id=" + id, refr);
+		dlg.form("form/city_edit.php?id=" + id, refr);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -262,7 +262,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createClub = function()
 	{
-		dlg.form("club_create.php", refr, 600);
+		dlg.form("form/club_create.php", refr, 600);
 	}
 
 	this.restoreClub = function(id)
@@ -277,7 +277,7 @@ var mr = new function()
 
 	this.editClub = function(id)
 	{
-		dlg.form("club_edit.php?id=" + id, refr, 600);
+		dlg.form("form/club_edit.php?id=" + id, refr, 600);
 	}
 
 	this.joinClub = function(id)
@@ -309,12 +309,12 @@ var mr = new function()
 
 	this.acceptClub = function(id)
 	{
-		dlg.form("club_accept.php?id=" + id, refr, 600);
+		dlg.form("form/club_accept.php?id=" + id, refr, 600);
 	}
 
 	this.declineClub = function(id)
 	{
-		dlg.form("club_decline.php?id=" + id, refr);
+		dlg.form("form/club_decline.php?id=" + id, refr);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -322,7 +322,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createLeague = function()
 	{
-		dlg.form("league_create.php", refr, 600);
+		dlg.form("form/league_create.php", refr, 600);
 	}
 
 	this.restoreLeague = function(id)
@@ -337,22 +337,22 @@ var mr = new function()
 
 	this.editLeague = function(id)
 	{
-		dlg.form("league_edit.php?id=" + id, refr, 600);
+		dlg.form("form/league_edit.php?id=" + id, refr, 600);
 	}
 
 	this.acceptLeague = function(id)
 	{
-		dlg.form("league_accept.php?id=" + id, refr, 600);
+		dlg.form("form/league_accept.php?id=" + id, refr, 600);
 	}
 
 	this.declineLeague = function(id)
 	{
-		dlg.form("league_decline.php?id=" + id, refr);
+		dlg.form("form/league_decline.php?id=" + id, refr);
 	}
 	
 	this.addLeagueManager = function(leagueId)
 	{
-		dlg.form("league_add_manager.php?league_id=" + leagueId, refr, 500);
+		dlg.form("form/league_add_manager.php?league_id=" + leagueId, refr, 500);
 	}
 	
 	this.removeLeagueManager = function(leagueId, userId, confirmMessage)
@@ -374,17 +374,17 @@ var mr = new function()
 	
 	this.editLeagueRules = function(leagueId)
 	{
-		dlg.form("league_rules_edit.php?league_id=" + leagueId, refr);
+		dlg.form("form/league_rules_edit.php?league_id=" + leagueId, refr);
 	}
 	
 	this.addLeagueClub = function(leagueId)
 	{
-		dlg.form("league_add_club.php?league_id=" + leagueId, refr, 500);
+		dlg.form("form/league_add_club.php?league_id=" + leagueId, refr, 500);
 	}
 	
 	this.removeLeagueClub = function(leagueId, clubId)
 	{
-		dlg.form("league_remove_club.php?league_id=" + leagueId + "&club_id=" + clubId, refr, 500);
+		dlg.form("form/league_remove_club.php?league_id=" + leagueId + "&club_id=" + clubId, refr, 500);
 	}
 	
 	this.acceptLeagueClub = function(leagueId, clubId)
@@ -397,17 +397,17 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createCountry = function()
 	{
-		dlg.form("country_create.php", refr);
+		dlg.form("form/country_create.php", refr);
 	}
 
 	this.deleteCountry = function(id)
 	{
-		dlg.form("country_delete.php?id=" + id, refr);
+		dlg.form("form/country_delete.php?id=" + id, refr);
 	}
 
 	this.editCountry = function(id)
 	{
-		dlg.form("country_edit.php?id=" + id, refr);
+		dlg.form("form/country_edit.php?id=" + id, refr);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -415,9 +415,9 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createEvent = function(clubId)
 	{
-		dlg.form("event_create.php?club=" + clubId, function(obj)
+		dlg.form("form/event_create.php?club=" + clubId, function(obj)
 		{
-			dlg.form("event_mailing_create.php?events=" + obj.events + '&type=0', refr, 500, refr);
+			dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=0', refr, 500, refr);
 		});
 	}
 	
@@ -425,7 +425,7 @@ var mr = new function()
 	{
 		json.post("api/ops/event.php", { op: "restore", event_id: id }, function(obj)
 		{
-			dlg.form("event_mailing_create.php?events=" + id + '&type=4', refr, 500, refr);
+			dlg.form("form/event_mailing_create.php?events=" + id + '&type=4', refr, 500, refr);
 		});
 	}
 
@@ -435,7 +435,7 @@ var mr = new function()
 		{
 			json.post("api/ops/event.php", { op: "cancel", event_id: id }, function()
 			{
-				dlg.form("event_mailing_create.php?events=" + id + '&type=1', refr, 500, refr);
+				dlg.form("form/event_mailing_create.php?events=" + id + '&type=1', refr, 500, refr);
 			});
 		}
 		
@@ -461,7 +461,7 @@ var mr = new function()
 	
 	this.createEventMailing = function(events, mailingType)
 	{
-		var url = "event_mailing_create.php?events=" + events;
+		var url = "form/event_mailing_create.php?events=" + events;
 		if (typeof mailingType == "number")
 		{
 			url += mailingType;
@@ -471,7 +471,7 @@ var mr = new function()
 	
 	this.editEventMailing = function(mailingId)
 	{
-		dlg.form('event_mailing_edit.php?mailing_id=' + mailingId, refr, 500);
+		dlg.form('form/event_mailing_edit.php?mailing_id=' + mailingId, refr, 500);
 	}
 	
 	this.deleteEventMailing = function(mailingId)
@@ -481,7 +481,7 @@ var mr = new function()
 
 	this.attendEvent = function(id, url)
 	{
-		dlg.form("event_attend.php?id=" + id, function()
+		dlg.form("form/event_attend.php?id=" + id, function()
 		{
 			goTo(url);
 		});
@@ -505,7 +505,7 @@ var mr = new function()
 
 	this.extendEvent = function(id)
 	{
-		dlg.form("event_extend.php?id=" + id, refr, 400);
+		dlg.form("form/event_extend.php?id=" + id, refr, 400);
 	}
 	
 	//--------------------------------------------------------------------------------------
@@ -513,7 +513,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createTournament = function(clubId, leagueId)
 	{
-		var formLink = "tournament_create.php?club_id=" + clubId;
+		var formLink = "form/tournament_create.php?club_id=" + clubId;
 		if (typeof leagueId == "number")
 		{
 			formLink += "&league_id=" + leagueId;
@@ -545,12 +545,12 @@ var mr = new function()
 
 	this.editTournament = function(id)
 	{
-		dlg.form("tournament_edit.php?id=" + id, refr);
+		dlg.form("form/tournament_edit.php?id=" + id, refr);
 	}
 	
 	this.approveTournament = function(id, leagueId)
 	{
-		dlg.form("tournament_approve.php?tournament_id=" + id + "&league_id=" + leagueId, function ()
+		dlg.form("form/tournament_approve.php?tournament_id=" + id + "&league_id=" + leagueId, function ()
 		{
 			goTo("tournament_info.php?id=" + id);
 		}, 600);
@@ -569,17 +569,17 @@ var mr = new function()
 
 	this.createScoringSystem = function(clubId)
 	{
-		dlg.form("scoring_create.php?club=" + clubId, refr, 400);
+		dlg.form("form/scoring_create.php?club=" + clubId, refr, 400);
 	}
 
 	this.editScoringSystem = function(id)
 	{
-		dlg.form("scoring_edit.php?id=" + id, refr, 400);
+		dlg.form("form/scoring_edit.php?id=" + id, refr, 400);
 	}
 	
 	this.createScoringRule = function(systemId, category)
 	{
-		dlg.form("scoring_rule_create.php?scoring=" + systemId + '&category=' + category, refr);
+		dlg.form("form/scoring_rule_create.php?scoring=" + systemId + '&category=' + category, refr);
 	}
 	
 	this.deleteScoringRule = function(systemId, category, matter, confirmMessage)
@@ -592,12 +592,12 @@ var mr = new function()
 	
 	this.editScoringSorting = function(systemId)
 	{
-		dlg.form("scoring_sorting_edit.php?scoring=" + systemId, refr, 600);
+		dlg.form("form/scoring_sorting_edit.php?scoring=" + systemId, refr, 600);
 	}
 	
 	this.showScoring = function(systemId)
 	{
-		dlg.infoForm("scoring_show.php?id=" + systemId);
+		dlg.infoForm("form/scoring_show.php?id=" + systemId);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -605,7 +605,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createRules = function(clubId, leagueId)
 	{
-		var u = "rules_edit.php?create&club_id=" + clubId;
+		var u = "form/rules_edit.php?create&club_id=" + clubId;
 		if (typeof leagueId != "undefined")
 			u += "&league_id=" + leagueId;
 		dlg.form(u, refr);
@@ -613,7 +613,7 @@ var mr = new function()
 
 	this.editRules = function(clubId, leagueId, rulesId)
 	{
-		var u = "rules_edit.php?club_id=" + clubId;
+		var u = "form/rules_edit.php?club_id=" + clubId;
 		if (typeof leagueId != "undefined")
 			u += "&league_id=" + leagueId;
 		if (typeof rulesId != "undefined")
@@ -669,17 +669,17 @@ var mr = new function()
 	
 	this.setGameVideo = function(gameId)
 	{
-		dlg.form("game_video_edit.php?game=" + gameId, refr, 600);
+		dlg.form("form/game_video_edit.php?game=" + gameId, refr, 600);
 	}
 	
 	this.watchGameVideo = function(gameId)
 	{
-		dlg.page("game_video.php?game=" + gameId);
+		dlg.page("form/game_video.php?game=" + gameId);
 	}
 	
 	this.gameExtraPoints = function(gameId, userId)
 	{
-		dlg.form("game_extra_points.php?game_id=" + gameId + '&user_id=' + userId, refr, 400);
+		dlg.form("form/game_extra_points.php?game_id=" + gameId + '&user_id=' + userId, refr, 400);
 	}
 	
 	//--------------------------------------------------------------------------------------
@@ -743,7 +743,7 @@ var mr = new function()
 	
 	this.editUserAccess = function(userId, clubId)
 	{
-		var url = "user_access.php?id=" + userId;
+		var url = "form/user_access.php?id=" + userId;
 		if (typeof clubId != "undefined")
 		{
 			url += "&club=" + clubId;
@@ -815,17 +815,17 @@ var mr = new function()
 	{
 		if (typeof eventId != "undefined")
 		{
-			dlg.form("video_create.php?event=" + eventId + "&vtype=" + vtype, refr, 600);
+			dlg.form("form/video_create.php?event=" + eventId + "&vtype=" + vtype, refr, 600);
 		}
 		else
 		{
-			dlg.form("video_create.php?club=" + clubId + "&vtype=" + vtype, refr, 600);
+			dlg.form("form/video_create.php?club=" + clubId + "&vtype=" + vtype, refr, 600);
 		}
 	}
 	
 	this.editVideo = function(videoId)
 	{
-		dlg.form("video_edit.php?id=" + videoId, refr, 600);
+		dlg.form("form/video_edit.php?id=" + videoId, refr, 600);
 	}
 	
 	this.deleteVideo = function(videoId, confirmMessage, urlToGo)
@@ -838,7 +838,7 @@ var mr = new function()
 	
 	this.showVideoUsers = function(videoId)
 	{
-		var url = "video_users.php?id=" + videoId;
+		var url = "form/video_users.php?id=" + videoId;
 		html.get(url, function(text, title)
 		{
 			$('#tagged').html(text);
