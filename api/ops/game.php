@@ -1235,7 +1235,7 @@ class ApiPage extends OpsApiPageBase
 				'url' => new Tag($request_base),
 				'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
 			
-			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_comment_game.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/comment_game.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
 			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_GAME, $game_id, $code);

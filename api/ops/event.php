@@ -933,7 +933,7 @@ class ApiPage extends OpsApiPageBase
 				'url' => new Tag($request_base),
 				'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
 			
-			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_comment_event.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/comment_event.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
 			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_EVENT, $event_id, $code);

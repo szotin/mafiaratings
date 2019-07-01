@@ -56,7 +56,7 @@ class ApiPage extends OpsApiPageBase
 				'photo' => new Tag('<a href="' . $request_base . '&pid=' . $photo_id . '"><img src="' . $image_url . '" border="0" width="' . EVENT_PHOTO_WIDTH . '"></a>'),
 				'unsub' => new Tag('<a href="' . $request_base . '/email_request.php?code=' . $code . '&user_id=' . $user_id . '&unsub=1" target="_blank">', '</a>'));
 			
-			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_comment_photo.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/comment_photo.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
 			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_PHOTO, $photo_id, $code);

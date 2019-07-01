@@ -150,7 +150,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($manager_id, $manager_name, $manager_email, $manager_def_lang) = $row;
 				$lang = get_lang_code($manager_def_lang);
-				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_create_subclub.php';
+				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/create_subclub.php';
 				
 				$tags = array(
 					'root' => new Tag(get_server_url()),
@@ -198,7 +198,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
 				$lang = get_lang_code($admin_def_lang);
-				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_create_club.php';
+				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/create_club.php';
 				
 				$tags = array(
 					'root' => new Tag(get_server_url()),
@@ -359,7 +359,7 @@ class ApiPage extends OpsApiPageBase
 					{
 						list($manager_id, $manager_name, $manager_email, $manager_def_lang) = $row;
 						$lang = get_lang_code($manager_def_lang);
-						list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_make_subclub.php';
+						list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/make_subclub.php';
 						
 						$tags = array(
 							'root' => new Tag(get_server_url()),
@@ -402,7 +402,7 @@ class ApiPage extends OpsApiPageBase
 					{
 						list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
 						$lang = get_lang_code($admin_def_lang);
-						list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_make_club.php';
+						list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/make_club.php';
 						
 						$tags = array(
 							'root' => new Tag(get_server_url()),
@@ -533,7 +533,7 @@ class ApiPage extends OpsApiPageBase
 				'user_name' => new Tag($user_name),
 				'club_id' => new Tag($club_id),
 				'club_name' => new Tag($name));
-			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_club.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/accept_club.php';
 		}
 		else if ($parent_id == NULL)
 		{
@@ -546,7 +546,7 @@ class ApiPage extends OpsApiPageBase
 				'user_name' => new Tag($user_name),
 				'club_id' => new Tag($club_id),
 				'club_name' => new Tag($club_name));
-			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_root_club.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/accept_root_club.php';
 		}
 		else
 		{
@@ -561,7 +561,7 @@ class ApiPage extends OpsApiPageBase
 				'club_name' => new Tag($club_name),
 				'parent_id' => new Tag($parent_id),
 				'parent_name' => new Tag($parent_name));
-			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_subclub.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/accept_subclub.php';
 		}
 		$subj = parse_tags($subj, $tags);
 		$body = parse_tags($body, $tags);
@@ -628,7 +628,7 @@ class ApiPage extends OpsApiPageBase
 			$lang = get_lang_code($user_lang);
 			if ($club_id == NULL)
 			{
-				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_decline_create_club.php';
+				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/decline_create_club.php';
 				$tags = array(
 					'root' => new Tag(get_server_url()),
 					'user_name' => new Tag($user_name),
@@ -637,7 +637,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			else
 			{
-				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_decline_update_club.php';
+				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/decline_update_club.php';
 				$tags = array(
 					'root' => new Tag(get_server_url()),
 					'user_name' => new Tag($user_name),

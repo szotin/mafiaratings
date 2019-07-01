@@ -146,7 +146,7 @@ try
 				$email_id = $mailing_type . '-' . $user_lang;
 				if (!isset($event_emails[$email_id]))
 				{
-					$event_emails[$email_id] = get_event_email($type, $user_lang);
+					$event_emails[$email_id] = get_event_email($mailing_type, $user_lang);
 					$common_tags['event_date'] = new Tag(format_date('l, F d, Y', $event_start_time, $timezone, $user_lang));
 					$common_tags['event_time'] = new Tag(format_date('H:i', $event_start_time, $timezone, $user_lang));
 					$common_tags['langs'] = new Tag(get_langs_str($event_langs, ', ', LOWERCASE, $user_lang));
@@ -259,7 +259,7 @@ try
 				// $tags['user_name'] = new Tag($u_name);
 				// $tags['event_date'] = new Tag(format_date('l, F d, Y', $e_start_time, $i_timezone, $u_lang));
 				// $tags['event_time'] = new Tag(format_date('H:i', $e_start_time, $i_timezone, $u_lang));
-				// list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_join_club.php';
+				// list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email/join_club.php';
 				// $body = parse_tags($body, $tags);
 				// $text_body = parse_tags($text_body, $tags);
 				// send_notification($u_email, $body, $text_body, $subj, $u_id, EMAIL_JOIN_CLUB, $e_id, $code);
@@ -324,7 +324,7 @@ try
 				'url' => new Tag($request_base),
 				'unsub' => new Tag('<a href="' . get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $code . '&unsub=1" target="_blank">', '</a>'));
 				
-			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_photo.php';
+			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email/photo.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
 			try
@@ -359,7 +359,7 @@ try
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
 				$lang = get_lang_code($admin_def_lang);
-				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email_rebuild_stats.php';
+				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email/rebuild_stats.php';
 				
 				$tags = array(
 					'root' => new Tag(get_server_url()),

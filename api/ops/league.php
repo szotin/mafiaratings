@@ -111,7 +111,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
 				$lang = get_lang_code($admin_def_lang);
-				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_create_league.php';
+				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/create_league.php';
 				
 				$tags = array(
 					'root' => new Tag(get_server_url()),
@@ -324,7 +324,7 @@ class ApiPage extends OpsApiPageBase
 			'user_id' => new Tag($user_id),
 			'user_name' => new Tag($user_name),
 			'league_name' => new Tag($name));
-		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_accept_league.php';
+		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/accept_league.php';
 		$body = parse_tags($body, $tags);
 		$text_body = parse_tags($text_body, $tags);
 		send_email($user_email, $body, $text_body, $subj);
@@ -366,7 +366,7 @@ class ApiPage extends OpsApiPageBase
 		if ($reason != '')
 		{
 			$lang = get_lang_code($user_lang);
-			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email_decline_league.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/decline_league.php';
 			$tags = array(
 				'root' => new Tag(get_server_url()),
 				'user_name' => new Tag($user_name),
@@ -556,7 +556,7 @@ class ApiPage extends OpsApiPageBase
 							$user_lang = LANG_RUSSIAN;
 						}
 					}
-					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_club_add_league.php';
+					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/club_add_league.php';
 					
 					$tags = array(
 						'root' => new Tag(get_server_url()),
@@ -589,7 +589,7 @@ class ApiPage extends OpsApiPageBase
 							$user_lang = LANG_RUSSIAN;
 						}
 					}
-					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_league_add_club.php';
+					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/league_add_club.php';
 					
 					$tags = array(
 						'root' => new Tag(get_server_url()),
@@ -662,7 +662,7 @@ class ApiPage extends OpsApiPageBase
 						$user_lang = LANG_RUSSIAN;
 					}
 				}
-				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_league_remove_club.php';
+				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/league_remove_club.php';
 				
 				$tags = array(
 					'root' => new Tag(get_server_url()),
@@ -696,7 +696,7 @@ class ApiPage extends OpsApiPageBase
 						$user_lang = LANG_RUSSIAN;
 					}
 				}
-				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_club_remove_league.php';
+				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/club_remove_league.php';
 				
 				$tags = array(
 					'root' => new Tag(get_server_url()),

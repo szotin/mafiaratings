@@ -21,7 +21,7 @@ function send_activation_email($user_id, $name, $email)
 		'user_name' => new Tag($name),
 		'url' => new Tag(get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $email_code . '&email=' . urlencode($email)));
 	
-	list($subj, $body, $text_body) = include __DIR__ .  '/languages/' . $_lang_code . '/email_user_activation.php';
+	list($subj, $body, $text_body) = include __DIR__ .  '/languages/' . $_lang_code . '/email/user_activation.php';
 	$body = parse_tags($body, $tags);
 	$text_body = parse_tags($text_body, $tags);
 	send_notification($email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_SIGN_IN, 0, $email_code);

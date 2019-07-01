@@ -18,22 +18,22 @@ function get_event_email_lang($lang, $langs)
 
 function get_event_email($type, $lang)
 {
-	$filename = '/email_event_invite.php';
+	$filename = '/email/event_invite.php';
 	switch ($type)
 	{
 		case EVENT_EMAIL_INVITE:
 			break;
 		case EVENT_EMAIL_CANCEL:
-			$filename = '/email_event_cancel.php';
+			$filename = '/email/event_cancel.php';
 			break;
 		case EVENT_EMAIL_CHANGE_ADDRESS:
-			$filename = '/email_event_address.php';
+			$filename = '/email/event_address.php';
 			break;
 		case EVENT_EMAIL_CHANGE_TIME:
-			$filename = '/email_event_time.php';
+			$filename = '/email/event_time.php';
 			break;
 		case EVENT_EMAIL_RESTORE:
-			$filename = '/email_event_restore.php';
+			$filename = '/email/event_restore.php';
 			break;
 	}
 	return include 'include/languages/' . get_lang_code($lang) . $filename;

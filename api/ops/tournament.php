@@ -205,7 +205,7 @@ class ApiPage extends OpsApiPageBase
 						$user_lang = LANG_RUSSIAN;
 					}
 				}
-				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_tournament_approve.php';
+				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/tournament_approve.php';
 				$tags = array(
 					'root' => new Tag(get_server_url()),
 					'user_id' => new Tag($user_id),
@@ -355,7 +355,7 @@ class ApiPage extends OpsApiPageBase
 								$user_lang = LANG_RUSSIAN;
 							}
 						}
-						list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_tournament_approve.php';
+						list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/tournament_approve.php';
 						$tags = array(
 							'root' => new Tag(get_server_url()),
 							'user_id' => new Tag($user_id),
@@ -423,7 +423,7 @@ class ApiPage extends OpsApiPageBase
 							$user_lang = LANG_RUSSIAN;
 						}
 					}
-					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_tournament_stars.php';
+					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/tournament_stars.php';
 					$tags = array(
 						'root' => new Tag(get_server_url()),
 						'user_id' => new Tag($user_id),
@@ -745,7 +745,7 @@ class ApiPage extends OpsApiPageBase
 				'url' => new Tag($request_base),
 				'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
 			
-			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email_comment_tournament.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/comment_tournament.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
 			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_TOURNAMENT, $tournament_id, $code);
