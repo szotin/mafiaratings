@@ -4,7 +4,6 @@ require_once 'include/session.php';
 require_once 'include/languages.php';
 require_once 'include/url.php';
 require_once 'include/email.php';
-require_once 'include/editor.php';
 
 initiate_session();
 
@@ -27,22 +26,6 @@ try
 
 ?>	
 	<script>
-	var editor = CKEDITOR.instances['form-note'];
-	if (editor)
-	{
-		CKEDITOR.remove(editor);
-	}
-	editor = CKEDITOR.replace('form-note',
-	{
-		skin : 'v2',
-		language: '<?php echo $_lang_code; ?>',
-		toolbar : [
-			['Bold','Italic','Underline','-','TextColor','BGColor','-','Format','Font','FontSize','-','RemoveFormat'],
-			['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock','-','NumberedList','BulletedList','-','Outdent','Indent','-','SpellChecker'],
-			['Link','Unlink','-','Image','Table','HorizontalRule','SpecialChar'],
-			['Source'],['tokens']]
-	});
-	
 	function commit(onSuccess)
 	{
 		json.post("api/ops/note.php",
@@ -50,7 +33,7 @@ try
 			op: "create"
 			, club_id: <?php echo $club_id; ?>
 			, name: $("#form-name").val()
-			, note: editor.getData()
+			, note: $("#form-note").val()
 		},
 		onSuccess);
 	}

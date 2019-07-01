@@ -512,59 +512,6 @@ class Event
 		$this->rounds_changed = false;
 	}
 
-	function parse_sample_email($email_addr, $body, $subj, $lang = LANG_NO)
-	{
-		global $_profile;
-		$code = generate_email_code();
-		$base_url = get_server_url() . '/email_request.php?user_id=' . $_profile->user_id . '&code=' . $code;
-		
-		if (!is_valid_lang($lang))
-		{
-			$lang = detect_lang($body);
-			if ($lang == LANG_NO)
-			{
-				$lang = $_profile->user_def_lang;
-			}
-		}
-
-		$tags = get_bbcode_tags();
-		$tags['root'] = new Tag(get_server_url());
-		$tags['event_name'] = new Tag($this->name);
-		$tags['event_id'] = new Tag($this->id);
-		$tags['event_date'] = new Tag(format_date('l, F d, Y', $this->timestamp, $this->timezone, $lang));
-		$tags['event_time'] = new Tag(format_date('H:i', $this->timestamp, $this->timezone, $lang));
-		$tags['notes'] = new Tag($this->notes);
-		$tags['langs'] = new Tag(get_langs_str($this->langs, ', ', LOWERCASE, $lang));
-		$tags['address'] = new Tag($this->addr);
-		$tags['address_url'] = new Tag($this->addr_url);
-		$tags['address_id'] = new Tag($this->addr_id);
-		if ($this->id > 0)
-		{
-			$tags['address_image'] = new Tag('<img src="' . get_server_url() . '/' . ADDRESS_PICS_DIR . TNAILS_DIR . $this->addr_id . '.jpg">');
-		}
-		else
-		{
-			$tags['address_image'] = new Tag('<img src="images/sample_address.jpg">');
-		}
-		$tags['user_name'] = new Tag($_profile->user_name);
-		$tags['user_id'] = new Tag($_profile->user_id);
-		$tags['email'] = new Tag($email_addr);
-		$tags['club_name'] = new Tag($this->club_name);
-		$tags['club_id'] = new Tag($this->club_id);
-		$tags['code'] = new Tag($code);
-		$tags['accept'] = new Tag('<a href="' . $base_url . '&accept=1" target="_blank">', '</a>');
-		$tags['decline'] = new Tag('<a href="' . $base_url . '&decline=1" target="_blank">', '</a>');
-		$tags['unsub'] = new Tag('<a href="' . $base_url . '&unsub=1" target="_blank">', '</a>');
-		$tags['accept_btn'] = new Tag('<input type="submit" name="accept" value="#">');
-		$tags['decline_btn'] = new Tag('<input type="submit" name="decline" value="#">');
-		$tags['unsub_btn'] = new Tag('<input type="submit" name="unsub" value="#">');
-	
-		return array(
-			parse_tags($body, $tags),
-			parse_tags($subj, $tags),
-			$lang);
-	}
-	
 	function load($event_id)
 	{
 		global $_profile, $_lang_code;
@@ -1234,6 +1181,7 @@ class EventPageBase extends PageBase
 				$menu[] = new MenuItem('#management', get_label('Management'), NULL, array
 				(
 					new MenuItem('event_players.php?id=' . $this->event->id, get_label('Players'), get_label('Manage players paricipaing in [0]', $this->event->name)),
+					new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name)),
 					new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name)),
 				));
 			}

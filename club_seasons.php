@@ -20,7 +20,6 @@ class Page extends ClubPageBase
 		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? ORDER BY start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, $this->id);
 		
 		echo '<table class="bordered" width="100%">';
-		echo '<script src="ckeditor/ckeditor.js"></script>';
 		echo '<tr class="darker"><th width="56">';
 		echo '<button class="icon" onclick="mr.createSeason(' . $this->id . ')" title="' . get_label('Create [0]', get_label('season')) . '"><img src="images/create.png" border="0"></button></th>';
 		echo '<th>' . get_label('Name') . '</th><th width="150">' . get_label('Start') . '</th><th width="150">' . get_label('End') . '</th></tr>';

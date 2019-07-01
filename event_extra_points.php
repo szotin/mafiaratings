@@ -17,6 +17,8 @@ class Page extends EventPageBase
 	{
 		global $_profile, $_page;
 		
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
+		
 		list ($count) = Db::record(get_label('extra points'), 'SELECT count(*) FROM event_extra_points WHERE event_id = ?', $this->event->id);
 		show_pages_navigation(PAGE_SIZE, $count);
 		

@@ -77,6 +77,7 @@ class Page extends EventPageBase
 	{
 		global $_profile, $_page;
 		
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
 		$this->init_players();
 		
 		show_pages_navigation(PAGE_SIZE, sizeof($this->players));

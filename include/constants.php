@@ -184,16 +184,18 @@ define('ADDR_ICON_MAX_VERSION', 7);
 define('MAILING_WAITING', 0);
 define('MAILING_SENDING', 1);
 define('MAILING_COMPLETE', 2);
-define('MAILING_CANCELED', 3);
 
-define('MAILING_FLAG_AUTODETECT_LANG', 1);
 define('MAILING_FLAG_TO_ATTENDED', 2); // when set the mailer sends emails to attended players
 define('MAILING_FLAG_TO_DECLINED', 4); // when set the mailer sends emails to declined players
 define('MAILING_FLAG_TO_DESIDING', 8); // when set the mailer sends emails to players who did not attend or decline yet.
 define('MAILING_FLAG_TO_ALL', 14); // Combination of ATTENDED, DECLINED and DECIDING. When set the mailer sends emails to all players of the club.
-define('MAILING_FLAG_LANG_TO_SET_ONLY', 16); // when set the mailer sends emails only to the players with the default language matching the email language.
-define('MAILING_FLAG_LANG_TO_DEF_ONLY', 32); // when set the mailer sends emails only to the players who know the email language.
-define('MAILING_FLAG_LANG_MASK', 48);
+
+define('EVENT_EMAIL_INVITE', 0);
+define('EVENT_EMAIL_CANCEL', 1);
+define('EVENT_EMAIL_CHANGE_ADDRESS', 2);
+define('EVENT_EMAIL_CHANGE_TIME', 3);
+define('EVENT_EMAIL_RESTORE', 4);
+define('EVENT_EMAIL_COUNT', 5);
 
 // club flags
 // 1 - 0x0001 -      1 - retired

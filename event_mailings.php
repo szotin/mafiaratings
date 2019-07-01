@@ -4,63 +4,31 @@ require_once 'include/page_base.php';
 require_once 'include/event.php';
 require_once 'include/event_mailing.php';
 
-class Page extends PageBase
+function type_to_str($type)
 {
-	private $event;
-
-	protected function prepare()
+	switch ($type)
 	{
-		global $_profile;
-	
-		if (!isset($_REQUEST['id']))
-		{
-			throw new FatalExc(get_label('Unknown [0]', get_label('event')));
-		}
-		$this->event = new Event();
-		$this->event->load($_REQUEST['id']);
-		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
-		
-		if (isset($_REQUEST['cancel']))
-		{
-			$mailing_id = $_REQUEST['cancel'];
-			list ($status) = Db::record(get_label('email'), 'SELECT status FROM event_emails WHERE id = ?', $mailing_id);
-			if ($status != MAILING_CANCELED)
-			{
-				if ($status != MAILING_WAITING)
-				{
-					throw new Exc(get_label('Some emails are already sent. This mailing can not be canceled.'));
-				}
-				Db::begin();
-				Db::exec(get_label('email'), 'UPDATE event_emails SET status = ' . MAILING_CANCELED . ' WHERE id = ?', $mailing_id);
-				if (Db::affected_rows() > 0)
-				{
-					db_log(LOG_OBJECT_EVENT_EMAILS, 'canceled', NULL, $mailing_id, $this->event->club_id);
-				}
-				Db::commit();
-			}
-		}
-		else if (isset($_REQUEST['restore']))
-		{
-			$mailing_id = $_REQUEST['restore'];
-			list ($status) = Db::record(get_label('email'), 'SELECT status FROM event_emails WHERE id = ?', $mailing_id);
-			if ($status == MAILING_CANCELED)
-			{
-				Db::begin();
-				Db::exec(get_label('email'), 'UPDATE event_emails SET status = ' . MAILING_WAITING . ' WHERE id = ?', $mailing_id);
-				if (Db::affected_rows() > 0)
-				{
-					db_log(LOG_OBJECT_EVENT_EMAILS, 'restored', NULL, $mailing_id, $this->event->club_id);
-				}
-				Db::commit();
-			}
-		}
-		
-		$this->_title = get_label('Mailing for [0]', $this->event->get_full_name());
+		case EVENT_EMAIL_INVITE:
+			return get_label('invitation');
+		case EVENT_EMAIL_CANCEL:
+			return get_label('cancelling');
+		case EVENT_EMAIL_CHANGE_ADDRESS:
+			return get_label('change address');
+		case EVENT_EMAIL_CHANGE_TIME:
+			return get_label('change time');
+		case EVENT_EMAIL_RESTORE:
+			return get_label('restore');
 	}
-	
+	return '';
+}
+
+class Page extends EventPageBase
+{
 	protected function show_body()
 	{
 		global $_profile;
+		
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
 		
 		echo '<table class="bordered light" width="100%">';
 		if (isset($_REQUEST['msg']))
@@ -72,58 +40,59 @@ class Page extends PageBase
 		}
 		
 		echo '<tr class="th darker">';
-		echo '<td width="52"><a href="create_event_mailing.php?events=' . $this->event->id . '&bck=1" title="' . get_label('New mailing') . '">';
-		echo '<img src="images/create.png" border="0"></a></td>';
-		echo '<td width="150">' . get_label('Date') . '</td><td>' . get_label('Recipients') . '</td><td width="80">' . get_label('Language') . '</td><td width="80">' . get_label('Status') . '</td><td width="80">' . get_label('Emails sent') . '</td></tr>';
+		echo '<td width="60"><button class="icon" onclick="mr.createEventMailing(' . $this->event->id . ')" title="' . get_label('New mailing') . '">';
+		echo '<img src="images/create.png" border="0"></button></td>';
+		echo '<td width="150">' . get_label('Date') . '</td><td>' . get_label('Recipients') . '</td><td width="80">' . get_label('Type') . '</td><td width="80">' . get_label('Status') . '</td><td width="80">' . get_label('Emails sent') . '</td></tr>';
 		
-		$query = new DbQuery('SELECT id, send_time, send_count, status, lang, flags FROM event_emails WHERE event_id = ? ORDER BY send_time', $this->event->id);
+		$query = new DbQuery('SELECT id, send_time, send_count, status, langs, flags, type FROM event_mailings WHERE event_id = ? ORDER BY send_time', $this->event->id);
 		while ($row = $query->next())
 		{
-			list($mail_id, $send_time, $send_count, $status, $lang, $flags) = $row;
+			list($mail_id, $send_time, $send_count, $status, $langs, $flags, $type) = $row;
 			
 			echo '<tr>';
 			switch ($status)
 			{
 				case MAILING_WAITING:
-					echo '<td class="dark"><a href="event_mailings.php?id=' . $this->event->id . '&cancel=' . $mail_id . '" title="' . get_label('Cancel') . '">';
-					echo '<img src="images/delete.png" border="0"></a>';
-					echo '<a href="edit_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('Edit') . '">';
-					echo '<img src="images/edit.png" border="0"></a></td>';
+					echo '<td class="dark">';
+					echo '<button class="icon" onclick="mr.editEventMailing(' . $mail_id . ')" title="' . get_label('Edit mailing') . '"><img src="images/edit.png" border="0"></button>';
+					echo '<button class="icon" onclick="deleteMailing(' . $mail_id . ')" title="' . get_label('Delete mailing') . '"><img src="images/delete.png" border="0"></button>';
+					echo '</td>';
+					echo '<td>' . format_date('F d, Y, H:i', $this->event->timestamp - $send_time, get_timezone()) . '</td>';
+					echo '<td>' . get_email_recipients($flags, $langs) . '</td>';
+					echo '<td>' . type_to_str($type) . '</td>';
+					echo '<td>' . get_label('waiting') . '</td><td></td>';
 					break;
 					
 				case MAILING_SENDING:
-				case MAILING_COMPLETE:
-					echo '<td class="dark">&nbsp;</td>';
-					break;
-					
-				case MAILING_CANCELED:
-					echo '<td class="dark"><a href="event_mailings.php?id=' . $this->event->id . '&restore=' . $mail_id . '" title="' . get_label('Uncancel') . '">';
-					echo '<img src="images/undelete.png" border="0"></a></td>';
-					break;
-			}
-			
-			echo '<td><a href="view_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('View') . '">' . format_date('F d, Y, H:i', $send_time, get_timezone()) . '</a></td>';
-			echo '<td>' . get_email_recipients($flags, $lang) . '</td>';
-			echo '<td>' . get_lang_str($lang) . '</td>';
-			
-			switch ($status)
-			{
-				case MAILING_WAITING:
-					echo '<td>' . get_label('waiting') . '</td><td>&nbsp;</td>';
-					break;
-				case MAILING_SENDING:
+					echo '<td class="dark"></td>';
+					echo '<td><a href="view_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('View') . '">' . format_date('F d, Y, H:i', $this->event->timestamp - $send_time, get_timezone()) . '</a></td>';
+					echo '<td>' . get_email_recipients($flags, $langs) . '</td>';
+					echo '<td>' . type_to_str($type) . '</td>';
 					echo '<td>' . get_label('sending') . '</td><td>' . $send_count . '</td>';
 					break;
+					
 				case MAILING_COMPLETE:
+					echo '<td class="dark"></td>';
+					echo '<td><a href="view_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('View') . '">' . format_date('F d, Y, H:i', $this->event->timestamp - $send_time, get_timezone()) . '</a></td>';
+					echo '<td>' . get_email_recipients($flags, $langs) . '</td>';
+					echo '<td>' . type_to_str($type) . '</td>';
 					echo '<td>' . get_label('complete') . '</td><td>' . $send_count . '</td>';
-					break;
-				case MAILING_CANCELED:
-					echo '<td>' . get_label('canceled') . '</td><td>&nbsp;</td>';
 					break;
 			}
 			echo '</tr>';
 		}
 		echo '</table>';
+	}
+	
+	protected function js()
+	{
+		parent::js();
+?>
+		function deleteMailing(mailingId)
+		{
+			dlg.yesNo("<?php echo get_label('Are you sure you want to delete event mailing?'); ?>", null, null, function() { mr.deleteEventMailing(mailingId) });
+		}
+<?php	
 	}
 }
 

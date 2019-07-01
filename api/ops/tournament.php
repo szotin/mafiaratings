@@ -621,18 +621,13 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$some_sent = false;
-		$query = new DbQuery('SELECT id, status FROM event_emails WHERE event_id = ?', $event_id);
+		$query = new DbQuery('SELECT id, status FROM event_mailings WHERE event_id = ?', $event_id);
 		while ($row = $query->next())
 		{
 			list ($mailing_id, $mailing_status) = $row;
 			switch ($mailing_status)
 			{
 				case MAILING_WAITING:
-					Db::exec(get_label('email'), 'UPDATE event_emails SET status = ' . MAILING_CANCELED . ' WHERE id = ?', $mailing_id);
-					if (Db::affected_rows() > 0)
-					{
-						db_log(LOG_OBJECT_TOURNAMENT, 'canceled', NULL, $mailing_id, $club_id);
-					}
 					break;
 				case MAILING_SENDING:
 				case MAILING_COMPLETE:

@@ -10,6 +10,7 @@ require_once 'include/constants.php';
 require_once 'include/localization.php';
 require_once 'include/error.php';
 require_once 'include/snapshot.php';
+require_once 'include/event_mailing.php';
 
 if (PHP_SAPI == 'cli')
 {
@@ -45,17 +46,18 @@ try
 	$server_name = get_server_url();
 	$emails_remaining = MAX_EMAILS;
 	$mailing_status = array();
-
+	
 	Db::begin();
 
+	$event_emails = array();
 	$query = new DbQuery(
-		'SELECT ee.id, ee.subject, ee.body, ee.lang, ee.flags, e.id, e.name, e.start_time, e.notes, e.languages, a.id, a.address, a.map_url, i.timezone, c.id, c.name FROM event_emails ee' . 
+		'SELECT ee.id, ee.type, ee.langs, ee.flags, e.id, e.name, e.start_time, e.notes, e.languages, a.id, a.address, a.map_url, i.timezone, c.id, c.name FROM event_mailings ee' . 
 		' JOIN events e ON e.id = ee.event_id' .
 		' JOIN addresses a ON a.id = e.address_id' . 
 		' JOIN clubs c ON c.id = e.club_id' .
 		' JOIN cities i ON i.id = a.city_id' .
 		' WHERE ee.status in (' . MAILING_WAITING . ', ' . MAILING_SENDING . ')' .
-		' AND ee.send_time <= ' . $time .
+		' AND e.start_time - ee.send_time <= UNIX_TIMESTAMP() ' .
 		' ORDER BY ee.send_time');
 	// echo $query->get_parsed_sql();
 	// echo '</br>';
@@ -63,47 +65,41 @@ try
 	while (($row = $query->next()) && $emails_remaining > 0)
 	{
 		list(
-			$email_id, $subj, $body, $email_lang, $email_flags,
+			$mailing_id, $mailing_type, $mailing_langs, $mailing_flags,
 			$event_id, $event_name, $event_start_time, $event_notes, $event_langs,
 			$addr_id, $addr, $addr_url, $timezone, $club_id,
 			$club_name) = $row;
 			
-		// echo '<br>$email_id=' . $email_id . '<br>$email_lang=' . $email_lang . '<br>$event_langs=' . $event_langs . '<br>$event_id=' . $event_id . '<br>$club_name=' . $club_name . '<br>';
+		// echo '<br>$mailing_id=' . $mailing_id . '<br>$mailing_lang=' . $mailing_lang . '<br>$event_langs=' . $event_langs . '<br>$event_id=' . $event_id . '<br>$club_name=' . $club_name . '<br>';
 		
 		$count = 0;
-		$to_flags = ($email_flags & MAILING_FLAG_TO_ALL);
+		$to_flags = ($mailing_flags & MAILING_FLAG_TO_ALL);
 		if ($to_flags != 0)
 		{
 			date_default_timezone_set($timezone);
 			
-			$tags = get_bbcode_tags();
-			$tags['root'] = new Tag(get_server_url());
-			$tags['event_name'] = new Tag($event_name);
-			$tags['event_id'] = new Tag($event_id);
-			$tags['event_date'] = new Tag(format_date('l, F d, Y', $event_start_time, $timezone, $email_lang));
-			$tags['event_time'] = new Tag(format_date('H:i', $event_start_time, $timezone, $email_lang));
-			$tags['notes'] = new Tag($event_notes);
-			$tags['address'] = new Tag($addr);
-			$tags['address_url'] = new Tag($addr_url);
-			$tags['address_id'] = new Tag($addr_id);
-			$tags['address_image'] = new Tag($image_base . $addr_id . '.jpg');
-			$tags['langs'] = new Tag(get_langs_str($event_langs, ', ', LOWERCASE, $email_lang));
-			$tags['club_name'] = new Tag($club_name);
-			$tags['club_id'] = new Tag($club_id);
-			$tags['accept_btn'] = new Tag('<input type="submit" name="accept" value="#">');
-			$tags['decline_btn'] = new Tag('<input type="submit" name="decline" value="#">');
-			$tags['unsub_btn'] = new Tag('<input type="submit" name="unsub" value="#">');
+			$common_tags = get_bbcode_tags();
+			$common_tags['root'] = new Tag(get_server_url());
+			$common_tags['event_name'] = new Tag($event_name);
+			$common_tags['event_id'] = new Tag($event_id);
+			$common_tags['notes'] = new Tag($event_notes);
+			$common_tags['address'] = new Tag($addr);
+			$common_tags['address_url'] = new Tag($addr_url);
+			$common_tags['address_id'] = new Tag($addr_id);
+			$common_tags['address_image'] = new Tag($image_base . $addr_id . '.jpg');
+			$common_tags['club_name'] = new Tag($club_name);
+			$common_tags['club_id'] = new Tag($club_id);
+			$common_tags['accept_btn'] = new Tag('<input type="submit" name="accept" value="#">');
+			$common_tags['decline_btn'] = new Tag('<input type="submit" name="decline" value="#">');
+			$common_tags['unsub_btn'] = new Tag('<input type="submit" name="unsub" value="#">');
 			
-			$body = parse_tags($body, $tags);
-			$subj = parse_tags($subj, $tags);
-		
 			$condition = new SQL('(u.languages & ?) <> 0' . 
 				' AND u.email <> \'\'' .
 				' AND uc.user_id = u.id' .
 				' AND uc.club_id = ?' .
 				' AND (uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_BANNED | USER_CLUB_FLAG_SUBSCRIBED) . ') = ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED) .
 				' AND u.id NOT IN (SELECT user_id FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT . ' AND obj_id = ?)',
-				$event_langs, $club_id, $email_id);
+				$mailing_langs, $club_id, $mailing_id);
 		
 			if ($to_flags != MAILING_FLAG_TO_ALL)
 			{
@@ -139,23 +135,27 @@ try
 				}
 			}
 			
-			if ($email_flags & MAILING_FLAG_LANG_TO_SET_ONLY)
-			{
-				$condition->add(' AND (u.languages & ?) <> 0', $email_lang);
-			}
-			
-			if ($email_flags & MAILING_FLAG_LANG_TO_DEF_ONLY)
-			{
-				$condition->add(' AND u.def_lang = ?', $email_lang);
-			}
-		
-			$query1 = new DbQuery('SELECT u.id, u.name, u.email FROM users u, user_clubs uc WHERE ', $condition);
+			$query1 = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang, u.languages FROM users u, user_clubs uc WHERE ', $condition);
 			$query1->add(' ORDER BY u.id LIMIT ' . $emails_remaining);
 			// echo $query1->get_parsed_sql();
 			// echo '</br>';
 			while ($row1 = $query1->next())
 			{
-				list($user_id, $user_name, $user_email) = $row1;
+				list($user_id, $user_name, $user_email, $user_lang, $user_langs) = $row1;
+				$user_lang = get_event_email_lang($user_lang, $user_langs);
+				$email_id = $mailing_type . '-' . $user_lang;
+				if (!isset($event_emails[$email_id]))
+				{
+					$event_emails[$email_id] = get_event_email($type, $user_lang);
+					$common_tags['event_date'] = new Tag(format_date('l, F d, Y', $event_start_time, $timezone, $user_lang));
+					$common_tags['event_time'] = new Tag(format_date('H:i', $event_start_time, $timezone, $user_lang));
+					$common_tags['langs'] = new Tag(get_langs_str($event_langs, ', ', LOWERCASE, $user_lang));
+					for ($i = 0; $i < count($event_emails[$email_id]); ++$i)
+					{
+						$event_emails[$email_id][$i] = parse_tags($event_emails[$email_id][$i], $common_tags);
+					}
+				}
+				list($subj, $body, $text_body) = $event_emails[$email_id];
 				
 				$code = generate_email_code();
 				$base_url = get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $code;
@@ -169,16 +169,17 @@ try
 					'decline' => new Tag('<a href="' . $base_url . '&decline=1" target="_blank">', '</a>'),
 					'unsub' => new Tag('<a href="' . $base_url . '&unsub=1" target="_blank">', '</a>'));
 					
-				$body1 = parse_tags($body, $tags);
-				$subj1 = parse_tags($subj, $tags);
-				if (empty($subj1))
+				$body = parse_tags($body, $tags);
+				$text_body = parse_tags($text_body, $tags);
+				$subj = parse_tags($subj, $tags);
+				if (empty($subj))
 				{
-					$subj1 = PRODUCT_NAME;
+					$subj = PRODUCT_NAME;
 				}
 				
 				try
 				{
-					send_notification($user_email, $body1, NO_TEXT, $subj1, $user_id, EMAIL_OBJ_EVENT, $email_id, $code);
+					send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_EVENT, $mailing_id, $code);
 					++$count;
 					echo 'Email about ' . $event_name . ' at ' . date('l, F d, Y', $event_start_time) . ' has been sent to ' . $user_name . EOL;
 				}
@@ -191,23 +192,23 @@ try
 				--$emails_remaining;
 			}
 		}
-		$mailing_status[$email_id] = $count;
+		$mailing_status[$mailing_id] = $count;
 	}
 
-	foreach ($mailing_status as $email_id => $count)
+	foreach ($mailing_status as $mailing_id => $count)
 	{
 		if ($count == 0)
 		{
-			Db::exec(get_label('email'), 'UPDATE event_emails SET status = ' . MAILING_COMPLETE . ' WHERE id = ?', $email_id);
+			Db::exec(get_label('email'), 'UPDATE event_mailings SET status = ' . MAILING_COMPLETE . ' WHERE id = ?', $mailing_id);
 			if (Db::affected_rows() > 0)
 			{
-				list ($club_id) = Db::record(get_label('club'), 'SELECT e.club_id FROM event_emails m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $email_id);
-				db_log(LOG_OBJECT_EVENT_EMAILS, 'sending complete', NULL, $email_id, $club_id);
+				list ($club_id) = Db::record(get_label('club'), 'SELECT e.club_id FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
+				db_log(LOG_OBJECT_EVENT_MAILINGS, 'sending complete', NULL, $mailing_id, $club_id);
 			}
 		}
 		else
 		{
-			Db::exec(get_label('email'), 'UPDATE event_emails SET status = ' . MAILING_SENDING . ', send_count = send_count + ? WHERE id = ?', $count, $email_id);
+			Db::exec(get_label('email'), 'UPDATE event_mailings SET status = ' . MAILING_SENDING . ', send_count = send_count + ? WHERE id = ?', $count, $mailing_id);
 		}
 	}
 	

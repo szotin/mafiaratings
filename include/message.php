@@ -266,7 +266,7 @@ function parse_message_urls($message)
 		
 		if (($flags & IS_URL_IMG) != 0)
 		{
-			$message = $before . '<img src="' . $url . '" />' . $after;
+			$message = $before . '<img src="' . $url . '" class="message-img" />' . $after;
 		}
 		else 
 		{
@@ -276,7 +276,7 @@ function parse_message_urls($message)
 				try
 				{
 					get_youtube_id($url, $video, $vtime);
-					$message .= '<iframe title="YouTube video player" width="200" height="150" src="' . get_embed_video_url($video, $vtime) . '" frameborder="0" allowfullscreen></iframe><br>';
+					$message .= '<iframe title="YouTube video player" width="300" height="225" src="' . get_embed_video_url($video, $vtime) . '" frameborder="0" allowfullscreen></iframe><br>';
 				}
 				catch (Exception $e)
 				{

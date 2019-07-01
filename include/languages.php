@@ -4,6 +4,7 @@ define('LANG_NO', 0);
 define('LANG_ENGLISH', 1);
 define('LANG_RUSSIAN', 2);
 define('LANG_ALL', 3);
+define('LANG_DEFAULT', 1); // English
 
 function get_lang($langs, $default_lang = -1)
 {
@@ -151,7 +152,7 @@ function get_lang_by_code($code)
 		case 'ru':
 			return LANG_RUSSIAN;
 	}
-	return LANG_ENGLISH;
+	return LANG_DEFAULT;
 }
 
 function get_langs($def)
@@ -234,12 +235,12 @@ function get_browser_lang()
 {
 	if (!isset($_SERVER['HTTP_ACCEPT_LANGUAGE']))
 	{
-		return LANG_ENGLISH;
+		return LANG_DEFAULT;
 	}
 
 	$browserlangs = strtolower($_SERVER['HTTP_ACCEPT_LANGUAGE']);
 	
-	$row = LANG_ENGLISH;
+	$row = LANG_DEFAULT;
 	$lang = LANG_NO;
 	while (($lang = get_next_lang($lang)) != LANG_NO)
 	{
@@ -377,7 +378,7 @@ function detect_lang($str)
 		{
 			return LANG_RUSSIAN;
 		}
-		return LANG_ENGLISH;
+		return LANG_DEFAULT;
 	}
 	else if ($lat_count > 0)
 	{

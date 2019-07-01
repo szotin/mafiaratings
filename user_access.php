@@ -4,7 +4,6 @@ require_once 'include/session.php';
 require_once 'include/languages.php';
 require_once 'include/url.php';
 require_once 'include/email.php';
-require_once 'include/editor.php';
 
 initiate_session();
 

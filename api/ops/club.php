@@ -37,36 +37,6 @@ class ApiPage extends OpsApiPageBase
 		}
 	}
 
-	private function create_event_email_templates($club_id, $langs)
-	{
-		$l = LANG_NO;
-		$second_lang = false;
-		while (($l = get_next_lang($l, $langs)) != LANG_NO)
-		{
-			$lang = get_lang_code($l);
-			$event_emails = include '../../include/languages/' . $lang . '/event_emails.php';
-			foreach ($event_emails as $event_email)
-			{
-				list($e_name, $e_subj, $e_body, $default_for) = $event_email;
-				if ($second_lang)
-				{
-					$default_for = 0;
-				}
-				Db::exec(
-					get_label('email'),
-					'INSERT INTO email_templates (club_id, name, subject, body, default_for) VALUES (?, ?, ?, ?, ?)',
-					$club_id, $e_name, $e_subj, $e_body, $default_for);
-				list ($template_id) = Db::record(get_label('email'), 'SELECT LAST_INSERT_ID()');
-				$log_details = new stdClass();
-				$log_details->name = $e_name;
-				$log_details->subject = $e_subj;
-				$log_details->body = $e_body;
-				db_log(LOG_OBJECT_EMAIL_TEMPLATE, 'created', $log_details, $template_id, $club_id);
-			}
-			$second_lang = true;
-		}
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -141,7 +111,6 @@ class ApiPage extends OpsApiPageBase
 			}
 			db_log(LOG_OBJECT_CLUB, 'created', $log_details, $club_id, $club_id);
 
-			$this->create_event_email_templates($club_id, $langs);
 			$this->response['club_id'] = $club_id;
 			
 			if (!$is_admin)
@@ -556,8 +525,6 @@ class ApiPage extends OpsApiPageBase
 					$user_id, $club_id);
 				db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $user_id, $club_id);
 			}
-			
-			$this->create_event_email_templates($club_id, $langs);
 			
 			// send email
 			$tags = array(

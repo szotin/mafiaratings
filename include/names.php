@@ -167,29 +167,4 @@ function check_address_name($name, $club_id, $address_id = -1)
 	}
 }
 
-function check_email_template_name($name, $club_id, $template_id = -1)
-{
-	global $_profile;
-
-	if ($name == '')
-	{
-		throw new Exc(get_label('Please enter [0].', get_label('email template name')));
-	}
-
-	check_name($name,get_label('email template name'));
-
-	if ($template_id > 0)
-	{
-		$query = new DbQuery('SELECT name FROM email_templates WHERE name = ? AND club_id = ? AND id <> ?', $name, $club_id, $template_id);
-	}
-	else
-	{
-		$query = new DbQuery('SELECT name FROM email_templates WHERE name = ? AND club_id = ?', $name, $club_id);
-	}
-	if ($query->next())
-	{
-        throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Email template name'), $name));
-	}
-}
-
 ?>

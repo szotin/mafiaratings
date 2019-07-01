@@ -135,3 +135,8 @@ img.round
 {
   border-radius: 50%;
 }
+
+img.message-img
+{
+	max-width: 300px;
+}

@@ -255,7 +255,6 @@ class ClubPageBase extends PageBase
 				$managment_menu[] = new MenuItem('club_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name));
 				$managment_menu[] = new MenuItem('club_custom_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name));
 				$managment_menu[] = new MenuItem('club_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name));
-				$managment_menu[] = new MenuItem('club_emails.php?id=' . $this->id, get_label('Emails'), get_label('[0] email templates', $this->name));
 				$managment_menu[] = new MenuItem('club_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name));
 			}
 			$menu[] = new MenuItem('#other', get_label('Management'), NULL, $managment_menu);

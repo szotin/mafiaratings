@@ -162,7 +162,7 @@ var dlg = new function()
 		html.get(formPage, formLoaded);
 	}
 	
-	this.form = function(formPage, onSuccess, width)
+	this.form = function(formPage, onSuccess, width, onCancel)
 	{
 		var id = null;
 		function formCommited(obj)
@@ -177,13 +177,22 @@ var dlg = new function()
 			}
 		}
 		
+		function formCanceled()
+		{
+			$(this).dialog("close"); 
+			if (typeof onCancel != "undefined")
+			{
+				onCancel(); 
+			}
+		}
+		
 		function formLoaded(text, title)
 		{
 			id = '#dlg' + _lastId;
 			dlg.custom(text, title, width, 
 			{
 				ok: { id:"dlg-ok", text: l("Ok"), click: function() { commit(formCommited); } },
-				cancel: { id:"dlg-cancel", text: l("Cancel"), click: function() { $(this).dialog("close"); } }
+				cancel: { id:"dlg-cancel", text: l("Cancel"), click: formCanceled }
 			});
 		}
 		

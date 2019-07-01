@@ -56,7 +56,7 @@ class Page extends PageBase
 			case EMAIL_OBJ_EVENT:
 				if (isset($_REQUEST['decline']))
 				{
-					$query1 = new DbQuery('SELECT event_id FROM event_emails WHERE id = ?', $obj_id);
+					$query1 = new DbQuery('SELECT event_id FROM event_mailings WHERE id = ?', $obj_id);
 					if ($row1 = $query1->next())
 					{
 						throw new RedirectExc('event_info.php?decline&id=' . $row1[0]);
@@ -64,7 +64,7 @@ class Page extends PageBase
 				}
 				else if (isset($_REQUEST['accept']))
 				{
-					$query1 = new DbQuery('SELECT event_id FROM event_emails WHERE id = ?', $obj_id);
+					$query1 = new DbQuery('SELECT event_id FROM event_mailings WHERE id = ?', $obj_id);
 					if ($row1 = $query1->next())
 					{
 						throw new RedirectExc('event_info.php?attend&id=' . $row1[0]);

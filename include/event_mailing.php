@@ -1,76 +1,45 @@
 <?php
 
 require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/languages.php';
 
-function create_event_mailing($events, $body, $subj, $send_time, $lang, $flags)
+function get_event_email_lang($lang, $langs)
 {
-	global $_profile;
-	Db::begin();
-	foreach ($events as $id)
+	if (($lang & LANG_ALL) == 0)
 	{
-		list ($start_time, $club_id) = Db::record(get_label('event'), 'SELECT start_time, club_id FROM events WHERE id = ?', $id);
-		if ($_profile == NULL || !$_profile->is_club_manager($club_id))
+		$lang = get_next_lang(LANG_NO, $langs);
+		if (($lang & LANG_ALL) == 0)
 		{
-			throw new FatalExc(get_label('No permissions'));
+			$lang = LANG_DEFAULT;
 		}
-		
-		if ($send_time <= 0)
-		{
-			$time = time();
-		}
-		else
-		{
-			$time = $start_time - $send_time * 86400;
-		}
-	
-		Db::exec(
-			get_label('email'), 
-			'INSERT INTO event_emails (event_id, subject, body, send_time, send_count, status, flags, lang) ' .
-				'VALUES (?, ?, ?, ?, 0, ' . MAILING_WAITING . ', ?, ?)',
-			$id, $subj, $body, $time, $flags, $lang);
-		list ($email_id) = Db::record(get_label('email'), 'SELECT LAST_INSERT_ID()');
-		list ($club_id, $event_name, $event_start, $timezone) =
-			Db::record(get_label('event'),
-				'SELECT e.club_id, e.name, e.start_time, ct.timezone FROM events e' .
-					' JOIN addresses a ON a.id = e.address_id' .
-					' JOIN cities ct ON ct.id = a.city_id' .
-					' WHERE e.id = ?',
-				$id);
-				
-		$log_details = new stdClass();
-		$log_details->event_id = $id;
-		$log_details->subj = $subj;
-		$log_details->send_time = format_date('d/m/y H:i', $time, $timezone);
-		$log_details->flags = $flags;
-		$log_details->lang = $lang;
-		$log_details->body = $body;
-		db_log(LOG_OBJECT_EVENT_EMAILS, 'created', $log_details, $email_id, $club_id);
 	}
-	Db::commit();
+	return $lang;
 }
 
-function update_event_mailing($id, $body, $subj, $send_time, $lang, $flags)
+function get_event_email($type, $lang)
 {
-	Db::begin();
-	Db::exec(
-		get_label('email'), 
-		'UPDATE event_emails SET subject = ?, body = ?, send_time = ?, lang = ?, flags = ? WHERE id = ?',
-		$subj, $body, $send_time, $lang, $flags, $id);
-	if (Db::affected_rows() > 0)
+	$filename = '/email_event_invite.php';
+	switch ($type)
 	{
-		list($club_id, $timezone) = Db::record(get_label('email'), 'SELECT e.club_id, c.timezone FROM event_emails m JOIN events e ON e.id = m.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE m.id = ?', $id);
-		$log_details = new stdClass();
-		$log_details->send_time = format_date('d/m/y H:i', $send_time, $timezone);
-		$log_details->lang = $lang;
-		$log_details->flags = $flags;
-		$log_details->subj = $subj;
-		$log_details->body = $body;
-		db_log(LOG_OBJECT_EVENT_EMAILS, 'changed', $log_details, $id, $club_id);
+		case EVENT_EMAIL_INVITE:
+			break;
+		case EVENT_EMAIL_CANCEL:
+			$filename = '/email_event_cancel.php';
+			break;
+		case EVENT_EMAIL_CHANGE_ADDRESS:
+			$filename = '/email_event_address.php';
+			break;
+		case EVENT_EMAIL_CHANGE_TIME:
+			$filename = '/email_event_time.php';
+			break;
+		case EVENT_EMAIL_RESTORE:
+			$filename = '/email_event_restore.php';
+			break;
 	}
-	Db::commit();
+	return include 'include/languages/' . get_lang_code($lang) . $filename;
 }
 
-function get_email_recipients($flags, $lang)
+function get_email_recipients($flags, $langs)
 {
 	$to_flags = ($flags & MAILING_FLAG_TO_ALL);
 	if ($to_flags == 0)
@@ -80,19 +49,11 @@ function get_email_recipients($flags, $lang)
 	
 	if ($to_flags == MAILING_FLAG_TO_ALL)
 	{
-		if ($flags & MAILING_FLAG_LANG_TO_SET_ONLY)
+		if (($langs & LANG_ALL) == LANG_ALL)
 		{
-			if ($flags & MAILING_FLAG_LANG_TO_DEF_ONLY)
-			{
-				return get_label('players who know and prefer [0]', get_lang_str($lang));
-			}
-			return get_label('players who know [0]', get_lang_str($lang));
+			return get_label('everybody', get_lang_str($lang));
 		}
-		else if ($flags & MAILING_FLAG_LANG_TO_DEF_ONLY)
-		{
-			return get_label('players who prefer [0]', get_lang_str($lang));
-		}
-		return get_label('everybody', get_lang_str($lang));
+		return get_label('players who know [0]', get_langs_str($langs, get_label(', or ')));
 	}
 	
 	if ($to_flags & MAILING_FLAG_TO_ATTENDED)
@@ -123,22 +84,14 @@ function get_email_recipients($flags, $lang)
 	}
 	else
 	{
-		$row = get_label('players who did not attend/decline the event');
+		$row = get_label('players who have not decided');
 	}
 
-	if ($flags & MAILING_FLAG_LANG_TO_SET_ONLY)
+	if (($langs & LANG_ALL) == LANG_ALL)
 	{
-		if ($flags & MAILING_FLAG_LANG_TO_DEF_ONLY)
-		{
-			return $row . ' ' . get_label('and know and prefer [0]', get_lang_str($lang));
-		}
-		return $row . ' ' . get_label('and know [0]', get_lang_str($lang));
+		return $row;
 	}
-	else if ($flags & MAILING_FLAG_LANG_TO_DEF_ONLY)
-	{
-		return $row . ' ' . get_label('and prefer [0]', get_lang_str($lang));
-	}
-	return $row;
+	return $row . ' ' . get_label('and know [0]', get_langs_str($langs, get_label(', or ')));
 }
 
 ?>

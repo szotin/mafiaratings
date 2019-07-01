@@ -249,7 +249,7 @@ class Page extends ClubPageBase
 			{
 				echo $note_name . ':';
 			}
-			echo '</td><td>' . $note_value . '</td></tr>';
+			echo '</td><td>' . prepare_message($note_value) . '</td></tr>';
 		}
 		if ($is_manager)
 		{
@@ -257,7 +257,6 @@ class Page extends ClubPageBase
 			echo '<table class="transp" width="100%"><tr><td class="dark">';
 			echo '<button class="icon" onclick="mr.createNote(' . $this->id . ')" title="' . get_label('Create [0]', get_label('note')) . '"><img src="images/create.png" border="0"></button>';
 			echo '</td></tr></table></td><td>&nbsp;</td></tr>';
-			echo '<script src="ckeditor/ckeditor.js"></script>';
 		}
 		echo '</table>';
 		if ($have_tables)

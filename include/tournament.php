@@ -216,35 +216,33 @@ class TournamentPageBase extends PageBase
 	{
 		echo '<table class="head" width="100%">';
 
-		if ($this->start_time < time())
-		{
-			$menu = array
+		$menu = array
+		(
+			new MenuItem('tournament_info.php?id=' . $this->id, get_label('Tournament'), get_label('General tournament information')),
+			new MenuItem('tournament_rounds.php?id=' . $this->id, get_label('Rounds'), get_label('Tournament rounds')),
+			new MenuItem('tournament_standings.php?id=' . $this->id, get_label('Standings'), get_label('Tournament standings')),
+			new MenuItem('tournament_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this tournament.')),
+			new MenuItem('tournament_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the tournament')),
+			new MenuItem('#stats', get_label('Stats'), NULL, array
 			(
-				new MenuItem('tournament_info.php?id=' . $this->id, get_label('Tournament'), get_label('General tournament information'))
-				, new MenuItem('tournament_standings.php?id=' . $this->id, get_label('Standings'), get_label('Tournament standings'))
-				, new MenuItem('tournament_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this tournament.'))
-				, new MenuItem('tournament_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the tournament'))
-				, new MenuItem('#stats', get_label('Stats'), NULL, array
-				(
-					new MenuItem('tournament_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
-					, new MenuItem('tournament_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
-					, new MenuItem('tournament_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
-					, new MenuItem('tournament_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of the tournament'))
-				))
-				, new MenuItem('#resources', get_label('Resources'), NULL, array
-				(
-					new MenuItem('tournament_albums.php?id=' . $this->id, get_label('Photos'), get_label('Tournament photo albums'))
-					, new MenuItem('tournament_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.'))
-					, new MenuItem('tournament_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.'))
-					// , new MenuItem('tournament_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.'))
-					// , new MenuItem('tournament_articles.php?id=' . $this->id, get_label('Articles'), get_label('Books and articles.'))
-					// , new MenuItem('tournament_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.'))
-				))
-			);
-			echo '<tr><td colspan="4">';
-			PageBase::show_menu($menu);
-			echo '</td></tr>';
-		}
+				new MenuItem('tournament_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
+				new MenuItem('tournament_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+				new MenuItem('tournament_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
+				new MenuItem('tournament_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of the tournament')),
+			)),
+			new MenuItem('#resources', get_label('Resources'), NULL, array
+			(
+				new MenuItem('tournament_albums.php?id=' . $this->id, get_label('Photos'), get_label('Tournament photo albums')),
+				new MenuItem('tournament_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.')),
+				new MenuItem('tournament_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.')),
+				// new MenuItem('tournament_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
+				// new MenuItem('tournament_articles.php?id=' . $this->id, get_label('Articles'), get_label('Books and articles.')),
+				// new MenuItem('tournament_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
+			)),
+		);
+		echo '<tr><td colspan="4">';
+		PageBase::show_menu($menu);
+		echo '</td></tr>';
 		
 		echo '<tr><td rowspan="2" valign="top" align="left" width="1">';
 		echo '<table class="bordered ';

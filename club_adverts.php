@@ -39,7 +39,6 @@ class Page extends ClubPageBase
 		echo ' onClick="document.form.submit()"> ' . get_label('show expired adverts') . '</form>';
 		
 		echo '<table class="bordered" width="100%">';
-		echo '<script src="ckeditor/ckeditor.js"></script>';
 		echo '<tr class="darker"><th width="56">';
 		echo '<button class="icon" onclick="mr.createAdvert(' . $this->id . ')" title="' . get_label('Create [0]', get_label('advert')) . '"><img src="images/create.png" border="0"></button></th><th>&nbsp;</th>';
 		while ($row = $query->next())

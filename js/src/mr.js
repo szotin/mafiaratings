@@ -417,15 +417,7 @@ var mr = new function()
 	{
 		dlg.form("event_create.php?club=" + clubId, function(obj)
 		{
-			var ids = obj.events;
-			var delim = '';
-			var id_str = '';
-			for (var i = 0; i < ids.length; ++i)
-			{
-				id_str += delim + ids[i];
-				delim = ',';
-			}
-			window.location.replace('create_event_mailing.php?bck=1&for=1&msg=0&events=' + ids);
+			dlg.form("event_mailing_create.php?events=" + obj.events + '&type=0', refr, 500, refr);
 		});
 	}
 	
@@ -433,14 +425,7 @@ var mr = new function()
 	{
 		json.post("api/ops/event.php", { op: "restore", event_id: id }, function(obj)
 		{
-			if (typeof obj.question == "string")
-			{
-				dlg.yesNo(obj.question, null, null, function() { window.location.replace('create_event_mailing.php?bck=1&events=' + id); }, refr);
-			}
-			else
-			{
-				refr();
-			}
+			dlg.form("event_mailing_create.php?events=" + id + '&type=4', refr, 500, refr);
 		});
 	}
 
@@ -448,17 +433,10 @@ var mr = new function()
 	{
 		function _cancel()
 		{
-			json.post("api/ops/event.php", { op: "cancel", event_id: id }, function(obj)
+			json.post("api/ops/event.php", { op: "cancel", event_id: id }, function()
 			{
-				if (typeof obj.question == "string")
-				{
-					dlg.yesNo(obj.question, null, null, function() { window.location.replace('create_event_mailing.php?bck=1&for=2&events=' + id); }, refr);
-				}
-				else
-				{
-					refr();
-				}
-			})
+				dlg.form("event_mailing_create.php?events=" + id + '&type=1', refr, 500, refr);
+			});
 		}
 		
 		if (typeof confirmMessage == "string")
@@ -479,6 +457,26 @@ var mr = new function()
 	this.eventMailing = function(id)
 	{
 		window.location.replace("event_mailings.php?bck=1&id=" + id);
+	}
+	
+	this.createEventMailing = function(events, mailingType)
+	{
+		var url = "event_mailing_create.php?events=" + events;
+		if (typeof mailingType == "number")
+		{
+			url += mailingType;
+		}
+		dlg.form(url, refr, 500, refr);
+	}
+	
+	this.editEventMailing = function(mailingId)
+	{
+		dlg.form('event_mailing_edit.php?mailing_id=' + mailingId, refr, 500);
+	}
+	
+	this.deleteEventMailing = function(mailingId)
+	{
+		json.post("api/ops/event.php", { op: "delete_mailing", mailing_id: mailingId }, refr);
 	}
 
 	this.attendEvent = function(id, url)

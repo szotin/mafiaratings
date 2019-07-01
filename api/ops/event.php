@@ -432,17 +432,17 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$some_sent = false;
-		$query = new DbQuery('SELECT id, status FROM event_emails WHERE event_id = ?', $event_id);
+		$query = new DbQuery('SELECT id, status FROM event_mailings WHERE event_id = ?', $event_id);
 		while ($row = $query->next())
 		{
 			list ($mailing_id, $mailing_status) = $row;
 			switch ($mailing_status)
 			{
 				case MAILING_WAITING:
-					Db::exec(get_label('email'), 'UPDATE event_emails SET status = ' . MAILING_CANCELED . ' WHERE id = ?', $mailing_id);
+					Db::exec(get_label('mailing'), 'DELET FROM event_mailings WHERE id = ?', $mailing_id);
 					if (Db::affected_rows() > 0)
 					{
-						db_log(LOG_OBJECT_EVENT_EMAILS, 'canceled', NULL, $mailing_id, $club_id);
+						db_log(LOG_OBJECT_EVENT_MAILINGS, 'deleted', NULL, $mailing_id, $club_id);
 					}
 					break;
 				case MAILING_SENDING:
@@ -624,7 +624,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function add_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_USER, 'Add extra points.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Add extra points.');
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('user_id', 'User id. The user who is receiving or loosing points.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.');
@@ -679,7 +679,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_USER, 'Change extra points.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change extra points.');
 		$help->request_param('points_id', 'Id of extra points object.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.', 'remains the same');
 		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.', 'remains the same');
@@ -708,8 +708,182 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_USER, 'Delete extra points.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete extra points.');
 		$help->request_param('points_id', 'Id of extra points object.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// create_mailing
+	//-------------------------------------------------------------------------------------------------------
+	function create_mailing_op()
+	{
+		$events = get_required_param('events');
+		$type = (int)get_optional_param('type', EVENT_EMAIL_INVITE);
+		if ($type < 0 || $type >= EVENT_EMAIL_COUNT)
+		{
+			throw new Exc(get_label('Invalid email type.'));
+		}
+		
+		$time = (int)get_required_param('time');
+		if ($time <= 0)
+		{
+			throw new Exc(get_label('Invalid send time.'));
+		}
+		
+		$flags = (int)get_optional_param('flags', MAILING_FLAG_TO_ATTENDED | MAILING_FLAG_TO_DESIDING);
+		if ($flags <= 0)
+		{
+			throw new Exc(get_label('No recipients.'));
+		}
+		
+		$langs = 0;
+		$event_ids = explode(',', $events);
+		if (count($event_ids) <= 0)
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('event')));
+		}
+		
+		$langs = 0;
+		foreach ($event_ids as $event_id)
+		{
+			list($club_id, $lgs) = Db::record(get_label('event'), 'SELECT club_id, languages FROM events WHERE id = ?', $event_id);
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			$langs |= $lgs;
+		}
+		$langs = (int)get_optional_param('langs', $langs);
+		if (($langs & LANG_ALL) == 0)
+		{
+			throw new Exc(get_label('No recipients.'));
+		}
+		
+		$mailing_ids = array();
+		Db::begin();
+		foreach ($event_ids as $event_id)
+		{
+			Db::exec(get_label('mailing'), 'INSERT INTO event_mailings (event_id, send_time, status, flags, langs, type) VALUES (?, ?, ' . MAILING_WAITING . ', ?, ?, ?)', $event_id, $time, $flags, $langs, $type);
+			list ($mailing_id) = Db::record(get_label('mailing'), 'SELECT LAST_INSERT_ID()');
+			list ($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
+					
+			$log_details = new stdClass();
+			$log_details->event_id = $event_id;
+			$log_details->send_time = $time;
+			$log_details->flags = $flags;
+			$log_details->langs = $langs;
+			$log_details->type = $type;
+			db_log(LOG_OBJECT_EVENT_MAILINGS, 'created', $log_details, $mailing_id, $club_id);
+			
+			$mailing_ids[] = $mailing_id;
+		}
+		Db::commit();
+		$this->response['mailings'] = $event_ids;
+	}
+	
+	function create_mailing_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, '');
+		$help->request_param('events', 'Coma separated array of ids of the events. Mailings will be created for all these events. Examples: "1123,1124,1125", "1123", "1123, 1124".');
+		$help->request_param('type', 'Mailing type. Possible values are:<ol><li value="0">invitation email.</li><li>notifiaction that the event has been canceled.</li><li>notification that start time has been changed.</li><li>notification that address has been changed.</li></ol>', '0 (invitation) is used');
+		$help->request_param('time', 'When the emails should be sent. In seconds before the event start.');
+		$help->request_param('flags', 'To whom the emails should be sent. An integer containing bit combination of:<ol><li value="2">to players who are attending the event.</li><li value="4">to players who declined to attend the event.</li><li value="8">to players who are still deciding whether to attend.</li></ol>', '10 (attanded & deciding) is used');
+		$help->request_param('langs', 'To whom the emails should be sent. An integer containing bit combination of:<ol><li value="1">to players who speak English.</li><li value="2">to players who speak Russian.</li></ol>', 'event languages are used');
+		$help->response_param('mailings', 'Array of ids of the newly created mailings.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// change_mailing
+	//-------------------------------------------------------------------------------------------------------
+	function change_mailing_op()
+	{
+		$mailing_id = (int)get_required_param('mailing_id');
+		list($club_id, $old_time, $status, $old_flags, $old_langs, $old_type) = Db::record(get_label('mailing'), 'SELECT e.club_id, m.send_time, m.status, m.flags, m.langs, m.type FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		if ($status != MAILING_WAITING)
+		{
+			throw new Exc(get_label('Can not change mailing. Some emails are already sent.', get_label('mailing')));
+		}
+		
+		$type = (int)get_optional_param('type', $old_type);
+		if ($type < 0 || $type >= EVENT_EMAIL_COUNT)
+		{
+			throw new Exc(get_label('Invalid email type.'));
+		}
+		
+		$time = (int)get_optional_param('time', $old_time);
+		if ($time <= 0)
+		{
+			throw new Exc(get_label('Invalid send time.'));
+		}
+		
+		$flags = (int)get_optional_param('flags', $old_flags);
+		if ($flags <= 0)
+		{
+			throw new Exc(get_label('No recipients.'));
+		}
+		
+		$langs = (int)get_optional_param('langs', $old_langs);
+		if (($langs & LANG_ALL) == 0)
+		{
+			throw new Exc(get_label('No recipients.'));
+		}
+		
+		Db::begin();
+		Db::exec(get_label('mailing'), 'UPDATE event_mailings SET type = ?, send_time = ?, flags = ?, langs = ? WHERE id = ?', $type, $time, $flags, $langs, $mailing_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			if ($type != $old_type)
+			{
+				$log_details->type = $type;
+			}
+			if ($time != $old_time)
+			{
+				$log_details->time = $time;
+			}
+			if ($flags != $old_flags)
+			{
+				$log_details->flags = $flags;
+			}
+			if ($langs != $old_langs)
+			{
+				$log_details->langs = $langs;
+			}
+			db_log(LOG_OBJECT_EVENT_MAILINGS, 'changed', $log_details, $mailing_id, $club_id);
+		}
+		Db::commit();
+	}
+	
+	function change_mailing_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, '');
+		$help->request_param('mailing_id', 'Id of the event mailing.');
+		$help->request_param('type', 'Mailing type. Possible values are:<ol><li value="0">invitation email.</li><li>notifiaction that the event has been canceled.</li><li>notification that start time has been changed.</li><li>notification that address has been changed.</li></ol>', 'remains the same.');
+		$help->request_param('time', 'When the emails should be sent. In seconds before the event start.', 'remains the same.');
+		$help->request_param('flags', 'To whom the emails should be sent. An integer containing bit combination of:<ol><li value="2">to players who are attending the event.</li><li value="4">to players who declined to attend the event.</li><li value="8">to players who are still deciding whether to attend.</li></ol>', 'remains the same.');
+		$help->request_param('langs', 'To whom the emails should be sent. An integer containing bit combination of:<ol><li value="1">to players who speak English.</li><li value="2">to players who speak Russian.</li></ol>', 'remains the same.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// delete_mailing
+	//-------------------------------------------------------------------------------------------------------
+	function delete_mailing_op()
+	{
+		$mailing_id = (int)get_required_param('mailing_id');
+		list($club_id) = Db::record(get_label('mailing'), 'SELECT e.club_id FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		
+		Db::begin();
+		Db::exec(get_label('mailing'), 'DELETE FROM event_mailings WHERE id = ?', $mailing_id);
+		db_log(LOG_OBJECT_EVENT_MAILINGS, 'deleted', new stdClass(), $mailing_id, $club_id);
+		Db::commit();
+	}
+	
+	function delete_mailing_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, '');
+		$help->request_param('mailing_id', 'Id of the event mailing.');
 		return $help;
 	}
 

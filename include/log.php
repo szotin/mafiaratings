@@ -23,8 +23,7 @@ define('LOG_OBJECT_PHOTO_ALBUM', 'photo album');
 define('LOG_OBJECT_PHOTO', 'photo');
 define('LOG_OBJECT_NOTE', 'note');
 define('LOG_OBJECT_ADVERT', 'advert');
-define('LOG_OBJECT_EMAIL_TEMPLATE', 'email template');
-define('LOG_OBJECT_EVENT_EMAILS', 'event emails');
+define('LOG_OBJECT_EVENT_MAILINGS', 'event emails');
 define('LOG_OBJECT_STATS_CALCULATOR', 'stats calculator');
 define('LOG_OBJECT_EXTRA_POINTS', 'extra points');
 
@@ -52,8 +51,7 @@ function prepare_log_objects()
 		, LOG_OBJECT_PHOTO => 'photo.php?bck=1&id='
 		, LOG_OBJECT_NOTE => NULL
 		, LOG_OBJECT_ADVERT => NULL
-		, LOG_OBJECT_EMAIL_TEMPLATE => NULL
-		, LOG_OBJECT_EVENT_EMAILS => 'view_event_mailing.php?bck=1&id='
+		, LOG_OBJECT_EVENT_MAILINGS => 'view_event_mailing.php?bck=1&id='
 		, LOG_OBJECT_STATS_CALCULATOR => 'stats_calculator.php?bck=1&id='
 	);
 }
