@@ -890,6 +890,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function ulist_op()
 	{
+		global $_lang_code;
+		
 		$club_id = 0;
 		if (isset($_REQUEST['club_id']))
 		{
@@ -908,30 +910,42 @@ class ApiPage extends OpsApiPageBase
 			$name = $_REQUEST['name'];
 		}
 		
+		$area_id = -1;
+		if ($club_id > 0)
+		{
+			list($area_id) = Db::record(get_label('area'), 'SELECT ct.area_id FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+		}
+		
 		array();
+		$query = new DbQuery(
+			'SELECT u.id, u.name, u.flags, c.id, c.name, a.id, a.name_' . $_lang_code . 
+				' FROM users u' .
+				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+				' JOIN cities ct ON ct.id = u.city_id' .
+				' JOIN cities a ON a.id = ct.area_id' .
+				' WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0');
 		if (!empty($name))
 		{
 			$name_wildcard = '%' . $name . '%';
-			$query = new DbQuery(
-				'SELECT u.id, u.name as _name, NULL, u.flags, c.name FROM users u' .
-					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-					' WHERE (u.name LIKE ? OR u.email LIKE ?) AND (u.flags & ' . USER_FLAG_BANNED . ') = 0' .
-					' UNION' .
-					' SELECT DISTINCT u.id, u.name as _name, r.nick_name, u.flags, c.name FROM users u' .
-					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-					' JOIN registrations r ON r.user_id = u.id' .
-					' WHERE r.nick_name <> u.name AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ? ORDER BY _name',
+			$query->add(
+					' AND (u.name LIKE ? OR' .
+					' u.email LIKE ? OR' .
+					' u.id IN (SELECT DISTINCT user_id FROM registrations WHERE nick_name LIKE ?))' .
+					' ORDER BY u.name',
 				$name_wildcard,
 				$name_wildcard,
 				$name_wildcard);
 		}
 		else if ($club_id > 0)
 		{
-			$query = new DbQuery('SELECT u.id, u.name, NULL, u.flags, c.name FROM users u JOIN user_clubs uc ON u.id = uc.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE uc.club_id = ? AND (uc.flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 ORDER BY rating DESC', $club_id);
+			$query->add(
+					' AND u.id IN (SELECT DISTINCT user_id FROM user_clubs WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)' .
+					' ORDER BY u.rating DESC',
+				$club_id);
 		}
 		else
 		{
-			$query = new DbQuery('SELECT u.id, u.name, NULL, u.flags, c.name FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0 ORDER BY rating DESC');
+			$query->add(' ORDER BY u.rating DESC');
 		}
 		
 		if ($num > 0)
@@ -942,11 +956,12 @@ class ApiPage extends OpsApiPageBase
 		$list = array();
 		while ($row = $query->next())
 		{
-			list ($u_id, $u_name, $nick, $u_flags, $club_name) = $row;
-			$p = new GPlayer($u_id, $u_name, $club_name, $u_flags, USER_CLUB_PERM_PLAYER);
-			if ($nick != NULL && $nick != $u_name)
+			$p = new stdClass();
+			list ($p->id, $p->name, $p->flags, $p_club_id, $p_club_name, $p_area_id, $p_area_name) = $row;
+			$p->full_name = $p->name;
+			if ($p_area_id != $area_id)
 			{
-				$p->nicks[$nick] = 1; 
+				$p->full_name .= ' (' . $p_area_name . ')';
 			}
 			$list[] = $p;
 		}

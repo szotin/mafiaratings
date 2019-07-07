@@ -1915,19 +1915,7 @@ var regForm = new function()
 				for (var i in data.list)
 				{
 					var p = data.list[i];
-					var nick = '';
-					for (var nck in p.nicks)
-					{
-						nick = nck;
-						break;
-					}
-					var h = '<a href="#" onclick="regForm.regIncomer(\'' + p.name + '\', \'' + nick + '\', ' + p.id + ', ' + p.flags  + ')" title="' + p.club + '">' + p.name;
-					if (nick != '')
-					{
-						h += ' (' + nick + ')';
-					}
-					h += '</a>';
-					$('#form-u' + num).html(h);
+					$('#form-u' + num).html('<a href="#" onclick="regForm.regIncomer(\'' + p.name + '\', \'' + p.name + '\', ' + p.id + ', ' + p.flags  + ')">' + p.full_name + '</a>');
 					++num;
 				}
 			});
