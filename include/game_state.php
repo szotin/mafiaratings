@@ -574,38 +574,55 @@ class GameState
 		return 0;
 	}
 	
+	function has_played($user_id)
+	{
+		if ($this->moder_id == $user_id)
+		{
+			return true;
+		}
+		for ($i = 0; $i < 10; ++$i)
+		{
+			if ($this->players[$i]->id == $user_id)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	function change_user($user_id, $new_user_id, $nickname = NULL)
 	{
-		if ($user_id == -1)
+		if ($user_id == -1 || !$this->has_played($user_id))
 		{
 			return false;
 		}
 		
-		$changed = false;
-		if ($this->moder_id == $user_id)
+		if ($this->has_played($new_user_id))
+		{
+			throw new Exc(get_label('Unable to change one user to another in the game because they both participated in it.'));
+		}
+		
+		if ($this->moder_id != $user_id)
+		{
+			for ($i = 0; $i < 10; ++$i)
+			{
+				$player = $this->players[$i];
+				if ($player->id == $user_id)
+				{
+					$player->id = $new_user_id;
+					if ($nickname != NULL)
+					{
+						$player->nick = $nickname;
+					}
+					break;
+				}
+			}
+		}
+		else
 		{
 			$this->moder_id = $new_user_id;
-			$changed = true;
 		}
-		for ($i = 0; $i < 10; ++$i)
-		{
-			$player = $this->players[$i];
-			if ($player->id == $new_user_id && $user_id != $new_user_id)
-			{
-				throw new Exc('Unable to change one user to another in the game because they both were playing.');
-			}
-			
-			if ($player->id == $user_id)
-			{
-				$player->id = $new_user_id;
-				if ($nickname != NULL)
-				{
-					$player->nick = $nickname;
-				}
-				$changed = true;
-			}
-		}
-		return $changed;
+		return true;
 	}
 }
 
