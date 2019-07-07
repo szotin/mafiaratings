@@ -451,7 +451,17 @@ var mr = new function()
 
 	this.editEvent = function(id)
 	{
-		window.location.replace("edit_event.php?bck=1&id=" + id);
+		dlg.form("form/event_edit.php?event_id=" + id, function(obj)
+		{
+			if (typeof obj.mailing != "undefined")
+			{
+				dlg.form("form/event_mailing_create.php?events=" + id + '&type=' + obj.mailing, refr, 500, refr);
+			}
+			else
+			{
+				refr();
+			}
+		});
 	}
 
 	this.eventMailing = function(id)

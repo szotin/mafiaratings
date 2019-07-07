@@ -39,7 +39,7 @@ class Page extends EventPageBase
 			}
 		}
 		
-		echo '<tr class="th darker">';
+		echo '<tr height="36" class="th darker">';
 		echo '<td width="60"><button class="icon" onclick="mr.createEventMailing(' . $this->event->id . ')" title="' . get_label('New mailing') . '">';
 		echo '<img src="images/create.png" border="0"></button></td>';
 		echo '<td width="150">' . get_label('Date') . '</td><td>' . get_label('Recipients') . '</td><td width="80">' . get_label('Type') . '</td><td width="80">' . get_label('Status') . '</td><td width="80">' . get_label('Emails sent') . '</td></tr>';
@@ -49,7 +49,7 @@ class Page extends EventPageBase
 		{
 			list($mail_id, $send_time, $send_count, $status, $langs, $flags, $type) = $row;
 			
-			echo '<tr>';
+			echo '<tr height="36">';
 			switch ($status)
 			{
 				case MAILING_WAITING:

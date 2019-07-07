@@ -282,6 +282,15 @@ function is_valid_rules_code($rules_code)
 	return true;
 }
 
+function check_rules_code($rules_code)
+{
+	if (!is_valid_rules_code($rules_code))
+	{
+		throw new Exc(get_label('Invalid rules code "[0]".', $rules_code));
+	}
+}
+
+
 function default_rules_code()
 {
 	return str_pad('', RULE_OPTIONS_COUNT, '0');

@@ -5,6 +5,7 @@ require_once '../../include/event.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
 require_once '../../include/game_stats.php';
+require_once '../../include/datetime.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -160,6 +161,213 @@ class ApiPage extends OpsApiPageBase
 			$param->sub_param('scoring_weight', 'Weight of the points in this round. All scores in this round are multiplied by it.', 'is set to 1');
 			$param->sub_param('games', 'How many games should be played in this round. The system will automaticaly change round after this number of games is played. Send 0 for changing rounds manually.', 'is set to 0');
 		$help->response_param('events', 'Array of ids of the newly created events.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// change
+	//-------------------------------------------------------------------------------------------------------
+	function change_op()
+	{
+		global $_profile;
+		$event_id = (int)get_required_param('event_id');
+		
+		Db::begin();
+		list($club_id, $old_name, $old_start_timestamp, $old_duration, $old_address_id, $old_price, $old_rules_code, $old_scoring_id, $old_scoring_weight, $old_planned_games, $old_langs, $old_notes, $old_flags, $timezone) = 
+			Db::record(get_label('event'), 
+				'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.languages, e.notes, e.flags, c.timezone ' .
+				'FROM events e ' . 
+				'JOIN addresses a ON a.id = e.address_id ' . 
+				'JOIN cities c ON c.id = a.city_id ' . 
+				'WHERE e.id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		$club = $_profile->clubs[$club_id];
+
+		$name = get_optional_param('name', $old_name);
+		$start = get_optional_param('start', $old_start_timestamp);
+		$duration = (int)get_optional_param('duration', $old_duration);
+		$price = get_optional_param('price', $old_price);
+		$scoring_id = (int)get_optional_param('scoring_id', $old_scoring_id);
+		$scoring_weight = (float)get_optional_param('scoring_weight', $old_scoring_weight);
+		$notes = get_optional_param('notes', $old_notes);
+		
+		$rules_code = get_optional_param('rules_code', $old_rules_code);
+		check_rules_code($rules_code);
+		
+		$flags = (int)get_optional_param('flags', $old_flags);
+		$flags = ($flags & EVENT_EDITABLE_MASK) + ($old_flags & ~EVENT_EDITABLE_MASK);
+		
+		$langs = get_optional_param('langs', $old_langs);
+		if (($langs & LANG_ALL) == 0)
+		{
+			throw new Exc(get_label('No languages specified.'));
+		}
+		
+		$address_id = get_optional_param('address_id', -1);
+		if ($address_id <= 0)
+		{
+			$address = get_optional_param('address_id', NULL);
+			if ($address != NULL)
+			{
+				$city_id = get_optional_param('city_id', -1);
+				if ($city_id <= 0)
+				{
+					$country_id = get_optional_param('country_id', NULL);
+					if ($country_id <= 0)
+					{
+						$country = get_optional_param('country', NULL);
+						if ($country != NULL)
+						{
+							$country_id = retrieve_country_id($country);
+						}
+						else
+						{
+							$country_id = $club->country_id;
+						}
+					}
+					
+					$city = get_optional_param('city', NULL);
+					if ($city != NULL)
+					{
+						$city_id = retrieve_city_id($city, $country_id, $club->timezone);
+					}
+					else
+					{
+						$city_id = $club->city_id;
+					}
+				}
+				
+				list($timezone) = Db::record(get_label('city'), 'SELECT timezone FROM cities WHERE id = ?', $city_id);
+				$sc_address = htmlspecialchars($address, ENT_QUOTES);
+				check_address_name($sc_address, $this->club_id);
+		
+				Db::exec(
+					get_label('address'), 
+					'INSERT INTO addresses (name, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
+					$sc_address, $this->club_id, $sc_address, $city_id);
+				list ($address_id) = Db::record(get_label('address'), 'SELECT LAST_INSERT_ID()');
+				
+				$log_details = new stdClass();
+				$log_details->name = $sc_address;
+				$log_details->address = $sc_address;
+				$log_details->city = $this->city;
+				$log_details->city_id = $city_id;
+				db_log(LOG_OBJECT_ADDRESS, 'created', $log_details, $this->addr_id, $this->club_id);
+		
+				$warning = load_map_info($this->addr_id);
+				if ($warning != NULL)
+				{
+					echo '<p>' . $warning . '</p>';
+				}
+			}
+			else
+			{
+				$address_id = $old_address_id;
+			}
+		}
+		else if ($address_id != $old_address_id)
+		{
+			list($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $address_id);
+		}
+
+		$start_datetime = get_datetime($start, $timezone);
+		$start_timestamp = $start_datetime->getTimestamp();
+		
+		Db::exec(
+			get_label('event'), 
+			'UPDATE events SET ' .
+				'name = ?, price = ?, rules = ?, scoring_id = ?, scoring_weight = ?, ' .
+				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
+				'languages = ? WHERE id = ?',
+			$name, $price, $rules_code, $scoring_id, $scoring_weight,
+			$address_id, $start_timestamp, $notes, $duration, $flags,
+			$langs, $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $address_id);
+			$log_details = new stdClass();
+			if ($name != $old_name)
+			{
+				$log_details->name = $name;
+			}
+			if ($price != $old_price)
+			{
+				$log_details->price = $price;
+			}
+			if ($address_id != $old_address_id)
+			{
+				$log_details->address_id = $address_id;
+			}
+			if ($start_timestamp != $old_start_timestamp)
+			{
+				$log_details->start_timestamp = $start_timestamp;
+			}
+			if ($duration != $old_duration)
+			{
+				$log_details->duration = $duration;
+			}
+			if ($flags != $old_flags)
+			{
+				$log_details->flags = $flags;
+			}
+			if ($langs != $old_langs)
+			{
+				$log_details->langs = $langs;
+			}
+			if ($rules_code != $old_rules_code)
+			{
+				$log_details->rules_code = $rules_code;
+			}
+			if ($scoring_id != $old_scoring_id)
+			{
+				$log_details->scoring_id = $scoring_id;
+			}
+			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
+		}
+		
+		if ($start_timestamp != $old_start_timestamp || $duration != $old_duration)
+		{
+			Db::exec(
+				get_label('registration'), 
+				'UPDATE registrations SET start_time = ?, duration = ? WHERE event_id = ?',
+				$start_timestamp, $duration, $event_id);
+		}
+		Db::commit();
+		
+		if ($address_id != $old_address_id)
+		{
+			$this->response['mailing'] = EVENT_EMAIL_CHANGE_ADDRESS;
+		}
+		else if ($start_timestamp != $old_start_timestamp)
+		{
+			$this->response['mailing'] = EVENT_EMAIL_CHANGE_TIME;
+		}
+	}
+	
+	function change_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create event.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('name', 'Event name.', 'remains the same.');
+		$help->request_param('start', 'Event start time. It is either unix timestamp or datetime in the format "yyyy-mm-dd hh:00". Timezone of the address is used.', 'remains the same.');
+		$help->request_param('duration', 'Event duration in seconds.', 'remains the same.');
+		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'remains the same.');
+		$help->request_param('rules_code', 'Rules for this event.', 'remain the same.');
+		$help->request_param('scoring_id', 'Scoring id for this event.', 'default club scoring system is used.', 'remain the same.');
+		$help->request_param('notes', 'Event notes. Just a text.', 'empty.', 'remain the same.');
+		$help->request_param('flags', 'Bit combination of the next flags.
+				<ul>
+					<li>1 - users can register for this event when they click "attend"</li>
+					<li>2 - users must enter password to participate in the event games.</li>
+					<li>4 - all registered users can moderate games.</li>
+				</ul>', 'remain the same.');
+		$help->request_param('langs', 'Languages on this event. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remain the same.');
+		$help->request_param('address_id', 'Address id of the event.', '<q>address</q> is used to create new address.');
+		$help->request_param('address', 'When <q>address_id</q> is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the address line to create.', 'address remains the same');
+		$help->request_param('country_id', 'When <q>address_id<q> is not set, and <q>address</q> is set - this is the country id for the new address.', '<q>country</q> parameter is used to create new country for the address.');
+		$help->request_param('country', 'When <q>address_id</q> is not set, and <q>address</q> is set, and <q>country_id</q> is not set - this is the country name for the new address. If <?php echo PRODUCT_NAME; ?> can not find a country with this name, new country is created.', 'club country is used for the new address.');
+		$help->request_param('city_id', 'When <q>address_id<q> is not set, and <q>address</q> is set - this is the city id for the new address.', '<q>city</q> parameter is used to create new city for the address.');
+		$help->request_param('city', 'When <q>address_id</q> is not set, and <q>address</q> is set, and <q>city_id</q> is not set - this is the city name for the new address. If <?php echo PRODUCT_NAME; ?> can not find a city with this name, new city is created.', 'club city is used for the new address.');
 		return $help;
 	}
 	
