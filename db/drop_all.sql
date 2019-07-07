@@ -3,7 +3,7 @@ DROP TABLE `club_requests`;
 DROP TABLE `club_rules`;
 DROP TABLE `dons`;
 DROP TABLE `emails`;
-DROP TABLE `event_emails`;
+DROP TABLE `event_mailings`;
 DROP TABLE `event_users`;
 DROP TABLE `game_settings`;
 DROP TABLE `gate_sessions`;

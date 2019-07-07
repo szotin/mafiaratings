@@ -353,7 +353,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('duration', 'Event duration in seconds.', 'remains the same.');
 		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'remains the same.');
 		$help->request_param('rules_code', 'Rules for this event.', 'remain the same.');
-		$help->request_param('scoring_id', 'Scoring id for this event.', 'default club scoring system is used.', 'remain the same.');
+		$help->request_param('scoring_id', 'Scoring id for this event.', 'remain the same.');
+		$help->request_param('scoring_weight', 'Scoring weight for this event. All scores will be multiplied to this. This is useful for tournaments where many events with different importance can be created.', 'remain the same.');
 		$help->request_param('notes', 'Event notes. Just a text.', 'empty.', 'remain the same.');
 		$help->request_param('flags', 'Bit combination of the next flags.
 				<ul>
@@ -734,7 +735,7 @@ class ApiPage extends OpsApiPageBase
 		list($new_user_registration) = Db::record(get_label('registration'), 'SELECT count(*) FROM registrations WHERE user_id = ? AND event_id = ?', $new_user_id, $event_id);
 		if ($new_user_registration > 0)
 		{
-			Db::exec(get_label('registration'), 'UPDATE registrations SET nick_name = ? WHERE user_id = ? AND event_id = ?', $new_user_id, $event_id);
+			Db::exec(get_label('registration'), 'UPDATE registrations SET nick_name = ? WHERE user_id = ? AND event_id = ?', $nickname, $new_user_id, $event_id);
 			if (Db::affected_rows() > 0)
 			{
 				$changed = true;
