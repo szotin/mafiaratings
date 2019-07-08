@@ -2499,6 +2499,7 @@ var mafia = new function()
 		var club = _data.club;
 		var lang = club.langs;
 		var user = _data.user;
+		var rules = _data.club.rules_code;
 		var event = club.events[_data.game.event_id];
 		var moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : user.id;
 		if (typeof id == "undefined")
@@ -2513,6 +2514,7 @@ var mafia = new function()
 			{
 				mid = user.id;
 			}
+			rules = event.rules_code;
 		}
 		if (((lang - 1) & lang) != 0)
 		{
@@ -2542,7 +2544,7 @@ var mafia = new function()
 			best_player: -1,
 			best_move: -1,
 			guess3: null,
-			rules_code: _data.game.rules_code
+			rules_code: rules
 		}
 		
 		for (var i = 0; i < 10; ++i)
