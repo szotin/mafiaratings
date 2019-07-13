@@ -1100,32 +1100,6 @@ function show_date_controls($day, $month, $year, $name_base = '')
 	echo '</select>';
 }
 
-function show_time_controls($hour, $minute, $prefix = '')
-{
-	echo '<select id="' . $prefix . 'hour" name="' . $prefix . 'hour">';
-	for ($i = 0; $i < 24; ++$i)
-	{
-		echo '<option value="' . $i . '"';
-		if ($hour == $i)
-		{
-			echo ' selected';
-		}
-		echo '>' . sprintf('%02s', $i) . '</option>';
-	}
-	echo '</select>';
-	echo '<select id="' . $prefix . 'minute" name="' . $prefix . 'minute">';
-	for ($i = 0; $i < 60; $i += 10)
-	{
-		echo '<option value="' . $i . '"';
-		if ($minute < $i + 10 && $minute >= $i)
-		{
-			echo ' selected';
-		}
-		echo '>' . sprintf('%02s', $i) . '</option>';
-	}
-	echo '</select>';
-}
-
 class EventPageBase extends PageBase
 {
 	protected $event;

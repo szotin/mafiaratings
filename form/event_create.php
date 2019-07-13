@@ -6,6 +6,7 @@ require_once '../include/country.php';
 require_once '../include/event.php';
 require_once '../include/timespan.php';
 require_once '../include/scoring.php';
+require_once '../include/datetime.php';
 
 initiate_session();
 
@@ -26,6 +27,10 @@ try
 	$club = $_profile->clubs[$club_id];
 	$event = new Event();
 	$event->set_club($club);
+	
+	$start = new DateTime();
+	$end = new DateTime();
+	$end->add(new DateInterval('P2M'));
 
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($event->name, ENT_QUOTES) . '"></td></tr>';
@@ -33,7 +38,7 @@ try
 	echo '<tr><td>'.get_label('Date').':</td><td>';
 	echo '<input type="checkbox" id="form-multiple" onclick="multipleChange()"> ' . get_label('multiple events');
 	echo '<div id="form-single_date">';
-	show_date_controls($event->day, $event->month, $event->year, 'form-');
+	echo '<input type="text" id="form-date" value="' . datetime_to_string($start, false) . '">';
 	echo '</div><div id="form-multiple_date" style="display:none;">';
 	echo '<p>' . get_label('Every') . ': ';
 	$weekday_names = array(get_label('sun'), get_label('mon'), get_label('tue'), get_label('wed'), get_label('thu'), get_label('fri'), get_label('sat'));
@@ -43,14 +48,14 @@ try
 	}
 	echo '</p>';
 	echo '<p>' . get_label('From') . ' ';
-	show_date_controls($event->day, $event->month, $event->year, 'form-from_');
+	echo '<input type="text" id="form-date-from" value="' . datetime_to_string($start, false) . '">';
 	echo ' ' . get_label('to') . ' ';
-	show_date_controls($event->day, $event->month, $event->year, 'form-to_');
+	echo '<input type="text" id="form-date-to" value="' . datetime_to_string($end, false) . '">';
 	echo '</td></tr>';
 	echo '</div></td></tr>';
 		
 	echo '<tr><td>'.get_label('Time').':</td><td>';
-	show_time_controls($event->hour, $event->minute, 'form-');
+	echo '<input id="form-hour" value="18"> : <input id="form-minute" value="00">';
 	echo '</td></tr>';
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($event->duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
@@ -178,6 +183,13 @@ try
 	echo '</td></tr></table>';
 ?>	
 	<script>
+	var dateFormat = "yy-mm-dd";
+	var date = $('#form-date').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
+	var fromDate = $('#form-date-from').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { toDate.datepicker("option", "minDate", this.value); });
+	var toDate = $('#form-date-to').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
+	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(16);
+	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(16);
+	
 	function multipleChange()
 	{
 		if ($('#form-multiple').attr('checked'))
@@ -339,6 +351,15 @@ try
 		$("#form-copy").val(0);
 	}
 	
+	function timeStr(val)
+	{
+		if (val.length < 2)
+		{
+			return '0' + val;
+		}
+		return val;
+	}
+	
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -354,8 +375,6 @@ try
 			op: "create"
 			, club_id: <?php echo $club_id; ?>
 			, name: $("#form-name").val()
-			, hour: $("#form-hour").val()
-			, minute: $("#form-minute").val()
 			, duration: strToTimespan($("#form-duration").val())
 			, price: $("#form-price").val()
 			, address_id: _addr
@@ -376,6 +395,7 @@ try
 			params['city'] = $("#form-city").val();
 		}
 		
+		var _time = ' ' + timeStr($('#form-hour').val()) + ':' + timeStr($('#form-minute').val());
 		if ($('#form-multiple').attr('checked'))
 		{
 			var weekdays = 0;
@@ -388,20 +408,13 @@ try
 			if ($("#form-wd6").attr('checked')) weekdays |= <?php echo WEEK_FLAG_SAT; ?>;
 			
 			params['weekdays'] = weekdays;
-			params['month'] = $("#form-from_month").val();
-			params['day'] = $("#form-from_day").val();
-			params['year'] = $("#form-from_year").val();
-			params['to_month'] = $("#form-to_month").val();
-			params['to_day'] = $("#form-to_day").val();
-			params['to_year'] = $("#form-to_year").val();
+			params['start'] = fromDate.val() + _time;
+			params['end'] = toDate.val() + _time;
 		}
 		else
 		{
-			params['month'] = $("#form-month").val();
-			params['day'] = $("#form-day").val();
-			params['year'] = $("#form-year").val();
+			params['start'] = date.val() + _time;
 		}
-		
 		json.post("api/ops/event.php", params, onSuccess);
 	}
 	

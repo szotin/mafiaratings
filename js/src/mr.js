@@ -217,26 +217,25 @@ var mr = new function()
 		json.post("api/ops/address.php", { op: "retire", address_id: addrId }, refr);
 	}
 
-	this.genAddr = function(addrId, confirmMessage)
+	this.genAddr = function(addrId)
 	{
-		function gen()
-		{
-			json.post("api/ops/address.php", { op: "google_map", address_id: addrId }, refr);
-		}
-
-		if (typeof confirmMessage == "string")
-		{
-			dlg.yesNo(confirmMessage, null, null, gen);
-		}
-		else
-		{
-			gen();
-		}
+		dlg.form("form/address_geo.php?id=" + addrId, refr, 400);
 	}
 
-	this.editAddr = function(id)
+	this.editAddr = function(addrId)
 	{
-		dlg.form("form/address_edit.php?id=" + id, refr, 600);
+		dlg.form("form/address_edit.php?id=" + addrId, function(obj)
+		{
+			var changed = typeof obj.changed != "undefined" && obj.changed;
+			if (changed)
+			{
+				dlg.form("form/address_geo.php?id=" + addrId, refr, 400, refr);
+			}
+			else
+			{
+				refr();
+			}
+		}, 600);
 	}
 
 	//--------------------------------------------------------------------------------------

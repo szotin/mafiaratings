@@ -5,6 +5,8 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/club.php';
 require_once __DIR__ . '/image.php';
 
+define('GOOGLE_API_KEY', 'AIzaSyAkBbApEfVfgk3Dy7FVlTkLoK7HeR196zE');
+
 function addr_label($addr, $addr_city, $addr_country)
 {
 	if ($addr == '')
@@ -20,12 +22,13 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 		get_label('address'), 
 		'SELECT a.address, a.club_id, a.flags, a.city_id, i.name_en, o.name_en FROM addresses a JOIN cities i ON i.id = a.city_id JOIN countries o ON o.id = i.country_id WHERE a.id = ?', 
 		$addr_id);
+	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	$geo_address = str_replace(' ', '+', $address . ',' . $city_name . ',' . $country_name);
-//	echo $geo_address . '<br>';
+	//echo $geo_address . '<br>';
 	$geo_address = urlencode($geo_address);
 	
-	$url = 'http://maps.googleapis.com/maps/api/geocode/json?address=' . $geo_address . '&sensor=false';
-//	echo $url . '<br>';
+	$url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . $geo_address . '&sensor=false&key=' . GOOGLE_API_KEY;
+	// echo $url . '<br>';
 	
 	$json = file_get_contents($url);
 	if ($json === FALSE)
@@ -95,8 +98,8 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 	
 	if ($set_image)
 	{
-		$image_url = 'http://maps.googleapis.com/maps/api/staticmap?center=' . $geo_address . '&zoom=12&size=' . TNAIL_WIDTH . 'x' . TNAIL_HEIGHT . '&maptype=roadmap&markers=color:blue%7Clabel:S%7C' . $lat . ',' . $lng . '&sensor=false&format=PNG';
-//		echo '<a href="' . $google_url . '" target="_blank"><img src="' . $image_url . '"></a>';
+		$image_url = 'https://maps.googleapis.com/maps/api/staticmap?center=' . $geo_address . '&zoom=12&size=' . TNAIL_WIDTH . 'x' . TNAIL_HEIGHT . '&maptype=roadmap&markers=color:blue%7Clabel:S%7C' . $lat . ',' . $lng . '&sensor=false&format=PNG&key=' . GOOGLE_API_KEY;
+		//echo '<a href="' . $google_url . '" target="_blank"><img src="' . $image_url . '"></a>';
 	
 		$image = file_get_contents($image_url);
 		if ($image === false)
@@ -185,7 +188,7 @@ function show_address_buttons($id, $name, $flags, $club_id)
 		else 
 		{
 			echo '<button class="icon" onclick="mr.editAddr(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.genAddr(' . $id . ', \'' . get_label('Address image and map URL will be changed. Are you sure you want to generate address map?') . '\')" title="' . get_label('Locate [0] in google maps and generate map image.', $name) . '"><img src="images/map.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.genAddr(' . $id . ')" title="' . get_label('Locate [0] in google maps and generate map image.', $name) . '"><img src="images/map.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.retireAddr(' . $id . ')" title="' . get_label('Mark [0] as not used', $name) . '"><img src="images/delete.png" border="0"></button>';
 			$no_buttons = false;
 		}

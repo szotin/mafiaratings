@@ -11,6 +11,77 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	function get_address_id($club, $old_address_id)
+	{
+		$address_id = get_optional_param('address_id', -1);
+		$timezone = $club->timezone;
+		if ($address_id <= 0)
+		{
+			$address = get_optional_param('address', NULL);
+			if ($address != NULL)
+			{
+				$city_id = get_optional_param('city_id', -1);
+				if ($city_id <= 0)
+				{
+					$country_id = get_optional_param('country_id', NULL);
+					if ($country_id <= 0)
+					{
+						$country = get_optional_param('country', NULL);
+						if ($country != NULL)
+						{
+							$country_id = retrieve_country_id($country);
+						}
+						else
+						{
+							$country_id = $club->country_id;
+						}
+					}
+					
+					$city = get_optional_param('city', NULL);
+					if ($city != NULL)
+					{
+						$city_id = retrieve_city_id($city, $country_id, $timezone);
+					}
+					else
+					{
+						$city_id = $club->city_id;
+					}
+				}
+				
+				list($timezone) = Db::record(get_label('city'), 'SELECT timezone FROM cities WHERE id = ?', $city_id);
+				$sc_address = htmlspecialchars($address, ENT_QUOTES);
+				check_address_name($sc_address, $club->id);
+		
+				Db::exec(
+					get_label('address'), 
+					'INSERT INTO addresses (name, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
+					$sc_address, $club->id, $sc_address, $city_id);
+				list ($address_id) = Db::record(get_label('address'), 'SELECT LAST_INSERT_ID()');
+				
+				$log_details = new stdClass();
+				$log_details->name = $sc_address;
+				$log_details->address = $sc_address;
+				$log_details->city_id = $city_id;
+				db_log(LOG_OBJECT_ADDRESS, 'created', $log_details, $address_id, $club->id);
+		
+				$warning = load_map_info($address_id);
+				if ($warning != NULL)
+				{
+					echo '<p>' . $warning . '</p>';
+				}
+			}
+			else
+			{
+				$address_id = $old_address_id;
+			}
+		}
+		else if ($address_id != $old_address_id)
+		{
+			list($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $address_id);
+		}
+		return array($address_id, $timezone);
+	}
+	
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -21,83 +92,101 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
-		$event = new Event();
-		$event->set_club($club);
-	
-		$event->name = get_required_param('name');
-		$event->hour = get_required_param('hour');
-		$event->minute = get_required_param('minute');
-		$event->duration = get_required_param('duration');
-		$event->price = get_optional_param('price', '');
-		$event->rules_code = get_optional_param('rules_code', $club->rules_code);
-		$event->scoring_id = get_optional_param('scoring_id', $club->scoring_id);
-		$event->scoring_weight = get_optional_param('scoring_weight', 1);
-		$event->planned_games = get_optional_param('planned_games', 0);
-		$event->notes = '';
-		if (isset($_REQUEST['notes']))
+		$name = get_required_param('name');
+		if ($name == '')
 		{
-			$event->notes = $_REQUEST['notes'];
+			throw new Exc(get_label('Please enter [0].', get_label('event name')));
 		}
 		
-		$event->flags = set_flag($event->flags, EVENT_FLAG_REG_ON_ATTEND, isset($_REQUEST['reg_on_attend']));
-		$event->flags = set_flag($event->flags, EVENT_FLAG_PWD_REQUIRED, isset($_REQUEST['pwd_required']));
-		$event->flags = set_flag($event->flags, EVENT_FLAG_PWD_REQUIRED, isset($_REQUEST['all_moderate']));
-		
-		$event->langs = 0;
-		if (isset($_REQUEST['langs']))
+		$start = get_required_param('start');
+		$duration = (int)get_required_param('duration');
+		$price = get_optional_param('price', '');
+		$rules_code = get_optional_param('rules_code', $club->rules_code);
+		$scoring_id = (int)get_optional_param('scoring_id', $club->scoring_id);
+		$scoring_weight = (float)get_optional_param('scoring_weight', 1);
+		$planned_games = (int)get_optional_param('planned_games', 0);
+		$notes = get_optional_param('notes', '');
+		$flags = (int)get_optional_param('flags', EVENT_FLAG_REG_ON_ATTEND | EVENT_FLAG_ALL_MODERATE) & EVENT_EDITABLE_MASK;
+		$langs = get_optional_param('langs', 0);
+		if (($langs & LANG_ALL) == 0)
 		{
-			$event->langs = (int)$_REQUEST['langs'];
-			$event->langs &= $club->langs;
-		}
-		if ($event->langs == 0)
-		{
-			$event->langs = $club->langs;
+			throw new Exc(get_label('No languages specified.'));
 		}
 		
+		$rounds = array();
 		if (isset($_REQUEST['rounds']))
 		{
-			$rounds = $_REQUEST['rounds'];
+			$_rounds = $_REQUEST['rounds'];
 			//throw new Exc(json_encode($rounds));
-			$event->clear_rounds();
-			foreach ($rounds as $round)
+			foreach ($_rounds as $_round)
 			{
-				$event->add_round($round["name"], $round["scoring_id"], $round["scoring_weight"], $round["planned_games"]);
+				$round = new stdClass();
+				$round->name = $_round["name"];
+				$round->scoring_id = $_round["scoring_id"];
+				$round->scoring_weight = $_round["scoring_weight"];
+				$round->planned_games = $_round["planned_games"];
+				$rounds[] = $round;
 			}
-			//throw new Exc(json_encode($event->rounds));
-		}
-		
-		$event->addr_id = (int)get_required_param('address_id');
-		if ($event->addr_id <= 0)
-		{
-			$event->addr = get_required_param('address');
-			$event->country = get_required_param('country');
-			$event->city = get_required_param('city');
+			//throw new Exc(json_encode($rounds));
 		}
 		
 		Db::begin();
-		date_default_timezone_set($event->timezone);
-		$time = mktime($event->hour, $event->minute, 0, get_required_param('month'), get_required_param('day'), get_required_param('year'));
+		list($address_id, $timezone) = $this->get_address_id($club, -1);
+		if ($address_id <= 0)
+		{
+			throw new Exc(get_label('Please enter [0]', get_label('address')));
+		}
+		
+		$log_details = new stdClass();
+		$log_details->name = $name;
+		$log_details->price = $price;
+		$log_details->address_id = $address_id;
+		$log_details->duration = $duration;
+		$log_details->flags = $flags;
+		$log_details->langs = $langs;
+		$log_details->rules_code = $rules_code;
+		$log_details->scoring_id = $scoring_id;
+		
+		$event_ids = array();
+		$start_datetime = get_datetime($start, $timezone);
 		if (isset($_REQUEST['weekdays']))
 		{
-			$weekdays = $_REQUEST['weekdays'];
-			$until = mktime($event->hour, $event->minute, 0, get_required_param('to_month'), get_required_param('to_day'), get_required_param('to_year'));
-			if ($time < time())
+			$weekdays = (int)$_REQUEST['weekdays'];
+			if (($weekdays & WEEK_FLAG_ALL) == 0)
 			{
-				$time += 86400; // 86400 - seconds per day
+				throw new Exc(get_label('Please enter at least one weekday.'));
 			}
 			
 			$event_ids = array();
-			$weekday = (1 << date('w', $time));
-			
-			while ($time < $until)
+			$end = get_required_param('end');
+			$end_datetime = get_datetime($end, $timezone);
+			$interval = new DateInterval('P1D');
+			$weekday = (1 << $start_datetime->format('w'));
+			while ($start_datetime->getTimestamp() < $end_datetime->getTimestamp())
 			{
 				if (($weekdays & $weekday) != 0)
 				{
-					$event->set_datetime($time, $event->timezone);
-					$event_ids[] = $event->create();
+					Db::exec(
+						get_label('event'), 
+						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_weight, planned_games, round_num) ' .
+						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						$name, $price, $address_id, $club_id, $start_datetime->getTimestamp(), 
+						$notes, $duration, $flags, $langs, $rules_code, 
+						$scoring_id, $scoring_weight, $planned_games, 0);
+					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
+					
+					$log_details->start = $start_datetime->format('d/m/y H:i');
+					db_log(LOG_OBJECT_EVENT, 'created', $log_details, $event_id, $club_id);
+					
+					for ($i = 0; $i < count($rounds); ++$i)
+					{
+						$round = $rounds[$i];
+						Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, planned_games) VALUES (?, ?, ?, ?, ?, ?)',
+							$event_id, $i + 1, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
+					}
+					$event_ids[] = $event_id;
 				}
-				
-				$time += 86400; // 86400 - seconds per day
+				$start_datetime->add($interval);
 				$weekday <<= 1;
 				if ($weekday > WEEK_FLAG_ALL)
 				{
@@ -107,15 +196,38 @@ class ApiPage extends OpsApiPageBase
 			
 			if (count($event_ids) == 0)
 			{
-				throw new Exc(get_label('No events found between the dates you specified.'));
+				throw new Exc(get_label('No events found between [0] and [1].', $start, $end));
 			}
 		}
 		else
 		{
-			$event->timestamp = $time;
-			$event_ids = array($event->create());
+			if ($start_datetime->getTimestamp() + $duration < time())
+			{
+				throw new Exc(get_label('You can not create event in the past. Please check the date.'));
+			}
+			
+			Db::exec(
+				get_label('event'), 
+				'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_weight, planned_games, round_num) ' .
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				$name, $price, $address_id, $club_id, $start_datetime->getTimestamp(), 
+				$notes, $duration, $flags, $langs, $rules_code, 
+				$scoring_id, $scoring_weight, $planned_games, 0);
+			list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
+			
+			$log_details->start = $start;
+			db_log(LOG_OBJECT_EVENT, 'created', $log_details, $event_id, $club_id);
+			
+			for ($i = 0; $i < count($rounds); ++$i)
+			{
+				$round = $rounds[$i];
+				Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, planned_games) VALUES (?, ?, ?, ?, ?, ?)',
+					$event_id, $i + 1, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
+			}
+			$event_ids[] = $event_id;
 		}
 		Db::commit();
+		
 		$this->response['events'] = $event_ids;
 	}
 	
@@ -134,9 +246,12 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('rules_code', 'Rules for this event.', 'default club rules are used.');
 		$help->request_param('scoring_id', 'Scoring id for this event.', 'default club scoring system is used.');
 		$help->request_param('notes', 'Event notes. Just a text.', 'empty.');
-		$help->request_param('reg_on_attend', 'When set, users can register by clicking attend event. We recomend to set it.', '-');
-		$help->request_param('pwd_required', 'When set, users have to enter their password to register to the event. We recomend not to set it.', '-');
-		$help->request_param('all_moderate', 'When set, any registered user can moderate games.', 'only the users with moderator permission can moderate.');
+		$help->request_param('flags', 'Bit combination of the next flags.
+				<ul>
+					<li>1 - users can register for this event when they click "attend"</li>
+					<li>2 - users must enter password to participate in the event games.</li>
+					<li>4 - all registered users can moderate games.</li>
+				</ul>', '5.');
 		$help->request_param('langs', 'Languages on this event. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all club languages are used.');
 		$help->request_param('address_id', 'Address id of the event.', '<q>address</q>, <q>city</q>, and <q>country</q> are used to create new address.');
 		$help->request_param('address', 'When address_id is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the address line to create.', '<q>address_id</q> must be set');
@@ -203,73 +318,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('No languages specified.'));
 		}
 		
-		$address_id = get_optional_param('address_id', -1);
-		if ($address_id <= 0)
-		{
-			$address = get_optional_param('address_id', NULL);
-			if ($address != NULL)
-			{
-				$city_id = get_optional_param('city_id', -1);
-				if ($city_id <= 0)
-				{
-					$country_id = get_optional_param('country_id', NULL);
-					if ($country_id <= 0)
-					{
-						$country = get_optional_param('country', NULL);
-						if ($country != NULL)
-						{
-							$country_id = retrieve_country_id($country);
-						}
-						else
-						{
-							$country_id = $club->country_id;
-						}
-					}
-					
-					$city = get_optional_param('city', NULL);
-					if ($city != NULL)
-					{
-						$city_id = retrieve_city_id($city, $country_id, $club->timezone);
-					}
-					else
-					{
-						$city_id = $club->city_id;
-					}
-				}
-				
-				list($timezone) = Db::record(get_label('city'), 'SELECT timezone FROM cities WHERE id = ?', $city_id);
-				$sc_address = htmlspecialchars($address, ENT_QUOTES);
-				check_address_name($sc_address, $this->club_id);
-		
-				Db::exec(
-					get_label('address'), 
-					'INSERT INTO addresses (name, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
-					$sc_address, $this->club_id, $sc_address, $city_id);
-				list ($address_id) = Db::record(get_label('address'), 'SELECT LAST_INSERT_ID()');
-				
-				$log_details = new stdClass();
-				$log_details->name = $sc_address;
-				$log_details->address = $sc_address;
-				$log_details->city = $this->city;
-				$log_details->city_id = $city_id;
-				db_log(LOG_OBJECT_ADDRESS, 'created', $log_details, $this->addr_id, $this->club_id);
-		
-				$warning = load_map_info($this->addr_id);
-				if ($warning != NULL)
-				{
-					echo '<p>' . $warning . '</p>';
-				}
-			}
-			else
-			{
-				$address_id = $old_address_id;
-			}
-		}
-		else if ($address_id != $old_address_id)
-		{
-			list($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $address_id);
-		}
-
+		list($address_id, $timezone) = $this->get_address_id($club, $old_address_id);
 		$start_datetime = get_datetime($start, $timezone);
 		$start_timestamp = $start_datetime->getTimestamp();
 		

@@ -94,7 +94,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$address_id = (int)get_required_param('address_id');
-		list($club_id, $name, $address, $city_id) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id FROM addresses WHERE id = ?', $address_id);
+		list($club_id, $old_name, $old_address, $old_city_id) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id FROM addresses WHERE id = ?', $address_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		if (isset($_REQUEST['address']))
@@ -105,6 +105,10 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('Please enter [0].', get_label('address')));
 			}
 		}
+		else
+		{
+			$address = $old_address;
+		}
 		
 		if (isset($_REQUEST['name']))
 		{
@@ -113,6 +117,10 @@ class ApiPage extends OpsApiPageBase
 			{
 				$name = $address;
 			}
+		}
+		else
+		{
+			$name = $old_name;
 		}
 		
 		Db::begin();
@@ -125,6 +133,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			$city_id = retrieve_city_id($_REQUEST['city'], retrieve_country_id($_REQUEST['country']), $_profile->clubs[$club_id]->timezone);
 		}
+		else
+		{
+			$city_id = $old_city_id;
+		}
 	
 		Db::exec(
 			get_label('address'), 
@@ -134,14 +146,27 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
 			$log_details = new stdClass();
-			$log_details->name = $name;
-			$log_details->address = $address;
-			$log_details->city = $city_name;
-			$log_details->city_id = $city_id;
+			if ($name != $old_name)
+			{
+				$log_details->name = $name;
+			}
+			if ($address != $old_address)
+			{
+				$log_details->address = $address;
+			}
+			if ($city_id != $old_city_id)
+			{
+				$log_details->city_id = $city_id;
+			}
 			db_log(LOG_OBJECT_ADDRESS, 'changed', $log_details, $address_id, $club_id);
 		}
 	
 		Db::commit();
+		
+		if ($address != $old_address || $city_id != $old_city_id)
+		{
+			$this->response['changed'] = 1;
+		}
 	}
 	
 	function change_op_help()
@@ -153,6 +178,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('city_id', 'City id.', '<q>city</q> and <q>country</q> are checked. If at least one of them is missing, city remains the same.');
 		$help->request_param('city', 'City name. Used only when <q>city_id</q> is not set. If a city with this name is not found, new city is created.', 'city remains the same unless <q>city_id</q> is set.');
 		$help->request_param('country', 'Country name. Used only when <q>city_id</q> is not set. If a country with this name is not found, new country is created.', 'city remains the same unless <q>city_id</q> is set.');
+		$help->response_param('changed', '1 if the address was changed. Whan everything remains the same, or only name is changed, it is 0.', '0.');
 		return $help;
 	}
 	
@@ -214,11 +240,11 @@ class ApiPage extends OpsApiPageBase
 	function google_map_op()
 	{
 		$address_id = (int)get_required_param('address_id');
-		list($club_id, $name, $address, $city_id) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id FROM addresses WHERE id = ?', $address_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		$change_picture = (int)get_optional_param('picture', 1);
+		$set_url = (int)get_optional_param('url', 1);
 		
 		Db::begin();
-		$warning = load_map_info($address_id);
+		$warning = load_map_info($address_id, $set_url, $change_picture);
 		Db::commit();
 		
 		if ($warning != NULL)
@@ -231,6 +257,8 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Generate and save google map URL for the address. And also generates an icon/logo for the address using snapshot from google maps.');
 		$help->request_param('address_id', 'Address id.');
+		$help->request_param('picture', '1 if address picture should be changed to the one from google maps; 0 - for leaving the existing picture.', '1.');
+		$help->request_param('url', '1 to add google maps link to the address; 0 - for leaving existing google maps link.', '1.');
 		return $help;
 	}
 }
