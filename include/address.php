@@ -4,8 +4,7 @@ require_once __DIR__ . '/page_base.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/club.php';
 require_once __DIR__ . '/image.php';
-
-define('GOOGLE_API_KEY', 'AIzaSyAkBbApEfVfgk3Dy7FVlTkLoK7HeR196zE');
+require_once __DIR__ . '/google_geo_key.php';
 
 function addr_label($addr, $addr_city, $addr_country)
 {
