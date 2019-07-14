@@ -3,6 +3,7 @@
 require_once '../../include/api.php';
 require_once '../../include/club.php';
 require_once '../../include/email.php';
+require_once '../../include/datetime.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -46,29 +47,25 @@ class ApiPage extends OpsApiPageBase
 		
 		$name = get_required_param('name');
 		$this->check_name($name, $club->id);
-		
-		$start_month = (int)get_required_param('start_month');
-		$start_day = (int)get_required_param('start_day');
-		$start_year = (int)get_required_param('start_year');
-		$end_month = (int)get_required_param('end_month');
-		$end_day = (int)get_required_param('end_day');
-		$end_year = (int)get_required_param('end_year');
-		
-		date_default_timezone_set($club->timezone);
-		$start = mktime(0, 0, 0, $start_month, $start_day, $start_year);
-		$end = mktime(0, 0, 0, $end_month, $end_day, $end_year);
+
+		$start = get_datetime(get_required_param('start'), $club->timezone);
+		$end = get_datetime(get_required_param('end'), $club->timezone);
+		if ($start >= $end)
+		{
+			throw new Exc(get_label('Season ends before or right after the start.'));
+		}
 		
 		Db::begin();
 		Db::exec(
 			get_label('season'),
 			'INSERT INTO seasons (club_id, name, start_time, end_time) VALUES (?, ?, ?, ?)', 
-			$club->id, $name, $start, $end);
+			$club->id, $name, $start->getTimestamp(), $end->getTimestamp());
 		list ($season_id) = Db::record(get_label('season'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
 		$log_details->name = $name;
-		$log_details->start = $start_year . '-' . $start_month . '-' . $start_day;
-		$log_details->end = $end_year . '-' . $end_month . '-' . $end_day;
+		$log_details->start = $start->format(DEF_DATETIME_FORMAT_NO_TIME);
+		$log_details->end = $end->format(DEF_DATETIME_FORMAT_NO_TIME);
 		db_log(LOG_OBJECT_SEASON, 'created', $log_details, $season_id, $club->id);
 		
 		Db::commit();
@@ -81,12 +78,8 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create a season in the club.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('name', 'Season name.');
-		$help->request_param('start_month', 'The month when the season starts. Integer 1-12.');
-		$help->request_param('start_day', 'The day of the month when the season starts. Integer 1-31.');
-		$help->request_param('start_year', 'The year when the season starts. 4 digit integer like 2018.');
-		$help->request_param('end_month', 'The month when the season ends. Integer 1-12.');
-		$help->request_param('end_day', 'The day of the month when the season ends. Integer 1-31.');
-		$help->request_param('end_year', 'The year when the season ends. 4 digit integer like 2018.');
+		$help->request_param('start', 'Season start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
+		$help->request_param('end', 'Season end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->response_param('season_id', 'Id of the newly created season.');
 		return $help;
 	}
@@ -106,16 +99,14 @@ class ApiPage extends OpsApiPageBase
 		$name = get_optional_param('name', $old_name);
 		$this->check_name($name, $club->id, $season_id);
 		
-		$start_month = get_required_param('start_month');
-		$start_day = get_required_param('start_day');
-		$start_year = get_required_param('start_year');
-		$end_month = get_required_param('end_month');
-		$end_day = get_required_param('end_day');
-		$end_year = get_required_param('end_year');
-		
-		date_default_timezone_set($club->timezone);
-		$start = mktime(0, 0, 0, $start_month, $start_day, $start_year);
-		$end = mktime(0, 0, 0, $end_month, $end_day, $end_year);
+		$start_datetime = get_datetime(get_optional_param('start', $old_start), $club->timezone);
+		$end_datetime = get_datetime(get_optional_param('end', $old_end), $club->timezone);
+		$start = $start_datetime->getTimestamp();
+		$end = $end_datetime->getTimestamp();
+		if ($start >= $end)
+		{
+			throw new Exc(get_label('Season ends before or right after the start.'));
+		}
 		
 		Db::begin();
 		Db::exec(get_label('season'), 'UPDATE seasons SET name = ?, start_time = ?, end_time = ? WHERE id = ?', $name, $start, $end, $season_id);
@@ -128,11 +119,11 @@ class ApiPage extends OpsApiPageBase
 			}
 			if ($old_start != $start)
 			{
-				$log_details->start_date = $start_year . '-' . $start_month . '-' . $start_day;
+				$log_details->start = $start_datetime->format(DEF_DATETIME_FORMAT_NO_TIME);
 			}
 			if ($old_end != $end)
 			{
-				$log_details->end_date = $end_year . '-' . $end_month . '-' . $end_day;
+				$log_details->end = $end_datetime->format(DEF_DATETIME_FORMAT_NO_TIME);
 			}
 			db_log(LOG_OBJECT_SEASON, 'changed', $log_details, $season_id, $club_id);
 		}
@@ -144,12 +135,8 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change the season.');
 		$help->request_param('season_id', 'Season id.');
 		$help->request_param('name', 'Season name.', 'remains the same');
-		$help->request_param('start_month', 'The month when the season starts. Integer 1-12.');
-		$help->request_param('start_day', 'The day of the month when the season starts. Integer 1-31.');
-		$help->request_param('start_year', 'The year when the season starts. 4 digit integer like 2018.');
-		$help->request_param('end_month', 'The month when the season ends. Integer 1-12.');
-		$help->request_param('end_day', 'The day of the month when the season ends. Integer 1-31.');
-		$help->request_param('end_year', 'The year when the season ends. 4 digit integer like 2018.');
+		$help->request_param('start', 'Season start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
+		$help->request_param('end', 'Season end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->response_param('season_id', 'Id of the newly created season.');
 		return $help;
 	}

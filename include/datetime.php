@@ -1,13 +1,17 @@
 <?php
 
+define('JS_DATETIME_FORMAT', 'yy-mm-dd');
+define('DEF_DATETIME_FORMAT', 'Y-m-d H:i');
+define('DEF_DATETIME_FORMAT_NO_TIME', 'Y-m-d');
+
 function timestamp_to_string($timestamp, $timezone, $include_time = true)
 {
 	date_default_timezone_set($timezone);
 	if ($include_time)
 	{
-		return date('Y-m-d H:i', $timestamp);
+		return date(DEF_DATETIME_FORMAT, $timestamp);
 	}
-	return date('Y-m-d', $timestamp);
+	return date(DEF_DATETIME_FORMAT_NO_TIME, $timestamp);
 }
 
 function get_datetime($str, $timezone)
@@ -29,9 +33,9 @@ function datetime_to_string($datetime, $include_time = true)
 	date_default_timezone_set($datetime->getTimezone()->getName());
 	if ($include_time)
 	{
-		return $datetime->format('Y-m-d H:i');
+		return $datetime->format(DEF_DATETIME_FORMAT);
 	}
-	return $datetime->format('Y-m-d');
+	return $datetime->format(DEF_DATETIME_FORMAT_NO_TIME);
 }
 
 ?>

@@ -150,7 +150,7 @@ try
 	show_upload_script(EVENT_PIC_CODE, $event_id);
 ?>	
 	<script>
-	var dateFormat = "yy-mm-dd";
+	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var startDate = $('#form-date').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(16);
 	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(16);

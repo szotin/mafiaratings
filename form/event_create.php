@@ -183,7 +183,7 @@ try
 	echo '</td></tr></table>';
 ?>	
 	<script>
-	var dateFormat = "yy-mm-dd";
+	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var date = $('#form-date').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	var fromDate = $('#form-date-from').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { toDate.datepicker("option", "minDate", this.value); });
 	var toDate = $('#form-date-to').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });

@@ -1061,45 +1061,6 @@ function show_event_selector($event_id, $form_name, $select_name, $perm_flags, $
 	echo '</select>';
 }
 
-function show_date_controls($day, $month, $year, $name_base = '')
-{
-	echo '<select id="' . $name_base . 'day" name="' . $name_base . 'day">';
-	for ($i = 1; $i <= 31; ++$i)
-	{
-		echo '<option value="' . $i . '"';
-		if ($day == $i)
-		{
-			echo ' selected';
-		}
-		echo '>' . $i . '</option>';
-	}
-	echo '</select>';
-	$month_names = array(get_label('January'), get_label('February'), get_label('March'), get_label('April'), get_label('May'), get_label('June'), get_label('July'), get_label('August'), get_label('September'), get_label('October'), get_label('November'), get_label('December'));
-	echo '<select id="' . $name_base . 'month" name="' . $name_base . 'month">';
-	for ($i = 1; $i <= 12; ++$i)
-	{
-		echo '<option value="' . $i . '"';
-		if ($month == $i)
-		{
-			echo ' selected';
-		}
-		echo '>' . $month_names[$i-1] . '</option>';
-	}
-	echo '</select>';
-	echo '<select id="' . $name_base . 'year" name="' . $name_base . 'year">';
-	$current_year = (int)date("Y");
-	for ($i = $current_year - 1; $i <= $current_year + 5; ++$i)
-	{
-		echo '<option value="' . $i . '"';
-		if ($year == $i)
-		{
-			echo ' selected';
-		}
-		echo '>' . $i . '</option>';
-	}
-	echo '</select>';
-}
-
 class EventPageBase extends PageBase
 {
 	protected $event;

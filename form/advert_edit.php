@@ -5,6 +5,7 @@ require_once '../include/languages.php';
 require_once '../include/url.php';
 require_once '../include/email.php';
 require_once '../include/message.php';
+require_once '../include/datetime.php';
 
 initiate_session();
 
@@ -21,10 +22,10 @@ try
 	list ($message, $start, $end, $timezone) = Db::record(get_label('advert'), 'SELECT n.raw_message, n.timestamp, n.expires, c.timezone FROM news n JOIN clubs cl ON cl.id = n.club_id JOIN cities c ON c.id = cl.city_id WHERE n.id = ?', $advert_id);
 	
 	date_default_timezone_set($timezone);
-	$start_date = date('Y-m-d', $start);
+	$start_date = date(DEF_DATETIME_FORMAT_NO_TIME, $start);
 	$start_hour = date('H', $start);
 	$start_minute = date('i', $start);
-	$end_date = date('Y-m-d', $end);
+	$end_date = date(DEF_DATETIME_FORMAT_NO_TIME, $end);
 	$end_hour = date('H', $end);
 	$end_minute = date('i', $end);
 	
@@ -39,7 +40,7 @@ try
 ?>	
 	<script>
 	
-	var dateFormat = "yy-mm-dd";
+	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var parts = "<?php echo $end_date; ?>".split("-")
 	var endDate = null;
 	if (parts.length > 2)

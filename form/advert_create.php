@@ -1,6 +1,7 @@
 <?php
 
 require_once '../include/session.php';
+require_once '../include/datetime.php';
 
 initiate_session();
 
@@ -28,8 +29,8 @@ try
 	$start_date->setTime($start_date->format('G'), 0);
 	$end_date->setTime($end_date->format('G'), 0);
 	
-	$start_date_str = $start_date->format('Y-m-d');
-	$end_date_str = $end_date->format('Y-m-d');
+	$start_date_str = $start_date->format(DEF_DATETIME_FORMAT_NO_TIME);
+	$end_date_str = $end_date->format(DEF_DATETIME_FORMAT_NO_TIME);
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="80" valign="top">' . get_label('Text').':</td><td><textarea id="form-advert" cols="93" rows="8"></textarea></td></tr>';
@@ -41,7 +42,7 @@ try
 
 ?>
 	<script>
-	var dateFormat = "yy-mm-dd";
+	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var parts = "<?php echo $end_date_str; ?>".split("-")
 	var endDate = null;
 	if (parts.length > 2)

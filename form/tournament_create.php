@@ -62,7 +62,6 @@ try
 	echo '  ' . get_label('to') . '  ';
 	echo '<input type="text" id="form-end" value="' . $date . '">';
 	echo '</td></tr>';
-	echo '</td></tr>';
 	
 	$addr_id = -1;
 	$scoring_id = -1;
@@ -144,7 +143,7 @@ try
 	<script type="text/javascript" src="js/rater.min.js"></script>
 	<script>
 	
-	var dateFormat = "yy-mm-dd";
+	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
 	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	$('#form-scoring-weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);

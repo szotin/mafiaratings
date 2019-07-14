@@ -29,3 +29,4 @@ js/seating.js
 js/seating-ui.js
 js/seating-ru.js
 js/seating-en.js
+include/google_geo_key.php
