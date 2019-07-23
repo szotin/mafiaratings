@@ -43,10 +43,18 @@ try
 	
 	echo '<table class="dialog_form" width="100%">';
 //	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value=""></td></tr>';
+
+	$league_pic = new Picture(LEAGUE_PICTURE);
+	$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE));
+	$user_pic = new Picture(USER_PICTURE);
 	
 	echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="' . (ICON_WIDTH * 2) . '">';
-	show_league_pic($league_id, $league_name, $league_flags, ICONS_DIR);
-	show_tournament_pic($tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 0, 0, false);
+	$league_pic->set($league_id, $league_name, $league_flags);
+	$league_pic->show(ICONS_DIR);
+	$tournament_pic->
+		set($tournament_id, $tournament_name, $tournament_flags)->
+		set($club_id, $club_name, $club_flags);
+	$tournament_pic->show(ICONS_DIR);
 	echo '</td><td align="center">' . get_label('Please approve the request to hold [0] in [1]', $tournament_name, $league_name) . '</td></tr></table></td></tr>';
 	
 	
@@ -69,7 +77,8 @@ try
 		}
 		
 		echo '<tr><td width="36">';
-		show_user_pic($user_id, $user_name, $user_flags, ICONS_DIR, 32);
+		$user_pic->set($user_id, $user_name, $user_flags);
+		$user_pic->show(ICONS_DIR, 32);
 		echo '</td><td>';
 		if ($user_stars >= 0)
 		{

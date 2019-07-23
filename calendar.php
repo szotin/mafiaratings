@@ -30,7 +30,7 @@ class Page extends GeneralPageBase
 		$time = time() + 604800 * $this->week;
 		$end_time = $time + 604800;
 
-		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, c.id, c.name, c.flags, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', i.timezone, a.address, a.map_url');
+		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', i.timezone, a.address, a.map_url');
 		if ($_profile != null)
 		{
 			$query->add(', eu.coming_odds, eu.people_with_me, eu.late FROM events e LEFT OUTER JOIN event_users eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
@@ -42,6 +42,7 @@ class Page extends GeneralPageBase
 		
 		$query->add(
 			' JOIN clubs c ON e.club_id = c.id' .
+			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities i ON a.city_id = i.id' .
 			' JOIN countries o ON i.country_id = o.id' .
@@ -70,12 +71,13 @@ class Page extends GeneralPageBase
 		}
 		$query->add(' ORDER BY e.start_time');
 		
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
 		$date_str = '';
 		$have_records = false;
 		$day_counter = 0;
 		while ($row = $query->next())
 		{
-			list ($id, $name, $start_time, $duration, $flags, $club_id, $club_name, $club_flags, $city_name, $country_name, $event_timezone, $addr, $addr_url, $come_odds, $bringing, $late) = $row;
+			list ($id, $name, $start_time, $duration, $flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $city_name, $country_name, $event_timezone, $addr, $addr_url, $come_odds, $bringing, $late) = $row;
 			
 			$_date_str = format_date('l, F d, Y', $start_time, $event_timezone);
 			if ($date_str != $_date_str)
@@ -109,7 +111,11 @@ class Page extends GeneralPageBase
 			}
 			
 			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '">' . $club_name . '<br>';
-			show_event_pic($id, $name, $flags, $club_id, $club_name, $club_flags, ICONS_DIR, 0, 0, false);
+			$event_pic->
+				set($id, $name, $flags)->
+				set($tournament_id, $tournament_name, $tournament_flags)->
+				set($club_id, $club_name, $club_flags);
+			$event_pic->show(ICONS_DIR);
 			echo '</a><br><b>' . format_date('H:i', $start_time, $event_timezone) . ' - ' . format_date('H:i', $start_time + $duration, $event_timezone) . '</b><br>';
 			
 //			echo '<a href="event_info.php?attend&bck=1&id=' . $id . '" title="' . get_label('I am coming') . '"><img src="images/accept.png" border="0"></a>&nbsp;';

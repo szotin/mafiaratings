@@ -43,7 +43,8 @@ class Page extends EventPageBase
 			echo '</td>';
 			echo '<td width="60" align="center">';
 			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">';
-			show_user_pic($user_id, $user_name, $user_flags, ICONS_DIR, 50, 50);
+			$this->user_pic->set($user_id, $user_name, $user_flags);
+			$this->user_pic->show(ICONS_DIR, 50);
 			echo '</a>';
 			echo '</td><td>';
 			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td>';

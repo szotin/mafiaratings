@@ -126,7 +126,7 @@ class ApiPage extends GetApiPageBase
 			$after = (int)$_REQUEST['after'];
 		}
 		
-		$page_size = 16;
+		$page_size = DEFAULT_PAGE_SIZE;
 		if (isset($_REQUEST['page_size']))
 		{
 			$page_size = (int)$_REQUEST['page_size'];
@@ -323,7 +323,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('after', 'Unix timestamp. For example: <a href="scores.php?after=1483228800"><?php echo PRODUCT_URL; ?>/api/get/scores.php?after=1483228800</a> returns scores earned after January 1, 2017; <a href="scores.php?after=1483228800&before=1485907200"><?php echo PRODUCT_URL; ?>/api/get/scores.php?after=1483228800&before=1485907200</a> returns scores earned in January 2017', '-');
 		$help->request_param('count', 'Returns game count instead of players list. For example: <a href="scores.php?club=1&count"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=1&count</a> returns how many players with scores are there in Vancouver Mafia Club; <a href="scores.php?event=7927&count"><?php echo PRODUCT_URL; ?>/api/get/scores.php?event=7927&count</a> returns how many players with scores participated in VaWaCa-2017 tournament.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="scores.php?club=1&page=1"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=1&page=1</a> returns the second page of scores for Vancouver Mafia Club players.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is 16. For example: <a href="scores.php?club=1&page_size=32"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=1&page_size=32</a> returns top 32 players for Vancouver Mafia Club; <a href="scores.php?club=6&page_size=0"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=6&page_size=0</a> returns all players for Empire of Mafia club in one page; <a href="scores.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=1</a> returns top 16 players for Vancouver Mafia Club;', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="scores.php?club=1&page_size=32"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=1&page_size=32</a> returns top 32 players for Vancouver Mafia Club; <a href="scores.php?club=6&page_size=0"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=6&page_size=0</a> returns all players for Empire of Mafia club in one page; <a href="scores.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/scores.php?club=1</a> returns top ' . DEFAULT_PAGE_SIZE . ' players for Vancouver Mafia Club;', '-');
 
 		$param = $help->response_param('scores', 'The array of scores. scores are always sorted in descending order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('num', 'Number in the current list.');

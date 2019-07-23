@@ -5,11 +5,16 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/picture.php';
 
 try
 {
 	initiate_session();
 	check_maintenance();
+	
+	$club_pic = new Picture(CLUB_PICTURE);
+	$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, $club_pic));
+	$user_pic = new Picture(USER_PICTURE);
 	
 	echo '<!DOCTYPE HTML>';
 	echo '<html>';
@@ -111,7 +116,11 @@ try
 			{
 				echo '</td><td align="right">';
 				$icon = (abs($logo_height - ICON_HEIGHT) < abs($logo_height - TNAIL_HEIGHT));
-				$event->show_pic($icon ? ICONS_DIR : TNAILS_DIR, 0, $logo_height);
+				$event_pic->
+					set($event->id, $event->name, $event->flags)->
+					set($event->tournament_id, $event->tournament_name, $event->tournament_flags)->
+					set($event->club_id, $event->club_name, $event->club_flags);
+				$event_pic->show($icon ? ICONS_DIR : TNAILS_DIR, 0, $logo_height);
 			}
 			echo '</td></tr></table>';
 		}
@@ -195,10 +204,12 @@ try
 					echo '<tr>';
 					echo '<td align="center" class="dark">' . $number . '</td>';
 					echo '<td width="50">';
-					show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
+					$user_pic->set($id, $name, $flags);
+					$user_pic->show(ICONS_DIR, 50);
 					echo '</td><td>' . $name . '</td>';
 					echo '<td width="50" align="center">';
-					show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
+					$club_pic->set($club_id, $club_name, $club_flags);
+					$club_pic->show(ICONS_DIR, 40);
 					echo '</td>';
 					echo '<td align="center" class="lighter">';
 					echo format_rating($points);
@@ -251,10 +262,12 @@ try
 					echo '<tr>';
 					echo '<td align="center" class="dark">' . $number . '</td>';
 					echo '<td width="50">';
-					show_user_pic($score->id, $score->name, $score->flags, ICONS_DIR, 50, 50);
+					$user_pic->set($score->id, $score->name, $score->flags);
+					$user_pic->show(ICONS_DIR, 50);
 					echo '</td><td>' . $score->name . '</td>';
 					echo '<td width="50" align="center">';
-					show_club_pic($score->club_id, $score->club_name, $score->club_flags, ICONS_DIR, 40, 40);
+					$club_pic->set($score->club_id, $score->club_name, $score->club_flags);
+					$club_pic->show(ICONS_DIR, 40);
 					echo '</td>';
 					echo '<td align="center" class="lighter">';
 					echo $score->points_str();

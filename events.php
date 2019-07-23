@@ -33,7 +33,7 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page;
 		
-		$condition = new SQL(' FROM events e JOIN addresses a ON e.address_id = a.id JOIN clubs c ON e.club_id = c.id JOIN cities ct ON ct.id = a.city_id WHERE e.start_time < UNIX_TIMESTAMP()');
+		$condition = new SQL(' FROM events e JOIN addresses a ON e.address_id = a.id JOIN clubs c ON e.club_id = c.id LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id JOIN cities ct ON ct.id = a.city_id WHERE e.start_time < UNIX_TIMESTAMP()');
 		
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
@@ -78,7 +78,7 @@ class Page extends GeneralPageBase
 
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags,' .
+			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags,' .
 			' (SELECT count(*) FROM games WHERE event_id = e.id AND result IN (1, 2)) as games,' .
 			' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users',
 			$condition);
@@ -91,14 +91,19 @@ class Page extends GeneralPageBase
 		echo '<td width="60" align="center">' . get_label('Games played') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Players attended') . '</td></tr>';
 		
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $club_id, $club_name, $club_flags, $languages, $addr_id, $addr, $addr_flags, $games_count, $users_count) = $row;
+			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tour_id, $tour_name, $tour_flags, $club_id, $club_name, $club_flags, $languages, $addr_id, $addr, $addr_flags, $games_count, $users_count) = $row;
 			
 			echo '<tr>';
 			
 			echo '<td width="50" class="dark"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
-			show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 50, 50, false);
+			$event_pic->
+				set($event_id, $event_name, $event_flags)->
+				set($tour_id, $tour_name, $tour_flags)->
+				set($club_id, $club_name, $club_flags);
+			$event_pic->show(ICONS_DIR, 50);
 			echo '</a></td>';
 			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
 			

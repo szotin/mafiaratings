@@ -22,7 +22,8 @@ try
 	}
 	$user_id = (int)$_REQUEST['user_id'];
 	
-	list ($event_name, $event_flags, $club_id, $club_name, $club_flags) = Db::record(get_label('event'), 'SELECT e.name, e.flags, c.id, c.name, c.flags FROM events e JOIN clubs c ON c.id = e.club_id WHERE e.id = ?', $event_id);
+	list ($event_name, $event_flags, $tour_id, $tour_name, $tour_flags, $club_id, $club_name, $club_flags) = 
+		Db::record(get_label('event'), 'SELECT e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags FROM events e JOIN clubs c ON c.id = e.club_id LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE e.id = ?', $event_id);
 	if ($user_id > 0)
 	{
 		list ($user_name, $user_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $user_id);
@@ -43,19 +44,13 @@ try
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="240">' . get_label('Event') . ':</td><td><table class="transp" width="100%"><tr><td width="60">';
-	show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 50);
+	$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+	$event_pic->
+		set($event_id, $event_name, $event_flags)->
+		set($tour_id, $tour_name, $tour_flags)->
+		set($club_id, $club_name, $club_flags);
+	$event_pic->show(ICONS_DIR, 50);
 	echo '</td><td>' . $event_name . '</td></tr></table></td></tr>';
-	
-	// echo '<tr><td>' . get_label('User') . ':</td><td width="60">';
-	// if ($user_id > 0)
-	// {
-		// show_user_pic($user_id, $user_name, $user_flags, ICONS_DIR, 50, 50);
-	// }
-	// else
-	// {
-		// echo '<img src="images/create_user.png" width="50">';
-	// }
-	// echo '</td><td>' . $user_name . '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Change nickname in this event to') . ':</td><td><input id="form-nick" value="' . $nickname . '">';
 	echo '</td></tr>';

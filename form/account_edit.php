@@ -21,7 +21,9 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td class="dark">' . get_label('User name') . ':</td><td class="light"><input id="form-name" value="' . $_profile->user_name . '"></td>';
 	echo '</td><td align="center" valign="top" rowspan=7>';
-	show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR);
+	$user_pic = new Picture(USER_PICTURE);
+	$user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
+	$user_pic->show(ICONS_DIR);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td></tr>';

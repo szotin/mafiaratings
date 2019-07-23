@@ -12,108 +12,6 @@ require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
 
-function show_tournament_pic($id, $name, $flags, $alt_id, $alt_name, $alt_flags, $dir, $width = 0, $height = 0, $alt_addr = true)
-{
-	global $_lang_code;
-
-	$w = $width;
-	$h = $height;
-	if ($dir == ICONS_DIR)
-	{
-		if ($w <= 0)
-		{
-			$w = ICON_WIDTH;
-		}
-		if ($h <= 0)
-		{
-			$h = ICON_HEIGHT;
-		}
-	}
-	else if ($dir == TNAILS_DIR)
-	{
-		if ($w <= 0)
-		{
-			$w = TNAIL_WIDTH;
-		}
-		if ($h <= 0)
-		{
-			$h = TNAIL_HEIGHT;
-		}
-	}
-	
-	if ($width <= 0 && $height <= 0)
-	{
-		$width = $w;
-		$height = $h;
-	}
-	
-	$origin = TOURNAMENT_PICS_DIR . $dir . $id . '.png';
-	echo '<span style="position:relative;"><img code="' . TOURNAMENT_PIC_CODE . $id . '" origin="' . $origin . '" src="';
-	if ($flags & TOURNAMENT_ICON_MASK)
-	{
-		echo $origin . '?' . (($flags & TOURNAMENT_ICON_MASK) >> TOURNAMENT_ICON_MASK_OFFSET);
-		$title = $name;
-		if (!$alt_addr)
-		{
-			$title .= ' (' . $alt_name . ')';
-		}
-	}
-	else if ($alt_addr)
-	{
-		if (($alt_flags & ADDR_ICON_MASK) != 0)
-		{
-			echo ADDRESS_PICS_DIR . $dir . $alt_id . '.png?' . (($alt_flags & ADDR_ICON_MASK) >> ADDR_ICON_MASK_OFFSET);
-		}
-		else
-		{
-			echo 'images/' . $dir . 'address.png';
-		}
-		$title = $name;
-	}
-	else 
-	{
-		if (($alt_flags & CLUB_ICON_MASK) != 0)
-		{
-			echo CLUB_PICS_DIR . $dir . $alt_id . '.png?' . (($alt_flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET);
-		}
-		else
-		{
-			echo 'images/' . $dir . 'club.png';
-		}
-		$title = $alt_name;
-	}
-	
-/*		echo '<span style="position:relative; left:0px; top:0px;">';
-		show_address_pic($addr_id, $addr_flags, $dir, $width, $height);
-		echo '<span style="position:absolute;right:0px;bottom:0px;">';
-		show_club_pic($club_id, $club_name, $club_flags, $dir, $width / 2, $height / 2);
-		echo '</span></span>';*/
-	echo '" border="0" title="' . $title . '"';
-	if ($width > 0)
-	{
-		echo ' width="' . $width . '"';
-	}
-	if ($height > 0)
-	{
-		echo ' height="' . $height . '"';
-	}
-	echo '>';
-	if ($flags & TOURNAMENT_FLAG_CANCELED)
-	{
-		echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
-		if ($width > 0)
-		{
-			echo ' width="' . $width . '"';
-		}
-		if ($height > 0)
-		{
-			echo ' height="' . $height . '"';
-		}
-		echo '>';
-	}
-	echo '</span>';
-}
-
 function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $league_id)
 {
 	global $_profile;
@@ -264,15 +162,20 @@ class TournamentPageBase extends PageBase
 			$this->club_flags,
 			$this->league_id);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(LEAGUE_PICTURE, $this->club_pic));
+		$tournament_pic->
+			set($this->id, $this->name, $this->flags)->
+			set($this->league_id, $this->league_name, $this->league_flags)->
+			set($this->club_id, $this->club_name, $this->club_flags);
 		if ($this->address_url != '')
 		{
 			echo '<a href="address_info.php?bck=1&id=' . $this->address_id . '">';
-			show_tournament_pic($this->id, $this->name, $this->flags, $this->address_id, $this->address, $this->address_flags, TNAILS_DIR);
+			$tournament_pic->show(TNAILS_DIR);
 			echo '</a>';
 		}
 		else
 		{
-			show_tournament_pic($this->id, $this->name, $this->flags, $this->address_id, $this->address, $this->address_flags, TNAILS_DIR);
+			$tournament_pic->show(TNAILS_DIR);
 		}
 		echo '</td></tr></table></td>';
 		$title = get_label('Tournament [0]', $this->_title);
@@ -284,12 +187,15 @@ class TournamentPageBase extends PageBase
 		echo '<td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom"><table><tr><td align="center"><a href="club_main.php?bck=1&id=' . $this->club_id . '">';
-		show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR, 48);
+		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
+		$this->club_pic->show(ICONS_DIR, 48);
 		echo '</a>';
 		if ($this->league_id > 0)
 		{
 			echo ' <a href="league_main.php?bck=1&id=' . $this->league_id . '">';
-			show_league_pic($this->league_id, $this->league_name, $this->league_flags, ICONS_DIR, 48);
+			$league_pic = new Picture(LEAGUE_PICTURE);
+			$league_pic->set($this->league_id, $this->league_name, $this->league_flags);
+			$league_pic->show(ICONS_DIR, 48);
 			echo '</a>';
 		}
 		echo '</td></tr><tr><td>';

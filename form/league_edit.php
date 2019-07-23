@@ -29,7 +29,9 @@ try
 	echo '<tr><td width="140">' . get_label('League name') . ':</td><td><input class="longest" id="form-league_name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="8">';
-	show_league_pic($id, $name, $flags, ICONS_DIR);
+	$league_pic = new Picture(LEAGUE_PICTURE);
+	$league_pic->set($id, $name, $flags);
+	$league_pic->show(ICONS_DIR);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td>';

@@ -65,7 +65,7 @@ class ApiPage extends GetApiPageBase
 			}
 		}
 		
-		$page_size = 16;
+		$page_size = DEFAULT_PAGE_SIZE;
 		if (isset($_REQUEST['page_size']))
 		{
 			$page_size = (int)$_REQUEST['page_size'];
@@ -158,7 +158,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('lang', 'Language for city and country names. 1 is English; 2 is Russian. For example: <a href="cities.php?lang=2"><?php echo PRODUCT_URL; ?>/api/get/cities.php?lang=2</a> returns cities names in Russian. If not specified, default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.', '-');
 		$help->request_param('count', 'Returns cities count instead of the cities themselves. For example: <a href="cities.php?contains=mo&count"><?php echo PRODUCT_URL; ?>/api/get/cities.php?contains=mo&count</a> returns how many cities contain "mo" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="cities.php?page=1"><?php echo PRODUCT_URL; ?>/api/get/cities.php?page=1</a> returns the second page of cities by alphabet.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is 16. For example: <a href="cities.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/cities.php?page_size=32</a> returns first 32 cities; <a href="cities.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/cities.php?page_size=0</a> returns cities in one page; <a href="cities.php"><?php echo PRODUCT_URL; ?>/api/get/cities.php</a> returns first 16 cities by alphabet.', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="cities.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/cities.php?page_size=32</a> returns first 32 cities; <a href="cities.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/cities.php?page_size=0</a> returns cities in one page; <a href="cities.php"><?php echo PRODUCT_URL; ?>/api/get/cities.php</a> returns first ' . DEFAULT_PAGE_SIZE . ' cities by alphabet.', '-');
 
 		$param = $help->response_param('cities', 'The array of cities. Cities are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'City id.');

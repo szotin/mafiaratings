@@ -15,6 +15,10 @@ class PhotoAlbum
 	public $name;
 	public $event_id;
 	public $event_name;
+	public $event_flags;
+	public $tour_id;
+	public $tour_name;
+	public $tour_flags;
 	public $club_id;
 	public $club_name;
 	public $club_flags;
@@ -30,6 +34,7 @@ class PhotoAlbum
 		
 		$this->id = -1;
 		$this->event_id = NULL;
+		$this->tour_id = NULL;
 		$this->club_id = -1;
 		$this->viewers = FOR_EVERYONE;
 		$this->adders = FOR_MANAGERS;
@@ -42,8 +47,9 @@ class PhotoAlbum
 		if ($id > 0)
 		{
 			$query = new DbQuery(
-				'SELECT a.name, a.viewers, a.adders, a.flags, e.id, e.name, c.id, c.name, c.flags, u.id, u.name FROM photo_albums a' .
+				'SELECT a.name, a.viewers, a.adders, a.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, u.id, u.name FROM photo_albums a' .
 				' LEFT OUTER JOIN events e ON a.event_id = e.id' .
+				' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 				' JOIN clubs c ON a.club_id = c.id' .
 				' JOIN users u ON a.user_id = u.id' .
 				' WHERE a.id = ? AND ', $id, PhotoAlbum::viewers_condition());
@@ -53,7 +59,8 @@ class PhotoAlbum
 				$this->id = $id;
 				list(
 					$this->name, $this->viewers, $this->adders, $this->flags,
-					$this->event_id, $this->event_name,
+					$this->event_id, $this->event_name, $this->event_flags,
+					$this->tour_id, $this->tour_name, $this->tour_flags,
 					$this->club_id, $this->club_name, $this->club_flags,
 					$this->user_id, $this->user_name) = $row;
 			}
@@ -338,11 +345,17 @@ class PhotoAlbum
 			echo '</td>';
 		}
 		
-		$query = new DbQuery('SELECT a.id, a.name, a.flags, a.viewers, u.id, u.name, c.id, c.name FROM photo_albums a, users u, clubs c WHERE u.id = a.user_id AND c.id = a.club_id AND ', $where);
+		$album_pic = new Picture(ALBUM_PICTURE, new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE))));
+		$query = new DbQuery('SELECT a.id, a.name, a.flags, a.viewers, u.id, u.name, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags FROM photo_albums a' .
+			' JOIN users u ON u.id = a.user_id' .
+			' JOIN clubs c ON c.id = a.club_id' .
+			' LEFT OUTER JOIN events e ON e.id = a.event_id' .
+			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+			' WHERE TRUE AND ', $where);
 		$query->add(' ORDER BY a.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		while ($row = $query->next())
 		{
-			list($album_id, $album_name, $album_flags, $album_viewers, $owner_id, $owner_name, $c_id, $c_name) = $row;
+			list($album_id, $album_name, $album_flags, $album_viewers, $owner_id, $owner_name, $e_id, $e_name, $e_flags, $t_id, $t_name, $t_flags, $c_id, $c_name, $c_flags) = $row;
 			if ($column_count == 0)
 			{
 				if ($albums_count == 0)
@@ -372,7 +385,12 @@ class PhotoAlbum
 				echo '<b>' . $c_name . '</b>';
 			}
 			echo '<br><a href="album_photos.php?id=' . $album_id . '&bck=1" title="' . $album_name . '">';
-			PhotoAlbum::show_pic($album_id, $album_flags, ICONS_DIR);
+			$album_pic->
+				set($album_id, $album_name, $album_flags)->
+				set($e_id, $e_name, $e_flags)->
+				set($t_id, $t_name, $t_flags)->
+				set($c_id, $c_name, $c_flags);
+			$album_pic->show(ICONS_DIR);
 			echo '<br>' . $album_name . '</a>';
 			if ($flags & ALBUM_SHOW_OWNER)
 			{
@@ -491,44 +509,6 @@ class PhotoAlbum
 		}
 		return $condition;
 	}
-	
-	static function show_pic($album_id, $flags, $dir, $width = 0, $height = 0)
-	{
-		if ($width <= 0 && $height <= 0)
-		{
-			if ($dir == ICONS_DIR)
-			{
-				$width = ICON_WIDTH;
-				$height = ICON_HEIGHT;
-			}
-			else if ($dir == TNAILS_DIR)
-			{
-				$width = TNAIL_WIDTH;
-				$height = TNAIL_HEIGHT;
-			}
-		}
-
-		$origin = ALBUM_PICS_DIR . $dir . $album_id . '.png';
-		echo '<img code="' . ALBUM_PIC_CODE . $album_id . '" origin="' . $origin . '" src="';
-		if (($flags & ALBUM_ICON_MASK) != 0)
-		{
-			echo $origin . '?' . (($flags & ALBUM_ICON_MASK) >> ALBUM_ICON_MASK_OFFSET);
-		}
-		else
-		{
-			echo 'images/' . $dir . 'album.png';
-		}
-		echo '" border="0"';
-		if ($width > 0)
-		{
-			echo ' width="' . $width . '"';
-		}
-		if ($height > 0)
-		{
-			echo ' height="' . $height . '"';
-		}
-		echo '>';
-	}
 }
 
 class AlbumPageBase extends PageBase
@@ -587,7 +567,13 @@ class AlbumPageBase extends PageBase
 		echo '</td>';
 		
 		echo '<td valign="top" width="1">';
-		PhotoAlbum::show_pic($this->album->id, $this->album->flags, ICONS_DIR);
+		$album_pic = new Picture(ALBUM_PICTURE, new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE))));
+		$album_pic->
+			set($this->album->id, $this->album->name, $this->album->flags)->
+			set($this->album->event_id, $this->album->event_name, $this->event_album->flags)->
+			set($this->album->tour_id, $this->album->tour_name, $this->album->tour_flags)->
+			set($this->album->club_id, $this->album->club_name, $this->album->club_flags);
+		$album_pic->show(ICONS_DIR);
 		echo '</td>';
 		
 		echo '</tr></table>';

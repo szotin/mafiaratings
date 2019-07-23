@@ -9,6 +9,7 @@ require_once 'include/club.php';
 require_once 'include/event.php';
 require_once 'include/snapshot.php';
 require_once 'include/scoring.php';
+require_once 'include/picture.php';
 
 define('COLUMN_COUNT', 5);
 define('ROW_COUNT', 2);
@@ -16,6 +17,8 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends GeneralPageBase
 {
+	private $event_pic;
+	
 	private function show_events_list($query, $title)
 	{
 		$event_count = 0;
@@ -45,7 +48,8 @@ class Page extends GeneralPageBase
 			echo $club_name . '<br>';
 			echo '<a href="event_info.php?bck=1&id=' . $event_id . '" title="' . get_label('View event details.') . '"><b>';
 			echo format_date('l, F d, Y, H:i', $event_time, $timezone) . '</b><br>';
-			show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 0, 0, false);
+			$this->event_pic->set($event_id, $event_name, $event_flags)->set($club_id, $club_name, $club_flags);
+			$this->event_pic->show(ICONS_DIR, 60);
 			echo '</a><br>' . $event_name . '</b></td>';
 			++$colunm_count;
 			++$event_count;
@@ -124,9 +128,11 @@ class Page extends GeneralPageBase
 				}
 				$dark = !$dark;
 				echo '<td width="48" align="center"><a href="user_info.php?id=' . $player->id . '&bck=1">';
-				show_user_pic($player->id, $player->user_name, $player->user_flags, ICONS_DIR, 36, 36);
+				$this->user_pic->set($player->id, $player->user_name, $player->user_flags);
+				$this->user_pic->show(ICONS_DIR, 36);
 				echo '</a></td><td width="48"><a href="club_main.php?id=' . $player->club_id . '&bck=1">';
-				show_club_pic($player->club_id, $player->club_name, $player->club_flags, ICONS_DIR, 36, 36);
+				$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
+				$this->club_pic->show(ICONS_DIR, 36);
 				echo '</a></td><td width="30">';
 				if (isset($player->src))
 				{
@@ -196,6 +202,8 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_lang_code;
 		
+		$this->event_pic = new Picture(EVENT_PICTURE, new Picture(CLUB_PICTURE));
+		
 		$condition = new SQL();
 		$ccc_id = $this->ccc_filter->get_id();
 		$ccc_code = $this->ccc_filter->get_code();
@@ -240,7 +248,8 @@ class Page extends GeneralPageBase
 				list ($club_id, $club_name, $club_flags, $timezone, $id, $timestamp, $message) = $row;
 				echo '<tr>';
 				echo '<td width="100" class="dark" align="center" valign="top"><a href="club_main.php?id=' . $club_id . '&bck=1">' . $club_name . '<br>';
-				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR);
+				$this->club_pic->set($club_id, $club_name, $club_flags);
+				$this->club_pic->show(ICONS_DIR, 60);
 				echo '</a></td><td valign="top"><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
 				
 				
@@ -339,9 +348,12 @@ class Page extends GeneralPageBase
 
 				echo '<td width="20" class="dark" align="center">' . $number . '</td>';
 				echo '<td width="50" valign="top"><a href="user_info.php?id=' . $id . '&bck=1">';
-				show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
+				$this->user_pic->set($id, $name, $flags);
+				$this->user_pic->show(ICONS_DIR, 50);
 				echo '</a></td><td width="36"><a href="club_main.php?id=' . $club_id . '&bck=1">';
-				show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 36, 36);
+				
+				$this->club_pic->set($club_id, $club_name, $club_flags);
+				$this->club_pic->show(ICONS_DIR, 36);
 				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';

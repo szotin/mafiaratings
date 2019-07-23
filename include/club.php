@@ -9,85 +9,6 @@ define('MY_CLUBS', 0);
 define('SEASON_ALL_TIME', -1);
 define('SEASON_LAST_YEAR', -2);
 
-function show_club_pic($club_id, $club_name, $flags, $dir, $width = 0, $height = 0, $attributes = NULL)
-{
-	global $_lang_code;
-	$w = $width;
-	$h = $height;
-	if ($dir == ICONS_DIR)
-	{
-		if ($w <= 0)
-		{
-			$w = ICON_WIDTH;
-		}
-		if ($h <= 0)
-		{
-			$h = ICON_HEIGHT;
-		}
-	}
-	else if ($dir == TNAILS_DIR)
-	{
-		if ($w <= 0)
-		{
-			$w = TNAIL_WIDTH;
-		}
-		if ($h <= 0)
-		{
-			$h = TNAIL_HEIGHT;
-		}
-	}
-	
-	if ($width <= 0 && $height <= 0)
-	{
-		$width = $w;
-		$height = $h;
-	}
-	
-	$origin = CLUB_PICS_DIR . $dir . $club_id . '.png';
-	echo '<span style="position:relative;"><img code="' . CLUB_PIC_CODE . $club_id . '" origin="' . $origin . '" src="';
-	if (($flags & CLUB_ICON_MASK) != 0)
-	{
-		echo $origin . '?' . (($flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET);
-	}
-	else if ($club_id == NULL)
-	{
-		echo 'images/transp.png';
-	}
-	else
-	{
-		echo 'images/' . $dir . 'club.png';
-	}
-	echo '" title="' . $club_name . '" border="0"';
-
-	if ($width > 0)
-	{
-		echo ' width="' . $width . '"';
-	}
-	if ($height > 0)
-	{
-		echo ' height="' . $height . '"';
-	}
-	if ($attributes != NULL)
-	{
-		echo ' ' . $attributes;
-	}
-	echo '>';
-	if ($flags & CLUB_FLAG_RETIRED)
-	{
-		echo '<img src="images/' . $dir . $_lang_code . '/closed.png" title="' . $club_name . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
-		if ($width > 0)
-		{
-			echo ' width="' . $width . '"';
-		}
-		if ($height > 0)
-		{
-			echo ' height="' . $height . '"';
-		}
-		echo '>';
-	}
-	echo '</span>';
-}
-
 function has_club_buttons($id, $flags, $memb_flags)
 {
 	global $_profile;
@@ -181,6 +102,9 @@ class ClubPageBase extends PageBase
 	protected $parent_name;
 	protected $parent_flags;
 	
+	protected $event_pic;
+	protected $league_pic;
+	
 	protected function prepare()
 	{
 		global $_lang_code, $_profile;
@@ -211,6 +135,9 @@ class ClubPageBase extends PageBase
 					'LEFT OUTER JOIN clubs p ON c.parent_id = p.id ' .
 					'WHERE c.id = ?',
 				$user_id, $this->id);
+				
+		$this->event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE)));
+		$this->league_pic = new Picture(LEAGUE_PICTURE);
 	}
 
 	protected function show_title()
@@ -279,15 +206,16 @@ class ClubPageBase extends PageBase
 		echo '<tr><td width="1" rowspan="2"><table class="bordered"><tr><td class="' . $dark . '" valign="top" style="min-width:28px; padding:4px;">';
 		show_club_buttons($this->id, $this->name, $this->flags, $this->memb_flags);
 		echo '</td><td class="' . $light . '" style="min-width:' . TNAIL_WIDTH . 'px; padding: 4px 3px 1px 4px;">';
+		$this->club_pic->set($this->id, $this->name, $this->flags);
 		if ($this->url != '')
 		{
 			echo '<a href="' . $this->url . '" target="blank">';
-			show_club_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
+			$this->club_pic->show(TNAILS_DIR);
 			echo '</a>';
 		}
 		else
 		{
-			show_club_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
+			$this->club_pic->show(TNAILS_DIR);
 		}
 		echo '</td></tr></table><td valign="top" rowspan="2"><h2 class="club">' . get_label('Club [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
@@ -296,7 +224,8 @@ class ClubPageBase extends PageBase
 		if ($this->parent_id != NULL)
 		{
 			echo '<a href="club_main.php?bck=1&id=' . $this->parent_id . '">';
-			show_club_pic($this->parent_id, get_label('[0] is a member of [1] club system.', $this->name, $this->parent_name), $this->parent_flags, ICONS_DIR, 36, 36);
+			$this->club_pic->set($this->parent_id, get_label('[0] is a member of [1] club system.', $this->name, $this->parent_name), $this->parent_flags);
+			$this->club_pic->show(ICONS_DIR, 36);
 			echo '</a>';
 		}
 		$query = new DbQuery('SELECT l.id, l.name, l.flags FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.flags = 0 AND c.club_id = ? ORDER BY l.name', $this->id);
@@ -304,7 +233,8 @@ class ClubPageBase extends PageBase
 		{
 			list($league_id, $league_name, $league_flags) = $row;
 			echo ' <a href="league_main.php?bck=1&id=' . $league_id . '">';
-			show_league_pic($league_id, get_label('[0] is a member of [1].', $this->name, $league_name), $league_flags, ICONS_DIR, 36, 36);
+			$this->league_pic->set($league_id, get_label('[0] is a member of [1].', $this->name, $league_name), $league_flags);
+			$this->league_pic->show(ICONS_DIR, 36);
 			echo '</a>';
 		}
 		echo '</td></tr>';

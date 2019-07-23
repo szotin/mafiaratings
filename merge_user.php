@@ -25,7 +25,7 @@ class Page extends UserPageBase
 		echo '<button class="icon" onclick="mergeAllUsers(' . $this->id . ')" title="' . get_label('Merge all these users with their stats and access rights to this account.') . '"><img src="images/merge.png"></button>';
 		echo '<button class="icon" onclick="deleteAllUsers(' . $this->id . ')" title="' . get_label('Delete all these users with their stats and ratings.') . '"><img src="images/delete.png"></button>';
 		echo '</td><td width="38"></td><td>'.get_label('Players with the same email').'</td><td width="100">Rating</td><td width="100">'.get_label('Games played').'</td></tr>';
-		
+
 		$query = new DbQuery('SELECT id, name, rating, games, flags FROM users WHERE id <> ? AND email = ?', $this->id, $this->email);
 		$query->add(' ORDER BY games DESC, rating DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
@@ -39,7 +39,8 @@ class Page extends UserPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			show_user_pic($id, $name, $flags, ICONS_DIR, 36, 36);
+			$this->user_pic->set($id, $name, $flags);
+			$this->user_pic->show(ICONS_DIR, 36);
 			echo '</td>';
 			
 			echo '<td><a href="merge_user.php?bck=1&id=' . $id . '">' . cut_long_name($name, 80) . '</a></td>';

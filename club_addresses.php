@@ -39,18 +39,19 @@ class Page extends ClubPageBase
 			echo '</td>';
 		}
 		
+		$address_pics = new Picture(ADDRESS_PICTURE);
 		$query = new DbQuery(
 			'SELECT a.id, a.name, a.address, a.map_url, a.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code .
 				', (SELECT count(*) FROM events e WHERE e.address_id = a.id) cnt FROM addresses a' . 
 				' JOIN cities ct ON a.city_id = ct.id' .
 				' JOIN countries cr ON ct.country_id = cr.id' .
 				' WHERE club_id = ?' .
-				' ORDER BY (a.flags & ' . ADDR_FLAG_NOT_USED . '), cnt DESC, a.name',
+				' ORDER BY (a.flags & ' . ADDRESS_FLAG_NOT_USED . '), cnt DESC, a.name',
 			$this->id);
 		while ($row = $query->next())
 		{
 			list ($addr_id, $addr_name, $addr, $addr_url, $addr_flags, $addr_city, $addr_country, $use_count) = $row;
-			if (($addr_flags & ADDR_FLAG_NOT_USED) != 0 && $use_count <= 0 && !$is_manager)
+			if (($addr_flags & ADDRESS_FLAG_NOT_USED) != 0 && $use_count <= 0 && !$is_manager)
 			{
 				continue;
 			}
@@ -65,7 +66,7 @@ class Page extends ClubPageBase
 			}
 
 			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top"';
-			if (($addr_flags & ADDR_FLAG_NOT_USED) != 0)
+			if (($addr_flags & ADDRESS_FLAG_NOT_USED) != 0)
 			{
 				echo ' class="dark">';
 			}
@@ -84,7 +85,8 @@ class Page extends ClubPageBase
 			
 			echo '<tr><td align="center"><a href="address_info.php?bck=1&id=' . $addr_id . '">';
 			echo '<b>' . $addr_name . '</b><br>';
-			show_address_pic($addr_id, $addr_flags, ICONS_DIR);
+			$address_pics->set($addr_id, $addr_name, $addr_flags);
+			$address_pics->show(ICONS_DIR);
 			echo '<br></a>' . addr_label($addr, $addr_city, $addr_country) . '<br>';
 			
 			echo '</td></tr></table>';

@@ -80,16 +80,17 @@ class Page extends ClubPageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, e.id, e.name, e.flags, a.id, a.name, a.flags FROM games g' .
+			'SELECT g.id, c.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' JOIN cities c ON c.id = a.city_id',
 			$condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $event_id, $event_name, $event_flags, $adr_id, $adr_name, $adr_flags) = $row;
+			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $event_id, $event_name, $event_flags, $tour_id, $tour_name, $tour_flags, $address_id, $address_name, $address_flags) = $row;
 			
 			echo '<tr class="light" align="center">';
 			if ($this->is_manager)
@@ -109,9 +110,14 @@ class Page extends ClubPageBase
 			}
 			
 			echo '<td class="dark" width="90"><a href="view_game.php?club_id=' . $this->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td><td>';
-			show_event_pic($event_id, $event_name, $event_flags, $adr_id, $adr_name, $adr_flags, ICONS_DIR, 48, 48);
+			$this->event_pic->
+				set($event_id, $event_name, $event_flags)->
+				set($tour_id, $tour_name, $tour_flags)->
+				set($address_id, $address_name, $address_flags);
+			$this->event_pic->show(ICONS_DIR, 48);
 			echo '</td><td>';
-			show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
+			$this->user_pic->set($moder_id, $moder_name, $moder_flags);
+			$this->user_pic->show(ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
 			echo '</td>';
 			
 			echo '<td align="left">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';

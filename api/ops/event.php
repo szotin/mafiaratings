@@ -229,6 +229,7 @@ class ApiPage extends OpsApiPageBase
 		Db::commit();
 		
 		$this->response['events'] = $event_ids;
+		$this->response['mailing'] = EVENT_EMAIL_INVITE;
 	}
 	
 	function create_op_help()
@@ -536,7 +537,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['planned_games'] = $event->planned_games;
 		
 		$base = get_server_url() . '/';
-		if (($event->addr_flags & ADDR_ICON_MASK) != 0)
+		if (($event->addr_flags & ADDRESS_ICON_MASK) != 0)
 		{
 			$this->response['addr_image'] = $base . ADDRESS_PICS_DIR . TNAILS_DIR . $event->addr_id . '.jpg';
 		}

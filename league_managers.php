@@ -23,6 +23,7 @@ class Page extends LeaguePageBase
 		echo '</td>';
 		echo '<td colspan="4">' . get_label('Manager') . '</td></tr>';
 
+		$user_pic = new Picture(USER_PICTURE);
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.email, u.flags, c.id, c.name, c.flags' .
 			' FROM league_managers m' .
@@ -41,7 +42,8 @@ class Page extends LeaguePageBase
 			echo '</td>';
 			
 			echo '<td width="60" align="center"><a href="user_info.php?id=' . $id . '&bck=1">';
-			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
+			$user_pic->set($id, $name, $flags);
+			$user_pic->show(ICONS_DIR, 50);
 			echo '</a></td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
 			echo '<td width="200">';
@@ -51,7 +53,8 @@ class Page extends LeaguePageBase
 			}
 			echo '</td>';
 			echo '<td width="50" align="center">';
-			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
+			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->show(ICONS_DIR, 40);
 			echo '</td></tr>';
 		}
 		echo '</table>';

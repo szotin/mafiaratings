@@ -2,85 +2,6 @@
 
 require_once __DIR__ . '/page_base.php';
 
-function show_league_pic($league_id, $league_name, $flags, $dir, $width = 0, $height = 0, $attributes = NULL)
-{
-	global $_lang_code;
-	$w = $width;
-	$h = $height;
-	if ($dir == ICONS_DIR)
-	{
-		if ($w <= 0)
-		{
-			$w = ICON_WIDTH;
-		}
-		if ($h <= 0)
-		{
-			$h = ICON_HEIGHT;
-		}
-	}
-	else if ($dir == TNAILS_DIR)
-	{
-		if ($w <= 0)
-		{
-			$w = TNAIL_WIDTH;
-		}
-		if ($h <= 0)
-		{
-			$h = TNAIL_HEIGHT;
-		}
-	}
-	
-	if ($width <= 0 && $height <= 0)
-	{
-		$width = $w;
-		$height = $h;
-	}
-	
-	$origin = LEAGUE_PICS_DIR . $dir . $league_id . '.png';
-	echo '<span style="position:relative;"><img code="' . LEAGUE_PIC_CODE . $league_id . '" origin="' . $origin . '" src="';
-	if (($flags & LEAGUE_ICON_MASK) != 0)
-	{
-		echo $origin . '?' . (($flags & LEAGUE_ICON_MASK) >> LEAGUE_ICON_MASK_OFFSET);
-	}
-	else if ($league_id == NULL)
-	{
-		echo 'images/transp.png';
-	}
-	else
-	{
-		echo 'images/' . $dir . 'league.png';
-	}
-	echo '" title="' . $league_name . '" border="0"';
-
-	if ($width > 0)
-	{
-		echo ' width="' . $width . '"';
-	}
-	if ($height > 0)
-	{
-		echo ' height="' . $height . '"';
-	}
-	if ($attributes != NULL)
-	{
-		echo ' ' . $attributes;
-	}
-	echo '>';
-	if ($flags & LEAGUE_FLAG_RETIRED)
-	{
-		echo '<img src="images/' . $dir . $_lang_code . '/closed.png" title="' . $league_name . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
-		if ($width > 0)
-		{
-			echo ' width="' . $width . '"';
-		}
-		if ($height > 0)
-		{
-			echo ' height="' . $height . '"';
-		}
-		echo '>';
-	}
-	echo '</span>';
-}
-
 function has_league_buttons($id, $flags)
 {
 	global $_profile;
@@ -205,18 +126,20 @@ class LeaguePageBase extends PageBase
 			$light = 'light';
 		}
 		
+		$league_pic = new Picture(LEAGUE_PICTURE);
 		echo '<tr><td width="1"><table class="bordered"><tr><td class="' . $dark . '" valign="top" style="min-width:28px; padding:4px;">';
 		show_league_buttons($this->id, $this->name, $this->flags);
 		echo '</td><td class="' . $light . '" style="min-width:' . TNAIL_WIDTH . 'px; padding: 4px 3px 1px 4px;">';
+		$league_pic->set($this->id, $this->name, $this->flags);
 		if ($this->url != '')
 		{
 			echo '<a href="' . $this->url . '" target="blank">';
-			show_league_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
+			$league_pic->show(TNAILS_DIR);
 			echo '</a>';
 		}
 		else
 		{
-			show_league_pic($this->id, $this->name, $this->flags, TNAILS_DIR);
+			$league_pic->show(TNAILS_DIR);
 		}
 		echo '</td></tr></table><td valign="top"><h2 class="league">' . get_label('League [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3></td><td valign="top" align="right">';
 		show_back_button();

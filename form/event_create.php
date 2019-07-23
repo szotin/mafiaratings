@@ -12,19 +12,26 @@ initiate_session();
 
 try
 {
-	dialog_title(get_label('Create [0]', get_label('event')));
-
-	if (!isset($_REQUEST['club']))
+	$tournament_id = 0;
+	if (isset($_REQUEST['tournament_id']))
+	{
+		dialog_title(get_label('Create [0]', get_label('tournament round')));
+		$tournament_id = (int)$_REQUEST['tournament_id'];
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+	}
+	else if (isset($_REQUEST['club_id']))
+	{
+		dialog_title(get_label('Create [0]', get_label('event')));
+		$club_id = (int)$_REQUEST['club_id'];
+	}
+	else
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('club')));
 	}
-	$club_id = $_REQUEST['club'];
-	if ($_profile == NULL || !$_profile->is_club_manager($club_id))
-	{
-		throw new FatalExc(get_label('No permissions'));
-	}
 	
+	check_permissions(PERMISSION_CLUB_MEMBER, $club_id);
 	$club = $_profile->clubs[$club_id];
+	
 	$event = new Event();
 	$event->set_club($club);
 	
@@ -34,6 +41,19 @@ try
 
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($event->name, ENT_QUOTES) . '"></td></tr>';
+	
+	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND (flags & ' . TOURNAMENT_FLAG_EVENT_ROUND . ') = 0 ORDER BY name', $club_id);
+	if ($row = $query->next())
+	{
+		echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament"">';
+		show_option(0, $tournament_id, '');
+		while ($row = $query->next())
+		{
+			list($tid, $tname) = $row;
+			show_option($tid, $tournament_id, $tname);
+		}
+		echo '</select></td></tr>';
+	}
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
 	echo '<input type="checkbox" id="form-multiple" onclick="multipleChange()"> ' . get_label('multiple events');
@@ -60,7 +80,7 @@ try
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($event->duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 		
-	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDR_FLAG_NOT_USED . ') = 0 ORDER BY name', $event->club_id);
+	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $event->club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id" onChange="addressClick()">';
 	echo '<option value="-1">' . get_label('New address') . '</option>';

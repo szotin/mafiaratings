@@ -21,12 +21,13 @@ try
 	}
 	$event_id = (int)$_REQUEST['event_id'];
 	
-	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_weight, $planned_games, $langs, $notes, $flags, $timezone) = 
+	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_weight, $planned_games, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
 		Db::record(get_label('event'), 
-			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.languages, e.notes, e.flags, c.timezone ' .
+			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
 			'FROM events e ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
+			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' . 
 			'WHERE e.id = ?', $event_id);
 	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	$club = $_profile->clubs[$club_id];
@@ -37,7 +38,12 @@ try
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="12">';
-	show_event_pic($event_id, $name, $flags, $club_id, $club->name, $club->flags, ICONS_DIR);
+	$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+	$event_pic->
+		set($event_id, $name, $flags)->
+		set($tour_id, $tour_name, $tour_flags)->
+		set($club_id, $club->name, $club->flags);
+	$event_pic->show(ICONS_DIR, 50);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td>';
@@ -54,7 +60,7 @@ try
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 		
-	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDR_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
+	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id" onChange="addressClick()">';
 	echo '<option value="-1">' . get_label('New address') . '</option>';

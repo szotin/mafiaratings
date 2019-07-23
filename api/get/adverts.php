@@ -14,7 +14,7 @@ class ApiPage extends GetApiPageBase
 			$club = (int)$_REQUEST['club'];
 		}
 		
-		$page_size = 16;
+		$page_size = DEFAULT_PAGE_SIZE;
 		if (isset($_REQUEST['page_size']))
 		{
 			$page_size = (int)$_REQUEST['page_size'];
@@ -126,7 +126,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('to', 'Unix timestamp for the latest message to return. For example: <a href="adverts.php?club=1&to=1483228800"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=1&to=1483228800</a> returns all messages before 2017; <a href="adverts.php?club=1&from=1483228800&to=1485907200"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=1&from=1483228800&to=1485907200</a> returns all messages in January 2017', '-');
 		$help->request_param('count', 'Returns game count instead of advertizements list. For example: <a href="adverts.php?club=1&count"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=1&count</a> returns how many advertizements are there in Vancouver Mafia Club', '-');
 		$help->request_param('page', 'Page number. For example: <a href="adverts.php?club=1&page=1"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=1&page=1</a> returns the second page of advertizements for Vancouver Mafia Club players.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is 16. For example: <a href="adverts.php?club=1&page_size=32"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=1&page_size=32</a> returns last 32 advertizements for Vancouver Mafia Club; <a href="adverts.php?club=6&page_size=0"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=6&page_size=0</a> returns all advertizements for Empire of Mafia club in one page; <a href="adverts.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=1</a> returns last 16 advertizements for Vancouver Mafia Club;', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="adverts.php?club=1&page_size=32"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=1&page_size=32</a> returns last 32 advertizements for Vancouver Mafia Club; <a href="adverts.php?club=6&page_size=0"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=6&page_size=0</a> returns all advertizements for Empire of Mafia club in one page; <a href="adverts.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/adverts.php?club=1</a> returns last ' . DEFAULT_PAGE_SIZE . ' advertizements for Vancouver Mafia Club;', '-');
 
 		$param = $help->response_param('mesages', 'The array of advertizements. They are always sorted from latest to oldest. There is no way to change sorting order in the current version of API.');
 			$param->sub_param('id', 'Advertizement id.');

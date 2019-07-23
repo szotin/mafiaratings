@@ -62,7 +62,7 @@ class Event
 		$base = get_server_url() . '/';
 			
 		$this->addr_image = '';
-		if (($addr_flags & ADDR_ICON_MASK) != 0)
+		if (($addr_flags & ADDRESS_ICON_MASK) != 0)
 		{
 			$this->addr_image = $base . ADDRESS_PICS_DIR . TNAILS_DIR . $this->addr_id . '.jpg';
 		}

@@ -112,7 +112,8 @@ class Page extends PageBase
 			{
 				list($user_id, $user_name, $user_flags, $send_time) = $row;
 				echo '<tr><td width="50"><a href="user_info.php?id=' . $row[0] . '&bck=1">';
-				show_user_pic($user_id, $user_name, $user_flags, ICONS_DIR, 48);
+				$this->user_pic->set($user_id, $user_name, $user_flags);
+				$this->user_pic->show(ICONS_DIR, 48);
 				echo '</a></td><td>' . $user_name . '</td>';
 				echo '<td class="dark" align="center">' . format_date('F d, Y, H:i', $send_time, $timezone) . '</td></tr>';
 			}

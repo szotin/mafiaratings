@@ -40,6 +40,7 @@ class Page extends UserPageBase
 		show_option(1, $moder, get_label('As a moderator'));
 		echo '</select>';
 		
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
 		if ($moder != 0)
 		{
 			if ($result_filter > 2 && $result_filter < 5)
@@ -80,9 +81,10 @@ class Page extends UserPageBase
 			echo '<tr class="th darker" align="center"><td width="90"></td><td width="48">'.get_label('Club').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, v.video, e.id, e.name, e.flags FROM games g' .
+				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, v.video, e.id, e.name, e.flags, t.id, t.name, t.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' LEFT OUTER JOIN videos v ON v.id = g.video_id' .
@@ -91,11 +93,15 @@ class Page extends UserPageBase
 			$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			while ($row = $query->next())
 			{
-				list ($game_id, $club_id, $club_name, $club_flags, $timezone, $start, $duration, $game_result, $video, $event_id, $event_name, $event_flags) = $row;
+				list ($game_id, $club_id, $club_name, $club_flags, $timezone, $start, $duration, $game_result, $video, $event_id, $event_name, $event_flags, $tour_id, $tour_name, $tour_flags) = $row;
 				
 				echo '<tr align="center"><td class="dark"><a href="view_game.php?moderator_id=' . $this->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 				echo '<td>';
-				show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 48, 48, false);
+				$event_pic->
+					set($event_id, $event_name, $event_flags)->
+					set($tour_id, $tour_name, $tour_flags)->
+					set($club_id, $club_name, $club_flags);
+				$event_pic->show(ICONS_DIR, 48);
 				echo '</td>';
 				echo '<td align="left">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
 				echo '<td>' . format_time($duration) . '</td>';
@@ -172,10 +178,11 @@ class Page extends UserPageBase
 			echo '<tr class="th darker" align="center"><td width="90"></td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Role').'</td><td width="60">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td><td width="60">'.get_label('Video').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, p.role, p.rating_before, p.rating_earned, v.video, e.id, e.name, e.flags FROM players p' .
+				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, p.role, p.rating_before, p.rating_earned, v.video, e.id, e.name, e.flags, t.id, t.name, t.flags FROM players p' .
 				' JOIN games g ON g.id = p.game_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
@@ -187,14 +194,19 @@ class Page extends UserPageBase
 			{
 				list (
 					$game_id, $club_id, $club_name, $club_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, 
-					$game_result, $role, $rating_before, $rating_earned, $video, $event_id, $event_name, $event_flags) = $row;
+					$game_result, $role, $rating_before, $rating_earned, $video, $event_id, $event_name, $event_flags, $tour_id, $tour_name, $tour_flags) = $row;
 			
 				echo '<tr align="center"><td class="dark"><a href="view_game.php?user_id=' . $this->id . '&id=' . $game_id . '&pid=' . $this->id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
 				echo '<td>';
-				show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 48, 48, false);
+				$event_pic->
+					set($event_id, $event_name, $event_flags)->
+					set($tour_id, $tour_name, $tour_flags)->
+					set($club_id, $club_name, $club_flags);
+				$event_pic->show(ICONS_DIR, 48);
 				echo '</td>';
 				echo '<td>';
-				show_user_pic($moder_id, $moder_name, $moder_flags, ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
+				$this->user_pic->set($moder_id, $moder_name, $moder_flags);
+				$this->user_pic->show(ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
 				echo '</td>';
 				echo '<td align="left">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
 				echo '<td>' . format_time($duration) . '</td>';

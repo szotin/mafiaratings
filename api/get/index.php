@@ -18,7 +18,7 @@ require_once '../../include/api.php';
 <tr class="darker"><th width="200">Service</th><th>Link</th><th>Description</th></tr>
 
 <tr>
-	<td>Get Games</td>
+	<td>Games</td>
 	<td><a href="games.php?help"><?php echo PRODUCT_URL; ?>/api/get/games.php</a></td>
 	<td>
 		<p>Returns games logs containg all information about a game: nominations, votings, shooting, checking etc...</p>
@@ -27,7 +27,39 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Get Ratings</td>
+	<td>Events</td>
+	<td><a href="events.php?help"><?php echo PRODUCT_URL; ?>/api/get/events.php</a></td>
+	<td>
+		<p>Returns a list of past, current and future events.</p>
+	</td>
+</tr>
+
+<tr>
+	<td>Tournaments</td>
+	<td><a href="tournaments.php?help"><?php echo PRODUCT_URL; ?>/api/get/tournaments.php</a></td>
+	<td>
+		<p>Returns a list of past, current and future tournaments.</p>
+	</td>
+</tr>
+
+<tr>
+	<td>Clubs</td>
+	<td><a href="clubs.php?help"><?php echo PRODUCT_URL; ?>/api/get/clubs.php</a></td>
+	<td>
+		<p>Returns a list of known clubs.</p>
+	</td>
+</tr>
+
+<tr>
+	<td>Leagues</td>
+	<td><a href="leagues.php?help"><?php echo PRODUCT_URL; ?>/api/get/leagues.php</a></td>
+	<td>
+		<p>Returns a list of known leagues.</p>
+	</td>
+</tr>
+
+<tr>
+	<td>Ratings</td>
 	<td><a href="ratings.php?help"><?php echo PRODUCT_URL; ?>/api/get/ratings.php</a></td>
 	<td>
 		<p>Returns players global Elo ratings.</p>
@@ -37,7 +69,7 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Get Scores</td>
+	<td>Scores</td>
 	<td><a href="scores.php?help"><?php echo PRODUCT_URL; ?>/api/get/scores.php</a></td>
 	<td>
 		<p>Returns players scores in games/events using configurable scoring systems.</p>
@@ -45,7 +77,7 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Get Rules</td>
+	<td>Rules</td>
 	<td><a href="rules.php?help"><?php echo PRODUCT_URL; ?>/api/get/rules.php</a></td>
 	<td>
 		<p>Returns game rules descriptions for different clubs, events, tournaments.</p>
@@ -53,7 +85,7 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Get Club Rules</td>
+	<td>Club Rules</td>
 	<td><a href="club_rules.php?help"><?php echo PRODUCT_URL; ?>/api/get/club_rules.php</a></td>
 	<td>
 		<p>Returns the list of custom game rules used in a specific club.</p>
@@ -61,7 +93,7 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Get Player Statistics</td>
+	<td>Player Statistics</td>
 	<td><a href="player_stats.php?help"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php</a></td>
 	<td>
 		<p>Returns player's statistics.</p>
@@ -70,15 +102,7 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Get Clubs</td>
-	<td><a href="clubs.php?help"><?php echo PRODUCT_URL; ?>/api/get/clubs.php</a></td>
-	<td>
-		<p>Returns a list of known clubs.</p>
-	</td>
-</tr>
-
-<tr>
-	<td>Get Cities</td>
+	<td>Cities</td>
 	<td><a href="cities.php?help"><?php echo PRODUCT_URL; ?>/api/get/cities.php</a></td>
 	<td>
 		<p>Returns a list of known cities.</p>
@@ -87,7 +111,7 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Get Countries</td>
+	<td>Countries</td>
 	<td><a href="countries.php?help"><?php echo PRODUCT_URL; ?>/api/get/countries.php</a></td>
 	<td>
 		<p>Returns a list of known countries.</p>
@@ -96,7 +120,7 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Get Club Advertisements</td>
+	<td>Club Advertisements</td>
 	<td><a href="adverts.php?help"><?php echo PRODUCT_URL; ?>/api/get/adverts.php</a></td>
 	<td>
 		<p>Returns club advertisements.</p>

@@ -114,13 +114,13 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 		
 		build_pic_tnail($dir, $addr_id);
 		
-		$icon_version = (($flags & ADDR_ICON_MASK) >> ADDR_ICON_MASK_OFFSET) + 1;
-		if ($icon_version > ADDR_ICON_MAX_VERSION)
+		$icon_version = (($flags & ADDRESS_ICON_MASK) >> ADDRESS_ICON_MASK_OFFSET) + 1;
+		if ($icon_version > ADDRESS_ICON_MAX_VERSION)
 		{
 			$icon_version = 1;
 		}
-		$flags = ($flags & ~ADDR_ICON_MASK) + ($icon_version << ADDR_ICON_MASK_OFFSET);
-		$flags |= ADDR_FLAG_GENERATED;
+		$flags = ($flags & ~ADDRESS_ICON_MASK) + ($icon_version << ADDRESS_ICON_MASK_OFFSET);
+		$flags |= ADDRESS_FLAG_GENERATED;
 		
 		Db::exec(get_label('address'), 'UPDATE addresses SET flags = ? WHERE id = ?', $flags, $addr_id);
 		if (Db::affected_rows() > 0)
@@ -133,45 +133,6 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 	return NULL;
 }
 
-function show_address_pic($id, $flags, $dir, $width = 0, $height = 0)
-{
-	if ($width <= 0 && $height <= 0)
-	{
-		if ($dir == ICONS_DIR)
-		{
-			$width = ICON_WIDTH;
-			$height = ICON_HEIGHT;
-		}
-		else if ($dir == TNAILS_DIR)
-		{
-			$width = TNAIL_WIDTH;
-			$height = TNAIL_HEIGHT;
-		}
-	}
-
-	$origin = ADDRESS_PICS_DIR . $dir . $id . '.png';
-	echo '<img code="' . ADDR_PIC_CODE . $id . '" origin="' . $origin . '" src="';
-	if (($flags & ADDR_ICON_MASK) != 0)
-	{
-		echo $origin . '?' . (($flags & ADDR_ICON_MASK) >> ADDR_ICON_MASK_OFFSET);
-	}
-	else
-	{
-		echo 'images/' . $dir . 'address.png';
-	}
-	echo '" border="0"';
-
-	if ($width > 0)
-	{
-		echo ' width="' . $width . '"';
-	}
-	if ($height > 0)
-	{
-		echo ' height="' . $height . '"';
-	}
-	echo '>';
-}
-
 function show_address_buttons($id, $name, $flags, $club_id)
 {
 	global $_profile;
@@ -179,7 +140,7 @@ function show_address_buttons($id, $name, $flags, $club_id)
 	$no_buttons = true;
 	if ($id > 0 && $_profile != NULL && $_profile->is_club_manager($club_id))
 	{
-		if (($flags & ADDR_FLAG_NOT_USED) != 0)
+		if (($flags & ADDRESS_FLAG_NOT_USED) != 0)
 		{
 			echo '<button class="icon" onclick="mr.restoreAddr(' . $id . ')" title="' . get_label('Mark [0] as used', $name) . '"><img src="images/undelete.png" border="0"></button>';
 			$no_buttons = false;
@@ -307,9 +268,11 @@ class AddressPageBase extends PageBase
 		PageBase::show_menu($menu);
 		echo '</td></tr>';
 		
+		$address_pic = new Picture(ADDRESS_PICTURE);
+		
 		echo '<tr><td rowspan="2" align="left" width="1">';
 		echo '<table class="bordered ';
-		if (($this->flags & ADDR_FLAG_NOT_USED) != 0)
+		if (($this->flags & ADDRESS_FLAG_NOT_USED) != 0)
 		{
 			echo 'dark';
 		}
@@ -320,22 +283,24 @@ class AddressPageBase extends PageBase
 		echo '"><tr><td width="1" valign="top" style="padding:4px;" class="dark">';
 		show_address_buttons($this->id, $this->name, $this->flags, $this->club_id);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
+		$address_pic->set($this->id, $this->name, $this->flags);
 		if ($this->url != '')
 		{
 			echo '<a href="' . $this->url . '" target="blank">';
-			show_address_pic($this->id, $this->flags, TNAILS_DIR);
+			$address_pic->show(TNAILS_DIR);
 			echo '</a>';
 		}
 		else
 		{
-			show_address_pic($this->id, $this->flags, TNAILS_DIR);
+			$address_pic->show(TNAILS_DIR);
 		}
 		echo '</td></tr></table></td>';
 		
 		echo '<td rowspan="2" valign="top"><h2 class="address">' . get_label('Address [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom" width="' . ICON_WIDTH . '"><a href="club_main.php?bck=1&id=' . $this->club_id . '"><table><tr><td align="center">' . $this->club_name . '</td></tr><tr><td>';
-		show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR);
+		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
+		$this->club_pic->show(ICONS_DIR);
 		echo '</td></tr></table></a></td></tr>';
 		
 		echo '</table>';

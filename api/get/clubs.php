@@ -60,7 +60,7 @@ class ApiPage extends GetApiPageBase
 			$langs = (int)$_REQUEST['langs'];
 		}
 		
-		$page_size = 16;
+		$page_size = DEFAULT_PAGE_SIZE;
 		if (isset($_REQUEST['page_size']))
 		{
 			$page_size = (int)$_REQUEST['page_size'];
@@ -170,7 +170,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('langs', 'Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="clubs.php?langs=1"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?langs=1</a> returns all clubs that support English as their language.', '-');
 		$help->request_param('count', 'Returns clubs count instead of the clubs themselves. For example: <a href="clubs.php?contains=an&count"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?contains=an&count</a> returns how many clubs contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="clubs.php?page=1"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page=1</a> returns the second page of clubs by alphabet.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is 16. For example: <a href="clubs.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page_size=32</a> returns first 32 clubs; <a href="clubs.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page_size=0</a> returns clubs in one page; <a href="clubs.php"><?php echo PRODUCT_URL; ?>/api/get/clubs.php</a> returns first 16 clubs by alphabet.', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="clubs.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page_size=32</a> returns first 32 clubs; <a href="clubs.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page_size=0</a> returns clubs in one page; <a href="clubs.php"><?php echo PRODUCT_URL; ?>/api/get/clubs.php</a> returns first ' . DEFAULT_PAGE_SIZE . ' clubs by alphabet.', '-');
 
 		$param = $help->response_param('clubs', 'The array of clubs. Clubs are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'Club id.');

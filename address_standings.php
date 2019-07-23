@@ -120,10 +120,12 @@ class Page extends AddressPageBase
 			}
 			echo '<td align="center" class="' . $highlight . '">' . $number . '</td>';
 			echo '<td width="50"><a href="user_info.php?id=' . $score->id . '&bck=1">';
-			show_user_pic($score->id, $score->name, $score->flags, ICONS_DIR, 50, 50);
+			$this->user_pic->set($score->id, $score->name, $score->flags);
+			$this->user_pic->show(ICONS_DIR, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $score->id . '&bck=1">' . cut_long_name($score->name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
-			show_club_pic($score->club_id, $score->club_name, $score->club_flags, ICONS_DIR, 40, 40);
+			$this->club_pic->set($score->club_id, $score->club_name, $score->club_flags);
+			$this->club_pic->show(ICONS_DIR, 40);
 			echo '</td>';
 			echo '<td class="' . $highlight . '" align="center">' . $score->points_str() . '</td>';
 			echo '<td align="center">' . $score->games_played . '</td>';

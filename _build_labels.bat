@@ -5,3 +5,4 @@
 
 php build_labels.php > build_labels.log
 start build_labels.log
+start include/languages/ru/labels.php

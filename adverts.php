@@ -57,7 +57,8 @@ class Page extends GeneralPageBase
 			list ($club_id, $club_name, $club_flags, $timezone, $id, $timestamp, $message) = $row;
 			echo '<tr>';
 			echo '<td width="100" align="center" valign="top" class="dark"><a href="club_main.php?id=' . $club_id . '&bck=1"><p>' . $club_name . '</p>';
-			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR);
+			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->show(ICONS_DIR);
 			echo '</a></td><td valign="top"><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
 		}
 		echo '</table>';

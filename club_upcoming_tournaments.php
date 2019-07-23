@@ -53,6 +53,7 @@ class Page extends ClubPageBase
 			$condition);
 		$query->add(' ORDER BY t.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE));
 		while ($row = $query->next())
 		{
 			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $tournament_timezone, $addr_id, $addr_flags, $addr, $addr_url, $addr_name, $league_id) = $row;
@@ -84,7 +85,8 @@ class Page extends ClubPageBase
 			}
 			
 			echo '<tr><td align="center"><a href="tournament_info.php?bck=1&id=' . $id . '"><b>' . format_date('l, F d, Y <br> H:i', $start_time, $tournament_timezone) . '</b><br>';
-			show_tournament_pic($id, $name, $flags, $addr_id, $addr, $addr_flags, ICONS_DIR);
+			$tournament_pic->set($id, $name, $flags)->set($addr_id, $addr, $addr_flags);
+			$tournament_pic->show(ICONS_DIR);
 			echo '</a><br>' . $name;
 			echo '</td></tr></table>';
 			

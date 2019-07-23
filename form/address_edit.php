@@ -37,7 +37,9 @@ try
 	echo '<tr><td width="120">' . get_label('Address name') . ':</td><td><input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="5">';
-	show_address_pic($id, $flags, ICONS_DIR);
+	$address_pic = new Picture(ADDRESS_PICTURE);
+	$address_pic->set($id, $name, $flags);
+	$address_pic->show(ICONS_DIR);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td>';
@@ -56,7 +58,7 @@ try
 	
 	echo '</table>';
 	
-	show_upload_script(ADDR_PIC_CODE, $id);
+	show_upload_script(ADDRESS_PIC_CODE, $id);
 ?>	
 	<script>
 	function commit(onSuccess)

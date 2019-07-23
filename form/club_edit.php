@@ -33,7 +33,9 @@ try
 	echo '<tr><td width="140">' . get_label('Club name') . ':</td><td><input class="longest" id="form-club_name" value="' . htmlspecialchars($club->name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="9">';
-	show_club_pic($id, $club->name, $flags, ICONS_DIR);
+	$club_pic = new Picture(CLUB_PICTURE);
+	$club_pic->set($id, $club->name, $flags);
+	$club_pic->show(ICONS_DIR);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td>';

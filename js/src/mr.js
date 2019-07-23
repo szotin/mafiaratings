@@ -414,9 +414,31 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createEvent = function(clubId)
 	{
-		dlg.form("form/event_create.php?club=" + clubId, function(obj)
+		dlg.form("form/event_create.php?club_id=" + clubId, function(obj)
 		{
-			dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=0', refr, 500, refr);
+			if (typeof obj.mailing != "undefined")
+			{
+				dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=' + obj.mailing, refr, 500, refr);
+			}
+			else
+			{
+				refr();
+			}
+		});
+	}
+	
+	this.createRound = function(tournamentId)
+	{
+		dlg.form("form/event_create.php?tournament_id=" + tournamentId, function(obj)
+		{
+			if (typeof obj.mailing != "undefined")
+			{
+				dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=' + obj.mailing, refr, 500, refr);
+			}
+			else
+			{
+				refr();
+			}
 		});
 	}
 	
@@ -662,18 +684,19 @@ var mr = new function()
 	
 	this.editGame = function(gameId)
 	{
-		var gotoGame = function(data)
-		{
-			var link = "game.php?edit&back=" + encodeURIComponent(window.location.href);
-			if (typeof data.club_id !== "undefined")
-				link += "&club=" + data.club_id;
-			window.location.replace(link);
-		}
+		// var gotoGame = function(data)
+		// {
+			// var link = "game.php?edit&back=" + encodeURIComponent(window.location.href);
+			// if (typeof data.club_id !== "undefined")
+				// link += "&club=" + data.club_id;
+			// window.location.replace(link);
+		// }
 		
-		json.post("api/ops/game.php", { op: 'change', game_id: gameId  }, gotoGame, function(errorMessage, data) 
-		{
-			gotoGame(data);
-		});
+		// json.post("api/ops/game.php", { op: 'change', game_id: gameId  }, gotoGame, function(errorMessage, data) 
+		// {
+			// gotoGame(data);
+		// });
+		dlg.info("<p>Editing games is turned off due to some critical bugs that can cause data corruption.</p><p>Sorry for the inconvinience. We will turn it back on once these bugs will be fixed.</p>", "FYI");
 	}
 	
 	this.setGameVideo = function(gameId)

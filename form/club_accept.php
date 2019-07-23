@@ -4,6 +4,7 @@ require_once '../include/session.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
 require_once '../include/club.php';
+require_once '../include/picture.php';
 
 initiate_session();
 
@@ -40,12 +41,15 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td colspan="2" align="center">' . get_club_request_action($name, $club_id, $club_name, $parent_id, $parent_name) . '</td></tr>';
 	
+	$club_pic = new Picture(CLUB_PICTURE);
+	
 	echo '<tr><td width="120">' . get_label('User') . ':</td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td></tr>';
 	if ($club_id != NULL)
 	{
 		echo '<tr><td>' . get_label('Club') . ':</td><td><input type="hidden" id="form-name" value="">';
 		echo '<table class="transp" width="100%"><tr><td width="50">';
-		show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 36, 36);
+		$club_pic->set($club_id, $club_name, $club_flags);
+		$club_pic->show(ICONS_DIR, 36);
 		echo '</td><td>' . $club_name . '</td></tr></table>';
 		echo '</td></tr>';
 	}
@@ -58,7 +62,8 @@ try
 	{
 		echo '<tr><td>' . get_label('Club system') . ':</td><td>';
 		echo '<table class="transp" width="100%"><tr><td width="50">';
-		show_club_pic($parent_id, $parent_name, $parent_flags, ICONS_DIR, 36, 36);
+		$club_pic->set($parent_id, $parent_name, $parent_flags);
+		$club_pic->show(ICONS_DIR, 36);
 		echo '</td><td>' . $parent_name . '</td></tr></table>';
 		echo '</td></tr>';
 	}

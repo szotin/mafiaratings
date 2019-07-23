@@ -246,11 +246,13 @@ class Page extends GeneralPageBase
 
 			echo '<td align="center" class="' . $highlight . '">' . $number . '</td>';
 			echo '<td width="60" align="center"><a href="user_info.php?id=' . $id . '&bck=1">';
-			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
+			$this->user_pic->set($id, $name, $flags);
+			$this->user_pic->show(ICONS_DIR, 50);
 			echo '</a></td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
-			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
+			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->show(ICONS_DIR, 40);
 			echo '</td>';
 			echo '<td align="center" class="' . $highlight . '">' . format_rating($rating) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';

@@ -79,6 +79,7 @@ try
 		echo '</td></tr>';
 	}
 	
+	$user_pic = new Picture(USER_PICTURE);
 	$class = 'darker';
 	$other_class = 'dark';
 	while ($row = $query->next())
@@ -87,7 +88,8 @@ try
 		echo '<tr class="' . $class . '">';
 		echo '<td width="32" valign="top" style="padding:5px;" class="' . $class . '" align="center">';
 		echo '<a href="user_info.php?id=' . $user_id . '&bck=1">';
-		show_user_pic($user_id, $user_name, $user_flags, ICONS_DIR, 32);
+		$user_pic->set($user_id, $user_name, $user_flags);
+		$user_pic->show(ICONS_DIR, 32);
 		echo '</a></td>';
 		
 		echo '<td width="100%" valign="top" style="padding:8px;">';
@@ -111,7 +113,8 @@ try
 	echo '<tr class=' . $class . '><td width="32" valign="top" class="darker" align="center">';
 	if ($_profile != NULL)
 	{
-		show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR, 32);
+		$user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
+		$user_pic->show(ICONS_DIR, 32);
 	}
 	echo '</td><td style="padding:5px;"><textarea class="' . $edit_class . '" id="comment" onkeyup="mr.checkCommentArea()" placeholder="' . get_label('Write a comment...') . '"></textarea></td><tr>';
 	

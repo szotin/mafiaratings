@@ -4,6 +4,8 @@ require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/api_help.php';
 
+define('DEFAULT_PAGE_SIZE', 16);
+
 class ApiPageBase
 {
 	protected $version;
@@ -132,6 +134,7 @@ class ApiPageBase
 			
 			$help->request_param('version', $descr, 'latest version is used'); 
 		}
+		$help->request_param('lod', 'Level of details. The greater it is the more fields are added to the responce. When LOD is not 0 for a response field, it is specified in the field description.', '0.');
 		$help->request_param('help', 'Shows this screen.', '-');
 		
 		$help->response_param('error', 

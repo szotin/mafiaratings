@@ -159,7 +159,9 @@ try
 					break;
 				case 'h':
 					echo '<td width="50"><a href="../user_info.php?id=' . $id . '" target="blank">';
-					show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
+					$user_pic = new Picture(USER_PICTURE);
+					$user_pic->set($id, $name, $flags);
+					$user_pic->show(ICONS_DIR, 50);
 					echo '</a></td>';
 					break;
 				case 'u':

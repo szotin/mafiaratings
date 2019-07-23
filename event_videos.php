@@ -106,26 +106,6 @@ class Page extends EventPageBase
 			echo '<td valign="bottom"';
 			echo ' width="' . COLUMN_WIDTH . '%" align="center" valign="center">';
 			
-			// echo '<table width="100%" class="transp"><tr><td align="left">';
-			// if ($event_id != NULL)
-			// {
-				// echo '<a href="event_info.php?bck=1&id=' . $event_id . '">';
-				// show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 24, 24, false);
-				// echo '</a>';
-			// }
-			// else
-			// {
-				// echo '<a href="club_main.php?bck=1&id=' . $club_id . '">';
-				// show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 24, 24, false);
-				// echo '</a>';
-			// }
-			// echo '</td><td><p><h4>' . $title . '</h4></p></td><td align="right">';
-			// show_language_pic($lang, ICONS_DIR, 24, 24);
-			// echo '</td></tr><tr><td align="center" colspan="3">';
-			// echo '</td></tr></table>';
-			
-			
-			// echo '<h4>' . $title . '</h4>';
 			echo '<p><span style="position:relative;">';
 			echo '<a href="video.php?bck=1&id=' . $video_id . '&event_id=' . $this->event->id . '&vtype=' . $this->video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="200" title="' . $title . '">';
 			if (!is_valid_lang($this->event->langs))

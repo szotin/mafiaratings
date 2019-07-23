@@ -279,7 +279,7 @@ class GClub
 		}
 		
 		$this->addrs = array();
-		$query = new DbQuery('SELECT a.id, a.name FROM addresses a WHERE a.club_id = ? AND (a.flags & ' . ADDR_FLAG_NOT_USED . ') = 0 ORDER BY (SELECT count(*) FROM events WHERE address_id = a.id) DESC', $id);
+		$query = new DbQuery('SELECT a.id, a.name FROM addresses a WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY (SELECT count(*) FROM events WHERE address_id = a.id) DESC', $id);
 		while ($row = $query->next())
 		{
 			$this->addrs[] = new GAddr($row);
@@ -750,6 +750,9 @@ class ApiPage extends OpsApiPageBase
 	function sync_op()
 	{
 		global $_profile;
+		
+		// to make sure $_profile is not NULL
+		check_permissions(PERMISSION_USER);
 		
 		if (isset($_REQUEST['club_id']))
 		{

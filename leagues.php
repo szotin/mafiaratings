@@ -132,6 +132,8 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT l.id, l.name, l.flags, l.web_site FROM leagues l', $condition);
 		$query->add(' ORDER BY l.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+		
+		$league_pic = new Picture(LEAGUE_PICTURE);
 			
 		if ($_profile != NULL && !$retired)
 		{
@@ -172,7 +174,8 @@ class Page extends GeneralPageBase
 			}
 			
 			echo '<tr><td align="center"><a href="league_main.php?bck=1&id=' . $id . '">';
-			show_league_pic($id, $name, $flags, ICONS_DIR);
+			$league_pic->set($id, $name, $flags);
+			$league_pic->show(ICONS_DIR);
 			echo '<br><b>' . $name . '</b>';
 			echo '</a></td></tr>';
 			

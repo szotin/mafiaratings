@@ -48,6 +48,7 @@ class Page extends UserPageBase
 			' JOIN players p ON p.game_id = g.id' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' . 
+			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' . 
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE p.user_id = ?', $this->id);
 		$ccc_id = $this->ccc_filter->get_id();
@@ -83,7 +84,7 @@ class Page extends UserPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags, SUM(p.rating_earned), COUNT(g.id), SUM(p.won)',
+			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags, SUM(p.rating_earned), COUNT(g.id), SUM(p.won)',
 			$condition);
 		$query->add(' GROUP BY e.id ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
@@ -95,15 +96,20 @@ class Page extends UserPageBase
 		echo '<td width="60" align="center">'.get_label('Victories').'</td>';
 		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
 		echo '<td width="60" align="center">'.get_label('Rating per game').'</td></tr>';
-		
+
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $rating, $games_played, $games_won) = $row;
+			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tour_id, $tour_name, $tour_flags, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $rating, $games_played, $games_won) = $row;
 			
 			echo '<tr>';
 			
 			echo '<td width="50" class="dark"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
-			show_event_pic($event_id, $event_name, $event_flags, $club_id, $club_name, $club_flags, ICONS_DIR, 50, 50, false);
+			$event_pic->
+				set($event_id, $event_name, $event_flags)->
+				set($tour_id, $tour_name, $tour_flags)->
+				set($club_id, $club_name, $club_flags);
+			$event_pic->show(ICONS_DIR, 50);
 			echo '</a></td>';
 			echo '<td>' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
 			

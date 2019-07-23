@@ -192,7 +192,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
-		Db::exec(get_label('address'), 'UPDATE addresses SET flags = (flags | ' . ADDR_FLAG_NOT_USED . ') WHERE id = ?', $address_id);
+		Db::exec(get_label('address'), 'UPDATE addresses SET flags = (flags | ' . ADDRESS_FLAG_NOT_USED . ') WHERE id = ?', $address_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM addresses WHERE id = ?', $address_id);
@@ -218,7 +218,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
-		Db::exec(get_label('address'), 'UPDATE addresses SET flags = (flags & ~' . ADDR_FLAG_NOT_USED . ') WHERE id = ?', $address_id);
+		Db::exec(get_label('address'), 'UPDATE addresses SET flags = (flags & ~' . ADDRESS_FLAG_NOT_USED . ') WHERE id = ?', $address_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM addresses WHERE id = ?', $address_id);

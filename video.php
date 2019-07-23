@@ -27,6 +27,9 @@ class Page extends PageBase
 	private $event_id;
 	private $event_name;
 	private $event_flags;
+	private $tour_id;
+	private $tour_name;
+	private $tour_flags;
 	private $game_id;
 	private $lang;
 	private $user_id;
@@ -41,11 +44,12 @@ class Page extends PageBase
 		$this->video_id = (int)$_REQUEST['id'];
 		list(
 			$this->video, $this->title, $this->type, $this->post_time, $this->video_time, $this->club_id, $this->club_name, $this->club_flags, 
-			$this->event_id, $this->event_name, $this->event_flags, $this->game_id, $this->lang, $this->user_id, $this->vtime) = 
+			$this->event_id, $this->event_name, $this->event_flags, $this->tour_id, $this->tour_name, $this->tour_flags, $this->game_id, $this->lang, $this->user_id, $this->vtime) = 
 			Db::record(get_label('video'), 
-				'SELECT v.video, v.name, type, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, g.id, v.lang, v.user_id, v.vtime FROM videos v ' .
+				'SELECT v.video, v.name, type, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, g.id, v.lang, v.user_id, v.vtime FROM videos v ' .
 				' JOIN clubs c ON c.id = v.club_id' .
 				' LEFT OUTER JOIN events e ON e.id = v.event_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 				' LEFT OUTER JOIN games g ON g.video_id = v.id' .
 				' WHERE v.id = ?', $this->video_id);
 		
@@ -62,7 +66,7 @@ class Page extends PageBase
 	protected function show_title()
 	{
 		echo '<table class="head" width="100%"><tr><td width="40">';
-		show_language_pic($this->lang, ICONS_DIR, 24, 24);
+		show_language_picture($this->lang, ICONS_DIR, 24, 24);
 		echo '</td><td>';
 		echo $this->standard_title() . '</td><td align="right" valign="top">';
 		show_back_button();
@@ -151,16 +155,21 @@ class Page extends PageBase
 		
 		echo '<table class="bordered light" width="100%"><tr><td>';
 		echo '<table class="transp" width="100%"><tr height="80"><td align="center">';
+		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
 		if ($this->event_id != NULL)
 		{
 			echo '<a href="event_info.php?bck=1&id=' . $this->event_id . '">';
-			show_event_pic($this->event_id, $this->event_name, $this->event_flags, $this->club_id, $this->club_name, $this->club_flags, ICONS_DIR, 64, 64, false);
+			$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, $this->club_pic));
+			$event_pic->
+				set($this->event_id, $this->event_name, $this->event_flags)->
+				set($this->tour_id, $this->tour_name, $this->tour_flags);
+			$event_pic->show(ICONS_DIR, 64);
 			echo '</a>';
 		}
 		else
 		{
 			echo '<a href="club_main.php?bck=1&id=' . $this->club_id . '">';
-			show_club_pic($this->club_id, $this->club_name, $this->club_flags, ICONS_DIR, 64, 64, false);
+			$this->club_pic->show(ICONS_DIR, 64);
 			echo '</a>';
 		}
 		echo '</td><td align="center" rowspan="2">';

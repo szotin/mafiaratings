@@ -48,6 +48,7 @@ class Page extends ClubPageBase
 			' FROM events e ' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 				' WHERE e.start_time < UNIX_TIMESTAMP() AND e.club_id = ?',
 			$this->id);
 		$condition->add(get_club_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
@@ -70,7 +71,7 @@ class Page extends ClubPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, a.id, a.address, a.flags,' .
+			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.name, a.flags, a.address,' .
 				' (SELECT count(*) FROM games WHERE event_id = e.id AND result IN (1, 2)) as games,' .
 				' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users',
 			$condition);
@@ -84,7 +85,7 @@ class Page extends ClubPageBase
 		echo '<td width="60" align="center">' . get_label('Players attended') . '</td></tr>';
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $address_id, $address, $address_flags, $games_count, $users_count) = $row;
+			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $address, $games_count, $users_count) = $row;
 
 			if ($event_flags & EVENT_FLAG_CANCELED)
 			{
@@ -96,7 +97,11 @@ class Page extends ClubPageBase
 			}
 			
 			echo '<td width="50"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
-			show_event_pic($event_id, $event_name, $event_flags, $address_id, $address, $address_flags, ICONS_DIR, 50);
+			$this->event_pic->
+				set($event_id, $event_name, $event_flags)->
+				set($tournament_id, $tournament_name, $tournament_flags)->
+				set($address_id, $address_name, $address_flags);
+			$this->event_pic->show(ICONS_DIR, 50);
 			echo '</a></td>';
 			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
 			

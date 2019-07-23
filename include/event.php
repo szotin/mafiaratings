@@ -24,108 +24,6 @@ define('WEEK_FLAG_ALL', 127);
 
 define('BRIEF_ATTENDANCE', true);
 
-function show_event_pic($id, $name, $flags, $alt_id, $alt_name, $alt_flags, $dir, $width = 0, $height = 0, $alt_addr = true)
-{
-	global $_lang_code;
-
-	$w = $width;
-	$h = $height;
-	if ($dir == ICONS_DIR)
-	{
-		if ($w <= 0)
-		{
-			$w = ICON_WIDTH;
-		}
-		if ($h <= 0)
-		{
-			$h = ICON_HEIGHT;
-		}
-	}
-	else if ($dir == TNAILS_DIR)
-	{
-		if ($w <= 0)
-		{
-			$w = TNAIL_WIDTH;
-		}
-		if ($h <= 0)
-		{
-			$h = TNAIL_HEIGHT;
-		}
-	}
-	
-	if ($width <= 0 && $height <= 0)
-	{
-		$width = $w;
-		$height = $h;
-	}
-	
-	$origin = EVENT_PICS_DIR . $dir . $id . '.png';
-	echo '<span style="position:relative;"><img code="' . EVENT_PIC_CODE . $id . '" origin="' . $origin . '" src="';
-	if ($flags & EVENT_ICON_MASK)
-	{
-		echo $origin . '?' . (($flags & EVENT_ICON_MASK) >> EVENT_ICON_MASK_OFFSET);
-		$title = $name;
-		if (!$alt_addr)
-		{
-			$title .= ' (' . $alt_name . ')';
-		}
-	}
-	else if ($alt_addr)
-	{
-		if (($alt_flags & ADDR_ICON_MASK) != 0)
-		{
-			echo ADDRESS_PICS_DIR . $dir . $alt_id . '.png?' . (($alt_flags & ADDR_ICON_MASK) >> ADDR_ICON_MASK_OFFSET);
-		}
-		else
-		{
-			echo 'images/' . $dir . 'address.png';
-		}
-		$title = $name;
-	}
-	else 
-	{
-		if (($alt_flags & CLUB_ICON_MASK) != 0)
-		{
-			echo CLUB_PICS_DIR . $dir . $alt_id . '.png?' . (($alt_flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET);
-		}
-		else
-		{
-			echo 'images/' . $dir . 'club.png';
-		}
-		$title = $alt_name;
-	}
-	
-/*		echo '<span style="position:relative; left:0px; top:0px;">';
-		show_address_pic($addr_id, $addr_flags, $dir, $width, $height);
-		echo '<span style="position:absolute;right:0px;bottom:0px;">';
-		show_club_pic($club_id, $club_name, $club_flags, $dir, $width / 2, $height / 2);
-		echo '</span></span>';*/
-	echo '" border="0" title="' . $title . '"';
-	if ($width > 0)
-	{
-		echo ' width="' . $width . '"';
-	}
-	if ($height > 0)
-	{
-		echo ' height="' . $height . '"';
-	}
-	echo '>';
-	if ($flags & EVENT_FLAG_CANCELED)
-	{
-		echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
-		if ($width > 0)
-		{
-			echo ' width="' . $width . '"';
-		}
-		if ($height > 0)
-		{
-			echo ' height="' . $height . '"';
-		}
-		echo '>';
-	}
-	echo '</span>';
-}
-
 class Event
 {
 	public $id;
@@ -148,6 +46,10 @@ class Event
 	public $flags;
 	public $langs;
 	public $rules_code;
+	
+	public $tournament_id;
+	public $tournament_name;
+	public $tournament_flags;
 	
 	public $scoring_id;
 	public $scoring_weight;
@@ -194,6 +96,7 @@ class Event
 		$this->rounds = array();
 		$this->rounds_changed = false;
 		$this->coming_odds = NULL;
+		$this->tournament_id = NULL;
 		
 		if ($_profile != NULL)
 		{
@@ -529,16 +432,18 @@ class Event
 		$this->id = $event_id;
 		list (
 			$this->name, $this->price, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
+			$this->tournament_id, $this->tournament_name, $this->tournament_flags,
 			$this->addr_id, $this->addr, $this->addr_url, $timezone, $this->addr_flags,
 			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_weight, $this->planned_games, $this->round_num, $this->coming_odds, $this->city, $this->country) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.round_num, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
+					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.round_num, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .
 						' JOIN countries o ON i.country_id = o.id' .
 						' LEFT OUTER JOIN event_users u ON u.event_id = e.id AND u.user_id = ?' .
+						' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 						' WHERE e.id = ?',
 					$user_id, $event_id);
 					
@@ -658,7 +563,8 @@ class Event
 						}
 						
 						echo '<td width="16.66%" class="lighter" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
+						$this->user_pic->set($user_id, $name, $user_flags);
+						$this->user_pic->show(ICONS_DIR, 50);
 						echo '</a><br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -695,7 +601,8 @@ class Event
 						}
 						
 						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
+						$this->user_pic->set($user_id, $name, $user_flags);
+						$this->user_pic->show(ICONS_DIR, 50);
 						echo '</a><br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -760,7 +667,8 @@ class Event
 							echo 'class="lighter"';
 						}
 						echo 'align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
+						$this->user_pic->set($user_id, $name, $user_flags);
+						$this->user_pic->show(ICONS_DIR, 50);
 						echo '</a><br>' . $name;
 						if ($bringing > 0)
 						{
@@ -813,7 +721,8 @@ class Event
 						}
 						
 						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
+						$this->user_pic->set($user_id, $name, $user_flags);
+						$this->user_pic->show(ICONS_DIR, 50);
 						echo '</a><br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -866,7 +775,8 @@ class Event
 					}
 					
 					echo '<td width="50"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-					show_user_pic($user_id, $name, $user_flags, ICONS_DIR, 50, 50);
+					$this->user_pic->set($user_id, $name, $user_flags);
+					$this->user_pic->show(ICONS_DIR, 50);
 					echo '</a></td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . cut_long_name($name, 80) . '</a></td><td width="280" align="center"><b>';
 					echo Event::odds_str($odds, $bringing, $late) . '</b></td></tr>';
 				}
@@ -938,11 +848,6 @@ class Event
 			}
 		}
 		echo '<button class="icon" onclick="window.open(\'event_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
-	}
-	
-	function show_pic($dir, $width = 0, $height = 0, $alt_addr = true)
-	{
-		show_event_pic($this->id, $this->name, $this->flags, $this->addr_id, $this->addr, $this->addr_flags, $dir, $width, $height, $alt_addr);
 	}
 }
 
@@ -1146,15 +1051,20 @@ class EventPageBase extends PageBase
 			$this->event->club_flags,
 			$this->event->coming_odds != NULL && $this->event->coming_odds > 0);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
+		
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
+		$event_pic->
+			set($this->event->id, $this->event->name, $this->event->flags)->
+			set($this->event->addr_id, $this->event->addr, $this->event->addr_flags);
 		if ($this->event->addr_url != '')
 		{
 			echo '<a href="address_info.php?bck=1&id=' . $this->event->addr_id . '">';
-			$this->event->show_pic(TNAILS_DIR);
+			$event_pic->show(TNAILS_DIR);
 			echo '</a>';
 		}
 		else
 		{
-			$this->event->show_pic(TNAILS_DIR);
+			$event_pic->show(TNAILS_DIR);
 		}
 		echo '</td></tr></table></td>';
 		
@@ -1188,7 +1098,8 @@ class EventPageBase extends PageBase
 		echo '<td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom"><a href="club_main.php?bck=1&id=' . $this->event->club_id . '" title="' . $this->event->club_name . '"><table><tr><td align="center">' . $this->event->club_name . '</td></tr><tr><td align="center">';
-		show_club_pic($this->event->club_id, $this->event->club_name, $this->event->club_flags, ICONS_DIR);
+		$this->club_pic->set($this->event->club_id, $this->event->club_name, $this->event->club_flags);
+		$this->club_pic->show(ICONS_DIR);
 		echo '</td></tr></table></a></td></tr>';
 		
 		echo '</table>';

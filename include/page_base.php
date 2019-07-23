@@ -3,6 +3,7 @@
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/user.php';
+require_once __DIR__ . '/picture.php';
 
 class PageBase
 {
@@ -17,9 +18,14 @@ class PageBase
 	
 	protected $_facebook;
 	
+	protected $user_pic;
+	protected $club_pic;
+	
 	function __construct()
 	{
 		initiate_session();
+		$this->user_pic = new Picture(USER_PICTURE);
+		$this->club_pic = new Picture(CLUB_PICTURE);
 	}
 	
 	final function run($title = '')
@@ -239,11 +245,13 @@ class PageBase
 				{
 					echo 'setCurrentMenu(null)">';
 				}
-				show_club_pic($club->id, $club->name, $club->club_flags, ICONS_DIR, 48, 48); //, ' class="round"');
+				$this->club_pic->set($club->id, $club->name, $club->club_flags);
+				$this->club_pic->show(ICONS_DIR, 48, 48); //, ' class="round"');
 				echo '</a> ';
 			}
 			echo ' <a id="header-user" onMouseEnter="javascript:showUserMenu()" href="user_info.php?id=' . $_profile->user_id . '" title="' . $_profile->user_name . '">';
-			show_user_pic($_profile->user_id, $_profile->user_name, $_profile->user_flags, ICONS_DIR, 48, 48); //, ' class="round"');
+			$this->user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
+			$this->user_pic->show(ICONS_DIR, 48, 48); //, ' class="round"');
 			echo '</a> ';
 			
 			echo '<ul id="header-user-menu" style="display:none;position:absolute;width:150px;text-align:left;z-index:2147483647;">';
@@ -265,7 +273,8 @@ class PageBase
 					if ($c->id != $club->id && ($c->club_flags & CLUB_FLAG_RETIRED) == 0)
 					{
 						echo '<li><a href="club_main.php?id=' . $c->id . '">';
-						show_club_pic($c->id, $c->name, $c->club_flags, ICONS_DIR, 48, 48, ' class="menu_image"');
+						$this->club_pic->set($c->id, $c->name, $c->club_flags);
+						$this->club_pic->show(ICONS_DIR, 48, 48, ' class="menu_image"');
 						echo ' ' . $c->name . '</a></li>';
 					}
 				}

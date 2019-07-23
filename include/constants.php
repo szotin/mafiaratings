@@ -104,7 +104,7 @@ define('ICONS_DIR', 'icons/');
 define('PHOTO_ROW_COUNT',6);
 define('PHOTO_COL_COUNT',5);
 
-define('ADDR_PIC_CODE', 'a');
+define('ADDRESS_PIC_CODE', 'a');
 define('USER_PIC_CODE', 'u');
 define('CLUB_PIC_CODE', 'c');
 define('LEAGUE_PIC_CODE', 'l');
@@ -175,12 +175,12 @@ define('TOURNAMENT_ICON_MAX_VERSION', 7);
 // 3 - 0x0004 -      4 - icon mask
 // 4 - 0x0008 -      8 - icon mask
 // 5 - 0x0010 -     16 - icon mask
-define('ADDR_FLAG_NOT_USED', 0x1);
-define('ADDR_FLAG_GENERATED', 0x2);
+define('ADDRESS_FLAG_NOT_USED', 0x1);
+define('ADDRESS_FLAG_GENERATED', 0x2);
 
-define('ADDR_ICON_MASK', 0x1c);
-define('ADDR_ICON_MASK_OFFSET', 2);
-define('ADDR_ICON_MAX_VERSION', 7);
+define('ADDRESS_ICON_MASK', 0x1c);
+define('ADDRESS_ICON_MASK_OFFSET', 2);
+define('ADDRESS_ICON_MAX_VERSION', 7);
 
 define('MAILING_WAITING', 0);
 define('MAILING_SENDING', 1);

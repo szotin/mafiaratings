@@ -282,7 +282,7 @@ function build_pic_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
 	}
 }
 
-function upload_pic($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT)
+function upload_picture($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT)
 {
 	if (!is_dir($dir))
 	{

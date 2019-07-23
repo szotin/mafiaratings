@@ -55,12 +55,12 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			list ($count) = Db::record('address', 'SELECT count(*) FROM addresses WHERE (flags & ' . ADDR_ICON_MASK . ') <> 0');
+			list ($count) = Db::record('address', 'SELECT count(*) FROM addresses WHERE (flags & ' . ADDRESS_ICON_MASK . ') <> 0');
 			$this->response['count'] = $count;
 			lock_site(true);
 		}
 		$c = 0;
-		$query = new DbQuery('SELECT id FROM addresses WHERE (flags & ' . ADDR_ICON_MASK . ') <> 0 AND id > ? ORDER BY id LIMIT 10', $last_id);
+		$query = new DbQuery('SELECT id FROM addresses WHERE (flags & ' . ADDRESS_ICON_MASK . ') <> 0 AND id > ? ORDER BY id LIMIT 10', $last_id);
 		while ($row = $query->next())
 		{
 			list($id) = $row;

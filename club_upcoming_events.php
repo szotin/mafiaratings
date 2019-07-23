@@ -47,7 +47,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 		}
 		
-		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', ct.timezone, a.id, a.flags, a.address, a.map_url, a.name');
+		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name');
 		if ($_profile != null)
 		{
 			$query->add(', eu.coming_odds, eu.people_with_me, eu.late FROM events e LEFT OUTER JOIN event_users eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
@@ -58,6 +58,7 @@ class Page extends ClubPageBase
 		}
 		$query->add(
 			' JOIN addresses a ON e.address_id = a.id' .
+			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id WHERE ', 
 			$condition);
@@ -65,7 +66,7 @@ class Page extends ClubPageBase
 
 		while ($row = $query->next())
 		{
-			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $event_timezone, $addr_id, $addr_flags, $addr, $addr_url, $addr_name, $come_odds, $bringing, $late) = $row;
+			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $event_timezone, $tour_id, $tour_name, $tour_flags, $addr_id, $addr_flags, $addr, $addr_url, $addr_name, $come_odds, $bringing, $late) = $row;
 			if ($name == $addr_name)
 			{
 				$name = $addr;
@@ -94,7 +95,11 @@ class Page extends ClubPageBase
 			}
 			
 			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '"><b>' . format_date('l, F d, Y <br> H:i', $start_time, $event_timezone) . '</b><br>';
-			show_event_pic($id, $name, $flags, $addr_id, $addr, $addr_flags, ICONS_DIR);
+			$this->event_pic->
+				set($id, $name, $flags)->
+				set($tour_id, $tour_name, $tour_flags)->
+				set($addr_id, $addr, $addr_flags);
+			$this->event_pic->show(ICONS_DIR);
 			echo '</a><br>' . $name;
 			
 			if ($come_odds != NULL)

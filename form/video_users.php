@@ -44,6 +44,8 @@ try
 		$show_title = true;
 	}
 	
+	$user_pic = new Picture(USER_PICTURE);
+	
 	$remaining_columns = 0;
 	if ($game_id == NULL)
 	{
@@ -83,7 +85,8 @@ try
 			echo '<table class="transp" width="100%"><tr><td align="center">';
 		}
 		echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
-		show_user_pic($user_id, $user_name, $user_flags, ICONS_DIR, 48, 48);
+		$user_pic->set($user_id, $user_name, $user_flags);
+		$user_pic->show(ICONS_DIR, 48);
 		echo '<br>' . $user_name;
 		echo '</a>';
 		if ($can_untag)

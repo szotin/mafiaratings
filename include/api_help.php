@@ -62,17 +62,30 @@ class ApiHelpResponseParam
 	public $name;
 	public $description;
 	public $default_value;
+	public $lod;
 	
-	function __construct($name, $description, $default_value = NULL)
+	function __construct($name, $description, $default_value = NULL, $lod = 0)
 	{
+		if (is_int($default_value))
+		{
+			$dval = NULL;
+			if (is_string($lod))
+			{
+				$dval = $lod;
+			}
+			$lod = $default_value;
+			$default_value = $dval;
+		}
+		
 		$this->name = $name;
 		$this->description = $description;
 		$this->default_value = $default_value;
+		$this->lod = $lod;
 	}
 	
-	function sub_param($name, $description, $default_value = NULL)
+	function sub_param($name, $description, $default_value = NULL, $lod = 0)
 	{
-		$param = new ApiHelpResponseParam($name, $description, $default_value);
+		$param = new ApiHelpResponseParam($name, $description, $default_value, $lod);
 		if (!isset($this->params))
 		{
 			$this->params = array();
@@ -98,9 +111,13 @@ class ApiHelpResponseParam
 			}
 			echo '</dl>';
 		}
+		if ($this->lod != 0)
+		{
+			echo '<p><dfn>Returned only when level of details (lod param) is or greater than ' . $this->lod . '.</dfn></p>';
+		}
 		if ($this->default_value != NULL)
 		{
-			echo '<p><dfn>When missing use ' . $this->default_value . ' </dfn></p>';
+			echo '<p><dfn>When missing: ' . $this->default_value . ' </dfn></p>';
 		}
 		echo '</dd>';
 	}
@@ -128,9 +145,9 @@ class ApiHelp
 		return $param;
 	}
 	
-	function response_param($name, $description, $default_value = NULL)
+	function response_param($name, $description, $default_value = NULL, $lod = 0)
 	{
-		$param = new ApiHelpResponseParam($name, $description, $default_value);
+		$param = new ApiHelpResponseParam($name, $description, $default_value, $lod);
 		$this->response[] = $param;
 		return $param;
 	}

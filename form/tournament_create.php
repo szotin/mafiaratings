@@ -36,7 +36,9 @@ try
 	{
 		list($league_name, $league_flags) = Db::record(get_label('league'), 'SELECT name, flags FROM leagues WHERE id = ?', $league_id);
 		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="' . ICON_WIDTH . '">';
-		show_league_pic($league_id, $league_name, $league_flags, ICONS_DIR);
+		$league_pic = new Picture(LEAGUE_PICTURE);
+		$league_pic->set($league_id, $league_name, $league_flags);
+		$league_pic->show(ICONS_DIR);
 		echo '</td><td align="center"><b>' . $league_name . '</b><input type="hidden" id="form-league" value="' . $league_id . '"></td></tr></table></td></tr>';
 	}
 	else
@@ -84,7 +86,7 @@ try
 		}
 	}
 	
-	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDR_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
+	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id" onChange="addressClick()">';
 	show_option(-1, $addr_id, get_label('New address'));

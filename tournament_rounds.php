@@ -60,6 +60,7 @@ class Page extends TournamentPageBase
 			$this->id);
 		$query->add(' ORDER BY e.start_time, e.id LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
 		while ($row = $query->next())
 		{
 			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $event_timezone, $addr_id, $addr_flags, $addr, $addr_url, $addr_name, $come_odds, $bringing, $late) = $row;
@@ -91,7 +92,10 @@ class Page extends TournamentPageBase
 			}
 			
 			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '"><b>' . format_date('l, F d, Y <br> H:i', $start_time, $event_timezone) . '</b><br>';
-			show_event_pic($id, $name, $flags, $addr_id, $addr, $addr_flags, ICONS_DIR);
+			$event_pic->
+				set($id, $name, $flags)->
+				set($addr_id, $addr, $addr_flags);
+			$event_pic->show(ICONS_DIR);
 			echo '</a><br>' . $name;
 			
 			if ($come_odds != NULL)

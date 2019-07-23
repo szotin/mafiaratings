@@ -41,10 +41,12 @@ class Page extends EventPageBase
 
 			echo '<tr><td align="center" width="40" class="dark">' . $number . '</td>';
 			echo '<td width="50"><a href="user_games.php?id=' . $id . '&moder=1&bck=1">';
-			show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
+			$this->user_pic->set($id, $name, $flags);
+			$this->user_pic->show(ICONS_DIR, 50);
 			echo '</a><td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
 			echo '<td width="50" align="center">';
-			show_club_pic($club_id, $club_name, $club_flags, ICONS_DIR, 40, 40);
+			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->show(ICONS_DIR, 40);
 			echo '</td>';
 			
 			$games = $civil_wins + $mafia_wins;

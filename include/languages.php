@@ -387,7 +387,7 @@ function detect_lang($str)
 	return LANG_NO;
 }
 
-function show_language_pic($lang, $dir, $width = 0, $height = 0)
+function show_language_picture($lang, $dir, $width = 0, $height = 0)
 {
 	if ($width <= 0 && $height <= 0)
 	{

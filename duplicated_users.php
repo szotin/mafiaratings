@@ -46,7 +46,8 @@ class Page extends GeneralPageBase
 				echo '<tr>';
 				
 				echo '<td>';
-				show_user_pic($id, $name, $flags, ICONS_DIR, 36, 36);
+				$this->user_pic->set($id, $name, $flags);
+				$this->user_pic->show(ICONS_DIR, 36);
 				echo '</td>';
 				
 				echo '<td><a href="merge_user.php?bck=1&id=' . $id . '">' . cut_long_name($name, 80) . '</a></td>';

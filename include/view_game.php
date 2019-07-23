@@ -19,6 +19,9 @@ class ViewGame
 	public $event_id;
 	public $event;
 	public $event_flags;
+	public $tournament_id;
+	public $tournament_name;
+	public $tournament_flags;
 	public $address_id;
 	public $address;
 	public $address_flags;
@@ -63,8 +66,9 @@ class ViewGame
 		}
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules FROM games g' .
+			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 				' JOIN clubs c ON c.id = g.club_id' . 
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
@@ -73,7 +77,8 @@ class ViewGame
 		if ($row = $query->next())
 		{
 			list (
-				$this->event_id, $event_name, $this->event_flags, $timezone, $event_time, $this->club_id, $this->club, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $start_time, $duration,
+				$this->event_id, $event_name, $this->event_flags, $timezone, $event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
+				$this->club_id, $this->club, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $start_time, $duration,
 				$this->language_code, $this->civ_odds, $this->result, $this->video_id, $this->rules) = $row;
 
 			$this->event = $event_name . format_date('. M j Y.', $event_time, $timezone);
@@ -148,13 +153,18 @@ class ViewGamePageBase extends PageBase
 	private $next_game_id;
 	private $url_base;
 	
+	protected $user_pic;
+	protected $event_pic;
+	protected $address_pic;
+	
 	protected function show_player_name($player, $player_score)
 	{
 		$gs = $this->vg->gs;
 		echo '<td width="48"><a href="view_game_stats.php?id=' . $gs->id . '&num=' . $player->number . '&bck=1" title="' . $player->nick . '">';
 		if ($player_score != NULL)
 		{
-			show_user_pic($player->id, $player->nick, $player_score->user_flags, ICONS_DIR, 48, 48);
+			$this->user_pic->set($player->id, $player->nick, $player_score->user_flags);
+			$this->user_pic->show(ICONS_DIR, 48);
 		}
 		else if ($player->id < 0)
 		{
@@ -217,6 +227,10 @@ class ViewGamePageBase extends PageBase
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 		}
+		
+		$this->user_pic = new Picture(USER_PICTURE);
+		$this->event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE));
+		$this->address_pic = new Picture(ADDRESS_PICTURE);
 		
 		$this->vg = new ViewGame($id);
 		$this->gametime = 0;
@@ -369,12 +383,16 @@ class ViewGamePageBase extends PageBase
 			echo '<td width="90">'.get_label('Video').'</td>';
 		}
 		echo '</tr><tr align="center" class="light"><td><a href="club_main.php?id=' . $vg->club_id . '&bck=1" title="' . $vg->club . '">';
-		show_club_pic($vg->club_id, $vg->club, $vg->club_flags, ICONS_DIR, 48);
+		$this->club_pic->set($vg->club_id, $vg->club, $vg->club_flags);
+		$this->club_pic->show(ICONS_DIR, 48);
 		echo '</a></td><td>';
 		if ($vg->event != NULL)
 		{
 			echo '<a href="event_standings.php?id=' . $vg->event_id . '&bck=1" title="' . $vg->event . '">';
-			show_event_pic($vg->event_id, $vg->event, $vg->event_flags, $vg->address_id, $vg->address, $vg->address_flags, ICONS_DIR, 48);
+			$this->event_pic->
+				set($vg->event_id, $vg->event, $vg->event_flags)->
+				set($vg->tournament_id, $vg->tournament_name, $vg->tournament_flags);
+			$this->event_pic->show(ICONS_DIR, 48);
 			echo '</a>';
 		}
 		else
@@ -382,12 +400,14 @@ class ViewGamePageBase extends PageBase
 			echo '<img src="images/transp.png" width="48" height="48">';
 		}
 		echo '</td><td><a href="address_info.php?id=' . $vg->address_id . '&bck=1" title="' . $vg->address . '">';
-		show_address_pic($vg->address_id, $vg->address_flags, ICONS_DIR, 48);
+		$this->address_pic->set($vg->address_id, $vg->address, $vg->address_flags);
+		$this->address_pic->show(ICONS_DIR, 48);
 		echo '</td><td>';
 		if ($gs->moder_id > 0)
 		{
 			echo '<a href="user_info.php?id=' . $gs->moder_id . '&bck=1" title="' . $vg->moder . '">';
-			show_user_pic($gs->moder_id, $vg->moder, $vg->moder_flags, ICONS_DIR, 48, 48);
+			$this->user_pic->set($gs->moder_id, $vg->moder, $vg->moder_flags);
+			$this->user_pic->show(ICONS_DIR, 48);
 			echo '</a>';
 		}
 		else
@@ -395,7 +415,7 @@ class ViewGamePageBase extends PageBase
 			echo '<img src="images/create_user.png" width="48" height="48" title="' . $vg->moder . '">';
 		}
 		echo '</td><td>' . $vg->start_time . '</td><td>' . $vg->duration . '</td><td>';
-		show_language_pic($vg->language_code, ICONS_DIR, 48, 48);
+		show_language_picture($vg->language_code, ICONS_DIR, 48, 48);
 		if ($vg->civ_odds >= 0 && $vg->civ_odds <= 1)
 		{
 			$odds_text = number_format($vg->civ_odds * 100, 1) . '%';

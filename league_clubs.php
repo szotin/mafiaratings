@@ -166,7 +166,8 @@ class Page extends LeaguePageBase
 			
 			echo '<tr><td colspan="2" align="center"><a href="club_main.php?bck=1&id=' . $id . '">';
 			echo '<b>' . $name . '</b><br>';
-			show_club_pic($id, $name, $flags, ICONS_DIR);
+			$this->club_pic->set($id, $name, $flags);
+			$this->club_pic->show(ICONS_DIR);
 			echo '<br></a>' . $city_name . '<br>';
 			
 			echo '</td></tr></table>';

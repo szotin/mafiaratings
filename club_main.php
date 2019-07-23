@@ -25,7 +25,7 @@ class Page extends ClubPageBase
 		$colunm_count = 0;
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $club_id, $club_name, $club_flags, $addr_id, $addr_flags, $addr, $addr_name) = $row;
+			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tour_id, $tour_name, $tour_flags, $addr_id, $addr_flags, $addr, $addr_name) = $row;
 			if ($colunm_count == 0)
 			{
 				if ($event_count == 0)
@@ -43,7 +43,11 @@ class Page extends ClubPageBase
 			echo '<td width="' . COLUMN_WIDTH . '%" align="center">';
 			echo '<a href="event_info.php?bck=1&id=' . $event_id . '" title="' . get_label('View event details.') . '"><b>';
 			echo format_date('l, F d, Y, H:i', $event_time, $timezone) . '</b><br>';
-			show_event_pic($event_id, $event_name, $event_flags, $addr_id, $addr, $addr_flags, ICONS_DIR, 0, 0, true);
+			$this->event_pic->
+				set($event_id, $event_name, $event_flags)->
+				set($tour_id, $tour_name, $tour_flags)->
+				set($addr_id, $addr, $addr_flags);
+			$this->event_pic->show(ICONS_DIR);
 			echo '</a><br>';
 			if ($addr_name == $event_name)
 			{
@@ -79,7 +83,8 @@ class Page extends ClubPageBase
 
 		echo '<tr><td width="20" align="center">' . $number . '</td>';
 		echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
-		show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
+		$this->user_pic->set($id, $name, $flags);
+		$this->user_pic->show(ICONS_DIR, 50);
 		echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 		echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 		echo '</tr>';
@@ -154,10 +159,11 @@ class Page extends ClubPageBase
 		if ($_profile != NULL)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, c.id, c.name, c.flags, a.id, a.flags, a.address, a.name FROM event_users u' .
+				'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.name FROM event_users u' .
 					' JOIN events e ON e.id = u.event_id' .
 					' JOIN addresses a ON e.address_id = a.id' .
 					' JOIN clubs c ON e.club_id = c.id' .
+					' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 					' JOIN cities ct ON ct.id = c.city_id' .
 					' WHERE u.user_id = ? AND u.coming_odds > 0 AND e.start_time + e.duration > UNIX_TIMESTAMP() AND e.club_id = ?' .
 					' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
@@ -167,9 +173,10 @@ class Page extends ClubPageBase
 		
 		// tournaments
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, c.id, c.name, c.flags, a.id, a.flags, a.address, a.name FROM events e' .
+			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.name FROM events e' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN clubs c ON e.club_id = c.id' .
+				' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 				' JOIN cities ct ON ct.id = c.city_id' .
 				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_TOURNAMENT . ') = ' . EVENT_FLAG_TOURNAMENT . ' AND e.club_id = ?',
 			$this->id);
@@ -182,9 +189,10 @@ class Page extends ClubPageBase
 	
 		// upcoming
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, c.id, c.name, c.flags, a.id, a.flags, a.address, a.name FROM events e' .
+			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.name FROM events e' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN clubs c ON e.club_id = c.id' .
+				' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 				' JOIN cities ct ON ct.id = c.city_id' .
 				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_TOURNAMENT . ') = 0 AND e.club_id = ?',
 			$this->id);
@@ -322,7 +330,8 @@ class Page extends ClubPageBase
 				}
 				echo '<td width="' . MANAGER_COLUMN_WIDTH . '%" align="center">';
 				echo '<a href="user_info.php?bck=1&id=' . $manager_id . '">' . $manager_name . '<br>';
-				show_user_pic($manager_id, $manager_name, $manager_flags, ICONS_DIR);
+				$this->user_pic->set($manager_id, $manager_name, $manager_flags);
+				$this->user_pic->show(ICONS_DIR);
 				echo '</a></td>';
 				
 				++$columns_count;
@@ -362,7 +371,8 @@ class Page extends ClubPageBase
 				}
 				echo '<td width="' . SUBCLUB_COLUMN_WIDTH . '%" align="center">';
 				echo '<a href="club_main.php?bck=1&id=' . $subclub_id . '">' . $subclub_name . '<br>';
-				show_club_pic($subclub_id, $subclub_name, $subclub_flags, ICONS_DIR);
+				$this->club_pic->set($subclub_id, $subclub_name, $subclub_flags);
+				$this->club_pic->show(ICONS_DIR);
 				echo '</a></td>';
 				
 				++$columns_count;
@@ -396,7 +406,8 @@ class Page extends ClubPageBase
 
 				echo '<td width="20" align="center">' . $number . '</td>';
 				echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
-				show_user_pic($id, $name, $flags, ICONS_DIR, 50, 50);
+				$this->user_pic->set($id, $name, $flags);
+				$this->user_pic->show(ICONS_DIR, 50);
 				echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';
