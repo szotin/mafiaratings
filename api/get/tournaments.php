@@ -164,6 +164,7 @@ class ApiPage extends GetApiPageBase
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
 			}
 			
+			$this->show_query($query);
 			while ($row = $query->next())
 			{
 				$tournament = new stdClass();
@@ -229,6 +230,7 @@ class ApiPage extends GetApiPageBase
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
 			}
 			
+			$this->show_query($query);
 			while ($row = $query->next())
 			{
 				$tournament = new stdClass();

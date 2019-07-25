@@ -255,6 +255,7 @@ class ApiPage extends GetApiPageBase
 		$ended_after = get_optional_param('ended_after');
 		$game_id = (int)get_optional_param('game_id', -1);
 		$club_id = (int)get_optional_param('club_id', -1);
+		$league_id = (int)get_optional_param('league_id', -1);
 		$event_id = (int)get_optional_param('event_id', -1);
 		$tournament_id = (int)get_optional_param('tournament_id', -1);
 		$address_id = (int)get_optional_param('address_id', -1);
@@ -298,6 +299,15 @@ class ApiPage extends GetApiPageBase
 		if ($club_id > 0)
 		{
 			$condition->add(' AND g.club_id = ?', $club_id);
+		}
+
+		if ($league_id == 0)
+		{
+			$condition->add(' AND g.event_id IN (SELECT _e.id FROM events _e LEFT OUTER JOIN tournaments _t ON _t.id = _e.tournament_id WHERE _t.id IS NULL OR _t.league_id IS NULL)');
+		}
+		else if ($league_id > 0)
+		{
+			$condition->add(' AND g.event_id IN (SELECT _e.id FROM events _e JOIN tournaments _t ON _t.id = _e.tournament_id WHERE _t.league_id = ?)', $league_id);
 		}
 
 		if ($event_id > 0)
@@ -357,7 +367,6 @@ class ApiPage extends GetApiPageBase
 			$query = new DbQuery('SELECT g.id, g.log FROM games g WHERE g.result IN(1,2)', $condition);
 		}
 		
-		$this->show_query($count_query);
 		list ($count) = $count_query->record('game');
 		$this->response['count'] = (int)$count;
 		if ($count_only)
@@ -399,8 +408,9 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are ended after a certain time. For example: <a href="games.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/games.php?ended_after=1483228800</a> returns all games ended after January 1, 2017; <a href="games.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/games.php?started_before=now&ended_after=now</a> returns all games that happening now. Logged user timezone is used for converting dates.', '-');
 		$help->request_param('game_id', 'Game id. For example: <a href="games.php?game_id=1299"><?php echo PRODUCT_URL; ?>/api/get/games.php?game_id=1299</a> returns only one game played in VaWaCa-2017 tournament.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="games.php?club_id=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?club_id=1</a> returns all games for Vancouver Mafia Club.', '-');
+		$help->request_param('league_id', 'League id. For example: <a href="games.php?league_id=2"><?php echo PRODUCT_URL; ?>/api/get/games.php?league_id=2</a> returns all games played in American Mafia League. <a href="games.php?league_id=0"><?php echo PRODUCT_URL; ?>/api/get/games.php?league_id=0</a> returns all games that were played outside of any league.', '-');
 		$help->request_param('event_id', 'Event id. For example: <a href="games.php?event_id=7927"><?php echo PRODUCT_URL; ?>/api/get/games.php?event_id=7927</a> returns all games for VaWaCa-2017 tournament.', '-');
-		$help->request_param('tournament_id', 'Tournament id. For example: <a href="games.php?tournament_id=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?tournament_id=1</a> returns all games for VaWaCa-2017 tournament.', '-');
+		$help->request_param('tournament_id', 'Tournament id. For example: <a href="games.php?tournament_id=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?tournament_id=1</a> returns all games for VaWaCa-2017 tournament. <a href="games.php?tournament_id=0"><?php echo PRODUCT_URL; ?>/api/get/games.php?tournament_id=0</a> returns all non tournament games.', '-');
 		$help->request_param('address_id', 'Address id. For example: <a href="games.php?address_id=10"><?php echo PRODUCT_URL; ?>/api/get/games.php?address_id=10</a> returns all games played in Tafs Cafe by Vancouver Mafia Club.', '-');
 		$help->request_param('city_id', 'City id. For example: <a href="games.php?city_id=49"><?php echo PRODUCT_URL; ?>/api/get/games.php?city_id=49</a> returns all games played in Seattle. List of the cities and their ids can be obtained using <a href="cities.php?help"><?php echo PRODUCT_URL; ?>/api/get/cities.php</a>.', '-');
 		$help->request_param('area_id', 'City id. The difference with city is that when area_id is set, the games from all nearby cities are also returned. For example: <a href="games.php?area_id=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?area_id=1</a> returns all games played in Vancouver and nearby cities. Though <a href="games.php?city_id=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?city_id=1</a> returns only the games played in Vancouver itself.', '-');

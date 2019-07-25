@@ -16,6 +16,7 @@ class ApiPage extends GetApiPageBase
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
 		$club_id = (int)get_optional_param('club_id', -1);
+		$league_id = (int)get_optional_param('league_id', -1);
 		$city_id = (int)get_optional_param('city_id', -1);
 		$area_id = (int)get_optional_param('area_id', -1);
 		$country_id = (int)get_optional_param('country_id', -1);
@@ -45,6 +46,11 @@ class ApiPage extends GetApiPageBase
 		if ($club_id > 0)
 		{
 			$condition->add(' AND c.id = ?', $club_id);
+		}
+		
+		if ($league_id > 0)
+		{
+			$condition->add(' AND c.id IN (SELECT club_id FROM league_clubs WHERE league_id = ?)', $league_id);
 		}
 		
 		if ($city_id > 0)
@@ -102,6 +108,7 @@ class ApiPage extends GetApiPageBase
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
 			}
 			
+			$this->show_query($query);
 			while ($row = $query->next())
 			{
 				$club = new stdClass();
@@ -143,6 +150,7 @@ class ApiPage extends GetApiPageBase
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
 			}
 			
+			$this->show_query($query);
 			while ($row = $query->next())
 			{
 				$club = new stdClass();
@@ -176,6 +184,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('name_contains', 'Search pattern. For example: <a href="clubs.php?name_contains=co">' . PRODUCT_URL . '/api/get/clubs.php?name_contains=co</a> returns clubs containing "co" in their name.', '-');
 		$help->request_param('name_starts', 'Search pattern. For example: <a href="clubs.php?name_starts=co">' . PRODUCT_URL . '/api/get/clubs.php?name_starts=co</a> returns clubs with names starting with "co".', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="clubs.php?club_id=1"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?club_id=1</a> returns information Vancouver Mafia Club.', '-');
+		$help->request_param('league_id', 'League id. For example: <a href="clubs.php?league_id=2"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?league_id=2</a> returns all clubs of American Mafia League.', '-');
 		$help->request_param('city_id', 'City id. For example: <a href="clubs.php?city_id=2"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?city_id=2</a> returns all clubs from Moscow. List of the cities and their ids can be obtained using <a href="cities.php?help"><?php echo PRODUCT_URL; ?>/api/get/cities.php</a>.', '-');
 		$help->request_param('area_id', 'City id. The difference vs city is that when area is set, the games from all nearby cities are also returned. For example: <a href="clubs.php?area_id=2"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?area_id=2</a> returns all clubs from Moscow and nearby cities like Podolsk, Himki, etc. Though <a href="clubs.php?city_id=2"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?city_id=2</a> returns only the clubs from Moscow itself.', '-');
 		$help->request_param('country_id', 'Country id. For example: <a href="clubs.php?country_id=2"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?country_id=2</a> returns all clubs from Russia. List of the countries and their ids can be obtained using <a href="countries.php?help"><?php echo PRODUCT_URL; ?>/api/get/countries.php</a>.', '-');

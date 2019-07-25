@@ -262,6 +262,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('langs', 'Languages used in the league. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
 		$help->request_param('email', 'League email.', 'remains the same.');
 		$help->request_param('phone', 'League phone. Just a text.', 'remains the same.');
+		api_rules_filter_help($help->request_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Contains json. Example: { "split_on_four": true, "extra_points": ["figm", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
 		return $help;
 	}
 	

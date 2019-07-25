@@ -433,6 +433,21 @@ function correct_rules($rules_code, $rules_filter)
 	return $rules_code;
 }
 
+function are_rules_allowed($rules_code, $rules_filter)
+{
+	global $_rules_options;
+	
+	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	{
+		$rule = $_rules_options[$i];
+		if (!is_rule_allowed($rules_filter, $i, get_rule($rules_code, $i)))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 function api_rules_help($rules_param, $show_code_param = false)
 {
 	global $_rules_options;
@@ -485,6 +500,57 @@ function api_rules_help($rules_param, $show_code_param = false)
 		}
 		$description .= '</dl></small>';
 		$rules_param->sub_param($rule_option_name, $description, $rule_options[0]);
+	}
+}
+
+function api_rules_filter_help($rules_param)
+{
+	global $_rules_options;
+	
+	$rules = include '../../include/languages/en/rules.php';
+	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	{
+		$rule_option = $_rules_options[$i];
+		$rule_option_name = $rule_option[RULE_OPTION_NAME];
+		$rule_options = $rule_option[RULE_OPTION_VALUES];
+		$rule_option_paragraph = $rule_option[RULE_OPTION_PARAGRAPH];
+		$rule_option_item = $rule_option[RULE_OPTION_ITEM];
+		
+		$rule = $rules[$rule_option_paragraph][RULE_PARAGRAPH_ITEMS][$rule_option_item];
+		$rule_name = $rule[RULE_ITEM_NAME];
+		$rule_descriptions = $rule[RULE_ITEM_OPTIONS_SHORT];
+		
+		$description = $rule_name . '. An array of strings or a single string. When string is specified this rule is allowed. Possible values:<small><dl>';
+		for ($j = 0; $j < count($rule_options); ++$j)
+		{
+			$option = $rule_options[$j];
+			if (is_string($option))
+			{
+				$option = '"' . $option . '"';
+			}
+			else if (is_bool($option))
+			{
+				if ($option)
+				{
+					$option = 'true';
+				}
+				else
+				{
+					$option = 'false';
+				}
+			}
+			
+			if (!isset($rule_descriptions[$j]))
+			{
+				$description .= '<b><dt>' . $option . '</dt><dd>Not set in rules_options.php</dd></b>';
+			}
+			else
+			{
+				$description .= '<dt>' . $option . '</dt><dd>' . $rule_descriptions[$j] . '</dd>';
+			}
+		}
+		$description .= '</dl></small>';
+		$rules_param->sub_param($rule_option_name, $description, 'all options are allowed.');
 	}
 }
 

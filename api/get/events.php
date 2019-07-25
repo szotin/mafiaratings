@@ -23,6 +23,7 @@ class ApiPage extends GetApiPageBase
 		$event_id = (int)get_optional_param('event_id', -1);
 		$tournament_id = (int)get_optional_param('tournament_id', -1);
 		$club_id = (int)get_optional_param('club_id', -1);
+		$league_id = (int)get_optional_param('league_id', -1);
 		$address_id = (int)get_optional_param('address_id', -1);
 		$city_id = (int)get_optional_param('city_id', -1);
 		$area_id = (int)get_optional_param('area_id', -1);
@@ -79,6 +80,15 @@ class ApiPage extends GetApiPageBase
 		if ($club_id > 0)
 		{
 			$condition->add(' AND e.club_id = ?', $club_id);
+		}
+		
+		if ($league_id == 0)
+		{
+			$condition->add(' AND (SELECT league_id FROM tournaments WHERE id = e.tournament_id) IS NULL');
+		}
+		else if ($league_id > 0)
+		{
+			$condition->add(' AND (SELECT league_id FROM tournaments WHERE id = e.tournament_id) = ?', $league_id);
 		}
 		
 		if ($address_id > 0)
@@ -164,6 +174,7 @@ class ApiPage extends GetApiPageBase
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
 			}
 			
+			$this->show_query($query);
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
@@ -228,6 +239,7 @@ class ApiPage extends GetApiPageBase
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
 			}
 			
+			$this->show_query($query);
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
@@ -263,6 +275,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('event_id', 'Event id. For example: <a href="events.php?event_id=1">' . PRODUCT_URL . '/api/get/events.php?event_id=1</a> returns information Vancouver Mafia Club.', '-');
 		$help->request_param('tournament_id', 'Tournament id. For example: <a href="events.php?tournament_id=1">' . PRODUCT_URL . '/api/get/events.php?tournament_id=1</a> returns all rounds of VaWaCa-2017. <a href="events.php?tournament_id=0">' . PRODUCT_URL . '/api/get/events.php?tournament_id=0</a> returns all stand alone events that are not tournament rounds.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="events.php?club_id=1">' . PRODUCT_URL . '/api/get/events.php?club_id=1</a> returns all events in Vancouver Mafia Club. List of the cities and their ids can be obtained using <a href="clubs.php?help">' . PRODUCT_URL . '/api/get/clubs.php</a>.', '-');
+		$help->request_param('league_id', 'League id. For example: <a href="events.php?league_id=2"><?php echo PRODUCT_URL; ?>/api/get/events.php?league_id=2</a> returns all American Mafia League tournament rounds. <a href="events.php?league_id=0"><?php echo PRODUCT_URL; ?>/api/get/events.php?league_id=0</a> returns all events that were played outside of any league.', '-');
 		$help->request_param('address_id', 'Address id. For example: <a href="events.php?address_id=10">' . PRODUCT_URL . '/api/get/events.php?address_id=10</a> returns all events played in Tafs Cafe by Vancouver Mafia Club.', '-');
 		$help->request_param('city_id', 'City id. For example: <a href="events.php?city_id=2">' . PRODUCT_URL . '/api/get/events.php?city_id=2</a> returns all events in Moscow. List of the cities and their ids can be obtained using <a href="cities.php?help">' . PRODUCT_URL . '/api/get/cities.php</a>.', '-');
 		$help->request_param('area_id', 'City id. The difference with city is that when area is set, the events from all nearby cities are also returned. For example: <a href="events.php?area_id=2">' . PRODUCT_URL . '/api/get/events.php?area_id=2</a> returns all events in Moscow and nearby cities like Podolsk, Himki, etc. Though <a href="events.php?city_id=2">' . PRODUCT_URL . '/api/get/events.php?city_id=2</a> returns only the events in Moscow itself.', '-');
