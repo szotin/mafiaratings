@@ -18,6 +18,14 @@ class ApiPageBase
 		initiate_session();
 	}
 	
+	protected function show_query($query)
+	{
+		if (isset($_REQUEST['sql']) && is_permitted(PERMISSION_ADMIN))
+		{
+			$this->response['sql'] = $query->get_parsed_sql();
+		}
+	}
+	
 	protected function _run($title, $version)
 	{
 		global $_profile;

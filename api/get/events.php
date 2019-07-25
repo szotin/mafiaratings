@@ -20,17 +20,16 @@ class ApiPage extends GetApiPageBase
 		$ended_before = get_optional_param('ended_before');
 		$started_after = get_optional_param('started_after');
 		$ended_after = get_optional_param('ended_after');
-		$event_id = (int)get_optional_param('event_id', 0);
-		$tournament_id = (int)get_optional_param('tournament_id', 0);
-		$game_id = (int)get_optional_param('game_id', 0);
-		$club_id = (int)get_optional_param('club_id', 0);
-		$address_id = (int)get_optional_param('address_id', 0);
-		$city_id = (int)get_optional_param('city_id', 0);
-		$area_id = (int)get_optional_param('area_id', 0);
-		$country_id = (int)get_optional_param('country_id', 0);
-		$scoring_id = (int)get_optional_param('scoring_id', 0);
+		$event_id = (int)get_optional_param('event_id', -1);
+		$tournament_id = (int)get_optional_param('tournament_id', -1);
+		$club_id = (int)get_optional_param('club_id', -1);
+		$address_id = (int)get_optional_param('address_id', -1);
+		$city_id = (int)get_optional_param('city_id', -1);
+		$area_id = (int)get_optional_param('area_id', -1);
+		$country_id = (int)get_optional_param('country_id', -1);
+		$scoring_id = (int)get_optional_param('scoring_id', -1);
 		$rules_code = get_optional_param('rules_code');
-		$user_id = (int)get_optional_param('user_id', 0);
+		$user_id = (int)get_optional_param('user_id', -1);
 		$langs = (int)get_optional_param('langs', 0);
 		$canceled = (int)get_optional_param('canceled', 0);
 		$lod = (int)get_optional_param('lod', 0);
@@ -76,32 +75,37 @@ class ApiPage extends GetApiPageBase
 		{
 			$condition->add(' AND e.id = ?', $event_id);
 		}
-		else if ($game_id > 0)
-		{
-			$condition->add(' AND e.id = (SELECT event_id FROM games WHERE id = ?)', $game_id);
-		}
-		else if ($club_id > 0)
+		
+		if ($club_id > 0)
 		{
 			$condition->add(' AND e.club_id = ?', $club_id);
 		}
-		else if ($address_id > 0)
+		
+		if ($address_id > 0)
 		{
 			$condition->add(' AND e.address_id = ?', $address_id);
 		}
-		else if ($city_id > 0)
+		
+		if ($city_id > 0)
 		{
 			$condition->add(' AND a.city_id = ?', $city_id);
 		}
-		else if ($area_id > 0)
+		
+		if ($area_id > 0)
 		{
 			$condition->add(' AND a.city_id IN (SELECT id FROM cities WHERE area_id = ?)', $area_id);
 		}
-		else if ($country_id > 0)
+		
+		if ($country_id > 0)
 		{
 			$condition->add(' AND a.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $country_id);
 		}
 		
-		if ($tournament_id > 0)
+		if ($tournament_id == 0)
+		{
+			$condition->add(' AND e.tournament_id IS NULL');
+		}
+		else if ($tournament_id > 0)
 		{
 			$condition->add(' AND e.tournament_id = ?', $tournament_id);
 		}
@@ -137,10 +141,6 @@ class ApiPage extends GetApiPageBase
 				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');
 				break;
 		}
-		// $lod = (int)get_optional_param('lod', 0);
-		// $count_only = isset($_REQUEST['count']);
-		// $page = (int)get_optional_param('page', 0);
-		// $page_size = (int)get_optional_param('page_size', DEFAULT_PAGE_SIZE);
 		
 		list($count) = Db::record('event', 'SELECT count(*) FROM events e JOIN addresses a ON a.id = e.address_id', $condition);
 		$this->response['count'] = (int)$count;
@@ -153,7 +153,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, c.name, c.flags, e.start_time, e.duration, e.notes, e.price, e.scoring_id, e.scoring_weight, t.id, t.name, t.flags, ct.timezone FROM events e' . 
+				'SELECT e.id, e.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, c.name, c.flags, e.start_time, e.duration, e.notes, e.price, e.scoring_id, e.rules, e.scoring_weight, t.id, t.name, t.flags, ct.timezone FROM events e' . 
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN clubs c ON c.id = e.club_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
@@ -167,7 +167,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
-				list ($event->id, $event->name, $event_flags, $event->langs, $event->address_id, $event->address_name, $address_flags, $event->club_id, $event->club_name, $club_flags, $event->timestamp, $event->duration, $event->notes, $event->price, $event->scoring_id, $event->scoring_weight, $tournament_id, $tournament_name, $tournament_flags, $event_timezone) = $row;
+				list ($event->id, $event->name, $event_flags, $event->langs, $event->address_id, $event->address_name, $address_flags, $event->club_id, $event->club_name, $club_flags, $event->timestamp, $event->duration, $event->notes, $event->price, $event->scoring_id, $rules_code, $event->scoring_weight, $tournament_id, $tournament_name, $tournament_flags, $event_timezone) = $row;
 				$event->id = (int)$event->id;
 				$event->langs = (int)$event->langs;
 				$event->address_id = (int)$event->address_id;
@@ -175,6 +175,7 @@ class ApiPage extends GetApiPageBase
 				$event->timestamp = (int)$event->timestamp;
 				$event->duration = (int)$event->duration;
 				$event->scoring_id = (int)$event->scoring_id;
+				$event->rules = rules_code_to_object($rules_code);
 				$event->scoring_weight = (float)$event->scoring_weight;
 				
 				$event->start = timestamp_to_string($event->timestamp, $event_timezone);
@@ -215,16 +216,11 @@ class ApiPage extends GetApiPageBase
 				
 				$events[] = $event;
 			}
-			
-
-			// $param->sub_param('tournament_name', 'Tournament name.', 'the event is not a tournament round.', 1);
-			// $param->sub_param('tournament_icon', 'Tournament icon URL.', 'the event is not a tournament round.', 1);
-			// $param->sub_param('tournament_picture', 'Tournament picture URL.', 'the event is not a tournament round.', 1);
 		}
 		else
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.price, e.scoring_id, e.scoring_weight, e.tournament_id FROM events e' . 
+				'SELECT e.id, e.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.price, e.scoring_id, e.rules, e.scoring_weight, e.tournament_id FROM events e' . 
 				' JOIN addresses a ON a.id = e.address_id', $condition);
 			$query->add(' ORDER BY e.start_time DESC, e.id DESC');
 			if ($page_size > 0)
@@ -235,7 +231,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
-				list ($event->id, $event->name, $flags, $event->langs, $event->address_id, $event->club_id, $event->timestamp, $event->duration, $event->notes, $event->price, $event->scoring_id, $event->scoring_weight, $tournament_id) = $row;
+				list ($event->id, $event->name, $flags, $event->langs, $event->address_id, $event->club_id, $event->timestamp, $event->duration, $event->notes, $event->price, $event->scoring_id, $rules_code, $event->scoring_weight, $tournament_id) = $row;
 				$event->id = (int)$event->id;
 				$event->langs = (int)$event->langs;
 				$event->address_id = (int)$event->address_id;
@@ -243,6 +239,7 @@ class ApiPage extends GetApiPageBase
 				$event->timestamp = (int)$event->timestamp;
 				$event->duration = (int)$event->duration;
 				$event->scoring_id = (int)$event->scoring_id;
+				$event->rules = rules_code_to_object($rules_code);
 				$event->scoring_weight = (float)$event->scoring_weight;
 				if (!is_null($tournament_id))
 				{
@@ -264,15 +261,14 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('started_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are started after a certain time. For example: <a href="events.php?started_after=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/events.php?started_after=2017-01-01%2000:00</a> returns all events started after January 1, 2017. Logged user timezone is used for converting dates.', '-');
 		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are ended after a certain time. For example: <a href="events.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/events.php?ended_after=1483228800</a> returns all events ended after January 1, 2017; <a href="events.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/events.php?started_before=now&ended_after=now</a> returns all events that happening now. Logged user timezone is used for converting dates.', '-');
 		$help->request_param('event_id', 'Event id. For example: <a href="events.php?event_id=1">' . PRODUCT_URL . '/api/get/events.php?event_id=1</a> returns information Vancouver Mafia Club.', '-');
-		$help->request_param('tournament_id', 'Tournament id. For example: <a href="events.php?tournament_id=1">' . PRODUCT_URL . '/api/get/events.php?tournament_id=1</a> returns all rounds of VaWaCa-2017.', '-');
-		$help->request_param('game_id', 'Game id. For example: <a href="events.php?game_id=1299">' . PRODUCT_URL . '/api/get/events.php?game_id=1299</a> returns the event where game 1299 was played.', '-');
+		$help->request_param('tournament_id', 'Tournament id. For example: <a href="events.php?tournament_id=1">' . PRODUCT_URL . '/api/get/events.php?tournament_id=1</a> returns all rounds of VaWaCa-2017. <a href="events.php?tournament_id=0">' . PRODUCT_URL . '/api/get/events.php?tournament_id=0</a> returns all stand alone events that are not tournament rounds.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="events.php?club_id=1">' . PRODUCT_URL . '/api/get/events.php?club_id=1</a> returns all events in Vancouver Mafia Club. List of the cities and their ids can be obtained using <a href="clubs.php?help">' . PRODUCT_URL . '/api/get/clubs.php</a>.', '-');
 		$help->request_param('address_id', 'Address id. For example: <a href="events.php?address_id=10">' . PRODUCT_URL . '/api/get/events.php?address_id=10</a> returns all events played in Tafs Cafe by Vancouver Mafia Club.', '-');
 		$help->request_param('city_id', 'City id. For example: <a href="events.php?city_id=2">' . PRODUCT_URL . '/api/get/events.php?city_id=2</a> returns all events in Moscow. List of the cities and their ids can be obtained using <a href="cities.php?help">' . PRODUCT_URL . '/api/get/cities.php</a>.', '-');
 		$help->request_param('area_id', 'City id. The difference with city is that when area is set, the events from all nearby cities are also returned. For example: <a href="events.php?area_id=2">' . PRODUCT_URL . '/api/get/events.php?area_id=2</a> returns all events in Moscow and nearby cities like Podolsk, Himki, etc. Though <a href="events.php?city_id=2">' . PRODUCT_URL . '/api/get/events.php?city_id=2</a> returns only the events in Moscow itself.', '-');
 		$help->request_param('country_id', 'Country id. For example: <a href="events.php?country_id=2">' . PRODUCT_URL . '/api/get/events.php?country_id=2</a> returns all events in Russia. List of the countries and their ids can be obtained using <a href="countries.php?help">' . PRODUCT_URL . '/api/get/countries.php</a>.', '-');
 		$help->request_param('scoring_id', 'Scoring id. For example: <a href="events.php?scoring_id=21">' . PRODUCT_URL . '/api/get/events.php?scoring_id=21</a> returns all events where VaWaCa scoring was used.', '-');
-		$help->request_param('rules_code', 'Rules code. For example: <a href="events.php?rules=00000000100101010200000000000">' . PRODUCT_URL . '/api/get/events.php?rules=00000000100101010200000000000</a> returns all events where the rules with the code 00000000100101010200000000000 was used. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
+		$help->request_param('rules_code', 'Rules code. For example: <a href="events.php?rules_code=00000000100101010200000000000">' . PRODUCT_URL . '/api/get/events.php?rules_code=00000000100101010200000000000</a> returns all events where the rules with the code 00000000100101010200000000000 was used. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('user_id', 'User id. For example: <a href="events.php?user_id=25">' . PRODUCT_URL . '/api/get/events.php?user_id=25</a> returns all events where Fantomas was playing.', '-');
 		$help->request_param('langs', 'Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="events.php?langs=1">' . PRODUCT_URL . '/api/get/events.php?langs=1</a> returns all events that support English as their language.', '-');
 		$help->request_param('canceled', '0 - exclude canceled events (default); 1 - incude canceled events; 2 - canceled events only. For example: <a href="events.php?canceled=2">' . PRODUCT_URL . '/api/get/events.php?canceled=2</a> returns all canceled events.', '-');
@@ -284,8 +280,8 @@ class ApiPage extends GetApiPageBase
 		$param = $help->response_param('events', 'The array of events. Events are always sorted in time order from newest to oldest. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'Event id.');
 			$param->sub_param('name', 'Event name.');
-			$param->sub_param('icon', 'Event icon URL.');
-			$param->sub_param('picture', 'Event picture URL.');
+			$param->sub_param('icon', 'Event icon URL.', 1);
+			$param->sub_param('picture', 'Event picture URL.', 1);
 			$param->sub_param('langs', 'Languages used in the event. A bit combination of: 1 - English; 2 - Russian.');
 			$param->sub_param('address_id', 'Event address id.');
 			$param->sub_param('address_name', 'Event address name.', 1);
@@ -308,7 +304,8 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('tournament_name', 'Tournament name.', 'the event is not a tournament round.', 1);
 			$param->sub_param('tournament_icon', 'Tournament icon URL.', 'the event is not a tournament round.', 1);
 			$param->sub_param('tournament_picture', 'Tournament picture URL.', 'the event is not a tournament round.', 1);
-		$help->response_param('count', 'Total number of events satisfying the request parameters.');
+			api_rules_help($param->sub_param('rules', 'Game rules used in the event.'), true);
+	$help->response_param('count', 'Total number of events satisfying the request parameters.');
 		return $help;
 	}
 }

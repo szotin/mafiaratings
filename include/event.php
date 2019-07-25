@@ -542,6 +542,7 @@ class Event
 				}
 			}
 			
+			$user_pic = new Picture(USER_PICTURE);
 			if ($this->flags & EVENT_FLAG_TOURNAMENT)
 			{
 				$found = false;
@@ -563,8 +564,8 @@ class Event
 						}
 						
 						echo '<td width="16.66%" class="lighter" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						$this->user_pic->set($user_id, $name, $user_flags);
-						$this->user_pic->show(ICONS_DIR, 50);
+						$user_pic->set($user_id, $name, $user_flags);
+						$user_pic->show(ICONS_DIR, 50);
 						echo '</a><br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -601,8 +602,8 @@ class Event
 						}
 						
 						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						$this->user_pic->set($user_id, $name, $user_flags);
-						$this->user_pic->show(ICONS_DIR, 50);
+						$user_pic->set($user_id, $name, $user_flags);
+						$user_pic->show(ICONS_DIR, 50);
 						echo '</a><br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -667,8 +668,8 @@ class Event
 							echo 'class="lighter"';
 						}
 						echo 'align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						$this->user_pic->set($user_id, $name, $user_flags);
-						$this->user_pic->show(ICONS_DIR, 50);
+						$user_pic->set($user_id, $name, $user_flags);
+						$user_pic->show(ICONS_DIR, 50);
 						echo '</a><br>' . $name;
 						if ($bringing > 0)
 						{
@@ -721,8 +722,8 @@ class Event
 						}
 						
 						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						$this->user_pic->set($user_id, $name, $user_flags);
-						$this->user_pic->show(ICONS_DIR, 50);
+						$user_pic->set($user_id, $name, $user_flags);
+						$user_pic->show(ICONS_DIR, 50);
 						echo '</a><br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -775,8 +776,8 @@ class Event
 					}
 					
 					echo '<td width="50"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-					$this->user_pic->set($user_id, $name, $user_flags);
-					$this->user_pic->show(ICONS_DIR, 50);
+					$user_pic->set($user_id, $name, $user_flags);
+					$user_pic->show(ICONS_DIR, 50);
 					echo '</a></td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . cut_long_name($name, 80) . '</a></td><td width="280" align="center"><b>';
 					echo Event::odds_str($odds, $bringing, $late) . '</b></td></tr>';
 				}
