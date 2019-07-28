@@ -42,16 +42,16 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($event->name, ENT_QUOTES) . '"></td></tr>';
 	
-	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND (flags & ' . TOURNAMENT_FLAG_EVENT_ROUND . ') = 0 ORDER BY name', $club_id);
+	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND (flags & ' . TOURNAMENT_FLAG_EVENT_ROUND . ') <> 0 AND start_time + duration > UNIX_TIMESTAMP() ORDER BY name', $club_id);
 	if ($row = $query->next())
 	{
 		echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament"">';
 		show_option(0, $tournament_id, '');
-		while ($row = $query->next())
+		do
 		{
 			list($tid, $tname) = $row;
 			show_option($tid, $tournament_id, $tname);
-		}
+		} while ($row = $query->next());
 		echo '</select></td></tr>';
 	}
 	

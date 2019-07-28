@@ -1097,7 +1097,7 @@ $labelMenu = array (
 'detailed' => 'детально', // club_rules.php, event_rules.php, league_rules.php, rules.php
 'shorter' => 'коротко', // club_rules.php, event_rules.php, league_rules.php, rules.php
 'shortest' => 'совсем коротко', // club_rules.php, event_rules.php
-'tournament' => 'турнир', // club_upcoming_tournaments.php, club_upcoming_tournaments.php, include/tournament.php, include/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, form/event_create.php, form/tournament_approve.php, form/tournament_approve.php, form/tournament_create.php, form/tournament_edit.php, form/tournament_edit.php, form/tournament_edit.php
+'tournament' => 'турнир', // club_upcoming_tournaments.php, club_upcoming_tournaments.php, upload.php, upload.php, include/tournament.php, include/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, form/event_create.php, form/tournament_approve.php, form/tournament_approve.php, form/tournament_create.php, form/tournament_edit.php, form/tournament_edit.php, form/tournament_edit.php
 'rules [0]' => 'правила [0]', // form/league_rules_edit.php, form/rules_edit.php, form/rules_edit.php, form/rules_edit.php
 'Tournament name' => 'Название турнира', // form/tournament_create.php, form/tournament_edit.php
 'not activated' => 'не активирован', // user_info.php
@@ -1246,6 +1246,8 @@ $labelMenu = array (
 'Edit calculator \'[0]\'.' => 'Редактировать калькулятор статистик \'[0]\'.', // stats_calculator.php
 'Delete calculator \'[0]\'.' => 'Удалить калькулятор статистик \'[0]\'.', // stats_calculator.php
 'View the code of calculator \'[0]\'.' => 'Просмотр кода калькулятора \'[0]\'', // stats_calculator.php
+'tournament rounds must use tournament rules.' => 'раунды турнира обязаны использовать те же правила игры, что и турнир', // form/tournament_create.php, form/tournament_edit.php
+'tournament rounds must use tournament scoring system.' => 'раунды турнира обязаны использовать ту же систему подсчета баллов, что и турнир', // form/tournament_create.php, form/tournament_edit.php
 );
 
 return $labelMenu;

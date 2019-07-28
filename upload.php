@@ -160,6 +160,28 @@ try
 		}
 		break;
 		
+	case TOURNAMENT_PIC_CODE:
+		list ($club_id, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, flags FROM tournaments WHERE id = ?', $id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		
+		upload_picture('Filedata', TOURNAMENT_PICS_DIR, $id);
+		
+		$icon_version = (($flags & TOURNAMENT_ICON_MASK) >> TOURNAMENT_ICON_MASK_OFFSET) + 1;
+		if ($icon_version > TOURNAMENT_ICON_MAX_VERSION)
+		{
+			$icon_version = 1;
+		}
+		$flags = ($flags & ~TOURNAMENT_ICON_MASK) + ($icon_version << TOURNAMENT_ICON_MASK_OFFSET);
+		
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = ? WHERE id = ?', $flags, $id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_TOURNAMENT, 'logo uploaded', $log_details, $id, $club_id);
+		}
+		break;
+		
 	case PHOTO_CODE:
 		$album = new PhotoAlbum($id);
 		if (!$album->can_add())

@@ -157,13 +157,18 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 // 1 - 0x0001 -      1 - icon mask
 // 2 - 0x0002 -      2 - icon mask
 // 3 - 0x0004 -      4 - icon mask
-// 4 - 0x0008 -      8 - long term tournament. Like a seasonal club championship.
-// 5 - 0x0010 -     16 - single games from non-tournament events can be assigned to the tournament.
-// 6 - 0x0020 -     32 - club events can become tournament rounds if needed.
+// 4 - 0x0008 -      8 - canceled
+// 5 - 0x0010 -     16 - long term tournament. Like a seasonal club championship.
+// 6 - 0x0020 -     32 - single games from non-tournament events can be assigned to the tournament.
+// 7 - 0x0040 -     64 - club events can become tournament rounds if needed.
+// 8 - 0x0080 -    128 - rounds must have the same game rules as the tournament.
+// 9 - 0x0100 -    256 - rounds must have the same game scoring system as the tournament.
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
 define('TOURNAMENT_FLAG_EVENT_ROUND', 0x40);
+define('TOURNAMENT_ENFORCE_RULES', 0x80);
+define('TOURNAMENT_ENFORCE_SCORING', 0x100);
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);

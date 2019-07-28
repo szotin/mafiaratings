@@ -29,7 +29,17 @@ try
 	$club = $_profile->clubs[$club_id];
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td></tr>';
+	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
+	
+	echo '<td align="center" valign="top" rowspan="12" width="120">';
+	$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE));
+	$tournament_pic->
+		set($tournament_id, $name, $flags)->
+		set($club_id, $club->name, $club->flags);
+	$tournament_pic->show(ICONS_DIR, 50);
+	echo '<p>';
+	show_upload_button();
+	echo '</p></td></tr>';
 	
 	echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league">';
 	show_option(0, $request_league_id, '');
@@ -92,15 +102,17 @@ try
 		echo '</td></tr>';
 	}
 	
-	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4">' . $notes . '</textarea></td></tr>';
+	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-long_term"';
+	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"';
 	if ($flags & TOURNAMENT_FLAG_LONG_TERM)
 	{
 		echo ' checked';
 	}
 	echo '> '.get_label('long term tournament. Like a seasonal club championship.').'<br>';
+	
+	echo '</tr><tr><td colspan="2">';
 	
 	echo '<input type="checkbox" id="form-single_game"';
 	if ($flags & TOURNAMENT_FLAG_SINGLE_GAME)
@@ -115,8 +127,26 @@ try
 		echo ' checked';
 	}
 	echo '> '.get_label('club events can become tournament rounds if needed.').'<br>';
+	
+	echo '<input type="checkbox" id="form-enforce_rules"';
+	if ($flags & TOURNAMENT_ENFORCE_RULES)
+	{
+		echo ' checked';
+	}
+	echo '> '.get_label('tournament rounds must use tournament rules.').'<br>';
+	
+	echo '<input type="checkbox" id="form-enforce_scoring"';
+	if ($flags & TOURNAMENT_ENFORCE_SCORING)
+	{
+		echo ' checked';
+	}
+	echo '> '.get_label('tournament rounds must use tournament scoring system.').'<br>';
+	
+	echo '</td></tr>';
+	
 	echo '</table>';
 	
+	show_upload_script(TOURNAMENT_PIC_CODE, $tournament_id);
 ?>	
 
 	<script type="text/javascript" src="js/rater.min.js"></script>
@@ -126,6 +156,15 @@ try
 	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
 	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	$('#form-scoring-weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
+	
+	function longTermClicked()
+	{
+		var c = $("#form-long_term").attr('checked') ? true : false;
+		$("#form-single_game").prop('checked', c);
+		$("#form-event_round").prop('checked', c);
+		$("#form-enforce_rules").prop('checked', c);
+		$("#form-enforce_scoring").prop('checked', c);
+	}
 	
 	$("#form-stars").rate(
 	{
@@ -141,6 +180,8 @@ try
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-event_round").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_EVENT_ROUND; ?>;
+		if ($("#form-enforce_rules").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_RULES; ?>;
+		if ($("#form-enforce_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_SCORING; ?>;
 		
 		var _end = strToDate(endDate.val());
 		_end.setDate(_end.getDate() + 1); // inclusive
