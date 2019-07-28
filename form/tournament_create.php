@@ -139,8 +139,8 @@ try
 	echo '</tr><tr><td colspan="2">';
 	echo '<input type="checkbox" id="form-single_game"> '.get_label('single games from non-tournament events can be assigned to the tournament.').'<br>';
 	echo '<input type="checkbox" id="form-event_round"> '.get_label('club events can become tournament rounds if needed.').'<br>';
-	echo '<input type="checkbox" id="form-enforce_rules"> '.get_label('tournament rounds must use tournament rules.').'<br>';
-	echo '<input type="checkbox" id="form-enforce_scoring"> '.get_label('tournament rounds must use tournament scoring system.').'<br>';
+	echo '<input type="checkbox" id="form-enforce_rules" checked> '.get_label('tournament rounds must use tournament rules.').'<br>';
+	echo '<input type="checkbox" id="form-enforce_scoring" checked> '.get_label('tournament rounds must use tournament scoring system.').'<br>';
 	echo '</table>';
 	
 ?>	
@@ -155,11 +155,9 @@ try
 	
 	function longTermClicked()
 	{
-		var c = $("#form-long_term").attr('checked');
+		var c = $("#form-long_term").attr('checked') ? true : false;
 		$("#form-single_game").prop('checked', c);
 		$("#form-event_round").prop('checked', c);
-		$("#form-enforce_rules").prop('checked', c);
-		$("#form-enforce_scoring").prop('checked', c);
 	}
 	
 	var oldAddressValue = "<?php echo $selected_address; ?>";

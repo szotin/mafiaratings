@@ -162,8 +162,6 @@ try
 		var c = $("#form-long_term").attr('checked') ? true : false;
 		$("#form-single_game").prop('checked', c);
 		$("#form-event_round").prop('checked', c);
-		$("#form-enforce_rules").prop('checked', c);
-		$("#form-enforce_scoring").prop('checked', c);
 	}
 	
 	$("#form-stars").rate(

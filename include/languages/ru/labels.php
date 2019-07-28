@@ -1232,6 +1232,8 @@ $labelMenu = array (
 'add google maps link to the address.' => 'добавить ссылку на google maps к адресу.', // form/address_geo.php
 'Season ends before or right after the start.' => 'Сезон заканчивается до начала.', // api/ops/season.php, api/ops/season.php
 'tournament round' => 'раунд турнира', // form/event_create.php
+'tournament rounds must use tournament rules.' => 'раунды турнира обязаны использовать те же правила игры, что и турнир', // form/tournament_create.php, form/tournament_edit.php
+'tournament rounds must use tournament scoring system.' => 'раунды турнира обязаны использовать ту же систему подсчета баллов, что и турнир', // form/tournament_create.php, form/tournament_edit.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'Town\'s victory.' => 'Победа города.', // include/view_game.php
@@ -1246,8 +1248,6 @@ $labelMenu = array (
 'Edit calculator \'[0]\'.' => 'Редактировать калькулятор статистик \'[0]\'.', // stats_calculator.php
 'Delete calculator \'[0]\'.' => 'Удалить калькулятор статистик \'[0]\'.', // stats_calculator.php
 'View the code of calculator \'[0]\'.' => 'Просмотр кода калькулятора \'[0]\'', // stats_calculator.php
-'tournament rounds must use tournament rules.' => 'раунды турнира обязаны использовать те же правила игры, что и турнир', // form/tournament_create.php, form/tournament_edit.php
-'tournament rounds must use tournament scoring system.' => 'раунды турнира обязаны использовать ту же систему подсчета баллов, что и турнир', // form/tournament_create.php, form/tournament_edit.php
 );
 
 return $labelMenu;

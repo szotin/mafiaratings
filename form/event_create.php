@@ -42,17 +42,28 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($event->name, ENT_QUOTES) . '"></td></tr>';
 	
-	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND (flags & ' . TOURNAMENT_FLAG_EVENT_ROUND . ') <> 0 AND start_time + duration > UNIX_TIMESTAMP() ORDER BY name', $club_id);
-	if ($row = $query->next())
+	if ($tournament_id <= 0)
 	{
-		echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament"">';
-		show_option(0, $tournament_id, '');
-		do
+		$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND (flags & ' . TOURNAMENT_FLAG_EVENT_ROUND . ') <> 0 AND start_time + duration > UNIX_TIMESTAMP() ORDER BY name', $club_id);
+		if ($row = $query->next())
 		{
-			list($tid, $tname) = $row;
-			show_option($tid, $tournament_id, $tname);
-		} while ($row = $query->next());
-		echo '</select></td></tr>';
+			echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
+			show_option(0, $tournament_id, '');
+			do
+			{
+				list($tid, $tname) = $row;
+				show_option($tid, $tournament_id, $tname);
+			} while ($row = $query->next());
+			echo '</select></td></tr>';
+		}
+		else
+		{
+			echo '<input type="hidden" id="form-tournament" value="0">';
+		}
+	}
+	else
+	{
+		echo '<input type="hidden" id="form-tournament" value="' . $tournament_id . '">';
 	}
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
@@ -224,6 +235,24 @@ try
 		}
 	}
 	
+	function tournamentChange()
+	{
+		var tid = $("#form-tournament").val();
+		if (tid > 0)
+		{
+			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
+			{
+				var t = obj.tournaments[0];
+				if (typeof t != "object")
+					return;
+				console.log(t);
+			});
+		}
+		else
+		{
+		}
+	}
+	
 	var old_address_value = "<?php echo $selected_address; ?>";
 	function newAddressChange()
 	{
@@ -331,41 +360,41 @@ try
 	
 	function copyEvent()
 	{
-		json.get("api/ops/event.php?op=get&event_id=" + $("#form-copy").val(), function(json)
+		json.get("api/ops/event.php?op=get&event_id=" + $("#form-copy").val(), function(e)
 		{
 			rounds = [];
-			if (typeof json.rounds != "undefined")
+			if (typeof e.rounds != "undefined")
 			{
-				for (var i in json.rounds)
+				for (var i in e.rounds)
 				{
-					var round = json.rounds[i];
+					var round = e.rounds[i];
 					rounds.push(round);
 				}
 			}
 			refreshRounds();
 			
-			$("#form-name").val(json.name);
-			$("#form-hour").val(json.hour);
-			$("#form-minute").val(json.minute);
-			$("#form-duration").val(timespanToStr(json.duration));
-			$("#form-addr_id").val(json.addr_id);
-			$("#form-price").val(json.price);
-			$("#form-rules").val(json.rules_code);
-			$("#form-scoring").val(json.scoring_id);
-			$('#form-scoring_weight').val(json.scoring_weight);
-			if (json.planned_games > 0)
+			$("#form-name").val(e.name);
+			$("#form-hour").val(e.hour);
+			$("#form-minute").val(e.minute);
+			$("#form-duration").val(timespanToStr(e.duration));
+			$("#form-addr_id").val(e.addr_id);
+			$("#form-price").val(e.price);
+			$("#form-rules").val(e.rules_code);
+			$("#form-scoring").val(e.scoring_id);
+			$('#form-scoring_weight').val(e.scoring_weight);
+			if (e.planned_games > 0)
 			{
-				$('#form-planned_games').val(json.planned_games);
+				$('#form-planned_games').val(e.planned_games);
 			}
 			else
 			{
 				$('#form-planned_games').val('');
 			}
-			$("#form-notes").val(json.notes);
-			$("#form-reg_att").prop('checked', (json.flags & <?php echo EVENT_FLAG_REG_ON_ATTEND; ?>) != 0);
-			$("#form-pwd_req").prop('checked', (json.flags & <?php echo EVENT_FLAG_PWD_REQUIRED; ?>) != 0);
-			$("#form-all_mod").prop('checked', (json.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
-			mr.setLangs(json.langs, "form-");
+			$("#form-notes").val(e.notes);
+			$("#form-reg_att").prop('checked', (e.flags & <?php echo EVENT_FLAG_REG_ON_ATTEND; ?>) != 0);
+			$("#form-pwd_req").prop('checked', (e.flags & <?php echo EVENT_FLAG_PWD_REQUIRED; ?>) != 0);
+			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
+			mr.setLangs(e.langs, "form-");
 			addressClick();
 		});
 		$("#form-copy").val(0);

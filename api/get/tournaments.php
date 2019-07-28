@@ -168,7 +168,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$tournament = new stdClass();
-				list ($tournament->id, $tournament->name, $tournament_flags, $tournament->langs, $tournament->address_id, $tournament->address_name, $address_flags, $tournament->club_id, $tournament->club_name, $club_flags, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament_scoring_id, $rules_code, $tournament_league_id, $tournament_league_name, $tournament_league_flags, $tournament_timezone) = $row;
+				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->address_name, $address_flags, $tournament->club_id, $tournament->club_name, $club_flags, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament_scoring_id, $rules_code, $tournament_league_id, $tournament_league_name, $tournament_league_flags, $tournament_timezone) = $row;
 				$tournament->id = (int)$tournament->id;
 				$tournament->langs = (int)$tournament->langs;
 				$tournament->address_id = (int)$tournament->address_id;
@@ -212,10 +212,11 @@ class ApiPage extends GetApiPageBase
 					$tournament_pic = new Picture(TOURNAMENT_PICTURE, $club_pic);
 				}
 				
-				$tournament_pic->set($tournament->id, $tournament->name, $tournament_flags);
+				$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 				$tournament->icon = $server_url . $tournament_pic->url(ICONS_DIR);
 				$tournament->picture = $server_url . $tournament_pic->url(TNAILS_DIR);
 				
+				$tournament->flags = (int)$tournament->flags | TOURNAMENT_EDITABLE_MASK;
 				$tournaments[] = $tournament;
 			}
 		}
@@ -234,7 +235,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$tournament = new stdClass();
-				list ($tournament->id, $tournament->name, $flags, $tournament->langs, $tournament->address_id, $tournament->club_id, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament->scoring_id, $rules_code, $league_id) = $row;
+				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->club_id, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament->scoring_id, $rules_code, $league_id) = $row;
 				$tournament->id = (int)$tournament->id;
 				$tournament->langs = (int)$tournament->langs;
 				$tournament->address_id = (int)$tournament->address_id;
@@ -247,6 +248,7 @@ class ApiPage extends GetApiPageBase
 					$tournament->league_id = (int)$league_id;
 				}
 				$tournament->rules = rules_code_to_object($rules_code);
+				$tournament->flags = (int)$tournament->flags | TOURNAMENT_EDITABLE_MASK;
 				$tournaments[] = $tournament;
 			}
 		}
@@ -306,6 +308,13 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('league_name', 'Tournament name.', 'the tournament is internal club tournament.', 1);
 			$param->sub_param('league_icon', 'Tournament icon URL.', 'the tournament is internal club tournament.', 1);
 			$param->sub_param('league_picture', 'Tournament picture URL.', 'the tournament is internal club tournament.', 1);
+			$param->sub_param('flags', 'A bit cobination of:<ol>' .
+										'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
+										'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .
+										'<li value="64">When a custom event is created, it can be assigned to this tournament as a round.</li>' .
+										'<li value="128">Tournament rounds must use this tournament game rules.</li>' .
+										'<li value="256">Tournament rounds must use this tournament scoring system.</li>' .
+										'</ol>');
 			api_rules_help($param->sub_param('rules', 'Game rules used in the tournament.'), true);
 		$help->response_param('count', 'Total number of tournaments satisfying the request parameters.');
 		return $help;

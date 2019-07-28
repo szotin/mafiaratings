@@ -60,7 +60,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$notes = get_optional_param('notes', '');
-		$flags = (int)get_optional_param('flags', 0);
+		$flags = (int)get_optional_param('flags', TOURNAMENT_ENFORCE_RULES | TOURNAMENT_ENFORCE_SCORING) & TOURNAMENT_EDITABLE_MASK;
 		$langs = get_optional_param('langs', $club->langs);
 		$rules_code = get_optional_param('rules_code', NULL);
 		$stars = max(min((float)get_optional_param('stars', 0), 5), 0);
@@ -172,7 +172,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(
 				get_label('round'), 
 				'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_weight, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)',
-				$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $price, $scoring_id, $tournament_id, $rules_code);
+				$event_name, $address_id, $club_id, $start, $end - $start, $notes, 0 /*change to something better*/, $langs, $price, $scoring_id, $tournament_id, $rules_code);
 				
 			$log_details = new stdClass();
 			$log_details->name = $name;
@@ -186,7 +186,7 @@ class ApiPage extends OpsApiPageBase
 			$log_details->price = $price;
 			$log_details->scoring_id = $scoring_id;
 			$log_details->rules_code = $rules_code;
-			$log_details->flags = $flags;
+			$log_details->flags = 0 /*change to something better*/;
 			db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id, $request_league_id);
 		}
 		
@@ -258,7 +258,13 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('scoring_weight', 'Weight of the points for this tournament. All scores multiplied by it.', 'is set to 1');
 		$help->request_param('notes', 'Tournament notes. Just a text.', 'empty.');
 		$help->request_param('langs', 'Languages on this tournament. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all club languages are used.');
-		$help->request_param('flags', 'Tournament flags. A bit combination of:', '0'); // todo
+		$help->request_param('flags', 'Tournament flags. A bit cobination of:<ol>' .
+									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
+									'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .
+									'<li value="64">When a custom event is created, it can be assigned to this tournament as a round.</li>' .
+									'<li value="128">Tournament rounds must use this tournament game rules.</li>' .
+									'<li value="256">Tournament rounds must use this tournament scoring system.</li>' .
+									'</ol>', '384 (=128+256) is used, which is a short term tournament enforcing rules and scoring system.');
 		$help->request_param('address_id', 'Address id of the tournament.', '<q>address</q>, <q>city</q>, and <q>country</q> are used to create new address.');
 		$help->request_param('address', 'When address_id is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the address line to create.', '<q>address_id</q> must be set');
 		$help->request_param('country', 'When address_id is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the country name for the new address. If <?php echo PRODUCT_NAME; ?> can not find a country with this name, new country is created.', '<q>address_id</q> must be set');
@@ -302,7 +308,8 @@ class ApiPage extends OpsApiPageBase
 		
 		$notes = get_optional_param('notes', $old_notes);
 		$langs = get_optional_param('langs', $old_langs);
-		$flags = get_optional_param('flags', $old_flags);
+		$flags = (int)get_optional_param('flags', $old_flags);
+		$flags = ($flags & TOURNAMENT_EDITABLE_MASK) + ($old_flags & ~TOURNAMENT_EDITABLE_MASK);
 		
 		$address_id = get_optional_param('address_id', $old_address_id);
 		if ($address_id != $old_address_id)
@@ -513,7 +520,13 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('scoring_weight', 'Weight of the points for this tournament. All scores multiplied by it.', 'remains the same.');
 		$help->request_param('notes', 'Tournament notes. Just a text.', 'remains the same.');
 		$help->request_param('langs', 'Languages on this tournament. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
-		$help->request_param('flags', 'Tournament flags. A bit combination of:', 'remains the same.'); // todo
+		$help->request_param('flags', 'Tournament flags. A bit cobination of:<ol>' .
+									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
+									'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .
+									'<li value="64">When a custom event is created, it can be assigned to this tournament as a round.</li>' .
+									'<li value="128">Tournament rounds must use this tournament game rules.</li>' .
+									'<li value="256">Tournament rounds must use this tournament scoring system.</li>' .
+									'</ol>', 'remain the same.');
 		$help->request_param('address_id', 'Address id of the tournament.', 'remains the same.');
 		return $help;
 	}
