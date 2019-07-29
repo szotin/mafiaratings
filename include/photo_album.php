@@ -570,7 +570,7 @@ class AlbumPageBase extends PageBase
 		$album_pic = new Picture(ALBUM_PICTURE, new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE))));
 		$album_pic->
 			set($this->album->id, $this->album->name, $this->album->flags)->
-			set($this->album->event_id, $this->album->event_name, $this->event_album->flags)->
+			set($this->album->event_id, $this->album->event_name, $this->album->event_flags)->
 			set($this->album->tour_id, $this->album->tour_name, $this->album->tour_flags)->
 			set($this->album->club_id, $this->album->club_name, $this->album->club_flags);
 		$album_pic->show(ICONS_DIR);
