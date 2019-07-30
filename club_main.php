@@ -178,7 +178,7 @@ class Page extends ClubPageBase
 				' JOIN clubs c ON e.club_id = c.id' .
 				' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 				' JOIN cities ct ON ct.id = c.city_id' .
-				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_TOURNAMENT . ') = ' . EVENT_FLAG_TOURNAMENT . ' AND e.club_id = ?',
+				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_CANCELED) . ') = ' . EVENT_FLAG_TOURNAMENT . ' AND e.club_id = ?',
 			$this->id);
 		if ($_profile != NULL)
 		{
@@ -194,7 +194,7 @@ class Page extends ClubPageBase
 				' JOIN clubs c ON e.club_id = c.id' .
 				' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 				' JOIN cities ct ON ct.id = c.city_id' .
-				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_TOURNAMENT . ') = 0 AND e.club_id = ?',
+				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_CANCELED) . ') = 0 AND e.club_id = ?',
 			$this->id);
 		if ($_profile != NULL)
 		{

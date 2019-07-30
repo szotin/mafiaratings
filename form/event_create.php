@@ -171,20 +171,7 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4">' . htmlspecialchars($event->notes, ENT_QUOTES) . '</textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-reg_att"';
-	if (($event->flags & EVENT_FLAG_REG_ON_ATTEND) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('allow users to register for the event when they click Attend button').'<br>';
 		
-	echo '<input type="checkbox" id="form-pwd_req"';
-	if (($event->flags & EVENT_FLAG_PWD_REQUIRED) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('user password is required when moderator is registering him for this event.').'<br>';
-
 	echo '<input type="checkbox" id="form-all_mod"';
 	if (($event->flags & EVENT_FLAG_ALL_MODERATE) != 0)
 	{
@@ -201,7 +188,7 @@ try
 			' JOIN addresses a ON e.address_id = a.id' . 
 			' JOIN cities c ON a.city_id = c.id' . 
 			' WHERE e.club_id = ?' .
-			' AND e.start_time < UNIX_TIMESTAMP() ORDER BY e.start_time DESC LIMIT 30',
+			' AND e.start_time < UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0 ORDER BY e.start_time DESC LIMIT 30',
 		$event->club_id);
 	echo get_label('Copy event data from') . ': <select id="form-copy" onChange="copyEvent()"><option value="0"></option>';
 	while ($row = $query->next())
@@ -391,8 +378,6 @@ try
 				$('#form-planned_games').val('');
 			}
 			$("#form-notes").val(e.notes);
-			$("#form-reg_att").prop('checked', (e.flags & <?php echo EVENT_FLAG_REG_ON_ATTEND; ?>) != 0);
-			$("#form-pwd_req").prop('checked', (e.flags & <?php echo EVENT_FLAG_PWD_REQUIRED; ?>) != 0);
 			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
 			mr.setLangs(e.langs, "form-");
 			addressClick();
@@ -415,8 +400,6 @@ try
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
-		if ($("#form-reg_att").attr('checked')) _flags |= <?php echo EVENT_FLAG_REG_ON_ATTEND; ?>;
-		if ($("#form-pwd_req").attr('checked')) _flags |= <?php echo EVENT_FLAG_PWD_REQUIRED; ?>;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
 		
 		var params =

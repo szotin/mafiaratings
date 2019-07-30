@@ -86,7 +86,7 @@ class Event
 		$this->club_flags = NEW_CLUB_FLAGS;
 		$this->club_url = '';
 		$this->notes = '';
-		$this->flags = EVENT_FLAG_REG_ON_ATTEND | EVENT_FLAG_ALL_MODERATE;
+		$this->flags = EVENT_FLAG_ALL_MODERATE;
 		$this->langs = LANG_ALL;
 		$this->rules_code = default_rules_code();
 		$this->scoring_id = -1;
@@ -292,12 +292,6 @@ class Event
 			list($this->timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $this->addr_id);
 		}
 		
-		$query = new DbQuery('SELECT max(start_time) FROM events WHERE start_time >= ? AND start_time < ?', $this->timestamp, $this->timestamp + 60);
-		if (($row = $query->next()) && $row[0] != NULL)
-		{
-			$this->timestamp = $row[0] + 1;
-		}
-		
 		Db::exec(
 			get_label('event'), 
 			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_weight, planned_games, round_num) ' .
@@ -349,23 +343,6 @@ class Event
 		Db::begin();
 		
 		list ($old_timestamp, $old_duration) = Db::record(get_label('event'), 'SELECT start_time, duration FROM events WHERE id = ?', $this->id);
-		if ($this->timestamp + 60 > $old_timestamp && $this->timestamp <= $old_timestamp)
-		{
-			$this->timestamp = $old_timestamp;
-		}
-		else if ($this->timestamp != $old_timestamp && $this->duration != $old_duration)
-		{
-			if ($this->timestamp + $this->duration < time())
-			{
-				throw new Exc(get_label('You can not change event time to the past. Please check the date.'));
-			}
-		
-			$query = new DbQuery('SELECT max(start_time) FROM events WHERE start_time >= ? AND start_time < ?', $this->timestamp, $this->timestamp + 60);
-			if (($row = $query->next()) && $row[0] != NULL)
-			{
-				$this->timestamp = $old_timestamp + 1;
-			}
-		}
 		
 		if ($this->rounds_changed)
 		{

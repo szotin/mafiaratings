@@ -284,7 +284,7 @@ class Page extends GeneralPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_TOURNAMENT . ') = ' . EVENT_FLAG_TOURNAMENT);
+			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_BEFORE) . ') = ' . EVENT_FLAG_TOURNAMENT);
 		if ($_profile != NULL)
 		{
 			$query->add(' AND e.id NOT IN (SELECT event_id FROM event_users WHERE user_id = ? AND coming_odds > 0)', $_profile->user_id);
@@ -298,7 +298,7 @@ class Page extends GeneralPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_TOURNAMENT . ') = 0', $condition);
+			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_BEFORE) . ') = 0', $condition);
 		if ($_profile != NULL)
 		{
 			$query->add(' AND e.id NOT IN (SELECT event_id FROM event_users WHERE user_id = ? AND coming_odds > 0)', $_profile->user_id);

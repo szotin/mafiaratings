@@ -64,7 +64,7 @@ class Page extends AlbumPageBase
 			'SELECT e.id, e.name, e.start_time, c.timezone FROM events e' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities c ON a.city_id = c.id' .
-				' WHERE e.club_id = ? AND e.start_time <= UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CANCELED .  ') = 0' .
+				' WHERE e.club_id = ? AND e.start_time <= UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) .  ') = 0' .
 				' ORDER BY e.start_time DESC LIMIT 50',
 			$this->album->club_id);
 		echo '<tr><td class="dark">'.get_label('Event').':</td><td class="light"><select name="event" onChange="onSelectEvent()">';

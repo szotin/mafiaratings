@@ -130,20 +130,7 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="50" rows="4">' . htmlspecialchars($notes, ENT_QUOTES) . '</textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-reg_att"';
-	if (($flags & EVENT_FLAG_REG_ON_ATTEND) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('allow users to register for the event when they click Attend button').'<br>';
 		
-	echo '<input type="checkbox" id="form-pwd_req"';
-	if (($flags & EVENT_FLAG_PWD_REQUIRED) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('user password is required when moderator is registering him for this event.').'<br>';
-
 	echo '<input type="checkbox" id="form-all_mod"';
 	if (($flags & EVENT_FLAG_ALL_MODERATE) != 0)
 	{
@@ -217,8 +204,6 @@ try
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
-		if ($("#form-reg_att").attr('checked')) _flags |= <?php echo EVENT_FLAG_REG_ON_ATTEND; ?>;
-		if ($("#form-pwd_req").attr('checked')) _flags |= <?php echo EVENT_FLAG_PWD_REQUIRED; ?>;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
 		
 		var _start = $('#form-date').val() + ' ' + timeStr($('#form-hour').val()) + ':' + timeStr($('#form-minute').val());

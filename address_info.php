@@ -35,7 +35,7 @@ class Page extends AddressPageBase
 		}
 		$games_count = $civils_win_count + $mafia_win_count + $playing_count;
 		
-		list($events_count) = Db::record(get_label('event'), 'SELECT count(*) FROM events e WHERE (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND start_time < UNIX_TIMESTAMP() AND e.address_id = ?', $this->id);
+		list($events_count) = Db::record(get_label('event'), 'SELECT count(*) FROM events e WHERE (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0 AND start_time < UNIX_TIMESTAMP() AND e.address_id = ?', $this->id);
 	
 		if ($games_count > 0)
 		{

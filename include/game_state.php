@@ -116,7 +116,7 @@ class GameState
 			$this->club_id = $club_id;
 			if ($club_id > 0 )
 			{
-				$query = new DbQuery('SELECT id, flags, languages FROM events WHERE start_time <= UNIX_TIMESTAMP() AND start_time + duration > UNIX_TIMESTAMP() AND club_id = ?', $club_id);
+				$query = new DbQuery('SELECT id, flags, languages FROM events WHERE start_time <= UNIX_TIMESTAMP() AND start_time + duration > UNIX_TIMESTAMP() AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?', $club_id);
 				if ($row = $query->next())
 				{
 					$this->event_id = (int)$row[0];

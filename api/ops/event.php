@@ -106,7 +106,7 @@ class ApiPage extends OpsApiPageBase
 		$scoring_weight = (float)get_optional_param('scoring_weight', 1);
 		$planned_games = (int)get_optional_param('planned_games', 0);
 		$notes = get_optional_param('notes', '');
-		$flags = (int)get_optional_param('flags', EVENT_FLAG_REG_ON_ATTEND | EVENT_FLAG_ALL_MODERATE) & EVENT_EDITABLE_MASK;
+		$flags = (int)get_optional_param('flags', EVENT_FLAG_ALL_MODERATE) & EVENT_EDITABLE_MASK;
 		$langs = get_optional_param('langs', 0);
 		if (($langs & LANG_ALL) == 0)
 		{
@@ -248,26 +248,26 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('scoring_id', 'Scoring id for this event.', 'default club scoring system is used.');
 		$help->request_param('notes', 'Event notes. Just a text.', 'empty.');
 		$help->request_param('flags', 'Bit combination of the next flags.
-				<ul>
-					<li>1 - users can register for this event when they click "attend"</li>
-					<li>2 - users must enter password to participate in the event games.</li>
-					<li>4 - all registered users can moderate games.</li>
-				</ul>', '5.');
+				<ol>
+					<li value="1">the event should not be shown in the list of upcoming events on the site.</li>
+					<li value="2">the event should not be shown in the list of past events on the site.</li>
+					<li value="4">all registered users can moderate games.</li>
+				</ol>', '4.');
 		$help->request_param('langs', 'Languages on this event. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all club languages are used.');
 		$help->request_param('address_id', 'Address id of the event.', '<q>address</q>, <q>city</q>, and <q>country</q> are used to create new address.');
 		$help->request_param('address', 'When address_id is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the address line to create.', '<q>address_id</q> must be set');
 		$help->request_param('country', 'When address_id is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the country name for the new address. If <?php echo PRODUCT_NAME; ?> can not find a country with this name, new country is created.', '<q>address_id</q> must be set');
 		$help->request_param('city', 'When address_id is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the city name for the new address. If <?php echo PRODUCT_NAME; ?> can not find a city with this name, new city is created.', '<q>address_id</q> must be set');
 		$help->request_param('weekdays', 'When set, multiple events are created. This is a bit combination of weekdays. When it is set, <?php echo PRODUCT_NAME; ?> creates events between the start date and end date at all weekdays that are set. The flags are:
-				<ul>
-					<li>1 - Sunday</li>
-					<li>2 - Monday</li>
-					<li>4 - Tuesday</li>
-					<li>8 - Wednesday</li>
-					<li>16 - Thursday</li>
-					<li>32 - Friday</li>
-					<li>64 - Saturday</li>
-				</ul>', 'single event is created.');
+				<ol>
+					<li value="1">Sunday</li>
+					<li value="2">Monday</li>
+					<li value="4">Tuesday</li>
+					<li value="8">Wednesday</li>
+					<li value="16">Thursday</li>
+					<li value="32">Friday</li>
+					<li value="64">Saturday</li>
+				</ol>', 'single event is created.');
 		$help->request_param('to_month', 'When creating multiple events (<q>weekdays</q> is set) this is the month of the end date.', '<q>weekdays</q> must also be not set');
 		$help->request_param('to_day', 'When creating multiple events (<q>weekdays</q> is set) this is the day of the month of the end date.', '<q>weekdays</q> must also be not set');
 		$help->request_param('to_year', 'When creating multiple events (<q>weekdays</q> is set) this is the year of the end date.', '<q>weekdays</q> must also be not set');
@@ -407,11 +407,11 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('scoring_weight', 'Scoring weight for this event. All scores will be multiplied to this. This is useful for tournaments where many events with different importance can be created.', 'remain the same.');
 		$help->request_param('notes', 'Event notes. Just a text.', 'empty.', 'remain the same.');
 		$help->request_param('flags', 'Bit combination of the next flags.
-				<ul>
-					<li>1 - users can register for this event when they click "attend"</li>
-					<li>2 - users must enter password to participate in the event games.</li>
-					<li>4 - all registered users can moderate games.</li>
-				</ul>', 'remain the same.');
+				<ol>
+					<li value="1">the event should not be shown in the list of upcoming events on the site.</li>
+					<li value="2">the event should not be shown in the list of past events on the site.</li>
+					<li value="4">all registered users can moderate games.</li>
+				</0l>', 'remain the same.');
 		$help->request_param('langs', 'Languages on this event. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remain the same.');
 		$help->request_param('address_id', 'Address id of the event.', '<q>address</q> is used to create new address.');
 		$help->request_param('address', 'When <q>address_id</q> is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the address line to create.', 'address remains the same');

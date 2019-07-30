@@ -100,7 +100,7 @@ class Upcoming
 		}
 	
 		$time = time();
-		list($this->count) = Db::record(get_label('event'), 'SELECT count(*) FROM events e WHERE e.start_time + e.duration > ?', $time, $condition);
+		list($this->count) = Db::record(get_label('event'), 'SELECT count(*) FROM events e WHERE e.start_time + e.duration > ? AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0', $time, $condition);
 		
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, a.id, a.address, a.map_url, ct.timezone, a.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', e.notes, e.languages, e.flags, e.rules FROM events e' .

@@ -172,7 +172,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(
 				get_label('round'), 
 				'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_weight, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)',
-				$event_name, $address_id, $club_id, $start, $end - $start, $notes, 0 /*change to something better*/, $langs, $price, $scoring_id, $tournament_id, $rules_code);
+				$event_name, $address_id, $club_id, $start, $end - $start, $notes, EVENT_MASK_HIDDEN, $langs, $price, $scoring_id, $tournament_id, $rules_code);
 				
 			$log_details = new stdClass();
 			$log_details->name = $name;
@@ -186,7 +186,7 @@ class ApiPage extends OpsApiPageBase
 			$log_details->price = $price;
 			$log_details->scoring_id = $scoring_id;
 			$log_details->rules_code = $rules_code;
-			$log_details->flags = 0 /*change to something better*/;
+			$log_details->flags = EVENT_MASK_HIDDEN;
 			db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id, $request_league_id);
 		}
 		

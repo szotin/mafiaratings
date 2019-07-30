@@ -55,15 +55,16 @@ class Page extends ClubPageBase
 		switch ($events_type)
 		{
 			case ETYPE_TOURNAMENT:
-				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_TOURNAMENT) . ') = ' . EVENT_FLAG_TOURNAMENT);
+				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_AFTER) . ') = ' . EVENT_FLAG_TOURNAMENT);
 				break;
 			case ETYPE_NOT_CANCELED:
-				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');
+				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0');
 				break;
 			case ETYPE_ALL:
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0');
 				break;
 			default:
-				$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0 AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
 				break;
 		}
 		

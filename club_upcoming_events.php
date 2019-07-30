@@ -71,6 +71,11 @@ class Page extends ClubPageBase
 			{
 				$name = $addr;
 			}
+			if (!is_null($tour_name))
+			{
+				$name = $tour_name . ': ' . $name;
+			}
+			
 			if ($column_count == 0)
 			{
 				if ($event_count == 0)
