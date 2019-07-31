@@ -1152,7 +1152,7 @@ class ApiPage extends OpsApiPageBase
 		// $this->show_help_response_params_head();
 	// }
 	
-//-------------------------------------------------------------------------------------------------------
+	//-------------------------------------------------------------------------------------------------------
 	// extra_points
 	//-------------------------------------------------------------------------------------------------------
 	function extra_points_op()
@@ -1195,6 +1195,36 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('points', 'Extra points. Floating point number from -0.4 to 0.7');
 		return $help;
     }
+	
+	//-------------------------------------------------------------------------------------------------------
+	// fix_event_ids (temporary - if you do not understand why it is there, delete it)
+	//-------------------------------------------------------------------------------------------------------
+	function fix_event_ids_op()
+	{
+		$total_count = 0;
+		$changed_count = 0;
+		
+		Db::begin();
+		$query = new DbQuery('SELECT id, log, event_id FROM games WHERE round_num > 0');
+		while ($row = $query->next())
+		{
+			list($id, $log, $event_id) = $row;
+			$event_id = (int)$event_id;
+			$gs = new GameState();
+			$gs->init_existing($id, $log);
+			if ($gs->event_id != $event_id)
+			{
+				$gs->event_id = $event_id;
+				rebuild_game_stats($gs);
+				++$changed_count;
+			}
+			++$total_count;
+		}
+		Db::commit();
+		
+		$this->response['total'] = $total_count;
+		$this->response['changed'] = $changed_count;
+	}
 	
 	//-------------------------------------------------------------------------------------------------------
 	// comment
