@@ -125,19 +125,9 @@ try
 			echo '</td></tr></table>';
 		}
 		
-		$rounds = array();
-		$round = new stdClass();
-		$round->scoring_weight = $event->scoring_weight;
-		$round->scoring_id = $event->scoring_id;
-		$rounds[] = $round;
-		foreach ($event->rounds as $round)
-		{
-			$rounds[] = $round;
-		}
-		
 		$condition = new SQL(' AND g.event_id = ?', $event->id);
 		$scoring_system = new ScoringSystem($event->scoring_id);
-		$scores = new Scores($scoring_system, $rounds, $condition);
+		$scores = new Scores($scoring_system, $condition);
 		$players_count = count($scores->players);
 			
 		if ($players_count == 0)
@@ -224,17 +214,6 @@ try
 		}
 		else
 		{
-			if (count($event->rounds) > 0)
-			{
-				if ($event->round_num == 0)
-				{
-					echo '<center><h2>' . get_label('Main round') . '</h2></center>';
-				}
-				else if ($event->round_num <= count($event->rounds))
-				{
-					echo '<center><h2>' . $event->rounds[$event->round_num - 1]->name . '</h2></center>';
-				}
-			}
 			$number = 0;
 			echo '<table width="100%"><tr>';
 			for ($i = 0; $i < $cols; ++$i)

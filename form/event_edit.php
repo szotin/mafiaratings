@@ -21,9 +21,9 @@ try
 	}
 	$event_id = (int)$_REQUEST['event_id'];
 	
-	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_weight, $planned_games, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
+	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_weight, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
 		Db::record(get_label('event'), 
-			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
+			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
 			'FROM events e ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
@@ -181,14 +181,6 @@ try
 	}
 	addressClick();
 	
-	function eventGamesChange()
-	{
-		if ($('#form-planned_games').val() <= 0)
-		{
-			$('#form-planned_games').val('');
-		}
-	}
-	
 	function timeStr(val)
 	{
 		if (val.length < 2)
@@ -220,7 +212,6 @@ try
 			, rules_code: $("#form-rules").val()
 			, scoring_id: $("#form-scoring").val()
 			, scoring_weight: $("#form-scoring-weight").val()
-			, planned_games: $("#form-planned_games").val()
 			, notes: $("#form-notes").val()
 			, flags: _flags
 			, langs: _langs
@@ -242,7 +233,6 @@ try
 	}
 	
 	$('#form-scoring_weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
-	$('#form-planned_games').spinner({ step:1, max:1000, min:0, change:eventGamesChange }).width(30);
 	
 	</script>
 <?php

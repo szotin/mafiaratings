@@ -71,20 +71,10 @@ class Page extends EventPageBase
 		show_user_input('page', $this->user_name, 'event=' . $this->event->id, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
 		
-		$rounds = array();
-		$round = new stdClass();
-		$round->scoring_weight = $this->event->scoring_weight;
-		$round->scoring_id = $this->event->scoring_id;
-		$rounds[] = $round;
-		foreach ($this->event->rounds as $round)
-		{
-			$rounds[] = $round;
-		}
-		
 		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
 		
 		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, $rounds, $condition, get_roles_condition($this->roles));
+		$scores = new Scores($scoring_system, $condition, get_roles_condition($this->roles));
 		$players_count = count($scores->players);
 		if ($this->user_id > 0)
 		{

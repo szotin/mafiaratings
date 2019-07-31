@@ -104,30 +104,12 @@ class ApiPage extends OpsApiPageBase
 		$rules_code = get_optional_param('rules_code', $club->rules_code);
 		$scoring_id = (int)get_optional_param('scoring_id', $club->scoring_id);
 		$scoring_weight = (float)get_optional_param('scoring_weight', 1);
-		$planned_games = (int)get_optional_param('planned_games', 0);
 		$notes = get_optional_param('notes', '');
 		$flags = (int)get_optional_param('flags', EVENT_FLAG_ALL_MODERATE) & EVENT_EDITABLE_MASK;
 		$langs = get_optional_param('langs', 0);
 		if (($langs & LANG_ALL) == 0)
 		{
 			throw new Exc(get_label('No languages specified.'));
-		}
-		
-		$rounds = array();
-		if (isset($_REQUEST['rounds']))
-		{
-			$_rounds = $_REQUEST['rounds'];
-			//throw new Exc(json_encode($rounds));
-			foreach ($_rounds as $_round)
-			{
-				$round = new stdClass();
-				$round->name = $_round["name"];
-				$round->scoring_id = $_round["scoring_id"];
-				$round->scoring_weight = $_round["scoring_weight"];
-				$round->planned_games = $_round["planned_games"];
-				$rounds[] = $round;
-			}
-			//throw new Exc(json_encode($rounds));
 		}
 		
 		Db::begin();
@@ -168,22 +150,16 @@ class ApiPage extends OpsApiPageBase
 				{
 					Db::exec(
 						get_label('event'), 
-						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_weight, planned_games, round_num) ' .
-						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_weight) ' .
+						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$name, $price, $address_id, $club_id, $start_datetime->getTimestamp(), 
 						$notes, $duration, $flags, $langs, $rules_code, 
-						$scoring_id, $scoring_weight, $planned_games, 0);
+						$scoring_id, $scoring_weight);
 					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 					
 					$log_details->start = $start_datetime->format('d/m/y H:i');
 					db_log(LOG_OBJECT_EVENT, 'created', $log_details, $event_id, $club_id);
 					
-					for ($i = 0; $i < count($rounds); ++$i)
-					{
-						$round = $rounds[$i];
-						Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, planned_games) VALUES (?, ?, ?, ?, ?, ?)',
-							$event_id, $i + 1, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
-					}
 					$event_ids[] = $event_id;
 				}
 				$start_datetime->add($interval);
@@ -208,22 +184,16 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('event'), 
-				'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_weight, planned_games, round_num) ' .
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_weight) ' .
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				$name, $price, $address_id, $club_id, $start_datetime->getTimestamp(), 
 				$notes, $duration, $flags, $langs, $rules_code, 
-				$scoring_id, $scoring_weight, $planned_games, 0);
+				$scoring_id, $scoring_weight);
 			list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details->start = $start;
 			db_log(LOG_OBJECT_EVENT, 'created', $log_details, $event_id, $club_id);
 			
-			for ($i = 0; $i < count($rounds); ++$i)
-			{
-				$round = $rounds[$i];
-				Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, planned_games) VALUES (?, ?, ?, ?, ?, ?)',
-					$event_id, $i + 1, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
-			}
 			$event_ids[] = $event_id;
 		}
 		Db::commit();
@@ -271,11 +241,6 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('to_month', 'When creating multiple events (<q>weekdays</q> is set) this is the month of the end date.', '<q>weekdays</q> must also be not set');
 		$help->request_param('to_day', 'When creating multiple events (<q>weekdays</q> is set) this is the day of the month of the end date.', '<q>weekdays</q> must also be not set');
 		$help->request_param('to_year', 'When creating multiple events (<q>weekdays</q> is set) this is the year of the end date.', '<q>weekdays</q> must also be not set');
-		$param = $help->request_param('rounds', 'Event rounds in a form of a json array. For example: [{name: "Quater final", scoring_id: 17, scoring_weight: 1, games: 10}, {name: "Semi final", scoring_id: 17, scoring_weight: 1.5, games: 5}, {name: "Final", scoring_id: 17, scoring_weight: 2, games: 2}].', 'Event does not have rounds.'); 
-			$param->sub_param('name', 'Round name.');
-			$param->sub_param('scoring_id', 'Scoring system id used in this round. All points from different scoring systems accumulate in final result. If a one needs to clear them, they should create a new event.');
-			$param->sub_param('scoring_weight', 'Weight of the points in this round. All scores in this round are multiplied by it.', 'is set to 1');
-			$param->sub_param('games', 'How many games should be played in this round. The system will automaticaly change round after this number of games is played. Send 0 for changing rounds manually.', 'is set to 0');
 		$help->response_param('events', 'Array of ids of the newly created events.');
 		return $help;
 	}
@@ -289,9 +254,9 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
-		list($club_id, $old_name, $old_start_timestamp, $old_duration, $old_address_id, $old_price, $old_rules_code, $old_scoring_id, $old_scoring_weight, $old_planned_games, $old_langs, $old_notes, $old_flags, $timezone) = 
+		list($club_id, $old_name, $old_start_timestamp, $old_duration, $old_address_id, $old_price, $old_rules_code, $old_scoring_id, $old_scoring_weight, $old_langs, $old_notes, $old_flags, $timezone) = 
 			Db::record(get_label('event'), 
-				'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.languages, e.notes, e.flags, c.timezone ' .
+				'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.languages, e.notes, e.flags, c.timezone ' .
 				'FROM events e ' . 
 				'JOIN addresses a ON a.id = e.address_id ' . 
 				'JOIN cities c ON c.id = a.city_id ' . 
@@ -534,7 +499,6 @@ class ApiPage extends OpsApiPageBase
 		$this->response['rules_code'] = $event->rules_code;
 		$this->response['scoring_id'] = $event->scoring_id;
 		$this->response['scoring_weight'] = $event->scoring_weight;
-		$this->response['planned_games'] = $event->planned_games;
 		
 		$base = get_server_url() . '/';
 		if (($event->addr_flags & ADDRESS_ICON_MASK) != 0)
@@ -548,11 +512,6 @@ class ApiPage extends OpsApiPageBase
 		date_default_timezone_set($event->timezone);
 		$this->response['hour'] = date('G', $event->timestamp);
 		$this->response['minute'] = round(date('i', $event->timestamp) / 10) * 10;
-		
-		if (count($event->rounds) > 0)
-		{
-			$this->response['rounds'] = $event->rounds;
-		}
 	}
 	
 	function get_op_help()
@@ -570,11 +529,6 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('addr_id', 'Address id.');
 		$help->response_param('addr', 'Event address.');
 		$help->response_param('addr_url', 'Address url.');
-		$param = $help->response_param('rounds', 'Event rounds in a form of a json array. For example: [{name: "Quater final", scoring_id: 17, scoring_weight: 1, games: 10}, {name: "Semi final", scoring_id: 17, scoring_weight: 1.5, games: 5}, {name: "Final", scoring_id: 17, scoring_weight: 2, games: 2}].'); 
-			$param->sub_param('name', 'Round name.');
-			$param->sub_param('scoring_id', 'Scoring system id used in this round. All points from different scoring systems accumulate in final result. If a one needs to clear them, they should create a new event.');
-			$param->sub_param('scoring_weight', 'Weight of the points in this round. All scores in this round are multiplied by it.');
-			$param->sub_param('games', 'How many games should be played in this round. The system will automaticaly change round after this number of games is played. Send 0 for changing rounds manually.');
 		
 		$timezone_help = 'Event timezone. One of: <select>';
 		$zones = DateTimeZone::listIdentifiers();
@@ -626,48 +580,6 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, 'Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('duration', 'New event duration. Send 0 if you want to end event now.');
-		return $help;
-	}
-
-	//-------------------------------------------------------------------------------------------------------
-	// set_round
-	//-------------------------------------------------------------------------------------------------------
-	function set_round_op()
-	{
-		$event_id = (int)get_required_param('event_id');
-		$event = new Event();
-		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, $event->club_id);
-		
-		$time = time();
-		if ($event->timestamp + $event->duration < $time)
-		{
-			throw new Exc(get_label('The event over. Please extend it first.'));
-		}
-		
-		$round = (int)get_required_param('round');
-		$finish_event = false;
-		if ($round < 0 || $round > count($event->rounds))
-		{
-			$round = count($event->rounds);
-		}
-		
-		Db::begin();
-		Db::exec(get_label('event'), 'UPDATE events SET round_num = ? WHERE id = ?', $round, $event->id);
-		if (Db::affected_rows() > 0)
-		{
-			$log_details = new stdClass();
-			$log_details->round = $round;
-			db_log(LOG_OBJECT_EVENT, 'round changed', $log_details, $event->id, $event->club_id);
-		}
-		Db::commit();
-	}
-	
-	function set_round_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, 'Change current round for the event. Note that round changes automatically when a number of games for the round exceeds round.planned_games count. However when planned_games is 0, manual change using this function is required.');
-		$help->request_param('event_id', 'Event id.');
-		$help->request_param('round', 'Round number. 0 for main round, and consecutive numbers for the next rounds. If round number is greater than number of rounds, the event becomes finished.');
 		return $help;
 	}
 

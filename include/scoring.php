@@ -1113,18 +1113,6 @@ function compare_scores($score1, $score2)
 	return 0;
 }
 
-class ScoringRound
-{
-	public $scoring_system;
-	public $weight;
-	
-	function __construct($scoring_system, $weight)
-	{
-		$this->scoring_system = $scoring_system;
-		$this->weight = $weight;
-	}
-}
-
 class Scores
 {
 	public $players;
@@ -1143,7 +1131,7 @@ class Scores
 	// new Scores($system, new SQL('AND g.event_id = 10')); // scores for the event 10
 	// new Scores($system, new SQL('AND g.event_id = 10'), new SQL('AND g.id = 982')); // what scores for the event 10 were earned in the game 982
 	// new Scores($system, new SQL('AND g.club_id = 1'), new SQL('AND g.id = 982')); // what scores for the club 1 were earned in the game 982
-	function __construct($scoring_system, $rounds, $condition, $scope_condition = NULL, $history = 0)
+	function __construct($scoring_system, $condition, $scope_condition = NULL, $history = 0)
 	{
 		$this->scoring_system = $scoring_system;
 		
@@ -1207,7 +1195,7 @@ class Scores
 			}
 		}
 		
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role, p.extra_points, g.end_time, g.round_num FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE 1', $condition);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role, p.extra_points, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE 1', $condition);
 		if ($scope_condition != NULL)
 		{
 			$query->add($scope_condition);
@@ -1219,17 +1207,8 @@ class Scores
 		// echo $query->get_parsed_sql();
 		while ($row = $query->next())
 		{
-			list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $scoring_flags, $player_role, $player_extra_points, $timestamp, $round_num) = $row;
+			list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $scoring_flags, $player_role, $player_extra_points, $timestamp) = $row;
 			$weight = 1;
-			if ($rounds != null)
-			{
-				if (is_null($round_num) || $round_num < 0 || $round_num >= count($rounds))
-				{
-					continue;
-				}
-				$round = $rounds[$round_num];
-				$weight = $round->scoring_weight;
-			}
 			
 			if (isset($players[$user_id]))
 			{

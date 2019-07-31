@@ -23,19 +23,9 @@ class Page extends EventPageBase
 			$this->scoring_id = (int)$_REQUEST['scoring'];
 		}
 		
-		$rounds = array();
-		$round = new stdClass();
-		$round->scoring_weight = $this->event->scoring_weight;
-		$round->scoring_id = $this->event->scoring_id;
-		$rounds[] = $round;
-		foreach ($this->event->rounds as $round)
-		{
-			$rounds[] = $round;
-		}
-		
 		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
 		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, $rounds, $condition);
+		$scores = new Scores($scoring_system, $condition);
 		$players_count = count($scores->players);
 		$separator = '';
 		if ($players_count > NUM_PLAYERS)

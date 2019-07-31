@@ -142,20 +142,20 @@ try
 		echo '<input type="hidden" id="form-rules" value="' . $club->rules_code . '">';
 	}
 	
-	echo '<tr><td class="dark">' . get_label('Rounds') . ':</td><td><table width="100%" class="transp">';
-	echo '<tr><td width="48"><a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a></td>';
-	echo '<td width="90">' . get_label('Name') . '</td>';
-	echo '<td>' . get_label('Scoring system') . '</td>';
-	echo '<td width="70">' . get_label('Scoring weight') . '</td>'; 
-	echo '<td width="70" align="center">' . get_label('Planned games count') . '</td></tr>';
-	echo '<tr><td></td>';
-	echo '<td>' . get_label('Main round') . '</td>';
-	echo '<td>';
-	show_scoring_select($event->club_id, $event->scoring_id, '', get_label('Scoring system'), 'form-scoring', false);
-	echo '</td>';
-	echo '<td><input id="form-scoring_weight" value="' . $event->scoring_weight . '"></td>';
-	echo '<td><input id="form-planned_games" value="' . ($event->planned_games > 0 ? $event->planned_games : '') . '"></td></tr>';
-	echo '</table><span id="form-rounds"></span></td></tr>';
+	// echo '<tr><td class="dark">' . get_label('Rounds') . ':</td><td><table width="100%" class="transp">';
+	// echo '<tr><td width="48"><a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a></td>';
+	// echo '<td width="90">' . get_label('Name') . '</td>';
+	// echo '<td>' . get_label('Scoring system') . '</td>';
+	// echo '<td width="70">' . get_label('Scoring weight') . '</td>'; 
+	// echo '<td width="70" align="center">' . get_label('Planned games count') . '</td></tr>';
+	// echo '<tr><td></td>';
+	// echo '<td>' . get_label('Main round') . '</td>';
+	// echo '<td>';
+	// show_scoring_select($event->club_id, $event->scoring_id, '', get_label('Scoring system'), 'form-scoring', false);
+	// echo '</td>';
+	// echo '<td><input id="form-scoring_weight" value="' . $event->scoring_weight . '"></td>';
+	// echo '<td><input id="form-planned_games" value="' . ($event->planned_games > 0 ? $event->planned_games : '') . '"></td></tr>';
+	// echo '</table><span id="form-rounds"></span></td></tr>';
 	
 	if (is_valid_lang($club->langs))
 	{
@@ -272,94 +272,10 @@ try
 	}
 	addressClick();
 	
-	var rounds = [];
-	var roundRow = 
-		'<tr><td width="48"><a href="javascript:deleteRound({num})" title="<?php echo get_label('Delete round'); ?>"><img src="images/delete.png"></a></td>' +
-		'<td width="90"><input id="form-round{num}_name" class="short" onchange="setRoundValues({num})"></td>' +
-		'<td><?php show_scoring_select($event->club_id, $event->scoring_id, 'setRoundValues({num})', get_label('Scoring system'), 'form-round{num}_scoring', false); ?></td>' +
-		'<td width="70"><input id="form-round{num}_weight" onchange="setRoundValues({num})"></td>' +
-		'<td width="70"><input id="form-round{num}_games" onchange="setRoundValues({num})"></td></tr>';
-	
-	function refreshRounds()
-	{
-		var html = '<table width="100%" class="transp">';
-		for (var i = 0; i < rounds.length; ++i)
-		{
-			html += roundRow.replace(new RegExp('\\{num\\}', 'g'), i);
-		}
-		html += '</table>';
-		$('#form-rounds').html(html);
-		
-		for (var i = 0; i < rounds.length; ++i)
-		{
-			var round = rounds[i];
-			$('#form-round' + i + '_name').val(round.name);
-			$('#form-round' + i + '_scoring').val(round.scoring_id);
-			$('#form-round' + i + '_weight').spinner({ step:0.1, max:100, min:0.1, change:setAllRoundValues }).width(30).val(round.scoring_weight);
-			$('#form-round' + i + '_games').spinner({ step:1, max:1000, min:0, change:setAllRoundValues }).width(30).val(round.planned_games > 0 ? round.planned_games : '');
-		}
-	}
-
-	function addRound()
-	{
-		rounds.push({ name: "", scoring_id: <?php echo $event->scoring_id; ?>, scoring_weight: 1, planned_games: 0});
-		refreshRounds();
-	}
-
-	function deleteRound(roundNumber)
-	{
-		rounds = rounds.slice(0, roundNumber).concat(rounds.slice(roundNumber + 1));
-		refreshRounds();
-	}
-	
-	function setRoundValues(roundNumber)
-	{
-		var round = rounds[roundNumber];
-		round.name = $('#form-round' + roundNumber + '_name').val();
-		round.scoring_id = $('#form-round' + roundNumber + '_scoring').val();
-		round.scoring_weight = $('#form-round' + roundNumber + '_weight').val();
-		round.planned_games = $('#form-round' + roundNumber + '_games').val();
-		if (round.planned_games == 0)
-		{
-			$('#form-round' + roundNumber + '_games').val('');
-		}
-		else if (isNaN(round.planned_games))
-		{
-			round.planned_games = 0;
-		}
-	}
-	
-	function setAllRoundValues()
-	{
-		for (var i = 0; i < rounds.length; ++i)
-		{
-			setRoundValues(i);
-		}
-	}
-	
-	function eventGamesChange()
-	{
-		if ($('#form-planned_games').val() <= 0)
-		{
-			$('#form-planned_games').val('');
-		}
-	}
-	
 	function copyEvent()
 	{
 		json.get("api/ops/event.php?op=get&event_id=" + $("#form-copy").val(), function(e)
 		{
-			rounds = [];
-			if (typeof e.rounds != "undefined")
-			{
-				for (var i in e.rounds)
-				{
-					var round = e.rounds[i];
-					rounds.push(round);
-				}
-			}
-			refreshRounds();
-			
 			$("#form-name").val(e.name);
 			$("#form-hour").val(e.hour);
 			$("#form-minute").val(e.minute);
@@ -369,14 +285,6 @@ try
 			$("#form-rules").val(e.rules_code);
 			$("#form-scoring").val(e.scoring_id);
 			$('#form-scoring_weight').val(e.scoring_weight);
-			if (e.planned_games > 0)
-			{
-				$('#form-planned_games').val(e.planned_games);
-			}
-			else
-			{
-				$('#form-planned_games').val('');
-			}
 			$("#form-notes").val(e.notes);
 			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
 			mr.setLangs(e.langs, "form-");
@@ -413,11 +321,9 @@ try
 			, rules_code: $("#form-rules").val()
 			, scoring_id: $("#form-scoring").val()
 			, scoring_weight: $("#form-scoring_weight").val()
-			, planned_games: $("#form-planned_games").val()
 			, notes: $("#form-notes").val()
 			, flags: _flags
 			, langs: _langs
-			, rounds: rounds
 		};
 		
 		if (_addr <= 0)
@@ -456,8 +362,6 @@ try
 	}
 	
 	$('#form-scoring_weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
-	$('#form-planned_games').spinner({ step:1, max:1000, min:0, change:eventGamesChange }).width(30);
-	refreshRounds();
 	
 	</script>
 <?php

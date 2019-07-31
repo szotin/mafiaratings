@@ -119,21 +119,8 @@ class ApiPage extends ControlApiPageBase
 				}
 				date_default_timezone_set($timezone);
 				
-				$rounds = array();
-				$round = new stdClass();
-				$round->scoring_weight = $scoring_weight;
-				$round->scoring_id = $scoring_id;
-				$rounds[] = $round;
-				$query = new DbQuery('SELECT scoring_id, scoring_weight FROM rounds r WHERE event_id = ? ORDER BY num', $event_id);
-				while ($row = $query->next())
-				{
-					$round = new stdClass();
-					list($round->scoring_id, $round->scoring_weight) = $row;
-					$rounds[] = $round;
-				}
-				
 				$scoring_system = new ScoringSystem($scoring_id);
-				$scores = new Scores($scoring_system, $rounds, new SQL(' AND g.event_id = ?', $event_id), new SQL(' AND p.user_id IN(' . $player_list . ')'), MAX_POINTS_ON_GRAPH);
+				$scores = new Scores($scoring_system, new SQL(' AND g.event_id = ?', $event_id), new SQL(' AND p.user_id IN(' . $player_list . ')'), MAX_POINTS_ON_GRAPH);
 		
 				$players_count = count($scores->players);
 				foreach ($user_ids as $user_id)
