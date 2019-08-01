@@ -462,85 +462,7 @@ class Event
 			}
 			
 			$user_pic = new Picture(USER_PICTURE);
-			if ($this->flags & EVENT_FLAG_TOURNAMENT)
-			{
-				$found = false;
-				$col = 0;
-				foreach ($attendance as $a)
-				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
-					if ($odds >= 100)
-					{
-						if ($col == 0)
-						{
-							if (!$found)
-							{
-								$found = true;
-								echo '<table class="bordered" width="100%">';
-								echo '<tr class="darker"><td colspan="6" align="center"><b>' . get_label('Accepted') . ':</b></td>';
-							}
-							echo '</tr><tr>';
-						}
-						
-						echo '<td width="16.66%" class="lighter" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, 50);
-						echo '</a><br>' . $name . '</td>';
-						++$col;
-						if ($col == 6)
-						{
-							$col = 0;
-						}
-					}
-				}
-				if ($found)
-				{
-					if ($col > 0)
-					{
-						echo '<td class="lighter" colspan="' . (6 - $col) . '"></td>';
-					}
-					echo '</tr></table>';
-				}
-				
-				$found = false;
-				$col = 0;
-				foreach ($attendance as $a)
-				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
-					if ($odds < 100)
-					{
-						if ($col == 0)
-						{
-							if (!$found)
-							{
-								$found = true;
-								echo '<table class="bordered" width="100%">';
-								echo '<tr class="darker"><td colspan="6" align="center"><b>' . get_label('Declined') . ':</b></td>';
-							}
-							echo '</tr><tr>';
-						}
-						
-						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, 50);
-						echo '</a><br>' . $name . '</td>';
-						++$col;
-						if ($col == 6)
-						{
-							$col = 0;
-						}
-					}
-				}
-				if ($found)
-				{
-					if ($col > 0)
-					{
-						echo '<td colspan="' . (6 - $col) . '"></td>';
-					}
-					echo '</tr></table>';
-				}
-			}
-			else if (BRIEF_ATTENDANCE)
+			if (BRIEF_ATTENDANCE)
 			{
 				$found = false;
 				$col = 0;
@@ -988,14 +910,7 @@ class EventPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		if ($this->event->flags & EVENT_FLAG_TOURNAMENT)
-		{
-			$title = get_label('Tournament [0]', $this->_title);
-		}
-		else
-		{
-			$title = get_label('Event [0]', $this->_title);
-		}
+		$title = get_label('Event [0]', $this->_title);
 		
 		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->name;
 		$time = time();

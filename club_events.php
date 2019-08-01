@@ -9,10 +9,9 @@ require_once 'include/event.php';
 define("CUT_NAME",45);
 define("PAGE_SIZE",15);
 
-define('ETYPE_TOURNAMENT', 0);
-define('ETYPE_WITH_GAMES', 1);
-define('ETYPE_NOT_CANCELED', 2);
-define('ETYPE_ALL', 3);
+define('ETYPE_WITH_GAMES', 0);
+define('ETYPE_NOT_CANCELED', 1);
+define('ETYPE_ALL', 2);
 
 class Page extends ClubPageBase
 {
@@ -37,7 +36,6 @@ class Page extends ClubPageBase
 		echo '<table class="transp" width="100%"><tr><td>';
 		$season = show_club_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show events of a specific season.'));
 		echo ' <select name="etype" onchange="document.clubForm.submit()">';
-		show_option(ETYPE_TOURNAMENT, $events_type, get_label('Tournaments'));
 		show_option(ETYPE_WITH_GAMES, $events_type, get_label('Events'));
 		show_option(ETYPE_NOT_CANCELED, $events_type, get_label('Events including empty'));
 		show_option(ETYPE_ALL, $events_type, get_label('Events including canceled'));
@@ -54,9 +52,6 @@ class Page extends ClubPageBase
 		$condition->add(get_club_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
 		switch ($events_type)
 		{
-			case ETYPE_TOURNAMENT:
-				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_AFTER) . ') = ' . EVENT_FLAG_TOURNAMENT);
-				break;
 			case ETYPE_NOT_CANCELED:
 				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0');
 				break;

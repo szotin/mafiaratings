@@ -61,6 +61,7 @@ UPDATE events SET name = 'Основной раунд', flags = (flags &~ 32) | 
 -- 8206 - December Mini-Tournament
 INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) 
 SELECT 'Mini-Tournaments 2018', club_id, address_id, 1514764800, 31536000, languages, notes, price, scoring_id, rules, 80, 2 FROM events WHERE id = 8135;
+SELECT @id := LAST_INSERT_ID();
 UPDATE events SET flags = flags &~ 32, tournament_id = @id WHERE id = 8135;
 UPDATE events SET flags = flags &~ 32, tournament_id = @id WHERE id = 8141;
 UPDATE events SET flags = flags &~ 32, tournament_id = @id WHERE id = 8160;
@@ -106,6 +107,7 @@ UPDATE events SET name = 'Основной раунд', flags = (flags &~ 32) | 
 -- 8281 - March Mini Tournament
 INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) 
 SELECT 'Mini-Tournaments 2019', club_id, address_id, 1514764800, 31536000, languages, notes, price, scoring_id, rules, 80, 2 FROM events WHERE id = 8239;
+SELECT @id := LAST_INSERT_ID();
 UPDATE events SET flags = flags &~ 32, tournament_id = @id WHERE id = 8239;
 UPDATE events SET flags = flags &~ 32, tournament_id = @id WHERE id = 8252;
 UPDATE events SET flags = flags &~ 32, tournament_id = @id WHERE id = 8281;

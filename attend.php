@@ -153,46 +153,37 @@ class Page extends PageBase
 		echo '<form method="post" name="playerForm">';
 		echo '<input type="hidden" name="id" value="' . $this->event_id . '">';
 		echo '<table class="bordered" width="100%">';
-		if ($this->event->flags & EVENT_FLAG_TOURNAMENT)
+		echo '<tr><td width="210">'.get_label('The chance that I am coming is').':</td><td><select name="odds" onChange = "document.playerForm.submit()">';
+		for ($i = 0; $i <= 100; $i += 10)
+		{
+			show_option($i, $this->odds, $i . '%');
+		}
+		echo '</select></td></tr>';
+		if ($this->odds > 0)
+		{
+			echo '<tr><td>'.get_label('I am bringing').':</td><td><select name="friends">';
+			for ($i = 0; $i <= 10; ++$i)
+			{
+				show_option($i, $this->friends, $i);
+			}
+			echo '</select>&nbsp;&nbsp;'.get_label('friends with me.').'</td></tr>';
+		}
+		if ($this->odds == 100)
 		{
 			echo '<tr><td>'.get_label('My nickname for this event is').':</td><td>';
 			nick_name_chooser($this->user_id, $_profile->user_name, $this->nickname);
 			echo '</td></tr>';
 		}
-		else
-		{
-			echo '<tr><td width="210">'.get_label('The chance that I am coming is').':</td><td><select name="odds" onChange = "document.playerForm.submit()">';
-			for ($i = 0; $i <= 100; $i += 10)
-			{
-				show_option($i, $this->odds, $i . '%');
-			}
-			echo '</select></td></tr>';
-			if ($this->odds > 0)
-			{
-				echo '<tr><td>'.get_label('I am bringing').':</td><td><select name="friends">';
-				for ($i = 0; $i <= 10; ++$i)
-				{
-					show_option($i, $this->friends, $i);
-				}
-				echo '</select>&nbsp;&nbsp;'.get_label('friends with me.').'</td></tr>';
-			}
-			if ($this->odds == 100)
-			{
-				echo '<tr><td>'.get_label('My nickname for this event is').':</td><td>';
-				nick_name_chooser($this->user_id, $_profile->user_name, $this->nickname);
-				echo '</td></tr>';
-			}
-			echo '<tr><td>' . get_label('I will be there') . ':</td><td><select name="late">';
-			show_option(0, $this->late, get_label('On time'));
-			show_option(30, $this->late, get_label('[0] minutes late', 30));
-			show_option(60, $this->late, get_label('1 hour late'));
-			show_option(90, $this->late, get_label('[0] and a half hours late', '1'));
-			show_option(120, $this->late, get_label('[0] hours late', '2'));
-			show_option(150, $this->late, get_label('[0] and a half hours late', '2'));
-			show_option(180, $this->late, get_label('[0] hours late', '3'));
-			show_option(-1, $this->late, get_label('More than 3 hours late'));
-			echo '</select></td></tr>';
-		}
+		echo '<tr><td>' . get_label('I will be there') . ':</td><td><select name="late">';
+		show_option(0, $this->late, get_label('On time'));
+		show_option(30, $this->late, get_label('[0] minutes late', 30));
+		show_option(60, $this->late, get_label('1 hour late'));
+		show_option(90, $this->late, get_label('[0] and a half hours late', '1'));
+		show_option(120, $this->late, get_label('[0] hours late', '2'));
+		show_option(150, $this->late, get_label('[0] and a half hours late', '2'));
+		show_option(180, $this->late, get_label('[0] hours late', '3'));
+		show_option(-1, $this->late, get_label('More than 3 hours late'));
+		echo '</select></td></tr>';
 		echo '</table>';
 		
 		echo '<br><input value="'.get_label('Attend').'" type="submit" class="btn norm" name="' . $this->submit_name . '"><input value="'.get_label('Cancel').'" type="submit" class="btn norm" name="cancel"></form>';

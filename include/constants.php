@@ -134,7 +134,7 @@ define('POINTS_DON', 6);
 // 3 - 0x0004 -      4 - canceled
 // 4 - 0x0008 -      8 - everyone can moderate
 // 5 - 0x0010 -     16 - event is finished - it can not be extended any more
-// 6 - 0x0020 -     32 - this event is an official tournament
+// 6 - 0x0020 -     32 - reserved
 // 7 - 0x0040 -     64 - icon mask
 // 8 - 0x0080 -    128 - icon mask
 // 9 - 0x0100 -    256 - icon mask
@@ -143,7 +143,6 @@ define('EVENT_FLAG_HIDDEN_AFTER', 0x2);
 define('EVENT_FLAG_CANCELED', 0x4);
 define('EVENT_FLAG_ALL_MODERATE', 0x8);
 define('EVENT_FLAG_DONE', 0x10);
-define('EVENT_FLAG_TOURNAMENT', 0x20);
 define('EVENT_MASK_HIDDEN', 0x3); // EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_HIDDEN_AFTER
 define('EVENT_EDITABLE_MASK', 0x0b); // EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_HIDDEN_AFTER | EVENT_FLAG_ALL_MODERATE
 

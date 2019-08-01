@@ -10,8 +10,7 @@ require_once 'include/scoring.php';
 
 define("PAGE_SIZE",15);
 
-define('ETYPE_TOURNAMENT', 0);
-define('ETYPE_ALL', 1);
+define('ETYPE_ALL', 0);
 
 class Page extends UserPageBase
 {
@@ -36,10 +35,6 @@ class Page extends UserPageBase
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		$this->ccc_filter->show('onCCC', get_label('Filter events by club, city, or country.'));
-		echo ' <select id="etype" onchange="filter()">';
-		show_option(ETYPE_TOURNAMENT, $this->events_type, get_label('Tournaments'));
-		show_option(ETYPE_ALL, $this->events_type, get_label('Events'));
-		echo '</select>';
 		echo '</td></tr></table>';
 		
 		$condition = new SQL(
@@ -50,7 +45,7 @@ class Page extends UserPageBase
 			' JOIN clubs c ON e.club_id = c.id' . 
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' . 
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE p.user_id = ?', $this->id);
+			' WHERE p.user_id = ? AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0', $this->id);
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
 		{
@@ -71,16 +66,7 @@ class Page extends UserPageBase
 			$condition->add(' AND ct.country_id = ?', $ccc_id);
 			break;
 		}
-		switch ($this->events_type)
-		{
-			case ETYPE_TOURNAMENT:
-				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_AFTER) . ') = ' . EVENT_FLAG_TOURNAMENT);
-				break;
-			default:
-				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0');
-				break;
-		}
-			
+		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(DISTINCT e.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		

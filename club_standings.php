@@ -89,7 +89,7 @@ class Page extends ClubPageBase
 		$condition->add(get_club_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		
 		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, NULL, $condition, get_roles_condition($this->roles));
+		$scores = new Scores($scoring_system, $condition, get_roles_condition($this->roles));
 		$players_count = count($scores->players);
 		if ($this->user_id > 0)
 		{

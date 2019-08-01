@@ -189,7 +189,7 @@ class ApiPage extends ControlApiPageBase
 				}
 				
 				$scoring_system = new ScoringSystem($scoring_id);
-				$scores = new Scores($scoring_system, NULL, new SQL(' AND g.club_id = ?', $club_id), new SQL(' AND p.user_id IN(' . $player_list . ')', get_club_season_condition($season, 'g.start_time', 'g.end_time')), MAX_POINTS_ON_GRAPH);
+				$scores = new Scores($scoring_system, new SQL(' AND g.club_id = ?', $club_id), new SQL(' AND p.user_id IN(' . $player_list . ')', get_club_season_condition($season, 'g.start_time', 'g.end_time')), MAX_POINTS_ON_GRAPH);
 		
 				$players_count = count($scores->players);
 				foreach ($user_ids as $user_id)

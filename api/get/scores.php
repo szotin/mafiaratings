@@ -246,7 +246,7 @@ class ApiPage extends GetApiPageBase
 		// $this->response['scope_condition'] = $scope_condition->get_parsed_sql();
 			
 		$scoring_system = new ScoringSystem($scoring);
-		$scores = new Scores($scoring_system, NULL, $condition, $scope_condition);
+		$scores = new Scores($scoring_system, $condition, $scope_condition);
 		$players_count = count($scores->players);
 		
 		$this->response['count'] = $players_count;

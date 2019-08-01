@@ -1203,6 +1203,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$total_count = 0;
 		$changed_count = 0;
+		$events_count = 0;
 		
 		Db::begin();
 		$query = new DbQuery('SELECT id, log, event_id FROM games WHERE round_num > 0');
@@ -1220,10 +1221,54 @@ class ApiPage extends OpsApiPageBase
 			}
 			++$total_count;
 		}
+		
+		$query = new DbQuery('SELECT e.id, e.flags, t.id, t.flags FROM events e JOIN tournaments t ON t.id = e.tournament_id');
+		while ($row = $query->next())
+		{
+			list($event_id, $event_flags, $tournament_id, $tournament_flags) = $row;
+			if (($tournament_flags & TOURNAMENT_ICON_MASK) != 0)
+			{
+				continue;
+			}
+			
+			if (($event_flags & EVENT_ICON_MASK) == 0)
+			{
+				continue;
+			}
+			
+			$event_dir = '../../' . EVENT_PICS_DIR;
+			$tournament_dir = '../../' . TOURNAMENT_PICS_DIR;
+			$tournament_filename = $tournament_id . '.png';
+			$event_filename = $event_id . '.png';
+			if (!rename($event_dir . $event_filename, $tournament_dir . $tournament_filename))
+			{
+				throw new Exc('Unable to move ' . $event_dir . $event_filename . ' to ' . $tournament_dir . $tournament_filename . '. Current dir: ' . getcwd());
+			}
+			if (!rename($event_dir . 'icons/' . $event_filename, $tournament_dir . 'icons/' . $tournament_filename))
+			{
+				rename($tournament_dir . $tournament_filename, $event_dir . $event_filename);
+				throw new Exc('Unable to move ' . $event_dir . 'icons/' . $event_filename . ' to ' . $tournament_dir . 'icons/' . $tournament_filename . '. Current dir: ' . getcwd());
+			}
+			if (!rename($event_dir . 'tnails/' . $event_filename, $tournament_dir . 'tnails/' . $tournament_filename))
+			{
+				rename($tournament_dir . $tournament_filename, $event_dir . $event_filename);
+				rename($tournament_dir . 'icons/' . $tournament_filename, $event_dir . 'icons/' . $event_filename);
+				throw new Exc('Unable to move ' . $event_dir . 'tnails/' . $event_filename . ' to ' . $tournament_dir . 'tnails/' . $tournament_filename . '. Current dir: ' . getcwd());
+			}
+			
+			$tournament_flags = ($tournament_flags & ~TOURNAMENT_ICON_MASK) + (1 << TOURNAMENT_ICON_MASK_OFFSET);
+			$event_flags = $event_flags & ~EVENT_ICON_MASK;
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = ? WHERE id = ?', $tournament_flags, $tournament_id);
+			Db::exec(get_label('event'), 'UPDATE events SET flags = ? WHERE id = ?', $event_flags, $event_id);
+			
+			++$events_count;
+		}
+		
 		Db::commit();
 		
 		$this->response['total'] = $total_count;
-		$this->response['changed'] = $changed_count;
+		$this->response['games_changed'] = $changed_count;
+		$this->response['events_changed'] = $events_count;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
