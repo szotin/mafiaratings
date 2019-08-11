@@ -23,11 +23,12 @@ try
 	
 	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_weight, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
 		Db::record(get_label('event'), 
-			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
+			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, s.scoring_id, e.scoring_weight, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
 			'FROM events e ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
 			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' . 
+			'LEFT OUTER JOIN scoring_versions s ON s.id = e.scoring_version_id ' . 
 			'WHERE e.id = ?', $event_id);
 	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	$club = $_profile->clubs[$club_id];

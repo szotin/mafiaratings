@@ -133,7 +133,7 @@ define('POINTS_DON', 6);
 // 2 - 0x0002 -      2 - event should not be shown in the event list after the end of the event
 // 3 - 0x0004 -      4 - canceled
 // 4 - 0x0008 -      8 - everyone can moderate
-// 5 - 0x0010 -     16 - event is finished - it can not be extended any more
+// 5 - 0x0010 -     16 - event is finished - all scoring is complete
 // 6 - 0x0020 -     32 - reserved
 // 7 - 0x0040 -     64 - icon mask
 // 8 - 0x0080 -    128 - icon mask
@@ -142,7 +142,7 @@ define('EVENT_FLAG_HIDDEN_BEFORE', 0x1);
 define('EVENT_FLAG_HIDDEN_AFTER', 0x2);
 define('EVENT_FLAG_CANCELED', 0x4);
 define('EVENT_FLAG_ALL_MODERATE', 0x8);
-define('EVENT_FLAG_DONE', 0x10);
+define('EVENT_FLAG_FINISHED', 0x10);
 define('EVENT_MASK_HIDDEN', 0x3); // EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_HIDDEN_AFTER
 define('EVENT_EDITABLE_MASK', 0x0b); // EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_HIDDEN_AFTER | EVENT_FLAG_ALL_MODERATE
 
@@ -154,22 +154,24 @@ define('EVENT_ALIVE_TIME', 28800); // event can be extended during this time aft
 define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during this time after being finished (2 weeks)
 
 // tournament flags
-// 1 - 0x0001 -      1 - icon mask
-// 2 - 0x0002 -      2 - icon mask
-// 3 - 0x0004 -      4 - icon mask
-// 4 - 0x0008 -      8 - canceled
-// 5 - 0x0010 -     16 - long term tournament. Like a seasonal club championship.
-// 6 - 0x0020 -     32 - single games from non-tournament events can be assigned to the tournament.
-// 7 - 0x0040 -     64 - club events can become tournament rounds if needed.
-// 8 - 0x0080 -    128 - rounds must have the same game rules as the tournament.
-// 9 - 0x0100 -    256 - rounds must have the same game scoring system as the tournament.
+//  1 - 0x0001 -      1 - icon mask
+//  2 - 0x0002 -      2 - icon mask
+//  3 - 0x0004 -      4 - icon mask
+//  4 - 0x0008 -      8 - canceled
+//  5 - 0x0010 -     16 - long term tournament. Like a seasonal club championship.
+//  6 - 0x0020 -     32 - single games from non-tournament events can be assigned to the tournament.
+//  7 - 0x0040 -     64 - club events can become tournament rounds if needed.
+//  8 - 0x0080 -    128 - rounds must have the same game rules as the tournament.
+//  9 - 0x0100 -    256 - rounds must have the same game scoring system as the tournament.
+// 10 - 0x0200 -    512 - tournament is finished - all scoring is complete
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
 define('TOURNAMENT_FLAG_EVENT_ROUND', 0x40);
-define('TOURNAMENT_ENFORCE_RULES', 0x80);
-define('TOURNAMENT_ENFORCE_SCORING', 0x100);
-define('TOURNAMENT_EDITABLE_MASK', 0x1f0); // TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_EVENT_ROUND | TOURNAMENT_ENFORCE_RULES | TOURNAMENT_ENFORCE_SCORING
+define('TOURNAMENT_FLAG_ENFORCE_RULES', 0x80);
+define('TOURNAMENT_FLAG_ENFORCE_SCORING', 0x100);
+define('TOURNAMENT_FLAG_FINISHED', 0x200);
+define('TOURNAMENT_EDITABLE_MASK', 0x1f0); // TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_EVENT_ROUND | TOURNAMENT_FLAG_ENFORCE_RULES | TOURNAMENT_FLAG_ENFORCE_SCORING
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);

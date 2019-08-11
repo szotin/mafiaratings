@@ -129,14 +129,14 @@ try
 	echo '> '.get_label('club events can become tournament rounds if needed.').'<br>';
 	
 	echo '<input type="checkbox" id="form-enforce_rules"';
-	if ($flags & TOURNAMENT_ENFORCE_RULES)
+	if ($flags & TOURNAMENT_FLAG_ENFORCE_RULES)
 	{
 		echo ' checked';
 	}
 	echo '> '.get_label('tournament rounds must use tournament rules.').'<br>';
 	
 	echo '<input type="checkbox" id="form-enforce_scoring"';
-	if ($flags & TOURNAMENT_ENFORCE_SCORING)
+	if ($flags & TOURNAMENT_FLAG_ENFORCE_SCORING)
 	{
 		echo ' checked';
 	}
@@ -178,8 +178,8 @@ try
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-event_round").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_EVENT_ROUND; ?>;
-		if ($("#form-enforce_rules").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_RULES; ?>;
-		if ($("#form-enforce_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_SCORING; ?>;
+		if ($("#form-enforce_rules").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_ENFORCE_RULES; ?>;
+		if ($("#form-enforce_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_ENFORCE_SCORING; ?>;
 		
 		var _end = strToDate(endDate.val());
 		_end.setDate(_end.getDate() + 1); // inclusive

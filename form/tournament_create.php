@@ -208,8 +208,8 @@ try
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-event_round").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_EVENT_ROUND; ?>;
-		if ($("#form-enforce_rules").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_RULES; ?>;
-		if ($("#form-enforce_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_SCORING; ?>;
+		if ($("#form-enforce_rules").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_ENFORCE_RULES; ?>;
+		if ($("#form-enforce_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_ENFORCE_SCORING; ?>;
 		
 		var _end = strToDate(endDate.val());
 		_end.setDate(_end.getDate() + 1); // inclusive

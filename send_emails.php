@@ -224,7 +224,7 @@ try
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities i ON a.city_id = i.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
-			' WHERE (e.flags & ' . EVENT_FLAG_DONE . ') = 0 AND e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' < UNIX_TIMESTAMP() AND e.start_time + e.duration + ' . EVENT_NOT_DONE_TIME . ' >= UNIX_TIMESTAMP()');
+			' WHERE (e.flags & ' . EVENT_FLAG_FINISHED . ') = 0 AND e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' < UNIX_TIMESTAMP() AND e.start_time + e.duration + ' . EVENT_NOT_DONE_TIME . ' >= UNIX_TIMESTAMP()');
 		while (($row = $query->next()) && $emails_remaining > 0)
 		{
 			list($e_id, $e_name, $e_start_time, $e_duration, $e_notes, $e_languages, $a_id, $a_address, $a_map_url, $i_timezone, $c_id, $c_name) = $row;
@@ -266,7 +266,7 @@ try
 				// --$emails_remaining;
 			// }
 			
-			Db::exec(get_label('event'), 'UPDATE events SET flags = (flags | ' . EVENT_FLAG_DONE . ') WHERE id = ?', $e_id);
+			Db::exec(get_label('event'), 'UPDATE events SET flags = (flags | ' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $e_id);
 		}
 	}
 
