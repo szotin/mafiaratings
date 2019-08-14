@@ -145,6 +145,22 @@ ALTER TABLE tournaments DROP COLUMN scoring_id;
 ALTER TABLE scorings DROP COLUMN sorting;
 DROP TABLE scoring_rules;
 
+RENAME TABLE seasons TO club_seasons;
+
+CREATE TABLE league_seasons (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `league_id` INT(11) NOT NULL,
+  `name` VARCHAR(256) NOT NULL,
+  `start_time` INT(11) NOT NULL,
+  `end_time` INT(11) NOT NULL,
+
+  PRIMARY KEY (`id`),
+  KEY `league` (`league_id`),
+  CONSTRAINT `season_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`)
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
 -- UPDATE scoring_versions SET scoring = '{"sorting":"acgk","groups":[{"name":"main","policies":[{"matter":2,"roles":5,"points":1},{"matter":2,"roles":10,"points":2}]},{"name":"extra","policies":[{"matter":32,"points":1},{"matter":64,"points":1},{"matter":1024,"roles":3,"points":1}]}]}' WHERE scoring_id = 2;
 -- UPDATE scoring_versions SET scoring = '{"sorting":"acgk","groups":[{"name":"main","policies":[{"matter":2,"points":1}]},{"name":"extra","policies":[{"matter":32,"points":0.3},{"matter":64,"points":0.2},{"matter":1024,"roles":3,"points":0.1},{"matter":32768,"roles":1,"points":0.2},{"matter":131072,"roles":12,"points":0.1},{"matter":524288,"roles":8,"points":0.1},{"matter":1048576,"roles":2,"points":0.2}]}]}' WHERE scoring_id = 3;
 -- UPDATE scoring_versions SET scoring = '{"sorting":"acgk","groups":[{"name":"main","policies":[{"matter":2,"roles":1,"points":3},{"matter":2,"roles":6,"points":4},{"matter":2,"roles":8,"points":5},{"matter":4,"roles":10,"points":-1}]},{"name":"extra","policies":[{"matter":32,"points":1},{"matter":64,"points":1},{"matter":1024,"roles":3,"points":1},{"matter":131072,"roles":8,"points":1},{"matter":1048576,"roles":2,"points":1}]}]}' WHERE scoring_id = 5;

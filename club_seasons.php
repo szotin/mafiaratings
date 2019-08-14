@@ -14,10 +14,10 @@ class Page extends ClubPageBase
 		
 		check_permissions(PERMISSION_CLUB_MANAGER, $this->id);
 		
-		list ($count) = Db::record(get_label('season'), 'SELECT count(*) FROM seasons WHERE club_id = ?', $this->id);
+		list ($count) = Db::record(get_label('season'), 'SELECT count(*) FROM club_seasons WHERE club_id = ?', $this->id);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? ORDER BY start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, $this->id);
+		$query = new DbQuery('SELECT id, name, start_time, end_time FROM club_seasons WHERE club_id = ? ORDER BY start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, $this->id);
 		
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="darker"><th width="56">';

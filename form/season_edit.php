@@ -16,7 +16,7 @@ try
 	}
 	$season_id = $_REQUEST['season'];
 	
-	list ($name, $start, $end, $club_id, $timezone) = Db::record(get_label('season'), 'SELECT s.name, s.start_time, s.end_time, c.id, ct.timezone FROM seasons s JOIN clubs c ON c.id = s.club_id JOIN cities ct ON ct.id = c.city_id WHERE s.id = ?', $season_id);
+	list ($name, $start, $end, $club_id, $timezone) = Db::record(get_label('season'), 'SELECT s.name, s.start_time, s.end_time, c.id, ct.timezone FROM club_seasons s JOIN clubs c ON c.id = s.club_id JOIN cities ct ON ct.id = c.city_id WHERE s.id = ?', $season_id);
 	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	
 	echo '<table class="dialog_form" width="100%">';
@@ -38,7 +38,7 @@ try
 	
 	function commit(onSuccess)
 	{
-		json.post("api/ops/season.php",
+		json.post("api/ops/club_season.php",
 			{
 				op: 'change'
 				, season_id: <?php echo $season_id; ?>

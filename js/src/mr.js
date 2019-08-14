@@ -181,7 +181,7 @@ var mr = new function()
 	{
 		function _delete()
 		{
-			json.post("api/ops/season.php", { op: 'delete', season_id: id }, refr);
+			json.post("api/ops/club_season.php", { op: 'delete', season_id: id }, refr);
 		}
 
 		if (typeof confirmMessage == "string")

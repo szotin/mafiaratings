@@ -101,6 +101,20 @@ define('SCORING_SORTING_SURRENDERED', 'q');
 
 define('SCORING_DEFAULT_SORTING', 'acgk');
 
+define('COMPETITION_EVENT', 0);
+define('COMPETITION_TOURNAMENT', 1);
+define('COMPETITION_CLUB', 2);
+define('COMPETITION_LEAGUE', 3);
+
+define('COMPETITION_FLAG_EVENT', 0x01);
+define('COMPETITION_FLAG_EVENT_OPT', 0x02);
+define('COMPETITION_FLAG_TOURNAMENT', 0x04);
+define('COMPETITION_FLAG_TOURNAMENT_OPT', 0x08);
+define('COMPETITION_FLAG_CLUB', 0x10);
+define('COMPETITION_FLAG_CLUB_OPT', 0x20);
+define('COMPETITION_FLAG_LEAGUE', 0x40);
+define('COMPETITION_FLAG_LEAGUE_OPT', 0x80);
+
 function format_score($score)
 {
 	$int_score = (int)($score * 100);
@@ -294,6 +308,107 @@ function get_roles_condition($roles)
 		break;
 	}
 	return $role_condition;
+}
+
+function get_scoring_system($scoring_system)
+{
+	if (is_numeric($scoring_system))
+	{
+		list($scoring_system) = Db::record(get_label('scoring system'), 'SELECT scoring FROM scoring_versions WHERE id = ?', $scoring_system);
+		$scoring_system = get_scoring_system($scoring_system);
+	}
+	else if (is_string($scoring_system))
+	{
+		$scoring_system = json_decode($scoring_system);
+	}
+	return $scoring_system;
+}
+
+class Scores
+{
+	private $players;
+	
+	function __construct()
+	{
+		$this->players = array();
+	}
+	
+	private function is_group_on($group, $competition, $options)
+	{
+		if (isset($group->comp))
+		{
+			$comp_flags = $group->comp >> ($competition * 2);
+			if (($comp_flags & 2) != 0 && $options != NULL && isset($options->$group->name))
+			{
+				$comp_flags = $options->$group->name >> ($competition * 2);
+			}
+			return ($comp_flags & 1) != 0;
+		}
+		return true;
+	}
+	
+	function add_scores($competition, $competition_id, $scoring_system, $options = NULL)
+	{
+		$scoring = get_scoring_system($scoring_system);
+		
+		// Are there any policies dependent on stats
+		$stat_flags = 0;
+		foreach ($scoring->groups as $group)
+		{
+			if (!$this->is_group_on($group, $competition, $options))
+			{
+				continue;
+			}
+			
+			foreach ($group->policies as $policy)
+			{
+				if (isset($policy->min_difficulty) || isset($policy->max_difficulty))
+				{
+					$stat_flags |= SCORING_STAT_FLAG_GAME_DIFFICULTY;
+				}
+				
+				if (isset($policy->min_night1) || isset($policy->max_night1))
+				{
+					$stat_flags |= SCORING_STAT_FLAG_FIRST_NIGHT_KILLING;
+				}
+			}
+		}
+		
+		// Make a competition condition
+		switch ($competition)
+		{
+			case COMPETITION_EVENT:
+				$game_condition = new SQL(' WHERE g.event_id = ?', $competition_id);
+				break;
+			case COMPETITION_TOURNAMENT:
+				$game_condition = new SQL(' JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ?)', $competition_id);
+				break;
+			case COMPETITION_CLUB:
+				if (is_array($competition_id))
+				{
+					list($club_id, $year) = $competition_id;
+					$start = mktime(0, 0, 0, 1, 1, $year);
+					$end = mktime(0, 0, 0, 1, 1, $year + 1);
+				}
+				else
+				{
+					list($start, $end) = Db::record(get_label('season'), 'SELECT start_time, end_time FROM club_seasons WHERE id = ?', $competition_id);
+				}
+				$game_condition = new SQL(' WHERE g.start_time >= ? AND g.start_time < ?', $start, $end);
+				break;
+			case COMPETITION_LEAGUE:
+				break;
+		}
+		
+		// Calculate game difficulty coefficients
+		$red_difficulty = 1;
+		$black_difficulty = 1;
+		if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
+		{
+			
+			// $query = new DbQuery('SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE 1', $condition);
+		}
+	}
 }
 
 // class ScoringRule

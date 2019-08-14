@@ -248,7 +248,7 @@ function get_current_club_season($club_id)
 	$condition = new SQL();
 	if ($club_id > 0)
 	{
-		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
+		$query = new DbQuery('SELECT id, name, start_time, end_time FROM club_seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
 		while ($row = $query->next())
 		{
 			return (int)$row[0];
@@ -274,7 +274,7 @@ function show_club_seasons_select($club_id, $option, $on_change, $title)
 	$condition = new SQL();
 	if ($club_id > 0)
 	{
-		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
+		$query = new DbQuery('SELECT id, name, start_time, end_time FROM club_seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
 		while ($row = $query->next())
 		{
 			$seasons[] = $row;
@@ -334,7 +334,7 @@ function get_club_season_condition($season, $start_field, $end_field)
 	$condition = new SQL('');
 	if ($season > 0)
 	{
-		$condition->add(' AND EXISTS(SELECT _s.id FROM seasons _s WHERE _s.start_time <= ' . $end_field . ' AND _s.end_time > ' . $start_field . ' AND _s.id = ?)', $season);
+		$condition->add(' AND EXISTS(SELECT _s.id FROM club_seasons _s WHERE _s.start_time <= ' . $end_field . ' AND _s.end_time > ' . $start_field . ' AND _s.id = ?)', $season);
 	}
 	else if ($season < SEASON_ALL_TIME)
 	{

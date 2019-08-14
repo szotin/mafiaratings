@@ -40,7 +40,7 @@ try
 	
 	function commit(onSuccess)
 	{
-		json.post("api/ops/season.php",
+		json.post("api/ops/club_season.php",
 		{
 			op: 'create'
 			, club_id: <?php echo $club_id; ?>

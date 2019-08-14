@@ -100,8 +100,8 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Season Operations</td>
-	<td><a href="season.php?help"><?php echo PRODUCT_URL; ?>/api/ops/season.php</a></td>
+	<td>Club Season Operations</td>
+	<td><a href="club_season.php?help"><?php echo PRODUCT_URL; ?>/api/ops/club_season.php</a></td>
 	<td>
 		<p>Creating, editing, and deleting seasons in a club. Season is a time interval used in a club to separate long term competitions. All stats can be viewed per configurable season instead of all-time stats.</p>
 	</td>
