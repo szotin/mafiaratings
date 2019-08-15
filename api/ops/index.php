@@ -108,6 +108,14 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
+	<td>League Season Operations</td>
+	<td><a href="league_season.php?help"><?php echo PRODUCT_URL; ?>/api/ops/league_season.php</a></td>
+	<td>
+		<p>Creating, editing, and deleting seasons in a league. Season is a time interval used in a league to separate long term competitions. All stats can be viewed per configurable season instead of all-time stats.</p>
+	</td>
+</tr>
+
+<tr>
 	<td>Scoring Operations</td>
 	<td><a href="scoring.php?help"><?php echo PRODUCT_URL; ?>/api/ops/scoring.php</a></td>
 	<td>

@@ -158,7 +158,7 @@ class Page extends ClubPageBase
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->season = 0;
+		$this->season = SEASON_LATEST;
 		if (isset($_REQUEST['season']))
 		{
 			$this->season = $_REQUEST['season'];

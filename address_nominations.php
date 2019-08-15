@@ -7,10 +7,8 @@ require_once 'include/scoring.php';
 
 class Page extends AddressPageBase
 {
-	private $season;
 	private $min_games;
 	private $games_count;
-	private $season_condition;
 
 	protected function prepare()
 	{
@@ -19,14 +17,7 @@ class Page extends AddressPageBase
 		list($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 		
-		$this->season = SEASON_ALL_TIME;
-		if (isset($_REQUEST['season']))
-		{
-			$this->season = $_REQUEST['season'];
-		}
-		
-		$this->season_condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.result > 0', $this->id, $this->season_condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.result > 0', $this->id);
 		if (isset($_REQUEST['min']))
 		{
 			$this->min_games = $_REQUEST['min'];
@@ -103,8 +94,6 @@ class Page extends AddressPageBase
 		echo '<p><form name="filter" method="get"><input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<input type="hidden" name="sort" id="sort" value="' . $sort . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$this->season = show_club_seasons_select($this->club_id, $this->season, 'document.filter.submit()', get_label('Show stats of a specific season.'));
-		echo ' ';
 		show_roles_select($roles, 'document.filter.submit()', get_label('Use only the stats of a specific role.'));
 		
 		echo ' <select name="min" onchange="document.filter.submit()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
@@ -130,7 +119,6 @@ class Page extends AddressPageBase
 		echo '</td></tr></table></form></p>';
 		
 		$condition = get_roles_condition($roles);
-		$condition->add($this->season_condition);
 		$query = new DbQuery(
 			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags' .
 				' FROM players p' .

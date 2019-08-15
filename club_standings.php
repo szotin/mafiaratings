@@ -31,7 +31,7 @@ class Page extends ClubPageBase
 			$this->roles = $_REQUEST['roles'];
 		}
 		
-		$this->season = 0;
+		$this->season = SEASON_LATEST;
 		if (isset($_REQUEST['season']))
 		{
 			$this->season = (int)$_REQUEST['season'];

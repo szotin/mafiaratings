@@ -14,6 +14,7 @@ define('LOG_OBJECT_CLUB_REQUEST', 'club request');
 define('LOG_OBJECT_RULES', 'rules');
 define('LOG_OBJECT_SCORING_SYSTEM', 'scoring system');
 define('LOG_OBJECT_CLUB_SEASON', 'club season');
+define('LOG_OBJECT_LEAGUE_SEASON', 'league season');
 define('LOG_OBJECT_ADDRESS', 'address');
 define('LOG_OBJECT_TOURNAMENT', 'tournament');
 define('LOG_OBJECT_EVENT', 'event');
@@ -42,6 +43,7 @@ function prepare_log_objects()
 		, LOG_OBJECT_RULES => NULL
 		, LOG_OBJECT_SCORING_SYSTEM => 'scoring.php?bck=1&id='
 		, LOG_OBJECT_CLUB_SEASON => NULL
+		, LOG_OBJECT_LEAGUE_SEASON => NULL
 		, LOG_OBJECT_ADDRESS => 'address_info.php?bck=1&id='
 		, LOG_OBJECT_TOURNAMENT => 'tournament_info.php?bck=1&id='
 		, LOG_OBJECT_EVENT => 'event_info.php?bck=1&id='

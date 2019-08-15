@@ -273,6 +273,9 @@ define('TOURNAMENT_INVITATION_STATUS_NO_RESPONCE', 0);
 define('TOURNAMENT_INVITATION_STATUS_ACCEPTED', 1);
 define('TOURNAMENT_INVITATION_STATUS_DECLINED', 2);
 
+define('SEASON_LATEST', 0);
+define('SEASON_ALL_TIME', -1);
+
 function set_flag($flags, $flag, $value)
 {
 	if ($value)

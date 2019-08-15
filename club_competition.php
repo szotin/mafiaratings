@@ -17,7 +17,7 @@ class Page extends ClubPageBase
 		global $_profile;
 		parent::prepare();
 		
-		$this->season = 0;
+		$this->season = SEASON_LATEST;
 		if (isset($_REQUEST['season']))
 		{
 			$this->season = (int)$_REQUEST['season'];

@@ -392,11 +392,22 @@ class Scores
 				}
 				else
 				{
-					list($start, $end) = Db::record(get_label('season'), 'SELECT start_time, end_time FROM club_seasons WHERE id = ?', $competition_id);
+					list($club_id, $start, $end) = Db::record(get_label('season'), 'SELECT club_id, start_time, end_time FROM club_seasons WHERE id = ?', $competition_id);
 				}
-				$game_condition = new SQL(' WHERE g.start_time >= ? AND g.start_time < ?', $start, $end);
+				$game_condition = new SQL(' WHERE g.club_id = ? AND g.start_time >= ? AND g.start_time < ?', $club_id, $start, $end);
 				break;
 			case COMPETITION_LEAGUE:
+				if (is_array($competition_id))
+				{
+					list($league_id, $year) = $competition_id;
+					$start = mktime(0, 0, 0, 1, 1, $year);
+					$end = mktime(0, 0, 0, 1, 1, $year + 1);
+				}
+				else
+				{
+					list($league_id, $start, $end) = Db::record(get_label('season'), 'SELECT league_id, start_time, end_time FROM league_seasons WHERE id = ?', $competition_id);
+				}
+				$game_condition = new SQL(' JOIN events e ON e.id = g.event_id JOIN tournaments t ON t.id = e.tournament_id WHERE t.league_id = ? AND g.start_time >= ? AND g.start_time < ?', $club_id, $start, $end);
 				break;
 		}
 		

@@ -19,7 +19,7 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_page;
 		
-		$season = 0;
+		$season = SEASON_LATEST;
 		if (isset($_REQUEST['season']))
 		{
 			$season = (int)$_REQUEST['season'];

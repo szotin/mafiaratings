@@ -6,9 +6,6 @@ require_once __DIR__ . '/league.php';
 define('ALL_CLUBS', -1);
 define('MY_CLUBS', 0);
 
-define('SEASON_ALL_TIME', -1);
-define('SEASON_LAST_YEAR', -2);
-
 function has_club_buttons($id, $flags, $memb_flags)
 {
 	global $_profile;
@@ -265,7 +262,7 @@ function get_current_club_season($club_id)
 		$last_year = (int)date('Y', $timestamp);
 		return -$last_year;
 	}
-	return SEASON_LAST_YEAR;
+	return -date('Y');
 }
 
 function show_club_seasons_select($club_id, $option, $on_change, $title)
@@ -282,13 +279,12 @@ function show_club_seasons_select($club_id, $option, $on_change, $title)
 		$condition->add(' AND g.club_id = ?', $club_id);
 	}
 	
-	if ($option == 0 && count($seasons) > 0)
+	if ($option == SEASON_LATEST && count($seasons) > 0)
 	{
 		$option = $seasons[0][0];
 	}
 	echo '<select name="season" id="season" onChange="' . $on_change . '" title="' . $title . '">';
 	show_option(SEASON_ALL_TIME, $option, get_label('All time'));
-	show_option(SEASON_LAST_YEAR, $option, get_label('Last year'), get_label('Since the same day a year ago.'));
 	if (count($seasons) > 0)
 	{
 		foreach ($seasons as $season)
@@ -332,22 +328,15 @@ function show_club_seasons_select($club_id, $option, $on_change, $title)
 function get_club_season_condition($season, $start_field, $end_field)
 {
 	$condition = new SQL('');
-	if ($season > 0)
+	if ($season > SEASON_LATEST)
 	{
 		$condition->add(' AND EXISTS(SELECT _s.id FROM club_seasons _s WHERE _s.start_time <= ' . $end_field . ' AND _s.end_time > ' . $start_field . ' AND _s.id = ?)', $season);
 	}
 	else if ($season < SEASON_ALL_TIME)
 	{
-		if ($season == SEASON_LAST_YEAR)
-		{
-			$condition->add(' AND ' . $end_field . ' >= UNIX_TIMESTAMP() - 31536000');
-		}
-		else
-		{
-			$start = mktime(0, 0, 0, 1, 1, -$season);
-			$end = mktime(0, 0, 0, 1, 1, 1 - $season);
-			$condition->add(' AND ' . $end_field . ' >= ? AND ' . $start_field . ' < ?', $start, $end);
-		}
+		$start = mktime(0, 0, 0, 1, 1, -$season);
+		$end = mktime(0, 0, 0, 1, 1, 1 - $season);
+		$condition->add(' AND ' . $end_field . ' >= ? AND ' . $start_field . ' < ?', $start, $end);
 	}
 	return $condition;
 }

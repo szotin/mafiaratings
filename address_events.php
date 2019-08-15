@@ -19,12 +19,6 @@ class Page extends AddressPageBase
 	{
 		global $_profile, $_page;
 		
-		$season = SEASON_ALL_TIME;
-		if (isset($_REQUEST['season']))
-		{
-			$season = (int)$_REQUEST['season'];
-		}
-		
 		$events_type = ETYPE_WITH_GAMES;
 		if (isset($_REQUEST['etype']))
 		{
@@ -34,7 +28,6 @@ class Page extends AddressPageBase
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_club_seasons_select($this->club_id, $season, 'document.clubForm.submit()', get_label('Show events of a specific season.'));
 		echo ' <select name="etype" onchange="document.clubForm.submit()">';
 		show_option(ETYPE_WITH_GAMES, $events_type, get_label('Events'));
 		show_option(ETYPE_NOT_CANCELED, $events_type, get_label('Events including empty'));
@@ -43,7 +36,6 @@ class Page extends AddressPageBase
 		echo '</td></tr></table></form>';
 		
 		$condition = new SQL(' FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE e.address_id = ? AND e.start_time < UNIX_TIMESTAMP()', $this->id);
-		$condition->add(get_club_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
 		switch ($events_type)
 		{
 			case ETYPE_NOT_CANCELED:

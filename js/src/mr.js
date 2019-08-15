@@ -170,14 +170,14 @@ var mr = new function()
 	}
 
 	//--------------------------------------------------------------------------------------
-	// Season
+	// Club Season
 	//--------------------------------------------------------------------------------------
-	this.editSeason = function(id)
+	this.editClubSeason = function(id)
 	{
-		dlg.form("form/season_edit.php?season=" + id, refr);
+		dlg.form("form/club_season_edit.php?season=" + id, refr);
 	}
 
-	this.deleteSeason = function(id, confirmMessage)
+	this.deleteClubSeason = function(id, confirmMessage)
 	{
 		function _delete()
 		{
@@ -194,9 +194,39 @@ var mr = new function()
 		}
 	}
 
-	this.createSeason = function(clubId)
+	this.createClubSeason = function(clubId)
 	{
-		dlg.form("form/season_create.php?club=" + clubId, refr);
+		dlg.form("form/club_season_create.php?club=" + clubId, refr);
+	}
+
+	//--------------------------------------------------------------------------------------
+	// League Season
+	//--------------------------------------------------------------------------------------
+	this.editLeagueSeason = function(id)
+	{
+		dlg.form("form/league_season_edit.php?season=" + id, refr);
+	}
+
+	this.deleteLeagueSeason = function(id, confirmMessage)
+	{
+		function _delete()
+		{
+			json.post("api/ops/league_season.php", { op: 'delete', season_id: id }, refr);
+		}
+
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _delete);
+		}
+		else
+		{
+			_delete();
+		}
+	}
+
+	this.createLeagueSeason = function(leagueId)
+	{
+		dlg.form("form/league_season_create.php?league=" + leagueId, refr);
 	}
 
 	//--------------------------------------------------------------------------------------

@@ -24,7 +24,7 @@ class Page extends ClubPageBase
 			}
 		}
 		
-		$season = 0;
+		$season = SEASON_LATEST;
 		if (isset($_REQUEST['season']))
 		{
 			$season = (int)$_REQUEST['season'];

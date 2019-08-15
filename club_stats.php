@@ -19,7 +19,7 @@ class Page extends ClubPageBase
 		list($timezone) = Db::record(get_label('club'), 'SELECT i.timezone FROM clubs c JOIN cities i ON c.city_id = i.id WHERE c.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 		
-		$this->season = 0;
+		$this->season = SEASON_LATEST;
 		if (isset($_REQUEST['season']))
 		{
 			$this->season = $_REQUEST['season'];
