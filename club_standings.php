@@ -136,7 +136,7 @@ class Page extends ClubPageBase
 			$this->user_pic->show(ICONS_DIR, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $score->id . '&bck=1">' . cut_long_name($score->name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
-			if (!is_null($score->club_id))
+			if (!is_null($score->club_id) && $score->club_id > 0)
 			{
 				$this->club_pic->set($score->club_id, $score->club_name, $score->club_flags);
 				$this->club_pic->show(ICONS_DIR, 40);
