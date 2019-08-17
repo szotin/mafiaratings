@@ -122,8 +122,11 @@ class Page extends EventPageBase
 			$this->user_pic->show(ICONS_DIR, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $score->id . '&bck=1">' . $score->name . '</a></td>';
 			echo '<td width="50" align="center">';
-			$this->club_pic->set($score->club_id, $score->club_name, $score->club_flags);
-			$this->club_pic->show(ICONS_DIR, 40);
+			if (!is_null($score->club_id) && $score->club_id > 0)
+			{
+				$this->club_pic->set($score->club_id, $score->club_name, $score->club_flags);
+				$this->club_pic->show(ICONS_DIR, 40);
+			}
 			echo '</td>';
 			echo '<td align="center" class="' . $highlight . '">';
 			echo $score->points_str();

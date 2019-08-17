@@ -220,8 +220,11 @@ class Page extends ClubPageBase
 			$this->user_pic->show(ICONS_DIR, 50);
 			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
-			$this->club_pic->set($club_id, $club_name, $club_flags);
-			$this->club_pic->show(ICONS_DIR, 40);
+			if (!is_null($club_id))
+			{
+				$this->club_pic->set($club_id, $club_name, $club_flags);
+				$this->club_pic->show(ICONS_DIR, 40);
+			}
 			echo '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td width="100" align="center">' . number_format($abs, 0) . '</td>';

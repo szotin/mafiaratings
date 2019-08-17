@@ -9,6 +9,9 @@ require_once 'include/chart.php';
 define('MAX_POINTS_ON_GRAPH', 50);
 define('MIN_PERIOD_ON_GRAPH', 10*24*60*60);
 
+define('RATINGS_BEFORE', 5);
+define('RATINGS_AFTER', 5);
+
 function show_permissions($user_flags)
 {
 	$sep = '';
@@ -130,6 +133,7 @@ class Page extends UserPageBase
 			}
 			echo '<tr><td class="dark">'.get_label('Account status').':</td><td>' . $status . '</td></tr>';
 		}
+		echo '</table>';
 		
 		$prev_club_id = 0;
 		$role_titles = array(
@@ -145,91 +149,41 @@ class Page extends UserPageBase
 			get_label('As a sheriff'),
 			get_label('As a mafiosi'),
 			get_label('As a don'));
-		
-		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM clubs c' . 
-				' JOIN games g ON g.club_id = c.id' .
-				' JOIN user_clubs u ON u.club_id = c.id' .
-				' JOIN players p ON p.user_id = u.user_id AND p.game_id = g.id' .
-				' WHERE u.user_id = ? GROUP BY c.id, p.role ORDER BY c.id, p.role',
-			$this->id);
 			
-		while ($row = $query->next())
-		{
-			list ($club_id, $club_name, $club_flags, $club_url, $role, $rating, $games, $games_won, $user_flags) = $row;
-			if ($club_id != $prev_club_id)
-			{
-				echo '</table>';
-				echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
-				echo '<table class="transp" width="100%"><tr><td width="52"><a href="club_main.php?bck=1&id=' . $club_id . '">';
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 48);
-				echo '</a></td><td>' . $club_name . '</td><td align="right">';
-				show_permissions($user_flags);
-				echo '</td></tr></table>';
-				echo '</td><td width="100">' . get_label('Games played');
-				echo ':</td><td width="100">' . get_label('Victories') . ':</td><td width="100">' . get_label('Rating earned') . ':</td></tr>';
-				$prev_club_id = $club_id;
-			}
-			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($rating), format_rating($rating/$games, 1)) . '</td></tr>';
-		}
-		
+		$total_rating = 0;
+		$total_games = 0;
+		$total_won = 0;
+		echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
+		echo '</td><td>' . get_label('Games played') . ':</td>';
+		echo '<td>' . get_label('Victories') . ':</td>';
+		echo '<td>' . get_label('Rating earned') . ':</td></tr>';
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM clubs c' . 
-				' JOIN games g ON g.club_id = c.id' .
-				' JOIN players p ON p.game_id = g.id' .
-				' WHERE p.user_id = ? AND c.id NOT IN (SELECT u.club_id FROM user_clubs u WHERE u.user_id = p.user_id) GROUP BY c.id, p.role ORDER BY c.id, p.role',
+			'SELECT p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
+				' JOIN games g ON g.id = p.game_id' .
+				' WHERE p.user_id = ? GROUP BY p.role ORDER BY p.role',
 			$this->id);
 		while ($row = $query->next())
 		{
-			list ($club_id, $club_name, $club_flags, $club_url, $role, $rating, $games, $games_won) = $row;
-			if ($club_id != $prev_club_id)
-			{
-				echo '</table>';
-				echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
-				echo '<table class="transp" width="100%"><tr><td width="52"><a href="club_main.php?bck=1&id=' . $club_id . '">';
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 48);
-				echo '</a></td><td>' . $club_name . '</td></tr></table>';
-				echo '</td><td width="100">' . get_label('Games played');
-				echo ':</td><td width="100">' . get_label('Victories') . ':</td><td width="100">' . get_label('Rating earned') . ':</td></tr>';
-				$prev_club_id = $club_id;
-			}
+			list ($role, $rating, $games, $games_won) = $row;
+			$total_rating += $rating;
+			$total_games += $games;
+			$total_won += $games_won;
 			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($rating), format_rating($rating/$games, 1)) . '</td></tr>';
 		}
-		
-		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, u.flags FROM clubs c' .
-			' JOIN user_clubs u ON u.club_id = c.id' .
-			' WHERE u.user_id = ? AND u.club_id NOT IN (SELECT g.club_id FROM players p, games g WHERE p.game_id = g.id AND p.user_id = u.user_id) ORDER BY u.flags DESC', $this->id);
-		while ($row = $query->next())
-		{
-			list ($club_id, $club_name, $club_flags, $club_url, $user_flags) = $row;
-			echo '</table>';
-			echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
-			echo '<table class="transp" width="100%"><tr><td width="52"><a href="club_main.php?bck=1&id=' . $club_id . '">';
-			$this->club_pic->set($club_id, $club_name, $club_flags);
-			$this->club_pic->show(ICONS_DIR, 48);
-			echo '</a></td><td>' . $club_name . '</td><td align="right">';
-			show_permissions($user_flags);
-			echo '</td></tr></table>';
-			echo '</td><td width="100"></td><td width="100"></td><td width="100"></td></tr>';
-			$prev_club_id = $club_id;
-		}
-		
+		echo '<tr class="darker"><td>' . get_label('Total') . ':</td><td>' . $total_games . '</td><td>' . $total_won . '(' . number_format($total_won * 100 / $total_games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($total_rating), format_rating($total_rating/$total_games, 1)) . '</td></tr>';
 		echo '</table>';
 		
 		if ($rating_pos >= 0)
 		{
 			echo '</td><td width="280" valign="top">';
-			$rating_page = $rating_pos - 3;
+			$rating_page = $rating_pos - RATINGS_BEFORE;
 			if ($rating_page < 0)
 			{
 				$rating_page = 0;
 			}
 			$query = new DbQuery(
 				'SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags ' . 
-				'FROM users u WHERE u.games > 0 ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $rating_page . ',7');
+				'FROM users u WHERE u.games > 0 ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $rating_page . ',' . (RATINGS_BEFORE + RATINGS_AFTER + 1));
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="4"><b>' . get_label('Rating position') . '</a></td></tr>';
 			$number = $rating_page;

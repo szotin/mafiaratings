@@ -46,8 +46,11 @@ class Page extends AddressPageBase
 			$this->user_pic->show(ICONS_DIR, 50);
 			echo '</a><td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
 			echo '<td width="50" align="center">';
-			$this->club_pic->set($club_id, $club_name, $club_flags);
-			$this->club_pic->show(ICONS_DIR, 40);
+			if (!is_null($club_id))
+			{
+				$this->club_pic->set($club_id, $club_name, $club_flags);
+				$this->club_pic->show(ICONS_DIR, 40);
+			}
 			echo '</td>';
 			
 			$games = $civil_wins + $mafia_wins;
