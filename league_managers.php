@@ -53,8 +53,11 @@ class Page extends LeaguePageBase
 			}
 			echo '</td>';
 			echo '<td width="50" align="center">';
-			$this->club_pic->set($club_id, $club_name, $club_flags);
-			$this->club_pic->show(ICONS_DIR, 40);
+			if (!is_null($club_id))
+			{
+				$this->club_pic->set($club_id, $club_name, $club_flags);
+				$this->club_pic->show(ICONS_DIR, 40);
+			}
 			echo '</td></tr>';
 		}
 		echo '</table>';

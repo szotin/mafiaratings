@@ -131,8 +131,11 @@ class Page extends GeneralPageBase
 				$this->user_pic->set($player->id, $player->user_name, $player->user_flags);
 				$this->user_pic->show(ICONS_DIR, 36);
 				echo '</a></td><td width="48"><a href="club_main.php?id=' . $player->club_id . '&bck=1">';
-				$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
-				$this->club_pic->show(ICONS_DIR, 36);
+				if (!is_null($club_id))
+				{
+					$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
+					$this->club_pic->show(ICONS_DIR, 36);
+				}
 				echo '</a></td><td width="30">';
 				if (isset($player->src))
 				{
@@ -352,8 +355,11 @@ class Page extends GeneralPageBase
 				$this->user_pic->show(ICONS_DIR, 50);
 				echo '</a></td><td width="36"><a href="club_main.php?id=' . $club_id . '&bck=1">';
 				
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 36);
+				if (!is_null($club_id))
+				{
+					$this->club_pic->set($club_id, $club_name, $club_flags);
+					$this->club_pic->show(ICONS_DIR, 36);
+				}
 				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';
