@@ -183,7 +183,7 @@ class Page extends GeneralPageBase
 				$this->user_pic->set($player->id, $player->user_name, $player->user_flags);
 				$this->user_pic->show(ICONS_DIR, 36);
 				echo '</a></td><td width="48"><a href="club_main.php?id=' . $player->club_id . '&bck=1">';
-				if (!is_null($club_id))
+				if (!is_null($player->club_id) && $player->club_id > 0)
 				{
 					$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
 					$this->club_pic->show(ICONS_DIR, 36);
