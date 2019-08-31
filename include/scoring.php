@@ -310,27 +310,17 @@ function get_roles_condition($roles)
 	return $role_condition;
 }
 
-function get_scoring_system($scoring_system)
-{
-	if (is_numeric($scoring_system))
-	{
-		list($scoring_system) = Db::record(get_label('scoring system'), 'SELECT scoring FROM scoring_versions WHERE id = ?', $scoring_system);
-		$scoring_system = get_scoring_system($scoring_system);
-	}
-	else if (is_string($scoring_system))
-	{
-		$scoring_system = json_decode($scoring_system);
-	}
-	return $scoring_system;
-}
-
 class Scores
 {
 	private $players;
+	private $events;
+	private $systems;
 	
 	function __construct()
 	{
 		$this->players = array();
+		$this->events = array();
+		$this->systems = array();
 	}
 	
 	private function is_group_on($group, $competition, $options)
@@ -347,9 +337,43 @@ class Scores
 		return true;
 	}
 	
-	function add_scores($competition, $competition_id, $scoring_system, $options = NULL)
+	static private function get_event($event_id)
 	{
-		$scoring = get_scoring_system($scoring_system);
+		if (isset($this->events[$event_id]))
+		{
+			return $this->events[$event_id];
+		}
+		
+		$event = new stdClass();
+		list($scoring_id, $options) = Db::record(get_label('event'), 'SELECT s.scoring, e.scoring_options FROM events e JOIN scoring_versions s ON s.id = e.scoring_version_id WHERE e.id = ?', $event_id);
+		$event->options = json_decode($options);
+		
+		if (!isset($this->systems[$scoring_id]))
+		{
+			list($system) = Db::record(get_label('scoring system'), 'SELECT scoring FROM scoring_versions WHERE id = ?', $scoring_system);
+			$this->systems[$scoring_id] = json_decode($system);
+		}
+		$event->system = $this->systems[$scoring_id];
+	}
+	
+	function add_event($event_id)
+	{
+		// Make syre scoring_system and scoring_options are valid
+		if (is_null($scoring_system))
+		{
+			list($scoring_system, $options) = Db::record(get_label('event'), 'SELECT s.scoring, e.scoring_options FROM events e JOIN scoring_versions s ON s.id = e.scoring_version_id WHERE e.id = ?', $event_id);
+			if (is_null($scoring_options))
+			{
+				$scoring_options = $options;
+			}
+		}
+		else if (is_null($scoring_options))
+		{
+			list($options) = Db::record(get_label('event'), 'SELECT scoring_options FROM events WHERE id = ?', $event_id);
+		}
+		
+		$scoring_system = Scores::get_scoring_system($scoring_system);
+		$scoring_options = Scores::get_scoring_options($scoring_options);
 		
 		// Are there any policies dependent on stats
 		$stat_flags = 0;
@@ -374,51 +398,17 @@ class Scores
 			}
 		}
 		
-		// Make a competition condition
-		switch ($competition)
-		{
-			case COMPETITION_EVENT:
-				$game_condition = new SQL(' WHERE g.event_id = ?', $competition_id);
-				break;
-			case COMPETITION_TOURNAMENT:
-				$game_condition = new SQL(' JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ?)', $competition_id);
-				break;
-			case COMPETITION_CLUB:
-				if (is_array($competition_id))
-				{
-					list($club_id, $year) = $competition_id;
-					$start = mktime(0, 0, 0, 1, 1, $year);
-					$end = mktime(0, 0, 0, 1, 1, $year + 1);
-				}
-				else
-				{
-					list($club_id, $start, $end) = Db::record(get_label('season'), 'SELECT club_id, start_time, end_time FROM club_seasons WHERE id = ?', $competition_id);
-				}
-				$game_condition = new SQL(' WHERE g.club_id = ? AND g.start_time >= ? AND g.start_time < ?', $club_id, $start, $end);
-				break;
-			case COMPETITION_LEAGUE:
-				if (is_array($competition_id))
-				{
-					list($league_id, $year) = $competition_id;
-					$start = mktime(0, 0, 0, 1, 1, $year);
-					$end = mktime(0, 0, 0, 1, 1, $year + 1);
-				}
-				else
-				{
-					list($league_id, $start, $end) = Db::record(get_label('season'), 'SELECT league_id, start_time, end_time FROM league_seasons WHERE id = ?', $competition_id);
-				}
-				$game_condition = new SQL(' JOIN events e ON e.id = g.event_id JOIN tournaments t ON t.id = e.tournament_id WHERE t.league_id = ? AND g.start_time >= ? AND g.start_time < ?', $club_id, $start, $end);
-				break;
-		}
-		
-		// Calculate game difficulty coefficients
-		$red_difficulty = 1;
-		$black_difficulty = 1;
+		// Calculate game difficulty rates
 		if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
 		{
-			
-			// $query = new DbQuery('SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE 1', $condition);
+			list ($count, $black_wins) = Db::record(get_label('event'), 'SELECT count(id), SUM(IF(result = 2, 1, 0)) FROM games WHERE result > 0 AND event_id = ?', $event_id);
+			if ($count > 0)
+			{
+				$scoring_options->red_wining_rate = (float)($black_wins / $count);
+			}
 		}
+		
+		// Calculate first night killed rates
 	}
 }
 
