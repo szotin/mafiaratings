@@ -887,7 +887,11 @@ class PlayerScore
 		{
 			if ($scoring_flags & $flag)
 			{
-				$this->counters[$offset] += $weight;
+				// A hack, FIGM changed killing rule, points for being killed first night are assigned only when the red team looses.
+				if ($flag != SCORING_FLAG_KILLED_FIRST_NIGHT || ($scoring_flags & SCORING_FLAG_LOOSE) != 0)
+				{
+					$this->counters[$offset] += $weight;
+				}
 			}
 			$flag <<= 1;
 			++$offset;
@@ -984,7 +988,11 @@ class PlayerScore
 		{
 			if ($flag & $role_flags)
 			{
-				$count += $this->counters[$matter];
+				// A hack, FIGM changed killing rule, points for being killed first night are assigned only when the red team looses.
+				if ($flag != SCORING_FLAG_KILLED_FIRST_NIGHT || ($scoring_flags & SCORING_FLAG_LOOSE) != 0)
+				{
+					$count += $this->counters[$matter];
+				}
 			}
 			$matter += SCORING_MATTER_COUNT;
 			$flag <<= 1;
