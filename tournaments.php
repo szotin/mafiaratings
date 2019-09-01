@@ -9,22 +9,16 @@ require_once 'include/ccc_filter.php';
 
 define("PAGE_SIZE",15);
 
-define('ETYPE_WITH_GAMES', 0);
-define('ETYPE_NOT_CANCELED', 1);
-define('ETYPE_ALL', 2);
+define('ETYPE_TOURNAMENT', 0);
+define('ETYPE_WITH_GAMES', 1);
+define('ETYPE_NOT_CANCELED', 2);
+define('ETYPE_ALL', 3);
 
 class Page extends GeneralPageBase
 {
-	private $events_type;
-	
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->events_type = ETYPE_WITH_GAMES;
-		if (isset($_REQUEST['etype']))
-		{
-			$this->events_type = (int)$_REQUEST['etype'];
-		}
 		$this->ccc_title = get_label('Filter events by club, city, or country.');
 	}
 
@@ -55,19 +49,7 @@ class Page extends GeneralPageBase
 			break;
 		}
 		
-		
-		switch ($this->events_type)
-		{
-			case ETYPE_NOT_CANCELED:
-				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0');
-				break;
-			case ETYPE_ALL:
-				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0');
-				break;
-			default:
-				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0 AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
-				break;
-		}
+		$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_AFTER) . ') = ' . EVENT_FLAG_TOURNAMENT);
 		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -112,20 +94,6 @@ class Page extends GeneralPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
-	}
-	
-	protected function show_filter_fields()
-	{
-		echo '<select id="etype" onchange="filter()">';
-		show_option(ETYPE_WITH_GAMES, $this->events_type, get_label('Events'));
-		show_option(ETYPE_NOT_CANCELED, $this->events_type, get_label('Events including empty'));
-		show_option(ETYPE_ALL, $this->events_type, get_label('Events including canceled'));
-		echo '</select>';
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ "&etype=" + $("#etype").val()';
 	}
 }
 

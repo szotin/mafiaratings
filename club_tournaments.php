@@ -9,10 +9,6 @@ require_once 'include/event.php';
 define("CUT_NAME",45);
 define("PAGE_SIZE",15);
 
-define('ETYPE_WITH_GAMES', 0);
-define('ETYPE_NOT_CANCELED', 1);
-define('ETYPE_ALL', 2);
-
 class Page extends ClubPageBase
 {
 	protected function show_body()
@@ -25,21 +21,10 @@ class Page extends ClubPageBase
 			$season = (int)$_REQUEST['season'];
 		}
 		
-		$events_type = ETYPE_WITH_GAMES;
-		if (isset($_REQUEST['etype']))
-		{
-			$events_type = (int)$_REQUEST['etype'];
-		}
-		
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		$season = show_club_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show events of a specific season.'));
-		echo ' <select name="etype" onchange="document.clubForm.submit()">';
-		show_option(ETYPE_WITH_GAMES, $events_type, get_label('Events'));
-		show_option(ETYPE_NOT_CANCELED, $events_type, get_label('Events including empty'));
-		show_option(ETYPE_ALL, $events_type, get_label('Events including canceled'));
-		echo '</select>';
 		echo '</td></tr></table></form>';
 		
 		$condition = new SQL(
@@ -50,18 +35,7 @@ class Page extends ClubPageBase
 				' WHERE e.start_time < UNIX_TIMESTAMP() AND e.club_id = ?',
 			$this->id);
 		$condition->add(get_club_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
-		switch ($events_type)
-		{
-			case ETYPE_NOT_CANCELED:
-				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0');
-				break;
-			case ETYPE_ALL:
-				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0');
-				break;
-			default:
-				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0 AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
-				break;
-		}
+		$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_AFTER) . ') = ' . EVENT_FLAG_TOURNAMENT);
 		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
