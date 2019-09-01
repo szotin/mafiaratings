@@ -108,6 +108,6 @@ class Page extends AddressPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Events'));
+$page->run(get_label('Events history'));
 
 ?>
