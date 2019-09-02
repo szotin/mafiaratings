@@ -113,6 +113,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Events'));
+$page->run(get_label('Events history'));
 
 ?>

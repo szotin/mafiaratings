@@ -21,16 +21,34 @@ try
 	}
 	$user_id = $_REQUEST['user_id'];
 	
-	list($user_name, $extra_points) = Db::record(get_label('player'), 'SELECT u.name, p.extra_points FROM players p JOIN users u ON u.id = p.user_id WHERE u.id = ? AND p.game_id = ?', $user_id, $game_id);
+	list($user_name, $extra_points, $extra_points_reason) = Db::record(get_label('player'), 'SELECT u.name, p.extra_points, p.extra_points_reason FROM players p JOIN users u ON u.id = p.user_id WHERE u.id = ? AND p.game_id = ?', $user_id, $game_id);
+	if ($extra_points_reason == NULL)
+	{
+		$extra_points_reason = '';
+	}
 	
-		
 	dialog_title(get_label('Extra points', $user_name, $game_id));
 		
-	echo '<p>' . get_label('Extra points for [0] in game [1]', $user_name, $game_id) . ': <input id="form-extra-points" value="' . $extra_points . '"></p>';
+	echo '<table class="dialog_form" width="100%">';
+	echo '<tr class="darker"><td colspan="2" align="center">' . get_label('Extra points for [0] in game [1]', $user_name, $game_id) . '</td></tr>';
+	echo '<tr><td width="80">' . get_label('Points') . ':</td><td><input id="form-points" value="' . $extra_points . '"></td></tr>';
+	echo '<tr><td>' . get_label('Reason') . ':</td><td><input id="form-reason" value="' . $extra_points_reason . '"></td></tr>';
+	echo '</table>';
 	
 ?>	
 	<script>
-	$("#form-extra-points").spinner({ step:0.05, max:0.7, min:-0.4 }).width(32);
+	$("#form-points").spinner({ step:0.05, max:0.7, min:-0.4 }).width(32);
+	
+	$("#form-reason").autocomplete(
+	{ 
+		source: function( request, response )
+		{
+			$.getJSON("api/control/extra_points_reason.php?game&term=" + $("#form-reason").val(), null, response);
+		}
+		, minLength: 0
+	})
+	.on("focus", function () { $(this).autocomplete("search", ''); }).width(400);
+	
 	function commit(onSuccess)
 	{
 		json.post("api/ops/game.php",
@@ -38,7 +56,8 @@ try
 			op: "extra_points"
 			, game_id: <?php echo $game_id; ?>
 			, user_id: <?php echo $user_id; ?>
-			, points: $('#form-extra-points').val()
+			, reason: $('#form-reason').val()
+			, points: $('#form-points').val()
 		},
 		onSuccess);
 	}

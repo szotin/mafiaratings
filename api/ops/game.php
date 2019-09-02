@@ -1162,6 +1162,16 @@ class ApiPage extends OpsApiPageBase
 		$game_id = (int)get_required_param('game_id');
         $user_id = (int)get_required_param('user_id');
         $points = (float)get_required_param('points');
+		$reason = get_optional_param('reason');
+		
+		if ($points == 0)
+		{
+			$reason = '';
+		}
+		else if (empty($reason))
+		{
+			throw new Exc(get_label('Please enter the reason.'));
+		}
 		
         list($game_log, $club_id) = Db::record(get_label('game'), 'SELECT log, club_id FROM games WHERE id = ?', $game_id);
 
@@ -1173,6 +1183,7 @@ class ApiPage extends OpsApiPageBase
             {
 				Db::begin();
                 $player->extra_points = $points;
+				$player->extra_points_reason = $reason;
                 rebuild_game_stats($gs);
 
                 $log_details = new stdClass();
@@ -1193,6 +1204,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('game_id', 'Game id.');
 		$help->request_param('user_id', 'User id. User must be a player in this game.');
 		$help->request_param('points', 'Extra points. Floating point number from -0.4 to 0.7');
+		$help->request_param('reason', 'Reason why the points are added/subtracted. Must be non empty if points are non zero.', 'points must be 0.');
 		return $help;
     }
 	

@@ -741,7 +741,7 @@ var mr = new function()
 	
 	this.gameExtraPoints = function(gameId, userId)
 	{
-		dlg.form("form/game_extra_points.php?game_id=" + gameId + '&user_id=' + userId, refr, 400);
+		dlg.form("form/game_extra_points.php?game_id=" + gameId + '&user_id=' + userId, refr, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------

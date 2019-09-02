@@ -42,7 +42,7 @@ class Page extends ViewGamePageBase
 			
 			if ($is_manager)
 			{
-				echo '<td width="24"><button class="icon" onclick="mr.gameExtraPoints(' . $this->vg->gs->id  . ', ' . $player->id . ')"><img src="images/star-empty.png"></button></td>';
+				echo '<td width="24"><button class="icon" onclick="mr.gameExtraPoints(' . $this->vg->gs->id  . ', ' . $player->id . ')" title="' . $player->extra_points_reason . '"><img src="images/star-empty.png"></button></td>';
 			}
 			echo '<td align="center">' . $player->sheriff_check_text() . '</td>';
 			echo '<td align="center">' . $player->don_check_text() . '</td>';
