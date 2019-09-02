@@ -50,3 +50,4 @@ DROP TABLE `country_names`;
 DROP TABLE `countries`;
 DROP TABLE `snapshots`;
 DROP TABLE `rebuild_stats`;
+DROP TABLE `extra_point_messages`;

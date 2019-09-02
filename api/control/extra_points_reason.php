@@ -17,29 +17,55 @@ class ApiPage extends ControlApiPageBase
 			$term = $_REQUEST['term'];
 		}
 		
+		$is_game = isset($_REQUEST['game']);
+		
 		$num = 16;
 		if (isset($_REQUEST['num']) && is_numeric($_REQUEST['num']))
 		{
 			$num = $_REQUEST['num'];
 		}
-		
-		if (empty($term))
+			
+		if ($is_game)
 		{
-			$query = new DbQuery('SELECT reason, count(*) c FROM event_extra_points GROUP BY reason ORDER BY c DESC, reason');
+			if (empty($term))
+			{
+				$query = new DbQuery('SELECT extra_points_reason, count(*) c FROM players WHERE extra_points_reason IS NOT NULL GROUP BY extra_points_reason ORDER BY c DESC, extra_points_reason');
+			}
+			else
+			{
+				$query = new DbQuery('SELECT extra_points_reason, count(*) c FROM players WHERE extra_points_reason LIKE ? GROUP BY extra_points_reason ORDER BY c DESC, extra_points_reason', '%' . $term . '%');
+			}
+			if ($num > 0)
+			{
+				$query->add(' LIMIT ' . $num);
+			}
+			
+			while ($row = $query->next())
+			{
+				list ($reason) = $row;
+				$this->response[] = $reason;
+			}
 		}
 		else
 		{
-			$query = new DbQuery('SELECT reason, count(*) c FROM event_extra_points WHERE reason LIKE ? GROUP BY reason ORDER BY c DESC, reason', '%' . $term . '%');
-		}
-		if ($num > 0)
-		{
-			$query->add(' LIMIT ' . $num);
-		}
-		
-		while ($row = $query->next())
-		{
-			list ($reason) = $row;
-			$this->response[] = $reason;
+			if (empty($term))
+			{
+				$query = new DbQuery('SELECT reason, count(*) c FROM event_extra_points GROUP BY reason ORDER BY c DESC, reason');
+			}
+			else
+			{
+				$query = new DbQuery('SELECT reason, count(*) c FROM event_extra_points WHERE reason LIKE ? GROUP BY reason ORDER BY c DESC, reason', '%' . $term . '%');
+			}
+			if ($num > 0)
+			{
+				$query->add(' LIMIT ' . $num);
+			}
+			
+			while ($row = $query->next())
+			{
+				list ($reason) = $row;
+				$this->response[] = $reason;
+			}
 		}
 	}
 	

@@ -185,11 +185,11 @@ class ViewGamePageBase extends PageBase
 		}
 		else if ($player->extra_points > 0)
 		{
-			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right"><big><b>+' . $player->extra_points . '</b></big></td></tr></table>';
+			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right" title="' . $player->extra_points_reason . '"><big><b>+' . $player->extra_points . '</b></big></td></tr></table>';
 		}
 		else if ($player->extra_points < 0)
 		{
-			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right"><big><b>' . $player->extra_points . '</b></big></td></tr></table>';
+			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right" title="' . $player->extra_points_reason . '"><big><b>' . $player->extra_points . '</b></big></td></tr></table>';
 		}
 		else
 		{

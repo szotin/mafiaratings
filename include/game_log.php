@@ -1,6 +1,6 @@
 <?php
 
-define('CURRENT_LOG_VERSION', 11);
+define('CURRENT_LOG_VERSION', 12);
 
 // log record types
 define('LOGREC_NORMAL', 0);
@@ -10,6 +10,7 @@ define('LOGREC_SUICIDE', 3);
 define('LOGREC_KICK_OUT', 4);
 
 define('GAME_PARAM_DELIMITER', ':');
+define('GAME_PARAM_DELIMITER_REPLACEMENT', ' ');
 
 function read_param($input, &$offset)
 {
