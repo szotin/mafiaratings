@@ -30,3 +30,12 @@ js/seating-ui.js
 js/seating-ru.js
 js/seating-en.js
 include/google_geo_key.php
+include/pdf/font/unifont/timesbd.mtx.php
+include/pdf/font/unifont/timesbd.cw127.php
+include/pdf/font/unifont/timesbd.cw.dat
+include/pdf/font/unifont/times.mtx.php
+include/pdf/font/unifont/times.cw127.php
+include/pdf/font/unifont/times.cw.dat
+include/pdf/font/unifont/arial.mtx.php
+include/pdf/font/unifont/arial.cw127.php
+include/pdf/font/unifont/arial.cw.dat
