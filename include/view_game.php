@@ -434,6 +434,7 @@ class ViewGamePageBase extends PageBase
 		{
 			echo '<button class="icon" onclick="deleteGame(' . $gs->id . ')" title="' . get_label('Delete game [0]', $gs->id) . '"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.editGame(' . $gs->id . ')" title="' . get_label('Edit game [0]', $gs->id) . '"><img src="images/edit.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.figmGameForm(' . $gs->id . ')" title="' . get_label('FIGM game [0] form', $gs->id) . '"><img src="images/table.png" border="0"></button>';
 			if ($vg->video_id == NULL)
 			{
 				echo '<button class="icon" onclick="mr.setGameVideo(' . $gs->id . ')" title="' . get_label('Add game [0] video', $gs->id) . '"><img src="images/film-add.png" border="0"></button>';

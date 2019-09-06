@@ -709,9 +709,9 @@ var mr = new function()
 		dlg.page("form/game_video.php?game=" + gameId);
 	}
 	
-	this.gameExtraPoints = function(gameId, userId)
+	this.figmGameForm = function(gameId)
 	{
-		dlg.form("form/game_extra_points.php?game_id=" + gameId + '&user_id=' + userId, refr, 600);
+		window.open('game_figm_form.php?game_id=' + gameId, '_blank').focus();
 	}
 	
 	//--------------------------------------------------------------------------------------
