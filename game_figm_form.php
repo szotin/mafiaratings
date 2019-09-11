@@ -160,6 +160,7 @@ try
 		
 		$killed_first = 0;
 		$y = 52.2;
+		$extra_point_comments = '';
 		for ($i = 0; $i < 10; ++$i, $y += 10.1)
 		{
 			$player = $gs->players[$i];
@@ -246,6 +247,15 @@ try
 			if ($extra_points != 0)
 			{
 				$pdf->Cell(13.2, 10.1, '' . $extra_points, 0, 0, 'C');
+			}
+			
+			if (!empty($player->extra_points_reason))
+			{
+				if (!empty($extra_point_comments))
+				{
+					$extra_point_comments .= "\n";
+				}
+				$extra_point_comments .= 'Игрок ' . ($i + 1) . ': ' . $player->extra_points_reason;
 			}
 		}
 		
@@ -349,6 +359,17 @@ try
 	$pdf->Cell(278.8, 16, 'ПОЯСНЕНИЯ К ДОПОЛНИТЕЛЬНЫМ БАЛЛАМ И ШТРАФАМ', 0, 0, 'C');
 	$pdf->SetXY(9.9, 129.0);
 	$pdf->Cell(278.8, 16, 'КОММЕНТАРИИ К ПРОТЕСТУ', 0, 0, 'C');
+	
+	if ($game_id > 0)
+	{
+		if (!empty($extra_point_comments))
+		{
+			$pdf->SetTextColor(0, 0, 128);
+			$pdf->SetFont('Arial', '', 10);
+			$pdf->SetXY(10.9, 18.5);
+			$pdf->MultiCell(286.7, 8, $extra_point_comments);
+		}
+	}
 
 	$pdf->Output();
 }

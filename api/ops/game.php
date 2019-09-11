@@ -1160,20 +1160,17 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$game_id = (int)get_required_param('game_id');
+		
         $user_id = (int)get_required_param('user_id');
         $points = (float)get_required_param('points');
 		$reason = get_optional_param('reason');
-		
-		if ($points == 0)
-		{
-			$reason = '';
-		}
-		else if (empty($reason))
+		if ($points != 0 && empty($reason))
 		{
 			throw new Exc(get_label('Please enter the reason.'));
 		}
 		
-        list($game_log, $club_id) = Db::record(get_label('game'), 'SELECT log, club_id FROM games WHERE id = ?', $game_id);
+        list($game_log, $club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT log, club_id, moderator_id FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 
         $gs = new GameState();
         $gs->init_existing($game_id, $game_log);
@@ -1207,6 +1204,76 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('reason', 'Reason why the points are added/subtracted. Must be non empty if points are non zero.', 'points must be 0.');
 		return $help;
     }
+	
+	//-------------------------------------------------------------------------------------------------------
+	// change_ex
+	//-------------------------------------------------------------------------------------------------------
+	function change_ex_op()
+	{
+		global $_profile;
+		
+		$game_id = (int)get_required_param('game_id');
+		list ($club_id, $old_table, $old_number, $old_objection_user_id, $old_objection, $moderator_id) =
+			Db::record(get_label('game'), 'SELECT club_id, table_name, game_number, objection_user_id, objection, moderator_id FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		
+		$table = get_optional_param('table', $old_table);
+		if (empty($table))
+		{
+			$table = NULL;
+		}
+		
+		$number = get_optional_param('number', $old_number);
+		if (empty($number))
+		{
+			$number = NULL;
+		}
+		
+		$objection_user_id = (int)get_optional_param('objection_user_id', $old_objection_user_id);
+		if ($objection_user_id <= 0)
+		{
+			$objection_user_id = NULL;
+		}
+		
+		$objection = get_optional_param('objection', $old_objection);
+		if (empty($objection))
+		{
+			$objection = NULL;
+		}
+		
+		Db::begin();
+		Db::exec(get_label('game'), 'UPDATE games SET table_name = ?, game_number = ?, objection_user_id = ?, objection = ? WHERE id = ?', 
+			$table, $number, $objection_user_id, $objection, $game_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			if ($table != $old_table)
+			{
+				$log_details->table = $table;
+			}
+			if ($number != $old_number)
+			{
+				$log_details->number = $number;
+			}
+			if ($objection_user_id != $old_objection_user_id)
+			{
+				$log_details->objection_user_id = $objection_user_id;
+			}
+			if ($objection != $old_objection)
+			{
+				$log_details->objection = $objection;
+			}
+			db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id);
+		}
+		Db::commit();
+	}
+	
+	function change_ex_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_USER, 'Comment game.');
+		$help->request_param('game_id', 'Game id.');
+		return $help;
+	}
 	
 	//-------------------------------------------------------------------------------------------------------
 	// comment
