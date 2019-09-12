@@ -225,8 +225,12 @@ try
 			switch ($player->kill_reason)
 			{
 				case KILL_REASON_WARNINGS:
+					$extra_points -= 0.5;
+					break;
 				case KILL_REASON_KICK_OUT:
 					$extra_points -= 0.5;
+					$pdf->SetXY(112.425, $y);
+					$pdf->Cell(7.475, 10.1, '!', 0, 0, 'C'); // √
 					break;
 			}
 			
@@ -367,7 +371,7 @@ try
 			$pdf->SetTextColor(0, 0, 128);
 			$pdf->SetFont('Arial', '', 10);
 			$pdf->SetXY(10.9, 18.5);
-			$pdf->MultiCell(286.7, 8, $extra_point_comments);
+			$pdf->MultiCell(276.8, 8, $extra_point_comments);
 		}
 	}
 
