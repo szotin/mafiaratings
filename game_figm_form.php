@@ -34,7 +34,7 @@ try
 			' WHERE g.id = ?', $game_id);
 		if (is_null($round_name))
 		{
-			$round_name = get_label('qualifying');
+			$round_name = 'квалификация';
 		}
 		
 		$gs = new GameState();
