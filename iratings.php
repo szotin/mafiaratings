@@ -130,7 +130,7 @@ try
 					echo '<th width="60">'.get_label('Games played').'</th>';
 					break;
 				case 'w':
-					echo '<th width="60">'.get_label('Victories').'</th>';
+					echo '<th width="60">'.get_label('Wins').'</th>';
 					break;
 				case 'p':
 					echo '<th width="60">'.get_label('Winning %').'</th>';

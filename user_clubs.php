@@ -64,7 +64,7 @@ class Page extends UserPageBase
 		echo '<table class="bordered light" width="100%"><tr class="darker"><td>';
 		echo '<table class="transp" width="100%"><tr><td width="52"></td><td>' . get_label('Total') . '</td></tr></table>';
 		echo '</td><td width="200">' . get_label('Games played');
-		echo ':</td><td width="200">' . get_label('Victories') . ':</td><td width="200">' . get_label('Rating earned') . ':</td></tr>';
+		echo ':</td><td width="200">' . get_label('Wins') . ':</td><td width="200">' . get_label('Rating earned') . ':</td></tr>';
 		$query = new DbQuery(
 			'SELECT p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
 				' JOIN games g ON g.id = p.game_id' .
@@ -107,7 +107,7 @@ class Page extends UserPageBase
 				show_permissions($user_flags);
 				echo '</td></tr></table>';
 				echo '</td><td width="200">' . get_label('Games played');
-				echo ':</td><td width="200">' . get_label('Victories') . ':</td><td width="200">' . get_label('Rating earned') . ':</td></tr>';
+				echo ':</td><td width="200">' . get_label('Wins') . ':</td><td width="200">' . get_label('Rating earned') . ':</td></tr>';
 				$prev_club_id = $club_id;
 			}
 			$total_rating += $rating;
@@ -141,7 +141,7 @@ class Page extends UserPageBase
 				$this->club_pic->show(ICONS_DIR, 48);
 				echo '</a></td><td>' . $club_name . '</td></tr></table>';
 				echo '</td><td width="200">' . get_label('Games played');
-				echo ':</td><td width="200">' . get_label('Victories') . ':</td><td width="200">' . get_label('Rating earned') . ':</td></tr>';
+				echo ':</td><td width="200">' . get_label('Wins') . ':</td><td width="200">' . get_label('Rating earned') . ':</td></tr>';
 				$prev_club_id = $club_id;
 			}
 			$total_rating += $rating;

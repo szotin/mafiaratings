@@ -159,8 +159,8 @@ class Page extends GeneralPageBase
 	{
 		echo '<select id="results" onChange="filter()" title="' . get_label('Filter games by result.') . '">';
 		show_option(-1, $this->result_filter, get_label('All games'));
-		show_option(1, $this->result_filter, get_label('Town victories'));
-		show_option(2, $this->result_filter, get_label('Mafia victories'));
+		show_option(1, $this->result_filter, get_label('Town wins'));
+		show_option(2, $this->result_filter, get_label('Mafia wins'));
 		if ($this->is_admin)
 		{
 			show_option(0, $this->result_filter, get_label('Unfinished games'));

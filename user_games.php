@@ -50,8 +50,8 @@ class Page extends UserPageBase
 			
 			echo ' <select name="result" onChange="document.filterForm.submit()">';
 			show_option(0, $result_filter, get_label('All games'));
-			show_option(1, $result_filter, get_label('Town victories'));
-			show_option(2, $result_filter, get_label('Mafia victories'));
+			show_option(1, $result_filter, get_label('Town wins'));
+			show_option(2, $result_filter, get_label('Mafia wins'));
 			echo '</select>';
 			echo ' <input type="checkbox" name="video" onclick="document.filterForm.submit()"';
 			if ($with_video)
@@ -138,9 +138,9 @@ class Page extends UserPageBase
 
 			echo ' <select name="result" onChange="document.filterForm.submit()">';
 			show_option(0, $result_filter, get_label('All games'));
-			show_option(1, $result_filter, get_label('Town victories'));
-			show_option(2, $result_filter, get_label('Mafia victories'));
-			show_option(3, $result_filter, get_label('[0] victories', $this->name));
+			show_option(1, $result_filter, get_label('Town wins'));
+			show_option(2, $result_filter, get_label('Mafia wins'));
+			show_option(3, $result_filter, get_label('[0] wins', $this->name));
 			show_option(4, $result_filter, get_label('[0] losses', $this->name));
 			echo '</select> ';
 			show_roles_select($roles, 'document.filterForm.submit()', get_label('Games where [0] was in a specific role.', $this->name), ROLE_NAME_FLAG_SINGLE);
@@ -237,7 +237,7 @@ class Page extends UserPageBase
 				switch ($win)
 				{
 					case 1:
-						echo '<img src="images/won.png" title="' . get_label('victory') . '" style="opacity: 0.8;">';
+						echo '<img src="images/won.png" title="' . get_label('win') . '" style="opacity: 0.8;">';
 						break;
 					case 2:
 						echo '<img src="images/lost.png" title="' . get_label('loss') . '" style="opacity: 0.8;">';

@@ -195,7 +195,7 @@ class Page extends AddressPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td>' . sorting_link($ref, SORT_TYPE_BY_NUMBERS, get_label('Number')) . '</td>';
 		echo '<td width="80" align="center">' . sorting_link($ref, SORT_TYPE_BY_GAMES, get_label('Games played')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_WIN, get_label('Victories (%)')) . '</td>';
+		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_WIN, get_label('Wins (%)')) . '</td>';
 		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_RATING, get_label('Rating (per game)')) . '</td>';
 		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_WARNINGS, get_label('Warnings (per game)')) . '</td>';
 		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_SHERIFF_CHECK, get_label('Checked by sheriff (%)')) . '</td>';

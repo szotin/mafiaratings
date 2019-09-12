@@ -155,7 +155,7 @@ class Page extends UserPageBase
 		$total_won = 0;
 		echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
 		echo '</td><td>' . get_label('Games played') . ':</td>';
-		echo '<td>' . get_label('Victories') . ':</td>';
+		echo '<td>' . get_label('Wins') . ':</td>';
 		echo '<td>' . get_label('Rating earned') . ':</td></tr>';
 		$query = new DbQuery(
 			'SELECT p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
@@ -170,7 +170,10 @@ class Page extends UserPageBase
 			$total_won += $games_won;
 			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($rating), format_rating($rating/$games, 1)) . '</td></tr>';
 		}
-		echo '<tr class="darker"><td>' . get_label('Total') . ':</td><td>' . $total_games . '</td><td>' . $total_won . '(' . number_format($total_won * 100 / $total_games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($total_rating), format_rating($total_rating/$total_games, 1)) . '</td></tr>';
+		if ($total_games > 0)
+		{
+			echo '<tr class="darker"><td>' . get_label('Total') . ':</td><td>' . $total_games . '</td><td>' . $total_won . '(' . number_format($total_won * 100 / $total_games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($total_rating), format_rating($total_rating/$total_games, 1)) . '</td></tr>';
+		}
 		echo '</table>';
 		
 		if ($rating_pos >= 0)

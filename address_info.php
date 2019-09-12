@@ -46,8 +46,8 @@ class Page extends AddressPageBase
 			echo '<tr><td class="dark">'.get_label('Games played').':</td><td>' . ($civils_win_count + $mafia_win_count) . '</td></tr>';
 			if ($civils_win_count + $mafia_win_count > 0)
 			{
-				echo '<tr><td class="dark">'.get_label('Mafia victories').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
-				echo '<tr><td class="dark">'.get_label('Town victories').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Mafia wins').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Town wins').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
 			}
 			if ($playing_count > 0)
 			{
