@@ -32,8 +32,8 @@ class Page extends AddressPageBase
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<select name="results" onChange="document.form.submit()">';
 		show_option(-1, $result_filter, get_label('All games'));
-		show_option(1, $result_filter, get_label('Town victories'));
-		show_option(2, $result_filter, get_label('Mafia victories'));
+		show_option(1, $result_filter, get_label('Town wins'));
+		show_option(2, $result_filter, get_label('Mafia wins'));
 		if ($this->is_manager)
 		{
 			show_option(0, $result_filter, get_label('Unfinished games'));

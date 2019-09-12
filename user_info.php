@@ -155,7 +155,7 @@ class Page extends UserPageBase
 		$total_won = 0;
 		echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
 		echo '</td><td>' . get_label('Games played') . ':</td>';
-		echo '<td>' . get_label('Victories') . ':</td>';
+		echo '<td>' . get_label('Wins') . ':</td>';
 		echo '<td>' . get_label('Rating earned') . ':</td></tr>';
 		$query = new DbQuery(
 			'SELECT p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 

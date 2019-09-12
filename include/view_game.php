@@ -133,10 +133,10 @@ class ViewGame
 				$state = get_label('Still playing.');
 				break;
 			case 1:
-				$state = get_label('Town\'s victory.');
+				$state = get_label('Town wins.');
 				break;
 			case 2:
-				$state = get_label('Mafia\'s victory.');
+				$state = get_label('Mafia wins.');
 				break;
 		}
 		return get_label('Game [0]. [1]', $this->gs->id, $state);
@@ -434,7 +434,6 @@ class ViewGamePageBase extends PageBase
 		{
 			echo '<button class="icon" onclick="deleteGame(' . $gs->id . ')" title="' . get_label('Delete game [0]', $gs->id) . '"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.editGame(' . $gs->id . ')" title="' . get_label('Edit game [0]', $gs->id) . '"><img src="images/edit.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.figmGameForm(' . $gs->id . ')" title="' . get_label('FIGM game [0] form', $gs->id) . '"><img src="images/table.png" border="0"></button>';
 			if ($vg->video_id == NULL)
 			{
 				echo '<button class="icon" onclick="mr.setGameVideo(' . $gs->id . ')" title="' . get_label('Add game [0] video', $gs->id) . '"><img src="images/film-add.png" border="0"></button>';
@@ -444,6 +443,7 @@ class ViewGamePageBase extends PageBase
 				echo '<button class="icon" onclick="mr.deleteVideo(' . $vg->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $gs->id) . '\')" title="' . get_label('Remove game [0] video', $gs->id) . '"><img src="images/film-delete.png" border="0"></button>';
 			}
 		}
+		echo '<button class="icon" onclick="mr.figmGameForm(' . $gs->id . ')" title="' . get_label('FIGM game [0] form', $gs->id) . '"><img src="images/table.png" border="0"></button>';
 		echo '</td></tr><tr><td align="right" valign="bottom"><form method="get" name="gotoForm" action="' . get_page_name() . '">';
 		echo '<input type="hidden" name="id" value="' . $gs->id . '">';
 		echo '<select name="gametime" onChange="document.gotoForm.submit()">';

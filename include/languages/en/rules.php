@@ -10,7 +10,7 @@ return array
 			'Ten people participate in each game. The Players are divided into two groups: Red and Black. The Red Players are law-abiding citizens (they draw the «Citizen» card); the «black» players are mafiosi (they draw the «Mafia» card). Seven red cards and three black cards are played. One of the seven red cards is different from the others - the «Sheriff» card. This Player becomes the leader of the Red Players. The Black players also have a leader, the one who draws the «Don» card.', // 1.1.
 			'The game has two parts: «day» and «night».', // 1.2.
 			'The Moderator observes the game and orchestrates its progress. Side Referees may assist in the game.', // 1.3.
-			'The victory of the Red team comes at the moment when all the black team are eliminated from the game. The victory of the «Black» team comes when the number of «Black» players is greater or equal than the «Red» ones. The player is assumed to be «killed» at the moment the vote is over and the moment after the «black» team completed their shooting.', // 1.4.
+			'The Red team wins at the moment when all the black team are eliminated from the game. The «Black» wins when the number of «Black» players is greater or equal than the «Red» ones. The player is assumed to be «killed» at the moment the vote is over and the moment after the «black» team completed their shooting.', // 1.4.
 			'If during 3 following «nights» and «days» starting with «night», no player leaves the game, a draw is announced.', // 1.5.
 			array // 1.6.
 			(

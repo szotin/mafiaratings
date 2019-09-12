@@ -94,7 +94,7 @@ class Page extends AddressPageBase
 		echo '<td colspan="3">'.get_label('Player').'</td>';
 		echo '<td width="80" align="center">'.get_label('Points').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="80" align="center">'.get_label('Victories').'</td>';
+		echo '<td width="80" align="center">'.get_label('Wins').'</td>';
 		echo '<td width="80" align="center">'.get_label('Winning %').'</td>';
 		echo '<td width="80" align="center">'.get_label('Points per game').'</td>';
 		echo '</tr>';

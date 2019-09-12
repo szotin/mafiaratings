@@ -197,7 +197,7 @@ try
 						echo '<td colspan="3">'.get_label('Player').'</td>';
 						echo '<td width="60" align="center">'.get_label('Rating').'</td>';
 						echo '<td width="60" align="center">'.get_label('Games played').'</td>';
-						echo '<td width="60" align="center">'.get_label('Victories').'</td>';
+						echo '<td width="60" align="center">'.get_label('Wins').'</td>';
 						echo '</tr>';
 					}
 					
@@ -255,7 +255,7 @@ try
 						echo '<td colspan="3">'.get_label('Player').'</td>';
 						echo '<td width="60" align="center">'.get_label('Points').'</td>';
 						echo '<td width="60" align="center">'.get_label('Games played').'</td>';
-						echo '<td width="60" align="center">'.get_label('Victories').'</td>';
+						echo '<td width="60" align="center">'.get_label('Wins').'</td>';
 						echo '</tr>';
 					}
 					

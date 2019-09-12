@@ -222,7 +222,7 @@ class Page extends GeneralPageBase
 		echo '<td colspan="3">'.get_label('Player').'</td>';
 		echo '<td width="80" align="center">'.get_label('Rating').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="80" align="center">'.get_label('Victories').'</td>';
+		echo '<td width="80" align="center">'.get_label('Wins').'</td>';
 		echo '<td width="80" align="center">'.get_label('Winning %').'</td>';
 		echo '<td width="80" align="center">'.get_label('Rating per game').'</td>';
 		echo '</tr>';

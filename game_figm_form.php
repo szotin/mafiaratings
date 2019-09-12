@@ -32,10 +32,6 @@ try
 			' JOIN users u ON u.id = g.moderator_id' .
 			' LEFT OUTER JOIN rounds r ON r.event_id = g.event_id AND r.num = g.round_num' .
 			' WHERE g.id = ?', $game_id);
-		if (is_null($round_name))
-		{
-			$round_name = 'квалификация';
-		}
 		
 		$gs = new GameState();
 		$gs->init_existing($game_id, $game_log);
@@ -149,8 +145,11 @@ try
 		$pdf->SetFont('Arial', '', 12);
 		$pdf->SetXY(43.0, 17.4);
 		$pdf->Cell(102, 7.7, $event_name, 0, 0, 'C');
-		$pdf->SetXY(65.0, 25.1);
-		$pdf->Cell(80, 7.7, $round_name, 0, 0, 'C');
+		if (!is_null($round_name))
+		{
+			$pdf->SetXY(65.0, 25.1);
+			$pdf->Cell(80, 7.7, $round_name, 0, 0, 'C');
+		}
 		$pdf->SetXY(33.0, 32.8);
 		$pdf->Cell(8.5, 7.7, $day, 0); 
 		$pdf->SetXY(45.0, 32.8);

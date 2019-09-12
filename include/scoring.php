@@ -611,15 +611,15 @@ class ScoringSystem
 			case SCORING_SORTING_MAIN_POINTS:
 				return get_label('The one who has [0] main points', $desc);
 			case SCORING_SORTING_WIN:
-				return get_label('The one who has [0] victories', $desc);
+				return get_label('The one who has [0] wins', $desc);
 			case SCORING_SORTING_LOOSE:
 				return get_label('The one who has [0] defeats', $desc);
 			case SCORING_SORTING_CLEAR_WIN:
-				return get_label('The one who has [0] clear victories', $desc);
+				return get_label('The one who has [0] clear wins', $desc);
 			case SCORING_SORTING_CLEAR_LOOSE:
 				return get_label('The one who has [0] clear defeats', $desc);
 			case SCORING_SORTING_SPECIAL_ROLE_WIN:
-				return get_label('The one who has [0] special role victories', $desc);
+				return get_label('The one who has [0] special role wins', $desc);
 			case SCORING_SORTING_BEST_PLAYER:
 				return get_label('The one who has [0] best player titles', $desc);
 			case SCORING_SORTING_BEST_MOVE:
