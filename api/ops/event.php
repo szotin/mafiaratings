@@ -768,12 +768,12 @@ class ApiPage extends OpsApiPageBase
 			list($nickname) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $new_user_id);
 		}
 		
-		$query = new DbQuery('SELECT id, log FROM games WHERE event_id = ? AND result <> 0', $event_id);
+		$query = new DbQuery('SELECT id, log, canceled FROM games WHERE event_id = ? AND result > 0', $event_id);
 		while ($row = $query->next())
 		{
-			list ($game_id, $game_log) = $row;
+			list ($game_id, $game_log, $is_canceled) = $row;
 			$gs = new GameState();
-			$gs->init_existing($game_id, $game_log);
+			$gs->init_existing($game_id, $game_log, $is_canceled);
 			if ($gs->change_user($user_id, $new_user_id, $nickname))
 			{
 				rebuild_game_stats($gs);

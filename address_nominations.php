@@ -26,7 +26,7 @@ class Page extends AddressPageBase
 		}
 		
 		$this->season_condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.result > 0', $this->id, $this->season_condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $this->season_condition);
 		if (isset($_REQUEST['min']))
 		{
 			$this->min_games = $_REQUEST['min'];
@@ -138,7 +138,7 @@ class Page extends AddressPageBase
 				' JOIN users u ON u.id = p.user_id' .
 				' JOIN events e ON g.event_id = e.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' WHERE e.address_id = ? AND g.result > 0',
+				' WHERE e.address_id = ? AND g.canceled = FALSE AND g.result > 0',
 			$this->id, $condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $min_games);
 		

@@ -36,7 +36,7 @@ class Page extends AddressPageBase
 
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.start_time, e.flags, t.id, t.name, t.flags, ' .
-				' (SELECT count(*) FROM games WHERE event_id = e.id AND result IN (1, 2)) as games,' .
+				' (SELECT count(*) FROM games WHERE event_id = e.id AND canceled = FALSE AND result > 0) as games,' .
 				' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users',
 			$condition);
 		$query->add(' ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);

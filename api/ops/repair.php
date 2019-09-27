@@ -299,7 +299,7 @@ class ApiPage extends OpsApiPageBase
 	function stats_op()
 	{
 		$last_id = 0;
-		$query = new DbQuery('SELECT id, log, end_time FROM games WHERE result > 0');
+		$query = new DbQuery('SELECT id, log, end_time, canceled FROM games WHERE result > 0');
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
@@ -339,7 +339,7 @@ class ApiPage extends OpsApiPageBase
 		
 		foreach ($games as $row)
 		{
-			list($id, $log, $end_time) = $row;
+			list($id, $log, $end_time, $is_canceled) = $row;
 			if ($snapshot_time == 0)
 			{
 				$snapshot_time = Snapshot::snapshot_time($end_time) + SNAPSHOT_INTERVAL;
@@ -369,7 +369,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				Db::begin();
 				$gs = new GameState();
-				$gs->init_existing($row[0], $row[1]);
+				$gs->init_existing($id, $log, $is_canceled);
 				if ($gs->error != NULL)
 				{
 					echo '<a href="view_game.php?id="' . $id . '" target="_blank">Game ' . $id . '</a> error: ' . $gs->error . '<br>';

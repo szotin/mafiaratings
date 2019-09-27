@@ -42,7 +42,7 @@ class Page extends ClubPageBase
 
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.name, a.flags, a.address,' .
-				' (SELECT count(*) FROM games WHERE event_id = e.id AND result IN (1, 2)) as games,' .
+				' (SELECT count(*) FROM games WHERE event_id = e.id AND canceled = FALSE AND result > 0) as games,' .
 				' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users',
 			$condition);
 		$query->add(' ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);

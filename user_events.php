@@ -50,7 +50,7 @@ class Page extends UserPageBase
 			' JOIN clubs c ON e.club_id = c.id' . 
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' . 
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE p.user_id = ?', $this->id);
+			' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id);
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
 		{
@@ -114,7 +114,7 @@ class Page extends UserPageBase
 			echo '</a></td>';
 			echo '<td>' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
 			
-			echo '<td align="center" class="dark">' . number_format($rating) . '</td>';
+			echo '<td align="center" class="dark">' . number_format($rating, 2) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)

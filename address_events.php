@@ -53,7 +53,7 @@ class Page extends AddressPageBase
 				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0');
 				break;
 			default:
-				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0 AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0 AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id AND g.result > 0)');
 				break;
 		}
 		

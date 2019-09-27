@@ -358,13 +358,13 @@ class ApiPage extends GetApiPageBase
 		
 		if ($user_id > 0)
 		{
-			$count_query = new DbQuery('SELECT count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.result IN(1,2) AND p.user_id = ?', $user_id, $condition);
-			$query = new DbQuery('SELECT g.id, g.log FROM players p JOIN games g ON  p.game_id = g.id WHERE g.result IN(1,2) AND p.user_id = ?', $user_id, $condition);
+			$count_query = new DbQuery('SELECT count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.result > 0 AND p.user_id = ?', $user_id, $condition);
+			$query = new DbQuery('SELECT g.id, g.log, g.canceled FROM players p JOIN games g ON  p.game_id = g.id WHERE g.canceled = FALSE AND g.result > 0 AND p.user_id = ?', $user_id, $condition);
 		}
 		else
 		{
-			$count_query = new DbQuery('SELECT count(*) FROM games g WHERE g.result IN(1,2)', $condition);
-			$query = new DbQuery('SELECT g.id, g.log FROM games g WHERE g.result IN(1,2)', $condition);
+			$count_query = new DbQuery('SELECT count(*) FROM games g WHERE g.canceled = FALSE AND g.result > 0', $condition);
+			$query = new DbQuery('SELECT g.id, g.log, g.canceled FROM games g WHERE g.result > 0', $condition);
 		}
 		
 		list ($count) = $count_query->record('game');
@@ -383,9 +383,9 @@ class ApiPage extends GetApiPageBase
 		$this->show_query($query);
 		while ($row = $query->next())
 		{
-			list ($id, $log) = $row;
+			list ($id, $log, $is_canceled) = $row;
 			$gs = new GameState();
-			$gs->init_existing($id, $log);
+			$gs->init_existing($id, $log, $is_canceled);
 			if ($raw)
 			{
 				$game = $gs;

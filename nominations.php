@@ -63,7 +63,7 @@ class Page extends GeneralPageBase
 		date_default_timezone_set(get_timezone());
 		$this->condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.result > 0 ', $this->condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.canceled = FALSE AND g.result > 0 ', $this->condition);
 		$this->condition->add(get_roles_condition($this->roles));
 		
 		if (isset($_REQUEST['min']))
@@ -102,7 +102,7 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $this->noms[$this->nom][1] . ') as abs, (' . $this->noms[$this->nom][1] . ') / (' . $this->noms[$this->nom][2] . ') as val, c.id, c.name, c.flags' .
 				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-				' WHERE g.result > 0',
+				' WHERE g.canceled = FALSE AND g.result > 0',
 			$this->condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $this->min_games);
 		

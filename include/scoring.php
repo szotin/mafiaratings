@@ -1162,11 +1162,11 @@ class Scores
 		{
 			if ($scope_condition != NULL)
 			{
-				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id', $condition, $scope_condition);
+				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id WHERE g.canceled = FALSE AND g.result > 0', $condition, $scope_condition);
 			}
 			else
 			{
-				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id', $condition);
+				list ($start_time, $end_time) = Db::record(get_label('game'), 'SELECT MIN(g.start_time), MAX(g.end_time) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id WHERE g.canceled = FALSE AND g.result > 0', $condition);
 			}
 			$interval = ($end_time - $start_time) / $history;
 		}
@@ -1175,7 +1175,7 @@ class Scores
 		$this->stats = array();
 		if ($scoring_system->stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
 		{
-			$query = new DbQuery('SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE 1', $condition);
+			$query = new DbQuery('SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE g.canceled = FALSE AND g.result > 0', $condition);
 			$difficulty = 0.5;
 			if ($row = $query->next())
 			{
@@ -1190,7 +1190,7 @@ class Scores
 		
 		if ($scoring_system->stat_flags & SCORING_STAT_FLAG_FIRST_NIGHT_KILLING)
 		{
-			$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE p.role <= 1', $condition);
+			$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.canceled = FALSE AND g.result > 0 AND p.role <= 1', $condition);
 			$query->add(' GROUP BY u.id');
 			while ($row = $query->next())
 			{
@@ -1215,7 +1215,7 @@ class Scores
 			}
 		}
 		
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role, p.extra_points, g.end_time, g.round_num FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE 1', $condition);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, p.flags, p.role, p.extra_points, g.end_time, g.round_num FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.canceled = FALSE AND g.result > 0', $condition);
 		if ($scope_condition != NULL)
 		{
 			$query->add($scope_condition);

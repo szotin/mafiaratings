@@ -8,6 +8,11 @@ require_once __DIR__ . '/rules.php';
 
 define('GAME_FLAG_SIMPLIFIED_CLIENT', 2);
 
+define('GAME_RESULT_PLAYING', 0);
+define('GAME_RESULT_TOWN', 1);
+define('GAME_RESULT_MAFIA', 2);
+define('GAME_RESULT_TIE', 3);
+
 // game states
 define('GAME_NOT_STARTED', 0);
 define('GAME_NIGHT0_START', 1);
@@ -46,6 +51,7 @@ class GameState
 	public $start_time;
 	public $end_time;
 	public $flags;
+	public $is_canceled;
 
     public $players;
 
@@ -85,6 +91,7 @@ class GameState
 		$this->best_move = -1;
 		$this->guess3 = NULL;
 		$this->error = NULL;
+		$this->is_canceled = false;
 		
 		$this->flags = 0;
 		$this->rules_code = default_rules_code();
@@ -96,8 +103,9 @@ class GameState
 	function init_new($user_id, $club_id = -1)
 	{
 		$this->user_id = $user_id;
+		$this->is_canceled = false;
 		
-		$query = new DbQuery('SELECT id, log, club_id, moderator_id, event_id, language, start_time, end_time, flags FROM games WHERE club_id = ? AND user_id = ? AND result = 0', $club_id, $user_id);
+		$query = new DbQuery('SELECT id, log, club_id, moderator_id, event_id, language, start_time, end_time, flags FROM games WHERE club_id = ? AND user_id = ? AND result = ' . GAME_RESULT_PLAYING, $club_id, $user_id);
 		if ($row = $query->next())
 		{
 			$this->id = (int)$row[0];
@@ -135,12 +143,12 @@ class GameState
 		}
 	}
 	
-	function init_existing($id, $log = NULL)
+	function init_existing($id, $log, $is_canceled)
 	{
 		$this->id = $id;
 		if ($log == NULL)
 		{
-			$row = Db::record(get_label('game'), 'SELECT log, user_id, club_id, moderator_id, event_id, language, start_time, end_time, flags FROM games WHERE id = ?', $id);
+			$row = Db::record(get_label('game'), 'SELECT log, user_id, club_id, moderator_id, event_id, language, start_time, end_time, flags, canceled FROM games WHERE id = ?', $id);
 			$log = $row[0];
 			$this->user_id = (int)$row[1];
 			$this->club_id = (int)$row[2];
@@ -150,11 +158,12 @@ class GameState
 			$this->start_time = (int)$row[6];
 			$this->end_time = (int)$row[7];
 			$this->flags = (int)$row[8];
+			$this->is_canceled = (bool)$row[9];
 			$this->read($log);
 		}
 		else if ($this->read($log) < 4) // starting from version 4 all fields can be read from the log, othervise we query them from db
 		{
-			$row = Db::record(get_label('game'), 'SELECT user_id, club_id, moderator_id, event_id, language, start_time, end_time, flags FROM games WHERE id = ?', $id);
+			$row = Db::record(get_label('game'), 'SELECT user_id, club_id, moderator_id, event_id, language, start_time, end_time, flags, canceled FROM games WHERE id = ?', $id);
 			$this->user_id = (int)$row[0];
 			$this->club_id = (int)$row[1];
 			$this->moder_id = (int)$row[2];
@@ -163,7 +172,12 @@ class GameState
 			$this->start_time = (int)$row[5];
 			$this->end_time = (int)$row[6];
 			$this->flags = (int)$row[7];
+			$this->is_canceled = (bool)$row[8];
 			Db::exec(get_label('game'), 'UPDATE games SET log = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?', $this->write(), $id);
+		}
+		else
+		{
+			$this->is_canceled = (bool)$is_canceled;
 		}
 	}
 	
@@ -172,11 +186,11 @@ class GameState
 		switch ($this->gamestate)
 		{
 			case GAME_MAFIA_WON:
-				return 2;
+				return GAME_RESULT_MAFIA;
 			case GAME_CIVIL_WON:
-				return 1;
+				return GAME_RESULT_TOWN;
 		}
-		return 0;
+		return GAME_RESULT_PLAYING;
 	}
 	
 	function create_from_json($data)
