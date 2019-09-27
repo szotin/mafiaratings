@@ -36,14 +36,14 @@ class ApiPage extends OpsApiPageBase
 	
 	function merge_users($src_id, $dst_id)
 	{
-		$query = new DbQuery('SELECT DISTINCT g.id, g.log FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ? OR g.moderator_id = ?', $src_id, $src_id);
+		$query = new DbQuery('SELECT DISTINCT g.id, g.log, g.canceled FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ? OR g.moderator_id = ?', $src_id, $src_id);
 		if ($row = $query->next())
 		{
 			do
 			{
-				list ($game_id, $game_log) = $row;
+				list ($game_id, $game_log, $is_canceled) = $row;
 				$gs = new GameState();
-				$gs->init_existing($game_id, $game_log);
+				$gs->init_existing($game_id, $game_log, $is_canceled);
 				if ($gs->change_user($src_id, $dst_id))
 				{
 					rebuild_game_stats($gs);
@@ -79,6 +79,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('stats'), 'UPDATE stats_calculators SET owner_id = ? WHERE owner_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('video'), 'UPDATE user_videos SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('video'), 'UPDATE videos SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('objection'), 'UPDATE objections SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('user'), 'DELETE FROM users WHERE id = ?', $src_id);
 		
 		$log_details = new stdClass();
@@ -102,14 +103,14 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_user($user_id)
 	{
-		$query = new DbQuery('SELECT g.id, g.log FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?', $user_id);
+		$query = new DbQuery('SELECT g.id, g.log, g.canceled FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?', $user_id);
 		if ($row = $query->next())
 		{
 			do
 			{
-				list ($game_id, $game_log) = $row;
+				list ($game_id, $game_log, $is_canceled) = $row;
 				$gs = new GameState();
-				$gs->init_existing($game_id, $game_log);
+				$gs->init_existing($game_id, $game_log, $is_canceled);
 				if ($gs->change_user($user_id, -1))
 				{
 					rebuild_game_stats($gs);
@@ -125,6 +126,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('club'), 'DELETE FROM user_clubs WHERE user_id = ?', $user_id);
 		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ?', $user_id);
 		Db::exec(get_label('log'), 'DELETE FROM log WHERE user_id = ?', $user_id);
+		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE objection_id IN (SELECT id FROM objections WHERE user_id = ?)', $user_id);
+		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE user_id = ?', $user_id);
 		Db::exec(get_label('user'), 'DELETE FROM users WHERE id = ?', $user_id);
 		
 		db_log(LOG_OBJECT_USER, 'deleted', NULL, $user_id);

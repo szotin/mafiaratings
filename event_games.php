@@ -62,15 +62,20 @@ class Page extends EventPageBase
 		echo '> ' . get_label('show only games with video');
 		echo '</td></tr></table></form></p>';
 		
+		$is_user = is_permitted(PERMISSION_USER);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td';
-		if ($this->is_manager)
+		if ($is_user)
+		{
+			echo ' colspan="3"';
+		}
+		else
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
+		echo '>&nbsp;</td><td width="120">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id FROM games g' .
+			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.canceled FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' JOIN cities ct ON ct.id = c.city_id',
@@ -78,12 +83,19 @@ class Page extends EventPageBase
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id) = $row;
+			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_canceled) = $row;
 			
-			echo '<tr align="center">';
+			echo '<tr align="center"';
+			if ($is_canceled)
+			{
+				echo ' class="dark"';
+			}
+			echo '>';
+			
 			if ($this->is_manager)
 			{
-				echo '<td class="dark" width="90">';
+				echo '<td class="dark" width="120">';
+				echo '<button class="icon" onclick="mr.gotoObjections(' . $game_id . ')" title="' . get_label('File an objection to the game [0] results.', $game_id) . '"><img src="images/objection.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editGame(' . $game_id . ')" title="' . get_label('Edit game [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
 				if ($video_id == NULL)
@@ -96,14 +108,38 @@ class Page extends EventPageBase
 				}
 				echo '</td>';
 			}
+			else if ($is_user)
+			{
+				echo '<td class="dark" width="30">';
+				echo '<button class="icon" onclick="mr.gotoObjections(' . $game_id . ')" title="' . get_label('File an objection to the game [0] results.', $game_id) . '"><img src="images/objection.png" border="0"></button>';
+				echo '</td>';
+			}
 			
-			echo '<td class="dark" width="90"><a href="view_game.php?event_id=' . $this->event->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
-			echo '<td>';
-			$this->user_pic->set($moder_id, $moder_name, $moder_flags);
-			$this->user_pic->show(ICONS_DIR, 32, ' style="opacity: 0.8;"');
+			if ($is_canceled)
+			{
+				echo '<td align="left"><s>';
+			}
+			else
+			{
+				echo '<td align="left" colspan="2">';
+			}
+			echo '<a href="view_game.php?event_id=' . $this->event->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a>';
+			if ($is_canceled)
+			{
+				echo '</s></td><td width="150" class="darker"><b>' . get_label('Game canceled') . '</b></td>';
+			}
 			echo '</td>';
-			echo '<td align="left">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
-			echo '<td>' . format_time($duration) . '</td>';
+			
+			if ($is_canceled)
+			{
+				echo '<td><s>' . format_date('M j Y, H:i', $start, $timezone) . '</s></td>';
+				echo '<td><s>' . format_time($duration) . '</s></td>';
+			}
+			else
+			{
+				echo '<td>' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
+				echo '<td>' . format_time($duration) . '</td>';
+			}
 			
 			echo '<td>';
 			switch ($game_result)

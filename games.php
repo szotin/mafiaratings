@@ -80,17 +80,21 @@ class Page extends GeneralPageBase
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, $this->club_pic));
+		$is_user = is_permitted(PERMISSION_USER);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td'; 
-		if ($this->is_admin)
+		if ($is_user)
+		{
+			echo ' colspan="3"';
+		}
+		else
 		{
 			echo ' colspan="2"';
 		}
-		
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, $this->club_pic));
-		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Moderator').'</td><td align="left">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="120">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id FROM games g' .
+			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.canceled FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
@@ -100,11 +104,19 @@ class Page extends GeneralPageBase
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $tour_id, $tour_name, $tour_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id) = $row;
-			echo '<tr align="center">';
+			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $tour_id, $tour_name, $tour_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_canceled) = $row;
+			
+			echo '<tr align="center"';
+			if ($is_canceled)
+			{
+				echo ' class="dark"';
+			}
+			echo '>';
+			
 			if ($this->is_admin)
 			{
-				echo '<td class="dark" width="90">';
+				echo '<td class="dark" width="120">';
+				echo '<button class="icon" onclick="mr.gotoObjections(' . $game_id . ')" title="' . get_label('File an objection to the game [0] results.', $game_id) . '"><img src="images/objection.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editGame(' . $game_id . ')" title="' . get_label('Edit game [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
 				if ($video_id == NULL)
@@ -117,8 +129,28 @@ class Page extends GeneralPageBase
 				}
 				echo '</td>';
 			}
+			else if ($is_user)
+			{
+				echo '<td class="dark" width="30">';
+				echo '<button class="icon" onclick="mr.gotoObjections(' . $game_id . ')" title="' . get_label('File an objection to the game [0] results.', $game_id) . '"><img src="images/objection.png" border="0"></button>';
+				echo '</td>';
+			}
 			
-			echo '<td class="dark" width="90"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
+			if ($is_canceled)
+			{
+				echo '<td align="left"><s>';
+			}
+			else
+			{
+				echo '<td align="left" colspan="2">';
+			}
+			echo '<a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a>';
+			if ($is_canceled)
+			{
+				echo '</s></td><td width="150" class="darker"><b>' . get_label('Game canceled') . '</b></td>';
+			}
+			echo '</td>';
+
 			echo '<td>';
 			$event_pic->
 				set($event_id, $event_name, $event_flags)->
@@ -126,12 +158,17 @@ class Page extends GeneralPageBase
 				set($club_id, $club_name, $club_flags);
 			$event_pic->show(ICONS_DIR, 48);
 			echo '</td>';
-			echo '<td>';
-			$this->user_pic->set($moder_id, $moder_name, $moder_flags);
-			$this->user_pic->show(ICONS_DIR, 32, 32, ' style="opacity: 0.8;"');
-			echo '</td>';
-			echo '<td align="left">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
-			echo '<td>' . format_time($duration) . '</td>';
+			
+			if ($is_canceled)
+			{
+				echo '<td><s>' . format_date('M j Y, H:i', $start, $timezone) . '</s></td>';
+				echo '<td><s>' . format_time($duration) . '</s></td>';
+			}
+			else
+			{
+				echo '<td>' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
+				echo '<td>' . format_time($duration) . '</td>';
+			}
 			
 			echo '<td>';
 			switch ($game_result)

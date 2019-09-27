@@ -834,13 +834,13 @@ class ApiPage extends OpsApiPageBase
 				$club_id = def_club();
 			}
 		
-			$query = new DbQuery('SELECT id, log FROM games WHERE user_id = ? AND result = 0 AND club_id = ?', $_profile->user_id, $club_id);
+			$query = new DbQuery('SELECT id, log, canceled FROM games WHERE user_id = ? AND result = 0 AND club_id = ?', $_profile->user_id, $club_id);
 			if ($row = $query->next())
 			{
-				list($game_id, $log) = $row;
+				list($game_id, $log, $is_canceled) = $row;
 				// $console[] = 'game id = ' . $game_id;
 				// $console[] = 'log = ' . $log;
-				$game->init_existing($game_id, $log);
+				$game->init_existing($game_id, $log, $is_canceled);
 			}
 			else if (isset($_SESSION['demo_game']))
 			{
@@ -1030,11 +1030,11 @@ class ApiPage extends OpsApiPageBase
 			{
 				$user_id = -$incomer_id;
 			}
-			$query = new DbQuery('SELECT id, log FROM games WHERE result > 0 AND result < 3 AND event_id = ?', $event_id);
+			$query = new DbQuery('SELECT id, log, canceled FROM games WHERE result > 0 event_id = ?', $event_id);
 			while($row = $query->next())
 			{
 				$gs = new GameState();
-				$gs->init_existing($row[0], $row[1]);
+				$gs->init_existing($row[0], $row[1], $row[2]);
 				if ($gs->change_user($old_user_id, $user_id))
 				{
 					rebuild_game_stats($gs);
@@ -1074,6 +1074,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM players WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id = ? AND objection_id IS NOT NULL', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
 		Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is deleted');
 		
@@ -1100,7 +1102,7 @@ class ApiPage extends OpsApiPageBase
 		$game_id = (int)$_REQUEST['game_id'];
 		
 		Db::begin();
-		list($club_id, $club_name, $log, $moderator_id) = Db::record(get_label('game'), 'SELECT c.id, c.name, g.log, g.moderator_id FROM games g JOIN clubs c ON c.id = g.club_id WHERE g.id = ?', $game_id);
+		list($club_id, $club_name, $log, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT c.id, c.name, g.log, g.moderator_id, g.canceled FROM games g JOIN clubs c ON c.id = g.club_id WHERE g.id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MODER) == 0)
 		{
@@ -1108,12 +1110,12 @@ class ApiPage extends OpsApiPageBase
 		}
 		$this->response['club_id'] = $club_id;
 		
-		$query = new DbQuery('SELECT id, log FROM games WHERE user_id = ? AND club_id = ? AND result = 0', $_profile->user_id, $club_id);
+		$query = new DbQuery('SELECT id, log, canceled FROM games WHERE user_id = ? AND club_id = ? AND result = 0', $_profile->user_id, $club_id);
 		while ($row = $query->next())
 		{
-			list($gid, $glog) = $row;
+			list($gid, $glog, $gcanceled) = $row;
 			$gs = new GameState();
-			$gs->init_existing($game_id, $glog);
+			$gs->init_existing($game_id, $glog, $gcanceled);
 			if ($gs->gamestate == GAME_NOT_STARTED)
 			{
 				Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $gid);
@@ -1126,7 +1128,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$gs = new GameState();
-		$gs->init_existing($game_id, $log);
+		$gs->init_existing($game_id, $log, $is_canceled);
 		$gs->user_id = $_profile->user_id;
 		$gs->save();
 		
@@ -1169,11 +1171,11 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please enter the reason.'));
 		}
 		
-        list($game_log, $club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT log, club_id, moderator_id FROM games WHERE id = ?', $game_id);
+        list($game_log, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT log, club_id, moderator_id, canceled FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 
         $gs = new GameState();
-        $gs->init_existing($game_id, $game_log);
+        $gs->init_existing($game_id, $game_log, $is_canceled);
         foreach ($gs->players as $player)
         {
             if ($user_id == $player->id)

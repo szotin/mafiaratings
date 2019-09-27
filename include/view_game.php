@@ -38,6 +38,7 @@ class ViewGame
 	public $civ_odds;
 	public $video;
 	public $rules_code;
+	public $timezone;
 	
 	public $players;
 	
@@ -54,7 +55,7 @@ class ViewGame
 		}
 		
 		$this->gs = new GameState();
-		$this->gs->init_existing($id);
+		$this->gs->init_existing($id, NULL, false);
 		
 		if ($this->gs->moder_id > 0)
 		{
@@ -77,16 +78,16 @@ class ViewGame
 		if ($row = $query->next())
 		{
 			list (
-				$this->event_id, $event_name, $this->event_flags, $timezone, $event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
+				$this->event_id, $event_name, $this->event_flags, $this->timezone, $event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
 				$this->club_id, $this->club, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $start_time, $duration,
 				$this->language_code, $this->civ_odds, $this->result, $this->video_id, $this->rules) = $row;
 
-			$this->event = $event_name . format_date('. M j Y.', $event_time, $timezone);
+			$this->event = $event_name . format_date('. M j Y.', $event_time, $this->timezone);
 		}
 		else
 		{
 			list (
-				$timezone, $this->club, $start_time, $duration, $this->language_code, $this->result) =
+				$this->timezone, $this->club, $start_time, $duration, $this->language_code, $this->result) =
 					Db::record(
 						get_label('game'), 
 						'SELECT ct.timezone, c.name, g.start_time, g.end_time - g.start_time, g.language, g.result FROM games g' . 
@@ -99,7 +100,7 @@ class ViewGame
 			$this->video_id = NULL;
 		}
 		
-		$this->start_time = format_date('M j Y H:i', $start_time, $timezone);
+		$this->start_time = format_date('M j Y H:i', $start_time, $this->timezone);
 		$this->duration = format_time($duration);
 		$this->language = get_lang_str($this->language_code);
 		$this->players = array(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -249,13 +250,16 @@ class ViewGamePageBase extends PageBase
 		}
 		
 		$this->last_gametime = $this->vg->gs->get_last_gametime();
-		$this->_title = $this->vg->get_title();
-		
-		if ($this->gametime < 0)
+		if ($this->vg->gs->is_canceled)
 		{
-			$this->gametime = 0;
+			$this->_title = '<s>' . $this->vg->get_title() . '</s> <big><span style="color:blue;">' . get_label('Game canceled') . '.</span></big>';
 		}
-		else if ($this->gametime > $this->last_gametime)
+		else
+		{
+			$this->_title = $this->vg->get_title();
+		}
+		
+		if ($this->gametime > $this->last_gametime)
 		{
 			$this->gametime = $this->last_gametime;
 		}
@@ -263,6 +267,10 @@ class ViewGamePageBase extends PageBase
 		if ($this->gametime == 0)
 		{
 			$right_page = 'view_game.php';
+		}
+		else if ($this->gametime < 0)
+		{
+			$right_page = 'view_game_objections.php';
 		}
 		else if ($this->gametime == 1)
 		{
@@ -430,6 +438,20 @@ class ViewGamePageBase extends PageBase
 			echo '</td>';
 		}
 		echo '</td></tr></table></td><td align="right" valign="top">';
+		if ($_profile != NULL)
+		{
+			echo '<button class="icon" onclick="';
+			if ($this->gametime >= 0)
+			{
+				echo 'mr.gotoObjections(' . $gs->id . ', false)';
+			}
+			else
+			{
+				echo 'mr.createObjection(' . $gs->id . ')';
+			}
+			echo '" title="' . get_label('File an objection to the game [0] results.', $gs->id) . '">';
+			echo '<img src="images/objection.png" border="0"></button>';
+		}
 		if ($vg->can_edit())
 		{
 			echo '<button class="icon" onclick="deleteGame(' . $gs->id . ')" title="' . get_label('Delete game [0]', $gs->id) . '"><img src="images/delete.png" border="0"></button>';
@@ -460,6 +482,7 @@ class ViewGamePageBase extends PageBase
 				show_option($i, $this->gametime, get_label('Night [0]', ($i>>1)));
 			}
 		}
+		show_option(-1, $this->gametime, get_label('Objections'));
 		echo '</select></form></td></tr></table></p>';
 	}
 	
@@ -470,7 +493,7 @@ class ViewGamePageBase extends PageBase
 		echo '<input type="hidden" name="id" value="' . $this->vg->gs->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td valign="top"><input value="'.get_label('Prev').'" class="btn norm" type="submit" name="prev"';
-		if ($this->gametime <= 0)
+		if ($this->gametime < 0)
 		{
 			echo ' disabled';
 		}

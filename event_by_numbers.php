@@ -177,7 +177,7 @@ class Page extends EventPageBase
 		$numbers = array();
 		$query = new DbQuery(
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
-			' FROM players p JOIN games g ON p.game_id = g.id WHERE g.event_id = ?', $this->event->id);
+			' FROM players p JOIN games g ON p.game_id = g.id WHERE g.event_id = ? AND g.canceled = FALSE AND g.result > 0', $this->event->id);
 		$query->add(get_roles_condition($roles));
 		$query->add(' GROUP BY p.number');
 		while ($row = $query->next())

@@ -24,8 +24,8 @@ try
 	
 	if ($game_id > 0)
 	{
-		list ($round_name, $event_name, $game_log, $start_time, $timezone, $moder_name) = Db::record(get_label('game'), 
-			'SELECT r.name, e.name, g.log, g.start_time, c.timezone, u.name FROM games g' .
+		list ($round_name, $event_name, $game_log, $start_time, $is_canceled, $timezone, $moder_name) = Db::record(get_label('game'), 
+			'SELECT r.name, e.name, g.log, g.start_time, g.canceled, c.timezone, u.name FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
 			' JOIN addresses a ON a.id = e.address_id' .
 			' JOIN cities c ON c.id = a.city_id' .
@@ -34,7 +34,7 @@ try
 			' WHERE g.id = ?', $game_id);
 		
 		$gs = new GameState();
-		$gs->init_existing($game_id, $game_log);
+		$gs->init_existing($game_id, $game_log, $is_canceled);
 	}
 	
 	// First page template

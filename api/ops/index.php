@@ -84,6 +84,14 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
+	<td>Objection Operations</td>
+	<td><a href="objection.php?help"><?php echo PRODUCT_URL; ?>/api/ops/objection.php</a></td>
+	<td>
+		<p>Manipulating objections. Users can file objections to a game results. Managers of the club and game moderators can manipulate these objections - respond, accept, decline, delete, and edit. They can also file objections on behalf of other users.</p>
+	</td>
+</tr>
+
+<tr>
 	<td>Address Operations</td>
 	<td><a href="address.php?help"><?php echo PRODUCT_URL; ?>/api/ops/address.php</a></td>
 	<td>

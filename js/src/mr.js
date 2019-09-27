@@ -714,19 +714,18 @@ var mr = new function()
 	
 	this.editGame = function(gameId)
 	{
-		// var gotoGame = function(data)
-		// {
-			// var link = "game.php?edit&back=" + encodeURIComponent(window.location.href);
-			// if (typeof data.club_id !== "undefined")
-				// link += "&club=" + data.club_id;
-			// window.location.replace(link);
-		// }
+		var gotoGame = function(data)
+		{
+			var link = "game.php?edit&back=" + encodeURIComponent(window.location.href);
+			if (typeof data.club_id !== "undefined")
+				link += "&club=" + data.club_id;
+			window.location.replace(link);
+		}
 		
-		// json.post("api/ops/game.php", { op: 'change', game_id: gameId  }, gotoGame, function(errorMessage, data) 
-		// {
-			// gotoGame(data);
-		// });
-		dlg.info("<p>Editing games is turned off due to some critical bugs that can cause data corruption.</p><p>Sorry for the inconvinience. We will turn it back on once these bugs will be fixed.</p>", "FYI");
+		json.post("api/ops/game.php", { op: 'change', game_id: gameId  }, gotoGame, function(errorMessage, data) 
+		{
+			gotoGame(data);
+		});
 	}
 	
 	this.setGameVideo = function(gameId)
@@ -747,6 +746,54 @@ var mr = new function()
 	this.gameExtraPoints = function(gameId, userId)
 	{
 		dlg.form("form/game_extra_points.php?game_id=" + gameId + '&user_id=' + userId, refr, 600);
+	}
+	
+	//--------------------------------------------------------------------------------------
+	// game objections
+	//--------------------------------------------------------------------------------------
+	this.gotoObjections = function(gameId, back)
+	{
+		var url = "view_game_objections.php?auto&gametime=-1&id=" + gameId;
+		if (typeof back != "boolean" || back)
+			url += "&bck=1";
+		goTo(url);
+	}
+	
+	this.createObjection = function(gameId)
+	{
+		dlg.form("form/objection_create.php?game_id=" + gameId, refr, 600);
+	}
+	
+	this.editObjection = function(objectionId)
+	{
+		dlg.form("form/objection_edit.php?objection_id=" + objectionId, refr, 600);
+	}
+	
+	this.replyObjection = function(objectionId)
+	{
+		dlg.form("form/objection_reply.php?objection_id=" + objectionId, refr, 600);
+	}
+	
+	this.deleteObjection = function(objectionId, confirmMessage)
+	{
+		function _delete()
+		{
+			json.post("api/ops/objection.php", { op: 'delete', objection_id: objectionId }, refr);
+		}
+
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _delete);
+		}
+		else
+		{
+			_delete();
+		}
+	}
+	
+	this.respondObjection = function(objectionId)
+	{
+		dlg.form("form/objection_respond.php?objection_id=" + objectionId, refr, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------

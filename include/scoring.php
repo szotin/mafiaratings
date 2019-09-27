@@ -1251,7 +1251,6 @@ class Scores
 	// function __construct($scoring_system, $condition, $scope_condition = NULL, $history = 0)
 	// {
 		// $this->scoring_system = $scoring_system;
-		
 		// $start_time = 0;
 		// $end_time = 0;
 		// $interval = 0;
@@ -1300,7 +1299,6 @@ class Scores
 				// $player_score->club_id = (int)$club_id;
 				// $player_score->club_name = $club_name;
 				// $player_score->club_flags = (int)$club_flags;
-			
 				// // 7 because statistically every red player should be killed once in 7 days.
 				// // So we use it to make sure a player does not get maximum ammount for being killed in one game.
 				// if ($games_count < 7)

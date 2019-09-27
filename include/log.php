@@ -27,6 +27,7 @@ define('LOG_OBJECT_ADVERT', 'advert');
 define('LOG_OBJECT_EVENT_MAILINGS', 'event emails');
 define('LOG_OBJECT_STATS_CALCULATOR', 'stats calculator');
 define('LOG_OBJECT_EXTRA_POINTS', 'extra points');
+define('LOG_OBJECT_OBJECTION', 'objection');
 
 function prepare_log_objects()
 {
@@ -53,6 +54,7 @@ function prepare_log_objects()
 		, LOG_OBJECT_PHOTO => 'photo.php?bck=1&id='
 		, LOG_OBJECT_NOTE => NULL
 		, LOG_OBJECT_ADVERT => NULL
+		, LOG_OBJECT_OBJECTION => NULL
 		, LOG_OBJECT_EVENT_MAILINGS => 'view_event_mailing.php?bck=1&id='
 		, LOG_OBJECT_STATS_CALCULATOR => 'stats_calculator.php?bck=1&id='
 	);

@@ -59,7 +59,7 @@ class Page extends ClubPageBase
 				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0');
 				break;
 			default:
-				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0 AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id)');
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0 AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id AND result > 0)');
 				break;
 		}
 		
@@ -68,7 +68,7 @@ class Page extends ClubPageBase
 
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.name, a.flags, a.address,' .
-				' (SELECT count(*) FROM games WHERE event_id = e.id AND result IN (1, 2)) as games,' .
+				' (SELECT count(*) FROM games WHERE event_id = e.id AND canceled = FALSE AND result > 0) as games,' .
 				' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users',
 			$condition);
 		$query->add(' ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -81,7 +81,7 @@ class Page extends ClubPageBase
 		echo '<td width="60" align="center">' . get_label('Players attended') . '</td></tr>';
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $address, $games_count, $users_count) = $row;
+			list($event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $address, $games_count, $users_count) = $row;
 
 			if ($event_flags & EVENT_FLAG_CANCELED)
 			{

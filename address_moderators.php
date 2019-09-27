@@ -13,7 +13,7 @@ class Page extends AddressPageBase
 	{
 		global $_page;
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g JOIN events e ON e.id = g.event_id WHERE e.address_id = ?', $this->id);
+		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g JOIN events e ON e.id = g.event_id WHERE e.address_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
@@ -22,7 +22,7 @@ class Page extends AddressPageBase
 				' JOIN games g ON g.moderator_id = u.id' .
 				' JOIN events e ON g.event_id = e.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' WHERE e.address_id = ?' .
+				' WHERE e.address_id = ? AND g.canceled = FALSE AND g.result > 0' .
 				' GROUP BY u.id ORDER BY count(g.id) DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
 			$this->id);
 		

@@ -11,14 +11,14 @@ class Page extends UserPageBase
 	{
 		global $_page;
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM players p JOIN games g ON p.game_id = g.id WHERE g.result IN(1,2) AND p.user_id = ?', $this->id);
+		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.flags, count(g.id) as gcount, SUM(p.rating_earned) as rating, SUM(p.won) as gwon FROM players p' .
 			' JOIN games g ON p.game_id = g.id' .
 			' JOIN users u ON g.moderator_id = u.id' .
-			' WHERE g.result IN(1,2) AND p.user_id = ?' .
+			' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0' .
 			' GROUP BY u.id ORDER BY rating DESC, gcount, gwon DESC, p.user_id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
 			$this->id);
 		
@@ -43,7 +43,7 @@ class Page extends UserPageBase
 			$this->user_pic->show(ICONS_DIR, 50);
 			echo '</a><td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
 			
-			echo '<td align="center" class="dark">' . number_format($rating) . '</td>';
+			echo '<td align="center" class="dark">' . number_format($rating, 2) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)

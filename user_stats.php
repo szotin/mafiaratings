@@ -319,11 +319,11 @@ class Page extends UserPageBase
 			$mafia_win_count = 0;
 			if ($club_id > 0)
 			{
-				$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND moderator_id = ? GROUP BY result', $club_id, $this->id);
+				$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND moderator_id = ? AND canceled = FALSE GROUP BY result', $club_id, $this->id);
 			}
 			else
 			{
-				$query = new DbQuery('SELECT result, count(*) FROM games WHERE moderator_id = ? GROUP BY result', $this->id);
+				$query = new DbQuery('SELECT result, count(*) FROM games WHERE moderator_id = ? AND canceled = FALSE GROUP BY result', $this->id);
 			}
 			while ($row = $query->next())
 			{

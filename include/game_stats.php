@@ -554,7 +554,7 @@ class GamePlayerStats
 			return;
 		}
 		
-		$query = new DbQuery('SELECT p.rating_before + p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE (g.start_time < ? OR (g.start_time = ? AND g.id < ?)) AND p.user_id = ? ORDER BY g.end_time DESC, g.id DESC LIMIT 1', $gs->end_time, $gs->end_time, $gs->id, $player->id);
+		$query = new DbQuery('SELECT p.rating_before + p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE g.canceled = FALSE AND (g.start_time < ? OR (g.start_time = ? AND g.id < ?)) AND p.user_id = ? ORDER BY g.end_time DESC, g.id DESC LIMIT 1', $gs->end_time, $gs->end_time, $gs->id, $player->id);
 		if ($row = $query->next())
 		{
 			list($this->rating_before) = $row;
@@ -674,14 +674,8 @@ class GamePlayerStats
 				break;
 		}
 		
-		// $query = new DbQuery('SELECT g.id, p.user_id FROM players p JOIN games g ON p.game_id = g.id WHERE p.id = ? AND (g.end_time > ? OR (g.end_time = ? AND g.id > ?))', $player->id, $gs->end_time, $gs->end_time, $gs->id); 
-		// if ($row = $query->next())
-		// {
-			// list($gid, $pid) = $row;
-			// echo 'Game ' . $gs->id . ': later game ' . $gid . ' found for user ' . $pid . '<br>';
-		// }
-		// else
-		// {
+		if (!$gs->is_canceled)
+		{
 			$query = new DbQuery('UPDATE users SET rating = ?, games = games + 1, games_won = games_won + ?', $this->rating_before + $this->rating_earned, $this->won);
 			if ($player->kill_round == 0 && $player->state == PLAYER_STATE_KILLED_NIGHT)
 			{
@@ -693,7 +687,7 @@ class GamePlayerStats
 			}
 			$query->add(' WHERE id = ?', $player->id);
 			Db::exec(get_label('user'), $query);
-		// }
+		}
     }
 	
 	public function get_title()
