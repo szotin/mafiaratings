@@ -12,7 +12,7 @@ CREATE TABLE `objections` (
   `user_id` INT(11) NOT NULL,
   `game_id` INT(11) NOT NULL,
   `message` TEXT NOT NULL,
-  `accept` INT(1) NOT NULL DEFAULT 0,
+  `accept` INT(2) NOT NULL DEFAULT 0,
 
   PRIMARY KEY (`id`),
   KEY (`user_id`),

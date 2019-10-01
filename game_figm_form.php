@@ -365,12 +365,35 @@ try
 	
 	if ($game_id > 0)
 	{
+		$pdf->SetTextColor(0, 0, 128);
+		$pdf->SetFont('Arial', '', 10);
 		if (!empty($extra_point_comments))
 		{
-			$pdf->SetTextColor(0, 0, 128);
-			$pdf->SetFont('Arial', '', 10);
 			$pdf->SetXY(10.9, 18.5);
 			$pdf->MultiCell(276.8, 8, $extra_point_comments);
+		}
+		
+		$objections = '';
+		$query = new DbQuery('SELECT o.message, o.accept, u.name FROM objections o JOIN users u ON u.id = o.user_id WHERE o.game_id = ? ORDER BY timestamp', $game_id);
+		while ($row = $query->next())
+		{
+			list ($message, $accept, $user_name) = $row;
+			$objections .= $user_name . ': ' . $message;
+			if ($accept > 0)
+			{
+				$objections .= ' Протест принят.';
+			}
+			else if ($accept < 0)
+			{
+				$objections .= ' Протест отклонен.';
+			}
+			$objections .= "\n";
+		}
+		
+		if (!empty($objections))
+		{
+			$pdf->SetXY(10.9, 142.0);
+			$pdf->MultiCell(276.8, 8, $objections);
 		}
 	}
 

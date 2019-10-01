@@ -741,7 +741,7 @@ var mr = new function()
 	
 	this.replyObjection = function(objectionId)
 	{
-		dlg.form("form/objection_reply.php?objection_id=" + objectionId, refr, 600);
+		dlg.form("form/objection_create.php?parent_id=" + objectionId, refr, 600);
 	}
 	
 	this.deleteObjection = function(objectionId, confirmMessage)
