@@ -1252,6 +1252,10 @@ $labelMenu = array (
 'On behalf of' => 'От имени', // form/objection_create.php, form/objection_edit.php
 'Edit objection [0] to the game [1] results.' => 'Редактировать протест №[0] на результаты игры [1].', // form/objection_edit.php
 'Respond to the objection [0].' => 'Ответить на протест №[0].', // form/objection_create.php
+'postpone decision' => 'отложить решение на потом', // form/objection_create.php, form/objection_edit.php
+'decline objection' => 'отклонить протест', // form/objection_create.php, form/objection_edit.php
+'accept objection' => 'принять протест', // form/objection_create.php, form/objection_edit.php
+'official tournament' => 'официальный турнир', // form/event_create.php, form/event_edit.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'The Sheriff\'s check' => 'Проверка шерифа', // view_game.php
@@ -1264,9 +1268,6 @@ $labelMenu = array (
 'Edit calculator \'[0]\'.' => 'Редактировать калькулятор статистик \'[0]\'.', // stats_calculator.php
 'Delete calculator \'[0]\'.' => 'Удалить калькулятор статистик \'[0]\'.', // stats_calculator.php
 'View the code of calculator \'[0]\'.' => 'Просмотр кода калькулятора \'[0]\'', // stats_calculator.php
-'postpone decision' => 'отложить решение на потом', // form/objection_create.php, form/objection_edit.php
-'decline objection' => 'отклонить протест', // form/objection_create.php, form/objection_edit.php
-'accept objection' => 'принять протест', // form/objection_create.php, form/objection_edit.php
 );
 
 return $labelMenu;

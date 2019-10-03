@@ -27,7 +27,7 @@ try
 			'FROM events e ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
-			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' . 
+			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' .  
 			'WHERE e.id = ?', $event_id);
 	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	$club = $_profile->clubs[$club_id];
@@ -136,7 +136,19 @@ try
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('everyone can moderate games.').'</td></tr>';
+	echo '> '.get_label('everyone can moderate games.');
+	
+	if (is_permitted(PERMISSION_ADMIN))
+	{
+		echo '<br><input type="checkbox" id="form-old_tournament"';
+		if (($flags & EVENT_FLAG_TOURNAMENT) != 0)
+		{
+			echo ' checked';
+		}
+		echo '> '.get_label('official tournament');
+	}
+	
+	echo '</td></tr>';
 	
 	echo '</table>';
 	
@@ -205,6 +217,7 @@ try
 		
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
+		if ($("#form-old_tournament").attr('checked')) _flags |= <?php echo EVENT_FLAG_TOURNAMENT; ?>;
 		
 		var _start = $('#form-date').val() + ' ' + timeStr($('#form-hour').val()) + ':' + timeStr($('#form-minute').val());
 		
