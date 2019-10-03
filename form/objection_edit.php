@@ -30,15 +30,27 @@ try
 	show_user_input('form-user', $user_name, '', get_label('Select user.'), 'onSelectUser');
 	echo '</td></tr>';
 	
-	if (!is_null($parent_id))
+	echo '<tr><td colspan="2">';
+	echo '<input type="radio" name="accept" value="0"';
+	if ($accept == 0)
 	{
-		echo '<tr><td colspan="2"><input type="checkbox" id="form-accept"';
-		if ($accept)
-		{
-			echo ' checked';
-		}
-		echo '> ' . get_label(' accept the objection and cancel the game.') . '</td></tr>';
+		echo ' checked';
 	}
+	echo '/> ' . get_label('postpone decision');
+	echo ' <input type="radio" id="form-decline" name="accept" value="-1"';
+	if ($accept < 0)
+	{
+		echo ' checked';
+	}
+	echo '/> ' . get_label('decline objection');
+	echo ' <input type="radio" id="form-accept" name="accept" value="1"';
+	if ($accept > 0)
+	{
+		echo ' checked';
+	}
+	echo '/> ' . get_label('accept objection');
+	echo '</td></tr>';
+		
 	echo '</table>';
 	
 	
@@ -62,15 +74,15 @@ try
 	function commit(onSuccess)
 	{
 		var accept = 0;
-		if ($("#form-accept").length)
+		if ($("#form-accept").attr("checked"))
 		{
-			accept = $("#form-accept").attr('checked') ? 1 : 0;
-			console.log('exists');
+			accept = 1;
 		}
-		else
+		else if ($("#form-decline").attr("checked"))
 		{
-			console.log('no');
+			accept = -1;
 		}
+		
 		json.post("api/ops/objection.php",
 		{
 			op: "change"
