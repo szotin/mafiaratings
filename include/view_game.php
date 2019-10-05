@@ -362,8 +362,12 @@ class ViewGamePageBase extends PageBase
 	{
 		global $_profile;
 		
+		if (!isset($this->vg))
+		{
+			return;
+		}
+		
 		$vg = $this->vg;
-		throw new Exc('---');
 		$gs = $vg->gs;
 		echo '<table class="head" width="100%"><tr>';
 		if ($this->prev_game_id > 0)
