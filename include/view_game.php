@@ -44,6 +44,7 @@ class ViewGame
 	
 	function __construct($id)
 	{
+		$this->gs = NULL;
 		$this->refresh($id);
 	}
 	
@@ -51,6 +52,10 @@ class ViewGame
 	{
 		if ($id <= 0)
 		{
+			if (is_null($this->gs))
+			{
+				throw new FatalExc(get_label('Unknown [0]', get_label('game')));
+			}
 			$id = $this->gs->id;
 		}
 		
@@ -358,6 +363,7 @@ class ViewGamePageBase extends PageBase
 		global $_profile;
 		
 		$vg = $this->vg;
+		throw new Exc('---');
 		$gs = $vg->gs;
 		echo '<table class="head" width="100%"><tr>';
 		if ($this->prev_game_id > 0)
@@ -510,21 +516,27 @@ class ViewGamePageBase extends PageBase
 	
 	protected function js_on_load()
 	{
+		if (isset($this->vg->gs))
+		{
 ?>
-		mr.showComments("game", <?php echo $this->vg->gs->id; ?>, 20, false, "wide_comment");
+			mr.showComments("game", <?php echo $this->vg->gs->id; ?>, 20, false, "wide_comment");
 <?php
+		}
 	}
 	
 	protected function js()
 	{
-?>
-		function deleteGame(gameId)
+		if (isset($this->vg->gs))
 		{
-			mr.deleteGame(gameId, "<?php echo get_label('Are you sure you want to delete the game [0]?', $this->vg->gs->id); ?>", function(){
-				window.location.replace("<?php echo get_back_page(); ?>");
-			});
-		}
+?>
+			function deleteGame(gameId)
+			{
+				mr.deleteGame(gameId, "<?php echo get_label('Are you sure you want to delete the game [0]?', $this->vg->gs->id); ?>", function(){
+					window.location.replace("<?php echo get_back_page(); ?>");
+				});
+			}
 <?php
+		}
 	}
 }
 
