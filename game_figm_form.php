@@ -291,6 +291,40 @@ try
 		$pdf->SetXY(35.0, 182.4);
 		$pdf->Cell(66, 10.1, $moder_name, 0, 0, 'C');
 		
+		$objections = '';
+		$query = new DbQuery('SELECT o.message, o.accept, u.id, u.name FROM objections o JOIN users u ON u.id = o.user_id WHERE o.game_id = ? ORDER BY timestamp', $game_id);
+		while ($row = $query->next())
+		{
+			list ($message, $accept, $user_id, $user_name) = $row;
+			if (empty($objections))
+			{
+				$complainer = $user_name;
+				for ($i = 0; $i < 10; ++$i, $y += 10.1)
+				{
+					$player = $gs->players[$i];
+					if ($player->id == $user_id)
+					{
+						$complainer = 'Игрок ' . ($i + 1) . ' (' . $user_name . ')';
+						break;
+					}
+				}
+				
+				$pdf->SetXY(42.0, 175.3);
+				$pdf->Cell(103.0, 7.1, $complainer, 0, 0, 'C');
+			}
+			
+			$objections .= $user_name . ': ' . $message;
+			if ($accept > 0)
+			{
+				$objections .= ' Протест принят.';
+			}
+			else if ($accept < 0)
+			{
+				$objections .= ' Протест отклонен.';
+			}
+			$objections .= "\n";
+		}
+		
 		$pdf->SetFont('Arial', '', 10);
         foreach ($gs->votings as $voting)
         {
@@ -371,23 +405,6 @@ try
 		{
 			$pdf->SetXY(10.9, 18.5);
 			$pdf->MultiCell(276.8, 8, $extra_point_comments);
-		}
-		
-		$objections = '';
-		$query = new DbQuery('SELECT o.message, o.accept, u.name FROM objections o JOIN users u ON u.id = o.user_id WHERE o.game_id = ? ORDER BY timestamp', $game_id);
-		while ($row = $query->next())
-		{
-			list ($message, $accept, $user_name) = $row;
-			$objections .= $user_name . ': ' . $message;
-			if ($accept > 0)
-			{
-				$objections .= ' Протест принят.';
-			}
-			else if ($accept < 0)
-			{
-				$objections .= ' Протест отклонен.';
-			}
-			$objections .= "\n";
 		}
 		
 		if (!empty($objections))
