@@ -1256,6 +1256,7 @@ $labelMenu = array (
 'decline objection' => 'отклонить протест', // form/objection_create.php, form/objection_edit.php
 'accept objection' => 'принять протест', // form/objection_create.php, form/objection_edit.php
 'official tournament' => 'официальный турнир', // form/event_create.php, form/event_edit.php
+'FIGM report.' => 'Отчет для ФИИМ.', // include/event.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'The Sheriff\'s check' => 'Проверка шерифа', // view_game.php
@@ -1268,7 +1269,11 @@ $labelMenu = array (
 'Edit calculator \'[0]\'.' => 'Редактировать калькулятор статистик \'[0]\'.', // stats_calculator.php
 'Delete calculator \'[0]\'.' => 'Удалить калькулятор статистик \'[0]\'.', // stats_calculator.php
 'View the code of calculator \'[0]\'.' => 'Просмотр кода калькулятора \'[0]\'', // stats_calculator.php
-'FIGM report.' => 'Отчет для ФИИМ.', // include/event.php
+'Sum' => 'Сумма', // event_screen.php
+'Main' => 'Осн.', // event_screen.php
+'Other' => 'Проч.', // event_screen.php
+'Guess' => 'ЛХ', // event_screen.php
+'Extra' => 'Допы', // event_screen.php
 );
 
 return $labelMenu;

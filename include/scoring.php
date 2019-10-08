@@ -838,6 +838,7 @@ class PlayerScore
 	public $points;
 	public $additional_points; // convert points to an array by category later. Now there are only 2 categories, so we'd rather keep it in a separate var.
 	public $extra_points;
+	public $prima_nocta_points;
 	public $counters;
 	public $games_played;
 	public $games_won;
@@ -850,6 +851,7 @@ class PlayerScore
 		$this->points = 0.0;
 		$this->additional_points = 0.0;
 		$this->extra_points = 0.0;
+		$this->prima_nocta_points = 0.0;
 		$this->counters = array_fill(0, SCORING_MATTER_COUNT * 4, 0);
 		$this->scores = $scores;
 		$this->games_played = 0;
@@ -920,6 +922,7 @@ class PlayerScore
 		
 		$this->points = $this->extra_points;
 		$this->additional_points = 0.0;
+		$this->prima_nocta_points = 0.0;
 		foreach ($scoring_system->rules as $rule)
 		{
 			$role_flag = 1;
@@ -954,10 +957,15 @@ class PlayerScore
 								break;
 						}
 					}
+					
 					$this->points += $points;
 					if ($rule->category == SCORING_CATEGORY_ADDITIONAL)
 					{
 						$this->additional_points += $points;
+					}
+					if ($rule->matter == SCORING_MATTER_GUESSED_3 || $rule->matter == SCORING_MATTER_GUESSED_2)
+					{
+						$this->prima_nocta_points += $points;
 					}
 				}
 				$role_flag <<= 1;
@@ -966,9 +974,29 @@ class PlayerScore
 		}
 	}
 	
-	function points_str()
+	function sum_points_str()
 	{
 		return format_score($this->points);
+	}
+	
+	function main_points_str()
+	{
+		return format_score($this->points - $this->additional_points - $this->extra_points);
+	}
+	
+	function additional_points_str()
+	{
+		return format_score($this->additional_points - $this->prima_nocta_points);
+	}
+	
+	function prima_nocta_points_str()
+	{
+		return format_score($this->prima_nocta_points);
+	}
+	
+	function extra_points_str()
+	{
+		return format_score($this->extra_points);
 	}
 	
 	function points_per_game_str()
