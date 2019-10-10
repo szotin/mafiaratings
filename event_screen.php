@@ -253,11 +253,11 @@ try
 						echo '<tr class="th darker">';
 						echo '<td width="20" rowspan="2"><button class="icon" onclick="window.location.replace(\'event_screen.php?id=' . $event->id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button></td>';
 						echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
-						echo '<td align="center" colspan="5">'.get_label('Points').'</td>';
+						echo '<td align="center" colspan="6">'.get_label('Points').'</td>';
 						echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 						echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 						echo '</tr>';
-						echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Other') . '</td></tr>';
+						echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('Other') . '</td></tr>';
 					}
 					
 					echo '<tr>';
@@ -267,15 +267,19 @@ try
 					$user_pic->show(ICONS_DIR, 50);
 					echo '</td><td>' . $score->name . '</td>';
 					echo '<td width="50" align="center">';
-					$club_pic->set($score->club_id, $score->club_name, $score->club_flags);
-					$club_pic->show(ICONS_DIR, 40);
+					if (!is_null($score->club_id) && $score->club_id > 0)
+					{
+						$club_pic->set($score->club_id, $score->club_name, $score->club_flags);
+						$club_pic->show(ICONS_DIR, 40);
+					}
 					echo '</td>';
 					
 					echo '<td align="center" class="dark">' . $score->sum_points_str() . '</td>';
 					echo '<td align="center">' . $score->main_points_str() . '</td>';
 					echo '<td align="center">' . $score->prima_nocta_points_str() . '</td>';
 					echo '<td align="center">' . $score->extra_points_str() . '</td>';
-					echo '<td align="center">' . $score->additional_points_str() . '</td>';
+					echo '<td align="center">' . $score->penalty_points_str() . '</td>';
+					echo '<td align="center">' . $score->other_points_str() . '</td>';
 					echo '<td align="center">' . $score->games_played . '</td>';
 					echo '<td align="center">' . $score->games_won . '</td>';
 					echo '</tr>';

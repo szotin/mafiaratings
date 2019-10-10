@@ -879,7 +879,7 @@ $labelMenu = array (
 'Invalid rule matter [0]' => 'Недопустимое событие [0] в правиле', // api/ops/scoring.php
 'Please select at least one role' => 'Выберите хотя бы одну роль, пожалуйста', // api/ops/scoring.php
 'Invalid policy [0]' => 'Недопустимая политика [0] в правиле', // api/ops/scoring.php
-'Please enter points' => 'Пожалуйста введите баллы', // api/ops/scoring.php
+'Please enter points' => 'Пожалуйста введите баллы', // api/ops/scoring.php, api/ops/scoring.php
 'scoring rule' => 'очковое правило', // api/ops/scoring.php, api/ops/scoring.php, api/ops/scoring.php
 'Matter' => 'Событие в игре', // form/scoring_rule_create.php
 'Players' => 'Игроки', // event_players.php, include/event.php, form/scoring_rule_create.php
@@ -1257,6 +1257,11 @@ $labelMenu = array (
 'accept objection' => 'принять протест', // form/objection_create.php, form/objection_edit.php
 'official tournament' => 'официальный турнир', // form/event_create.php, form/event_edit.php
 'FIGM report.' => 'Отчет для ФИИМ.', // include/event.php
+'Sum' => 'Сумма', // address_standings.php, club_standings.php, event_screen.php, event_standings.php
+'Main' => 'Осн', // address_standings.php, club_standings.php, event_screen.php, event_standings.php
+'Other' => 'Проч', // address_standings.php, club_standings.php, event_screen.php, event_standings.php
+'Guess' => 'ЛХ', // address_standings.php, club_standings.php, event_screen.php, event_standings.php
+'Extra' => 'Доп', // address_standings.php, club_standings.php, event_screen.php, event_standings.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, user_games.php
 'The Sheriff\'s check' => 'Проверка шерифа', // view_game.php
@@ -1269,11 +1274,9 @@ $labelMenu = array (
 'Edit calculator \'[0]\'.' => 'Редактировать калькулятор статистик \'[0]\'.', // stats_calculator.php
 'Delete calculator \'[0]\'.' => 'Удалить калькулятор статистик \'[0]\'.', // stats_calculator.php
 'View the code of calculator \'[0]\'.' => 'Просмотр кода калькулятора \'[0]\'', // stats_calculator.php
-'Sum' => 'Сумма', // event_screen.php
-'Main' => 'Осн.', // event_screen.php
-'Other' => 'Проч.', // event_screen.php
-'Guess' => 'ЛХ', // event_screen.php
-'Extra' => 'Допы', // event_screen.php
+'Penlt' => 'Штрф', // event_screen.php
+'Points depending on how often the player was killed the first night by FIGM rules' => 'Баллы в зависимости от частоты с которой этот игрок убивается первой ночью по правилам ФИИМ', // include/scoring.php
+'[0] get points depending on kill rate using FIGM rules.' => '[0] получает баллы в зависимости от того как часто убивался первой ночью по правилам ФИИМ.', // include/scoring.php
 );
 
 return $labelMenu;

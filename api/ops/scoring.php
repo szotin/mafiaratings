@@ -185,14 +185,20 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Invalid policy [0]', $policy));
 		}
 		
-		$min_points = (float)get_required_param('min_points');
-		if ($policy == SCORING_POLICY_STATIC)
+		switch ($policy)
 		{
+		case SCORING_POLICY_STATIC:
+			$max_points = $min_points = (float)get_required_param('min_points');
 			$max_dependency = $min_dependency = 0.0;
-			$max_points = $min_points;
-		}
-		else
-		{
+			if ($min_points == 0)
+			{
+				throw new Exc(get_label('Please enter points'));
+			}
+			break;
+			
+		case SCORING_POLICY_GAME_DIFFICULTY:
+		case SCORING_POLICY_FIRST_NIGHT_KILLING:
+			$min_points = (float)get_required_param('min_points');
 			$max_points = (float)get_required_param('max_points');
 			if ($max_points == $min_points)
 			{
@@ -226,11 +232,17 @@ class ApiPage extends OpsApiPageBase
 					$max_dependency = $min_dependency;
 				}
 			}
-		}
-		
-		if ($min_points == 0 && $max_points == 0)
-		{
-			throw new Exc(get_label('Please enter points'));
+			
+			if ($min_points == 0 && $max_points == 0)
+			{
+				throw new Exc(get_label('Please enter points'));
+			}
+			break;
+			
+		case SCORING_POLICY_FIRST_NIGHT_KILLING_FIGM:
+			$max_dependency = $min_dependency = 0.0;
+			$max_points = $min_points = 0.0;
+			break;
 		}
 		
 		Db::begin();

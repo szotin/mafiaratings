@@ -76,10 +76,12 @@ define('SCORING_FLAG_RED_CHECKS', 0x100000); // 2097152: Matter 21 - All sheriff
 define('SCORING_POLICY_STATIC', 0); // just add a certain number of points
 define('SCORING_POLICY_GAME_DIFFICULTY', 1); // depending on town winning percentage
 define('SCORING_POLICY_FIRST_NIGHT_KILLING', 2); // depending on how often the player is killed the first night
-define('SCORING_POLICY_COUNT', 3);
+define('SCORING_POLICY_FIRST_NIGHT_KILLING_FIGM', 3); // depending on how often the player is killed the first night FIGM rules
+define('SCORING_POLICY_COUNT', 4);
 
 define('SCORING_STAT_FLAG_GAME_DIFFICULTY', 0x1);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING', 0x2);
+define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM', 0x4);
 
 define('SCORING_SORTING_ADDITIONAL_POINTS', 'a');
 define('SCORING_SORTING_MAIN_POINTS', 'b');
@@ -510,6 +512,8 @@ class ScoringRule
 				return get_label('Points depending on game difficulty (i.e. who wins more often civs or mafia)');
 			case SCORING_POLICY_FIRST_NIGHT_KILLING:
 				return get_label('Points depending on how often the player was killed the first night');
+			case SCORING_POLICY_FIRST_NIGHT_KILLING_FIGM:
+				return get_label('Points depending on how often the player was killed the first night by FIGM rules');
 		}
 		return get_label('Unknown');
 	}
@@ -572,6 +576,9 @@ class ScoringSystem
 						break;
 					case SCORING_POLICY_FIRST_NIGHT_KILLING:
 						$this->stat_flags |= SCORING_STAT_FLAG_FIRST_NIGHT_KILLING;
+						break;
+					case SCORING_POLICY_FIRST_NIGHT_KILLING_FIGM:
+						$this->stat_flags |= SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM;
 						break;
 				}
 				
@@ -768,6 +775,10 @@ class ScoringSystem
 						$lower_text,
 						$higher_text);
 					break;
+					
+				case SCORING_POLICY_FIRST_NIGHT_KILLING_FIGM:
+					echo get_label('[0] get points depending on kill rate using FIGM rules.', $rule->get_roles_label());
+					break;
 			}
 			echo '<br>';
 			
@@ -835,10 +846,15 @@ class PlayerScore
 	public $club_id;
 	public $club_name;
 	public $club_flags;
+	
 	public $points;
-	public $additional_points; // convert points to an array by category later. Now there are only 2 categories, so we'd rather keep it in a separate var.
-	public $extra_points;
+	public $main_points;
 	public $prima_nocta_points;
+	public $extra_points;
+	public $best_player_points;
+	public $penalty_points;
+	public $other_points;
+	
 	public $counters;
 	public $games_played;
 	public $games_won;
@@ -852,6 +868,8 @@ class PlayerScore
 		$this->additional_points = 0.0;
 		$this->extra_points = 0.0;
 		$this->prima_nocta_points = 0.0;
+		$this->penalty_points = 0.0;
+		$this->best_player_points = 0.0;
 		$this->counters = array_fill(0, SCORING_MATTER_COUNT * 4, 0);
 		$this->scores = $scores;
 		$this->games_played = 0;
@@ -923,6 +941,9 @@ class PlayerScore
 		$this->points = $this->extra_points;
 		$this->additional_points = 0.0;
 		$this->prima_nocta_points = 0.0;
+		$this->penalty_points = 0.0;
+		$this->best_player_points = 0.0;
+		$this->other_points = 0.0;
 		foreach ($scoring_system->rules as $rule)
 		{
 			$role_flag = 1;
@@ -955,17 +976,41 @@ class PlayerScore
 							case SCORING_POLICY_FIRST_NIGHT_KILLING:
 								$points = $count * $rule->calculate_points($this->first_night_kill_rate);
 								break;
+								
+							case SCORING_POLICY_FIRST_NIGHT_KILLING_FIGM:
+								$points = $count * $this->first_night_kill_rate_figm;
+								break;
 						}
 					}
 					
 					$this->points += $points;
-					if ($rule->category == SCORING_CATEGORY_ADDITIONAL)
+					switch ($rule->matter)
 					{
-						$this->additional_points += $points;
-					}
-					if ($rule->matter == SCORING_MATTER_GUESSED_3 || $rule->matter == SCORING_MATTER_GUESSED_2)
-					{
-						$this->prima_nocta_points += $points;
+						case SCORING_MATTER_PLAY:
+						case SCORING_MATTER_WIN:
+						case SCORING_MATTER_LOOSE:
+							$this->main_points += $points;
+							break;
+							
+						case SCORING_MATTER_GUESSED_3:
+						case SCORING_MATTER_GUESSED_2:
+							$this->prima_nocta_points += $points;
+							break;
+						
+						case SCORING_MATTER_WARNINGS_4:
+						case SCORING_MATTER_KICK_OUT:
+						case SCORING_MATTER_SURRENDERED:
+							$this->penalty_points += $points;
+							break;
+							
+						case SCORING_MATTER_BEST_PLAYER:
+						case SCORING_MATTER_BEST_MOVE:
+							$this->best_player_points += $points;
+							break;
+						
+						default:
+							$this->other_points += $points;
+							break;
 					}
 				}
 				$role_flag <<= 1;
@@ -981,12 +1026,7 @@ class PlayerScore
 	
 	function main_points_str()
 	{
-		return format_score($this->points - $this->additional_points - $this->extra_points);
-	}
-	
-	function additional_points_str()
-	{
-		return format_score($this->additional_points - $this->prima_nocta_points);
+		return format_score($this->main_points);
 	}
 	
 	function prima_nocta_points_str()
@@ -996,7 +1036,17 @@ class PlayerScore
 	
 	function extra_points_str()
 	{
-		return format_score($this->extra_points);
+		return format_score($this->extra_points + $this->best_player_points);
+	}
+	
+	function penalty_points_str()
+	{
+		return format_score($this->penalty_points);
+	}
+	
+	function other_points_str()
+	{
+		return format_score($this->other_points);
 	}
 	
 	function points_per_game_str()
@@ -1216,7 +1266,7 @@ class Scores
 			$this->stats[SCORING_STAT_FLAG_GAME_DIFFICULTY] = (float)$difficulty;
 		}
 		
-		if ($scoring_system->stat_flags & SCORING_STAT_FLAG_FIRST_NIGHT_KILLING)
+		if ($scoring_system->stat_flags & (SCORING_STAT_FLAG_FIRST_NIGHT_KILLING | SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM))
 		{
 			$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.canceled = FALSE AND g.result > 0 AND p.role <= 1', $condition);
 			$query->add(' GROUP BY u.id');
@@ -1232,13 +1282,25 @@ class Scores
 				$player_score->club_name = $club_name;
 				$player_score->club_flags = (int)$club_flags;
 			
-				// 7 because statistically every red player should be killed once in 7 days.
-				// So we use it to make sure a player does not get maximum ammount for being killed in one game.
-				if ($games_count < 7)
+				if ($scoring_system->stat_flags & SCORING_STAT_FLAG_FIRST_NIGHT_KILLING)
 				{
-					$games_count = 7;
+					// 7 because statistically every red player should be killed once in 7 days.
+					// So we use it to make sure a player does not get maximum ammount for being killed in one game.
+					if ($games_count < 7)
+					{
+						$games_count = 7;
+					}
+					$player_score->first_night_kill_rate = $first_night_kill_count / $games_count;
 				}
-				$player_score->first_night_kill_rate = $first_night_kill_count / $games_count;
+				if ($scoring_system->stat_flags & SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM)
+				{
+					// A hack for Alcatraz cup. Reworking is coming anyway.
+					if ($games_count < 13)
+					{
+						$games_count = 13;
+					}
+					$player_score->first_night_kill_rate_figm = min($first_night_kill_count * 0.4 / round($games_count * 0.4), 0.4);
+				}
 				$players[$user_id] = $player_score;
 			}
 		}

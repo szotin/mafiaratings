@@ -108,6 +108,9 @@ try
 				$("#form-min-dep").spinner({ step: 1, max: 100, min: 0, page: 10 });
 				$("#form-max-dep").spinner({ step: 1, max: 100, min: 0, page: 10 });
 				break;
+			case <?php echo SCORING_POLICY_FIRST_NIGHT_KILLING_FIGM; ?>:
+				$("#form-points-holder").html("");
+				break;
 		}
 	}
 	

@@ -105,13 +105,13 @@ class Page extends ClubPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40" rowspan="2">&nbsp;</td>';
 		echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
-		echo '<td width="36" align="center" colspan="5">'.get_label('Points').'</td>';
+		echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
 		echo '</tr>';
-		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Other') . '</td></tr>';
+		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('Other') . '</td></tr>';
 
 		$page_start = $_page * PAGE_SIZE;
 		if ($players_count > $page_start + PAGE_SIZE)
@@ -147,7 +147,8 @@ class Page extends ClubPageBase
 			echo '<td align="center">' . $score->main_points_str() . '</td>';
 			echo '<td align="center">' . $score->prima_nocta_points_str() . '</td>';
 			echo '<td align="center">' . $score->extra_points_str() . '</td>';
-			echo '<td align="center">' . $score->additional_points_str() . '</td>';
+			echo '<td align="center">' . $score->penalty_points_str() . '</td>';
+			echo '<td align="center">' . $score->other_points_str() . '</td>';
 			echo '<td align="center">' . $score->games_played . '</td>';
 			echo '<td align="center">' . $score->games_won . '</td>';
 			echo '<td align="center">' . number_format(($score->games_won * 100.0)/$score->games_played, 1) . '%</td>';
