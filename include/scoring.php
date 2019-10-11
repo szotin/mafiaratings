@@ -886,7 +886,7 @@ class PlayerScore
 		}
 	}
 	
-	function add_counters($scoring_flags, $extra_points, $player_role, $timestamp, $weight)
+	function add_counters($scoring_flags, $extra_points, $player_role, $timestamp, $weight, $round_num)
 	{
 		if (is_array($this->history) && $this->timestamp != $timestamp)
 		{
@@ -908,7 +908,8 @@ class PlayerScore
 			if ($scoring_flags & $flag)
 			{
 				// A hack, FIGM changed killing rule, points for being killed first night are assigned only when the red team looses.
-				if ($flag != SCORING_FLAG_KILLED_FIRST_NIGHT || ($scoring_flags & SCORING_FLAG_LOOSE) != 0)
+				// Even a werce hack - we are assuming round 2 is the finals.
+				if ($flag != SCORING_FLAG_KILLED_FIRST_NIGHT || (($scoring_flags & SCORING_FLAG_LOOSE) != 0 && $round_num < 2))
 				{
 					$this->counters[$offset] += $weight;
 				}
@@ -1067,6 +1068,8 @@ class PlayerScore
 			if ($flag & $role_flags)
 			{
 				// A hack, FIGM changed killing rule, points for being killed first night are assigned only when the red team looses.
+				// Note that we don't do round=2 hack here. Because round is not available and this is used for sorting only.
+				// Yeah, pretty bad. But it will be reworked in the near future.
 				if ($flag != SCORING_FLAG_KILLED_FIRST_NIGHT || ($scoring_flags & SCORING_FLAG_LOOSE) != 0)
 				{
 					$count += $this->counters[$matter];
@@ -1266,7 +1269,7 @@ class Scores
 			$this->stats[SCORING_STAT_FLAG_GAME_DIFFICULTY] = (float)$difficulty;
 		}
 		
-		if ($scoring_system->stat_flags & (SCORING_STAT_FLAG_FIRST_NIGHT_KILLING | SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM))
+		if ($scoring_system->stat_flags & SCORING_STAT_FLAG_FIRST_NIGHT_KILLING)
 		{
 			$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.canceled = FALSE AND g.result > 0 AND p.role <= 1', $condition);
 			$query->add(' GROUP BY u.id');
@@ -1282,25 +1285,39 @@ class Scores
 				$player_score->club_name = $club_name;
 				$player_score->club_flags = (int)$club_flags;
 			
-				if ($scoring_system->stat_flags & SCORING_STAT_FLAG_FIRST_NIGHT_KILLING)
+				// 7 because statistically every red player should be killed once in 7 days.
+				// So we use it to make sure a player does not get maximum ammount for being killed in one game.
+				if ($games_count < 7)
 				{
-					// 7 because statistically every red player should be killed once in 7 days.
-					// So we use it to make sure a player does not get maximum ammount for being killed in one game.
-					if ($games_count < 7)
-					{
-						$games_count = 7;
-					}
-					$player_score->first_night_kill_rate = $first_night_kill_count / $games_count;
+					$games_count = 7;
 				}
-				if ($scoring_system->stat_flags & SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM)
+				$player_score->first_night_kill_rate = $first_night_kill_count / $games_count;
+				$players[$user_id] = $player_score;
+			}
+		}
+		
+		if ($scoring_system->stat_flags & SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM)
+		{
+			// This is all a huck for Alcatraz. Don't try to make sense out of this code. Just reimplement FIGM logic later.
+			$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.canceled = FALSE AND g.result > 0 AND g.round_num < 2 AND p.role <= 1', $condition);
+			$query->add(' GROUP BY u.id');
+			while ($row = $query->next())
+			{
+				list ($user_id, $user_name, $user_flags, $user_langs, $club_id, $club_name, $club_flags, $games_count, $first_night_kill_count) = $row;
+				$player_score = new PlayerScore($this, $start_time);
+				$player_score->id = (int)$user_id;
+				$player_score->name = $user_name;
+				$player_score->flags = (int)$user_flags;
+				$player_score->langs = (int)$user_langs;
+				$player_score->club_id = (int)$club_id;
+				$player_score->club_name = $club_name;
+				$player_score->club_flags = (int)$club_flags;
+			
+				if ($games_count < 13)
 				{
-					// A hack for Alcatraz cup. Reworking is coming anyway.
-					if ($games_count < 13)
-					{
-						$games_count = 13;
-					}
-					$player_score->first_night_kill_rate_figm = min($first_night_kill_count * 0.4 / round($games_count * 0.4), 0.4);
+					$games_count = 13;
 				}
+				$player_score->first_night_kill_rate_figm = min($first_night_kill_count * 0.4 / round($games_count * 0.4), 0.4);
 				$players[$user_id] = $player_score;
 			}
 		}
@@ -1350,7 +1367,7 @@ class Scores
 			{
 				$timestamp = $start_time + round(ceil(($timestamp - $start_time) / $interval) * $interval);
 			}
-			$player_score->add_counters($scoring_flags, $player_extra_points, $player_role, $timestamp, $weight);
+			$player_score->add_counters($scoring_flags, $player_extra_points, $player_role, $timestamp, $weight, $round_num);
 		}
 		
 		$this->players = array();
