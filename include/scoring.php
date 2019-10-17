@@ -76,10 +76,12 @@ define('SCORING_FLAG_RED_CHECKS', 0x100000); // 2097152: Matter 21 - All sheriff
 define('SCORING_POLICY_STATIC', 0); // just add a certain number of points
 define('SCORING_POLICY_GAME_DIFFICULTY', 1); // depending on town winning percentage
 define('SCORING_POLICY_FIRST_NIGHT_KILLING', 2); // depending on how often the player is killed the first night
-define('SCORING_POLICY_COUNT', 3);
+define('SCORING_POLICY_FIRST_NIGHT_KILLING_FIGM', 3); // depending on how often the player is killed the first night FIGM rules
+define('SCORING_POLICY_COUNT', 4);
 
 define('SCORING_STAT_FLAG_GAME_DIFFICULTY', 0x1);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING', 0x2);
+define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM', 0x4);
 
 define('SCORING_SORTING_ADDITIONAL_POINTS', 'a');
 define('SCORING_SORTING_MAIN_POINTS', 'b');

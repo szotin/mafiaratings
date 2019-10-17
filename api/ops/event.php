@@ -105,7 +105,14 @@ class ApiPage extends OpsApiPageBase
 		$scoring_id = (int)get_optional_param('scoring_id', $club->scoring_id);
 		$scoring_weight = (float)get_optional_param('scoring_weight', 1);
 		$notes = get_optional_param('notes', '');
-		$flags = (int)get_optional_param('flags', EVENT_FLAG_ALL_MODERATE) & EVENT_EDITABLE_MASK;
+		
+		$editable_mask = EVENT_EDITABLE_MASK;
+		if (is_permitted(PERMISSION_ADMIN))
+		{
+			$editable_mask |= EVENT_FLAG_TOURNAMENT;
+		}
+		$flags = (int)get_optional_param('flags', EVENT_FLAG_ALL_MODERATE);// & $editable_mask;
+		
 		$langs = get_optional_param('langs', 0);
 		if (($langs & LANG_ALL) == 0)
 		{
@@ -290,8 +297,13 @@ class ApiPage extends OpsApiPageBase
 		$rules_code = get_optional_param('rules_code', $old_rules_code);
 		check_rules_code($rules_code);
 		
+		$editable_mask = EVENT_EDITABLE_MASK;
+		if (is_permitted(PERMISSION_ADMIN))
+		{
+			$editable_mask |= EVENT_FLAG_TOURNAMENT;
+		}
 		$flags = (int)get_optional_param('flags', $old_flags);
-		$flags = ($flags & EVENT_EDITABLE_MASK) + ($old_flags & ~EVENT_EDITABLE_MASK);
+		$flags = ($flags & $editable_mask) + ($old_flags & ~$editable_mask);
 		
 		$langs = get_optional_param('langs', $old_langs);
 		if (($langs & LANG_ALL) == 0)

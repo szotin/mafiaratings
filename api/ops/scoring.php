@@ -292,7 +292,6 @@ class ApiPage extends OpsApiPageBase
 				// {
 					// $min_dependency = 1.0;
 				// }
-				
 				// $max_dependency = (float)get_required_param('max_dep');
 				// if ($max_dependency < 0)
 				// {
