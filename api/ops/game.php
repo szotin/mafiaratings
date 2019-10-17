@@ -1170,6 +1170,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('Please enter the reason.'));
 		}
+		$reason = str_replace(":", "&#58;", $reason);
 		
         list($game_log, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT log, club_id, moderator_id, canceled FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
