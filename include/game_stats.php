@@ -224,6 +224,7 @@ class GamePlayerStats
 
 	function __construct($gs, $player_num)
     {
+		$player_num = min(max((int)$player_num, 0), 9);
 		$this->timestamp = time();
 	
         $player = $gs->players[$player_num];
