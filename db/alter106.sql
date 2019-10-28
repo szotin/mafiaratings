@@ -24,25 +24,8 @@ ALTER TABLE scorings ADD COLUMN flags INT(11) NOT NULL;
 ALTER TABLE events ADD COLUMN scoring_version_id INT(11) NULL;
 ALTER TABLE tournaments ADD COLUMN scoring_version_id INT(11) NULL;
 
-define('SCORING_ROLE_FLAGS_CIV', 1);
-define('SCORING_ROLE_FLAGS_SHERIFF', 2);
-define('SCORING_ROLE_FLAGS_RED', 3);
-define('SCORING_ROLE_FLAGS_MAF', 4);
-define('SCORING_ROLE_FLAGS_CIV_MAF', 5);
-define('SCORING_ROLE_FLAGS_SHERIFF_MAF', 6);
-define('SCORING_ROLE_FLAGS_EXCEPT_DON', 7);
-define('SCORING_ROLE_FLAGS_DON', 8);
-define('SCORING_ROLE_FLAGS_CIV_DON', 9);
-define('SCORING_ROLE_FLAGS_SHERIFF_DON', 10);
-define('SCORING_ROLE_FLAGS_EXCEPT_MAF', 11);
-define('SCORING_ROLE_FLAGS_BLACK', 12);
-define('SCORING_ROLE_FLAGS_EXCEPT_SHERIFF', 13);
-define('SCORING_ROLE_FLAGS_EXCEPT_CIV', 14);
-define('SCORING_ROLE_FLAGS_ALL', 15);
-
-
 -- Империя Мафии
-UPDATE scoring_versions SET scoring = 2, 1, '{"sorting":"acgk","groups":[{"name":"main","policies":[{"matter":2,"roles":5,"points":1},{"matter":2,"roles":10,"points":2}]},{"name":"extra","policies":[{"matter":32,"points":1},{"matter":64,"points":1},{"matter":1024,"roles":3,"points":1}]}]}');
+INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (2, 1, '{"sorting":"acgk","groups":[{"name":"main","policies":[{"matter":2,"roles":5,"points":1},{"matter":2,"roles":10,"points":2}]},{"name":"extra","policies":[{"matter":32,"points":1},{"matter":64,"points":1},{"matter":1024,"roles":3,"points":1}]}]}');
 SELECT @id := LAST_INSERT_ID();
 UPDATE events SET scoring_version_id = @id WHERE scoring_id = 2;
 UPDATE tournaments SET scoring_version_id = @id WHERE scoring_id = 2;

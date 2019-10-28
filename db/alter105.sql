@@ -167,3 +167,30 @@ INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs,
 SELECT name, club_id, address_id, start_time, duration, languages, notes, price, scoring_id, rules, 384, 1 FROM events WHERE id = 8362;
 SELECT @id := LAST_INSERT_ID();
 UPDATE events SET name = 'Основной раунд', flags = (flags &~ 32) | 3, tournament_id = @id WHERE id = 8362;
+
+-- 8412 - Columbia Cup (финал)
+INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) 
+SELECT name, club_id, address_id, start_time, duration, languages, notes, price, scoring_id, rules, 384, 4 FROM events WHERE id = 8412;
+SELECT @id := LAST_INSERT_ID();
+UPDATE events SET name = 'Основной раунд', flags = (flags &~ 32) | 3, tournament_id = @id WHERE id = 8412;
+
+INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_weight, tournament_id, rules)
+SELECT 'Финал', address_id, club_id, start_time, duration, 27, languages, scoring_id, 1.5, @id, rules FROM events WHERE id = 8412;
+SELECT @event_id := LAST_INSERT_ID();
+UPDATE games SET event_id = @event_id WHERE event_id = 8412 AND round_num = 2;
+
+-- 8439 - Alcatraz-2019
+INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) 
+SELECT name, club_id, address_id, start_time, duration, languages, notes, price, scoring_id, rules, 384, 4 FROM events WHERE id = 8439;
+SELECT @id := LAST_INSERT_ID();
+UPDATE events SET name = 'Основной раунд', flags = (flags &~ 32) | 3, tournament_id = @id WHERE id = 8439;
+
+INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_weight, tournament_id, rules)
+SELECT 'Полуфинал', address_id, club_id, start_time, duration, 27, languages, scoring_id, 1, @id, rules FROM events WHERE id = 8439;
+SELECT @event_id := LAST_INSERT_ID();
+UPDATE games SET event_id = @event_id WHERE event_id = 8439 AND round_num = 1;
+
+INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_weight, tournament_id, rules)
+SELECT 'Финал', address_id, club_id, start_time, duration, 27, languages, scoring_id, 1.5, @id, rules FROM events WHERE id = 8439;
+SELECT @event_id := LAST_INSERT_ID();
+UPDATE games SET event_id = @event_id WHERE event_id = 8439 AND round_num = 2;
