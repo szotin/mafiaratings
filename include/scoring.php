@@ -1338,7 +1338,12 @@ class Scores
 			$weight = 1;
 			if ($rounds != null)
 			{
-				if (is_null($round_num) || $round_num < 0 || $round_num >= count($rounds))
+				if (is_null($round_num))
+				{
+					$round_num = 0;
+				}
+				
+				if ($round_num < 0 || $round_num >= count($rounds))
 				{
 					continue;
 				}
