@@ -194,3 +194,15 @@ INSERT INTO events (name, address_id, club_id, start_time, duration, flags, lang
 SELECT 'Финал', address_id, club_id, start_time, duration, 27, languages, scoring_id, 1.5, @id, rules FROM events WHERE id = 8439;
 SELECT @event_id := LAST_INSERT_ID();
 UPDATE games SET event_id = @event_id WHERE event_id = 8439 AND round_num = 2;
+
+-- 8447 - Police Academy
+INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) 
+SELECT name, club_id, address_id, start_time, duration, languages, notes, price, scoring_id, rules, 384, 1 FROM events WHERE id = 8447;
+SELECT @id := LAST_INSERT_ID();
+UPDATE events SET name = 'Основной раунд', flags = (flags &~ 32) | 3, tournament_id = @id WHERE id = 8447;
+
+-- 8473 - Minitournament
+INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) 
+SELECT name, club_id, address_id, start_time, duration, languages, notes, price, scoring_id, rules, 384, 1 FROM events WHERE id = 8473;
+SELECT @id := LAST_INSERT_ID();
+UPDATE events SET name = 'Основной раунд', flags = (flags &~ 32) | 3, tournament_id = @id WHERE id = 8473;

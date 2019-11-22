@@ -1218,13 +1218,13 @@ class ApiPage extends OpsApiPageBase
 		$events_count = 0;
 		
 		Db::begin();
-		$query = new DbQuery('SELECT id, log, event_id FROM games WHERE round_num > 0');
+		$query = new DbQuery('SELECT id, log, canceled, event_id FROM games WHERE round_num > 0');
 		while ($row = $query->next())
 		{
-			list($id, $log, $event_id) = $row;
+			list($id, $log, $is_canceled, $event_id) = $row;
 			$event_id = (int)$event_id;
 			$gs = new GameState();
-			$gs->init_existing($id, $log);
+			$gs->init_existing($id, $log, $is_canceled);
 			if ($gs->event_id != $event_id)
 			{
 				$gs->event_id = $event_id;
@@ -1232,6 +1232,21 @@ class ApiPage extends OpsApiPageBase
 				++$changed_count;
 			}
 			++$total_count;
+		}
+		
+		$event_dir = '../../' . EVENT_PICS_DIR;
+		$tournament_dir = '../../' . TOURNAMENT_PICS_DIR;
+		if (!is_dir($tournament_dir))
+		{
+			mkdir($tournament_dir);
+		}
+		if (!is_dir($tournament_dir . 'icons'))
+		{
+			mkdir($tournament_dir . 'icons');
+		}
+		if (!is_dir($tournament_dir . 'tnails'))
+		{
+			mkdir($tournament_dir . 'tnails');
 		}
 		
 		$query = new DbQuery('SELECT e.id, e.flags, t.id, t.flags FROM events e JOIN tournaments t ON t.id = e.tournament_id');
@@ -1248,8 +1263,6 @@ class ApiPage extends OpsApiPageBase
 				continue;
 			}
 			
-			$event_dir = '../../' . EVENT_PICS_DIR;
-			$tournament_dir = '../../' . TOURNAMENT_PICS_DIR;
 			$tournament_filename = $tournament_id . '.png';
 			$event_filename = $event_id . '.png';
 			if (!rename($event_dir . $event_filename, $tournament_dir . $tournament_filename))

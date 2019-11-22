@@ -139,11 +139,11 @@ class GamePlayerStats
 		$mafs_guessed = $gs->mafs_guessed($this->player_num);
 		if ($mafs_guessed >= 3)
 		{
-			$this->scoring_flags |= SCORING_FLAG_GUESSED_3;
+			$this->scoring_flags |= SCORING_FLAG_PRIMA_NOCTA_3;
 		}
 		else if ($mafs_guessed >= 2)
 		{
-			$this->scoring_flags |= SCORING_FLAG_GUESSED_2;
+			$this->scoring_flags |= SCORING_FLAG_PRIMA_NOCTA_2;
 		}
 		
         switch ($player->kill_reason)

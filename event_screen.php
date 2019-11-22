@@ -125,10 +125,8 @@ try
 			echo '</td></tr></table>';
 		}
 		
-		$condition = new SQL(' AND g.event_id = ?', $event->id);
-		$scoring_system = new ScoringSystem($event->scoring_id);
-		$scores = new Scores($scoring_system, $condition);
-		$players_count = count($scores->players);
+		$players = event_scores($event->id);
+		$players_count = count($players);
 			
 		if ($players_count == 0)
 		{
@@ -224,7 +222,7 @@ try
 					{
 						break;
 					}
-					$score = $scores->players[$number++];
+					$player = $players[$number++];
 					
 					if ($j == 0)
 					{
@@ -236,31 +234,33 @@ try
 						echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 						echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 						echo '</tr>';
-						echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('Other') . '</td></tr>';
+						echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
 					}
 					
 					echo '<tr>';
 					echo '<td align="center" class="dark">' . $number . '</td>';
 					echo '<td width="50">';
-					$user_pic->set($score->id, $score->name, $score->flags);
+					$user_pic->set($player->id, $player->name, $player->flags);
 					$user_pic->show(ICONS_DIR, 50);
-					echo '</td><td>' . $score->name . '</td>';
+					echo '</td><td>' . $player->name . '</td>';
 					echo '<td width="50" align="center">';
-					if (!is_null($score->club_id) && $score->club_id > 0)
+					if (!is_null($player->club_id) && $player->club_id > 0)
 					{
-						$club_pic->set($score->club_id, $score->club_name, $score->club_flags);
+						$club_pic->set($player->club_id, $player->club_name, $player->club_flags);
 						$club_pic->show(ICONS_DIR, 40);
 					}
 					echo '</td>';
 					
-					echo '<td align="center" class="dark">' . $score->sum_points_str() . '</td>';
-					echo '<td align="center">' . $score->main_points_str() . '</td>';
-					echo '<td align="center">' . $score->prima_nocta_points_str() . '</td>';
-					echo '<td align="center">' . $score->extra_points_str() . '</td>';
-					echo '<td align="center">' . $score->penalty_points_str() . '</td>';
-					echo '<td align="center">' . $score->other_points_str() . '</td>';
-					echo '<td align="center">' . $score->games_played . '</td>';
-					echo '<td align="center">' . $score->games_won . '</td>';
+					echo '<td align="center" class="dark">' . format_score(get_score($player)) . '</td>';
+					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_MAIN)) . '</td>';
+					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_PRIMA_NOCTA)) . '</td>';
+					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_EXTRA)) . '</td>';
+					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_PENALTY)) . '</td>';
+					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_NIGHT1)) . '</td>';
+					echo '<td align="center">' . $player->games_count . '</td>';
+					echo '<td align="center">' . $player->wins . '</td>';
+					
+					
 					echo '</tr>';
 				}
 				echo '</table></td>';

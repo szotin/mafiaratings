@@ -28,7 +28,6 @@ class ApiPage extends GetApiPageBase
 		$city_id = (int)get_optional_param('city_id', -1);
 		$area_id = (int)get_optional_param('area_id', -1);
 		$country_id = (int)get_optional_param('country_id', -1);
-		$scoring_id = (int)get_optional_param('scoring_id', -1);
 		$rules_code = get_optional_param('rules_code');
 		$user_id = (int)get_optional_param('user_id', -1);
 		$langs = (int)get_optional_param('langs', 0);
@@ -120,11 +119,6 @@ class ApiPage extends GetApiPageBase
 			$condition->add(' AND e.tournament_id = ?', $tournament_id);
 		}
 		
-		if ($scoring_id > 0)
-		{
-			$condition->add(' AND e.scoring_id = ?', $scoring_id);
-		}
-		
 		if (!empty($rules_code))
 		{
 			$condition->add(' AND e.rules = ?', $rules_code);
@@ -163,7 +157,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, c.name, c.flags, e.start_time, e.duration, e.notes, e.price, e.scoring_id, e.rules, e.scoring_weight, t.id, t.name, t.flags, ct.timezone FROM events e' . 
+				'SELECT e.id, e.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, c.name, c.flags, e.start_time, e.duration, e.notes, e.price, e.rules, e.scoring_weight, t.id, t.name, t.flags, ct.timezone FROM events e' . 
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN clubs c ON c.id = e.club_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
@@ -178,14 +172,13 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
-				list ($event->id, $event->name, $event_flags, $event->langs, $event->address_id, $event->address_name, $address_flags, $event->club_id, $event->club_name, $club_flags, $event->timestamp, $event->duration, $event->notes, $event->price, $event->scoring_id, $rules_code, $event->scoring_weight, $tournament_id, $tournament_name, $tournament_flags, $event_timezone) = $row;
+				list ($event->id, $event->name, $event_flags, $event->langs, $event->address_id, $event->address_name, $address_flags, $event->club_id, $event->club_name, $club_flags, $event->timestamp, $event->duration, $event->notes, $event->price, $rules_code, $event->scoring_weight, $tournament_id, $tournament_name, $tournament_flags, $event_timezone) = $row;
 				$event->id = (int)$event->id;
 				$event->langs = (int)$event->langs;
 				$event->address_id = (int)$event->address_id;
 				$event->club_id = (int)$event->club_id;
 				$event->timestamp = (int)$event->timestamp;
 				$event->duration = (int)$event->duration;
-				$event->scoring_id = (int)$event->scoring_id;
 				$event->rules = rules_code_to_object($rules_code);
 				$event->scoring_weight = (float)$event->scoring_weight;
 				
@@ -231,7 +224,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.price, e.scoring_id, e.rules, e.scoring_weight, e.tournament_id FROM events e' . 
+				'SELECT e.id, e.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.price, e.rules, e.scoring_weight, e.tournament_id FROM events e' . 
 				' JOIN addresses a ON a.id = e.address_id', $condition);
 			$query->add(' ORDER BY e.start_time DESC, e.id DESC');
 			if ($page_size > 0)
@@ -243,14 +236,13 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
-				list ($event->id, $event->name, $flags, $event->langs, $event->address_id, $event->club_id, $event->timestamp, $event->duration, $event->notes, $event->price, $event->scoring_id, $rules_code, $event->scoring_weight, $tournament_id) = $row;
+				list ($event->id, $event->name, $flags, $event->langs, $event->address_id, $event->club_id, $event->timestamp, $event->duration, $event->notes, $event->price, $rules_code, $event->scoring_weight, $tournament_id) = $row;
 				$event->id = (int)$event->id;
 				$event->langs = (int)$event->langs;
 				$event->address_id = (int)$event->address_id;
 				$event->club_id = (int)$event->club_id;
 				$event->timestamp = (int)$event->timestamp;
 				$event->duration = (int)$event->duration;
-				$event->scoring_id = (int)$event->scoring_id;
 				$event->rules = rules_code_to_object($rules_code);
 				$event->scoring_weight = (float)$event->scoring_weight;
 				if (!is_null($tournament_id))
@@ -280,7 +272,6 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('city_id', 'City id. For example: <a href="events.php?city_id=2">' . PRODUCT_URL . '/api/get/events.php?city_id=2</a> returns all events in Moscow. List of the cities and their ids can be obtained using <a href="cities.php?help">' . PRODUCT_URL . '/api/get/cities.php</a>.', '-');
 		$help->request_param('area_id', 'City id. The difference with city is that when area is set, the events from all nearby cities are also returned. For example: <a href="events.php?area_id=2">' . PRODUCT_URL . '/api/get/events.php?area_id=2</a> returns all events in Moscow and nearby cities like Podolsk, Himki, etc. Though <a href="events.php?city_id=2">' . PRODUCT_URL . '/api/get/events.php?city_id=2</a> returns only the events in Moscow itself.', '-');
 		$help->request_param('country_id', 'Country id. For example: <a href="events.php?country_id=2">' . PRODUCT_URL . '/api/get/events.php?country_id=2</a> returns all events in Russia. List of the countries and their ids can be obtained using <a href="countries.php?help">' . PRODUCT_URL . '/api/get/countries.php</a>.', '-');
-		$help->request_param('scoring_id', 'Scoring id. For example: <a href="events.php?scoring_id=21">' . PRODUCT_URL . '/api/get/events.php?scoring_id=21</a> returns all events where VaWaCa scoring was used.', '-');
 		$help->request_param('rules_code', 'Rules code. For example: <a href="events.php?rules_code=00000000100101010200000000000">' . PRODUCT_URL . '/api/get/events.php?rules_code=00000000100101010200000000000</a> returns all events where the rules with the code 00000000100101010200000000000 was used. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('user_id', 'User id. For example: <a href="events.php?user_id=25">' . PRODUCT_URL . '/api/get/events.php?user_id=25</a> returns all events where Fantomas was playing.', '-');
 		$help->request_param('langs', 'Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="events.php?langs=1">' . PRODUCT_URL . '/api/get/events.php?langs=1</a> returns all events that support English as their language.', '-');
@@ -311,7 +302,6 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('notes', 'Event notes.');
 			$param->sub_param('price', 'Event admission rate.');
 			$param->sub_param('canceled', 'Trus for canceled events, false for others.');
-			$param->sub_param('scoring_id', 'Id of the scoring system used in the event.');
 			$param->sub_param('scoring_weight', 'All scorings are multiplied by this weight. It is used in the tournaments where different tournament events can have different weight. For example semifuinal results can be multiplied by 1.2; finals - by 1.5.');
 			$param->sub_param('tournament_id', 'Tournament id when the event belongs to a tournament.', 'the event is not a tournament round.');
 			$param->sub_param('tournament_name', 'Tournament name.', 'the event is not a tournament round.', 1);
