@@ -23,8 +23,15 @@ class FigmForm
 		$this->pdf->Output();
 	}
 
-	public function add($gs, $round_name, $event_name, $moder_name, $timezone)
+	public function add($gs, $event_name, $tournament_name, $moder_name, $timezone)
 	{
+		$round_name = '';
+		if (!is_null($tournament_name))
+		{
+			$round_name = $event_name;
+			$event_name = $tournament_name;
+		}
+		
 		// First page template
 		$this->pdf->AddPage('L', 'A4');
 		$this->pdf->SetFont('Timesbd', '', 12);
@@ -134,11 +141,8 @@ class FigmForm
 			$this->pdf->SetFont('Arial', '', 12);
 			$this->pdf->SetXY(43.0, 17.4);
 			$this->pdf->Cell(102, 7.7, $event_name, 0, 0, 'C');
-			if (!is_null($round_name))
-			{
-				$this->pdf->SetXY(65.0, 25.1);
-				$this->pdf->Cell(80, 7.7, $round_name, 0, 0, 'C');
-			}
+			$this->pdf->SetXY(65.0, 25.1);
+			$this->pdf->Cell(80, 7.7, $round_name, 0, 0, 'C');
 			$this->pdf->SetXY(33.0, 32.8);
 			$this->pdf->Cell(8.5, 7.7, $day, 0); 
 			$this->pdf->SetXY(45.0, 32.8);
