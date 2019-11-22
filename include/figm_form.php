@@ -330,11 +330,14 @@ class FigmForm
 				{
 					$nominant = $voting->nominants[$i];
 					$count = 0;
-					foreach ($voting->votes as $vote)
+					if (isset($voting->votes) && is_array($voting->votes))
 					{
-						if ($vote == $i)
+						foreach ($voting->votes as $vote)
 						{
-							++$count;
+							if ($vote == $i)
+							{
+								++$count;
+							}
 						}
 					}
 					
