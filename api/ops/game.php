@@ -956,6 +956,8 @@ class ApiPage extends OpsApiPageBase
 			$query->add(' LIMIT ' . $num);
 		}
 		
+//		echo $query->get_parsed_sql();
+		
 		$list = array();
 		while ($row = $query->next())
 		{
