@@ -486,17 +486,17 @@ class GameState
 		if ($count > 0)
 		{
 			Db::exec(get_label('game'),
-				'UPDATE games SET log = ?, end_time = ?, club_id = ?, event_id = ?, moderator_id = ?, ' .
+				'UPDATE games SET log = ?, end_time = ?, club_id = ?, event_id = ?, tournament_id = (SELECT tournament_id FROM events WHERE id = ?), moderator_id = ?, ' .
 					'user_id = ?, language = ?, start_time = ?, end_time = ?, result = ?, ' .
 					'rules = ?, flags = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
-				$log, $this->end_time, $this->club_id, $this->event_id, $moder_id,
+				$log, $this->end_time, $this->club_id, $this->event_id, $this->event_id, $moder_id,
 				$this->user_id, $this->lang, $this->start_time, $this->end_time, $this->result_code(),
 				$this->rules_code, $this->flags, $this->id);
 		}
 		else
 		{
 			Db::exec(get_label('game'),
-				'INSERT INTO games (club_id, event_id, moderator_id, user_id, language, log, start_time, end_time, result, rules, flags, log_version) ' .
+				'INSERT INTO games (club_id, event_id, tournament_id = (SELECT tournament_id FROM events WHERE id = ?), moderator_id, user_id, language, log, start_time, end_time, result, rules, flags, log_version) ' .
 					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . CURRENT_LOG_VERSION . ')',
 				$this->club_id, $this->event_id, $moder_id, $this->user_id, $this->lang,
 				$log, $this->start_time, $this->end_time, $this->result_code(), $this->rules_code,

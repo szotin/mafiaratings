@@ -178,16 +178,6 @@ try
 		echo ' checked';
 	}
 	echo '> '.get_label('everyone can moderate games.');
-	
-	if (is_permitted(PERMISSION_ADMIN))
-	{
-		echo '<br><input type="checkbox" id="form-old_tournament"';
-		if (($event->flags & EVENT_FLAG_TOURNAMENT) != 0)
-		{
-			echo ' checked';
-		}
-		echo '> '.get_label('official tournament');
-	}
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -320,7 +310,6 @@ try
 		
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
-		if ($("#form-old_tournament").attr('checked')) _flags |= <?php echo EVENT_FLAG_TOURNAMENT; ?>;
 		
 		var params =
 		{

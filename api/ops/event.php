@@ -107,10 +107,6 @@ class ApiPage extends OpsApiPageBase
 		$notes = get_optional_param('notes', '');
 		
 		$editable_mask = EVENT_EDITABLE_MASK;
-		if (is_permitted(PERMISSION_ADMIN))
-		{
-			$editable_mask |= EVENT_FLAG_TOURNAMENT;
-		}
 		$flags = (int)get_optional_param('flags', EVENT_FLAG_ALL_MODERATE);// & $editable_mask;
 		
 		$langs = get_optional_param('langs', 0);
@@ -286,10 +282,6 @@ class ApiPage extends OpsApiPageBase
 		check_rules_code($rules_code);
 		
 		$editable_mask = EVENT_EDITABLE_MASK;
-		if (is_permitted(PERMISSION_ADMIN))
-		{
-			$editable_mask |= EVENT_FLAG_TOURNAMENT;
-		}
 		$flags = (int)get_optional_param('flags', $old_flags);
 		$flags = ($flags & $editable_mask) + ($old_flags & ~$editable_mask);
 		
