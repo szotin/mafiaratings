@@ -82,7 +82,7 @@ class Page extends EventPageBase
 		
 		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
 		
-		$players = event_scores($this->event->id, $this->scoring);
+		$players = event_scores($this->event->id, null, SCORING_LOD_GROUP, $this->scoring);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{

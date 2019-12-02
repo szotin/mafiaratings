@@ -125,7 +125,7 @@ try
 			echo '</td></tr></table>';
 		}
 		
-		$players = event_scores($event->id);
+		$players = event_scores($event->id, NULL, SCORING_LOD_GROUP);
 		$players_count = count($players);
 			
 		if ($players_count == 0)
