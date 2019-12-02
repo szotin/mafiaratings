@@ -119,7 +119,7 @@ define('SCORING_LOD_TOTAL', 1);
 define('SCORING_LOD_PER_GROUP', 2);
 define('SCORING_LOD_PER_POLICY', 4);
 define('SCORING_LOD_HISTORY', 8);
-define('SCORING_LOD_ACCUMULATIVE_HISTORY', 16);
+define('SCORING_LOD_PER_GAME', 16);
 
 $_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_PRIMA_NOCTA, SCORING_GROUP_EXTRA, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
@@ -385,8 +385,33 @@ function prepare_scoring($scoring, $options)
 function add_player_score($player, $scoring, $game_flags, $game_role, $extra_points, $red_win_rate, $lod_flags, $game_id, $game_end_time)
 {
 	global $_groups;
-	
-	$player_game = new stdClass();
+
+	if ($lod_flags & SCORING_LOD_TOTAL)
+	{
+		$total_points = 0;
+	}
+	if ($lod_flags & SCORING_LOD_PER_GROUP)
+	{
+		foreach ($_groups as $group)
+		{
+			$$group = 0;
+		}
+	}
+	if ($lod_flags & SCORING_LOD_PER_POLICY)
+	{
+		foreach ($_groups as $group)
+		{
+			$a = array();
+			if (isset($scoring->$group))
+			{
+				foreach ($scoring->$group as $policy)
+				{
+					$a[] = 0;
+				}
+			}
+			${$group . '_policies'} = $a;
+		}
+	}
 	
 	$player_game->extra = $extra_points;
 	$role = 1 << $game_role;
@@ -397,8 +422,9 @@ function add_player_score($player, $scoring, $game_flags, $game_role, $extra_poi
 			continue;
 		}
 		
-		foreach ($scoring->$group as $policy)
+		for ($i = 0; $i < count($scoring->$group); ++$i)
 		{
+			$policy = $scoring->$group[$i];
 			if (!$policy->active)
 			{
 				continue;
@@ -473,25 +499,15 @@ function add_player_score($player, $scoring, $game_flags, $game_role, $extra_poi
 			
 			if ($lod_flags & SCORING_LOD_TOTAL)
 			{
-				$player_game->points += $points;
+				$total_points += $points;
 			}
 			if ($lod_flags & SCORING_LOD_PER_GROUP)
 			{
-				$player_game->$group += $points;
+				$$group += $points;
 			}
 			if ($lod_flags & SCORING_LOD_PER_POLICY)
 			{
-				$player_game->policy += $points;
-			}
-			
-			if ($lod_flags | SCORING_LOD_HISTORY)
-			{
-				$history_point = new stdClass();
-				$history_point->time = $game_end_time;
-				$history_point->game_id = $game_id;
-			}
-			if ($lod_flags | SCORING_LOD_ACCUMULATIVE_HISTORY)
-			{
+				${$group . '_policies'}[$i] += $points;
 			}
 		}
 	}
