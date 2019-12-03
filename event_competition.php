@@ -17,16 +17,24 @@ class Page extends EventPageBase
 		global $_profile;
 		parent::prepare();
 		
-		$this->scoring_id = $this->event->scoring_id;
-		if (isset($_REQUEST['scoring']))
-		{
-			$this->scoring_id = (int)$_REQUEST['scoring'];
-		}
-		
-		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
-		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, $condition);
-		$players_count = count($scores->players);
+        $this->scoring_id = $this->event->scoring_id;
+        $this->scoring_version = $this->event->scoring_version;
+        $this->scoring = NULL;
+        if (isset($_REQUEST['scoring']))
+        {
+            $this->scoring_id = (int)$_REQUEST['scoring'];
+            if ($this->scoring_id > 0)
+            {
+                list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
+                $this->scoring_version = -1;
+            }
+        }
+        
+        // todo - it's pretty bad that we calculate history for all players, not only the five needed. May be it is more efficient to do something like this:/
+        //   $players = event_scores($this->event->id, null, SCORING_LOD_TOTAL, $this->scoring);
+        //   $players = event_scores($this->event->id, array_slice($players, 0, NUM_PLAYERS), SCORING_LOD_HISTORY | SCORING_LOD_TOTAL, $this->scoring);
+        $players = event_scores($this->event->id, null, SCORING_LOD_HISTORY | SCORING_LOD_TOTAL, $this->scoring);
+		$players_count = count($players);
 		$separator = '';
 		if ($players_count > NUM_PLAYERS)
 		{
@@ -35,7 +43,7 @@ class Page extends EventPageBase
 		
 		for ($num = 0; $num < $players_count; ++$num)
 		{
-			$score = $scores->players[$num];
+			$score = $players[$num];
 			$this->players_list .= $separator . $score->id;
 			$separator = ',';
 		}

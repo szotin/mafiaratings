@@ -125,7 +125,7 @@ try
 			echo '</td></tr></table>';
 		}
 		
-		$players = event_scores($event->id, NULL, SCORING_LOD_GROUP);
+		$players = event_scores($event->id, NULL, SCORING_LOD_PER_GROUP | SCORING_LOD_TOTAL);
 		$players_count = count($players);
 			
 		if ($players_count == 0)
@@ -251,15 +251,14 @@ try
 					}
 					echo '</td>';
 					
-					echo '<td align="center" class="dark">' . format_score(get_score($player)) . '</td>';
-					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_MAIN)) . '</td>';
-					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_PRIMA_NOCTA)) . '</td>';
-					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_EXTRA)) . '</td>';
-					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_PENALTY)) . '</td>';
-					echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_NIGHT1)) . '</td>';
+					echo '<td align="center" class="dark">' . format_score($player->points) . '</td>';
+					echo '<td align="center">' . format_score($player->main_points) . '</td>';
+					echo '<td align="center">' . format_score($player->prima_nocta_points) . '</td>';
+					echo '<td align="center">' . format_score($player->extra_points) . '</td>';
+					echo '<td align="center">' . format_score($player->penalty_points) . '</td>';
+					echo '<td align="center">' . format_score($player->night1_points) . '</td>';
 					echo '<td align="center">' . $player->games_count . '</td>';
 					echo '<td align="center">' . $player->wins . '</td>';
-					
 					
 					echo '</tr>';
 				}

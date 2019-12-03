@@ -82,7 +82,7 @@ class Page extends EventPageBase
 		
 		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
 		
-		$players = event_scores($this->event->id, null, SCORING_LOD_GROUP, $this->scoring);
+		$players = event_scores($this->event->id, null, SCORING_LOD_PER_GROUP | SCORING_LOD_TOTAL, $this->scoring);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{
@@ -136,21 +136,20 @@ class Page extends EventPageBase
 				$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
 				$this->club_pic->show(ICONS_DIR, 40);
 			}
-			$points = get_score($player);
 			echo '</td>';
-			echo '<td align="center" class="' . $highlight . '">' . format_score($points) . '</td>';
-			echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_MAIN)) . '</td>';
-			echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_PRIMA_NOCTA)) . '</td>';
-			echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_EXTRA)) . '</td>';
-			echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_PENALTY)) . '</td>';
-			echo '<td align="center">' . format_score(get_score($player, SCORING_GROUP_NIGHT1)) . '</td>';
+			echo '<td align="center" class="' . $highlight . '">' . format_score($player->points) . '</td>';
+			echo '<td align="center">' . format_score($player->main_points) . '</td>';
+			echo '<td align="center">' . format_score($player->prima_nocta_points) . '</td>';
+			echo '<td align="center">' . format_score($player->extra_points) . '</td>';
+			echo '<td align="center">' . format_score($player->penalty_points) . '</td>';
+			echo '<td align="center">' . format_score($player->night1_points) . '</td>';
 			echo '<td align="center">' . $player->games_count . '</td>';
 			echo '<td align="center">' . $player->wins . '</td>';
 			if ($player->games_count != 0)
 			{
 				echo '<td align="center">' . number_format(($player->wins * 100.0) / $player->games_count, 1) . '%</td>';
 				echo '<td align="center">';
-				echo format_score($points / $player->games_count);
+				echo format_score($player->points / $player->games_count);
 				echo '</td>';
 			}
 			else

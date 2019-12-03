@@ -109,18 +109,18 @@ define('COMPETITION_FLAG_CLUB_OPT', 0x20);
 define('COMPETITION_FLAG_LEAGUE', 0x40);
 define('COMPETITION_FLAG_LEAGUE_OPT', 0x80);
 
-define('SCORING_GROUP_MAIN', 'main');
-define('SCORING_GROUP_PRIMA_NOCTA', 'prima_nocta');
-define('SCORING_GROUP_EXTRA', 'extra');
-define('SCORING_GROUP_PENALTY', 'penalty');
-define('SCORING_GROUP_NIGHT1', 'night1');
+define('SCORING_GROUP_MAIN', 'main'); // points for wins/looses
+define('SCORING_GROUP_PRIMA_NOCTA', 'prima_nocta'); // points for guessing 3 mafs by first night victim.
+define('SCORING_GROUP_EXTRA', 'extra'); // extra points assigned by moderator, or earned by custom actions
+define('SCORING_GROUP_PENALTY', 'penalty'); // points (most likely negative) for taking warnings and other discipline offences
+define('SCORING_GROUP_NIGHT1', 'night1'); // points for being killed first night
 
-define('SCORING_LOD_TOTAL', 1);
-define('SCORING_LOD_PER_GROUP', 2);
-define('SCORING_LOD_PER_POLICY', 4);
-define('SCORING_LOD_HISTORY', 8);
-define('SCORING_LOD_PER_GAME', 16);
-define('SCORING_LOD_NO_SORTING', 32);
+define('SCORING_LOD_TOTAL', 1); // scoring returns total score in $player->points
+define('SCORING_LOD_PER_GROUP', 2); // scoring returns points per group in $player->main, $player->prima_nocta, $player->extra, $player->penalty, and $player->night1 fields.
+define('SCORING_LOD_PER_POLICY', 4); // scoring returns points per policy for each group in $player->main_policies, $player->prima_nocta_policies, $player->extra_policies, $player->penalty_policies, and $player->night1_policies fields.
+define('SCORING_LOD_HISTORY', 8); // scoring returns player history in $player->history field. It contains an array of points with timestamp and scores according to SCORING_LOD_TOTAL, SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
+define('SCORING_LOD_PER_GAME', 16); // scoring returns scores for every game a player played in $player->games field. It contains an array of games with timestamp, game_id, and scores according to SCORING_LOD_TOTAL, SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
+define('SCORING_LOD_NO_SORTING', 32); // When set sorting returns associative array player_id => player. When not set scoring returns array of players sorted by total score.
 
 $_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_PRIMA_NOCTA, SCORING_GROUP_EXTRA, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
@@ -385,17 +385,22 @@ function prepare_scoring($scoring, $options)
     
 function init_player_score($player, $scoring, $lod_flags)
 {
+    global $_groups;
+    
     if ($lod_flags & SCORING_LOD_TOTAL)
     {
         $player->points = 0;
     }
+    
     if ($lod_flags & SCORING_LOD_PER_GROUP)
     {
         foreach ($_groups as $group)
         {
-            $player->$group = 0;
+            $g = $group . '_points';
+            $player->$g = 0;
         }
     }
+    
     if ($lod_flags & SCORING_LOD_PER_POLICY)
     {
         foreach ($_groups as $group)
@@ -408,9 +413,18 @@ function init_player_score($player, $scoring, $lod_flags)
                     $a[] = 0;
                 }
             }
-            $g = $group . '_policies';
-            $player->$g = $a;
+            $player->$group = $a;
         }
+    }
+    
+    if ($lod_flags & SCORING_LOD_HISTORY)
+    {
+        $player->history = array();
+    }
+    
+    if ($lod_flags & SCORING_LOD_PER_GAME)
+    {
+        $player->games[] = array();
     }
 }
 
@@ -426,7 +440,8 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 	{
 		foreach ($_groups as $group)
 		{
-			$$group = 0;
+            $g = $group . '_points';
+			$$g = 0;
 		}
 	}
 	if ($lod_flags & SCORING_LOD_PER_POLICY)
@@ -441,8 +456,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 					$a[] = 0;
 				}
 			}
-            $g = $group . '_policies';
-			$$g = $a;
+			$$group = $a;
 		}
 	}
 	
@@ -536,12 +550,12 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 			}
 			if ($lod_flags & SCORING_LOD_PER_GROUP)
 			{
-				$$group += $points;
+                $g = $group . '_points';
+				$$g += $points;
 			}
 			if ($lod_flags & SCORING_LOD_PER_POLICY)
 			{
-                $g = $group . '_policies';
-				$$g[$i] += $points;
+				$$group[$i] += $points;
 			}
 		}
 	}
@@ -554,7 +568,8 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
     {
         foreach ($_groups as $group)
         {
-            $player->$group += $$group;
+            $g = $group . '_points';
+            $player->$g += $$g;
         }
     }
     if ($lod_flags & SCORING_LOD_PER_POLICY)
@@ -563,8 +578,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
         {
             for ($i = 0; $i < count($scoring->$group); ++$i)
             {
-                $g = $group . '_policies';
-                $player->$g[$i] += $$g[$i];
+                $player->$group[$i] += $$group[$i];
             }
         }
     }
@@ -582,17 +596,18 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
         {
             foreach ($_groups as $group)
             {
-                $history_point->$group = $player->$group;
+                $g = $group . '_points';
+                $history_point->$g = $player->$g;
             }
         }
         if ($lod_flags & SCORING_LOD_PER_POLICY)
         {
             foreach ($_groups as $group)
             {
-                $g = $group . '_policies';
-                $history_point->$g = $player->$g;
+                $history_point->$group = $player->$group; // arrays are copied by value in php
             }
         }
+        $player->history[] = $history_point;
     }
     
     if ($lod_flags & SCORING_LOD_PER_GAME)
@@ -608,40 +623,19 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
         {
             foreach ($_groups as $group)
             {
-                $game->$group = $$group;
+                $g = $group . '_points';
+                $game->$g = $$g;
             }
         }
         if ($lod_flags & SCORING_LOD_PER_POLICY)
         {
             foreach ($_groups as $group)
             {
-                $g = $group . '_policies';
-                $game->$g = $$g;
+                $game->$group = $$group;
             }
         }
+        $player->games[] = $game;
     }
-}
-
-function get_score($player, $group = NULL)
-{
-	global $_groups;
-	
-	$points = 0;
-	if (is_null($group))
-	{
-		foreach ($_groups as $group)
-		{
-			if (isset($player->$group))
-			{
-				$points += $player->$group;
-			}
-		}
-	}
-	else if (isset($player->$group))
-	{
-		$points = $player->$group;
-	}
-	return $points;
 }
 
 function compare_scores($player1, $player2)
@@ -799,7 +793,7 @@ function get_user_page($players, $user_id, $page_size)
 	return -1;
 }
 
-function event_scores($event_id, $players, $lod_flags, $scoring_json = NULL, $options = 0)
+function event_scores($event_id, $players_list, $lod_flags, $scoring_json = NULL, $options = 0)
 {
 	global $_groups;
 	
@@ -814,11 +808,15 @@ function event_scores($event_id, $players, $lod_flags, $scoring_json = NULL, $op
     
     // prepare players filter
     $players_condition_str = '';
-    if (is_array($players) && count($players) > 0)
+    if (is_array($players_list) && count($players_list) > 0)
     {
         $delimiter = ' AND p.user_id IN (';
-        for ($players as $player_id)
+        for ($players_list as $player_id)
         {
+            if (is_object($player_id))
+            {
+                $player_id = $player_id->id;
+            }
             $players_condition_str .= $delimiter . $player_id;
             $delimiter = ', ';
         }
@@ -863,6 +861,11 @@ function event_scores($event_id, $players, $lod_flags, $scoring_json = NULL, $op
 	}
 	
 	// Prepare and sort scores
+    if ($lod_flags & SCORING_LOD_NO_SORTING)
+    {
+        return $players;
+    }
+
 	$scores = array();
 	foreach ($players as $user_id => $player)
 	{
@@ -874,10 +877,7 @@ function event_scores($event_id, $players, $lod_flags, $scoring_json = NULL, $op
 			$scores[] = $player;
 		}
 	}
-    if (($lod_flags & SCORING_LOD_NO_SORTING) == 0)
-    {
-        usort($scores, 'compare_scores');
-    }
+    usort($scores, 'compare_scores');
 	
 	return $scores;
 }
