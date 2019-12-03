@@ -30,25 +30,22 @@ class Page extends EventPageBase
             }
         }
         
-        // todo - it's pretty bad that we calculate history for all players, not only the five needed. May be it is more efficient to do something like this:/
-        //   $players = event_scores($this->event->id, null, SCORING_LOD_TOTAL, $this->scoring);
-        //   $players = event_scores($this->event->id, array_slice($players, 0, NUM_PLAYERS), SCORING_LOD_HISTORY | SCORING_LOD_TOTAL, $this->scoring);
-        $players = event_scores($this->event->id, null, SCORING_LOD_HISTORY | SCORING_LOD_TOTAL, $this->scoring);
+        $players = event_scores($this->event->id, NULL, 0, $this->scoring);
 		$players_count = count($players);
-		$separator = '';
 		if ($players_count > NUM_PLAYERS)
 		{
 			$players_count = NUM_PLAYERS;
 		}
 		
+		$separator = '';
 		for ($num = 0; $num < $players_count; ++$num)
 		{
-			$score = $players[$num];
-			$this->players_list .= $separator . $score->id;
+			$player = $players[$num];
+			$this->players_list .= $separator . $player->id;
 			$separator = ',';
 		}
 		
-		while ($num < 5)
+		while ($num < NUM_PLAYERS)
 		{
 			$this->players_list .= $separator;
 			++$num;

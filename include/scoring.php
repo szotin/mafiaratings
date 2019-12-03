@@ -115,12 +115,11 @@ define('SCORING_GROUP_EXTRA', 'extra'); // extra points assigned by moderator, o
 define('SCORING_GROUP_PENALTY', 'penalty'); // points (most likely negative) for taking warnings and other discipline offences
 define('SCORING_GROUP_NIGHT1', 'night1'); // points for being killed first night
 
-define('SCORING_LOD_TOTAL', 1); // scoring returns total score in $player->points
-define('SCORING_LOD_PER_GROUP', 2); // scoring returns points per group in $player->main, $player->prima_nocta, $player->extra, $player->penalty, and $player->night1 fields.
-define('SCORING_LOD_PER_POLICY', 4); // scoring returns points per policy for each group in $player->main_policies, $player->prima_nocta_policies, $player->extra_policies, $player->penalty_policies, and $player->night1_policies fields.
-define('SCORING_LOD_HISTORY', 8); // scoring returns player history in $player->history field. It contains an array of points with timestamp and scores according to SCORING_LOD_TOTAL, SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
-define('SCORING_LOD_PER_GAME', 16); // scoring returns scores for every game a player played in $player->games field. It contains an array of games with timestamp, game_id, and scores according to SCORING_LOD_TOTAL, SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
-define('SCORING_LOD_NO_SORTING', 32); // When set sorting returns associative array player_id => player. When not set scoring returns array of players sorted by total score.
+define('SCORING_LOD_PER_GROUP', 1); // scoring returns points per group in $player->main, $player->prima_nocta, $player->extra, $player->penalty, and $player->night1 fields.
+define('SCORING_LOD_PER_POLICY', 2); // scoring returns points per policy for each group in $player->main_policies, $player->prima_nocta_policies, $player->extra_policies, $player->penalty_policies, and $player->night1_policies fields.
+define('SCORING_LOD_HISTORY', 4); // scoring returns player history in $player->history field. It contains an array of points with timestamp and scores according to SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
+define('SCORING_LOD_PER_GAME', 8); // scoring returns scores for every game a player played in $player->games field. It contains an array of games with timestamp, game_id, and scores according to SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
+define('SCORING_LOD_NO_SORTING', 16); // When set sorting returns associative array player_id => player. When not set scoring returns array of players sorted by total score.
 
 $_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_PRIMA_NOCTA, SCORING_GROUP_EXTRA, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
@@ -387,11 +386,8 @@ function init_player_score($player, $scoring, $lod_flags)
 {
     global $_groups;
     
-    if ($lod_flags & SCORING_LOD_TOTAL)
-    {
-        $player->points = 0;
-    }
-    
+    $player->points = 0;
+	
     if ($lod_flags & SCORING_LOD_PER_GROUP)
     {
         foreach ($_groups as $group)
@@ -428,14 +424,11 @@ function init_player_score($player, $scoring, $lod_flags)
     }
 }
 
-function add_player_score($player, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_points, $red_win_rate, $lod_flags)
+function add_player_score($player, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $red_win_rate, $lod_flags)
 {
 	global $_groups;
 
-	if ($lod_flags & SCORING_LOD_TOTAL)
-	{
-		$total_points = 0;
-	}
+	$total_points = $extra_pts;
 	if ($lod_flags & SCORING_LOD_PER_GROUP)
 	{
 		foreach ($_groups as $group)
@@ -443,6 +436,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
             $g = $group . '_points';
 			$$g = 0;
 		}
+		$extra_points = $extra_pts;
 	}
 	if ($lod_flags & SCORING_LOD_PER_POLICY)
 	{
@@ -458,20 +452,21 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 			}
 			$$group = $a;
 		}
+		$extra[] = $extra_pts;
 	}
 	
-	$player_game->extra = $extra_points;
 	$role = 1 << $game_role;
-	foreach ($_groups as $group)
+	foreach ($_groups as $group_name)
 	{
-		if (!isset($scoring->$group))
+		if (!isset($scoring->$group_name))
 		{
 			continue;
 		}
-		
-		for ($i = 0; $i < count($scoring->$group); ++$i)
+		 
+		$group = $scoring->$group_name;
+		for ($i = 0; $i < count($group); ++$i)
 		{
-			$policy = $scoring->$group[$i];
+			$policy = $group[$i];
 			if (!$policy->active)
 			{
 				continue;
@@ -544,13 +539,10 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 					max(min($player->killed_first_count * $policy->figm_first_night_score / round($player->games_count * $policy->figm_first_night_score), $policy->figm_first_night_score), 0);
 			}
 			
-			if ($lod_flags & SCORING_LOD_TOTAL)
-			{
-				$total_points += $points;
-			}
+			$total_points += $points;
 			if ($lod_flags & SCORING_LOD_PER_GROUP)
 			{
-                $g = $group . '_points';
+                $g = $group_name . '_points';
 				$$g += $points;
 			}
 			if ($lod_flags & SCORING_LOD_PER_POLICY)
@@ -560,10 +552,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 		}
 	}
     
-    if ($lod_flags & SCORING_LOD_TOTAL)
-    {
-        $player->points += $total_points;
-    }
+	$player->points += $total_points;
     if ($lod_flags & SCORING_LOD_PER_GROUP)
     {
         foreach ($_groups as $group)
@@ -576,7 +565,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
     {
         foreach ($_groups as $group)
         {
-            for ($i = 0; $i < count($scoring->$group); ++$i)
+            for ($i = 0; $i < count($group); ++$i)
             {
                 $player->$group[$i] += $$group[$i];
             }
@@ -588,10 +577,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
         $history_point = new stdClass();
         $history_point->game_id = $game_id;
         $history_point->time = $game_end_time;
-        if ($lod_flags & SCORING_LOD_TOTAL)
-        {
-            $history_point = $player->points;
-        }
+        $history_point->points = $player->points;
         if ($lod_flags & SCORING_LOD_PER_GROUP)
         {
             foreach ($_groups as $group)
@@ -615,10 +601,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
         $game = new stdClass();
         $game->game_id = $game_id;
         $game->time = $game_end_time;
-        if ($lod_flags & SCORING_LOD_TOTAL)
-        {
-            $game->points = $total_points;
-        }
+        $game->points = $total_points;
         if ($lod_flags & SCORING_LOD_PER_GROUP)
         {
             foreach ($_groups as $group)
@@ -640,13 +623,11 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 
 function compare_scores($player1, $player2)
 {
-	$points1 = get_score($player1);
-	$points2 = get_score($player2);
-	if ($points2 > $points1 + 0.00001)
+	if ($player2->points > $player1->points + 0.00001)
 	{
 		return 1;
 	}
-	else if ($points2 < $points1 - 0.00001)
+	else if ($player2->points < $player1->points - 0.00001)
 	{
 		return -1;
 	}
@@ -811,14 +792,17 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring_json = NULL
     if (is_array($players_list) && count($players_list) > 0)
     {
         $delimiter = ' AND p.user_id IN (';
-        for ($players_list as $player_id)
+        foreach ($players_list as $player_id)
         {
             if (is_object($player_id))
             {
                 $player_id = $player_id->id;
             }
-            $players_condition_str .= $delimiter . $player_id;
-            $delimiter = ', ';
+			if (is_numeric($player_id))
+			{
+				$players_condition_str .= $delimiter . $player_id;
+				$delimiter = ', ';
+			}
         }
         $players_condition_str .= ')';
     }

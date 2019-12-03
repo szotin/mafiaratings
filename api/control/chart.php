@@ -108,41 +108,38 @@ class ApiPage extends ControlApiPageBase
 				}
 				$event_id = (int)$_REQUEST['id'];
 				
-				list($scoring_id, $scoring_weight, $timezone) = Db::record(get_label('event'), 'SELECT e.scoring_id, e.scoring_weight, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE e.id = ?', $event_id);
+				list($scoring_id, $scoring, $scoring_options, $scoring_weight, $timezone) = Db::record(get_label('event'), 'SELECT e.scoring_id, s.scoring, e.scoring_options, e.scoring_weight, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
 				if (isset($_REQUEST['scoring']))
 				{
-					$sid = (int)$_REQUEST['scoring'];
-					if ($sid > 0)
+					$scoring_id = (int)$_REQUEST['scoring'];
+					$scoring_options = 0;
+					if ($scoring_id > 0)
 					{
-						$scoring_id = $sid;
+						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+						$scoring_version = -1;
 					}
 				}
 				date_default_timezone_set($timezone);
+
+				$players = NULL;
+				if (isset($_REQUEST['players']))
+				{
+					$players = explode(',', $_REQUEST['players']);
+				}
 				
-				$scoring_system = new ScoringSystem($scoring_id);
-				$scores = new Scores($scoring_system, new SQL(' AND g.event_id = ?', $event_id), new SQL(' AND p.user_id IN(' . $player_list . ')'), MAX_POINTS_ON_GRAPH);
-		
-				$players_count = count($scores->players);
+				$players = event_scores($event_id, $players, SCORING_LOD_HISTORY | SCORING_LOD_NO_SORTING, $scoring, $scoring_options);
+				$players_count = count($players);
 				foreach ($user_ids as $user_id)
 				{
-					if ($user_id > 0)
+					if ($user_id > 0 && isset($players[$user_id]))
 					{
-						$player = NULL;
-						for ($i = 0; $i < $players_count; ++$i)
-						{
-							if ($scores->players[$i]->id == $user_id)
-							{
-								$player = $scores->players[$i];
-								break;
-							}
-						}
-						
+						$player = $players[$user_id];
 						if ($player != NULL)
 						{
 							$data = new ChartData($player->name, $_chart_colors[$current_color]);
 							foreach ($player->history as $point)
 							{
-								$data->data[] = new ChartPoint($point->timestamp, $point->points);
+								$data->data[] = new ChartPoint($point->time, $point->points);
 							}
 							$this->response[] = $data;
 						}
