@@ -120,6 +120,7 @@ define('SCORING_LOD_PER_GROUP', 2);
 define('SCORING_LOD_PER_POLICY', 4);
 define('SCORING_LOD_HISTORY', 8);
 define('SCORING_LOD_PER_GAME', 16);
+define('SCORING_LOD_NO_SORTING', 32);
 
 $_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_PRIMA_NOCTA, SCORING_GROUP_EXTRA, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
@@ -381,8 +382,39 @@ function prepare_scoring($scoring, $options)
 	}
 	return $stat_flags;
 }
+    
+function init_player_score($player, $scoring, $lod_flags)
+{
+    if ($lod_flags & SCORING_LOD_TOTAL)
+    {
+        $player->points = 0;
+    }
+    if ($lod_flags & SCORING_LOD_PER_GROUP)
+    {
+        foreach ($_groups as $group)
+        {
+            $player->$group = 0;
+        }
+    }
+    if ($lod_flags & SCORING_LOD_PER_POLICY)
+    {
+        foreach ($_groups as $group)
+        {
+            $a = array();
+            if (isset($scoring->$group))
+            {
+                foreach ($scoring->$group as $policy)
+                {
+                    $a[] = 0;
+                }
+            }
+            $g = $group . '_policies';
+            $player->$g = $a;
+        }
+    }
+}
 
-function add_player_score($player, $scoring, $game_flags, $game_role, $extra_points, $red_win_rate, $lod_flags, $game_id, $game_end_time)
+function add_player_score($player, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_points, $red_win_rate, $lod_flags)
 {
 	global $_groups;
 
@@ -409,7 +441,8 @@ function add_player_score($player, $scoring, $game_flags, $game_role, $extra_poi
 					$a[] = 0;
 				}
 			}
-			${$group . '_policies'} = $a;
+            $g = $group . '_policies';
+			$$g = $a;
 		}
 	}
 	
@@ -507,10 +540,86 @@ function add_player_score($player, $scoring, $game_flags, $game_role, $extra_poi
 			}
 			if ($lod_flags & SCORING_LOD_PER_POLICY)
 			{
-				${$group . '_policies'}[$i] += $points;
+                $g = $group . '_policies';
+				$$g[$i] += $points;
 			}
 		}
 	}
+    
+    if ($lod_flags & SCORING_LOD_TOTAL)
+    {
+        $player->points += $total_points;
+    }
+    if ($lod_flags & SCORING_LOD_PER_GROUP)
+    {
+        foreach ($_groups as $group)
+        {
+            $player->$group += $$group;
+        }
+    }
+    if ($lod_flags & SCORING_LOD_PER_POLICY)
+    {
+        foreach ($_groups as $group)
+        {
+            for ($i = 0; $i < count($scoring->$group); ++$i)
+            {
+                $g = $group . '_policies';
+                $player->$g[$i] += $$g[$i];
+            }
+        }
+    }
+    
+    if ($lod_flags & SCORING_LOD_HISTORY)
+    {
+        $history_point = new stdClass();
+        $history_point->game_id = $game_id;
+        $history_point->time = $game_end_time;
+        if ($lod_flags & SCORING_LOD_TOTAL)
+        {
+            $history_point = $player->points;
+        }
+        if ($lod_flags & SCORING_LOD_PER_GROUP)
+        {
+            foreach ($_groups as $group)
+            {
+                $history_point->$group = $player->$group;
+            }
+        }
+        if ($lod_flags & SCORING_LOD_PER_POLICY)
+        {
+            foreach ($_groups as $group)
+            {
+                $g = $group . '_policies';
+                $history_point->$g = $player->$g;
+            }
+        }
+    }
+    
+    if ($lod_flags & SCORING_LOD_PER_GAME)
+    {
+        $game = new stdClass();
+        $game->game_id = $game_id;
+        $game->time = $game_end_time;
+        if ($lod_flags & SCORING_LOD_TOTAL)
+        {
+            $game->points = $total_points;
+        }
+        if ($lod_flags & SCORING_LOD_PER_GROUP)
+        {
+            foreach ($_groups as $group)
+            {
+                $game->$group = $$group;
+            }
+        }
+        if ($lod_flags & SCORING_LOD_PER_POLICY)
+        {
+            foreach ($_groups as $group)
+            {
+                $g = $group . '_policies';
+                $game->$g = $$g;
+            }
+        }
+    }
 }
 
 function get_score($player, $group = NULL)
@@ -702,6 +811,20 @@ function event_scores($event_id, $players, $lod_flags, $scoring_json = NULL, $op
 	$players = array();
 	
 	$stat_flags = prepare_scoring($scoring, $options);
+    
+    // prepare players filter
+    $players_condition_str = '';
+    if (is_array($players) && count($players) > 0)
+    {
+        $delimiter = ' AND p.user_id IN (';
+        for ($players as $player_id)
+        {
+            $players_condition_str .= $delimiter . $player_id;
+            $delimiter = ', ';
+        }
+        $players_condition_str .= ')';
+    }
+    $players_condition = new SQL($players_condition_str);
 	
 	// Calculate game difficulty rates
 	$red_win_rate = 0;
@@ -715,13 +838,15 @@ function event_scores($event_id, $players, $lod_flags, $scoring_json = NULL, $op
 	}
 	
 	// Calculate first night kill rates and games count per player
-	$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.canceled = 0 GROUP BY u.id', $event_id);
+	$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.canceled = 0', $event_id, $players_condition);
+    $query->add(' GROUP BY u.id');
 	while ($row = $query->next())
 	{
 		$player = new stdClass();
 		list ($player->id, $player->name, $player->flags, $player->langs, $player->club_id, $player->club_name, $player->club_flags, $player->games_count, $player->killed_first_count, $player->wins, $player->special_role_wins) = $row;
 		$player->scoring = $scoring;
-		$players[$player->id] = $player;
+        init_player_score($player, $scoring, $lod_flags);
+        $players[$player->id] = $player;
 	}
 	
 	// echo '<pre>';
@@ -729,14 +854,15 @@ function event_scores($event_id, $players, $lod_flags, $scoring_json = NULL, $op
 	// echo '</pre><br>';
 	
 	// Calculate scores
-	$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.canceled = 0 ORDER BY g.end_time', $event_id);
+	$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.canceled = 0', $event_id, $players_condition);
+    $query->add(' ORDER BY g.end_time');
 	while ($row = $query->next())
 	{
 		list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
-		add_player_score($players[$player_id], $scoring, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $game_id, $game_end_time);
+		add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags);
 	}
 	
-	// Sort scores
+	// Prepare and sort scores
 	$scores = array();
 	foreach ($players as $user_id => $player)
 	{
@@ -748,7 +874,10 @@ function event_scores($event_id, $players, $lod_flags, $scoring_json = NULL, $op
 			$scores[] = $player;
 		}
 	}
-	usort($scores, 'compare_scores');
+    if (($lod_flags & SCORING_LOD_NO_SORTING) == 0)
+    {
+        usort($scores, 'compare_scores');
+    }
 	
 	return $scores;
 }
