@@ -872,18 +872,32 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring_json = NULL
 	return $scores;
 }
 
-function club_scores($club_id, $start_time, $end_time, $players_list, $lod_flags, $scoring_json = NULL, $options = 0)
+function club_scores($club_id, $start_time, $end_time, $players_list, $lod_flags, $scoring = NULL, $options = NULL)
 {
-    global $_groups;
-    
-    if ($scoring_json == NULL)
+    if ($scoring == NULL)
     {
-        list($scoring_id, $options) = Db::record(get_label('club'), 'SELECT scoring_id, scoring_options FROM clubs WHERE id = ?', $club_id);
-        list($scoring_json) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+        // todo: somehow provide scoring_version for club seasons. Club seasons should be reworked to support it.
+        list($scoring) = Db::record(get_label('scoring'), 'SELECT s.scoring FROM clubs c JOIN scoring_versions s ON s.scoring_id = c.scoring_id WHERE c.id = ? ORDER BY s.version DESC LIMIT 1', $club_id);
+        $options = new stdClass();
     }
-    $scoring = json_decode($scoring_json);
-    $players = array();
+    else
+    {
+        if (is_string($scoring))
+        {
+            $scoring = json_decode($scoring);
+        }
+        
+        if ($options == NULL)
+        {
+            $options = new stdClass();
+        }
+        else if (is_string($options))
+        {
+            $options = json_decode($options);
+        }
+    }
     
+    $players = array();
     $stat_flags = prepare_scoring($scoring, $options);
     
     // prepare additional filter
@@ -932,7 +946,7 @@ function club_scores($club_id, $start_time, $end_time, $players_list, $lod_flags
     while ($row = $query->next())
     {
         list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
-        add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags);
+        add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, 1);
     }
     
     // Prepare and sort scores
@@ -957,17 +971,57 @@ function club_scores($club_id, $start_time, $end_time, $players_list, $lod_flags
     return $scores;
 }
 
-function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring_json = NULL, $options = 0)
+function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring = NULL, $options = NULL)
 {
-    global $_groups;
-    
-    if ($scoring_json == NULL)
+    $events = NULL;
+    if (is_null($scoring))
     {
-        list($options, $scoring_json) = Db::record(get_label('club'), 'SELECT c.scoring_options, s.scoring FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
+        list($tournament_flags, $scoring, $options) = Db::record(get_label('tournament'), 'SELECT t.flags, s.scoring_options, t.scoring_options FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
+        if ($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
+        {
+            $events = array();
+        }
     }
-    $scoring = json_decode($scoring_json);
-    $players = array();
     
+    if (is_string($scoring))
+    {
+        $scoring = json_decode($scoring);
+    }
+    
+    if (is_null($options))
+    {
+        $options = new stdClass();
+    }
+    else if (is_string($options))
+    {
+        $options = json_decode($options);
+    }
+    
+    // Prepare events info
+    if (!is_null($events))
+    {
+        $scorings = array();
+        $query = new DbQuery('SELECT e.id, e.scoring_id, e.scoring_version, e.scoring_options, s.scoring FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE tournament_id = ?', $tournament_id);
+        while ($row = $query->next())
+        {
+            list($event_id, $event_scoring_id, $event_scoring_version, $event_scoring_options, $event_scoring) = $row;
+            for ($i = 0; $i < count($scorings); ++$i)
+            {
+                $s = $scorings[$i];
+                if ($s->id == $event_scoring_id && $s->version == $event_scoring_version && is_same_scoring_options($s.options, $event_scoring_options))
+                {
+                    break;
+                }
+            }
+            
+            if ($i < count($scorings))
+            {
+                
+            }
+        }
+    }
+    
+    $players = array();
     $stat_flags = prepare_scoring($scoring, $options);
     
     // prepare additional filter
