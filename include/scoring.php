@@ -334,19 +334,20 @@ function prepare_scoring($scoring, $options)
 		{
 			if (isset($policy->active))
 			{
-				if (($options & $option_flag) == 0)
+				$option_name = $group . $policy->matter;
+				if (isset($options->$option_name))
 				{
-					$policy->active = false;
-					continue;
-				}
-				else
-				{
-					$policy->active = true;
+					$policy->active = $options->$option_name;
 				}
 			}
 			else
 			{
 				$policy->active = true;
+			}
+			
+			if (!$policy->active)
+			{
+				continue;
 			}
 			
 			if (isset($policy->min_difficulty) || isset($policy->max_difficulty))
@@ -798,17 +799,35 @@ function get_players_condition($players_list)
     return new SQL($players_condition_str);
 }
 
-function event_scores($event_id, $players_list, $lod_flags, $scoring_json = NULL, $options = 0, $weight = 1)
+function event_scores($event_id, $players_list, $lod_flags, $scoring = NULL, $options = NULL, $weight = 0)
 {
 	global $_groups;
 	
-	if ($scoring_json == NULL)
+	if (is_null($scoring))
 	{
-		list($options, $scoring_json, $weight) = Db::record(get_label('event'), 'SELECT e.scoring_options, s.scoring, e.scoring_weight FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
+		list($scoring, $options, $weight) = Db::record(get_label('event'), 'SELECT s.scoring, e.scoring_options, e.scoring_weight FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
+		$scoring = json_decode($scoring);
 	}
-	$scoring = json_decode($scoring_json);
-	$players = array();
+	else if (is_string($scoring))
+	{
+		$scoring = json_decode($scoring);
+	}
 	
+	if (is_null($options))
+	{
+		$options = new stdClass();
+	}
+	else if (is_string($options))
+	{
+		$options = json_decode($scoring_json);
+	}
+	
+	if ($weight <= 0)
+	{
+		list($weight) = Db::record(get_label('event'), 'SELECT scoring_weight FROM events WHERE id = ?', $event_id);
+	}
+	
+	$players = array();
 	$stat_flags = prepare_scoring($scoring, $options);
     
     // prepare additional filter
@@ -847,7 +866,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring_json = NULL
 	while ($row = $query->next())
 	{
 		list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
-		add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags);
+		add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $weight);
 	}
 	
 	// Prepare and sort scores

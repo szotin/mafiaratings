@@ -21,9 +21,9 @@ ALTER TABLE scorings ADD COLUMN flags INT(11) NOT NULL;
 ALTER TABLE scorings ADD COLUMN version INT(11) NULL DEFAULT 1;
 
 ALTER TABLE events ADD COLUMN scoring_version INT(11) NULL;
-ALTER TABLE events ADD COLUMN scoring_options INT(11) NOT NULL;
+ALTER TABLE events ADD COLUMN scoring_options TEXT NULL;
 ALTER TABLE tournaments ADD COLUMN scoring_version INT(11) NULL;
-ALTER TABLE tournaments ADD COLUMN scoring_options INT(11) NOT NULL;
+ALTER TABLE tournaments ADD COLUMN scoring_options TEXT NULL;
 
 -- Империя Мафии
 INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (2, 1, '{"main":[{"matter":2,"roles":5,"points":1},{"matter":2,"roles":10,"points":2}],"prima_nocta":[{"matter":1024,"roles":3,"points":1}],"extra":[{"matter":32,"points":1},{"matter":64,"points":1}]}');
