@@ -799,13 +799,13 @@ function get_players_condition($players_list)
     return new SQL($players_condition_str);
 }
 
-function event_scores($event_id, $players_list, $lod_flags, $scoring = NULL, $options = NULL)
+function event_scores($event_id, $players_list, $lod_flags, $scoring = NULL, $options = NULL, $weight = 0)
 {
 	global $_groups;
 	
 	if (is_null($scoring))
 	{
-		list($scoring, $options) = Db::record(get_label('event'), 'SELECT s.scoring, e.scoring_options FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
+		list($scoring, $options, $weight) = Db::record(get_label('event'), 'SELECT s.scoring, e.scoring_options, e.scoring_weight FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
 		$scoring = json_decode($scoring);
 	}
 	else if (is_string($scoring))
@@ -820,6 +820,11 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring = NULL, $op
 	else if (is_string($options))
 	{
 		$options = json_decode($scoring_json);
+	}
+	
+	if ($weight <= 0)
+	{
+		list($weight) = Db::record(get_label('event'), 'SELECT scoring_weight FROM events WHERE id = ?', $event_id);
 	}
 	
 	$players = array();
@@ -861,7 +866,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring = NULL, $op
 	while ($row = $query->next())
 	{
 		list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
-		add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags);
+		add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $weight);
 	}
 	
 	// Prepare and sort scores

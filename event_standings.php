@@ -13,7 +13,6 @@ class Page extends EventPageBase
 	private $scoring_id;
 	private $scoring_version;
 	private $scoring;
-	private $roles;
 	
 	private $user_id;
 	private $user_name;
@@ -38,12 +37,6 @@ class Page extends EventPageBase
 				list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
 				$this->scoring_version = -1;
 			}
-		}
-		
-		$this->roles = POINTS_ALL;
-		if (isset($_REQUEST['roles']))
-		{
-			$this->roles = (int)$_REQUEST['roles'];
 		}
 		
 		$this->user_id = 0;
@@ -73,8 +66,6 @@ class Page extends EventPageBase
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
 		show_scoring_select($this->event->club_id, $this->scoring_id, 'document.viewForm.submit()', get_label('Scoring system'));
-		echo ' ';
-		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'event=' . $this->event->id, get_label('Go to the page where a specific player is located.'));
@@ -172,15 +163,7 @@ class Page extends EventPageBase
 	
 	private function no_user_error()
 	{
-		if ($this->roles == POINTS_ALL)
-		{
-			$message = get_label('[0] played no games.', $this->user_name);
-		}
-		else
-		{
-			$message = get_label('[0] played no games as [1].', $this->user_name, get_role_name($this->roles, ROLE_NAME_FLAG_SINGLE | ROLE_NAME_FLAG_LOWERCASE));
-		}
-		$this->errorMessage($message);
+		$this->errorMessage(get_label('[0] did not play in [1].', $this->user_name, $this->event->name));
 	}
 }
 
