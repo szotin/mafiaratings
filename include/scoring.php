@@ -798,7 +798,7 @@ function get_players_condition($players_list)
     }
     return new SQL($players_condition_str);
 }
-
+    
 function event_scores($event_id, $players_list, $lod_flags, $scoring = NULL, $options = NULL, $weight = 0)
 {
 	global $_groups;
@@ -806,9 +806,9 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring = NULL, $op
 	if (is_null($scoring))
 	{
 		list($scoring, $options, $weight) = Db::record(get_label('event'), 'SELECT s.scoring, e.scoring_options, e.scoring_weight FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
-		$scoring = json_decode($scoring);
 	}
-	else if (is_string($scoring))
+    
+	if (is_string($scoring))
 	{
 		$scoring = json_decode($scoring);
 	}
@@ -897,23 +897,21 @@ function club_scores($club_id, $start_time, $end_time, $players_list, $lod_flags
     {
         // todo: somehow provide scoring_version for club seasons. Club seasons should be reworked to support it.
         list($scoring) = Db::record(get_label('scoring'), 'SELECT s.scoring FROM clubs c JOIN scoring_versions s ON s.scoring_id = c.scoring_id WHERE c.id = ? ORDER BY s.version DESC LIMIT 1', $club_id);
+        $options = NULL;
+    }
+    
+    if (is_string($scoring))
+    {
+        $scoring = json_decode($scoring);
+    }
+    
+    if ($options == NULL)
+    {
         $options = new stdClass();
     }
-    else
+    else if (is_string($options))
     {
-        if (is_string($scoring))
-        {
-            $scoring = json_decode($scoring);
-        }
-        
-        if ($options == NULL)
-        {
-            $options = new stdClass();
-        }
-        else if (is_string($options))
-        {
-            $options = json_decode($options);
-        }
+        $options = json_decode($options);
     }
     
     $players = array();
@@ -992,13 +990,13 @@ function club_scores($club_id, $start_time, $end_time, $players_list, $lod_flags
 
 function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring = NULL, $options = NULL)
 {
-    $events = NULL;
+    $scorings = NULL;
     if (is_null($scoring))
     {
         list($tournament_flags, $scoring, $options) = Db::record(get_label('tournament'), 'SELECT t.flags, s.scoring_options, t.scoring_options FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
-        if ($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
+        if (($tournament_flags & TOURNAMENT_FLAG_ENFORCE_SCORING) == 0)
         {
-            $events = array();
+            $scorings = array();
         }
     }
     
@@ -1015,19 +1013,65 @@ function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring =
     {
         $options = json_decode($options);
     }
+
     
-    // Prepare events info
-    if (!is_null($events))
+    $condition = get_players_condition($players_list);
+
+    $players = array();
+    if (is_null($scorings))
     {
-        $scorings = array();
-        $query = new DbQuery('SELECT e.id, e.scoring_id, e.scoring_version, e.scoring_options, s.scoring FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE tournament_id = ?', $tournament_id);
+        
+        $stat_flags = prepare_scoring($scoring, $options);
+        
+        $red_win_rate = 0;
+        if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
+        {
+            list ($count, $red_wins) = Db::record(get_label('tournament'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0', $tournament_id, $time_condition);
+            if ($count > 0)
+            {
+                $red_win_rate = max(min((float)($red_wins / $count), 1), 0);
+            }
+        }
+        
+        // Calculate first night kill rates and games count per player
+        $query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0', $tournament_id, $condition);
+        $query->add(' GROUP BY u.id');
         while ($row = $query->next())
         {
-            list($event_id, $event_scoring_id, $event_scoring_version, $event_scoring_options, $event_scoring) = $row;
+            $player = new stdClass();
+            list ($player->id, $player->name, $player->flags, $player->langs, $player->club_id, $player->club_name, $player->club_flags, $player->games_count, $player->killed_first_count, $player->wins, $player->special_role_wins) = $row;
+            $player->scoring = $scoring;
+            init_player_score($player, $scoring, $lod_flags);
+            $players[$player->id] = $player;
+        }
+        
+        // echo '<pre>';
+        // print_r($scoring);
+        // echo '</pre><br>';
+        
+        // Calculate scores
+        $query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0', $tournament_id, $condition);
+        $query->add(' ORDER BY g.end_time');
+        while ($row = $query->next())
+        {
+            list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
+            add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags);
+        }
+    }
+    else
+    {
+        // prepare scorings per event
+        $query = new DbQuery('SELECT e.id, e.scoring_id, e.scoring_version, e.scoring_options, e.scoring_weight, s.scoring FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE tournament_id = ?', $tournament_id);
+        while ($row = $query->next())
+        {
+            list($event_id, $event_scoring_id, $event_scoring_version, $event_scoring_options, $event_scoring_weight, $event_scoring) = $row;
             for ($i = 0; $i < count($scorings); ++$i)
             {
                 $s = $scorings[$i];
-                if ($s->id == $event_scoring_id && $s->version == $event_scoring_version && is_same_scoring_options($s.options, $event_scoring_options))
+                if ($s->id == $event_scoring_id &&
+                    $s->version == $event_scoring_version &&
+                    $s->weight == $event_scoring_weight &&
+                    $s.options == $event_scoring_options)
                 {
                     break;
                 }
@@ -1035,61 +1079,62 @@ function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring =
             
             if ($i < count($scorings))
             {
-                
+                $s = new stdClass();
+                $s->id = $event_scoring_id;
+                $s->version = $event_scoring_version;
+                $s->weight = $event_scoring_weight;
+                $s->options = $event_scoring_options;
+                $s->scoring = $event_scoring;
+                $s->events = '' . $event_id;
+                $scorings[] = $s;
+            }
+            else
+            {
+                $s->events .= ', ' . $event_id;
             }
         }
-    }
-    
-    $players = array();
-    $stat_flags = prepare_scoring($scoring, $options);
-    
-    // prepare additional filter
-    $condition = get_players_condition($players_list);
-    $time_condition = new SQL();
-    if ($start_time > 0)
-    {
-        $time_condition->add(' AND g.end_time >= ?', $startTime);
-    }
-    if ($end_time > 0)
-    {
-        $time_condition->add(' AND g.end_time < ?', $endTime);
-    }
-    $condition->add($time_condition);
-    
-    // Calculate game difficulty rates
-    $red_win_rate = 0;
-    if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
-    {
-        list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE g.event_id = ? AND g.result > 0 AND g.canceled = 0', $event_id, $time_condition);
-        if ($count > 0)
+        
+        // calculate scores and stats per scoring
+        foreach ($scorings as $s)
         {
-            $red_win_rate = max(min((float)($red_wins / $count), 1), 0);
+            $stat_flags = prepare_scoring($s->scoring, $s->options);
+            
+            $red_win_rate = 0;
+            if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
+            {
+                list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE g.event_id IN(' . $s.events . ') AND g.result > 0 AND g.canceled = 0');
+                if ($count > 0)
+                {
+                    $red_win_rate = max(min((float)($red_wins / $count), 1), 0);
+                }
+            }
+            
+            // Calculate first night kill rates and games count per player
+            $query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id IN(' . $s.events . ') AND g.result > 0 AND g.canceled = 0', $condition);
+            $query->add(' GROUP BY u.id');
+            while ($row = $query->next())
+            {
+                $player = new stdClass();
+                list ($player->id, $player->name, $player->flags, $player->langs, $player->club_id, $player->club_name, $player->club_flags, $player->games_count, $player->killed_first_count, $player->wins, $player->special_role_wins) = $row;
+                if (isset(
+                $player->scoring = $scoring;
+                init_player_score($player, $scoring, $lod_flags);
+                $players[$player->id] = $player;
+            }
+            
+            // echo '<pre>';
+            // print_r($scoring);
+            // echo '</pre><br>';
+            
+            // Calculate scores
+            $query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0', $tournament_id, $condition);
+            $query->add(' ORDER BY g.end_time');
+            while ($row = $query->next())
+            {
+                list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
+                add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags);
+            }
         }
-    }
-    
-    // Calculate first night kill rates and games count per player
-    $query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.canceled = 0', $event_id, $condition);
-    $query->add(' GROUP BY u.id');
-    while ($row = $query->next())
-    {
-        $player = new stdClass();
-        list ($player->id, $player->name, $player->flags, $player->langs, $player->club_id, $player->club_name, $player->club_flags, $player->games_count, $player->killed_first_count, $player->wins, $player->special_role_wins) = $row;
-        $player->scoring = $scoring;
-        init_player_score($player, $scoring, $lod_flags);
-        $players[$player->id] = $player;
-    }
-    
-    // echo '<pre>';
-    // print_r($scoring);
-    // echo '</pre><br>';
-    
-    // Calculate scores
-    $query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.canceled = 0', $event_id, $condition);
-    $query->add(' ORDER BY g.end_time');
-    while ($row = $query->next())
-    {
-        list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
-        add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags);
     }
     
     // Prepare and sort scores
