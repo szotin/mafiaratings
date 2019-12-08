@@ -119,7 +119,6 @@ class ApiPage extends ControlApiPageBase
 						$scoring_version = -1;
 					}
 				}
-				date_default_timezone_set($timezone);
 
 				$players = NULL;
 				if (isset($_REQUEST['players']))
@@ -155,23 +154,14 @@ class ApiPage extends ControlApiPageBase
 				}
 				$club_id = (int)$_REQUEST['id'];
 				
-				list($scoring_id, $timezone) = Db::record(get_label('event'), 'SELECT c.scoring_id, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+				list($scoring_id, $timezone) = Db::record(get_label('club'), 'SELECT c.scoring_id, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+				$scoring = NULL;
 				if (isset($_REQUEST['scoring']))
 				{
-					$sid = (int)$_REQUEST['scoring'];
-					if ($sid > 0)
+					$scoring_id = (int)$_REQUEST['scoring'];
+					if ($scoring_id > 0)
 					{
-						$scoring_id = $sid;
-					}
-				}
-				date_default_timezone_set($timezone);
-				
-				if (isset($_REQUEST['scoring']))
-				{
-					$sid = (int)$_REQUEST['scoring'];
-					if ($sid > 0)
-					{
-						$scoring_id = $sid;
+						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 					}
 				}
 				
@@ -185,33 +175,37 @@ class ApiPage extends ControlApiPageBase
 					$season = get_current_club_season($club_id);
 				}
 				
-				$scoring_system = new ScoringSystem($scoring_id);
-				$scores = new Scores($scoring_system, new SQL(' AND g.club_id = ?', $club_id), new SQL(' AND p.user_id IN(' . $player_list . ')', get_club_season_condition($season, 'g.start_time', 'g.end_time')), MAX_POINTS_ON_GRAPH);
-		
-				$players_count = count($scores->players);
+				$start_time = $end_time = 0;
+				if ($season > SEASON_LATEST)
+				{
+					list($start_time, $end_time) = Db::record(get_label('season'), 'SELECT start_time, end_time FROM club_seasons WHERE id = ?', $season);
+				}
+				else if ($season < SEASON_ALL_TIME)
+				{
+					date_default_timezone_set($timezone);
+					$start_time = mktime(0, 0, 0, 1, 1, -$season);
+					$end_time = mktime(0, 0, 0, 1, 1, 1 - $season);
+				}
+				
+				$players = NULL;
+				if (isset($_REQUEST['players']))
+				{
+					$players = explode(',', $_REQUEST['players']);
+				}
+				
+				$players = club_scores($club_id, $start_time, $end_time, $players, SCORING_LOD_HISTORY | SCORING_LOD_NO_SORTING, $scoring);
+				$players_count = count($players);
 				foreach ($user_ids as $user_id)
 				{
-					if ($user_id > 0)
+					if (isset($players[$user_id]))
 					{
-						$player = NULL;
-						for ($i = 0; $i < $players_count; ++$i)
+						$player = $players[$user_id];
+						$data = new ChartData($player->name, $_chart_colors[$current_color]);
+						foreach ($player->history as $point)
 						{
-							if ($scores->players[$i]->id == $user_id)
-							{
-								$player = $scores->players[$i];
-								break;
-							}
+							$data->data[] = new ChartPoint($point->time, $point->points);
 						}
-						
-						if ($player != NULL)
-						{
-							$data = new ChartData($player->name, $_chart_colors[$current_color]);
-							foreach ($player->history as $point)
-							{
-								$data->data[] = new ChartPoint($point->timestamp, $point->points);
-							}
-							$this->response[] = $data;
-						}
+						$this->response[] = $data;
 					}
 					++$current_color;
 				}

@@ -27,14 +27,31 @@ class Page extends ClubPageBase
 			$this->season = get_current_club_season($this->id);
 		}
 		
-		if (isset($_REQUEST['scoring']))
+        $this->scoring = NULL;
+        if (isset($_REQUEST['scoring']))
+        {
+            $scoring_id = (int)$_REQUEST['scoring'];
+            if ($scoring_id > 0)
+            {
+                list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
+            }
+        }
+		
+		$start_time = $end_time = 0;
+		if ($this->season > SEASON_LATEST)
 		{
-			$this->scoring_id = (int)$_REQUEST['scoring'];
+			list($start_time, $end_time) = Db::record(get_label('season'), 'SELECT start_time, end_time FROM club_seasons WHERE id = ?', $this->season);
+		}
+		else if ($this->season < SEASON_ALL_TIME)
+		{
+			date_default_timezone_set($this->timezone);
+			$start_time = mktime(0, 0, 0, 1, 1, -$this->season);
+			$end_time = mktime(0, 0, 0, 1, 1, 1 - $this->season);
 		}
 		
-		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, new SQL(' AND g.club_id = ?', $this->id), get_club_season_condition($this->season, 'g.start_time', 'g.end_time'));
-		$players_count = count($scores->players);
+		$players = club_scores($this->id, $start_time, $end_time, NULL, 0, $this->scoring);
+		
+		$players_count = count($players);
 		$separator = '';
 		if ($players_count > NUM_PLAYERS)
 		{
@@ -43,7 +60,7 @@ class Page extends ClubPageBase
 		
 		for ($num = 0; $num < $players_count; ++$num)
 		{
-			$score = $scores->players[$num];
+			$score = $players[$num];
 			$this->players_list .= $separator . $score->id;
 			$separator = ',';
 		}

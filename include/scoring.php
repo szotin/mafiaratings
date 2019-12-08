@@ -922,11 +922,11 @@ function club_scores($club_id, $start_time, $end_time, $players_list, $lod_flags
     $time_condition = new SQL();
     if ($start_time > 0)
     {
-        $time_condition->add(' AND g.end_time >= ?', $startTime);
+        $time_condition->add(' AND g.end_time >= ?', $start_time);
     }
     if ($end_time > 0)
     {
-        $time_condition->add(' AND g.end_time < ?', $endTime);
+        $time_condition->add(' AND g.end_time < ?', $end_time);
     }
     $condition->add($time_condition);
     
@@ -1116,7 +1116,6 @@ function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring =
             {
                 $player = new stdClass();
                 list ($player->id, $player->name, $player->flags, $player->langs, $player->club_id, $player->club_name, $player->club_flags, $player->games_count, $player->killed_first_count, $player->wins, $player->special_role_wins) = $row;
-                if (isset(
                 $player->scoring = $scoring;
                 init_player_score($player, $scoring, $lod_flags);
                 $players[$player->id] = $player;

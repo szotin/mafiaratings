@@ -152,11 +152,7 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_lang_code;
 	
-		if ($_profile != NULL)
-		{
-			$is_manager = $_profile->is_club_manager($this->id);
-		}
-		
+		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
 		$have_tables = false;
 		
 		$playing_count = 0;
