@@ -124,7 +124,11 @@ class Page extends PageBase
 			}
 		}
 		
-		if (isset($_REQUEST['event_id']))
+		if (isset($_REQUEST['tournament_id']))
+		{
+			$condition->add(' AND tournament_id = ?', (int)$_REQUEST['tournament_id']);
+		}
+		else if (isset($_REQUEST['event_id']))
 		{
 			$condition->add(' AND event_id = ?', (int)$_REQUEST['event_id']);
 		}

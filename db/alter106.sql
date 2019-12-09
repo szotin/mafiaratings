@@ -132,3 +132,13 @@ ALTER TABLE games ADD KEY (tournament_id);
 ALTER TABLE games ADD CONSTRAINT game_tournament FOREIGN KEY(tournament_id) REFERENCES tournaments(id);
 
 UPDATE games g, events e SET g.tournament_id = e.tournament_id WHERE e.id = g.event_id;
+
+ALTER TABLE photo_albums ADD COLUMN tournament_id INT(11) NULL;
+ALTER TABLE photo_albums ADD KEY (tournament_id);
+ALTER TABLE photo_albums ADD CONSTRAINT photo_album_tournament FOREIGN KEY(tournament_id) REFERENCES tournaments(id);
+UPDATE photo_albums a SET a.tournament_id = (SELECT e.tournament_id FROM events e WHERE e.id = a.event_id) WHERE a.event_id IS NOT NULL;
+
+ALTER TABLE videos ADD COLUMN tournament_id INT(11) NULL;
+ALTER TABLE videos ADD KEY (tournament_id);
+ALTER TABLE videos ADD CONSTRAINT video_tournament FOREIGN KEY(tournament_id) REFERENCES tournaments(id);
+UPDATE videos v, games g SET v.event_id = g.event_id, v.tournament_id = g.tournament_id WHERE g.video_id = v.id;

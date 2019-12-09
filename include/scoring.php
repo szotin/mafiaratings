@@ -993,7 +993,7 @@ function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring =
     $scorings = NULL;
     if (is_null($scoring))
     {
-        list($tournament_flags, $scoring, $options) = Db::record(get_label('tournament'), 'SELECT t.flags, s.scoring_options, t.scoring_options FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
+        list($tournament_flags, $scoring, $options) = Db::record(get_label('tournament'), 'SELECT t.flags, s.scoring, t.scoring_options FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
         if (($tournament_flags & TOURNAMENT_FLAG_ENFORCE_SCORING) == 0)
         {
             $scorings = array();
@@ -1026,7 +1026,7 @@ function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring =
         $red_win_rate = 0;
         if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
         {
-            list ($count, $red_wins) = Db::record(get_label('tournament'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0', $tournament_id, $time_condition);
+            list ($count, $red_wins) = Db::record(get_label('tournament'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0', $tournament_id, $condition);
             if ($count > 0)
             {
                 $red_win_rate = max(min((float)($red_wins / $count), 1), 0);
@@ -1055,7 +1055,7 @@ function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring =
         while ($row = $query->next())
         {
             list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
-            add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags);
+            add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, 1);
         }
     }
     else
