@@ -52,6 +52,11 @@ function def_club()
 	return $club_id;
 }
 
+function compare_players($player1, $player2)
+{
+	return strcasecmp($player1->name , $player2->name);
+}
+
 class GPlayer
 {
 	public $id;
@@ -970,6 +975,10 @@ class ApiPage extends OpsApiPageBase
 			}
 			$list[] = $p;
 		}
+		
+		// sort it by name
+		usort($list, 'compare_players');
+		
 		$this->response['list'] = $list;
 	}
 	
