@@ -924,9 +924,17 @@ class ApiPage extends OpsApiPageBase
 			list($area_id) = Db::record(get_label('area'), 'SELECT ct.area_id FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 		}
 		
+		
+		$games_count_query = new SQL('SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = u.id AND g.start_time > UNIX_TIMESTAMP() - ' . (24*60*60*365));
+		if ($club_id > 0)
+		{
+			$games_count_query->add(' AND g.club_id = ?', $club_id);
+		}
+		
 		array();
-		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, c.id, c.name, a.id, a.name_' . $_lang_code . 
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, c.id, c.name, a.id, a.name_' . $_lang_code . ', (', $games_count_query);
+		$query->add(
+				') as games_count' .
 				' FROM users u' .
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' JOIN cities ct ON ct.id = u.city_id' .
@@ -938,23 +946,16 @@ class ApiPage extends OpsApiPageBase
 			$query->add(
 					' AND (u.name LIKE ? OR' .
 					' u.email LIKE ? OR' .
-					' u.id IN (SELECT DISTINCT user_id FROM registrations WHERE nick_name LIKE ?))' .
-					' ORDER BY u.name',
+					' u.id IN (SELECT DISTINCT user_id FROM registrations WHERE nick_name LIKE ?))',
 				$name_wildcard,
 				$name_wildcard,
 				$name_wildcard);
 		}
 		else if ($club_id > 0)
 		{
-			$query->add(
-					' AND u.id IN (SELECT DISTINCT user_id FROM user_clubs WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)' .
-					' ORDER BY u.rating DESC',
-				$club_id);
+			$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM user_clubs WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)', $club_id);
 		}
-		else
-		{
-			$query->add(' ORDER BY u.rating DESC');
-		}
+		$query->add(' ORDER BY games_count DESC');
 		
 		if ($num > 0)
 		{
