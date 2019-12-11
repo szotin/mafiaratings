@@ -695,11 +695,11 @@ class Event
 				$no_buttons = false;
 			}
 		}
-		echo '<button class="icon" onclick="window.open(\'event_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
 		if ($start_time < $now)
 		{
-			echo '<button class="icon" onclick="window.open(\'event_figm_form.php?event_id=' . $id . '\' ,\'_blank\')" title="' . get_label('FIGM report.') . '"><img src="images/table.png" border="0"></button>';
+			echo '<button class="icon" onclick="window.open(\'event_figm_form.php?event_id=' . $id . '\' ,\'_blank\')" title="' . get_label('FIGM report.') . '"><img src="images/figm.png" border="0"></button>';
 		}
+		echo '<button class="icon" onclick="window.open(\'event_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
 	}
 }
 

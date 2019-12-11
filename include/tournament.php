@@ -40,6 +40,10 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 			$no_buttons = false;
 		}
 	}
+	if ($start_time < $now)
+	{
+		echo '<button class="icon" onclick="window.open(\'tournament_figm_form.php?tournament_id=' . $id . '\' ,\'_blank\')" title="' . get_label('FIGM report.') . '"><img src="images/figm.png" border="0"></button>';
+	}
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
 	if ($league_id > 0 && is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
 	{

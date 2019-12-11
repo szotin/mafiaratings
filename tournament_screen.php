@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/event.php';
+require_once 'include/tournament.php';
 require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
@@ -13,7 +13,7 @@ try
 	check_maintenance();
 	
 	$club_pic = new Picture(CLUB_PICTURE);
-	$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, $club_pic));
+	$tournament_pic = new Picture(TOURNAMENT_PICTURE, $club_pic);
 	$user_pic = new Picture(USER_PICTURE);
 	
 	echo '<!DOCTYPE HTML>';
@@ -26,10 +26,10 @@ try
 	
 	echo '</head><body>';
 	
-	$event = new Event();
-	$event->load($_REQUEST['id']);
+	list ($tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
+		Db::record(get_label('tournament'), 'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags FROM tournaments t JOIN clubs c ON c.id = t.club_id WHERE t.id = ?', $_REQUEST['id']);
 	
-	$is_manager = ($_profile != NULL && $_profile->is_club_manager($event->club_id));
+	$is_manager = ($_profile != NULL && $_profile->is_club_manager($club_id));
 	$rows = 0;
 	$cols = 0;
 	$refr = 0;
@@ -61,16 +61,16 @@ try
 			$logo_height = (int)$_REQUEST['l'];
 		}
 		$json = json_encode(array($rows, $cols, $logo_height, $title, $refr));
-		$query = Db::exec(get_label('event'), 'UPDATE events SET standings_settings = ? WHERE id = ?', $json, $event->id);
-		header('location: event_screen.php?id=' . $event->id);
+		$query = Db::exec(get_label('tournament'), 'UPDATE tournaments SET standings_settings = ? WHERE id = ?', $json, $tournament_id);
+		header('location: tournament_screen.php?id=' . $tournament_id);
 	}
 	else
 	{
-		list ($standings_settings) = Db::record(get_label('event'), 'SELECT e.standings_settings FROM events e WHERE e.id = ?', $event->id);
+		list ($standings_settings) = Db::record(get_label('tournament'), 'SELECT e.standings_settings FROM tournaments e WHERE e.id = ?', $tournament_id);
 		if (is_null($standings_settings))
 		{
 			$edit_settings = true;
-			$query = Db::query('SELECT e.standings_settings FROM events e WHERE e.standings_settings IS NOT NULL AND e.club_id = ? ORDER BY e.id DESC LIMIT 1', $event->club_id);
+			$query = Db::query('SELECT e.standings_settings FROM tournaments e WHERE e.standings_settings IS NOT NULL AND e.club_id = ? ORDER BY e.id DESC LIMIT 1', $club_id);
 			if ($row = $query->next())
 			{
 				list ($standings_settings) = $row;
@@ -99,8 +99,8 @@ try
 	if ($edit_settings && $is_manager)
 	{
 		echo '<h1>' . get_label('Standings screen settings') . '</h1>';
-		echo '<form method="get" action="event_screen.php">';
-		echo '<input type="hidden" name="id" value="' . $event->id . '">';
+		echo '<form method="get" action="tournament_screen.php">';
+		echo '<input type="hidden" name="id" value="' . $tournament_id . '">';
 		echo '<input type="hidden" name="save">';
 		echo '<table class="dialog_form" width="100%">';
 		echo '<tr><td width="100">'.get_label('Rows').':</td><td><input name="r" value="' . $rows . '"></td></tr>';
@@ -124,21 +124,20 @@ try
 		
 		if ($title)
 		{
-			echo '<table width="100%"><tr><td><h2>' . $event->name . '</h2>';
+			echo '<table width="100%"><tr><td><h2>' . $tournament_name . '</h2>';
 			if ($logo_height > 0)
 			{
 				echo '</td><td align="right">';
 				$icon = (abs($logo_height - ICON_HEIGHT) < abs($logo_height - TNAIL_HEIGHT));
-				$event_pic->
-					set($event->id, $event->name, $event->flags)->
-					set($event->tournament_id, $event->tournament_name, $event->tournament_flags)->
-					set($event->club_id, $event->club_name, $event->club_flags);
-				$event_pic->show($icon ? ICONS_DIR : TNAILS_DIR, 0, $logo_height);
+				$tournament_pic->
+					set($tournament_id, $tournament_name, $tournament_flags)->
+					set($club_id, $club_name, $club_flags);
+				$tournament_pic->show($icon ? ICONS_DIR : TNAILS_DIR, 0, $logo_height);
 			}
 			echo '</td></tr></table>';
 		}
 		
-		$players = event_scores($event->id, NULL, SCORING_LOD_PER_GROUP);
+		$players = tournament_scores($tournament_id, NULL, SCORING_LOD_PER_GROUP);
 		$players_count = count($players);
 			
 		if ($players_count == 0)
@@ -146,30 +145,14 @@ try
 			$players = array();
 			$page_size = $rows * $cols;
 		
-			echo '<center><h2>' . get_label('The event hasn\'t started yet. Current ratings:') . '</h2></center>';
 			$query = new DbQuery(
-				'SELECT u.id, u.name, r.nick_name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM registrations r' . 
-				' JOIN users u ON r.user_id = u.id' .
+				'SELECT u.id, u.name, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM users u' . 
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' WHERE r.event_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
-				$event->id);
-			
+				' WHERE c.id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
+				$club_id);
 			while ($row = $query->next())
 			{
 				$players[] = $row;
-			}
-
-			if (count($players) == 0)
-			{
-				$query = new DbQuery(
-					'SELECT u.id, u.name, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM users u' . 
-					' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-					' WHERE c.id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
-					$event->club_id);
-				while ($row = $query->next())
-				{
-					$players[] = $row;
-				}
 			}
 			
 			$number = 0;
@@ -194,7 +177,7 @@ try
 					{
 						echo '<td width="' . (100 / $cols) . '%" valign="top"><table class="bordered light" width="100%">';
 						echo '<tr class="th-long darker">';
-						echo '<td width="20"><button class="icon" onclick="window.location.replace(\'event_screen.php?id=' . $event->id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button></td>';
+						echo '<td width="20"><button class="icon" onclick="window.location.replace(\'tournament_screen.php?id=' . $tournament_id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button></td>';
 						echo '<td colspan="3">'.get_label('Player').'</td>';
 						echo '<td width="60" align="center">'.get_label('Rating').'</td>';
 						echo '<td width="60" align="center">'.get_label('Games played').'</td>';
@@ -241,7 +224,12 @@ try
 					{
 						echo '<td width="' . (100 / $cols) . '%" valign="top"><table class="bordered light" width="100%">';
 						echo '<tr class="th darker">';
-						echo '<td width="20" rowspan="2"><button class="icon" onclick="window.location.replace(\'event_screen.php?id=' . $event->id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button></td>';
+						echo '<td width="20" rowspan="2">';
+						if ($is_manager)
+						{
+							echo '<button class="icon" onclick="window.location.replace(\'tournament_screen.php?id=' . $tournament_id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button>';
+						}
+						echo '</td>';
 						echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
 						echo '<td align="center" colspan="6">'.get_label('Points').'</td>';
 						echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';

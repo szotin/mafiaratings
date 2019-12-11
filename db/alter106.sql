@@ -142,3 +142,6 @@ ALTER TABLE videos ADD COLUMN tournament_id INT(11) NULL;
 ALTER TABLE videos ADD KEY (tournament_id);
 ALTER TABLE videos ADD CONSTRAINT video_tournament FOREIGN KEY(tournament_id) REFERENCES tournaments(id);
 UPDATE videos v, games g SET v.event_id = g.event_id, v.tournament_id = g.tournament_id WHERE g.video_id = v.id;
+
+ALTER TABLE tournaments DROP COLUMN standings_settings;
+ALTER TABLE tournaments ADD COLUMN standings_settings VARCHAR(256) NULL;
