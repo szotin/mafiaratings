@@ -381,6 +381,10 @@ class PageBase
 			{
 				echo ' title="' . $item->title . '"';
 			}
+			if ($item->new_window)
+			{
+				echo ' target="_blank"';
+			}
 			echo '>' . $item->text . '</a>';
 			if ($item->submenu != NULL)
 			{
@@ -546,13 +550,15 @@ class MenuItem
 	public $title;
 	public $text;
 	public $submenu;
+	public $new_window;
 	
-	function __construct($page, $text, $title, $submenu = NULL)
+	function __construct($page, $text, $title, $submenu = NULL, $new_window = false)
 	{
 		$this->page = $page;
 		$this->title = $title;
 		$this->text = $text;
 		$this->submenu = $submenu;
+		$this->new_window = $new_window;
 	}
 }
 
