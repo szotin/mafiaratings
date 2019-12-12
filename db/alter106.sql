@@ -20,9 +20,9 @@ ALTER TABLE scorings ADD CONSTRAINT system_league FOREIGN KEY(league_id) REFEREN
 ALTER TABLE scorings ADD COLUMN flags INT(11) NOT NULL;
 ALTER TABLE scorings ADD COLUMN version INT(11) NULL DEFAULT 1;
 
-ALTER TABLE events ADD COLUMN scoring_version INT(11) NULL;
+ALTER TABLE events ADD COLUMN scoring_version INT(11) NOT NULL;
 ALTER TABLE events ADD COLUMN scoring_options TEXT NULL;
-ALTER TABLE tournaments ADD COLUMN scoring_version INT(11) NULL;
+ALTER TABLE tournaments ADD COLUMN scoring_version INT(11) NOT NULL;
 ALTER TABLE tournaments ADD COLUMN scoring_options TEXT NULL;
 
 -- Империя Мафии

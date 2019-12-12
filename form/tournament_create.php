@@ -119,8 +119,6 @@ try
 	}
 	echo '</select></td></tr>';
 	
-	echo '<tr><td>' . get_label('Scoring weight') . ':</td><td><input id="form-scoring-weight" value="1"></td></tr>';
-	
 	if (is_valid_lang($club->langs))
 	{
 		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
@@ -149,7 +147,6 @@ try
 	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
 	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
-	$('#form-scoring-weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
 	
 	function longTermClicked()
 	{
@@ -232,7 +229,6 @@ try
 			price: $("#form-price").val(),
 			address_id: _addr,
 			scoring_id: $("#form-scoring").val(),
-			scoring_weight: $("#form-scoring-weight").val(),
 			notes: $("#form-notes").val(),
 			start: startDate.val(),
 			end: dateToStr(_end),

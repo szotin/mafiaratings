@@ -20,8 +20,8 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $request_league_id, $league_id, $name, $start_time, $duration, $timezone, $stars, $address_id, $scoring_id, $scoring_weight, $price, $langs, $notes, $flags) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.scoring_weight, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
+	list ($club_id, $request_league_id, $league_id, $name, $start_time, $duration, $timezone, $stars, $address_id, $scoring_id, $price, $langs, $notes, $flags) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
@@ -88,8 +88,6 @@ try
 		show_option($sid, $scoring_id, $sname);
 	}
 	echo '</select></td></tr>';
-	
-	echo '<tr><td>' . get_label('Scoring weight') . ':</td><td><input id="form-scoring-weight" value="' . $scoring_weight . '"></td></tr>';
 	
 	if (is_valid_lang($club->langs))
 	{
@@ -158,7 +156,6 @@ try
 	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
 	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
-	$('#form-scoring-weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
 	
 	function longTermClicked()
 	{
@@ -206,7 +203,6 @@ try
 			price: $("#form-price").val(),
 			address_id: $("#form-addr_id").val(),
 			scoring_id: $("#form-scoring").val(),
-			scoring_weight: $("#form-scoring-weight").val(),
 			notes: $("#form-notes").val(),
 			start: startDate.val(),
 			end: dateToStr(_end),
