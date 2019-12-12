@@ -60,7 +60,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$notes = get_optional_param('notes', '');
-		$flags = (int)get_optional_param('flags', TOURNAMENT_FLAG_ENFORCE_RULES | TOURNAMENT_FLAG_ENFORCE_SCORING) & TOURNAMENT_EDITABLE_MASK;
+		$flags = (int)get_optional_param('flags', TOURNAMENT_FLAG_USE_ROUNDS_SCORING) & TOURNAMENT_EDITABLE_MASK;
 		$langs = get_optional_param('langs', $club->langs);
 		$rules_code = get_optional_param('rules_code', NULL);
 		$stars = max(min((float)get_optional_param('stars', 0), 5), 0);
