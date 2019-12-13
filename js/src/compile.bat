@@ -23,5 +23,6 @@ java -jar compiler.jar --js seating.js --js_output_file ..\seating.js
 java -jar compiler.jar --js seating-en.js --js_output_file ..\seating-en.js
 copy seating-ru.js ..
 java -jar compiler.jar --js seating-ui.js --js_output_file ..\seating-ui.js
+java -jar compiler.jar --js scoring_editor.js --js_output_file ..\scoring_editor.js
 
 pause

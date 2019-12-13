@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html manifest="game.manifest">
+<head>
+	<title>Mafia Ratings: The Game</title>
+	<META content="text/html; charset=utf-8" http-equiv=Content-Type>
+	<script src="js/jquery.min.js"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script src="js/jquery.ui.menubar.js"></script>
+	<script src="js/src/scoring_editor.js"></script>
+    <link rel="stylesheet" type="text/css" href="common.css">
+</head>
+<body>
+    <table width="100%" class="bordered dark"><tr class="darker"><th>Editor:</th><tr><tr><td>
+	<div id="scoring-editor"></div>
+    </td></tr></table>
+    
+    <br>
+
+    <table width="100%" class="bordered dark"><tr class="darker"><th>Result:</th><tr><tr><td>
+	<div id="result"></div>
+    </td></tr></table>
+    
+    <script>
+        initScoringEditor('{"main":[{"matter":2,"roles":5,"min_difficulty":0.5,"min_points":1,"max_difficulty":1,"max_points":2},{"matter":2,"roles":10,"min_difficulty":0.5,"min_points":1.05,"max_difficulty":1,"max_points":2.05},{"matter":4,"roles":10,"points":-0.05}],"prima_nocta":[{"matter":1024,"roles":3,"points":0.2},{"matter":2048,"roles":3,"points":0.1},{"matter":16,"points":-0.1},{"matter":262144,"roles":8,"points":0.05},{"matter":1048576,"roles":2,"points":0.1}],"extra":[{"matter":32,"points":0.3},{"matter":64,"points":0.2}],"penalty":[{"matter":4096,"points":-0.2},{"matter":8192,"points":-0.4}],"night1":[{"matter":256,"roles":3,"min_night1":0.15,"min_points":0,"max_night1":0.4,"max_points":0.3}]}');
+    </script>
+</body>
+</html>

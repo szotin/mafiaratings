@@ -16,3 +16,4 @@ copy seating.js ..
 copy seating-en.js ..
 copy seating-ru.js ..
 copy seating-ui.js ..
+copy scoring_editor.js ..
