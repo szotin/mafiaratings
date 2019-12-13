@@ -20,9 +20,9 @@ ALTER TABLE scorings ADD CONSTRAINT system_league FOREIGN KEY(league_id) REFEREN
 ALTER TABLE scorings ADD COLUMN flags INT(11) NOT NULL;
 ALTER TABLE scorings ADD COLUMN version INT(11) NULL DEFAULT 1;
 
-ALTER TABLE events ADD COLUMN scoring_version INT(11) NULL;
+ALTER TABLE events ADD COLUMN scoring_version INT(11) NOT NULL;
 ALTER TABLE events ADD COLUMN scoring_options TEXT NULL;
-ALTER TABLE tournaments ADD COLUMN scoring_version INT(11) NULL;
+ALTER TABLE tournaments ADD COLUMN scoring_version INT(11) NOT NULL;
 ALTER TABLE tournaments ADD COLUMN scoring_options TEXT NULL;
 
 -- Империя Мафии
@@ -142,3 +142,6 @@ ALTER TABLE videos ADD COLUMN tournament_id INT(11) NULL;
 ALTER TABLE videos ADD KEY (tournament_id);
 ALTER TABLE videos ADD CONSTRAINT video_tournament FOREIGN KEY(tournament_id) REFERENCES tournaments(id);
 UPDATE videos v, games g SET v.event_id = g.event_id, v.tournament_id = g.tournament_id WHERE g.video_id = v.id;
+
+ALTER TABLE tournaments DROP COLUMN standings_settings;
+ALTER TABLE tournaments ADD COLUMN standings_settings VARCHAR(256) NULL;

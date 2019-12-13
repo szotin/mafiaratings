@@ -634,13 +634,13 @@ class Event
 		}
 	}
 	
-	function get_full_name($with_club = false)
+	function get_full_name()
 	{
-		if ($with_club && $this->name != $this->club_name)
+		if (!is_null($this->tournament_id))
 		{
-			return get_label('[1] / [0]: [2]', $this->name, $this->club_name, format_date('D, M d, y', $this->timestamp, $this->timezone));
+			return $this->tournament_name . ' : ' . $this->name;
 		}
-		return get_label('[0]: [1]', $this->name, format_date('D, M d, y', $this->timestamp, $this->timezone));
+		return $this->name;
 	}
 	
 	static function show_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $attending)
@@ -696,10 +696,6 @@ class Event
 			}
 		}
 		echo '<button class="icon" onclick="window.open(\'event_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
-		if ($start_time < $now)
-		{
-			echo '<button class="icon" onclick="window.open(\'event_figm_form.php?event_id=' . $id . '\' ,\'_blank\')" title="' . get_label('FIGM report.') . '"><img src="images/table.png" border="0"></button>';
-		}
 	}
 }
 
@@ -849,12 +845,13 @@ class EventPageBase extends PageBase
 				new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings')),
 				new MenuItem('event_competition.php?id=' . $this->event->id, get_label('Competition chart'), get_label('How players were competing on this event.')),
 				new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event')),
-				new MenuItem('#stats', get_label('Stats'), NULL, array
+				new MenuItem('#stats', get_label('Reports'), NULL, array
 				(
 					new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
 					new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 					new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
 					new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event')),
+					new MenuItem('event_figm_form.php?event_id=' . $this->event->id, get_label('FIGM'), get_label('PDF report for sending to FIGM Mafia World Tour'), NULL, true),
 				)),
 				new MenuItem('#resources', get_label('Resources'), NULL, array
 				(
@@ -922,7 +919,7 @@ class EventPageBase extends PageBase
 		
 		$title = get_label('Event [0]', $this->_title);
 		
-		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->name;
+		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->get_full_name();
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
 		

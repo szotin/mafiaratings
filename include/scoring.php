@@ -994,7 +994,7 @@ function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring =
     if (is_null($scoring))
     {
         list($tournament_flags, $scoring, $options) = Db::record(get_label('tournament'), 'SELECT t.flags, s.scoring, t.scoring_options FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
-        if (($tournament_flags & TOURNAMENT_FLAG_ENFORCE_SCORING) == 0)
+        if (($tournament_flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING) == 0)
         {
             $scorings = array();
         }

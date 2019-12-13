@@ -154,26 +154,26 @@ class UserPageBase extends PageBase
 		
 		$menu = array
 		(
-			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information'))
-			, new MenuItem('user_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How [0] competes with the other players', $this->title))
-			, new MenuItem('user_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('[0] clubs', $this->title))
-			, new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title))
-			, new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title))
-			, new MenuItem('#stats', get_label('Stats'), NULL, array
+			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information')),
+			new MenuItem('user_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How [0] competes with the other players', $this->title)),
+			new MenuItem('user_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('[0] clubs', $this->title)),
+			new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title)),
+			new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title)),
+			new MenuItem('#stats', get_label('Reports'), NULL, array
 			(
-				new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('General statistics. How many games played, winning percentage, nominating/voting, etc.'))
-				, new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
-				, new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title))
-				, new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->title))
-			))
-			, new MenuItem('#resources', get_label('Resources'), NULL, array
+				new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('General statistics. How many games played, winning percentage, nominating/voting, etc.')),
+				new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+				new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)),
+				new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->title)),
+			)),
+			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
-				new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title))
-				, new MenuItem('user_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.'))
-				, new MenuItem('user_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.'))
-				// , new MenuItem('club_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.'))
-				// , new MenuItem('club_articles.php?id=' . $this->id, get_label('Articles'), get_label('Books and articles.'))
-				// , new MenuItem('club_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.'))
+				new MenuItem('user_photos.php?id=' . $this->id, get_label('Photos'), get_label('Photos of [0]', $this->title)),
+				new MenuItem('user_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.')),
+				new MenuItem('user_videos.php?id=' . $this->id . '&vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.')),
+				// new MenuItem('club_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
+				// new MenuItem('club_articles.php?id=' . $this->id, get_label('Articles'), get_label('Books and articles.')),
+				// new MenuItem('club_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			))
 		);
 		if ($_profile != NULL && $_profile->user_id == $this->id)
