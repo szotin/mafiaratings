@@ -38,7 +38,7 @@ class Page extends TournamentPageBase
 			echo '<table class="transp" width="100%">';
 			echo '<tr class="light"><td align="left" style="padding:2px;>';
 			show_club_buttons(-1, '', 0, 0);
-			echo '</td></tr><tr><td align="center"><a href="#" onclick="mr.createEvent(' . $this->id . ')">' . get_label('Create [0]', get_label('round'));
+			echo '</td></tr><tr><td align="center"><a href="#" onclick="mr.createRound(' . $this->id . ')">' . get_label('Create [0]', get_label('round'));
 			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '">';
 			echo '</td></tr></table>';
 			echo '</td>';

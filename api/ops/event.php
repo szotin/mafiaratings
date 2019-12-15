@@ -97,6 +97,14 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('Please enter [0].', get_label('event name')));
 		}
+
+		$tournament_id = get_optional_param('tournament_id', 0);
+		if ($tournament_id <= 0)
+		{
+			$tournament_id = NULL;
+		}
+		// todo check that the event params are applicable to the tournament
+		
 		
 		$start = get_required_param('start');
 		$duration = (int)get_required_param('duration');
@@ -116,7 +124,14 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		list ($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? AND OREDER BY version DESC LIMIT 1', $scoring_id);
+		if (is_null($tournament_id))
+		{
+			list ($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+		}
+		else
+		{
+			list ($scoring_id, $scoring_version, $rules_code) = Db::record(get_label('tournament'), 'SELECT scoring_id, scoring_version, rules FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+		}
 		
 		list($address_id, $timezone) = $this->get_address_id($club, -1);
 		if ($address_id <= 0)
@@ -125,6 +140,10 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$log_details = new stdClass();
+		if (!is_null($tournament_id))
+		{
+			$log_details->tournament_id = $tournament_id;
+		}
 		$log_details->name = $name;
 		$log_details->price = $price;
 		$log_details->address_id = $address_id;
@@ -156,11 +175,11 @@ class ApiPage extends OpsApiPageBase
 				{
 					Db::exec(
 						get_label('event'), 
-						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_weight) ' .
-						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_weight, tournament_id) ' .
+						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$name, $price, $address_id, $club_id, $start_datetime->getTimestamp(), 
 						$notes, $duration, $flags, $langs, $rules_code, 
-						$scoring_id, $scoring_version, $scoring_weight);
+						$scoring_id, $scoring_version, $scoring_weight, $tournament_id);
 					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 					
 					$log_details->start = $start_datetime->format('d/m/y H:i');
@@ -190,11 +209,11 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('event'), 
-				'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_weight) ' .
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_weight, tournament_id) ' .
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				$name, $price, $address_id, $club_id, $start_datetime->getTimestamp(), 
 				$notes, $duration, $flags, $langs, $rules_code, 
-				$scoring_id, $scoring_version, $scoring_weight);
+				$scoring_id, $scoring_version, $scoring_weight, $tournament_id);
 			list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details->start = $start;
@@ -298,7 +317,7 @@ class ApiPage extends OpsApiPageBase
 		$scoring_version = -1;
 		if ($scoring_id != $old_scoring_id)
 		{
-			list ($scoring_version) = Db::recors(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? AND OREDER BY version DESC LIMIT 1', $scoring_id);
+			list ($scoring_version) = Db::recors(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 			Db::exec(
 				get_label('event'), 
 				'UPDATE events SET ' .

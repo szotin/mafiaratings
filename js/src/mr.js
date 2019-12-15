@@ -459,17 +459,7 @@ var mr = new function()
 	
 	this.createRound = function(tournamentId)
 	{
-		dlg.form("form/event_create.php?tournament_id=" + tournamentId, function(obj)
-		{
-			if (typeof obj.mailing != "undefined")
-			{
-				dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=' + obj.mailing, refr, 500, refr);
-			}
-			else
-			{
-				refr();
-			}
-		});
+		dlg.form("form/round_create.php?tournament_id=" + tournamentId, refr);
 	}
 	
 	this.restoreEvent = function(id)

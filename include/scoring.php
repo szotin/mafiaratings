@@ -1077,7 +1077,7 @@ function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring =
                 }
             }
             
-            if ($i < count($scorings))
+            if ($i >= count($scorings))
             {
                 $s = new stdClass();
                 $s->id = $event_scoring_id;
@@ -1110,7 +1110,14 @@ function tournament_scores($tournament_id, $players_list, $lod_flags, $scoring =
             }
             
             // Calculate first night kill rates and games count per player
-            $query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id IN(' . $s.events . ') AND g.result > 0 AND g.canceled = 0', $condition);
+            $query = 
+				new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)),' .
+				' SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))'.
+				' FROM players p' .
+				' JOIN games g ON g.id = p.game_id' .
+				' JOIN users u ON u.id = p.user_id' .
+				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+				' WHERE g.event_id IN(' . $s->events . ') AND g.result > 0 AND g.canceled = 0', $condition);
             $query->add(' GROUP BY u.id');
             while ($row = $query->next())
             {
