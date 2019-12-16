@@ -37,7 +37,7 @@ try
 	
 	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
 	show_option(0, $event->tournament_id, '');
-	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND (flags & ' . TOURNAMENT_FLAG_EVENT_ROUND . ') <> 0 AND start_time + duration > UNIX_TIMESTAMP() ORDER BY name', $club_id);
+	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time + duration > UNIX_TIMESTAMP() ORDER BY name', $club_id);
 	if ($row = $query->next())
 	{
 		list($tid, $tname) = $row;

@@ -12,93 +12,46 @@ initiate_session();
 
 try
 {
-	$tournament_id = 0;
-	if (isset($_REQUEST['tournament_id']))
+	if (!isset($_REQUEST['tournament_id']))
 	{
-		dialog_title(get_label('Create [0]', get_label('tournament round')));
-		$tournament_id = (int)$_REQUEST['tournament_id'];
-		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
-	}
-	else if (isset($_REQUEST['club_id']))
-	{
-		dialog_title(get_label('Create [0]', get_label('event')));
-		$club_id = (int)$_REQUEST['club_id'];
-	}
-	else
-	{
-		throw new Exc(get_label('Unknown [0]', get_label('club')));
+		throw new Exc(get_label('Unknown [0]', get_label('tournament')));
 	}
 	
-	check_permissions(PERMISSION_CLUB_MEMBER, $club_id);
-	$club = $_profile->clubs[$club_id];
+	dialog_title(get_label('Create [0]', get_label('tournament round')));
+	$tournament_id = (int)$_REQUEST['tournament_id'];
+	list($club_id, $addr_id, $rules_code, $langs, $country, $city) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.address_id, t.rules, t.langs, c.id, c.country_id' .
+		' FROM tournaments t' .
+		' JOIN addresses a ON a.id = t.address_id' .
+		' JOIN cities c ON c.id = a.city_id' .
+		' WHERE t.id = ?', $tournament_id);
 	
-	$event = new Event();
-	$event->set_club($club);
+	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	
 	$start = new DateTime();
-	$end = new DateTime();
-	$end->add(new DateInterval('P2M'));
+	$duration = 6 * 3600;
 
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($event->name, ENT_QUOTES) . '"></td></tr>';
-	
-	if ($tournament_id <= 0)
-	{
-		$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND (flags & ' . TOURNAMENT_FLAG_EVENT_ROUND . ') <> 0 AND start_time + duration > UNIX_TIMESTAMP() ORDER BY name', $club_id);
-		if ($row = $query->next())
-		{
-			echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
-			show_option(0, $tournament_id, '');
-			do
-			{
-				list($tid, $tname) = $row;
-				show_option($tid, $tournament_id, $tname);
-			} while ($row = $query->next());
-			echo '</select></td></tr>';
-		}
-		else
-		{
-			echo '<input type="hidden" id="form-tournament" value="0">';
-		}
-	}
-	else
-	{
-		echo '<input type="hidden" id="form-tournament" value="' . $tournament_id . '">';
-	}
+	echo '<tr><td width="160">'.get_label('Round name').':</td><td><input id="form-name" value="' . get_label('main round') . '"></td></tr>';
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
-	echo '<input type="checkbox" id="form-multiple" onclick="multipleChange()"> ' . get_label('multiple events');
-	echo '<div id="form-single_date">';
 	echo '<input type="text" id="form-date" value="' . datetime_to_string($start, false) . '">';
-	echo '</div><div id="form-multiple_date" style="display:none;">';
-	echo '<p>' . get_label('Every') . ': ';
-	$weekday_names = array(get_label('sun'), get_label('mon'), get_label('tue'), get_label('wed'), get_label('thu'), get_label('fri'), get_label('sat'));
-	for ($i = 0; $i < 7; ++$i)
-	{
-		echo '<input type="checkbox" id="form-wd' . $i . '"> ' . $weekday_names[$i] . ' ';
-	}
-	echo '</p>';
-	echo '<p>' . get_label('From') . ' ';
-	echo '<input type="text" id="form-date-from" value="' . datetime_to_string($start, false) . '">';
-	echo ' ' . get_label('to') . ' ';
-	echo '<input type="text" id="form-date-to" value="' . datetime_to_string($end, false) . '">';
 	echo '</td></tr>';
-	echo '</div></td></tr>';
 		
 	echo '<tr><td>'.get_label('Time').':</td><td>';
 	echo '<input id="form-hour" value="18"> : <input id="form-minute" value="00">';
 	echo '</td></tr>';
 		
-	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($event->duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
+	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 		
-	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $event->club_id);
+	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id" onChange="addressClick()">';
 	echo '<option value="-1">' . get_label('New address') . '</option>';
 	$selected_address = '';
 	while ($row = $query->next())
 	{
-		if (show_option($row[0], $event->addr_id, $row[1]))
+		if (show_option($row[0], $addr_id, $row[1]))
 		{
 			$selected_address = $row[1];
 		}
@@ -106,100 +59,30 @@ try
 	echo '</select><div id="form-new_addr_div">';
 //	echo '<button class="icon" onclick="mr.createAddr(' . $club_id . ')" title="' . get_label('Create [0]', get_label('address')) . '"><img src="images/create.png" border="0"></button>';
 	echo '<input id="form-new_addr" onkeyup="newAddressChange()"> ';
-	show_country_input('form-country', $club->country, 'form-city');
+	show_country_input('form-country', $country, 'form-city');
 	echo ' ';
-	show_city_input('form-city', $club->city, 'form-country');
+	show_city_input('form-city', $city, 'form-country');
 	echo '</span></td></tr>';
 	
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input id="form-price" value="' . $event->price . '"></td></tr>';
-		
-	$query = new DbQuery('SELECT rules, name FROM club_rules WHERE club_id = ? ORDER BY name', $event->club_id);
-	if ($row = $query->next())
+	if (is_valid_lang($langs))
 	{
-		$custom_rules = true;
-		echo '<tr><td>' . get_label('Game rules') . ':</td><td><select id="form-rules"><option value="' . $club->rules_code . '"';
-		if ($club->rules_code == $event->rules_code)
-		{
-			echo ' selected';
-			$custom_rules = false;
-		}
-		echo '>' . $club->name . '</option>';
-		do
-		{
-			list ($rules_code, $rules_name) = $row;
-			echo '<option value="' . $rules_code . '"';
-			if ($custom_rules && $rules_code == $event->rules_code)
-			{
-				echo ' selected';
-			}
-			echo '>' . $rules_name . '</option>';
-		} while ($row = $query->next());
-		echo '</select>';
-		echo '</td></tr>';
-	}
-	else
-	{
-		echo '<input type="hidden" id="form-rules" value="' . $club->rules_code . '">';
-	}
-	
-	// echo '<tr><td class="dark">' . get_label('Rounds') . ':</td><td><table width="100%" class="transp">';
-	// echo '<tr><td width="48"><a href="javascript:addRound()" title="' . get_label('Add round') . '"><img src="images/create.png"></a></td>';
-	// echo '<td width="90">' . get_label('Name') . '</td>';
-	// echo '<td>' . get_label('Scoring system') . '</td>';
-	// echo '<td width="70">' . get_label('Scoring weight') . '</td>'; 
-	// echo '<td width="70" align="center">' . get_label('Planned games count') . '</td></tr>';
-	// echo '<tr><td></td>';
-	// echo '<td>' . get_label('Main round') . '</td>';
-	// echo '<td>';
-	// show_scoring_select($event->club_id, $event->scoring_id, '', get_label('Scoring system'), 'form-scoring', false);
-	// echo '</td>';
-	// echo '<td><input id="form-scoring_weight" value="' . $event->scoring_weight . '"></td>';
-	// echo '<td><input id="form-planned_games" value="' . ($event->planned_games > 0 ? $event->planned_games : '') . '"></td></tr>';
-	// echo '</table><span id="form-rounds"></span></td></tr>';
-	
-	if (is_valid_lang($club->langs))
-	{
-		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
+		echo '<input type="hidden" id="form-langs" value="' . $langs . '">';
 	}
 	else
 	{
 		echo '<tr><td>'.get_label('Languages').':</td><td>';
-		langs_checkboxes($event->langs, $club->langs, NULL, '<br>', 'form-');
+		langs_checkboxes($langs, $langs, NULL, '<br>', 'form-');
 		echo '</td></tr>';
 	}
 		
-	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4">' . htmlspecialchars($event->notes, ENT_QUOTES) . '</textarea></td></tr>';
+	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
 		
-	echo '<input type="checkbox" id="form-all_mod"';
-	if (($event->flags & EVENT_FLAG_ALL_MODERATE) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('everyone can moderate games.');
+	echo '<input type="checkbox" id="form-all_mod" checked> '.get_label('everyone can moderate games.');
 	echo '</td></tr>';
 	
 	echo '</table>';
-	
-	echo '<table class="transp" width="100%"><tr>';
-	echo '<td align="right">';
-	$query = new DbQuery(
-		'SELECT e.id, e.name, e.start_time, c.timezone FROM events e' .
-			' JOIN addresses a ON e.address_id = a.id' . 
-			' JOIN cities c ON a.city_id = c.id' . 
-			' WHERE e.club_id = ?' .
-			' AND e.start_time < UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0 ORDER BY e.start_time DESC LIMIT 30',
-		$event->club_id);
-	echo get_label('Copy event data from') . ': <select id="form-copy" onChange="copyEvent()"><option value="0"></option>';
-	while ($row = $query->next())
-	{
-		echo '<option value="' . $row[0] . '">';
-		echo $row[1] . format_date(' D F d H:i', $row[2], $row[3]);
-		echo '</option>';
-	}
-	echo '</select>';
-	echo '</td></tr></table>';
 ?>	
 	<script>
 	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
@@ -208,20 +91,6 @@ try
 	var toDate = $('#form-date-to').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(16);
 	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(16);
-	
-	function multipleChange()
-	{
-		if ($('#form-multiple').attr('checked'))
-		{
-			$('#form-multiple_date').show();
-			$('#form-single_date').hide();
-		}
-		else
-		{
-			$('#form-multiple_date').hide();
-			$('#form-single_date').show();
-		}
-	}
 	
 	function tournamentChange()
 	{
@@ -273,27 +142,6 @@ try
 	}
 	addressClick();
 	
-	function copyEvent()
-	{
-		json.get("api/ops/event.php?op=get&event_id=" + $("#form-copy").val(), function(e)
-		{
-			$("#form-name").val(e.name);
-			$("#form-hour").val(e.hour);
-			$("#form-minute").val(e.minute);
-			$("#form-duration").val(timespanToStr(e.duration));
-			$("#form-addr_id").val(e.addr_id);
-			$("#form-price").val(e.price);
-			$("#form-rules").val(e.rules_code);
-			$("#form-scoring").val(e.scoring_id);
-			$('#form-scoring_weight').val(e.scoring_weight);
-			$("#form-notes").val(e.notes);
-			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
-			mr.setLangs(e.langs, "form-");
-			addressClick();
-		});
-		$("#form-copy").val(0);
-	}
-	
 	function timeStr(val)
 	{
 		if (val.length < 2)
@@ -315,12 +163,10 @@ try
 		{
 			op: "create"
 			, club_id: <?php echo $club_id; ?>
+			, tournament_id: <?php echo $tournament_id; ?>
 			, name: $("#form-name").val()
 			, duration: strToTimespan($("#form-duration").val())
-			, price: $("#form-price").val()
 			, address_id: _addr
-			, rules_code: $("#form-rules").val()
-			, scoring_id: $("#form-scoring").val()
 			, scoring_weight: $("#form-scoring_weight").val()
 			, notes: $("#form-notes").val()
 			, flags: _flags

@@ -88,7 +88,17 @@ class ApiPage extends OpsApiPageBase
 	function create_op()
 	{
 		global $_profile;
-		$club_id = (int)get_required_param('club_id');
+		$tournament_id = get_optional_param('tournament_id', 0);
+		if ($tournament_id <= 0)
+		{
+			$club_id = (int)get_required_param('club_id');
+			$tournament_id = NULL;
+		}
+		else
+		{
+			list($club_id) = db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		}
+		
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
@@ -98,11 +108,6 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please enter [0].', get_label('event name')));
 		}
 
-		$tournament_id = get_optional_param('tournament_id', 0);
-		if ($tournament_id <= 0)
-		{
-			$tournament_id = NULL;
-		}
 		// todo check that the event params are applicable to the tournament
 		
 		
@@ -230,7 +235,8 @@ class ApiPage extends OpsApiPageBase
 	function create_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create event.');
-		$help->request_param('club_id', 'Club id.');
+		$help->request_param('club_id', 'Club id.', 'tournament_id must be set.');
+		$help->request_param('tournament_id', 'Tournament id. When set the event becomes a tournament round.', 'club_id must be set.');
 		$help->request_param('name', 'Event name.');
 		$help->request_param('month', 'Month of the event.');
 		$help->request_param('day', 'Day of the month of the event.');
@@ -429,6 +435,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create event.');
 		$help->request_param('event_id', 'Event id.');
+		$help->request_param('tournament_id', 'Tournament id. When set the event becomes a tournament round.', 'remains the same.');
 		$help->request_param('name', 'Event name.', 'remains the same.');
 		$help->request_param('start', 'Event start time. It is either unix timestamp or datetime in the format "yyyy-mm-dd hh:00". Timezone of the address is used.', 'remains the same.');
 		$help->request_param('duration', 'Event duration in seconds.', 'remains the same.');

@@ -135,7 +135,6 @@ try
 	echo '<tr><td colspan="2">';
 	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> '.get_label('long term tournament. Like a seasonal club championship.').'<br>';
 	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> '.get_label('single games from non-tournament events can be assigned to the tournament.').'<br>';
-	echo '<input type="checkbox" id="form-event_round"> '.get_label('club events can become tournament rounds if needed.').'<br>';
 	echo '<input type="checkbox" id="form-use_rounds_scoring"> '.get_label('scoring rules can be custom in tournament rounds.').'<br>';
 	echo '</table>';
 	
@@ -152,10 +151,8 @@ try
 	{
 		var c = $("#form-long_term").attr('checked') ? true : false;
 		$("#form-single_game").prop('checked', c);
-		$("#form-event_round").prop('checked', c);
 		$("#form-use_rounds_scoring").prop('checked', !c);
 		$("#form-single_game").prop('disabled', !c);
-		$("#form-event_round").prop('disabled', !c);
 		$("#form-use_rounds_scoring").prop('disabled', c);
 	}
 	
@@ -214,7 +211,6 @@ try
 		var _flags = 0;
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
-		if ($("#form-event_round").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_EVENT_ROUND; ?>;
 		if ($("#form-use_rounds_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_USE_ROUNDS_SCORING; ?>;
 		
 		var _end = strToDate(endDate.val());

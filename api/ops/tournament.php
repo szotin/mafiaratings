@@ -452,6 +452,9 @@ class ApiPage extends OpsApiPageBase
 				get_label('tournament'), 
 				'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, price = ?, scoring_id = ?, scoring_version = ?, flags = ? WHERE id = ?',
 				$name, $address_id, $start, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $flags, $tournament_id);
+			Db::exec(
+				get_label('round'),
+				'UPDATE events SET scoring_id = ?, scoring_version = ? WHERE tournament_id = ?', $scoring_id, $scoring_version, $tournament_id);
 		}
 		else
 		{
@@ -522,8 +525,6 @@ class ApiPage extends OpsApiPageBase
 									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
 									'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .
 									'<li value="64">When a custom event is created, it can be assigned to this tournament as a round.</li>' .
-									'<li value="128">Tournament rounds must use this tournament game rules.</li>' .
-									'<li value="256">Tournament rounds must use this tournament scoring system.</li>' .
 									'</ol>', 'remain the same.');
 		$help->request_param('address_id', 'Address id of the tournament.', 'remains the same.');
 		return $help;
