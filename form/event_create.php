@@ -35,22 +35,15 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($event->name, ENT_QUOTES) . '"></td></tr>';
 	
+	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
+	show_option(0, $event->tournament_id, '');
 	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND (flags & ' . TOURNAMENT_FLAG_EVENT_ROUND . ') <> 0 AND start_time + duration > UNIX_TIMESTAMP() ORDER BY name', $club_id);
 	if ($row = $query->next())
 	{
-		echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
-		show_option(0, $event->tournament_id, '');
-		do
-		{
-			list($tid, $tname) = $row;
-			show_option($tid, $event->tournament_id, $tname);
-		} while ($row = $query->next());
-		echo '</select></td></tr>';
+		list($tid, $tname) = $row;
+		show_option($tid, $event->tournament_id, $tname);
 	}
-	else
-	{
-		echo '<input type="hidden" id="form-tournament" value="0">';
-	}
+	echo '</select></td></tr>';
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
 	echo '<input type="checkbox" id="form-multiple" onclick="multipleChange()"> ' . get_label('multiple events');
@@ -211,10 +204,15 @@ try
 				var t = obj.tournaments[0];
 				if (typeof t != "object")
 					return;
-				$("#form-rules").val(t.rules.code);
-				$("#form-scoring").val(t.scoring_id);
+				$("#form-rules").val(t.rules.code).prop('disabled', true);
+				$("#form-scoring").val(t.scoring_id).prop('disabled', true);
 				//console.log(t);
 			});
+		}
+		else
+		{
+			$("#form-rules").prop('disabled', false);
+			$("#form-scoring").prop('disabled', false);
 		}
 	}
 	

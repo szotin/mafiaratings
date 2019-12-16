@@ -130,7 +130,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			list ($scoring_id, $scoring_version, $rules_code) = Db::record(get_label('tournament'), 'SELECT scoring_id, scoring_version, rules FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+			list ($scoring_id, $scoring_version, $rules_code) = Db::record(get_label('tournament'), 'SELECT scoring_id, scoring_version, rules FROM tournaments WHERE id = ?', $tournament_id);
 		}
 		
 		list($address_id, $timezone) = $this->get_address_id($club, -1);
@@ -279,9 +279,9 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
-		list($club_id, $old_name, $old_start_timestamp, $old_duration, $old_address_id, $old_price, $old_rules_code, $old_scoring_id, $old_scoring_weight, $old_langs, $old_notes, $old_flags, $timezone) = 
+		list($club_id, $old_name, $old_tournament_id, $old_start_timestamp, $old_duration, $old_address_id, $old_price, $old_rules_code, $old_scoring_id, $old_scoring_weight, $old_langs, $old_notes, $old_flags, $timezone) = 
 			Db::record(get_label('event'), 
-				'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.languages, e.notes, e.flags, c.timezone ' .
+				'SELECT e.club_id, e.name, e.tournament_id, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.languages, e.notes, e.flags, c.timezone ' .
 				'FROM events e ' . 
 				'JOIN addresses a ON a.id = e.address_id ' . 
 				'JOIN cities c ON c.id = a.city_id ' . 
@@ -290,12 +290,19 @@ class ApiPage extends OpsApiPageBase
 		$club = $_profile->clubs[$club_id];
 
 		$name = get_optional_param('name', $old_name);
+		$tournament_id = get_optional_param('tournament_id', $old_tournament_id);
+		if ($tournament_id <= 0)
+		{
+			$tournament_id = NULL;
+		}
+		
 		$start = get_optional_param('start', $old_start_timestamp);
 		$duration = (int)get_optional_param('duration', $old_duration);
 		$price = get_optional_param('price', $old_price);
 		$scoring_id = (int)get_optional_param('scoring_id', $old_scoring_id);
 		$scoring_weight = (float)get_optional_param('scoring_weight', $old_scoring_weight);
 		$notes = get_optional_param('notes', $old_notes);
+		
 		
 		$rules_code = get_optional_param('rules_code', $old_rules_code);
 		check_rules_code($rules_code);
@@ -315,16 +322,27 @@ class ApiPage extends OpsApiPageBase
 		$start_timestamp = $start_datetime->getTimestamp();
 		
 		$scoring_version = -1;
+		if ($tournament_id != $old_tournament_id)
+		{
+			if (!is_null($tournament_id))
+			{
+				list ($scoring_id, $scoring_version, $rules_code) = Db::record(get_label('tournament'), 'SELECT scoring_id, scoring_version, rules FROM tournaments WHERE id = ?', $tournament_id);
+			}
+		}
+		
 		if ($scoring_id != $old_scoring_id)
 		{
-			list ($scoring_version) = Db::recors(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+			if ($scoring_version <= 0)
+			{
+				list ($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+			}
 			Db::exec(
 				get_label('event'), 
 				'UPDATE events SET ' .
-					'name = ?, price = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_weight = ?, ' .
+					'name = ?, tournament_id = ?, price = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_weight = ?, ' .
 					'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
 					'languages = ? WHERE id = ?',
-				$name, $price, $rules_code, $scoring_id, $scoring_version, $scoring_weight,
+				$name, $tournament_id, $price, $rules_code, $scoring_id, $scoring_version, $scoring_weight,
 				$address_id, $start_timestamp, $notes, $duration, $flags,
 				$langs, $event_id);
 		}
@@ -333,10 +351,10 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(
 				get_label('event'), 
 				'UPDATE events SET ' .
-					'name = ?, price = ?, rules = ?, scoring_weight = ?, ' .
+					'name = ?, tournament_id = ?, price = ?, rules = ?, scoring_weight = ?, ' .
 					'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
 					'languages = ? WHERE id = ?',
-				$name, $price, $rules_code, $scoring_weight,
+				$name, $tournament_id, $price, $rules_code, $scoring_weight,
 				$address_id, $start_timestamp, $notes, $duration, $flags,
 				$langs, $event_id);
 		}
@@ -347,6 +365,10 @@ class ApiPage extends OpsApiPageBase
 			if ($name != $old_name)
 			{
 				$log_details->name = $name;
+			}
+			if ($tournament_id != $old_tournament_id)
+			{
+				$log_details->tournament_id = $tournament_id;
 			}
 			if ($price != $old_price)
 			{

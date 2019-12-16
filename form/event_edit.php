@@ -37,7 +37,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
-	echo '<td align="center" valign="top" rowspan="12">';
+	echo '<td align="center" valign="top" rowspan="13">';
 	$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
 	$event_pic->
 		set($event_id, $name, $flags)->
@@ -49,6 +49,16 @@ try
 	echo '</p></td>';
 	
 	echo '</tr>';
+	
+	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND (flags & ' . TOURNAMENT_FLAG_EVENT_ROUND . ') <> 0 AND start_time <= ? AND start_time + duration >= ? ORDER BY name', $club_id, $start_time, $start_time);
+	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
+	show_option(0, $tour_id, '');
+	while ($row = $query->next())
+	{
+		list($tid, $tname) = $row;
+		show_option($tid, $tour_id, $tname);
+	}
+	echo '</select></td></tr>';
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
 	echo '<input type="text" id="form-date" value="' . datetime_to_string($start, false) . '">';
@@ -160,6 +170,29 @@ try
 		old_address_value = text;
 	}
 	
+	function tournamentChange()
+	{
+		var tid = $("#form-tournament").val();
+		if (tid > 0)
+		{
+			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
+			{
+				var t = obj.tournaments[0];
+				if (typeof t != "object")
+					return;
+				$("#form-rules").val(t.rules.code).prop('disabled', true);
+				$("#form-scoring").val(t.scoring_id).prop('disabled', true);
+				//console.log(t);
+			});
+		}
+		else
+		{
+			$("#form-rules").prop('disabled', false);
+			$("#form-scoring").prop('disabled', false);
+		}
+	}
+	tournamentChange();
+	
 	function addressClick()
 	{
 		var text = '';
@@ -204,6 +237,7 @@ try
 		{
 			op: "change"
 			, event_id: <?php echo $event_id; ?>
+			, tournament_id: $("#form-tournament").val()
 			, name: $("#form-name").val()
 			, start: _start
 			, duration: strToTimespan($("#form-duration").val())
