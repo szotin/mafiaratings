@@ -21,7 +21,41 @@
     </td></tr></table>
     
     <script>
-        initScoringEditor('{"main":[{"matter":2,"roles":5,"min_difficulty":0.5,"min_points":1,"max_difficulty":1,"max_points":2},{"matter":2,"roles":10,"min_difficulty":0.5,"min_points":1.05,"max_difficulty":1,"max_points":2.05},{"matter":4,"roles":10,"points":-0.05}],"prima_nocta":[{"matter":1024,"roles":3,"points":0.2},{"matter":2048,"roles":3,"points":0.1},{"matter":16,"points":-0.1},{"matter":262144,"roles":8,"points":0.05},{"matter":1048576,"roles":2,"points":0.1}],"extra":[{"matter":32,"points":0.3},{"matter":64,"points":0.2}],"penalty":[{"matter":4096,"points":-0.2},{"matter":8192,"points":-0.4}],"night1":[{"matter":256,"roles":3,"min_night1":0.15,"min_points":0,"max_night1":0.4,"max_points":0.3}]}');
+        var scoring = '{"main":[{"matter":2,"roles":5,"min_difficulty":0.5,"min_points":1,"max_difficulty":1,"max_points":2},{"matter":2,"roles":10,"min_difficulty":0.5,"min_points":1.05,"max_difficulty":1,"max_points":2.05},{"matter":4,"roles":10,"points":-0.05}],"prima_nocta":[{"matter":1024,"roles":3,"points":0.2},{"matter":2048,"roles":3,"points":0.1},{"matter":16,"points":-0.1},{"matter":262144,"roles":8,"points":0.05},{"matter":1048576,"roles":2,"points":0.1}],"extra":[{"matter":32,"points":0.3},{"matter":64,"points":0.2}],"penalty":[{"matter":4096,"points":-0.2},{"matter":8192,"points":-0.4}],"night1":[{"matter":256,"roles":3,"min_night1":0.15,"min_points":0,"max_night1":0.4,"max_points":0.3}]}';
+        var strings = ["civilian", "sheriff", "mafia", "don", "Please select at least one role.", "Please select at least one game action.", "Add new policy.", "Delete policy."];
+        var sections = {
+            "main": "Main points",
+            "prima_nocta": "Prima nocta points",
+            "extra": "Extra points",
+            "penalty": "Penalty points",
+            "night1": "First night victim points"
+        };
+        var matters = {
+            "1": "Played the game",
+            "2": "Player wins",
+            "4": "Player looses",
+            "8": "All players killed in a daytime were from another team",
+            "16": "All players killed in a daytime were from player's team",
+            "32": "Best player",
+            "64": "Best move",
+            "128": "Survived in the game",
+            "256": "Killed in the first night",
+            "512": "Killed in the night",
+            "1024": "Guessed 3 mafia",
+            "2048": "Guessed 2 mafia",
+            "4096": "Killed by warnings",
+            "8192": "Kicked out",
+            "16384": "Surrendered",
+            "32768": "All votes vs mafia (>3 votings)",
+            "65536": "All votes vs civs (>3 votings)",
+            "131072": "Killed sheriff next day after finding",
+            "262144": "Sheriff was found first night",
+            "524288": "Sheriff was killed the first night",
+            "1048576": "Sheriff did three black checks in a row",
+            "2097152": "All sheriff checks are red"
+        };
+        
+        initScoringEditor(scoring, strings, sections, matters);
     </script>
 </body>
 </html>
