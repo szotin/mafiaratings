@@ -2,55 +2,71 @@ var _scoring = null;
 var _strings = null;
 var _matters = null;
 var _sections = null;
-var sections = ["main", "prima_nocta", "extra", "penalty", "night1"];
+var _isDirty = false;
 
-function spinnerChange(sectionName, policyNum, spinnerNum)
+function dirty(isDirty)
 {
-    var policy = _scoring[sectionName][policyNum];
-    var base = '#' + sectionName + '-' + policyNum;
-    switch (spinnerNum)
+    if (typeof isDirty == "boolean")
     {
-        case 0:
-            policy.points = parseFloat($(base + '-points').val());
+        _isDirty = isDirty;
+    }
+    return _isDirty;
+}
+
+function spinnerChange(e, ui)
+{
+    var ids = e.target.id.split('-');
+    var policy = _scoring[ids[0]][parseInt(ids[1])];
+    var spinnerId = ids[2];
+    var value = parseFloat(e.target.value);
+    dirty(true);
+    switch (spinnerId)
+    {
+        case 'points':
+            policy.points = value;
             break;
-        case 1:
-            policy.min_points = parseFloat($(base + '-minpoints').val());
+        case 'minpoints':
+            policy.min_points = value;
             break;
-        case 2:
-            policy.max_points = parseFloat($(base + '-maxpoints').val());
+        case 'maxpoints':
+            policy.max_points = value;
             break;
-        case 3:
-            policy.min_difficulty = parseFloat($(base + '-mindif').val());
+        case 'mindif':
+            policy.min_difficulty = value;
             break;
-        case 4:
-            policy.max_difficulty = parseFloat($(base + '-maxdif').val());
+        case 'maxdif':
+            policy.max_difficulty = value;
             break;
-        case 5:
-            policy.min_night1 = parseFloat($(base + '-minnight1').val());
+        case 'minnight1':
+            policy.min_night1 = value;
             break;
-        case 6:
-            policy.max_night1 = parseFloat($(base + '-maxnight1').val());
+        case 'maxnight1':
+            policy.max_night1 = value;
             break;
     }
-    refreshScoringEditor();
 }
 
 function pointsPolicyChange(sectionName, policyNum)
 {
     var policy = _scoring[sectionName][policyNum];
-    switch ($('#' + sectionName + '-' + policyNum + '-pp').val())
+    var value = parseInt($('#' + sectionName + '-' + policyNum + '-pp').val());
+    switch (value)
     {
         case 1:
             if (typeof policy.points != "undefined")
                 policy.min_points = policy.max_points = policy.points;
-            if (typeof policy.min_night1 != "undefined")
-                policy.min_difficulty = policy.min_night1;
-            else
+            if (typeof policy.min_difficulty == "undefined")
+            {
                 policy.min_difficulty = 0;
-            if (typeof policy.max_night1 != "undefined")
-                policy.max_difficulty = policy.max_night1;
-            else
+                if (typeof policy.min_night1 != "undefined")
+                    policy.min_difficulty = policy.min_night1;
+            }
+            if (typeof policy.max_difficulty == "undefined")
+            {
                 policy.max_difficulty = 1;
+                if (typeof policy.max_night1 != "undefined")
+                    policy.max_difficulty = policy.max_night1;
+            }
             delete policy.points;
             delete policy.min_night1;
             delete policy.max_night1;
@@ -58,25 +74,31 @@ function pointsPolicyChange(sectionName, policyNum)
         case 2:
             if (typeof policy.points != "undefined")
                 policy.min_points = policy.max_points = policy.points;
-            if (typeof policy.min_difficulty != "undefined")
-                policy.min_night1 = policy.min_difficulty;
-            else
+            if (typeof policy.min_night1 == "undefined")
+            {
                 policy.min_night1 = 0;
-            if (typeof policy.max_difficulty != "undefined")
-                policy.max_night1 = policy.max_difficulty;
-            else
+                if (typeof policy.min_difficulty != "undefined")
+                    policy.min_night1 = policy.min_difficulty;
+            }
+            if (typeof policy.max_night1 == "undefined")
+            {
                 policy.max_night1 = 1;
+                if (typeof policy.max_difficulty != "undefined")
+                    policy.max_night1 = policy.max_difficulty;
+            }
             delete policy.points;
             delete policy.min_difficulty;
             delete policy.max_difficulty;
             break;
         default:
-            if (typeof policy.max_points != "undefined")
-                policy.points = policy.max_points;
-            else if (typeof policy.max_points != "undefined")
-                policy.points = policy.min_points;
-            else
+            if (typeof policy.points == "undefined")
+            {
                 policy.points = 1;
+                if (typeof policy.max_points != "undefined")
+                    policy.points = policy.max_points;
+                else if (typeof policy.max_points != "undefined")
+                    policy.points = policy.min_points;
+            }
             delete policy.min_points;
             delete policy.max_points;
             delete policy.min_night1;
@@ -85,7 +107,7 @@ function pointsPolicyChange(sectionName, policyNum)
             delete policy.max_difficulty;
             break;
     }
-    refreshScoringEditor();
+    refreshScoringEditor(true);
 }
 
 function pointsPolicySelect(sectionName, policyNum, option)
@@ -106,18 +128,18 @@ function pointsHtml(sectionName, policyNum)
     if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
     {
         html += pointsPolicySelect(sectionName, policyNum, 1);
-        html += _strings.minDif + ': <input id="' + base + '-mindif" onchange="spinnerChange(\'' + sectionName + '\', ' + policyNum + ', 3)"> ';
-        html += _strings.points + ': <input id="' + base + '-minpoints" onchange="spinnerChange(\'' + sectionName + '\', ' + policyNum + ', 1)"><br>';
-        html += _strings.maxDif + ': <input id="' + base + '-maxdif" onchange="spinnerChange(\'' + sectionName + '\', ' + policyNum + ', 4)"> ';
-        html += _strings.points + ': <input id="' + base + '-maxpoints" onchange="spinnerChange(\'' + sectionName + '\', ' + policyNum + ', 2)">';
+        html += _strings.minDif + ': <input id="' + base + '-mindif"> ';
+        html += _strings.points + ': <input id="' + base + '-minpoints"><br>';
+        html += _strings.maxDif + ': <input id="' + base + '-maxdif"> ';
+        html += _strings.points + ': <input id="' + base + '-maxpoints">';
     }
     else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
     {
         html += pointsPolicySelect(sectionName, policyNum, 2);
-        html += _strings.minNight1 + ': <input id="' + base + '-minnight1" onchange="spinnerChange(\'' + sectionName + '\', ' + policyNum + ', 5)"> ';
-        html += _strings.points + ': <input id="' + base + '-minpoints" onchange="spinnerChange(\'' + sectionName + '\', ' + policyNum + ', 1)"><br>';
-        html += _strings.maxNight1 + ': <input id="' + base + '-maxnight1" onchange="spinnerChange(\'' + sectionName + '\', ' + policyNum + ', 6)"> ';
-        html += _strings.points + ': <input id="' + base + '-maxpoints" onchange="spinnerChange(\'' + sectionName + '\', ' + policyNum + ', 2)">';
+        html += _strings.minNight1 + ': <input id="' + base + '-minnight1"> ';
+        html += _strings.points + ': <input id="' + base + '-minpoints"><br>';
+        html += _strings.maxNight1 + ': <input id="' + base + '-maxnight1"> ';
+        html += _strings.points + ': <input id="' + base + '-maxpoints">';
     }
     else
     {
@@ -127,7 +149,7 @@ function pointsHtml(sectionName, policyNum)
         {
             points = policy.points;
         }
-        html += _strings.points + ': <input id="' + base + '-points" onchange="spinnerChange(\'' + sectionName + '\', ' + policyNum + ', 0)">';
+        html += _strings.points + ': <input id="' + base + '-points">';
     }
     return html;
 }
@@ -144,7 +166,7 @@ function optChange(sectionName, policyNum)
         delete policy.option_name;
         delete policy.def;
     }
-    refreshScoringEditor();
+    refreshScoringEditor(true);
 }
 
 function defChange(sectionName, policyNum)
@@ -158,14 +180,14 @@ function defChange(sectionName, policyNum)
     {
         policy.def = false;
     }
-    refreshScoringEditor();
+    refreshScoringEditor(true);
 }
 
 function optNameChange(sectionName, policyNum)
 {
     var policy = _scoring[sectionName][policyNum];
     policy.option_name = $('#' + sectionName + '-' + policyNum + '-optname').val();
-    refreshScoringEditor();
+    refreshScoringEditor(true);
 }
 
 function optionHtml(sectionName, policyNum)
@@ -198,14 +220,14 @@ function deletePolicy(sectionName, policyNum)
 {
     var section = _scoring[sectionName];
     section.splice(policyNum, 1);
-    refreshScoringEditor();
+    refreshScoringEditor(true);
 }
 
 function createPolicy(sectionName)
 {
     var section = _scoring[sectionName];
     section.push({ matter: 0, points: 0 });
-    refreshScoringEditor();
+    refreshScoringEditor(true);
 }
 
 function rolesChange(role, sectionName, policyNum)
@@ -220,7 +242,7 @@ function rolesChange(role, sectionName, policyNum)
         policy.roles &= ~role;
     if ((policy.roles & 15) == 15)
         delete policy.roles;
-    refreshScoringEditor();
+    refreshScoringEditor(true);
 }
 
 function rolesHtml(sectionName, policyNum)
@@ -265,7 +287,7 @@ function matterSelectChange(sectionName, policyNum, matterFlag)
     var flag = $('#' + sectionName + '-' + policyNum + '-matter-' + matterFlag).val();
     policy.matter &= ~ matterFlag;
     policy.matter |= flag;
-    refreshScoringEditor();
+    refreshScoringEditor(true);
 }
 
 function matterSelectHtml(sectionName, policyNum, matterFlag)
@@ -331,7 +353,7 @@ function sectionHtml(sectionName, isFirst)
     return html;
 }
 
-function refreshScoringEditor()
+function refreshScoringEditor(isDirty)
 {
     var html = '<table width="100%" class="bordered">';
     var isFirst = true;
@@ -345,33 +367,34 @@ function refreshScoringEditor()
     $("#scoring-editor").html(html);
     $("#result").html(JSON.stringify(_scoring));
     
-//    for (var sectionName in _sections)
-//    {
-//        section = _scoring[sectionName];
-//        for (var i = 0; i < section.length; ++i)
-//        {
-//            var policy = section[i];
-//            var base = '#' + sectionName + '-' + i;
-//            if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
-//            {
-//                $(base + '-mindif').spinner({ step:0.1, min:0, max:1}).width(40).val(policy.min_difficulty);
-//                $(base + '-minpoints').spinner({ step:0.1 }).width(40).val(policy.min_points);
-//                $(base + '-maxdif').spinner({ step:0.1, min:0, max:1 }).width(40).val(policy.max_difficulty);
-//                $(base + '-maxpoints').spinner({ step:0.1 }).width(40).val(policy.max_points);
-//            }
-//            else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
-//            {
-//                $(base + '-minnight1').spinner({ step:0.1, min:0, max:1 }).width(40).val(policy.min_night1);
-//                $(base + '-minpoints').spinner({ step:0.1 }).width(40).val(policy.min_points);
-//                $(base + '-maxnight1').spinner({ step:0.1, min:0, max:1 }).width(40).val(policy.max_night1);
-//                $(base + '-maxpoints').spinner({ step:0.1 }).width(40).val(policy.max_points);
-//            }
-//            else
-//            {
-//                $(base + '-points').spinner({ step:0.1 }).width(40).val(policy.points);
-//            }
-//        }
-//    }
+    for (var sectionName in _sections)
+    {
+        section = _scoring[sectionName];
+        for (var i = 0; i < section.length; ++i)
+        {
+            var policy = section[i];
+            var base = '#' + sectionName + '-' + i;
+            if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
+            {
+                $(base + '-mindif').spinner({ step:0.1, min:0, max:1, change:spinnerChange}).width(40).val(policy.min_difficulty);
+                $(base + '-minpoints').spinner({ step:0.1, change:spinnerChange }).width(40).val(policy.min_points);
+                $(base + '-maxdif').spinner({ step:0.1, min:0, max:1, change:spinnerChange }).width(40).val(policy.max_difficulty);
+                $(base + '-maxpoints').spinner({ step:0.1, change:spinnerChange }).width(40).val(policy.max_points);
+            }
+            else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
+            {
+                $(base + '-minnight1').spinner({ step:0.1, min:0, max:1, change:spinnerChange }).width(40).val(policy.min_night1);
+                $(base + '-minpoints').spinner({ step:0.1, change:spinnerChange }).width(40).val(policy.min_points);
+                $(base + '-maxnight1').spinner({ step:0.1, min:0, max:1, change:spinnerChange }).width(40).val(policy.max_night1);
+                $(base + '-maxpoints').spinner({ step:0.1, change:spinnerChange }).width(40).val(policy.max_points);
+            }
+            else
+            {
+                $(base + '-points').spinner({ step:0.1, change:spinnerChange }).width(40).val(policy.points);
+            }
+        }
+    }
+    dirty(isDirty);
 }
 
 function initScoringEditor(scoringStr, strings, sections, matters)
