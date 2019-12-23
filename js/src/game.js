@@ -238,6 +238,8 @@ var mafia = new function()
 			club.haunters.sort(userSort);
 			
 			var events = club.events;
+			console.log('events:');
+			console.log(events);
 			if (typeof events[0] != "undefined")
 			{
 				_demoEvent = events[0];
@@ -249,6 +251,7 @@ var mafia = new function()
 					id: 0,
 					club_id: club.id,
 					rules_code: club.rules_code,
+					tournamentId: -1,
 					name: l("DemoEvent"),
 					start_time: 0,
 					duration: 4294967295,
@@ -400,6 +403,8 @@ var mafia = new function()
 		var oldDirty = _gDirty;
 		json.post('api/ops/game.php', request, function(data)
 		{
+			console.log('data:');
+			console.log(data);
 			if (typeof data.console == "object")
 				for (var i = 0; i < data.console.length; ++i)
 					console.log('Sync log: ' + data.console[i]);
@@ -604,6 +609,16 @@ var mafia = new function()
 			dirty();
 		}
 		return old_id;
+	}
+	
+	this.tournamentId = function(tournament_id)
+	{
+		if (typeof tournament_id != "undefined")
+		{
+			_data.game.tournament_id = tournament_id;
+			dirty();
+		}
+		return _data.game.tournament_id;
 	}
 	
 	this.createEvent = function(event)
@@ -2527,6 +2542,7 @@ var mafia = new function()
 			moder_id: moder_id,
 			lang: lang,
 			event_id: _data.game.event_id,
+			tournament_id: _data.game.tournament_id,
 			start_time: 0,
 			end_time: 0,
 			players: [],

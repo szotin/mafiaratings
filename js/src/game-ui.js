@@ -600,26 +600,18 @@ mafia.ui = new function()
 				status += '<td><button class="icon" onclick="eventForm.show()"><img src="images/create.png" class="icon"></button></td>';
 			}
 			status += '<td><select id="events" onchange="mafia.ui.eventChange(false)"></select></td></td></tr></table></tr><tr><td align="left">';
-			var clubRules = mafia.data().club.rules;
-			if (clubRules.length > 1)
+			
+			status += l('Status') + ': <select id="tournaments" onchange="mafia.ui.tournamentChange()">';
+			status += _option(-1, game.tournament_id, l('NoRating'));
+			status += _option(0, game.tournament_id, l('RatingNoTour'));
+			var tournaments = mafia.data().club.tournaments;
+			for (var i = 0; i < tournaments.length; ++i)
 			{
-				status += l('Rules') + ': <select id="rules" onchange="mafia.ui.rulesChange()">';
-				var custom = true;
-				for (var i = 0; i < clubRules.length; ++i)
-				{
-					var rules = clubRules[i];
-					status += _option(rules.code, game.rules_code, rules.name);
-					if (rules.code == game.rules_code)
-					{
-						custom = false;
-					}
-				}
-				if (custom)
-				{
-					status += _option(game.rules_code, game.rules_code, '');
-				}
-				status += '</select>';
+				var tournament = tournaments[i];
+				status += _option(tournament.id, game.tournament_id, l("Tour", tournament.name));
 			}
+			status += '</select>';
+			
 			status += '</td></tr></table>';
 			
 			clockHtml = '<table width="100%"><tr><td align="right">' + l('Lang') + ': <select id="lang" onchange="mafia.ui.langChange()"></select></td></tr>';
@@ -1303,6 +1295,8 @@ mafia.ui = new function()
 			event_id = game.event_id;
 			
 		var event = club.events[event_id];
+		console.log('event:');
+		console.log(event);
 		var user = data.user;
 		
 		mafia.eventId(event_id);
@@ -1326,7 +1320,7 @@ mafia.ui = new function()
 			html += _option(/*RUSSIAN*/2, game.lang, l('Rus'));
 		}
 		_enable($('#lang').html(html), true);
-		_enable($('#rules').val(game.rules_code), true);
+		_enable($('#tournaments').val(game.tournament_id), true);
 		
 		var sReg = mafia.sReg(event.id);
 		if (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8)
@@ -1401,9 +1395,9 @@ mafia.ui = new function()
 		mafia.setLang($('#lang').val());
 	}
 
-	this.rulesChange = function()
+	this.tournamentChange = function()
 	{
-		mafia.rulesCode($('#rules').val());
+		mafia.tournamentId($('#tournaments').val());
 	}
 
 	this.playerChange = function(num)

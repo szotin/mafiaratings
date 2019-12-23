@@ -289,11 +289,11 @@ class Event
 		
 		Db::exec(
 			get_label('event'), 
-			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_weight) ' .
-			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_weight, tournament_id) ' .
+			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$this->name, $this->price, $this->addr_id, $this->club_id, $this->timestamp, 
 			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_code, 
-			$this->scoring_id, $this->scoring_version, $this->scoring_weight);
+			$this->scoring_id, $this->scoring_version, $this->scoring_weight, $this->tournament_id);
 		list ($this->id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 		list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
 		

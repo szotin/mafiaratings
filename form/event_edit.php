@@ -146,8 +146,15 @@ try
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('everyone can moderate games.').'</td></tr>';
+	echo '> '.get_label('everyone can moderate games.');
 	
+	echo '<br><input type="checkbox" id="form-fun"';
+	if (($flags & EVENT_FLAG_FUN) != 0)
+	{
+		echo ' checked';
+	}
+	echo '> '.get_label('fun event for non-rating games.');
+	echo '</td></tr>';	
 	echo '</table>';
 	
 	show_upload_script(EVENT_PIC_CODE, $event_id);
@@ -230,6 +237,7 @@ try
 		
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
+		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		
 		var _start = $('#form-date').val() + ' ' + timeStr($('#form-hour').val()) + ':' + timeStr($('#form-minute').val());
 		

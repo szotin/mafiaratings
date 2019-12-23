@@ -1191,7 +1191,7 @@ $labelMenu = array (
 'Edit calculator \'[0]\'.' => 'Редактировать калькулятор статистик \'[0]\'.', // stats_calculator.php
 'Delete calculator \'[0]\'.' => 'Удалить калькулятор статистик \'[0]\'.', // stats_calculator.php
 'View the code of calculator \'[0]\'.' => 'Просмотр кода калькулятора \'[0]\'', // stats_calculator.php
-'scoring rules can be custom in tournament rounds.' => 'потсчет баллов производится отдельно по раундам и раунды могут считать баллы по разному.', // form/tournament_create.php, form/tournament_edit.ph
+'scoring rules can be custom in tournament rounds.' => 'подсчет баллов производится отдельно по раундам и раунды могут считать баллы по разному.', // form/tournament_create.php, form/tournament_edit.ph
 );
 
 return $labelMenu;

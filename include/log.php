@@ -126,4 +126,11 @@ function short_log_message($message)
 	return $message;
 }
 
+function print_json($object)
+{
+	echo '<pre>';
+	echo json_encode($object, JSON_PRETTY_PRINT);
+	echo '</pre>';
+}
+
 ?>

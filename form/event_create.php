@@ -148,6 +148,13 @@ try
 		echo ' checked';
 	}
 	echo '> '.get_label('everyone can moderate games.');
+	
+	echo '<br><input type="checkbox" id="form-fun"';
+	if (($event->flags & EVENT_FLAG_FUN) != 0)
+	{
+		echo ' checked';
+	}
+	echo '> '.get_label('fun event for non-rating games.');
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -264,6 +271,7 @@ try
 			$('#form-scoring-weight').val(e.scoring_weight);
 			$("#form-notes").val(e.notes);
 			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
+			$("#form-fun").prop('checked', (e.flags & <?php echo EVENT_FLAG_FUN; ?>) != 0);
 			mr.setLangs(e.langs, "form-");
 			addressClick();
 		});
@@ -286,6 +294,7 @@ try
 		
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
+		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		
 		var params =
 		{
