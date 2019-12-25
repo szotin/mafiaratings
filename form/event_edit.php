@@ -153,7 +153,7 @@ try
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('fun event for non-rating games.');
+	echo '> '.get_label('non-rating event.');
 	echo '</td></tr>';	
 	echo '</table>';
 	

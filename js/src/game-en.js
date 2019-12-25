@@ -169,3 +169,4 @@ _l["NoRating"] = "Non-rating";
 _l["RatingNoTour"] = "Rating but non-tournament";
 _l["Tour"] = "Tournament {1}";
 _l["Status"] = "Game status";
+_l["Fun"] = "non-rating event";

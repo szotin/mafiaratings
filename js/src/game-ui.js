@@ -600,17 +600,7 @@ mafia.ui = new function()
 				status += '<td><button class="icon" onclick="eventForm.show()"><img src="images/create.png" class="icon"></button></td>';
 			}
 			status += '<td><select id="events" onchange="mafia.ui.eventChange(false)"></select></td></td></tr></table></tr><tr><td align="left">';
-			
-			status += l('Status') + ': <select id="tournaments" onchange="mafia.ui.tournamentChange()">';
-			status += _option(-1, game.tournament_id, l('NoRating'));
-			status += _option(0, game.tournament_id, l('RatingNoTour'));
-			var tournaments = mafia.data().club.tournaments;
-			for (var i = 0; i < tournaments.length; ++i)
-			{
-				var tournament = tournaments[i];
-				status += _option(tournament.id, game.tournament_id, l("Tour", tournament.name));
-			}
-			status += '</select>';
+			status += '<div id="tournaments_div"></div>';
 			
 			status += '</td></tr></table>';
 			
@@ -1295,8 +1285,6 @@ mafia.ui = new function()
 			event_id = game.event_id;
 			
 		var event = club.events[event_id];
-		console.log('event:');
-		console.log(event);
 		var user = data.user;
 		
 		mafia.eventId(event_id);
@@ -1320,7 +1308,25 @@ mafia.ui = new function()
 			html += _option(/*RUSSIAN*/2, game.lang, l('Rus'));
 		}
 		_enable($('#lang').html(html), true);
-		_enable($('#tournaments').val(game.tournament_id), true);
+		
+		var eventTournamentId = event.tournament_id;
+		html = l('Status') + ': <select id="tournaments" onchange="mafia.ui.tournamentChange()">' +
+			_option(-1, eventTournamentId, l('NoRating')) +
+			_option(0, eventTournamentId, l('RatingNoTour'));
+		for (var tournament of mafia.data().club.tournaments)
+		{
+			html += _option(tournament.id, eventTournamentId, l("Tour", tournament.name));
+			if (eventTournamentId == tournament.id)
+			{
+				eventTournamentId = 0;
+			}
+		}
+		if (eventTournamentId > 0)
+		{
+			html += _option(eventTournamentId, eventTournamentId, l("Tour", event.tournament_name));
+		}
+		html += '</select>';
+		$('#tournaments_div').html(html);
 		
 		var sReg = mafia.sReg(event.id);
 		if (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8)
@@ -1708,7 +1714,7 @@ var eventForm = new function()
 			'<tr><td>' + l('Rules') + ':</td><td><select id="form-rules"></select></td></tr>' +
 			'<tr><td>' + l('Langs') + ':</td><td id="form-langs"></td></tr>' +
 			'<tr><td colspan="2">' +
-			'<input type="checkbox" id="form-all_mod" checked> ' + l('AllModer') + '</td></tr>' +
+			'<input type="checkbox" id="form-all_mod" checked> ' + l('AllModer') + '<br><input type="checkbox" id="form-fun"> ' + l('Fun') + '</td></tr>' +
 			'</table><script>$(eventForm.init);</script>';
 			
 		dlg.okCancel(html, l('CreateEvent'), 600, function()
@@ -1717,6 +1723,12 @@ var eventForm = new function()
 			{
 				var aid = $("#form-addr").val();
 				var f = $('#form-all_mod').attr('checked') ? /*EVENT_FLAG_ALL_MODERATE*/8 : 0;
+				var tournament_id = 0;
+				if ($('#form-fun').attr('checked'))
+				{
+					f |= /*EVENT_FLAG_FUN*/32;
+					tournament_id = -1;
+				}
 				var l = 0;
 				if ($('#form-en').attr('checked')) l |= /*ENGLISH*/1;
 				if ($('#form-ru').attr('checked')) l |= /*RUSSIAN*/2;
@@ -1726,6 +1738,7 @@ var eventForm = new function()
 					duration: $('#form-duration').val(),
 					price: $('#form-price').val(),
 					rules_code: $('#form-rules').val(),
+					tournament_id: tournament_id,
 					langs: l,
 					flags: f
 				};

@@ -238,8 +238,6 @@ var mafia = new function()
 			club.haunters.sort(userSort);
 			
 			var events = club.events;
-			console.log('events:');
-			console.log(events);
 			if (typeof events[0] != "undefined")
 			{
 				_demoEvent = events[0];
@@ -251,7 +249,7 @@ var mafia = new function()
 					id: 0,
 					club_id: club.id,
 					rules_code: club.rules_code,
-					tournamentId: -1,
+					tournament_id: -1,
 					name: l("DemoEvent"),
 					start_time: 0,
 					duration: 4294967295,
@@ -648,6 +646,7 @@ var mafia = new function()
 			langs: event.langs,
 			duration: event.duration,
 			flags: event.flags,
+			tournament_id: event.tournament_id,
 			reg: {}
 		};
 		

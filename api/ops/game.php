@@ -161,14 +161,26 @@ class GClub
 			while ($row = $query->next())
 			{
 				$e = new stdClass();
-				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->tournament_id, $e->tournament_name) = $row;
+				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->tournament_id, $tournament_name) = $row;
 				$e->id = (int)$e->id;
 				$e->start_time = (int)$e->start_time;
 				$e->langs = (int)$e->langs;
 				$e->duration = (int)$e->duration;
 				$e->flags = (int)$e->flags;
 				$e->reg = array();
-				$e->tournament_id = (int)$e->tournament_id;
+				if (!is_null($e->tournament_id))
+				{
+					$e->tournament_id = (int)$e->tournament_id;
+					$e->tournament_name = $tournament_name;
+				}
+				else if ($e->flags & EVENT_FLAG_FUN)
+				{
+					$e->tournament_id = -1;
+				}
+				else
+				{
+					$e->tournament_id = 0;
+				}
 				$this->events[$e->id] = $e;
 				$events_str .= ', ' . $e->id;
 			}
@@ -808,6 +820,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$this->response['console'] = $console;
 		}
+		//print_json($this->response);
 	}
 	
 	function sync_op_help()
