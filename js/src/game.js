@@ -249,12 +249,12 @@ var mafia = new function()
 					id: 0,
 					club_id: club.id,
 					rules_code: club.rules_code,
-					tournament_id: -1,
+					tournament_id: 0,
 					name: l("DemoEvent"),
 					start_time: 0,
 					duration: 4294967295,
 					langs: club.langs,
-					flags: 0,
+					flags: /*EVENT_FLAG_FUN*/32,
 					reg: { }
 				};
 			}
@@ -401,8 +401,6 @@ var mafia = new function()
 		var oldDirty = _gDirty;
 		json.post('api/ops/game.php', request, function(data)
 		{
-			console.log('data:');
-			console.log(data);
 			if (typeof data.console == "object")
 				for (var i = 0; i < data.console.length; ++i)
 					console.log('Sync log: ' + data.console[i]);
@@ -582,14 +580,35 @@ var mafia = new function()
 		return pl;
 	}
 	
+	this.rating = function(value)
+	{
+		var r = (_data.game.flags & /*GAME_FLAG_FUN*/1) == 0;
+		if (typeof value != "undefined")
+		{
+			if (value)
+			{
+				_data.game.flags &= ~/*GAME_FLAG_FUN*/1;
+			}
+			else
+			{
+				_data.game.flags |= /*GAME_FLAG_FUN*/1;
+			}
+		}
+		return r;
+	}
+	
 	this.eventId = function(event_id)
 	{
+		event_id = parseInt(event_id);
+		
 		var game = _data.game;
 		var old_id = game.event_id;
 		if (game.event_id != event_id)
 		{
 			var club = _data.club;
 			var event = club.events[event_id];
+			game.tournament_id = event.tournament_id;
+			mafia.rating((event.flags & /*EVENT_FLAG_FUN*/32) == 0);
 			game.event_id = event_id;
 			game.moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : _data.user.id;
 			game.lang = parseInt(event.langs);
@@ -614,6 +633,10 @@ var mafia = new function()
 		if (typeof tournament_id != "undefined")
 		{
 			_data.game.tournament_id = tournament_id;
+			if (tournament_id > 0)
+			{
+				_data.game.flags &= ~/*GAME_FLAG_FUN*/1;
+			}
 			dirty();
 		}
 		return _data.game.tournament_id;
@@ -2514,6 +2537,7 @@ var mafia = new function()
 		var rules = _data.club.rules_code;
 		var event = club.events[_data.game.event_id];
 		var moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : user.id;
+		var flags = (event.flags & /*EVENT_FLAG_FUN*/32) ? /*GAME_FLAG_FUN*/1 : 0;
 		if (typeof id == "undefined")
 		{
 			id = 0;
@@ -2540,8 +2564,8 @@ var mafia = new function()
 			user_id: user.id,
 			moder_id: moder_id,
 			lang: lang,
-			event_id: _data.game.event_id,
-			tournament_id: _data.game.tournament_id,
+			event_id: event.id,
+			tournament_id: event.tournament_id,
 			start_time: 0,
 			end_time: 0,
 			players: [],
@@ -2553,7 +2577,7 @@ var mafia = new function()
 			votings: null,
 			shooting: null,
 			log: null,
-			flags: 0,
+			flags: flags,
 			best_player: -1,
 			best_move: -1,
 			guess3: null,

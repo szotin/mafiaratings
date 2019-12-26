@@ -6,9 +6,6 @@ require_once __DIR__ . '/game_player.php';
 require_once __DIR__ . '/game_voting.php';
 require_once __DIR__ . '/rules.php';
 
-define('GAME_FLAG_NON_RATING', 1);
-define('GAME_FLAG_SIMPLIFIED_CLIENT', 2);
-
 define('GAME_RESULT_PLAYING', 0);
 define('GAME_RESULT_TOWN', 1);
 define('GAME_RESULT_MAFIA', 2);
@@ -39,9 +36,6 @@ define('GAME_DAY_FREE_DISCUSSION', 20);
 define('GAME_DAY_GUESS3', 21); // deprecated the code should reach this only for the old logs
 define('GAME_CHOOSE_BEST_PLAYER', 22);
 define('GAME_CHOOSE_BEST_MOVE', 23);
-
-define('GAME_STATUS_NON_RATING', -1);
-define('GAME_STATUS_NON_TOURNAMENT', 0);
 
 class GameState
 {
@@ -90,7 +84,7 @@ class GameState
 		$this->moder_id = 0;
 		$this->lang = 0;
 		$this->event_id = 0;
-		$this->tournament_id = GAME_STATUS_NON_TOURNAMENT;
+		$this->tournament_id = 0;
 		$this->start_time = 0;
 		$this->end_time = 0;
 		$this->best_player = -1;
@@ -110,14 +104,7 @@ class GameState
 	{
 		if ($tournament_id == NULL)
 		{
-			if ($this->flags & GAME_FLAG_NON_RATING)
-			{
-				$this->tournament_id = GAME_STATUS_NON_RATING;
-			}
-			else
-			{
-				$this->tournament_id = GAME_STATUS_NON_TOURNAMENT;
-			}
+			$this->tournament_id = 0;
 		}
 		else
 		{
@@ -233,18 +220,7 @@ class GameState
 		$this->lang = $data->lang;
 		$this->flags = $data->flags;
 		$this->event_id = $data->event_id;
-		if (isset($data->tournament_id))
-		{
-			$this->tournament_id = $data->tournament_id;
-		}
-		else
-		{
-			$this->tournament_id = GAME_STATUS_NON_TOURNAMENT;
-		}
-		if ($this->tournament_id < 0)
-		{
-			$this->flags |= GAME_FLAG_NON_RATING;
-		}
+		$this->tournament_id = $data->tournament_id;
 		$this->start_time = $data->start_time;
 		$this->end_time = $data->end_time;
     	$this->gamestate = $data->gamestate;
@@ -396,7 +372,7 @@ class GameState
 			}
 			else if (!isset($this->tournament_id))
 			{
-				$this->tournament_id = GAME_STATUS_NON_TOURNAMENT;
+				$this->tournament_id = 0;
 			}
 			$this->user_id = (int) read_param($input, $offset);
 			$this->moder_id = (int) read_param($input, $offset);
@@ -534,23 +510,16 @@ class GameState
 		$log = $this->write();
 		list($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE id = ?', $this->id);
 		$tournament_id = NULL;
-		if ($this->tournament_id < 0)
+		if ($this->tournament_id > 0)
 		{
-			$this->flags |= GAME_FLAG_NON_RATING;
-		}
-		else
-		{
-			$this->flags &= ~GAME_FLAG_NON_RATING;
-			if ($this->tournament_id > 0)
+			list($tournament_name, $tournament_flags, $event_id) = Db::record(get_label('tournament'), 'SELECT t.name, t.flags, e.id FROM tournaments t LEFT OUTER JOIN events e ON e.id = ? AND e.tournament_id = t.id WHERE t.id = ?', $this->event_id, $this->tournament_id);
+			if (($tournament_flags | TOURNAMENT_FLAG_SINGLE_GAME) == 0 && is_null($event_id))
 			{
-				list($tournament_name, $tournament_flags, $event_id) = Db::record(get_label('tournament'), 'SELECT t.name, t.flags, e.id FROM tournaments t LEFT OUTER JOIN events e ON e.id = ? AND e.tournament_id = t.id WHERE t.id = ?', $this->event_id, $this->tournament_id);
-				if (($tournament_flags | TOURNAMENT_FLAG_SINGLE_GAME) == 0 && is_null($event_id))
-				{
-					throw new Exc(get_label('Game [0] can not be played in the tournament [1]', $this->id, $tournament_name));
-				}
-				$tournament_id = $this->tournament_id;
+				throw new Exc(get_label('Game [0] can not be played in the tournament [1]', $this->id, $tournament_name));
 			}
+			$tournament_id = $this->tournament_id;
 		}
+		
 		if ($count > 0)
 		{
 			Db::exec(get_label('game'),

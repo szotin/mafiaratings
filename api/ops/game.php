@@ -173,10 +173,6 @@ class GClub
 					$e->tournament_id = (int)$e->tournament_id;
 					$e->tournament_name = $tournament_name;
 				}
-				else if ($e->flags & EVENT_FLAG_FUN)
-				{
-					$e->tournament_id = -1;
-				}
 				else
 				{
 					$e->tournament_id = 0;

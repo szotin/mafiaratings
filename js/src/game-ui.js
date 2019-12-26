@@ -439,9 +439,9 @@ mafia.ui = new function()
 					'<td id="warn' + i + '" width="100"></td>' +
 					'<td width="90">' +
 						'<span id="btns-' + i + '">' +
-							'<button class="icon" onclick="mafia.ui.warnPlayer(' + i + ')"><img src="images/warn.png"></button>' +
-							'<button class="icon" onclick="mafia.ui.suicide(' + i + ')"><img src="images/suicide.png"></button>' +
-							'<button class="icon" onclick="mafia.ui.kickOut(' + i + ')"><img src="images/delete.png""></button>' +
+							'<button class="icon" onclick="mafia.warnPlayer(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
+							'<button class="icon" onclick="mafia.suicide(' + i + ')"><img src="images/suicide.png" title="' + l('Suicide') + '"></button>' +
+							'<button class="icon" onclick="mafia.kickOut(' + i + ')"><img src="images/delete.png"" title="' + l('KickOut') + '"></button>' +
 						'</span>' +
 					'</td>' +
 				'</tr>';
@@ -1258,21 +1258,27 @@ mafia.ui = new function()
 			var end = start + parseInt(event.duration);
 			if (start <= timestamp && end + user.manager * 28800 > timestamp)
 			{
-				var d = new Date(start * 1000);
+//				var d = new Date(start * 1000);
 				var n = event.name;
-				if (event_id != 0)
+				if (event_id > 0)
 				{
-					n = d.getDate() + "/" + (d.getMonth() + 1) + "/" + d.getFullYear() + ": " + n;
+					if (event.tournament_id > 0)
+						n = event.tournament_name + ': ' + n;
+					// else
+						// n = d.getDate() + "/" + (d.getMonth() + 1) + "/" + d.getFullYear() + ": " + n;
 					if (end + user.manager <= timestamp)
-					{
 						n += ' (' + l('EvOver') + ')';
-					}
 				}
 				str += _option(event_id, game.event_id, n);
 			}
 		}
 		$('#events').html(str);
 		mafia.ui.eventChange(true);
+	}
+	
+	this.ratingChange = function()
+	{
+		mafia.rating($('#rating').attr('checked') ? 1 : 0);
 	}
 	
 	this.eventChange = function(init)
@@ -1310,12 +1316,10 @@ mafia.ui = new function()
 		_enable($('#lang').html(html), true);
 		
 		var eventTournamentId = event.tournament_id;
-		html = l('Status') + ': <select id="tournaments" onchange="mafia.ui.tournamentChange()">' +
-			_option(-1, eventTournamentId, l('NoRating')) +
-			_option(0, eventTournamentId, l('RatingNoTour'));
+		html = l('Tournament') + ': <select id="tournaments" onchange="mafia.ui.tournamentChange()"><option value="0"></option>';
 		for (var tournament of mafia.data().club.tournaments)
 		{
-			html += _option(tournament.id, eventTournamentId, l("Tour", tournament.name));
+			html += _option(tournament.id, eventTournamentId, tournament.name);
 			if (eventTournamentId == tournament.id)
 			{
 				eventTournamentId = 0;
@@ -1323,9 +1327,14 @@ mafia.ui = new function()
 		}
 		if (eventTournamentId > 0)
 		{
-			html += _option(eventTournamentId, eventTournamentId, l("Tour", event.tournament_name));
+			html += _option(eventTournamentId, eventTournamentId, event.tournament_name);
 		}
-		html += '</select>';
+		html += '</select> <input type="checkbox" id="rating" onclick="mafia.ui.ratingChange()"';
+		if (mafia.rating())
+		{
+			html += ' checked';
+		}
+		html += '> ' + l('Rating');
 		$('#tournaments_div').html(html);
 		
 		var sReg = mafia.sReg(event.id);
@@ -1404,6 +1413,7 @@ mafia.ui = new function()
 	this.tournamentChange = function()
 	{
 		mafia.tournamentId($('#tournaments').val());
+		$('#rating').prop('checked', (mafia.data().game.flags & ~/*GAME_FLAG_FUN*/1) == 0);
 	}
 
 	this.playerChange = function(num)
@@ -1525,23 +1535,6 @@ mafia.ui = new function()
 		}
 	}
 	
-	this.suicide = function(num)
-	{
-		dlg.yesNo(l('ConfirmSuicide', mafia.playerTitle(num)), null, null, function()
-		{
-			mafia.suicide(num);
-		});
-	}
-	
-	this.kickOut = function(num)
-	{
-		dlg.yesNo(l('ConfirmKickOut', mafia.playerTitle(num)), null, null, function()
-		{
-			mafia.kickOut(num);
-		});
-	}
-	
-	this.warnPlayer = mafia.warnPlayer;
 	this.back = mafia.back;
 	this.save = mafia.save;
 	
@@ -1723,11 +1716,9 @@ var eventForm = new function()
 			{
 				var aid = $("#form-addr").val();
 				var f = $('#form-all_mod').attr('checked') ? /*EVENT_FLAG_ALL_MODERATE*/8 : 0;
-				var tournament_id = 0;
 				if ($('#form-fun').attr('checked'))
 				{
 					f |= /*EVENT_FLAG_FUN*/32;
-					tournament_id = -1;
 				}
 				var l = 0;
 				if ($('#form-en').attr('checked')) l |= /*ENGLISH*/1;
@@ -1738,7 +1729,7 @@ var eventForm = new function()
 					duration: $('#form-duration').val(),
 					price: $('#form-price').val(),
 					rules_code: $('#form-rules').val(),
-					tournament_id: tournament_id,
+					tournament_id: 0,
 					langs: l,
 					flags: f
 				};
