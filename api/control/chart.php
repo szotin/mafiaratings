@@ -146,11 +146,57 @@ class ApiPage extends ControlApiPageBase
 					++$current_color;
 				}
 			}
+			else if ($type == 'tournament')
+			{
+				if (!isset($_REQUEST['id']))
+				{
+					throw new FatalExc(get_label('Unknown [0]', get_label('tournament')));
+				}
+				$tournament_id = (int)$_REQUEST['id'];
+				
+				list($scoring_id, $scoring, $scoring_options, $timezone, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.scoring_id, s.scoring, t.scoring_options, c.timezone, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
+				if (isset($_REQUEST['scoring']))
+				{
+					$scoring_id = (int)$_REQUEST['scoring'];
+					$scoring_options = 0;
+					if ($scoring_id > 0)
+					{
+						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+						$scoring_version = -1;
+					}
+				}
+
+				$players = NULL;
+				if (isset($_REQUEST['players']))
+				{
+					$players = explode(',', $_REQUEST['players']);
+				}
+				
+				$players = tournament_scores($tournament_id, $tournament_flags, $players, SCORING_LOD_HISTORY | SCORING_LOD_NO_SORTING, $scoring, $scoring_options);
+				$players_count = count($players);
+				foreach ($user_ids as $user_id)
+				{
+					if ($user_id > 0 && isset($players[$user_id]))
+					{
+						$player = $players[$user_id];
+						if ($player != NULL)
+						{
+							$data = new ChartData($player->name, $_chart_colors[$current_color]);
+							foreach ($player->history as $point)
+							{
+								$data->data[] = new ChartPoint($point->time, $point->points);
+							}
+							$this->response[] = $data;
+						}
+					}
+					++$current_color;
+				}
+			}
 			else if ($type == 'club')
 			{
 				if (!isset($_REQUEST['id']))
 				{
-					throw new FatalExc(get_label('Unknown [0]', get_label('event')));
+					throw new FatalExc(get_label('Unknown [0]', get_label('club')));
 				}
 				$club_id = (int)$_REQUEST['id'];
 				
@@ -224,6 +270,7 @@ class ApiPage extends ControlApiPageBase
 				<ul>
 					<li>rating - returns chart data for global ratings. For example: <a href="chart.php?type=rating&players=264"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=rating&players=264</a> returns Tigra rating all time chart data.</li>
 					<li>event - returns chart data for event points. For example: <a href="chart.php?type=event&id=7927&players=264"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=event&id=7927&players=264</a> returns Tigra scoring chart data during VaWaCa-2017.</li>
+					<li>tournament - returns chart data for tournament points. For example: <a href="chart.php?type=tournament&id=22&players=264"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=tournament&id=22&players=264</a> returns Tigra scoring chart data during Alcatraz-2019.</li>
 					<li>club - returns chart data for club points. For example: <a href="chart.php?type=club&id=1&players=264"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=club&id=1&players=264</a> returns Tigra current season scoring chart data in Vancouver Mafia Club.</li>
 				</ul>
 			</dd>

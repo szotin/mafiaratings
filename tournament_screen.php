@@ -137,7 +137,7 @@ try
 			echo '</td></tr></table>';
 		}
 		
-		$players = tournament_scores($tournament_id, NULL, SCORING_LOD_PER_GROUP);
+		$players = tournament_scores($tournament_id, $tournament_flags, NULL, SCORING_LOD_PER_GROUP);
 		$players_count = count($players);
 			
 		if ($players_count == 0)

@@ -50,7 +50,7 @@ INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (9, 1, '{"mai
 UPDATE events SET scoring_version = 1 WHERE scoring_id = 9;
 UPDATE tournaments SET scoring_version = 1 WHERE scoring_id = 9;
 -- ФИИМ с баллами за трудность и за отстрелы
-INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (10, 1, '{"main":[{"matter":2,"min_difficulty":0.5,"min_points":1,"max_difficulty":1,"max_points":2}],"prima_nocta":[{"matter":1024,"roles":3,"points":0.4},{"matter":2048,"roles":3,"points":0.25}],"penalty":[{"matter":4096,"points":-0.5},{"matter":8192,"points":-0.5}],"night1":[{"matter":256,"min_night1":0,"min_points":0,"max_night1":0.4,"max_points":0.4}]}');
+INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (10, 1, '{"main":[{"matter":2,"min_difficulty":0.5,"min_points":1,"max_difficulty":1,"max_points":2}],"prima_nocta":[{"matter":1024,"roles":3,"points":0.4},{"matter":2048,"roles":3,"points":0.25}],"penalty":[{"matter":4096,"points":-0.5},{"matter":8192,"points":-0.5}],"night1":[{"matter":260,"figm_first_night_score":0.4}]}');
 UPDATE events SET scoring_version = 1 WHERE scoring_id = 10;
 UPDATE tournaments SET scoring_version = 1 WHERE scoring_id = 10;
 -- WaVaCa-2017
@@ -78,7 +78,7 @@ INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (17, 1, '{"ma
 UPDATE events SET scoring_version = 1 WHERE scoring_id = 17;
 UPDATE tournaments SET scoring_version = 1 WHERE scoring_id = 17;
 -- ФИИМ с баллами за отстрелы
-INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (18, 1, '{"main":[{"matter":2,"points":1}],"prima_nocta":[{"matter":1024,"roles":3,"points":0.4},{"matter":2048,"roles":3,"points":0.25}],"penalty":[{"matter":4096,"points":-0.5},{"matter":8192,"points":-0.5}],"night1":[{"matter":256,"min_night1":0,"min_points":0,"max_night1":0.4,"max_points":0.4}]}');
+INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (18, 1, '{"main":[{"matter":2,"points":1}],"prima_nocta":[{"matter":1024,"roles":3,"points":0.4},{"matter":2048,"roles":3,"points":0.25}],"penalty":[{"matter":4096,"points":-0.5},{"matter":8192,"points":-0.5}],"night1":[{"matter":260,"figm_first_night_score":0.4}]}');
 UPDATE events SET scoring_version = 1 WHERE scoring_id = 18;
 UPDATE tournaments SET scoring_version = 1 WHERE scoring_id = 18;
 -- ФИИМ

@@ -861,7 +861,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('user_id', 'User id. The user who is receiving or loosing points.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.');
 		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.');
-		$help->request_param('details', 'Detailed explanation why user recieves or looses points.', 'empty.');
+		$help->request_param('details', 'Detailed explanation why user recieves or loses points.', 'empty.');
 		
 		$help->response_param('points_id', 'Id of the created extra points object.');
 		return $help;
@@ -915,7 +915,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('points_id', 'Id of extra points object.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.', 'remains the same');
 		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.', 'remains the same');
-		$help->request_param('details', 'Detailed explanation why user recieves or looses points.', 'remains the same');
+		$help->request_param('details', 'Detailed explanation why user recieves or loses points.', 'remains the same');
 		return $help;
 	}
 

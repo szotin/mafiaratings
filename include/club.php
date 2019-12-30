@@ -36,11 +36,11 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 				$quit_params = $id;
 				if ($memb_flags & USER_CLUB_PERM_MANAGER)
 				{
-					$quit_params .= ', \'' . get_label('You are a manager of this club. You loose your status once you leave it. Are you sure you want to quit?') . '\'';
+					$quit_params .= ', \'' . get_label('You are a manager of this club. You lose your status once you leave it. Are you sure you want to quit?') . '\'';
 				}
 				else if ($memb_flags & USER_CLUB_PERM_MODER)
 				{
-					$quit_params .= ', \'' . get_label('You are a moderator of this club. You loose your status once you leave it. Are you sure you want to quit?') . '\'';
+					$quit_params .= ', \'' . get_label('You are a moderator of this club. You lose your status once you leave it. Are you sure you want to quit?') . '\'';
 				}
 			
 				echo '<button class="icon" onclick="mr.quitClub(' . $quit_params . ')" title="' . get_label('Quit [0]', $name) . '"><img src="images/accept.png" border="0"></button>';

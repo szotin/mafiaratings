@@ -191,7 +191,7 @@ SELECT @event_id := LAST_INSERT_ID();
 UPDATE games SET event_id = @event_id WHERE event_id = 8439 AND round_num = 1;
 
 INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_weight, tournament_id, rules)
-SELECT 'финал', address_id, club_id, start_time, duration, 27, languages, scoring_id, 1.5, @id, rules FROM events WHERE id = 8439;
+SELECT 'финал', address_id, club_id, start_time, duration, 27, languages, scoring_id, 1.3, @id, rules FROM events WHERE id = 8439;
 SELECT @event_id := LAST_INSERT_ID();
 UPDATE games SET event_id = @event_id WHERE event_id = 8439 AND round_num = 2;
 

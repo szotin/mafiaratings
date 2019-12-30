@@ -164,10 +164,8 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 //  4 - 0x0008 -      8 - canceled
 //  5 - 0x0010 -     16 - long term tournament. Like a seasonal club championship.
 //  6 - 0x0020 -     32 - single games from non-tournament events can be assigned to the tournament.
-//  7 - 0x0040 -     64 - club events can become tournament rounds if needed.
-//  8 - 0x0080 -    128 - rounds must have the same game rules as the tournament.
-//  9 - 0x0100 -    256 - rounds must have the same game scoring options and weights as the tournament.
-// 10 - 0x0200 -    512 - tournament is finished - all scoring is complete
+//  7 - 0x0040 -     64 - rounds have different scoring options. If not set, all rounds are the same, just the weight is different. Example: points for being killed first night can be off in finals.
+//  8 - 0x0080 -    128 - tournament is finished - all scoring is complete
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);

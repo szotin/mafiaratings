@@ -71,7 +71,7 @@ class Page extends TournamentPageBase
 		
 		$condition = new SQL(' AND g.tournament_id = ?', $this->id);
 		
-		$players = tournament_scores($this->id, null, SCORING_LOD_PER_GROUP, $this->scoring);
+		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{

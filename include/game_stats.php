@@ -78,10 +78,10 @@ class GamePlayerStats
 		{
 			if ($gs->gamestate == GAME_CIVIL_WON)
 			{
-				$this->scoring_flags |= SCORING_FLAG_LOOSE;
+				$this->scoring_flags |= SCORING_FLAG_LOSE;
 				if ($civ_day_kills == 0)
 				{
-					$this->scoring_flags |= SCORING_FLAG_CLEAR_LOOSE;
+					$this->scoring_flags |= SCORING_FLAG_CLEAR_LOSE;
 				}
 			}
 			else
@@ -111,10 +111,10 @@ class GamePlayerStats
 		}
 		else
 		{
-			$this->scoring_flags |= SCORING_FLAG_LOOSE;
+			$this->scoring_flags |= SCORING_FLAG_LOSE;
 			if ($maf_day_kills == 0)
 			{
-				$this->scoring_flags |= SCORING_FLAG_CLEAR_LOOSE;
+				$this->scoring_flags |= SCORING_FLAG_CLEAR_LOSE;
 			}
 		}
 		
