@@ -1,5 +1,8 @@
 use mafia;
 
+UPDATE events SET tournament_id = NULL;
+DELETE FROM tournaments;
+
 -- 6025 - ЗАКРЫТЫЙ ЧЕМПИОНАТ РОССИИ
 INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) 
 SELECT name, club_id, address_id, start_time, duration, languages, notes, price, scoring_id, rules, 192, 3 FROM events WHERE id = 6025;
@@ -206,3 +209,21 @@ INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs,
 SELECT name, club_id, address_id, start_time, duration, languages, notes, price, scoring_id, rules, 192, 1 FROM events WHERE id = 8473;
 SELECT @id := LAST_INSERT_ID();
 UPDATE events SET name = 'основной раунд', flags = (flags &~ 32) | 3, tournament_id = @id WHERE id = 8473;
+
+-- 8479 - Inaugural Seaside Fruitcake
+INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) 
+SELECT name, club_id, address_id, start_time, duration, languages, notes, price, scoring_id, rules, 192, 1 FROM events WHERE id = 8479;
+SELECT @id := LAST_INSERT_ID();
+UPDATE events SET name = 'основной раунд', flags = (flags &~ 32) | 3, tournament_id = @id WHERE id = 8479;
+
+-- 8484 - Black Friday
+INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, rules, flags, stars) 
+SELECT name, club_id, address_id, start_time, duration, languages, notes, price, scoring_id, rules, 192, 1 FROM events WHERE id = 8484;
+SELECT @id := LAST_INSERT_ID();
+UPDATE events SET name = 'основной раунд', flags = (flags &~ 32) | 3, tournament_id = @id WHERE id = 8484;
+
+ALTER TABLE games ADD COLUMN tournament_id INT(11) NULL;
+ALTER TABLE games ADD KEY (tournament_id);
+ALTER TABLE games ADD CONSTRAINT game_tournament FOREIGN KEY(tournament_id) REFERENCES tournaments(id);
+
+UPDATE games g, events e SET g.tournament_id = e.tournament_id WHERE e.id = g.event_id;

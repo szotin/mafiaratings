@@ -45,6 +45,7 @@ DROP TABLE `addresses`;
 ALTER TABLE `scorings` DROP FOREIGN KEY system_club;
 DROP TABLE `club_seasons`;
 DROP TABLE `clubs`;
+ALTER TABLE `scorings` DROP FOREIGN KEY system_version;
 DROP TABLE `scoring_versions`;
 DROP TABLE `scorings`;
 DROP TABLE `city_names`;

@@ -39,3 +39,4 @@ include/pdf/font/unifont/times.cw.dat
 include/pdf/font/unifont/arial.mtx.php
 include/pdf/font/unifont/arial.cw127.php
 include/pdf/font/unifont/arial.cw.dat
+js/scoring_editor.js
