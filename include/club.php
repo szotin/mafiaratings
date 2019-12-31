@@ -6,9 +6,6 @@ require_once __DIR__ . '/league.php';
 define('ALL_CLUBS', -1);
 define('MY_CLUBS', 0);
 
-define('SEASON_ALL_TIME', -1);
-define('SEASON_LAST_YEAR', -2);
-
 function has_club_buttons($id, $flags, $memb_flags)
 {
 	global $_profile;
@@ -39,11 +36,11 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 				$quit_params = $id;
 				if ($memb_flags & USER_CLUB_PERM_MANAGER)
 				{
-					$quit_params .= ', \'' . get_label('You are a manager of this club. You loose your status once you leave it. Are you sure you want to quit?') . '\'';
+					$quit_params .= ', \'' . get_label('You are a manager of this club. You lose your status once you leave it. Are you sure you want to quit?') . '\'';
 				}
 				else if ($memb_flags & USER_CLUB_PERM_MODER)
 				{
-					$quit_params .= ', \'' . get_label('You are a moderator of this club. You loose your status once you leave it. Are you sure you want to quit?') . '\'';
+					$quit_params .= ', \'' . get_label('You are a moderator of this club. You lose your status once you leave it. Are you sure you want to quit?') . '\'';
 				}
 			
 				echo '<button class="icon" onclick="mr.quitClub(' . $quit_params . ')" title="' . get_label('Quit [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
@@ -152,7 +149,7 @@ class ClubPageBase extends PageBase
 			, new MenuItem('club_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->name))
 			, new MenuItem('club_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
 			, new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name))
-			, new MenuItem('#stats', get_label('Stats'), NULL, array
+			, new MenuItem('#stats', get_label('Reports'), NULL, array
 			(
 				new MenuItem('club_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
 				, new MenuItem('club_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
@@ -248,7 +245,7 @@ function get_current_club_season($club_id)
 	$condition = new SQL();
 	if ($club_id > 0)
 	{
-		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
+		$query = new DbQuery('SELECT id, name, start_time, end_time FROM club_seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
 		while ($row = $query->next())
 		{
 			return (int)$row[0];
@@ -265,7 +262,7 @@ function get_current_club_season($club_id)
 		$last_year = (int)date('Y', $timestamp);
 		return -$last_year;
 	}
-	return SEASON_LAST_YEAR;
+	return -date('Y');
 }
 
 function show_club_seasons_select($club_id, $option, $on_change, $title)
@@ -274,7 +271,7 @@ function show_club_seasons_select($club_id, $option, $on_change, $title)
 	$condition = new SQL();
 	if ($club_id > 0)
 	{
-		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
+		$query = new DbQuery('SELECT id, name, start_time, end_time FROM club_seasons WHERE club_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $club_id);
 		while ($row = $query->next())
 		{
 			$seasons[] = $row;
@@ -282,13 +279,12 @@ function show_club_seasons_select($club_id, $option, $on_change, $title)
 		$condition->add(' AND g.club_id = ?', $club_id);
 	}
 	
-	if ($option == 0 && count($seasons) > 0)
+	if ($option == SEASON_LATEST && count($seasons) > 0)
 	{
 		$option = $seasons[0][0];
 	}
 	echo '<select name="season" id="season" onChange="' . $on_change . '" title="' . $title . '">';
 	show_option(SEASON_ALL_TIME, $option, get_label('All time'));
-	show_option(SEASON_LAST_YEAR, $option, get_label('Last year'), get_label('Since the same day a year ago.'));
 	if (count($seasons) > 0)
 	{
 		foreach ($seasons as $season)
@@ -332,22 +328,15 @@ function show_club_seasons_select($club_id, $option, $on_change, $title)
 function get_club_season_condition($season, $start_field, $end_field)
 {
 	$condition = new SQL('');
-	if ($season > 0)
+	if ($season > SEASON_LATEST)
 	{
-		$condition->add(' AND EXISTS(SELECT _s.id FROM seasons _s WHERE _s.start_time <= ' . $end_field . ' AND _s.end_time > ' . $start_field . ' AND _s.id = ?)', $season);
+		$condition->add(' AND EXISTS(SELECT _s.id FROM club_seasons _s WHERE _s.start_time <= ' . $end_field . ' AND _s.end_time > ' . $start_field . ' AND _s.id = ?)', $season);
 	}
 	else if ($season < SEASON_ALL_TIME)
 	{
-		if ($season == SEASON_LAST_YEAR)
-		{
-			$condition->add(' AND ' . $end_field . ' >= UNIX_TIMESTAMP() - 31536000');
-		}
-		else
-		{
-			$start = mktime(0, 0, 0, 1, 1, -$season);
-			$end = mktime(0, 0, 0, 1, 1, 1 - $season);
-			$condition->add(' AND ' . $end_field . ' >= ? AND ' . $start_field . ' < ?', $start, $end);
-		}
+		$start = mktime(0, 0, 0, 1, 1, -$season);
+		$end = mktime(0, 0, 0, 1, 1, 1 - $season);
+		$condition->add(' AND ' . $end_field . ' >= ? AND ' . $start_field . ' < ?', $start, $end);
 	}
 	return $condition;
 }

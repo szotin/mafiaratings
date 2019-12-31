@@ -119,8 +119,6 @@ try
 	}
 	echo '</select></td></tr>';
 	
-	echo '<tr><td>' . get_label('Scoring weight') . ':</td><td><input id="form-scoring-weight" value="1"></td></tr>';
-	
 	if (is_valid_lang($club->langs))
 	{
 		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
@@ -135,12 +133,9 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> '.get_label('long term tournament. Like a seasonal club championship.');
-	echo '</tr><tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-single_game"> '.get_label('single games from non-tournament events can be assigned to the tournament.').'<br>';
-	echo '<input type="checkbox" id="form-event_round"> '.get_label('club events can become tournament rounds if needed.').'<br>';
-	echo '<input type="checkbox" id="form-enforce_rules" checked> '.get_label('tournament rounds must use tournament rules.').'<br>';
-	echo '<input type="checkbox" id="form-enforce_scoring" checked> '.get_label('tournament rounds must use tournament scoring system.').'<br>';
+	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> '.get_label('long term tournament. Like a seasonal club championship.').'<br>';
+	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> '.get_label('single games from non-tournament events can be assigned to the tournament.').'<br>';
+	echo '<input type="checkbox" id="form-use_rounds_scoring"> '.get_label('scoring rules can be custom in tournament rounds.').'<br>';
 	echo '</table>';
 	
 ?>	
@@ -151,14 +146,23 @@ try
 	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
 	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
-	$('#form-scoring-weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
 	
 	function longTermClicked()
 	{
 		var c = $("#form-long_term").attr('checked') ? true : false;
 		$("#form-single_game").prop('checked', c);
-		$("#form-event_round").prop('checked', c);
+		$("#form-use_rounds_scoring").prop('checked', !c);
+		$("#form-single_game").prop('disabled', !c);
+		$("#form-use_rounds_scoring").prop('disabled', c);
 	}
+	
+	function singleGameClicked()
+	{
+		var c = $("#form-single_game").attr('checked') ? true : false;
+		$("#form-use_rounds_scoring").prop('checked', !c);
+		$("#form-use_rounds_scoring").prop('disabled', c);
+	}
+	longTermClicked();
 	
 	var oldAddressValue = "<?php echo $selected_address; ?>";
 	function newAddressChange()
@@ -207,9 +211,7 @@ try
 		var _flags = 0;
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
-		if ($("#form-event_round").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_EVENT_ROUND; ?>;
-		if ($("#form-enforce_rules").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_RULES; ?>;
-		if ($("#form-enforce_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_SCORING; ?>;
+		if ($("#form-use_rounds_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_USE_ROUNDS_SCORING; ?>;
 		
 		var _end = strToDate(endDate.val());
 		_end.setDate(_end.getDate() + 1); // inclusive
@@ -223,7 +225,6 @@ try
 			price: $("#form-price").val(),
 			address_id: _addr,
 			scoring_id: $("#form-scoring").val(),
-			scoring_weight: $("#form-scoring-weight").val(),
 			notes: $("#form-notes").val(),
 			start: startDate.val(),
 			end: dateToStr(_end),

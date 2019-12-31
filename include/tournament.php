@@ -75,6 +75,7 @@ class TournamentPageBase extends PageBase
 	protected $notes;
 	protected $price;
 	protected $scoring_id;
+	protected $scoring_version;
 	protected $rules_code;
 	protected $flags;
 	protected $stars;
@@ -93,13 +94,13 @@ class TournamentPageBase extends PageBase
 			$this->address_id, $this->address_name, $this->address, $this->address_url, $this->address_flags,
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->price, 
-			$this->scoring_id, $this->rules_code, $this->flags, $this->stars) =
+			$this->scoring_id, $this->scoring_version, $this->rules_code, $this->flags, $this->stars) =
 		Db::record(
 			get_label('tournament'),
 			'SELECT t.name, t.request_league_id, l.id, l.name, l.flags, c.id, c.name, c.flags,' . 
 				' a.id, a.name, a.address, a.map_url, a.flags,' . 
 				' ct.id, ct.name_' . $_lang_code . ', cr.id, cr.name_' . $_lang_code . ', ct.timezone,' . 
-				' t.start_time, t.duration, t.langs, t.notes, t.price, t.scoring_id, t.rules, t.flags, t.stars' .
+				' t.start_time, t.duration, t.langs, t.notes, t.price, t.scoring_id, t.scoring_version, t.rules, t.flags, t.stars' .
 				' FROM tournaments t' .
 				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' JOIN clubs c ON c.id = t.club_id' .
@@ -121,12 +122,13 @@ class TournamentPageBase extends PageBase
 			new MenuItem('tournament_standings.php?id=' . $this->id, get_label('Standings'), get_label('Tournament standings')),
 			new MenuItem('tournament_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this tournament.')),
 			new MenuItem('tournament_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the tournament')),
-			new MenuItem('#stats', get_label('Stats'), NULL, array
+			new MenuItem('#stats', get_label('Reports'), NULL, array
 			(
 				new MenuItem('tournament_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
 				new MenuItem('tournament_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('tournament_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
 				new MenuItem('tournament_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of the tournament')),
+				new MenuItem('tournament_figm_form.php?tournament_id=' . $this->id, get_label('FIGM'), get_label('PDF report for sending to FIGM Mafia World Tour'), NULL, true),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(

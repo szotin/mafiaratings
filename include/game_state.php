@@ -6,8 +6,6 @@ require_once __DIR__ . '/game_player.php';
 require_once __DIR__ . '/game_voting.php';
 require_once __DIR__ . '/rules.php';
 
-define('GAME_FLAG_SIMPLIFIED_CLIENT', 2);
-
 define('GAME_RESULT_PLAYING', 0);
 define('GAME_RESULT_TOWN', 1);
 define('GAME_RESULT_MAFIA', 2);
@@ -48,6 +46,7 @@ class GameState
 	public $moder_id;
 	public $lang;
 	public $event_id;
+	public $tournament_id;
 	public $start_time;
 	public $end_time;
 	public $flags;
@@ -85,6 +84,7 @@ class GameState
 		$this->moder_id = 0;
 		$this->lang = 0;
 		$this->event_id = 0;
+		$this->tournament_id = 0;
 		$this->start_time = 0;
 		$this->end_time = 0;
 		$this->best_player = -1;
@@ -100,12 +100,24 @@ class GameState
 			new Player(5), new Player(6), new Player(7), new Player(8), new Player(9));
 	}
 	
+	function set_tournament_id($tournament_id)
+	{
+		if ($tournament_id == NULL)
+		{
+			$this->tournament_id = 0;
+		}
+		else
+		{
+			$this->tournament_id = (int)$tournament_id;
+		}
+	}
+	
 	function init_new($user_id, $club_id = -1)
 	{
 		$this->user_id = $user_id;
 		$this->is_canceled = false;
 		
-		$query = new DbQuery('SELECT id, log, club_id, moderator_id, event_id, language, start_time, end_time, flags FROM games WHERE club_id = ? AND user_id = ? AND result = ' . GAME_RESULT_PLAYING, $club_id, $user_id);
+		$query = new DbQuery('SELECT id, log, club_id, moderator_id, event_id, language, start_time, end_time, flags, tournament_id FROM games WHERE club_id = ? AND user_id = ? AND result = ' . GAME_RESULT_PLAYING . ' ORDER BY start_time DESC', $club_id, $user_id);
 		if ($row = $query->next())
 		{
 			$this->id = (int)$row[0];
@@ -117,6 +129,7 @@ class GameState
 			$this->start_time = (int)$row[6];
 			$this->end_time = (int)$row[7];
 			$this->flags = (int)$row[8];
+			$this->set_tournament_id($row[9]);
 			$this->read($log);
 		}
 		else
@@ -124,12 +137,13 @@ class GameState
 			$this->club_id = $club_id;
 			if ($club_id > 0 )
 			{
-				$query = new DbQuery('SELECT id, flags, languages FROM events WHERE start_time <= UNIX_TIMESTAMP() AND start_time + duration > UNIX_TIMESTAMP() AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?', $club_id);
+				$query = new DbQuery('SELECT id, flags, languages, tournament_id FROM events WHERE start_time <= UNIX_TIMESTAMP() AND start_time + duration > UNIX_TIMESTAMP() AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?', $club_id);
 				if ($row = $query->next())
 				{
 					$this->event_id = (int)$row[0];
 					$event_flags = (int)$row[1];
 					$event_langs = (int)$row[2];
+					$this->set_tournament_id($row[3]);
 					if (($event_flags & EVENT_FLAG_ALL_MODERATE) == 0)
 					{
 						$this->moder_id = $user_id;
@@ -148,7 +162,7 @@ class GameState
 		$this->id = $id;
 		if ($log == NULL)
 		{
-			$row = Db::record(get_label('game'), 'SELECT log, user_id, club_id, moderator_id, event_id, language, start_time, end_time, flags, canceled FROM games WHERE id = ?', $id);
+			$row = Db::record(get_label('game'), 'SELECT log, user_id, club_id, moderator_id, event_id, language, start_time, end_time, flags, canceled, tournament_id FROM games WHERE id = ?', $id);
 			$log = $row[0];
 			$this->user_id = (int)$row[1];
 			$this->club_id = (int)$row[2];
@@ -159,11 +173,12 @@ class GameState
 			$this->end_time = (int)$row[7];
 			$this->flags = (int)$row[8];
 			$this->is_canceled = (bool)$row[9];
+			$this->set_tournament_id($row[10]);
 			$this->read($log);
 		}
 		else if ($this->read($log) < 4) // starting from version 4 all fields can be read from the log, othervise we query them from db
 		{
-			$row = Db::record(get_label('game'), 'SELECT user_id, club_id, moderator_id, event_id, language, start_time, end_time, flags, canceled FROM games WHERE id = ?', $id);
+			$row = Db::record(get_label('game'), 'SELECT user_id, club_id, moderator_id, event_id, language, start_time, end_time, flags, canceled, tournament_id FROM games WHERE id = ?', $id);
 			$this->user_id = (int)$row[0];
 			$this->club_id = (int)$row[1];
 			$this->moder_id = (int)$row[2];
@@ -173,6 +188,7 @@ class GameState
 			$this->end_time = (int)$row[6];
 			$this->flags = (int)$row[7];
 			$this->is_canceled = (bool)$row[8];
+			$this->set_tournament_id($row[9]);
 			Db::exec(get_label('game'), 'UPDATE games SET log = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?', $this->write(), $id);
 		}
 		else
@@ -195,14 +211,16 @@ class GameState
 	
 	function create_from_json($data)
 	{
-		//var_dump($data);
+		//print_json($data);
 	
 		$this->id = $data->id;
 		$this->user_id = $data->user_id;
 		$this->club_id = $data->club_id;
 		$this->moder_id = $data->moder_id;
 		$this->lang = $data->lang;
+		$this->flags = $data->flags;
 		$this->event_id = $data->event_id;
+		$this->tournament_id = $data->tournament_id;
 		$this->start_time = $data->start_time;
 		$this->end_time = $data->end_time;
     	$this->gamestate = $data->gamestate;
@@ -210,7 +228,6 @@ class GameState
     	$this->player_speaking = $data->player_speaking;
     	$this->table_opener = $data->table_opener;
     	$this->current_nominant = $data->current_nominant;
-		$this->flags = $data->flags;
 		$this->best_player = $data->best_player;
 		$this->best_move = $data->best_move;
 		$this->guess3 = $data->guess3;
@@ -265,6 +282,7 @@ class GameState
 			$this->rules_code . GAME_PARAM_DELIMITER .
 			$this->club_id . GAME_PARAM_DELIMITER .
 			$this->event_id . GAME_PARAM_DELIMITER .
+			$this->tournament_id . GAME_PARAM_DELIMITER .
 			$this->user_id . GAME_PARAM_DELIMITER .
 			$this->moder_id . GAME_PARAM_DELIMITER .
 			$this->lang . GAME_PARAM_DELIMITER .
@@ -348,6 +366,14 @@ class GameState
 			}
 			$this->club_id = (int) read_param($input, $offset); 
 			$this->event_id = (int) read_param($input, $offset);
+			if ($version > 12)
+			{
+				$this->tournament_id = (int) read_param($input, $offset);
+			}
+			else if (!isset($this->tournament_id))
+			{
+				$this->tournament_id = 0;
+			}
 			$this->user_id = (int) read_param($input, $offset);
 			$this->moder_id = (int) read_param($input, $offset);
 			$this->lang = (int) read_param($input, $offset);
@@ -483,22 +509,33 @@ class GameState
 	
 		$log = $this->write();
 		list($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE id = ?', $this->id);
+		$tournament_id = NULL;
+		if ($this->tournament_id > 0)
+		{
+			list($tournament_name, $tournament_flags, $event_id) = Db::record(get_label('tournament'), 'SELECT t.name, t.flags, e.id FROM tournaments t LEFT OUTER JOIN events e ON e.id = ? AND e.tournament_id = t.id WHERE t.id = ?', $this->event_id, $this->tournament_id);
+			if (($tournament_flags | TOURNAMENT_FLAG_SINGLE_GAME) == 0 && is_null($event_id))
+			{
+				throw new Exc(get_label('Game [0] can not be played in the tournament [1]', $this->id, $tournament_name));
+			}
+			$tournament_id = $this->tournament_id;
+		}
+		
 		if ($count > 0)
 		{
 			Db::exec(get_label('game'),
-				'UPDATE games SET log = ?, end_time = ?, club_id = ?, event_id = ?, moderator_id = ?, ' .
+				'UPDATE games SET log = ?, end_time = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 					'user_id = ?, language = ?, start_time = ?, end_time = ?, result = ?, ' .
 					'rules = ?, flags = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
-				$log, $this->end_time, $this->club_id, $this->event_id, $moder_id,
+				$log, $this->end_time, $this->club_id, $this->event_id, $tournament_id, $moder_id,
 				$this->user_id, $this->lang, $this->start_time, $this->end_time, $this->result_code(),
 				$this->rules_code, $this->flags, $this->id);
 		}
 		else
 		{
 			Db::exec(get_label('game'),
-				'INSERT INTO games (club_id, event_id, moderator_id, user_id, language, log, start_time, end_time, result, rules, flags, log_version) ' .
-					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . CURRENT_LOG_VERSION . ')',
-				$this->club_id, $this->event_id, $moder_id, $this->user_id, $this->lang,
+				'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, log, start_time, end_time, result, rules, flags, log_version) ' .
+					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . CURRENT_LOG_VERSION . ')',
+				$this->club_id, $this->event_id, $tournament_id, $moder_id, $this->user_id, $this->lang,
 				$log, $this->start_time, $this->end_time, $this->result_code(), $this->rules_code,
 				$this->flags);
 			list ($this->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');

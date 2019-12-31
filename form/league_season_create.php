@@ -10,12 +10,12 @@ try
 {
 	dialog_title(get_label('Create [0]', get_label('season')));
 
-	if (!isset($_REQUEST['club']))
+	if (!isset($_REQUEST['league']))
 	{
-		throw new Exc(get_label('Unknown [0]', get_label('club')));
+		throw new Exc(get_label('Unknown [0]', get_label('league')));
 	}
-	$club_id = (int)$_REQUEST['club'];
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+	$league_id = (int)$_REQUEST['league'];
+	check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 	
 	$start = new DateTime();
 	$end = new DateTime();
@@ -40,10 +40,10 @@ try
 	
 	function commit(onSuccess)
 	{
-		json.post("api/ops/season.php",
+		json.post("api/ops/league_season.php",
 		{
 			op: 'create'
-			, club_id: <?php echo $club_id; ?>
+			, league_id: <?php echo $league_id; ?>
 			, name: $("#form-name").val()
 			, start: startDate.val()
 			, end: endDate.val()

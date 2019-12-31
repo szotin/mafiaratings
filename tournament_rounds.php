@@ -38,7 +38,7 @@ class Page extends TournamentPageBase
 			echo '<table class="transp" width="100%">';
 			echo '<tr class="light"><td align="left" style="padding:2px;>';
 			show_club_buttons(-1, '', 0, 0);
-			echo '</td></tr><tr><td align="center"><a href="#" onclick="mr.createEvent(' . $this->id . ')">' . get_label('Create [0]', get_label('round'));
+			echo '</td></tr><tr><td align="center"><a href="#" onclick="mr.createRound(' . $this->id . ')">' . get_label('Create [0]', get_label('round'));
 			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '">';
 			echo '</td></tr></table>';
 			echo '</td>';
@@ -60,7 +60,7 @@ class Page extends TournamentPageBase
 			$this->id);
 		$query->add(' ORDER BY e.start_time, e.id LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE)));
 		while ($row = $query->next())
 		{
 			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $event_timezone, $addr_id, $addr_flags, $addr, $addr_url, $addr_name, $come_odds, $bringing, $late) = $row;
@@ -94,6 +94,7 @@ class Page extends TournamentPageBase
 			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '"><b>' . format_date('l, F d, Y <br> H:i', $start_time, $event_timezone) . '</b><br>';
 			$event_pic->
 				set($id, $name, $flags)->
+				set($this->id, $this->name, $this->flags)->
 				set($addr_id, $addr, $addr_flags);
 			$event_pic->show(ICONS_DIR);
 			echo '</a><br>' . $name;

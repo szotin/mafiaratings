@@ -14,14 +14,14 @@ class Page extends ClubPageBase
 		
 		check_permissions(PERMISSION_CLUB_MANAGER, $this->id);
 		
-		list ($count) = Db::record(get_label('season'), 'SELECT count(*) FROM seasons WHERE club_id = ?', $this->id);
+		list ($count) = Db::record(get_label('season'), 'SELECT count(*) FROM club_seasons WHERE club_id = ?', $this->id);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$query = new DbQuery('SELECT id, name, start_time, end_time FROM seasons WHERE club_id = ? ORDER BY start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, $this->id);
+		$query = new DbQuery('SELECT id, name, start_time, end_time FROM club_seasons WHERE club_id = ? ORDER BY start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, $this->id);
 		
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="darker"><th width="56">';
-		echo '<button class="icon" onclick="mr.createSeason(' . $this->id . ')" title="' . get_label('Create [0]', get_label('season')) . '"><img src="images/create.png" border="0"></button></th>';
+		echo '<button class="icon" onclick="mr.createClubSeason(' . $this->id . ')" title="' . get_label('Create [0]', get_label('season')) . '"><img src="images/create.png" border="0"></button></th>';
 		echo '<th>' . get_label('Name') . '</th><th width="150">' . get_label('Start') . '</th><th width="150">' . get_label('End') . '</th></tr>';
 		while ($row = $query->next())
 		{
@@ -30,8 +30,8 @@ class Page extends ClubPageBase
 			if ($this->is_manager)
 			{
 				echo '<td width="56" valign="top" align="center">';
-				echo '<button class="icon" onclick="mr.editSeason(' . $id . ')" title="' . get_label('Edit [0]', get_label('season')) . '"><img src="images/edit.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.deleteSeason(' . $id . ', \'' . get_label('Are you sure you want to delete the season?') . '\')" title="' . get_label('Delete [0]', get_label('season')) . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.editClubSeason(' . $id . ')" title="' . get_label('Edit [0]', get_label('season')) . '"><img src="images/edit.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.deleteClubSeason(' . $id . ', \'' . get_label('Are you sure you want to delete the season?') . '\')" title="' . get_label('Delete [0]', get_label('season')) . '"><img src="images/delete.png" border="0"></button>';
 				echo '</td>';
 			}
 			echo '<td>' . $name . '</td>';

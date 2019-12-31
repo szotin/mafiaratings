@@ -53,14 +53,10 @@ class ApiPage extends OpsApiPageBase
 		
 		$price = get_optional_param('price', '');
 		$scoring_id = (int)get_optional_param('scoring_id', $club->scoring_id);
-		$scoring_weight = (float)get_optional_param('scoring_weight', 1);
-		if ($scoring_weight <= 0)
-		{
-			throw new Exc('Scoring weight must be positive floating point value.');
-		}
+		list($scoring_version) = Db::record(get_label('scoring'), 'SELECT MAX(version) FROM scoring_versions WHERE scoring_id = ?', $scoring_id);
 		
 		$notes = get_optional_param('notes', '');
-		$flags = (int)get_optional_param('flags', TOURNAMENT_ENFORCE_RULES | TOURNAMENT_ENFORCE_SCORING) & TOURNAMENT_EDITABLE_MASK;
+		$flags = (int)get_optional_param('flags', TOURNAMENT_FLAG_USE_ROUNDS_SCORING) & TOURNAMENT_EDITABLE_MASK;
 		$langs = get_optional_param('langs', $club->langs);
 		$rules_code = get_optional_param('rules_code', NULL);
 		$stars = max(min((float)get_optional_param('stars', 0), 5), 0);
@@ -143,8 +139,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, league_id, request_league_id, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_weight, rules, flags, stars) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $request_league_id, $club_id, $address_id, $start, $end - $start, $langs, $notes, $price, $scoring_id, $scoring_weight, $rules_code, $flags, $stars);
+			'INSERT INTO tournaments (name, league_id, request_league_id, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_version, rules, flags, stars) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $league_id, $request_league_id, $club_id, $address_id, $start, $end - $start, $langs, $notes, $price, $scoring_id, $scoring_version, $rules_code, $flags, $stars);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -159,7 +155,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->notes = $notes;
 		$log_details->price = $price;
 		$log_details->scoring_id = $scoring_id;
-		$log_details->scoring_weight = $scoring_weight;
+		$log_details->scoring_version = $scoring_version;
 		$log_details->rules_code = $rules_code;
 		$log_details->flags = $flags;
 		$log_details->stars = $stars;
@@ -171,8 +167,8 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('round'), 
-				'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_weight, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)',
-				$event_name, $address_id, $club_id, $start, $end - $start, $notes, EVENT_MASK_HIDDEN, $langs, $price, $scoring_id, $tournament_id, $rules_code);
+				'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_version, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				$event_name, $address_id, $club_id, $start, $end - $start, $notes, EVENT_MASK_HIDDEN, $langs, $price, $scoring_id, $scoring_version, $tournament_id, $rules_code);
 				
 			$log_details = new stdClass();
 			$log_details->name = $name;
@@ -185,6 +181,7 @@ class ApiPage extends OpsApiPageBase
 			$log_details->notes = $notes;
 			$log_details->price = $price;
 			$log_details->scoring_id = $scoring_id;
+			$log_details->scoring_version = $scoring_version;
 			$log_details->rules_code = $rules_code;
 			$log_details->flags = EVENT_MASK_HIDDEN;
 			db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id, $request_league_id);
@@ -255,7 +252,6 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'empty.');
 		$help->request_param('rules_code', 'Rules for this tournament.', 'default club or club-league rules are used. Depending on the league.');
 		$help->request_param('scoring_id', 'Scoring id for this tournament.', 'default club scoring system is used.');
-		$help->request_param('scoring_weight', 'Weight of the points for this tournament. All scores multiplied by it.', 'is set to 1');
 		$help->request_param('notes', 'Tournament notes. Just a text.', 'empty.');
 		$help->request_param('langs', 'Languages on this tournament. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all club languages are used.');
 		$help->request_param('flags', 'Tournament flags. A bit cobination of:<ol>' .
@@ -282,8 +278,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_request_league_id, $old_league_id, $old_name, $old_start, $old_duration, $old_timezone, $old_stars, $old_address_id, $old_scoring_id, $old_scoring_weight, $old_price, $old_langs, $old_notes, $old_flags) = 
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.scoring_weight, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
+		list ($club_id, $old_request_league_id, $old_league_id, $old_name, $old_start, $old_duration, $old_timezone, $old_stars, $old_address_id, $old_scoring_id, $old_price, $old_langs, $old_notes, $old_flags) = 
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -300,11 +296,6 @@ class ApiPage extends OpsApiPageBase
 		$name = get_optional_param('name', $old_name);
 		$price = get_optional_param('price', $old_price);
 		$scoring_id = get_optional_param('scoring_id', $old_scoring_id);
-		$scoring_weight = (float)get_optional_param('scoring_weight', $old_scoring_weight);
-		if ($scoring_weight <= 0)
-		{
-			throw new Exc('Scoring weight must be positive floating point value.');
-		}
 		
 		$notes = get_optional_param('notes', $old_notes);
 		$langs = get_optional_param('langs', $old_langs);
@@ -454,10 +445,24 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		Db::exec(
-			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, price = ?, scoring_id = ?, scoring_weight = ?, flags = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $price, $scoring_id, $scoring_weight, $flags, $tournament_id);
+		if ($scoring_id != $old_scoring_id)
+		{
+			list($scoring_version) = Db::record(get_label('scoring'), 'SELECT MAX(version) FROM scoring_versions WHERE scoring_id = ?', $scoring_id);
+			Db::exec(
+				get_label('tournament'), 
+				'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, price = ?, scoring_id = ?, scoring_version = ?, flags = ? WHERE id = ?',
+				$name, $address_id, $start, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $flags, $tournament_id);
+			Db::exec(
+				get_label('round'),
+				'UPDATE events SET scoring_id = ?, scoring_version = ? WHERE tournament_id = ?', $scoring_id, $scoring_version, $tournament_id);
+		}
+		else
+		{
+			Db::exec(
+				get_label('tournament'), 
+				'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, price = ?, flags = ? WHERE id = ?',
+				$name, $address_id, $start, $duration, $langs, $notes, $price, $flags, $tournament_id);
+		}
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -492,10 +497,7 @@ class ApiPage extends OpsApiPageBase
 			if ($scoring_id != $old_scoring_id)
 			{
 				$log_details->scoring_id = $scoring_id;
-			}
-			if ($scoring_weight != $old_scoring_weight)
-			{
-				$log_details->scoring_weight = $scoring_weight;
+				$log_details->scoring_version = $scoring_version;
 			}
 			if ($flags != $old_flags)
 			{
@@ -517,15 +519,12 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'remains the same.');
 		$help->request_param('scoring_id', 'Scoring id for this tournament.', 'remains the same.');
-		$help->request_param('scoring_weight', 'Weight of the points for this tournament. All scores multiplied by it.', 'remains the same.');
 		$help->request_param('notes', 'Tournament notes. Just a text.', 'remains the same.');
 		$help->request_param('langs', 'Languages on this tournament. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
 		$help->request_param('flags', 'Tournament flags. A bit cobination of:<ol>' .
 									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
 									'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .
 									'<li value="64">When a custom event is created, it can be assigned to this tournament as a round.</li>' .
-									'<li value="128">Tournament rounds must use this tournament game rules.</li>' .
-									'<li value="256">Tournament rounds must use this tournament scoring system.</li>' .
 									'</ol>', 'remain the same.');
 		$help->request_param('address_id', 'Address id of the tournament.', 'remains the same.');
 		return $help;

@@ -4,7 +4,7 @@ require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/address.php';
-require_once 'include/event.php';
+require_once 'include/tournament.php';
 
 define("CUT_NAME",45);
 define("PAGE_SIZE",15);
@@ -15,7 +15,7 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_page;
 		
-		$season = 0;
+		$season = SEASON_ALL_TIME;
 		if (isset($_REQUEST['season']))
 		{
 			$season = (int)$_REQUEST['season'];
@@ -24,40 +24,39 @@ class Page extends ClubPageBase
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_club_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show events of a specific season.'));
+		$season = show_club_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show tournaments of a specific season.'));
 		echo '</td></tr></table></form>';
 		
 		$condition = new SQL(
-			' FROM events e ' .
-				' JOIN addresses a ON e.address_id = a.id' .
+			' FROM tournaments t ' .
+				' JOIN addresses a ON t.address_id = a.id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
-				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
-				' WHERE e.start_time < UNIX_TIMESTAMP() AND e.club_id = ?',
+				' WHERE t.start_time < UNIX_TIMESTAMP() AND t.club_id = ? AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0',
 			$this->id);
-		$condition->add(get_club_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
-		$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_AFTER) . ') = ' . EVENT_FLAG_TOURNAMENT);
+		$condition->add(get_club_season_condition($season, 't.start_time', '(t.start_time + t.duration)'));
 		
-		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
+		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE));
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.name, a.flags, a.address,' .
-				' (SELECT count(*) FROM games WHERE event_id = e.id AND canceled = FALSE AND result > 0) as games,' .
-				' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users',
+			'SELECT t.id, t.name, t.flags, t.start_time, ct.timezone, a.id, a.name, a.flags, a.address,' .
+			' (SELECT count(*) FROM games _g JOIN events _e ON _e.id = _g.event_id WHERE _e.tournament_id = t.id AND canceled = FALSE AND result > 0) as games,' .
+			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events',
 			$condition);
-		$query->add(' ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query->add(' ORDER BY t.start_time DESC, t.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';
-		echo '<td colspan="2">' . get_label('Event') . '</td>';
+		echo '<td colspan="2">' . get_label('Tournament') . '</td>';
 		echo '<td>' . get_label('Address') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Games played') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Players attended') . '</td></tr>';
+		echo '<td width="60" align="center">' . get_label('Number of rounds') . '</td></tr>';
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $address, $games_count, $users_count) = $row;
+			list ($tournament_id, $tournament_name, $tournament_flags, $tournament_time, $timezone, $address_id, $address_name, $address_flags, $address, $games_count, $rounds_count) = $row;
 
-			if ($event_flags & EVENT_FLAG_CANCELED)
+			if ($tournament_flags & TOURNAMENT_FLAG_CANCELED)
 			{
 				echo '<tr class="dark">';
 			}
@@ -66,19 +65,18 @@ class Page extends ClubPageBase
 				echo '<tr>';
 			}
 			
-			echo '<td width="50"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
-			$this->event_pic->
-				set($event_id, $event_name, $event_flags)->
+			echo '<td width="50"><a href="tournament_standings.php?bck=1&id=' . $tournament_id . '">';
+			$tournament_pic->
 				set($tournament_id, $tournament_name, $tournament_flags)->
 				set($address_id, $address_name, $address_flags);
-			$this->event_pic->show(ICONS_DIR, 50);
+			$tournament_pic->show(ICONS_DIR, 50);
 			echo '</a></td>';
-			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
+			echo '<td width="180">' . $tournament_name . '<br><b>' . format_date('l, F d, Y', $tournament_time, $timezone) . '</b></td>';
 			
 			echo '<td>' . $address . '</td>';
 			
-			echo '<td align="center"><a href="event_games.php?bck=1&id=' . $event_id . '">' . $games_count . '</a></td>';
-			echo '<td align="center"><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
+			echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament_id . '">' . $games_count . '</a></td>';
+			echo '<td align="center"><a href="tournament_rounds.php?bck=1&id=' . $tournament_id . '">' . $rounds_count . '</a></td>';
 			
 			echo '</tr>';
 		}
@@ -87,6 +85,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Tournaments history'));
+$page->run(get_label('Tournaments'));
 
 ?>

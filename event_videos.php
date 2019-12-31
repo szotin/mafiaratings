@@ -103,7 +103,7 @@ class Page extends EventPageBase
 				echo '<tr>';
 			}
 			
-			echo '<td valign="bottom"';
+			echo '<td valign="top"';
 			echo ' width="' . COLUMN_WIDTH . '%" align="center" valign="center">';
 			
 			echo '<p><span style="position:relative;">';
@@ -112,9 +112,17 @@ class Page extends EventPageBase
 			{
 				echo '<img src="images/' . ICONS_DIR . 'lang' . $lang . '.png" title="' . $title . '" width="24" style="position:absolute; margin-left:-28px;">';
 			}
-			echo '</a></span></p>';
+			echo '</a></span></p><p>';
+			if ($game_id != NULL)
+			{
+				echo get_label('Game [0]: [1]', $game_id, $title);
+			}
+			else
+			{
+				echo $title;
+			}
 
-			echo '</td>';
+			echo '</p></td>';
 			
 			++$video_count;
 			++$column_count;

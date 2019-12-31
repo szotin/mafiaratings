@@ -17,40 +17,35 @@ class Page extends EventPageBase
 		global $_profile;
 		parent::prepare();
 		
-		$this->scoring_id = $this->event->scoring_id;
-		if (isset($_REQUEST['scoring']))
-		{
-			$this->scoring_id = (int)$_REQUEST['scoring'];
-		}
-		
-		$rounds = array();
-		$round = new stdClass();
-		$round->scoring_weight = $this->event->scoring_weight;
-		$round->scoring_id = $this->event->scoring_id;
-		$rounds[] = $round;
-		foreach ($this->event->rounds as $round)
-		{
-			$rounds[] = $round;
-		}
-		
-		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
-		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, $rounds, $condition);
-		$players_count = count($scores->players);
-		$separator = '';
+        $this->scoring_id = $this->event->scoring_id;
+        $this->scoring_version = $this->event->scoring_version;
+        $this->scoring = NULL;
+        if (isset($_REQUEST['scoring']))
+        {
+            $this->scoring_id = (int)$_REQUEST['scoring'];
+            if ($this->scoring_id > 0)
+            {
+                list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
+                $this->scoring_version = -1;
+            }
+        }
+        
+        $players = event_scores($this->event->id, NULL, 0, $this->scoring);
+		$players_count = count($players);
 		if ($players_count > NUM_PLAYERS)
 		{
 			$players_count = NUM_PLAYERS;
 		}
 		
+		$separator = '';
 		for ($num = 0; $num < $players_count; ++$num)
 		{
-			$score = $scores->players[$num];
-			$this->players_list .= $separator . $score->id;
+			$player = $players[$num];
+			$this->players_list .= $separator . $player->id;
 			$separator = ',';
 		}
 		
-		while ($num < 5)
+		while ($num < NUM_PLAYERS)
 		{
 			$this->players_list .= $separator;
 			++$num;

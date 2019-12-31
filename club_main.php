@@ -77,6 +77,64 @@ class Page extends ClubPageBase
 		return false;
 	}
 	
+	private function show_tournaments_list($query, $title)
+	{
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE));
+		$tournament_count = 0;
+		$colunm_count = 0;
+		while ($row = $query->next())
+		{
+			list ($tournament_id, $tournament_name, $tournament_flags, $tournament_time, $timezone, $addr_id, $addr_flags, $addr, $addr_name) = $row;
+			if ($colunm_count == 0)
+			{
+				if ($tournament_count == 0)
+				{
+					echo '<table class="bordered light" width="100%">';
+					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . $title . '</b></td></tr>';
+				}
+				else
+				{
+					echo '</tr>';
+				}
+				echo '<tr>';
+			}
+			
+			echo '<td width="' . COLUMN_WIDTH . '%" align="center">';
+			echo '<a href="tournament_info.php?bck=1&id=' . $tournament_id . '" title="' . get_label('View tournament details.') . '"><b>';
+			echo format_date('l, F d, Y, H:i', $tournament_time, $timezone) . '</b><br>';
+			$tournament_pic->
+				set($tournament_id, $tournament_name, $tournament_flags)->
+				set($addr_id, $addr, $addr_flags);
+			$tournament_pic->show(ICONS_DIR);
+			echo '</a><br>';
+			if ($addr_name == $tournament_name)
+			{
+				echo $addr;
+			}
+			else
+			{
+				echo $tournament_name;
+			}
+			echo '</b></td>';
+			++$colunm_count;
+			++$tournament_count;
+			if ($colunm_count >= COLUMN_COUNT)
+			{
+				$colunm_count = 0;
+			}
+		}
+		if ($colunm_count > 0)
+		{
+			echo '<td colspan="' . (COLUMN_COUNT - $colunm_count) . '">&nbsp;</td>';
+		}
+		if ($tournament_count > 0)
+		{
+			echo '</tr></table>';
+			return true;
+		}
+		return false;
+	}
+	
 	protected function rating_row($row, $number)
 	{
 		list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
@@ -94,11 +152,7 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_lang_code;
 	
-		if ($_profile != NULL)
-		{
-			$is_manager = $_profile->is_club_manager($this->id);
-		}
-		
+		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
 		$have_tables = false;
 		
 		$playing_count = 0;
@@ -171,21 +225,14 @@ class Page extends ClubPageBase
 			$have_tables = $this->show_events_list($query, get_label('Your events')) || $have_tables;
 		}
 		
-		// tournaments
+		// future tournaments
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.name FROM events e' .
-				' JOIN addresses a ON e.address_id = a.id' .
-				' JOIN clubs c ON e.club_id = c.id' .
-				' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
-				' JOIN cities ct ON ct.id = c.city_id' .
-				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_CANCELED) . ') = ' . EVENT_FLAG_TOURNAMENT . ' AND e.club_id = ?',
+			'SELECT t.id, t.name, t.flags, t.start_time, c.timezone, a.id, a.flags, a.address, a.name FROM tournaments t' .
+				' JOIN addresses a ON t.address_id = a.id' .
+				' JOIN cities c ON c.id = a.city_id' .
+				' WHERE t.start_time > UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0 AND t.club_id = ? ORDER BY t.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
 			$this->id);
-		if ($_profile != NULL)
-		{
-			$query->add(' AND e.id NOT IN (SELECT event_id FROM event_users WHERE user_id = ? AND coming_odds > 0)', $_profile->user_id);
-		}
-		$query->add(' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
-		$have_tables = $this->show_events_list($query, get_label('Upcoming tournaments')) || $have_tables;
+		$have_tables = $this->show_tournaments_list($query, get_label('Upcoming tournaments')) || $have_tables;
 	
 		// upcoming
 		$query = new DbQuery(
@@ -194,7 +241,7 @@ class Page extends ClubPageBase
 				' JOIN clubs c ON e.club_id = c.id' .
 				' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 				' JOIN cities ct ON ct.id = c.city_id' .
-				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_TOURNAMENT | EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_CANCELED) . ') = 0 AND e.club_id = ?',
+				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_CANCELED) . ') = 0 AND e.club_id = ?',
 			$this->id);
 		if ($_profile != NULL)
 		{
@@ -207,6 +254,15 @@ class Page extends ClubPageBase
 			echo '</p>';
 		}
 			
+		// current tournaments
+		$query = new DbQuery(
+			'SELECT t.id, t.name, t.flags, t.start_time, c.timezone, a.id, a.flags, a.address, a.name FROM tournaments t' .
+				' JOIN addresses a ON t.address_id = a.id' .
+				' JOIN cities c ON c.id = a.city_id' .
+				' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND t.start_time <= UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0 AND t.club_id = ? ORDER BY t.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
+			$this->id);
+		$have_tables = $this->show_tournaments_list($query, get_label('Current tournaments')) || $have_tables;
+	
 		// info
 		if ($have_tables)
 		{

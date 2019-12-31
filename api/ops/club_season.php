@@ -22,11 +22,11 @@ class ApiPage extends OpsApiPageBase
 
 		if ($id > 0)
 		{
-			$query = new DbQuery('SELECT name FROM seasons WHERE name = ? AND club_id = ? AND id <> ?', $name, $club_id, $id);
+			$query = new DbQuery('SELECT name FROM club_seasons WHERE name = ? AND club_id = ? AND id <> ?', $name, $club_id, $id);
 		}
 		else
 		{
-			$query = new DbQuery('SELECT name FROM seasons WHERE name = ? AND club_id = ?', $name, $club_id);
+			$query = new DbQuery('SELECT name FROM club_seasons WHERE name = ? AND club_id = ?', $name, $club_id);
 		}
 		if ($query->next())
 		{
@@ -58,7 +58,7 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		Db::exec(
 			get_label('season'),
-			'INSERT INTO seasons (club_id, name, start_time, end_time) VALUES (?, ?, ?, ?)', 
+			'INSERT INTO club_seasons (club_id, name, start_time, end_time) VALUES (?, ?, ?, ?)', 
 			$club->id, $name, $start->getTimestamp(), $end->getTimestamp());
 		list ($season_id) = Db::record(get_label('season'), 'SELECT LAST_INSERT_ID()');
 		
@@ -66,7 +66,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->name = $name;
 		$log_details->start = $start->format(DEF_DATETIME_FORMAT_NO_TIME);
 		$log_details->end = $end->format(DEF_DATETIME_FORMAT_NO_TIME);
-		db_log(LOG_OBJECT_SEASON, 'created', $log_details, $season_id, $club->id);
+		db_log(LOG_OBJECT_CLUB_SEASON, 'created', $log_details, $season_id, $club->id);
 		
 		Db::commit();
 		
@@ -92,7 +92,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$season_id = (int)get_required_param('season_id');
-		list ($club_id, $old_name, $old_start, $old_end) = Db::record(get_label('season'), 'SELECT club_id, name, start_time, end_time FROM seasons WHERE id = ?', $season_id);
+		list ($club_id, $old_name, $old_start, $old_end) = Db::record(get_label('season'), 'SELECT club_id, name, start_time, end_time FROM club_seasons WHERE id = ?', $season_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
@@ -109,7 +109,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		Db::exec(get_label('season'), 'UPDATE seasons SET name = ?, start_time = ?, end_time = ? WHERE id = ?', $name, $start, $end, $season_id);
+		Db::exec(get_label('season'), 'UPDATE club_seasons SET name = ?, start_time = ?, end_time = ? WHERE id = ?', $name, $start, $end, $season_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -125,7 +125,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->end = $end_datetime->format(DEF_DATETIME_FORMAT_NO_TIME);
 			}
-			db_log(LOG_OBJECT_SEASON, 'changed', $log_details, $season_id, $club_id);
+			db_log(LOG_OBJECT_CLUB_SEASON, 'changed', $log_details, $season_id, $club_id);
 		}
 		Db::commit();
 	}
@@ -150,13 +150,13 @@ class ApiPage extends OpsApiPageBase
 		
 		$season_id = (int)get_required_param('season_id');
 	
-		list ($club_id) = Db::record(get_label('season'), 'SELECT club_id FROM seasons WHERE id = ?', $season_id);
+		list ($club_id) = Db::record(get_label('season'), 'SELECT club_id FROM club_seasons WHERE id = ?', $season_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
 		Db::begin();
-		Db::exec(get_label('season'), 'DELETE FROM seasons WHERE id = ?', $season_id);
-		db_log(LOG_OBJECT_SEASON, 'deleted', NULL, $season_id, $club_id);
+		Db::exec(get_label('season'), 'DELETE FROM club_seasons WHERE id = ?', $season_id);
+		db_log(LOG_OBJECT_CLUB_SEASON, 'deleted', NULL, $season_id, $club_id);
 		Db::commit();
 	}
 	
@@ -169,6 +169,6 @@ class ApiPage extends OpsApiPageBase
 }
 
 $page = new ApiPage();
-$page->run('Season Operations', CURRENT_VERSION);
+$page->run('Club Season Operations', CURRENT_VERSION);
 
 ?>

@@ -11,7 +11,8 @@ define("PAGE_SIZE",15);
 class Page extends EventPageBase
 {
 	private $scoring_id;
-	private $roles;
+	private $scoring_version;
+	private $scoring;
 	
 	private $user_id;
 	private $user_name;
@@ -26,15 +27,16 @@ class Page extends EventPageBase
 		parent::prepare();
 		
 		$this->scoring_id = $this->event->scoring_id;
+		$this->scoring_version = $this->event->scoring_version;
+		$this->scoring = NULL;
 		if (isset($_REQUEST['scoring']))
 		{
 			$this->scoring_id = (int)$_REQUEST['scoring'];
-		}
-		
-		$this->roles = POINTS_ALL;
-		if (isset($_REQUEST['roles']))
-		{
-			$this->roles = (int)$_REQUEST['roles'];
+			if ($this->scoring_id > 0)
+			{
+				list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
+				$this->scoring_version = -1;
+			}
 		}
 		
 		$this->user_id = 0;
@@ -64,31 +66,18 @@ class Page extends EventPageBase
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
 		show_scoring_select($this->event->club_id, $this->scoring_id, 'document.viewForm.submit()', get_label('Scoring system'));
-		echo ' ';
-		show_roles_select($this->roles, 'document.viewForm.submit()', get_label('Use only the points earned in a specific role.'));
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'event=' . $this->event->id, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
 		
-		$rounds = array();
-		$round = new stdClass();
-		$round->scoring_weight = $this->event->scoring_weight;
-		$round->scoring_id = $this->event->scoring_id;
-		$rounds[] = $round;
-		foreach ($this->event->rounds as $round)
-		{
-			$rounds[] = $round;
-		}
-		
 		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
 		
-		$scoring_system = new ScoringSystem($this->scoring_id);
-		$scores = new Scores($scoring_system, $rounds, $condition, get_roles_condition($this->roles));
-		$players_count = count($scores->players);
+		$players = event_scores($this->event->id, null, SCORING_LOD_PER_GROUP, $this->scoring);
+		$players_count = count($players);
 		if ($this->user_id > 0)
 		{
-			$_page = $scores->get_user_page($this->user_id, PAGE_SIZE);
+			$_page = get_user_page($players, $this->user_id, PAGE_SIZE);
 			if ($_page < 0)
 			{
 				$_page = 0;
@@ -107,7 +96,7 @@ class Page extends EventPageBase
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
 		echo '</tr>';
-		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('Other') . '</td></tr>';
+		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
 		
 		$page_start = $_page * PAGE_SIZE;
 		if ($players_count > $page_start + PAGE_SIZE)
@@ -116,8 +105,8 @@ class Page extends EventPageBase
 		}
 		for ($number = $page_start; $number < $players_count; ++$number)
 		{
-			$score = $scores->players[$number];
-			if ($score->id == $this->user_id)
+			$player = $players[$number];
+			if ($player->id == $this->user_id)
 			{
 				echo '<tr class="darker">';
 				$highlight = 'darker';
@@ -128,30 +117,30 @@ class Page extends EventPageBase
 				$highlight = 'dark';
 			}
 			echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
-			echo '<td width="50"><a href="user_info.php?id=' . $score->id . '&bck=1">';
-			$this->user_pic->set($score->id, $score->name, $score->flags);
+			echo '<td width="50"><a href="user_info.php?id=' . $player->id . '&bck=1">';
+			$this->user_pic->set($player->id, $player->name, $player->flags);
 			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a></td><td><a href="user_info.php?id=' . $score->id . '&bck=1">' . $score->name . '</a></td>';
+			echo '</a></td><td><a href="user_info.php?id=' . $player->id . '&bck=1">' . $player->name . '</a></td>';
 			echo '<td width="50" align="center">';
-			if (!is_null($score->club_id) && $score->club_id > 0)
+			if (!is_null($player->club_id) && $player->club_id > 0)
 			{
-				$this->club_pic->set($score->club_id, $score->club_name, $score->club_flags);
+				$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
 				$this->club_pic->show(ICONS_DIR, 40);
 			}
 			echo '</td>';
-			echo '<td align="center" class="' . $highlight . '">' . $score->sum_points_str() . '</td>';
-			echo '<td align="center">' . $score->main_points_str() . '</td>';
-			echo '<td align="center">' . $score->prima_nocta_points_str() . '</td>';
-			echo '<td align="center">' . $score->extra_points_str() . '</td>';
-			echo '<td align="center">' . $score->penalty_points_str() . '</td>';
-			echo '<td align="center">' . $score->other_points_str() . '</td>';
-			echo '<td align="center">' . $score->games_played . '</td>';
-			echo '<td align="center">' . $score->games_won . '</td>';
-			if ($score->games_played != 0)
+			echo '<td align="center" class="' . $highlight . '">' . format_score($player->points) . '</td>';
+			echo '<td align="center">' . format_score($player->main_points) . '</td>';
+			echo '<td align="center">' . format_score($player->prima_nocta_points) . '</td>';
+			echo '<td align="center">' . format_score($player->extra_points) . '</td>';
+			echo '<td align="center">' . format_score($player->penalty_points) . '</td>';
+			echo '<td align="center">' . format_score($player->night1_points) . '</td>';
+			echo '<td align="center">' . $player->games_count . '</td>';
+			echo '<td align="center">' . $player->wins . '</td>';
+			if ($player->games_count != 0)
 			{
-				echo '<td align="center">' . number_format(($score->games_won*100.0)/$score->games_played, 1) . '%</td>';
+				echo '<td align="center">' . number_format(($player->wins * 100.0) / $player->games_count, 1) . '%</td>';
 				echo '<td align="center">';
-				echo $score->points_per_game_str();
+				echo format_score($player->points / $player->games_count);
 				echo '</td>';
 			}
 			else
@@ -174,15 +163,7 @@ class Page extends EventPageBase
 	
 	private function no_user_error()
 	{
-		if ($this->roles == POINTS_ALL)
-		{
-			$message = get_label('[0] played no games.', $this->user_name);
-		}
-		else
-		{
-			$message = get_label('[0] played no games as [1].', $this->user_name, get_role_name($this->roles, ROLE_NAME_FLAG_SINGLE | ROLE_NAME_FLAG_LOWERCASE));
-		}
-		$this->errorMessage($message);
+		$this->errorMessage(get_label('[0] did not play in [1].', $this->user_name, $this->event->name));
 	}
 }
 

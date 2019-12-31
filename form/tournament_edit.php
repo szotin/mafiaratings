@@ -20,8 +20,8 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $request_league_id, $league_id, $name, $start_time, $duration, $timezone, $stars, $address_id, $scoring_id, $scoring_weight, $price, $langs, $notes, $flags) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.scoring_weight, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
+	list ($club_id, $request_league_id, $league_id, $name, $start_time, $duration, $timezone, $stars, $address_id, $scoring_id, $price, $langs, $notes, $flags) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
@@ -89,8 +89,6 @@ try
 	}
 	echo '</select></td></tr>';
 	
-	echo '<tr><td>' . get_label('Scoring weight') . ':</td><td><input id="form-scoring-weight" value="' . $scoring_weight . '"></td></tr>';
-	
 	if (is_valid_lang($club->langs))
 	{
 		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
@@ -112,35 +110,27 @@ try
 	}
 	echo '> '.get_label('long term tournament. Like a seasonal club championship.').'<br>';
 	
-	echo '</tr><tr><td colspan="2">';
-	
-	echo '<input type="checkbox" id="form-single_game"';
+	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"';
+	if (($flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
+	{
+		echo ' disabled';
+	}
 	if ($flags & TOURNAMENT_FLAG_SINGLE_GAME)
 	{
 		echo ' checked';
 	}
 	echo '> '.get_label('single games from non-tournament events can be assigned to the tournament.').'<br>';
 	
-	echo '<input type="checkbox" id="form-event_round"';
-	if ($flags & TOURNAMENT_FLAG_EVENT_ROUND)
+	echo '<input type="checkbox" id="form-use_rounds_scoring"';
+	if ($flags & TOURNAMENT_FLAG_SINGLE_GAME)
+	{
+		echo ' disabled';
+	}
+	if ($flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING)
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('club events can become tournament rounds if needed.').'<br>';
-	
-	echo '<input type="checkbox" id="form-enforce_rules"';
-	if ($flags & TOURNAMENT_ENFORCE_RULES)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('tournament rounds must use tournament rules.').'<br>';
-	
-	echo '<input type="checkbox" id="form-enforce_scoring"';
-	if ($flags & TOURNAMENT_ENFORCE_SCORING)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('tournament rounds must use tournament scoring system.').'<br>';
+	echo '> '.get_label('scoring rules can be custom in tournament rounds.').'<br>';
 	
 	echo '</td></tr>';
 	
@@ -155,13 +145,21 @@ try
 	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
 	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
-	$('#form-scoring-weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
 	
 	function longTermClicked()
 	{
 		var c = $("#form-long_term").attr('checked') ? true : false;
 		$("#form-single_game").prop('checked', c);
-		$("#form-event_round").prop('checked', c);
+		$("#form-use_rounds_scoring").prop('checked', !c);
+		$("#form-single_game").prop('disabled', !c);
+		$("#form-use_rounds_scoring").prop('disabled', c);
+	}
+	
+	function singleGameClicked()
+	{
+		var c = $("#form-single_game").attr('checked') ? true : false;
+		$("#form-use_rounds_scoring").prop('checked', !c);
+		$("#form-use_rounds_scoring").prop('disabled', c);
 	}
 	
 	$("#form-stars").rate(
@@ -177,9 +175,7 @@ try
 		var _flags = 0;
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
-		if ($("#form-event_round").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_EVENT_ROUND; ?>;
-		if ($("#form-enforce_rules").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_RULES; ?>;
-		if ($("#form-enforce_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_ENFORCE_SCORING; ?>;
+		if ($("#form-use_rounds_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_USE_ROUNDS_SCORING; ?>;
 		
 		var _end = strToDate(endDate.val());
 		_end.setDate(_end.getDate() + 1); // inclusive
@@ -193,7 +189,6 @@ try
 			price: $("#form-price").val(),
 			address_id: $("#form-addr_id").val(),
 			scoring_id: $("#form-scoring").val(),
-			scoring_weight: $("#form-scoring-weight").val(),
 			notes: $("#form-notes").val(),
 			start: startDate.val(),
 			end: dateToStr(_end),

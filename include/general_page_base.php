@@ -55,7 +55,7 @@ class GeneralPageBase extends PageBase
 			new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
 			new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games')),
 			// new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),
-			new MenuItem('#stats', get_label('Stats'), NULL, array
+			new MenuItem('#stats', get_label('Reports'), NULL, array
 			(
 				new MenuItem('stats.php' . $ccc, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
 				new MenuItem('by_numbers.php' . $ccc, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),

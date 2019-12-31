@@ -99,7 +99,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, c.flags, c.langs, c.web_site, c.email, c.phone, c.city_id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', rules, scoring_id FROM clubs c' . 
+				'SELECT c.id, c.name, c.flags, c.langs, c.web_site, c.email, c.phone, c.city_id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', c.rules, c.scoring_id FROM clubs c' . 
 				' JOIN cities i ON i.id = c.city_id' .
 				' JOIN countries o ON o.id = i.country_id', $condition);
 			$query->add(' ORDER BY name');

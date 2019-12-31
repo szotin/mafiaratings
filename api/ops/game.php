@@ -59,12 +59,6 @@ function compare_players($player1, $player2)
 
 class GPlayer
 {
-	public $id;
-	public $name;
-	public $club;
-	public $flags;
-	public $nicks;
-
 	function __construct($id, $name, $club, $u_flags, $user_club_flags)
 	{
 		$this->id = (int)$id;
@@ -74,57 +68,6 @@ class GPlayer
 		$this->flags = (int)(($user_club_flags & (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
 	}
 }
-
-class GAddr
-{
-	public $id;
-	public $name;
-	
-	function __construct($row)
-	{
-		$this->id = (int)$row[0];
-		$this->name = $row[1];
-	}
-}
-
-class GEmptyReg
-{
-}
-
-class GEvent
-{
-	public $id;
-	public $rules_code;
-	public $name;
-	public $start_time;
-	public $langs;
-	public $duration;
-	public $flags;
-	public $reg;
-
-	function __construct($row)
-	{
-		list ($this->id, $this->rules_code, $this->name, $this->start_time, $this->langs, $this->duration, $this->flags, $addr_id) = $row;
-		$this->id = (int)$this->id;
-		$this->start_time = (int)$this->start_time;
-		$this->langs = (int)$this->langs;
-		$this->duration = (int)$this->duration;
-		$this->flags = (int)$this->flags;
-		$this->reg = new GEmptyReg();
-	}
-}
-
-class GClubMin
-{
-	public $id;
-	public $name;
-	
-	function __construct($id, $name)
-	{
-		$this->id = $id;
-		$this->name = $name;
-	}
-};
 
 class GClub
 {
@@ -199,17 +142,43 @@ class GClub
 				$this->players[$user_id]->nicks[$nick] = $count;
 			}
 		}
-
+		
+		$this->tournaments = array();
 		$this->events = array();
 		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & USER_CLUB_PERM_MODER))
 		{
-			$events_str = '(0';
-			$query = new DbQuery('SELECT id, rules, name, start_time, languages, duration, flags, address_id FROM events WHERE (start_time + duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?) OR id = ?', $id, $game->event_id);
+			$query = new DbQuery('SELECT t.id, t.name FROM tournaments t WHERE t.start_time + t.duration >= UNIX_TIMESTAMP() AND t.start_time <= UNIX_TIMESTAMP() AND (t.flags & ' . (TOURNAMENT_FLAG_CANCELED | TOURNAMENT_FLAG_SINGLE_GAME) . ') = ' . TOURNAMENT_FLAG_SINGLE_GAME . ' AND t.club_id = ?', $id);
 			while ($row = $query->next())
 			{
-				$e_id = $row[0];
-				$this->events[$e_id] = new GEvent($row);
-				$events_str .= ', ' . $e_id;
+				$t = new stdClass();
+				list ($t->id, $t->name) = $row;
+				$t->id = (int)$t->id;
+				$this->tournaments[] = $t;
+			}
+			
+			$events_str = '(0';
+			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, t.id, t.name FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $game->event_id);
+			while ($row = $query->next())
+			{
+				$e = new stdClass();
+				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->tournament_id, $tournament_name) = $row;
+				$e->id = (int)$e->id;
+				$e->start_time = (int)$e->start_time;
+				$e->langs = (int)$e->langs;
+				$e->duration = (int)$e->duration;
+				$e->flags = (int)$e->flags;
+				$e->reg = array();
+				if (!is_null($e->tournament_id))
+				{
+					$e->tournament_id = (int)$e->tournament_id;
+					$e->tournament_name = $tournament_name;
+				}
+				else
+				{
+					$e->tournament_id = 0;
+				}
+				$this->events[$e->id] = $e;
+				$events_str .= ', ' . $e->id;
 			}
 			$events_str .= ')';
 			
@@ -228,14 +197,7 @@ class GClub
 							++$haunters_count;
 						}
 					}
-					if (!is_array($this->events[$event_id]->reg))
-					{
-						$this->events[$event_id]->reg = array($user_id => $nick);
-					}
-					else
-					{
-						$this->events[$event_id]->reg[$user_id] = $nick;
-					}
+					$this->events[$event_id]->reg[$user_id] = $nick;
 				}
 			}
 			
@@ -247,14 +209,7 @@ class GClub
 				if (isset($this->events[$event_id]))
 				{
 					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, $this->name, NEW_USER_FLAGS, $incomer_flags | USER_CLUB_PERM_PLAYER);
-					if (!is_array($this->events[$event_id]->reg))
-					{
-						$this->events[$event_id]->reg = array($incomer_id => $nick);
-					}
-					else
-					{
-						$this->events[$event_id]->reg[$incomer_id] = $nick;
-					}
+					$this->events[$event_id]->reg[$incomer_id] = $nick;
 					if ($haunters_count < 50)
 					{
 						$this->haunters[] = (int)$incomer_id;
@@ -287,30 +242,10 @@ class GClub
 		$query = new DbQuery('SELECT a.id, a.name FROM addresses a WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY (SELECT count(*) FROM events WHERE address_id = a.id) DESC', $id);
 		while ($row = $query->next())
 		{
-			$this->addrs[] = new GAddr($row);
-		}
-	}
-}
-
-class GUserSettings
-{
-	public $flags;
-	public $l_autosave;
-	public $g_autosave;
-	
-	function __construct($row)
-	{
-		if ($row)
-		{
-			$this->flags = (int)$row[0];
-			$this->l_autosave = (int)$row[1];
-			$this->g_autosave = (int)$row[2];
-		}
-		else
-		{
-			$this->flags = 0;
-			$this->l_autosave = 10;
-			$this->g_autosave = 60;
+			$a = new stdClass();
+			$a->id = (int)$row[0];
+			$a->name = $row[1];
+			$this->addrs[] = $a;
 		}
 	}
 }
@@ -334,14 +269,29 @@ class GUser
 		$this->manager = ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MANAGER) ? 1 : 0;
 		
 		$query = new DbQuery('SELECT flags, l_autosave, g_autosave FROM game_settings WHERE user_id = ?', $this->id);
-		$this->settings = new GUserSettings($query->next());
+		$this->settings = new stdClass();
+		if ($row = $query->next())
+		{
+			$this->settings->flags = (int)$row[0];
+			$this->settings->l_autosave = (int)$row[1];
+			$this->settings->g_autosave = (int)$row[2];
+		}
+		else
+		{
+			$this->settings->flags = 0;
+			$this->settings->l_autosave = 10;
+			$this->settings->g_autosave = 60;
+		}
 		
 		$this->clubs = array();
 		foreach ($_profile->clubs as $club)
 		{
 			if (($club->club_flags & CLUB_FLAG_RETIRED) == 0)
 			{
-				$this->clubs[] = new GClubMin($club->id, $club->name);
+				$c = new stdClass();
+				$c->id = $club->id;
+				$c->name = $club->name;
+				$this->clubs[] = $c;
 			}
 		}
 	}
@@ -866,6 +816,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$this->response['console'] = $console;
 		}
+		//print_json($this->response);
 	}
 	
 	function sync_op_help()
@@ -924,9 +875,17 @@ class ApiPage extends OpsApiPageBase
 			list($area_id) = Db::record(get_label('area'), 'SELECT ct.area_id FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 		}
 		
+		
+		$games_count_query = new SQL('SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = u.id AND g.start_time > UNIX_TIMESTAMP() - ' . (24*60*60*365));
+		if ($club_id > 0)
+		{
+			$games_count_query->add(' AND g.club_id = ?', $club_id);
+		}
+		
 		array();
-		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, c.id, c.name, a.id, a.name_' . $_lang_code . 
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, c.id, c.name, a.id, a.name_' . $_lang_code . ', (', $games_count_query);
+		$query->add(
+				') as games_count' .
 				' FROM users u' .
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' JOIN cities ct ON ct.id = u.city_id' .
@@ -938,23 +897,16 @@ class ApiPage extends OpsApiPageBase
 			$query->add(
 					' AND (u.name LIKE ? OR' .
 					' u.email LIKE ? OR' .
-					' u.id IN (SELECT DISTINCT user_id FROM registrations WHERE nick_name LIKE ?))' .
-					' ORDER BY u.name',
+					' u.id IN (SELECT DISTINCT user_id FROM registrations WHERE nick_name LIKE ?))',
 				$name_wildcard,
 				$name_wildcard,
 				$name_wildcard);
 		}
 		else if ($club_id > 0)
 		{
-			$query->add(
-					' AND u.id IN (SELECT DISTINCT user_id FROM user_clubs WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)' .
-					' ORDER BY u.rating DESC',
-				$club_id);
+			$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM user_clubs WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)', $club_id);
 		}
-		else
-		{
-			$query->add(' ORDER BY u.rating DESC');
-		}
+		$query->add(' ORDER BY games_count DESC');
 		
 		if ($num > 0)
 		{
@@ -1218,6 +1170,94 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('reason', 'Reason why the points are added/subtracted. Must be non empty if points are non zero.', 'points must be 0.');
 		return $help;
     }
+	
+	//-------------------------------------------------------------------------------------------------------
+	// fix_event_ids (temporary - if you do not understand why it is there, delete it)
+	//-------------------------------------------------------------------------------------------------------
+	function fix_event_ids_op()
+	{
+		$total_count = 0;
+		$changed_count = 0;
+		$events_count = 0;
+		
+		Db::begin();
+		$query = new DbQuery('SELECT id, log, canceled, event_id FROM games WHERE round_num > 0');
+		while ($row = $query->next())
+		{
+			list($id, $log, $is_canceled, $event_id) = $row;
+			$event_id = (int)$event_id;
+			$gs = new GameState();
+			$gs->init_existing($id, $log, $is_canceled);
+			if ($gs->event_id != $event_id)
+			{
+				$gs->event_id = $event_id;
+				rebuild_game_stats($gs);
+				++$changed_count;
+			}
+			++$total_count;
+		}
+		
+		$event_dir = '../../' . EVENT_PICS_DIR;
+		$tournament_dir = '../../' . TOURNAMENT_PICS_DIR;
+		if (!is_dir($tournament_dir))
+		{
+			mkdir($tournament_dir);
+		}
+		if (!is_dir($tournament_dir . 'icons'))
+		{
+			mkdir($tournament_dir . 'icons');
+		}
+		if (!is_dir($tournament_dir . 'tnails'))
+		{
+			mkdir($tournament_dir . 'tnails');
+		}
+		
+		$query = new DbQuery('SELECT e.id, e.flags, t.id, t.flags FROM events e JOIN tournaments t ON t.id = e.tournament_id');
+		while ($row = $query->next())
+		{
+			list($event_id, $event_flags, $tournament_id, $tournament_flags) = $row;
+			if (($tournament_flags & TOURNAMENT_ICON_MASK) != 0)
+			{
+				continue;
+			}
+			
+			if (($event_flags & EVENT_ICON_MASK) == 0)
+			{
+				continue;
+			}
+			
+			$tournament_filename = $tournament_id . '.png';
+			$event_filename = $event_id . '.png';
+			if (!rename($event_dir . $event_filename, $tournament_dir . $tournament_filename))
+			{
+				throw new Exc('Unable to move ' . $event_dir . $event_filename . ' to ' . $tournament_dir . $tournament_filename . '. Current dir: ' . getcwd());
+			}
+			if (!rename($event_dir . 'icons/' . $event_filename, $tournament_dir . 'icons/' . $tournament_filename))
+			{
+				rename($tournament_dir . $tournament_filename, $event_dir . $event_filename);
+				throw new Exc('Unable to move ' . $event_dir . 'icons/' . $event_filename . ' to ' . $tournament_dir . 'icons/' . $tournament_filename . '. Current dir: ' . getcwd());
+			}
+			if (!rename($event_dir . 'tnails/' . $event_filename, $tournament_dir . 'tnails/' . $tournament_filename))
+			{
+				rename($tournament_dir . $tournament_filename, $event_dir . $event_filename);
+				rename($tournament_dir . 'icons/' . $tournament_filename, $event_dir . 'icons/' . $event_filename);
+				throw new Exc('Unable to move ' . $event_dir . 'tnails/' . $event_filename . ' to ' . $tournament_dir . 'tnails/' . $tournament_filename . '. Current dir: ' . getcwd());
+			}
+			
+			$tournament_flags = ($tournament_flags & ~TOURNAMENT_ICON_MASK) + (1 << TOURNAMENT_ICON_MASK_OFFSET);
+			$event_flags = $event_flags & ~EVENT_ICON_MASK;
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = ? WHERE id = ?', $tournament_flags, $tournament_id);
+			Db::exec(get_label('event'), 'UPDATE events SET flags = ? WHERE id = ?', $event_flags, $event_id);
+			
+			++$events_count;
+		}
+		
+		Db::commit();
+		
+		$this->response['total'] = $total_count;
+		$this->response['games_changed'] = $changed_count;
+		$this->response['events_changed'] = $events_count;
+	}
 	
 	//-------------------------------------------------------------------------------------------------------
 	// change_ex

@@ -30,10 +30,10 @@ try
 	$event->load($_REQUEST['id']);
 	
 	$is_manager = ($_profile != NULL && $_profile->is_club_manager($event->club_id));
-	$rows = 10;
-	$cols = 2;
+	$rows = 0;
+	$cols = 0;
+	$refr = 0;
 	$title = 1;
-	$refr = 60;
 	$logo_height = TNAIL_HEIGHT;
 	$edit_settings = isset($_REQUEST['settings']);
 	
@@ -83,6 +83,19 @@ try
 		}
 	}
 	
+	if ($rows <= 0)
+	{
+		$rows = 10;
+	}
+	if ($cols <= 0)
+	{
+		$cols = 2;
+	}
+	if ($refr <= 0)
+	{
+		$refr = 60;
+	}
+	
 	if ($edit_settings && $is_manager)
 	{
 		echo '<h1>' . get_label('Standings screen settings') . '</h1>';
@@ -125,20 +138,8 @@ try
 			echo '</td></tr></table>';
 		}
 		
-		$rounds = array();
-		$round = new stdClass();
-		$round->scoring_weight = $event->scoring_weight;
-		$round->scoring_id = $event->scoring_id;
-		$rounds[] = $round;
-		foreach ($event->rounds as $round)
-		{
-			$rounds[] = $round;
-		}
-		
-		$condition = new SQL(' AND g.event_id = ?', $event->id);
-		$scoring_system = new ScoringSystem($event->scoring_id);
-		$scores = new Scores($scoring_system, $rounds, $condition);
-		$players_count = count($scores->players);
+		$players = event_scores($event->id, NULL, SCORING_LOD_PER_GROUP);
+		$players_count = count($players);
 			
 		if ($players_count == 0)
 		{
@@ -224,17 +225,6 @@ try
 		}
 		else
 		{
-			if (count($event->rounds) > 0)
-			{
-				if ($event->round_num == 0)
-				{
-					echo '<center><h2>' . get_label('Main round') . '</h2></center>';
-				}
-				else if ($event->round_num <= count($event->rounds))
-				{
-					echo '<center><h2>' . $event->rounds[$event->round_num - 1]->name . '</h2></center>';
-				}
-			}
 			$number = 0;
 			echo '<table width="100%"><tr>';
 			for ($i = 0; $i < $cols; ++$i)
@@ -245,7 +235,7 @@ try
 					{
 						break;
 					}
-					$score = $scores->players[$number++];
+					$player = $players[$number++];
 					
 					if ($j == 0)
 					{
@@ -257,31 +247,32 @@ try
 						echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 						echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 						echo '</tr>';
-						echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('Other') . '</td></tr>';
+						echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
 					}
 					
 					echo '<tr>';
 					echo '<td align="center" class="dark">' . $number . '</td>';
 					echo '<td width="50">';
-					$user_pic->set($score->id, $score->name, $score->flags);
+					$user_pic->set($player->id, $player->name, $player->flags);
 					$user_pic->show(ICONS_DIR, 50);
-					echo '</td><td>' . $score->name . '</td>';
+					echo '</td><td>' . $player->name . '</td>';
 					echo '<td width="50" align="center">';
-					if (!is_null($score->club_id) && $score->club_id > 0)
+					if (!is_null($player->club_id) && $player->club_id > 0)
 					{
-						$club_pic->set($score->club_id, $score->club_name, $score->club_flags);
+						$club_pic->set($player->club_id, $player->club_name, $player->club_flags);
 						$club_pic->show(ICONS_DIR, 40);
 					}
 					echo '</td>';
 					
-					echo '<td align="center" class="dark">' . $score->sum_points_str() . '</td>';
-					echo '<td align="center">' . $score->main_points_str() . '</td>';
-					echo '<td align="center">' . $score->prima_nocta_points_str() . '</td>';
-					echo '<td align="center">' . $score->extra_points_str() . '</td>';
-					echo '<td align="center">' . $score->penalty_points_str() . '</td>';
-					echo '<td align="center">' . $score->other_points_str() . '</td>';
-					echo '<td align="center">' . $score->games_played . '</td>';
-					echo '<td align="center">' . $score->games_won . '</td>';
+					echo '<td align="center" class="dark">' . format_score($player->points) . '</td>';
+					echo '<td align="center">' . format_score($player->main_points) . '</td>';
+					echo '<td align="center">' . format_score($player->prima_nocta_points) . '</td>';
+					echo '<td align="center">' . format_score($player->extra_points) . '</td>';
+					echo '<td align="center">' . format_score($player->penalty_points) . '</td>';
+					echo '<td align="center">' . format_score($player->night1_points) . '</td>';
+					echo '<td align="center">' . $player->games_count . '</td>';
+					echo '<td align="center">' . $player->wins . '</td>';
+					
 					echo '</tr>';
 				}
 				echo '</table></td>';

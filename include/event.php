@@ -52,12 +52,8 @@ class Event
 	public $tournament_flags;
 	
 	public $scoring_id;
+	public $scoring_version;
 	public $scoring_weight;
-	public $planned_games;
-	
-	public $round_num;
-	public $rounds;
-	public $rounds_changed;
 	
 	public $day;
 	public $month;
@@ -90,11 +86,8 @@ class Event
 		$this->langs = LANG_ALL;
 		$this->rules_code = default_rules_code();
 		$this->scoring_id = -1;
+		$this->scoring_version = 0;
 		$this->scoring_weight = 1;
-		$this->planned_games = 0;
-		$this->round_num = 0;
-		$this->rounds = array();
-		$this->rounds_changed = false;
 		$this->coming_odds = NULL;
 		$this->tournament_id = NULL;
 		
@@ -109,6 +102,7 @@ class Event
 					$timezone = $club->timezone;
 					$this->rules_code = $club->rules_code;
 					$this->scoring_id = $club->scoring_id;
+					list($this->scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
 					$this->langs = $club->langs;
 					break;
 				}
@@ -230,6 +224,7 @@ class Event
 		$this->city = $club->city;
 		$this->country = $club->country;
 		$this->scoring_id = $club->scoring_id;
+		list($this->scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
 		$this->rules_code = $club->rules_code;
 	}
 
@@ -294,11 +289,11 @@ class Event
 		
 		Db::exec(
 			get_label('event'), 
-			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_weight, planned_games, round_num) ' .
+			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_weight, tournament_id) ' .
 			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$this->name, $this->price, $this->addr_id, $this->club_id, $this->timestamp, 
 			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_code, 
-			$this->scoring_id, $this->scoring_weight, $this->planned_games, $this->round_num);
+			$this->scoring_id, $this->scoring_version, $this->scoring_weight, $this->tournament_id);
 		list ($this->id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 		list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
 		
@@ -313,14 +308,9 @@ class Event
 		$log_details->langs = $this->langs;
 		$log_details->rules_code = $this->rules_code;
 		$log_details->scoring_id = $this->scoring_id;
+		$log_details->scoring_version = $this->scoring_version;
 		db_log(LOG_OBJECT_EVENT, 'created', $log_details, $this->id, $this->club_id);
 		
-		for ($i = 0; $i < count($this->rounds); ++$i)
-		{
-			$round = $this->rounds[$i];
-			Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, planned_games) VALUES (?, ?, ?, ?, ?, ?)',
-				$this->id, $i + 1, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
-		}
 		Db::commit();
 		
 		return $this->id;
@@ -344,25 +334,14 @@ class Event
 		
 		list ($old_timestamp, $old_duration) = Db::record(get_label('event'), 'SELECT start_time, duration FROM events WHERE id = ?', $this->id);
 		
-		if ($this->rounds_changed)
-		{
-			Db::exec(get_label('round'), 'DELETE FROM rounds WHERE event_id = ?', $this->id);
-			for ($i = 0; $i < count($this->rounds); ++$i)
-			{
-				$round = $this->rounds[$i];
-				Db::exec(get_label('round'), 'INSERT INTO rounds (event_id, num, name, scoring_id, scoring_weight, planned_games) VALUES (?, ?, ?, ?, ?, ?)',
-					$this->id, $i + 1, $round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games);
-			}
-		}
-		
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
-				'name = ?, price = ?, club_id = ?, rules = ?, scoring_id = ?, scoring_weight = ?, planned_games = ?, ' .
-				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, round_num = ?, ' .
+				'name = ?, price = ?, club_id = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_weight = ?, ' .
+				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
 				'languages = ? WHERE id = ?',
-			$this->name, $this->price, $this->club_id, $this->rules_code, $this->scoring_id, $this->scoring_weight, $this->planned_games,
-			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags, $this->round_num,
+			$this->name, $this->price, $this->club_id, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_weight,
+			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags,
 			$this->langs, $this->id);
 		if (Db::affected_rows() > 0)
 		{
@@ -378,6 +357,7 @@ class Event
 			$log_details->langs = $this->langs;
 			$log_details->rules_code = $this->rules_code;
 			$log_details->scoring_id = $this->scoring_id;
+			$log_details->scoring_version = $this->scoring_version;
 			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $this->id, $this->club_id);
 		}
 		
@@ -389,7 +369,6 @@ class Event
 				$this->timestamp, $this->duration, $this->id);
 		}
 		Db::commit();
-		$this->rounds_changed = false;
 	}
 
 	function load($event_id)
@@ -411,10 +390,10 @@ class Event
 			$this->name, $this->price, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
 			$this->tournament_id, $this->tournament_name, $this->tournament_flags,
 			$this->addr_id, $this->addr, $this->addr_url, $timezone, $this->addr_flags,
-			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_weight, $this->planned_games, $this->round_num, $this->coming_odds, $this->city, $this->country) =
+			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_weight, $this->coming_odds, $this->city, $this->country) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.round_num, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
+					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_weight, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .
@@ -424,38 +403,7 @@ class Event
 						' WHERE e.id = ?',
 					$user_id, $event_id);
 					
-		$this->rounds = array();
-		$this->rounds_changed = false;
-		$query = new DbQuery('SELECT name, scoring_id, scoring_weight, planned_games FROM rounds WHERE event_id = ? ORDER BY num', $this->id);
-		while ($row = $query->next())
-		{
-			$round = new stdClass();
-			list($round->name, $round->scoring_id, $round->scoring_weight, $round->planned_games) = $row;
-			$this->rounds[] = $round;
-		}
 		$this->set_datetime($timestamp, $timezone);
-	}
-	
-	function clear_rounds()
-	{
-		if (count($this->rounds) > 0)
-		{
-			$this->rounds = array();
-			$this->round_num = 0;
-			$this->rounds_changed = true;
-		}
-	}
-	
-	function add_round($name, $scoring_id, $scoring_weight, $planned_games)
-	{
-		$round = new stdClass();
-		$round->name = $name;
-		$round->scoring_id = $scoring_id;
-		$round->scoring_weight = $scoring_weight;
-		$round->planned_games = $planned_games;
-		
-		$this->rounds[] = $round;
-		$this->rounds_changed = true;
 	}
 	
 	function show_details($show_attendance = true, $show_details = true)
@@ -520,85 +468,7 @@ class Event
 			}
 			
 			$user_pic = new Picture(USER_PICTURE);
-			if ($this->flags & EVENT_FLAG_TOURNAMENT)
-			{
-				$found = false;
-				$col = 0;
-				foreach ($attendance as $a)
-				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
-					if ($odds >= 100)
-					{
-						if ($col == 0)
-						{
-							if (!$found)
-							{
-								$found = true;
-								echo '<table class="bordered" width="100%">';
-								echo '<tr class="darker"><td colspan="6" align="center"><b>' . get_label('Accepted') . ':</b></td>';
-							}
-							echo '</tr><tr>';
-						}
-						
-						echo '<td width="16.66%" class="lighter" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, 50);
-						echo '</a><br>' . $name . '</td>';
-						++$col;
-						if ($col == 6)
-						{
-							$col = 0;
-						}
-					}
-				}
-				if ($found)
-				{
-					if ($col > 0)
-					{
-						echo '<td class="lighter" colspan="' . (6 - $col) . '"></td>';
-					}
-					echo '</tr></table>';
-				}
-				
-				$found = false;
-				$col = 0;
-				foreach ($attendance as $a)
-				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
-					if ($odds < 100)
-					{
-						if ($col == 0)
-						{
-							if (!$found)
-							{
-								$found = true;
-								echo '<table class="bordered" width="100%">';
-								echo '<tr class="darker"><td colspan="6" align="center"><b>' . get_label('Declined') . ':</b></td>';
-							}
-							echo '</tr><tr>';
-						}
-						
-						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
-						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, 50);
-						echo '</a><br>' . $name . '</td>';
-						++$col;
-						if ($col == 6)
-						{
-							$col = 0;
-						}
-					}
-				}
-				if ($found)
-				{
-					if ($col > 0)
-					{
-						echo '<td colspan="' . (6 - $col) . '"></td>';
-					}
-					echo '</tr></table>';
-				}
-			}
-			else if (BRIEF_ATTENDANCE)
+			if (BRIEF_ATTENDANCE)
 			{
 				$found = false;
 				$col = 0;
@@ -764,13 +634,13 @@ class Event
 		}
 	}
 	
-	function get_full_name($with_club = false)
+	function get_full_name()
 	{
-		if ($with_club && $this->name != $this->club_name)
+		if (!is_null($this->tournament_id))
 		{
-			return get_label('[1] / [0]: [2]', $this->name, $this->club_name, format_date('D, M d, y', $this->timestamp, $this->timezone));
+			return $this->tournament_name . ' : ' . $this->name;
 		}
-		return get_label('[0]: [1]', $this->name, format_date('D, M d, y', $this->timestamp, $this->timezone));
+		return $this->name;
 	}
 	
 	static function show_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $attending)
@@ -814,7 +684,7 @@ class Event
 				}
 				else if ($start_time + $duration + EVENT_ALIVE_TIME >= $now)
 				{
-					echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, extend event, set current round.') . '"><img src="images/time.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
 				}
 				$no_buttons = false;
 			}
@@ -826,10 +696,6 @@ class Event
 			}
 		}
 		echo '<button class="icon" onclick="window.open(\'event_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
-		if ($start_time < $now)
-		{
-			echo '<button class="icon" onclick="window.open(\'event_figm_form.php?event_id=' . $id . '\' ,\'_blank\')" title="' . get_label('FIGM report.') . '"><img src="images/table.png" border="0"></button>';
-		}
 	}
 }
 
@@ -979,12 +845,13 @@ class EventPageBase extends PageBase
 				new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings')),
 				new MenuItem('event_competition.php?id=' . $this->event->id, get_label('Competition chart'), get_label('How players were competing on this event.')),
 				new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event')),
-				new MenuItem('#stats', get_label('Stats'), NULL, array
+				new MenuItem('#stats', get_label('Reports'), NULL, array
 				(
 					new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
 					new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 					new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
 					new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event')),
+					new MenuItem('event_figm_form.php?event_id=' . $this->event->id, get_label('FIGM'), get_label('PDF report for sending to FIGM Mafia World Tour'), NULL, true),
 				)),
 				new MenuItem('#resources', get_label('Resources'), NULL, array
 				(
@@ -1050,31 +917,10 @@ class EventPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		if ($this->event->flags & EVENT_FLAG_TOURNAMENT)
-		{
-			$title = get_label('Tournament [0]', $this->_title);
-		}
-		else
-		{
-			$title = get_label('Event [0]', $this->_title);
-		}
+		$title = get_label('Event [0]', $this->_title);
 		
-		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->name;
+		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->get_full_name();
 		$time = time();
-		if ($this->event->timestamp <= $time && $this->event->timestamp + $this->event->duration > $time)
-		{
-			if (count($this->event->rounds) > 0)
-			{
-				if ($this->event->round_num == 0)
-				{
-					echo ' (' . get_label('Main round') . ')';
-				}
-				else if ($this->event->round_num <= count($this->event->rounds))
-				{
-					echo ' (' . $this->event->rounds[$this->event->round_num - 1]->name . ')';
-				}
-			}
-		}
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
 		
 		echo '<td valign="top" align="right">';

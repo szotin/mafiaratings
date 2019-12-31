@@ -475,7 +475,7 @@ class ViewGamePageBase extends PageBase
 				echo '<button class="icon" onclick="mr.deleteVideo(' . $vg->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $gs->id) . '\')" title="' . get_label('Remove game [0] video', $gs->id) . '"><img src="images/film-delete.png" border="0"></button>';
 			}
 		}
-		echo '<button class="icon" onclick="mr.figmGameForm(' . $gs->id . ')" title="' . get_label('FIGM game [0] form', $gs->id) . '"><img src="images/table.png" border="0"></button>';
+		echo '<button class="icon" onclick="mr.figmGameForm(' . $gs->id . ')" title="' . get_label('FIGM game [0] form', $gs->id) . '"><img src="images/figm.png" border="0"></button>';
 		echo '</td></tr><tr><td align="right" valign="bottom"><form method="get" name="gotoForm" action="' . get_page_name() . '">';
 		echo '<input type="hidden" name="id" value="' . $gs->id . '">';
 		echo '<select name="gametime" onChange="document.gotoForm.submit()">';

@@ -439,9 +439,9 @@ mafia.ui = new function()
 					'<td id="warn' + i + '" width="100"></td>' +
 					'<td width="90">' +
 						'<span id="btns-' + i + '">' +
-							'<button class="icon" onclick="mafia.ui.warnPlayer(' + i + ')"><img src="images/warn.png"></button>' +
-							'<button class="icon" onclick="mafia.ui.suicide(' + i + ')"><img src="images/suicide.png"></button>' +
-							'<button class="icon" onclick="mafia.ui.kickOut(' + i + ')"><img src="images/delete.png""></button>' +
+							'<button class="icon" onclick="mafia.warnPlayer(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
+							'<button class="icon" onclick="mafia.suicide(' + i + ')"><img src="images/suicide.png" title="' + l('Suicide') + '"></button>' +
+							'<button class="icon" onclick="mafia.kickOut(' + i + ')"><img src="images/delete.png"" title="' + l('KickOut') + '"></button>' +
 						'</span>' +
 					'</td>' +
 				'</tr>';
@@ -600,26 +600,8 @@ mafia.ui = new function()
 				status += '<td><button class="icon" onclick="eventForm.show()"><img src="images/create.png" class="icon"></button></td>';
 			}
 			status += '<td><select id="events" onchange="mafia.ui.eventChange(false)"></select></td></td></tr></table></tr><tr><td align="left">';
-			var clubRules = mafia.data().club.rules;
-			if (clubRules.length > 1)
-			{
-				status += l('Rules') + ': <select id="rules" onchange="mafia.ui.rulesChange()">';
-				var custom = true;
-				for (var i = 0; i < clubRules.length; ++i)
-				{
-					var rules = clubRules[i];
-					status += _option(rules.code, game.rules_code, rules.name);
-					if (rules.code == game.rules_code)
-					{
-						custom = false;
-					}
-				}
-				if (custom)
-				{
-					status += _option(game.rules_code, game.rules_code, '');
-				}
-				status += '</select>';
-			}
+			status += '<div id="tournaments_div"></div>';
+			
 			status += '</td></tr></table>';
 			
 			clockHtml = '<table width="100%"><tr><td align="right">' + l('Lang') + ': <select id="lang" onchange="mafia.ui.langChange()"></select></td></tr>';
@@ -1276,21 +1258,27 @@ mafia.ui = new function()
 			var end = start + parseInt(event.duration);
 			if (start <= timestamp && end + user.manager * 28800 > timestamp)
 			{
-				var d = new Date(start * 1000);
+//				var d = new Date(start * 1000);
 				var n = event.name;
-				if (event_id != 0)
+				if (event_id > 0)
 				{
-					n = d.getDate() + "/" + (d.getMonth() + 1) + "/" + d.getFullYear() + ": " + n;
+					if (event.tournament_id > 0)
+						n = event.tournament_name + ': ' + n;
+					// else
+						// n = d.getDate() + "/" + (d.getMonth() + 1) + "/" + d.getFullYear() + ": " + n;
 					if (end + user.manager <= timestamp)
-					{
 						n += ' (' + l('EvOver') + ')';
-					}
 				}
 				str += _option(event_id, game.event_id, n);
 			}
 		}
 		$('#events').html(str);
 		mafia.ui.eventChange(true);
+	}
+	
+	this.ratingChange = function()
+	{
+		mafia.rating($('#rating').attr('checked') ? 1 : 0);
 	}
 	
 	this.eventChange = function(init)
@@ -1326,7 +1314,28 @@ mafia.ui = new function()
 			html += _option(/*RUSSIAN*/2, game.lang, l('Rus'));
 		}
 		_enable($('#lang').html(html), true);
-		_enable($('#rules').val(game.rules_code), true);
+		
+		var eventTournamentId = event.tournament_id;
+		html = l('Tournament') + ': <select id="tournaments" onchange="mafia.ui.tournamentChange()"><option value="0"></option>';
+		for (var tournament of mafia.data().club.tournaments)
+		{
+			html += _option(tournament.id, eventTournamentId, tournament.name);
+			if (eventTournamentId == tournament.id)
+			{
+				eventTournamentId = 0;
+			}
+		}
+		if (eventTournamentId > 0)
+		{
+			html += _option(eventTournamentId, eventTournamentId, event.tournament_name);
+		}
+		html += '</select> <input type="checkbox" id="rating" onclick="mafia.ui.ratingChange()"';
+		if (mafia.rating())
+		{
+			html += ' checked';
+		}
+		html += '> ' + l('Rating');
+		$('#tournaments_div').html(html);
 		
 		var sReg = mafia.sReg(event.id);
 		if (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8)
@@ -1401,9 +1410,10 @@ mafia.ui = new function()
 		mafia.setLang($('#lang').val());
 	}
 
-	this.rulesChange = function()
+	this.tournamentChange = function()
 	{
-		mafia.rulesCode($('#rules').val());
+		mafia.tournamentId($('#tournaments').val());
+		$('#rating').prop('checked', (mafia.data().game.flags & ~/*GAME_FLAG_FUN*/1) == 0);
 	}
 
 	this.playerChange = function(num)
@@ -1525,23 +1535,6 @@ mafia.ui = new function()
 		}
 	}
 	
-	this.suicide = function(num)
-	{
-		dlg.yesNo(l('ConfirmSuicide', mafia.playerTitle(num)), null, null, function()
-		{
-			mafia.suicide(num);
-		});
-	}
-	
-	this.kickOut = function(num)
-	{
-		dlg.yesNo(l('ConfirmKickOut', mafia.playerTitle(num)), null, null, function()
-		{
-			mafia.kickOut(num);
-		});
-	}
-	
-	this.warnPlayer = mafia.warnPlayer;
 	this.back = mafia.back;
 	this.save = mafia.save;
 	
@@ -1714,7 +1707,7 @@ var eventForm = new function()
 			'<tr><td>' + l('Rules') + ':</td><td><select id="form-rules"></select></td></tr>' +
 			'<tr><td>' + l('Langs') + ':</td><td id="form-langs"></td></tr>' +
 			'<tr><td colspan="2">' +
-			'<input type="checkbox" id="form-all_mod" checked> ' + l('AllModer') + '</td></tr>' +
+			'<input type="checkbox" id="form-all_mod" checked> ' + l('AllModer') + '<br><input type="checkbox" id="form-fun"> ' + l('Fun') + '</td></tr>' +
 			'</table><script>$(eventForm.init);</script>';
 			
 		dlg.okCancel(html, l('CreateEvent'), 600, function()
@@ -1723,6 +1716,10 @@ var eventForm = new function()
 			{
 				var aid = $("#form-addr").val();
 				var f = $('#form-all_mod').attr('checked') ? /*EVENT_FLAG_ALL_MODERATE*/8 : 0;
+				if ($('#form-fun').attr('checked'))
+				{
+					f |= /*EVENT_FLAG_FUN*/32;
+				}
 				var l = 0;
 				if ($('#form-en').attr('checked')) l |= /*ENGLISH*/1;
 				if ($('#form-ru').attr('checked')) l |= /*RUSSIAN*/2;
@@ -1732,6 +1729,7 @@ var eventForm = new function()
 					duration: $('#form-duration').val(),
 					price: $('#form-price').val(),
 					rules_code: $('#form-rules').val(),
+					tournament_id: 0,
 					langs: l,
 					flags: f
 				};

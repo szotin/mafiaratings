@@ -28,6 +28,7 @@ class ApiPage extends GetApiPageBase
 		$area_id = (int)get_optional_param('area_id', -1);
 		$country_id = (int)get_optional_param('country_id', -1);
 		$scoring_id = (int)get_optional_param('scoring_id', -1);
+		$scoring_version = (int)get_optional_param('scoring_version', -1);
 		$rules_code = get_optional_param('rules_code');
 		$user_id = (int)get_optional_param('user_id', -1);
 		$langs = (int)get_optional_param('langs', 0);
@@ -115,6 +116,11 @@ class ApiPage extends GetApiPageBase
 			$condition->add(' AND t.scoring_id = ?', $scoring_id);
 		}
 		
+		if ($scoring_version > 0)
+		{
+			$condition->add(' AND t.scoring_version = ?', $scoring_version);
+		}
+		
 		if (!empty($rules_code))
 		{
 			$condition->add(' AND t.rules = ?', $rules_code);
@@ -153,7 +159,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, c.name, c.flags, t.start_time, t.duration, t.notes, t.price, t.scoring_id, t.rules, l.id, l.name, l.flags, ct.timezone FROM tournaments t' . 
+				'SELECT t.id, t.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, c.name, c.flags, t.start_time, t.duration, t.notes, t.price, t.scoring_id, t.scoring_version, t.rules, l.id, l.name, l.flags, ct.timezone FROM tournaments t' . 
 				' JOIN addresses a ON a.id = t.address_id' .
 				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' JOIN clubs c ON c.id = t.club_id' .
@@ -168,7 +174,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$tournament = new stdClass();
-				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->address_name, $address_flags, $tournament->club_id, $tournament->club_name, $club_flags, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament_scoring_id, $rules_code, $tournament_league_id, $tournament_league_name, $tournament_league_flags, $tournament_timezone) = $row;
+				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->address_name, $address_flags, $tournament->club_id, $tournament->club_name, $club_flags, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament_scoring_id, $tournament_scoring_version, $rules_code, $tournament_league_id, $tournament_league_name, $tournament_league_flags, $tournament_timezone) = $row;
 				$tournament->id = (int)$tournament->id;
 				$tournament->langs = (int)$tournament->langs;
 				$tournament->address_id = (int)$tournament->address_id;
@@ -178,6 +184,7 @@ class ApiPage extends GetApiPageBase
 				if (!is_null($tournament_scoring_id))
 				{
 					$tournament->scoring_id = (int)$tournament_scoring_id;
+					$tournament->scoring_version = (int)$tournament_scoring_version;
 				}
 				$tournament->rules = rules_code_to_object($rules_code);
 				
@@ -223,7 +230,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.name, t.flags, t.langs, t.address_id, t.club_id, t.start_time, t.duration, t.notes, t.price, t.scoring_id, t.rules, t.league_id FROM tournaments t' . 
+				'SELECT t.id, t.name, t.flags, t.langs, t.address_id, t.club_id, t.start_time, t.duration, t.notes, t.price, t.scoring_id, t.scoring_version, t.rules, t.league_id FROM tournaments t' . 
 				' JOIN addresses a ON a.id = t.address_id', $condition);
 			$query->add(' ORDER BY t.start_time DESC, t.id DESC');
 			if ($page_size > 0)
@@ -235,14 +242,18 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$tournament = new stdClass();
-				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->club_id, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament->scoring_id, $rules_code, $league_id) = $row;
+				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->club_id, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament_scoring_id, $tournament_scoring_version, $rules_code, $league_id) = $row;
 				$tournament->id = (int)$tournament->id;
 				$tournament->langs = (int)$tournament->langs;
 				$tournament->address_id = (int)$tournament->address_id;
 				$tournament->club_id = (int)$tournament->club_id;
 				$tournament->timestamp = (int)$tournament->timestamp;
 				$tournament->duration = (int)$tournament->duration;
-				$tournament->scoring_id = (int)$tournament->scoring_id;
+				if (!is_null($tournament_scoring_id))
+				{
+					$tournament->scoring_id = (int)$tournament_scoring_id;
+					$tournament->scoring_version = (int)$tournament_scoring_version;
+				}
 				if (!is_null($league_id))
 				{
 					$tournament->league_id = (int)$league_id;

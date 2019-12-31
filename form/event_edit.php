@@ -21,13 +21,13 @@ try
 	}
 	$event_id = (int)$_REQUEST['event_id'];
 	
-	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_weight, $planned_games, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
+	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_version, $scoring_weight, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
 		Db::record(get_label('event'), 
-			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_weight, e.planned_games, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
+			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_weight, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
 			'FROM events e ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
-			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' .  
+			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' . 
 			'WHERE e.id = ?', $event_id);
 	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	$club = $_profile->clubs[$club_id];
@@ -37,7 +37,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
-	echo '<td align="center" valign="top" rowspan="12">';
+	echo '<td align="center" valign="top" rowspan="13">';
 	$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
 	$event_pic->
 		set($event_id, $name, $flags)->
@@ -49,6 +49,16 @@ try
 	echo '</p></td>';
 	
 	echo '</tr>';
+	
+	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= ? AND start_time + duration >= ? ORDER BY name', $club_id, $start_time, $start_time);
+	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
+	show_option(0, $tour_id, '');
+	while ($row = $query->next())
+	{
+		list($tid, $tname) = $row;
+		show_option($tid, $tour_id, $tname);
+	}
+	echo '</select></td></tr>';
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
 	echo '<input type="text" id="form-date" value="' . datetime_to_string($start, false) . '">';
@@ -138,18 +148,13 @@ try
 	}
 	echo '> '.get_label('everyone can moderate games.');
 	
-	if (is_permitted(PERMISSION_ADMIN))
+	echo '<br><input type="checkbox" id="form-fun"';
+	if (($flags & EVENT_FLAG_FUN) != 0)
 	{
-		echo '<br><input type="checkbox" id="form-old_tournament"';
-		if (($flags & EVENT_FLAG_TOURNAMENT) != 0)
-		{
-			echo ' checked';
-		}
-		echo '> '.get_label('official tournament');
+		echo ' checked';
 	}
-	
-	echo '</td></tr>';
-	
+	echo '> '.get_label('non-rating event.');
+	echo '</td></tr>';	
 	echo '</table>';
 	
 	show_upload_script(EVENT_PIC_CODE, $event_id);
@@ -172,6 +177,29 @@ try
 		old_address_value = text;
 	}
 	
+	function tournamentChange()
+	{
+		var tid = $("#form-tournament").val();
+		if (tid > 0)
+		{
+			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
+			{
+				var t = obj.tournaments[0];
+				if (typeof t != "object")
+					return;
+				$("#form-rules").val(t.rules.code).prop('disabled', true);
+				$("#form-scoring").val(t.scoring_id).prop('disabled', true);
+				//console.log(t);
+			});
+		}
+		else
+		{
+			$("#form-rules").prop('disabled', false);
+			$("#form-scoring").prop('disabled', false);
+		}
+	}
+	tournamentChange();
+	
 	function addressClick()
 	{
 		var text = '';
@@ -193,14 +221,6 @@ try
 	}
 	addressClick();
 	
-	function eventGamesChange()
-	{
-		if ($('#form-planned_games').val() <= 0)
-		{
-			$('#form-planned_games').val('');
-		}
-	}
-	
 	function timeStr(val)
 	{
 		if (val.length < 2)
@@ -217,7 +237,7 @@ try
 		
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
-		if ($("#form-old_tournament").attr('checked')) _flags |= <?php echo EVENT_FLAG_TOURNAMENT; ?>;
+		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		
 		var _start = $('#form-date').val() + ' ' + timeStr($('#form-hour').val()) + ':' + timeStr($('#form-minute').val());
 		
@@ -225,6 +245,7 @@ try
 		{
 			op: "change"
 			, event_id: <?php echo $event_id; ?>
+			, tournament_id: $("#form-tournament").val()
 			, name: $("#form-name").val()
 			, start: _start
 			, duration: strToTimespan($("#form-duration").val())
@@ -233,7 +254,6 @@ try
 			, rules_code: $("#form-rules").val()
 			, scoring_id: $("#form-scoring").val()
 			, scoring_weight: $("#form-scoring-weight").val()
-			, planned_games: $("#form-planned_games").val()
 			, notes: $("#form-notes").val()
 			, flags: _flags
 			, langs: _langs
@@ -255,7 +275,6 @@ try
 	}
 	
 	$('#form-scoring_weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
-	$('#form-planned_games').spinner({ step:1, max:1000, min:0, change:eventGamesChange }).width(30);
 	
 	</script>
 <?php

@@ -17,13 +17,13 @@ try
 	
 	if ($game_id > 0)
 	{
-		list ($round_name, $event_name, $game_log, $is_canceled, $timezone, $moder_name) = Db::record(get_label('game'), 
-			'SELECT r.name, e.name, g.log, g.canceled, c.timezone, u.name FROM games g' .
+		list ($tournament_name, $event_name, $game_log, $is_canceled, $timezone, $moder_name) = Db::record(get_label('game'), 
+			'SELECT t.name, e.name, g.log, g.canceled, c.timezone, u.name FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
 			' JOIN addresses a ON a.id = e.address_id' .
 			' JOIN cities c ON c.id = a.city_id' .
 			' JOIN users u ON u.id = g.moderator_id' .
-			' LEFT OUTER JOIN rounds r ON r.event_id = g.event_id AND r.num = g.round_num' .
+			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 			' WHERE g.id = ?', $game_id);
 		
 		$gs = new GameState();
@@ -32,14 +32,14 @@ try
 	else
 	{
 		$gs = NULL;
-		$round_name = NULL;
+		$tournament_name = NULL;
 		$event_name = NULL;
 		$moder_name = NULL;
 		$timezone = NULL;
 	}
 	
 	$form = new FigmForm();
-	$form->add($gs, $round_name, $event_name, $moder_name, $timezone);
+	$form->add($gs, $event_name, $tournament_name, $moder_name, $timezone);
 	$form->output();
 }
 catch (Exception $e)

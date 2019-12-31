@@ -22,19 +22,19 @@ try
 	
 	$form = new FigmForm();
 	$query = new DbQuery(
-		'SELECT g.id, r.name, e.name, g.log, g.canceled, c.timezone, u.name FROM games g' .
+		'SELECT g.id, t.name, e.name, g.log, g.canceled, c.timezone, u.name FROM games g' .
 		' JOIN events e ON e.id = g.event_id' .
 		' JOIN addresses a ON a.id = e.address_id' .
 		' JOIN cities c ON c.id = a.city_id' .
 		' JOIN users u ON u.id = g.moderator_id' .
-		' LEFT OUTER JOIN rounds r ON r.event_id = g.event_id AND r.num = g.round_num' .
+		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 		' WHERE e.id = ? AND g.result > 0 ORDER BY g.end_time', $event_id);
 	while ($row = $query->next())
 	{
-		list ($game_id, $round_name, $event_name, $game_log, $is_canceled, $timezone, $moder_name) = $row;
+		list ($game_id, $tournament_name, $event_name, $game_log, $is_canceled, $timezone, $moder_name) = $row;
 		$gs = new GameState();
 		$gs->init_existing($game_id, $game_log, $is_canceled);
-		$form->add($gs, $round_name, $event_name, $moder_name, $timezone);
+		$form->add($gs, $event_name, $tournament_name, $moder_name, $timezone);
 	}
 	$form->output();
 }

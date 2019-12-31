@@ -78,10 +78,10 @@ class GamePlayerStats
 		{
 			if ($gs->gamestate == GAME_CIVIL_WON)
 			{
-				$this->scoring_flags |= SCORING_FLAG_LOOSE;
+				$this->scoring_flags |= SCORING_FLAG_LOSE;
 				if ($civ_day_kills == 0)
 				{
-					$this->scoring_flags |= SCORING_FLAG_CLEAR_LOOSE;
+					$this->scoring_flags |= SCORING_FLAG_CLEAR_LOSE;
 				}
 			}
 			else
@@ -111,10 +111,10 @@ class GamePlayerStats
 		}
 		else
 		{
-			$this->scoring_flags |= SCORING_FLAG_LOOSE;
+			$this->scoring_flags |= SCORING_FLAG_LOSE;
 			if ($maf_day_kills == 0)
 			{
-				$this->scoring_flags |= SCORING_FLAG_CLEAR_LOOSE;
+				$this->scoring_flags |= SCORING_FLAG_CLEAR_LOSE;
 			}
 		}
 		
@@ -139,11 +139,11 @@ class GamePlayerStats
 		$mafs_guessed = $gs->mafs_guessed($this->player_num);
 		if ($mafs_guessed >= 3)
 		{
-			$this->scoring_flags |= SCORING_FLAG_GUESSED_3;
+			$this->scoring_flags |= SCORING_FLAG_PRIMA_NOCTA_3;
 		}
 		else if ($mafs_guessed >= 2)
 		{
-			$this->scoring_flags |= SCORING_FLAG_GUESSED_2;
+			$this->scoring_flags |= SCORING_FLAG_PRIMA_NOCTA_2;
 		}
 		
         switch ($player->kill_reason)
@@ -224,6 +224,7 @@ class GamePlayerStats
 
 	function __construct($gs, $player_num)
     {
+		$player_num = min(max((int)$player_num, 0), 9);
 		$this->timestamp = time();
 	
         $player = $gs->players[$player_num];
@@ -698,60 +699,6 @@ class GamePlayerStats
 	}
 }
 
-function save_game_round($gs)
-{
-	list ($event_id, $current_round) = Db::record(get_label('game'), 'SELECT event_id, round_num FROM games WHERE id = ?', $gs->id);
-	if (!is_null($current_round))
-	{
-		//echo 'already set<br>';
-		return; // it is already set
-	}
-	
-	list ($event_name, $current_round, $planned_games) = Db::record(get_label('event'), 'SELECT name, round_num, planned_games FROM events WHERE id = ?', $event_id);
-	if ($current_round > 0)
-	{
-		//echo 'current_round: ' . $current_round . '<br>';
-		$planned_games = 0;
-		$query = new DbQuery('SELECT name, planned_games FROM rounds WHERE event_id = ? AND num = ?', $event_id, $current_round);
-		if ($row = $query->next())
-		{
-			list($round_name, $planned_games) = $row;
-		}
-		//echo 'planned_games: ' . $planned_games . '<br>';
-		
-		if ($planned_games > 0)
-		{
-			list ($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE event_id = ? AND canceled = FALSE AND result > 0 AND round_num = ?', $event_id, $current_round);
-			//echo 'games_count: ' . $games_count . '<br>';
-			if ($games_count + 1 >= $planned_games)
-			{
-				echo get_label('[0]: [1] is complete. All [2] games are played.', $event_name, $round_name, $planned_games);
-				Db::exec(get_label('event'), 'UPDATE events SET round_num = ? WHERE id = ?', $current_round + 1, $event_id);
-				if ($games_count >= $planned_games)
-				{
-					++$current_round;
-				}
-			}
-		}
-	}
-	else if ($planned_games > 0)
-	{
-		//echo 'current_round: 0, planned_games: ' . $planned_games . '<br>';
-		list ($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE event_id = ? AND round_num = 0 AND canceled = FALSE AND result > 0', $event_id);
-		//echo 'games_count: ' . $games_count . '<br>';
-		if ($games_count + 1 >= $planned_games)
-		{
-			echo get_label('[0]: [1] is complete. All [2] games are played.', $event_name, get_label('Main round'), $planned_games);
-			Db::exec(get_label('event'), 'UPDATE events SET round_num = 1 WHERE id = ?', $event_id);
-			if ($games_count >= $planned_games)
-			{
-				Db::exec(get_label('event'), 'UPDATE games SET round_num = 1 WHERE id = ?', $gs->id);
-			}
-		}
-	}
-	Db::exec(get_label('event'), 'UPDATE games SET round_num = ? WHERE id = ?', $current_round, $gs->id);
-}
-
 function save_game_results($gs)
 {
 	if ($gs->id <= 0)
@@ -778,7 +725,6 @@ function save_game_results($gs)
 	try
 	{
 		Db::begin();
-		$round = save_game_round($gs);
 		
 		$best_player_id = NULL;
 		if ($gs->best_player >= 0 && $gs->best_player < 10)
