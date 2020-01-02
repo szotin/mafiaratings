@@ -119,7 +119,7 @@ function format_rating($rating)
 	return number_format($rating, $digits);
 }
 
-function show_scoring_select($club_id, $scoring_id, $on_change, $title, $name = NULL, $show_prefix = true)
+function show_scoring_select($club_id, $scoring_id, $version, $on_change, $title, $name = NULL, $show_prefix = true)
 {
 	if ($name == NULL)
 	{
@@ -150,7 +150,8 @@ function show_scoring_select($club_id, $scoring_id, $on_change, $title, $name = 
 		list ($sid, $sname) = $row;
 		show_option($sid, $scoring_id, $sname);
 	}
-	echo '</select>';
+	echo '</select> ' . get_label('version') . ': <select id="' . $name . '-' . $version . '"></select>';
+	
 }
 
 define('ROLE_NAME_FLAG_LOWERCASE', 1);
@@ -300,7 +301,7 @@ function get_scoring_stat_flags($scoring, $options)
 		for ($i = 0; $i < count($group); ++$i)
 		{
 			$policy = $group[$i];
-			$option_name = $group_name . $i;
+			$option_name = $group_name . '-' . $i;
 			if (isset($options->$option_name) && !$options->$option_name)
 			{
 				continue;
@@ -425,7 +426,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 		for ($i = 0; $i < count($group); ++$i)
 		{
 			$policy = $group[$i];
-			$option_name = $group_name . $i;
+			$option_name = $group_name . '-' . $i;
 			if (isset($options->$option_name) && !$options->$option_name)
 			{
 				continue;

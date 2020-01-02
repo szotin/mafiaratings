@@ -127,6 +127,14 @@ require_once '../../include/api.php';
 	</td>
 </tr>
 
+<tr>
+	<td>Scoring systems</td>
+	<td><a href="scorings.php?help"><?php echo PRODUCT_URL; ?>/api/get/scorings.php</a></td>
+	<td>
+		<p>Scoring systems. The configurable rules for calculating tournament scores.</p>
+	</td>
+</tr>
+
 </table>
 
 </body></html>
