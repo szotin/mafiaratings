@@ -352,36 +352,47 @@ function sortingChange()
     var layer = 0;
     while (true)
     {
-        if ($('#sorting-desc-' + layer).val() == 1)
+        var d = $('#sorting-desc-' + layer).val();
+        if (typeof d == "undefined")
         {
-            sorting = sorting.concat('-');
+            break;
         }
+        
         var substr = '';
         var index = 0;
         while (true)
         {
             var c = $('#sorting-' + layer + '-' + index).val();
-            if (typeof _data.sorting[c] != 'string')
+            if (typeof c == "undefined")
             {
                 break;
             }
-            substr = substr.concat(c);
+            if (typeof _data.sorting[c] == 'string')
+            {
+                substr = substr.concat(c);
+            }
             ++index;
         }
-        if (substr.length == 0)
+        
+        if (substr.length > 0)
         {
-            break;
-        }
-        else if (substr.length > 1)
-        {
-            sorting = sorting.concat('(' + substr + ')');
-        }
-        else
-        {
-            sorting = sorting.concat(substr);
+            if (d == 1)
+            {
+                sorting = sorting.concat('-');
+            }
+            
+            if (substr.length > 1)
+            {
+                sorting = sorting.concat('(' + substr + ')');
+            }
+            else
+            {
+                sorting = sorting.concat(substr);
+            }
         }
         ++layer;
     }
+    
     if (sorting == '(epg)wsk')
     {
         delete _data.scoring.sorting;
@@ -425,7 +436,6 @@ function sortingHtml()
     {
         sorting = _data.scoring.sorting;
     }
-    console.log(sorting);
     
     var inBrackets = false;
     var desc = false;
