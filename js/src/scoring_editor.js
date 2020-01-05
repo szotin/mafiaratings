@@ -346,9 +346,67 @@ function sectionHtml(sectionName)
     return html;
 }
 
-function sortingSelect(letter, index)
+function sortingChange()
 {
-    var html = ' <select id="sorting-' + index + ' onchange="sortingChange()"><option value="0"></option>';
+    var sorting = '';
+    var layer = 0;
+    while (true)
+    {
+        var d = $('#sorting-desc-' + layer).val();
+        if (typeof d == "undefined")
+        {
+            break;
+        }
+        
+        var substr = '';
+        var index = 0;
+        while (true)
+        {
+            var c = $('#sorting-' + layer + '-' + index).val();
+            if (typeof c == "undefined")
+            {
+                break;
+            }
+            if (typeof _data.sorting[c] == 'string')
+            {
+                substr = substr.concat(c);
+            }
+            ++index;
+        }
+        
+        if (substr.length > 0)
+        {
+            if (d == 1)
+            {
+                sorting = sorting.concat('-');
+            }
+            
+            if (substr.length > 1)
+            {
+                sorting = sorting.concat('(' + substr + ')');
+            }
+            else
+            {
+                sorting = sorting.concat(substr);
+            }
+        }
+        ++layer;
+    }
+    
+    if (sorting == '(epg)wsk')
+    {
+        delete _data.scoring.sorting;
+    }
+    else
+    {
+        _data.scoring.sorting = sorting;
+    }
+    refreshScoringEditor(true);
+}
+
+function sortingSelect(letter, layer, index)
+{
+    var html = ' <select id="sorting-' + layer + '-' + index + '" onchange="sortingChange()"><option value="0"></option>';
     for (var l in _data.sorting)
     {
         html += '<option value="' + l + '"' + (letter == l ? ' selected' : '') + '>' + _data.sorting[l] + '</option>';
@@ -357,65 +415,69 @@ function sortingSelect(letter, index)
     return html;
 }
 
-function sortingSectionStart(index, desc)
+function sortingSectionStart(layer, desc)
 {
-    return '<tr><td colspan="5">' + _data.strings.theOne + ' <select id="sorting-desc-' + index + '" onchange="sortingDescChange(' + index + ')">' +
+    return '<tr><td colspan="5">' + _data.strings.theOne + ' <select id="sorting-desc-' + layer + '" onchange="sortingChange()">' +
         '<option value="0"' + (desc ? '' : ' selected') + '>' + _data.strings.higher + '</option>' +
         '<option value="1"' + (desc ? ' selected' : '') + '>' + _data.strings.lower + '</option>' +
         '</select> ' + _data.strings.sumOf + ':';
 }
 
-function sortingSectionEnd(index)
+function sortingSectionEnd(layer, index)
 {
-    return sortingSelect('0', index) + '</td></tr>';
+    return sortingSelect('0', layer, index) + '</td></tr>';
 }
 
 function sortingHtml()
 {
     var html = '<tr class="darker"><td colspan="5">' + _data.strings.sorting + '</td></tr>';
     var sorting = '(epg)wsk';
-    if (typeof _data.sorting == "string")
+    if (typeof _data.scoring.sorting == "string")
     {
-        sorting = _data.sorting;
+        sorting = _data.scoring.sorting;
     }
     
     var inBrackets = false;
     var desc = false;
+    var layer = 0;
+    var index = 0;
     for (var i = 0; i < sorting.length; ++i)
     {
         var c = sorting.charAt(i);
-        if (c == '-')
-        {
-            desc = true;
-        }
-        else if (inBrackets)
+        if (inBrackets)
         {
             if (c == ')')
             {
-                html += sortingSectionEnd(i);
-                inBrackets = false;
+                html += sortingSectionEnd(layer++, index);
+                desc = inBrackets = false;
             }
             else
             {
-                html += sortingSelect(c, i);
+                html += sortingSelect(c, layer, index++);
             }
+        }
+        else if (c == '-')
+        {
+            desc = true;
         }
         else
         {
-            html += sortingSectionStart(i, desc);
-            desc = false;
+            html += sortingSectionStart(layer, desc);
             if (c == '(')
             {
                 inBrackets = true;
+                index = 0;
             }
             else
             {
-                html += sortingSelect(c, i);
-                html += sortingSectionEnd(i);
+                html += sortingSelect(c, layer, 0);
+                html += sortingSectionEnd(layer++, 1);
+                desc = false;
             }
         }
     }
-    console.log(sortingSectionStart(0, false));
+    html += sortingSectionStart(layer, false);
+    html += sortingSectionEnd(layer, 0);
     return html;
 }
 
