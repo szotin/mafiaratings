@@ -119,7 +119,7 @@ function format_rating($rating)
 	return number_format($rating, $digits);
 }
 
-function show_scoring_select($club_id, $scoring_id, $version, $on_change, $title, $name = NULL, $show_prefix = true)
+function show_scoring_select($club_id, $scoring_id, $version, $on_change, $name = NULL, $show_prefix = true)
 {
 	if ($name == NULL)
 	{
@@ -141,17 +141,21 @@ function show_scoring_select($club_id, $scoring_id, $version, $on_change, $title
 	
 	if ($show_prefix)
 	{
-		echo '<a href="#" onclick="mr.showScoring(' . $scoring_id . ')" title="' . get_label('Show [0] scoring rules.', $scoring_name) . '">' . get_label('Scoring system') . ':</a> ';
+		echo '<a href="#" onclick="mr.showScoring(\'' . $name . '\')" title="' . get_label('Show [0] scoring rules.', $scoring_name) . '">' . get_label('Scoring system') . ':</a> ';
 	}
-	echo '<select name="' . $name . '" id="' . $name . '" onChange="' . $on_change . '" title="' . $title . '">';
+	echo '<select id="' . $name . '-sel" name="' . $name . '_id" onChange="mr.onChangeScoring(\'' . $name . '\', false, ' . $on_change . ')" title="' . get_label('Scoring system') . '">';
 	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
 	foreach ($scorings as $row)
 	{
 		list ($sid, $sname) = $row;
 		show_option($sid, $scoring_id, $sname);
 	}
-	echo '</select> ' . get_label('version') . ': <select id="' . $name . '-' . $version . '"></select>';
-	
+	echo '</select>';
+	if ($version)
+	{
+		echo ' ' . get_label('version') . ': <select id="' . $name . '-ver" name="' . $name . '_version" onchange="mr.onChangeScoringVersion(\'' . $name . '\', ' . $on_change . ')"></select><div id="' . $name . '-opt"></div>';
+	}
+	echo '<script>mr.onChangeScoring("' . $name . '", ' . $version . ');</script>';
 }
 
 define('ROLE_NAME_FLAG_LOWERCASE', 1);

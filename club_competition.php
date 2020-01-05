@@ -27,15 +27,20 @@ class Page extends ClubPageBase
 			$this->season = get_current_club_season($this->id);
 		}
 		
-        $this->scoring = NULL;
-        if (isset($_REQUEST['scoring']))
-        {
-            $scoring_id = (int)$_REQUEST['scoring'];
-            if ($scoring_id > 0)
-            {
-                list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
-            }
-        }
+		$this->scoring = NULL;
+		if (isset($_REQUEST['scoring_id']))
+		{
+			$this->scoring_id = (int)$_REQUEST['scoring_id'];
+			if (isset($_REQUEST['scoring_version']))
+			{
+				$this->scoring_version = (int)$_REQUEST['scoring_version'];
+				list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
+			}
+		}
+		if ($this->scoring == NULL)
+		{
+			list($this->scoring, $this->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
+		}
 		
 		$start_time = $end_time = 0;
 		if ($this->season > SEASON_LATEST)
@@ -81,7 +86,7 @@ class Page extends ClubPageBase
 	protected function show_body()
 	{
 		echo '<p>';
-		show_scoring_select($this->id, $this->scoring_id, 'doUpdateChart()', get_label('Scoring system'));		
+		show_scoring_select($this->id, $this->scoring_id, $this->scoring_version, 'doUpdateChart');
 		echo ' ';
 		$this->season = show_club_seasons_select($this->id, $this->season, 'doUpdateChart()', get_label('Standings by season.'));	
 		echo '</p>';
@@ -96,7 +101,8 @@ class Page extends ClubPageBase
 ?>
 		function doUpdateChart()
 		{
-			chartParams.scoring = $("#scoring").val();
+			chartParams.scoring_id = $('#scoring-sel').val();
+			chartParams.scoring_version = $('#scoring-ver').val();
 			chartParams.season = $("#season").val();
 			updateChart();
 		}

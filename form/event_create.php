@@ -122,7 +122,7 @@ try
 	}
 	
 	echo '<tr><td>' . get_label('Scoring system') . '</td><td>';
-	show_scoring_select($event->club_id, $event->scoring_id, '', get_label('Scoring system'), 'form-scoring', false);
+	show_scoring_select($event->club_id, $event->scoring_id, $event->scoring_version, '', 'form-scoring', false);
 	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring weight').':</td><td><input id="form-scoring-weight" value="' . $event->scoring_weight . '"></td></tr>';
@@ -212,14 +212,16 @@ try
 				if (typeof t != "object")
 					return;
 				$("#form-rules").val(t.rules.code).prop('disabled', true);
-				$("#form-scoring").val(t.scoring_id).prop('disabled', true);
+				$("#form-scoring-sel").val(t.scoring_id).prop('disabled', true);
+				$("#form-scoring-ver").val(t.scoring_version).prop('disabled', true);
 				//console.log(t);
 			});
 		}
 		else
 		{
 			$("#form-rules").prop('disabled', false);
-			$("#form-scoring").prop('disabled', false);
+			$("#form-scoring-sel").prop('disabled', false);
+			$("#form-scoring-ver").prop('disabled', false);
 		}
 	}
 	
@@ -267,7 +269,8 @@ try
 			$("#form-addr_id").val(e.addr_id);
 			$("#form-price").val(e.price);
 			$("#form-rules").val(e.rules_code);
-			$("#form-scoring").val(e.scoring_id);
+			$("#form-scoring-sel").val(e.scoring_id);
+			$("#form-scoring-ver").val(e.scoring_version);
 			$('#form-scoring-weight').val(e.scoring_weight);
 			$("#form-notes").val(e.notes);
 			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
@@ -306,7 +309,8 @@ try
 			, price: $("#form-price").val()
 			, address_id: _addr
 			, rules_code: $("#form-rules").val()
-			, scoring_id: $("#form-scoring").val()
+			, scoring_id: $("#form-scoring-sel").val()
+			, scoring_version: $("#form-scoring-ver").val()
 			, scoring_weight: $("#form-scoring-weight").val()
 			, notes: $("#form-notes").val()
 			, flags: _flags

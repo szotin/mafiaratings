@@ -108,15 +108,18 @@ class ApiPage extends ControlApiPageBase
 				}
 				$event_id = (int)$_REQUEST['id'];
 				
-				list($scoring_id, $scoring, $scoring_options, $scoring_weight, $timezone) = Db::record(get_label('event'), 'SELECT e.scoring_id, s.scoring, e.scoring_options, e.scoring_weight, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
-				if (isset($_REQUEST['scoring']))
+				list($scoring_id, $scoring_version, $scoring, $scoring_options, $scoring_weight, $timezone) = Db::record(get_label('event'), 'SELECT e.scoring_id, e.scoring_version, s.scoring, e.scoring_options, e.scoring_weight, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
+				if (isset($_REQUEST['scoring_id']) && $_REQUEST['scoring_id'] > 0)
 				{
-					$scoring_id = (int)$_REQUEST['scoring'];
-					$scoring_options = 0;
-					if ($scoring_id > 0)
+					$scoring_id = (int)$_REQUEST['scoring_id'];
+					if (isset($_REQUEST['scoring_version']) && $_REQUEST['scoring_version'] > 0)
 					{
-						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
-						$scoring_version = -1;
+						$scoring_version = (int)$_REQUEST['scoring_version'];
+						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $scoring_id, $scoring_version);
+					}
+					else
+					{
+						list($scoring, $scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 					}
 				}
 
@@ -155,14 +158,17 @@ class ApiPage extends ControlApiPageBase
 				$tournament_id = (int)$_REQUEST['id'];
 				
 				list($scoring_id, $scoring, $scoring_options, $timezone, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.scoring_id, s.scoring, t.scoring_options, c.timezone, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
-				if (isset($_REQUEST['scoring']))
+				if (isset($_REQUEST['scoring_id']) && $_REQUEST['scoring_id'] > 0)
 				{
-					$scoring_id = (int)$_REQUEST['scoring'];
-					$scoring_options = 0;
-					if ($scoring_id > 0)
+					$scoring_id = (int)$_REQUEST['scoring_id'];
+					if (isset($_REQUEST['scoring_version']) && $_REQUEST['scoring_version'] > 0)
 					{
-						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
-						$scoring_version = -1;
+						$scoring_version = (int)$_REQUEST['scoring_version'];
+						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $scoring_id, $scoring_version);
+					}
+					else
+					{
+						list($scoring, $scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 					}
 				}
 
@@ -202,12 +208,17 @@ class ApiPage extends ControlApiPageBase
 				
 				list($scoring_id, $timezone) = Db::record(get_label('club'), 'SELECT c.scoring_id, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 				$scoring = NULL;
-				if (isset($_REQUEST['scoring']))
+				if (isset($_REQUEST['scoring_id']) && $_REQUEST['scoring_id'] > 0)
 				{
-					$scoring_id = (int)$_REQUEST['scoring'];
-					if ($scoring_id > 0)
+					$scoring_id = (int)$_REQUEST['scoring_id'];
+					if (isset($_REQUEST['scoring_version']) && $_REQUEST['scoring_version'] > 0)
 					{
-						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+						$scoring_version = (int)$_REQUEST['scoring_version'];
+						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $scoring_id, $scoring_version);
+					}
+					else
+					{
+						list($scoring, $scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 					}
 				}
 				

@@ -16,16 +16,23 @@ class Page extends TournamentPageBase
 		global $_profile;
 		parent::prepare();
 		
-        $this->scoring = NULL;
-        if (isset($_REQUEST['scoring']))
+        if (isset($_REQUEST['scoring_id']))
         {
             $this->scoring_id = (int)$_REQUEST['scoring'];
-            if ($this->scoring_id > 0)
+			if (isset($_REQUEST['scoring_version']))
+			{
+				$this->scoring_version = (int)$_REQUEST['scoring_version'];
+				list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id);
+			}
+			else
             {
-                list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
-                $this->scoring_version = -1;
+                list($this->scoring, $this->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
             }
         }
+		else
+		{
+			list($this->scoring, $this->scoring_id, $this->scoring_version) = Db::record(get_label('tournament'), 'SELECT v.scoring, t.scoring_id, t.scoring_version FROM tournaments t JOIN scoring_versions v ON v.scoring_id = t.scoring_id AND v.version = t.scoring_version WHERE t.id = ?', $this->id);
+		}
         
         $players = tournament_scores($this->id, $this->flags, NULL, 0, $this->scoring);
 		$players_count = count($players);
@@ -59,7 +66,7 @@ class Page extends TournamentPageBase
 	{
 		echo '<p><form method="get" name="viewForm" action="tournament_competition.php">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		show_scoring_select($this->club_id, $this->scoring_id, 'doUpdateChart()', get_label('Scoring system'));
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, 'doUpdateChart');
 		echo '</form></p>';
 		
 		show_chart_legend();
@@ -70,9 +77,10 @@ class Page extends TournamentPageBase
 	{
 		parent::js();
 ?>		
-		function doUpdateChart()
+		function doUpdateChart(scoringId, scoringVersion)
 		{
-			chartParams.scoring = $("#scoring").val();
+			chartParams.scoring_id = scoringId;
+			chartParams.scoring_version = scoringVersion;
 			updateChart();
 		}
 <?php 

@@ -50,7 +50,7 @@ class ApiPage extends GetApiPageBase
 		
 		if ($club_id > 0)
 		{
-			$condition->add(' AND s.club_id = ?', $club_id);
+			$condition->add(' AND (s.club_id = ? OR s.club_id IS NULL)', $club_id);
 		}
 		else
 		{
@@ -59,14 +59,14 @@ class ApiPage extends GetApiPageBase
 		
 		if ($league_id > 0)
 		{
-			$condition->add(' AND s.league_id = ?', $league_id);
+			$condition->add(' AND (s.league_id = ? OR s.league_id IS NULL)', $league_id);
 		}
 		else
 		{
 			$condition->add(' AND s.league_id IS NULL');
 		}
 		
-		list($count) = Db::record('scoring', 'SELECT count(s.id) FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id', $condition);
+		list($count) = Db::record('scoring', 'SELECT count(DISTINCT s.id) FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id', $condition);
 		$this->response['count'] = (int)$count;
 		if ($count_only)
 		{
@@ -99,22 +99,22 @@ class ApiPage extends GetApiPageBase
 			if ($current_scoring == NULL)
 			{
 				$current_scoring = new stdClass();
-				$current_scoring->id = $scoring_id;
+				$current_scoring->id = (int)$scoring_id;
 				$current_scoring->name = $scoring_name;
 				if (!is_null($scoring_club_id))
 				{
-					$current_scoring->club_id = $scoring_club_id;
+					$current_scoring->club_id = (int)$scoring_club_id;
 				}
 				if (!is_null($scoring_league_id))
 				{
-					$current_scoring->league_id = $scoring_league_id;
+					$current_scoring->league_id = (int)$scoring_league_id;
 				}
 				$current_scoring->versions = array();
 				$scorings[] = $current_scoring;
 			}
 			
 			$v = new stdClass();
-			$v->version = $scoring_version;
+			$v->version = (int)$scoring_version;
 			$v->rules = json_decode($scoring);
 			$current_scoring->versions[] = $v;
 		}

@@ -646,9 +646,38 @@ var mr = new function()
 		dlg.form("form/scoring_sorting_edit.php?scoring=" + systemId, refr, 600);
 	}
 	
-	this.showScoring = function(systemId)
+	this.showScoring = function(name)
 	{
-		dlg.infoForm("form/scoring_show.php?id=" + systemId);
+		dlg.infoForm("form/scoring_show.php?id=" + $('#' + name + '-sel').val());
+	}
+	
+	this.onChangeScoring = function(name, version, changed)
+	{
+		var scoringId = $('#' + name + '-sel').val();
+		json.post("api/get/scorings.php", { scoring_id: scoringId }, function(data)
+		{
+			var s = data.scorings[0];
+			var c = $('#' + name + '-ver');
+			c.find('option').remove();
+			for (var v of s.versions)
+			{
+				c.append($('<option>').val(v.version).text(v.version));
+			}
+			if (!version)
+			{
+				version = v.version;
+			}
+			c.val(version);
+			mr.onChangeScoringVersion(name, changed);
+		});
+	}
+	
+	this.onChangeScoringVersion = function(name, changed)
+	{
+		if (changed)
+		{
+			changed($('#' + name + '-sel').val(), $('#' + name + '-ver').val());
+		}
 	}
 
 	//--------------------------------------------------------------------------------------

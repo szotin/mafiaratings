@@ -24,17 +24,22 @@ class Page extends TournamentPageBase
 		
 		parent::prepare();
 		
-		$this->scoring_id = $this->scoring_id;
-		$this->scoring_version = $this->scoring_version;
-		$this->scoring = NULL;
-		if (isset($_REQUEST['scoring']))
+		if (isset($_REQUEST['scoring_id']))
 		{
-			$this->scoring_id = (int)$_REQUEST['scoring'];
-			if ($this->scoring_id > 0)
+			$this->scoring_id = (int)$_REQUEST['scoring_id'];
+			if (isset($_REQUEST['scoring_version']))
 			{
-				list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
-				$this->scoring_version = -1;
+				$this->scoring_version = (int)$_REQUEST['scoring_version'];
+				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 			}
+			else
+			{
+				list($this->scoring, $this->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
+			}
+		}
+		else
+		{
+			list($this->scoring, $this->scoring_id, $this->scoring_version) = Db::record(get_label('tournament'), 'SELECT v.scoring, t.scoring_id, t.scoring_version FROM tournaments t JOIN scoring_versions v ON v.scoring_id = t.scoring_id AND v.version = t.scoring_version WHERE t.id = ?', $this->id);
 		}
 		
 		$this->user_id = 0;
@@ -63,7 +68,7 @@ class Page extends TournamentPageBase
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->club_id, $this->scoring_id, 'document.viewForm.submit()', get_label('Scoring system'));
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, 'submitForm');
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'tournament=' . $this->id, get_label('Go to the page where a specific player is located.'));
@@ -154,6 +159,11 @@ class Page extends TournamentPageBase
 ?>
 		<script type="text/javascript">
 			mr.showComments("tournament", <?php echo $this->id; ?>, 5);
+			
+			function submitForm()
+			{
+				document.viewForm.submit();
+			}
 		</script>
 <?php
 	}

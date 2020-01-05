@@ -121,7 +121,7 @@ try
 	}
 	
 	echo '<tr><td>' . get_label('Scoring system').':</td><td>';
-	show_scoring_select($club_id, $scoring_id, '', get_label('Scoring system for [0]', $name), 'form-scoring', false);
+	show_scoring_select($club_id, $scoring_id, $scoring_version, '', 'form-scoring', false);
 	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring weight').':</td><td><input id="form-scoring-weight" value="' . $scoring_weight . '"></td></tr>';
@@ -188,14 +188,16 @@ try
 				if (typeof t != "object")
 					return;
 				$("#form-rules").val(t.rules.code).prop('disabled', true);
-				$("#form-scoring").val(t.scoring_id).prop('disabled', true);
+				$("#form-scoring-sel").val(t.scoring_id).prop('disabled', true);
+				$("#form-scoring-ver").val(t.scoring_version).prop('disabled', true);
 				//console.log(t);
 			});
 		}
 		else
 		{
 			$("#form-rules").prop('disabled', false);
-			$("#form-scoring").prop('disabled', false);
+			$("#form-scoring-sel").prop('disabled', false);
+			$("#form-scoring-ver").prop('disabled', false);
 		}
 	}
 	tournamentChange();
@@ -252,7 +254,8 @@ try
 			, price: $("#form-price").val()
 			, address_id: _addr
 			, rules_code: $("#form-rules").val()
-			, scoring_id: $("#form-scoring").val()
+			, scoring_id: $("#form-scoring-sel").val()
+			, scoring_version: $("#form-scoring-ver").val()
 			, scoring_weight: $("#form-scoring-weight").val()
 			, notes: $("#form-notes").val()
 			, flags: _flags

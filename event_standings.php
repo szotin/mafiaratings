@@ -10,8 +10,6 @@ define("PAGE_SIZE",15);
 
 class Page extends EventPageBase
 {
-	private $scoring_id;
-	private $scoring_version;
 	private $scoring;
 	
 	private $user_id;
@@ -26,17 +24,23 @@ class Page extends EventPageBase
 		
 		parent::prepare();
 		
-		$this->scoring_id = $this->event->scoring_id;
-		$this->scoring_version = $this->event->scoring_version;
 		$this->scoring = NULL;
-		if (isset($_REQUEST['scoring']))
+		if (isset($_REQUEST['scoring_id']))
 		{
-			$this->scoring_id = (int)$_REQUEST['scoring'];
-			if ($this->scoring_id > 0)
+			$this->event->scoring_id = (int)$_REQUEST['scoring_id'];
+			if (isset($_REQUEST['scoring_version']))
 			{
-				list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
-				$this->scoring_version = -1;
+				$this->event->scoring_version = (int)$_REQUEST['scoring_version'];
+				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->event->scoring_id, $this->event->scoring_version);
 			}
+			else
+			{
+				list($this->scoring, $this->event->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->event->scoring_id);
+			}
+		}
+		else
+		{
+			list($this->scoring, $this->event->scoring_id, $this->event->scoring_version) = Db::record(get_label('event'), 'SELECT v.scoring, e.scoring_id, e.scoring_version FROM events e JOIN scoring_versions v ON v.scoring_id = e.scoring_id AND v.version = e.scoring_version WHERE e.id = ?', $this->event->id);
 		}
 		
 		$this->user_id = 0;
@@ -65,7 +69,7 @@ class Page extends EventPageBase
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->event->club_id, $this->scoring_id, 'document.viewForm.submit()', get_label('Scoring system'));
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, 'submitForm');
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'event=' . $this->event->id, get_label('Go to the page where a specific player is located.'));
@@ -156,6 +160,11 @@ class Page extends EventPageBase
 ?>
 		<script type="text/javascript">
 			mr.showComments("event", <?php echo $this->event->id; ?>, 5);
+			
+			function submitForm()
+			{
+				document.viewForm.submit();
+			}
 		</script>
 <?php
 	}

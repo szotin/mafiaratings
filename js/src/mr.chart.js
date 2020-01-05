@@ -5,7 +5,8 @@ var chartParams =
 	name: "", 
 	players: "", 
 	id: 0,
-	scoring: 0,
+	scoring_id: 0,
+	scoring_version: 0,
 	season: 0,
 	charts:5
 };

@@ -10,25 +10,29 @@ define('NUM_PLAYERS', 5);
 class Page extends EventPageBase
 {
 	private $players_list;
-	private $scoring_id;
 	
 	protected function prepare()
 	{
 		global $_profile;
 		parent::prepare();
 		
-        $this->scoring_id = $this->event->scoring_id;
-        $this->scoring_version = $this->event->scoring_version;
-        $this->scoring = NULL;
-        if (isset($_REQUEST['scoring']))
+        if (isset($_REQUEST['scoring_id']))
         {
-            $this->scoring_id = (int)$_REQUEST['scoring'];
-            if ($this->scoring_id > 0)
+            $this->event->scoring_id = (int)$_REQUEST['scoring'];
+			if (isset($_REQUEST['scoring_version']))
+			{
+				$this->event->scoring_version = (int)$_REQUEST['scoring_version'];
+				list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->event->scoring_id);
+			}
+			else
             {
-                list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
-                $this->scoring_version = -1;
+                list($this->scoring, $this->event->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->event->scoring_id);
             }
         }
+		else
+		{
+			list($this->scoring, $this->event->scoring_id, $this->event->scoring_version) = Db::record(get_label('event'), 'SELECT v.scoring, e.scoring_id, e.scoring_version FROM events e JOIN scoring_versions v ON v.scoring_id = e.scoring_id AND v.version = e.scoring_version WHERE e.id = ?', $this->event->id);
+		}
         
         $players = event_scores($this->event->id, NULL, 0, $this->scoring);
 		$players_count = count($players);
@@ -62,7 +66,7 @@ class Page extends EventPageBase
 	{
 		echo '<p><form method="get" name="viewForm" action="event_competition.php">';
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
-		show_scoring_select($this->event->club_id, $this->scoring_id, 'doUpdateChart()', get_label('Scoring system'));
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, 'doUpdateChart');
 		echo '</form></p>';
 		
 		show_chart_legend();
@@ -73,9 +77,10 @@ class Page extends EventPageBase
 	{
 		parent::js();
 ?>		
-		function doUpdateChart()
+		function doUpdateChart(scoringId, scoringVersion)
 		{
-			chartParams.scoring = $("#scoring").val();
+			chartParams.scoring_id = scoringId;
+			chartParams.scoring_version = scoringVersion;
 			updateChart();
 		}
 <?php 
