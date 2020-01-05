@@ -89,8 +89,8 @@ try
 	var date = $('#form-date').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	var fromDate = $('#form-date-from').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { toDate.datepicker("option", "minDate", this.value); });
 	var toDate = $('#form-date-to').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
-	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(16);
-	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(16);
+	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(40);
+	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(40);
 	
 	function tournamentChange()
 	{
