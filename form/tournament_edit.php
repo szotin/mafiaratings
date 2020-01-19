@@ -20,8 +20,8 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $request_league_id, $league_id, $name, $start_time, $duration, $timezone, $stars, $address_id, $scoring_id, $price, $langs, $notes, $flags) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
+	list ($club_id, $request_league_id, $league_id, $name, $start_time, $duration, $timezone, $stars, $address_id, $scoring_id, $scoring_version, $scoring_options, $price, $langs, $notes, $flags) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.scoring_version, t.scoring_options, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
@@ -79,14 +79,7 @@ try
 	echo '<tr><td>' . get_label('Admission rate') . ':</td><td><input id="form-price" value="' . $price . '"></td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
-	echo '<select id="form-scoring" onChange="scoringChanged()" title="' . get_label('Scoring system') . '">';
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
-	show_option(-1, $scoring_id, get_label('[The sum of round scores]'));
-	while ($row = $query->next())
-	{
-		list ($sid, $sname) = $row;
-		show_option($sid, $scoring_id, $sname);
-	}
+	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
 	echo '</select></td></tr>';
 	
 	if (is_valid_lang($club->langs))
@@ -146,6 +139,16 @@ try
 	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
 	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	
+	var scoringId = <?php echo $scoring_id; ?>;
+	var scoringVersion = <?php echo $scoring_version; ?>;
+	var scoringOptions = '<?php echo $scoring_options; ?>';
+	function onScoringChange(id, version, options)
+	{
+		scoringId = id;
+		scoringVersion = version;
+		scoringOptions = JSON.stringify(options);
+	}
+	
 	function longTermClicked()
 	{
 		var c = $("#form-long_term").attr('checked') ? true : false;
@@ -188,7 +191,9 @@ try
 			name: $("#form-name").val(),
 			price: $("#form-price").val(),
 			address_id: $("#form-addr_id").val(),
-			scoring_id: $("#form-scoring").val(),
+			scoring_id: scoringId,
+			scoring_version: scoringVersion,
+			scoring_options: scoringOptions,
 			notes: $("#form-notes").val(),
 			start: startDate.val(),
 			end: dateToStr(_end),

@@ -7,6 +7,7 @@ var chartParams =
 	id: 0,
 	scoring_id: 0,
 	scoring_version: 0,
+	scoring_options: "{}",
 	season: 0,
 	charts:5
 };

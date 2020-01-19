@@ -136,7 +136,10 @@ try
 				echo '</td></tr></table>';
 			}
 			
-			$players = tournament_scores($tournament_id, $tournament_flags, NULL, SCORING_LOD_PER_GROUP);
+			list($scoring, $scoring_options) =  Db::record(get_label('tournament'), 'SELECT s.scoring, t.scoring_options FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
+			$scoring = json_decode($scoring);
+			$scoring_options = json_decode($scoring_options);
+			$players = tournament_scores($tournament_id, $tournament_flags, NULL, SCORING_LOD_PER_GROUP, $scoring, $scoring_options);
 			$players_count = count($players);
 				
 			if ($players_count == 0)

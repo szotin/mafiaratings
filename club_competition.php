@@ -1,8 +1,6 @@
 <?php 
 
 require_once 'include/club.php';
-require_once 'include/general_page_base.php';
-require_once 'include/scoring.php';
 require_once 'include/chart.php';
 
 define('NUM_PLAYERS', 5);
@@ -10,70 +8,20 @@ define('NUM_PLAYERS', 5);
 class Page extends ClubPageBase
 {
 	private $players_list;
-	private $season; 
 	
 	protected function prepare()
 	{
 		global $_profile;
 		parent::prepare();
 		
-		$this->season = SEASON_LATEST;
-		if (isset($_REQUEST['season']))
-		{
-			$this->season = (int)$_REQUEST['season'];
-		}
-		if ($this->season == 0)
-		{
-			$this->season = get_current_club_season($this->id);
-		}
-		
-		$this->scoring = NULL;
-		if (isset($_REQUEST['scoring_id']))
-		{
-			$this->scoring_id = (int)$_REQUEST['scoring_id'];
-			if (isset($_REQUEST['scoring_version']))
-			{
-				$this->scoring_version = (int)$_REQUEST['scoring_version'];
-				list($this->scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
-			}
-		}
-		if ($this->scoring == NULL)
-		{
-			list($this->scoring, $this->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
-		}
-		
-		$start_time = $end_time = 0;
-		if ($this->season > SEASON_LATEST)
-		{
-			list($start_time, $end_time) = Db::record(get_label('season'), 'SELECT start_time, end_time FROM club_seasons WHERE id = ?', $this->season);
-		}
-		else if ($this->season < SEASON_ALL_TIME)
-		{
-			date_default_timezone_set($this->timezone);
-			$start_time = mktime(0, 0, 0, 1, 1, -$this->season);
-			$end_time = mktime(0, 0, 0, 1, 1, 1 - $this->season);
-		}
-		
-		$players = club_scores($this->id, $start_time, $end_time, NULL, 0, $this->scoring);
-		
-		$players_count = count($players);
 		$separator = '';
-		if ($players_count > NUM_PLAYERS)
+		$this->players_list = '';
+		$query = new DbQuery('SELECT u.id FROM users u WHERE u.games > 0 AND u.club_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . NUM_PLAYERS, $this->id);
+		while ($row = $query->next())
 		{
-			$players_count = NUM_PLAYERS;
-		}
-		
-		for ($num = 0; $num < $players_count; ++$num)
-		{
-			$score = $players[$num];
-			$this->players_list .= $separator . $score->id;
+			list ($user_id) = $row;
+			$this->players_list .= $separator . $user_id;
 			$separator = ',';
-		}
-		
-		while ($num < 5)
-		{
-			$this->players_list .= $separator;
-			++$num;
 		}
 	}
 	
@@ -85,45 +33,24 @@ class Page extends ClubPageBase
 	
 	protected function show_body()
 	{
-		echo '<p>';
-		show_scoring_select($this->id, $this->scoring_id, $this->scoring_version, 'doUpdateChart');
-		echo ' ';
-		$this->season = show_club_seasons_select($this->id, $this->season, 'doUpdateChart()', get_label('Standings by season.'));	
-		echo '</p>';
-		
 		show_chart_legend();
 		show_chart(CONTENT_WIDTH, floor(CONTENT_WIDTH/1.618)); // fibonacci golden ratio 1.618:1
-	}
-	
-	protected function js()
-	{
-		parent::js();
-?>
-		function doUpdateChart()
-		{
-			chartParams.scoring_id = $('#scoring-sel').val();
-			chartParams.scoring_version = $('#scoring-ver').val();
-			chartParams.season = $("#season").val();
-			updateChart();
-		}
-<?php
 	}
 	
 	protected function js_on_load()
 	{
 		parent::js_on_load();
-?>		
-		chartParams.type = "club";
-		chartParams.id = <?php echo $this->id; ?>;
-		chartParams.name = "<?php echo $this->_title; ?>";
+?>
+		chartParams.type = "rating";
+		chartParams.name = "<?php echo get_label('Competition chart'); ?>";
 		chartParams.players = "<?php echo $this->players_list; ?>";
-		chartParams.charts = <?php echo NUM_PLAYERS; ?>;
-		initChart("<?php echo get_label('Points'); ?>");
-<?php 
+		chartParams.charts = "<?php echo NUM_PLAYERS; ?>";
+		initChart("<?php echo get_label('Rating'); ?>");
+<?php
 	}
 }
 
 $page = new Page();
-$page->run(get_label('Competition Chart'));
+$page->run(get_label('Competition chart'));
 
 ?>

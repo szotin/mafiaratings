@@ -54,6 +54,7 @@ class Event
 	public $scoring_id;
 	public $scoring_version;
 	public $scoring_weight;
+	public $scoring_options;
 	
 	public $day;
 	public $month;
@@ -88,6 +89,7 @@ class Event
 		$this->scoring_id = -1;
 		$this->scoring_version = 0;
 		$this->scoring_weight = 1;
+		$this->scoring_options = '{}';
 		$this->coming_odds = NULL;
 		$this->tournament_id = NULL;
 		
@@ -289,11 +291,11 @@ class Event
 		
 		Db::exec(
 			get_label('event'), 
-			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_weight, tournament_id) ' .
-			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_weight, scoring_options, tournament_id) ' .
+			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$this->name, $this->price, $this->addr_id, $this->club_id, $this->timestamp, 
 			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_code, 
-			$this->scoring_id, $this->scoring_version, $this->scoring_weight, $this->tournament_id);
+			$this->scoring_id, $this->scoring_version, $this->scoring_weight, $this->scoring_options, $this->tournament_id);
 		list ($this->id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 		list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
 		
@@ -337,10 +339,10 @@ class Event
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
-				'name = ?, price = ?, club_id = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_weight = ?, ' .
+				'name = ?, price = ?, club_id = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_weight = ?, scoring_options = ?, ' .
 				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
 				'languages = ? WHERE id = ?',
-			$this->name, $this->price, $this->club_id, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_weight,
+			$this->name, $this->price, $this->club_id, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_weight, $this->scoring_options,
 			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags,
 			$this->langs, $this->id);
 		if (Db::affected_rows() > 0)
@@ -390,10 +392,10 @@ class Event
 			$this->name, $this->price, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
 			$this->tournament_id, $this->tournament_name, $this->tournament_flags,
 			$this->addr_id, $this->addr, $this->addr_url, $timezone, $this->addr_flags,
-			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_weight, $this->coming_odds, $this->city, $this->country) =
+			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_weight, $this->scoring_options, $this->coming_odds, $this->city, $this->country) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_weight, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
+					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_weight, e.scoring_options, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .

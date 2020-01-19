@@ -122,6 +122,21 @@ class ApiPage extends ControlApiPageBase
 						list($scoring, $scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 					}
 				}
+				$scoring = json_decode($scoring);
+				$scoring_options = json_decode($scoring_options);
+				
+				if (isset($_REQUEST['scoring_options']))
+				{
+					$ops = $_REQUEST['scoring_options'];
+					if (is_string($ops))
+					{
+						$ops = json_decode($ops);
+					}
+					foreach($ops as $key => $value) 
+					{
+						$scoring_options->$key = $value;
+					}
+				}
 
 				$players = NULL;
 				if (isset($_REQUEST['players']))
@@ -171,6 +186,21 @@ class ApiPage extends ControlApiPageBase
 						list($scoring, $scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 					}
 				}
+				$scoring = json_decode($scoring);
+				$scoring_options = json_decode($scoring_options);
+				
+				if (isset($_REQUEST['scoring_options']))
+				{
+					$ops = $_REQUEST['scoring_options'];
+					if (is_string($ops))
+					{
+						$ops = json_decode($ops);
+					}
+					foreach($ops as $key => $value) 
+					{
+						$scoring_options->$key = $value;
+					}
+				}
 
 				$players = NULL;
 				if (isset($_REQUEST['players']))
@@ -194,75 +224,6 @@ class ApiPage extends ControlApiPageBase
 							}
 							$this->response[] = $data;
 						}
-					}
-					++$current_color;
-				}
-			}
-			else if ($type == 'club')
-			{
-				if (!isset($_REQUEST['id']))
-				{
-					throw new FatalExc(get_label('Unknown [0]', get_label('club')));
-				}
-				$club_id = (int)$_REQUEST['id'];
-				
-				list($scoring_id, $timezone) = Db::record(get_label('club'), 'SELECT c.scoring_id, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
-				$scoring = NULL;
-				if (isset($_REQUEST['scoring_id']) && $_REQUEST['scoring_id'] > 0)
-				{
-					$scoring_id = (int)$_REQUEST['scoring_id'];
-					if (isset($_REQUEST['scoring_version']) && $_REQUEST['scoring_version'] > 0)
-					{
-						$scoring_version = (int)$_REQUEST['scoring_version'];
-						list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $scoring_id, $scoring_version);
-					}
-					else
-					{
-						list($scoring, $scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
-					}
-				}
-				
-				$season = 0;
-				if (isset($_REQUEST['season']))
-				{
-					$season = (int)$_REQUEST['season'];
-				}
-				if ($season == 0)
-				{
-					$season = get_current_club_season($club_id);
-				}
-				
-				$start_time = $end_time = 0;
-				if ($season > SEASON_LATEST)
-				{
-					list($start_time, $end_time) = Db::record(get_label('season'), 'SELECT start_time, end_time FROM club_seasons WHERE id = ?', $season);
-				}
-				else if ($season < SEASON_ALL_TIME)
-				{
-					date_default_timezone_set($timezone);
-					$start_time = mktime(0, 0, 0, 1, 1, -$season);
-					$end_time = mktime(0, 0, 0, 1, 1, 1 - $season);
-				}
-				
-				$players = NULL;
-				if (isset($_REQUEST['players']))
-				{
-					$players = explode(',', $_REQUEST['players']);
-				}
-				
-				$players = club_scores($club_id, $start_time, $end_time, $players, SCORING_LOD_HISTORY | SCORING_LOD_NO_SORTING, $scoring);
-				$players_count = count($players);
-				foreach ($user_ids as $user_id)
-				{
-					if (isset($players[$user_id]))
-					{
-						$player = $players[$user_id];
-						$data = new ChartData($player->name, $_chart_colors[$current_color]);
-						foreach ($player->history as $point)
-						{
-							$data->data[] = new ChartPoint($point->time, $point->points);
-						}
-						$this->response[] = $data;
 					}
 					++$current_color;
 				}

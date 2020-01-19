@@ -39,7 +39,18 @@ class Page extends TournamentPageBase
 		}
 		else
 		{
-			list($this->scoring, $this->scoring_id, $this->scoring_version) = Db::record(get_label('tournament'), 'SELECT v.scoring, t.scoring_id, t.scoring_version FROM tournaments t JOIN scoring_versions v ON v.scoring_id = t.scoring_id AND v.version = t.scoring_version WHERE t.id = ?', $this->id);
+			list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
+		}
+		$this->scoring = json_decode($this->scoring);
+		
+		$this->scoring_options = json_decode($this->scoring_options);
+		if (isset($_REQUEST['scoring_ops']))
+		{
+			$ops = json_decode($_REQUEST['scoring_ops']);
+			foreach($ops as $key => $value) 
+			{
+				$this->scoring_options->$key = $value;
+			}
 		}
 		
 		$this->user_id = 0;
@@ -64,19 +75,17 @@ class Page extends TournamentPageBase
 	{
 		global $_profile, $_page;
 		
-		echo '<form method="get" name="viewForm">';
-		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, 'submitForm');
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, 'submitScoring'); //, ($this->flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING) ? SCORING_SELECT_FLAG_NO_OPTIONS : 0);
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'tournament=' . $this->id, get_label('Go to the page where a specific player is located.'));
-		echo '</td></tr></table></form>';
+		echo '</td></tr></table>';
 		
 		$condition = new SQL(' AND g.tournament_id = ?', $this->id);
 		
-		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring);
+		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->scoring_options);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{
@@ -160,9 +169,9 @@ class Page extends TournamentPageBase
 		<script type="text/javascript">
 			mr.showComments("tournament", <?php echo $this->id; ?>, 5);
 			
-			function submitForm()
+			function submitScoring(scoringId, scoringVer, scoringOps)
 			{
-				document.viewForm.submit();
+				goTo({ scoring_id: scoringId, scoring_version: scoringVer, scoring_ops: scoringOps });
 			}
 		</script>
 <?php

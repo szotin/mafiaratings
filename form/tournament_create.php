@@ -34,7 +34,7 @@ try
 	
 	if ($league_id > 0)
 	{
-		list($league_name, $league_flags) = Db::record(get_label('league'), 'SELECT name, flags FROM leagues WHERE id = ?', $league_id);
+		list($league_name, $league_flags, $scoring_id) = Db::record(get_label('league'), 'SELECT name, flags, scoring_id FROM leagues WHERE id = ?', $league_id);
 		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="' . ICON_WIDTH . '">';
 		$league_pic = new Picture(LEAGUE_PICTURE);
 		$league_pic->set($league_id, $league_name, $league_flags);
@@ -66,23 +66,26 @@ try
 	echo '</td></tr>';
 	
 	$addr_id = -1;
-	$scoring_id = -1;
-	$query = new DbQuery('SELECT address_id, scoring_id FROM tournaments WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
+	$query = new DbQuery('SELECT address_id, scoring_id, scoring_version, scoring_options FROM tournaments WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
 	$row = $query->next();
 	if ($row = $query->next())
 	{
-		list($addr_id, $scoring_id) = $row;
-		if ($scoring_id == NULL)
-		{
-			$scoring_id = -1;
-		}
+		list($addr_id, $scoring_id, $scoring_version, $scoring_options) = $row;
 	}
 	else
 	{
-		$query = new DbQuery('SELECT address_id, scoring_id FROM events WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
+		$query = new DbQuery('SELECT address_id, scoring_id, scoring_version, scoring_options FROM events WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
 		if ($row = $query->next())
 		{
-			list($addr_id, $scoring_id) = $row;
+			list($addr_id, $scoring_id, $scoring_version, $scoring_options) = $row;
+		}
+		else 
+		{
+			if ($league_id <= 0)
+			{
+				$scoring_id = $club->scoring_id;
+			}
+			list($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 		}
 	}
 	
@@ -109,15 +112,8 @@ try
 	echo '<tr><td>' . get_label('Admission rate') . ':</td><td><input id="form-price" value=""></td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
-	echo '<select id="form-scoring" onChange="scoringChanged()" title="' . get_label('Scoring system') . '">';
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
-	show_option(-1, $scoring_id, get_label('[The sum of round scores]'));
-	while ($row = $query->next())
-	{
-		list ($sid, $sname) = $row;
-		show_option($sid, $scoring_id, $sname);
-	}
-	echo '</select></td></tr>';
+	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
+	echo '</td></tr>';
 	
 	if (is_valid_lang($club->langs))
 	{
@@ -146,6 +142,16 @@ try
 	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
 	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
 	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
+	
+	var scoringId = <?php echo $scoring_id; ?>;
+	var scoringVersion = <?php echo $scoring_version; ?>;
+	var scoringOptions = '<?php echo $scoring_options; ?>';
+	function onScoringChange(id, version, options)
+	{
+		scoringId = id;
+		scoringVersion = version;
+		scoringOptions = JSON.stringify(options);
+	}
 	
 	function longTermClicked()
 	{
@@ -224,7 +230,9 @@ try
 			name: $("#form-name").val(),
 			price: $("#form-price").val(),
 			address_id: _addr,
-			scoring_id: $("#form-scoring").val(),
+			scoring_id: scoringId,
+			scoring_version: scoringVersion,
+			scoring_options: scoringOptions,
 			notes: $("#form-notes").val(),
 			start: startDate.val(),
 			end: dateToStr(_end),

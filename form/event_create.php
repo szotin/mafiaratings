@@ -122,7 +122,7 @@ try
 	}
 	
 	echo '<tr><td>' . get_label('Scoring system') . '</td><td>';
-	show_scoring_select($event->club_id, $event->scoring_id, $event->scoring_version, '', 'form-scoring', false);
+	show_scoring_select($event->club_id, $event->scoring_id, $event->scoring_version, json_decode($event->scoring_options), 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
 	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring weight').':</td><td><input id="form-scoring-weight" value="' . $event->scoring_weight . '"></td></tr>';
@@ -166,7 +166,7 @@ try
 			' JOIN addresses a ON e.address_id = a.id' . 
 			' JOIN cities c ON a.city_id = c.id' . 
 			' WHERE e.club_id = ?' .
-			' AND e.start_time < UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0 ORDER BY e.start_time DESC LIMIT 30',
+			' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0 ORDER BY e.start_time DESC LIMIT 30',
 		$event->club_id);
 	echo get_label('Copy event data from') . ': <select id="form-copy" onChange="copyEvent()"><option value="0"></option>';
 	while ($row = $query->next())
@@ -186,6 +186,16 @@ try
 	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(40);
 	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(40);
 	$('#form-scoring-weight').spinner({ step:0.1, min:0.1 }).width(40);
+	
+	var scoringId = <?php echo $event->scoring_id; ?>;
+	var scoringVersion = <?php echo $event->scoring_version; ?>;
+	var scoringOptions = '<?php echo $event->scoring_options; ?>';
+	function onScoringChange(id, version, options)
+	{
+		scoringId = id;
+		scoringVersion = version;
+		scoringOptions = JSON.stringify(options);
+	}
 	
 	function multipleChange()
 	{
@@ -271,12 +281,14 @@ try
 			$("#form-rules").val(e.rules_code);
 			$("#form-scoring-sel").val(e.scoring_id);
 			$("#form-scoring-ver").val(e.scoring_version);
+			$('#form-scoring-options').val(e.scoring_options);
 			$('#form-scoring-weight').val(e.scoring_weight);
 			$("#form-notes").val(e.notes);
 			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
 			$("#form-fun").prop('checked', (e.flags & <?php echo EVENT_FLAG_FUN; ?>) != 0);
 			mr.setLangs(e.langs, "form-");
 			addressClick();
+			tournamentChange();
 		});
 		$("#form-copy").val(0);
 	}
@@ -301,20 +313,21 @@ try
 		
 		var params =
 		{
-			op: "create"
-			, club_id: <?php echo $club_id; ?>
-			, tournament_id: $("#form-tournament").val()
-			, name: $("#form-name").val()
-			, duration: strToTimespan($("#form-duration").val())
-			, price: $("#form-price").val()
-			, address_id: _addr
-			, rules_code: $("#form-rules").val()
-			, scoring_id: $("#form-scoring-sel").val()
-			, scoring_version: $("#form-scoring-ver").val()
-			, scoring_weight: $("#form-scoring-weight").val()
-			, notes: $("#form-notes").val()
-			, flags: _flags
-			, langs: _langs
+			op: "create",
+			club_id: <?php echo $club_id; ?>,
+			tournament_id: $("#form-tournament").val(),
+			name: $("#form-name").val(),
+			duration: strToTimespan($("#form-duration").val()),
+			price: $("#form-price").val(),
+			address_id: _addr,
+			rules_code: $("#form-rules").val(),
+			scoring_id: scoringId,
+			scoring_version: scoringVersion,
+			scoring_options: scoringOptions,
+			scoring_weight: $("#form-scoring-weight").val(),
+			notes: $("#form-notes").val(),
+			flags: _flags,
+			langs: _langs,
 		};
 		
 		if (_addr <= 0)

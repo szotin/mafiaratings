@@ -587,7 +587,9 @@ function showMenuBar()
 function setUrlParam(url, key, value)
 {
 	var str = key;
-	if (typeof value != "undefined")
+	if (typeof value == "object")
+		str += '=' + JSON.stringify(value);
+	else if (typeof value != "undefined")
 		str += '=' + value;
 	
 	var beg = url.indexOf('?') + 1;

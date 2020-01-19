@@ -648,7 +648,7 @@ var mr = new function()
 	
 	this.showScoring = function(name)
 	{
-		dlg.infoForm("form/scoring_show.php?id=" + $('#' + name + '-sel').val());
+		dlg.infoForm("form/scoring_show.php?id=" + $('#' + name + '-sel').val() + "&version=" + $('#' + name + '-ver').val());
 	}
 	
 	this.onChangeScoring = function(name, version, changed)
@@ -659,27 +659,88 @@ var mr = new function()
 			var s = data.scorings[0];
 			var c = $('#' + name + '-ver');
 			c.find('option').remove();
+			var v1 = null;
 			for (var v of s.versions)
 			{
 				c.append($('<option>').val(v.version).text(v.version));
+				if (v.version == version)
+				{
+					v1 = v;
+				}
 			}
-			if (!version)
+			if (v1 == null)
 			{
-				version = v.version;
+				v1 = v;
 			}
-			c.val(version);
-			mr.onChangeScoringVersion(name, changed);
+			c.val(v1.version);
+			mr.onChangeScoringVersion(name, v1, changed);
 		});
 	}
 	
-	this.onChangeScoringVersion = function(name, changed)
+	this.onChangeScoringVersion = function(name, scoring, changed)
+	{
+		if (scoring)
+		{
+			var night1Disabled = true;
+			var difDisabled = true;
+			for (var s in scoring.rules)
+			{
+				for (var p of scoring.rules[s])
+				{
+					if (p.min_difficulty || p.max_difficulty)
+					{
+						difDisabled = false;
+					}
+					else if (p.min_night1 || p.max_night1 || p.figm_first_night_score)
+					{
+						night1Disabled = false;
+					}
+				}
+			}
+			if (night1Disabled) 
+			{
+				$('#' + name + '-night1').prop("disabled", true).prop("checked", false);
+			}
+			else
+			{
+				$('#' + name + '-night1').prop("disabled", false);
+			}
+			if (difDisabled) 
+			{
+				$('#' + name + '-difficulty').prop("checked", false).prop("disabled", true);
+			}
+			else
+			{
+				$('#' + name + '-difficulty').prop("disabled", false);
+			}
+			mr.onChangeScoringOptions(name, changed);
+		}
+		else
+		{
+			json.post("api/get/scorings.php", { scoring_id: $('#' + name + '-sel').val(), scoring_version: $('#' + name + '-ver').val() }, function(data)
+			{
+				mr.onChangeScoringVersion(name, data.scorings[0].versions[0], changed);
+			});
+		}
+	}
+	
+	this.onChangeScoringOptions = function(name, changed)
 	{
 		if (changed)
 		{
-			changed($('#' + name + '-sel').val(), $('#' + name + '-ver').val());
+			var flags = 0;
+			if (!$('#' + name + '-night1').prop('checked'))
+			{
+				flags |= /*SCORING_OPTION_NO_NIGHT_KILLS*/1;
+			}
+			if (!$('#' + name + '-difficulty').prop('checked'))
+			{
+				flags |= /*SCORING_OPTION_NO_GAME_DIFFICULTY*/2;
+			}
+			changed($('#' + name + '-sel').val(), $('#' + name + '-ver').val(), { flags: flags } );
 		}
 	}
-
+	
 	//--------------------------------------------------------------------------------------
 	// rules
 	//--------------------------------------------------------------------------------------

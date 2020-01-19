@@ -19,8 +19,8 @@ try
 	
 	dialog_title(get_label('Create [0]', get_label('tournament round')));
 	$tournament_id = (int)$_REQUEST['tournament_id'];
-	list($club_id, $addr_id, $rules_code, $langs, $country, $city) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.address_id, t.rules, t.langs, c.id, c.country_id' .
+	list($club_id, $addr_id, $rules_code, $langs, $scoring_id, $scoring_version, $scoring_options, $country, $city) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.address_id, t.rules, t.langs, t.scoring_id, t.scoring_version, t.scoring_options, c.id, c.country_id' .
 		' FROM tournaments t' .
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities c ON c.id = a.city_id' .
@@ -43,6 +43,10 @@ try
 	echo '</td></tr>';
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
+	
+	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
+	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
+	echo '</td></tr>';
 		
 	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
@@ -92,22 +96,12 @@ try
 	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(40);
 	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(40);
 	
-	function tournamentChange()
+	$('#form-scoring-sel').prop("disabled", true);
+	$('#form-scoring-ver').prop("disabled", true);
+	var scoringOptions = '<?php echo $scoring_options; ?>';
+	function onScoringChange(id, version, options)
 	{
-		var tid = $("#form-tournament").val();
-		if (tid > 0)
-		{
-			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
-			{
-				var t = obj.tournaments[0];
-				if (typeof t != "object")
-					return;
-				console.log(t);
-			});
-		}
-		else
-		{
-		}
+		scoringOptions = JSON.stringify(options);
 	}
 	
 	var old_address_value = "<?php echo $selected_address; ?>";
@@ -168,6 +162,7 @@ try
 			, duration: strToTimespan($("#form-duration").val())
 			, address_id: _addr
 			, scoring_weight: $("#form-scoring_weight").val()
+			, scoring_options: scoringOptions
 			, notes: $("#form-notes").val()
 			, flags: _flags
 			, langs: _langs
