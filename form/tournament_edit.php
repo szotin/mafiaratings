@@ -79,7 +79,7 @@ try
 	echo '<tr><td>' . get_label('Admission rate') . ':</td><td><input id="form-price" value="' . $price . '"></td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
-	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
+	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
 	echo '</select></td></tr>';
 	
 	if (is_valid_lang($club->langs))

@@ -45,7 +45,7 @@ try
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
-	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
+	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
 	echo '</td></tr>';
 		
 	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
@@ -161,7 +161,6 @@ try
 			, name: $("#form-name").val()
 			, duration: strToTimespan($("#form-duration").val())
 			, address_id: _addr
-			, scoring_weight: $("#form-scoring_weight").val()
 			, scoring_options: scoringOptions
 			, notes: $("#form-notes").val()
 			, flags: _flags
@@ -202,8 +201,6 @@ try
 	{
 		$("#dlg-ok").button("option", "disabled", strToTimespan($("#form-duration").val()) <= 0);
 	}
-	
-	$('#form-scoring_weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
 	
 	</script>
 <?php

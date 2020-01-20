@@ -19,7 +19,7 @@ class Page extends EventPageBase
 		list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->event->scoring_id, $this->event->scoring_version);
 		$scoring = json_decode($scoring);
 		$this->scoring_options = json_decode($this->event->scoring_options);
-		$players = event_scores($this->event->id, NULL, 0, $scoring, $this->event->scoring_options, $this->event->scoring_weight);
+		$players = event_scores($this->event->id, NULL, 0, $scoring, $this->event->scoring_options);
 		$players_count = count($players);
 		if ($players_count > NUM_PLAYERS)
 		{
@@ -51,7 +51,7 @@ class Page extends EventPageBase
 	{
 		echo '<p><form method="get" name="viewForm" action="event_competition.php">';
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
-		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, $this->scoring_options, 'doUpdateChart');
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, $this->scoring_options, ' ', 'doUpdateChart', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION);
 		echo '</form></p>';
 		
 		show_chart_legend();

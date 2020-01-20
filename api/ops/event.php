@@ -115,7 +115,6 @@ class ApiPage extends OpsApiPageBase
 		$scoring_id = (int)get_optional_param('scoring_id', $club->scoring_id);
 		$scoring_version = (int)get_optional_param('scoring_version', -1);
 		$scoring_options = get_optional_param('scoring_options', '{}');
-		$scoring_weight = (float)get_optional_param('scoring_weight', 1);
 		$notes = get_optional_param('notes', '');
 		
 		$editable_mask = EVENT_EDITABLE_MASK;
@@ -180,11 +179,11 @@ class ApiPage extends OpsApiPageBase
 				{
 					Db::exec(
 						get_label('event'), 
-						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, scoring_weight, tournament_id) ' .
-						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id) ' .
+						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$name, $price, $address_id, $club_id, $start_datetime->getTimestamp(), 
 						$notes, $duration, $flags, $langs, $rules_code, 
-						$scoring_id, $scoring_version, $scoring_options, $scoring_weight, $tournament_id);
+						$scoring_id, $scoring_version, $scoring_options, $tournament_id);
 					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 					
 					$log_details->start = $start_datetime->format('d/m/y H:i');
@@ -214,11 +213,11 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('event'), 
-				'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, scoring_weight, tournament_id) ' .
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id) ' .
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				$name, $price, $address_id, $club_id, $start_datetime->getTimestamp(), 
 				$notes, $duration, $flags, $langs, $rules_code, 
-				$scoring_id, $scoring_version, $scoring_options, $scoring_weight, $tournament_id);
+				$scoring_id, $scoring_version, $scoring_options, $tournament_id);
 			list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details->start = $start;
@@ -287,9 +286,9 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
-		list($club_id, $old_name, $old_tournament_id, $old_start_timestamp, $old_duration, $old_address_id, $old_price, $old_rules_code, $old_scoring_id, $old_scoring_version, $old_scoring_options, $old_scoring_weight, $old_langs, $old_notes, $old_flags, $timezone) = 
+		list($club_id, $old_name, $old_tournament_id, $old_start_timestamp, $old_duration, $old_address_id, $old_price, $old_rules_code, $old_scoring_id, $old_scoring_version, $old_scoring_options, $old_langs, $old_notes, $old_flags, $timezone) = 
 			Db::record(get_label('event'), 
-				'SELECT e.club_id, e.name, e.tournament_id, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.scoring_weight, e.languages, e.notes, e.flags, c.timezone ' .
+				'SELECT e.club_id, e.name, e.tournament_id, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone ' .
 				'FROM events e ' . 
 				'JOIN addresses a ON a.id = e.address_id ' . 
 				'JOIN cities c ON c.id = a.city_id ' . 
@@ -310,7 +309,6 @@ class ApiPage extends OpsApiPageBase
 		$scoring_id = (int)get_optional_param('scoring_id', $old_scoring_id);
 		$scoring_version = (int)get_optional_param('scoring_version', -1);
 		$scoring_options = get_optional_param('scoring_options', $old_scoring_options);
-		$scoring_weight = (float)get_optional_param('scoring_weight', $old_scoring_weight);
 		$notes = get_optional_param('notes', $old_notes);
 		
 		
@@ -350,10 +348,10 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
-				'name = ?, tournament_id = ?, price = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_options = ?, scoring_weight = ?, ' .
+				'name = ?, tournament_id = ?, price = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_options = ?, ' .
 				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
 				'languages = ? WHERE id = ?',
-			$name, $tournament_id, $price, $rules_code, $scoring_id, $scoring_version, $scoring_options, $scoring_weight,
+			$name, $tournament_id, $price, $rules_code, $scoring_id, $scoring_version, $scoring_options,
 			$address_id, $start_timestamp, $notes, $duration, $flags,
 			$langs, $event_id);
 		
@@ -441,7 +439,6 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('scoring_id', 'Scoring id for this event.', 'remain the same.');
 		$help->request_param('scoring_version', 'Scoring version for this event.', 'remain the same, or set to the latest for current scoring if scoring_id is changed.');
 		api_scoring_help($help->request_param('scoring_options', 'Scoring options for this event.', 'remain the same.'));
-		$help->request_param('scoring_weight', 'Scoring weight for this event. All scores will be multiplied to this. This is useful for tournaments where many events with different importance can be created.', 'remain the same.');
 		$help->request_param('notes', 'Event notes. Just a text.', 'empty.', 'remain the same.');
 		$help->request_param('flags', 'Bit combination of the next flags.
 				<ol>
@@ -572,7 +569,6 @@ class ApiPage extends OpsApiPageBase
 		$this->response['scoring_id'] = $event->scoring_id;
 		$this->response['scoring_version'] = $event->scoring_version;
 		$this->response['scoring_options'] = $event->scoring_options;
-		$this->response['scoring_weight'] = $event->scoring_weight;
 		
 		$base = get_server_url() . '/';
 		if (($event->addr_flags & ADDRESS_ICON_MASK) != 0)

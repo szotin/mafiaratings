@@ -124,9 +124,12 @@ function format_rating($rating)
 
 define('SCORING_SELECT_FLAG_NO_PREFIX', 1);
 define('SCORING_SELECT_FLAG_NO_VERSION', 2);
-define('SCORING_SELECT_FLAG_NO_OPTIONS', 4);
+define('SCORING_SELECT_FLAG_NO_FLAGS_OPTION', 8);
+define('SCORING_SELECT_FLAG_NO_WEIGHT_OPTION', 16);
+define('SCORING_SELECT_FLAG_NO_GROUP_OPTION', 32);
+define('SCORING_SELECT_FLAG_NO_OPTIONS', SCORING_SELECT_FLAG_NO_FLAGS_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION);
 
-function show_scoring_select($club_id, $scoring_id, $version, $options, $on_change, $flags = 0, $name = NULL)
+function show_scoring_select($club_id, $scoring_id, $version, $options, $options_separator, $on_change, $flags = 0, $name = NULL)
 {
 	if ($name == NULL)
 	{
@@ -163,30 +166,64 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $on_chan
 		echo ' ' . get_label('version') . ': <select id="' . $name . '-ver" name="' . $name . '_version" onchange="mr.onChangeScoringVersion(\'' . $name . '\', null, ' . $on_change . ')"></select><span id="' . $name . '-opt"></span>';
 	}
 	
-	if (($flags & SCORING_SELECT_FLAG_NO_OPTIONS) == 0)
+	if (($flags & SCORING_SELECT_FLAG_NO_OPTIONS) != SCORING_SELECT_FLAG_NO_OPTIONS)
 	{
-		$options_flags = 0;
-		if (!is_null($options) && isset($options->flags))
+		echo $options_separator;
+		if (($flags & SCORING_SELECT_FLAG_NO_WEIGHT_OPTION) == 0)
 		{
-			$options_flags = $options->flags;
+			$options_weight = 1;
+			if (isset($options->weight))
+			{
+				$options_weight = $options->weight;
+			}
+			echo $options_separator . get_label('Points weight') . ': <input id="' . $name . '-weight" value="' . $options_weight . '">';
 		}
+		if (($flags & SCORING_SELECT_FLAG_NO_FLAGS_OPTION) == 0)
+		{
+			$options_flags = 0;
+			if (isset($options->flags))
+			{
+				$options_flags = $options->flags;
+			}
 		
-		echo ' <input type="checkbox" id="' . $name . '-night1" onclick="mr.onChangeScoringOptions(\'' . $name . '\', ' . $on_change . ')"';
-		if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
-		{
-			echo ' checked';
+			echo $options_separator . '<input type="checkbox" id="' . $name . '-night1" onclick="optionChanged()"';
+			if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
+			{
+				echo ' checked';
+			}
+			echo '> ' . get_label('use first night kill rate factor');
+			
+			echo $options_separator . '<input type="checkbox" id="' . $name . '-difficulty" onclick="optionChanged()"';
+			if (($options_flags & SCORING_OPTION_NO_GAME_DIFFICULTY) == 0)
+			{
+				echo ' checked';
+			}
+			echo '> ' . get_label('use game difficulty factor');
 		}
-		echo '> ' . get_label('use first night kill rate factor');
-		
-		echo ' <input type="checkbox" id="' . $name . '-difficulty" onclick="mr.onChangeScoringOptions(\'' . $name . '\', ' . $on_change . ')"';
-		if (($options_flags & SCORING_OPTION_NO_GAME_DIFFICULTY) == 0)
+		if (($flags & SCORING_SELECT_FLAG_NO_GROUP_OPTION) == 0)
 		{
-			echo ' checked';
+			$options_group = '';
+			if (isset($options->group))
+			{
+				$options_group = $options->group;
+			}
+			echo $options_separator . '<div id="' . $name . '-group-div">' . get_label('Tournament group') . ': <select id="' . $name . '-group" onchange="optionChanged()" title="' . get_label('Tournament rounds can be grouped to calculate stats required for scoring seperately. For example, compensation for being shot first night (Ci) can be calculated in the finals separately. In this case main round and semi-finals can belong to \'main\' group, and finals to \'final\' group.') . '">';
+			show_option('', $options_group, '');
+			show_option('pre', $options_group, get_label('preliminary rounds'));
+			show_option('main', $options_group, get_label('main rounds'));
+			show_option('final', $options_group, get_label('final rounds'));
+			echo '</select></div>';
 		}
-		echo '> ' . get_label('use game difficulty factor');
 	}
 	
-	echo '<script>mr.onChangeScoring("' . $name . '", ' . $version . ');</script>';
+	echo '<script>';
+	echo 'function optionChanged() { mr.onChangeScoringOptions(\'' . $name . '\', ' . $on_change . '); } ';
+	if (($flags & SCORING_SELECT_FLAG_NO_WEIGHT_OPTION) == 0)
+	{
+		echo '$("#' . $name . '-weight").spinner({ step:0.1, min:0.1, change: optionChanged, stop: optionChanged }).width(40); ';
+	}
+	echo 'mr.onChangeScoring("' . $name . '", ' . $version . ');';
+	echo '</script>';
 }
 
 define('ROLE_NAME_FLAG_LOWERCASE', 1);
@@ -324,7 +361,7 @@ function get_scoring_stat_flags($scoring, $options)
 {
 	global $_scoring_groups;
 	$options_flags = 0;
-	if (!is_null($options) && isset($options->flags))
+	if (isset($options->flags))
 	{
 		$options_flags = $options->flags;
 	}
@@ -432,16 +469,23 @@ function init_player_score($player, $scoring, $lod_flags)
     }
 }
 
-function add_player_score($player, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $red_win_rate, $games_count, $killed_first_count, $lod_flags, $weight, $options)
+function add_player_score($player, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $red_win_rate, $games_count, $killed_first_count, $lod_flags, $options)
 {
 	global $_scoring_groups;
 	$options_flags = 0;
-	if (!is_null($options) && isset($options->flags))
+	if (isset($options->flags))
 	{
 		$options_flags = $options->flags;
 	}
-
-	$total_points = $extra_pts * $weight;
+	
+	$weight = 1;
+	if (isset($options->weight))
+	{
+		$weight = $options->weight;
+	}
+	$extra_pts *= $weight;
+	
+	$total_points = $extra_pts;
 	if ($lod_flags & SCORING_LOD_PER_GROUP)
 	{
 		foreach ($_scoring_groups as $group)
@@ -835,7 +879,7 @@ function get_players_condition($players_list)
     return new SQL($players_condition_str);
 }
     
-function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $weight = 1)
+function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 {
 	global $_scoring_groups;
 	
@@ -878,7 +922,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	{
 		list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
 		$player = $players[$player_id];
-		add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $weight, $options);
+		add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options);
 	}
 	
 	// Prepare and sort scores
@@ -901,6 +945,20 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
     usort($scores, 'compare_scores');
 	
 	return $scores;
+}
+
+function is_same_scoring_options_group($options1, $options2)
+{
+	if (isset($options1->group))
+	{
+		if (isset($options2->group))
+		{
+			return $options1->group == $options2->group;
+		}
+		return false;
+	}
+	return !isset($options2->group);
+	
 }
 
 function tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $options)
@@ -955,18 +1013,17 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     else
     {
 		// prepare scorings per event
-		$query = new DbQuery('SELECT id, scoring_options, scoring_weight FROM events WHERE tournament_id = ?', $tournament_id);
+		$query = new DbQuery('SELECT id, scoring_options FROM events WHERE tournament_id = ?', $tournament_id);
         while ($row = $query->next())
         {
-            list($event_id, $event_scoring_options, $event_scoring_weight) = $row;
+            list($event_id, $event_scoring_options) = $row;
 			$event_scoring_options = json_decode($event_scoring_options);
 			$scoring_info = new stdClass();
 			$scoring_info->shared = NULL;
-			$scoring_info->weight = $event_scoring_weight;
 			foreach ($event_scorings as $e_id => $s_info)
             {
 				$shared = $s_info->shared;
-				if ($shared->options == $event_scoring_options)
+				if (is_same_scoring_options_group($shared->options, $event_scoring_options))
 				{
 					$shared->events .= ', ' . $event_id;
 					$scoring_info->shared = $shared;
@@ -1054,7 +1111,6 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			{
 				$s = $event_scorings[$event_id];
 				$sh = $s->shared;
-				$weight = $s->weight;
 				$player = $sh->players[$player_id];
 				$op = $sh->options;
 				if (isset($sh->red_win_rate))
@@ -1068,12 +1124,11 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			}
 			else
 			{
-				$weight = 1;
 				$player = $no_event_players[$player_id];
 				$op = $options;
 				$red_win_rate = $no_event_red_win_rate;
 			}
-			add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $weight, $options);
+			add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options);
 		}
     }
     
@@ -1210,7 +1265,7 @@ function get_scoring_group_label($group)
 function api_scoring_help($param)
 {
 	$param->sub_param('flags', 'Bit flag of: 1 - turn off points for being shot first night; 2 - turn off points for game difficulty.', '0 is used.');
-
+	$param->sub_param('weight', 'Scoring weight. All scores are multiplied to this weight when scores are calculated.', '1 is used.');
 }
 
 ?>

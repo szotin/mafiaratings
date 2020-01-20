@@ -51,7 +51,7 @@ class Page extends TournamentPageBase
 	{
 		echo '<p><form method="get" name="viewForm" action="tournament_competition.php">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, 'doUpdateChart');
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'doUpdateChart', SCORING_SELECT_FLAG_NO_OPTIONS);
 		echo '</form></p>';
 		
 		show_chart_legend();

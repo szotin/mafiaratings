@@ -588,9 +588,9 @@ function setUrlParam(url, key, value)
 {
 	var str = key;
 	if (typeof value == "object")
-		str += '=' + JSON.stringify(value);
+		str += '=' + encodeURI(JSON.stringify(value));
 	else if (typeof value != "undefined")
-		str += '=' + value;
+		str += '=' + encodeURI(value);
 	
 	var beg = url.indexOf('?') + 1;
 	if (beg <= 0)

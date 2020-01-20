@@ -121,11 +121,9 @@ try
 		echo '<input type="hidden" id="form-rules" value="' . $club->rules_code . '">';
 	}
 	
-	echo '<tr><td>' . get_label('Scoring system') . '</td><td>';
-	show_scoring_select($event->club_id, $event->scoring_id, $event->scoring_version, json_decode($event->scoring_options), 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
+	echo '<tr><td valign="top">' . get_label('Scoring system') . '</td><td>';
+	show_scoring_select($event->club_id, $event->scoring_id, $event->scoring_version, json_decode($event->scoring_options), '<br>',	'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
 	echo '</td></tr>';
-	
-	echo '<tr><td>' . get_label('Scoring weight').':</td><td><input id="form-scoring-weight" value="' . $event->scoring_weight . '"></td></tr>';
 	
 	if (is_valid_lang($club->langs))
 	{
@@ -216,6 +214,7 @@ try
 		var tid = $("#form-tournament").val();
 		if (tid > 0)
 		{
+			$("#form-scoring-group-div").show();
 			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
 			{
 				var t = obj.tournaments[0];
@@ -229,11 +228,15 @@ try
 		}
 		else
 		{
+			$("#form-scoring-group").val('');
+			mr.onChangeScoringOptions('form-scoring', onScoringChange);
+			$("#form-scoring-group-div").hide();
 			$("#form-rules").prop('disabled', false);
 			$("#form-scoring-sel").prop('disabled', false);
 			$("#form-scoring-ver").prop('disabled', false);
 		}
 	}
+	tournamentChange();
 	
 	var old_address_value = "<?php echo $selected_address; ?>";
 	function newAddressChange()
@@ -282,7 +285,6 @@ try
 			$("#form-scoring-sel").val(e.scoring_id);
 			$("#form-scoring-ver").val(e.scoring_version);
 			$('#form-scoring-options').val(e.scoring_options);
-			$('#form-scoring-weight').val(e.scoring_weight);
 			$("#form-notes").val(e.notes);
 			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
 			$("#form-fun").prop('checked', (e.flags & <?php echo EVENT_FLAG_FUN; ?>) != 0);
@@ -324,7 +326,6 @@ try
 			scoring_id: scoringId,
 			scoring_version: scoringVersion,
 			scoring_options: scoringOptions,
-			scoring_weight: $("#form-scoring-weight").val(),
 			notes: $("#form-notes").val(),
 			flags: _flags,
 			langs: _langs,

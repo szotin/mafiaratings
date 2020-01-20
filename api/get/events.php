@@ -5,6 +5,7 @@ require_once '../../include/user_location.php';
 require_once '../../include/rules.php';
 require_once '../../include/datetime.php';
 require_once '../../include/picture.php';
+require_once '../../include/scoring.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -157,7 +158,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, c.name, c.flags, e.start_time, e.duration, e.notes, e.price, e.rules, e.scoring_weight, t.id, t.name, t.flags, ct.timezone FROM events e' . 
+				'SELECT e.id, e.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, c.name, c.flags, e.start_time, e.duration, e.notes, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, t.id, t.name, t.flags, ct.timezone FROM events e' . 
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN clubs c ON c.id = e.club_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
@@ -172,7 +173,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
-				list ($event->id, $event->name, $event_flags, $event->langs, $event->address_id, $event->address_name, $address_flags, $event->club_id, $event->club_name, $club_flags, $event->timestamp, $event->duration, $event->notes, $event->price, $rules_code, $event->scoring_weight, $tournament_id, $tournament_name, $tournament_flags, $event_timezone) = $row;
+				list ($event->id, $event->name, $event_flags, $event->langs, $event->address_id, $event->address_name, $address_flags, $event->club_id, $event->club_name, $club_flags, $event->timestamp, $event->duration, $event->notes, $event->price, $rules_code, $event->scoring_id, $event->scoring_version, $event->scoring_options, $tournament_id, $tournament_name, $tournament_flags, $event_timezone) = $row;
 				$event->id = (int)$event->id;
 				$event->langs = (int)$event->langs;
 				$event->address_id = (int)$event->address_id;
@@ -180,7 +181,9 @@ class ApiPage extends GetApiPageBase
 				$event->timestamp = (int)$event->timestamp;
 				$event->duration = (int)$event->duration;
 				$event->rules = rules_code_to_object($rules_code);
-				$event->scoring_weight = (float)$event->scoring_weight;
+				$event->scoring_id = (int)$event->scoring_id;
+				$event->scoring_version = (int)$event->scoring_version;
+				$event->scoring_options = json_decode($event->scoring_options);
 				
 				$event->start = timestamp_to_string($event->timestamp, $event_timezone);
 				$event->end = timestamp_to_string($event->timestamp + $event->duration, $event_timezone);
@@ -224,7 +227,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.price, e.rules, e.scoring_weight, e.tournament_id FROM events e' . 
+				'SELECT e.id, e.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.tournament_id FROM events e' . 
 				' JOIN addresses a ON a.id = e.address_id', $condition);
 			$query->add(' ORDER BY e.start_time DESC, e.id DESC');
 			if ($page_size > 0)
@@ -236,7 +239,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
-				list ($event->id, $event->name, $flags, $event->langs, $event->address_id, $event->club_id, $event->timestamp, $event->duration, $event->notes, $event->price, $rules_code, $event->scoring_weight, $tournament_id) = $row;
+				list ($event->id, $event->name, $flags, $event->langs, $event->address_id, $event->club_id, $event->timestamp, $event->duration, $event->notes, $event->price, $rules_code, $event->scoring_id, $event->scoring_version, $event->scoring_options, $tournament_id) = $row;
 				$event->id = (int)$event->id;
 				$event->langs = (int)$event->langs;
 				$event->address_id = (int)$event->address_id;
@@ -244,7 +247,9 @@ class ApiPage extends GetApiPageBase
 				$event->timestamp = (int)$event->timestamp;
 				$event->duration = (int)$event->duration;
 				$event->rules = rules_code_to_object($rules_code);
-				$event->scoring_weight = (float)$event->scoring_weight;
+				$event->scoring_id = (int)$event->scoring_id;
+				$event->scoring_version = (int)$event->scoring_version;
+				$event->scoring_options = json_decode($event->scoring_options);
 				if (!is_null($tournament_id))
 				{
 					$event->tournament_id = (int)$tournament_id;
@@ -302,7 +307,9 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('notes', 'Event notes.');
 			$param->sub_param('price', 'Event admission rate.');
 			$param->sub_param('canceled', 'Trus for canceled events, false for others.');
-			$param->sub_param('scoring_weight', 'All scorings are multiplied by this weight. It is used in the tournaments where different tournament events can have different weight. For example semifuinal results can be multiplied by 1.2; finals - by 1.5.');
+			$param->sub_param('scoring_id', 'Scoring system id for this event.');
+			$param->sub_param('scoring_version', 'The version of scoring system id for this event.');
+			api_scoring_help($param->sub_param('scoring_options', 'Scoring options for this event.'));
 			$param->sub_param('tournament_id', 'Tournament id when the event belongs to a tournament.', 'the event is not a tournament round.');
 			$param->sub_param('tournament_name', 'Tournament name.', 'the event is not a tournament round.', 1);
 			$param->sub_param('tournament_icon', 'Tournament icon URL.', 'the event is not a tournament round.', 1);

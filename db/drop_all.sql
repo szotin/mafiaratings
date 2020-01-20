@@ -35,7 +35,6 @@ DROP TABLE `tournament_approves`;
 DROP TABLE `tournament_comments`;
 DROP TABLE `tournament_invitations`;
 DROP TABLE `users`;
-DROP TABLE `rounds`;
 DROP TABLE `events`;
 DROP TABLE `tournaments`;
 DROP TABLE `league_seasons`;

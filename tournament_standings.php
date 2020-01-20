@@ -77,7 +77,7 @@ class Page extends TournamentPageBase
 		
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, 'submitScoring'); //, ($this->flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING) ? SCORING_SELECT_FLAG_NO_OPTIONS : 0);
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_OPTIONS);
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'tournament=' . $this->id, get_label('Go to the page where a specific player is located.'));

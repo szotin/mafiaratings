@@ -21,9 +21,9 @@ try
 	}
 	$event_id = (int)$_REQUEST['event_id'];
 	
-	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_version, $scoring_options, $scoring_weight, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
+	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_version, $scoring_options, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
 		Db::record(get_label('event'), 
-			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.scoring_weight, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
+			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
 			'FROM events e ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
@@ -120,11 +120,9 @@ try
 		echo '<input type="hidden" id="form-rules" value="' . $club->rules_code . '">';
 	}
 	
-	echo '<tr><td>' . get_label('Scoring system').':</td><td>';
-	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
+	echo '<tr><td valign="top">' . get_label('Scoring system').':</td><td>';
+	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
 	echo '</td></tr>';
-	
-	echo '<tr><td>' . get_label('Scoring weight').':</td><td><input id="form-scoring-weight" value="' . $scoring_weight . '"></td></tr>';
 	
 	if (is_valid_lang($club->langs))
 	{
@@ -192,6 +190,7 @@ try
 		var tid = $("#form-tournament").val();
 		if (tid > 0)
 		{
+			$("#form-scoring-group-div").show();
 			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
 			{
 				var t = obj.tournaments[0];
@@ -205,6 +204,9 @@ try
 		}
 		else
 		{
+			$("#form-scoring-group").val('');
+			mr.onChangeScoringOptions('form-scoring', onScoringChange);
+			$("#form-scoring-group-div").hide();
 			$("#form-rules").prop('disabled', false);
 			$("#form-scoring-sel").prop('disabled', false);
 			$("#form-scoring-ver").prop('disabled', false);
@@ -267,7 +269,6 @@ try
 			, scoring_id: scoringId
 			, scoring_version: scoringVersion
 			, scoring_options: scoringOptions
-			, scoring_weight: $("#form-scoring-weight").val()
 			, notes: $("#form-notes").val()
 			, flags: _flags
 			, langs: _langs
@@ -287,8 +288,6 @@ try
 	{
 		$("#dlg-ok").button("option", "disabled", strToTimespan($("#form-duration").val()) <= 0);
 	}
-	
-	$('#form-scoring_weight').spinner({ step:0.1, max:100, min:0.1 }).width(30);
 	
 	</script>
 <?php

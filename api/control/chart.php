@@ -108,7 +108,7 @@ class ApiPage extends ControlApiPageBase
 				}
 				$event_id = (int)$_REQUEST['id'];
 				
-				list($scoring_id, $scoring_version, $scoring, $scoring_options, $scoring_weight, $timezone) = Db::record(get_label('event'), 'SELECT e.scoring_id, e.scoring_version, s.scoring, e.scoring_options, e.scoring_weight, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
+				list($scoring_id, $scoring_version, $scoring, $scoring_options, $timezone) = Db::record(get_label('event'), 'SELECT e.scoring_id, e.scoring_version, s.scoring, e.scoring_options, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
 				if (isset($_REQUEST['scoring_id']) && $_REQUEST['scoring_id'] > 0)
 				{
 					$scoring_id = (int)$_REQUEST['scoring_id'];

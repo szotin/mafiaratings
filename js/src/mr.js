@@ -728,16 +728,43 @@ var mr = new function()
 	{
 		if (changed)
 		{
-			var flags = 0;
-			if (!$('#' + name + '-night1').prop('checked'))
+			var ops = {};
+			var n = $('#' + name + '-night1');
+			var d = $('#' + name + '-difficulty');
+			var w = $('#' + name + '-weight');
+			var g = $('#' + name + '-group');
+			if (n.length > 0 || d.length > 0)
 			{
-				flags |= /*SCORING_OPTION_NO_NIGHT_KILLS*/1;
+				var flags = 0;
+				if (!n.prop('checked'))
+				{
+					flags |= /*SCORING_OPTION_NO_NIGHT_KILLS*/1;
+				}
+				if (!d.prop('checked'))
+				{
+					flags |= /*SCORING_OPTION_NO_GAME_DIFFICULTY*/2;
+				}
+				if (flags > 0)
+				{
+					ops.flags = flags;
+				}
 			}
-			if (!$('#' + name + '-difficulty').prop('checked'))
+			if (w.length > 0)
 			{
-				flags |= /*SCORING_OPTION_NO_GAME_DIFFICULTY*/2;
+				var weight = parseFloat(w.val());
+				if (Math.abs(weight - 1) > Number.EPSILON)
+				{
+					ops.weight = weight;
+				}
 			}
-			changed($('#' + name + '-sel').val(), $('#' + name + '-ver').val(), { flags: flags } );
+			console.log(g);
+			console.log(g.length);
+			console.log(g.val());
+			if (g.length > 0 && g.val())
+			{
+				ops.group = g.val();
+			}
+			changed($('#' + name + '-sel').val(), $('#' + name + '-ver').val(), ops);
 		}
 	}
 	
