@@ -151,68 +151,6 @@ function pointsHtml(sectionName, policyNum)
     return html;
 }
 
-function optChange(sectionName, policyNum)
-{
-    var policy = _data.scoring[sectionName][policyNum];
-    if ($('#' + sectionName + '-' + policyNum + '-opt').attr('checked'))
-    {
-        policy.option_name = "";
-    }
-    else
-    {
-        delete policy.option_name;
-        delete policy.def;
-    }
-    refreshScoringEditor(true);
-}
-
-function defChange(sectionName, policyNum)
-{
-    var policy = _data.scoring[sectionName][policyNum];
-    if ($('#' + sectionName + '-' + policyNum + '-def').attr('checked'))
-    {
-        delete policy.def;
-    }
-    else
-    {
-        policy.def = false;
-    }
-    refreshScoringEditor(true);
-}
-
-function optNameChange(sectionName, policyNum)
-{
-    var policy = _scoring[sectionName][policyNum];
-    policy.option_name = $('#' + sectionName + '-' + policyNum + '-optname').val();
-    refreshScoringEditor(true);
-}
-
-function optionHtml(sectionName, policyNum)
-{
-    var policy = _data.scoring[sectionName][policyNum];
-    var html = '<input type="checkbox" id="' + sectionName + '-' + policyNum + '-opt" onclick="optChange(\'' + sectionName + '\', ' + policyNum + ')"';
-    if (typeof policy.option_name == "string")
-    {
-        html += ' checked> ' + _data.strings.opt;
-        html += '<br><input type="checkbox" id="' + sectionName + '-' + policyNum + '-def" onclick="defChange(\'' + sectionName + '\', ' + policyNum + ')"';
-        if (typeof policy.def == "undefined" || policy.def)
-        {
-            html += ' checked';
-        }
-        html += '> ' + _data.strings.defOn;
-        html += '<br>' + _data.strings.optName + ':<br><input id="' + sectionName + '-' + policyNum + '-optname" onchange="optNameChange(\'' + sectionName + '\', ' + policyNum + ')" value="' + policy.option_name + '">';
-        if (policy.option_name.length == 0)
-        {
-            policy.message = _data.strings.optNameErr;
-        }
-    }
-    else
-    {
-        html += '> ' + _data.strings.opt;
-    }
-    return html;
-}
-
 function deletePolicy(sectionName, policyNum)
 {
     var section = _data.scoring[sectionName];
@@ -310,13 +248,14 @@ function matterSelectHtml(sectionName, policyNum, matterFlag)
 function sectionHtml(sectionName)
 {
     var section = _data.scoring[sectionName];
-    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.policyAdd + '" onclick="createPolicy(\'' + sectionName + '\')"><img src="images/create.png"></button></td><td colspan="4">' + _data.sections[sectionName] + '</td></tr>';
+    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.policyAdd + '" onclick="createPolicy(\'' + sectionName + '\')"><img src="images/create.png"></button></td><td colspan="3">' + _data.sections[sectionName] + '</td></tr>';
     for (var i = 0; i < section.length; ++i)
     {
         var policy = section[i];
         delete policy.message;
-        html += '<tr valign="top"><td align="center"><button class="icon" title="' + _data.strings.policyDel + '" onclick="deletePolicy(\'' + sectionName + '\', ' + i + ')"><img src="images/delete.png"></button></td><td width="140">';
-        html += optionHtml(sectionName, i);
+        html += '<tr valign="top"><td align="center"><button class="icon" title="' + _data.strings.policyDel + '" onclick="deletePolicy(\'' + sectionName + '\', ' + i + ')"><img src="images/delete.png"></button></td>';
+        html += '<td width="100">'
+        html += rolesHtml(sectionName, i);
         html += '</td><td width="140">'
         var matter = policy.matter;
         if (matter <= 0)
@@ -328,8 +267,6 @@ function sectionHtml(sectionName)
             html += matterSelectHtml(sectionName, i, matter ^ oldMatter);
         }
         html += matterSelectHtml(sectionName, i, 0);
-        html += '</td><td width="100">'
-        html += rolesHtml(sectionName, i);
         html += '</td>'
         if (typeof policy.message == "string")
         {
