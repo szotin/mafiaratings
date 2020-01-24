@@ -12,6 +12,18 @@ require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
 
+define('TOURNAMENT_TYPE_CUSTOM', 0);
+define('TOURNAMENT_TYPE_FIGM_ONE_ROUND', 1);
+define('TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS3', 2);
+define('TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS4', 3);
+define('TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS3', 4);
+define('TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS4', 5);
+define('TOURNAMENT_TYPE_AML_ONE_ROUND', 6);
+define('TOURNAMENT_TYPE_AML_TWO_ROUNDS', 7);
+define('TOURNAMENT_TYPE_AML_THREE_ROUNDS', 8);
+define('TOURNAMENT_TYPE_CHAMPIONSHIP', 9);
+define('TOURNAMENT_TYPE_SERIES', 10);
+
 function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $league_id)
 {
 	global $_profile;

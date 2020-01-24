@@ -569,7 +569,7 @@ var mr = new function()
 		{
 			formLink += "&league_id=" + leagueId;
 		}
-		dlg.form(formLink, refr);
+		dlg.form(formLink, refr, 900);
 	}
 	
 	this.restoreTournament = function(id)
@@ -757,9 +757,6 @@ var mr = new function()
 					ops.weight = weight;
 				}
 			}
-			console.log(g);
-			console.log(g.length);
-			console.log(g.val());
 			if (g.length > 0 && g.val())
 			{
 				ops.group = g.val();

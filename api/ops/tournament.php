@@ -27,6 +27,30 @@ function stars_str($stars)
 	return $stars_str;
 }
 
+function create_event($event_name, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $league_id)
+{
+	Db::exec(
+		get_label('round'), 
+		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_version, scoring_options, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+		$event_name, $address_id, $club_id, $start, $end - $start, $notes, EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_MODERATE, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code);
+		
+	$log_details = new stdClass();
+	$log_details->name = $event_name;
+	$log_details->tournament_id = $tournament_id;
+	$log_details->club_id = $club_id; 
+	$log_details->address_id = $address_id; 
+	$log_details->start = $start;
+	$log_details->duration = $end - $start;
+	$log_details->langs = $langs;
+	$log_details->notes = $notes;
+	$log_details->price = $price;
+	$log_details->scoring_id = $scoring_id;
+	$log_details->scoring_version = $scoring_version;
+	$log_details->scoring_options = $scoring_options;
+	$log_details->rules_code = $rules_code;
+	$log_details->flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_MODERATE;
+	db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id, $league_id);
+}
 
 class ApiPage extends OpsApiPageBase
 {
@@ -35,7 +59,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		global $_profile;
+		global $_profile, $_lang_code;
 		$club_id = (int)get_required_param('club_id');
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
@@ -52,10 +76,12 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please enter [0].', get_label('tournament name')));
 		}
 		
+		$type = (int)get_optional_param('type', TOURNAMENT_TYPE_CUSTOM);
 		$price = get_optional_param('price', '');
 		$scoring_id = (int)get_optional_param('scoring_id', $club->scoring_id);
 		$scoring_version = (int)get_optional_param('scoring_version', -1);
-		$scoring_options = get_optional_param('scoring_options', NULL);
+		$scoring_options = json_decode(get_optional_param('scoring_options', NULL));
+		$scoring_options_str = json_encode($scoring_options);
 		if ($scoring_version < 0)
 		{
 			list($scoring_version) = Db::record(get_label('scoring'), 'SELECT MAX(version) FROM scoring_versions WHERE scoring_id = ?', $scoring_id);
@@ -142,11 +168,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			$rules_code = $club->rules_code;
 		}
-		
+
 		Db::exec(
 			get_label('tournament'), 
 			'INSERT INTO tournaments (name, league_id, request_league_id, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_version, scoring_options, rules, flags, stars) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $request_league_id, $club_id, $address_id, $start, $end - $start, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options, $rules_code, $flags, $stars);
+			$name, $league_id, $request_league_id, $club_id, $address_id, $start, $end - $start, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options_str, $rules_code, $flags, $stars);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -162,37 +188,115 @@ class ApiPage extends OpsApiPageBase
 		$log_details->price = $price;
 		$log_details->scoring_id = $scoring_id;
 		$log_details->scoring_version = $scoring_version;
-		$log_details->scoring_options = $scoring_options;
+		$log_details->scoring_options = $scoring_options_str;
 		$log_details->rules_code = $rules_code;
 		$log_details->flags = $flags;
 		$log_details->stars = $stars;
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id, $request_league_id);
 		
-		if (($flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
+		if (is_valid_lang($langs))
 		{
-			$event_name = get_label('Main round'); // todo use tournament language instead of user language
-			
-			Db::exec(
-				get_label('round'), 
-				'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_version, scoring_options, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-				$event_name, $address_id, $club_id, $start, $end - $start, $notes, EVENT_MASK_HIDDEN, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code);
-				
-			$log_details = new stdClass();
-			$log_details->name = $name;
-			$log_details->tournament_id = $tournament_id;
-			$log_details->club_id = $club_id; 
-			$log_details->address_id = $address_id; 
-			$log_details->start = $start;
-			$log_details->duration = $end - $start;
-			$log_details->langs = $langs;
-			$log_details->notes = $notes;
-			$log_details->price = $price;
-			$log_details->scoring_id = $scoring_id;
-			$log_details->scoring_version = $scoring_version;
-			$log_details->scoring_options = $scoring_options;
-			$log_details->rules_code = $rules_code;
-			$log_details->flags = EVENT_MASK_HIDDEN;
-			db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id, $request_league_id);
+			$lang_code = get_lang_code($langs);
+		}
+		else
+		{
+			$lang_code = $_lang_code;
+		}
+		$round_names = include '../../include/languages/' . $lang_code . '/rounds.php';
+		switch ($type)
+		{
+			case TOURNAMENT_TYPE_FIGM_ONE_ROUND:
+				$ops = new stdClass();
+				if (isset($scoring_options->flags))
+				{
+					$ops->flags = $scoring_options->flags;
+				}
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				break;
+			case TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS3:
+				$ops = new stdClass();
+				$ops->group = 'main';
+				$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
+				if (isset($scoring_options->flags))
+				{
+					$ops->flags |= $scoring_options->flags;
+				}
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				$ops->group = 'final';
+				$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				break;
+			case TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS4:
+				$ops = new stdClass();
+				$ops->group = 'main';
+				$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
+				if (isset($scoring_options->flags))
+				{
+					$ops->flags |= $scoring_options->flags;
+				}
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				$ops->group = 'final';
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				break;
+			case TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS3:
+				$ops = new stdClass();
+				$ops->group = 'main';
+				$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
+				if (isset($scoring_options->flags))
+				{
+					$ops->flags |= $scoring_options->flags;
+				}
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				$ops->group = 'final';
+				$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				break;
+			case TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS4:
+				$ops = new stdClass();
+				$ops->group = 'main';
+				$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
+				if (isset($scoring_options->flags))
+				{
+					$ops->flags |= $scoring_options->flags;
+				}
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				$ops->group = 'final';
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				break;
+			case TOURNAMENT_TYPE_AML_ONE_ROUND:
+				$ops = new stdClass();
+				if (isset($scoring_options->flags))
+				{
+					$ops->flags = $scoring_options->flags;
+				}
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				break;
+			case TOURNAMENT_TYPE_AML_TWO_ROUNDS:
+				$ops = new stdClass();
+				if (isset($scoring_options->flags))
+				{
+					$ops->flags = $scoring_options->flags;
+				}
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				$ops->weight = 1.5;
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				break;
+			case TOURNAMENT_TYPE_AML_THREE_ROUNDS:
+				$ops = new stdClass();
+				if (isset($scoring_options->flags))
+				{
+					$ops->flags = $scoring_options->flags;
+				}
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				$ops->weight = 1.2;
+				create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				$ops->weight = 1.5;
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
+				break;
+			default:
+				break;
 		}
 		
 		if ($league_id != $request_league_id)
