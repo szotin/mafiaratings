@@ -56,21 +56,7 @@ try
 		foreach ($scoring->$group as $policy)
 		{
 			echo '<tr><td width="300">';
-			$not_first = false;
-			$matters = $policy->matter;
-			while ($matters != 0)
-			{
-				$new_matters = $matters & ($matters - 1);
-				$matter = $matters & ~$new_matters;
-				$matters = $new_matters;
-				
-				if ($not_first)
-				{
-					echo ' ' . get_label('and') . '<br>';
-				}
-				$not_first = true;
-				echo get_scoring_matter_label($matter);
-			}
+			echo get_scoring_matter_label($policy);
 			echo '</td><td>';
 			$roles = isset($policy->roles) ? $policy->roles : SCORING_ROLE_FLAGS_ALL;
 			if (isset($policy->min_difficulty) || isset($policy->max_difficulty))

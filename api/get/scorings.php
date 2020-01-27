@@ -21,22 +21,42 @@ class ApiPage extends GetApiPageBase
 		$page_size = (int)get_optional_param('page_size', DEFAULT_PAGE_SIZE);
 		
 		$condition = new SQL(' WHERE 1');
-		if ($name_contains != '')
-		{
-			$name_contains = '%' . $name_contains . '%';
-			$condition->add(' AND s.name LIKE(?)', $name_contains);
-		}
-		
-		if ($name_starts != '')
-		{
-			$name_starts1 = '% ' . $name_starts . '%';
-			$name_starts2 = $name_starts . '%';
-			$condition->add(' AND (s.name LIKE(?) OR s.name LIKE(?))', $name_starts1, $name_starts2);
-		}
-		
 		if ($scoring_id > 0)
 		{
 			$condition->add(' AND s.id = ?', $scoring_id);
+		}
+		else
+		{
+			if ($name_contains != '')
+			{
+				$name_contains = '%' . $name_contains . '%';
+				$condition->add(' AND s.name LIKE(?)', $name_contains);
+			}
+			
+			if ($name_starts != '')
+			{
+				$name_starts1 = '% ' . $name_starts . '%';
+				$name_starts2 = $name_starts . '%';
+				$condition->add(' AND (s.name LIKE(?) OR s.name LIKE(?))', $name_starts1, $name_starts2);
+			}
+		
+			if ($club_id > 0)
+			{
+				$condition->add(' AND (s.club_id = ? OR s.club_id IS NULL)', $club_id);
+			}
+			else
+			{
+				$condition->add(' AND s.club_id IS NULL');
+			}
+			
+			if ($league_id > 0)
+			{
+				$condition->add(' AND (s.league_id = ? OR s.league_id IS NULL)', $league_id);
+			}
+			else
+			{
+				$condition->add(' AND s.league_id IS NULL');
+			}
 		}
 		
 		if ($scoring_version > 0)
@@ -46,24 +66,6 @@ class ApiPage extends GetApiPageBase
 		else if ($scoring_version == 0)
 		{
 			$condition->add(' AND v.version = (SELECT MAX(v1.version) FROM scoring_versions v1 WHERE v1.scoring_id = s.id)');
-		}
-		
-		if ($club_id > 0)
-		{
-			$condition->add(' AND (s.club_id = ? OR s.club_id IS NULL)', $club_id);
-		}
-		else
-		{
-			$condition->add(' AND s.club_id IS NULL');
-		}
-		
-		if ($league_id > 0)
-		{
-			$condition->add(' AND (s.league_id = ? OR s.league_id IS NULL)', $league_id);
-		}
-		else
-		{
-			$condition->add(' AND s.league_id IS NULL');
 		}
 		
 		list($count) = Db::record('scoring', 'SELECT count(DISTINCT s.id) FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id', $condition);

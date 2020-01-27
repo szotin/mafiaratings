@@ -139,11 +139,11 @@ class GamePlayerStats
 		$mafs_guessed = $gs->mafs_guessed($this->player_num);
 		if ($mafs_guessed >= 3)
 		{
-			$this->scoring_flags |= SCORING_FLAG_PRIMA_NOCTA_3;
+			$this->scoring_flags |= SCORING_FLAG_FIRST_LEGACY_3;
 		}
 		else if ($mafs_guessed >= 2)
 		{
-			$this->scoring_flags |= SCORING_FLAG_PRIMA_NOCTA_2;
+			$this->scoring_flags |= SCORING_FLAG_FIRST_LEGACY_2;
 		}
 		
         switch ($player->kill_reason)
@@ -219,6 +219,11 @@ class GamePlayerStats
 		else if ($red_checks >= 3)
 		{
 			$this->scoring_flags |= SCORING_FLAG_RED_CHECKS;
+		}
+		
+		if ($player->extra_points != 0)
+		{
+			$this->scoring_flags |= SCORING_FLAG_EXTRA_POINTS;
 		}
 	}
 

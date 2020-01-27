@@ -268,7 +268,7 @@ try
 						
 						echo '<td align="center" class="dark">' . format_score($player->points) . '</td>';
 						echo '<td align="center">' . format_score($player->main_points) . '</td>';
-						echo '<td align="center">' . format_score($player->prima_nocta_points) . '</td>';
+						echo '<td align="center">' . format_score($player->legacy_points) . '</td>';
 						echo '<td align="center">' . format_score($player->extra_points) . '</td>';
 						echo '<td align="center">' . format_score($player->penalty_points) . '</td>';
 						echo '<td align="center">' . format_score($player->night1_points) . '</td>';

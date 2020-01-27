@@ -24,12 +24,15 @@ class Page extends TournamentPageBase
 		
 		parent::prepare();
 		
+		$this->tournament_player_params = '&id=' . $this->id;
 		if (isset($_REQUEST['scoring_id']))
 		{
 			$this->scoring_id = (int)$_REQUEST['scoring_id'];
+			$this->tournament_player_params .= '&scoring_id=' . $this->scoring_id;
 			if (isset($_REQUEST['scoring_version']))
 			{
 				$this->scoring_version = (int)$_REQUEST['scoring_version'];
+				$this->tournament_player_params .= '&scoring_version=' . $this->scoring_version;
 				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 			}
 			else
@@ -46,12 +49,14 @@ class Page extends TournamentPageBase
 		$this->scoring_options = json_decode($this->scoring_options);
 		if (isset($_REQUEST['scoring_ops']))
 		{
+			$this->tournament_player_params .= '&scoring_ops=' . rawurlencode($_REQUEST['scoring_ops']);
 			$ops = json_decode($_REQUEST['scoring_ops']);
 			foreach($ops as $key => $value) 
 			{
 				$this->scoring_options->$key = $value;
 			}
 		}
+		$this->tournament_player_params .= '&bck=1';
 		
 		$this->user_id = 0;
 		if ($_page < 0)
@@ -129,10 +134,10 @@ class Page extends TournamentPageBase
 				$highlight = 'dark';
 			}
 			echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
-			echo '<td width="50"><a href="user_info.php?id=' . $player->id . '&bck=1">';
+			echo '<td width="50"><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">';
 			$this->user_pic->set($player->id, $player->name, $player->flags);
 			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a></td><td><a href="user_info.php?id=' . $player->id . '&bck=1">' . $player->name . '</a></td>';
+			echo '</a></td><td><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">' . $player->name . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($player->club_id) && $player->club_id > 0)
 			{
@@ -142,7 +147,7 @@ class Page extends TournamentPageBase
 			echo '</td>';
 			echo '<td align="center" class="' . $highlight . '">' . format_score($player->points) . '</td>';
 			echo '<td align="center">' . format_score($player->main_points) . '</td>';
-			echo '<td align="center">' . format_score($player->prima_nocta_points) . '</td>';
+			echo '<td align="center">' . format_score($player->legacy_points) . '</td>';
 			echo '<td align="center">' . format_score($player->extra_points) . '</td>';
 			echo '<td align="center">' . format_score($player->penalty_points) . '</td>';
 			echo '<td align="center">' . format_score($player->night1_points) . '</td>';

@@ -33,8 +33,8 @@ define('SCORING_FLAG_BEST_MOVE', 0x40); // 64: Matter 6 - Best move
 define('SCORING_FLAG_SURVIVE', 0x80); // 128: Matter 7 - Survived in the game
 define('SCORING_FLAG_KILLED_FIRST_NIGHT', 0x100); // 256: Matter 8 - Killed in the first night
 define('SCORING_FLAG_KILLED_NIGHT', 0x200); // 512: Matter 9 - Killed in the night
-define('SCORING_FLAG_PRIMA_NOCTA_3', 0x400); // 1024: Matter 10 - Guessed 3 mafia
-define('SCORING_FLAG_PRIMA_NOCTA_2', 0x800); // 2048: Matter 11 - Guessed 2 mafia
+define('SCORING_FLAG_FIRST_LEGACY_3', 0x400); // 1024: Matter 10 - Guessed 3 mafia after being killed first night
+define('SCORING_FLAG_FIRST_LEGACY_2', 0x800); // 2048: Matter 11 - Guessed 2 mafia after being killed first night
 define('SCORING_FLAG_WARNINGS_4', 0x1000); // 4096: Matter 12 - Killed by warnings
 define('SCORING_FLAG_KICK_OUT', 0x2000); // 8192: Matter 13 - Kicked out
 define('SCORING_FLAG_SURRENDERED', 0x4000); // 16384: Matter 14 - Surrendered
@@ -44,14 +44,15 @@ define('SCORING_FLAG_SHERIFF_KILLED_AFTER_FINDING', 0x20000); // 131072: Matter 
 define('SCORING_FLAG_SHERIFF_FOUND_FIRST_NIGHT', 0x40000); // 262144: Matter 18 - Sheriff was found first night
 define('SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT', 0x80000); // 524288: Matter 19 - Sheriff was killed the first night
 define('SCORING_FLAG_BLACK_CHECKS', 0x100000); // 1048576: Matter 20 - Sheriff did three black checks in a row
-define('SCORING_FLAG_RED_CHECKS', 0x100000); // 2097152: Matter 21 - All sheriff checks are red
+define('SCORING_FLAG_RED_CHECKS', 0x200000); // 2097152: Matter 21 - All sheriff checks are red
+define('SCORING_FLAG_EXTRA_POINTS', 0x400000); // 4194304: Matter 22 - Player has manually assigned extra points
 
 define('SCORING_STAT_FLAG_GAME_DIFFICULTY', 0x1);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING', 0x2);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM', 0x4);
 
 define('SCORING_SORTING_MAIN_POINTS', 'm');
-define('SCORING_SORTING_PRIMA_NOCTA_POINTS', 'g');
+define('SCORING_SORTING_LEGACY_POINTS', 'g');
 define('SCORING_SORTING_EXTRA_POINTS', 'e');
 define('SCORING_SORTING_PENALTY_POINTS', 'p');
 define('SCORING_SORTING_NIGHT1_POINTS', 'n');
@@ -76,13 +77,13 @@ define('COMPETITION_FLAG_LEAGUE', 0x40);
 define('COMPETITION_FLAG_LEAGUE_OPT', 0x80);
 
 define('SCORING_GROUP_MAIN', 'main'); // points for wins/loses
-define('SCORING_GROUP_PRIMA_NOCTA', 'prima_nocta'); // points for guessing 3 mafs by first night victim.
+define('SCORING_GROUP_LEGACY', 'legacy'); // points for guessing 3 mafs by first night victim.
 define('SCORING_GROUP_EXTRA', 'extra'); // extra points assigned by moderator, or earned by custom actions
 define('SCORING_GROUP_PENALTY', 'penalty'); // points (most likely negative) for taking warnings and other discipline offences
 define('SCORING_GROUP_NIGHT1', 'night1'); // points for being killed first night
 
-define('SCORING_LOD_PER_GROUP', 1); // scoring returns points per group in $player->main, $player->prima_nocta, $player->extra, $player->penalty, and $player->night1 fields.
-define('SCORING_LOD_PER_POLICY', 2); // scoring returns points per policy for each group in $player->main_policies, $player->prima_nocta_policies, $player->extra_policies, $player->penalty_policies, and $player->night1_policies fields.
+define('SCORING_LOD_PER_GROUP', 1); // scoring returns points per group in $player->main, $player->legacy, $player->extra, $player->penalty, and $player->night1 fields.
+define('SCORING_LOD_PER_POLICY', 2); // scoring returns points per policy for each group in $player->main_points, $player->legacy_points, $player->extra_points, $player->penalty_points, and $player->night1_policies fields.
 define('SCORING_LOD_HISTORY', 4); // scoring returns player history in $player->history field. It contains an array of points with timestamp and scores according to SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
 define('SCORING_LOD_PER_GAME', 8); // scoring returns scores for every game a player played in $player->games field. It contains an array of games with timestamp, game_id, and scores according to SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
 define('SCORING_LOD_NO_SORTING', 16); // When set sorting returns associative array player_id => player. When not set scoring returns array of players sorted by total score.
@@ -90,10 +91,15 @@ define('SCORING_LOD_NO_SORTING', 16); // When set sorting returns associative ar
 define('SCORING_OPTION_NO_NIGHT_KILLS', 1); // Do not use policies dependent on the night kills
 define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent on the game difficulty
 
-$_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_PRIMA_NOCTA, SCORING_GROUP_EXTRA, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
+$_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_EXTRA, SCORING_GROUP_LEGACY, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
-function format_score($score)
+function format_score($score, $zeroes = true)
 {
+	if ($score == 0 && !$zeroes)
+	{
+		return '';
+	}
+	
 	$int_score = (int)($score * 100);
 	if (($int_score % 10) != 0)
 	{
@@ -456,6 +462,7 @@ function init_player_score($player, $scoring, $lod_flags)
             }
             $player->$group = $a;
         }
+		$player->extra[] = 0;
     }
     
     if ($lod_flags & SCORING_LOD_HISTORY)
@@ -465,11 +472,11 @@ function init_player_score($player, $scoring, $lod_flags)
     
     if ($lod_flags & SCORING_LOD_PER_GAME)
     {
-        $player->games[] = array();
+        $player->games = array();
     }
 }
 
-function add_player_score($player, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $red_win_rate, $games_count, $killed_first_count, $lod_flags, $options)
+function add_player_score($player, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $red_win_rate, $games_count, $killed_first_count, $lod_flags, $options, $event_name = NULL)
 {
 	global $_scoring_groups;
 	$options_flags = 0;
@@ -483,9 +490,8 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 	{
 		$weight = $options->weight;
 	}
-	$extra_pts *= $weight;
 	
-	$total_points = $extra_pts;
+	$total_points = 0;
 	if ($lod_flags & SCORING_LOD_PER_GROUP)
 	{
 		foreach ($_scoring_groups as $group)
@@ -493,10 +499,10 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
             $g = $group . '_points';
 			$$g = 0;
 		}
-		$extra_points = $extra_pts;
 	}
 	if ($lod_flags & SCORING_LOD_PER_POLICY)
 	{
+		$per_policy = new stdClass();
 		foreach ($_scoring_groups as $group)
 		{
 			$a = array();
@@ -507,9 +513,8 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 					$a[] = 0;
 				}
 			}
-			$$group = $a;
+			$per_policy->$group = $a;
 		}
-		$extra[] = $extra_pts;
 	}
 	
 	$role = 1 << $game_role;
@@ -610,6 +615,10 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 					}
 				}
 			}
+			else if (isset($policy->extra_points_weight))
+			{
+				$points = $policy->extra_points_weight * $extra_pts;
+			}
 			
 			// if ($player->id == 25)
 			// {
@@ -629,11 +638,12 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 			}
 			if ($lod_flags & SCORING_LOD_PER_POLICY)
 			{
-				$$group[$i] += $points;
+				$g_array = &$per_policy->$group_name;
+				$g_array[$i] += $points;
 			}
 		}
 	}
-    
+	
 	$player->points += $total_points;
     if ($lod_flags & SCORING_LOD_PER_GROUP)
     {
@@ -647,9 +657,11 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
     {
         foreach ($_scoring_groups as $group)
         {
-            for ($i = 0; $i < count($group); ++$i)
+			$pg_array = &$player->$group;
+			$ppg_array = &$per_policy->$group;
+            for ($i = 0; $i < count($ppg_array); ++$i)
             {
-                $player->$group[$i] += $$group[$i];
+				$pg_array[$i] += $ppg_array[$i];
             }
         }
     }
@@ -684,6 +696,11 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
         $game->game_id = $game_id;
         $game->time = $game_end_time;
         $game->points = $total_points;
+		$game->role = (int)$game_role;
+		if (!is_null($event_name))
+		{
+			$game->event_name = $event_name;
+		}
         if ($lod_flags & SCORING_LOD_PER_GROUP)
         {
             foreach ($_scoring_groups as $group)
@@ -696,7 +713,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
         {
             foreach ($_scoring_groups as $group)
             {
-                $game->$group = $$group;
+                $game->$group = $per_policy->$group;
             }
         }
         $player->games[] = $game;
@@ -751,57 +768,57 @@ function compare_scores($player1, $player2)
 			$value2 = 0;
 		}
 		
-		//'prima_nocta', 'penalty', 'night1'
+		//'legacy', 'penalty', 'night1'
 		switch ($char)
 		{
 			case SCORING_SORTING_MAIN_POINTS:
-				if (isset($player1->main))
+				if (isset($player1->main_points))
 				{
-					$value1 += $player1->main * $sign;
+					$value1 += $player1->main_points * $sign;
 				}
 				if (isset($player2->main))
 				{
-					$value2 += $player2->main * $sign;
+					$value2 += $player2->main_points * $sign;
 				}
 				break;
-			case SCORING_SORTING_PRIMA_NOCTA_POINTS:
-				if (isset($player1->prima_nocta))
+			case SCORING_SORTING_LEGACY_POINTS:
+				if (isset($player1->legacy_points))
 				{
-					$value1 += $player1->prima_nocta * $sign;
+					$value1 += $player1->legacy_points * $sign;
 				}
-				if (isset($player2->prima_nocta))
+				if (isset($player2->legacy_points))
 				{
-					$value2 += $player2->prima_nocta * $sign;
+					$value2 += $player2->legacy_points * $sign;
 				}
 				break;
 			case SCORING_SORTING_EXTRA_POINTS:
-				if (isset($player1->extra))
+				if (isset($player1->extra_points))
 				{
-					$value1 += $player1->extra * $sign;
+					$value1 += $player1->extra_points * $sign;
 				}
-				if (isset($player2->extra))
+				if (isset($player2->extra_points))
 				{
-					$value2 += $player2->extra * $sign;
+					$value2 += $player2->extra_points * $sign;
 				}
 				break;
 			case SCORING_SORTING_PENALTY_POINTS:
-				if (isset($player1->penalty))
+				if (isset($player1->penalty_points))
 				{
-					$value1 += $player1->penalty * $sign;
+					$value1 += $player1->penalty_points * $sign;
 				}
-				if (isset($player2->penalty))
+				if (isset($player2->penalty_points))
 				{
-					$value2 += $player2->penalty * $sign;
+					$value2 += $player2->penalty_points * $sign;
 				}
 				break;
 			case SCORING_SORTING_NIGHT1_POINTS:
-				if (isset($player1->night1))
+				if (isset($player1->night1_points))
 				{
-					$value1 += $player1->night1 * $sign;
+					$value1 += $player1->night1_points * $sign;
 				}
-				if (isset($player2->night1))
+				if (isset($player2->night1_points))
 				{
-					$value2 += $player2->night1 * $sign;
+					$value2 += $player2->night1_points * $sign;
 				}
 				break;
 			case SCORING_SORTING_WIN:
@@ -876,6 +893,10 @@ function get_players_condition($players_list)
         }
         $players_condition_str .= ')';
     }
+	else if (is_numeric($players_list))
+	{
+		$players_condition_str = ' AND p.user_id = ' . $players_list;
+	}
     return new SQL($players_condition_str);
 }
     
@@ -906,7 +927,18 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 	while ($row = $query->next())
 	{
 		$player = new stdClass();
-		list ($player->id, $player->name, $player->flags, $player->langs, $player->club_id, $player->club_name, $player->club_flags, $player->games_count, $player->killed_first_count, $player->wins, $player->special_role_wins) = $row;
+		$player->id = (int)$row[0];
+		$player->name = $row[1];
+		$player->flags = (int)$row[2];
+		$player->langs = (int)$row[3];
+		$player->club_id = (int)$row[4];
+		$player->club_name = $row[5];
+		$player->club_flags = (int)$row[6];
+		$player->games_count = (int)$row[7];
+		$player->killed_first_count = (int)$row[8];
+		$player->wins = (int)$row[9];
+		$player->special_role_wins = (int)$row[10];
+
         init_player_score($player, $scoring, $lod_flags);
         $players[$player->id] = $player;
 	}
@@ -979,7 +1011,18 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 	while ($row = $query->next())
 	{
 		$player = new stdClass();
-		list ($player->id, $player->name, $player->flags, $player->langs, $player->club_id, $player->club_name, $player->club_flags, $player->games_count, $player->killed_first_count, $player->wins, $player->special_role_wins) = $row;
+		$player->id = (int)$row[0];
+		$player->name = $row[1];
+		$player->flags = (int)$row[2];
+		$player->langs = (int)$row[3];
+		$player->club_id = (int)$row[4];
+		$player->club_name = $row[5];
+		$player->club_flags = (int)$row[6];
+		$player->games_count = (int)$row[7];
+		$player->killed_first_count = (int)$row[8];
+		$player->wins = (int)$row[9];
+		$player->special_role_wins = (int)$row[10];
+		
 		init_player_score($player, $scoring, $lod_flags);
 		$players[$player->id] = $player;
 	}
@@ -1013,12 +1056,13 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     else
     {
 		// prepare scorings per event
-		$query = new DbQuery('SELECT id, scoring_options FROM events WHERE tournament_id = ?', $tournament_id);
+		$query = new DbQuery('SELECT id, name, scoring_options FROM events WHERE tournament_id = ?', $tournament_id);
         while ($row = $query->next())
         {
-            list($event_id, $event_scoring_options) = $row;
+            list($event_id, $event_name, $event_scoring_options) = $row;
 			$event_scoring_options = json_decode($event_scoring_options);
 			$scoring_info = new stdClass();
+			$scoring_info->event_name = $event_name;
 			$scoring_info->shared = NULL;
 			foreach ($event_scorings as $e_id => $s_info)
             {
@@ -1068,7 +1112,11 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
             while ($row = $query->next())
             {
 				$player = new stdClass();
-                list ($player->id, $player->games_count, $player->killed_first_count, $player->wins, $player->special_role_wins) = $row;
+				$player->id = (int)$row[0];
+				$player->games_count = (int)$row[1];
+				$player->killed_first_count = (int)$row[2];
+				$player->wins = (int)$row[3];
+				$player->special_role_wins = (int)$row[4];
                 $shared->players[$player->id] = $player;
             }
         }
@@ -1097,6 +1145,11 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		{
 			$player = new stdClass();
 			list ($player->id, $player->games_count, $player->killed_first_count, $player->wins, $player->special_role_wins) = $row;
+			$player->id = (int)$row[0];
+			$player->games_count = (int)$row[1];
+			$player->killed_first_count = (int)$row[2];
+			$player->wins = (int)$row[3];
+			$player->special_role_wins = (int)$row[4];
 			init_player_score($player, $scoring, $lod_flags);
 			$no_event_players[$player->id] = $player;
 		}
@@ -1121,14 +1174,16 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				{
 					$red_win_rate = 0;
 				}
+				$event_name = $s->event_name;
 			}
 			else
 			{
 				$player = $no_event_players[$player_id];
 				$op = $options;
 				$red_win_rate = $no_event_red_win_rate;
+				$event_name = NULL;
 			}
-			add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options);
+			add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options, $event_name);
 		}
     }
     
@@ -1192,56 +1247,155 @@ function get_scoring_roles_label($role_flags)
 	return get_label('No players');
 }
 
-function get_scoring_matter_label($matter)
+function get_scoring_matter_label($policy, $include_roles = false)
 {
-	switch ($matter)
+	$matter = 0;
+	if (isset($policy->matter))
 	{
-		case SCORING_FLAG_PLAY:
-			return get_label('For playing the game');
-		case SCORING_FLAG_WIN:
-			return get_label('For winning');
-		case SCORING_FLAG_LOSE:
-			return get_label('For loosing');
-		case SCORING_FLAG_CLEAR_WIN:
-			return get_label('For clear winning (all day-kills were from the opposite team)');
-		case SCORING_FLAG_CLEAR_LOSE:
-			return get_label('For clear loosing (all day-kills were from the player\'s team)');
-		case SCORING_FLAG_BEST_PLAYER:
-			return get_label('For being the best player');
-		case SCORING_FLAG_BEST_MOVE:
-			return get_label('For the best move');
-		case SCORING_FLAG_SURVIVE:
-			return get_label('For surviving the game');
-		case SCORING_FLAG_KILLED_FIRST_NIGHT:
-			return get_label('For being killed the first night');
-		case SCORING_FLAG_KILLED_NIGHT:
-			return get_label('For being killed in the night');
-		case SCORING_FLAG_PRIMA_NOCTA_3:
-			return get_label('For guessing [0] mafia (after being killed the first night)', 3);
-		case SCORING_FLAG_PRIMA_NOCTA_2:
-			return get_label('For guessing [0] mafia (after being killed the first night)', 2);
-		case SCORING_FLAG_WARNINGS_4:
-			return get_label('For getting 4 warnigs');
-		case SCORING_FLAG_KICK_OUT:
-			return get_label('For beign kicked out from the game');
-		case SCORING_FLAG_SURRENDERED:
-			return get_label('For surrender (leaving the game by accepting the loss)');
-		case SCORING_FLAG_ALL_VOTES_VS_MAF:
-			return get_label('For voting against mafia only (should participate in at least 3 votings)');
-		case SCORING_FLAG_ALL_VOTES_VS_CIV:
-			return get_label('For voting against civilians only (should participate in at least 3 votings)');
-		case SCORING_FLAG_SHERIFF_KILLED_AFTER_FINDING:
-			return get_label('When sheriff was killed the next day after don found him/her');
-		case SCORING_FLAG_SHERIFF_FOUND_FIRST_NIGHT:
-			return get_label('When sheriff was found by don the first night');
-		case SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT:
-			return get_label('When sheriff was killed the first night');
-		case SCORING_FLAG_BLACK_CHECKS:
-			return get_label('When the first three checks of the sheriff where black');
-		case SCORING_FLAG_RED_CHECKS:
-			return get_label('When the first three checks of the sheriff where red');
+		$matter = $policy->matter;
 	}
-	return get_label('Unknown');
+	
+	$label = '';
+	$delim = NULL;
+	while ($matter)
+	{
+		$new_matter = ($matter - 1) & $matter;
+		$l = '?';
+		switch ($new_matter ^ $matter)
+		{
+			case SCORING_FLAG_PLAY:
+				$l = get_label('playing the game');
+				break;
+			case SCORING_FLAG_WIN:
+				$l = get_label('winning');
+				break;
+			case SCORING_FLAG_LOSE:
+				$l = get_label('loosing');
+				break;
+			case SCORING_FLAG_CLEAR_WIN:
+				$l = get_label('clear winning (all day-kills were from the opposite team)');
+				break;
+			case SCORING_FLAG_CLEAR_LOSE:
+				$l = get_label('clear loosing (all day-kills were from the player\'s team)');
+				break;
+			case SCORING_FLAG_BEST_PLAYER:
+				$l = get_label('being the best player');
+				break;
+			case SCORING_FLAG_BEST_MOVE:
+				$l = get_label('the best move');
+				break;
+			case SCORING_FLAG_SURVIVE:
+				$l = get_label('surviving the game');
+				break;
+			case SCORING_FLAG_KILLED_FIRST_NIGHT:
+				$l = get_label('being killed the first night');
+				break;
+			case SCORING_FLAG_KILLED_NIGHT:
+				$l = get_label('being killed in the night');
+				break;
+			case SCORING_FLAG_FIRST_LEGACY_3:
+				$l = get_label('guessing [0] mafia (after being killed the first night)', 3);
+				break;
+			case SCORING_FLAG_FIRST_LEGACY_2:
+				$l = get_label('guessing [0] mafia (after being killed the first night)', 2);
+				break;
+			case SCORING_FLAG_WARNINGS_4:
+				$l = get_label('getting 4 warnigs');
+				break;
+			case SCORING_FLAG_KICK_OUT:
+				$l = get_label('beign kicked out from the game');
+				break;
+			case SCORING_FLAG_SURRENDERED:
+				$l = get_label('surrender (leaving the game by accepting the loss)');
+				break;
+			case SCORING_FLAG_ALL_VOTES_VS_MAF:
+				$l = get_label('voting against mafia only (should participate in at least 3 votings)');
+				break;
+			case SCORING_FLAG_ALL_VOTES_VS_CIV:
+				$l = get_label('voting against civilians only (should participate in at least 3 votings)');
+				break;
+			case SCORING_FLAG_SHERIFF_KILLED_AFTER_FINDING:
+				$l = get_label('sheriff being killed the next day after don found them');
+				break;
+			case SCORING_FLAG_SHERIFF_FOUND_FIRST_NIGHT:
+				$l = get_label('sheriff being found by don the first night');
+				break;
+			case SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT:
+				$l = get_label('sheriff being killed the first night');
+				break;
+			case SCORING_FLAG_BLACK_CHECKS:
+				$l = get_label('the first three checks of the sheriff being black');
+				break;
+			case SCORING_FLAG_RED_CHECKS:
+				$l = get_label('the first three checks of the sheriff being red');
+				break;
+			case SCORING_FLAG_EXTRA_POINTS:
+				$l = get_label('actions in the game rated by the moderator');
+				break;
+		}
+		if ($delim == NULL)
+		{
+			$delim = get_label(' and ');
+			$label .= get_label('for ');
+		}
+		else
+		{
+			$label .= $delim;
+		}
+		$label .= $l;
+		$matter = $new_matter;
+	}
+	
+	if ($include_roles && isset($policy->roles) && ($policy->roles & SCORING_ROLE_FLAGS_ALL) != SCORING_ROLE_FLAGS_ALL)
+	{
+		$label .= ' ';
+		switch ($policy->roles)
+		{
+		case SCORING_ROLE_FLAGS_CIV:
+			$label .= get_label('as a civilian');
+			break;
+		case SCORING_ROLE_FLAGS_SHERIFF:
+			$label .= get_label('as the sheriff');
+			break;
+		case SCORING_ROLE_FLAGS_RED:
+			$label .= get_label('as a red player');
+			break;
+		case SCORING_ROLE_FLAGS_MAF:
+			$label .= get_label('as an ordinary mafia player');
+			break;
+		case SCORING_ROLE_FLAGS_CIV_MAF:
+			$label .= get_label('as the don');
+			break;
+		case SCORING_ROLE_FLAGS_SHERIFF_MAF:
+			$label .= get_label('as an ordinary mafia player or the sheriff');
+			break;
+		case SCORING_ROLE_FLAGS_EXCEPT_DON:
+			$label .= get_label('as any player except the don');
+			break;
+		case SCORING_ROLE_FLAGS_DON:
+			$label .= get_label('as the don');
+			break;
+		case SCORING_ROLE_FLAGS_CIV_DON:
+			$label .= get_label('as an ordinary civilian or the don');
+			break;
+		case SCORING_ROLE_FLAGS_SHERIFF_DON:
+			$label .= get_label('as the sheriff or the don');
+			break;
+		case SCORING_ROLE_FLAGS_EXCEPT_MAF:
+			$label .= get_label('as any player except an ordinary maf');
+			break;
+		case SCORING_ROLE_FLAGS_BLACK:
+			$label .= get_label('as a black player');
+			break;
+		case SCORING_ROLE_FLAGS_EXCEPT_SHERIFF:
+			$label .= get_label('as any player except the sheriff');
+			break;
+		case SCORING_ROLE_FLAGS_EXCEPT_CIV:
+			$label .= get_label('as any player except an ordinary civilian');
+			break;
+		}
+	}
+	return $label;
 }
 
 function get_scoring_group_label($group)
@@ -1250,8 +1404,8 @@ function get_scoring_group_label($group)
 	{
 		case 'main':
 			return get_label('Main points');
-		case 'prima_nocta':
-			return get_label('Prima nocta points');
+		case 'legacy':
+			return get_label('Legacy points');
 		case 'extra':
 			return get_label('Extra points');
 		case 'penalty':
@@ -1260,6 +1414,52 @@ function get_scoring_group_label($group)
 			return get_label('Points for being killed first night');
 	}
 	return get_label('Unknown');
+}
+
+function is_scoring_policy_on($policy, $options)
+{
+	if (isset($options->flags) && $options->flags != 0)
+	{
+		if (isset($policy->min_night1) || isset($policy->max_night1))
+		{
+			if (!isset($policy->min_points) || $policy->min_points == 0)
+			{
+				return ($options->flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0;
+			}
+		}
+		if (isset($policy->min_difficulty) || isset($policy->max_difficulty))
+		{
+			if (!isset($policy->min_points) || $policy->min_points == 0)
+			{
+				return ($options->flags & SCORING_OPTION_NO_GAME_DIFFICULTY) == 0;
+			}
+		}
+	}
+	return true;
+}
+
+function get_scoring_group_policies_count($group, $scoring, $options = NULL)
+{
+	$count = 0;
+	if (isset($scoring->$group))
+	{
+		if ($options != NULL && isset($options->flags) && $options->flags != 0)
+		{
+			for ($i = 0; $i < count($scoring->$group); ++$i)
+			{
+				$g = &$scoring->$group;
+				if (is_scoring_policy_on($g[$i], $options))
+				{
+					++$count;
+				}
+			}
+		}
+		else
+		{
+			$count = count($scoring->$group);
+		}
+	}
+	return $count;
 }
 
 function api_scoring_help($param)

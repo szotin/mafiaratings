@@ -196,7 +196,7 @@ class PlayerStats
 				'SUM(p.warns), SUM(IF(p.was_arranged >= 0, 1, 0)), ' .
 				'SUM(IF(p.checked_by_don >= 0, 1, 0)), SUM(IF(p.checked_by_sheriff >= 0, 1, 0)), ' .
 				'SUM(IF(g.log_version > 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)), ' .
-				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_PRIMA_NOCTA_3 . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_PRIMA_NOCTA_2 . ') <> 0, 1, 0))',
+				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0))',
 			$where);
 		
 		$row = $query->record(get_label('player'));
