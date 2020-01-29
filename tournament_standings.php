@@ -80,9 +80,18 @@ class Page extends TournamentPageBase
 	{
 		global $_profile, $_page;
 		
+		if ($this->flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING)
+		{
+			$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS;
+		}
+		else
+		{
+			$scoring_select_flags = SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION;
+		}
+		
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_OPTIONS);
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'tournament=' . $this->id, get_label('Go to the page where a specific player is located.'));

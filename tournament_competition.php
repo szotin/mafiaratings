@@ -49,9 +49,18 @@ class Page extends TournamentPageBase
 	
 	protected function show_body()
 	{
+		if ($this->flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING)
+		{
+			$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS;
+		}
+		else
+		{
+			$scoring_select_flags = SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION;
+		}
+		
 		echo '<p><form method="get" name="viewForm" action="tournament_competition.php">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'doUpdateChart', SCORING_SELECT_FLAG_NO_OPTIONS);
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'doUpdateChart', $scoring_select_flags);
 		echo '</form></p>';
 		
 		show_chart_legend();

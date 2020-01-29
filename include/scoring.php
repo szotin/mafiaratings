@@ -1044,13 +1044,13 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
         // echo '</pre><br>';
         
         // Calculate scores
-        $query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0', $tournament_id, $condition);
+        $query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, e.name FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0', $tournament_id, $condition);
         $query->add(' ORDER BY g.end_time');
         while ($row = $query->next())
         {
-            list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
+            list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_name) = $row;
 			$player = $players[$player_id];
-            add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, 1, $options);
+            add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options, $event_name);
         }
     }
     else
@@ -1183,7 +1183,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				$red_win_rate = $no_event_red_win_rate;
 				$event_name = NULL;
 			}
-			add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options, $event_name);
+			add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $op, $event_name);
 		}
     }
     

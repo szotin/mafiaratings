@@ -61,10 +61,19 @@ class Page extends TournamentPageBase
 	{
 		global $_profile, $_page, $_scoring_groups;
 		
+		if ($this->flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING)
+		{
+			$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS;
+		}
+		else
+		{
+			$scoring_select_flags = SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION;
+		}
+		
 		echo '<p>';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION);
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
 		echo '</td><td align="right">';
 		echo get_label('Select a player') . ': ';
 		show_user_input('user_name', $this->user_name, 'tournament=' . $this->id, get_label('Select a player'), 'selectPlayer');
@@ -126,7 +135,7 @@ class Page extends TournamentPageBase
 		{
 			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&tournament_id=' . $this->id . '&id=' . $game->game_id . '&bck=1">' . get_label('Game #[0]', $game->game_id) . '</a></td>';
 			echo '<td align="right">';
-			if (isset($game->event_name))
+			if (isset($game->event_name) && is_string($game->event_name))
 			{
 				echo $game->event_name;
 			}
