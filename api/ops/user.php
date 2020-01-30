@@ -36,27 +36,22 @@ class ApiPage extends OpsApiPageBase
 	
 	function merge_users($src_id, $dst_id)
 	{
-		$query = new DbQuery('SELECT DISTINCT g.id, g.log, g.canceled FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ? OR g.moderator_id = ?', $src_id, $src_id);
-		if ($row = $query->next())
+		$query = new DbQuery('SELECT g.id, g.log, g.canceled FROM games g LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = ? WHERE p.user_id IS NOT NULL OR g.moderator_id = ? OR g.user_id = ?', $src_id, $src_id, $src_id);
+		while ($row = $query->next())
 		{
-			do
+			list ($game_id, $game_log, $is_canceled) = $row;
+			$gs = new GameState();
+			$gs->init_existing($game_id, $game_log, $is_canceled);
+			if ($gs->change_user($src_id, $dst_id))
 			{
-				list ($game_id, $game_log, $is_canceled) = $row;
-				$gs = new GameState();
-				$gs->init_existing($game_id, $game_log, $is_canceled);
-				if ($gs->change_user($src_id, $dst_id))
-				{
-					rebuild_game_stats($gs);
-					Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
-				}
-				
-			} while ($row = $query->next());
+				rebuild_game_stats($gs);
+				Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
+			}
 		}
 		
 		list($src_name, $src_games_moderated, $src_games, $src_rating, $src_reg_time, $src_city_id, $src_club_id, $src_flags) = 
 			Db::record(get_label('user'), 'SELECT name, games_moderated, games, rating, reg_time, city_id, club_id, flags FROM users WHERE id = ?', $src_id);
 		
-		Db::exec(get_label('game'), 'UPDATE games SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('email'), 'UPDATE emails SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('registration'), 'DELETE FROM registrations WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM registrations WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
@@ -71,7 +66,15 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('comment'), 'UPDATE game_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('comment'), 'UPDATE photo_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('comment'), 'UPDATE video_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
-		Db::exec(get_label('settings'), 'UPDATE game_settings SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		list ($game_settings_count) = Db::record(get_label('settings'), 'SELECT count(*) FROM game_settings WHERE user_id = ?', $dst_id);
+		if ($game_settings_count > 0)
+		{
+			Db::exec(get_label('settings'), 'DELETE FROM game_settings WHERE user_id = ?', $src_id);
+		}
+		else
+		{
+			Db::exec(get_label('settings'), 'UPDATE game_settings SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		}
 		Db::exec(get_label('league manager'), 'UPDATE league_managers SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('photo'), 'UPDATE photos SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('photo album'), 'UPDATE photo_albums SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
@@ -103,6 +106,12 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_user($user_id)
 	{
+		list ($moderator_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE moderator_id = ? OR user_id = ?', $user_id, $user_id);
+		if ($moderator_count > 0)
+		{
+			throw new Exc(get_label('Unable to delete user because they moderated some games. Try to merge them instead.'));
+		}
+		
 		$query = new DbQuery('SELECT g.id, g.log, g.canceled FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?', $user_id);
 		if ($row = $query->next())
 		{
@@ -126,7 +135,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('club'), 'DELETE FROM user_clubs WHERE user_id = ?', $user_id);
 		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ?', $user_id);
 		Db::exec(get_label('log'), 'DELETE FROM log WHERE user_id = ?', $user_id);
-		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE objection_id IN (SELECT id FROM objections WHERE user_id = ?)', $user_id);
+		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE objection_id IN (SELECT id FROM (SELECT id FROM objections WHERE user_id = ?) x)', $user_id);
 		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE user_id = ?', $user_id);
 		Db::exec(get_label('user'), 'DELETE FROM users WHERE id = ?', $user_id);
 		

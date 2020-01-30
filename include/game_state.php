@@ -643,14 +643,27 @@ class GameState
 	
 	function change_user($user_id, $new_user_id, $nickname = NULL)
 	{
-		if ($user_id == -1 || !$this->has_played($user_id))
+		if ($user_id <= 0)
+		{
+			return false;
+		}
+		
+		if ($this->user_id == $user_id)
+		{
+			$this->user_id = $new_user_id;
+			if (!$this->has_played($user_id))
+			{
+				return true;
+			}
+		}
+		else if (!$this->has_played($user_id))
 		{
 			return false;
 		}
 		
 		if ($this->has_played($new_user_id))
 		{
-			throw new Exc(get_label('Unable to change one user to another in the game because they both participated in it.'));
+			throw new Exc(get_label('Unable to change one user to another in the game [0] because they both participated in it.', $this->id));
 		}
 		
 		if ($this->moder_id != $user_id)
