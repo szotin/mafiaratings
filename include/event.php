@@ -290,7 +290,7 @@ class Event
 		Db::exec(
 			get_label('event'), 
 			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id) ' .
-			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$this->name, $this->price, $this->addr_id, $this->club_id, $this->timestamp, 
 			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_code, 
 			$this->scoring_id, $this->scoring_version, $this->scoring_options, $this->tournament_id);

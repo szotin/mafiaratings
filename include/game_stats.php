@@ -570,7 +570,7 @@ class GamePlayerStats
 			$this->rating_before = USER_INITIAL_RATING;
 		}
 		
-		$query = new DbQuery('SELECT p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE g.id = ? AND p.user_id = ?', $gs->id, $player->id);
+		$query = new DbQuery('SELECT p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE g.id = ? AND p.user_id = ? AND (g.flags | ' . GAME_FLAG_FUN . ') = 0 AND canceled = 0', $gs->id, $player->id);
 		if ($row = $query->next())
 		{
 			list($this->rating_earned) = $row;
@@ -580,12 +580,17 @@ class GamePlayerStats
 	function calculate_rating($civ_odds)
 	{
         $gs = $this->gs;
+		if ($gs->is_canceled || ($gs->flags & GAME_FLAG_FUN) != 0)
+		{
+			return;
+		}
+
         $player = $gs->players[$this->player_num];
 		if ($player->id <= 0)
 		{
 			return;
 		}
-
+		
 		$WINNING_K = 20;
 		$LOOSING_K = 15;
 		switch ($player->role)
@@ -680,7 +685,7 @@ class GamePlayerStats
 				break;
 		}
 		
-		if (!$gs->is_canceled)
+		if (!$gs->is_canceled && ($gs->flags & GAME_FLAG_FUN) == 0)
 		{
 			$query = new DbQuery('UPDATE users SET rating = ?, games = games + 1, games_won = games_won + ?', $this->rating_before + $this->rating_earned, $this->won);
 			if ($player->kill_round == 0 && $player->state == PLAYER_STATE_KILLED_NIGHT)
@@ -711,7 +716,6 @@ function save_game_results($gs)
 		return NULL;
 	}
 
-	$update_stats = true;
     $game_result = 0;
     switch ($gs->gamestate)
     {
@@ -741,66 +745,59 @@ function save_game_results($gs)
 			}
 		}
 		
-		if ($update_stats)
+		Db::exec(get_label('user'), 'UPDATE users u, games g SET u.games_moderated = u.games_moderated + 1 WHERE u.id = g.moderator_id AND g.id = ?', $gs->id);
+		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $gs->id);
+		Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $gs->id);
+		Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $gs->id);
+		Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $gs->id);
+		$stats = array();
+		for ($i = 0; $i < 10; ++$i)
 		{
-			Db::exec(get_label('user'), 'UPDATE users u, games g SET u.games_moderated = u.games_moderated + 1 WHERE u.id = g.moderator_id AND g.id = ?', $gs->id);
-			Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $gs->id);
-			Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $gs->id);
-			Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $gs->id);
-			Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $gs->id);
-			$stats = array();
-			for ($i = 0; $i < 10; ++$i)
+			$stats[] = new GamePlayerStats($gs, $i);
+		}
+		
+		// calculate ratings
+		$maf_sum = 0;
+		$maf_count = 0;
+		$civ_sum = 0;
+		$civ_count = 0;
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $gs->players[$i];
+			if ($player->id > 0)
 			{
-				$stats[] = new GamePlayerStats($gs, $i);
-			}
-			
-			// calculate ratings
-			$maf_sum = 0;
-			$maf_count = 0;
-			$civ_sum = 0;
-			$civ_count = 0;
-			for ($i = 0; $i < 10; ++$i)
-			{
-				$player = $gs->players[$i];
-				if ($player->id > 0)
+				switch ($player->role)
 				{
-					switch ($player->role)
-					{
-						case PLAYER_ROLE_CIVILIAN:
-						case PLAYER_ROLE_SHERIFF:
-							$civ_sum += $stats[$i]->rating_before;
-							++$civ_count;
-							break;
-						case PLAYER_ROLE_MAFIA:
-						case PLAYER_ROLE_DON:
-							$maf_sum += $stats[$i]->rating_before;
-							++$maf_count;
-							break;
-					}
+					case PLAYER_ROLE_CIVILIAN:
+					case PLAYER_ROLE_SHERIFF:
+						$civ_sum += $stats[$i]->rating_before;
+						++$civ_count;
+						break;
+					case PLAYER_ROLE_MAFIA:
+					case PLAYER_ROLE_DON:
+						$maf_sum += $stats[$i]->rating_before;
+						++$maf_count;
+						break;
 				}
 			}
-			
-			$civ_odds = NULL;
-			if ($maf_count > 0 && $civ_count > 0)
-			{
-				$civ_odds = 1.0 / (1.0 + pow(10.0, ($maf_sum / $maf_count - $civ_sum / $civ_count) / 400));
-				for ($i = 0; $i < 10; ++$i)
-				{
-					$stats[$i]->calculate_rating($civ_odds);
-				}
-			}
-			
-			// save stats
+		}
+		
+		$civ_odds = NULL;
+		if ($maf_count > 0 && $civ_count > 0)
+		{
+			$civ_odds = 1.0 / (1.0 + pow(10.0, ($maf_sum / $maf_count - $civ_sum / $civ_count) / 400));
 			for ($i = 0; $i < 10; ++$i)
 			{
-				$stats[$i]->save();
+				$stats[$i]->calculate_rating($civ_odds);
 			}
-			Db::exec(get_label('game'), 'UPDATE games SET result = ?, best_player_id = ?, flags = ?, civ_odds = ? WHERE id = ?', $game_result, $best_player_id, $gs->flags, $civ_odds, $gs->id);
 		}
-		else
+		
+		// save stats
+		for ($i = 0; $i < 10; ++$i)
 		{
-			Db::exec(get_label('game'), 'UPDATE games SET result = ?, best_player_id = ?, flags = ?, WHERE id = ?', $game_result, $best_player_id, $gs->flags, $gs->id);
+			$stats[$i]->save();
 		}
+		Db::exec(get_label('game'), 'UPDATE games SET result = ?, best_player_id = ?, flags = ?, civ_odds = ? WHERE id = ?', $game_result, $best_player_id, $gs->flags, $civ_odds, $gs->id);
 		Db::commit();
 	}
 	catch (FatalExc $e)
