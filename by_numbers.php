@@ -4,6 +4,7 @@ require_once 'include/general_page_base.php';
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/scoring.php';
+require_once 'include/games.php';
 
 define('SORT_TYPE_BY_NUMBERS', 0);
 define('SORT_TYPE_BY_GAMES', 1);
@@ -165,6 +166,12 @@ class Page extends GeneralPageBase
 			$this->roles = (int)$_REQUEST['roles'];
 		}
 		$this->ccc_title = get_label('Show statistics in a specific club, city, or country.');
+		
+		$this->filter = GAMES_FILTER_RATING;
+		if (isset($_REQUEST['filter']))
+		{
+			$this->filter = (int)$_REQUEST['filter'];
+		}
 	}
 	
 	protected function show_body()
@@ -176,6 +183,8 @@ class Page extends GeneralPageBase
 		}
 		
 		$condition = get_roles_condition($this->roles);
+		$condition->add(get_games_filter_condition($this->filter));
+		
 		$ccc_id = $this->ccc_filter->get_id();
 		switch ($this->ccc_filter->get_type())
 		{
@@ -271,11 +280,13 @@ class Page extends GeneralPageBase
 	protected function show_filter_fields()
 	{
 		show_roles_select($this->roles, 'filter()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
+		echo ' ';
+		show_games_filter($this->filter, 'filter', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
 	}
 	
 	protected function get_filter_js()
 	{
-		return '+ "&roles=" + $("#roles").val()';
+		return '+ "&roles=" + $("#roles").val() + "&filter=" + getGamesFilter()';
 	}
 }
 

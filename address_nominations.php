@@ -4,6 +4,7 @@ require_once 'include/address.php';
 require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/games.php';
 
 class Page extends AddressPageBase
 {
@@ -59,6 +60,12 @@ class Page extends AddressPageBase
 			array(get_label('Checked by sheriff'), 'SUM(IF(p.checked_by_sheriff >= 0, 1, 0))', 'count(*)', 1),
 		);
 		
+		$filter = GAMES_FILTER_RATING;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter = (int)$_REQUEST['filter'];
+		}
+		
 		$nom = 0;
 		if (isset($_REQUEST['nom']))
 		{
@@ -91,12 +98,10 @@ class Page extends AddressPageBase
 			$min_games -= $min_games % 10;
 		}
 	
-		echo '<p><form name="filter" method="get"><input type="hidden" name="id" value="' . $this->id . '">';
-		echo '<input type="hidden" name="sort" id="sort" value="' . $sort . '">';
-		echo '<table class="transp" width="100%"><tr><td>';
-		show_roles_select($roles, 'document.filter.submit()', get_label('Use only the stats of a specific role.'));
+		echo '<p><table class="transp" width="100%"><tr><td>';
+		show_roles_select($roles, 'filterChanged()', get_label('Use only the stats of a specific role.'));
 		
-		echo ' <select name="min" onchange="document.filter.submit()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
+		echo ' <select id="min" onchange="filterChanged()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
 		$max_option = round($this->games_count / 20) * 10;
 		for ($i = 0; $i <= $max_option; $i += 10)
 		{
@@ -109,16 +114,19 @@ class Page extends AddressPageBase
 				show_option($i, $this->min_games, get_label('[0] or more games', $i));
 			}
 		}
-		echo '</select></td><td align="right">';
-		echo '<select name="nom" onchange="document.filter.submit()">';
+		echo '</select> ';
+		show_games_filter($filter, 'filterChanged', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		echo '</td><td align="right">';
+		echo '<select id="nom" onchange="filterChanged()">';
 		for ($i = 0; $i < count($noms); ++$i)
 		{
 			show_option($i, $nom, $noms[$i][0]);
 		}
 		echo '</select>';
-		echo '</td></tr></table></form></p>';
+		echo '</td></tr></table></p>';
 		
 		$condition = get_roles_condition($roles);
+		$condition->add(get_games_filter_condition($filter));
 		$query = new DbQuery(
 			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags' .
 				' FROM players p' .
@@ -159,16 +167,16 @@ class Page extends AddressPageBase
 		{
 			if ($sort & 1)
 			{
-				echo '&#x25B2; <a href="javascript:sortBy(2)">';
+				echo '&#x25B2; <a href="javascript:goTo({sort:2})">';
 			}
 			else
 			{
-				echo '&#x25BC; <a href="javascript:sortBy(3)">';
+				echo '&#x25BC; <a href="javascript:goTo({sort:3})">';
 			}
 		}
 		else
 		{
-			echo '<a href="javascript:sortBy(2)">';
+			echo '<a href="javascript:goTo({sort:2})">';
 		}
 		echo get_label('Absolute') . '</a></td>';
 		echo '<td width="100" align="center">';
@@ -176,16 +184,16 @@ class Page extends AddressPageBase
 		{
 			if ($sort & 1)
 			{
-				echo '&#x25B2; <a href="javascript:sortBy(0)">';
+				echo '&#x25B2; <a href="javascript:goTo({sort:0})">';
 			}
 			else
 			{
-				echo '&#x25BC; <a href="javascript:sortBy(1)">';
+				echo '&#x25BC; <a href="javascript:goTo({sort:1})">';
 			}
 		}
 		else
 		{
-			echo '<a href="javascript:sortBy(0)">';
+			echo '<a href="javascript:goTo({sort:0})">';
 		}
 		if ($noms[$nom][3])
 		{
@@ -204,15 +212,15 @@ class Page extends AddressPageBase
 			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags) = $row;
 
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
-			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
+			echo '<td width="50">';
 			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+			$this->user_pic->show(ICONS_DIR, true, 50);
+			echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($club_id))
 			{
 				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 40);
+				$this->club_pic->show(ICONS_DIR, true, 40);
 			}
 			echo '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
@@ -230,21 +238,19 @@ class Page extends AddressPageBase
 		}
 		echo '</table>';
 	}
+	
+	protected function js()
+	{
+?>
+		function filterChanged()
+		{
+			goTo({roles: $('#roles').val(), filter: getGamesFilter(), min: $('#min').val(), nom: $('#nom').val() });
+		}
+<?php
+	}
 }
 
 $page = new Page();
 $page->run(get_label('Nomination Winners'));
 
 ?>
-
-<script>
-function sortBy(s)
-{
-	if (s != $('#sort').val())
-	{
-		$('#sort').val(s);
-		//console.log($('#sort').val());
-		document.filter.submit();
-	}
-}
-</script>

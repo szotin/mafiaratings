@@ -50,7 +50,7 @@ try
 		echo '<tr><td width="60" valign="top">';
 		$user_pic = new Picture(USER_PICTURE);
 		$user_pic->set($parent_user_id, $parent_user_name, $parent_user_flags);
-		$user_pic->show(ICONS_DIR, 48);
+		$user_pic->show(ICONS_DIR, false, 48);
 		echo '<br>' . $parent_user_name . '</td><td valign="top">' . $parent_message . '</td></tr>';
 		echo '</table></p>';
 		

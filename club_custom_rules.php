@@ -31,7 +31,7 @@ class Page extends ClubPageBase
 			echo '<tr><td class="dark"><a href="#" onclick="mr.editRules(' . $this->id . ', ' . $league_id . ')" title="' . get_label('Edit [0] in [1]', $league_name, $this->name) . '"><img src="images/edit.png" border="0"></a>';
 			echo '</td><td><table class="transp" width="100%"><tr><td width="30">';
 			$this->league_pic->set($league_id, $league_name, $league_flags);
-			$this->league_pic->show(ICONS_DIR, 24);
+			$this->league_pic->show(ICONS_DIR, false, 24);
 			echo '</td><td>' . $league_name . '</td></tr></table></td></tr>';
 		}
 

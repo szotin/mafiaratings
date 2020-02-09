@@ -3,6 +3,7 @@
 require_once 'include/club.php';
 require_once 'include/user.php';
 require_once 'include/pages.php';
+require_once 'include/games.php';
 
 define("PAGE_SIZE",15);
 
@@ -18,13 +19,20 @@ class Page extends ClubPageBase
 			$season = (int)$_REQUEST['season'];
 		}
 		
-		echo '<form method="get" name="clubForm">';
-		echo '<input type="hidden" name="id" value="' . $this->id . '">';
+		$filter = GAMES_FILTER_RATING;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter = (int)$_REQUEST['filter'];
+		}
+		
 		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_club_seasons_select($this->id, $season, 'document.clubForm.submit()', get_label('Show moderators who moderated in a specific season.'));
-		echo '</td></tr></table></form>';
+		$season = show_club_seasons_select($this->id, $season, 'filterChanged()', get_label('Show moderators who moderated in a specific season.'));
+		echo ' ';
+		show_games_filter($filter, 'filterChanged', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		echo '</td></tr></table>';
 		
 		$condition = get_club_season_condition($season, 'g.start_time', 'g.end_time');
+		$condition->add(get_games_filter_condition($filter));
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND canceled = FALSE AND result > 0', $this->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
@@ -50,15 +58,15 @@ class Page extends ClubPageBase
 			list ($id, $name, $flags, $civil_wins, $mafia_wins, $club_id, $club_name, $club_flags) = $row;
 
 			echo '<tr><td class="dark" align="center">' . $number . '</td>';
-			echo '<td width="50"><a href="user_games.php?id=' . $id . '&moder=1&bck=1">';
+			echo '<td width="50">';
 			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a><td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
+			$this->user_pic->show(ICONS_DIR, true, 50);
+			echo '<td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($club_id))
 			{
 				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 40);
+				$this->club_pic->show(ICONS_DIR, true, 40);
 			}
 			echo '</td>';
 			
@@ -84,6 +92,16 @@ class Page extends ClubPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+	}
+	
+	protected function js()
+	{
+?>
+		function filterChanged()
+		{
+			goTo({filter: getGamesFilter(), season: $('#season').val()});
+		}
+<?php
 	}
 }
 

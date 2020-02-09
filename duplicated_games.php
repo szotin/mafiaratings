@@ -30,7 +30,7 @@ class Page extends GeneralPageBase
 			echo '<tr>';
 			echo '<td>';
 			$this->club_pic->set($club_id, $club_name, $club_flags);
-			$this->club_pic->show(ICONS_DIR, 48);
+			$this->club_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			echo '<td align="center" width="90"><a href="view_game.php?id=' . $game1_id . '&bck=1">' . get_label('Game #[0]', $game1_id) . '</a></td>';
 			echo '<td align="center" width="90"><a href="view_game.php?id=' . $game2_id . '&bck=1">' . get_label('Game #[0]', $game2_id) . '</a></td>';

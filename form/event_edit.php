@@ -43,7 +43,7 @@ try
 		set($event_id, $name, $flags)->
 		set($tour_id, $tour_name, $tour_flags)->
 		set($club_id, $club->name, $club->flags);
-	$event_pic->show(ICONS_DIR, 50);
+	$event_pic->show(ICONS_DIR, false, 50);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td>';

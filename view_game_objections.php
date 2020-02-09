@@ -59,7 +59,7 @@ class Page extends ViewGamePageBase
 			
 			echo '<td width="80" align="center" valign="top">';
 			$this->user_pic->set($user_id, $user_name, $user_flags);
-			$this->user_pic->show(ICONS_DIR, 48);
+			$this->user_pic->show(ICONS_DIR, true, 48);
 			echo '<br>' . $user_name . '</td>';
 			
 			$message = stripslashes($message);

@@ -74,7 +74,7 @@ class ViewGame
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, c.id, c.name, c.flags, a.id, a.name, a.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
-				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' JOIN clubs c ON c.id = g.club_id' . 
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
@@ -145,6 +145,10 @@ class ViewGame
 				$state = get_label('Mafia wins.');
 				break;
 		}
+		if ($this->gs->flags & GAME_FLAG_FUN)
+		{
+			return get_label('Game [0] (non-rating). [1]', $this->gs->id, $state);
+		}
 		return get_label('Game [0]. [1]', $this->gs->id, $state);
 	}
 }
@@ -170,7 +174,7 @@ class ViewGamePageBase extends PageBase
 		if ($player_score != NULL)
 		{
 			$this->user_pic->set($player->id, $player->nick, $player_score->user_flags);
-			$this->user_pic->show(ICONS_DIR, 48);
+			$this->user_pic->show(ICONS_DIR, false, 48);
 		}
 		else if ($player->id < 0)
 		{
@@ -400,38 +404,22 @@ class ViewGamePageBase extends PageBase
 		{
 			echo '<td width="90">'.get_label('Video').'</td>';
 		}
-		echo '</tr><tr align="center" class="light"><td><a href="club_main.php?id=' . $vg->club_id . '&bck=1" title="' . $vg->club . '">';
+		echo '</tr><tr align="center" class="light"><td>';
 		$this->club_pic->set($vg->club_id, $vg->club, $vg->club_flags);
-		$this->club_pic->show(ICONS_DIR, 48);
-		echo '</a></td><td>';
-		if ($vg->event != NULL)
-		{
-			echo '<a href="event_standings.php?id=' . $vg->event_id . '&bck=1" title="' . $vg->event . '">';
-			$this->event_pic->
-				set($vg->event_id, $vg->event, $vg->event_flags)->
-				set($vg->tournament_id, $vg->tournament_name, $vg->tournament_flags);
-			$this->event_pic->show(ICONS_DIR, 48);
-			echo '</a>';
-		}
-		else
-		{
-			echo '<img src="images/transp.png" width="48" height="48">';
-		}
-		echo '</td><td><a href="address_info.php?id=' . $vg->address_id . '&bck=1" title="' . $vg->address . '">';
-		$this->address_pic->set($vg->address_id, $vg->address, $vg->address_flags);
-		$this->address_pic->show(ICONS_DIR, 48);
+		$this->club_pic->show(ICONS_DIR, true, 48);
 		echo '</td><td>';
-		if ($gs->moder_id > 0)
-		{
-			echo '<a href="user_info.php?id=' . $gs->moder_id . '&bck=1" title="' . $vg->moder . '">';
-			$this->user_pic->set($gs->moder_id, $vg->moder, $vg->moder_flags);
-			$this->user_pic->show(ICONS_DIR, 48);
-			echo '</a>';
-		}
-		else
-		{
-			echo '<img src="images/create_user.png" width="48" height="48" title="' . $vg->moder . '">';
-		}
+		
+		$this->event_pic->
+			set($vg->event_id, $vg->event, $vg->event_flags)->
+			set($vg->tournament_id, $vg->tournament_name, $vg->tournament_flags);
+		$this->event_pic->show(ICONS_DIR, true, 48);
+		
+		echo '</td><td>';
+		$this->address_pic->set($vg->address_id, $vg->address, $vg->address_flags);
+		$this->address_pic->show(ICONS_DIR, true, 48);
+		echo '</td><td>';
+		$this->user_pic->set($gs->moder_id, $vg->moder, $vg->moder_flags);
+		$this->user_pic->show(ICONS_DIR, true, 48);
 		echo '</td><td>' . $vg->start_time . '</td><td>' . $vg->duration . '</td><td>';
 		show_language_picture($vg->language_code, ICONS_DIR, 48, 48);
 		if ($vg->civ_odds >= 0 && $vg->civ_odds <= 1)

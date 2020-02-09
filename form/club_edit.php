@@ -35,7 +35,7 @@ try
 	echo '<td align="center" valign="top" rowspan="9">';
 	$club_pic = new Picture(CLUB_PICTURE);
 	$club_pic->set($id, $club->name, $flags);
-	$club_pic->show(ICONS_DIR);
+	$club_pic->show(ICONS_DIR, false);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td>';

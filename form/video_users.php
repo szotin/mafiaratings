@@ -86,7 +86,7 @@ try
 		}
 		echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
 		$user_pic->set($user_id, $user_name, $user_flags);
-		$user_pic->show(ICONS_DIR, 48);
+		$user_pic->show(ICONS_DIR, false, 48);
 		echo '<br>' . $user_name;
 		echo '</a>';
 		if ($can_untag)

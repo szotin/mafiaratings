@@ -50,7 +50,7 @@ class Page extends GeneralPageBase
 			echo '<a href="event_info.php?bck=1&id=' . $event_id . '" title="' . get_label('View event details.') . '"><b>';
 			echo format_date('l, F d, Y, H:i', $event_time, $timezone) . '</b><br>';
 			$this->event_pic->set($event_id, $event_name, $event_flags)->set($tour_id, $tour_name, $tour_flags)->set($club_id, $club_name, $club_flags);
-			$this->event_pic->show(ICONS_DIR, 60);
+			$this->event_pic->show(ICONS_DIR, false, 60);
 			echo '</a><br>' . $event_name . '</b></td>';
 			++$colunm_count;
 			++$event_count;
@@ -101,7 +101,7 @@ class Page extends GeneralPageBase
 			echo '<a href="tournament_info.php?bck=1&id=' . $tournament_id . '" title="' . get_label('View tournament details.') . '"><b>';
 			echo format_date('l, F d, Y, H:i', $tournament_time, $timezone) . '</b><br>';
 			$this->tournament_pic->set($tournament_id, $tournament_name, $tournament_flags)->set($club_id, $club_name, $club_flags);
-			$this->tournament_pic->show(ICONS_DIR, 60);
+			$this->tournament_pic->show(ICONS_DIR, false, 60);
 			echo '</a><br>' . $tournament_name . '</b></td>';
 			++$colunm_count;
 			++$tournament_count;
@@ -179,14 +179,14 @@ class Page extends GeneralPageBase
 					echo '<tr>';
 				}
 				$dark = !$dark;
-				echo '<td width="48" align="center"><a href="user_info.php?id=' . $player->id . '&bck=1">';
+				echo '<td width="48" align="center">';
 				$this->user_pic->set($player->id, $player->user_name, $player->user_flags);
-				$this->user_pic->show(ICONS_DIR, 36);
-				echo '</a></td><td width="48"><a href="club_main.php?id=' . $player->club_id . '&bck=1">';
+				$this->user_pic->show(ICONS_DIR, true, 36);
+				echo '</td><td width="48"><a href="club_main.php?id=' . $player->club_id . '&bck=1">';
 				if (!is_null($player->club_id) && $player->club_id > 0)
 				{
 					$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
-					$this->club_pic->show(ICONS_DIR, 36);
+					$this->club_pic->show(ICONS_DIR, true, 36);
 				}
 				echo '</a></td><td width="30">';
 				if (isset($player->src))
@@ -305,7 +305,7 @@ class Page extends GeneralPageBase
 				echo '<tr>';
 				echo '<td width="100" class="dark" align="center" valign="top"><a href="club_main.php?id=' . $club_id . '&bck=1">' . $club_name . '<br>';
 				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 60);
+				$this->club_pic->show(ICONS_DIR, false, 60);
 				echo '</a></td><td valign="top"><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
 				
 				
@@ -412,16 +412,12 @@ class Page extends GeneralPageBase
 				list ($id, $name, $rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $row;
 
 				echo '<td width="20" class="dark" align="center">' . $number . '</td>';
-				echo '<td width="50" valign="top"><a href="user_info.php?id=' . $id . '&bck=1">';
+				echo '<td width="50" valign="top">';
 				$this->user_pic->set($id, $name, $flags);
-				$this->user_pic->show(ICONS_DIR, 50);
-				echo '</a></td><td width="36"><a href="club_main.php?id=' . $club_id . '&bck=1">';
-				
-				if (!is_null($club_id))
-				{
-					$this->club_pic->set($club_id, $club_name, $club_flags);
-					$this->club_pic->show(ICONS_DIR, 36);
-				}
+				$this->user_pic->show(ICONS_DIR, true, 50);
+				echo '</td><td width="36">';
+				$this->club_pic->set($club_id, $club_name, $club_flags);
+				$this->club_pic->show(ICONS_DIR, false, 36);
 				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';

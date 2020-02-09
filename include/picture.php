@@ -124,6 +124,11 @@ class Picture
 	
 	public function url($dir)
 	{
+		if (is_null($this->id) || $this->id <= 0)
+		{
+			return 'images/transp.png';
+		}
+		
 		$url = $this->_url($dir);
 		if (is_null($url))
 		{
@@ -148,7 +153,29 @@ class Picture
 		return $this->name;
 	}
 	
-	public function show($dir, $width = 0, $height = 0, $attributes = NULL)
+	public function hyperlink()
+	{
+		switch ($this->type)
+		{
+			case CLUB_PICTURE:
+				return 'club_main.php?bck=1&id=' . $this->id;
+			case EVENT_PICTURE:
+				return 'event_standings.php?bck=1&id=' . $this->id;
+			case TOURNAMENT_PICTURE:
+				return 'tournament_standings.php?bck=1&id=' . $this->id;
+			case ADDRESS_PICTURE:
+				return 'address_info.php?bck=1&id=' . $this->id;
+			case USER_PICTURE:
+				return 'user_info.php?bck=1&id=' . $this->id;
+			case LEAGUE_PICTURE:
+				return 'league_main.php?bck=1&id=' . $this->id;
+			case ALBUM_PICTURE:
+				return 'album_photos.php?bck=1&id=' . $this->id;
+		}
+		return '';
+	}
+	
+	public function show($dir, $with_link, $width = 0, $height = 0, $attributes = NULL)
 	{
 		global $_lang_code;
 		
@@ -183,6 +210,13 @@ class Picture
 			$height = $h;
 		}
 		
+		$close_link = '';
+		if ($with_link && !is_null($this->id) && $this->id > 0)
+		{
+			echo '<a href="' . $this->hyperlink() . '">';
+			$close_link = '</a>';
+		}
+		
 		$title = $this->title();
 		$origin = $this->pic_dir . $dir . $this->id . '.png';
 		echo '<span style="position:relative;"><img code="' . $this->code . $this->id . '" origin="' . $this->pic_dir . $dir . $this->id . '.png" src="';
@@ -202,7 +236,7 @@ class Picture
 			echo ' ' . $attributes;
 		}
 		echo '>';
-	
+		
 		switch ($this->type)
 		{
 			case CLUB_PICTURE:
@@ -283,7 +317,7 @@ class Picture
 			default:
 				break;
 		}
-		echo '</span>';
+		echo '</span>' . $close_link;
 	}
 }
 	

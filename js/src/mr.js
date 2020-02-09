@@ -656,8 +656,6 @@ var mr = new function()
 		var scoringId = $('#' + name + '-sel').val();
 		json.post("api/get/scorings.php", { scoring_id: scoringId }, function(data)
 		{
-			console.log(scoringId);
-			console.log(data);
 			var s = data.scorings[0];
 			var c = $('#' + name + '-ver');
 			c.find('option').remove();

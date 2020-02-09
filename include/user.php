@@ -163,7 +163,7 @@ class UserPageBase extends PageBase
 			(
 				new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('General statistics. How many games played, winning percentage, nominating/voting, etc.')),
 				new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
-				new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)),
+				//new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)),
 				new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->title)),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
@@ -195,17 +195,17 @@ class UserPageBase extends PageBase
 		echo '</td><td style="padding: 4px 2px 4px 1px;">';
 		$user_pic = new Picture(USER_PICTURE);
 		$user_pic->set($this->id, $this->name, $this->flags);
-		$user_pic->show(TNAILS_DIR);
+		$user_pic->show(TNAILS_DIR, false);
 		echo '</td></tr></table><td valign="top"><h2 class="user">' . get_label('Player [0]', $this->_title) . '</h2><br><h3>' . $this->title . '</h3><p class="subtitle">';
 		echo $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom" colspan="2">';
 		if ($this->club != NULL)
 		{
-			echo '<table><tr><td align="center"><a href="club_main.php?bck=1&id=' . $this->club_id . '">' . $this->club . '</a></td></tr><tr><td align="center"><a href="club_main.php?bck=1&id=' . $this->club_id . '">';
+			echo '<table><tr><td align="center"><a href="club_main.php?bck=1&id=' . $this->club_id . '">' . $this->club . '</a></td></tr><tr><td align="center">';
 			$this->club_pic->set($this->club_id, $this->club, $this->club_flags);
-			$this->club_pic->show(ICONS_DIR);
-			echo '</a></td></tr></table>';
+			$this->club_pic->show(ICONS_DIR, true);
+			echo '</td></tr></table>';
 		}
 		echo '</td></tr></table>';
 	}

@@ -31,6 +31,7 @@ class Page extends ClubPageBase
 			' FROM tournaments t ' .
 				' JOIN addresses a ON t.address_id = a.id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
+				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' WHERE t.start_time < UNIX_TIMESTAMP() AND t.club_id = ? AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0',
 			$this->id);
 		$condition->add(get_club_season_condition($season, 't.start_time', '(t.start_time + t.duration)'));
@@ -38,9 +39,9 @@ class Page extends ClubPageBase
 		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE));
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(LEAGUE_PICTURE));
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, ct.timezone, a.id, a.name, a.flags, a.address,' .
+			'SELECT t.id, t.name, t.flags, t.start_time, ct.timezone, a.id, a.name, a.flags, a.address, l.id, l.name, l.flags,' .
 			' (SELECT count(*) FROM games _g JOIN events _e ON _e.id = _g.event_id WHERE _e.tournament_id = t.id AND canceled = FALSE AND result > 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events',
 			$condition);
@@ -54,7 +55,7 @@ class Page extends ClubPageBase
 		echo '<td width="60" align="center">' . get_label('Number of rounds') . '</td></tr>';
 		while ($row = $query->next())
 		{
-			list ($tournament_id, $tournament_name, $tournament_flags, $tournament_time, $timezone, $address_id, $address_name, $address_flags, $address, $games_count, $rounds_count) = $row;
+			list ($tournament_id, $tournament_name, $tournament_flags, $tournament_time, $timezone, $address_id, $address_name, $address_flags, $address, $league_id, $league_name, $league_flags, $games_count, $rounds_count) = $row;
 
 			if ($tournament_flags & TOURNAMENT_FLAG_CANCELED)
 			{
@@ -65,12 +66,12 @@ class Page extends ClubPageBase
 				echo '<tr>';
 			}
 			
-			echo '<td width="50"><a href="tournament_standings.php?bck=1&id=' . $tournament_id . '">';
+			echo '<td width="50">';
 			$tournament_pic->
 				set($tournament_id, $tournament_name, $tournament_flags)->
-				set($address_id, $address_name, $address_flags);
-			$tournament_pic->show(ICONS_DIR, 50);
-			echo '</a></td>';
+				set($league_id, $league_name, $league_flags);
+			$tournament_pic->show(ICONS_DIR, true, 50);
+			echo '</td>';
 			echo '<td width="180">' . $tournament_name . '<br><b>' . format_date('l, F d, Y', $tournament_time, $timezone) . '</b></td>';
 			
 			echo '<td>' . $address . '</td>';

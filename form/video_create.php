@@ -60,7 +60,7 @@ try
 	echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="40">';
 	$club_pic = new Picture(CLUB_PICTURE);
 	$club_pic->set($club_id, $club->name, $club->club_flags);
-	$club_pic->show(ICONS_DIR, 40);
+	$club_pic->show(ICONS_DIR, false, 40);
 	echo '</td><td align="center"><b>' . $club->name;
 	echo '</b></td></tr></table></td></tr>';
 	echo '<tr><td width="140">'.get_label('Youtube link').':</td><td><input id="form-video" size="65"></td></tr>';

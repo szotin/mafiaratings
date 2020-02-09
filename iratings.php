@@ -161,7 +161,7 @@ try
 					echo '<td width="50"><a href="../user_info.php?id=' . $id . '" target="blank">';
 					$user_pic = new Picture(USER_PICTURE);
 					$user_pic->set($id, $name, $flags);
-					$user_pic->show(ICONS_DIR, 50);
+					$user_pic->show(ICONS_DIR, false, 50);
 					echo '</a></td>';
 					break;
 				case 'u':

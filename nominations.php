@@ -4,6 +4,7 @@ require_once 'include/general_page_base.php';
 require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/games.php';
 
 class Page extends GeneralPageBase
 {
@@ -48,6 +49,12 @@ class Page extends GeneralPageBase
 			array(get_label('Checked by sheriff'), 'SUM(IF(p.checked_by_sheriff >= 0, 1, 0))', 'count(*)', 1),
 		);
 		
+		$this->filter = GAMES_FILTER_RATING;
+		if (isset($_REQUEST['filter']))
+		{
+			$this->filter = (int)$_REQUEST['filter'];
+		}
+		
 		$this->season = 0;
 		if (isset($_REQUEST['season']))
 		{
@@ -62,6 +69,7 @@ class Page extends GeneralPageBase
 		
 		date_default_timezone_set(get_timezone());
 		$this->condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
+		$this->condition->add(get_games_filter_condition($this->filter));
 		
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.canceled = FALSE AND g.result > 0 ', $this->condition);
 		$this->condition->add(get_roles_condition($this->roles));
@@ -180,16 +188,13 @@ class Page extends GeneralPageBase
 			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags) = $row;
 
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
-			echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
+			echo '<td width="50">';
 			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+			$this->user_pic->show(ICONS_DIR, true, 50);
+			echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 40);
-			}
+			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->show(ICONS_DIR, true, 40);
 			echo '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td width="100" align="center">' . number_format($abs, 0) . '</td>';
@@ -225,7 +230,8 @@ class Page extends GeneralPageBase
 				show_option($i, $this->min_games, get_label('[0] or more games', $i));
 			}
 		}
-		echo '</select>';
+		echo '</select> ';
+		show_games_filter($this->filter, 'filter', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
 	}
 	
 	protected function show_search_fields()
@@ -240,7 +246,7 @@ class Page extends GeneralPageBase
 	
 	protected function get_filter_js()
 	{
-		return '+ "&season=" + $("#season").val() + "&roles=" + $("#roles").val() + "&min=" + $("#min").val() + "&nom=" + $("#nom").val() + "&sort=" + sort';
+		return '+ "&season=" + $("#season").val() + "&roles=" + $("#roles").val() + "&min=" + $("#min").val() + "&nom=" + $("#nom").val() + "&sort=" + sort + "&filter=" + getGamesFilter()';
 	}
 	
 	protected function js()

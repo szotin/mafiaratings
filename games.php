@@ -7,6 +7,7 @@ require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/user.php';
+require_once 'include/games.php';
 
 define("PAGE_SIZE", 20);
 
@@ -34,12 +35,26 @@ class Page extends GeneralPageBase
 			}
 		}
 		
-		$this->with_video = isset($_REQUEST['video']);
+		$this->with_video = 0;
+		if (isset($_REQUEST['video']))
+		{
+			$this->with_video = (int)$_REQUEST['video'];
+		}
+		
+		$this->filter = GAMES_FILTER_ALL;
+		if (isset($_REQUEST['filter']))
+		{
+			$this->filter = (int)$_REQUEST['filter'];
+		}
 	}
 
 	protected function show_body()
 	{
 		global $_page, $_profile;
+		
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(LEAGUE_PICTURE));
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
+		$club_pic = new Picture(CLUB_PICTURE);
 		
 		$condition = new SQL();
 		if ($this->result_filter < 0)
@@ -55,6 +70,8 @@ class Page extends GeneralPageBase
 		{
 			$condition->add(' AND g.video_id IS NOT NULL');
 		}
+		
+		$condition->add(get_games_filter_condition($this->filter));
 		
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
@@ -80,34 +97,35 @@ class Page extends GeneralPageBase
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, $this->club_pic));
 		$is_user = is_permitted(PERMISSION_USER);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td'; 
 		if ($is_user)
 		{
-			echo ' colspan="3"';
+			echo ' colspan="4"';
 		}
 		else
 		{
-			echo ' colspan="2"';
+			echo ' colspan="3"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="120">'.get_label('Time').'</td><td width="60">'.get_label('Duration').'</td><td width="60">'.get_label('Result').'</td><td width="60">'.get_label('Video').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td><td width="48">'.get_label('Video').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.canceled FROM games g' .
+			'SELECT g.id, g.flags, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.canceled, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
+				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
-				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
+				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' JOIN cities ct ON ct.id = c.city_id',
 			$condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $tour_id, $tour_name, $tour_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_canceled) = $row;
+			list ($game_id, $game_flags, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_canceled, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
 			
 			echo '<tr align="center"';
-			if ($is_canceled)
+			if ($is_canceled || ($game_flags & GAME_FLAG_FUN))
 			{
 				echo ' class="dark"';
 			}
@@ -138,37 +156,67 @@ class Page extends GeneralPageBase
 			
 			if ($is_canceled)
 			{
+				echo '<td align="left" width="120"><s>' . format_date('M j Y, H:i', $start, $timezone) . '</s></td>';
 				echo '<td align="left"><s>';
 			}
-			else
+			else 
 			{
-				echo '<td align="left" colspan="2">';
+				echo '<td align="left" width="120">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
+				if ($game_flags & GAME_FLAG_FUN)
+				{
+					echo '<td align="left">';
+				}
+				else
+				{
+					echo '<td align="left" colspan="2">';
+				}
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a>';
+			echo '<a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id);
+			echo '<br>';
+			if (!is_null($tournament_id))
+			{
+				echo $tournament_name . ': ';
+			}
+			echo $event_name . '</a>';
 			if ($is_canceled)
 			{
-				echo '</s></td><td width="150" class="darker"><b>' . get_label('Game canceled') . '</b></td>';
+				echo '</s></td><td width="100" class="darker"><b>' . get_label('Canceled');
+				if ($game_flags & GAME_FLAG_FUN)
+				{
+					echo '<br>' . get_label('Non-rating');
+				}
+				echo '</b></td>';
+			}
+			else if ($game_flags & GAME_FLAG_FUN)
+			{
+				echo '</td><td width="100" class="darker"><b>' . get_label('Non-rating') . '</b></td>';
 			}
 			echo '</td>';
 
 			echo '<td>';
-			$event_pic->
-				set($event_id, $event_name, $event_flags)->
-				set($tour_id, $tour_name, $tour_flags)->
+			$club_pic->
 				set($club_id, $club_name, $club_flags);
-			$event_pic->show(ICONS_DIR, 48);
+			$club_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
-			if ($is_canceled)
-			{
-				echo '<td><s>' . format_date('M j Y, H:i', $start, $timezone) . '</s></td>';
-				echo '<td><s>' . format_time($duration) . '</s></td>';
-			}
-			else
-			{
-				echo '<td>' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
-				echo '<td>' . format_time($duration) . '</td>';
-			}
+			echo '<td>';
+			$event_pic->
+				set($event_id, $event_name, $event_flags)->
+				set($address_id, $address_name, $address_flags);
+			$event_pic->show(ICONS_DIR, true, 48);
+			echo '</td>';
+			
+			echo '<td>';
+			$tournament_pic->
+				set($tournament_id, $tournament_name, $tournament_flags)->
+				set($league_id, $league_name, $league_flags);
+			$tournament_pic->show(ICONS_DIR, true, 48);
+			echo '</td>';
+			
+			echo '<td>';
+			$this->user_pic->set($moder_id, $moder_name, $moder_flags);
+			$this->user_pic->show(ICONS_DIR, true, 48);
+			echo '</td>';
 			
 			echo '<td>';
 			switch ($game_result)
@@ -203,17 +251,12 @@ class Page extends GeneralPageBase
 			show_option(0, $this->result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
-		echo ' <input type="checkbox" id="video" onclick="filter()"';
-		if ($this->with_video)
-		{
-			echo ' checked';
-		}
-		echo '> ' . get_label('show only games with video');
+		show_games_filter($this->filter, 'filter');
 	}
 	
 	protected function get_filter_js()
 	{
-		return '+ "&results=" + $("#results").val() + ($("#video").attr("checked") ? "&video" : "")';
+		return '+ "&results=" + $("#results").val() + "&filter=" + getGamesFilter()';
 	}
 }
 

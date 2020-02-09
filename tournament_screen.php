@@ -131,7 +131,7 @@ try
 					$tournament_pic->
 						set($tournament_id, $tournament_name, $tournament_flags)->
 						set($club_id, $club_name, $club_flags);
-					$tournament_pic->show($icon ? ICONS_DIR : TNAILS_DIR, 0, $logo_height);
+					$tournament_pic->show($icon ? ICONS_DIR : TNAILS_DIR, false, 0, $logo_height);
 				}
 				echo '</td></tr></table>';
 			}
@@ -191,11 +191,11 @@ try
 						echo '<td align="center" class="dark">' . $number . '</td>';
 						echo '<td width="50">';
 						$user_pic->set($id, $name, $flags);
-						$user_pic->show(ICONS_DIR, 50);
+						$user_pic->show(ICONS_DIR, false, 50);
 						echo '</td><td>' . $name . '</td>';
 						echo '<td width="50" align="center">';
 						$club_pic->set($club_id, $club_name, $club_flags);
-						$club_pic->show(ICONS_DIR, 40);
+						$club_pic->show(ICONS_DIR, false, 40);
 						echo '</td>';
 						echo '<td align="center" class="lighter">';
 						echo format_rating($points);
@@ -244,13 +244,13 @@ try
 						echo '<td align="center" class="dark">' . $number . '</td>';
 						echo '<td width="50">';
 						$user_pic->set($player->id, $player->name, $player->flags);
-						$user_pic->show(ICONS_DIR, 50);
+						$user_pic->show(ICONS_DIR, false, 50);
 						echo '</td><td>' . $player->name . '</td>';
 						echo '<td width="50" align="center">';
 						if (!is_null($player->club_id) && $player->club_id > 0)
 						{
 							$club_pic->set($player->club_id, $player->club_name, $player->club_flags);
-							$club_pic->show(ICONS_DIR, 40);
+							$club_pic->show(ICONS_DIR, false, 40);
 						}
 						echo '</td>';
 						

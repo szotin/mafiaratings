@@ -175,7 +175,7 @@ class Page extends GeneralPageBase
 			
 			echo '<tr><td align="center"><a href="league_main.php?bck=1&id=' . $id . '">';
 			$league_pic->set($id, $name, $flags);
-			$league_pic->show(ICONS_DIR);
+			$league_pic->show(ICONS_DIR, false);
 			echo '<br><b>' . $name . '</b>';
 			echo '</a></td></tr>';
 			

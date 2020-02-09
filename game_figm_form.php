@@ -23,7 +23,7 @@ try
 			' JOIN addresses a ON a.id = e.address_id' .
 			' JOIN cities c ON c.id = a.city_id' .
 			' JOIN users u ON u.id = g.moderator_id' .
-			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+			' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 			' WHERE g.id = ?', $game_id);
 		
 		$gs = new GameState();

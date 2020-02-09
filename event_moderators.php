@@ -4,6 +4,7 @@ require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/user.php';
+require_once 'include/games.php';
 
 define("PAGE_SIZE",15);
 
@@ -13,7 +14,20 @@ class Page extends EventPageBase
 	{
 		global $_page;
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT moderator_id) FROM games WHERE club_id = ? AND canceled = FALSE AND result > 0', $this->event->id);
+		$filter = GAMES_FILTER_RATING;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter = (int)$_REQUEST['filter'];
+		}
+		
+		echo '<p>';
+		echo '<table class="transp" width="100%"><tr><td>';
+		show_games_filter($filter, 'filterChanged', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		echo '</td></tr></table></p>';
+		
+		$condition = get_games_filter_condition($filter);
+		
+		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND g.canceled = FALSE AND g.result > 0', $this->event->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
@@ -21,10 +35,9 @@ class Page extends EventPageBase
 				' FROM users u' .
 				' JOIN games g ON g.moderator_id = u.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' WHERE g.event_id = ? AND canceled = FALSE AND result > 0' .
-				' GROUP BY u.id ORDER BY count(g.id) DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
-			$this->event->id);
-		
+				' WHERE g.event_id = ? AND canceled = FALSE AND result > 0',
+			$this->event->id, $condition);
+		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="20">&nbsp;</td>';
 		echo '<td colspan="3">'.get_label('User name') . '</td>';
@@ -40,16 +53,13 @@ class Page extends EventPageBase
 			list ($id, $name, $flags, $civil_wins, $mafia_wins, $club_id, $club_name, $club_flags) = $row;
 
 			echo '<tr><td align="center" width="40" class="dark">' . $number . '</td>';
-			echo '<td width="50"><a href="user_games.php?id=' . $id . '&moder=1&bck=1">';
+			echo '<td width="50">';
 			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a><td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
+			$this->user_pic->show(ICONS_DIR, true, 50);
+			echo '<td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
 			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 40);
-			}
+			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->show(ICONS_DIR, true, 40);
 			echo '</td>';
 			
 			$games = $civil_wins + $mafia_wins;
@@ -74,6 +84,16 @@ class Page extends EventPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+	}
+	
+	protected function js()
+	{
+?>
+		function filterChanged()
+		{
+			goTo({filter: getGamesFilter()});
+		}
+<?php
 	}
 }
 

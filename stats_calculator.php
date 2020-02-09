@@ -124,7 +124,7 @@ class Page extends PageBase
 		echo $descr;
 		echo '</td><td width="50" valign="top">';
 		$this->user_pic->set($this->owner_id, $this->owner_name, $this->owner_flags);
-		$this->user_pic->show(ICONS_DIR);
+		$this->user_pic->show(ICONS_DIR, false);
 		echo '</td></tr></table></td></tr>';
 		
 		echo '</table></p>';

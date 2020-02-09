@@ -4,6 +4,7 @@ require_once 'include/user.php';
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/scoring.php';
+require_once 'include/games.php';
 
 define('SORT_TYPE_BY_NUMBERS', 0);
 define('SORT_TYPE_BY_GAMES', 1);
@@ -124,30 +125,29 @@ function compare_numbers($row1, $row2)
 	return $desc * ($games2 - $games1);
 }
 
-function sorting_link($ref, $sort, $text)
+function sorting_link($sort, $text)
 {
 	global $sort_type;
-	$result = '<a href="' . $ref . '&sort=';
 	if (($sort_type >> 1) == $sort)
 	{
 		if ($sort_type & 1)
 		{
-			$result = '▼ <a href="' . $ref . '&sort=' . ($sort * 2);
+			$result = '▼ <a href="javascript:goTo({sort:' . ($sort * 2);
 		}
 		else
 		{
-			$result = '▲ <a href="' . $ref . '&sort=' . ($sort * 2 + 1);
+			$result = '▲ <a href="javascript:goTo({sort:' . ($sort * 2 + 1);
 		}
 	}
 	else if ($sort_type & 1)
 	{
-		$result = '<a href="' . $ref . '&sort=' . ($sort * 2 + 1);
+		$result = '<a href="javascript:goTo({sort:' . ($sort * 2 + 1);
 	}
 	else
 	{
-		$result = '<a href="' . $ref . '&sort=' . ($sort * 2);
+		$result = '<a href="javascript:goTo({sort:' . ($sort * 2);
 	}
-	$result .= '">' . $text . '</a>';
+	$result .= '})">' . $text . '</a>';
 	return $result;
 }
 
@@ -173,13 +173,16 @@ class Page extends UserPageBase
 			$roles = (int)$_REQUEST['roles'];
 		}
 		
-		echo '<form method="get" name="form" action="user_by_numbers.php">';
-		echo '<table class="transp" width="100%"><tr><td>';
-		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		echo '<input type="hidden" name="sort" value="' . $sort_type . '">';
+		$filter = GAMES_FILTER_RATING;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter = (int)$_REQUEST['filter'];
+		}
+		
+		echo '<p><table class="transp" width="100%"><tr><td>';
 		
 		$query = new DbQuery('SELECT DISTINCT c.id, c.name FROM players p, games g, clubs c WHERE p.game_id = g.id AND g.club_id = c.id AND p.user_id = ? ORDER BY c.name', $this->id);
-		echo '<select name="club" onChange="document.form.submit()">';
+		echo '<select id="club" onChange="filterChanged()">';
 		show_option(0, $club_id, get_label('All clubs'));
 		while ($row = $query->next())
 		{
@@ -187,14 +190,17 @@ class Page extends UserPageBase
 			show_option($c_id, $club_id, $c_name);
 		}
 		echo '</select> ';
-		show_roles_select($roles, 'document.form.submit()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
-		echo '</td></tr></table></form>';
+		show_roles_select($roles, 'filterChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
+		echo ' ';
+		show_games_filter($filter, 'filterChanged', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		echo '</td></tr></table></p>';
 
 		$numbers = array();
 		$query = new DbQuery(
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
 			' FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id);
 		$query->add(get_roles_condition($roles));
+		$query->add(get_games_filter_condition($filter));
 		if ($club_id > 0)
 		{
 			$query->add(' AND g.club_id = ?', $club_id);
@@ -206,21 +212,16 @@ class Page extends UserPageBase
 		}
 		usort($numbers, "compare_numbers");
 			
-		$ref = 'user_by_numbers.php?id=' . $this->id;
-		if ($roles != POINTS_ALL)
-		{
-			$ref .= '&roles=' . $roles;
-		}
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker"><td>' . sorting_link($ref, SORT_TYPE_BY_NUMBERS, get_label('Number')) . '</td>';
-		echo '<td width="80" align="center">' . sorting_link($ref, SORT_TYPE_BY_GAMES, get_label('Games played')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_WIN, get_label('Wins (%)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_RATING, get_label('Rating (per game)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_WARNINGS, get_label('Warnings (per game)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_SHERIFF_CHECK, get_label('Checked by sheriff (%)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_DON_CHECK, get_label('Checked by don (%)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_KILLED_NIGHT, get_label('Killed at night (%)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link($ref, SORT_TYPE_BY_KILLED_FIRST_NIGHT, get_label('Killed first night (%)')) . '</td>';
+		echo '<tr class="th-long darker"><td>' . sorting_link(SORT_TYPE_BY_NUMBERS, get_label('Number')) . '</td>';
+		echo '<td width="80" align="center">' . sorting_link(SORT_TYPE_BY_GAMES, get_label('Games played')) . '</td>';
+		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_WIN, get_label('Wins (%)')) . '</td>';
+		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_RATING, get_label('Rating (per game)')) . '</td>';
+		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_WARNINGS, get_label('Warnings (per game)')) . '</td>';
+		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_SHERIFF_CHECK, get_label('Checked by sheriff (%)')) . '</td>';
+		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_DON_CHECK, get_label('Checked by don (%)')) . '</td>';
+		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_KILLED_NIGHT, get_label('Killed at night (%)')) . '</td>';
+		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_KILLED_FIRST_NIGHT, get_label('Killed first night (%)')) . '</td>';
 		echo '</tr>';
 		
 		$sum_games = $sum_won = $sum_rating = $sum_warnings = $sum_sheriff_check = $sum_don_check = $sum_killed_first = $sum_killed_night = 0;
@@ -264,6 +265,16 @@ class Page extends UserPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+	}
+	
+	protected function js()
+	{
+?>		
+		function filterChanged()
+		{
+			goTo({ roles: $('#roles').val(), filter: getGamesFilter(), club: $('#club').val() });
+		}
+<?php
 	}
 }
 

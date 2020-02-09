@@ -384,14 +384,14 @@ class PhotoAlbum
 			{
 				echo '<b>' . $c_name . '</b>';
 			}
-			echo '<br><a href="album_photos.php?id=' . $album_id . '&bck=1" title="' . $album_name . '">';
+			echo '<br>';
 			$album_pic->
 				set($album_id, $album_name, $album_flags)->
 				set($e_id, $e_name, $e_flags)->
 				set($t_id, $t_name, $t_flags)->
 				set($c_id, $c_name, $c_flags);
-			$album_pic->show(ICONS_DIR);
-			echo '<br>' . $album_name . '</a>';
+			$album_pic->show(ICONS_DIR, true);
+			echo '<br>' . $album_name;
 			if ($flags & ALBUM_SHOW_OWNER)
 			{
 				echo '<br>' . get_label('By [0]', $owner_name);
@@ -573,7 +573,7 @@ class AlbumPageBase extends PageBase
 			set($this->album->event_id, $this->album->event_name, $this->album->event_flags)->
 			set($this->album->tour_id, $this->album->tour_name, $this->album->tour_flags)->
 			set($this->album->club_id, $this->album->club_name, $this->album->club_flags);
-		$album_pic->show(ICONS_DIR);
+		$album_pic->show(ICONS_DIR, false);
 		echo '</td>';
 		
 		echo '</tr></table>';

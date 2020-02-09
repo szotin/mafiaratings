@@ -44,6 +44,7 @@ class PlayerStats
 	public $guess2maf;
 	
 	public $roles;
+	public $game_filter;
 	
     public $voted_civil;
     public $voted_mafia;
@@ -69,11 +70,12 @@ class PlayerStats
 	
 	// if $user_id <= 0: gives stats of an average player
 	// if $club_id <= 0: gives stats for all clubs
-	function __construct($user_id, $club_id, $roles)
+	function __construct($user_id, $club_id, $roles, $game_filter)
 	{
 		$this->club_id = $club_id;
 		$this->user_id = $user_id;
 		$this->roles = $roles;
+		$this->game_filter = $game_filter;
 		
 		$this->games_played = 0;
 		$this->games_won = 0;
@@ -97,94 +99,26 @@ class PlayerStats
 		$this->surviving = array();
 		$this->version1_games_played = 0;
 		
-		if (($roles & ROLE_ANY) == 0)
+		$condition = new SQL(' FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE');
+		$condition->add(get_roles_condition($roles));
+		$condition->add(get_games_filter_condition($game_filter));
+		if ($club_id > 0)
 		{
-			return;
-		}
-	
-		$roles_query = NULL;
-		if (($roles & ROLE_ANY) != ROLE_ANY)
-		{
-			switch ($roles)
-			{
-				case ROLE_CIVIL:
-					$roles_query = new SQL('p.role = 0');
-					break;
-				case ROLE_SHERIFF:
-					$roles_query = new SQL('p.role = 1');
-					break;
-				case ROLE_MAFIA:
-					$roles_query = new SQL('p.role = 2');
-					break;
-				case ROLE_DON:
-					$roles_query = new SQL('p.role = 3');
-					break;
-				default:
-					$roles_query = new SQL('p.role IN(');
-					$delim = '';
-					if(($roles & ROLE_CIVIL) != 0)
-					{
-						$roles_query->add('0');
-						$delim = ', ';
-					}
-					if(($roles & ROLE_SHERIFF) != 0)
-					{
-						$roles_query->add($delim . '1');
-						$delim = ', ';
-					}
-					if(($roles & ROLE_MAFIA) != 0)
-					{
-						$roles_query->add($delim . '2');
-						$delim = ', ';
-					}
-					if(($roles & ROLE_DON) != 0)
-					{
-						$roles_query->add($delim . '3');
-					}
-					$roles_query->add(')');
-					break;
-			}
+			$condition->add(' AND g.club_id = ?', $club_id);
 		}
 		
 		$count = 1; 
-		if ($user_id <= 0)
+		if ($user_id > 0)
 		{
-			if ($club_id <= 0)
-			{
-				$query = new DbQuery('SELECT count(DISTINCT p.user_id) FROM players p');
-				if ($roles_query != NULL)
-				{
-					$query->add(' WHERE ', $roles_query);
-				}
-			}
-			else
-			{
-				$query = new DbQuery('SELECT count(DISTINCT p.user_id) FROM players p, games g WHERE g.id = p.game_id AND g.club_id = ?', $club_id);
-				if ($roles_query != NULL)
-				{
-					$query->add(' AND ', $roles_query);
-				}
-			}
-			
-			list ($count) = $query->record(get_label('player'));
+			$condition->add(' AND p.user_id = ?', $user_id);
+		}
+		else
+		{
+			list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id)', $condition);
 			if ($count <= 0)
 			{
 				$count = 1;
 			}
-		}
-		
-		$where = new SQL('FROM players p, games g WHERE p.game_id = g.id');
-		if ($roles_query != NULL)
-		{
-			$where->add(' AND ', $roles_query);
-		}
-		if ($user_id > 0)
-		{
-			$where->add(' AND p.user_id = ?', $user_id);
-		}
-		if ($club_id > 0)
-		{
-			$where->add(' AND g.club_id = ?', $club_id);
 		}
 		
 		$query = new DbQuery(
@@ -196,8 +130,8 @@ class PlayerStats
 				'SUM(p.warns), SUM(IF(p.was_arranged >= 0, 1, 0)), ' .
 				'SUM(IF(p.checked_by_don >= 0, 1, 0)), SUM(IF(p.checked_by_sheriff >= 0, 1, 0)), ' .
 				'SUM(IF(g.log_version > 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)), ' .
-				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0))',
-			$where);
+				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0)) ',
+			$condition);
 		
 		$row = $query->record(get_label('player'));
 		$this->games_played = $row[0] / $count;
@@ -228,7 +162,7 @@ class PlayerStats
 			$this->guess2maf = $row[23] / $count;
 		}
 		
-		$query = new DbQuery('SELECT p.kill_round, p.kill_type, count(*) ', $where);
+		$query = new DbQuery('SELECT p.kill_round, p.kill_type, count(*)', $condition);
 		$query->add(' GROUP BY p.kill_type, p.kill_round ORDER BY p.kill_round, p.kill_type');
 		while ($row = $query->next())
 		{

@@ -96,7 +96,7 @@ class ApiPage extends OpsApiPageBase
 				'SELECT g.id, g.moderator_id, g.club_id, t.league_id, o.message, o.user_id, o.objection_id, o.accept FROM objections o' .
 				' JOIN games g ON g.id = o.game_id' .
 				' JOIN events e ON e.id = g.event_id' .
-				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' WHERE o.id = ?', $objection_id);
 				
 		$accept = max(min((int)get_optional_param('accept', $old_accept), 1), -1);
@@ -188,7 +188,7 @@ class ApiPage extends OpsApiPageBase
 				'SELECT g.id, g.club_id, g.moderator_id, t.league_id, o.accept FROM objections o' .
 				' JOIN games g ON g.id = o.game_id' .
 				' JOIN events e ON e.id = g.event_id' .
-				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' WHERE o.id = ?', $objection_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		

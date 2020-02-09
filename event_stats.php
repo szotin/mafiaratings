@@ -4,6 +4,7 @@ require_once 'include/event.php';
 require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/games.php';
 
 class Page extends EventPageBase
 {
@@ -22,12 +23,24 @@ class Page extends EventPageBase
 	{
 		global $_profile, $_lang_code;
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND g.canceled = FALSE AND g.result > 0', $this->event->id);
+		$filter = GAMES_FILTER_RATING;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter = (int)$_REQUEST['filter'];
+		}
+		
+		echo '<p><table class="transp" width="100%"><tr><td>';
+		show_games_filter($filter, 'filterChanged', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		echo '</td></tr></table></p>';
+		
+		$condition = get_games_filter_condition($filter);
+		
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND g.canceled = FALSE AND g.result > 0', $this->event->id, $condition);
 		
 		$playing_count = 0;
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
-		$query = new DbQuery('SELECT g.result, count(*) FROM games g WHERE g.event_id = ? AND g.canceled = FALSE AND g.result > 0', $this->event->id);
+		$query = new DbQuery('SELECT g.result, count(*) FROM games g WHERE g.event_id = ? AND g.canceled = FALSE AND g.result > 0', $this->event->id, $condition);
 		$query->add(' GROUP BY result');
 		while ($row = $query->next())
 		{
@@ -143,6 +156,16 @@ class Page extends EventPageBase
 			}
 		}
 		echo '</form>';
+	}
+	
+	protected function js()
+	{
+?>
+		function filterChanged()
+		{
+			goTo({filter: getGamesFilter()});
+		}
+<?php
 	}
 }
 

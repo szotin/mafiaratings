@@ -27,7 +27,7 @@ try
 		' JOIN addresses a ON a.id = e.address_id' .
 		' JOIN cities c ON c.id = a.city_id' .
 		' JOIN users u ON u.id = g.moderator_id' .
-		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+		' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 		' WHERE e.id = ? AND g.result > 0 ORDER BY g.end_time', $event_id);
 	while ($row = $query->next())
 	{

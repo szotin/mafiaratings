@@ -86,7 +86,7 @@ class Page extends ClubPageBase
 			echo '<tr><td align="center"><a href="address_info.php?bck=1&id=' . $addr_id . '">';
 			echo '<b>' . $addr_name . '</b><br>';
 			$address_pics->set($addr_id, $addr_name, $addr_flags);
-			$address_pics->show(ICONS_DIR);
+			$address_pics->show(ICONS_DIR, false);
 			echo '<br></a>' . addr_label($addr, $addr_city, $addr_country) . '<br>';
 			
 			echo '</td></tr></table>';

@@ -4,6 +4,7 @@ require_once 'include/general_page_base.php';
 require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/games.php';
 
 class Page extends GeneralPageBase
 {
@@ -23,6 +24,12 @@ class Page extends GeneralPageBase
 			date_default_timezone_set(get_timezone());
 		}
 		
+		$this->filter = GAMES_FILTER_RATING;
+		if (isset($_REQUEST['filter']))
+		{
+			$this->filter = (int)$_REQUEST['filter'];
+		}
+		
 		$this->season = 0;
 		if (isset($_REQUEST['season']))
 		{
@@ -36,6 +43,7 @@ class Page extends GeneralPageBase
 		global $_profile, $_lang_code;
 		
 		$condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
+		$condition->add(get_games_filter_condition($this->filter));
 		$ccc_id = $this->ccc_filter->get_id();
 		switch ($this->ccc_filter->get_type())
 		{
@@ -182,11 +190,13 @@ class Page extends GeneralPageBase
 	protected function show_filter_fields()
 	{
 		$this->season = show_club_seasons_select(0, $this->season, 'filter()', get_label('Show stats of a specific season.'));
+		echo ' ';
+		show_games_filter($this->filter, 'filter', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
 	}
 	
 	protected function get_filter_js()
 	{
-		return '+ "&season=" + $("#season").val()';
+		return '+ "&season=" + $("#season").val() + "&filter=" + getGamesFilter()';
 	}
 }
 

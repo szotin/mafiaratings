@@ -50,11 +50,11 @@ try
 	
 	echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="' . (ICON_WIDTH * 2) . '">';
 	$league_pic->set($league_id, $league_name, $league_flags);
-	$league_pic->show(ICONS_DIR);
+	$league_pic->show(ICONS_DIR, false);
 	$tournament_pic->
 		set($tournament_id, $tournament_name, $tournament_flags)->
 		set($club_id, $club_name, $club_flags);
-	$tournament_pic->show(ICONS_DIR);
+	$tournament_pic->show(ICONS_DIR, false);
 	echo '</td><td align="center">' . get_label('Please approve the request to hold [0] in [1]', $tournament_name, $league_name) . '</td></tr></table></td></tr>';
 	
 	
@@ -78,7 +78,7 @@ try
 		
 		echo '<tr><td width="36">';
 		$user_pic->set($user_id, $user_name, $user_flags);
-		$user_pic->show(ICONS_DIR, 32);
+		$user_pic->show(ICONS_DIR, false, 32);
 		echo '</td><td>';
 		if ($user_stars >= 0)
 		{

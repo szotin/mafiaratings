@@ -71,12 +71,12 @@ class Page extends GeneralPageBase
 			
 			echo '<tr>';
 			
-			echo '<td width="50" class="dark"><a href="tournament_standings.php?bck=1&id=' . $tournament_id . '">';
+			echo '<td width="50" class="dark">';
 			$tournament_pic->
 				set($tournament_id, $tournament_name, $tournament_flags)->
 				set($club_id, $club_name, $club_flags);
-			$tournament_pic->show(ICONS_DIR, 50);
-			echo '</a></td>';
+			$tournament_pic->show(ICONS_DIR, true, 50);
+			echo '</td>';
 			echo '<td width="180">' . $tournament_name . '<br><b>' . format_date('l, F d, Y', $tournament_time, $timezone) . '</b></td>';
 			
 			echo '<td>' . $addr . '</td>';

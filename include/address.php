@@ -287,12 +287,12 @@ class AddressPageBase extends PageBase
 		if ($this->url != '')
 		{
 			echo '<a href="' . $this->url . '" target="blank">';
-			$address_pic->show(TNAILS_DIR);
+			$address_pic->show(TNAILS_DIR, false);
 			echo '</a>';
 		}
 		else
 		{
-			$address_pic->show(TNAILS_DIR);
+			$address_pic->show(TNAILS_DIR, false);
 		}
 		echo '</td></tr></table></td>';
 		
@@ -300,7 +300,7 @@ class AddressPageBase extends PageBase
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom" width="' . ICON_WIDTH . '"><a href="club_main.php?bck=1&id=' . $this->club_id . '"><table><tr><td align="center">' . $this->club_name . '</td></tr><tr><td>';
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		$this->club_pic->show(ICONS_DIR);
+		$this->club_pic->show(ICONS_DIR, true);
 		echo '</td></tr></table></a></td></tr>';
 		
 		echo '</table>';

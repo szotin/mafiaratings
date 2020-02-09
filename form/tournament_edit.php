@@ -36,7 +36,7 @@ try
 	$tournament_pic->
 		set($tournament_id, $name, $flags)->
 		set($club_id, $club->name, $club->flags);
-	$tournament_pic->show(ICONS_DIR, 50);
+	$tournament_pic->show(ICONS_DIR, false, 50);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td></tr>';

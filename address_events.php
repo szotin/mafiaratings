@@ -80,12 +80,12 @@ class Page extends AddressPageBase
 				echo '<tr>';
 			}
 			
-			echo '<td width="50" class="dark"><a href="event_standings.php?bck=1&id=' . $event_id . '">';
+			echo '<td width="50" class="dark">';
 			$event_pic->
 				set($event_id, $event_name, $event_flags)->
 				set($tournament_id, $tournament_name, $tournament_flags);
-			$event_pic->show(ICONS_DIR, 50);
-			echo '</a></td>';
+			$event_pic->show(ICONS_DIR, true, 50);
+			echo '</td>';
 			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $this->timezone) . '</b></td>';
 			
 			echo '<td>' . $this->address . '</td>';

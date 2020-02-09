@@ -39,7 +39,7 @@ try
 	echo '<td align="center" valign="top" rowspan="5">';
 	$address_pic = new Picture(ADDRESS_PICTURE);
 	$address_pic->set($id, $name, $flags);
-	$address_pic->show(ICONS_DIR);
+	$address_pic->show(ICONS_DIR, false);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td>';

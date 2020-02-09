@@ -86,7 +86,7 @@ class Page extends ClubPageBase
 			
 			echo '<tr><td align="center"><a href="tournament_info.php?bck=1&id=' . $id . '"><b>' . format_date('l, F d, Y <br> H:i', $start_time, $tournament_timezone) . '</b><br>';
 			$tournament_pic->set($id, $name, $flags)->set($addr_id, $addr, $addr_flags);
-			$tournament_pic->show(ICONS_DIR);
+			$tournament_pic->show(ICONS_DIR, false);
 			echo '</a><br>' . $name;
 			echo '</td></tr></table>';
 			

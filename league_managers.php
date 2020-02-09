@@ -41,10 +41,10 @@ class Page extends LeaguePageBase
 			echo '<button class="icon" onclick="mr.removeLeagueManager(' . $this->id . ', ' . $id . ', \'' . get_label('Are you sure you want to remove [0] from the league managers?', $name) . '\')" title="' . get_label('Remove [0] from the league managers', $name) . '"><img src="images/delete.png" border="0"></button>';
 			echo '</td>';
 			
-			echo '<td width="60" align="center"><a href="user_info.php?id=' . $id . '&bck=1">';
+			echo '<td width="60" align="center">';
 			$user_pic->set($id, $name, $flags);
-			$user_pic->show(ICONS_DIR, 50);
-			echo '</a></td>';
+			$user_pic->show(ICONS_DIR, true, 50);
+			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
 			echo '<td width="200">';
 			if (is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
@@ -53,11 +53,8 @@ class Page extends LeaguePageBase
 			}
 			echo '</td>';
 			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 40);
-			}
+			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->show(ICONS_DIR, true, 40);
 			echo '</td></tr>';
 		}
 		echo '</table>';

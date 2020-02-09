@@ -56,9 +56,9 @@ class Page extends PageBase
 		echo '<table class="head" width="100%"><tr>';
 		if ($this->user_id > 0)
 		{
-			echo '<td width="1"><a href="user_info.php?id=' . $this->user_id . '&bck=1">';
+			echo '<td width="1">';
 			$this->user_pic->set($this->user_id, $this->user_name, $this->user_flags);
-			$this->user_pic->show(ICONS_DIR);
+			$this->user_pic->show(ICONS_DIR, true);
 			echo '</td>';
 		}
 		echo '<td valign="top">' . $this->standard_title() . '</td><td valign="top" align="right">';

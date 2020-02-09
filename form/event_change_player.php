@@ -49,7 +49,7 @@ try
 		set($event_id, $event_name, $event_flags)->
 		set($tour_id, $tour_name, $tour_flags)->
 		set($club_id, $club_name, $club_flags);
-	$event_pic->show(ICONS_DIR, 50);
+	$event_pic->show(ICONS_DIR, false, 50);
 	echo '</td><td>' . $event_name . '</td></tr></table></td></tr>';
 	
 	echo '<tr><td>' . get_label('Change nickname in this event to') . ':</td><td><input id="form-nick" value="' . $nickname . '">';

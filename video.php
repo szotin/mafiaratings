@@ -49,8 +49,8 @@ class Page extends PageBase
 				'SELECT v.video, v.name, type, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, g.id, v.lang, v.user_id, v.vtime FROM videos v ' .
 				' JOIN clubs c ON c.id = v.club_id' .
 				' LEFT OUTER JOIN events e ON e.id = v.event_id' .
-				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 				' LEFT OUTER JOIN games g ON g.video_id = v.id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' WHERE v.id = ?', $this->video_id);
 		
 		if ($this->game_id != NULL)
@@ -162,19 +162,15 @@ class Page extends PageBase
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
 		if ($this->event_id != NULL)
 		{
-			echo '<a href="event_info.php?bck=1&id=' . $this->event_id . '">';
 			$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, $this->club_pic));
 			$event_pic->
 				set($this->event_id, $this->event_name, $this->event_flags)->
 				set($this->tour_id, $this->tour_name, $this->tour_flags);
-			$event_pic->show(ICONS_DIR, 64);
-			echo '</a>';
+			$event_pic->show(ICONS_DIR, true, 64);
 		}
 		else
 		{
-			echo '<a href="club_main.php?bck=1&id=' . $this->club_id . '">';
-			$this->club_pic->show(ICONS_DIR, 64);
-			echo '</a>';
+			$this->club_pic->show(ICONS_DIR, true, 64);
 		}
 		echo '</td><td align="center" rowspan="2">';
 		echo '<p><iframe title="' . $this->title . '" width="720" height="405" src="' . get_embed_video_url($this->video, $this->vtime) . '" frameborder="0" allowfullscreen></iframe></p>';

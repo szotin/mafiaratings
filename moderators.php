@@ -5,6 +5,7 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/user.php';
+require_once 'include/games.php';
 
 define("PAGE_SIZE",15);
 
@@ -23,6 +24,12 @@ class Page extends GeneralPageBase
 		parent::prepare();
 		
 		$this->ccc_title = get_label('Filter moderators by club, city, or country.');
+		
+		$this->filter = GAMES_FILTER_RATING;
+		if (isset($_REQUEST['filter']))
+		{
+			$this->filter = (int)$_REQUEST['filter'];
+		}
 		
 		$this->user_id = 0;
 		if ($_page < 0)
@@ -67,6 +74,7 @@ class Page extends GeneralPageBase
 			$condition->add(' AND u.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $ccc_id);
 			break;
 		}
+		$condition->add(get_games_filter_condition($this->filter));
 		
 		if ($this->user_id > 0)
 		{
@@ -127,16 +135,13 @@ class Page extends GeneralPageBase
 				echo '<tr>';
 			}
 			echo '<td class="dark" align="center">' . $number . '</td>';
-			echo '<td width="50"><a href="user_games.php?id=' . $id . '&moder=1&bck=1">';
+			echo '<td width="50">';
 			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a><td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
+			$this->user_pic->show(ICONS_DIR, true, 50);
+			echo '<td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
 			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 40);
-			}
+			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->show(ICONS_DIR, true, 40);
 			echo '</td>';
 			
 			$games = $civil_wins + $mafia_wins;
@@ -204,6 +209,11 @@ class Page extends GeneralPageBase
 		$this->errorMessage($message);
 	}
 	
+	protected function show_filter_fields()
+	{
+		show_games_filter($this->filter, 'filter', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+	}
+	
 	protected function show_search_fields()
 	{
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
@@ -212,7 +222,7 @@ class Page extends GeneralPageBase
 	
 	protected function get_filter_js()
 	{
-		$result = '';
+		$result = '+ "&filter=" + getGamesFilter()';
 		if ($this->user_id > 0)
 		{
 			$result .= ' + "&page=-' . $this->user_id . '"';

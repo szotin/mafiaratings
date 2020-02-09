@@ -53,7 +53,7 @@ try
 		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="' . ICON_WIDTH . '">';
 		$league_pic = new Picture(LEAGUE_PICTURE);
 		$league_pic->set($league_id, $league_name, $league_flags);
-		$league_pic->show(ICONS_DIR);
+		$league_pic->show(ICONS_DIR, false);
 		echo '</td><td align="center"><b>' . $league_name . '</b><input type="hidden" id="form-league" value="' . $league_id . '"></td></tr></table></td></tr>';
 	}
 	else

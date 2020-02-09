@@ -246,12 +246,12 @@ class PageBase
 					echo 'setCurrentMenu(null)">';
 				}
 				$this->club_pic->set($club->id, $club->name, $club->club_flags);
-				$this->club_pic->show(ICONS_DIR, 48, 48); //, ' class="round"');
+				$this->club_pic->show(ICONS_DIR, false, 48); //, ' class="round"');
 				echo '</a> ';
 			}
 			echo ' <a id="header-user" onMouseEnter="javascript:showUserMenu()" href="user_info.php?id=' . $_profile->user_id . '" title="' . $_profile->user_name . '">';
 			$this->user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
-			$this->user_pic->show(ICONS_DIR, 48, 48); //, ' class="round"');
+			$this->user_pic->show(ICONS_DIR, false, 48); //, ' class="round"');
 			echo '</a> ';
 			
 			echo '<ul id="header-user-menu" style="display:none;position:absolute;width:150px;text-align:left;z-index:2147483647;">';
@@ -274,7 +274,7 @@ class PageBase
 					{
 						echo '<li><a href="club_main.php?id=' . $c->id . '">';
 						$this->club_pic->set($c->id, $c->name, $c->club_flags);
-						$this->club_pic->show(ICONS_DIR, 48, 48, ' class="menu_image"');
+						$this->club_pic->show(ICONS_DIR, false, 48, 48, ' class="menu_image"');
 						echo ' ' . $c->name . '</a></li>';
 					}
 				}

@@ -208,12 +208,12 @@ class ClubPageBase extends PageBase
 		if ($this->url != '')
 		{
 			echo '<a href="' . $this->url . '" target="blank">';
-			$this->club_pic->show(TNAILS_DIR);
+			$this->club_pic->show(TNAILS_DIR, false);
 			echo '</a>';
 		}
 		else
 		{
-			$this->club_pic->show(TNAILS_DIR);
+			$this->club_pic->show(TNAILS_DIR, false);
 		}
 		echo '</td></tr></table><td valign="top" rowspan="2"><h2 class="club">' . get_label('Club [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
@@ -221,19 +221,15 @@ class ClubPageBase extends PageBase
 		echo '</tr><td align="right" valign="bottom">';
 		if ($this->parent_id != NULL)
 		{
-			echo '<a href="club_main.php?bck=1&id=' . $this->parent_id . '">';
 			$this->club_pic->set($this->parent_id, get_label('[0] is a member of [1] club system.', $this->name, $this->parent_name), $this->parent_flags);
-			$this->club_pic->show(ICONS_DIR, 36);
-			echo '</a>';
+			$this->club_pic->show(ICONS_DIR, true, 36);
 		}
 		$query = new DbQuery('SELECT l.id, l.name, l.flags FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.flags = 0 AND c.club_id = ? ORDER BY l.name', $this->id);
 		while ($row = $query->next())
 		{
 			list($league_id, $league_name, $league_flags) = $row;
-			echo ' <a href="league_main.php?bck=1&id=' . $league_id . '">';
 			$this->league_pic->set($league_id, get_label('[0] is a member of [1].', $this->name, $league_name), $league_flags);
-			$this->league_pic->show(ICONS_DIR, 36);
-			echo '</a>';
+			$this->league_pic->show(ICONS_DIR, true, 36);
 		}
 		echo '</td></tr>';
 		echo '</table>';

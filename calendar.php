@@ -115,7 +115,7 @@ class Page extends GeneralPageBase
 				set($id, $name, $flags)->
 				set($tournament_id, $tournament_name, $tournament_flags)->
 				set($club_id, $club_name, $club_flags);
-			$event_pic->show(ICONS_DIR);
+			$event_pic->show(ICONS_DIR, false);
 			echo '</a><br><b>' . format_date('H:i', $start_time, $event_timezone) . ' - ' . format_date('H:i', $start_time + $duration, $event_timezone) . '</b><br>';
 			
 //			echo '<a href="event_info.php?attend&bck=1&id=' . $id . '" title="' . get_label('I am coming') . '"><img src="images/accept.png" border="0"></a>&nbsp;';

@@ -77,10 +77,10 @@ class Page extends EventPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td rowspan="2">';
-		echo '<table class="transp"><tr><td width="72"><a href="user_info.php?id=' . $this->player->id . '&bck=1">';
+		echo '<table class="transp"><tr><td width="72">';
 		$this->user_pic->set($this->player->id, $this->player->name, $this->player->flags);
-		$this->user_pic->show(ICONS_DIR, 64);
-		echo '</a></td><td>' . $this->player->name . '</td></tr></table>';
+		$this->user_pic->show(ICONS_DIR, true, 64);
+		echo '</td><td>' . $this->player->name . '</td></tr></table>';
 		echo '</td>';
 		foreach ($_scoring_groups as $group)
 		{

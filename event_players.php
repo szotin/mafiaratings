@@ -103,10 +103,8 @@ class Page extends EventPageBase
 			echo '<td width="60" align="center">';
 			if ($player->id > 0)
 			{
-				echo '<a href="user_info.php?id=' . $player->id . '&bck=1">';
 				$this->user_pic->set($player->id, $player->user_name, $player->flags);
-				$this->user_pic->show(ICONS_DIR, 50);
-				echo '</a>';
+				$this->user_pic->show(ICONS_DIR, true, 50);
 			}
 			else
 			{

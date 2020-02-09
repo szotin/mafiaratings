@@ -145,13 +145,13 @@ class Page extends TournamentPageBase
 			echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
 			echo '<td width="50"><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">';
 			$this->user_pic->set($player->id, $player->name, $player->flags);
-			$this->user_pic->show(ICONS_DIR, 50);
+			$this->user_pic->show(ICONS_DIR, false, 50);
 			echo '</a></td><td><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">' . $player->name . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($player->club_id) && $player->club_id > 0)
 			{
 				$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
-				$this->club_pic->show(ICONS_DIR, 40);
+				$this->club_pic->show(ICONS_DIR, true, 40);
 			}
 			echo '</td>';
 			echo '<td align="center" class="' . $highlight . '">' . format_score($player->points) . '</td>';

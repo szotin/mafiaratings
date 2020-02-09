@@ -185,12 +185,12 @@ class TournamentPageBase extends PageBase
 		if ($this->address_url != '')
 		{
 			echo '<a href="address_info.php?bck=1&id=' . $this->address_id . '">';
-			$tournament_pic->show(TNAILS_DIR);
+			$tournament_pic->show(TNAILS_DIR, false);
 			echo '</a>';
 		}
 		else
 		{
-			$tournament_pic->show(TNAILS_DIR);
+			$tournament_pic->show(TNAILS_DIR, false);
 		}
 		echo '</td></tr></table></td>';
 		$title = get_label('Tournament [0]', $this->_title);
@@ -201,18 +201,15 @@ class TournamentPageBase extends PageBase
 		
 		echo '<td valign="top" align="right">';
 		show_back_button();
-		echo '</td></tr><tr><td align="right" valign="bottom"><table><tr><td align="center"><a href="club_main.php?bck=1&id=' . $this->club_id . '">';
+		echo '</td></tr><tr><td align="right" valign="bottom"><table><tr><td align="center">';
+		
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		$this->club_pic->show(ICONS_DIR, 48);
-		echo '</a>';
-		if ($this->league_id > 0)
-		{
-			echo ' <a href="league_main.php?bck=1&id=' . $this->league_id . '">';
-			$league_pic = new Picture(LEAGUE_PICTURE);
-			$league_pic->set($this->league_id, $this->league_name, $this->league_flags);
-			$league_pic->show(ICONS_DIR, 48);
-			echo '</a>';
-		}
+		$this->club_pic->show(ICONS_DIR, true, 48);
+		
+		$league_pic = new Picture(LEAGUE_PICTURE);
+		$league_pic->set($this->league_id, $this->league_name, $this->league_flags);
+		$league_pic->show(ICONS_DIR, true, 48);
+		
 		echo '</td></tr><tr><td>';
 		for ($i = 0; $i < floor($this->stars); ++$i)
 		{

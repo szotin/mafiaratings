@@ -104,7 +104,7 @@ class Page extends ClubPageBase
 				set($id, $name, $flags)->
 				set($tour_id, $tour_name, $tour_flags)->
 				set($addr_id, $addr, $addr_flags);
-			$this->event_pic->show(ICONS_DIR);
+			$this->event_pic->show(ICONS_DIR, false);
 			echo '</a><br>' . $name;
 			
 			if ($come_odds != NULL)

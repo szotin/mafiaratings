@@ -23,7 +23,7 @@ try
 	echo '</td><td align="center" valign="top" rowspan=7>';
 	$user_pic = new Picture(USER_PICTURE);
 	$user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
-	$user_pic->show(ICONS_DIR);
+	$user_pic->show(ICONS_DIR, false);
 	echo '<p>';
 	show_upload_button();
 	echo '</p></td></tr>';

@@ -42,10 +42,8 @@ class Page extends EventPageBase
 			echo '<button class="icon" onclick="editPoints(' . $points_id . ')"><img src="images/edit.png" border="0"></button>';
 			echo '</td>';
 			echo '<td width="60" align="center">';
-			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">';
 			$this->user_pic->set($user_id, $user_name, $user_flags);
-			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a>';
+			$this->user_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td>';
 			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td>';
 			echo '<td>' . $reason . '</td>';

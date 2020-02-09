@@ -87,10 +87,9 @@ try
 		list ($user_id, $user_name, $user_flags, $comment, $time, $lang) = $row;
 		echo '<tr class="' . $class . '">';
 		echo '<td width="32" valign="top" style="padding:5px;" class="' . $class . '" align="center">';
-		echo '<a href="user_info.php?id=' . $user_id . '&bck=1">';
 		$user_pic->set($user_id, $user_name, $user_flags);
-		$user_pic->show(ICONS_DIR, 32);
-		echo '</a></td>';
+		$user_pic->show(ICONS_DIR, true, 32);
+		echo '</td>';
 		
 		echo '<td width="100%" valign="top" style="padding:8px;">';
 		echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' .  $user_name . '</a>: '; // . ', ' . format_date('H:i, d M y', $time, $timezone);
@@ -114,7 +113,7 @@ try
 	if ($_profile != NULL)
 	{
 		$user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
-		$user_pic->show(ICONS_DIR, 32);
+		$user_pic->show(ICONS_DIR, false, 32);
 	}
 	echo '</td><td style="padding:5px;"><textarea class="' . $edit_class . '" id="comment" onkeyup="mr.checkCommentArea()" placeholder="' . get_label('Write a comment...') . '"></textarea></td><tr>';
 	

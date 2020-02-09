@@ -130,7 +130,7 @@ class Page extends ClubPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="3">'.get_label('Player').'</td>';
+		echo '<td colspan="2">'.get_label('Player').'</td>';
 		echo '<td width="80" align="center">'.get_label('Rating').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="80" align="center">'.get_label('Wins').'</td>';
@@ -156,18 +156,11 @@ class Page extends ClubPageBase
 			}
 
 			echo '<td align="center" class="' . $highlight . '">' . $number . '</td>';
-			echo '<td width="60" align="center"><a href="user_info.php?id=' . $id . '&bck=1">';
+			echo '<td width="60" align="center">';
 			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a></td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 40);
-			}
+			$this->user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
+			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td align="center" class="' . $highlight . '">' . format_rating($rating) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';

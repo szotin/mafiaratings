@@ -245,17 +245,14 @@ class Page extends GeneralPageBase
 			}
 
 			echo '<td align="center" class="' . $highlight . '">' . $number . '</td>';
-			echo '<td width="60" align="center"><a href="user_info.php?id=' . $id . '&bck=1">';
+			echo '<td width="60" align="center">';
 			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, 50);
-			echo '</a></td>';
+			$this->user_pic->show(ICONS_DIR, true, 50);
+			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, 40);
-			}
+			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->show(ICONS_DIR, true, 40);
 			echo '</td>';
 			echo '<td align="center" class="' . $highlight . '">' . format_rating($rating) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';

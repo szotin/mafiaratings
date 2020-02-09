@@ -514,10 +514,10 @@ class Event
 						{
 							echo 'class="lighter"';
 						}
-						echo 'align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
+						echo 'align="center">';
 						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, 50);
-						echo '</a><br>' . $name;
+						$user_pic->show(ICONS_DIR, true, 50);
+						echo '<br>' . $name;
 						if ($bringing > 0)
 						{
 							echo ' + ' . $bringing; 
@@ -568,10 +568,10 @@ class Event
 							}
 						}
 						
-						echo '<td width="16.66%" align="center"><a href="user_info.php?id=' . $user_id . '&bck=1">';
+						echo '<td width="16.66%" align="center">';
 						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, 50);
-						echo '</a><br>' . $name . '</td>';
+						$user_pic->show(ICONS_DIR, true, 50);
+						echo '<br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
 						{
@@ -622,10 +622,10 @@ class Event
 						echo '<tr>';
 					}
 					
-					echo '<td width="50"><a href="user_info.php?id=' . $user_id . '&bck=1">';
+					echo '<td width="50">';
 					$user_pic->set($user_id, $name, $user_flags);
-					$user_pic->show(ICONS_DIR, 50);
-					echo '</a></td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . cut_long_name($name, 80) . '</a></td><td width="280" align="center"><b>';
+					$user_pic->show(ICONS_DIR, true, 50);
+					echo '</td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . cut_long_name($name, 80) . '</a></td><td width="280" align="center"><b>';
 					echo Event::odds_str($odds, $bringing, $late) . '</b></td></tr>';
 				}
 				
@@ -908,12 +908,12 @@ class EventPageBase extends PageBase
 		if ($this->event->addr_url != '')
 		{
 			echo '<a href="address_info.php?bck=1&id=' . $this->event->addr_id . '">';
-			$event_pic->show(TNAILS_DIR);
+			$event_pic->show(TNAILS_DIR, false);
 			echo '</a>';
 		}
 		else
 		{
-			$event_pic->show(TNAILS_DIR);
+			$event_pic->show(TNAILS_DIR, false);
 		}
 		echo '</td></tr></table></td>';
 		
@@ -927,7 +927,7 @@ class EventPageBase extends PageBase
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom"><a href="club_main.php?bck=1&id=' . $this->event->club_id . '" title="' . $this->event->club_name . '"><table><tr><td align="center">' . $this->event->club_name . '</td></tr><tr><td align="center">';
 		$this->club_pic->set($this->event->club_id, $this->event->club_name, $this->event->club_flags);
-		$this->club_pic->show(ICONS_DIR);
+		$this->club_pic->show(ICONS_DIR, false);
 		echo '</td></tr></table></a></td></tr>';
 		
 		echo '</table>';

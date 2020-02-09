@@ -47,7 +47,7 @@ class Page extends ClubPageBase
 				set($event_id, $event_name, $event_flags)->
 				set($tour_id, $tour_name, $tour_flags)->
 				set($addr_id, $addr, $addr_flags);
-			$this->event_pic->show(ICONS_DIR);
+			$this->event_pic->show(ICONS_DIR, false);
 			echo '</a><br>';
 			if ($addr_name == $event_name)
 			{
@@ -105,7 +105,7 @@ class Page extends ClubPageBase
 			$tournament_pic->
 				set($tournament_id, $tournament_name, $tournament_flags)->
 				set($addr_id, $addr, $addr_flags);
-			$tournament_pic->show(ICONS_DIR);
+			$tournament_pic->show(ICONS_DIR, false);
 			echo '</a><br>';
 			if ($addr_name == $tournament_name)
 			{
@@ -140,10 +140,10 @@ class Page extends ClubPageBase
 		list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
 
 		echo '<tr><td width="20" align="center">' . $number . '</td>';
-		echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
+		echo '<td width="50">';
 		$this->user_pic->set($id, $name, $flags);
-		$this->user_pic->show(ICONS_DIR, 50);
-		echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+		$this->user_pic->show(ICONS_DIR, true, 50);
+		echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 		echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 		echo '</tr>';
 	}
@@ -387,7 +387,7 @@ class Page extends ClubPageBase
 				echo '<td width="' . MANAGER_COLUMN_WIDTH . '%" align="center">';
 				echo '<a href="user_info.php?bck=1&id=' . $manager_id . '">' . $manager_name . '<br>';
 				$this->user_pic->set($manager_id, $manager_name, $manager_flags);
-				$this->user_pic->show(ICONS_DIR);
+				$this->user_pic->show(ICONS_DIR, false);
 				echo '</a></td>';
 				
 				++$columns_count;
@@ -428,7 +428,7 @@ class Page extends ClubPageBase
 				echo '<td width="' . SUBCLUB_COLUMN_WIDTH . '%" align="center">';
 				echo '<a href="club_main.php?bck=1&id=' . $subclub_id . '">' . $subclub_name . '<br>';
 				$this->club_pic->set($subclub_id, $subclub_name, $subclub_flags);
-				$this->club_pic->show(ICONS_DIR);
+				$this->club_pic->show(ICONS_DIR, false);
 				echo '</a></td>';
 				
 				++$columns_count;
@@ -461,10 +461,10 @@ class Page extends ClubPageBase
 				list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
 
 				echo '<td width="20" align="center">' . $number . '</td>';
-				echo '<td width="50"><a href="user_info.php?id=' . $id . '&bck=1">';
+				echo '<td width="50">';
 				$this->user_pic->set($id, $name, $flags);
-				$this->user_pic->show(ICONS_DIR, 50);
-				echo '</a></td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+				$this->user_pic->show(ICONS_DIR, true, 50);
+				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';
 				

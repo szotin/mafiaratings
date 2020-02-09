@@ -35,7 +35,7 @@ class Page extends AddressPageBase
 
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.start_time, t.flags, ' .
-				' (SELECT count(*) FROM games WHERE tournament_id = t.id AND canceled = FALSE AND result > 0) as games,' .
+				' (SELECT count(*) FROM games WHERE tournament_id = t.id AND canceled = FALSE AND result > 0 AND (flags & ' . GAME_FLAG_FUN . ') = 0) as games,' .
 				' (SELECT count(*) FROM events WHERE tournament_id = t.id) as rounds',
 			$condition);
 		$query->add(' ORDER BY t.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -61,10 +61,10 @@ class Page extends AddressPageBase
 				echo '<tr>';
 			}
 			
-			echo '<td width="50" class="dark"><a href="tournament_standings.php?bck=1&id=' . $tournament_id . '">';
+			echo '<td width="50" class="dark">';
 			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
-			$tournament_pic->show(ICONS_DIR, 50);
-			echo '</a></td>';
+			$tournament_pic->show(ICONS_DIR, true, 50);
+			echo '</td>';
 			echo '<td width="180">' . $tournament_name . '<br><b>' . format_date('l, F d, Y', $tournament_time, $this->timezone) . '</b></td>';
 			
 			echo '<td>' . $this->address . '</td>';

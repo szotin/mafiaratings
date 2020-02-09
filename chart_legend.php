@@ -93,11 +93,11 @@ try
 			echo '<td width="' . $percentage . '%"><table class="transp" width="100%"><tr><td width="50">' . $a_open . '<img src="images/chart' . ($i + 1) . '.png">' . $a_close . '</td>';
 			echo '<td width="64">' . $a_open . $user_name . $a_close . '</td><td><a href="user_competition.php?id=' . $user_id . '">';
 			$user_pic->set($user_id, $user_name, $user_flags);
-			$user_pic->show(ICONS_DIR, 32);
-			echo '</a><a href="club_main.php?bck=1&id=' . $club_id . '">';
+			$user_pic->show(ICONS_DIR, false, 32);
+			echo '</a>';
 			$club_pic->set($club_id, $club_name, $club_flags);
-			$club_pic->show(ICONS_DIR, 32);
-			echo '</a></td>';
+			$club_pic->show(ICONS_DIR, true, 32);
+			echo '</td>';
 		}
 		else
 		{

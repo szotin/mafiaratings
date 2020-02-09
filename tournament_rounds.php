@@ -96,7 +96,7 @@ class Page extends TournamentPageBase
 				set($id, $name, $flags)->
 				set($this->id, $this->name, $this->flags)->
 				set($addr_id, $addr, $addr_flags);
-			$event_pic->show(ICONS_DIR);
+			$event_pic->show(ICONS_DIR, false);
 			echo '</a><br>' . $name;
 			
 			if ($come_odds != NULL)
