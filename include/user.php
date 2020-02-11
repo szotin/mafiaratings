@@ -226,7 +226,7 @@ function show_user_input($name, $value, $condition, $title, $js_function = 'mr.g
 		<script>
 		$("#<?php echo $name; ?>").autocomplete(
 		{ 
-			source: function( request, response )
+			source: function(request, response)
 			{
 				$.getJSON("<?php echo $url; ?>" + $("#<?php echo $name; ?>").val(), null, response);
 			}

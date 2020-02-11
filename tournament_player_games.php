@@ -52,8 +52,17 @@ class Page extends TournamentPageBase
 		if ($this->user_id > 0)
 		{
 			$data = tournament_scores($this->id, $this->flags, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->scoring_options);
-			$this->player = $data[$this->user_id];
-			$this->user_name = $this->player->name;
+			if (isset($data[$this->user_id]))
+			{
+				$this->player = $data[$this->user_id];
+				$this->user_name = $this->player->name;
+			}
+			else
+			{
+				list ($user_name) = Db::record(get_label('user'), 'SELECT name FROM USERS WHERE id = ?', $this->user_id);
+				$this->user_id = 0;
+				$this->errorMessage(get_label('[0] was not playing in [1].', $user_name, $this->name));
+			}
 		}
 	}
 	

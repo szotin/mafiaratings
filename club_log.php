@@ -36,7 +36,10 @@ class Page extends ClubPageBase
 		if (isset($_REQUEST['user_id']))
 		{
 			$this->filter_user_id = (int)$_REQUEST['user_id'];
-			list($this->filter_user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->filter_user_id);
+			if ($this->filter_user_id > 0)
+			{
+				list($this->filter_user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->filter_user_id);
+			}
 		}
 	}
 
@@ -161,24 +164,6 @@ class Page extends ClubPageBase
 		
 		$no_filter = '?id=' . $this->id;
 		
-		$obj_filter = $no_filter;
-		if ($this->filter_user_id > 0)
-		{
-			$obj_filter .= '&user_id=' . $this->filter_user_id;
-		}
-		$obj_filter .= '&obj=';
-		
-		$user_filter = $no_filter;
-		if ($this->filter_obj != '')
-		{
-			$user_filter .= '&obj=' . $this->filter_obj;
-		}
-		if ($this->filter_obj_id > 0)
-		{
-			$user_filter .= '&obj_id=' . $this->filter_obj_id;
-		}
-		$user_filter .= '&user_id=';
-		
 ?>
 		function showDetails(id)
 		{
@@ -191,12 +176,12 @@ class Page extends ClubPageBase
 
 		function filterUser(data)
 		{
-			window.location.replace("<?php echo $user_filter; ?>" + data.id);
+			goTo({user_id:data.id});
 		}
 
 		function filterObj()
 		{
-			window.location.replace("<?php echo $obj_filter; ?>" + $("#obj").val());
+			goTo({obj:$("#obj").val()});
 		}
 
 		function unfilter()

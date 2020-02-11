@@ -13,14 +13,14 @@ try
 	{
 		$game_id = (int)$_REQUEST['game_id'];
 		$parent_id = 0;
-		list ($club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, moderator_id FROM games WHERE id = ?', $game_id);
+		list ($club_id, $event_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, event_id, moderator_id FROM games WHERE id = ?', $game_id);
 	}
 	else if (isset($_REQUEST['parent_id']))
 	{
 		$parent_id = (int)$_REQUEST['parent_id'];
-		list ($game_id, $club_id, $moderator_id, $parent_user_id, $parent_user_name, $parent_user_flags, $parent_message) = 
+		list ($game_id, $club_id, $event_id, $moderator_id, $parent_user_id, $parent_user_name, $parent_user_flags, $parent_message) = 
 			Db::record(get_label('game'), 
-				'SELECT g.id, g.club_id, g.moderator_id, u.id, u.name, u.flags, o.message FROM objections o' .
+				'SELECT g.id, g.club_id, g.event_id, g.moderator_id, u.id, u.name, u.flags, o.message FROM objections o' .
 				' JOIN games g ON g.id = o.game_id' .
 				' JOIN users u ON u.id = o.user_id' .
 				' WHERE o.id = ?', $parent_id);
@@ -61,7 +61,7 @@ try
 	if ($can_edit)
 	{
 		echo '<tr><td>' . get_label('On behalf of') . ':</td><td>';
-		show_user_input('form-user', $_profile->user_name, '', get_label('Select user.'), 'onSelectUser');
+		show_user_input('form-user', $_profile->user_name, 'event=' . $event_id, get_label('Select user.'), 'onSelectUser');
 		echo '</td></tr>';
 		
 		echo '<tr><td colspan="2">';

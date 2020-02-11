@@ -35,7 +35,10 @@ class Page extends GeneralPageBase
 		if (isset($_REQUEST['user_id']))
 		{
 			$this->filter_user_id = (int)$_REQUEST['user_id'];
-			list($this->filter_user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->filter_user_id);
+			if ($this->filter_user_id > 0)
+			{
+				list($this->filter_user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->filter_user_id);
+			}
 		}
 	}
 

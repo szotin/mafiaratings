@@ -30,6 +30,10 @@ class ApiPage extends ControlApiPageBase
 			{
 				$query->add(' AND u.id IN (SELECT DISTINCT p.user_id FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?)', $_REQUEST['event']);
 			}
+			else if (isset($_REQUEST['tournament']))
+			{
+				$query->add(' AND u.id IN (SELECT DISTINCT p.user_id FROM players p JOIN games g ON g.id = p.game_id WHERE g.tournament_id = ?)', $_REQUEST['tournament']);
+			}
 			else if (isset($_REQUEST['club']))
 			{
 				$query->add(' AND u.id IN (SELECT user_id FROM user_clubs WHERE club_id = ?)', $_REQUEST['club']);
@@ -52,6 +56,11 @@ class ApiPage extends ControlApiPageBase
 		{
 			$query->add(' LIMIT ' . $num);
 		}
+		
+		$player = new stdClass();
+		$player->id = 0;
+		$player->label = $player->name = $player->nickname = '-';
+		$this->response[] = $player;
 		
 		while ($row = $query->next())
 		{
@@ -81,7 +90,9 @@ class ApiPage extends ControlApiPageBase
 		<dt>num</dt>
 			<dd>Number of users to return. Default is 16. For example <a href="user.php?term=al">/api/control/user.php?num=4</a> returns only 4 users.</dd>
 		<dt>event</dt>
-			<dd>Event id. Only the users who were participating in this event are returned. For example <a href="user.php?event=7927">/api/control/user.php?event=7927</a> users who played on VaWaCa-2017 tournament.</dd>
+			<dd>Event id. Only the users who were participating in this event are returned. For example <a href="user.php?event=7927">/api/control/user.php?event=7927</a> users who played on VaWaCa-2017 main round.</dd>
+		<dt>tournament</dt>
+			<dd>Tournament id. Only the users who were participating in this tournament are returned. For example <a href="user.php?tournament=26">/api/control/user.php?tournament=26</a> users who played on Police Academy tournament.</dd>
 		<dt>club</dt>
 			<dd>Club id. Only the members of this club are returned.  For example <a href="user.php?club=41">/api/control/user.php?club=41</a> returns only the members of The Black Cat club.</dd>
 <?php

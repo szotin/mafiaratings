@@ -68,6 +68,11 @@ class Page extends ClubPageBase
 	{
 		global $_page, $_profile;
 		
+		echo '<p><table class="transp" width="100%"><tr><td align="right">';
+		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific player is located.'));
+		echo '</td></tr></table></p>';
+		
 		$condition = new SQL(' WHERE u.club_id = ? AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND u.games > 0', $this->id);
 		if ($this->role == POINTS_ALL)
 		{
@@ -187,16 +192,6 @@ class Page extends ClubPageBase
 	{
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
-	}
-	
-	protected function get_filter_js()
-	{
-		$result = '+ "&role=" + $("#roles option:selected").val()';
-		if ($this->user_id > 0)
-		{
-			$result .= ' + "&page=-' . $this->user_id . '"';
-		}
-		return $result;
 	}
 }
 
