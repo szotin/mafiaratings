@@ -1073,7 +1073,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 					$group->events .= ', ' . $event_id;
 					if (isset($event_scoring_options->flags))
 					{
-						$group->options->flags |= $event_scoring_options->flags;
+						$group->options->flags |= ~$event_scoring_options->flags;
 					}
 					$scoring_info->group = $group;
 					break;
@@ -1086,7 +1086,11 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				$group->options = new stdClass();
 				if (isset($event_scoring_options->flags))
 				{
-					$group->options->flags |= $event_scoring_options->flags;
+					$group->options->flags = ~$event_scoring_options->flags;
+				}
+				else
+				{
+					$group->options->flags = ~0;
 				}
 				$group->events = '' . $event_id;
 				$scoring_info->group = $group;
@@ -1100,6 +1104,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			$group = $scoring_info->group;
 			if (!isset($group->stat_flags))
 			{
+				$group->options->flags = ~$group->options->flags;
 				$group->stat_flags = get_scoring_stat_flags($scoring, $group->options);
 			}
 			
