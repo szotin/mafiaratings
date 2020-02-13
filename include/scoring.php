@@ -694,6 +694,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
     {
         $game = new stdClass();
         $game->game_id = $game_id;
+		$game->flags = (int)$game_flags;
         $game->time = $game_end_time;
         $game->points = $total_points;
 		$game->role = (int)$game_role;

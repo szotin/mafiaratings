@@ -177,7 +177,8 @@ class Page extends TournamentPageBase
 					{
 						if (is_scoring_policy_on($gr1[$i], $this->scoring_options))
 						{
-							echo '<td>' . format_score($gr2[$i], false) . '</td>';
+							$show_zeroes = ($group == SCORING_GROUP_NIGHT1 && ($game->flags & SCORING_FLAG_KILLED_FIRST_NIGHT) != 0);
+							echo '<td>' . format_score($gr2[$i], $show_zeroes) . '</td>';
 						}
 					}
 				}
