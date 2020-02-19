@@ -53,6 +53,13 @@ button.game-btn[disabled] { border: 1px solid #303030; padding: 0px; color: #808
 button.game-btn[disabled]:hover {}
 button.game-btn[disabled]:active {}
 
+button.config-btn { height: 28px; width: 320px; margin: 0px; padding: 1px; border: 1px outset #cccccc; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.config-btn:hover { border: 1px outset #cccccc; padding: 0px;  }
+button.config-btn:active { border: 1px inset #cccccc; padding: 0px;  }
+button.config-btn[disabled] { border: 1px solid #303030; padding: 0px; color: #808080; background-color: transparent; opacity: 0.2; }
+button.config-btn[disabled]:hover {}
+button.config-btn[disabled]:active {}
+
 button.ops { border: 0; height: 58px; width: 58px; margin: 0px; padding: 0px; vertical-align: center; margin: 0px 6px 0px 6px; background-color: transparent; }
 button.ops:hover { border: 1px outset #cccccc; padding: 0px;  }
 button.ops:active { border: 1px inset #cccccc; padding: 0px; }

@@ -450,25 +450,22 @@ var mafia = new function()
 		var result = -1;
 		if (num == 10)
 		{
-			if (game.gamestate == /*GAME_STATE_NOT_STARTED*/0 && (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8))
+			game.moder_id = id;
+			if (id != 0)
 			{
-				game.moder_id = id;
-				if (id != 0)
+				for (var i = 0; i < 10; ++i)
 				{
-					for (var i = 0; i < 10; ++i)
+					var p = game.players[i];
+					if (p.id == id)
 					{
-						var p = game.players[i];
-						if (p.id == id)
-						{
-							p.id = 0;
-							p.nick = "";
-							p.warnings = 0;
-							result = i;
-						}
+						p.id = 0;
+						p.nick = "";
+						p.warnings = 0;
+						result = i;
 					}
 				}
-				dirty();
 			}
+			dirty();
 		}
 		else
 		{
@@ -607,21 +604,47 @@ var mafia = new function()
 		{
 			var club = _data.club;
 			var event = club.events[event_id];
+			var oldEvent = club.events[game.event_id];
 			game.tournament_id = event.tournament_id;
 			mafia.rating((event.flags & /*EVENT_FLAG_FUN*/32) == 0);
 			game.event_id = event_id;
-			game.moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : _data.user.id;
 			game.lang = parseInt(event.langs);
 			game.rules_code = event.rules_code;
 			if ((game.lang - 1) & game.lang)
 			{
 				game.lang = 0;
 			}
+			
+			if ((event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) == 0)
+			{
+				game.moder_id = _data.user.id;
+			}
+			else
+			{
+				var nick = oldEvent.reg[game.moder_id];
+				if (nick)
+				{
+					mafia.register(nick, game.moder_id);
+				}
+				else
+				{
+					game.moder_id = _data.user.id;
+				}
+			}
+			
 			for (var i = 0; i < 10; ++i)
 			{
 				var p = game.players[i];
-				p.id = 0;
-				p.nick = "";
+				var nick = oldEvent.reg[p.id];
+				if (nick)
+				{
+					mafia.register(nick, p.id);
+				}
+				else
+				{
+					p.id = 0;
+					p.nick = "";
+				}
 			}
 			dirty();
 		}
@@ -630,16 +653,17 @@ var mafia = new function()
 	
 	this.tournamentId = function(tournament_id)
 	{
-		if (typeof tournament_id != "undefined")
+		var game = _data.game;
+		if (typeof tournament_id != "undefined" && game.tournament_id != tournament_id)
 		{
-			_data.game.tournament_id = tournament_id;
+			game.tournament_id = tournament_id;
 			if (tournament_id > 0)
 			{
-				_data.game.flags &= ~/*GAME_FLAG_FUN*/1;
+				game.flags &= ~/*GAME_FLAG_FUN*/1;
 			}
 			dirty();
 		}
-		return _data.game.tournament_id;
+		return game.tournament_id;
 	}
 	
 	this.createEvent = function(event)
@@ -870,8 +894,7 @@ var mafia = new function()
 	
 	this.canNext = function()
 	{
-		var game = _data.game;
-		return game.gamestate != /*GAME_STATE_NOT_STARTED*/0 || (game.moder_id != 0 && game.lang != 0);
+		return _data.game.moder_id > 0 && _data.game.lang > 0;
 	}
 	
 	this.canRestart = function()
@@ -898,17 +921,19 @@ var mafia = new function()
 		}
 	}
 	
-	this.setLang = function(lang)
+	this.lang = function(lang)
 	{
 		if ((lang - 1) & lang)
 		{
 			lang = 0;
 		}
-		if (_data.game.lang != lang)
+		var game = _data.game;
+		if (game.lang != lang)
 		{
-			_data.game.lang = lang;
+			game.lang = lang;
 			dirty();
 		}
+		return game.lang;
 	}
 	
 // =================================================== The game
