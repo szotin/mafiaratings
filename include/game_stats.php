@@ -148,7 +148,7 @@ class GamePlayerStats
 		
         switch ($player->kill_reason)
         {
-            case KILL_REASON_SUICIDE:
+            case KILL_REASON_GIVE_UP:
 				$this->scoring_flags |= SCORING_FLAG_SURRENDERED;
                 break;
             case KILL_REASON_WARNINGS:
@@ -372,7 +372,7 @@ class GamePlayerStats
                     $this->kill_type = 1;
                 }
                 break;
-            case KILL_REASON_SUICIDE:
+            case KILL_REASON_GIVE_UP:
                 $this->kill_type = 4;
                 break;
             case KILL_REASON_WARNINGS:
@@ -636,9 +636,9 @@ class GamePlayerStats
 		}
 		
 		$reason = NULL;
-		if (!empty($player->extra_points_reason))
+		if (!empty($player->comment))
 		{
-			$reason = $player->extra_points_reason;
+			$reason = $player->comment;
 		}
 		
         Db::exec(

@@ -164,7 +164,7 @@ class Page extends UserPageBase
 					case WARNINGS_KILL:
 						echo '<tr><td class="dark" width="300">'.get_label('Killed by warnings in round').' ' . $surviving->round . ':</td><td>';
 						break;
-					case SUICIDE_KILL:
+					case GIVE_UP_KILL:
 						echo '<tr><td class="dark" width="300">'.get_label('Left the game in round').' ' . $surviving->round . ':</td><td>';
 						break;
 					case KICK_OUT_KILL:

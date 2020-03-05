@@ -94,8 +94,8 @@ class Page extends ViewGamePageBase
 			{
 				switch ($player->kill_reason)
 				{
-					case KILL_REASON_SUICIDE:
-						echo get_label('suicide');
+					case KILL_REASON_GIVE_UP:
+						echo get_label('gave up');
 						break;
 					case KILL_REASON_WARNINGS:
 						echo get_label('4 warnings');

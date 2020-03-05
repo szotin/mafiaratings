@@ -16,7 +16,7 @@ define('PLAYER_STATE_KILLED_DAY', 2);
 
 // kill reasons
 define('KILL_REASON_NORMAL', 0);
-define('KILL_REASON_SUICIDE', 1);
+define('KILL_REASON_GIVE_UP', 1);
 define('KILL_REASON_WARNINGS', 2);
 define('KILL_REASON_KICK_OUT', 3);
 
@@ -37,7 +37,7 @@ class Player
     public $sheriff_check; // round num when sheriff checked the player; -1 if he didn't
     public $mute; // number of round when player misses his speach because of warnings
 	public $extra_points;
-	public $extra_points_reason;
+	public $comment;
 	
 	function __construct($number)
     {
@@ -56,7 +56,7 @@ class Player
 		$this->sheriff_check = -1;
 		$this->mute = -1;
 		$this->extra_points = 0;
-		$this->extra_points_reason = '';
+		$this->comment = '';
     }
 	
 	function create_from_json($data)
@@ -78,10 +78,10 @@ class Player
 		if (isset($data->extra_points))
 		{
 			$this->extra_points = $data->extra_points;
-			if ($this->extra_points != 0 && isset($data->extra_points_reason))
-			{
-				$this->extra_points_reason = str_replace(GAME_PARAM_DELIMITER, GAME_PARAM_DELIMITER_REPLACEMENT, $data->extra_points_reason);
-			}
+		}
+		if (isset($data->comment))
+		{
+			$this->comment = str_replace(GAME_PARAM_DELIMITER, GAME_PARAM_DELIMITER_REPLACEMENT, $data->comment);
 		}
 	}
 	
@@ -204,8 +204,8 @@ class Player
 
         switch ($this->kill_reason)
         {
-            case KILL_REASON_SUICIDE:
-                $row .= ' '.get_label('suicide');
+            case KILL_REASON_GIVE_UP:
+                $row .= ' '.get_label('gave up');
                 break;
             case KILL_REASON_WARNINGS:
                 $row .= ' '.get_label('warnings');
@@ -243,7 +243,7 @@ class Player
 			$this->sheriff_check . GAME_PARAM_DELIMITER .
 			$this->mute . GAME_PARAM_DELIMITER .
 			$this->extra_points . GAME_PARAM_DELIMITER .
-			$this->extra_points_reason . GAME_PARAM_DELIMITER;
+			$this->comment . GAME_PARAM_DELIMITER;
     }
 
     function read($input, $version, &$offset)
@@ -267,7 +267,7 @@ class Player
 				$this->extra_points = (float) read_param($input, $offset);
 				if ($version > 11)
 				{
-					$this->extra_points_reason = read_param($input, $offset);
+					$this->comment = read_param($input, $offset);
 				}
 			}
 		}

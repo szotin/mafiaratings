@@ -185,27 +185,29 @@ class ViewGamePageBase extends PageBase
 			echo '<img src="images/transp.png" width="48" height="48">';
 		}
 		echo '</a></td><td>';
-		if ($gs->best_player == $player->number)
+		echo '<table class="transp" width="100%"><tr';
+		if ($player->comment)
 		{
-			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right"><img src="images/best_player.png" title="' . get_label('Best player') . '"></td></tr></table>';
+			echo  ' title="' . $player->comment . '"';
 		}
-		else if ($gs->best_move == $player->number)
+		echo '><td>'. cut_long_name($player->nick, 50) . '</td>';
+		if ($player->extra_points > 0)
 		{
-			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right"><img src="images/best_move.png" title="' . get_label('Best move') . '"></td></tr></table>';
-		}
-		else if ($player->extra_points > 0)
-		{
-			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right" title="' . $player->extra_points_reason . '"><big><b>+' . $player->extra_points . '</b></big></td></tr></table>';
+			echo '<td align="right"><big><b>+' . $player->extra_points . '</b></big></td>';
 		}
 		else if ($player->extra_points < 0)
 		{
-			echo '<table class="transp" width="100%"><tr><td>'. cut_long_name($player->nick, 50) . '</td><td align="right" title="' . $player->extra_points_reason . '"><big><b>' . $player->extra_points . '</b></big></td></tr></table>';
+			echo '<td align="right"><big><b>' . $player->extra_points . '</b></big></td>';
 		}
-		else
+		if ($gs->best_player == $player->number)
 		{
-			echo cut_long_name($player->nick, 50);
+			echo '<td align="right" width="24"><img src="images/best_player.png"></td>';
 		}
-		echo '</td>';
+		if ($gs->best_move == $player->number)
+		{
+			echo '<td align="right" width="24"><img src="images/best_move.png"></td>';
+		}
+		echo '</tr></table></td>';
 	}
 	
 	protected function show_player_role($player)
@@ -453,7 +455,7 @@ class ViewGamePageBase extends PageBase
 		if ($vg->can_edit())
 		{
 			echo '<button class="icon" onclick="deleteGame(' . $gs->id . ')" title="' . get_label('Delete game [0]', $gs->id) . '"><img src="images/delete.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.editGame(' . $gs->id . ')" title="' . get_label('Edit game [0]', $gs->id) . '"><img src="images/edit.png" border="0"></button>';
+			//echo '<button class="icon" onclick="mr.editGame(' . $gs->id . ')" title="' . get_label('Edit game [0]', $gs->id) . '"><img src="images/edit.png" border="0"></button>';
 			if ($vg->video_id == NULL)
 			{
 				echo '<button class="icon" onclick="mr.setGameVideo(' . $gs->id . ')" title="' . get_label('Add game [0] video', $gs->id) . '"><img src="images/film-add.png" border="0"></button>';

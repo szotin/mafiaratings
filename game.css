@@ -80,6 +80,18 @@ button.warn3[checked] { border: 1px solid; padding: 0px; background-color: #aacc
 button.warn3:hover { border: 1px outset #cccccc; padding: 0px;  }
 button.warn3:active { border: 1px inset #cccccc; padding: 0px;  }
 
+button.extra-pts { height: 28px; width: 160px; margin: 0px; padding: 1px; border: 1px outset #cccccc; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.extra-pts:hover { border: 1px outset #cccccc; padding: 0px;  }
+button.extra-pts:active { border: 1px inset #cccccc; padding: 0px;  }
+button.extra-pts[disabled] { border: 1px solid #303030; padding: 0px; color: #808080; background-color: transparent; opacity: 0.2; }
+button.extra-pts[disabled]:hover {}
+button.extra-pts[disabled]:active {}
+
+button.best { border: 1px outset #dddddd; height: 28px; width: 60px; margin: 0px; padding: 1px; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.best[checked] { border: 1px solid #909090; padding: 0px; background-color: #aaccdd; }
+button.best[disabled] { border: 1px solid #909090; padding: 0px; color: #808080; background-color: transparent; }
+button.best:active { border: 1px inset #dddddd; padding: 0px;  }
+
 #info { font-weight:bold; }
 #clock { text-align:right; padding:0px; margin:0px; }
 #demo { text-align:center; vertical-align: center; top:200px; position: absolute; left:0; width:100%; margin:0; border-style: none; font-size: 15em; font-weight:bold; opacity: 0.3; display:none; pointer-events:none; }

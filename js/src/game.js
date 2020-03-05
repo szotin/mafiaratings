@@ -4,7 +4,7 @@
 // /*LOGREC_TYPE_NORMAL*/0
 // /*LOGREC_TYPE_MISSED_SPEECH*/1 // deprecated now it's normal - we know that player misses speech by player.mute var
 // /*LOGREC_TYPE_WARNING*/2
-// /*LOGREC_TYPE_SUICIDE*/3
+// /*LOGREC_TYPE_GIVE_UP*/3
 // /*LOGREC_TYPE_KICK_OUT*/4
 // /*LOGREC_TYPE_POSTPONE_MUTE*/5
 // /*LOGREC_TYPE_CANCEL_VOTING*/6
@@ -25,7 +25,7 @@
 
 // /*PLAYER_KR_ALIVE*/-1
 // /*PLAYER_KR_NORMAL*/0
-// /*PLAYER_KR_SUICIDE*/1
+// /*PLAYER_KR_GIVE_UP*/1
 // /*PLAYER_KR_WARNINGS*/2
 // /*PLAYER_KR_KICKOUT*/3
 
@@ -1014,7 +1014,7 @@ var mafia = new function()
 		{
 			case /*PLAYER_KR_WARNINGS*/2:
 			case /*PLAYER_KR_KICKOUT*/3:
-			case /*PLAYER_KR_SUICIDE*/1:
+			case /*PLAYER_KR_GIVE_UP*/1:
 				switch (game.gamestate)
 				{
 					case /*GAME_STATE_DAY_START*/3:
@@ -1791,7 +1791,7 @@ var mafia = new function()
 					--player.warnings;
 				}
 			}
-			else if (logRec.type == /*LOGREC_TYPE_SUICIDE*/3 || logRec.type == /*LOGREC_TYPE_KICK_OUT*/4)
+			else if (logRec.type == /*LOGREC_TYPE_GIVE_UP*/3 || logRec.type == /*LOGREC_TYPE_KICK_OUT*/4)
 			{
 				_resurrectPlayer(logRec.player);
 			}
@@ -2380,7 +2380,7 @@ var mafia = new function()
 		}
 	}
 
-	this.suicide = function(num)
+	this.giveUp = function(num)
 	{
 		var game = _data.game;
 		switch (game.gamestate)
@@ -2395,14 +2395,14 @@ var mafia = new function()
 		
 		var logRec =
 		{
-			type: /*LOGREC_TYPE_SUICIDE*/3,
+			type: /*LOGREC_TYPE_GIVE_UP*/3,
 			round: game.round,
 			gamestate: game.gamestate,
 			player_speaking: game.player_speaking,
 			current_nominant: game.current_nominant,
 			player: num
 		};
-		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_SUICIDE*/1, game.round);
+		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_GIVE_UP*/1, game.round);
 		_gameStep(0, logRec);
 	}
 

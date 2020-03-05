@@ -155,7 +155,7 @@ class Page extends GeneralPageBase
 					echo get_label('Killed by warnings');
 					break;
 				case 4:
-					echo get_label('Commited suicide');
+					echo get_label('Gave up');
 					break;
 				case 5:
 					echo get_label('Killed by moderator');

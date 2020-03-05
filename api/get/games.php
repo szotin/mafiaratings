@@ -113,8 +113,8 @@ class ApiPlayer
                     $this->death_type = 'day';
                 }
                 break;
-            case KILL_REASON_SUICIDE:
-                $this->death_type = 'suicide';
+            case KILL_REASON_GIVE_UP:
+                $this->death_type = 'gave-up';
                 break;
             case KILL_REASON_WARNINGS:
                 $this->death_type = 'warning';
@@ -441,7 +441,7 @@ class ApiPage extends GetApiPageBase
 				$param1->sub_param('nick_name', 'Nick name used in this game.');
 				$param1->sub_param('role', 'One of: "civ", "maf", "srf", or "don".');
 				$param1->sub_param('death_round', 'The round number (starting from 0) when this player was killed. <i>Optional:</i> missing if the player survived.');
-				$param1->sub_param('death_type', 'How this player was killed. Possible values: "day" - killed by day votings; "night" - killed by night shooting; "warning" - killed by 4th warning; "suicide" - left the game by theirself; "kick-out" - kicked out by the moderator. <i>Optional:</i> missing if the player survived.');
+				$param1->sub_param('death_type', 'How this player was killed. Possible values: "day" - killed by day votings; "night" - killed by night shooting; "warning" - killed by 4th warning; "gave-up" - left the game by theirself; "kick-out" - kicked out by the moderator. <i>Optional:</i> missing if the player survived.');
 				$param1->sub_param('warnings', 'Number of warnings. <i>Optional:</i> missing when 0.');
 				$param1->sub_param('arranged_for_round', 'Was arranged by mafia to be shooted down in the round (starting from 0). <i>Optional:</i> missing when the player was not arranged.');
 				$param1->sub_param('checked_by_don', 'The round (starting from 0) when the don checked this player. <i>Optional:</i> missing when the player was not checked by the don.');

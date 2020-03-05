@@ -6,7 +6,7 @@ define('CURRENT_LOG_VERSION', 13);
 define('LOGREC_NORMAL', 0);
 define('LOGREC_MISSED_SPEECH', 1);
 define('LOGREC_WARNING', 2);
-define('LOGREC_SUICIDE', 3);
+define('LOGREC_GIVE_UP', 3);
 define('LOGREC_KICK_OUT', 4);
 
 define('GAME_PARAM_DELIMITER', ':');

@@ -248,13 +248,13 @@ class FigmForm
 					$this->pdf->Cell(13.2, 10.1, '' . $extra_points, 0, 0, 'C');
 				}
 				
-				if (!empty($player->extra_points_reason))
+				if (!empty($player->comment))
 				{
 					if (!empty($extra_point_comments))
 					{
 						$extra_point_comments .= "\n";
 					}
-					$extra_point_comments .= 'Игрок ' . ($i + 1) . ': ' . $player->extra_points_reason;
+					$extra_point_comments .= 'Игрок ' . ($i + 1) . ': ' . $player->comment;
 				}
 			}
 			

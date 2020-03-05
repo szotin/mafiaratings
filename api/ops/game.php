@@ -1146,7 +1146,7 @@ class ApiPage extends OpsApiPageBase
             {
 				Db::begin();
                 $player->extra_points = $points;
-				$player->extra_points_reason = $reason;
+				$player->comment = $reason;
                 rebuild_game_stats($gs);
 
                 $log_details = new stdClass();
