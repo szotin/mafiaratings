@@ -82,7 +82,7 @@
 //------------------------------------------------------------------------------------------
 var mafia = new function()
 {
-	var _version = 0;
+	var _version = 1; // must match CURRENT_VERSION in api/ops/game.php
 	var _lDirty = 0;
 	var _gDirty = 0;
 	var _data = null;

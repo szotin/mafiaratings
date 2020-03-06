@@ -692,18 +692,30 @@ mafia.ui = new function()
 			for (var i = 0; i < 10; ++i)
 			{
 				var player = game.players[i];
+				var leftSide = player.warnings;
+				var color = '#a08000';
+				for (var j = game.log.length - 1; j >= 0; --j)
+				{
+					if (game.log[j].type != /*LOGREC_TYPE_WARNING*/2)
+						break;
+					if (game.log[j].player == i)
+						--leftSide;
+				}
 				switch (player.warnings)
 				{
-					case 0:
-						$('#warn' + i).html('');
-						break;
-					case 1:
-						$('#warn' + i).html(l('WarningText'));
-						break;
-					default:
-						$('#warn' + i).html(l('WarningsText', player.warnings));
-						break;
+					case 2: color = '#b06000'; break;
+					case 3: color = '#c04000'; break;
+					case 4: color = '#d02000'; break;
 				}
+					
+				var html = '<font color="#808000" size="4"><b><table width="100%" class="transp"><tr><td>';
+				var w;
+				for (w = 0; w < leftSide; ++w) html += '✔';
+				html += '</td><td align="right">'
+				for (; w < player.warnings; ++w) html += '✔';
+				html += '</td></tr></table></b></font>';
+				$('#warn' + i).html(html);
+				
 				if (player.state != /*PLAYER_STATE_ALIVE*/0)
 				{
 					$('#btns-' + i).hide();
@@ -1632,7 +1644,7 @@ mafia.ui = new function()
 			var event = club.events[event_id];
 			var start = parseInt(event.start_time);
 			var end = start + parseInt(event.duration);
-			if (start <= timestamp && end + user.manager * 28800 > timestamp)
+			if (event_id == game.event_id || (start <= timestamp && end + user.manager * 28800 > timestamp))
 			{
 				var n = event.name;
 				if (event_id > 0)

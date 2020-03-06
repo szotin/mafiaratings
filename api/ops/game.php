@@ -695,7 +695,7 @@ class CommandQueue
 	}
 }
 
-define('CURRENT_VERSION', 0);
+define('CURRENT_VERSION', 1); // must match _version in js/src/game.js
 
 class ApiPage extends OpsApiPageBase
 {
