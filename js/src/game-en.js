@@ -159,7 +159,7 @@ _l["Save"] = "Save";
 _l["Offline"] = "How to play offline";
 _l["OfflineText"] = "<p>Please click on this link <a href=\"game-{1}en.html\">game-{1}en.html</a> and add it to bookmarks. After you visit this page it will become available offline.</p><p>However, don't forget to send data to Mafia Ratings as soon as you re-establish connection.</p>";
 _l["Game"] = "game";
-_l["ErrVersion"] = "Application version ({1}) does not match server version ({2}). Click ok to reload the page, or press Ctrl-F5.";
+_l["ErrVersion"] = "A newer version of the software is available. Click ok to reload the page, or press Ctrl-F5.";
 _l["Tournament"] = "Tournament";
 _l["Fun"] = "non-rating event";
 _l["Rating"] = "rating game";
