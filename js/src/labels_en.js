@@ -16,3 +16,4 @@ _l['Accept']="Accept";
 _l['Decline']="Decline";
 _l['Close']="Close";
 _l['DeleteCL']="<p>The declined changes will be lost forever.</p><p>Are you sure you want to decline the chengelist?</p>";
+_l['FileTooBig']="File {1} is too big for upload. Maximum size is {2} bytes.";

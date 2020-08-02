@@ -170,6 +170,47 @@ var mr = new function()
 	}
 
 	//--------------------------------------------------------------------------------------
+	// Sounds
+	//--------------------------------------------------------------------------------------
+	this.editSound = function(id)
+	{
+		dlg.form("form/sound_edit.php?sound_id=" + id, refr, 500);
+	}
+
+	this.deleteSound = function(id, confirmMessage)
+	{
+		function _delete()
+		{
+			json.post("api/ops/sound.php", { op: 'delete', sound_id: id }, refr);
+		}
+
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _delete);
+		}
+		else
+		{
+			_delete();
+		}
+	}
+
+	this.createSound = function(clubId, userId)
+	{
+		var url = "form/sound_create.php";
+		var delim = '?';
+		if (clubId)
+		{
+			url += delim + "club_id=" + clubId
+			delim = '&';
+		}
+		if (userId)
+		{
+			url += delim + 'user_id=' + userId;
+		}
+		dlg.form(url, refr, 500);
+	}
+
+	//--------------------------------------------------------------------------------------
 	// Club Season
 	//--------------------------------------------------------------------------------------
 	this.editClubSeason = function(id)
@@ -1070,6 +1111,25 @@ var mr = new function()
 		{ 
 			mr.showVideoUsers(videoId);
 		});
+	}
+	
+	//--------------------------------------------------------------------------------------
+	// upload
+	//--------------------------------------------------------------------------------------
+	this.upload = function(form, onComplete, onProgress)
+	{
+		var request = new XMLHttpRequest();
+		if (onProgress)
+		{
+			request.addEventListener('progress', onProgress);
+		}
+		if (onComplete)
+		{
+			request.addEventListener('load', onComplete);
+		}
+		request.open('post', 'api/ops/upload.php', true);
+		request.setRequestHeader("Content-Type","multipart/form-data");
+		request.send(file);
 	}
 }
 

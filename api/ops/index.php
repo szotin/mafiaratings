@@ -187,6 +187,14 @@ require_once '../../include/api.php';
 	</td>
 </tr>
 
+<tr>
+	<td>Game Sounds Operations</td>
+	<td><a href="sound.php?help"><?php echo PRODUCT_URL; ?>/api/ops/sound.php</a></td>
+	<td>
+		<p>Manipulating prompt sounds that are played in the game. Uploading custom sounds, setting sounds for a club or for a user.</p>
+	</td>
+</tr>
+
 </table>
 
 

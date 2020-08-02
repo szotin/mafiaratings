@@ -28,6 +28,7 @@ define('LOG_OBJECT_EVENT_MAILINGS', 'event emails');
 define('LOG_OBJECT_STATS_CALCULATOR', 'stats calculator');
 define('LOG_OBJECT_EXTRA_POINTS', 'extra points');
 define('LOG_OBJECT_OBJECTION', 'objection');
+define('LOG_OBJECT_SOUND', 'sound');
 
 function prepare_log_objects()
 {

@@ -178,7 +178,11 @@ class UserPageBase extends PageBase
 		);
 		if ($_profile != NULL && $_profile->user_id == $this->id)
 		{
-			$menu[] = new MenuItem('user_albums.php?id=' . $this->id, get_label('Photo albums'), get_label('Photo albums of [0]', $this->title));
+			$menu[] = new MenuItem('#site', get_label('Management'), NULL, array
+			(
+				new MenuItem('user_albums.php?id=' . $this->id, get_label('Photo albums'), get_label('Photo albums of [0]', $this->title)),
+				new MenuItem('user_sounds.php?id=' . $this->id, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.')),
+			));
 		}
 			
 		echo '<table class="head" width="100%">';

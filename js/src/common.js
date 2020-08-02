@@ -388,6 +388,67 @@ var http = new function()
 		}
 	}
 	
+	this.upload = function(page, params, maxSize, onSuccess, onError, onProgress)
+	{
+		var w = _waiter;
+		page = _host + page;
+		if (w.start())
+		{
+			let request = new XMLHttpRequest();
+			let formData = new FormData();
+			
+			for (var param in params)
+			{
+				let value = params[param];
+				if (maxSize && value.size && maxSize < value.size)
+				{
+					w.error(l('FileTooBig', value.name, maxSize), onError);
+					return;
+				}
+				formData.append(param, value);
+			}
+			
+			if (onProgress)
+			{
+				request.addEventListener('progress', onProgress, false);
+				if (request.upload)
+				{
+					request.upload.onprogress = onProgress;
+				}
+			}
+			
+			request.onreadystatechange = function(e) 
+			{
+				if (this.readyState == 4) 
+				{
+					if (this.status >= 200 && this.status < 300)
+					{
+						if (onSuccess)
+						{
+							var error = onSuccess(request.response);
+							if (typeof error == "string" && error.length > 0)
+							{
+								console.log(error);
+								w.error(error, onError);
+							}
+							else
+							{
+								w.success();
+							}
+						}
+					}
+					else
+					{
+						w.error(request.response, onError);
+					}
+				}
+			};
+			
+			request.open("POST", page);
+			request.send(formData);
+		}
+	}
+	
 	this.get = function(page, onSuccess, onError)
 	{
 		var w = _waiter;
@@ -459,6 +520,11 @@ var html = new function()
 	this.post = function(page, params, onSuccess, onError)
 	{
 		http.post(page, params, function(text) { return _success(text, onSuccess, onError); }, onError);
+	}
+	
+	this.upload = function(page, params, maxSize, onSuccess, onError, onProgress)
+	{
+		http.upload(page, params, maxSize, function(text) { return _success(text, onSuccess, onError); }, onError, onProgress);
 	}
 	
 	this.get = function(page, onSuccess, onError)
@@ -554,6 +620,14 @@ var json = new function()
 		{
 			return _success(text, onSuccess, onError, function() { json.post(page, params, onSuccess, onError); });
 		}, onError);
+	}
+	
+	this.upload = function(page, params, maxSize, onSuccess, onError, onProgress)
+	{
+		http.upload(page, params, maxSize, function(text)
+		{
+			return _success(text, onSuccess, onError, function() { json.upload(page, params, maxSize, onSuccess, onError, onProgress); });
+		}, onError, onProgress);
 	}
 	
 	this.get = function(page, onSuccess, onError)

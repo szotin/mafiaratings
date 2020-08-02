@@ -98,6 +98,7 @@ define('LEAGUE_PICS_DIR', 'pics/league/');
 define('ALBUM_PICS_DIR', 'pics/album/');
 define('EVENT_PICS_DIR', 'pics/event/');
 define('TOURNAMENT_PICS_DIR', 'pics/tournament/');
+define('SOUNDS_DIR', 'sounds/');
 
 define('TNAILS_DIR', 'tnails/');
 define('ICONS_DIR', 'icons/');

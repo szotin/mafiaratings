@@ -1,7 +1,6 @@
 <?php
 
 require_once 'include/page_base.php';
-require_once 'include/timer.php';
 
 class Page extends PageBase
 {

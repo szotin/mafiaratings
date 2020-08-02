@@ -52,7 +52,6 @@ class ApiPage extends OpsApiPageBase
 		
 		check_permissions(PERMISSION_USER);
 		$name = trim(get_required_param('name'));
-		$this->check_name($name);
 
 		$url = get_optional_param('url');
 		$phone = get_optional_param('phone');
@@ -69,6 +68,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
+		$this->check_name($name);
 		if ($_profile->is_admin())
 		{
 			// Admin does not have to send a confirmation request. The league is confirmed instantly.
