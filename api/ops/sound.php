@@ -126,10 +126,12 @@ class ApiPage extends OpsApiPageBase
 				mkdir($sound_dir);
 			}
 			
-			if (!rename($tmp_filename, $sound_dir . $sound_id . '.mp3'))
+			$filename = $sound_dir . $sound_id . '.mp3';
+			if (!rename($tmp_filename, $filename))
 			{
 				throw new Exc(get_label('Unable to move uploaded file [0] to the destination path', $src_filename));
 			}
+			chmod($filename, 0644);
 			
 			Db::commit();
 		}
@@ -222,6 +224,7 @@ class ApiPage extends OpsApiPageBase
 				{
 					throw new Exc(get_label('Unable to move uploaded file [0] to the destination path', $src_filename));
 				}
+				chmod($filename, 0644);
 				$log_details->uploaded = true;
 			}
 			

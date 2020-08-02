@@ -97,21 +97,25 @@ class Page extends ClubPageBase
 		
 		function promptSoundChanged()
 		{
+			var id = $("#def-prompt").val();
+			playSound(id)
 			json.post("api/ops/sound.php",
 			{
 				op: 'set_def_sound'
 				, club_id: <?php echo $this->id; ?>
-				, prompt_sound_id: $("#def-prompt").val()
+				, prompt_sound_id: id
 			});
 		}
 		
 		function endSoundChanged()
 		{
+			var id = $("#def-end").val();
+			playSound(id)
 			json.post("api/ops/sound.php",
 			{
 				op: 'set_def_sound'
 				, club_id: <?php echo $this->id; ?>
-				, end_sound_id: $("#def-end").val()
+				, end_sound_id: id
 			});
 		}
 <?php

@@ -96,19 +96,23 @@ class Page extends UserPageBase
 		
 		function promptSoundChanged()
 		{
+			var id = $("#def-prompt").val();
+			playSound(id)
 			json.post("api/ops/sound.php",
 			{
 				op: 'set_def_sound'
-				, prompt_sound_id: $("#def-prompt").val()
+				, prompt_sound_id: id
 			});
 		}
 		
 		function endSoundChanged()
 		{
+			var id = $("#def-end").val();
+			playSound(id)
 			json.post("api/ops/sound.php",
 			{
 				op: 'set_def_sound'
-				, end_sound_id: $("#def-end").val()
+				, end_sound_id: id
 			});
 		}
 <?php
