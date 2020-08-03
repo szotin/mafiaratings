@@ -1847,27 +1847,30 @@ var nickForm = new function()
 			$("#nf-sex").hide();
 		}
 
-		var str = '<option value=""></option><option value="' + _user.name + '">' + _user.name + '</option>';
-		var nick = _user.name;
-		var l = nick.toLocaleLowerCase()
-		var max = 0;
-		for (n in _user.nicks)
+		var str = '<option value=""></option>';
+		var nick = null;
+		var nameFound = false;
+		for (n of _user.nicks)
 		{
-			var use = parseInt(_user.nicks[n]);
-			if (l == n.toLocaleLowerCase())
+			str += '<option value="' + n + '"';
+			if (nick == null)
 			{
-				n = _user.name;
-			}
-			else
-			{
-				str += '<option value="' + n + '">' + n + '</option>';
-			}
-			
-			if (use > max)
-			{
-				max = use;
 				nick = n;
+				str += ' selected';
 			}
+			str += '>' + n + '</option>';
+			if (n == _user.name)
+				nameFound = true;
+		}
+		if (!nameFound)
+		{
+			str += '<option value="' + _user.name + '"';
+			if (nick == null)
+			{
+				nick = _user.name;
+				str += ' selected';
+			}
+			str += '>' + _user.name + '</option>';
 		}
 		$('#nf-nick').val(nick);
 		$('#nf-nicks').html(str).val(nick);

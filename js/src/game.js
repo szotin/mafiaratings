@@ -405,6 +405,8 @@ var mafia = new function()
 				for (var i = 0; i < data.console.length; ++i)
 					console.log('Sync log: ' + data.console[i]);
 				
+			console.log(data);
+				
 			if (_version != data.version)
 			{
 				if (_failEvent != null)
@@ -556,7 +558,7 @@ var mafia = new function()
 				return p;
 			if (searchInNicks)
 			{
-				for (var n in p.nicks)
+				for (var n of p.nicks)
 				{
 					if (n.toLocaleLowerCase() == name)
 					{
@@ -779,7 +781,7 @@ var mafia = new function()
 					'id': user_id,
 					'name': name,
 					'flags': flags,
-					'nicks': {}
+					'nicks': []
 				}
 			}
 			
@@ -861,7 +863,7 @@ var mafia = new function()
 			'id': user_id,
 			'name': name,
 			'flags': flags,
-			'nicks': {}
+			'nicks': []
 		};
 		
 		var reg = event.reg;

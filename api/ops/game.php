@@ -132,14 +132,42 @@ class GClub
 			}
 		}
 		
-		$query = new DbQuery('SELECT u.user_id, r.nick_name, count(*) FROM user_clubs u JOIN registrations r ON r.user_id = u.user_id WHERE u.club_id = ? GROUP BY user_id, nick_name', $id);
+        $query = new DbQuery('SELECT u.user_id, r.nick_name, r.club_id, count(*), MAX(e.start_time) FROM user_clubs u JOIN registrations r ON r.user_id = u.user_id JOIN events e ON e.id = r.event_id WHERE u.club_id = ? GROUP BY r.user_id, r.nick_name, r.club_id', $id);
 		while ($row = $query->next())
 		{
-			list ($user_id, $nick, $count) = $row;
+			list ($user_id, $nick, $club_id, $count, $time) = $row;
+			if ($club_id == $id)
+			{
+				$time += $count * 60 * 60 * 4;
+			}
+			else
+			{
+				$time += $count * 60 * 60;
+			}
+			
 			if (isset($this->players[$user_id]))
 			{
-				$this->players[$user_id]->nicks[$nick] = $count;
+				if (!isset($this->players[$user_id]->nicks[$nick]) || $this->players[$user_id]->nicks[$nick] < $time)
+				{
+					$this->players[$user_id]->nicks[$nick] = $time;
+				}
 			}
+		}
+		
+		foreach ($this->players as $user_id => $player)
+		{
+			arsort($player->nicks);
+			$nicks = array();
+			$nick_count = 0;
+			foreach ($player->nicks as $nick => $count)
+			{
+				if ($nick_count++ == 8)
+				{
+					break;
+				}
+				$nicks[] = $nick;
+			}
+			$player->nicks = $nicks;
 		}
 		
 		$this->tournaments = array();
