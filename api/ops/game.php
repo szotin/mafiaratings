@@ -11,8 +11,7 @@ define('EVENTS_FUTURE_LIMIT', 1209600); // 2 weeks
 
 define('GAME_SETTINGS_SIMPLIFIED_CLIENT', 0x1);
 define('GAME_SETTINGS_START_TIMER', 0x2);
-define('GAME_SETTINGS_NO_SOUND', 0x4);
-define('GAME_SETTINGS_NO_BLINKING', 0x8);
+define('GAME_SETTINGS_NO_BLINKING', 0x8); // 0x4 is available
 
 function def_club()
 {
@@ -268,19 +267,57 @@ class GUser
 		$this->flags = (int)$_profile->user_flags;
 		$this->manager = ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MANAGER) ? 1 : 0;
 		
-		$query = new DbQuery('SELECT flags, l_autosave, g_autosave FROM game_settings WHERE user_id = ?', $this->id);
+		$query = new DbQuery('SELECT flags, l_autosave, g_autosave, prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $this->id);
 		$this->settings = new stdClass();
 		if ($row = $query->next())
 		{
 			$this->settings->flags = (int)$row[0];
 			$this->settings->l_autosave = (int)$row[1];
 			$this->settings->g_autosave = (int)$row[2];
+			$this->settings->prompt_sound = $row[3];
+			$this->settings->end_sound = $row[4];
 		}
 		else
 		{
 			$this->settings->flags = 0;
 			$this->settings->l_autosave = 10;
 			$this->settings->g_autosave = 60;
+			$this->settings->prompt_sound = NULL;
+			$this->settings->end_sound = NULL;
+		}
+		
+		if (is_null($this->settings->prompt_sound))
+		{
+			if (is_null($this->settings->end_sound))
+			{
+				list($this->settings->prompt_sound, $this->settings->end_sound) = Db::record(get_label('club'), 'SELECT prompt_sound_id, end_sound_id FROM clubs WHERE id = ?', $club_id);
+			}
+			else
+			{
+				list($this->settings->prompt_sound) = Db::record(get_label('club'), 'SELECT prompt_sound_id FROM clubs WHERE id = ?', $club_id);
+			}
+		}
+		else if (is_null($this->settings->end_sound))
+		{
+			list($this->settings->end_sound) = Db::record(get_label('club'), 'SELECT end_sound_id FROM clubs WHERE id = ?', $club_id);
+		}
+		
+		if (is_null($this->settings->prompt_sound))
+		{
+			$this->settings->prompt_sound = 2;
+		}
+		else
+		{
+			$this->settings->prompt_sound = (int)$this->settings->prompt_sound;
+		}
+		
+		if (is_null($this->settings->end_sound))
+		{
+			$this->settings->end_sound = 3;
+		}
+		else
+		{
+			$this->settings->end_sound = (int)$this->settings->end_sound;
 		}
 		
 		$this->clubs = array();

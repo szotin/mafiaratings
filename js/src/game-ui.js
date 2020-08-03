@@ -198,10 +198,7 @@ var timer = new function()
 			var f = mafia.data().user.settings.flags;
 			if (t <= 0)
 			{
-				if ((f & /*S_FLAG_NO_SOUND*/0x4) == 0)
-				{
-					_eSnd.play();
-				}
+				_eSnd.play();
 				if ((f & /*S_FLAG_NO_BLINKING*/0x8) == 0)
 				{
 					_blinkCount = 15;
@@ -215,10 +212,7 @@ var timer = new function()
 			{
 				if (_get() > _prompt && t <= _prompt)
 				{
-					if ((f & /*S_FLAG_NO_SOUND*/0x4) == 0)
-					{
-						_pSnd.play();
-					}
+					_pSnd.play();
 					if ((f & /*S_FLAG_NO_BLINKING*/0x8) == 0)
 					{
 						_blinkCount = 2;
@@ -464,8 +458,8 @@ mafia.ui = new function()
 				'<td id="info" align="center"></td>' +
 				'<td align="right"><button class="game-btn" id="next" onclick="mafia.ui.next()"><img src="images/next.png" class="text"></button></td>' +
 			'</tr></table></div>' +
-			'<audio id="end-snd" src="sound/end.mp3" preload></audio>' +
-			'<audio id="prompt-snd" src="sound/10sec.mp3" preload></audio>';
+			'<audio id="end-snd" preload></audio>' +
+			'<audio id="prompt-snd" preload></audio>';
 			
 		$('#game-area').html(html);
 	
@@ -557,6 +551,7 @@ mafia.ui = new function()
 		var club = data.club;
 		var game = data.game;
 		var user = data.user;
+		var settings = user.settings;
 		var html;
 		
 		var status = '';
@@ -573,6 +568,14 @@ mafia.ui = new function()
 			$('#game-id').html('<b>' + data.club.name + ' : ' + l('Game') + ' ' + data.game.id + '</b>');
 		else
 			$('#game-id').html('<b>' + data.club.name + '</b>');
+		
+		if (!settings.prompt_sound)
+			settings.prompt_sound = 2;
+		document.getElementById('prompt-snd').src = "sounds/" + settings.prompt_sound + ".mp3";
+		
+		if (!settings.end_sound)
+			settings.end_sound = 3;
+		document.getElementById('end-snd').src = "sounds/" + settings.end_sound + ".mp3";
 		
 		if (flags & /*STATE_CHANGE_FLAG_CLUB_CHANGED*/2)
 			statusWaiter.update();
@@ -2426,7 +2429,6 @@ var settingsForm = new function()
 			'<tr><td width="200">' + l('SaveLocal') + ':</td><td><select id="l-autosave"><option value="0">' + l('off') + '</option><option value="-1">' + l('OnGameEnd') + '</option><option value="60">' + l('1min') + '</option><option value="30">' + l('30sec') + '</option><option value="20">' + l('20sec') + '</option><option value="10">' + l('10sec') + '</option></select></td></tr>' +
 			'<tr><td>' + l('Sync') + ':</td><td><select id="g-autosave"><option value="0">' + l('off') + '</option><option value="-1">' + l('OnGameEnd') + '</option><option value="1800">' + l('30min') + '</option><option value="600">' + l('10min') + '</option><option value="300">' + l('5min') + '</option><option value="120">' + l('2min') + '</option><option value="60">' + l('1min') + '</option></select></td></tr>' +
 			'<tr><td>' + l('TStart') + ':</td><td><select id="t-start"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>' +
-			'<tr><td>' + l('TSounds') + ':</td><td><select id="t-sound"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>' +
 			'<tr><td>' + l('TBlinking') + ':</td><td><select id="t-blink"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>';
 		html += '<tr><td>' + l('SimpVoting') + ':</td><td><select id="s-client"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>';
 		html += '</table><script>settingsForm.init()</script>';
@@ -2435,7 +2437,6 @@ var settingsForm = new function()
 		{
 			var flags = 0;
 			if ($('#t-start').val() != 0) flags |= /*S_FLAG_START_TIMER*/0x2;
-			if ($('#t-sound').val() == 0) flags |= /*S_FLAG_NO_SOUND*/0x4;
 			if ($('#t-blink').val() == 0) flags |= /*S_FLAG_NO_BLINKING*/0x8;
 			if ($('#s-client').val() != 0) flags |= /*S_FLAG_SIMPLIFIED_CLIENT*/0x1;
 			mafia.settings($('#l-autosave').val(), $('#g-autosave').val(), flags);
@@ -2449,7 +2450,6 @@ var settingsForm = new function()
 		$('#l-autosave').val(s.l_autosave);
 		$('#g-autosave').val(s.g_autosave);
 		$('#t-start').val((f & /*S_FLAG_START_TIMER*/0x2) ? 1 : 0);
-		$('#t-sound').val((f & /*S_FLAG_NO_SOUND*/0x4) ? 0 : 1);
 		$('#t-blink').val((f & /*S_FLAG_NO_BLINKING*/0x8) ? 0 : 1);
 		$('#s-client').val((f & /*S_FLAG_SIMPLIFIED_CLIENT*/0x1) ? 1 : 0);
 	}
