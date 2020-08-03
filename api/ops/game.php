@@ -320,6 +320,16 @@ class GUser
 			$this->settings->end_sound = (int)$this->settings->end_sound;
 		}
 		
+		$this->sounds = array();
+		$query = new DbQuery('SELECT id, name FROM sounds WHERE (club_id IS NULL AND user_id IS NULL) OR club_id = ? OR user_id = ?', $club_id, $this->id);
+		while ($row = $query->next())
+		{
+			$sound = new stdClass();
+			$sound->id = (int)$row[0];
+			$sound->name = $row[1];
+			$this->sounds[] = $sound;
+		}
+		
 		$this->clubs = array();
 		foreach ($_profile->clubs as $club)
 		{
@@ -720,14 +730,14 @@ class CommandQueue
 		if ($query->next())
 		{
 			Db::exec(get_label('user'),
-				'UPDATE game_settings SET l_autosave = ?, g_autosave = ?, flags = ? WHERE user_id = ?',
-				$rec->l_autosave, $rec->g_autosave, $rec->flags, $_profile->user_id);
+				'UPDATE game_settings SET l_autosave = ?, g_autosave = ?, flags = ?, prompt_sound_id = ?, end_sound_id = ? WHERE user_id = ?',
+				$rec->l_autosave, $rec->g_autosave, $rec->flags, $rec->prompt_sound, $rec->end_sound, $_profile->user_id);
 		}
 		else
 		{
 			Db::exec(get_label('user'),
-				'INSERT INTO game_settings (user_id, l_autosave, g_autosave, flags) VALUES (?, ?, ?, ?)',
-				$_profile->user_id, $rec->l_autosave, $rec->g_autosave, $rec->flags);
+				'INSERT INTO game_settings (user_id, l_autosave, g_autosave, flags, prompt_sound_id, end_sound_id) VALUES (?, ?, ?, ?, ?, ?)',
+				$_profile->user_id, $rec->l_autosave, $rec->g_autosave, $rec->flags, $rec->prompt_sound, $rec->end_sound);
 		}
 	}
 }

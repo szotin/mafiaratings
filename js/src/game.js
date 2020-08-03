@@ -2786,26 +2786,28 @@ var mafia = new function()
 		}
 	}
 	
-	this.settings = function(lAutosave, gAutosave, flags)
+	this.settings = function(lAutosave, gAutosave, promptSound, endSound, flags)
 	{
 		var s = _data.user.settings;
 		lAutosave = Math.floor(lAutosave / 10) * 10;
 		gAutosave = Math.floor(gAutosave / 60) * 60;
-		if (s.flags != flags || s.l_autosave != lAutosave || s.g_autosave != gAutosave)
+		
+		s.flags = flags;
+		s.l_autosave = lAutosave;
+		s.g_autosave = gAutosave;
+		s.prompt_sound = promptSound;
+		s.end_sound = endSound;
+		var req =
 		{
-			s.flags = flags;
-			s.l_autosave = lAutosave;
-			s.g_autosave = gAutosave;
-			var req =
-			{
-				action: 'settings',
-				l_autosave: lAutosave,
-				g_autosave: lAutosave,
-				flags: flags
-			};
-			_data.requests.push(req);
-			dirty();
-		}
+			action: 'settings',
+			l_autosave: lAutosave,
+			g_autosave: lAutosave,
+			prompt_sound: promptSound,
+			end_sound: endSound,
+			flags: flags
+		};
+		_data.requests.push(req);
+		dirty();
 	}
 	
 	this.votingWinner = function(num, c)

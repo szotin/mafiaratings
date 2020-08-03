@@ -6,8 +6,6 @@ var timer = new function()
 	var _prompt = 0;
 	var _blinkCount = 0;
 	var _html = '<table id="t-area" class="timer timer-0" width="100%"><tr><td width="1"><button id="timerBtn" class="timer" onclick="timer.toggle()"><img id="timerImg" src="images/resume_big.png" class="timer"></button></td><td><div id="timer" class="timer"></div></td><td width="1"><button class="timer" onclick="timer.inc(-10)"><img src="images/dec_big.png" class="timer"></button></td><td width="1"><button class="timer" onclick="timer.inc(10)"><img src="images/inc_big.png" class="timer"></button></td></tr></table>';
-	var _eSnd;
-	var _pSnd;
 	var _hidden = true;
 	
 	function _blink()
@@ -98,8 +96,6 @@ var timer = new function()
 		}
 		
 		$('#t-area').attr('class', 'timer timer-0');
-		_eSnd = document.getElementById('end-snd').cloneNode(true);
-		_pSnd = document.getElementById('prompt-snd').cloneNode(true);
 		
 		_blinkCount = 0;
 		_prompt = total / 6;
@@ -198,7 +194,8 @@ var timer = new function()
 			var f = mafia.data().user.settings.flags;
 			if (t <= 0)
 			{
-				_eSnd.play();
+				document.getElementById('prompt-snd').pause();
+				document.getElementById('end-snd').play();
 				if ((f & /*S_FLAG_NO_BLINKING*/0x8) == 0)
 				{
 					_blinkCount = 15;
@@ -212,7 +209,7 @@ var timer = new function()
 			{
 				if (_get() > _prompt && t <= _prompt)
 				{
-					_pSnd.play();
+					document.getElementById('prompt-snd').play();
 					if ((f & /*S_FLAG_NO_BLINKING*/0x8) == 0)
 					{
 						_blinkCount = 2;
@@ -2424,12 +2421,22 @@ var settingsForm = new function()
 {
 	this.show = function()
 	{
+		var sounds = mafia.data().user.sounds;
+		var soundsHtml = '';
+		for (const s of sounds)
+		{
+			soundsHtml += '<option value="' + s.id + '">' + s.name + '</option>';
+		}
+		
 		var html = 
-			'<table class="dialog_form" width="100%">' +
+			'<audio id="test-snd" preload></audio><table class="dialog_form" width="100%">' +
 			'<tr><td width="200">' + l('SaveLocal') + ':</td><td><select id="l-autosave"><option value="0">' + l('off') + '</option><option value="-1">' + l('OnGameEnd') + '</option><option value="60">' + l('1min') + '</option><option value="30">' + l('30sec') + '</option><option value="20">' + l('20sec') + '</option><option value="10">' + l('10sec') + '</option></select></td></tr>' +
 			'<tr><td>' + l('Sync') + ':</td><td><select id="g-autosave"><option value="0">' + l('off') + '</option><option value="-1">' + l('OnGameEnd') + '</option><option value="1800">' + l('30min') + '</option><option value="600">' + l('10min') + '</option><option value="300">' + l('5min') + '</option><option value="120">' + l('2min') + '</option><option value="60">' + l('1min') + '</option></select></td></tr>' +
 			'<tr><td>' + l('TStart') + ':</td><td><select id="t-start"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>' +
+			'<tr><td>' + l('TPrompt') + ':</td><td><select id="t-prompt" onchange="settingsForm.playSound(0)">' + soundsHtml + '</select></td></tr>' +
+			'<tr><td>' + l('TEnd') + ':</td><td><select id="t-end" onchange="settingsForm.playSound(1)">' + soundsHtml + '</select></td></tr>' +
 			'<tr><td>' + l('TBlinking') + ':</td><td><select id="t-blink"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>';
+		
 		html += '<tr><td>' + l('SimpVoting') + ':</td><td><select id="s-client"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>';
 		html += '</table><script>settingsForm.init()</script>';
 	
@@ -2439,7 +2446,9 @@ var settingsForm = new function()
 			if ($('#t-start').val() != 0) flags |= /*S_FLAG_START_TIMER*/0x2;
 			if ($('#t-blink').val() == 0) flags |= /*S_FLAG_NO_BLINKING*/0x8;
 			if ($('#s-client').val() != 0) flags |= /*S_FLAG_SIMPLIFIED_CLIENT*/0x1;
-			mafia.settings($('#l-autosave').val(), $('#g-autosave').val(), flags);
+			document.getElementById('prompt-snd').src = "sounds/" + $('#t-prompt').val() + ".mp3";
+			document.getElementById('end-snd').src = "sounds/" + $('#t-end').val() + ".mp3";
+			mafia.settings($('#l-autosave').val(), $('#g-autosave').val(), $('#t-prompt').val(), $('#t-end').val(), flags);
 		});
 	}
 	
@@ -2452,7 +2461,18 @@ var settingsForm = new function()
 		$('#t-start').val((f & /*S_FLAG_START_TIMER*/0x2) ? 1 : 0);
 		$('#t-blink').val((f & /*S_FLAG_NO_BLINKING*/0x8) ? 0 : 1);
 		$('#s-client').val((f & /*S_FLAG_SIMPLIFIED_CLIENT*/0x1) ? 1 : 0);
+		$('#t-prompt').val(s.prompt_sound);
+		$('#t-end').val(s.end_sound);
 	}
+	
+	this.playSound = function(type)
+	{
+		var snd = document.getElementById('test-snd').cloneNode(true);
+		var ctrl = (type == 0 ? '#t-prompt' : '#t-end');
+		snd.src = "sounds/" + $(ctrl).val() + ".mp3";
+		snd.play();
+	}
+	
 } // settingsForm
 
 var gameStartForm = new function()
