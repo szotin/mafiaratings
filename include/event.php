@@ -925,10 +925,16 @@ class EventPageBase extends PageBase
 		
 		echo '<td valign="top" align="right">';
 		show_back_button();
-		echo '</td></tr><tr><td align="right" valign="bottom"><a href="club_main.php?bck=1&id=' . $this->event->club_id . '" title="' . $this->event->club_name . '"><table><tr><td align="center">' . $this->event->club_name . '</td></tr><tr><td align="center">';
+		echo '</td></tr><tr><td align="right" valign="bottom"><table><tr><td align="center">';
 		$this->club_pic->set($this->event->club_id, $this->event->club_name, $this->event->club_flags);
-		$this->club_pic->show(ICONS_DIR, false);
-		echo '</td></tr></table></a></td></tr>';
+		$this->club_pic->show(ICONS_DIR, true, 48);
+		if (!is_null($this->event->tournament_id))
+		{
+			$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+			$tournament_pic->set($this->event->tournament_id, $this->event->tournament_name, $this->event->tournament_flags);
+			$tournament_pic->show(ICONS_DIR, true, 48);
+		}
+		echo '</td></tr></table></td></tr>';
 		
 		echo '</table>';
 	}

@@ -203,9 +203,12 @@ class TournamentPageBase extends PageBase
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
 		$this->club_pic->show(ICONS_DIR, true, 48);
 		
-		$league_pic = new Picture(LEAGUE_PICTURE);
-		$league_pic->set($this->league_id, $this->league_name, $this->league_flags);
-		$league_pic->show(ICONS_DIR, true, 48);
+		if (!is_null($this->league_id))
+		{
+			$league_pic = new Picture(LEAGUE_PICTURE);
+			$league_pic->set($this->league_id, $this->league_name, $this->league_flags);
+			$league_pic->show(ICONS_DIR, true, 48);
+		}
 		
 		echo '</td></tr><tr><td>';
 		for ($i = 0; $i < floor($this->stars); ++$i)

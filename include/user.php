@@ -206,9 +206,9 @@ class UserPageBase extends PageBase
 		echo '</td></tr><tr><td align="right" valign="bottom" colspan="2">';
 		if ($this->club != NULL)
 		{
-			echo '<table><tr><td align="center"><a href="club_main.php?bck=1&id=' . $this->club_id . '">' . $this->club . '</a></td></tr><tr><td align="center">';
+			echo '<table><tr><td align="center">';
 			$this->club_pic->set($this->club_id, $this->club, $this->club_flags);
-			$this->club_pic->show(ICONS_DIR, true);
+			$this->club_pic->show(ICONS_DIR, true, 48);
 			echo '</td></tr></table>';
 		}
 		echo '</td></tr></table>';

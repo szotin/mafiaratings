@@ -223,14 +223,14 @@ class ClubPageBase extends PageBase
 		if ($this->parent_id != NULL)
 		{
 			$this->club_pic->set($this->parent_id, get_label('[0] is a member of [1] club system.', $this->name, $this->parent_name), $this->parent_flags);
-			$this->club_pic->show(ICONS_DIR, true, 36);
+			$this->club_pic->show(ICONS_DIR, true, 48);
 		}
 		$query = new DbQuery('SELECT l.id, l.name, l.flags FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.flags = 0 AND c.club_id = ? ORDER BY l.name', $this->id);
 		while ($row = $query->next())
 		{
 			list($league_id, $league_name, $league_flags) = $row;
 			$this->league_pic->set($league_id, get_label('[0] is a member of [1].', $this->name, $league_name), $league_flags);
-			$this->league_pic->show(ICONS_DIR, true, 36);
+			$this->league_pic->show(ICONS_DIR, true, 48);
 		}
 		echo '</td></tr>';
 		echo '</table>';

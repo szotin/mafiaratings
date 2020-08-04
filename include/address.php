@@ -298,10 +298,10 @@ class AddressPageBase extends PageBase
 		
 		echo '<td rowspan="2" valign="top"><h2 class="address">' . get_label('Address [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
 		show_back_button();
-		echo '</td></tr><tr><td align="right" valign="bottom" width="' . ICON_WIDTH . '"><a href="club_main.php?bck=1&id=' . $this->club_id . '"><table><tr><td align="center">' . $this->club_name . '</td></tr><tr><td>';
+		echo '</td></tr><tr><td align="right" valign="bottom" width="' . ICON_WIDTH . '"><table><tr><td>';
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		$this->club_pic->show(ICONS_DIR, true);
-		echo '</td></tr></table></a></td></tr>';
+		$this->club_pic->show(ICONS_DIR, true, 48);
+		echo '</td></tr></table></td></tr>';
 		
 		echo '</table>';
 	}
