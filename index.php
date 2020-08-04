@@ -12,82 +12,191 @@ require_once 'include/scoring.php';
 require_once 'include/picture.php';
 
 define('COLUMN_COUNT', 5);
-define('ROW_COUNT', 2);
+define('ROW_COUNT', 3);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends GeneralPageBase
 {
 	private $event_pic;
 	private $tournament_pic;
+	private $league_pic;
 	
-	private function show_events_list($query, $title)
+	private function show_tournament($tournament)
 	{
-		$event_count = 0;
-		$colunm_count = 0;
-		while ($row = $query->next())
+		$future = ($tournament->start_time > time());
+		if ($future)
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tour_id, $tour_name, $tour_flags, $club_id, $club_name, $club_flags, $languages, $addr_id, $addr_flags, $addr, $addr_name) = $row;
-			if ($event_name == $addr_name)
-			{
-				$event_name = $addr;
-			}
-			if ($colunm_count == 0)
-			{
-				if ($event_count == 0)
-				{
-					echo '<table class="bordered light" width="100%">';
-					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . $title . '</b></td></tr>';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center">';
-			echo $club_name . '<br>';
-			echo '<a href="event_info.php?bck=1&id=' . $event_id . '" title="' . get_label('View event details.') . '"><b>';
-			echo format_date('l, F d, Y, H:i', $event_time, $timezone) . '</b><br>';
-			$this->event_pic->set($event_id, $event_name, $event_flags)->set($tour_id, $tour_name, $tour_flags)->set($club_id, $club_name, $club_flags);
-			$this->event_pic->show(ICONS_DIR, false, 60);
-			echo '</a><br>' . $event_name . '</b></td>';
-			++$colunm_count;
-			++$event_count;
-			if ($colunm_count >= COLUMN_COUNT)
-			{
-				$colunm_count = 0;
-			}
+			$dark_class = ' class = "darker"';
+			$light_class = ' class = "dark"';
 		}
-		if ($colunm_count > 0)
+		else
 		{
-			echo '<td colspan="' . (COLUMN_COUNT - $colunm_count) . '">&nbsp;</td>';
+			$dark_class = ' class = "dark"';
+			$light_class = '';
 		}
-		if ($event_count > 0)
+		
+		echo '<table class="transp" width="100%">';
+		
+		echo '<tr' . $dark_class . ' style="height: 40px;">';
+		if (!is_null($tournament->league_id))
 		{
-			echo '</tr></table>';
-			return true;
+			echo '<td width="32">';
+			$this->league_pic->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
+			$this->league_pic->show(ICONS_DIR, false, 30);
+			echo '</td><td colspan="2"';' align="center"><b>' . $tournament->name . '</b>';
 		}
-		return false;
+		else
+		{
+			echo '<td colspan="3"';
+		}
+		echo ' align="center"><b>' . $tournament->name . '</b></td></tr>';
+		
+		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
+		if ($future)
+		{
+			echo format_date('l, F d', $tournament->start_time, $tournament->timezone) . '<br>';
+			echo '<a href="tournament_info.php?bck=1&id=';
+		}
+		else
+		{
+			echo '<a href="tournament_standings.php?bck=1&id=';
+		}
+		echo $tournament->id . '" title="' . get_label('View tournament details.') . '">';
+		
+		$this->tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
+		$this->tournament_pic->show(ICONS_DIR, false, $future ? 56 : 70);
+		echo '</a></td></tr>';
+		
+		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="2" align="center">' . $tournament->club_name . '</td><td width="34">';
+		$this->club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
+		$this->club_pic->show(ICONS_DIR, false, 30);
+		echo '</td></tr>';
+		
+		echo '</table>';
 	}
 	
-	private function show_tournaments_list($query, $title)
+	private function show_event($event)
 	{
-		$tournament_count = 0;
-		$colunm_count = 0;
-		while ($row = $query->next())
+		$future = ($event->start_time > time());
+		if ($future)
 		{
-			list ($tournament_id, $tournament_name, $tournament_flags, $tournament_time, $timezone, $club_id, $club_name, $club_flags, $languages, $addr_id, $addr_flags, $addr, $addr_name) = $row;
-			if ($tournament_name == $addr_name)
+			$dark_class = ' class = "darker"';
+			$light_class = ' class = "dark"';
+		}
+		else
+		{
+			$dark_class = ' class = "dark"';
+			$light_class = '';
+		}
+		
+		echo '<table class="transp" width="100%">';
+		
+		echo '<tr' . $dark_class . ' style="height: 40px;">';
+		if (!is_null($event->tournament_id))
+		{
+			echo '<td width="32">';
+			$this->tournament_pic->set($event->tournament_id, $event->tournament_name, $event->tournament_flags);
+			$this->tournament_pic->show(ICONS_DIR, false, 30);
+			echo '</td><td colspan="2"';
+		}
+		else
+		{
+			echo '<td colspan="3"';
+		}
+		echo 'align="center"><b>' . $event->name . '</b></td></tr>';
+		
+		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
+		if ($future)
+		{
+			echo format_date('l, F d', $event->start_time, $event->timezone) . '<br>';
+			echo '<a href="event_info.php?bck=1&id=';
+		}
+		else
+		{
+			echo '<a href="event_standings.php?bck=1&id=';
+		}
+		echo $event->id . '" title="' . get_label('View event details.') . '">';
+		
+		$this->event_pic->set($event->id, $event->name, $event->flags);
+		$this->event_pic->show(ICONS_DIR, false, $future ? 56 : 70);
+		echo '</a></td></tr>';
+		
+		echo '<tr' . $dark_class . ' class="dark" style="height: 40px;"><td colspan="2" align="center">' . $event->club_name . '</td><td width="34">';
+		$this->club_pic->set($event->club_id, $event->club_name, $event->club_flags);
+		$this->club_pic->show(ICONS_DIR, false, 30);
+		echo '</td></tr>';
+		
+		echo '</table>';
+	}
+	
+	private function show_happenings($events, $tournaments)
+	{
+		$event_index = 0;
+		$events_count = count($events);
+		if ($events_count > 0)
+		{
+			$event = new stdClass();
+			list (
+				$event->id, $event->name, $event->flags, 
+				$event->start_time, $event->duration, $event->timezone, 
+				$event->tournament_id, $event->tournament_name, $event->tournament_flags, 
+				$event->club_id, $event->club_name, $event->club_flags, 
+				$event->languages, 
+				$event->addr_id, $event->addr_flags, $event->addr, $event->addr_name) = $events[0];
+		}
+		else
+		{
+			$event = NULL;
+		}
+		
+		$tournament_index = 0;
+		$tournaments_count = count($tournaments);
+		if ($tournaments_count > 0)
+		{
+			$tournament = new stdClass();
+			list (
+				$tournament->id, $tournament->name, $tournament->flags, 
+				$tournament->start_time, $tournament->duration, $tournament->timezone, 
+				$tournament->club_id, $tournament->club_name, $tournament->club_flags, 
+				$tournament->languages, 
+				$tournament->addr_id, $tournament->addr_flags, $tournament->addr, $tournament->addr_name, 
+				$tournament->league_id, $tournament->league_name, $tournament->league_flags) = $tournaments[0];
+		}
+		else
+		{
+			$tournament = NULL;
+		}
+			
+		$happening_count = 0;
+		$column_count = 0;
+		while (true)
+		{
+			if ($event != NULL)
 			{
-				$tournament_name = $addr;
+				if ($tournament != NULL)
+				{
+					$show_tournament = ($event->start_time > $tournament->start_time || ($event->start_time == $tournament->start_time && $event->duration > $tournament->duration));
+				}
+				else
+				{
+					$show_tournament = false;
+				}
 			}
-			if ($colunm_count == 0)
+			else if ($tournament != NULL)
 			{
-				if ($tournament_count == 0)
+				$show_tournament = true;
+			}
+			else
+			{
+				break;
+			}
+			
+			if ($column_count == 0)
+			{
+				if ($happening_count == 0)
 				{
 					echo '<table class="bordered light" width="100%">';
-					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . $title . '</b></td></tr>';
+					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . get_label('Tournaments and events') . '</b></td></tr>';
 				}
 				else
 				{
@@ -95,26 +204,62 @@ class Page extends GeneralPageBase
 				}
 				echo '<tr>';
 			}
-			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center">';
-			echo $club_name . '<br>';
-			echo '<a href="tournament_info.php?bck=1&id=' . $tournament_id . '" title="' . get_label('View tournament details.') . '"><b>';
-			echo format_date('l, F d, Y, H:i', $tournament_time, $timezone) . '</b><br>';
-			$this->tournament_pic->set($tournament_id, $tournament_name, $tournament_flags)->set($club_id, $club_name, $club_flags);
-			$this->tournament_pic->show(ICONS_DIR, false, 60);
-			echo '</a><br>' . $tournament_name . '</b></td>';
-			++$colunm_count;
-			++$tournament_count;
-			if ($colunm_count >= COLUMN_COUNT)
+			echo '<td width="' . COLUMN_WIDTH . '%" valign="top">';
+			if ($show_tournament)
 			{
-				$colunm_count = 0;
+				$this->show_tournament($tournament);
+				
+				++$tournament_index;
+				if ($tournament_index < $tournaments_count)
+				{
+					list (
+						$tournament->id, $tournament->name, $tournament->flags, 
+						$tournament->start_time, $tournament->duration, $tournament->timezone, 
+						$tournament->club_id, $tournament->club_name, $tournament->club_flags, 
+						$tournament->languages, 
+						$tournament->addr_id, $tournament->addr_flags, $tournament->addr, $tournament->addr_name, 
+						$tournament->league_id, $tournament->league_name, $tournament->league_flags) = $tournaments[$tournament_index];
+				}
+				else
+				{
+					$tournament = NULL;
+				}
+			}
+			else
+			{
+				$this->show_event($event);
+				
+				++$event_index;
+				if ($event_index < $events_count)
+				{
+					list (
+						$event->id, $event->name, $event->flags, 
+						$event->start_time, $event->duration, $event->timezone, 
+						$event->tournament_id, $event->tournament_name, $event->tournament_flags, 
+						$event->club_id, $event->club_name, $event->club_flags, 
+						$event->languages, 
+						$event->addr_id, $event->addr_flags, $event->addr, $event->addr_name) = $events[$event_index];
+				}
+				else
+				{
+					$event = NULL;
+				}
+			}
+			
+			echo '</td>';
+			++$column_count;
+			++$happening_count;
+			if ($column_count >= COLUMN_COUNT)
+			{
+				$column_count = 0;
 			}
 		}
-		if ($colunm_count > 0)
+		
+		if ($column_count > 0)
 		{
-			echo '<td colspan="' . (COLUMN_COUNT - $colunm_count) . '">&nbsp;</td>';
+			echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '"></td>';
 		}
-		if ($tournament_count > 0)
+		if ($happening_count > 0)
 		{
 			echo '</tr></table>';
 			return true;
@@ -131,7 +276,7 @@ class Page extends GeneralPageBase
 		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT 2');
 		while ($row = $query->next())
 		{
-			list($prev_time, $json) = $row;
+			list ($prev_time, $json) = $row;
 			$prev_snapshot = new Snapshot($prev_time, $json);
 			$prev_snapshot->load_user_details();
 			$diff = $snapshot->compare($prev_snapshot);
@@ -257,8 +402,9 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_lang_code;
 		
-		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE));
-		$this->event_pic = new Picture(EVENT_PICTURE, $this->tournament_pic);
+		$this->league_pic = new Picture(LEAGUE_PICTURE);
+		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$this->event_pic = new Picture(EVENT_PICTURE);
 		
 		$condition = new SQL();
 		$ccc_id = $this->ccc_filter->get_id();
@@ -319,56 +465,40 @@ class Page extends GeneralPageBase
 		{
 			echo '<p>';
 		}
-		// my events
-		// if ($_profile != NULL)
-		// {
-			// $query = new DbQuery(
-				// 'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM event_users u' .
-					// ' JOIN events e ON e.id = u.event_id' .
-					// ' JOIN addresses a ON e.address_id = a.id' .
-					// ' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
-					// ' JOIN clubs c ON e.club_id = c.id' .
-					// ' JOIN cities ct ON ct.id = c.city_id' .
-					// ' WHERE u.user_id = ? AND u.coming_odds > 0 AND e.start_time + e.duration > UNIX_TIMESTAMP()' .
-					// ' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
-				// $_profile->user_id);
-			// $have_tables = $this->show_events_list($query, get_label('Your events')) || $have_tables;
-		// }
 		
-		// future tournaments
+		// tournaments and events
+		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name FROM tournaments t' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name, l.id, l.name, l.flags FROM tournaments t' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE t.start_time > UNIX_TIMESTAMP()' .
-			' ORDER BY t.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
-		$have_tables = $this->show_tournaments_list($query, get_label('Upcoming tournaments')) || $have_tables;
-		
-		// upcoming
-		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM events e' .
-			' JOIN addresses a ON e.address_id = a.id' .
-			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
-			' JOIN clubs c ON e.club_id = c.id' .
-			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0', $condition);
-		if ($_profile != NULL)
+			' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
+			' WHERE t.start_time + duration > UNIX_TIMESTAMP()', $condition);
+		$query->add(' ORDER BY t.start_time, t.duration LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
+		while ($row = $query->next())
 		{
-			$query->add(' AND e.id NOT IN (SELECT event_id FROM event_users WHERE user_id = ? AND coming_odds > 0)', $_profile->user_id);
+			$tournaments[] = $row;
 		}
-		$query->add(' ORDER BY e.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
-		$have_tables = $this->show_events_list($query, get_label('Coming soon')) || $have_tables;
 		
-		// current tournaments
-		// $query = new DbQuery(
-			// 'SELECT t.id, t.name, t.flags, t.start_time, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name FROM tournaments t' .
-			// ' JOIN addresses a ON t.address_id = a.id' .
-			// ' JOIN clubs c ON t.club_id = c.id' .
-			// ' JOIN cities ct ON ct.id = c.city_id' .
-			// ' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND t.start_time <= UNIX_TIMESTAMP()' .
-			// ' ORDER BY t.start_time LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
-		// $have_tables = $this->show_tournaments_list($query, get_label('Current tournaments')) || $have_tables;
+		$events = array();
+		$events_count = (COLUMN_COUNT * ROW_COUNT) - count($tournaments);
+		if ($events_count > 0)
+		{
+			$query = new DbQuery(
+				'SELECT e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM events e' .
+				' JOIN addresses a ON e.address_id = a.id' .
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+				' JOIN clubs c ON e.club_id = c.id' .
+				' JOIN cities ct ON ct.id = c.city_id' .
+				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0', $condition);
+			$query->add(' ORDER BY e.start_time, e.duration LIMIT ' . $events_count);
+			while ($row = $query->next())
+			{
+				$events[] = $row;
+			}
+		}
+		$have_tables = $this->show_happenings($events, $tournaments) || $have_tables;
 		
 		if ($had_tables)
 		{

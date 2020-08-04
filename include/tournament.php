@@ -177,11 +177,8 @@ class TournamentPageBase extends PageBase
 			$this->club_flags,
 			$this->league_id);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(LEAGUE_PICTURE, $this->club_pic));
-		$tournament_pic->
-			set($this->id, $this->name, $this->flags)->
-			set($this->league_id, $this->league_name, $this->league_flags)->
-			set($this->club_id, $this->club_name, $this->club_flags);
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$tournament_pic->set($this->id, $this->name, $this->flags);
 		if ($this->address_url != '')
 		{
 			echo '<a href="address_info.php?bck=1&id=' . $this->address_id . '">';
