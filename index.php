@@ -28,11 +28,13 @@ class Page extends GeneralPageBase
 		{
 			$dark_class = ' class = "darker"';
 			$light_class = ' class = "dark"';
+			$url = 'tournament_info.php';
 		}
 		else
 		{
 			$dark_class = ' class = "dark"';
 			$light_class = '';
+			$url = 'tournament_standings.php';
 		}
 		
 		echo '<table class="transp" width="100%">';
@@ -52,20 +54,15 @@ class Page extends GeneralPageBase
 		echo ' align="center"><b>' . $tournament->name . '</b></td></tr>';
 		
 		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
-		if ($future)
-		{
-			echo format_date('l, F d', $tournament->start_time, $tournament->timezone) . '<br>';
-			echo '<a href="tournament_info.php?bck=1&id=';
-		}
-		else
-		{
-			echo '<a href="tournament_standings.php?bck=1&id=';
-		}
-		echo $tournament->id . '" title="' . get_label('View tournament details.') . '">';
-		
+		echo '<a href="' . $url . '?bck=1&id=' . $tournament->id . '" title="' . get_label('View tournament details.') . '">';
 		$this->tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 		$this->tournament_pic->show(ICONS_DIR, false, $future ? 56 : 70);
-		echo '</a></td></tr>';
+		echo '</a>';
+		if ($future)
+		{
+			echo '<br>' . format_date('l, F d', $tournament->start_time, $tournament->timezone);
+		}
+		echo '</td></tr>';
 		
 		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="2" align="center">' . $tournament->club_name . '</td><td width="34">';
 		$this->club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
@@ -82,11 +79,13 @@ class Page extends GeneralPageBase
 		{
 			$dark_class = ' class = "darker"';
 			$light_class = ' class = "dark"';
+			$url = 'event_info.php';
 		}
 		else
 		{
 			$dark_class = ' class = "dark"';
 			$light_class = '';
+			$url = 'event_standings.php';
 		}
 		
 		echo '<table class="transp" width="100%">';
@@ -106,20 +105,15 @@ class Page extends GeneralPageBase
 		echo 'align="center"><b>' . $event->name . '</b></td></tr>';
 		
 		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
-		if ($future)
-		{
-			echo format_date('l, F d', $event->start_time, $event->timezone) . '<br>';
-			echo '<a href="event_info.php?bck=1&id=';
-		}
-		else
-		{
-			echo '<a href="event_standings.php?bck=1&id=';
-		}
-		echo $event->id . '" title="' . get_label('View event details.') . '">';
-		
+		echo '<a href="' . $url . '?bck=1&id=' . $event->id . '" title="' . get_label('View event details.') . '">';
 		$this->event_pic->set($event->id, $event->name, $event->flags);
 		$this->event_pic->show(ICONS_DIR, false, $future ? 56 : 70);
-		echo '</a></td></tr>';
+		echo '</a>';
+		if ($future)
+		{
+			echo '<br>' . format_date('l, F d', $event->start_time, $event->timezone);
+		}
+		echo '</td></tr>';
 		
 		echo '<tr' . $dark_class . ' class="dark" style="height: 40px;"><td colspan="2" align="center">' . $event->club_name . '</td><td width="34">';
 		$this->club_pic->set($event->club_id, $event->club_name, $event->club_flags);

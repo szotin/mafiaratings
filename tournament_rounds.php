@@ -6,8 +6,8 @@ require_once 'include/image.php';
 require_once 'include/event.php';
 require_once 'include/address.php';
 
-define('PAGE_SIZE', 20);
 define('COLUMN_COUNT', 5);
+define('ROW_COUNT', 6);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends TournamentPageBase
@@ -17,7 +17,7 @@ class Page extends TournamentPageBase
 		global $_page, $_lang_code, $_profile;
 		
 		$is_manager = ($_profile != NULL && $_profile->is_club_manager($this->club_id));
-		$page_size = PAGE_SIZE;
+		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$event_count = 0;
 		$column_count = 0;
 		
@@ -58,9 +58,9 @@ class Page extends TournamentPageBase
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id WHERE e.tournament_id = ?', 
 			$this->id);
-		$query->add(' ORDER BY e.start_time, e.id LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+		$query->add(' ORDER BY e.start_time DESC, e.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE)));
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
 		while ($row = $query->next())
 		{
 			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $event_timezone, $addr_id, $addr_flags, $addr, $addr_url, $addr_name, $come_odds, $bringing, $late) = $row;
@@ -91,13 +91,12 @@ class Page extends TournamentPageBase
 				echo '</td></tr>';	
 			}
 			
-			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '"><b>' . format_date('l, F d, Y <br> H:i', $start_time, $event_timezone) . '</b><br>';
+			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '"><b>' . $name . '</b><br>';
 			$event_pic->
 				set($id, $name, $flags)->
-				set($this->id, $this->name, $this->flags)->
 				set($addr_id, $addr, $addr_flags);
 			$event_pic->show(ICONS_DIR, false);
-			echo '</a><br>' . $name;
+			echo '</a><br>' . format_date('l, F d, Y', $start_time, $event_timezone);
 			
 			if ($come_odds != NULL)
 			{
