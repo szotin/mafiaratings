@@ -18,7 +18,7 @@ $labelMenu = array (
 'friends with me.' => 'друга(зей).', // attend.php, form/event_attend.php
 'My nickname for this event is' => 'Мой псевдоним для игрового дня', // attend.php, form/event_attend.php
 'Cancel' => 'Отменить', // album_edit.php, attend.php, create_album.php, tag_user.php
-'Clubs' => 'Клубы', // clubs.php, menu.php, menu.php, include/general_page_base.php, include/league.php, include/user.php, api/control/ccc.php
+'Clubs' => 'Клубы', // clubs.php, league_main.php, menu.php, menu.php, include/general_page_base.php, include/league.php, include/user.php, api/control/ccc.php
 'Status' => 'Статус', // event_mailings.php
 'Your email has expired.' => 'Ваше письмо устарело.', // email_request.php
 'Click on the confirmation link in the email to complete your sign up.' => 'Кликните на ссылку подтверждения в электронной почте, чтобы завершить процесс создания учетной записи.', // api/ops/account.php
@@ -1142,7 +1142,7 @@ $labelMenu = array (
 'Penlt' => 'Штрф', // event_screen.php, event_standings.php, tournament_screen.php, tournament_standings.php
 'Show tournaments of a specific season.' => 'Показать турниры определенного сезона', // address_tournaments.php, club_tournaments.php
 'scoring' => 'система подсчета баллов', // event_competition.php, event_player_games.php, event_player_games.php, event_player_games.php, event_screen.php, event_standings.php, event_standings.php, event_standings.php, tournament_competition.php, tournament_player_games.php, tournament_player_games.php, tournament_player_games.php, tournament_standings.php, tournament_standings.php, tournament_standings.php, include/event.php, include/event.php, api/ops/event.php, api/ops/event.php, api/ops/tournament.php, api/ops/tournament.php, api/control/chart.php, api/control/chart.php, api/control/chart.php, api/control/chart.php, form/scoring_show.php, form/scoring_show.php, form/tournament_create.php
-'View tournament details.' => 'Перейти в турнир.', // club_main.php, index.php
+'View tournament details.' => 'Перейти в турнир.', // club_main.php, index.php, league_main.php
 'Number of rounds' => 'Количество раундов', // club_tournaments.php, tournaments.php
 'Game [0]: [1]' => 'Игра [0]: [1]', // club_videos.php, event_videos.php, tournament_videos.php, videos.php
 '[0] did not play in [1].' => '[0] не играл в [1]', // event_standings.php, tournament_standings.php
@@ -1266,6 +1266,7 @@ $labelMenu = array (
 'Please select a sound to upload.' => 'Выберите звуковой файл для загрузки, пожалуйста.', // api/ops/sound.php, api/ops/sound.php
 'Unable to move uploaded file [0] to the destination path' => 'Не получается переместить файл [0]', // api/ops/sound.php, api/ops/sound.php
 'Unable to delete one of the default sounds.' => 'Не получается удалить один из звуков.', // api/ops/sound.php
+'Tournaments and events' => 'Турниры и игровые дни', // club_main.php, index.php, league_main.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'The Sheriff\'s check' => 'Проверка шерифа', // view_game.php
@@ -1279,7 +1280,8 @@ $labelMenu = array (
 'when player\'s first-night-killed rate is 0%' => 'когда игрок никогда не убиваелся в первую ночь', // form/scoring_show.php
 'when player\'s first-night-killed rate is lower than [0]%' => 'когда процент убийств в первую ночь был ниже [0]%', // form/scoring_show.php
 'Tournament rounds can be grouped to calculate stats required for scoring seperately. For example, compensation for being shot first night (Ci) can be calculated in the finals separately. In this case main round and semi-finals can belong to \'main\' group, and finals to \'final\' group.' => 'Турнирные раунды можно сгруппировать для отдельного подсчета статистик нужных для вычисления баллов. Например, баллы за отстрел в первую ночь (Ci) можно отдельно подсчитывать в основном раунде и полуфиналах, отнеся их к группе \'основные раунды\' и отдельно для финала отнеся его к группе \'финальные раунды\'.', // include/scoring.php
-'Tournaments and events' => 'Турниры и игровые дни', // club_main.php, index.php
+'Tournaments played' => 'Сыграно турниров', // league_main.php
+'Players participated' => 'Участвовало игроков', // league_main.php
 );
 
 return $labelMenu;
