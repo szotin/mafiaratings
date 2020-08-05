@@ -61,7 +61,7 @@ try
 	echo '</select></td></tr>';
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
-	echo '<input type="text" id="form-date" value="' . datetime_to_string($start, false) . '">';
+	echo '<input type="date" id="form-date" value="' . datetime_to_string($start, false) . '">';
 	echo '</td></tr>';
 		
 	echo '<tr><td>'.get_label('Time').':</td><td>';
@@ -159,7 +159,6 @@ try
 ?>	
 	<script>
 	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
-	var startDate = $('#form-date').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(40);
 	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(40);
 	$("#form-scoring-weight").spinner({ step:0.1, min:0.1 }).width(40);

@@ -32,23 +32,23 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="80" valign="top">' . get_label('Text').':</td><td><textarea id="form-advert" cols="93" rows="8">' . $message . '</textarea></td></tr>';
 	echo '<tr><td valign="top">' . get_label('Starting from').':</td><td>';
-	echo '<input type="text" id="form-start-date" value="' . $start_date . '"> <input id="form-start-hour" value="' . $start_hour . '"> : <input id="form-start-minute" value="' . $start_minute . '"></td></tr>';
+	echo '<input type="date" id="form-start-date" value="' . $start_date . '" onchange="onMinDateChange()"> <input id="form-start-hour" value="' . $start_hour . '"> : <input id="form-start-minute" value="' . $start_minute . '"></td></tr>';
 	echo '<tr><td valign="top">' . get_label('Ending at').':</td><td>';
-	echo '<input type="text" id="form-end-date" value="' . $end_date . '"> <input id="form-end-hour" value="' . $end_hour . '"> : <input id="form-end-minute" value="' . $end_minute . '"></td></tr>';
+	echo '<input type="date" id="form-end-date" value="' . $end_date . '"> <input id="form-end-hour" value="' . $end_hour . '"> : <input id="form-end-minute" value="' . $end_minute . '"></td></tr>';
 	echo '</table>';
 	
 ?>	
 	<script>
-	
-	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
-	var parts = "<?php echo $end_date; ?>".split("-")
-	var endDate = null;
-	if (parts.length > 2)
+	function onMinDateChange()
 	{
-		endDate = new Date(parts[0], parts[1] - 1, parts[2]);
+		$('#form-end-date').attr("min", $('#form-start-date').val());
+		var f = new Date($('#form-start-date').val());
+		var t = new Date($('#form-end-date').val());
+		if (f > t)
+		{
+			$('#form-end-date').val($('#form-start-date').val());
+		}
 	}
-	var startDate = $('#form-start-date').datepicker({ maxDate:14, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
-	var endDate = $('#form-end-date').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { startDate.datepicker("option", "maxDate", this.value); });
 	
 	$("#form-start-hour").spinner({ step:1, max:23, min:0 }).width(16);
 	$("#form-end-hour").spinner({ step:1, max:23, min:0 }).width(16);
@@ -69,8 +69,8 @@ try
 	
 	function commit(onSuccess)
 	{
-		var start = startDate.val() + " " + addZero($("#form-start-hour").val()) + ":" + addZero($("#form-start-minute").val());
-		var end = endDate.val() + " " + addZero($("#form-end-hour").val()) + ":" + addZero($("#form-end-minute").val());
+		var start = $('#form-start-date').val() + " " + addZero($("#form-start-hour").val()) + ":" + addZero($("#form-start-minute").val());
+		var end = $('#form-end-date').val() + " " + addZero($("#form-end-hour").val()) + ":" + addZero($("#form-end-minute").val());
 		json.post("api/ops/advert.php",
 		{
 			op: "change"

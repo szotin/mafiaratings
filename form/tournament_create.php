@@ -75,9 +75,9 @@ try
 	$date = datetime_to_string($datetime, false);
 	
 	echo '<tr><td>'.get_label('Dates').':</td><td>';
-	echo '<input type="text" id="form-start" value="' . $date . '">';
+	echo '<input type="date" id="form-start" value="' . $date . '" onchange="onMinDateChange()">';
 	echo '  ' . get_label('to') . '  ';
-	echo '<input type="text" id="form-end" value="' . $date . '">';
+	echo '<input type="date" id="form-end" value="' . $date . '">';
 	echo '</td></tr>';
 	
 	$addr_id = -1;
@@ -161,9 +161,16 @@ try
 	<script type="text/javascript" src="js/rater.min.js"></script>
 	<script>
 	
-	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
-	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
-	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
+	function onMinDateChange()
+	{
+		$('#form-end').attr("min", $('#form-start').val());
+		var f = new Date($('#form-start').val());
+		var t = new Date($('#form-end').val());
+		if (f > t)
+		{
+			$('#form-end').val($('#form-start').val());
+		}
+	}
 	
 	var scoringId = <?php echo $scoring_id; ?>;
 	var scoringVersion = <?php echo $scoring_version; ?>;
@@ -290,7 +297,7 @@ try
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-use_rounds_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_USE_ROUNDS_SCORING; ?>;
 		
-		var _end = strToDate(endDate.val());
+		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
 		
 		var params =
@@ -306,7 +313,7 @@ try
 			scoring_version: scoringVersion,
 			scoring_options: scoringOptions,
 			notes: $("#form-notes").val(),
-			start: startDate.val(),
+			start: $('#form-start').val(),
 			end: dateToStr(_end),
 			langs: _langs,
 			flags: _flags,

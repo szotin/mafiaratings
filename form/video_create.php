@@ -3,6 +3,7 @@
 require_once '../include/session.php';
 require_once '../include/languages.php';
 require_once '../include/club.php';
+require_once '../include/datetime.php';
 
 initiate_session();
 
@@ -49,12 +50,10 @@ try
 		$vtype = (int)$_REQUEST['vtype'];
 	}
 
+	$date = timestamp_to_string($timestamp, $club->timezone, false);
 	date_default_timezone_set($club->timezone);
-	$date = date('m/d/Y', $timestamp);
 	$hour = date('G', $timestamp);
 	$minute = 0; //date('i', $timestamp);
-	
-	// echo '<script src="js/datepicker-' . $_lang_code . '.js"></script>';
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="40">';
@@ -76,11 +75,10 @@ try
 	}
 	else
 	{
-		echo '<tr><td>' . get_label('Date') . ':</td><td><input type="text" id="form-date" value="' . $date . '"></td></tr>';
+		echo '<tr><td>' . get_label('Date') . ':</td><td><input type="date" id="form-date" value="' . $date . '"></td></tr>';
 		echo '<tr><td>' . get_label('Time') . ':</td><td><input id="form-hour" value="' . $hour . '"> : <input id="form-minute" value="' . $minute . '"></td></tr>';
 ?>
 		<script>
-		$('#form-date').datepicker();
 		$( "#form-hour" ).spinner({ step: 1, max: 23, min: 0, page: 4 });
 		$( "#form-minute" ).spinner({ step: 1, max: 59, min: 0, page: 10 });
 		</script>
@@ -98,7 +96,6 @@ try
 	}
 	echo '</table>';
 
-	//	$('#datepicker').datepicker($.datepicker.regional[" echo $_lang_code; "]);
 ?>
 	<script>
 	function commit(onSuccess)

@@ -35,7 +35,7 @@ try
 	echo '<tr><td width="160">'.get_label('Round name').':</td><td><input id="form-name" value="' . get_label('main round') . '"></td></tr>';
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
-	echo '<input type="text" id="form-date" value="' . datetime_to_string($start, false) . '">';
+	echo '<input type="date" id="form-date" value="' . datetime_to_string($start, false) . '">';
 	echo '</td></tr>';
 		
 	echo '<tr><td>'.get_label('Time').':</td><td>';
@@ -89,10 +89,6 @@ try
 	echo '</table>';
 ?>	
 	<script>
-	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
-	var date = $('#form-date').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
-	var fromDate = $('#form-date-from').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { toDate.datepicker("option", "minDate", this.value); });
-	var toDate = $('#form-date-to').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(40);
 	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(40);
 	
@@ -175,25 +171,7 @@ try
 		}
 		
 		var _time = ' ' + timeStr($('#form-hour').val()) + ':' + timeStr($('#form-minute').val());
-		if ($('#form-multiple').attr('checked'))
-		{
-			var weekdays = 0;
-			if ($("#form-wd0").attr('checked')) weekdays |= <?php echo WEEK_FLAG_SUN; ?>;
-			if ($("#form-wd1").attr('checked')) weekdays |= <?php echo WEEK_FLAG_MON; ?>;
-			if ($("#form-wd2").attr('checked')) weekdays |= <?php echo WEEK_FLAG_TUE; ?>;
-			if ($("#form-wd3").attr('checked')) weekdays |= <?php echo WEEK_FLAG_WED; ?>;
-			if ($("#form-wd4").attr('checked')) weekdays |= <?php echo WEEK_FLAG_THU; ?>;
-			if ($("#form-wd5").attr('checked')) weekdays |= <?php echo WEEK_FLAG_FRI; ?>;
-			if ($("#form-wd6").attr('checked')) weekdays |= <?php echo WEEK_FLAG_SAT; ?>;
-			
-			params['weekdays'] = weekdays;
-			params['start'] = fromDate.val() + _time;
-			params['end'] = toDate.val() + _time;
-		}
-		else
-		{
-			params['start'] = date.val() + _time;
-		}
+		params['start'] = $('#form-date').val() + _time;
 		json.post("api/ops/event.php", params, onSuccess);
 	}
 	

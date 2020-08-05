@@ -48,7 +48,7 @@ try
 	echo '<tr><td>'.get_label('Date').':</td><td>';
 	echo '<input type="checkbox" id="form-multiple" onclick="multipleChange()"> ' . get_label('multiple events');
 	echo '<div id="form-single_date">';
-	echo '<input type="text" id="form-date" value="' . datetime_to_string($start, false) . '">';
+	echo '<input type="date" id="form-date" value="' . datetime_to_string($start, false) . '">';
 	echo '</div><div id="form-multiple_date" style="display:none;">';
 	echo '<p>' . get_label('Every') . ': ';
 	$weekday_names = array(get_label('sun'), get_label('mon'), get_label('tue'), get_label('wed'), get_label('thu'), get_label('fri'), get_label('sat'));
@@ -58,9 +58,9 @@ try
 	}
 	echo '</p>';
 	echo '<p>' . get_label('From') . ' ';
-	echo '<input type="text" id="form-date-from" value="' . datetime_to_string($start, false) . '">';
+	echo '<input type="date" id="form-date-from" value="' . datetime_to_string($start, false) . '" onchange="onMinDateChange()">';
 	echo ' ' . get_label('to') . ' ';
-	echo '<input type="text" id="form-date-to" value="' . datetime_to_string($end, false) . '">';
+	echo '<input type="date" id="form-date-to" value="' . datetime_to_string($end, false) . '">';
 	echo '</td></tr>';
 	echo '</div></td></tr>';
 		
@@ -177,13 +177,20 @@ try
 	echo '</td></tr></table>';
 ?>	
 	<script>
-	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
-	var date = $('#form-date').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
-	var fromDate = $('#form-date-from').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { toDate.datepicker("option", "minDate", this.value); });
-	var toDate = $('#form-date-to').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
 	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(40);
 	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(40);
 	$('#form-scoring-weight').spinner({ step:0.1, min:0.1 }).width(40);
+	
+	function onMinDateChange()
+	{
+		$('#form-date-to').attr("min", $('#form-date-from').val());
+		var f = new Date($('#form-date-from').val());
+		var t = new Date($('#form-date-to').val());
+		if (f > t)
+		{
+			$('#form-date-to').val($('#form-date-from').val());
+		}
+	}
 	
 	var scoringId = <?php echo $event->scoring_id; ?>;
 	var scoringVersion = <?php echo $event->scoring_version; ?>;
@@ -351,12 +358,12 @@ try
 			if ($("#form-wd6").attr('checked')) weekdays |= <?php echo WEEK_FLAG_SAT; ?>;
 			
 			params['weekdays'] = weekdays;
-			params['start'] = fromDate.val() + _time;
-			params['end'] = toDate.val() + _time;
+			params['start'] = $('#form-date-from').val() + _time;
+			params['end'] = $('#form-date-to').val() + _time;
 		}
 		else
 		{
-			params['start'] = date.val() + _time;
+			params['start'] = $('#form-date').val() + _time;
 		}
 		json.post("api/ops/event.php", params, onSuccess);
 	}

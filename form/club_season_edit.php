@@ -23,18 +23,25 @@ try
 	echo '<tr><td width="140">' . get_label('Name') . ':</td><td><input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"> </td></tr>';
 	
 	echo '<tr><td>'.get_label('Dates').':</td><td>';
-	echo '<input type="text" id="form-start" value="' . timestamp_to_string($start, $timezone, false) . '">';
+	echo '<input type="date" id="form-start" value="' . timestamp_to_string($start, $timezone, false) . '" onchange="onMinDateChange()">';
 	echo '  ' . get_label('to') . '  ';
-	echo '<input type="text" id="form-end" value="' . timestamp_to_string($end, $timezone, false) . '">';
+	echo '<input type="date" id="form-end" value="' . timestamp_to_string($end, $timezone, false) . '">';
 	echo '</td></tr>';
 	
 	echo '</table>';
 	
 ?>	
 	<script>
-	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
-	var startDate = $('#form-start').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true }).on("change", function() { endDate.datepicker("option", "minDate", this.value); });
-	var endDate = $('#form-end').datepicker({ minDate:0, dateFormat:dateFormat, changeMonth: true, changeYear: true });
+	function onMinDateChange()
+	{
+		$('#form-end').attr("min", $('#form-start').val());
+		var f = new Date($('#form-start').val());
+		var t = new Date($('#form-end').val());
+		if (f > t)
+		{
+			$('#form-end').val($('#form-start').val());
+		}
+	}
 	
 	function commit(onSuccess)
 	{
@@ -43,8 +50,8 @@ try
 				op: 'change'
 				, season_id: <?php echo $season_id; ?>
 				, name: $("#form-name").val()
-				, start: startDate.val()
-				, end: endDate.val()
+				, start: $('#form-start').val()
+				, end: $('#form-end').val()
 			},
 			onSuccess);
 	}
