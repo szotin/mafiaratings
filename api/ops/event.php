@@ -1171,6 +1171,8 @@ class ApiPage extends OpsApiPageBase
 		$log_details->flags = $flags;
 		db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
 		
+		Db::exec(get_label('game'), 'UPDATE games SET tournament_id = ? WHERE event_id = ?', $tournament_id, $event_id);
+		
 		Db::commit();
 		
 		$this->response['tournament_id'] = $tournament_id;
