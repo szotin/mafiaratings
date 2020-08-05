@@ -600,6 +600,26 @@ var mr = new function()
 		dlg.form("form/event_extend.php?id=" + id, refr, 400);
 	}
 	
+	this.convertEventToTournament = function(id, confirmMessage)
+	{
+		function _convert()
+		{
+			json.post("api/ops/event.php", { op: "convert_to_tournament", event_id: id }, function(data)
+			{
+				goTo("tournament_info.php?id=" + data.tournament_id);
+			});
+		}
+		
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _convert);
+		}
+		else
+		{
+			_cancel();
+		}
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// tournament
 	//--------------------------------------------------------------------------------------

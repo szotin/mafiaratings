@@ -1116,6 +1116,75 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
+	// convert_to_tournament
+	//-------------------------------------------------------------------------------------------------------
+	function convert_to_tournament_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		
+		Db::begin();
+		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options, $rules, $flags, $tournament_id) = 
+			Db::record(get_label('event'), 'SELECT club_id, name, address_id, start_time, duration, languages, notes, price, scoring_id, scoring_version, scoring_options, rules, flags, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		
+		if (!is_null($tournament_id))
+		{
+			throw new Exc(get_label('Event [0] is already a tournament round.', $name));
+		}
+		
+		if (($flags & EVENT_FLAG_CANCELED) != 0)
+		{
+			throw new Exc(get_label('Event [0] is canceled.'));
+		}
+		
+		Db::exec(
+			get_label('tournament'), 
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_version, scoring_options, rules, flags, stars) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options, $rules, 0, 0);
+		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
+			
+		$log_details = new stdClass();
+		$log_details->name = $name;
+		$log_details->club_id = $club_id; 
+		$log_details->address_id = $address_id; 
+		$log_details->start = $start_time;
+		$log_details->duration = $duration;
+		$log_details->langs = $langs;
+		$log_details->notes = $notes;
+		$log_details->price = $price;
+		$log_details->scoring_id = $scoring_id;
+		$log_details->scoring_version = $scoring_version;
+		$log_details->scoring_options = $scoring_options;
+		$log_details->rules_code = $rules;
+		$log_details->flags = 0;
+		$log_details->stars = 0;
+		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
+			
+		$name = get_label('main round');
+		$flags |= EVENT_MASK_HIDDEN;
+		Db::exec(
+			get_label('event'), 
+			'UPDATE events SET tournament_id = ?, flags = ?, name = ? WHERE id = ?', $tournament_id, $flags, $name, $event_id);
+		$log_details = new stdClass();
+		$log_details->tournament_id = $tournament_id;
+		$log_details->name = $name;
+		$log_details->flags = $flags;
+		db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
+		
+		Db::commit();
+		
+		$this->response['tournament_id'] = $tournament_id;
+	}
+	
+	function convert_to_tournament_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Creates a tournament with one round. Where the event is the round.');
+		$help->request_param('event_id', 'Event id to convert to a tournament.');
+		$help->response_param('tournament_id', 'Id of the newly created tournament.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()

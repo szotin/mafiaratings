@@ -867,12 +867,17 @@ class EventPageBase extends PageBase
 			);
 			if ($this->is_manager)
 			{
-				$menu[] = new MenuItem('#management', get_label('Management'), NULL, array
+				$manager_menu = array
 				(
 					new MenuItem('event_players.php?id=' . $this->event->id, get_label('Players'), get_label('Manage players paricipaing in [0]', $this->event->name)),
 					new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name)),
 					new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name)),
-				));
+				);
+				if (is_null($this->event->tournament_id))
+				{
+					$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->event->id . ', \'' . get_label('Are you sure you want to convert [0] to a tournament?', $this->event->name) . '\')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->event->name));
+				}
+				$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 			}
 			
 			echo '<tr><td colspan="4">';
