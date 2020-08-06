@@ -182,7 +182,7 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 			{
 				$options_weight = $options->weight;
 			}
-			echo $options_separator . get_label('Points weight') . ': <input id="' . $name . '-weight" value="' . $options_weight . '">';
+			echo $options_separator . get_label('Points weight') . ': <input type="number" style="width: 40px;" step="0.1" min="0.1" id="' . $name . '-weight" value="' . $options_weight . '" onchange="optionChanged(1)">';
 		}
 		if (($flags & SCORING_SELECT_FLAG_NO_FLAGS_OPTION) == 0)
 		{
@@ -192,14 +192,14 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 				$options_flags = $options->flags;
 			}
 		
-			echo $options_separator . '<input type="checkbox" id="' . $name . '-night1" onclick="optionChanged()"';
+			echo $options_separator . '<input type="checkbox" id="' . $name . '-night1" onclick="optionChanged(2)"';
 			if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
 			{
 				echo ' checked';
 			}
 			echo '> ' . get_label('use first night kill rate factor');
 			
-			echo $options_separator . '<input type="checkbox" id="' . $name . '-difficulty" onclick="optionChanged()"';
+			echo $options_separator . '<input type="checkbox" id="' . $name . '-difficulty" onclick="optionChanged(3)"';
 			if (($options_flags & SCORING_OPTION_NO_GAME_DIFFICULTY) == 0)
 			{
 				echo ' checked';
@@ -213,7 +213,7 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 			{
 				$options_group = $options->group;
 			}
-			echo $options_separator . '<div id="' . $name . '-group-div">' . get_label('Tournament group') . ': <select id="' . $name . '-group" onchange="optionChanged()" title="' . get_label('Tournament rounds can be grouped to calculate stats required for scoring seperately. For example, compensation for being shot first night (Ci) can be calculated in the finals separately. In this case main round and semi-finals can belong to \'main\' group, and finals to \'final\' group.') . '">';
+			echo $options_separator . '<div id="' . $name . '-group-div">' . get_label('Tournament group') . ': <select id="' . $name . '-group" onchange="optionChanged(4)" title="' . get_label('Tournament rounds can be grouped to calculate stats required for scoring seperately. For example, compensation for being shot first night (Ci) can be calculated in the finals separately. In this case main round and semi-finals can belong to \'main\' group, and finals to \'final\' group.') . '">';
 			show_option('', $options_group, '');
 			show_option('pre', $options_group, get_label('preliminary rounds'));
 			show_option('main', $options_group, get_label('main rounds'));
@@ -223,11 +223,7 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 	}
 	
 	echo '<script>';
-	echo 'function optionChanged() { mr.onChangeScoringOptions(\'' . $name . '\', ' . $on_change . '); } ';
-	if (($flags & SCORING_SELECT_FLAG_NO_WEIGHT_OPTION) == 0)
-	{
-		echo '$("#' . $name . '-weight").spinner({ step:0.1, min:0.1, change: optionChanged, stop: optionChanged }).width(40); ';
-	}
+	echo 'function optionChanged(s) { mr.onChangeScoringOptions(\'' . $name . '\', ' . $on_change . '); } ';
 	echo 'mr.onChangeScoring("' . $name . '", ' . $version . ');';
 	echo '</script>';
 }

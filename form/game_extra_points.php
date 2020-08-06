@@ -31,14 +31,12 @@ try
 		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr class="darker"><td colspan="2" align="center">' . get_label('Extra points for [0] in game [1]', $user_name, $game_id) . '</td></tr>';
-	echo '<tr><td width="80">' . get_label('Points') . ':</td><td><input id="form-points" value="' . $extra_points . '"></td></tr>';
+	echo '<tr><td width="80">' . get_label('Points') . ':</td><td><input type="number" style="width: 45px;" step="0.1" id="form-points" value="' . $extra_points . '"></td></tr>';
 	echo '<tr><td>' . get_label('Reason') . ':</td><td><textarea id="form-reason" cols="64" rows="8">' . $extra_points_reason . '</textarea></td></tr>';
 	echo '</table>';
 	
 ?>	
 	<script>
-	$("#form-points").spinner({ step:0.05, max:0.7, min:-0.4 }).width(32);
-	
 	function commit(onSuccess)
 	{
 		json.post("api/ops/game.php",

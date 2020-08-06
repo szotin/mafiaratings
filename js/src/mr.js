@@ -729,7 +729,7 @@ var mr = new function()
 					v1 = v;
 				}
 			}
-			if (v1 == null)
+			if (!v1)
 			{
 				v1 = v;
 			}

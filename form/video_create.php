@@ -50,10 +50,7 @@ try
 		$vtype = (int)$_REQUEST['vtype'];
 	}
 
-	$date = timestamp_to_string($timestamp, $club->timezone, false);
-	date_default_timezone_set($club->timezone);
-	$hour = date('G', $timestamp);
-	$minute = 0; //date('i', $timestamp);
+	$datetime = timestamp_to_string($timestamp, $club->timezone, true);
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="40">';
@@ -69,20 +66,11 @@ try
 	echo '</select></td></tr>';
 	if (isset($event_id))
 	{
-		echo '<input type="hidden" id="form-date" value="' . $date . '">';
-		echo '<input type="hidden" id="form-hour" value="' . $hour . '">';
-		echo '<input type="hidden" id="form-minute" value="' . $minute . '">';
+		echo '<input type="hidden" id="form-datetime" value="' . $datetime . '">';
 	}
 	else
 	{
-		echo '<tr><td>' . get_label('Date') . ':</td><td><input type="date" id="form-date" value="' . $date . '"></td></tr>';
-		echo '<tr><td>' . get_label('Time') . ':</td><td><input id="form-hour" value="' . $hour . '"> : <input id="form-minute" value="' . $minute . '"></td></tr>';
-?>
-		<script>
-		$( "#form-hour" ).spinner({ step: 1, max: 23, min: 0, page: 4 });
-		$( "#form-minute" ).spinner({ step: 1, max: 59, min: 0, page: 10 });
-		</script>
-<?php
+		echo '<tr><td>' . get_label('Date') . ':</td><td><input type="datetime-local" id="form-datetime" value="' . $datetime . '"></td></tr>';
 	}
 	if (is_valid_lang($langs))
 	{
@@ -116,7 +104,7 @@ try
 			video: $("#form-video").val(),
 			vtype: $("#form-type").val(),
 			lang: $("#form-lang").val(),
-			time: $("#form-date").val() + " " + $("#form-hour").val() + ":" + $("#form-minute").val()
+			time: $("#form-datetime").val()
 		},
 		onSuccess);
 	}

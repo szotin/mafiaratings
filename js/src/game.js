@@ -405,8 +405,6 @@ var mafia = new function()
 				for (var i = 0; i < data.console.length; ++i)
 					console.log('Sync log: ' + data.console[i]);
 				
-			console.log(data);
-				
 			if (_version != data.version)
 			{
 				if (_failEvent != null)

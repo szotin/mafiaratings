@@ -3,8 +3,8 @@ var seatingUi = new function()
 	function _setupView()
 	{
 		var html = '<p><table width="100%" class="bordered dark">'
-		html += '<tr><td width="260" class="darker">' + seatingLabel.playersCount + ':</td><td><input id="players" value="' + seating.playersCount + '"></td></tr>'; 
-		html += '<tr><td class="darker">' + seatingLabel.tablesCount + ':</td><td><input id="tables" value="' + seating.tablesCount + '"></td></tr>'; 
+		html += '<tr><td width="260" class="darker">' + seatingLabel.playersCount + ':</td><td><input type="number" style="width: 50px;" id="players" value="' + seating.playersCount + '" step="1" max="500" min="10" onchange="seatingUi.setupChanged()"></td></tr>'; 
+		html += '<tr><td class="darker">' + seatingLabel.tablesCount + ':</td><td><input type="number" style="width: 50px;" id="tables" value="' + seating.tablesCount + '" step="1" max="50" min="1"></td></tr>'; 
 		html += '<tr><td class="darker">' + seatingLabel.gpp + ':</td><td><select id="gpp" value="' + seating.gpp + '"></td></tr>'; 
 		html += '</table></p>';
 		
@@ -416,8 +416,6 @@ var seatingUi = new function()
 		$('#content').html(html);
 		if (initControls)
 		{
-			$("#players").spinner({ step:1, max:500, min:10, change: seatingUi.setupChanged }).width(26);
-			$("#tables").spinner({ step:1, max:50, min:1 }).width(26);
 			seatingUi.setupChanged();
 		}
 	}
@@ -468,7 +466,7 @@ var seatingUi = new function()
 		var playersCount = $("#players").val();
 		var tablesCount = $("#tables").val();
 		var gppSelect = $("#gpp");
-		$("#tables").spinner("option", "max", Math.floor(playersCount / 10));
+		$("#tables").attr("max", Math.floor(playersCount / 10));
 		
 		gppSelect.empty();
 		for (var i = 1; i <= 100; ++i)

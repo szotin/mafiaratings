@@ -536,13 +536,13 @@ class ApiPage extends OpsApiPageBase
 		$event->load($event_id);
 		check_permissions(PERMISSION_CLUB_MEMBER, $event->club_id);
 		
-		$date_format = '';
+		$date_format = 'Y-m-d';
 		if (isset($_REQUEST['date_format']))
 		{
 			$date_format = $_REQUEST['df'];
 		}
 
-		$time_format = '';
+		$time_format = 'H:i';
 		if (isset($_REQUEST['time_format']))
 		{
 			$time_format = $_REQUEST['tf'];

@@ -1567,7 +1567,7 @@ mafia.ui = new function()
 		
 		var html = '<table class="dialog_form" width="100%">';
 		
-		html += '<tr><td>' + l('ExtraPoints') + ':</td><td><table width="100%" class="transp"><tr><td><input id="dlg-points"';
+		html += '<tr><td>' + l('ExtraPoints') + ':</td><td><table width="100%" class="transp"><tr><td><input type="number" style="width: 45px;" step="0.1" id="dlg-points"';
 		if (obj.extra_points)
 		{
 			html += ' value="' + obj.extra_points + '"';
@@ -1583,7 +1583,7 @@ mafia.ui = new function()
 			html += obj.comment;
 		}
 		html += '</textarea></td></tr>';
-		html += '</table><script>$("#dlg-points").spinner({ step:0.1 }).width(48);</script>';
+		html += '</table>';
 		
 		dlg.okCancel(html, title, 500, function()
 		{
@@ -2255,10 +2255,10 @@ var regForm = new function()
 			}
 			else
 			{
-				var pnicks = {};
+				var pnicks = [];
 				if (pnick != '')
 				{
-					pnicks[pnick] = 1;
+					pnicks.push(pnick);
 				}
 				p =
 				{
@@ -2338,7 +2338,7 @@ var newUserForm = new function()
 			{
 				name: name,
 				flags: flags,
-				nicks: {}
+				nicks: []
 			};
 			
 			function createUser()

@@ -20,7 +20,7 @@ try
 	echo '<tr><td>' . get_label('Reason').':</td><td><input id="form-reason"></td></tr>';
 	echo '<tr><td valign="top">' . get_label('Details').':</td><td><textarea id="form-details" cols="93" rows="8"></textarea></td></tr>';
 	echo '<tr><td>' . get_label('Points') . ':</td><td>';
-	echo '<table class="transp"><tr><td width="80"><input id="form-points"></td><td><input type="checkbox" id="form-av-points" onclick="averageClicked()"> ' . get_label('average points per game for this event.') . '</td></tr></table>';
+	echo '<table class="transp"><tr><td width="80"><input type="number" style="width: 45px;" step="0.1" id="form-points"></td><td><input type="checkbox" id="form-av-points" onclick="averageClicked()"> ' . get_label('average points per game for this event.') . '</td></tr></table>';
 	echo '</td></tr>';
 	echo '</table>';
 
@@ -28,8 +28,6 @@ try
 	<script>
 	var userInfo = null;
 	var savedPoints = 0;
-	
-	$("#form-points").spinner({ step:0.1 }).width(30);
 	
 	$("#form-reason").autocomplete(
 	{ 
@@ -57,11 +55,11 @@ try
 		if ($("#form-av-points").attr("checked"))
 		{
 			savedPoints = $("#form-points").val();
-			$("#form-points").val('').spinner("disable");
+			$("#form-points").val('').prop('disabled', true);
 		}
 		else
 		{
-			$("#form-points").val(savedPoints).spinner("enable");
+			$("#form-points").val(savedPoints).prop('disabled', false);
 		}
 	}
 	

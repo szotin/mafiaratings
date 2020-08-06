@@ -65,7 +65,7 @@ try
 	echo '</td></tr>';
 		
 	echo '<tr><td>'.get_label('Time').':</td><td>';
-	echo '<input id="form-hour" value="' . $start->format('H') . '"> : <input id="form-minute" value="' . $start->format('i') . '">';
+	echo '<input type="time" id="form-time" value="' . $start->format('H:i') . '">';
 	echo '</td></tr>';
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
@@ -158,11 +158,6 @@ try
 	show_upload_script(EVENT_PIC_CODE, $event_id);
 ?>	
 	<script>
-	var dateFormat = "<?php echo JS_DATETIME_FORMAT; ?>";
-	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(40);
-	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(40);
-	$("#form-scoring-weight").spinner({ step:0.1, min:0.1 }).width(40);
-	
 	var scoringId = <?php echo $scoring_id; ?>;
 	var scoringVersion = <?php echo $scoring_version; ?>;
 	var scoringOptions = '<?php echo $scoring_options; ?>';
@@ -204,7 +199,7 @@ try
 		else
 		{
 			$("#form-scoring-group").val('');
-			mr.onChangeScoringOptions('form-scoring', onScoringChange);
+			mr.onChangeScoring('form-scoring', 0, onScoringChange);
 			$("#form-scoring-group-div").hide();
 			$("#form-rules").prop('disabled', false);
 			$("#form-scoring-sel").prop('disabled', false);
@@ -252,15 +247,13 @@ try
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		
-		var _start = $('#form-date').val() + ' ' + timeStr($('#form-hour').val()) + ':' + timeStr($('#form-minute').val());
-		
 		var params =
 		{
 			op: "change"
 			, event_id: <?php echo $event_id; ?>
 			, tournament_id: $("#form-tournament").val()
 			, name: $("#form-name").val()
-			, start: _start
+			, start: $('#form-date').val() + 'T' + timeStr($('#form-time').val())
 			, duration: strToTimespan($("#form-duration").val())
 			, price: $("#form-price").val()
 			, address_id: _addr

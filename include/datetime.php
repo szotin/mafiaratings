@@ -1,7 +1,6 @@
 <?php
 
-define('JS_DATETIME_FORMAT', 'yy-mm-dd');
-define('DEF_DATETIME_FORMAT', 'Y-m-d H:i');
+define('DEF_DATETIME_FORMAT', 'Y-m-d\TH:i');
 define('DEF_DATETIME_FORMAT_NO_TIME', 'Y-m-d');
 
 function timestamp_to_string($timestamp, $timezone, $include_time = true)

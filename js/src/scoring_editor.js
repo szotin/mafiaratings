@@ -125,18 +125,18 @@ function pointsHtml(sectionName, policyNum)
     if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
     {
         html += pointsPolicySelect(sectionName, policyNum, 1);
-        html += _data.strings.minDif + ': <input id="' + base + '-mindif"> ';
-        html += _data.strings.points + ': <input id="' + base + '-minpoints"><br>';
-        html += _data.strings.maxDif + ': <input id="' + base + '-maxdif"> ';
-        html += _data.strings.points + ': <input id="' + base + '-maxpoints">';
+        html += _data.strings.minDif + ': <input type="number" style="width: 45px;" id="' + base + '-mindif" step="0.1" min"0" max"1"> ';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-minpoints" step="0.1"><br>';
+        html += _data.strings.maxDif + ': <input type="number" style="width: 45px;" id="' + base + '-maxdif" step="0.1" min="0" max="1"> ';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-maxpoints" step="0.1">';
     }
     else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
     {
         html += pointsPolicySelect(sectionName, policyNum, 2);
-        html += _data.strings.minNight1 + ': <input id="' + base + '-minnight1"> ';
-        html += _data.strings.points + ': <input id="' + base + '-minpoints"><br>';
-        html += _data.strings.maxNight1 + ': <input id="' + base + '-maxnight1"> ';
-        html += _data.strings.points + ': <input id="' + base + '-maxpoints">';
+        html += _data.strings.minNight1 + ': <input type="number" style="width: 45px;" id="' + base + '-minnight1" step="0.1" min="0" max="1"> ';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-minpoints" step="0.1"><br>';
+        html += _data.strings.maxNight1 + ': <input type="number" style="width: 45px;" id="' + base + '-maxnight1" step="0.1" min="0" max="1"> ';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-maxpoints" step="0.1">';
     }
     else
     {
@@ -146,7 +146,7 @@ function pointsHtml(sectionName, policyNum)
         {
             points = policy.points;
         }
-        html += _data.strings.points + ': <input id="' + base + '-points">';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-points" step="0.1">';
     }
     return html;
 }
@@ -440,21 +440,21 @@ function refreshScoringEditor(isDirty)
             var base = '#' + sectionName + '-' + i;
             if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
             {
-                $(base + '-mindif').spinner({ step:0.1, min:0, max:1, change:spinnerChange}).width(64).val(policy.min_difficulty);
-                $(base + '-minpoints').spinner({ step:0.1, change:spinnerChange }).width(64).val(policy.min_points);
-                $(base + '-maxdif').spinner({ step:0.1, min:0, max:1, change:spinnerChange }).width(64).val(policy.max_difficulty);
-                $(base + '-maxpoints').spinner({ step:0.1, change:spinnerChange }).width(64).val(policy.max_points);
+                $(base + '-mindif').val(policy.min_difficulty);
+                $(base + '-minpoints').val(policy.min_points);
+                $(base + '-maxdif').val(policy.max_difficulty);
+                $(base + '-maxpoints').val(policy.max_points);
             }
             else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
             {
-                $(base + '-minnight1').spinner({ step:0.1, min:0, max:1, change:spinnerChange }).width(64).val(policy.min_night1);
-                $(base + '-minpoints').spinner({ step:0.1, change:spinnerChange }).width(64).val(policy.min_points);
-                $(base + '-maxnight1').spinner({ step:0.1, min:0, max:1, change:spinnerChange }).width(64).val(policy.max_night1);
-                $(base + '-maxpoints').spinner({ step:0.1, change:spinnerChange }).width(64).val(policy.max_points);
+                $(base + '-minnight1').val(policy.min_night1);
+                $(base + '-minpoints').val(policy.min_points);
+                $(base + '-maxnight1').val(policy.max_night1);
+                $(base + '-maxpoints').val(policy.max_points);
             }
             else
             {
-                $(base + '-points').spinner({ step:0.1, change:spinnerChange }).width(64).val(policy.points);
+                $(base + '-points').val(policy.points);
             }
         }
     }

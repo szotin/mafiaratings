@@ -65,7 +65,7 @@ try
 	echo '</div></td></tr>';
 		
 	echo '<tr><td>'.get_label('Time').':</td><td>';
-	echo '<input id="form-hour" value="18"> : <input id="form-minute" value="00">';
+	echo '<input type="time" id="form-time" value="18:00">';
 	echo '</td></tr>';
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($event->duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
@@ -177,10 +177,6 @@ try
 	echo '</td></tr></table>';
 ?>	
 	<script>
-	$("#form-hour").spinner({ step:1, max:23, min:0 }).width(40);
-	$("#form-minute").spinner({ step:10, max:50, min:0, numberFormat: "d2" }).width(40);
-	$('#form-scoring-weight').spinner({ step:0.1, min:0.1 }).width(40);
-	
 	function onMinDateChange()
 	{
 		$('#form-date-to').attr("min", $('#form-date-from').val());
@@ -197,6 +193,9 @@ try
 	var scoringOptions = '<?php echo $event->scoring_options; ?>';
 	function onScoringChange(id, version, options)
 	{
+		console.log(id);
+		console.log(version);
+		console.log(JSON.stringify(options));
 		scoringId = id;
 		scoringVersion = version;
 		scoringOptions = JSON.stringify(options);
@@ -236,7 +235,7 @@ try
 		else
 		{
 			$("#form-scoring-group").val('');
-			mr.onChangeScoringOptions('form-scoring', onScoringChange);
+			mr.onChangeScoring('form-scoring', 0, onScoringChange);
 			$("#form-scoring-group-div").hide();
 			$("#form-rules").prop('disabled', false);
 			$("#form-scoring-sel").prop('disabled', false);
@@ -277,13 +276,21 @@ try
 	}
 	addressClick();
 	
+	function timeStr(val)
+	{
+		if (val.length < 2)
+		{
+			return '0' + val;
+		}
+		return val;
+	}
+	
 	function copyEvent()
 	{
 		json.get("api/ops/event.php?op=get&event_id=" + $("#form-copy").val(), function(e)
 		{
 			$("#form-name").val(e.name);
-			$("#form-hour").val(e.hour);
-			$("#form-minute").val(e.minute);
+			$("#form-time").val(e.time_str);
 			$("#form-tournament").val(e.tournament_id);
 			$("#form-duration").val(timespanToStr(e.duration));
 			$("#form-addr_id").val(e.addr_id);
@@ -300,15 +307,6 @@ try
 			tournamentChange();
 		});
 		$("#form-copy").val(0);
-	}
-	
-	function timeStr(val)
-	{
-		if (val.length < 2)
-		{
-			return '0' + val;
-		}
-		return val;
 	}
 	
 	function commit(onSuccess)
@@ -345,7 +343,6 @@ try
 			params['city'] = $("#form-city").val();
 		}
 		
-		var _time = ' ' + timeStr($('#form-hour').val()) + ':' + timeStr($('#form-minute').val());
 		if ($('#form-multiple').attr('checked'))
 		{
 			var weekdays = 0;
@@ -358,12 +355,12 @@ try
 			if ($("#form-wd6").attr('checked')) weekdays |= <?php echo WEEK_FLAG_SAT; ?>;
 			
 			params['weekdays'] = weekdays;
-			params['start'] = $('#form-date-from').val() + _time;
-			params['end'] = $('#form-date-to').val() + _time;
+			params['start'] = $('#form-date-from').val() + 'T' + $('#form-time').val();
+			params['end'] = $('#form-date-to').val() + 'T' + $('#form-time').val();
 		}
 		else
 		{
-			params['start'] = $('#form-date').val() + _time;
+			params['start'] = $('#form-date').val() + 'T' + $('#form-time').val();;
 		}
 		json.post("api/ops/event.php", params, onSuccess);
 	}
