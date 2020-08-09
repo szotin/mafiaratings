@@ -261,27 +261,29 @@ var dialogWaiter = new function()
 			counter = 0;
 			$("#loading").hide();
 		}
-		dlg.error(message, undefined, undefined, function() 
-		{ 
-			if (typeof onError === "function")
+		
+		var noDialog = false;
+		if (typeof onError === "function")
+		{
+			if (typeof data != "undefined")
 			{
-				if (typeof data != "undefined")
+				try
 				{
-					try
-					{
-						onError(message, jQuery.parseJSON(data));
-					}
-					catch (e)
-					{
-						onError(message);
-					}				
+					noDialog = onError(message, jQuery.parseJSON(data));
 				}
-				else
+				catch (e)
 				{
-					onError(message);
-				}
+					noDialog = onError(message);
+				}				
 			}
-		});
+			else
+			{
+				noDialog = onError(message);
+			}
+		}
+		
+		if (!noDialog)
+			dlg.error(message);
 	}
 	
 	this.info = function(message, title, onClose)
