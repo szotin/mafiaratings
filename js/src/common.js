@@ -572,7 +572,6 @@ var json = new function()
 		try
 		{
 			var obj = jQuery.parseJSON(text);
-			// console.log(obj);
 			if (obj != null)
 			{
 				if (typeof obj.login != "undefined")

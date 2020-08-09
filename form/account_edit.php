@@ -20,13 +20,14 @@ try
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td class="dark">' . get_label('User name') . ':</td><td class="light"><input id="form-name" value="' . $_profile->user_name . '"></td>';
-	echo '</td><td align="center" valign="top" rowspan=7>';
+	echo '</td><td align="center" valign="top" rowspan="8">';
+	start_upload_logo_button();
+	echo get_label('Change picture') . '<br>';
 	$user_pic = new Picture(USER_PICTURE);
 	$user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
 	$user_pic->show(ICONS_DIR, false);
-	echo '<p>';
-	show_upload_button();
-	echo '</p></td></tr>';
+	end_upload_logo_button(USER_PIC_CODE, $_profile->user_id);
+	echo '</td></tr>';
 	
 	$club_id = $_profile->user_club_id;
 	if ($club_id == NULL)
@@ -108,7 +109,6 @@ try
 	echo '>'.get_label('I would like to receive emails when someone tags me on a photo.').'</p>';
 	echo '</table>';
 	
-	show_upload_script(USER_PIC_CODE, $_profile->user_id);
 ?>
 	<script>
 	function commit(onSuccess)
@@ -128,6 +128,17 @@ try
 			, message_notify: ($("#form-message_notify").attr("checked") ? 1 : 0)
 			, photo_notify: ($("#form-photo_notify").attr('checked') ? 1 : 0)
 		},
+		onSuccess);
+	}
+	
+	function uploadLogo(onSuccess)
+	{
+		json.upload('api/ops/account.php', 
+		{
+			op: "edit",
+			picture: document.getElementById("upload").files[0]
+		}, 
+		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
 		onSuccess);
 	}
 	</script>

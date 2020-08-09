@@ -38,15 +38,13 @@ try
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="13">';
-	$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
-	$event_pic->
-		set($event_id, $name, $flags)->
-		set($tour_id, $tour_name, $tour_flags)->
-		set($club_id, $club->name, $club->flags);
+	start_upload_logo_button();
+	echo get_label('Change logo') . '<br>';
+	$event_pic = new Picture(EVENT_PICTURE);
+	$event_pic->set($event_id, $name, $flags);
 	$event_pic->show(ICONS_DIR, false, 50);
-	echo '<p>';
-	show_upload_button();
-	echo '</p></td>';
+	end_upload_logo_button(EVENT_PIC_CODE, $event_id);
+	echo '</td>';
 	
 	echo '</tr>';
 	
@@ -155,7 +153,6 @@ try
 	echo '</td></tr>';	
 	echo '</table>';
 	
-	show_upload_script(EVENT_PIC_CODE, $event_id);
 ?>	
 	<script>
 	var scoringId = <?php echo $scoring_id; ?>;
@@ -281,6 +278,17 @@ try
 		$("#dlg-ok").button("option", "disabled", strToTimespan($("#form-duration").val()) <= 0);
 	}
 	
+	function uploadLogo(onSuccess)
+	{
+		json.upload('api/ops/event.php', 
+		{
+			op: "change",
+			event_id: <?php echo $event_id; ?>,
+			logo: document.getElementById("upload").files[0]
+		}, 
+		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
+		onSuccess);
+	}
 	</script>
 <?php
 	echo '<ok>';

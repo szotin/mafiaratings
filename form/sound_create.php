@@ -97,7 +97,7 @@ try
 			, name: $("#form-name").val()
 			, file: document.getElementById("form-file").files[0]
 		},
-		2097152,
+		<?php echo UPLOAD_SOUND_MAX_SIZE; ?>,
 		onSuccess);
 	}
 	

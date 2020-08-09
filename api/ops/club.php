@@ -241,15 +241,15 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
-		global $_profile;
+		global $_profile, $_FILES;
 		
 		$club_id = (int)get_required_param('club_id');
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
-		list($old_name, $old_parent_id, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id, $old_city_id, $timezone) = Db::record(get_label('club'),
-			'SELECT c.name, c.parent_id, c.web_site, c.email, c.phone, c.price, c.langs, c.scoring_id, ct.id, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
-		
+		list($old_name, $old_parent_id, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id, $old_city_id, $old_flags, $timezone) = Db::record(get_label('club'),
+			'SELECT c.name, c.parent_id, c.web_site, c.email, c.phone, c.price, c.langs, c.scoring_id, ct.id, c.flags, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+			
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
 		{
@@ -288,10 +288,23 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
+		$flags = $old_flags;
+		if (isset($_FILES['logo']))
+		{
+			upload_picture('logo', '../../' . CLUB_PICS_DIR, $club_id);
+			
+			$icon_version = (($flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > CLUB_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~CLUB_ICON_MASK) + ($icon_version << CLUB_ICON_MASK_OFFSET);
+		}
+		
 		Db::exec(
 			get_label('club'), 
-			'UPDATE clubs SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, city_id = ?, scoring_id = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $price, $city_id, $scoring_id, $club_id);
+			'UPDATE clubs SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, city_id = ?, scoring_id = ?, flags = ? WHERE id = ?',
+			$name, $url, $langs, $email, $phone, $price, $city_id, $scoring_id, $flags, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
@@ -310,7 +323,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			if ($old_email != $email)
 			{
-				$log_details->email = $email;
+			$log_details->email = $email;
 			}
 			if ($old_price != $price)
 			{
@@ -324,6 +337,11 @@ class ApiPage extends OpsApiPageBase
 			if ($old_scoring_id != $scoring_id)
 			{
 				$log_details->scoring_id = $scoring_id;
+			}
+			if ($old_flags != $flags)
+			{
+				$log_details->flags = $flags;
+				$log_details->logo_uploaded = true;
 			}
 			db_log(LOG_OBJECT_CLUB, 'changed', $log_details, $club_id, $club_id);
 		}
@@ -444,6 +462,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('city_id', 'City id.', 'remains the same unless <q>city</q> and <q>country</q> are set.');
 		$help->request_param('city', 'City name. Used only when <q>city_id</q> is not set. If a city with this name is not found, new city is created.', 'city remains the same unless <q>city_id</q> is set.');
 		$help->request_param('country', 'Country name. Used only when <q>city_id</q> is not set. If a country with this name is not found, new country is created.', 'city remains the same unless <q>city_id</q> is set.');
+		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		return $help;
 	}
 	

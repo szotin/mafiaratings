@@ -140,6 +140,7 @@ function upload_image($input_name, $dst_filename)
 	echo '</pre>';*/
 	if (!isset($_FILES[$input_name]))
 	{
+		throw new Exc($input_name);
 		throw new FatalExc(get_label('Failed to upload [0].', get_label('file')));
 	}
 	$file = $_FILES[$input_name];
@@ -334,116 +335,28 @@ function show_photo_thumbnails($page, $condition)
 	echo '</table>';
 }
 
-function show_upload_script($code, $id)
+function start_upload_logo_button()
 {
-	$upload_url = 'upload.php?code=' . $code . '&id=' . $id;
-	$code = $code . $id;
-?>
-	<script type="text/javascript" src="js/swfupload.js"></script>
-	<script type="text/javascript">
-	
-	$(function()
-	{
-		var settings =
-		{
-			flash_url: "js/swfupload.swf",
-			upload_url: "<?php echo $upload_url; ?>",
-			post_params:
-			{
-				"PHPSESSID": "<?php echo session_id(); ?>"
-			},
-			file_size_limit: "2 MB",
-			file_types: "*.jpg; *.jpeg; *.png",
-			file_types_description: "<?php echo get_label('Picture Files'); ?>",
-			file_upload_limit: 10,
-			file_queue_limit: 0,
-			debug: false,
-
-			// Button settings
-			button_width: "60",
-			button_height: "48",
-			button_image_url: "images/upload.png",
-			button_placeholder_id: "spanButtonPlaceHolder",
-			button_action: SWFUpload.BUTTON_ACTION.SELECT_FILE,
-
-			// The event handler functions are defined in handlers.js
-			file_queued_handler: fileQueued,
-			file_queue_error_handler: fileQueueError,
-			file_dialog_complete_handler: fileDialogComplete,
-			upload_start_handler: uploadStart,
-			upload_error_handler: uploadError,
-			upload_success_handler: uploadSuccess
-		};
-
-		swfu = new SWFUpload(settings);
-
-		function fileQueued(file)
-		{
-		}
-
-		function fileQueueError(file, errorCode, message)
-		{
-			switch (errorCode)
-			{
-			case SWFUpload.QUEUE_ERROR.QUEUE_LIMIT_EXCEEDED:
-				dlg.error("<?php echo get_label('Please select one photo.'); ?>");
-				break;
-			case SWFUpload.QUEUE_ERROR.FILE_EXCEEDS_SIZE_LIMIT:
-				dlg.error("<?php echo get_label('File size exeeds 2 Mb. We do not accept big files.'); ?>");
-				break;
-			case SWFUpload.QUEUE_ERROR.ZERO_BYTE_FILE:
-				dlg.error("<?php echo get_label('Cannot upload Zero Byte files.'); ?>");
-				break;
-			case SWFUpload.QUEUE_ERROR.INVALID_FILETYPE:
-				dlg.error("<?php echo get_label('This is not a picture.'); ?>");
-				break;
-			default:
-				dlg.error("<?php echo get_label('Unhandled Error'); ?>");
-				break;
-			}
-		}
-
-		function fileDialogComplete(numFilesSelected, numFilesQueued)
-		{
-			this.startUpload();
-		}
-
-		function uploadStart(file)
-		{
-			$("#loading").show();
-			return true;
-		}
-
-		function uploadSuccess(file, serverData)
-		{
-			$("#loading").hide();
-			if (serverData.indexOf('ok', serverData.length - 2) >= 0)
-			{
-				var d = (new Date()).getTime();
-				$("img[code=<?php echo $code; ?>]").each(function()
-				{
-					$(this).attr('src', $(this).attr('origin') + '?' + d);
-				});
-			}
-			else
-			{
-				dlg.error(serverData);
-			}
-		}
-
-		function uploadError(file, errorCode, message)
-		{
-			$("#loading").hide();
-			dlg.error(message);
-		}
-	});
-	</script>
-<?php
+	echo '<input type="file" id="upload" style="display:none" onchange="uploadLogo(onLogoUploadSuccess)">';
+	echo '<button class="upload" onclick="$(\'#upload\').trigger(\'click\');">';
 }
 
-function show_upload_button()
+function end_upload_logo_button($pic_code, $id)
 {
-	echo '<span id="spanButtonPlaceHolder"></span>';
+	echo '</button>';
+?>
+	<script>
+	function onLogoUploadSuccess()
+	{
+		var d = (new Date()).getTime();
+		$("img[code=<?php echo $pic_code . $id; ?>]").each(function()
+		{
+			$(this).attr('src', $(this).attr('origin') + '?' + d);
+		});
+	}
+	
+	</script>
+<?php
 }
 
 ?>

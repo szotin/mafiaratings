@@ -1132,25 +1132,6 @@ var mr = new function()
 			mr.showVideoUsers(videoId);
 		});
 	}
-	
-	//--------------------------------------------------------------------------------------
-	// upload
-	//--------------------------------------------------------------------------------------
-	this.upload = function(form, onComplete, onProgress)
-	{
-		var request = new XMLHttpRequest();
-		if (onProgress)
-		{
-			request.addEventListener('progress', onProgress);
-		}
-		if (onComplete)
-		{
-			request.addEventListener('load', onComplete);
-		}
-		request.open('post', 'api/ops/upload.php', true);
-		request.setRequestHeader("Content-Type","multipart/form-data");
-		request.send(file);
-	}
 }
 
 var swfu = null;

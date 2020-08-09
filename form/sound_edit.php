@@ -58,7 +58,7 @@ try
 			params['file'] = file;
 		}
 		
-		json.upload("api/ops/sound.php", params, 2097152, onSuccess);
+		json.upload("api/ops/sound.php", params, <?php echo UPLOAD_SOUND_MAX_SIZE; ?>, onSuccess);
 	}
 	
 	</script>

@@ -4,6 +4,7 @@ require_once '../../include/api.php';
 require_once '../../include/user.php';
 require_once '../../include/city.php';
 require_once '../../include/country.php';
+require_once '../../include/image.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -187,7 +188,6 @@ class ApiPage extends OpsApiPageBase
 	function edit_op()
 	{
 		global $_profile, $_lang_code;
-		
 		check_permissions(PERMISSION_USER);
 		$name = $_profile->user_name;
 		if (isset($_REQUEST['name']))
@@ -296,6 +296,20 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
+		$picture_uploaded = false;
+		if (isset($_FILES['picture']))
+		{
+			upload_picture('picture', '../../' . USER_PICS_DIR, $_profile->user_id);
+			
+			$icon_version = (($flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > USER_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~USER_ICON_MASK) + ($icon_version << USER_ICON_MASK_OFFSET);
+			$picture_uploaded = true;
+		}
+		
 		Db::begin();
 		if (isset($_REQUEST['pwd1']))
 		{
@@ -331,6 +345,11 @@ class ApiPage extends OpsApiPageBase
 			if ($_profile->user_flags != $flags)
 			{
 				$log_details->flags = $flags;
+			}
+			
+			if ($picture_uploaded)
+			{
+				$log_details->picture_uploaded = true;
 			}
 			
 			if ($_profile->user_name != $name)
@@ -389,6 +408,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('pwd2', 'Password confirmation. Must be the same as <q>pwd1</q>. Must be set when <q>pwd1</q> is set. Ignored when <q>pwd1</q> is not set.', '-');
 		$help->request_param('message_notify', '1 to notify user when someone replies to his/her message, 0 to turn notificetions off.', 'remains the same');
 		$help->request_param('photo_notify', '1 to notify user when someone comments on his/her photo, 0 to turn notificetions off.', 'remains the same');
+		$help->request_param('picture', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 
 		$help->response_param('message', 'Localized user message when there is something to tell user.');
 		return $help;

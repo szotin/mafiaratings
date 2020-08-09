@@ -41,8 +41,10 @@ class Page extends AlbumPageBase
 	{
 		global $_profile;
 	
-		echo '<table class="transp" width="100%"><tr><td align="right" valign="center">' . get_label('Change icon') . ':</td><td height="52" width="60">';
-		show_upload_button();
+		echo '<table class="transp" width="100%"><tr><td align="right" valign="center"></td><td height="52" width="60">';
+		start_upload_logo_button();
+		echo get_label('Change logo') . '<br>';
+		end_upload_logo_button(ALBUM_PIC_CODE, $this->album->id);
 		echo '</td></tr></table>';
 	
 		echo '<form method="post" name="updateForm" action="album_edit.php">';
@@ -110,8 +112,31 @@ class Page extends AlbumPageBase
 		echo '</table>';
 		echo '<p><input type="submit" class="btn norm" value="'.get_label('Change album').'" name="update"><input type="submit" class="btn norm" value="' . get_label('Cancel') . '" name="cancel"></p>';
 		echo '</form>';
+	}
+	
+	protected function js()
+	{
+?>		
+		function onSelectEvent()
+		{
+			var enentSelect = document.createForm.event;
+			var nameInput = document.createForm.name;
+			var index = enentSelect.selectedIndex;
+			nameInput.value = enentSelect.options[index].text;
+		}
 		
-		show_upload_script(ALBUM_PIC_CODE, $this->album->id);
+		function uploadLogo(onSuccess)
+		{
+			json.upload('api/ops/album.php', 
+			{
+				op: "change",
+				album_id: <?php echo $this->album->id; ?>,
+				logo: document.getElementById("upload").files[0]
+			}, 
+			<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
+			onSuccess);
+		}
+<?php
 	}
 }
 
@@ -119,16 +144,3 @@ $page = new Page();
 $page->run(get_label('Edit photo album'));
 
 ?>
-
-<script language="JavaScript" type="text/javascript">
-<!--
-
-	function onSelectEvent()
-	{
-		var enentSelect = document.createForm.event;
-		var nameInput = document.createForm.name;
-		var index = enentSelect.selectedIndex;
-		nameInput.value = enentSelect.options[index].text;
-	}
-//-->
-</script>

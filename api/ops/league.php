@@ -6,6 +6,7 @@ require_once '../../include/address.php';
 require_once '../../include/event.php';
 require_once '../../include/url.php';
 require_once '../../include/scoring.php';
+require_once '../../include/image.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -156,8 +157,8 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
-		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_rules) = Db::record(get_label('league'),
-			'SELECT name, web_site, email, phone, langs, scoring_id, rules FROM leagues c WHERE id = ?', $league_id);
+		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_rules, $old_flags) = Db::record(get_label('league'),
+			'SELECT name, web_site, email, phone, langs, scoring_id, rules, flags FROM leagues c WHERE id = ?', $league_id);
 		
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
@@ -217,10 +218,23 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('[0] is not a valid email address.', $email));
 		}
 		
+		$flags = $old_flags;
+		if (isset($_FILES['logo']))
+		{
+			upload_picture('logo', '../../' . LEAGUE_PICS_DIR, $league_id);
+			
+			$icon_version = (($flags & LEAGUE_ICON_MASK) >> LEAGUE_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > LEAGUE_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~LEAGUE_ICON_MASK) + ($icon_version << LEAGUE_ICON_MASK_OFFSET);
+		}
+		
 		Db::exec(
 			get_label('league'), 
-			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ?, rules = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $scoring_id, $rules, $league_id);
+			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ?, rules = ?, flags = ? WHERE id = ?',
+			$name, $url, $langs, $email, $phone, $scoring_id, $rules, $flags, $league_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -248,6 +262,11 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->rules = $rules;
 			}
+			if ($old_flags != $flags)
+			{
+				$log_details->flags = $flags;
+				$log_details->logo_uploaded = true;
+			}
 			db_log(LOG_OBJECT_LEAGUE, 'changed', $log_details, $league_id, NULL, $league_id);
 		}
 		Db::commit();
@@ -263,6 +282,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('email', 'League email.', 'remains the same.');
 		$help->request_param('phone', 'League phone. Just a text.', 'remains the same.');
 		api_rules_filter_help($help->request_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Contains json. Example: { "split_on_four": true, "extra_points": ["figm", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
+		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		return $help;
 	}
 	

@@ -6,6 +6,7 @@ require_once '../../include/email.php';
 require_once '../../include/message.php';
 require_once '../../include/datetime.php';
 require_once '../../include/scoring.php';
+require_once '../../include/image.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -442,14 +443,28 @@ class ApiPage extends OpsApiPageBase
 		
 		$old_start_datetime = get_datetime($old_start, $old_timezone);
 		$old_end_datetime = get_datetime($old_start + $old_duration, $old_timezone);
-		$start_datetime = get_datetime(get_required_param('start', datetime_to_string($old_start_datetime)), $timezone);
-		$end_datetime = get_datetime(get_required_param('end', datetime_to_string($old_end_datetime)), $timezone);
+		$start_datetime = get_datetime(get_optional_param('start', datetime_to_string($old_start_datetime)), $timezone);
+		$end_datetime = get_datetime(get_optional_param('end', datetime_to_string($old_end_datetime)), $timezone);
 		$start = $start_datetime->getTimestamp();
 		$end = $end_datetime->getTimestamp();
 		$duration = $end - $start;
 		if ($duration <= 0)
 		{
 			throw new Exc(get_label('Tournament ends before or right after the start.'));
+		}
+		
+		$logo_uploaded = false;
+		if (isset($_FILES['logo']))
+		{
+			upload_picture('logo', '../../' . TOURNAMENT_PICS_DIR, $tournament_id);
+			
+			$icon_version = (($flags & TOURNAMENT_ICON_MASK) >> TOURNAMENT_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > TOURNAMENT_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~TOURNAMENT_ICON_MASK) + ($icon_version << TOURNAMENT_ICON_MASK_OFFSET);
+			$logo_uploaded = true;
 		}
 		
 		if ($request_league_id != $old_request_league_id)
@@ -633,6 +648,10 @@ class ApiPage extends OpsApiPageBase
 			if ($flags != $old_flags)
 			{
 				$log_details->flags = $flags;
+			}
+			if ($logo_uploaded)
+			{
+				$log_details->logo_uploaded = true;
 			}
 			db_log(LOG_OBJECT_TOURNAMENT, 'changed', $log_details, $tournament_id, $club_id, $old_league_id);
 		}

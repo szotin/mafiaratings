@@ -32,14 +32,13 @@ try
 	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="12" width="120">';
-	$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE));
-	$tournament_pic->
-		set($tournament_id, $name, $flags)->
-		set($club_id, $club->name, $club->flags);
-	$tournament_pic->show(ICONS_DIR, false, 50);
-	echo '<p>';
-	show_upload_button();
-	echo '</p></td></tr>';
+	start_upload_logo_button();
+	echo get_label('Change logo') . '<br>';
+	$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+	$tournament_pic->set($tournament_id, $name, $flags);
+	$tournament_pic->show(ICONS_DIR, false);
+	end_upload_logo_button(TOURNAMENT_PIC_CODE, $tournament_id);
+	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league">';
 	show_option(0, $request_league_id, '');
@@ -129,7 +128,6 @@ try
 	
 	echo '</table>';
 	
-	show_upload_script(TOURNAMENT_PIC_CODE, $tournament_id);
 ?>	
 
 	<script type="text/javascript" src="js/rater.min.js"></script>
@@ -212,6 +210,17 @@ try
 		json.post("api/ops/tournament.php", params, onSuccess);
 	}
 	
+	function uploadLogo(onSuccess)
+	{
+		json.upload('api/ops/tournament.php', 
+		{
+			op: "change"
+			, tournament_id: <?php echo $tournament_id; ?>
+			, logo: document.getElementById("upload").files[0]
+		}, 
+		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
+		onSuccess);
+	}
 	</script>
 <?php
 	echo '<ok>';

@@ -164,7 +164,15 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Photo Operations</td>
+	<td>Photo Album Operations</td>
+	<td><a href="album.php?help"><?php echo PRODUCT_URL; ?>/api/ops/album.php</a></td>
+	<td>
+		<p>Manipulating photo albums.</p>
+	</td>
+</tr>
+
+<tr>
+	<td>Single Photo Operations</td>
 	<td><a href="photo.php?help"><?php echo PRODUCT_URL; ?>/api/ops/photo.php</a></td>
 	<td>
 		<p>Manipulating photos.</p>

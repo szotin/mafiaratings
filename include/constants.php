@@ -286,4 +286,7 @@ function set_flag($flags, $flag, $value)
 	return $flags & ~$flag;
 }
 
+define('UPLOAD_LOGO_MAX_SIZE', 0);
+define('UPLOAD_SOUND_MAX_SIZE', 2097152);
+
 ?>

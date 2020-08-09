@@ -32,13 +32,14 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140">' . get_label('Club name') . ':</td><td><input class="longest" id="form-club_name" value="' . htmlspecialchars($club->name, ENT_QUOTES) . '"></td>';
 	
-	echo '<td align="center" valign="top" rowspan="9">';
+	echo '<td align="center" valign="top" rowspan="10">';
+	start_upload_logo_button();
+	echo get_label('Change logo') . '<br>';
 	$club_pic = new Picture(CLUB_PICTURE);
 	$club_pic->set($id, $club->name, $flags);
 	$club_pic->show(ICONS_DIR, false);
-	echo '<p>';
-	show_upload_button();
-	echo '</p></td>';
+	end_upload_logo_button(CLUB_PIC_CODE, $id);
+	echo '</td>';
 	
 	echo '</tr>';
 	
@@ -75,8 +76,7 @@ try
 	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $id);
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
 	while ($row = $query->next())
-	{
-		list ($scoring_id, $scoring_name) = $row;
+	{		list ($scoring_id, $scoring_name) = $row;
 		echo '<option value="' . $scoring_id . '"';
 		if ($scoring_id == $club->scoring_id)
 		{
@@ -88,7 +88,6 @@ try
 	
 	echo '</table>';
 	
-	show_upload_script(CLUB_PIC_CODE, $id);
 ?>	
 	<script>
 	function commit(onSuccess)
@@ -109,6 +108,18 @@ try
 			, scoring_id: $("#form-scoring").val()
 			, langs: languages
 		},
+		onSuccess);
+	}
+	
+	function uploadLogo(onSuccess)
+	{
+		json.upload('api/ops/club.php', 
+		{
+			op: "change",
+			club_id: <?php echo $id; ?>,
+			logo: document.getElementById("upload").files[0]
+		}, 
+		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
 		onSuccess);
 	}
 	</script>

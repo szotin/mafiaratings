@@ -37,12 +37,13 @@ try
 	echo '<tr><td width="120">' . get_label('Address name') . ':</td><td><input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="5">';
+	start_upload_logo_button();
+	echo get_label('Change logo') . '<br>';
 	$address_pic = new Picture(ADDRESS_PICTURE);
 	$address_pic->set($id, $name, $flags);
 	$address_pic->show(ICONS_DIR, false);
-	echo '<p>';
-	show_upload_button();
-	echo '</p></td>';
+	end_upload_logo_button(ADDRESS_PIC_CODE, $id);
+	echo '</td>';
 	
 	echo '</tr>';
 	
@@ -58,7 +59,6 @@ try
 	
 	echo '</table>';
 	
-	show_upload_script(ADDRESS_PIC_CODE, $id);
 ?>	
 	<script>
 	function commit(onSuccess)
@@ -73,6 +73,18 @@ try
 			, country: $("#form-country").val()
 		};
 		json.post("api/ops/address.php", params, onSuccess);
+	}
+	
+	function uploadLogo(onSuccess)
+	{
+		json.upload('api/ops/address.php', 
+		{
+			op: "change",
+			address_id: <?php echo $id; ?>,
+			logo: document.getElementById("upload").files[0]
+		}, 
+		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
+		onSuccess);
 	}
 	</script>
 <?php	

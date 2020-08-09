@@ -6,6 +6,7 @@ require_once '../../include/email.php';
 require_once '../../include/message.php';
 require_once '../../include/game_stats.php';
 require_once '../../include/datetime.php';
+require_once '../../include/image.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -345,6 +346,21 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
+		$logo_uploaded = false;
+		if (isset($_FILES['logo']))
+		{
+			upload_picture('logo', '../../' . EVENT_PICS_DIR, $event_id);
+			
+			$icon_version = (($flags & EVENT_ICON_MASK) >> EVENT_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > EVENT_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~EVENT_ICON_MASK) + ($icon_version << EVENT_ICON_MASK_OFFSET);
+			$logo_uploaded = true;
+		}
+		
+		
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
@@ -404,6 +420,10 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->scoring_options = $scoring_options;
 			}
+			if ($logo_uploaded)
+			{
+				$log_details->logo_uploaded = true;
+			}
 			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
 		}
 		
@@ -453,6 +473,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('country', 'When <q>address_id</q> is not set, and <q>address</q> is set, and <q>country_id</q> is not set - this is the country name for the new address. If <?php echo PRODUCT_NAME; ?> can not find a country with this name, new country is created.', 'club country is used for the new address.');
 		$help->request_param('city_id', 'When <q>address_id<q> is not set, and <q>address</q> is set - this is the city id for the new address.', '<q>city</q> parameter is used to create new city for the address.');
 		$help->request_param('city', 'When <q>address_id</q> is not set, and <q>address</q> is set, and <q>city_id</q> is not set - this is the city name for the new address. If <?php echo PRODUCT_NAME; ?> can not find a city with this name, new city is created.', 'club city is used for the new address.');
+		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		return $help;
 	}
 	

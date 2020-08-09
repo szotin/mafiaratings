@@ -5,6 +5,7 @@ require_once '../../include/club.php';
 require_once '../../include/city.php';
 require_once '../../include/country.php';
 require_once '../../include/address.php';
+require_once '../../include/image.php';
 
 require_once '../../include/api.php';
 require_once '../../include/user_location.php';
@@ -94,7 +95,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$address_id = (int)get_required_param('address_id');
-		list($club_id, $old_name, $old_address, $old_city_id) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id FROM addresses WHERE id = ?', $address_id);
+		list($club_id, $old_name, $old_address, $old_city_id, $old_flags) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id, flags FROM addresses WHERE id = ?', $address_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		if (isset($_REQUEST['address']))
@@ -138,10 +139,23 @@ class ApiPage extends OpsApiPageBase
 			$city_id = $old_city_id;
 		}
 	
+		$flags = $old_flags;
+		if (isset($_FILES['logo']))
+		{
+			upload_picture('logo', '../../' . ADDRESS_PICS_DIR, $address_id);
+			
+			$icon_version = (($flags & ADDRESS_ICON_MASK) >> ADDRESS_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > ADDRESS_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~ADDRESS_ICON_MASK) + ($icon_version << ADDRESS_ICON_MASK_OFFSET);
+		}
+		
 		Db::exec(
 			get_label('address'), 
-			'UPDATE addresses SET name = ?, address = ?, city_id = ?, club_id = ? WHERE id = ?',
-			$name, $address, $city_id, $club_id, $address_id);
+			'UPDATE addresses SET name = ?, address = ?, city_id = ?, club_id = ?, flags = ? WHERE id = ?',
+			$name, $address, $city_id, $club_id, $flags, $address_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
@@ -157,6 +171,11 @@ class ApiPage extends OpsApiPageBase
 			if ($city_id != $old_city_id)
 			{
 				$log_details->city_id = $city_id;
+			}
+			if ($old_flags != $flags)
+			{
+				$log_details->flags = $flags;
+				$log_details->logo_uploaded = true;
 			}
 			db_log(LOG_OBJECT_ADDRESS, 'changed', $log_details, $address_id, $club_id);
 		}
@@ -179,6 +198,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('city', 'City name. Used only when <q>city_id</q> is not set. If a city with this name is not found, new city is created.', 'city remains the same unless <q>city_id</q> is set.');
 		$help->request_param('country', 'Country name. Used only when <q>city_id</q> is not set. If a country with this name is not found, new country is created.', 'city remains the same unless <q>city_id</q> is set.');
 		$help->response_param('changed', '1 if the address was changed. Whan everything remains the same, or only name is changed, it is 0.', '0.');
+		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		return $help;
 	}
 	

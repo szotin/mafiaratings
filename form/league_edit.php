@@ -29,12 +29,13 @@ try
 	echo '<tr><td width="140">' . get_label('League name') . ':</td><td><input class="longest" id="form-league_name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="8">';
+	start_upload_logo_button();
+	echo get_label('Change logo') . '<br>';
 	$league_pic = new Picture(LEAGUE_PICTURE);
 	$league_pic->set($id, $name, $flags);
 	$league_pic->show(ICONS_DIR, false);
-	echo '<p>';
-	show_upload_button();
-	echo '</p></td>';
+	end_upload_logo_button(LEAGUE_PIC_CODE, $id);
+	echo '</td>';
 	
 	echo '</tr>';
 
@@ -63,7 +64,6 @@ try
 	
 	echo '</table>';
 	
-	show_upload_script(LEAGUE_PIC_CODE, $id);
 ?>	
 	<script>
 	function commit(onSuccess)
@@ -80,6 +80,18 @@ try
 			, scoring_id: $("#form-scoring").val()
 			, langs: languages
 		},
+		onSuccess);
+	}
+	
+	function uploadLogo(onSuccess)
+	{
+		json.upload('api/ops/league.php', 
+		{
+			op: "change"
+			, league_id: <?php echo $id; ?>
+			, logo: document.getElementById("upload").files[0]
+		}, 
+		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
 		onSuccess);
 	}
 	</script>

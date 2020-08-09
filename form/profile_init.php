@@ -24,12 +24,13 @@ try
 	echo '</td>';
 	
 	echo '<td width="' . ICON_WIDTH . '" align="center" valign="top" rowspan="8">';
+	start_upload_logo_button();
+	echo get_label('Change picture') . '<br>';
 	$user_pic = new Picture(USER_PICTURE);
 	$user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
 	$user_pic->show(ICONS_DIR, false);
-	echo '<p>';
-	show_upload_button();
-	echo '</p></td></tr>';
+	end_upload_logo_button(USER_PIC_CODE, $_profile->user_id);
+	echo '</td></tr>';
 
 	$club_id = $_profile->user_club_id;
 	if ($club_id == NULL)
@@ -80,8 +81,6 @@ try
 		
 	echo '</table>';
 		
-	show_upload_script(USER_PIC_CODE, $_profile->user_id);
-	
 ?>	
 	<script>
 	var clubSetManually = false;
@@ -151,6 +150,16 @@ try
 	$("#en" ).change(updateClub);
 	updateClub();
 	
+	function uploadLogo(onSuccess)
+	{
+		json.upload('api/ops/account.php', 
+		{
+			op: "edit",
+			picture: document.getElementById("upload").files[0]
+		}, 
+		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
+		onSuccess);
+	}
 	</script>
 <?php
 	echo '<ok>';
