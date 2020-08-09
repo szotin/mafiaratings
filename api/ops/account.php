@@ -299,7 +299,7 @@ class ApiPage extends OpsApiPageBase
 		$picture_uploaded = false;
 		if (isset($_FILES['picture']))
 		{
-			upload_picture('picture', '../../' . USER_PICS_DIR, $_profile->user_id);
+			upload_logo('picture', '../../' . USER_PICS_DIR, $_profile->user_id);
 			
 			$icon_version = (($flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET) + 1;
 			if ($icon_version > USER_ICON_MAX_VERSION)

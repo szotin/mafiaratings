@@ -349,7 +349,7 @@ class ApiPage extends OpsApiPageBase
 		$logo_uploaded = false;
 		if (isset($_FILES['logo']))
 		{
-			upload_picture('logo', '../../' . EVENT_PICS_DIR, $event_id);
+			upload_logo('logo', '../../' . EVENT_PICS_DIR, $event_id);
 			
 			$icon_version = (($flags & EVENT_ICON_MASK) >> EVENT_ICON_MASK_OFFSET) + 1;
 			if ($icon_version > EVENT_ICON_MAX_VERSION)

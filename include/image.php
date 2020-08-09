@@ -140,7 +140,6 @@ function upload_image($input_name, $dst_filename)
 	echo '</pre>';*/
 	if (!isset($_FILES[$input_name]))
 	{
-		throw new Exc($input_name);
 		throw new FatalExc(get_label('Failed to upload [0].', get_label('file')));
 	}
 	$file = $_FILES[$input_name];
@@ -229,14 +228,14 @@ function build_photo_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
 	imagedestroy($t_img);
 }
 
-function upload_photo($input_name, $id, $t_option = TNAIL_OPTION_FIT)
+function upload_photo($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT)
 {
-	if (!is_dir(PHOTOS_DIR))
+	if (!is_dir($dir))
 	{
-		mkdir(PHOTOS_DIR);
+		mkdir($dir);
 	}
-	$img = upload_image($input_name, PHOTOS_DIR . $id . '.jpg');
-	build_photo_tnail(PHOTOS_DIR, $id, $t_option, $img);
+	$img = upload_image($input_name, $dir . $id . '.jpg');
+	build_photo_tnail($dir, $id, $t_option, $img);
 	imagedestroy($img);
 }
 
@@ -283,7 +282,7 @@ function build_pic_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
 	}
 }
 
-function upload_picture($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT)
+function upload_logo($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT)
 {
 	if (!is_dir($dir))
 	{

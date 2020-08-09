@@ -2,12 +2,46 @@
 
 require_once '../../include/api.php';
 require_once '../../include/message.php';
-require_once '../../include/email.php';
+require_once '../../include/photo_album.php';
+require_once '../../include/image.php';
 
 define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	//-------------------------------------------------------------------------------------------------------
+	// create
+	//-------------------------------------------------------------------------------------------------------
+	function create_op()
+	{
+		global $_profile;
+		
+		$album_id = (int)get_required_param('album_id', 0);
+		$album = new PhotoAlbum($album_id);
+		if (!$album->can_add())
+		{
+			throw new FatalExc(get_label('No permissions'));
+		}
+		
+		Db::exec(
+			get_label('photo'), 
+			'INSERT INTO photos (user_id, viewers, album_id) VALUES (?, ?, ?)', 
+			$_profile->user_id, $album->viewers, $album->id);
+
+		list ($id) = Db::record(get_label('photo'), 'SELECT LAST_INSERT_ID()');
+		upload_photo('photo', '../../' . PHOTOS_DIR, $id);
+		$this->response['photo_id'] = $id;
+	}
+	
+	function create_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_OWNER, 'Create a photo.');
+		$help->request_param('album_id', 'Photo album this photo belongs to.');
+		$help->request_param('photo', 'Photo file to be uploaded for multicast multipart/form-data.');
+		$help->response_param('photo_id', 'Newly created photo id.');
+		return $help;
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------

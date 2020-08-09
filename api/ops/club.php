@@ -291,7 +291,7 @@ class ApiPage extends OpsApiPageBase
 		$flags = $old_flags;
 		if (isset($_FILES['logo']))
 		{
-			upload_picture('logo', '../../' . CLUB_PICS_DIR, $club_id);
+			upload_logo('logo', '../../' . CLUB_PICS_DIR, $club_id);
 			
 			$icon_version = (($flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET) + 1;
 			if ($icon_version > CLUB_ICON_MAX_VERSION)

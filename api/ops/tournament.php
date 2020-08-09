@@ -456,7 +456,7 @@ class ApiPage extends OpsApiPageBase
 		$logo_uploaded = false;
 		if (isset($_FILES['logo']))
 		{
-			upload_picture('logo', '../../' . TOURNAMENT_PICS_DIR, $tournament_id);
+			upload_logo('logo', '../../' . TOURNAMENT_PICS_DIR, $tournament_id);
 			
 			$icon_version = (($flags & TOURNAMENT_ICON_MASK) >> TOURNAMENT_ICON_MASK_OFFSET) + 1;
 			if ($icon_version > TOURNAMENT_ICON_MAX_VERSION)

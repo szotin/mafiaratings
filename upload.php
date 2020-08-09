@@ -31,7 +31,7 @@ try
 		list ($club_id, $flags) = Db::record(get_label('address'), 'SELECT club_id, flags FROM addresses WHERE id = ?', $id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
-		upload_picture('Filedata', ADDRESS_PICS_DIR, $id);
+		upload_logo('Filedata', ADDRESS_PICS_DIR, $id);
 		$icon_version = (($flags & ADDRESS_ICON_MASK) >> ADDRESS_ICON_MASK_OFFSET) + 1;
 		if ($icon_version > ADDRESS_ICON_MAX_VERSION)
 		{
@@ -54,7 +54,7 @@ try
 		list ($club_id, $flags) = Db::record(get_label('user'), 'SELECT club_id, flags FROM users WHERE id = ?', $id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $id);
 	
-		upload_picture('Filedata', USER_PICS_DIR, $id);
+		upload_logo('Filedata', USER_PICS_DIR, $id);
 		$icon_version = (($flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET) + 1;
 		if ($icon_version > USER_ICON_MAX_VERSION)
 		{
@@ -76,7 +76,7 @@ try
 	
 	case CLUB_PIC_CODE:
 		check_permissions(PERMISSION_CLUB_MANAGER, $id);
-		upload_picture('Filedata', CLUB_PICS_DIR, $id);
+		upload_logo('Filedata', CLUB_PICS_DIR, $id);
 		
 		list ($flags) = Db::record(get_label('club'), 'SELECT flags FROM clubs WHERE id = ?', $id);
 		$icon_version = (($flags & CLUB_ICON_MASK) >> CLUB_ICON_MASK_OFFSET) + 1;
@@ -97,7 +97,7 @@ try
 	
 	case LEAGUE_PIC_CODE:
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $id);
-		upload_picture('Filedata', LEAGUE_PICS_DIR, $id);
+		upload_logo('Filedata', LEAGUE_PICS_DIR, $id);
 		
 		list ($flags) = Db::record(get_label('league'), 'SELECT flags FROM leagues WHERE id = ?', $id);
 		$icon_version = (($flags & LEAGUE_ICON_MASK) >> LEAGUE_ICON_MASK_OFFSET) + 1;
@@ -120,7 +120,7 @@ try
 		list ($owner_id, $club_id, $flags) = Db::record(get_label('photo album'),'SELECT user_id, club_id, flags FROM photo_albums WHERE id = ?', $id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $owner_id);
 	
-		upload_picture('Filedata', ALBUM_PICS_DIR, $id);
+		upload_logo('Filedata', ALBUM_PICS_DIR, $id);
 		
 		$icon_version = (($flags & ALBUM_ICON_MASK) >> ALBUM_ICON_MASK_OFFSET) + 1;
 		if ($icon_version > ALBUM_ICON_MAX_VERSION)
@@ -142,7 +142,7 @@ try
 		list ($club_id, $flags) = Db::record(get_label('event'), 'SELECT club_id, flags FROM events WHERE id = ?', $id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
-		upload_picture('Filedata', EVENT_PICS_DIR, $id);
+		upload_logo('Filedata', EVENT_PICS_DIR, $id);
 		
 		$icon_version = (($flags & EVENT_ICON_MASK) >> EVENT_ICON_MASK_OFFSET) + 1;
 		if ($icon_version > EVENT_ICON_MAX_VERSION)
@@ -164,7 +164,7 @@ try
 		list ($club_id, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, flags FROM tournaments WHERE id = ?', $id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
-		upload_picture('Filedata', TOURNAMENT_PICS_DIR, $id);
+		upload_logo('Filedata', TOURNAMENT_PICS_DIR, $id);
 		
 		$icon_version = (($flags & TOURNAMENT_ICON_MASK) >> TOURNAMENT_ICON_MASK_OFFSET) + 1;
 		if ($icon_version > TOURNAMENT_ICON_MAX_VERSION)
@@ -195,7 +195,7 @@ try
 			$_profile->user_id, $album->viewers, $album->id);
 
 		list ($id) = Db::record(get_label('photo'), 'SELECT LAST_INSERT_ID()');
-		upload_photo('Filedata', $id);
+		upload_photo('Filedata', PHOTOS_DIR, $id);
 		break;
 		
 	default:

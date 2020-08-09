@@ -87,7 +87,7 @@ class ApiPage extends OpsApiPageBase
 		// Only upload is implemented yet.
 		if (isset($_FILES['logo']))
 		{
-			upload_picture('logo', '../../' . ALBUM_PICS_DIR, $album_id);
+			upload_logo('logo', '../../' . ALBUM_PICS_DIR, $album_id);
 			
 			$flags = $old_flags;
 			$icon_version = (($flags & ALBUM_ICON_MASK) >> ALBUM_ICON_MASK_OFFSET) + 1;

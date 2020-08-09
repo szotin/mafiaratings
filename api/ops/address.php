@@ -142,7 +142,7 @@ class ApiPage extends OpsApiPageBase
 		$flags = $old_flags;
 		if (isset($_FILES['logo']))
 		{
-			upload_picture('logo', '../../' . ADDRESS_PICS_DIR, $address_id);
+			upload_logo('logo', '../../' . ADDRESS_PICS_DIR, $address_id);
 			
 			$icon_version = (($flags & ADDRESS_ICON_MASK) >> ADDRESS_ICON_MASK_OFFSET) + 1;
 			if ($icon_version > ADDRESS_ICON_MAX_VERSION)
