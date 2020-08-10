@@ -906,6 +906,7 @@ mafia.ui = new function()
 					break;
 					
 				case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
+					console.log('Killed speaking -----------------------------------');
 					p = game.players[game.player_speaking];
 					$('#r' + game.player_speaking).removeClass().addClass('day-mark');
 					if (mafia.isKillingThisDay())
@@ -935,6 +936,7 @@ mafia.ui = new function()
 					break;
 					
 				case /*GAME_STATE_VOTING*/8:
+					console.log('Voting --------------------------------------------');
 					if (voting.canceled > 0)
 					{
 						status = l('VotingCanceled') + ' ' + l('StartNight');
@@ -998,8 +1000,6 @@ mafia.ui = new function()
 					
 				case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
 					console.log('Multiple winners ----------------------------------');
-					console.log('voting.canceled:');
-					console.log(voting.canceled);
 					if (voting.canceled > 0)
 					{
 						status = l('VotingCanceled') + ' ' + l('StartNight');
@@ -1007,26 +1007,12 @@ mafia.ui = new function()
 					else
 					{
 						n = mafia.votingWinners();
-						console.log('mafia.playersCount()');
-						console.log(mafia.playersCount());
-						console.log('mafia.votingWinners():');
-						console.log(n);
-						console.log('mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11):');
-						console.log(mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11));
-						console.log('mafia.isKillingThisDay():');
-						console.log(mafia.isKillingThisDay());
-						console.log('voting.voting_round:');
-						console.log(voting.voting_round);
-						console.log('voting:');
-						console.log(voting);
 						if (mafia.playersCount() == 4 && n.length == 2 && mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11) == /*RULES_SPLIT_ON_FOUR_PROHIBITED*/1)
 						{
-							console.log('NoOneKilled');
 							status = l('NoOneKilled');
 						}
 						else if (!mafia.isKillingThisDay())
 						{
-							console.log('MultipleDistrust');
 							status = l('MultipleDistrust', n.length) + ' ';
 							if (n.length > 0)
 							{
@@ -1041,12 +1027,10 @@ mafia.ui = new function()
 						{
 							if (mafia.playersCount() == 3)
 							{
-								console.log('ThreeVoters');
 								status = l('ThreeVoters', n.length);
 							}
 							else
 							{
-								console.log('AllOrNoOne');
 								status = l('AllOrNoOne', n.length);
 								clockHtml = 
 									'<button id="ka"' + (mafia.votingKillAll() ? ' checked' : '') + 
@@ -1057,7 +1041,6 @@ mafia.ui = new function()
 						}
 						else
 						{
-							console.log('RepeatVoting');
 							status = l('RepeatVoting', n.length) + ' ';
 							if (n.length > 0)
 							{
@@ -1069,10 +1052,10 @@ mafia.ui = new function()
 							}
 						}
 					}
-					console.log('---------------------------------------------------');
 					break;
 					
 				case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+					console.log('Nominant speaking ---------------------------------');
 					if (voting.canceled > 0)
 					{
 						status = l('VotingCanceled') + ' ' + l('StartNight');
