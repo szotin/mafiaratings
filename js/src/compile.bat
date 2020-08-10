@@ -18,7 +18,6 @@ copy labels_ru.js ..
 java -jar compiler.jar --js md5.js --js_output_file ..\md5.js
 java -jar compiler.jar --js mr.js --js_output_file ..\mr.js
 java -jar compiler.jar --js mr.chart.js --js_output_file ..\mr.chart.js
-copy fileprogress.js ..
 java -jar compiler.jar --js seating.js --js_output_file ..\seating.js
 java -jar compiler.jar --js seating-en.js --js_output_file ..\seating-en.js
 copy seating-ru.js ..
