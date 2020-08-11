@@ -26,10 +26,30 @@ class ApiPageBase
 		}
 	}
 	
+	private function _doLogin($user_name, $password)
+	{
+		$found = false;
+		$query = new DbQuery('SELECT id, password FROM users WHERE name = ? OR email = ? ORDER BY games DESC, id', $user_name, $user_name);
+		while ($row = $query->next())
+		{
+			list ($user_id, $password_hash) = $row;
+			if (md5($password) == $password_hash && login($user_id, false))
+			{
+				$found = true;
+				break;
+			}
+		}
+		
+		if (!$found)
+		{
+			throw new Exc('Authorization failed');
+		}
+	}
+	
 	protected function _run($title, $version)
 	{
 		global $_profile;
-		
+
 		$this->title = $title;
 		$this->latest_version = $this->version = (int)$version;
 		if ($this->version >= 0 && isset($_REQUEST['version']))
@@ -86,11 +106,30 @@ class ApiPageBase
 				}
 				
 				$this->response = array();
+				
+				// Authorization
+				$headers = getallheaders();
+				if (isset($headers['Authorization']))
+				{
+					$auth = $headers['Authorization'];
+					if (substr($auth, 0, 6) == 'Basic ')
+					{
+						list($user_name, $password) = explode(':', base64_decode(substr($auth, 6)));
+						if ($_profile == NULL || ($user_name != $_profile->user_name && $user_name != $_profile->user_email))
+						{
+							$this->_doLogin($user_name, $password);
+						}
+					}
+				}
 				$this->prepare_response();
 			}
 			catch (LoginExc $e)
 			{
-				$this->response['login'] = $e->user_name;
+				if ($e->user_name != null)
+				{
+					$this->response['login'] = $e;
+				}
+				$this->response['error'] = $e->getMessage();
 			}
 			catch (RedirectExc $e)
 			{
@@ -142,7 +181,7 @@ class ApiPageBase
 			
 			$help->request_param('version', $descr, 'latest version is used'); 
 		}
-		$help->request_param('lod', 'Level of details. The greater it is the more fields are added to the responce. When LOD is not 0 for a response field, it is specified in the field description.', '0.');
+		$help->request_param('lod', 'Level of details. The greater it is the more fields are added to the response. When LOD is not 0 for a response field, it is specified in the field description.', '0.');
 		$help->request_param('help', 'Shows this screen.', '-');
 		
 		$help->response_param('error', 

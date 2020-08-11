@@ -39,7 +39,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Invalid start time'));
 		}
 		
-		$end = ApiPage::get_timestamp(get_required_param('end'), $club->timezone);
+		$end = ApiPage::get_timestamp(get_optional_param('end', time() + 2 * 7 * 24 * 60 *60), $club->timezone);
 		if ($end <= 0)
 		{
 			throw new Exc(get_label('Invalid end time'));
@@ -74,7 +74,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('club_id', 'Club id. Required.');
 		$help->request_param('message', 'Advertizement message text.');
 		$help->request_param('start', 'Time when the message will start apearing in the club main page. It is either unix timestamp or time string in format (php datetime format) "Y-m-d H:i" ("2018-06-23 17:33").', 'the message starts being showed immediatly.');
-		$help->request_param('end', 'Expiration time.  It is either unix timestamp or time string in format (php datetime format) "Y-m-d H:i" ("2018-06-23 17:33").');
+		$help->request_param('end', 'Expiration time.  It is either unix timestamp or time string in format (php datetime format) "Y-m-d H:i" ("2018-06-23 17:33").', 'the end is in two weeks from now');
 		$help->request_param('lang', 'Advertisement language. 1 (English) or 2 (Russian). Other languages are not supported yet.', 'auto-detected by analyzing message character codes.');
 
 		$help->response_param('advert_id', 'Newly created advertisement id.');
