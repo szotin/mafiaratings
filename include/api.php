@@ -108,17 +108,14 @@ class ApiPageBase
 				$this->response = array();
 				
 				// Authorization
-				$headers = getallheaders();
-				if (isset($headers['Authorization']))
+				if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW']))
 				{
-					$auth = $headers['Authorization'];
-					if (substr($auth, 0, 6) == 'Basic ')
+					$user_name = $_SERVER['PHP_AUTH_USER'];
+					$password = $_SERVER['PHP_AUTH_PW'];
+					if ($_profile == NULL || ($user_name != $_profile->user_name && $user_name != $_profile->user_email))
 					{
-						list($user_name, $password) = explode(':', base64_decode(substr($auth, 6)));
-						if ($_profile == NULL || ($user_name != $_profile->user_name && $user_name != $_profile->user_email))
-						{
-							$this->_doLogin($user_name, $password);
-						}
+						$this->_doLogin($user_name, $password);
+						$this->response['logged_in'] = $user_name;
 					}
 				}
 				$this->prepare_response();
