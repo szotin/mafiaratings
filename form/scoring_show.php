@@ -142,6 +142,98 @@ try
 			echo '</td></tr>';
 		}
 	}
+	
+	$sorting = SCORING_DEFAULT_SORTING;
+	if (isset($scoring->sorting))
+	{
+		$sorting = $scoring->sorting;
+	}
+	
+	echo '<tr class="darker"><td colspan="2"><h4>' . get_label('When the scores are the same') . '</h4></td></tr>';
+	$inside_brackets = false;
+	$sorting_text = '';
+	$compare_text = get_label('higher');
+	$delimiter_text = '';
+	$first = true;
+	for ($i = 0; $i < strlen($sorting); ++$i)
+	{
+		$ch = $sorting[$i];
+		switch ($ch)
+		{
+			case SCORING_SORTING_MAIN_POINTS:
+				$sorting_text .= $delimiter_text . get_label('main points');
+				$delimiter_text = get_label(' plus ');
+				break;
+			case SCORING_SORTING_LEGACY_POINTS:
+				$sorting_text .= $delimiter_text . get_label('legacy points');
+				$delimiter_text = get_label(' plus ');
+				break;
+			case SCORING_SORTING_EXTRA_POINTS:
+				$sorting_text .= $delimiter_text . get_label('extra points');
+				$delimiter_text = get_label(' plus ');
+				break;
+			case SCORING_SORTING_PENALTY_POINTS:
+				$sorting_text .= $delimiter_text . get_label('penalty points');
+				$delimiter_text = get_label(' plus ');
+				break;
+			case SCORING_SORTING_NIGHT1_POINTS:
+				$sorting_text .= $delimiter_text . get_label('points for being killed first night');
+				$delimiter_text = get_label(' plus ');
+				break;
+			case SCORING_SORTING_WIN:
+				$sorting_text .= $delimiter_text . get_label('number of wins');
+				$delimiter_text = get_label(' plus ');
+				break;
+			case SCORING_SORTING_SPECIAL_ROLE_WIN:
+				$sorting_text .= $delimiter_text . get_label('number of special role wins');
+				$delimiter_text = get_label(' plus ');
+				break;
+			case SCORING_SORTING_KILLED_FIRST_NIGHT:
+				$sorting_text .= $delimiter_text . get_label('times being killed first night');
+				$delimiter_text = get_label(' plus ');
+				break;
+			case '-':
+				$compare_text = get_label('lower');
+				break;
+			case '(';
+				$inside_brackets = true;
+				$delimiter_text = get_label('sum of: ');
+				break;
+			case ')';
+				$inside_brackets = false;
+				break;
+		}
+		
+		if (!$inside_brackets && !empty($sorting_text))
+		{
+			echo '<tr><td colspan="2">';
+			if ($first)
+			{
+				echo get_label('The winner is the one who has [0] [1].', $compare_text, $sorting_text);
+			}
+			else
+			{
+				echo get_label('If still equal, the winner is the one who has [0] [1].', $compare_text, $sorting_text);
+			}
+			echo '</td></tr>';
+			$sorting_text = '';
+			$compare_text = get_label('higher');
+			$delimiter_text = '';
+			$first = false;
+		}
+	}
+	echo '<tr><td colspan="2">';
+	if ($first)
+	{
+		echo get_label('The winner is the one who registered with [0] first.', PRODUCT_NAME);
+	}
+	else
+	{
+		echo get_label('If still equal, the winner is the one who registered with [0] first.', PRODUCT_NAME);
+	}
+	echo '</td></tr>';
+	
+	
 	echo '</table>';
 	echo '<ok>';
 }
