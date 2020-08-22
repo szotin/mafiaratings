@@ -2,25 +2,9 @@
 
 require_once '../include/session.php';
 require_once '../include/scoring.php';
+require_once '../include/security.php';
 
 initiate_session();
-
-// function get_scoring_policy_label($policy)
-// {
-	// switch ($policy & SCORING_ROLE_FLAGS_ALL)
-	// {
-		// case SCORING_POLICY_STATIC:
-			// return get_label('Static points');
-		// case SCORING_POLICY_GAME_DIFFICULTY:
-			// return get_label('Points depending on game difficulty (i.e. who wins more often civs or mafia)');
-		// case SCORING_POLICY_FIRST_NIGHT_KILLING:
-			// return get_label('Points depending on how often the player was killed the first night');
-		// case SCORING_POLICY_FIRST_NIGHT_KILLING_FIGM:
-			// return get_label('Points depending on how often the player was killed the first night by FIGM rules');
-	// }
-	// return get_label('Unknown');
-// }
-
 
 try
 {
@@ -33,16 +17,40 @@ try
 	if (isset($_REQUEST['version']))
 	{
 		$version = (int)$_REQUEST['version'];
-		list($scoring, $name) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? AND v.version = ?', $id, $version);
+		list($scoring, $name, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? AND v.version = ?', $id, $version);
 	}
 	else
 	{
-		list($scoring, $name, $version) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, v.version FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? ORDER BY version DESC LIMIT 1', $id);
+		list($scoring, $name, $version, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, v.version, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? ORDER BY version DESC LIMIT 1', $id);
 		$version = (int)$version;
 	}
 	$scoring = json_decode($scoring);
 	
+	if (is_null($club_id))
+	{
+		if (is_null($league_id))
+		{
+			$can_edit = is_permitted(PERMISSION_ADMIN);
+		}
+		else
+		{
+			$can_edit = is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id);
+		}
+	}
+	else
+	{
+		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER, $club_id);
+		if (!is_null($league_id))
+		{
+			$can_edit = is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id);
+		}
+	}
+	
 	dialog_title(get_label('Scoring system [0]. Version [1].', $name, $version));
+	if ($can_edit)
+	{
+		echo '<p><a onclick="mr.editScoringSystem(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a><p>';
+	}
 	
 	echo '<table class="bordered light" width="100%">';
 	foreach ($_scoring_groups as $group)

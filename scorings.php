@@ -18,16 +18,26 @@ class Page extends GeneralPageBase
 		
 		echo '<td>' . get_label('Scoring system name') . '</td></tr>';
 		
-		$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id IS NULL ORDER BY name');
+		$query = new DbQuery('SELECT id, name, version FROM scorings WHERE club_id IS NULL ORDER BY name');
 		while ($row = $query->next())
 		{
-			list ($id, $name) = $row;
+			list ($id, $name, $version) = $row;
 			echo '<tr><td class="dark" align="center">';
 			echo '<a onclick="mr.deleteScoringSystem(' . $id . ', \'' . get_label('Are you sure you want to delete [0]?', $name) . '\')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
 			echo '<a onclick="mr.editScoringSystem(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
-			echo '</td><td><a href="scoring.php?bck=1&id=' . $id . '">' . $name . '</a></td></tr>';
+			echo '</td><td><a href="javascript:showScoring(' . $id . ', ' . $version . ')">' . $name . '</a></td></tr>';
 		}
 		echo '</table>';
+	}
+	
+	protected function js()
+	{
+?>
+		function showScoring(id, version)
+		{
+			dlg.infoForm("form/scoring_show.php?id=" + id + "&version=" + version);
+		}
+<?php
 	}
 }
 

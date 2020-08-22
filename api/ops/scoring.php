@@ -49,7 +49,14 @@ class ApiPage extends OpsApiPageBase
 		if ($club_id > 0)
 		{
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-			$league_id = NULL;
+			if ($league_id > 0)
+			{
+				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			}
+			else
+			{
+				$league_id = NULL;
+			}
 		}
 		else if ($league_id > 0)
 		{
@@ -74,7 +81,7 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		$this->check_name($name, $club_id, $league_id);
 		
-		Db::exec(get_label('scoring system'), 'INSERT INTO scorings (club_id, league_id, name) VALUES', $club_id, $league_id, $name);
+		Db::exec(get_label('scoring system'), 'INSERT INTO scorings (club_id, league_id, name, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $name);
 		list ($scoring_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
 		
 		if ($copy_id > 0)
@@ -87,6 +94,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::exec(get_label('scoring system'), 'INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (?, 1, ?)', $scoring_id, $scoring);
+		Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = 1', $club_id, $league_id, $name);
 		
 		$log_details = new stdClass();
 		$log_details->name = $name;
@@ -94,7 +102,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->scoring = $scoring;
 		db_log(LOG_OBJECT_SCORING_SYSTEM, 'created', $log_details, $scoring_id, $club_id, $league_id);
 		Db::commit();
-		$this->result['scoring_id'] = (int)$scoring_id;
+		$this->response['scoring_id'] = (int)$scoring_id;
 	}
 	
 	function create_op_help()
@@ -104,7 +112,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('league_id', 'League id.', 'global scoring system is created.');
 		$help->request_param('name', 'Scoring system name.');
 		$help->request_param('copy_id', 'Id of the existing scoring system to be used as an initial template. If set, the latest version of scoring rules from this system are copied to the new system.', 'parameter <q>scoring</q> is used to create the new system.');
-		api_scoring_help($help->request_param('scoring', 'Scoring rules:', 'empty scoring system is created or copy_id is used if set.'));
+		api_scoring_help($help->request_param('scoring', 'Scoring rules:', 'empty scoring system is created.'));
 		$help->response_param('scoring_id', 'Id of the newly created scoring system.');
 		return $help;
 	}
@@ -122,8 +130,12 @@ class ApiPage extends OpsApiPageBase
 		if (!is_null($club_id))
 		{
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			if (!is_null($league_id))
+			{
+				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			}
 		}
-		if (!is_null($league_id))
+		else if (!is_null($league_id))
 		{
 			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		}
@@ -142,25 +154,19 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$overwrite = false;
-		$version_id = NULL;
-		$version = 0;
-		$query = new DbQuery('SELECT version_id, scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
-		if ($scoring != NULL && $row = $query->next())
+		list ($old_scoring, $version) = Db::record(get_label('scoring system'), 'SELECT v.scoring, s.version FROM scorings s JOIN scoring_versions v ON v.scoring_id = s.id AND v.version = s.version WHERE s.id = ?', $scoring_id);
+		if ($old_scoring != $scoring)
 		{
-			list ($version_id, $old_scoring, $version) = $row;
-			if ($old_scoring != $scoring)
+			list ($usageCount) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . EVENT_FLAG_FINISHED . ') <> 0', $scoring_id, $version);
+			if ($usageCount <= 0)
 			{
-				list ($usageCount) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE scoring_id = ? AND (flags & ' . EVENT_FLAG_FINISHED . ') <> 0', $version_id);
-				if ($usageCount <= 0)
-				{
-					list ($usageCount) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE scoring_id = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $version_id);
-					$overwrite = ($usageCount <= 0);
-				}
+				list ($usageCount) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $scoring_id, $version);
+				$overwrite = ($usageCount <= 0);
 			}
-			else
-			{
-				$scoring = NULL;
-			}
+		}
+		else
+		{
+			$scoring = NULL;
 		}
 		
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
@@ -175,7 +181,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($overwrite)
 			{
-				Db::exec(get_label('scoring system'), 'UPDATE scoring_versions SET scoring = ? WHERE id = ?', $scoring, $version_id);
+				Db::exec(get_label('scoring system'), 'UPDATE scoring_versions SET scoring = ? WHERE scoring_id = ? AND version = ?', $scoring, $scoring_id, $version);
 				if (Db::affected_rows() > 0)
 				{
 					$log_details = new stdClass();
@@ -187,6 +193,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				++$version;
 				Db::exec(get_label('scoring system'), 'INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (?, ?, ?)', $scoring_id, $version, $scoring);
+				Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = ? WHERE id = ?', $version, $scoring_id);
 				if (Db::affected_rows() > 0)
 				{
 					$log_details = new stdClass();
@@ -197,7 +204,8 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		Db::commit();
-		return $help;
+		
+		$this->response['scoring_version'] = (int)$version;
 	}
 	
 	function change_op_help()
@@ -206,6 +214,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) updating requires <em>admin</em> permissions.');
 		$help->request_param('name', 'Scoring system name.', 'remains the same.');
 		api_scoring_help($help->request_param('scoring', 'Scoring rules:', 'remain the same.'));
+		$help->response_param('version', 'Current scoring system version.');
 		return $help;
 	}
 

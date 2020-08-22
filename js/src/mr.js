@@ -679,14 +679,25 @@ var mr = new function()
 		});
 	}
 
-	this.createScoringSystem = function(clubId)
+	this.createScoringSystem = function(clubId, leagueId)
 	{
-		dlg.form("form/scoring_create.php?club=" + clubId, refr, 400);
+		var url = "form/scoring_create.php";
+		var delim = "?";
+		if (clubId)
+		{
+			url += delim + "club=" + clubId;
+			delim = "&";
+		}
+		if (leagueId)
+		{
+			url += delim + "league=" + leagueId;
+		}
+		dlg.form(url, refr, 400);
 	}
 
 	this.editScoringSystem = function(id)
 	{
-		dlg.form("form/scoring_edit.php?id=" + id, refr, 400);
+		goTo("scoring.php?bck=1&id=" + id);
 	}
 	
 	this.createScoringRule = function(systemId, category)

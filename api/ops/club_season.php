@@ -70,7 +70,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::commit();
 		
-		$this->result['season_id'] = (int)$season_id;
+		$this->response['season_id'] = (int)$season_id;
 	}
 	
 	function create_op_help()

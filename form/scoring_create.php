@@ -2,6 +2,7 @@
 
 require_once '../include/session.php';
 require_once '../include/scoring.php';
+require_once '../include/security.php';
 
 initiate_session();
 
@@ -15,18 +16,31 @@ try
 		$club_id = $_REQUEST['club'];
 	}
 	
-	if ($club_id > 0)
+	$league_id = -1;
+	if (isset($_REQUEST['league']))
 	{
-		if ($_profile == NULL || !$_profile->is_club_manager($club_id))
-		{
-			throw new FatalExc(get_label('No permissions'));
-		}
-	}
-	else if (!$_profile->is_admin())
-	{
-		throw new FatalExc(get_label('No permissions'));
+		$league_id = $_REQUEST['league'];
 	}
 	
+	echo $club_id . '<p>' . $league_id . '<p>';
+	
+	// if ($club_id > 0)
+	// {
+		// check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		// if ($league_id > 0)
+		// {
+			// check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		// }
+	// }
+	// else if ($league_id > 0)
+	// {
+		// check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+	// }
+	// else
+	// {
+		// check_permissions(PERMISSION_ADMIN);
+	// }
+		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="200">'.get_label('Scoring system name').':</td><td><input id="form-name"></td></tr>';
 	
@@ -52,6 +66,7 @@ try
 			, name: $("#form-name").val()
 			, copy_id: $("#form-copy").val()
 			, club_id: <?php echo $club_id; ?>
+			, league_id: <?php echo $league_id; ?>
 		};
 		json.post("api/ops/scoring.php", params, onSuccess);
 	}

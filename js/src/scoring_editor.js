@@ -1,22 +1,49 @@
 var _data = null;
 var _isDirty = false;
+var _onChangeData = null;
+var _timerIsWorking = false;
+
+function isScoringDataCorrect()
+{
+    for (var sectionName in _data.sections)
+	{
+		var section = _data.scoring[sectionName];
+		if (!section)
+			continue;
+		for (var i = 0; i < section.length; ++i)
+		{
+			var policy = section[i];
+			if (typeof policy.message == "string")
+				return false;
+		}
+	}
+	return true;
+}
 
 function dirty(isDirty)
 {
     if (typeof isDirty == "boolean")
     {
         _isDirty = isDirty;
+		if (_isDirty && _onChangeData && !_timerIsWorking && isScoringDataCorrect())
+		{
+			_timerIsWorking = true;
+			setTimeout(function()
+			{
+				_onChangeData(data);
+				_isDirty = _timerIsWorking = false;
+			}, 1000);
+		}
     }
     return _isDirty;
 }
 
-function spinnerChange(e, ui)
+function spinnerChange(controlId)
 {
-    var ids = e.target.id.split('-');
+    var ids = controlId.split('-');
     var policy = _data.scoring[ids[0]][parseInt(ids[1])];
     var spinnerId = ids[2];
-    var value = parseFloat(e.target.value);
-    dirty(true);
+    var value = parseFloat($('#' + controlId).val());
     switch (spinnerId)
     {
         case 'points':
@@ -40,7 +67,11 @@ function spinnerChange(e, ui)
         case 'maxnight1':
             policy.max_night1 = value;
             break;
+		case 'figm_night':
+            policy.figm_first_night_score = value;
+            break;
     }
+    dirty(true);
 }
 
 function pointsPolicyChange(sectionName, policyNum)
@@ -52,6 +83,8 @@ function pointsPolicyChange(sectionName, policyNum)
         case 1:
             if (typeof policy.points != "undefined")
                 policy.min_points = policy.max_points = policy.points;
+			else if (typeof policy.figm_first_night_score != "undefined")
+                policy.min_points = policy.max_points = policy.figm_first_night_score;
             if (typeof policy.min_difficulty == "undefined")
             {
                 policy.min_difficulty = 0;
@@ -64,6 +97,7 @@ function pointsPolicyChange(sectionName, policyNum)
                 if (typeof policy.max_night1 != "undefined")
                     policy.max_difficulty = policy.max_night1;
             }
+			delete policy.figm_first_night_score;
             delete policy.points;
             delete policy.min_night1;
             delete policy.max_night1;
@@ -71,6 +105,8 @@ function pointsPolicyChange(sectionName, policyNum)
         case 2:
             if (typeof policy.points != "undefined")
                 policy.min_points = policy.max_points = policy.points;
+			else if (typeof policy.figm_first_night_score != "undefined")
+                policy.min_points = policy.max_points = policy.figm_first_night_score;
             if (typeof policy.min_night1 == "undefined")
             {
                 policy.min_night1 = 0;
@@ -83,9 +119,23 @@ function pointsPolicyChange(sectionName, policyNum)
                 if (typeof policy.max_difficulty != "undefined")
                     policy.max_night1 = policy.max_difficulty;
             }
+			delete policy.figm_first_night_score;
             delete policy.points;
             delete policy.min_difficulty;
             delete policy.max_difficulty;
+            break;
+        case 3:
+			if (typeof policy.figm_first_night_score == "undefined")
+			{
+				policy.figm_first_night_score = 0.4;
+			}
+            delete policy.points;
+            delete policy.min_points;
+            delete policy.max_points;
+            delete policy.min_difficulty;
+            delete policy.max_difficulty;
+            delete policy.min_night1;
+            delete policy.max_night1;
             break;
         default:
             if (typeof policy.points == "undefined")
@@ -95,7 +145,10 @@ function pointsPolicyChange(sectionName, policyNum)
                     policy.points = policy.max_points;
                 else if (typeof policy.max_points != "undefined")
                     policy.points = policy.min_points;
+				else if (typeof policy.figm_first_night_score != "undefined")
+					policy.points = policy.figm_first_night_score;
             }
+			delete policy.figm_first_night_score;
             delete policy.min_points;
             delete policy.max_points;
             delete policy.min_night1;
@@ -113,6 +166,7 @@ function pointsPolicySelect(sectionName, policyNum, option)
     html += '<option value="0"' + (option == 0 ? ' selected' : '') + '>' + _data.strings.statPoints + '</option>';
     html += '<option value="1"' + (option == 1 ? ' selected' : '') + '>' + _data.strings.difPoints + '</option>';
     html += '<option value="2"' + (option == 2 ? ' selected' : '') + '>' + _data.strings.shotPoints + '</option>';
+    html += '<option value="3"' + (option == 3 ? ' selected' : '') + '>' + _data.strings.shotPointsFigm + '</option>';
     html += '</select><p>';
     return html;
 }
@@ -125,28 +179,28 @@ function pointsHtml(sectionName, policyNum)
     if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
     {
         html += pointsPolicySelect(sectionName, policyNum, 1);
-        html += _data.strings.minDif + ': <input type="number" style="width: 45px;" id="' + base + '-mindif" step="0.1" min"0" max"1"> ';
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-minpoints" step="0.1"><br>';
-        html += _data.strings.maxDif + ': <input type="number" style="width: 45px;" id="' + base + '-maxdif" step="0.1" min="0" max="1"> ';
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-maxpoints" step="0.1">';
+        html += _data.strings.minDif + ': <input type="number" style="width: 45px;" id="' + base + '-mindif" step="0.1" min"0" max"1" onChange="spinnerChange(\'' + base + '-mindif\')"> ';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-minpoints" step="0.1" onChange="spinnerChange(\'' + base + '-minpoints\')"><br>';
+        html += _data.strings.maxDif + ': <input type="number" style="width: 45px;" id="' + base + '-maxdif" step="0.1" min="0" max="1" onChange="spinnerChange(\'' + base + '-maxdif\')"> ';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-maxpoints" step="0.1" onChange="spinnerChange(\'' + base + '-maxpoints\')">';
     }
     else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
     {
         html += pointsPolicySelect(sectionName, policyNum, 2);
-        html += _data.strings.minNight1 + ': <input type="number" style="width: 45px;" id="' + base + '-minnight1" step="0.1" min="0" max="1"> ';
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-minpoints" step="0.1"><br>';
-        html += _data.strings.maxNight1 + ': <input type="number" style="width: 45px;" id="' + base + '-maxnight1" step="0.1" min="0" max="1"> ';
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-maxpoints" step="0.1">';
+        html += _data.strings.minNight1 + ': <input type="number" style="width: 45px;" id="' + base + '-minnight1" step="0.1" min="0" max="1" onChange="spinnerChange(\'' + base + '-minnight1\')"> ';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-minpoints" step="0.1" onChange="spinnerChange(\'' + base + '-minpoints\')"><br>';
+        html += _data.strings.maxNight1 + ': <input type="number" style="width: 45px;" id="' + base + '-maxnight1" step="0.1" min="0" max="1" onChange="spinnerChange(\'' + base + '-maxnight1\')"> ';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-maxpoints" step="0.1" onChange="spinnerChange(\'' + base + '-maxpoints\')">';
+    }
+    else if (typeof policy.figm_first_night_score != "undefined")
+    {
+        html += pointsPolicySelect(sectionName, policyNum, 3);
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-figm_night" step="0.1" onChange="spinnerChange(\'' + base + '-figm_night\')">';
     }
     else
     {
         html += pointsPolicySelect(sectionName, policyNum, 0);
-        var points = 0;
-        if (typeof policy.points != "undefined")
-        {
-            points = policy.points;
-        }
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-points" step="0.1">';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-points" step="0.1" onChange="spinnerChange(\'' + base + '-points\')">';
     }
     return html;
 }
@@ -155,13 +209,21 @@ function deletePolicy(sectionName, policyNum)
 {
     var section = _data.scoring[sectionName];
     section.splice(policyNum, 1);
+	if (section.length == 0)
+	{
+		delete _data.scoring[sectionName];
+	}
     refreshScoringEditor(true);
 }
 
 function createPolicy(sectionName)
 {
     var section = _data.scoring[sectionName];
-    section.push({ matter: 0, points: 0 });
+	if (!section)
+	{
+		section = _data.scoring[sectionName] = [];
+	}
+    section.push({ matter: 0, points: 1 });
     refreshScoringEditor(true);
 }
 
@@ -249,36 +311,39 @@ function sectionHtml(sectionName)
 {
     var section = _data.scoring[sectionName];
     var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.policyAdd + '" onclick="createPolicy(\'' + sectionName + '\')"><img src="images/create.png"></button></td><td colspan="3">' + _data.sections[sectionName] + '</td></tr>';
-    for (var i = 0; i < section.length; ++i)
-    {
-        var policy = section[i];
-        delete policy.message;
-        html += '<tr valign="top"><td align="center"><button class="icon" title="' + _data.strings.policyDel + '" onclick="deletePolicy(\'' + sectionName + '\', ' + i + ')"><img src="images/delete.png"></button></td>';
-        html += '<td width="100">'
-        html += rolesHtml(sectionName, i);
-        html += '</td><td width="140">'
-        var matter = policy.matter;
-        if (matter <= 0)
-            policy.message = _data.strings.actionErr;
-        else while (matter > 0)
-        {
-            var oldMatter = matter;
-            matter &= matter - 1;
-            html += matterSelectHtml(sectionName, i, matter ^ oldMatter);
-        }
-        html += matterSelectHtml(sectionName, i, 0);
-        html += '</td>'
-        if (typeof policy.message == "string")
-        {
-            html += '<td class="light" align="center"><p><font color="red">' + policy.message + '</font></p>';
-        }
-        else
-        {
-            html += '<td>';
-            html += pointsHtml(sectionName, i);
-        }
-        html += '</td></tr>';
-    }
+	if (section)
+	{
+		for (var i = 0; i < section.length; ++i)
+		{
+			var policy = section[i];
+			delete policy.message;
+			html += '<tr valign="top"><td align="center"><button class="icon" title="' + _data.strings.policyDel + '" onclick="deletePolicy(\'' + sectionName + '\', ' + i + ')"><img src="images/delete.png"></button></td>';
+			html += '<td width="100">'
+			html += rolesHtml(sectionName, i);
+			html += '</td><td width="140">'
+			var matter = policy.matter;
+			if (matter <= 0)
+				policy.message = _data.strings.actionErr;
+			else while (matter > 0)
+			{
+				var oldMatter = matter;
+				matter &= matter - 1;
+				html += matterSelectHtml(sectionName, i, matter ^ oldMatter);
+			}
+			html += matterSelectHtml(sectionName, i, 0);
+			html += '</td>'
+			if (typeof policy.message == "string")
+			{
+				html += '<td class="light" align="center"><p><font color="red">' + policy.message + '</font></p>';
+			}
+			else
+			{
+				html += '<td>';
+				html += pointsHtml(sectionName, i);
+			}
+			html += '</td></tr>';
+		}
+	}
     html += '<tr class="light"><td colspan="5"></td></tr>';
     return html;
 }
@@ -418,9 +483,28 @@ function sortingHtml()
     return html;
 }
 
+function onScoringNameChange()
+{
+	_data.name = $("#scoring-name").val();
+	dirty(true);
+}
+
+function setScoringVersion(version)
+{
+	if (_data.version != version)
+	{
+		_data.version = version;
+		refreshScoringEditor();
+	}
+}
+
 function refreshScoringEditor(isDirty)
 {
-    var html = '<table width="100%" class="bordered">';
+    var html = '<table width="100%" class="bordered dark">';
+	if (_data.name)
+	{
+		html += '<tr><td colspan="4">' + _data.strings.name + ': <input id="scoring-name" value="' + _data.name + '" onChange="onScoringNameChange()"> ' + _data.strings.version + ': ' + _data.version + '</td></tr>';
+	}
     for (var sectionName in _data.sections)
     {
         html += sectionHtml(sectionName);
@@ -429,40 +513,47 @@ function refreshScoringEditor(isDirty)
     html += '</table>';
     
     $("#scoring-editor").html(html);
-    $("#result").html(JSON.stringify(_data.scoring));
     
     for (var sectionName in _data.sections)
     {
         section = _data.scoring[sectionName];
-        for (var i = 0; i < section.length; ++i)
-        {
-            var policy = section[i];
-            var base = '#' + sectionName + '-' + i;
-            if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
-            {
-                $(base + '-mindif').val(policy.min_difficulty);
-                $(base + '-minpoints').val(policy.min_points);
-                $(base + '-maxdif').val(policy.max_difficulty);
-                $(base + '-maxpoints').val(policy.max_points);
-            }
-            else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
-            {
-                $(base + '-minnight1').val(policy.min_night1);
-                $(base + '-minpoints').val(policy.min_points);
-                $(base + '-maxnight1').val(policy.max_night1);
-                $(base + '-maxpoints').val(policy.max_points);
-            }
-            else
-            {
-                $(base + '-points').val(policy.points);
-            }
-        }
+		if (section)
+		{
+			for (var i = 0; i < section.length; ++i)
+			{
+				var policy = section[i];
+				var base = '#' + sectionName + '-' + i;
+				if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
+				{
+					$(base + '-mindif').val(policy.min_difficulty);
+					$(base + '-minpoints').val(policy.min_points);
+					$(base + '-maxdif').val(policy.max_difficulty);
+					$(base + '-maxpoints').val(policy.max_points);
+				}
+				else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
+				{
+					$(base + '-minnight1').val(policy.min_night1);
+					$(base + '-minpoints').val(policy.min_points);
+					$(base + '-maxnight1').val(policy.max_night1);
+					$(base + '-maxpoints').val(policy.max_points);
+				}
+				else if (typeof policy.figm_first_night_score != "undefined")
+				{
+					$(base + '-figm_night').val(policy.figm_first_night_score);
+				}
+				else
+				{
+					$(base + '-points').val(policy.points);
+				}
+			}
+		}
     }
     dirty(isDirty);
 }
 
-function initScoringEditor(data)
+function initScoringEditor(data, onChangeData)
 {
     _data = data;
+	_onChangeData = onChangeData;
     refreshScoringEditor();
 }
