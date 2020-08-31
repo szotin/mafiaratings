@@ -15,3 +15,6 @@ del /Q "..\seating.js"
 del /Q "..\seating-en.js"
 del /Q "..\seating-ru.js"
 del /Q "..\seating-ui.js"
+del /Q "..\scoring_editor.js"
+del /Q "..\normalizer_editor.js"
+

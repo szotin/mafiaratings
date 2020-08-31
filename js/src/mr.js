@@ -700,24 +700,6 @@ var mr = new function()
 		goTo("scoring.php?bck=1&id=" + id);
 	}
 	
-	this.createScoringRule = function(systemId, category)
-	{
-		dlg.form("form/scoring_rule_create.php?scoring=" + systemId + '&category=' + category, refr);
-	}
-	
-	this.deleteScoringRule = function(systemId, category, matter, confirmMessage)
-	{
-		dlg.yesNo(confirmMessage, null, null, function()
-		{
-			json.post("api/ops/scoring.php", { op: 'delete_rule', scoring_id: systemId, matter: matter, category: category }, refr);
-		});
-	}
-	
-	this.editScoringSorting = function(systemId)
-	{
-		dlg.form("form/scoring_sorting_edit.php?scoring=" + systemId, refr, 600);
-	}
-	
 	this.showScoring = function(name)
 	{
 		dlg.infoForm("form/scoring_show.php?id=" + $('#' + name + '-sel').val() + "&version=" + $('#' + name + '-ver').val());
@@ -832,6 +814,38 @@ var mr = new function()
 			}
 			changed($('#' + name + '-sel').val(), $('#' + name + '-ver').val(), ops);
 		}
+	}
+	
+	//--------------------------------------------------------------------------------------
+	// scoring normalizers
+	//--------------------------------------------------------------------------------------
+	this.deleteNormalizer = function(id, confirmMessage)
+	{
+		dlg.yesNo(confirmMessage, null, null, function()
+		{
+			json.post("api/ops/normalizer.php", { op: 'delete', normalizer_id: id }, refr);
+		});
+	}
+
+	this.createNormalizer = function(clubId, leagueId)
+	{
+		var url = "form/normalizer_create.php";
+		var delim = "?";
+		if (clubId)
+		{
+			url += delim + "club=" + clubId;
+			delim = "&";
+		}
+		if (leagueId)
+		{
+			url += delim + "league=" + leagueId;
+		}
+		dlg.form(url, refr, 400);
+	}
+
+	this.editNormalizer = function(id)
+	{
+		goTo("normalizer.php?bck=1&id=" + id);
 	}
 	
 	//--------------------------------------------------------------------------------------

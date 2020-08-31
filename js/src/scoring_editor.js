@@ -1,7 +1,6 @@
 var _data = null;
 var _isDirty = false;
 var _onChangeData = null;
-var _timerIsWorking = false;
 
 function isScoringDataCorrect()
 {
@@ -24,15 +23,10 @@ function dirty(isDirty)
 {
     if (typeof isDirty == "boolean")
     {
-        _isDirty = isDirty;
-		if (_isDirty && _onChangeData && !_timerIsWorking && isScoringDataCorrect())
+		_isDirty = isDirty;
+		if (_onChangeData)
 		{
-			_timerIsWorking = true;
-			setTimeout(function()
-			{
-				_onChangeData(data);
-				_isDirty = _timerIsWorking = false;
-			}, 1000);
+			_onChangeData(_data, isDirty);
 		}
     }
     return _isDirty;

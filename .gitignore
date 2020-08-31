@@ -41,3 +41,4 @@ include/pdf/font/unifont/arial.cw127.php
 include/pdf/font/unifont/arial.cw.dat
 js/scoring_editor.js
 sounds/
+js/normalizer_editor.js

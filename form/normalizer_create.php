@@ -8,7 +8,7 @@ initiate_session();
 
 try
 {
-	dialog_title(get_label('Scoring system'));
+	dialog_title(get_label('Scoring normalizer'));
 
 	$club_id = -1;
 	if (isset($_REQUEST['club']))
@@ -40,11 +40,11 @@ try
 	}
 		
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="200">'.get_label('Scoring system name').':</td><td><input id="form-name"></td></tr>';
+	echo '<tr><td width="200">'.get_label('Scoring normalizer name').':</td><td><input id="form-name"></td></tr>';
 	
 	echo '<tr><td>'.get_label('Copy all rules from') . ':</td><td><select id="form-copy">';
 	show_option(0, 0, '');
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id IS NULL OR club_id = ? ORDER BY name', $club_id);
+	$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id IS NULL OR club_id = ? ORDER BY name', $club_id);
 	while ($row = $query->next())
 	{
 		list ($id, $name) = $row;
@@ -66,7 +66,7 @@ try
 			, club_id: <?php echo $club_id; ?>
 			, league_id: <?php echo $league_id; ?>
 		};
-		json.post("api/ops/scoring.php", params, onSuccess);
+		json.post("api/ops/normalizer.php", params, onSuccess);
 	}
 	</script>
 <?php

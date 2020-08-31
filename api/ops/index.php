@@ -132,6 +132,14 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
+	<td>Scoring Normalizer Operations</td>
+	<td><a href="normalizer.php?help"><?php echo PRODUCT_URL; ?>/api/ops/normalizer.php</a></td>
+	<td>
+		<p>Scoring normalizers are used in the tournaments where players play different number of games. They normalize the result because otherwise a player who played more games wins no matter how good he/she is.</p><p>The simplest normalizer would divide player's score to the number of games played. This is not the best one because it gives the advantage to a player who played only one game and won it. Thus more complicated rules can be created to make normalization as fair as possible.</p>
+	</td>
+</tr>
+
+<tr>
 	<td>Rules Operations</td>
 	<td><a href="rules.php?help"><?php echo PRODUCT_URL; ?>/api/ops/rules.php</a></td>
 	<td>

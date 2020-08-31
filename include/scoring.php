@@ -1480,8 +1480,12 @@ function get_scoring_group_policies_count($group, $scoring, $options = NULL)
 
 function api_scoring_help($param)
 {
-	$param->sub_param('flags', 'Bit flag of: 1 - turn off points for being shot first night; 2 - turn off points for game difficulty.', '0 is used.');
-	$param->sub_param('weight', 'Scoring weight. All scores are multiplied to this weight when scores are calculated.', '1 is used.');
+	$param->sub_param('Help on scoring json structure is not implemented yet.', '', '-');
+}
+
+function api_normalizer_help($param)
+{
+	$param->sub_param('Help on normalizer json structure is not implemented yet.', '', '-');
 }
 
 ?>

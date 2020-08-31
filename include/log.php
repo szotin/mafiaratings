@@ -13,6 +13,7 @@ define('LOG_OBJECT_CLUB', 'club');
 define('LOG_OBJECT_CLUB_REQUEST', 'club request');
 define('LOG_OBJECT_RULES', 'rules');
 define('LOG_OBJECT_SCORING_SYSTEM', 'scoring system');
+define('LOG_OBJECT_SCORING_NORMALIZER', 'scoring normalizer');
 define('LOG_OBJECT_CLUB_SEASON', 'club season');
 define('LOG_OBJECT_LEAGUE_SEASON', 'league season');
 define('LOG_OBJECT_ADDRESS', 'address');

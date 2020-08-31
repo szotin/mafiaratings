@@ -140,3 +140,43 @@ img.message-img
 {
 	max-width: 300px;
 }
+
+.tab 
+{
+	overflow: hidden;
+	border: 1px solid #c0cccc;
+	border-bottom: none;
+	background-color: #c0cccc;
+}
+
+.tab button 
+{
+	background-color: inherit;
+	float: left;
+	border: none;
+	outline: none;
+	cursor: pointer;
+	padding: 10px 12px;
+	transition: 0.3s;
+	font-size: 14px;
+}
+
+.tab button:hover 
+{
+	background-color: #cfdfdf;
+}
+
+/* Create an active/current tablink class */
+.tab button.active 
+{
+	background-color: #e8f8f8;
+}
+
+/* Style the tab content */
+.tabcontent 
+{
+	background-color: #e8f8f8;
+	padding: 6px 12px;
+	border: 1px solid #c0cccc;
+	border-top: none;
+}

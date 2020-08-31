@@ -45,6 +45,7 @@ class Page extends PageBase
 	
 	protected function show_body()
 	{
+		echo '<p><button id="save" onclick="saveData()" disabled>' . get_label('Save') . '</button></p>';
 		echo '<script src="js/scoring_editor.js"></script>';
 		echo '<div id="scoring-editor"></div>';
 	}
@@ -133,7 +134,14 @@ class Page extends PageBase
 			}
 		};
 		
-		function onDataChange(data)
+		function onDataChange(d, isDirty)
+		{
+			console.log(isDirty);
+			data = d;
+			$('#save').prop('disabled', !isDirty || !isScoringDataCorrect());
+		}
+		
+		function saveData()
 		{
 			console.log(data.scoring);
 			var params =
@@ -147,6 +155,7 @@ class Page extends PageBase
 			{
 				setScoringVersion(response.scoring_version);
 			});
+			dirty(false);
 		}
 		
 		initScoringEditor(data, onDataChange);
