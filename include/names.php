@@ -13,12 +13,12 @@ function cut_long_name($name, $length)
 
 function is_valid_name($name)
 {
-	return preg_match('/^([a-zA-Z0-9 _\x80-\xFF-])+$/', $name);
+	return preg_match('/^([a-zA-Z0-9,.; _\x80-\xFF-])+$/', $name);
 }
 
 function correct_name($name)
 {
-	return preg_replace("/[^a-zA-Z0-9 _\x80-\xFF-]/", '_', $name);
+	return preg_replace("/[^a-zA-Z0-9,.; _\x80-\xFF-]/", '_', $name);
 }
 
 function check_name($name, $in)
