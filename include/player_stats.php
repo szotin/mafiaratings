@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/scoring.php';
+require_once __DIR__ . '/games.php';
 
 define("AVERAGE_PLAYER", -1);
 define("ROLE_CIVIL", 1);

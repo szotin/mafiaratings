@@ -73,16 +73,22 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</td></tr>';
 	
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $id);
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
+	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $id);
 	while ($row = $query->next())
-	{		list ($scoring_id, $scoring_name) = $row;
-		echo '<option value="' . $scoring_id . '"';
-		if ($scoring_id == $club->scoring_id)
-		{
-			echo ' selected';
-		}
-		echo '>' . $scoring_name . '</option>';
+	{		
+		list ($scoring_id, $scoring_name) = $row;
+		show_option($scoring_id, $club->scoring_id, $scoring_name);
+	} 
+	echo '</select></td></tr>';
+	
+	echo '<tr><td>' . get_label('Scoring normalizer') . ':</td><td><select id="form-normalizer">';
+	show_option(0, is_null($club->normalizer_id) ? 0 : -1, get_label('No scoring normalization'));
+	$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id = ? OR club_id IS NULL ORDER BY name', $id);
+	while ($row = $query->next())
+	{		
+		list ($normalizer_id, $normalizer_name) = $row;
+		show_option($normalizer_id, $club->normalizer_id, $normalizer_name);
 	} 
 	echo '</select></td></tr>';
 	
@@ -106,6 +112,7 @@ try
 			, city: $("#form-city").val()
 			, country: $("#form-country").val()
 			, scoring_id: $("#form-scoring").val()
+			, normalizer_id: $("#form-normalizer").val()
 			, langs: languages
 		},
 		onSuccess);

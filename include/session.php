@@ -49,6 +49,7 @@ class ProfileClub
 	public $timezone;
 	public $rules_code;
 	public $scoring_id;
+	public $normalizer_id;
 	public $price;
 	public $parent_id;
 }
@@ -124,7 +125,7 @@ class Profile
 		if ($this->is_admin())
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules, c.scoring_id, c.price, c.parent_id FROM clubs c' .
+				'SELECT c.id, c.name, ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.price, c.parent_id FROM clubs c' .
 					' JOIN cities i ON c.city_id = i.id ' .
 					' JOIN countries o ON i.country_id = o.id ' .
 					' ORDER BY c.name');
@@ -132,7 +133,7 @@ class Profile
 		else
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, uc.flags, c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules, c.scoring_id, c.price, c.parent_id FROM user_clubs uc' .
+				'SELECT c.id, c.name, uc.flags, c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.price, c.parent_id FROM user_clubs uc' .
 					' JOIN clubs c ON c.id = uc.club_id' .
 					' JOIN cities i ON i.id = c.city_id' .
 					' JOIN countries o ON i.country_id = o.id ' .
@@ -146,7 +147,7 @@ class Profile
 			while ($row = $query->next())
 			{
 				$pc = new ProfileClub();
-				list($pc->id, $pc->name, $pc->flags, $pc->club_flags, $pc->langs, $pc->city_id, $pc->city, $pc->country_id, $pc->country, $pc->timezone, $pc->rules_code, $pc->scoring_id, $pc->price, $pc->parent_id) = $row;
+				list($pc->id, $pc->name, $pc->flags, $pc->club_flags, $pc->langs, $pc->city_id, $pc->city, $pc->country_id, $pc->country, $pc->timezone, $pc->rules_code, $pc->scoring_id, $pc->normalizer_id, $pc->price, $pc->parent_id) = $row;
 				$this->clubs[$pc->id] = $pc;
 			}
 		}

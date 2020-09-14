@@ -135,6 +135,14 @@ require_once '../../include/api.php';
 	</td>
 </tr>
 
+<tr>
+	<td>Scoring normalizers</td>
+	<td><a href="normalizers.php?help"><?php echo PRODUCT_URL; ?>/api/get/normalizers.php</a></td>
+	<td>
+		<p>Scoring normalizers. The configurable rules for normalizing tournament scores.</p><p>It is used in a long term tournaments where players play a significantly different number of games. In this case we don't want a user who plays more to win just because they played more games than others. So we use normalization. The simplest (but not the fairest) is to use average score per game. Normalizers can be way more complicated. Mafia Ratings lets users to configure custom normalizers and use whatever they think is the best way to normalize scores.</p>
+	</td>
+</tr>
+
 </table>
 
 </body></html>

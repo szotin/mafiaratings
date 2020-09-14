@@ -63,7 +63,12 @@ class Page extends PageBase
 			strings:
 			{
 				name: "<?php echo get_label('Scoring normalizer name'); ?>",
-				version: "<?php echo get_label('Version'); ?>"
+				version: "<?php echo get_label('Version'); ?>",
+				policy: "<?php echo get_label('Normalization policy'); ?>",
+				policy_none: "<?php echo get_label('Do nothing'); ?>",
+				policy_average: "<?php echo get_label('Divide the score to the number of games played (average per game)'); ?>",
+				policy_by_winrate: "<?php echo get_label('Multiply the score to the winning rate'); ?>",
+				policy_by_round: "<?php echo get_label('Divide the score to the number of rounds (average per round)'); ?>"
 			},
 		};
 		

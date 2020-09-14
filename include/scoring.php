@@ -6,6 +6,7 @@ require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/game_player.php';
 
 define('SCORING_DEFAULT_ID', 18); // Default scoring system is hardcoded here to ФИИМ (FIGM)
+define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
 
 define('SCORING_ROLE_FLAGS_CIV', 1);
 define('SCORING_ROLE_FLAGS_SHERIFF', 2);
@@ -91,6 +92,11 @@ define('SCORING_LOD_NO_SORTING', 16); // When set sorting returns associative ar
 define('SCORING_OPTION_NO_NIGHT_KILLS', 1); // Do not use policies dependent on the night kills
 define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent on the game difficulty
 
+define('NORMALIZATION_NONE', 0);
+define('NORMALIZATION_AVERAGE', 1);
+define('NORMALIZATION_BY_WINNING_RATE', 2);
+define('NORMALIZATION_AVERAGE_PER_EVENT', 3);
+
 $_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_EXTRA, SCORING_GROUP_LEGACY, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
 function format_score($score, $zeroes = true)
@@ -160,7 +166,6 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 		echo '<a href="#" onclick="mr.showScoring(\'' . $name . '\')" title="' . get_label('Show [0] scoring rules.', $scoring_name) . '">' . get_label('Scoring system') . ':</a> ';
 	}
 	echo '<select id="' . $name . '-sel" name="' . $name . '_id" onChange="mr.onChangeScoring(\'' . $name . '\', 0, ' . $on_change . ')" title="' . get_label('Scoring system') . '">';
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
 	foreach ($scorings as $row)
 	{
 		list ($sid, $sname) = $row;
@@ -169,7 +174,7 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 	echo '</select>';
 	if (($flags & SCORING_SELECT_FLAG_NO_VERSION) == 0)
 	{
-		echo ' ' . get_label('version') . ': <select id="' . $name . '-ver" name="' . $name . '_version" onchange="mr.onChangeScoringVersion(\'' . $name . '\', null, ' . $on_change . ')"></select><span id="' . $name . '-opt"></span>';
+		echo ' ' . get_label('version') . ': <select id="' . $name . '-ver" name="' . $name . '_ver" onchange="mr.onChangeScoringVersion(\'' . $name . '\', null, ' . $on_change . ')"></select><span id="' . $name . '-opt"></span>';
 	}
 	
 	if (($flags & SCORING_SELECT_FLAG_NO_OPTIONS) != SCORING_SELECT_FLAG_NO_OPTIONS)
@@ -225,6 +230,46 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 	echo '<script>';
 	echo 'function optionChanged(s) { mr.onChangeScoringOptions(\'' . $name . '\', ' . $on_change . '); } ';
 	echo 'mr.onChangeScoring("' . $name . '", ' . $version . ');';
+	echo '</script>';
+}
+
+function show_normalizer_select($club_id, $normalizer_id, $version, $name = NULL)
+{
+	if ($name == NULL)
+	{
+		$name = 'normalizer';
+	}
+	
+	if (is_null($normalizer_id) || $normalizer_id < 0)
+	{
+		$normalizer_id = 0;
+	}
+	
+	$normalizers = array();
+	$normalizer_name = '';
+	$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
+	while ($row = $query->next())
+	{
+		$normalizers[] = $row;
+		list ($nid, $nname) = $row;
+		if ($nid == $normalizer_id)
+		{
+			$normalizer_name = $nname;
+		}
+	}
+	
+	echo '<select id="' . $name . '-sel" name="' . $name . '_id" onChange="mr.onChangeNormalizer(\'' . $name . '\', 0)" title="' . get_label('Scoring normalizer') . '">';
+	show_option(0, $normalizer_id, get_label('No scoring normalization'));
+	foreach ($normalizers as $row)
+	{
+		list ($nid, $nname) = $row;
+		show_option($nid, $normalizer_id, $nname);
+	}
+	echo '</select>';
+	echo '<span id="' . $name . '-version"> ' . get_label('version') . ': <select id="' . $name . '-ver" name="' . $name . '_ver"></select></span>';
+	
+	echo '<script>';
+	echo 'mr.onChangeNormalizer("' . $name . '", ' . $version . ');';
 	echo '</script>';
 }
 

@@ -848,6 +848,40 @@ var mr = new function()
 		goTo("normalizer.php?bck=1&id=" + id);
 	}
 	
+	this.onChangeNormalizer = function(name, version)
+	{
+		var normalizerId = $('#' + name + '-sel').val();
+		var versionDiv = $('#' + name + '-version');
+		if (normalizerId > 0)
+		{
+			json.post("api/get/normalizers.php", { normalizer_id: normalizerId }, function(data)
+			{
+				var s = data.normalizers[0];
+				var c = $('#' + name + '-ver');
+				c.find('option').remove();
+				var v1 = null;
+				for (var v of s.versions)
+				{
+					c.append($('<option>').val(v.version).text(v.version));
+					if (v.version == version)
+					{
+						v1 = v;
+					}
+				}
+				if (!v1)
+				{
+					v1 = v;
+				}
+				c.val(v1.version);
+				versionDiv.css('visibility', 'visible');
+			});
+		}
+		else
+		{
+			versionDiv.css('visibility', 'hidden');
+		}
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// rules
 	//--------------------------------------------------------------------------------------

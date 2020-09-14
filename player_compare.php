@@ -115,11 +115,11 @@ class Page extends UserPageBase
 	private $name2;
 	private $flags2;
 
-	private function standard_compare($role, $game_filter)
+	private function standard_compare($role)
 	{
 		$mafia_role = ($role == (ROLE_MAFIA | ROLE_DON) ? -1 : 1);
-		$stats1 = new PlayerStats($this->id, -1, $role, $game_filter);
-		$stats2 = new PlayerStats($this->id2, -1, $role, $game_filter);
+		$stats1 = new PlayerStats($this->id, -1, $role, GAMES_FILTER_NO_CANCELED); // consider adding GAMES_FILTER_RATING
+		$stats2 = new PlayerStats($this->id2, -1, $role, GAMES_FILTER_NO_CANCELED);
 		
 		$winning_percentage1 = 0;
 		$rating_per_game1 = 0;

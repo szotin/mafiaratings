@@ -22,8 +22,8 @@ try
 		throw new FatalExc(get_label('No permissions'));
 	}
 	
-	list ($name, $url, $email, $phone, $langs, $flags) =
-		Db::record(get_label('league'), 'SELECT name, web_site, email, phone, langs, flags FROM leagues WHERE id = ?', $id);
+	list ($name, $url, $email, $phone, $langs, $flags, $league_scoring_id, $league_normalizer_id) =
+		Db::record(get_label('league'), 'SELECT name, web_site, email, phone, langs, flags, scoring_id, normalizer_id FROM leagues WHERE id = ?', $id);
 		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140">' . get_label('League name') . ':</td><td><input class="longest" id="form-league_name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
@@ -48,17 +48,22 @@ try
 	echo '<tr><td>'.get_label('Contact email').':</td><td><input class="longest" id="form-email" value="' . htmlspecialchars($email, ENT_QUOTES) . '"></td></tr>';
 	echo '<tr><td>'.get_label('Contact phone(s)').':</td><td><input class="longest" id="form-phone" value="' . htmlspecialchars($phone, ENT_QUOTES) . '"></td></tr>';
 	
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id IS NULL ORDER BY name', $id);
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
+	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id IS NULL ORDER BY name');
 	while ($row = $query->next())
-	{
+	{		
 		list ($scoring_id, $scoring_name) = $row;
-		echo '<option value="' . $scoring_id . '"';
-		if ($scoring_id == $league->scoring_id)
-		{
-			echo ' selected';
-		}
-		echo '>' . $scoring_name . '</option>';
+		show_option($scoring_id, $league_scoring_id, $scoring_name);
+	} 
+	echo '</select></td></tr>';
+	
+	echo '<tr><td>' . get_label('Scoring normalizer') . ':</td><td><select id="form-normalizer">';
+	show_option(0, is_null($league_normalizer_id) ? 0 : -1, get_label('No scoring normalization'));
+	$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id IS NULL ORDER BY name');
+	while ($row = $query->next())
+	{		
+		list ($normalizer_id, $normalizer_name) = $row;
+		show_option($normalizer_id, $league_normalizer_id, $normalizer_name);
 	} 
 	echo '</select></td></tr>';
 	
@@ -78,6 +83,7 @@ try
 			, email: $("#form-email").val()
 			, phone: $("#form-phone").val()
 			, scoring_id: $("#form-scoring").val()
+			, normalizer_id: $("#form-normalizer").val()
 			, langs: languages
 		},
 		onSuccess);

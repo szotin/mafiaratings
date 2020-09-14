@@ -65,7 +65,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
-		$request_league_id = (int)get_optional_param('league_id', NULL);
+		$request_league_id = (int)get_optional_param('league_id', 0);
 		if ($request_league_id <= 0)
 		{
 			$request_league_id = NULL;
@@ -79,13 +79,54 @@ class ApiPage extends OpsApiPageBase
 		
 		$type = (int)get_optional_param('type', TOURNAMENT_TYPE_CUSTOM);
 		$price = get_optional_param('price', '');
-		$scoring_id = (int)get_optional_param('scoring_id', $club->scoring_id);
+		$scoring_id = (int)get_optional_param('scoring_id', -1);
 		$scoring_version = (int)get_optional_param('scoring_version', -1);
+		$normalizer_id = (int)get_optional_param('normalizer_id', -1);
+		$normalizer_version = (int)get_optional_param('normalizer_version', -1);
 		$scoring_options = json_decode(get_optional_param('scoring_options', NULL));
 		$scoring_options_str = json_encode($scoring_options);
+		
+		if ($normalizer_id <= 0)
+		{
+			if ($scoring_id <= 0)
+			{
+				if (is_null($request_league_id))
+				{
+					list($scoring_id, $normalizer_id) = Db::record(get_label('league'), 'SELECT scoring_id, normalizer_id FROM clubs WHERE id = ?', $club_id);
+				}
+				else
+				{
+					list($scoring_id, $normalizer_id) = Db::record(get_label('club'), 'SELECT scoring_id, normalizer_id FROM leagues WHERE id = ?', $request_league_id);
+				}
+			}
+			else if (is_null($request_league_id))
+			{
+				list($normalizer_id) = Db::record(get_label('league'), 'SELECT normalizer_id FROM clubs WHERE id = ?', $club_id);
+			}
+			else
+			{
+				list($normalizer_id) = Db::record(get_label('club'), 'SELECT normalizer_id FROM leagues WHERE id = ?', $request_league_id);
+			}
+		}
+		else if ($scoring_id <= 0)
+		{
+			if (is_null($request_league_id))
+			{
+				list($scoring_id) = Db::record(get_label('league'), 'SELECT scoring_id FROM clubs WHERE id = ?', $club_id);
+			}
+			else
+			{
+				list($scoring_id) = Db::record(get_label('club'), 'SELECT scoring_id FROM leagues WHERE id = ?', $request_league_id);
+			}
+		}
+		
 		if ($scoring_version < 0)
 		{
 			list($scoring_version) = Db::record(get_label('scoring'), 'SELECT MAX(version) FROM scoring_versions WHERE scoring_id = ?', $scoring_id);
+		}
+		if (!is_null($normalizer_id) && $normalizer_version < 0)
+		{
+			list($normalizer_version) = Db::record(get_label('scoring normalizer'), 'SELECT MAX(version) FROM normalizer_versions WHERE normalizer_id = ?', $normalizer_id);
 		}
 		
 		$notes = get_optional_param('notes', '');
@@ -172,8 +213,8 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, league_id, request_league_id, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_version, scoring_options, rules, flags, stars) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $request_league_id, $club_id, $address_id, $start, $end - $start, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options_str, $rules_code, $flags, $stars);
+			'INSERT INTO tournaments (name, league_id, request_league_id, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, rules, flags, stars) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $league_id, $request_league_id, $club_id, $address_id, $start, $end - $start, $langs, $notes, $price, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options_str, $rules_code, $flags, $stars);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -189,6 +230,8 @@ class ApiPage extends OpsApiPageBase
 		$log_details->price = $price;
 		$log_details->scoring_id = $scoring_id;
 		$log_details->scoring_version = $scoring_version;
+		$log_details->normalizer_id = $normalizer_id;
+		$log_details->normalizer_version = $normalizer_version;
 		$log_details->scoring_options = $scoring_options_str;
 		$log_details->rules_code = $rules_code;
 		$log_details->flags = $flags;
@@ -364,8 +407,10 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'empty.');
 		$help->request_param('rules_code', 'Rules for this tournament.', 'default club or club-league rules are used. Depending on the league.');
-		$help->request_param('scoring_id', 'Scoring id for this tournament.', 'default club scoring system is used.');
+		$help->request_param('scoring_id', 'Scoring id for this tournament.', 'default league scoring system is used; if there is no league - default club scoring system is used.');
 		$help->request_param('scoring_version', 'Scoring version for this tournament.', 'the latest version of the system identified by scoring_id is used.');
+		$help->request_param('normalizer_id', 'Normalizer id for this tournament.', 'default league scoring normalizer is used; if there is no league - default club scoring normalizer is used.');
+		$help->request_param('normalizer_version', 'Normalizer version for this tournament.', 'the latest version of the system identified by normalizer_id is used.');
 		api_scoring_help($help->request_param('scoring_options', 'Scoring options for this tournament.', 'null is used. All values are assumed to be default.'));
 		$help->request_param('notes', 'Tournament notes. Just a text.', 'empty.');
 		$help->request_param('langs', 'Languages on this tournament. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all club languages are used.');
@@ -393,8 +438,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_request_league_id, $old_league_id, $old_name, $old_start, $old_duration, $old_timezone, $old_stars, $old_address_id, $old_scoring_id, $old_scoring_version, $old_scoring_options, $old_price, $old_langs, $old_notes, $old_flags) = 
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.scoring_version, t.scoring_options, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
+		list ($club_id, $old_request_league_id, $old_league_id, $old_name, $old_start, $old_duration, $old_timezone, $old_stars, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_price, $old_langs, $old_notes, $old_flags) = 
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -412,6 +457,13 @@ class ApiPage extends OpsApiPageBase
 		$price = get_optional_param('price', $old_price);
 		$scoring_id = get_optional_param('scoring_id', $old_scoring_id);
 		$scoring_version = get_optional_param('scoring_version', -1);
+		$normalizer_id = get_optional_param('normalizer_id', $old_normalizer_id);
+		$normalizer_version = get_optional_param('normalizer_version', -1);
+		if ($normalizer_id <= 0)
+		{
+			$normalizer_id = NULL;
+			$normalizer_version = NULL;
+		}
 		$scoring_options = get_optional_param('scoring_options', $old_scoring_options);
 		
 		if ($scoring_version < 0)
@@ -423,6 +475,18 @@ class ApiPage extends OpsApiPageBase
 			else
 			{
 				list($scoring_version) = Db::record(get_label('scoring'), 'SELECT MAX(version) FROM scoring_versions WHERE scoring_id = ?', $scoring_id);
+			}
+		}
+		
+		if (!is_null($normalizer_id) && $normalizer_version < 0)
+		{
+			if ($normalizer_id == $old_normalizer_id)
+			{
+				$normalizer_version = $old_normalizer_version;
+			}
+			else
+			{
+				list($normalizer_version) = Db::record(get_label('scoring normalizer'), 'SELECT MAX(version) FROM normalizer_versions WHERE normalizer_id = ?', $normalizer_id);
 			}
 		}
 		
@@ -588,22 +652,15 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
+		Db::exec(
+			get_label('tournament'), 
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, price = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $tournament_id);
 		if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
 		{
 			Db::exec(
-				get_label('tournament'), 
-				'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, price = ?, scoring_id = ?, scoring_version = ?, scoring_options = ?, flags = ? WHERE id = ?',
-				$name, $address_id, $start, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options, $flags, $tournament_id);
-			Db::exec(
 				get_label('round'),
 				'UPDATE events SET scoring_id = ?, scoring_version = ? WHERE tournament_id = ?', $scoring_id, $scoring_version, $tournament_id);
-		}
-		else
-		{
-			Db::exec(
-				get_label('tournament'), 
-				'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, price = ?, flags = ?, scoring_options = ? WHERE id = ?',
-				$name, $address_id, $start, $duration, $langs, $notes, $price, $flags, $scoring_options, $tournament_id);
 		}
 		if (Db::affected_rows() > 0)
 		{
@@ -641,6 +698,11 @@ class ApiPage extends OpsApiPageBase
 				$log_details->scoring_id = $scoring_id;
 				$log_details->scoring_version = $scoring_version;
 			}
+			if ($normalizer_id != $old_normalizer_id || $normalizer_version != $old_normalizer_version)
+			{
+				$log_details->normalizer_id = $normalizer_id;
+				$log_details->normalizer_version = $normalizer_version;
+			}
 			if ($scoring_options != $old_scoring_options)
 			{
 				$log_details->scoring_options = $scoring_options;
@@ -670,6 +732,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'remains the same.');
 		$help->request_param('scoring_id', 'Scoring id for this tournament.', 'remains the same.');
 		$help->request_param('scoring_version', 'Scoring version for this tournament.', 'remain the same, or set to the latest for current scoring if scoring_id is changed.');
+		$help->request_param('normalizer_id', 'Normalizer id for this tournament.', 'remains the same.');
+		$help->request_param('normalizer_version', 'Normalizer version for this tournament.', 'remain the same, or set to the latest for current normalizer if normalizer_id is changed.');
 		api_scoring_help($help->request_param('scoring_options', 'Scoring options for this tournament.', 'remain the same.'));
 		$help->request_param('notes', 'Tournament notes. Just a text.', 'remains the same.');
 		$help->request_param('langs', 'Languages on this tournament. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');

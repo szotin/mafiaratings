@@ -20,13 +20,17 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $request_league_id, $league_id, $name, $start_time, $duration, $timezone, $stars, $address_id, $scoring_id, $scoring_version, $scoring_options, $price, $langs, $notes, $flags) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.scoring_version, t.scoring_options, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
+	list ($club_id, $request_league_id, $league_id, $name, $start_time, $duration, $timezone, $stars, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $price, $langs, $notes, $flags) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.request_league_id, t.league_id, t.name, t.start_time, t.duration, ct.timezone, t.stars, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
 	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	$club = $_profile->clubs[$club_id];
+	if (is_null($normalizer_id))
+	{
+		$normalizer_id = 0;
+	}
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
@@ -40,13 +44,17 @@ try
 	end_upload_logo_button(TOURNAMENT_PIC_CODE, $tournament_id);
 	echo '</td></tr>';
 	
-	echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league">';
-	show_option(0, $request_league_id, '');
-	$query = new DbQuery('SELECT l.id, l.name FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER by l.name', $club_id);
+	echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league" onchange="onLeagueChange()">';
+	echo '<option value="0,' . $scoring_id . ',' . $normalizer_id . '" selected></option>';
+	$query = new DbQuery('SELECT l.id, l.name, l.scoring_id, l.normalizer_id FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER by l.name', $club_id);
 	while ($row = $query->next())
 	{
-		list($lid, $lname) = $row;
-		show_option($lid, $request_league_id, $lname);
+		list($lid, $lname, $lsid, $lnid) = $row;
+		if (is_null($lnid))
+		{
+			$lnid = 0;
+		}
+		echo '<option value="' . $lid . ',' . $lsid . ',' . $lnid . '">' . $lname . '</option>';
 	}
 	echo '</select></td></tr>';
 	
@@ -80,6 +88,10 @@ try
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
 	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
 	echo '</select></td></tr>';
+	
+	echo '<tr><td>' . get_label('Scoring normalizer') . ':</td><td>';
+	show_normalizer_select($club_id, $normalizer_id, $normalizer_version, 'form-normalizer');
+	echo '</td></tr>';
 	
 	if (is_valid_lang($club->langs))
 	{
@@ -161,6 +173,8 @@ try
 		$("#form-use_rounds_scoring").prop('checked', !c);
 		$("#form-single_game").prop('disabled', !c);
 		$("#form-use_rounds_scoring").prop('disabled', c);
+		$('#form-normalizer-sel').val(c ? $("#form-league").val().split(',')[2] : 0);
+		mr.onChangeNormalizer('form-normalizer', 0);
 	}
 	
 	function singleGameClicked()
@@ -177,6 +191,19 @@ try
 		initial_value: <?php echo $stars; ?>,
 	});
 	
+	function onLeagueChange()
+	{
+		var league = $("#form-league").val().split(',');
+		if (!$("#form-long_term").attr('checked'))
+		{
+			league[2] = 0;
+		}
+		$('#form-scoring-sel').val(league[1]);
+		$('#form-normalizer-sel').val(league[2]);
+		mr.onChangeScoring('form-scoring', 0, onScoringChange);
+		mr.onChangeNormalizer('form-normalizer', 0);
+	}
+	
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -187,18 +214,21 @@ try
 		
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
+		var league = $("#form-league").val().split(',');
 		
 		var params =
 		{
 			op: "change",
 			tournament_id: <?php echo $tournament_id; ?>,
-			league_id: $("#form-league").val(),
+			league_id: league[0],
 			name: $("#form-name").val(),
 			price: $("#form-price").val(),
 			address_id: $("#form-addr_id").val(),
 			scoring_id: scoringId,
 			scoring_version: scoringVersion,
 			scoring_options: scoringOptions,
+			normalizer_id: $("#form-normalizer-sel").val(),
+			normalizer_version: $("#form-normalizer-ver").val(),
 			notes: $("#form-notes").val(),
 			start: $('#form-start').val(),
 			end: dateToStr(_end),

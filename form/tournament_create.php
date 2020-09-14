@@ -46,28 +46,48 @@ try
 	show_option(TOURNAMENT_TYPE_SERIES, $tournament_type, get_label('Mini-tournament series.'));
 	show_option(TOURNAMENT_TYPE_CHAMPIONSHIP, $tournament_type, get_label('Seasonal championship.'));
 	echo '</td></tr>';
-	
+
 	if ($league_id > 0)
 	{
-		list($league_name, $league_flags, $scoring_id) = Db::record(get_label('league'), 'SELECT name, flags, scoring_id FROM leagues WHERE id = ?', $league_id);
+		list($league_name, $league_flags, $scoring_id, $normalizer_id) = Db::record(get_label('league'), 'SELECT name, flags, scoring_id, normalizer_id FROM leagues WHERE id = ?', $league_id);
+		if (is_null($normalizer_id))
+		{
+			$normalizer_id = 0;
+		}
+		
 		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="' . ICON_WIDTH . '">';
 		$league_pic = new Picture(LEAGUE_PICTURE);
 		$league_pic->set($league_id, $league_name, $league_flags);
 		$league_pic->show(ICONS_DIR, false);
-		echo '</td><td align="center"><b>' . $league_name . '</b><input type="hidden" id="form-league" value="' . $league_id . '"></td></tr></table></td></tr>';
+		echo '</td><td align="center"><b>' . $league_name . '</b><input type="hidden" id="form-league" value="' . $league_id . ',' . $scoring_id . ',' . $normalizer_id . '"></td></tr></table></td></tr>';
 	}
 	else
 	{
-		echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league">';
-		show_option(0, 0, '');
-		$query = new DbQuery('SELECT l.id, l.name FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER by l.name', $club_id);
+		$scoring_id = $club->scoring_id;
+		$normalizer_id = $club->normalizer_id;
+		if (is_null($normalizer_id))
+		{
+			$normalizer_id = 0;
+		}
+		
+		echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league" onchange="onLeagueChange()">';
+		echo '<option value="0,' . $scoring_id . ',' . $normalizer_id . '" selected></option>';
+		$query = new DbQuery('SELECT l.id, l.name, l.scoring_id, l.normalizer_id FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER by l.name', $club_id);
 		while ($row = $query->next())
 		{
-			list($lid, $lname) = $row;
-			show_option($lid, 0, $lname);
+			list($lid, $lname, $lsid, $lnid) = $row;
+			if (is_null($lnid))
+			{
+				$lnid = 0;
+			}
+			echo '<option value="' . $lid . ',' . $lsid . ',' . $lnid . '">' . $lname . '</option>';
 		}
 		echo '</select></td></tr>';
 	}
+	
+	$normalizer_id = 0; // set it to null because long term is not checked
+	$normalizer_version = 0;
+	list($scoring_version) = Db::record(get_label('scoring system'), 'SELECT version FROM scorings WHERE id = ?', $scoring_id);
 	
 	echo '<tr><td>' . get_label('Stars') . ':</td><td><div id="form-stars" class="stars"></div></td></tr>';
 	
@@ -81,26 +101,19 @@ try
 	echo '</td></tr>';
 	
 	$addr_id = -1;
-	$query = new DbQuery('SELECT address_id, scoring_id, scoring_version, scoring_options FROM tournaments WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
+	$scoring_options = '{}';
+	$query = new DbQuery('SELECT address_id, scoring_options FROM tournaments WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
 	$row = $query->next();
 	if ($row = $query->next())
 	{
-		list($addr_id, $scoring_id, $scoring_version, $scoring_options) = $row;
+		list($addr_id, $scoring_options) = $row;
 	}
 	else
 	{
-		$query = new DbQuery('SELECT address_id, scoring_id, scoring_version, scoring_options FROM events WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
+		$query = new DbQuery('SELECT address_id, scoring_options FROM events WHERE club_id = ? ORDER BY start_time DESC LIMIT 1', $club_id);
 		if ($row = $query->next())
 		{
-			list($addr_id, $scoring_id, $scoring_version, $scoring_options) = $row;
-		}
-		else 
-		{
-			if ($league_id <= 0)
-			{
-				$scoring_id = $club->scoring_id;
-			}
-			list($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+			list($addr_id, $scoring_options) = $row;
 		}
 	}
 	
@@ -128,6 +141,10 @@ try
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
 	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
+	echo '</td></tr>';
+	
+	echo '<tr><td>' . get_label('Scoring normalizer') . ':</td><td>';
+	show_normalizer_select($club_id, $normalizer_id, $normalizer_version, 'form-normalizer');
 	echo '</td></tr>';
 	
 	if (is_valid_lang($club->langs))
@@ -190,6 +207,8 @@ try
 		$("#form-use_rounds_scoring").prop('checked', !c);
 		$("#form-single_game").prop('disabled', !c || type != 0);
 		$("#form-use_rounds_scoring").prop('disabled', c || type != 0);
+		$('#form-normalizer-sel').val(c ? $("#form-league").val().split(',')[2] : 0);
+		mr.onChangeNormalizer('form-normalizer', 0);
 	}
 	
 	function singleGameClicked()
@@ -239,6 +258,19 @@ try
 		step_size: 0.5,
 		initial_value: 0,
 	});
+	
+	function onLeagueChange()
+	{
+		var league = $("#form-league").val().split(',');
+		if (!$("#form-long_term").attr('checked'))
+		{
+			league[2] = 0;
+		}
+		$('#form-scoring-sel').val(league[1]);
+		$('#form-normalizer-sel').val(league[2]);
+		mr.onChangeScoring('form-scoring', 0, onScoringChange);
+		mr.onChangeNormalizer('form-normalizer', 0);
+	}
 	
 	function typeChanged()
 	{
@@ -300,11 +332,13 @@ try
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
 		
+		var league = $("#form-league").val().split(',');
+		
 		var params =
 		{
 			op: "create",
 			club_id: <?php echo $club_id; ?>,
-			league_id: $("#form-league").val(),
+			league_id: league[0],
 			name: $("#form-name").val(),
 			type: $('#form-type').val(),
 			price: $("#form-price").val(),
@@ -312,6 +346,8 @@ try
 			scoring_id: scoringId,
 			scoring_version: scoringVersion,
 			scoring_options: scoringOptions,
+			normalizer_id: $("#form-normalizer-sel").val(),
+			normalizer_version: $("#form-normalizer-ver").val(),
 			notes: $("#form-notes").val(),
 			start: $('#form-start').val(),
 			end: dateToStr(_end),

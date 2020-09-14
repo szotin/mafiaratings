@@ -157,12 +157,8 @@ class ApiPage extends OpsApiPageBase
 		list ($old_normalizer, $version) = Db::record(get_label('scoring normalizer'), 'SELECT v.normalizer, s.version FROM normalizers s JOIN normalizer_versions v ON v.normalizer_id = s.id AND v.version = s.version WHERE s.id = ?', $normalizer_id);
 		if ($old_normalizer != $normalizer)
 		{
-			list ($usageCount) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE normalizer_id = ? AND normalizer_version = ? AND (flags & ' . EVENT_FLAG_FINISHED . ') <> 0', $normalizer_id, $version);
-			if ($usageCount <= 0)
-			{
-				list ($usageCount) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE normalizer_id = ? AND normalizer_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $normalizer_id, $version);
-				$overwrite = ($usageCount <= 0);
-			}
+			list ($usageCount) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE normalizer_id = ? AND normalizer_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $normalizer_id, $version);
+			$overwrite = ($usageCount <= 0);
 		}
 		else
 		{
