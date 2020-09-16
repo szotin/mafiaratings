@@ -85,7 +85,7 @@ class Page extends EventPageBase
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION);
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'event=' . $this->event->id, get_label('Go to the page where a specific player is located.'));
@@ -177,9 +177,9 @@ class Page extends EventPageBase
 		<script type="text/javascript">
 			mr.showComments("event", <?php echo $this->event->id; ?>, 5);
 			
-			function submitScoring(scoringId, scoringVer, scoringOps)
+			function submitScoring(s)
 			{
-				goTo({ scoring_id: scoringId, scoring_version: scoringVer, scoring_ops: scoringOps });
+				goTo({ scoring_id: s.sId, scoring_version: s.sVer, scoring_ops: s.ops });
 			}
 		</script>
 <?php

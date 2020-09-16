@@ -54,7 +54,12 @@ try
 		{
 			$lnid = 0;
 		}
-		echo '<option value="' . $lid . ',' . $lsid . ',' . $lnid . '">' . $lname . '</option>';
+		echo '<option value="' . $lid . ',' . $lsid . ',' . $lnid . '"';
+		if ($league_id == $lid)
+		{
+			echo ' selected';
+		}
+		echo '>' . $lname . '</option>';
 	}
 	echo '</select></td></tr>';
 	
@@ -86,12 +91,8 @@ try
 	echo '<tr><td>' . get_label('Admission rate') . ':</td><td><input id="form-price" value="' . $price . '"></td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
-	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
+	show_scoring_select($club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
 	echo '</select></td></tr>';
-	
-	echo '<tr><td>' . get_label('Scoring normalizer') . ':</td><td>';
-	show_normalizer_select($club_id, $normalizer_id, $normalizer_version, 'form-normalizer');
-	echo '</td></tr>';
 	
 	if (is_valid_lang($club->langs))
 	{
@@ -159,11 +160,12 @@ try
 	var scoringId = <?php echo $scoring_id; ?>;
 	var scoringVersion = <?php echo $scoring_version; ?>;
 	var scoringOptions = '<?php echo $scoring_options; ?>';
-	function onScoringChange(id, version, options)
+	function onScoringChange(s)
 	{
-		scoringId = id;
-		scoringVersion = version;
-		scoringOptions = JSON.stringify(options);
+		console.log(s);
+		scoringId = s.sId;
+		scoringVersion = s.sVer;
+		scoringOptions = JSON.stringify(s.ops);
 	}
 	
 	function longTermClicked()
@@ -173,8 +175,8 @@ try
 		$("#form-use_rounds_scoring").prop('checked', !c);
 		$("#form-single_game").prop('disabled', !c);
 		$("#form-use_rounds_scoring").prop('disabled', c);
-		$('#form-normalizer-sel').val(c ? $("#form-league").val().split(',')[2] : 0);
-		mr.onChangeNormalizer('form-normalizer', 0);
+		$('#form-scoring-norm-sel').val(c ? $("#form-league").val().split(',')[2] : 0);
+		mr.onChangeNormalizer('form-scoring', 0);
 	}
 	
 	function singleGameClicked()
@@ -199,9 +201,9 @@ try
 			league[2] = 0;
 		}
 		$('#form-scoring-sel').val(league[1]);
-		$('#form-normalizer-sel').val(league[2]);
+		$('#form-scoring-norm-sel').val(league[2]);
 		mr.onChangeScoring('form-scoring', 0, onScoringChange);
-		mr.onChangeNormalizer('form-normalizer', 0);
+		mr.onChangeNormalizer('form-scoring', 0);
 	}
 	
 	function commit(onSuccess)
@@ -215,7 +217,6 @@ try
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
 		var league = $("#form-league").val().split(',');
-		
 		var params =
 		{
 			op: "change",
@@ -227,8 +228,8 @@ try
 			scoring_id: scoringId,
 			scoring_version: scoringVersion,
 			scoring_options: scoringOptions,
-			normalizer_id: $("#form-normalizer-sel").val(),
-			normalizer_version: $("#form-normalizer-ver").val(),
+			normalizer_id: $("#form-scoring-norm-sel").val(),
+			normalizer_version: $("#form-scoring-norm-ver").val(),
 			notes: $("#form-notes").val(),
 			start: $('#form-start').val(),
 			end: dateToStr(_end),

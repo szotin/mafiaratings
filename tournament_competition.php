@@ -17,9 +17,19 @@ class Page extends TournamentPageBase
 		parent::prepare();
 		
 		list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
+		if ($this->normalizer_id != NULL && $this->normalizer_id > 0)
+		{
+			list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
+		}
+		else
+		{
+			$this->normalizer = '{}';
+		}
 		$this->scoring_options = json_decode($this->scoring_options);
 		$this->scoring = json_decode($this->scoring);
-        $players = tournament_scores($this->id, $this->flags, NULL, 0, $this->scoring, $this->scoring_options);
+		$this->normalizer = json_decode($this->normalizer);
+        $players = tournament_scores($this->id, $this->flags, NULL, 0, $this->scoring, $this->normalizer, $this->scoring_options);
+		
 		$players_count = count($players);
 		if ($players_count > NUM_PLAYERS)
 		{
@@ -60,7 +70,7 @@ class Page extends TournamentPageBase
 		
 		echo '<p><form method="get" name="viewForm" action="tournament_competition.php">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'doUpdateChart', $scoring_select_flags);
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'doUpdateChart', $scoring_select_flags);
 		echo '</form></p>';
 		
 		show_chart_legend();
@@ -71,11 +81,13 @@ class Page extends TournamentPageBase
 	{
 		parent::js();
 ?>		
-		function doUpdateChart(id, version, options)
+		function doUpdateChart(s)
 		{
-			chartParams.scoring_id = id;
-			chartParams.scoring_version = version;
-			chartParams.scoring_options = options;
+			chartParams.scoring_id = s.sId;
+			chartParams.scoring_version = s.sVer;
+			chartParams.normalizer_id = s.nId;
+			chartParams.normalizer_version = s.nVer;
+			chartParams.scoring_options = s.opt;
 			updateChart();
 		}
 <?php 

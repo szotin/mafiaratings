@@ -122,7 +122,7 @@ try
 	}
 	
 	echo '<tr><td valign="top">' . get_label('Scoring system') . '</td><td>';
-	show_scoring_select($event->club_id, $event->scoring_id, $event->scoring_version, json_decode($event->scoring_options), '<br>',	'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
+	show_scoring_select($event->club_id, $event->scoring_id, $event->scoring_version, 0, 0, json_decode($event->scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');
 	echo '</td></tr>';
 	
 	if (is_valid_lang($club->langs))
@@ -191,14 +191,11 @@ try
 	var scoringId = <?php echo $event->scoring_id; ?>;
 	var scoringVersion = <?php echo $event->scoring_version; ?>;
 	var scoringOptions = '<?php echo $event->scoring_options; ?>';
-	function onScoringChange(id, version, options)
+	function onScoringChange(s)
 	{
-		console.log(id);
-		console.log(version);
-		console.log(JSON.stringify(options));
-		scoringId = id;
-		scoringVersion = version;
-		scoringOptions = JSON.stringify(options);
+		scoringId = s.sId;
+		scoringVersion = s.sVer;
+		scoringOptions = JSON.stringify(s.ops);
 	}
 	
 	function multipleChange()

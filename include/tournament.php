@@ -89,6 +89,8 @@ class TournamentPageBase extends PageBase
 	protected $scoring_id;
 	protected $scoring_version;
 	protected $scoring_options;
+	protected $normalizer_id;
+	protected $normalizer_version;
 	protected $rules_code;
 	protected $flags;
 	protected $stars;
@@ -107,13 +109,13 @@ class TournamentPageBase extends PageBase
 			$this->address_id, $this->address_name, $this->address, $this->address_url, $this->address_flags,
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->price, 
-			$this->scoring_id, $this->scoring_version, $this->scoring_options, $this->rules_code, $this->flags, $this->stars) =
+			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, $this->rules_code, $this->flags, $this->stars) =
 		Db::record(
 			get_label('tournament'),
 			'SELECT t.name, t.request_league_id, l.id, l.name, l.flags, c.id, c.name, c.flags,' . 
 				' a.id, a.name, a.address, a.map_url, a.flags,' . 
 				' ct.id, ct.name_' . $_lang_code . ', cr.id, cr.name_' . $_lang_code . ', ct.timezone,' . 
-				' t.start_time, t.duration, t.langs, t.notes, t.price, t.scoring_id, t.scoring_version, t.scoring_options, t.rules, t.flags, t.stars' .
+				' t.start_time, t.duration, t.langs, t.notes, t.price, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.rules, t.flags, t.stars' .
 				' FROM tournaments t' .
 				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' JOIN clubs c ON c.id = t.club_id' .

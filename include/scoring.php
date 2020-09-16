@@ -139,34 +139,23 @@ define('SCORING_SELECT_FLAG_NO_VERSION', 2);
 define('SCORING_SELECT_FLAG_NO_FLAGS_OPTION', 8);
 define('SCORING_SELECT_FLAG_NO_WEIGHT_OPTION', 16);
 define('SCORING_SELECT_FLAG_NO_GROUP_OPTION', 32);
+define('SCORING_SELECT_FLAG_NO_NORMALIZER', 64);
 define('SCORING_SELECT_FLAG_NO_OPTIONS', SCORING_SELECT_FLAG_NO_FLAGS_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION);
 
-function show_scoring_select($club_id, $scoring_id, $version, $options, $options_separator, $on_change, $flags = 0, $name = NULL)
+function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $options, $options_separator, $on_change, $flags, $name = NULL)
 {
 	if ($name == NULL)
 	{
 		$name = 'scoring';
 	}
 	
-	$scorings = array();
-	$scoring_name = '';
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
-	while ($row = $query->next())
-	{
-		$scorings[] = $row;
-		list ($sid, $sname) = $row;
-		if ($sid == $scoring_id)
-		{
-			$scoring_name = $sname;
-		}
-	}
-	
 	if (($flags & SCORING_SELECT_FLAG_NO_PREFIX) == 0)
 	{
-		echo '<a href="#" onclick="mr.showScoring(\'' . $name . '\')" title="' . get_label('Show [0] scoring rules.', $scoring_name) . '">' . get_label('Scoring system') . ':</a> ';
+		echo '<a href="#" onclick="mr.showScoring(\'' . $name . '\')" title="' . get_label('Show scoring rules.') . '">' . get_label('Scoring system') . ':</a> ';
 	}
 	echo '<select id="' . $name . '-sel" name="' . $name . '_id" onChange="mr.onChangeScoring(\'' . $name . '\', 0, ' . $on_change . ')" title="' . get_label('Scoring system') . '">';
-	foreach ($scorings as $row)
+	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
+	while ($row = $query->next())
 	{
 		list ($sid, $sname) = $row;
 		show_option($sid, $scoring_id, $sname);
@@ -187,7 +176,7 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 			{
 				$options_weight = $options->weight;
 			}
-			echo $options_separator . get_label('Points weight') . ': <input type="number" style="width: 40px;" step="0.1" min="0.1" id="' . $name . '-weight" value="' . $options_weight . '" onchange="optionChanged(1)">';
+			echo $options_separator . get_label('Points weight') . ': <input type="number" style="width: 40px;" step="0.1" min="0.1" id="' . $name . '-weight" value="' . $options_weight . '" onchange="optionChanged()">';
 		}
 		if (($flags & SCORING_SELECT_FLAG_NO_FLAGS_OPTION) == 0)
 		{
@@ -197,14 +186,14 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 				$options_flags = $options->flags;
 			}
 		
-			echo $options_separator . '<input type="checkbox" id="' . $name . '-night1" onclick="optionChanged(2)"';
+			echo $options_separator . '<input type="checkbox" id="' . $name . '-night1" onclick="optionChanged()"';
 			if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
 			{
 				echo ' checked';
 			}
 			echo '> ' . get_label('use first night kill rate factor');
 			
-			echo $options_separator . '<input type="checkbox" id="' . $name . '-difficulty" onclick="optionChanged(3)"';
+			echo $options_separator . '<input type="checkbox" id="' . $name . '-difficulty" onclick="optionChanged()"';
 			if (($options_flags & SCORING_OPTION_NO_GAME_DIFFICULTY) == 0)
 			{
 				echo ' checked';
@@ -218,7 +207,7 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 			{
 				$options_group = $options->group;
 			}
-			echo $options_separator . '<div id="' . $name . '-group-div">' . get_label('Tournament group') . ': <select id="' . $name . '-group" onchange="optionChanged(4)" title="' . get_label('Tournament rounds can be grouped to calculate stats required for scoring seperately. For example, compensation for being shot first night (Ci) can be calculated in the finals separately. In this case main round and semi-finals can belong to \'main\' group, and finals to \'final\' group.') . '">';
+			echo $options_separator . '<div id="' . $name . '-group-div">' . get_label('Tournament group') . ': <select id="' . $name . '-group" onchange="optionChanged()" title="' . get_label('Tournament rounds can be grouped to calculate stats required for scoring seperately. For example, compensation for being shot first night (Ci) can be calculated in the finals separately. In this case main round and semi-finals can belong to \'main\' group, and finals to \'final\' group.') . '">';
 			show_option('', $options_group, '');
 			show_option('pre', $options_group, get_label('preliminary rounds'));
 			show_option('main', $options_group, get_label('main rounds'));
@@ -227,49 +216,34 @@ function show_scoring_select($club_id, $scoring_id, $version, $options, $options
 		}
 	}
 	
-	echo '<script>';
-	echo 'function optionChanged(s) { mr.onChangeScoringOptions(\'' . $name . '\', ' . $on_change . '); } ';
-	echo 'mr.onChangeScoring("' . $name . '", ' . $version . ');';
-	echo '</script>';
-}
-
-function show_normalizer_select($club_id, $normalizer_id, $version, $name = NULL)
-{
-	if ($name == NULL)
+	if (($flags & SCORING_SELECT_FLAG_NO_NORMALIZER) == 0)
 	{
-		$name = 'normalizer';
-	}
-	
-	if (is_null($normalizer_id) || $normalizer_id < 0)
-	{
-		$normalizer_id = 0;
-	}
-	
-	$normalizers = array();
-	$normalizer_name = '';
-	$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
-	while ($row = $query->next())
-	{
-		$normalizers[] = $row;
-		list ($nid, $nname) = $row;
-		if ($nid == $normalizer_id)
+		echo '<p>';
+		if (is_null($normalizer_id) || $normalizer_id < 0)
 		{
-			$normalizer_name = $nname;
+			$normalizer_id = 0;
 		}
+		
+		echo get_label('Scoring normalizer') . ': ';
+		echo '<select id="' . $name . '-norm-sel" name="' . $name . '-norm-sel" onChange="mr.onChangeNormalizer(\'' . $name . '\', 0, ' . $on_change . ')" title="' . get_label('Scoring normalizer') . '">';
+		show_option(0, $normalizer_id, get_label('No scoring normalization'));
+		$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
+		while ($row = $query->next())
+		{
+			list ($nid, $nname) = $row;
+			show_option($nid, $normalizer_id, $nname);
+		}
+		echo '</select>';
+		echo '<span id="' . $name . '-norm-version"> ' . get_label('version') . ': <select id="' . $name . '-norm-ver" name="' . $name . '-norm-ver" onChange="mr.onChangeNormalizerVersion(\'' . $name . '\', ' . $on_change . ')"></select></span></p>';
 	}
-	
-	echo '<select id="' . $name . '-sel" name="' . $name . '_id" onChange="mr.onChangeNormalizer(\'' . $name . '\', 0)" title="' . get_label('Scoring normalizer') . '">';
-	show_option(0, $normalizer_id, get_label('No scoring normalization'));
-	foreach ($normalizers as $row)
-	{
-		list ($nid, $nname) = $row;
-		show_option($nid, $normalizer_id, $nname);
-	}
-	echo '</select>';
-	echo '<span id="' . $name . '-version"> ' . get_label('version') . ': <select id="' . $name . '-ver" name="' . $name . '_ver"></select></span>';
 	
 	echo '<script>';
-	echo 'mr.onChangeNormalizer("' . $name . '", ' . $version . ');';
+	echo 'function optionChanged() { mr.onChangeScoringOptions(\'' . $name . '\', ' . $on_change . '); } ';
+	echo 'mr.onChangeScoring("' . $name . '", ' . $scoring_version . '); ';
+	if (($flags & SCORING_SELECT_FLAG_NO_NORMALIZER) == 0)
+	{
+		echo 'mr.onChangeNormalizer("' . $name . '", ' . $normalizer_version . '); ';
+	}
 	echo '</script>';
 }
 
@@ -710,8 +684,8 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
     if ($lod_flags & SCORING_LOD_HISTORY)
     {
         $history_point = new stdClass();
-        $history_point->game_id = $game_id;
-        $history_point->time = $game_end_time;
+        $history_point->game_id = (int)$game_id;
+        $history_point->time = (int)$game_end_time;
         $history_point->points = $player->points;
         if ($lod_flags & SCORING_LOD_PER_GROUP)
         {
@@ -734,11 +708,12 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
     if ($lod_flags & SCORING_LOD_PER_GAME)
     {
         $game = new stdClass();
-        $game->game_id = $game_id;
+        $game->game_id = (int)$game_id;
 		$game->flags = (int)$game_flags;
-        $game->time = $game_end_time;
+        $game->time = (int)$game_end_time;
         $game->points = $total_points;
 		$game->role = (int)$game_role;
+		$game->won = ($game_flags & SCORING_FLAG_WIN) ? true : false;
 		if (!is_null($event_name))
 		{
 			$game->event_name = $event_name;
@@ -1035,7 +1010,97 @@ function is_same_scoring_options_group($options1, $options2)
 	
 }
 
-function tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $options)
+function set_player_normalization($player, $max_games_played)
+{
+	global $_scoring_groups;
+	
+	$normalization = 1;
+	if (isset($player->normalizer) && $player->normalizer != NULL)
+	{
+		$normalizer = $player->normalizer;
+		
+		if (isset($normalizer->policy))
+		{
+			switch ($normalizer->policy)
+			{
+				case NORMALIZATION_AVERAGE:
+					if ($player->games_count > 0)
+					{
+						$normalization *= 1 / $player->games_count;
+					}
+					break;
+				case NORMALIZATION_BY_WINNING_RATE:
+					if ($player->games_count > 0)
+					{
+						$normalization *= $player->wins / $player->games_count;
+					}
+					break;
+				case NORMALIZATION_AVERAGE_PER_EVENT:
+					if ($player->events_count > 0)
+					{
+						$normalization *= 1 / $player->events_count;
+					}
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	
+	$normalization = min(1, max(0, $normalization));
+	$player->normalization = $normalization;
+	$player->raw_points = $player->points;
+	$player->points *= $normalization;
+	foreach ($_scoring_groups as $group)
+	{
+		$g = $group . '_points';
+		if (isset($player->$g))
+		{
+			$rg = 'raw_' . $g;
+			$player->$rg = $player->$g;
+			$player->$g *= $normalization;
+		}
+		if (isset($player->$group))
+		{
+			$rg = 'raw_' . $group;
+			$player->$rg = $player->$group;
+			foreach($player->$group as &$p) 
+			{
+				$p *= $normalization;
+			}			
+		}
+	}
+	if (isset($player->games))
+	{
+		foreach($player->games as $game) 
+		{
+			$game->raw_points = $game->points;
+			$game->points *= $normalization;
+			foreach ($_scoring_groups as $group)
+			{
+				if (isset($game->$group))
+				{
+					$rg = 'raw_' . $group;
+					$game->$rg = $game->$group;
+					foreach($game->$group as &$p) 
+					{
+						$p *= $normalization;
+					}			
+				}
+			}
+		}			
+	}
+	if (isset($player->history))
+	{
+		foreach($player->history as $hp)
+		{
+			$hp->raw_points = $hp->points;
+			$hp->points *= $normalization;
+		}
+	}
+}
+
+function tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options)
 {
 	$event_scorings = NULL;
 	if ($tournament_flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING)
@@ -1047,8 +1112,9 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     $condition = get_players_condition($players_list);
 
 	// Calculate first night kill rates and games count per player
+	$max_games_played = 0;
     $players = array();
-	$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0 AND (g.flags & ' . GAME_FLAG_FUN . ') = 0', $tournament_id, $condition);
+	$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), COUNT(DISTINCT g.event_id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0 AND (g.flags & ' . GAME_FLAG_FUN . ') = 0', $tournament_id, $condition);
 	$query->add(' GROUP BY u.id');
 	while ($row = $query->next())
 	{
@@ -1061,9 +1127,13 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$player->club_name = $row[5];
 		$player->club_flags = (int)$row[6];
 		$player->games_count = (int)$row[7];
-		$player->killed_first_count = (int)$row[8];
-		$player->wins = (int)$row[9];
-		$player->special_role_wins = (int)$row[10];
+		$player->events_count = (int)$row[8];
+		$player->killed_first_count = (int)$row[9];
+		$player->wins = (int)$row[10];
+		$player->special_role_wins = (int)$row[11];
+		$player->normalizer = $normalizer;
+		
+		$max_games_played = min($max_games_played, $player->games_count);
 		
 		init_player_score($player, $scoring, $lod_flags);
 		$players[$player->id] = $player;
@@ -1251,17 +1321,19 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     // Prepare and sort scores
     if ($lod_flags & SCORING_LOD_NO_SORTING)
     {
+		foreach ($players as $user_id => $player)
+		{
+			set_player_normalization($player, $max_games_played);
+		}
         return $players;
     }
     
     $scores = array();
     foreach ($players as $user_id => $player)
     {
-        // echo '<pre>';
-        // print_r($player);
-        // echo '</pre><br>';
         if ($player->games_count > 0)
         {
+			set_player_normalization($player, $max_games_played);
             $scores[] = $player;
         }
     }

@@ -25,14 +25,14 @@ class Page extends TournamentPageBase
 		parent::prepare();
 		
 		$this->tournament_player_params = '&id=' . $this->id;
-		if (isset($_REQUEST['scoring_id']))
+		if (isset($_REQUEST['sid']))
 		{
-			$this->scoring_id = (int)$_REQUEST['scoring_id'];
-			$this->tournament_player_params .= '&scoring_id=' . $this->scoring_id;
-			if (isset($_REQUEST['scoring_version']))
+			$this->scoring_id = (int)$_REQUEST['sid'];
+			$this->tournament_player_params .= '&sid=' . $this->scoring_id;
+			if (isset($_REQUEST['sver']))
 			{
-				$this->scoring_version = (int)$_REQUEST['scoring_version'];
-				$this->tournament_player_params .= '&scoring_version=' . $this->scoring_version;
+				$this->scoring_version = (int)$_REQUEST['sver'];
+				$this->tournament_player_params .= '&sver=' . $this->scoring_version;
 				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 			}
 			else
@@ -46,11 +46,36 @@ class Page extends TournamentPageBase
 		}
 		$this->scoring = json_decode($this->scoring);
 		
-		$this->scoring_options = json_decode($this->scoring_options);
-		if (isset($_REQUEST['scoring_ops']))
+		$this->normalizer = '{}';
+		if (isset($_REQUEST['nid']))
 		{
-			$this->tournament_player_params .= '&scoring_ops=' . rawurlencode($_REQUEST['scoring_ops']);
-			$ops = json_decode($_REQUEST['scoring_ops']);
+			$this->normalizer_id = (int)$_REQUEST['nid'];
+			$this->tournament_player_params .= '&nid=' . $this->normalizer_id;
+			if ($this->normalizer_id > 0)
+			{
+				if (isset($_REQUEST['nver']))
+				{
+					$this->normalizer_version = (int)$_REQUEST['nver'];
+					$this->tournament_player_params .= '&nver=' . $this->normalizer_version;
+					list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
+				}
+				else
+				{
+					list($this->normalizer, $this->normalizer_version) = Db::record(get_label('normalizer'), 'SELECT normalizer, version FROM normalizer_versions WHERE normalizer_id = ? ORDER BY version DESC LIMIT 1', $this->normalizer_id);
+				}
+			}
+		}
+		else if (!is_null($this->normalizer_id) && $this->normalizer_id > 0)
+		{
+			list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
+		}
+		$this->normalizer = json_decode($this->normalizer);
+		
+		$this->scoring_options = json_decode($this->scoring_options);
+		if (isset($_REQUEST['sops']))
+		{
+			$this->tournament_player_params .= '&sops=' . rawurlencode($_REQUEST['sops']);
+			$ops = json_decode($_REQUEST['sops']);
 			foreach($ops as $key => $value) 
 			{
 				$this->scoring_options->$key = $value;
@@ -91,7 +116,7 @@ class Page extends TournamentPageBase
 		
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'tournament=' . $this->id, get_label('Go to the page where a specific player is located.'));
@@ -99,7 +124,7 @@ class Page extends TournamentPageBase
 		
 		$condition = new SQL(' AND g.tournament_id = ?', $this->id);
 		
-		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->scoring_options);
+		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->normalizer, $this->scoring_options);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{
@@ -166,7 +191,7 @@ class Page extends TournamentPageBase
 			{
 				echo '<td align="center">' . number_format(($player->wins * 100.0) / $player->games_count, 1) . '%</td>';
 				echo '<td align="center">';
-				echo format_score($player->points / $player->games_count);
+				echo format_score($player->raw_points / $player->games_count);
 				echo '</td>';
 			}
 			else
@@ -183,9 +208,9 @@ class Page extends TournamentPageBase
 		<script type="text/javascript">
 			mr.showComments("tournament", <?php echo $this->id; ?>, 5);
 			
-			function submitScoring(scoringId, scoringVer, scoringOps)
+			function submitScoring(s)
 			{
-				goTo({ scoring_id: scoringId, scoring_version: scoringVer, scoring_ops: scoringOps });
+				goTo({ sid: s.sId, sver: s.sVer, nid: s.nId, nver: s.nVer, sops: s.ops });
 			}
 		</script>
 <?php

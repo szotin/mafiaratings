@@ -51,7 +51,7 @@ class Page extends EventPageBase
 	{
 		echo '<p><form method="get" name="viewForm" action="event_competition.php">';
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
-		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, $this->scoring_options, ' ', 'doUpdateChart', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION);
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, 0, 0, $this->scoring_options, ' ', 'doUpdateChart', SCORING_SELECT_FLAG_NO_NORMALIZER | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION);
 		echo '</form></p>';
 		
 		show_chart_legend();
@@ -62,11 +62,11 @@ class Page extends EventPageBase
 	{
 		parent::js();
 ?>		
-		function doUpdateChart(scoringId, scoringVersion, options)
+		function doUpdateChart(s)
 		{
-			chartParams.scoring_id = scoringId;
-			chartParams.scoring_version = scoringVersion;
-			chartParams.scoring_options = options;
+			chartParams.scoring_id = s.sId;
+			chartParams.scoring_version = s.sVer;
+			chartParams.scoring_options = s.ops;
 			updateChart();
 		}
 <?php 

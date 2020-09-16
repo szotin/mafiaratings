@@ -136,10 +136,15 @@ try
 				echo '</td></tr></table>';
 			}
 			
-			list($scoring, $scoring_options) =  Db::record(get_label('tournament'), 'SELECT s.scoring, t.scoring_options FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
+			list($scoring, $normalizer, $scoring_options) =  Db::record(get_label('tournament'), 'SELECT s.scoring, n.normalizer, t.scoring_options FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version LEFT OUTER JOIN normalizer_versions n ON n.normalizer_id = t.normalizer_id AND n.version = t.normalizer_version WHERE t.id = ?', $tournament_id);
+			if (is_null($normalizer))
+			{
+				$normalizer = '{}';
+			}
 			$scoring = json_decode($scoring);
+			$normalizer = json_decode($normalizer);
 			$scoring_options = json_decode($scoring_options);
-			$players = tournament_scores($tournament_id, $tournament_flags, NULL, SCORING_LOD_PER_GROUP, $scoring, $scoring_options);
+			$players = tournament_scores($tournament_id, $tournament_flags, NULL, SCORING_LOD_PER_GROUP, $scoring, $normalizer, $scoring_options);
 			$players_count = count($players);
 				
 			if ($players_count == 0)

@@ -13,12 +13,12 @@ class Page extends TournamentPageBase
 		
 		parent::prepare();
 		
-		if (isset($_REQUEST['scoring_id']))
+		if (isset($_REQUEST['sid']))
 		{
-			$this->scoring_id = (int)$_REQUEST['scoring_id'];
-			if (isset($_REQUEST['scoring_version']))
+			$this->scoring_id = (int)$_REQUEST['sid'];
+			if (isset($_REQUEST['sver']))
 			{
-				$this->scoring_version = (int)$_REQUEST['scoring_version'];
+				$this->scoring_version = (int)$_REQUEST['sver'];
 				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 			}
 			else
@@ -32,10 +32,35 @@ class Page extends TournamentPageBase
 		}
 		$this->scoring = json_decode($this->scoring);
 		
-		$this->scoring_options = json_decode($this->scoring_options);
-		if (isset($_REQUEST['scoring_ops']))
+		$this->normalizer = '{}';
+		if (isset($_REQUEST['nid']))
 		{
-			$ops = json_decode($_REQUEST['scoring_ops']);
+			$this->normalizer_id = (int)$_REQUEST['nid'];
+			$this->tournament_player_params .= '&nid=' . $this->normalizer_id;
+			if ($this->normalizer_id > 0)
+			{
+				if (isset($_REQUEST['nver']))
+				{
+					$this->normalizer_version = (int)$_REQUEST['nver'];
+					$this->tournament_player_params .= '&nver=' . $this->normalizer_version;
+					list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
+				}
+				else
+				{
+					list($this->normalizer, $this->normalizer_version) = Db::record(get_label('normalizer'), 'SELECT normalizer, version FROM normalizer_versions WHERE normalizer_id = ? ORDER BY version DESC LIMIT 1', $this->normalizer_id);
+				}
+			}
+		}
+		else if (!is_null($this->normalizer_id) && $this->normalizer_id > 0)
+		{
+			list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
+		}
+		$this->normalizer = json_decode($this->normalizer);
+		
+		$this->scoring_options = json_decode($this->scoring_options);
+		if (isset($_REQUEST['sops']))
+		{
+			$ops = json_decode($_REQUEST['sops']);
 			foreach($ops as $key => $value) 
 			{
 				$this->scoring_options->$key = $value;
@@ -51,7 +76,7 @@ class Page extends TournamentPageBase
 		$this->user_name = '';
 		if ($this->user_id > 0)
 		{
-			$data = tournament_scores($this->id, $this->flags, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->scoring_options);
+			$data = tournament_scores($this->id, $this->flags, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->normalizer, $this->scoring_options);
 			if (isset($data[$this->user_id]))
 			{
 				$this->player = $data[$this->user_id];
@@ -82,7 +107,7 @@ class Page extends TournamentPageBase
 		echo '<p>';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
 		echo '</td><td align="right">';
 		echo get_label('Select a player') . ': ';
 		show_user_input('user_name', $this->user_name, 'tournament=' . $this->id, get_label('Select a player'), 'selectPlayer');
@@ -95,10 +120,15 @@ class Page extends TournamentPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td rowspan="2">';
-		echo '<table class="transp"><tr><td width="72">';
+		echo '<table class="transp" width="100%"><tr><td width="72">';
 		$this->user_pic->set($this->player->id, $this->player->name, $this->player->flags);
 		$this->user_pic->show(ICONS_DIR, true, 64);
-		echo '</td><td>' . $this->player->name . '</td></tr></table>';
+		echo '</td><td>' . $this->player->name . '</td></tr>';
+		if ($this->player->normalization >= 0 && $this->player->normalization < 1)
+		{
+			echo '<tr><td colspan="3" align="center">' . get_label('Normalization rate') . ': ' . format_score($this->player->normalization) . '</td></tr>';
+		}
+		echo '</table>';
 		echo '</td>';
 		foreach ($_scoring_groups as $group)
 		{
@@ -148,7 +178,7 @@ class Page extends TournamentPageBase
 			{
 				echo $game->event_name;
 			}
-			echo '</td><td align="right" width="30">';
+			echo '</td><td align="right" width="50">';
 			switch ($game->role)
 			{
 				case 0: // civil;
@@ -163,6 +193,14 @@ class Page extends TournamentPageBase
 				case 3: // don
 					echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
 					break;
+			}
+			if ($game->won)
+			{
+				echo '<img src="images/won.png" title="' . get_label('win') . '" style="opacity: 0.8;">';
+			}
+			else
+			{
+				echo '<img src="images/lost.png" title="' . get_label('loss') . '" style="opacity: 0.8;">';
 			}
 			echo '</td></tr></table></td>';
 			foreach ($_scoring_groups as $group)
@@ -243,9 +281,9 @@ class Page extends TournamentPageBase
 			goTo({ 'user_id': data.id });
 		}
 		
-		function submitScoring(scoringId, scoringVer, scoringOps)
+		function submitScoring(s)
 		{
-			goTo({ scoring_id: scoringId, scoring_version: scoringVer, scoring_ops: scoringOps });
+			goTo({ sid: s.sId, sver: s.sVer, nid: s.nId, nver: s.nVer, sops: s.ops });
 		}
 <?php	
 	}

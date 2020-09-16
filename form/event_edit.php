@@ -119,7 +119,7 @@ try
 	}
 	
 	echo '<tr><td valign="top">' . get_label('Scoring system').':</td><td>';
-	show_scoring_select($club_id, $scoring_id, $scoring_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX, 'form-scoring');
+	show_scoring_select($club_id, $scoring_id, $scoring_version, 0, 0, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');
 	echo '</td></tr>';
 	
 	if (is_valid_lang($club->langs))
@@ -158,11 +158,11 @@ try
 	var scoringId = <?php echo $scoring_id; ?>;
 	var scoringVersion = <?php echo $scoring_version; ?>;
 	var scoringOptions = '<?php echo $scoring_options; ?>';
-	function onScoringChange(id, version, options)
+	function onScoringChange(s)
 	{
-		scoringId = id;
-		scoringVersion = version;
-		scoringOptions = JSON.stringify(options);
+		scoringId = s.sId;
+		scoringVersion = s.sVer;
+		scoringOptions = JSON.stringify(s.ops);
 	}
 	
 	var old_address_value = "<?php echo $selected_address; ?>";

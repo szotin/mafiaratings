@@ -78,7 +78,7 @@ class Page extends EventPageBase
 		echo '<p>';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION);
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
 		echo '</td><td align="right">';
 		echo get_label('Select a player') . ': ';
 		show_user_input('user_name', $this->user_name, 'event=' . $this->event->id, get_label('Select a player'), 'selectPlayer');
@@ -139,7 +139,7 @@ class Page extends EventPageBase
 		foreach ($this->player->games as $game)
 		{
 			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->event->id . '&id=' . $game->game_id . '&bck=1">' . get_label('Game #[0]', $game->game_id) . '</a></td>';
-			echo '<td align="right">';
+			echo '<td align="right" width="50">';
 			switch ($game->role)
 			{
 				case 0: // civil;
@@ -154,6 +154,14 @@ class Page extends EventPageBase
 				case 3: // don
 					echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
 					break;
+			}
+			if ($game->won)
+			{
+				echo '<img src="images/won.png" title="' . get_label('win') . '" style="opacity: 0.8;">';
+			}
+			else
+			{
+				echo '<img src="images/lost.png" title="' . get_label('loss') . '" style="opacity: 0.8;">';
 			}
 			echo '</td></tr></table></td>';
 			foreach ($_scoring_groups as $group)
@@ -234,9 +242,9 @@ class Page extends EventPageBase
 			goTo({ 'user_id': data.id });
 		}
 		
-		function submitScoring(scoringId, scoringVer, scoringOps)
+		function submitScoring(s)
 		{
-			goTo({ scoring_id: scoringId, scoring_version: scoringVer, scoring_ops: scoringOps });
+			goTo({ scoring_id: s.sId, scoring_version: s.sVer, scoring_ops: s.ops });
 		}
 <?php	
 	}

@@ -778,6 +778,47 @@ var mr = new function()
 		}
 	}
 	
+	this.onChangeNormalizer = function(name, version, changed)
+	{
+		var normalizerId = $('#' + name + '-norm-sel').val();
+		var versionDiv = $('#' + name + '-norm-version');
+		if (normalizerId > 0)
+		{
+			json.post("api/get/normalizers.php", { normalizer_id: normalizerId }, function(data)
+			{
+				var s = data.normalizers[0];
+				var c = $('#' + name + '-norm-ver');
+				c.find('option').remove();
+				var v1 = null;
+				for (var v of s.versions)
+				{
+					c.append($('<option>').val(v.version).text(v.version));
+					if (v.version == version)
+					{
+						v1 = v;
+					}
+				}
+				if (!v1)
+				{
+					v1 = v;
+				}
+				c.val(v1.version);
+				versionDiv.css('visibility', 'visible');
+				mr.onChangeNormalizerVersion(name, changed);
+			});
+		}
+		else
+		{
+			versionDiv.css('visibility', 'hidden');
+			mr.onChangeNormalizerVersion(name, changed);
+		}
+	}
+	
+	this.onChangeNormalizerVersion = function(name, changed)
+	{
+		mr.onChangeScoringOptions(name, changed);
+	}
+	
 	this.onChangeScoringOptions = function(name, changed)
 	{
 		if (changed)
@@ -812,7 +853,14 @@ var mr = new function()
 			{
 				ops.group = g.val();
 			}
-			changed($('#' + name + '-sel').val(), $('#' + name + '-ver').val(), ops);
+			changed(
+			{
+				sId: $('#' + name + '-sel').val(),
+				sVer: $('#' + name + '-ver').val(), 
+				nId: $('#' + name + '-norm-sel').val(),
+				nVer: $('#' + name + '-norm-ver').val(), 
+				ops: ops
+			});
 		}
 	}
 	
@@ -846,40 +894,6 @@ var mr = new function()
 	this.editNormalizer = function(id)
 	{
 		goTo("normalizer.php?bck=1&id=" + id);
-	}
-	
-	this.onChangeNormalizer = function(name, version)
-	{
-		var normalizerId = $('#' + name + '-sel').val();
-		var versionDiv = $('#' + name + '-version');
-		if (normalizerId > 0)
-		{
-			json.post("api/get/normalizers.php", { normalizer_id: normalizerId }, function(data)
-			{
-				var s = data.normalizers[0];
-				var c = $('#' + name + '-ver');
-				c.find('option').remove();
-				var v1 = null;
-				for (var v of s.versions)
-				{
-					c.append($('<option>').val(v.version).text(v.version));
-					if (v.version == version)
-					{
-						v1 = v;
-					}
-				}
-				if (!v1)
-				{
-					v1 = v;
-				}
-				c.val(v1.version);
-				versionDiv.css('visibility', 'visible');
-			});
-		}
-		else
-		{
-			versionDiv.css('visibility', 'hidden');
-		}
 	}
 	
 	//--------------------------------------------------------------------------------------

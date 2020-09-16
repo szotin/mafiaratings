@@ -172,7 +172,7 @@ class ApiPage extends ControlApiPageBase
 				}
 				$tournament_id = (int)$_REQUEST['id'];
 				
-				list($scoring_id, $scoring, $scoring_options, $timezone, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.scoring_id, s.scoring, t.scoring_options, c.timezone, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $tournament_id);
+				list($scoring_id, $scoring, $normalizer_id, $normalizer, $scoring_options, $timezone, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.scoring_id, s.scoring, t.normalizer_id, n.normalizer, t.scoring_options, c.timezone, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version LEFT OUTER JOIN normalizer_versions n ON n.normalizer_id = t.normalizer_id AND n.version = t.normalizer_version WHERE t.id = ?', $tournament_id);
 				if (isset($_REQUEST['scoring_id']) && $_REQUEST['scoring_id'] > 0)
 				{
 					$scoring_id = (int)$_REQUEST['scoring_id'];
@@ -187,8 +187,31 @@ class ApiPage extends ControlApiPageBase
 					}
 				}
 				$scoring = json_decode($scoring);
-				$scoring_options = json_decode($scoring_options);
 				
+				if (is_null($normalizer))
+				{
+					$normalizer = '{}';
+				}
+				if (isset($_REQUEST['normalizer_id']))
+				{
+					$normalizer_id = (int)$_REQUEST['normalizer_id'];
+					if ($normalizer_id <= 0)
+					{
+						$normalizer = '{}';
+					}
+					else if (isset($_REQUEST['normalizer_version']) && $_REQUEST['normalizer_version'] > 0)
+					{
+						$normalizer_version = (int)$_REQUEST['normalizer_version'];
+						list($normalizer) = Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $normalizer_id, $normalizer_version);
+					}
+					else
+					{
+						list($normalizer, $normalizer_version) = Db::record(get_label('scoring normalizer'), 'SELECT normalizer, version FROM normalizer_versions WHERE normalizer_id = ? ORDER BY version DESC LIMIT 1', $normalizer_id);
+					}
+				}
+				$normalizer = json_decode($normalizer);
+				
+				$scoring_options = json_decode($scoring_options);
 				if (isset($_REQUEST['scoring_options']))
 				{
 					$ops = $_REQUEST['scoring_options'];
@@ -208,7 +231,8 @@ class ApiPage extends ControlApiPageBase
 					$players = explode(',', $_REQUEST['players']);
 				}
 				
-				$players = tournament_scores($tournament_id, $tournament_flags, $players, SCORING_LOD_HISTORY | SCORING_LOD_NO_SORTING, $scoring, $scoring_options);
+				$players = tournament_scores($tournament_id, $tournament_flags, $players, SCORING_LOD_HISTORY | SCORING_LOD_NO_SORTING, $scoring, $normalizer, $scoring_options);
+				//print_json($players);
 				$players_count = count($players);
 				foreach ($user_ids as $user_id)
 				{
