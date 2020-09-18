@@ -8,49 +8,52 @@ initiate_session();
 
 try
 {
-	if (!isset($_REQUEST['id']))
+	if (!isset($_REQUEST['sid']))
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('scoring system')));
 	}
-	$id = (int)$_REQUEST['id'];
+	$scoring_id = (int)$_REQUEST['sid'];
 	
-	if (isset($_REQUEST['version']))
+	if (isset($_REQUEST['sver']))
 	{
-		$version = (int)$_REQUEST['version'];
-		list($scoring, $name, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? AND v.version = ?', $id, $version);
+		$scoring_version = (int)$_REQUEST['sver'];
+		list($scoring, $name, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? AND v.version = ?', $scoring_id, $scoring_version);
 	}
 	else
 	{
-		list($scoring, $name, $version, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, v.version, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? ORDER BY version DESC LIMIT 1', $id);
-		$version = (int)$version;
+		list($scoring, $name, $scoring_version, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, v.version, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+		$scoring_version = (int)$scoring_version;
 	}
 	$scoring = json_decode($scoring);
 	
-	if (is_null($club_id))
+	$normalizer_id = 0;
+	$normalizer = NULL;
+	if (isset($_REQUEST['nid']))
 	{
-		if (is_null($league_id))
+		$normalizer_id = (int)$_REQUEST['nid'];
+		if ($normalizer_id > 0)
 		{
-			$can_edit = is_permitted(PERMISSION_ADMIN);
-		}
-		else
-		{
-			$can_edit = is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id);
-		}
-	}
-	else
-	{
-		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER, $club_id);
-		if (!is_null($league_id))
-		{
-			$can_edit = is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id);
+			if (isset($_REQUEST['nver']))
+			{
+				$normalizer_version = (int)$_REQUEST['nver'];
+				list($normalizer, $name, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT v.normalizer, s.name, s.club_id, s.league_id FROM normalizer_versions v JOIN normalizers s ON s.id = v.normalizer_id WHERE v.normalizer_id = ? AND v.version = ?', $normalizer_id, $normalizer_version);
+			}
+			else
+			{
+				list($normalizer, $name, $normalizer_version, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT v.normalizer, s.name, v.version, s.club_id, s.league_id FROM normalizer_versions v JOIN normalizers s ON s.id = v.normalizer_id WHERE v.normalizer_id = ? ORDER BY version DESC LIMIT 1', $normalizer_id);
+				$normalizer_version = (int)$normalizer_version;
+			}
+			$normalizer = json_decode($normalizer);
 		}
 	}
 	
-	dialog_title(get_label('Scoring system [0]. Version [1].', $name, $version));
-	if ($can_edit)
+	$opt_flags = 0;
+	if (isset($_REQUEST['ops_flags']))
 	{
-		echo '<p><a onclick="mr.editScoringSystem(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a><p>';
+		$opt_flags = (int)$_REQUEST['ops_flags'];
 	}
+	
+	dialog_title(get_label('Scoring system [0]. Version [1].', $name, $scoring_version));
 	
 	echo '<table class="bordered light" width="100%">';
 	foreach ($_scoring_groups as $group)
@@ -60,12 +63,10 @@ try
 			continue;
 		}
 		
-		echo '<tr class="darker"><td colspan="2"><h4>' . get_scoring_group_label($group) . '</h4></td></tr>';
+		$group_title_shown = false;
 		foreach ($scoring->$group as $policy)
 		{
-			echo '<tr><td width="300">';
-			echo get_scoring_matter_label($policy);
-			echo '</td><td>';
+			$text = NULL;
 			$roles = isset($policy->roles) ? $policy->roles : SCORING_ROLE_FLAGS_ALL;
 			if (isset($policy->min_difficulty) || isset($policy->max_difficulty))
 			{
@@ -74,30 +75,44 @@ try
 				$min_points = isset($policy->min_points) ? $policy->min_points : 0;
 				$max_points = isset($policy->max_points) ? $policy->max_points : 0;
 				
-				if ($min_difficulty <= 0)
+				if ($opt_flags & SCORING_OPTION_NO_GAME_DIFFICULTY)
 				{
-					$lower_text = get_label('when the game difficulty is 0%');
+					if ($min_points == 1)
+					{
+						$text = get_label('[0] get 1 point.', get_scoring_roles_label($roles));
+					}
+					else if ($min_points != 0)
+					{
+						$text = get_label('[0] get [1] points.', get_scoring_roles_label($roles), $min_points);
+					}
 				}
 				else
 				{
-					$lower_text = get_label('when the game difficulty is lower than [0]%', $min_difficulty * 100);
+					if ($min_difficulty <= 0)
+					{
+						$lower_text = get_label('when the game difficulty is 0%');
+					}
+					else
+					{
+						$lower_text = get_label('when the game difficulty is lower than [0]%', $min_difficulty * 100);
+					}
+					
+					if ($max_difficulty >= 1)
+					{
+						$higher_text = get_label('when the game difficulty is 100%');
+					}
+					else
+					{
+						$higher_text = get_label('when the game difficulty is higher than [0]%', $max_difficulty * 100);
+					}
+					
+					$text = get_label('[0] get from [1] ([3]) to [2] ([4]) points.', 
+						get_scoring_roles_label($roles),
+						$min_points,
+						$max_points,
+						$lower_text,
+						$higher_text);
 				}
-				
-				if ($max_difficulty >= 1)
-				{
-					$higher_text = get_label('when the game difficulty is 100%');
-				}
-				else
-				{
-					$higher_text = get_label('when the game difficulty is higher than [0]%', $max_difficulty * 100);
-				}
-				
-				echo get_label('[0] get from [1] ([3]) to [2] ([4]) points.', 
-					get_scoring_roles_label($roles),
-					$min_points,
-					$max_points,
-					$lower_text,
-					$higher_text);
 			}
 			else if (isset($policy->min_night1) || isset($policy->max_night1))
 			{
@@ -106,48 +121,75 @@ try
 				$min_points = isset($policy->min_points) ? $policy->min_points : 0;
 				$max_points = isset($policy->max_points) ? $policy->max_points : 0;
 				
-				if ($min_night1 <= 0)
+				
+				if ($opt_flags & SCORING_OPTION_NO_NIGHT_KILLS)
 				{
-					$lower_text = get_label('when player\'s first-night-killed rate is 0%');
+					if ($min_points == 1)
+					{
+						$text = get_label('[0] get 1 point.', get_scoring_roles_label($roles));
+					}
+					else if ($min_points != 0)
+					{
+						$text = get_label('[0] get [1] points.', get_scoring_roles_label($roles), $min_points);
+					}
 				}
 				else
 				{
-					$lower_text = get_label('when player\'s first-night-killed rate is lower than [0]%', $min_night1);
+					if ($min_night1 <= 0)
+					{
+						$lower_text = get_label('when player\'s first-night-killed rate is 0%');
+					}
+					else
+					{
+						$lower_text = get_label('when player\'s first-night-killed rate is lower than [0]%', $min_night1);
+					}
+					
+					if ($max_night1 >= 1)
+					{
+						$higher_text = get_label('when first-night-killed rate is 100%');
+					}
+					else
+					{
+						$higher_text = get_label('when first-night-killed rate is higher than [0]%', $max_night1);
+					}
+					
+					$text = get_label('[0] get from [1] ([3]) to [2] ([4]) points.', 
+						get_scoring_roles_label($roles),
+						$min_points,
+						$max_points,
+						$lower_text,
+						$higher_text);
 				}
-				
-				if ($max_night1 >= 1)
-				{
-					$higher_text = get_label('when first-night-killed rate is 100%');
-				}
-				else
-				{
-					$higher_text = get_label('when first-night-killed rate is higher than [0]%', $max_night1);
-				}
-				
-				echo get_label('[0] get from [1] ([3]) to [2] ([4]) points.', 
-					get_scoring_roles_label($roles),
-					$min_points,
-					$max_points,
-					$lower_text,
-					$higher_text);
 			}
 			else if (isset($policy->figm_first_night_score))
 			{
-				echo get_label('[0] get points depending on kill rate using FIGM rules.', get_scoring_roles_label($roles));
+				if (($opt_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
+				{
+					$text = get_label('[0] get points depending on kill rate using FIGM rules.', get_scoring_roles_label($roles));
+				}
 			}
 			else
 			{
 				$points = isset($policy->points) ? $policy->points : 0;
 				if ($points == 1)
 				{
-					echo get_label('[0] get 1 point.', get_scoring_roles_label($roles));
+					$text = get_label('[0] get 1 point.', get_scoring_roles_label($roles));
 				}
-				else
+				else if ($points != 0)
 				{
-					echo get_label('[0] get [1] points.', get_scoring_roles_label($roles), $points);
+					$text = get_label('[0] get [1] points.', get_scoring_roles_label($roles), $points);
 				}
 			}
-			echo '</td></tr>';
+			
+			if (!is_null($text))
+			{
+				if (!$group_title_shown)
+				{
+					echo '<tr class="darker"><td colspan="2"><h4>' . get_scoring_group_label($group) . '</h4></td></tr>';
+					$group_title_shown = true;
+				}
+				echo '<tr><td width="300">' . get_scoring_matter_label($policy) . '</td><td>' . $text . '</td></tr>';
+			}
 		}
 	}
 	
@@ -155,6 +197,30 @@ try
 	if (isset($scoring->sorting))
 	{
 		$sorting = $scoring->sorting;
+	}
+	
+	if (!is_null($normalizer))
+	{
+		echo '<tr class="darker"><td colspan="2"><h4>' . get_label('Scoring normalization to make players with different number of games comparable.') . '</h4></td></tr>';
+		echo '<tr><td colspan="2">';
+		$policy = NORMALIZATION_NONE;
+		if (isset($normalizer->policy))
+		{
+			$policy = $normalizer->policy;
+		}
+		switch ($policy)
+		{
+			case NORMALIZATION_AVERAGE:
+				echo get_label('The final score is divided to the number of games played by the player. I.e. average score per game is used.');
+				break;
+			case NORMALIZATION_BY_WINNING_RATE:
+				echo get_label('The final score is multiplied by the player\'s winning rate.');
+				break;
+			case NORMALIZATION_AVERAGE_PER_EVENT:
+				echo get_label('The final score is divided to the number of rounds played by the player. I.e. average score per tournament round is used.');
+				break;
+		}
+		echo '</td></tr>';
 	}
 	
 	echo '<tr class="darker"><td colspan="2"><h4>' . get_label('When the scores are the same') . '</h4></td></tr>';

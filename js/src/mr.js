@@ -702,7 +702,26 @@ var mr = new function()
 	
 	this.showScoring = function(name)
 	{
-		dlg.infoForm("form/scoring_show.php?id=" + $('#' + name + '-sel').val() + "&version=" + $('#' + name + '-ver').val());
+		var n = $('#' + name + '-night1');
+		var d = $('#' + name + '-difficulty');
+		var flags = 0;
+		if (n.length > 0 || d.length > 0)
+		{
+			if (!n.prop('checked'))
+			{
+				flags |= /*SCORING_OPTION_NO_NIGHT_KILLS*/1;
+			}
+			if (!d.prop('checked'))
+			{
+				flags |= /*SCORING_OPTION_NO_GAME_DIFFICULTY*/2;
+			}
+		}
+		dlg.infoForm("form/scoring_show.php" + 
+			"?sid=" + $('#' + name + '-sel').val() + 
+			"&sver=" + $('#' + name + '-ver').val() +
+			"&nid=" + $('#' + name + '-norm-sel').val() + 
+			"&nver=" + $('#' + name + '-norm-ver').val() +
+			"&ops_flags=" + flags);
 	}
 	
 	this.onChangeScoring = function(name, version, changed)
