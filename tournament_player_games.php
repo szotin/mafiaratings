@@ -5,6 +5,15 @@ require_once 'include/club.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 
+function score_title($points, $raw_points, $normalization)
+{
+	if ($normalization != 1 && $points != 0)
+	{
+		return ' title="' . format_score($raw_points) . ' * ' . format_score($normalization) . ' = ' . format_score($points) . '"';
+	}
+	return '';
+}
+
 class Page extends TournamentPageBase
 {
 	protected function prepare()
@@ -210,18 +219,20 @@ class Page extends TournamentPageBase
 				{
 					$gr1 = &$this->scoring->$group;
 					$gr2 = &$game->$group;
+					$raw_gname = 'raw_' . $group;
+					$raw_rg2 = &$game->$raw_gname;
 					$count = get_scoring_group_policies_count($group, $this->scoring);
 					for ($i = 0; $i < $count; ++$i)
 					{
 						if (is_scoring_policy_on($gr1[$i], $this->scoring_options))
 						{
 							$show_zeroes = ($group == SCORING_GROUP_NIGHT1 && ($game->flags & SCORING_FLAG_KILLED_FIRST_NIGHT) != 0);
-							echo '<td>' . format_score($gr2[$i], $show_zeroes) . '</td>';
+							echo '<td' . score_title($gr2[$i], $raw_rg2[$i], $this->player->normalization) . '>' . format_score($gr2[$i], $show_zeroes) . '</td>';
 						}
 					}
 				}
 			}
-			echo '<td class="darker"><b>' . format_score($game->points, false) . '</b></td>';
+			echo '<td class="darker"' . score_title($game->points, $game->raw_points, $this->player->normalization) . '><b>' . format_score($game->points, false) . '</b></td>';
 			echo '</tr>';
 		}
 		
@@ -233,17 +244,19 @@ class Page extends TournamentPageBase
 			{
 				$gr1 = &$this->scoring->$group;
 				$gr2 = &$this->player->$group;
+				$raw_gname = 'raw_' . $group;
+				$raw_rg2 = &$this->player->$raw_gname;
 				$count = get_scoring_group_policies_count($group, $this->scoring);
 				for ($i = 0; $i < $count; ++$i)
 				{
 					if (is_scoring_policy_on($gr1[$i], $this->scoring_options))
 					{
-						echo '<td>' . format_score($gr2[$i], false) . '</td>';
+						echo '<td' . score_title($gr2[$i], $raw_rg2[$i], $this->player->normalization) . '>' . format_score($gr2[$i], false) . '</td>';
 					}
 				}
 			}
 		}
-		echo '<td class="darkest">' . format_score($this->player->points, false) . '</td>';
+		echo '<td class="darkest"' . score_title($this->player->points, $this->player->raw_points, $this->player->normalization) . '>' . format_score($this->player->points, false) . '</td>';
 		echo '</tr>';
 		
 		echo '</table>';

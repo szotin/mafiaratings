@@ -8,6 +8,15 @@ require_once 'include/scoring.php';
 
 define("PAGE_SIZE",15);
 
+function score_title($points, $raw_points, $normalization)
+{
+	if ($normalization != 1 && $points != 0)
+	{
+		return ' title="' . format_score($raw_points) . ' * ' . format_score($normalization) . ' = ' . format_score($points) . '"';
+	}
+	return '';
+}
+
 class Page extends TournamentPageBase
 {
 	private $scoring;
@@ -180,12 +189,12 @@ class Page extends TournamentPageBase
 				$this->club_pic->show(ICONS_DIR, true, 40);
 			}
 			echo '</td>';
-			echo '<td align="center" class="' . $highlight . '">' . format_score($player->points) . '</td>';
-			echo '<td align="center">' . format_score($player->main_points) . '</td>';
-			echo '<td align="center">' . format_score($player->legacy_points) . '</td>';
-			echo '<td align="center">' . format_score($player->extra_points) . '</td>';
-			echo '<td align="center">' . format_score($player->penalty_points) . '</td>';
-			echo '<td align="center">' . format_score($player->night1_points) . '</td>';
+			echo '<td align="center" class="' . $highlight . '"' . score_title($player->points, $player->raw_points, $player->normalization) . '>' . format_score($player->points) . '</td>';
+			echo '<td align="center"' . score_title($player->main_points, $player->raw_main_points, $player->normalization) . '>' . format_score($player->main_points) . '</td>';
+			echo '<td align="center"' . score_title($player->legacy_points, $player->raw_legacy_points, $player->normalization) . '>' . format_score($player->legacy_points) . '</td>';
+			echo '<td align="center"' . score_title($player->extra_points, $player->raw_extra_points, $player->normalization) . '>' . format_score($player->extra_points) . '</td>';
+			echo '<td align="center"' . score_title($player->penalty_points, $player->raw_penalty_points, $player->normalization) . '>' . format_score($player->penalty_points) . '</td>';
+			echo '<td align="center"' . score_title($player->night1_points, $player->raw_night1_points, $player->normalization) . '>' . format_score($player->night1_points) . '</td>';
 			echo '<td align="center">' . $player->events_count . '</td>';
 			echo '<td align="center">' . $player->games_count . '</td>';
 			echo '<td align="center">' . $player->wins . '</td>';
