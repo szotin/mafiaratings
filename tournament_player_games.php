@@ -124,7 +124,7 @@ class Page extends TournamentPageBase
 		$this->user_pic->set($this->player->id, $this->player->name, $this->player->flags);
 		$this->user_pic->show(ICONS_DIR, true, 64);
 		echo '</td><td>' . $this->player->name . '</td></tr>';
-		if ($this->player->normalization >= 0 && $this->player->normalization < 1)
+		if ($this->player->normalization != 1)
 		{
 			echo '<tr><td colspan="3" align="center">' . get_label('Normalization rate') . ': ' . format_score($this->player->normalization) . '</td></tr>';
 		}

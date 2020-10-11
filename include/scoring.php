@@ -92,11 +92,6 @@ define('SCORING_LOD_NO_SORTING', 16); // When set sorting returns associative ar
 define('SCORING_OPTION_NO_NIGHT_KILLS', 1); // Do not use policies dependent on the night kills
 define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent on the game difficulty
 
-define('NORMALIZATION_NONE', 0);
-define('NORMALIZATION_AVERAGE', 1);
-define('NORMALIZATION_BY_WINNING_RATE', 2);
-define('NORMALIZATION_AVERAGE_PER_EVENT', 3);
-
 $_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_EXTRA, SCORING_GROUP_LEGACY, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
 function format_score($score, $zeroes = true)
@@ -1010,7 +1005,7 @@ function is_same_scoring_options_group($options1, $options2)
 	
 }
 
-function set_player_normalization($player, $max_games_played)
+function set_player_normalization($player, $max_games_played, $max_rounds_played)
 {
 	global $_scoring_groups;
 	
@@ -1018,36 +1013,106 @@ function set_player_normalization($player, $max_games_played)
 	if (isset($player->normalizer) && $player->normalizer != NULL)
 	{
 		$normalizer = $player->normalizer;
-		
-		if (isset($normalizer->policy))
+		if (isset($normalizer->policies))
 		{
-			switch ($normalizer->policy)
+			foreach ($normalizer->policies as $policy)
 			{
-				case NORMALIZATION_AVERAGE:
+				$cond = NULL;
+				if (isset($policy->games))
+				{
+					$cond_value = $player->games_count;
+					$cond = $policy->games;
+				}
+				else if (isset($policy->gamesPerc))
+				{
+					$cond_value = $max_games_played == 0 ? 0 : ($player->games_count * 100) / $max_games_played;
+					// echo '......<br>';
+					// echo 'cond_value: ' . $cond_value . '%<br>';
+					// echo 'games_count: ' . $player->games_count . '<br>';
+					// echo 'max_games_played: ' . $max_games_played . '<br>';
+					// echo 'max_rounds_played: ' . $max_rounds_played . '<br>';
+					$cond = $policy->gamesPerc;
+				}
+				else if (isset($policy->rounds))
+				{
+					$cond_value = $player->events_count;
+					$cond = $policy->rounds;
+				}
+				else if (isset($policy->roundsPerc))
+				{
+					$cond_value = $max_rounds_played == 0 ? 0 : $player->events_count * 100 / $max_rounds_played;
+					$cond = $policy->roundsPerc;
+				}
+				else if (isset($policy->winPerc))
+				{
+					$cond_value = $player->games_count == 0 ? 0 : $player->wins * 100 / $player->games_count;
+					$cond = $policy->winPerc;
+				}
+				
+				if ($cond != NULL)
+				{
+					if (isset($cond->min) && $cond_value < $cond->min)
+					{
+						continue;
+					}
+					
+					if (isset($cond->max) && $cond_value >= $cond->max)
+					{
+						continue;
+					}
+				}
+				
+				$multiplier = 1;
+				if (isset($policy->multiply))
+				{
+					if (isset($policy->multiply->val))
+					{
+						if (isset($policy->multiply->max) && $cond != NULL && isset($cond->min) && isset($cond->max) && $cond->min < $cond->max)
+						{
+							$multiplier = ($policy->multiply->val * ($cond->max - $cond_value) + $policy->multiply->max * ($cond_value - $cond->min)) / ($cond->max - $cond->min);
+						}
+						else
+						{
+							$multiplier = $policy->multiply->val;
+						}
+					}
+					else if (isset($policy->multiply->max))
+					{
+						$multiplier = $policy->multiply->max;
+					}
+				}
+				else if (isset($policy->gameAv))
+				{
+					$add = isset($policy->gameAv->add) ? $policy->gameAv->add : 0;
+					$min = isset($policy->gameAv->min) ? $policy->gameAv->min : 0;
+					$games_count = max($player->games_count + $add, $min);
+					if ($games_count > 0)
+					{
+						$multiplier = 1 / $games_count;
+					}
+				}
+				else if (isset($policy->roundAv))
+				{
+					$add = isset($policy->roundAv->add) ? $policy->roundAv->add : 0;
+					$min = isset($policy->roundAv->min) ? $policy->roundAv->min : 0;
+					$rounds_count = max($player->events_count + $add, $min);
+					if ($rounds_count > 0)
+					{
+						$multiplier = 1 / $rounds_count;
+					}
+				}
+				else if (isset($policy->byWinRate))
+				{
 					if ($player->games_count > 0)
 					{
-						$normalization *= 1 / $player->games_count;
+						$multiplier = $player->wins / $player->games_count;
 					}
-					break;
-				case NORMALIZATION_BY_WINNING_RATE:
-					if ($player->games_count > 0)
-					{
-						$normalization *= $player->wins / $player->games_count;
-					}
-					break;
-				case NORMALIZATION_AVERAGE_PER_EVENT:
-					if ($player->events_count > 0)
-					{
-						$normalization *= 1 / $player->events_count;
-					}
-					break;
-				default:
-					break;
+				}
+				$normalization *= $multiplier;
 			}
 		}
 	}
 	
-	$normalization = min(1, max(0, $normalization));
 	$player->normalization = $normalization;
 	$player->raw_points = $player->points;
 	$player->points *= $normalization;
@@ -1113,6 +1178,19 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 
 	// Calculate first night kill rates and games count per player
 	$max_games_played = 0;
+	$max_rounds_played = 0;
+	if (!$condition->is_empty())
+	{
+		$query = new DbQuery('SELECT p.user_id, COUNT(DISTINCT g.id), COUNT(DISTINCT g.event_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0 AND (g.flags & ' . GAME_FLAG_FUN . ') = 0 GROUP BY p.user_id', $tournament_id);
+		while ($row = $query->next())
+		{
+			list($uid, $games_played, $rounds_played) = $row;
+			$max_games_played = max($max_games_played, $games_played);
+			$max_rounds_played = max($max_rounds_played, $rounds_played);
+			
+		}
+	}
+	
     $players = array();
 	$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), COUNT(DISTINCT g.event_id), SUM(IF(p.kill_round = 0 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.canceled = 0 AND (g.flags & ' . GAME_FLAG_FUN . ') = 0', $tournament_id, $condition);
 	$query->add(' GROUP BY u.id');
@@ -1133,7 +1211,8 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$player->special_role_wins = (int)$row[11];
 		$player->normalizer = $normalizer;
 		
-		$max_games_played = min($max_games_played, $player->games_count);
+		$max_games_played = max($max_games_played, $player->games_count);
+		$max_rounds_played = max($max_rounds_played, $player->events_count);
 		
 		init_player_score($player, $scoring, $lod_flags);
 		$players[$player->id] = $player;
@@ -1323,7 +1402,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     {
 		foreach ($players as $user_id => $player)
 		{
-			set_player_normalization($player, $max_games_played);
+			set_player_normalization($player, $max_games_played, $max_rounds_played);
 		}
         return $players;
     }
@@ -1333,7 +1412,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     {
         if ($player->games_count > 0)
         {
-			set_player_normalization($player, $max_games_played);
+			set_player_normalization($player, $max_games_played, $max_rounds_played);
             $scores[] = $player;
         }
     }

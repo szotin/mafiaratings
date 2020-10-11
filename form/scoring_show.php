@@ -199,28 +199,214 @@ try
 		$sorting = $scoring->sorting;
 	}
 	
-	if (!is_null($normalizer))
+	if (!is_null($normalizer) && isset($normalizer->policies))
 	{
 		echo '<tr class="darker"><td colspan="2"><h4>' . get_label('Scoring normalization to make players with different number of games comparable.') . '</h4></td></tr>';
-		echo '<tr><td colspan="2">';
-		$policy = NORMALIZATION_NONE;
-		if (isset($normalizer->policy))
+		
+		foreach ($normalizer->policies as $policy)
 		{
-			$policy = $normalizer->policy;
+			echo '<tr><td valign="top"><p>';
+			$cond_type = 0;
+			$cond = NULL;
+			if (isset($policy->games))
+			{
+				$cond = $policy->games;
+				$cond_type = 1;
+				if (isset($cond->min) && $cond->min > 0)
+				{
+					echo get_label('For players who played more than or equal to') . ' ' . $cond->min . get_label(' games');
+					if (isset($cond->max))
+					{
+						echo get_label(' and less than') . ' ' . $cond->max . get_label(' games');
+					}
+				}
+				else if (isset($cond->max))
+				{
+					echo get_label('For players who played less than') . ' ' . $cond->max . get_label(' games');
+				}
+				else
+				{
+					echo get_label('For all players');
+				}
+			}
+			else if (isset($policy->gamesPerc))
+			{
+				$cond = $policy->gamesPerc;
+				$cond_type = 2;
+				if (isset($cond->min) && $cond->min > 0)
+				{
+					echo get_label('For players who played more than or equal to') . ' ' . $cond->min . get_label('% of the games');
+					if (isset($cond->max) && $cond->max < 100)
+					{
+						echo get_label(' and less than') . ' ' . $cond->max . get_label('% of the games');
+					}
+				}
+				else if (isset($cond->max) && $cond->max < 100)
+				{
+					echo get_label('For players who played less than') . ' ' . $cond->max . get_label('% of the games');
+				}
+				else
+				{
+					echo get_label('For all players');
+				}
+			}
+			else if (isset($policy->rounds))
+			{
+				$cond = $policy->rounds;
+				$cond_type = 3;
+				if (isset($cond->min) && $cond->min > 0)
+				{
+					echo get_label('For players who played more than or equal to') . ' ' . $cond->min . get_label(' rounds');
+					if (isset($cond->max))
+					{
+						echo get_label(' and less than') . ' ' . $cond->max . get_label(' rounds');
+					}
+				}
+				else if (isset($cond->max))
+				{
+					echo get_label('For players who played less than') . ' ' . $cond->max . get_label(' rounds');
+				}
+				else
+				{
+					echo get_label('For all players');
+				}
+			}
+			else if (isset($policy->roundsPerc))
+			{
+				$cond = $policy->roundsPerc;
+				$cond_type = 4;
+				if (isset($cond->min))
+				{
+					echo get_label('For players who played more than or equal to') . ' ' . $cond->min . get_label('% of the rounds');
+					if (isset($cond->max) && $cond->max < 100)
+					{
+						echo get_label(' and less than') . ' ' . $cond->max . get_label('% of the rounds');
+					}
+				}
+				else if (isset($cond->max) && $cond->max < 100)
+				{
+					echo get_label('For players who played less than') . ' ' . $cond->max . get_label('% of the rounds');
+				}
+				else
+				{
+					echo get_label('For all players');
+				}
+			}
+			else if (isset($policy->winPerc))
+			{
+				$cond = $policy->winPerc;
+				$cond_type = 5;
+				if (isset($cond->min) && $cond->min > 0)
+				{
+					echo get_label('For players who has greater than or equal to') . ' ' . $cond->min . get_label('% of the wins');
+					if (isset($cond->max) && $cond->max < 100)
+					{
+						echo get_label(' and lower than') . ' ' . $cond->max . get_label('% of the wins');
+					}
+				}
+				else if (isset($cond->max) && $cond->max < 100)
+				{
+					echo get_label('For players who has lower than') . ' ' . $cond->max . get_label('% of the wins');
+				}
+				else
+				{
+					echo get_label('For all players');
+				}
+			}
+			else
+			{
+				echo get_label('For all players');
+			}
+			
+			echo '</p></td><td valign="top"><p>';
+			if (isset($policy->multiply))
+			{
+				if (isset($policy->multiply->val))
+				{
+					if (isset($policy->multiply->max) && $cond != NULL && isset($cond->min) && isset($cond->max) && $cond->min < $cond->max)
+					{
+						echo get_label('The final score is multiplied by a value between [0] and [1] depending on ', $policy->multiply->val, $policy->multiply->max);
+						$cond_sample_val = round(($cond->min + $cond->max) / 2);
+						$sample_result = format_score(($policy->multiply->val * ($cond->max - $cond_sample_val) + $policy->multiply->max * ($cond_sample_val - $cond->min)) / ($cond->max - $cond->min));
+						switch ($cond_type)
+						{
+							case 1: // games
+								echo get_label('the number of[0] played by a player: by [1] for [2][0]; by [3] for [4][0]; by [5] for [6][0]; etc.', get_label(' games'), $policy->multiply->val, $cond->min, $policy->multiply->max, $cond->max, $sample_result, $cond_sample_val);
+								break;
+							case 2: // gamesPerc
+								echo get_label('the number of[0] played by a player: by [1] for [2][0]; by [3] for [4][0]; by [5] for [6][0]; etc.', get_label('% of the games'), $policy->multiply->val, $cond->min, $policy->multiply->max, $cond->max, $sample_result, $cond_sample_val);
+								break;
+							case 3: // rounds
+								echo get_label('the number of[0] played by a player: by [1] for [2][0]; by [3] for [4][0]; by [5] for [6][0]; etc.', get_label(' rounds'), $policy->multiply->val, $cond->min, $policy->multiply->max, $cond->max, $sample_result, $cond_sample_val);
+								break;
+							case 4: // roundsPerc
+								echo get_label('the number of[0] played by a player: by [1] for [2][0]; by [3] for [4][0]; by [5] for [6][0]; etc.', get_label('% of the rounds'), $policy->multiply->val, $cond->min, $policy->multiply->max, $cond->max, $sample_result, $cond_sample_val);
+								break;
+							case 5: // winPerc
+								echo get_label('a player winning rate: by [1] for [2][0]; by [3] for [4][0]; by [5] for [6][0]; etc.', get_label('% of the wins'), $policy->multiply->val, $cond->min, $policy->multiply->max, $cond->max, $sample_result, $cond_sample_val);
+								break;
+						}
+					}
+					else if ($policy->multiply->val != 1)
+					{
+						echo get_label('The final score is multiplied by [0].', $policy->multiply->val);
+					}
+					else
+					{
+						echo get_label('Nothing is done.');
+					}
+				}
+				else if (isset($policy->multiply->max) && $policy->multiply->max != 1)
+				{
+					echo get_label('The final score is multiplied by [0].', $policy->multiply->max);
+				}
+				else
+				{
+					echo get_label('Nothing is done.');
+				}
+			}
+			else if (isset($policy->gameAv))
+			{
+				if (isset($policy->gameAv->add))
+				{
+					echo get_label('The final score is divided by the number of[0] played by a player plus [1].', get_label(' games'), $policy->gameAv->add) . '</p><p>* ';
+					echo get_label('For example if a player played 9[0] and scored 7.2 points, the final score is 7.2 / (9 + [1]) = [2].', get_label(' games'), $policy->gameAv->add, format_score(7.2 / (9 + $policy->gameAv->add)));
+				}
+				else if (isset($policy->gameAv->min))
+				{
+					echo get_label('The final score is divided by the number of[0] played by a player.', get_label(' games')) . get_label(' If the number of games is lower than [0] it is still divided by [0].', $policy->gameAv->min) . '</p><p>* ';
+					echo get_label('For example if a player played 2[0] and scored 2.4 points, the final score is 2.4 / max(2, [1]) = [2].', get_label(' games'), $policy->gameAv->add, format_score(2.4 / max(2, $policy->gameAv->add)));
+				}
+				else
+				{
+					echo get_label('The final score is divided by the number of[0] played by a player.', get_label(' games')) . '</p><p>* ';
+					echo get_label('For example if a player played 9[0] and scored 7.2 points, the final score is 7.2 / 9 = 0.8.', get_label(' games'));
+				}
+			}
+			else if (isset($policy->roundAv))
+			{
+				if (isset($policy->roundAv->add))
+				{
+					echo get_label('The final score is divided by the number of[0] played by a player plus [1].', get_label(' rounds'), $policy->roundAv->add) . '</p><p>* ';
+					echo get_label('For example if a player played 9[0] and scored 7.2 points, the final score is 7.2 / (9 + [1]) = [2].', get_label(' rounds'), $policy->roundAv->add, format_score(7.2 / (9 + $policy->roundAv->add)));
+				}
+				else if (isset($policy->roundAv->min))
+				{
+					echo get_label('The final score is divided by the number of[0] played by a player.', get_label(' rounds')) . get_label(' If the number of rounds is lower than [0] it is still divided by [0].', $policy->roundAv->min) . '</p><p>* ';
+					echo get_label('For example if a player played 2[0] and scored 2.4 points, the final score is 2.4 / max(2, [1]) = [2].', get_label(' rounds'), $policy->roundAv->add, format_score(2.4 / max(2, $policy->roundAv->add)));
+				}
+				else
+				{
+					echo get_label('The final score is divided by the number of[0] played by a player.', get_label(' rounds')) . '</p><p>* ';
+					echo get_label('For example if a player played 9[0] and scored 7.2 points, the final score is 7.2 / 9 = 0.8.', get_label(' rounds'));
+				}
+			}
+			else if (isset($policy->byWinRate))
+			{
+				echo get_label('The final score is multiplied by winning rate.') . '</p><p>* ' . get_label('For example if a player played 82 games, won 44 of them, and scored 46.6 points, the final result will be calculated as 46.6 * win_rate = 46.6 * 44 / 82 = 25.0');
+			}
+			echo '</p></td></tr>';
 		}
-		switch ($policy)
-		{
-			case NORMALIZATION_AVERAGE:
-				echo get_label('The final score is divided to the number of games played by the player. I.e. average score per game is used.');
-				break;
-			case NORMALIZATION_BY_WINNING_RATE:
-				echo get_label('The final score is multiplied by the player\'s winning rate.');
-				break;
-			case NORMALIZATION_AVERAGE_PER_EVENT:
-				echo get_label('The final score is divided to the number of rounds played by the player. I.e. average score per tournament round is used.');
-				break;
-		}
-		echo '</td></tr>';
 	}
 	
 	echo '<tr class="darker"><td colspan="2"><h4>' . get_label('When the scores are the same') . '</h4></td></tr>';

@@ -1283,8 +1283,8 @@ $labelMenu = array (
 'For' => 'За', // normalizer.php, scoring.php
 'Please select at least one role.' => 'Пожалуйста выберите хоть одну роль.', // scoring.php
 'Please select at least one game action.' => 'Пожалуйста выберите хоть одно игровое событие', // scoring.php
-'Add new policy.' => 'Добавить новую политику', // scoring.php
-'Delete policy.' => 'Удалить политику', // scoring.php
+'Add new policy.' => 'Добавить новую политику', // normalizer.php, scoring.php
+'Delete policy.' => 'Удалить политику', // normalizer.php, scoring.php
 'Static points' => 'Статические баллы', // scoring.php
 'Depending on the game difficulty' => 'В зависимости от сложности игры', // scoring.php
 'Depending on number of times player was killed first night' => 'В зависимости от частоты убийств первой ночью', // scoring.php
@@ -1301,14 +1301,72 @@ $labelMenu = array (
 'Scoring normalizer name' => 'Название системы выравнивания баллов', // normalizer.php, scorings.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, form/normalizer_create.php
 'Scoring normalizers' => 'Системы выравнивания баллов', // scorings.php
 'New scoring normalizer' => 'Создать систему выравнивания баллов', // scorings.php
-'Normalization policy' => 'Политика нормализации', // normalizer.php
-'Do nothing' => 'Ничего не делать', // normalizer.php
-'Divide the score to the number of games played (average per game)' => 'Делить баллы на количество сыгранных игр (среднее за игру)', // normalizer.php
-'Multiply the score to the winning rate' => 'Умножить баллы на процент побед', // normalizer.php
-'Divide the score to the number of rounds (average per round)' => 'Делить баллы на количество сыгранных раундов турнира (среднее за раунд)', // normalizer.php
 'No scoring normalization' => 'Выравнивание баллов не требуется', // include/scoring.php, form/club_edit.php, form/league_edit.php
 'normalizer' => 'выравнивание баллов', // tournament_player_games.php, tournament_standings.php
 'Normalization rate' => 'Коэф. выравнивания баллов', // tournament_player_games.php
+'Scoring normalization to make players with different number of games comparable.' => 'Выравнивание баллов, чтобы сравнивать игроков с разным количеством игр.', // form/scoring_show.php
+'Normalization policies' => 'Политики выравнивания баллов', // normalizer.php
+'For all players' => 'Для всех игроков', // normalizer.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+'minimum value' => 'минимальное значение', // normalizer.php
+'maximum value' => 'максимальное значение', // normalizer.php
+'By number of games played' => 'По количеству сыгранных игр', // normalizer.php
+'By percent of the games played' => 'По проценту сыгранных игр', // normalizer.php
+'By number of rounds playes' => 'По количеству сыгранных раундов', // normalizer.php
+'By percent of the rounds played' => 'По проценту сыгранных раундов', // normalizer.php
+'By winning percentage' => 'По проценту побед', // normalizer.php
+'For players who played more than or equal to' => 'Для игроков сыгравших не меньше, чем', // normalizer.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+' and less than' => ' но меньше, чем', // normalizer.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+'For players who played less than' => 'Для игроков сыгравших меньше, чем', // normalizer.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+'For players who has greater than or equal to' => 'Для игроков с процентом побед не ниже, чем', // normalizer.php, form/scoring_show.php
+' and lower than' => 'но ниже, чем', // normalizer.php, form/scoring_show.php
+' games' => ' игр', // normalizer.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+'% of the games' => '% игр', // normalizer.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+' rounds' => ' раундов', // normalizer.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+'% of the rounds' => '% раундов', // normalizer.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+'% of the wins' => '%', // normalizer.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+'Percent is calculated of the number of the games played by the player who played the most games in the tournament.' => 'Процент считается от количества игр сыгранных игроком, который сыграл больше всех игр в турнире.', // normalizer.php
+'Percent is calculated of the number of the rounds played by the player who played the most rounds in the tournament.' => 'Процент считается от количества раундов сыгранных игроком, который сыграл больше всех раундов в турнире.', // normalizer.php
+'For players who has lower than' => 'Для игроков с процентом побед ниже, чем', // normalizer.php, form/scoring_show.php
+'Multiply the score by a given value' => 'Умножить результат на определенное значение', // normalizer.php
+'Divide the score by the number of games played (average per game)' => 'Поделить результат на количество сыгранных игроком игр (средний бал за игру)', // normalizer.php
+'Multiply the score by the winning rate' => 'Умножить результат на процент побед', // normalizer.php
+'Divide the score by the number of rounds (average per round)' => 'Поделить результат на количество сыгранных игроком раундов (средний бал за раунд)', // normalizer.php
+'The score in the end is multiplied by' => 'В итоге результат умножается на', // normalizer.php
+'The score in the end is multiplied by a value between' => 'В итоге результат умножается на значение между', // normalizer.php
+'and, depending on the condition value' => 'и (в зависимости от условия)', // normalizer.php
+'change the value depending on the condition' => 'менять значение в зависимости от условия', // normalizer.php
+'For example: if you create a policy for players who played from 10 to 20 games, you may set minimum multiplier as 0.2 and maximum multiplier as 0.4. In this case the result for a player who played 10 games will be multiplied by 0.2; 20 games - by 0.4; 15 games - by 0.3; 11 games - by 0.22; etc.' => 'Например: если вы создали политику для игроков сыгравших от 10 до 20 игр, вы можете поставить минимальный коэфициент 0.2 и максимальный 0.4. В этом случае результат для игрока который сыграл 10 игр будет умножен на 0.2; 20 игр - на 0.4; 15 игр - на 0.3; 11 игр - на 0.22; и так далее.', // normalizer.php
+'Simple average' => 'Простое среднее', // normalizer.php
+'For example if a player played 82 games, won 44 of them, and scored 46.6 points, the final result will be calculated as 46.6 * win_rate = 46.6 * 44 / 82 = 25.0' => 'Например если игрок сыграл 82 игры, выиграл 44 из них и заработал 46.6 баллов, то финальный результат будет посчитан так: 46.6 * процент_побед = 46.6 * 44 / 82 = 25.0', // normalizer.php, form/scoring_show.php
+'Add value to the number of games played' => 'Добавить значение к количеству сыгранных игр', // normalizer.php
+'Set minimum games' => 'Установить минимальное количество игр', // normalizer.php
+'For example: if a player played 20 games and scored 12.6 points in sum, the final score is 12.6 / 20 = 0.63. Which is the average points per game.' => 'Например: если игрок сыграл 20 игр и набрал в сумме 12.6 баллов, итоговый результат будет 12.6 / 20 = 0.63. Или, что то же самое, среднее количество баллов за игру.', // normalizer.php
+'For example: if you set the value to add to 2, and a player played 8 games and scored 5.4 points, the final score is 5.4 / (8 + 2) = 0.54. This algorithm makes sure that players with low number of games do not have the highest scores.' => 'Например: если вы установили добавку как 2, игрок сыграл 8 игр и заработал 5.4 балла. Тогда итоговый результат будет 5.4 / (8 + 2) = 0.54. Эта добавка делается для того, чтобы игроки с малым количеством игр не получали слишком высокие результаты.', // normalizer.php
+'For example: if you set minimum games to 20, and a player played 8 games and scored 5.4 points, the final score is 5.4 / MAX(8, 20) = 5.4 / 20 = 0.27. This algorithm makes sure that players with low number of games do not have the highest scores.' => 'Например: если вы установили минимум игр на 20, то если игрок сыграл 8 игр и заработал 5.4 балла, итоговый результат будет 5.4 / MAX(8, 20) = 5.4 / 20 = 0.27. Это делается для того, чтобы игроки с малым количеством игр не получали слишком высокий результат.', // normalizer.php
+'Divide the score to the number of games.' => 'Делить результат на количество игр', // normalizer.php
+'Divide the score to the number of games plus' => 'Делить результат на количество игр с добавкой', // normalizer.php
+'Divide the score to the number of games but not less games than' => 'Делить результат на количество игр с минимумом', // normalizer.php
+'Add value to the number of rounds played' => 'Добавить значение к количеству сыгранных раундов', // normalizer.php
+'Set minimum rounds' => 'Установить минимальное количество раундов', // normalizer.php
+'For example: if a player played 20 rounds and scored 38.2 points in sum, the final score is 38.2 / 20 = 1.91. Which is the average points per round.' => 'Например: если игрок сыграл 20 раундов и набрал в сумме 38.2 баллов, итоговый результат будет 38.2 / 20 = 1.91. Или, что то же самое, среднее количество баллов за раунд.', // normalizer.php
+'For example: if you set the value to add to 2, and a player played 8 rounds and scored 43.2 points, the final score is 43.2 / (8 + 2) = 4.32. This algorithm makes sure that players with low number of rounds do not have the highest scores.' => 'Например: если вы установили добавку как 2, игрок сыграл 8 раундов и заработал 43.2 балла. Тогда итоговый результат будет 43.2 / (8 + 2) = 4.32. Эта добавка делается для того, чтобы игроки с малым количеством сыгранных раундов не получали слишком высокие результаты.', // normalizer.php
+'For example: if you set minimum rounds to 20, and a player played 8 rounds and scored 43.2 points, the final score is 43.2 / MAX(8, 20) = 43.2 / 20 = 2.16. This algorithm makes sure that players with low number of rounds do not have the highest scores.' => 'Например: если вы установили минимум раундов на 20, то если игрок сыграл 8 раундов и заработал 43.2 балла, итоговый результат будет 43.2 / MAX(8, 20) = 43.2 / 20 = 2.16. Это делается для того, чтобы игроки с малым количеством игр не получали слишком высокие результаты.', // normalizer.php
+'Divide the score to the number of rounds.' => 'Делить результат на количество раундов', // normalizer.php
+'Divide the score to the number of rounds plus' => 'Делить результат на количество раундов с добавкой', // normalizer.php
+'Divide the score to the number of rounds but not less games than' => 'Делить результат на количество раундов с минимумом', // normalizer.php
+'The final score is multiplied by a value between [0] and [1] depending on ' => 'Итоговый результат умножается на значение между [0] и [1] в зависимости от', // form/scoring_show.php
+'the number of[0] played by a player: by [1] for [2][0]; by [3] for [4][0]; by [5] for [6][0]; etc.' => 'количества[0] сыгранных игроком: на [1] для [2][0]; на [3] для [4][0]; на [5] для [6][0]; и тд.', // form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+'a player winning rate: by [1] for [2][0]; by [3] for [4][0]; by [5] for [6][0]; etc.' => 'процента побед игрока: на [1] для [2][0]; на [3] для [4][0]; на [5] для [6][0]; и тд.', // form/scoring_show.php
+'The final score is multiplied by [0].' => 'Итоговый результат умножается на [0].', // form/scoring_show.php, form/scoring_show.php
+'The final score is divided by the number of[0] played by a player plus [1].' => 'Итоговый результат делится на количество[0] сыгранных игроком плюс [1].', // form/scoring_show.php, form/scoring_show.php
+'For example if a player played 9[0] and scored 7.2 points, the final score is 7.2 / (9 + [1]) = [2].' => 'Например: если игрок сыграл 9[0] и заработал 7.2 балла, итоговый результат будет 7.2 / (9 + [1]) = [2].', // form/scoring_show.php, form/scoring_show.php
+'The final score is divided by the number of[0] played by a player.' => 'Итоговый результат делится на количество[0] сыгранных игроком.', // form/scoring_show.php, form/scoring_show.php, form/scoring_show.php, form/scoring_show.php
+' If the number of games is lower than [0] it is still divided by [0].' => ' Если количество сыгранных игр меньше [0] результат по прежнему делится на [0].', // form/scoring_show.php
+'For example if a player played 2[0] and scored 2.4 points, the final score is 2.4 / max(2, [1]) = [2].' => 'Например, если игрок сыграл 2[0] и заработал 2.4 балла, то итоговый результат будет 2.4 / max(2, [1]) = [2].', // form/scoring_show.php, form/scoring_show.php
+'For example if a player played 9[0] and scored 7.2 points, the final score is 7.2 / 9 = 0.8.' => 'Например, если игрок сыграл 9[0] и заработал 7.2 балла, то итоговый результат будет 7.2 / 9 = 0.8.', // form/scoring_show.php, form/scoring_show.php
+' If the number of rounds is lower than [0] it is still divided by [0].' => ' Если количество сыгранных раундов меньше [0], результат по прежнему делится на [0].', // form/scoring_show.php
+'The final score is multiplied by winning rate.' => 'Итоговый результат умножается на процент побед.', // form/scoring_show.php
+'Nothing is done.' => 'Ничего не делается.', // form/scoring_show.php, form/scoring_show.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'The Sheriff\'s check' => 'Проверка шерифа', // view_game.php
@@ -1322,10 +1380,7 @@ $labelMenu = array (
 'when player\'s first-night-killed rate is 0%' => 'когда игрок никогда не убиваелся в первую ночь', // form/scoring_show.php
 'when player\'s first-night-killed rate is lower than [0]%' => 'когда процент убийств в первую ночь был ниже [0]%', // form/scoring_show.php
 'Tournament rounds can be grouped to calculate stats required for scoring seperately. For example, compensation for being shot first night (Ci) can be calculated in the finals separately. In this case main round and semi-finals can belong to \'main\' group, and finals to \'final\' group.' => 'Турнирные раунды можно сгруппировать для отдельного подсчета статистик нужных для вычисления баллов. Например, баллы за отстрел в первую ночь (Ci) можно отдельно подсчитывать в основном раунде и полуфиналах, отнеся их к группе \'основные раунды\' и отдельно для финала отнеся его к группе \'финальные раунды\'.', // include/scoring.php
-'Scoring normalization to make players with different number of games comparable.' => 'Выравнивание баллов, чтобы сравнивать игроков с разным количеством игр.', // form/scoring_show.php
-'The final score is divided to the number of games played by the player. I.e. average score per game is used.' => 'Итоговый результат делится на количество игр сыгранных игроком. Т.е. среднее количество баллов за игру.', // form/scoring_show.php
-'The final score is multiplied by the player\'s winning rate.' => 'Итоговый результат умножается на процент побед игрока.', // form/scoring_show.php
-'The final score is divided to the number of rounds played by the player. I.e. average score per tournament round is used.' => 'Итоговый результат делится на количество раундов сыгранных игроком. Т.е. среднее количество баллов за турнирный раунд.', // form/scoring_show.php
+'Rounds played' => 'Сыграно раундов', // tournament_standings.php
 );
 
 return $labelMenu;

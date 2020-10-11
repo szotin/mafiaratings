@@ -142,6 +142,7 @@ class Page extends TournamentPageBase
 		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
 		echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
 		echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
+		echo '<td width="36" align="center" rowspan="2">'.get_label('Rounds played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
@@ -185,6 +186,7 @@ class Page extends TournamentPageBase
 			echo '<td align="center">' . format_score($player->extra_points) . '</td>';
 			echo '<td align="center">' . format_score($player->penalty_points) . '</td>';
 			echo '<td align="center">' . format_score($player->night1_points) . '</td>';
+			echo '<td align="center">' . $player->events_count . '</td>';
 			echo '<td align="center">' . $player->games_count . '</td>';
 			echo '<td align="center">' . $player->wins . '</td>';
 			if ($player->games_count != 0)
