@@ -724,6 +724,15 @@ var mr = new function()
 			"&ops_flags=" + flags);
 	}
 	
+	this.showPlayerTournamentNorm = function(playerId, tournamentId)
+	{
+		dlg.infoForm("form/scoring_normalization_show.php" + 
+			"?nid=" + $('#' + name + '-norm-sel').val() + 
+			"&nver=" + $('#' + name + '-norm-ver').val() +
+			"&pid=" + playerId +
+			"&tid=" + tournamentId);
+	}
+	
 	this.onChangeScoring = function(name, version, changed)
 	{
 		var scoringId = $('#' + name + '-sel').val();

@@ -12,7 +12,7 @@ function score_title($points, $raw_points, $normalization)
 {
 	if ($normalization != 1 && $points != 0)
 	{
-		return ' title="' . format_score($raw_points) . ' * ' . format_score($normalization) . ' = ' . format_score($points) . '"';
+		return ' title="' . format_score($raw_points) . ' * ' . format_coeff($normalization) . ' = ' . format_score($points) . '"';
 	}
 	return '';
 }
@@ -79,6 +79,7 @@ class Page extends TournamentPageBase
 			list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
 		}
 		$this->normalizer = json_decode($this->normalizer);
+		$this->has_normalizer = isset($this->normalizer->policies) && count($this->normalizer->policies) > 0;
 		
 		$this->scoring_options = json_decode($this->scoring_options);
 		if (isset($_REQUEST['sops']))
@@ -156,6 +157,10 @@ class Page extends TournamentPageBase
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
+		if ($this->has_normalizer)
+		{
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Normalization rate').'</td>';
+		}
 		echo '</tr>';
 		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
 		
@@ -170,7 +175,7 @@ class Page extends TournamentPageBase
 			if ($player->id == $this->user_id)
 			{
 				echo '<tr class="darker">';
-				$highlight = 'darker';
+				$highlight = 'darkest';
 			}
 			else
 			{
@@ -208,6 +213,10 @@ class Page extends TournamentPageBase
 			else
 			{
 				echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
+			}
+			if ($this->has_normalizer)
+			{
+				echo '<td align="center">' . format_coeff($player->normalization) . '</td>';
 			}
 			echo '</tr>';
 		}

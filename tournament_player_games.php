@@ -9,7 +9,7 @@ function score_title($points, $raw_points, $normalization)
 {
 	if ($normalization != 1 && $points != 0)
 	{
-		return ' title="' . format_score($raw_points) . ' * ' . format_score($normalization) . ' = ' . format_score($points) . '"';
+		return ' title="' . format_score($raw_points) . ' * ' . format_coeff($normalization) . ' = ' . format_score($points) . '"';
 	}
 	return '';
 }
@@ -135,7 +135,7 @@ class Page extends TournamentPageBase
 		echo '</td><td>' . $this->player->name . '</td></tr>';
 		if ($this->player->normalization != 1)
 		{
-			echo '<tr><td colspan="3" align="center">' . get_label('Normalization rate') . ': ' . format_score($this->player->normalization) . '</td></tr>';
+			echo '<tr><td colspan="3" align="center"><button onclick="mr.showPlayerTournamentNorm(' . $this->player->id . ', ' . $this->id . ')" title="' . get_label('Click here to see how normalization rate is calculated for [0].', $this->player->name) . '">' . get_label('Normalization rate') . ': ' . format_coeff($this->player->normalization) . '</button></td></tr>';
 		}
 		echo '</table>';
 		echo '</td>';

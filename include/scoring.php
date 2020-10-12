@@ -94,6 +94,11 @@ define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent
 
 $_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_EXTRA, SCORING_GROUP_LEGACY, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
+function format_coeff($coeff, $sign_digits = 3)
+{
+	return round($coeff, $sign_digits - floor(log10($coeff)) - 1);
+}
+
 function format_score($score, $zeroes = true)
 {
 	if ($score == 0 && !$zeroes)
