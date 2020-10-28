@@ -5,7 +5,7 @@ require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/game_player.php';
 
-define('SCORING_DEFAULT_ID', 18); // Default scoring system is hardcoded here to ФИИМ (FIGM)
+define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIGM)
 define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
 
 define('SCORING_ROLE_FLAGS_CIV', 1);
