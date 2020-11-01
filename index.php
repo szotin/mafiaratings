@@ -469,7 +469,7 @@ class Page extends GeneralPageBase
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 			' WHERE t.start_time + duration > UNIX_TIMESTAMP()', $condition);
-		$query->add(' ORDER BY t.start_time, t.duration LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
+		$query->add(' ORDER BY t.start_time + t.duration, t.name, t.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
 		while ($row = $query->next())
 		{
 			$tournaments[] = $row;
@@ -486,7 +486,7 @@ class Page extends GeneralPageBase
 				' JOIN clubs c ON e.club_id = c.id' .
 				' JOIN cities ct ON ct.id = c.city_id' .
 				' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0', $condition);
-			$query->add(' ORDER BY e.start_time, e.duration LIMIT ' . $events_count);
+			$query->add(' ORDER BY e.start_time + e.duration, e.name, e.id LIMIT ' . $events_count);
 			while ($row = $query->next())
 			{
 				$events[] = $row;

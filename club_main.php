@@ -329,7 +329,7 @@ class Page extends ClubPageBase
 				' JOIN addresses a ON t.address_id = a.id' .
 				' JOIN cities c ON c.id = a.city_id' .
 				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
-				' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND t.club_id = ? ORDER BY t.start_time, t.duration LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
+				' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND t.club_id = ? ORDER BY t.start_time + t.duration, t.name, t.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
 			$this->id);
 		while ($row = $query->next())
 		{
@@ -346,7 +346,7 @@ class Page extends ClubPageBase
 					' JOIN clubs c ON e.club_id = c.id' .
 					' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 					' JOIN cities ct ON ct.id = c.city_id' .
-					' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0 AND e.club_id = ? ORDER BY e.start_time, e.duration LIMIT ' . $events_count,
+					' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0 AND e.club_id = ? ORDER BY e.start_time + e.duration, e.name, e.id LIMIT ' . $events_count,
 				$this->id);
 			while ($row = $query->next())
 			{

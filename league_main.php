@@ -125,7 +125,7 @@ class Page extends LeaguePageBase
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 			' WHERE t.start_time + duration > UNIX_TIMESTAMP() AND league_id = ?' .
-			' ORDER BY t.start_time, t.duration LIMIT ' . (COLUMN_COUNT * ROW_COUNT), $this->id);
+			' ORDER BY t.start_time + t.duration, t.name, t.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT), $this->id);
 		while ($row = $query->next())
 		{
 			$tournaments[] = $row;
