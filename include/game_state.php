@@ -643,7 +643,7 @@ class GameState
 	
 	function change_user($user_id, $new_user_id, $nickname = NULL)
 	{
-		if ($user_id <= 0)
+		if ($user_id == 0)
 		{
 			return false;
 		}
