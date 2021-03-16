@@ -131,7 +131,7 @@ function short_log_message($message)
 function print_json($object)
 {
 	echo '<pre>';
-	echo json_encode($object, JSON_PRETTY_PRINT);
+	echo json_encode($object, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 	echo '</pre>';
 }
 

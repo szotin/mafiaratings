@@ -1,0 +1,154 @@
+<?php
+
+require_once 'include/session.php';
+require_once 'include/game.php';
+
+define('COLUMN_COUNT', 5);
+define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
+define('LEGACY_SUPPORTED_SINCE', 1366393836);
+
+define('SHOW_PROBLEMS', 'p');
+define('SHOW_GAME', 'g');
+define('SHOW_VOTING', 'v');
+define('SHOW_ORIGINAL', 'o');
+define('SHOW_FIXED', 'f');
+define('DEFAULT_SHOW', 'pg');
+
+initiate_session();
+
+function show_flags($flags)
+{
+	$yes = get_label('yes');
+	$no = get_label('no');
+	echo '<tr><td width="34%" valign="top"><table class="transp">';
+	echo '<tr><td>' . get_label('Arrangement') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_ARRANGEMENT) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('Don checks') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_DON_CHECKS) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('Sheriff checks') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_SHERIFF_CHECKS) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('If players died') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_DEATH) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('Which round players died') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_DEATH_ROUND) ? $yes : $no) . '</td></tr>';
+	echo '</table></td><td width="33%" valign="top"><table class="transp">';
+	echo '<tr><td>' . get_label('How players died') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_DEATH_TYPE) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('When players died') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_DEATH_TIME) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('Legacy of the first shot player') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_LEGACY) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('Mafia shots') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_SHOOTING) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('Voting') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_VOTING) ? $yes : $no) . '</td></tr>';
+	echo '</table></td><td width="33%" valign="top"><table class="transp">';
+	echo '<tr><td>' . get_label('Voting for killing all') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_VOTING_KILL_ALL) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('Nominating') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_NOMINATING) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('Number of warnings') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_WARNINGS) ? $yes : $no) . '</td></tr>';
+	echo '<tr><td>' . get_label('When warnings were received') . ':</td><td style="padding-left: 10px;">' . (($flags & GAME_FEATURE_FLAG_WARNINGS_DETAILS) ? $yes : $no) . '</td></tr>';
+	echo '</table></td></tr>';
+}
+
+function show_game($game, $title)
+{
+	echo '<tr class="th darker"><td colspan="3">' . $title . '</td></tr>';
+	if (isset($game->problems))
+	{
+		foreach ($game->problems as $problem)
+		{
+			echo '<tr class="lighter"><td colspan="3">' . $problem . '</td></tr>';
+		}
+	}
+	show_flags($game->flags);
+	echo '<tr><td colspan="3">';
+	print_json($game->data);
+	echo '</td></tr>';
+}
+
+try
+{
+	$feature_flags = 0;
+	if (isset($_REQUEST['game']))
+	{
+		$game = new Game($_REQUEST['game'], $feature_flags, false);
+	}
+	else if (isset($_REQUEST['game_id']))
+	{
+		$game_id = (int)$_REQUEST['game_id'];
+		list ($game_log, $is_canceled) = Db::record(get_label('game'), 'SELECT log, canceled FROM games WHERE id = ?', $game_id);
+		$gs = new GameState();
+		$gs->init_existing($game_id, $game_log, $is_canceled);
+		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
+		if ($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT)
+		{
+			$feature_flags &= ~GAME_FEATURE_FLAG_VOTING;
+		}
+		if ($gs->start_time <= LEGACY_SUPPORTED_SINCE)
+		{
+			$feature_flags &= ~GAME_FEATURE_FLAG_LEGACY;
+		}
+		$game = new Game($gs, $feature_flags, false);
+	}
+	
+	if (isset($_REQUEST['show']))
+	{
+		$show = $_REQUEST['show'];
+	}		
+	else
+	{
+		$show = DEFAULT_SHOW;
+	}
+	
+	if (isset($game))
+	{
+		if (isset($_REQUEST['json']))
+		{
+			echo json_encode($game->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+		}
+		else
+		{
+			echo '<table class="bordered light" width="100%">';
+			for ($i = 0; $i < strlen($show); $i++)
+			{
+				switch ($show[$i])
+				{
+					case SHOW_PROBLEMS:
+						break;
+						
+					case SHOW_GAME:
+						show_game($game, 'The game');
+						break;
+						
+					case SHOW_VOTING:
+						echo '<tr class="th darker"><td colspan="3">' . get_label('Votings json') . '</td></tr>';
+						echo '<tr><td colspan="3">';
+						if (isset($game->votings))
+						{
+							print_json($game->votings);
+						}
+						else
+						{
+							echo 'Not set';
+						}
+						echo '</td></tr>';
+						break;
+						
+					case SHOW_ORIGINAL:
+						if (isset($game_id))
+						{
+							list ($game_log, $is_canceled) = Db::record(get_label('game'), 'SELECT log, canceled FROM games WHERE id = ?', $game_id);
+							$gs = new GameState();
+							$gs->init_existing($game_id, $game_log, $is_canceled);
+							echo '<tr class="th darker"><td colspan="3">' . get_label('Original game') . '</td></tr><tr><td colspan="3">';
+							print_json($gs);
+							echo '</td></tr>';
+						}
+						break;
+						
+					case SHOW_FIXED:
+						$fixed = new Game($game, $feature_flags, true);
+						show_game($fixed, 'Fixed version of the game');
+						break;
+				}
+			}
+			echo '</table>';
+		}	
+	}
+}
+catch (Exception $e)
+{
+	echo '<b>Error:</b> ' . $e->getMessage();
+}
+
+?>

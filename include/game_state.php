@@ -362,7 +362,14 @@ class GameState
 			}
 			else
 			{
-				$this->rules_code = set_rule(default_rules_code(), RULES_SPLIT_ON_FOUR, RULES_SPLIT_ON_FOUR_PROHIBITED); // Only Vancouver Mafia rules were used before version 7
+				// Only Vancouver Mafia rules were used before version 7
+				// 00000000100101010200000000000
+				$this->rules_code = default_rules_code();
+				$this->rules_code = set_rule($this->rules_code, RULES_FIRST_DAY_VOTING, RULES_FIRST_DAY_VOTING_TO_TALK);
+				$this->rules_code = set_rule($this->rules_code, RULES_SPLIT_ON_FOUR, RULES_SPLIT_ON_FOUR_PROHIBITED);
+				$this->rules_code = set_rule($this->rules_code, RULES_KILLED_NOMINATE, RULES_KILLED_NOMINATE_ALLOWED);
+				$this->rules_code = set_rule($this->rules_code, RULES_BEST_GUESS, RULES_BEST_GUESS_NO);
+				$this->rules_code = set_rule($this->rules_code, RULES_EXTRA_POINTS, RULES_EXTRA_POINTS_BEST_PLAYER);
 			}
 			$this->club_id = (int) read_param($input, $offset); 
 			$this->event_id = (int) read_param($input, $offset);
