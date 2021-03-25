@@ -314,11 +314,6 @@ class Player
 	{
 		return $this->role == PLAYER_ROLE_MAFIA || $this->role == PLAYER_ROLE_DON;
 	}
-	
-	function is_dummy()
-	{
-		return $this->id == 0;
-	}
 }
 
 ?>

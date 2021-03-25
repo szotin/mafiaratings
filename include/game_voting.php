@@ -187,7 +187,7 @@ class Voting
 			{
 				$nom_num = (int)read_param($input, $offset);
 				$player = $this->gs->players[$i];
-				if (($player->kill_round < 0 || $player->kill_round >= $this->round) && !$player->is_dummy() && !$this->canceled && $nominants_count > 0)
+				if (($player->kill_round < 0 || $player->kill_round >= $this->round) && !$this->canceled && $nominants_count > 0)
 				{
 					if ($nom_num >= 0 && $nom_num < $nominants_count)
 					{

@@ -7,12 +7,12 @@ define('COLUMN_COUNT', 5);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 define('LEGACY_SUPPORTED_SINCE', 1366393836);
 
-define('SHOW_PROBLEMS', 'p');
+define('SHOW_ISSUES', 'i');
 define('SHOW_GAME', 'g');
 define('SHOW_VOTING', 'v');
 define('SHOW_ORIGINAL', 'o');
 define('SHOW_FIXED', 'f');
-define('DEFAULT_SHOW', 'pg');
+define('DEFAULT_SHOW', 'ig');
 
 initiate_session();
 
@@ -43,11 +43,11 @@ function show_flags($flags)
 function show_game($game, $title)
 {
 	echo '<tr class="th darker"><td colspan="3">' . $title . '</td></tr>';
-	if (isset($game->problems))
+	if (isset($game->issues))
 	{
-		foreach ($game->problems as $problem)
+		foreach ($game->issues as $issue)
 		{
-			echo '<tr class="lighter"><td colspan="3">' . $problem . '</td></tr>';
+			echo '<tr class="lighter"><td colspan="3">' . $issue . '</td></tr>';
 		}
 	}
 	show_flags($game->flags);
@@ -58,10 +58,9 @@ function show_game($game, $title)
 
 try
 {
-	$feature_flags = 0;
 	if (isset($_REQUEST['game']))
 	{
-		$game = new Game($_REQUEST['game'], $feature_flags, false);
+		$game = new Game($_REQUEST['game']);
 	}
 	else if (isset($_REQUEST['game_id']))
 	{
@@ -74,12 +73,9 @@ try
 		{
 			$feature_flags &= ~GAME_FEATURE_FLAG_VOTING;
 		}
-		if ($gs->start_time <= LEGACY_SUPPORTED_SINCE)
-		{
-			$feature_flags &= ~GAME_FEATURE_FLAG_LEGACY;
-		}
-		$game = new Game($gs, $feature_flags, false);
+		$game = new Game($gs, $feature_flags);
 	}
+	$game->check();
 	
 	if (isset($_REQUEST['show']))
 	{
@@ -103,7 +99,7 @@ try
 			{
 				switch ($show[$i])
 				{
-					case SHOW_PROBLEMS:
+					case SHOW_ISSUES:
 						break;
 						
 					case SHOW_GAME:
@@ -137,7 +133,8 @@ try
 						break;
 						
 					case SHOW_FIXED:
-						$fixed = new Game($game, $feature_flags, true);
+						$fixed = new Game($game, $feature_flags);
+						$fixed->fix();
 						show_game($fixed, 'Fixed version of the game');
 						break;
 				}

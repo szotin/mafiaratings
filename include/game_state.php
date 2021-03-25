@@ -211,8 +211,6 @@ class GameState
 	
 	function create_from_json($data)
 	{
-		//print_json($data);
-	
 		$this->id = $data->id;
 		$this->user_id = $data->user_id;
 		$this->club_id = $data->club_id;

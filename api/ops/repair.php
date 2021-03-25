@@ -3,6 +3,8 @@
 require_once '../../include/api.php';
 require_once '../../include/image.php';
 require_once '../../include/game_stats.php';
+require_once '../../include/game.php';
+require_once '../../include/rules.php';
 require_once '../../include/snapshot.php';
 
 class ApiPage extends OpsApiPageBase
@@ -398,6 +400,101 @@ class ApiPage extends OpsApiPageBase
 	// }
 	
 	function stats_op_permissions()
+	{
+		return PERMISSION_ADMIN;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// convert
+	//-------------------------------------------------------------------------------------------------------
+	function convert_op()
+	{
+		$last_id = 0;
+		$query = new DbQuery('SELECT id, log, end_time, canceled FROM games WHERE result > 0');
+		if (isset($_REQUEST['last_id']))
+		{
+			$last_id = $_REQUEST['last_id'];
+			list($last_end) = Db::record(get_label('game'), 'SELECT end_time FROM games WHERE id = ?', $last_id);
+			$query->add(' AND (end_time > ? OR (end_time = ? AND id > ?))', $last_end, $last_end, $last_id);
+		}
+		else
+		{
+			list ($count) = Db::record('games', 'SELECT count(*) FROM games WHERE result > 0');
+			$this->response['count'] = $count;
+			lock_site(true);
+		}
+		$query->add(' ORDER BY end_time, id LIMIT 10');
+		$games = array();
+		while ($row = $query->next())
+		{
+			$games[] = $row;
+		}
+		
+		$c = 0;
+		foreach ($games as $row)
+		{
+			list($id, $log, $end_time, $is_canceled) = $row;
+			$last_id = $id;
+			++$c;
+			try
+			{
+				// echo $id . '<br>';
+				$gs = new GameState();
+				$gs->init_existing($id, $log, $is_canceled);
+				
+				$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
+				if ($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT)
+				{
+					$feature_flags &= ~GAME_FEATURE_FLAG_VOTING;
+				}
+				if (get_rule($gs->rules_code, RULES_BEST_GUESS) == RULES_BEST_GUESS_NO)
+				{
+					$feature_flags &= ~GAME_FEATURE_FLAG_LEGACY;
+				}
+				$game = new Game($gs, $feature_flags);
+				$game->check(false);
+				
+				Db::begin();
+				Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ?', $id);
+				if (isset($game->issues))
+				{
+					//echo 'Game ' . $id . "\n";
+					$old_json = $game->to_json();
+					$game->check($feature_flags, true);
+					if (isset($game->issues))
+					{
+						$issues = '<ul>';
+						foreach ($game->issues as $issue)
+						{
+							$issues .= '<li>' . $issue . '</li>';
+						}
+						$issues .= '</ul>';
+					}
+					Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues) VALUES (?, ?, ?)', $id, $old_json, $issues);
+				}
+				Db::exec(get_label('game'), 'UPDATE games SET json = ?, feature_flags = ? WHERE id = ?', $game->to_json(), $game->flags, $id);
+				Db::commit();
+			}
+			catch (Exception $e)
+			{
+				Db::rollback();
+				echo $e->getMessage() . '<br>';
+			}
+		}
+		$this->response['recs'] = $c;
+		$this->response['last_id'] = $last_id;
+		if ($c <= 0)
+		{
+			lock_site(false);
+		}
+	}
+	
+	// No help. We want to keep this API internal.
+	// function convert_op_help()
+	// {
+	// }
+	
+	function convert_op_permissions()
 	{
 		return PERMISSION_ADMIN;
 	}

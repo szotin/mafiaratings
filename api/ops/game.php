@@ -6,6 +6,7 @@ require_once '../../include/event.php';
 require_once '../../include/email.php';
 require_once '../../include/view_game.php';
 require_once '../../include/video.php';
+require_once '../../include/game.php';
 
 define('EVENTS_FUTURE_LIMIT', 1209600); // 2 weeks
 
@@ -1112,8 +1113,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM players WHERE game_id = ?', $game_id);
-		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id = ? AND objection_id IS NOT NULL', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
 		Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is deleted');
 		
@@ -1387,6 +1388,62 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('comment', 'Comment text.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// raw_change
+	//-------------------------------------------------------------------------------------------------------
+	function raw_change_op()
+	{
+		global $_profile;
+		
+		$game_id = (int)get_required_param('game_id');
+		$src = json_decode(get_required_param('json'));
+		
+		Db::begin();
+		check_permissions(PERMISSION_ADMIN);
+		
+		$gs = new GameState();
+		$gs->create_from_json($src);
+		
+		$game = new Game($gs);
+		$game->check();
+		
+		Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
+		if (isset($game->issues))
+		{
+			$old_json = $game->to_json();
+			$game->fix();
+			if (isset($game->issues))
+			{
+				$issues = '<ul>';
+				foreach ($game->issues as $issue)
+				{
+					$issues .= '<li>' . $issue . '</li>';
+				}
+				$issues .= '</ul>';
+			}
+			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues) VALUES (?, ?, ?)', $game_id, $old_json, $issues);
+		}
+		
+		Db::exec(get_label('game'), 'UPDATE games SET log = ?, json = ?, feature_flags = ?, rules = ? WHERE id = ?', $gs->write(), $game->to_json(), $game->flags, $gs->rules_code, $game_id);
+		Db::commit();
+		
+		if (isset($issues))
+		{
+			$this->response['message'] = $issues;
+		}
+		else
+		{
+			$this->response['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
+		}
+	}
+	
+	// function raw_change_op_help()
+	// {
+		// echo '';
+		// $this->show_help_request_params_head();
+		// $this->show_help_response_params_head();
+	// }
 }
 
 $page = new ApiPage();

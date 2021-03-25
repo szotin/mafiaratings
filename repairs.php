@@ -9,6 +9,7 @@ class Page extends GeneralPageBase
 	{
 		$all_logs = array(
 			'',
+			'form/',
 			'api/ops/',
 			'api/control/',
 			'api/get/',
@@ -68,7 +69,10 @@ class Page extends GeneralPageBase
 		echo '<input type="submit" class="btn long" value="Rebuild photo icons" onclick="rebuildPhotoIcons()">';
 		echo '</p>';
 	
-		echo '<p><input type="submit" class="btn long" value="Rebuild stats" onclick="rebuildStats()"></p>';
+		echo '<p>';
+		echo '<input type="submit" class="btn long" value="Rebuild stats" onclick="rebuildStats()">';
+		echo '<input type="submit" class="btn long" value="Convert games" onclick="convertGames()">';
+		echo '</p>';
 		
 		$this->show_error_logs();
 	}
@@ -218,6 +222,21 @@ class Page extends GeneralPageBase
 			{
 				$("#progr").progressbar("option", "max", data.count);
 				updateProgress(data, statsNext);
+			});
+		}
+		
+		function convertGamesNext(id)
+		{
+			json.post("api/ops/repair.php", { op: 'convert', last_id: id }, function(data) { updateProgress(data, convertGamesNext); });
+		}
+		
+		function convertGames()
+		{
+			startRepairing();
+			json.post("api/ops/repair.php", { op: 'convert' }, function (data)
+			{
+				$("#progr").progressbar("option", "max", data.count);
+				updateProgress(data, convertGamesNext);
 			});
 		}
 		

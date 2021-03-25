@@ -44,15 +44,17 @@ class Game
 {
 	public $data;
 	
-	function __construct($g, $feature_flags, $fix = false)
+	function __construct($g, $feature_flags = GAME_FEATURE_MASK_MAFIARATINGS)
 	{
 		try
 		{
 			$this->data = NULL;
+			$this->expected_flags = $feature_flags;
 			if (is_numeric($g))
 			{
-				$row = Db::record(get_label('game'), 'SELECT json FROM games WHERE id = ?', (int)$g);
+				$row = Db::record(get_label('game'), 'SELECT json, feature_flags FROM games WHERE id = ?', (int)$g);
 				$this->data = json_decode($row[0]);
+				$this->expected_flags = (int)$row[1];
 			}
 			else if (is_string($g))
 			{
@@ -173,7 +175,6 @@ class Game
 								break;
 						}
 					}
-					$p->warnings = array();
 					
 					$this->data->players[] = $player;
 				}
@@ -220,21 +221,24 @@ class Game
 									$voting[] = NULL;
 								}
 								
-								if (is_null($voting[$v->round]))
+								if ($v->round != 0 || count($v->nominants) > 1 || get_rule($this->get_rules(), RULES_FIRST_DAY_VOTING) == RULES_FIRST_DAY_VOTING_TO_TALK)
 								{
-									$voting[$v->round] = $v->nominants[$pv]->player_num + 1;
-								}
-								else if (is_array($voting))
-								{
-									if (!is_array($voting[$v->round]))
+									if (is_null($voting[$v->round]))
 									{
-										$voting[$v->round] = array($voting[$v->round]);
+										$voting[$v->round] = $v->nominants[$pv]->player_num + 1;
 									}
-									$voting[$v->round][] = $v->nominants[$pv]->player_num + 1;
-								}
-								else
-								{
-									$voting[$v->round] = array($voting[$v->round], $v->nominants[$pv]->player_num + 1);
+									else if (is_array($voting))
+									{
+										if (!is_array($voting[$v->round]))
+										{
+											$voting[$v->round] = array($voting[$v->round]);
+										}
+										$voting[$v->round][] = $v->nominants[$pv]->player_num + 1;
+									}
+									else
+									{
+										$voting[$v->round] = array($voting[$v->round], $v->nominants[$pv]->player_num + 1);
+									}
 								}
 							}
 						}
@@ -326,7 +330,7 @@ class Game
 					}
 				}
 			}
-			$this->check($feature_flags, $fix);
+			$this->flags = $feature_flags;
 		}
 		catch (Exception $e)
 		{
@@ -348,38 +352,38 @@ class Game
 		return default_rules_code();
 	}
 	
-	private function set_problem($fix, $text, $fix_text)
+	private function set_issue($fix, $text, $fix_text)
 	{
 		if (empty($text))
 		{
 			return false;
 		}
 		
-		$problem = $text;
+		$issue = $text;
 		if ($fix)
 		{
-			$problem .= $fix_text;
+			$issue .= $fix_text;
 		}
 		
-		if (isset($this->problems))
+		if (isset($this->issues))
 		{
-			foreach ($this->problems as $p)
+			foreach ($this->issues as $p)
 			{
-				if ($p == $problem)
+				if ($p == $issue)
 				{
 					return $fix;
 				}
 			}
-			$this->problems[] = $problem;
+			$this->issues[] = $issue;
 		}
 		else
 		{
-			$this->problems = array($problem);
+			$this->issues = array($issue);
 		}
 		return $fix;
 	}
 	
-	function init_flags($feature_flags)
+	function init_flags()
 	{
 		$this->flags = 0;
 		for ($i = 0; $i < 10; ++$i)
@@ -459,7 +463,7 @@ class Game
 				}
 			}
 		}
-		$this->flags |= ($feature_flags & (GAME_FEATURE_FLAG_VOTING_KILL_ALL | GAME_FEATURE_FLAG_LEGACY | GAME_FEATURE_FLAG_DEATH_TIME));
+		$this->flags |= ($this->expected_flags & (GAME_FEATURE_FLAG_VOTING_KILL_ALL | GAME_FEATURE_FLAG_LEGACY | GAME_FEATURE_FLAG_DEATH_TIME));
 	}
 	
 	function check_game_result($fix = false)
@@ -509,7 +513,7 @@ class Game
 					{
 						$death_round = $player->death->round;
 					}
-					else if ($this->set_problem($fix, 'Death round is not set for player ' . ($i + 1) . '.', ' Death rounds for all players are removed.'))
+					else if ($this->set_issue($fix, 'Death round is not set for player ' . ($i + 1) . '.', ' Death rounds for all players are removed.'))
 					{
 						$this->remove_flags(GAME_FEATURE_FLAG_DEATH_ROUND);
 						return false;
@@ -521,7 +525,7 @@ class Game
 					++$death_round;
 					if (isset($player->nominating) && count($player->nominating) > $death_round)
 					{
-						if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' is nominating someone after he/she is dead.', ' Excess data is cut.'))
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' is nominating someone after he/she is dead.', ' Excess data is cut.'))
 						{
 							$player->nominating = array_slice($player->nominating, 0, $death_round);
 							return false;
@@ -529,7 +533,7 @@ class Game
 					}
 					if (isset($player->voting) && count($player->voting) > $death_round)
 					{
-						if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' is voting for someone after he/she is dead.', ' Excess data is cut.'))
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' is voting for someone after he/she is dead.', ' Excess data is cut.'))
 						{
 							$player->voting = array_slice($player->voting, 0, $death_round);
 							return false;
@@ -537,7 +541,7 @@ class Game
 					}
 					if (isset($player->shooting) && count($player->shooting) > $death_round)
 					{
-						if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' is shooting someone after he/she is dead.', ' Excess data is cut.'))
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' is shooting someone after he/she is dead.', ' Excess data is cut.'))
 						{
 							$player->shooting = array_slice($player->shooting, 0, $death_round);
 							return false;
@@ -574,7 +578,7 @@ class Game
 					if (
 						$death_type != NULL && 
 						$death_type != "night" && 
-						$this->set_problem($fix, 'Player ' . ($i + 1) . ' was not killed in night. he/she can not leave legacy.', ' Player\'s legacy data is removed.'))
+						$this->set_issue($fix, 'Player ' . ($i + 1) . ' was not killed in night. he/she can not leave legacy.', ' Player\'s legacy data is removed.'))
 					{
 						unset($player->legacy);
 						return false;
@@ -582,14 +586,14 @@ class Game
 					
 					if (
 						$death_round > 1 && 
-						$this->set_problem($fix, 'Player ' . ($i + 1) . ' was killed in round ' . $death_round . ' he/she can not leave legacy.', ' Player\'s legacy data is removed.'))
+						$this->set_issue($fix, 'Player ' . ($i + 1) . ' was killed in round ' . $death_round . ' he/she can not leave legacy.', ' Player\'s legacy data is removed.'))
 					{
 						unset($player->legacy);
 						return false;
 						
 					}
 				}
-				else if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' has to be dead to leave a legacy.', ' Player\'s legacy data is removed.'))
+				else if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has to be dead to leave a legacy.', ' Player\'s legacy data is removed.'))
 				{
 					unset($player->legacy);
 					return false;
@@ -599,7 +603,7 @@ class Game
 			if (
 				isset($player->shooting) &&
 				(!isset($player->role) || $player->role == 'civ' || $player->role == 'sheriff') &&
-				$this->set_problem($fix, 'Player ' . ($i + 1) . ' can not shoot because he/she is red.', ' Player\'s shooting data is removed.'))
+				$this->set_issue($fix, 'Player ' . ($i + 1) . ' can not shoot because he/she is red.', ' Player\'s shooting data is removed.'))
 			{
 				unset($player->shooting);
 				return false;
@@ -667,7 +671,7 @@ class Game
 				if (
 					$death_type == NULL && 
 					($this->flags & GAME_FEATURE_FLAG_DEATH_TYPE) != 0 &&
-					$this->set_problem($fix, 'Death type is not set for player ' . ($i + 1) . '.', ' Death type info for all players is removed.'))
+					$this->set_issue($fix, 'Death type is not set for player ' . ($i + 1) . '.', ' Death type info for all players is removed.'))
 				{
 					$this->remove_flags(GAME_FEATURE_FLAG_DEATH_TYPE);
 					return false;
@@ -676,7 +680,7 @@ class Game
 				if (
 					$death_round < 0 &&
 					($this->flags & GAME_FEATURE_FLAG_DEATH_ROUND) != 0 &&
-					$this->set_problem($fix, 'Death round is not set for player ' . ($i + 1) . '.', ' Death round info for all players is removed.'))
+					$this->set_issue($fix, 'Death round is not set for player ' . ($i + 1) . '.', ' Death round info for all players is removed.'))
 				{
 					$this->remove_flags(GAME_FEATURE_FLAG_DEATH_ROUND);
 					return false;
@@ -692,10 +696,10 @@ class Game
 					case DEATH_TYPE_TEAM_KICK_OUT:
 						if ($death_time != NULL)
 						{
-							$problem = $this->check_gametime($death_time);
+							$issue = $this->check_gametime($death_time);
 							if (
-								$problem != NULL &&
-								$this->set_problem($fix, 'Player ' . ($i + 1) . ' death time is incorect: ' . $problem, ' Kill time info for all players is removed.'))
+								$issue != NULL &&
+								$this->set_issue($fix, 'Player ' . ($i + 1) . ' death time is incorect: ' . $issue, ' Kill time info for all players is removed.'))
 							{
 								$this->remove_flags(GAME_FEATURE_FLAG_DEATH_TIME);
 								return false;
@@ -703,7 +707,7 @@ class Game
 						}
 						else if ($this->flags & GAME_FEATURE_FLAG_DEATH_TIME)
 						{
-							if ($this->set_problem($fix, 'Death round is not set for player ' . ($i + 1) . '.', ' Kill time info for all players is removed.'))
+							if ($this->set_issue($fix, 'Death round is not set for player ' . ($i + 1) . '.', ' Kill time info for all players is removed.'))
 							{
 								$this->remove_flags(GAME_FEATURE_FLAG_DEATH_TIME);
 								return false;
@@ -713,7 +717,7 @@ class Game
 					case DEATH_TYPE_NIGHT:
 						if ($death_round == 0)
 						{
-							if ($this->set_problem($fix, 'Player ' . ($j + 1) . ' was shot in night 0. This is not possible.', ' Death round info for all players is removed.'))
+							if ($this->set_issue($fix, 'Player ' . ($j + 1) . ' was shot in night 0. This is not possible.', ' Death round info for all players is removed.'))
 							{
 								$this->remove_flags(GAME_FEATURE_FLAG_DEATH_ROUND);
 								return false;
@@ -744,7 +748,7 @@ class Game
 								
 								if (!isset($p->shooting))
 								{
-									if ($this->set_problem($fix, 'Shooting is not set for player ' . ($j + 1) . '.', ' Shooting is created.'))
+									if ($this->set_issue($fix, 'Shooting is not set for player ' . ($j + 1) . '.', ' Shooting is created.'))
 									{
 										$p->shooting = array();
 										for ($k = 0; $k < $death_round; ++$k)
@@ -757,7 +761,7 @@ class Game
 								}
 								else if (count($p->shooting) < $death_round)
 								{
-									if ($this->set_problem($fix, 'No shooting for player ' . ($j + 1) . ' in round ' . $death_round . '.', ' Shooting is created.'))
+									if ($this->set_issue($fix, 'No shooting for player ' . ($j + 1) . ' in round ' . $death_round . '.', ' Shooting is created.'))
 									{
 										for ($k = count($p->shooting); $k < $death_round; ++$k)
 										{
@@ -769,7 +773,7 @@ class Game
 								}
 								else if ($p->shooting[$death_round - 1] != $i + 1)
 								{
-									if ($this->set_problem($fix, 'Wrong shooting to player ' . ($i + 1) . ' in round ' . $death_round . ' for player ' . ($j + 1) . '. Because player ' . ($i + 1) . 'was shot in night ' . $death_round . '.', ' Shooting is set to the right value.'))
+									if ($this->set_issue($fix, 'Wrong shooting to player ' . ($i + 1) . ' in round ' . $death_round . ' for player ' . ($j + 1) . '. Because player ' . ($i + 1) . 'was shot in night ' . $death_round . '.', ' Shooting is set to the right value.'))
 									{
 										$p->shooting[$death_round - 1] = $i + 1;
 										return false;
@@ -786,12 +790,12 @@ class Game
 							{
 								if (isset($voting->killed) && $voting->killed)
 								{
-									if (isset($voting->winners))
+									if (isset($voting->winner))
 									{
-										if (is_array($voting->winners))
+										if (is_array($voting->winner))
 										{
 											$killed = false;
-											foreach ($voting->winners as $winner)
+											foreach ($voting->winner as $winner)
 											{
 												if ($i + 1 == $winner)
 												{
@@ -802,12 +806,12 @@ class Game
 										}
 										else
 										{
-											$killed = ($i + 1 == $voting->winners);
+											$killed = ($i + 1 == $voting->winner);
 										}
 										
 										if (!$killed)
 										{
-											if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' is specified as voted out in round ' . $death_round . '. But accordiong to the voting info, another player was voted out.', ' All votings are removed.'))
+											if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' is specified as voted out in round ' . $death_round . '. But accordiong to the voting info, another player was voted out.', ' All votings are removed.'))
 											{
 												$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
 												return false;
@@ -815,7 +819,7 @@ class Game
 										}
 									}
 								}
-								else if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' is specified as voted out in round ' . $death_round . '. But accordiong to the voting info, noone was voted out in this round', ' All votings are removed.'))
+								else if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' is specified as voted out in round ' . $death_round . '. But accordiong to the voting info, no one was voted out in this round.', ' All votings are removed.'))
 								{
 									$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
 									return false;
@@ -854,18 +858,21 @@ class Game
 			$death_time = $this->get_player_death_time($i + 1);
 			$speech_time->round = count($player->nominating) - 1;
 			$speech_time->speaker = $i + 1;
-			if ($speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0)
+			if ($death_time != NULL && $speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0)
 			{
-				if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' was dead when they nominated player ' . $player->nominating[$speech_time->round] . ' in round ' . $speech_time->round . '.', ' Nomination is removed.'))
+				if (get_rule($this->get_rules(), RULES_KILLED_NOMINATE) != RULES_KILLED_NOMINATE_ALLOWED || $death_time->round != $speech_time->round || $death_time->time != GAMETIME_SHOOTING)
 				{
-					do
+					if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' was dead when they nominated player ' . $player->nominating[$speech_time->round] . ' in round ' . $speech_time->round . '.', ' Nomination is removed.'))
 					{
-						$player->nominating[$speech_time->round] = NULL;
-						--$speech_time->round;
+						do
+						{
+							$player->nominating[$speech_time->round] = NULL;
+							--$speech_time->round;
+						}
+						while ($speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0);
+						$player->nominating = Game::cut_ending_nulls($player->nominating);
+						return false;
 					}
-					while ($speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0);
-					Game::cut_ending_nulls($player->nominating);
-					return false;
 				}
 			}
 			
@@ -880,10 +887,10 @@ class Game
 				$nominated_player_death_time = $this->get_player_death_time($nom);
 				if ($nominated_player_death_time != NULL && $this->compare_gametimes($nominated_player_death_time, $speech_time) < 0)
 				{
-					if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' nominated dead player ' . $nom . ' in round ' . $speech_time->round . '.', ' Nomination is removed.'))
+					if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' nominated dead player ' . $nom . ' in round ' . $speech_time->round . '.', ' Nomination is removed.'))
 					{
 						$player->nominating[$speech_time->round] = NULL;
-						Game::cut_ending_nulls($player->nominating);
+						$player->nominating = Game::cut_ending_nulls($player->nominating);
 						return false;
 					}
 				}
@@ -911,7 +918,7 @@ class Game
 			
 			if (!isset($player->role) || ($player->role != 'maf' && $player->role != 'don'))
 			{
-				if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' is not mafia but they were shooting .', ' Shots are removed.'))
+				if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' is not mafia but they were shooting .', ' Shots are removed.'))
 				{
 					unset($player->shooting);
 					return false;
@@ -924,7 +931,7 @@ class Game
 				$shooting_time->round = count($player->shooting) - 1;
 				if ($shooting_time->round >= 0 && $this->compare_gametimes($death_time, $shooting_time) < 0)
 				{
-					if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' was dead when they shot player ' . $player->shooting[$shooting_time->round] . ' in round ' . $shooting_time->round . '.', ' Shot is removed.'))
+					if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' was dead when they shot player ' . $player->shooting[$shooting_time->round] . ' in round ' . $shooting_time->round . '.', ' Shot is removed.'))
 					{
 						do
 						{
@@ -932,7 +939,7 @@ class Game
 							--$shooting_time->round;
 						}
 						while ($shooting_time->round >= 0 && $this->compare_gametimes($death_time, $shooting_time) < 0);
-						Game::cut_ending_nulls($player->shooting);
+						$player->shooting = Game::cut_ending_nulls($player->shooting);
 						return false;
 					}
 				}
@@ -947,7 +954,7 @@ class Game
 		// Check that voter was alive during voting
 		if ($voter_death_time != NULL && $this->compare_gametimes($voter_death_time, $voting_time) < 0)
 		{
-			if ($this->set_problem($fix, 'Player ' . $voter_num . ' was dead when they were voting for ' . $voting_time->nominant . ' in round ' . $voting_time->round . '.', ' Votes are removed.'))
+			if ($this->set_issue($fix, 'Player ' . $voter_num . ' was dead when they were voting for ' . $voting_time->nominant . ' in round ' . $voting_time->round . '.', ' Votes are removed.'))
 			{
 				$player = $this->data->players[$voter_num - 1];
 				$v = $player->voting[$voting_time->round];
@@ -996,7 +1003,7 @@ class Game
 		$voted_player_death_time = $this->get_player_death_time($voting_time->nominant);
 		if ($voted_player_death_time != NULL && $this->compare_gametimes($voted_player_death_time, $voting_time) < 0)
 		{
-			if ($this->set_problem($fix, 'Player ' . $voter_num . ' voted for dead player ' . $voting_time->nominant . ' in round ' . $voting_time->round . '.', ' All voting are removed.'))
+			if ($this->set_issue($fix, 'Player ' . $voter_num . ' voted for dead player ' . $voting_time->nominant . ' in round ' . $voting_time->round . '.', ' All voting are removed.'))
 			{
 				$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
 				return false;
@@ -1016,7 +1023,7 @@ class Game
 					break;
 				}
 			}
-			if (!$nominated && $this->set_problem($fix, 'Player ' . $voter_num . ' voted for player ' . $voting_time->nominant . ',  who is not nominated in round ' . $voting_time->round . '.', ' All nominations are removed.'))
+			if (!$nominated && $this->set_issue($fix, 'Player ' . $voter_num . ' voted for player ' . $voting_time->nominant . ', who is not nominated in round ' . $voting_time->round . '.', ' All nominations are removed.'))
 			{
 				$this->remove_flags(GAME_FEATURE_FLAG_NOMINATING);
 				return false;
@@ -1055,7 +1062,7 @@ class Game
 		$player = $this->data->players[$player_num - 1];
 		if (!isset($player->death))
 		{
-			if ($this->set_problem($fix, 'Player was voted out in round ' . $round . ' but is not dead.', ' All votings are removed.'))
+			if ($this->set_issue($fix, 'Player was voted out in round ' . $round . ' but is not dead.', ' All votings are removed.'))
 			{
 				$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
 				return false;
@@ -1065,7 +1072,7 @@ class Game
 		{
 			if (
 				$player->death != $round &&
-				$this->set_problem($fix, 'Player was voted out in round ' . $round . ' but was dead in round ' . $player->death . '.', ' All votings are removed.'))
+				$this->set_issue($fix, 'Player was voted out in round ' . $round . ' but was dead in round ' . $player->death . '.', ' All votings are removed.'))
 			{
 				$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
 				return false;
@@ -1075,7 +1082,7 @@ class Game
 		{
 			if (
 				$player->death != DEATH_TYPE_DAY &&
-				$this->set_problem($fix, 'Player was voted out in round ' . $round . ' but was dead by ' . $player->death . '.', ' All votings are removed.'))
+				$this->set_issue($fix, 'Player was voted out in round ' . $round . ' but was dead by ' . $player->death . '.', ' All votings are removed.'))
 			{
 				$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
 				return false;
@@ -1085,14 +1092,14 @@ class Game
 		{
 			if (
 				$player->death->round != $round &&
-				$this->set_problem($fix, 'Player was voted out in round ' . $round . ' but was dead in round ' . $player->death->round . '.', ' All votings are removed.'))
+				$this->set_issue($fix, 'Player was voted out in round ' . $round . ' but was dead in round ' . $player->death->round . '.', ' All votings are removed.'))
 			{
 				$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
 				return false;
 			}
 			if (
 				$player->death->type != DEATH_TYPE_DAY &&
-				$this->set_problem($fix, 'Player was voted out in round ' . $round . ' but was dead by ' . $player->death->type . '.', ' All votings are removed.'))
+				$this->set_issue($fix, 'Player was voted out in round ' . $round . ' but was dead by ' . $player->death->type . '.', ' All votings are removed.'))
 			{
 				$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
 				return false;
@@ -1142,7 +1149,7 @@ class Game
 				else if (
 					$voting_time->round < count($this->votings) && 
 					$this->has_voting($voting_time->round) &&
-					$this->set_problem($fix, 'Player ' . ($i + 1) . ' did not vote in round ' . $voting_time->round . '. Although they were alive and voting was not canceled.', ' All votings are removed.'))
+					$this->set_issue($fix, 'Player ' . ($i + 1) . ' did not vote in round ' . $voting_time->round . '. Although they were alive and voting was not canceled.', ' All votings are removed.'))
 				{
 					// player was alive but did not vote in this round
 					// Voting was not canceled. Player had to vote.
@@ -1158,30 +1165,31 @@ class Game
 			for ($round = 0; $round < count($this->votings); ++$round)
 			{
 				$voting = $this->votings[$round];
-				if (!isset($voting->winners))
+				if (!isset($voting->winner))
 				{
 					continue;
 				}
-				if (is_numeric($voting->winners))
+				if (is_numeric($voting->winner))
 				{
 					if ($voting->killed)
 					{
-						if (!$this->check_voted_out($fix, $voting->winners, $round))
+						if (!$this->check_voted_out($fix, $voting->winner, $round))
 						{
 							return false;
 						}
 					}
-					else if (
-						($round != 0 || get_rule($this->get_rules(), RULES_FIRST_DAY_VOTING) != RULES_FIRST_DAY_VOTING_TO_TALK) &&
-						$this->set_problem($fix, 'Player ' . $voting->winners . ' was voted out in round ' . $round . ' but did not die.', ' All votings are removed.'))
+					else if ($round != 0 || get_rule($this->get_rules(), RULES_FIRST_DAY_VOTING) != RULES_FIRST_DAY_VOTING_TO_TALK)
 					{
-						$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
-						return false;
+						if ($this->set_issue($fix, 'Player ' . $voting->winner . ' was voted out in round ' . $round . ' but did not die.', ' All votings are removed.'))
+						{
+							$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
+							return false;
+						}
 					}
 				}
 				else if ($voting->killed)
 				{
-					foreach ($voting->winners as $winner)
+					foreach ($voting->winner as $winner)
 					{
 						if (!$this->check_voted_out($fix, $winner, $round))
 						{
@@ -1209,12 +1217,12 @@ class Game
 			{
 				if ($this->flags & GAME_FEATURE_FLAG_WARNINGS_DETAILS)
 				{
-					$problem = NULL;
+					$issue = NULL;
 					if (is_array($player->warnings))
 					{
 						if (
 							count($player->warnings) > 4 &&
-							$this->set_problem($fix, 'Player ' . ($i + 1) . ' has ' . count($player->warnings). ' warnings.', ' Warnings are cut to 4.'))
+							$this->set_issue($fix, 'Player ' . ($i + 1) . ' has ' . count($player->warnings). ' warnings.', ' Warnings are cut to 4.'))
 						{
 							$player->warnings = array_slice($player->warnings, 0, 4);
 							return false;
@@ -1223,22 +1231,22 @@ class Game
 						for ($j = 0; $j < count($player->warnings); ++$j)
 						{
 							$warning = $player->warnings[$j];
-							$problem = $this->check_gametime($warning);
-							if ($problem != NULL)
+							$issue = $this->check_gametime($warning);
+							if ($issue != NULL)
 							{
-								$problem = 'Player ' . ($i + 1) . ' warning ' . ($j + 1) . ' is incorect: ' . $problem;
+								$issue = 'Player ' . ($i + 1) . ' warning ' . ($j + 1) . ' is incorect: ' . $issue;
 								break;
 							}
 						}
 					}
 					else 
 					{
-						$problem = 'Player ' . ($i + 1) . ' warnings is not an array.';
+						$issue = 'Player ' . ($i + 1) . ' warnings is not an array.';
 					}
 					
 					if (
-						$problem != NULL &&
-						$this->set_problem($fix, $problem, ' Warning details are removed.'))
+						$issue != NULL &&
+						$this->set_issue($fix, $issue, ' Warning details are removed.'))
 					{
 						$this->remove_flags(GAME_FEATURE_FLAG_WARNINGS_DETAILS);
 						return false;
@@ -1249,7 +1257,7 @@ class Game
 					if (!is_numeric($player->warnings))
 					{
 						$warnings_count = min(max(is_array($player->warnings) ? count($player->warnings) : 0, 0), 4);
-						if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' warnings is not a number.', ' Warnings are set to ' . $warnings_count . '.'))
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' warnings is not a number.', ' Warnings are set to ' . $warnings_count . '.'))
 						{
 							if ($warnings_count > 0)
 							{
@@ -1265,7 +1273,7 @@ class Game
 					else if ($player->warnings < 0 || $player->warnings > 4)
 					{
 						$warnings_count = min(max($player->warnings, 0), 4);
-						if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' warnings is set to incorect number ' . $player->warnings . '.', ' Warnings are set to ' . $warnings_count . '.'))
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' warnings is set to incorect number ' . $player->warnings . '.', ' Warnings are set to ' . $warnings_count . '.'))
 						{
 							if ($warnings_count > 0)
 							{
@@ -1286,7 +1294,7 @@ class Game
 				// player must be dead of warnings
 				if (!isset($player->death))
 				{
-					if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' has 4 warnings but they are not dead.', ' Number of warnings is set to 3.'))
+					if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has 4 warnings but they are not dead.', ' Number of warnings is set to 3.'))
 					{
 						if ($this->flags & GAME_FEATURE_FLAG_WARNINGS_DETAILS)
 						{
@@ -1328,7 +1336,7 @@ class Game
 					}
 					if ($death_type != NULL && $death_type != DEATH_TYPE_WARNINGS)
 					{
-						if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' has 4 warnings but their death type is ' . $death_type . '.', ' Number of warnings is set to 3.'))
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has 4 warnings but their death type is ' . $death_type . '.', ' Number of warnings is set to 3.'))
 						{
 							if ($this->flags & GAME_FEATURE_FLAG_WARNINGS_DETAILS)
 							{
@@ -1345,7 +1353,7 @@ class Game
 					{
 						if ($death_round >= 0 && $death_round != $player->warnings[3]->round)
 						{
-							if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' has 4 warnings in round ' . $player->warnings[3]->round . '. But according to death info thery were dead in round '. $death_round . '.', ' Number of warnings is set to 3.'))
+							if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has 4 warnings in round ' . $player->warnings[3]->round . '. But according to death info thery were dead in round '. $death_round . '.', ' Number of warnings is set to 3.'))
 							{
 								$player->warnings = array_slice($player->warnings, 0, 3);
 								return false;
@@ -1353,7 +1361,7 @@ class Game
 						}
 						else if ($death_time != NULL && $this->compare_gametimes($death_time, $player->warnings[3]) == 0)
 						{
-							if ($this->set_problem($fix, 'Player ' . ($i + 1) . ' has 4 warnings but fourth warning time does not match death time.', ' Number of warnings is set to 3.'))
+							if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has 4 warnings but fourth warning time does not match death time.', ' Number of warnings is set to 3.'))
 							{
 								$player->warnings = array_slice($player->warnings, 0, 3);
 								return false;
@@ -1366,7 +1374,12 @@ class Game
 		return true;
 	}
 	
-	function check($feature_flags = 0, $fix = false)
+	function fix()
+	{
+		$this->check(true);
+	}
+	
+	function check($fix = false)
 	{
 		if (!isset($this->data->players))
 		{
@@ -1377,11 +1390,11 @@ class Game
 			throw new Exc(get_label('Field players must be an array of size 10 in the game.'));
 		}
 		
-		if (isset($this->problems))
+		if (isset($this->issues))
 		{
-			unset($this->problems);
+			unset($this->issues);
 		}
-		$this->init_flags($feature_flags);
+		$this->init_flags();
 		
 		// Maximum 10 attempts to fix
 		$done = false;
@@ -1467,7 +1480,14 @@ class Game
 				$gametime->round = $log->round;
 				$gametime->time = GAMETIME_VOTING;
 				$gametime->votingRound = 0; // how to find out voting round??
-				$gametime->nominant = $log->player_speaking + 1;
+				foreach ($gs->votings as $voting)
+				{
+					if ($voting->round == $log->round)
+					{
+						$gametime->nominant = $voting->nominants[$log->current_nominant]->player_num + 1;
+						break;
+					}
+				}
 				break;
 			case GAME_VOTING_MULTIPLE_WINNERS:
 				$gametime->round = $log->round;
@@ -1663,18 +1683,25 @@ class Game
 			}
 		}
 		
-		$speech_time = new stdClass();
-		$speech_time->round = $round;
-		$speech_time->time = GAMETIME_SPEAKING;
-		$speech_time->speaker = $candidate;
-		while ($this->compare_gametimes($this->get_player_death_time($speech_time->speaker), $speech_time) < 0)
+		$day_start = new stdClass();
+		$day_start->round = $round;
+		$day_start->time = GAMETIME_NIGHT_KILL_SPEAKING;
+		for ($i = 0; $i < 10; ++$i)
 		{
-			if (++$speech_time->speaker > 10)
+			if ($this->compare_gametimes($this->get_player_death_time($candidate), $day_start) > 0)
 			{
-				$speech_time->speaker = 1;
+				break;
+			}
+			else if (++$candidate > 10)
+			{
+				$candidate = 1;
 			}
 		}
-		return $speech_time->speaker;
+		if ($i >= 10)
+		{
+			return 0;
+		}
+		return $candidate;
 	}
 	
 	function init_votings($force = true)
@@ -1720,6 +1747,7 @@ class Game
 					$voting->nominants[] = $nom;
 				}
 			}
+			
 			for ($i = 1; $i < $first_speaker; ++$i)
 			{
 				$player = $this->data->players[$i-1];
@@ -1780,7 +1808,7 @@ class Game
 							if ($nom == NULL)
 							{
 								$nom = new stdClass();
-								$nom->nominant = $v;
+								$nom->nominant = $vote;
 								$voting->nominants[] = $nom;
 							}
 							
@@ -1864,18 +1892,18 @@ class Game
 							}
 							if ($count == $max_votes)
 							{
-								if (!isset($voting->winners))
+								if (!isset($voting->winner))
 								{
-									$voting->winners = $nom->nominant;
+									$voting->winner = $nom->nominant;
 								}
-								else if (is_array($voting->winners))
+								else if (is_array($voting->winner))
 								{
-									$voting->winners[] = $nom->nominant;
+									$voting->winner[] = $nom->nominant;
 								}
 								else
 								{
-									$voting->winners = array($voting->winners);
-									$voting->winners[] = $nom->nominant;
+									$voting->winner = array($voting->winner);
+									$voting->winner[] = $nom->nominant;
 								}
 							}
 						}
@@ -1887,16 +1915,16 @@ class Game
 				{
 					$voting->killed = (count($voting->voted_to_kill) * 2 > $num_voters);
 				}
-				else if (isset($voting->winners))
+				else if (isset($voting->winner))
 				{
-					if (is_numeric($voting->winners))
+					if (is_numeric($voting->winner))
 					{
-						$player = $this->data->players[$voting->winners-1];
+						$player = $this->data->players[$voting->winner-1];
 						$voting->killed = (isset($player->death) && $player->death->round == $round && $player->death->type == DEATH_TYPE_DAY);
 					}
-					else if (count($voting->winners))
+					else if (count($voting->winner))
 					{
-						$player = $this->data->players[$voting->winners[0]-1];
+						$player = $this->data->players[$voting->winner[0]-1];
 						$voting->killed = (isset($player->death) && $player->death->round == $round && $player->death->type == DEATH_TYPE_DAY);
 					}
 				}
