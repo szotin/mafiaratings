@@ -21,6 +21,7 @@ DROP TABLE `photo_albums`;
 DROP TABLE `players`;
 DROP TABLE `game_comments`;
 DROP TABLE `objections`;
+DROP TABLE `game_issues`;
 DROP TABLE `games`;
 DROP TABLE `user_videos`;
 DROP TABLE `video_comments`;
