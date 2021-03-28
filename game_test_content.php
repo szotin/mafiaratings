@@ -88,59 +88,52 @@ try
 	
 	if (isset($game))
 	{
-		if (isset($_REQUEST['json']))
+		echo '<table class="bordered light" width="100%">';
+		for ($i = 0; $i < strlen($show); $i++)
 		{
-			echo json_encode($game->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-		}
-		else
-		{
-			echo '<table class="bordered light" width="100%">';
-			for ($i = 0; $i < strlen($show); $i++)
+			switch ($show[$i])
 			{
-				switch ($show[$i])
-				{
-					case SHOW_ISSUES:
-						break;
-						
-					case SHOW_GAME:
-						show_game($game, 'The game');
-						break;
-						
-					case SHOW_VOTING:
-						echo '<tr class="th darker"><td colspan="3">' . get_label('Votings json') . '</td></tr>';
-						echo '<tr><td colspan="3">';
-						if (isset($game->votings))
-						{
-							print_json($game->votings);
-						}
-						else
-						{
-							echo 'Not set';
-						}
+				case SHOW_ISSUES:
+					break;
+					
+				case SHOW_GAME:
+					show_game($game, 'The game');
+					break;
+					
+				case SHOW_VOTING:
+					echo '<tr class="th darker"><td colspan="3">' . get_label('Votings json') . '</td></tr>';
+					echo '<tr><td colspan="3">';
+					if (isset($game->votings))
+					{
+						print_json($game->votings);
+					}
+					else
+					{
+						echo 'Not set';
+					}
+					echo '</td></tr>';
+					break;
+					
+				case SHOW_ORIGINAL:
+					if (isset($game_id))
+					{
+						list ($game_log, $is_canceled) = Db::record(get_label('game'), 'SELECT log, canceled FROM games WHERE id = ?', $game_id);
+						$gs = new GameState();
+						$gs->init_existing($game_id, $game_log, $is_canceled);
+						echo '<tr class="th darker"><td colspan="3">' . get_label('Original game') . '</td></tr><tr><td colspan="3">';
+						print_json($gs);
 						echo '</td></tr>';
-						break;
-						
-					case SHOW_ORIGINAL:
-						if (isset($game_id))
-						{
-							list ($game_log, $is_canceled) = Db::record(get_label('game'), 'SELECT log, canceled FROM games WHERE id = ?', $game_id);
-							$gs = new GameState();
-							$gs->init_existing($game_id, $game_log, $is_canceled);
-							echo '<tr class="th darker"><td colspan="3">' . get_label('Original game') . '</td></tr><tr><td colspan="3">';
-							print_json($gs);
-							echo '</td></tr>';
-						}
-						break;
-						
-					case SHOW_FIXED:
-						$fixed = new Game($game, $feature_flags);
-						$fixed->fix();
-						show_game($fixed, 'Fixed version of the game');
-						break;
-				}
+					}
+					break;
+					
+				case SHOW_FIXED:
+					$fixed = new Game($game, $feature_flags);
+					$fixed->fix();
+					show_game($fixed, 'Fixed version of the game');
+					break;
 			}
-			echo '</table>';
-		}	
+		}
+		echo '</table>';
 	}
 }
 catch (Exception $e)
