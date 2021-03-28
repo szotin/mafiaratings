@@ -819,7 +819,9 @@ class Game
 										}
 									}
 								}
-								else if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' is specified as voted out in round ' . $death_round . '. But accordiong to the voting info, no one was voted out in this round.', ' All votings are removed.'))
+								else if (
+									($this->flags & GAME_FEATURE_FLAG_VOTING) != 0 &&
+									$this->set_issue($fix, 'Player ' . ($i + 1) . ' is specified as voted out in round ' . $death_round . '. But accordiong to the voting info, no one was voted out in this round.', ' All votings are removed.'))
 								{
 									$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
 									return false;
@@ -1052,7 +1054,11 @@ class Game
 				return false;
 			case 1:
 				// only one nominated in round 0
-				return $round > 0;
+				if (get_rule($this->get_rules(), RULES_FIRST_DAY_VOTING) != RULES_FIRST_DAY_VOTING_TO_TALK)
+				{
+					return $round > 0;
+				}
+				break;
 		}
 		return true;
 	}

@@ -97,7 +97,14 @@ try
 					break;
 					
 				case SHOW_GAME:
-					show_game($game, 'The game');
+					if (isset($game_id))
+					{
+						show_game($game, get_label('Game #[0]', $game_id));
+					}
+					else
+					{
+						show_game($game, get_label('The game'));
+					}
 					break;
 					
 				case SHOW_VOTING:
@@ -120,7 +127,7 @@ try
 						list ($game_log, $is_canceled) = Db::record(get_label('game'), 'SELECT log, canceled FROM games WHERE id = ?', $game_id);
 						$gs = new GameState();
 						$gs->init_existing($game_id, $game_log, $is_canceled);
-						echo '<tr class="th darker"><td colspan="3">' . get_label('Original game') . '</td></tr><tr><td colspan="3">';
+						echo '<tr class="th darker"><td colspan="3">' . get_label('Original game #[0]', $game_id) . '</td></tr><tr><td colspan="3">';
 						print_json($gs);
 						echo '</td></tr>';
 					}
@@ -129,7 +136,14 @@ try
 				case SHOW_FIXED:
 					$fixed = new Game($game, $feature_flags);
 					$fixed->fix();
-					show_game($fixed, 'Fixed version of the game');
+					if (isset($game_id))
+					{
+						show_game($fixed, get_label('Fixed version of the game #[0]', $game_id));
+					}
+					else
+					{
+						show_game($fixed, get_label('Fixed version of the game'));
+					}
 					break;
 			}
 		}
