@@ -849,7 +849,6 @@ class Game
 		}
 		
 		$speech_time = new stdClass();
-		$speech_time->time = GAMETIME_SPEAKING;
 		for ($i = 0; $i < 10; ++$i)
 		{
 			$player = $this->data->players[$i];
@@ -857,24 +856,30 @@ class Game
 			{
 				continue;
 			}
-			$death_time = $this->get_player_death_time($i + 1);
+			$death_time = $this->get_player_death_time($i + 1, true);
 			$speech_time->round = count($player->nominating) - 1;
-			$speech_time->speaker = $i + 1;
+			if (get_rule($this->get_rules(), RULES_KILLED_NOMINATE) == RULES_KILLED_NOMINATE_ALLOWED && $death_time->round == $speech_time->round && $death_time->time == GAMETIME_NIGHT_KILL_SPEAKING)
+			{
+				// player was shot in the night time and he is allowed to nominate
+				$speech_time->time = GAMETIME_NIGHT_KILL_SPEAKING;
+			}
+			else
+			{
+				$speech_time->time = GAMETIME_SPEAKING;
+				$speech_time->speaker = $i + 1;
+			}
 			if ($death_time != NULL && $speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0)
 			{
-				if (get_rule($this->get_rules(), RULES_KILLED_NOMINATE) != RULES_KILLED_NOMINATE_ALLOWED || $death_time->round != $speech_time->round || $death_time->time != GAMETIME_SHOOTING)
+				if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' was dead when they nominated player ' . $player->nominating[$speech_time->round] . ' in round ' . $speech_time->round . '.', ' Nomination is removed.'))
 				{
-					if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' was dead when they nominated player ' . $player->nominating[$speech_time->round] . ' in round ' . $speech_time->round . '.', ' Nomination is removed.'))
+					do
 					{
-						do
-						{
-							$player->nominating[$speech_time->round] = NULL;
-							--$speech_time->round;
-						}
-						while ($speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0);
-						$player->nominating = Game::cut_ending_nulls($player->nominating);
-						return false;
+						$player->nominating[$speech_time->round] = NULL;
+						--$speech_time->round;
 					}
+					while ($speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0);
+					$player->nominating = Game::cut_ending_nulls($player->nominating);
+					return false;
 				}
 			}
 			

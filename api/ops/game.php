@@ -1444,6 +1444,28 @@ class ApiPage extends OpsApiPageBase
 		// $this->show_help_request_params_head();
 		// $this->show_help_response_params_head();
 	// }
+	
+	//-------------------------------------------------------------------------------------------------------
+	// delete_issue
+	//-------------------------------------------------------------------------------------------------------
+	function delete_issue_op()
+	{
+		global $_profile;
+		
+		$game_id = (int)get_required_param('game_id');
+		
+		Db::begin();
+		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'UPDATE games SET as_is = TRUE WHERE id = ?', $game_id);
+		Db::commit();
+	}
+	
+	// function delete_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete game.');
+		// $help->request_param('game_id', 'Game id.');
+		// return $help;
+	// }
 }
 
 $page = new ApiPage();
