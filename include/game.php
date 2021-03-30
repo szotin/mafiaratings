@@ -137,7 +137,7 @@ class Game
 					{
 						$player->death = new stdClass();
 						$player->death->round = $p->kill_round;
-						if ($p->state == PLAYER_STATE_KILLED_NIGHT)
+						if ($p->state == PLAYER_STATE_KILLED_NIGHT && $p->kill_reason == KILL_REASON_NORMAL)
 						{
 							if ($p->kill_round == 0 && $g->guess3 != NULL)
 							{
