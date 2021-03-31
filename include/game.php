@@ -1176,11 +1176,15 @@ class Game
 			for ($round = 0; $round < count($this->votings); ++$round)
 			{
 				$voting = $this->votings[$round];
-				if (!isset($voting->winner))
+				if (isset($voting->canceled) && $voting->canceled)
 				{
 					continue;
 				}
-				if (is_numeric($voting->winner))
+				else if (!isset($voting->winner))
+				{
+					continue;
+				}
+				else if (is_numeric($voting->winner))
 				{
 					if ($voting->killed)
 					{
@@ -1855,9 +1859,17 @@ class Game
 						
 						if (!isset($nom->voting))
 						{
-							$nom->voting = array();
+							$nom->voting = array($i + 1);
 						}
-						$nom->voting[] = $i + 1;
+						else if (is_array($nom->voting[0]))
+						{
+							// There were multiple voting rounds. This player participated in the first round only. Apparently they was kicked off before the next rounds.
+							$nom->voting[0][] = $i + 1;
+						}
+						else
+						{
+							$nom->voting[] = $i + 1;
+						}
 					}
 				}
 			}
