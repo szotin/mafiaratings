@@ -746,7 +746,7 @@ function save_game_results($gs)
 	{
 		$feature_flags &= ~GAME_FEATURE_FLAG_VOTING;
 	}
-	if (get_rule($gs->rules_code, RULES_BEST_GUESS) == RULES_BEST_GUESS_NO)
+	if (get_rule($gs->rules_code, RULES_LEGACY) == RULES_LEGACY_NO)
 	{
 		$feature_flags &= ~GAME_FEATURE_FLAG_LEGACY;
 	}

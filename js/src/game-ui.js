@@ -830,7 +830,7 @@ mafia.ui = new function()
 									' ' + l('LastSpeech', l('She'), l('her'));
 							}
 							time = 60;
-							if (game.round == 1 && mafia.getRule(/*RULES_BEST_GUESS*/15) == /*RULES_BEST_GUESS_YES*/0)
+							if (game.round == 1 && mafia.getRule(/*RULES_LEGACY*/15) == /*RULES_LEGACY_FIRST*/0)
 							{
 								for (var i = 0; i < 10; ++i)
 								{

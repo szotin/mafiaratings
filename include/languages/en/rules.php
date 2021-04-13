@@ -351,17 +351,19 @@ return array
 			'On a game night, players must behave as it is described described in paragraph 4.5.', // 8.16.
 			array // 8.17.
 			(
-				RULES_BEST_GUESS,
-				'«Best guess»',
+				RULES_LEGACY,
+				'«Legacy»',
 				array
 				(
-					'The player «killed» the first «night» has the right to the «best guess». In their last speech, they can make a guess who the three mafia are. If they guess two or three of them right, they can get additional tournament points according to the rules of the tournament they are playing. A player is not entitled to a «best guess» if two or more players have left the game on the first day.',
+					'The player «killed» the first «night» has the right to leave a «legacy». In their last speech, they can make a guess who the three mafia are. If they guess two or three of them right, they can get additional tournament points according to the rules of the tournament they are playing. A player is not entitled to a «legacy» if two or more players have left the game on the first day.',
 					'The player «killed» the first «night» may guess three «black» players but it is not official. It will not affect the tournament results.',
+					'The player «killed» in any «night» has the right to leave a «legacy». In their last speech, they can make a guess who the three mafia are. If they guess two or three of them right, they can get additional tournament points according to the rules of the tournament they are playing. A player is not entitled to a «legacy» if two or more players have left the game on the first day.',
 				),
 				array
 				(
-					'Yes.',
+					'First night.',
 					'No.',
+					'Any night.',
 				),
 			),
 			'In the following «days» and «nights» the course of the game does not change. The phases of the game repeat until one of the teams win.', // 8.18.
@@ -502,8 +504,8 @@ return array
 				'Gestures on first killed player speech',
 				array
 				(
-					'Gestures during the final minute of the player «killed» in the first «night», before making the «best guess». Warning.',
-					'Gestures during the final minute of the player «killed» in the first «night», before making the «best guess». No penalty.',
+					'Gestures during the final minute of the player «killed» in the first «night», before making the «legacy». Warning.',
+					'Gestures during the final minute of the player «killed» in the first «night», before making the «legacy». No penalty.',
 				),
 				array
 				(
@@ -522,13 +524,13 @@ return array
 			'Rude unethical behavior, disrespect for the players, Moderator or tournament organizers. Disqualification.', // 10.20.
 			array // 10.21.
 			(
-				RULES_BEST_GUESS_ADVICE,
-				'«Best guess» influence',
+				RULES_LEGACY_ADVICE,
+				'«legacy» influence',
 				array
 				(
-					'Asking to add or not to add someone to the «best guess», expressed verbally or using gestures. Disqualification.',
-					'Asking to add or not to add someone to the «best guess», expressed verbally or using gestures. Warning.',
-					'Asking to add or not to add someone to the «best guess», expressed verbally or using gestures. No penalty.',
+					'Asking to add or not to add someone to the «legacy», expressed verbally or using gestures. Disqualification.',
+					'Asking to add or not to add someone to the «legacy», expressed verbally or using gestures. Warning.',
+					'Asking to add or not to add someone to the «legacy», expressed verbally or using gestures. No penalty.',
 				),
 				array
 				(
@@ -539,13 +541,13 @@ return array
 			),
 			array // 10.22.
 			(
-				RULES_BEST_GUESS_ARGUMENT,
-				'Referring to «best guess» influence',
+				RULES_LEGACY_ARGUMENT,
+				'Referring to «legacy» influence',
 				array
 				(
-					'Referring to influence on the «best guess» in order to prove the role in the game or to explain the actions of the game. Disqualification.',
-					'Referring to influence on the «best guess» in order to prove the role in the game or to explain the actions of the game. Warning.',
-					'Referring to influence on the «best guess» in order to prove the role in the game or to explain the actions of the game. No penalty.',
+					'Referring to influence on the «legacy» in order to prove the role in the game or to explain the actions of the game. Disqualification.',
+					'Referring to influence on the «legacy» in order to prove the role in the game or to explain the actions of the game. Warning.',
+					'Referring to influence on the «legacy» in order to prove the role in the game or to explain the actions of the game. No penalty.',
 				),
 				array
 				(

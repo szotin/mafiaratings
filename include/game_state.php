@@ -366,7 +366,7 @@ class GameState
 				$this->rules_code = set_rule($this->rules_code, RULES_FIRST_DAY_VOTING, RULES_FIRST_DAY_VOTING_TO_TALK);
 				$this->rules_code = set_rule($this->rules_code, RULES_SPLIT_ON_FOUR, RULES_SPLIT_ON_FOUR_PROHIBITED);
 				$this->rules_code = set_rule($this->rules_code, RULES_KILLED_NOMINATE, RULES_KILLED_NOMINATE_ALLOWED);
-				$this->rules_code = set_rule($this->rules_code, RULES_BEST_GUESS, RULES_BEST_GUESS_NO);
+				$this->rules_code = set_rule($this->rules_code, RULES_LEGACY, RULES_LEGACY_NO);
 				$this->rules_code = set_rule($this->rules_code, RULES_EXTRA_POINTS, RULES_EXTRA_POINTS_BEST_PLAYER);
 			}
 			$this->club_id = (int) read_param($input, $offset); 
