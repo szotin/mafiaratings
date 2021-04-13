@@ -501,7 +501,17 @@ class GamePlayerStats
                     case 3:
                         $shot = $shooting[$player_num];
                         $partner_shot1 = $shooting[$partner1];
-                        $partner_shot2 = $shooting[$partner2];
+						if (!isset($shooting[$partner2]))
+						{
+							echo 'game ' . $gs->id . '<br>';
+							echo 'partner2 = ' . $partner2 . '<br>';
+							print_json($shooting);
+							$partner_shot2 = $partner_shot1;
+						}
+						else
+						{
+							$partner_shot2 = $shooting[$partner2];
+						}
                         if ($shot < 0)
                         {
                             ++$this->shots3_blank;
@@ -730,10 +740,39 @@ function save_game_results($gs)
         default:
             throw new Exc(get_label('The game [0] is not finished yet.', $gs->id));
     }
-
+	
+	$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
+	if ($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT)
+	{
+		$feature_flags &= ~GAME_FEATURE_FLAG_VOTING;
+	}
+	if (get_rule($gs->rules_code, RULES_BEST_GUESS) == RULES_BEST_GUESS_NO)
+	{
+		$feature_flags &= ~GAME_FEATURE_FLAG_LEGACY;
+	}
+	$game = new Game($gs, $feature_flags);
+	$game->check(false);
+	
 	try
 	{
 		Db::begin();
+		
+		Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ?', $gs->id);
+		if (isset($game->issues))
+		{
+			$old_json = $game->to_json();
+			$game->check($feature_flags, true);
+			if (isset($game->issues))
+			{
+				$issues = '<ul>';
+				foreach ($game->issues as $issue)
+				{
+					$issues .= '<li>' . $issue . '</li>';
+				}
+				$issues .= '</ul>';
+			}
+			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues) VALUES (?, ?, ?)', $gs->id, $old_json, $issues);
+		}
 		
 		$best_player_id = NULL;
 		if ($gs->best_player >= 0 && $gs->best_player < 10)
@@ -797,7 +836,7 @@ function save_game_results($gs)
 		{
 			$stats[$i]->save();
 		}
-		Db::exec(get_label('game'), 'UPDATE games SET result = ?, best_player_id = ?, flags = ?, civ_odds = ? WHERE id = ?', $game_result, $best_player_id, $gs->flags, $civ_odds, $gs->id);
+		Db::exec(get_label('game'), 'UPDATE games SET result = ?, best_player_id = ?, flags = ?, civ_odds = ?, json = ?, feature_flags = ? WHERE id = ?', $game_result, $best_player_id, $gs->flags, $civ_odds, $game->to_json(), $game->flags, $gs->id);
 		Db::commit();
 	}
 	catch (FatalExc $e)
