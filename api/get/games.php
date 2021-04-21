@@ -1,254 +1,17 @@
 <?php
 
 require_once '../../include/api.php';
-require_once '../../include/game_state.php';
+require_once '../../include/game.php';
 require_once '../../include/datetime.php';
 require_once '../../include/games.php';
 
 define('CURRENT_VERSION', 0);
-
-class ApiPlayer
-{
-	public $user_id;
-	public $nick_name;
-	public $role;
-	public $death_round;
-	public $death_type;
-	public $warnings;
-	public $arranged_for_round;
-	public $checked_by_don;
-	public $checked_by_srf;
-	public $best_player;
-	public $best_move;
-	public $mafs_guessed;
-	
-	function normalize()
-	{
-		$this->user_id = (int)$this->user_id;
-		$this->role = (int)$this->role;
-		$this->death_round = (int)$this->death_round;
-		$this->warnings = (int)$this->warnings;
-		$this->arranged_for_round = (int)$this->arranged_for_round;
-		$this->checked_by_don = (int)$this->checked_by_don;
-		$this->checked_by_srf = (int)$this->checked_by_srf;
-
-		switch ($this->role)
-		{
-			case PLAYER_ROLE_CIVILIAN:
-				$this->role = 'civ';
-				break;
-			case PLAYER_ROLE_SHERIFF:
-				$this->role = 'srf';
-				break;
-			case PLAYER_ROLE_MAFIA:
-				$this->role = 'maf';
-				break;
-			case PLAYER_ROLE_DON:
-				$this->role = 'don';
-				break;
-		}
-		
-		if ($this->death_round < 0)
-		{
-			unset($this->death_round);
-		}
-		
-		if ($this->user_id <= 0)
-		{
-			unset($this->user_id);
-		}
-		
-		if ($this->warnings <= 0)
-		{
-			unset($this->warnings);
-		}
-		
-		if ($this->arranged_for_round < 0)
-		{
-			unset($this->arranged_for_round);
-		}
-		
-		if ($this->checked_by_srf < 0)
-		{
-			unset($this->checked_by_srf);
-		}
-		
-		if ($this->checked_by_don < 0)
-		{
-			unset($this->checked_by_don);
-		}
-		
-		if (!$this->best_player)
-		{
-			unset($this->best_player);
-		}
-		
-		if (!$this->best_move)
-		{
-			unset($this->best_move);
-		}
-		
-		if ($this->mafs_guessed < 0)
-		{
-			unset($this->mafs_guessed);
-		}
-	}
-	
-	function __construct($gs, $index)
-	{
-		$player = $gs->players[$index];
-		$this->user_id = $player->id;
-		$this->nick_name = $player->nick;
-		$this->role = $player->role;
-		$this->death_round = $player->kill_round;
-        switch ($player->kill_reason)
-        {
-            case KILL_REASON_NORMAL:
-                if ($player->state == PLAYER_STATE_KILLED_NIGHT)
-                {
-                    $this->death_type = 'night';
-                }
-                else if ($player->state == PLAYER_STATE_KILLED_DAY)
-                {
-                    $this->death_type = 'day';
-                }
-                break;
-            case KILL_REASON_GIVE_UP:
-                $this->death_type = 'gave-up';
-                break;
-            case KILL_REASON_WARNINGS:
-                $this->death_type = 'warning';
-                break;
-            case KILL_REASON_KICK_OUT:
-                $this->death_type = 'kick-out';
-                break;
-            default:
-				unset($this->death_type);
-                break;
-        }
-		
-		$this->warnings = $player->warnings;
-		$this->arranged_for_round = $player->arranged;
-		$this->checked_by_don = $player->don_check;
-		$this->checked_by_srf = $player->sheriff_check;
-		$this->best_player = ($gs->best_player == $index);
-		$this->best_move = ($gs->best_move == $index);
-		$this->mafs_guessed = $gs->mafs_guessed($index);
-		
-		$this->normalize();
-	}
-}
-
-class ApiGame
-{
-	public $id;
-	public $club_id;
-	public $event_id;
-	public $start_time;
-	public $end_time;
-	public $language;
-	public $moderator_id;
-	public $winner;
-	public $players;
-	
-	function __construct($gs)
-	{
-		$this->id = $gs->id;
-		$this->club_id = $gs->club_id;
-		if (is_null($gs->event_id))
-		{
-			unset($this->event_id);
-		}
-		else
-		{
-			$this->event_id = $gs->event_id;
-		}
-		$this->start_time = $gs->start_time;
-		$this->end_time = $gs->end_time;
-		
-		$this->language = (int)$gs->lang;
-		switch ($gs->gamestate)
-		{
-			case GAME_MAFIA_WON:
-				$this->winner = 'maf';
-				break;
-			case GAME_CIVIL_WON:
-				$this->winner = 'civ';
-				break;
-			default:
-				unset($this->winner);
-				break;
-		}
-		$this->moderator_id = $gs->moder_id;
-		
-		$this->players = array();
-		for ($i = 0; $i < 10; ++$i)
-		{
-			$this->players[$i] = new ApiPlayer($gs, $i);
-		}
-		
-		// $this->voting = $gs->votings;
-		foreach ($gs->votings as $voting)
-		{
-			$round_key = 'round_' . $voting->round;
-			if ($voting->voting_round == 0)
-			{
-				foreach ($voting->nominants as $nominant)
-				{
-					if ($nominant->nominated_by >= 0 && $nominant->nominated_by < 10)
-					{
-						$this->players[$nominant->nominated_by]->nominating[$round_key] = $nominant->player_num;
-					}
-				}
-			}
-			
-			if (isset($voting->votes))
-			{
-				for ($i = 0; $i < 10; ++$i)
-				{
-					$vote = $voting->votes[$i];
-					if ($vote >= 0)
-					{
-						$player = $this->players[$i];
-						if (!isset($player->voting) || !isset($player->voting[$round_key]))
-						{
-							$player->voting[$round_key] = $voting->nominants[$vote]->player_num;
-						}
-						else if (is_array($player->voting[$round_key]))
-						{
-							$player->voting[$round_key][] = $voting->nominants[$vote]->player_num;
-						}
-						else
-						{
-							$player->voting[$round_key] = array($player->voting[$round_key], $voting->nominants[$vote]->player_num);
-						}
-					}
-				}
-			}
-		}
-		
-		$round = 0;
-		foreach ($gs->shooting as $shots)
-		{
-			foreach ($shots as $shoter => $shooted)
-			{
-				if ($shooted >= 0 && $shooted < 10)
-				{
-					$this->players[$shoter]->shooting['round_' . $round] = $shooted;
-				}
-			}
-			++$round;
-		}
-	}
-}
 
 class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
 		global $_profile;
-		
-		$raw = isset($_REQUEST['raw']);
 		
 		$started_before = get_optional_param('started_before');
 		$ended_before = get_optional_param('ended_before');
@@ -363,12 +126,12 @@ class ApiPage extends GetApiPageBase
 		if ($user_id > 0)
 		{
 			$count_query = new DbQuery('SELECT count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.result > 0 AND p.user_id = ?', $user_id, $condition);
-			$query = new DbQuery('SELECT g.id, g.log, g.canceled FROM players p JOIN games g ON  p.game_id = g.id WHERE g.canceled = FALSE AND g.result > 0 AND p.user_id = ?', $user_id, $condition);
+			$query = new DbQuery('SELECT g.id, g.json, g.feature_flags, c.timezone FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE g.canceled = FALSE AND g.result > 0 AND p.user_id = ?', $user_id, $condition);
 		}
 		else
 		{
 			$count_query = new DbQuery('SELECT count(*) FROM games g WHERE g.canceled = FALSE AND g.result > 0', $condition);
-			$query = new DbQuery('SELECT g.id, g.log, g.canceled FROM games g WHERE g.result > 0', $condition);
+			$query = new DbQuery('SELECT g.id, g.json, g.feature_flags, c.timezone FROM games g JOIN events e ON g.event_id = e.id JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE g.result > 0', $condition);
 		}
 		
 		list ($count) = $count_query->record('game');
@@ -387,18 +150,16 @@ class ApiPage extends GetApiPageBase
 		$this->show_query($query);
 		while ($row = $query->next())
 		{
-			list ($id, $log, $is_canceled) = $row;
-			$gs = new GameState();
-			$gs->init_existing($id, $log, $is_canceled);
-			if ($raw)
-			{
-				$game = $gs;
-			}
-			else
-			{
-				$game = new ApiGame($gs);
-			}
-			$games[] = $game;
+			list ($id, $json, $feature_flags, $timezone) = $row;
+			$game = new Game($json, $feature_flags);
+			
+			date_default_timezone_set($timezone);
+			$game->data->startTime = date("Y-m-d\TH:i:sO", $game->data->startTime);
+			$game->data->endTime = date("Y-m-d\TH:i:sO", $game->data->endTime);
+			$game->data->timezone = $timezone;
+			$game->data->features = Game::feature_flags_to_leters($game->flags);
+			//$game->data->rules = rules_code_to_object($game->data->rules);
+			$games[] = $game->data;
 		}
 		$this->response['games'] = $games;
 	}
@@ -428,30 +189,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="games.php?club=1&page_size=32"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1&page_size=32</a> returns last 32 games for Vancouver Mafia Club; <a href="games.php?club=6&page_size=0"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=6&page_size=0</a> returns all games for Empire of Mafia club in one page; <a href="games.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1</a> returns last ' . DEFAULT_PAGE_SIZE . ' games for Vancouver Mafia Club;', '-');
 
 		$param = $help->response_param('games', 'The array of games. Games are always sorted from latest to oldest. There is no way to change sorting order in the current version of the API.');
-			$param->sub_param('id', 'Game id. Unique game identifier.');
-			$param->sub_param('club_id', 'Club id. Unique club identifier.');
-			$param->sub_param('event_id', 'Event id. Unique event identifier.');
-			$param->sub_param('start_time', 'Unix timestamp for the game start.');
-			$param->sub_param('end_time', 'Unix timestamp for the game end.');
-			$param->sub_param('language', 'Language of the game. Possible values are: 1 for English; 2 for Russian. Other languages are not supported in the current version.');
-			$param->sub_param('moderator_id', 'User id of the user who moderated the game.');
-			$param->sub_param('winner', 'Who won the game. Possible values: "civ" or "maf". Tie is not supported in the current version.');
-			$param1 = $param->sub_param('players', 'The array of players who played. Array size is always 10. Players index in the array matches their number at the table.');
-				$param1->sub_param('user_id', 'User id. <i>Optional:</i> missing when someone not registered in mafiaratings played.');
-				$param1->sub_param('nick_name', 'Nick name used in this game.');
-				$param1->sub_param('role', 'One of: "civ", "maf", "srf", or "don".');
-				$param1->sub_param('death_round', 'The round number (starting from 0) when this player was killed. <i>Optional:</i> missing if the player survived.');
-				$param1->sub_param('death_type', 'How this player was killed. Possible values: "day" - killed by day votings; "night" - killed by night shooting; "warning" - killed by 4th warning; "gave-up" - left the game by theirself; "kick-out" - kicked out by the moderator. <i>Optional:</i> missing if the player survived.');
-				$param1->sub_param('warnings', 'Number of warnings. <i>Optional:</i> missing when 0.');
-				$param1->sub_param('arranged_for_round', 'Was arranged by mafia to be shooted down in the round (starting from 0). <i>Optional:</i> missing when the player was not arranged.');
-				$param1->sub_param('checked_by_don', 'The round (starting from 0) when the don checked this player. <i>Optional:</i> missing when the player was not checked by the don.');
-				$param1->sub_param('checked_by_srf', 'The round (starting from 0) when the sheriff checked this player. <i>Optional:</i> missing when the player was not checked by the sheriff.');
-				$param1->sub_param('best_player', 'True if this is the best player. <i>Optional:</i> missing when false.');
-				$param1->sub_param('best_move', 'True if the player did the best move of the game. <i>Optional:</i> missing when false.');
-				$param1->sub_param('mafs_guessed', 'Number of mafs guessed right by the player killed the first night. <i>Optional:</i> missing when player was not killed in night 0, or when they guessed wrong.');
-				$param1->sub_param('voting', 'How the player was voting. An assotiated array in the form <i>round_N: M</i>. Where N is day number (starting from 0); M is the number of player for whom he/she voted (0 to 9).');
-				$param1->sub_param('nominating', 'How the player was nominating. An assotiated array in the form <i>round_N: M</i>. Where N is day number (starting from 0); M is the number of player who was nominated (0 to 9).');
-				$param1->sub_param('shooting', 'For mafia only. An assotiated array in the form <i>round_N: M</i>. . Where N is day number (starting from 0); M is the number of player who was nominated (0 to 9). For example: { round_0: 0, round_1: 8, round_2: 9 } means that this player was shooting player 1(index 0) the first night; player 9 the second night; and player 10 the third night.');
+		Game::api_help($param);
 		$help->response_param('count', 'The total number of games sutisfying the request parameters. It is set only when the parameter <i>count</i> is set.');
 		return $help;
 	}

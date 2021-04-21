@@ -500,12 +500,12 @@ return array
 			),
 			array // 10.11.
 			(
-				RULES_FIRST_KILL_GESTURE,
-				'Gestures on first killed player speech',
+				RULES_FIRST_KILL_GESTURING,
+				'Gesturing on first killed player speech',
 				array
 				(
-					'Gestures during the final minute of the player «killed» in the first «night», before making the «legacy». Warning.',
-					'Gestures during the final minute of the player «killed» in the first «night», before making the «legacy». No penalty.',
+					'Gesturing during the final minute of the player «killed» in the first «night», before making the «legacy». Warning.',
+					'Gesturing during the final minute of the player «killed» in the first «night», before making the «legacy». No penalty.',
 				),
 				array
 				(

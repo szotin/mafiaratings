@@ -500,7 +500,7 @@ return array
 			),
 			array // 10.11.
 			(
-				RULES_FIRST_KILL_GESTURE,
+				RULES_FIRST_KILL_GESTURING,
 				'Жестикуляция на первом убитом',
 				array
 				(

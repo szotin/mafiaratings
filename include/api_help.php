@@ -26,6 +26,11 @@ class ApiHelpRequestParam
 		return $param;
 	}
 	
+	function add_description($description)
+	{
+		$this->description .= $description;
+	}
+	
 	function show()
 	{
 		$when_missing = NULL;
@@ -92,6 +97,11 @@ class ApiHelpResponseParam
 		}
 		$this->params[] = $param;
 		return $param;
+	}
+	
+	function add_description($description)
+	{
+		$this->description .= $description;
 	}
 	
 	function show()

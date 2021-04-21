@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/game_state.php';
 require_once __DIR__ . '/rules.php';
+require_once __DIR__ . '/datetime.php';
+require_once __DIR__ . '/rules.php';
 
 define('GAME_FEATURE_FLAG_ARRANGEMENT',                 0x00000001);
 define('GAME_FEATURE_FLAG_DON_CHECKS',                  0x00000002);
@@ -49,16 +51,23 @@ class Game
 		try
 		{
 			$this->data = NULL;
-			$this->expected_flags = $feature_flags;
 			if (is_numeric($g))
 			{
 				$row = Db::record(get_label('game'), 'SELECT json, feature_flags FROM games WHERE id = ?', (int)$g);
 				$this->data = json_decode($row[0]);
-				$this->expected_flags = (int)$row[1];
+				$feature_flags = (int)$row[1];
+				if (isset($this->data->features))
+				{
+					$feature_flags = Game::leters_to_feature_flags($this->data->features);
+				}
 			}
 			else if (is_string($g))
 			{
 				$this->data = json_decode($g);
+				if (isset($this->data->features))
+				{
+					$feature_flags = Game::leters_to_feature_flags($this->data->features);
+				}
 			}
 			else if ($g instanceof Game)
 			{
@@ -67,13 +76,14 @@ class Game
 			else if ($g instanceof GameState)
 			{
 				$this->data = new stdClass();
-				$this->data->id = $g->id;
-				$this->data->clubId = $g->club_id;
-				$this->data->eventId = $g->event_id;
-				$this->data->startTime = $g->start_time;
-				$this->data->endTime = $g->end_time;
+				$this->data->id = (int)$g->id;
+				$this->data->clubId = (int)$g->club_id;
+				$this->data->eventId = (int)$g->event_id;
+				$this->data->startTime = (int)$g->start_time;
+				$this->data->endTime = (int)$g->end_time;
 				$this->data->language = get_lang_code($g->lang);
 				$this->data->rules = $g->rules_code;
+				$this->data->features = Game::feature_flags_to_leters($feature_flags);
 				if ($g->gamestate == GAME_MAFIA_WON)
 				{
 					$this->data->winner = 'maf';
@@ -93,7 +103,10 @@ class Game
 				{
 					$p = $g->players[$i];
 					$player = new stdClass();
-					$player->id = $p->id;
+					if ($p->id > 0)
+					{
+						$player->id = $p->id;
+					}
 					$player->name = $p->nick;
 					if ($p->arranged >= 0)
 					{
@@ -109,7 +122,7 @@ class Game
 					}
 					if ($p->extra_points)
 					{
-						$player->extra_points = $p->extra_points;
+						$player->bonus = $p->extra_points;
 					}
 					if (!empty($p->comment))
 					{
@@ -243,6 +256,8 @@ class Game
 							}
 						}
 					}
+					
+					
 				}
 				
 				foreach ($g->log as $log)
@@ -299,38 +314,38 @@ class Game
 				if ($g->best_player >= 0)
 				{
 					$player = $this->data->players[$g->best_player];
-					if (!isset($player->extra_points))
+					if (!isset($player->bonus))
 					{
-						$player->extra_points = 'bestPlayer';
+						$player->bonus = 'bestPlayer';
 					}
-					else if (is_array($player->extra_points))
+					else if (is_array($player->bonus))
 					{
-						$player->extra_points[] = 'bestPlayer';
+						$player->bonus[] = 'bestPlayer';
 					}
 					else
 					{
-						$player->extra_points = array($player->extra_points, 'bestPlayer');
+						$player->bonus = array($player->bonus, 'bestPlayer');
 					}
 				}
 				
 				if ($g->best_move >= 0)
 				{
 					$player = $this->data->players[$g->best_move];
-					if (!isset($player->extra_points))
+					if (!isset($player->bonus))
 					{
-						$player->extra_points = 'bestMove';
+						$player->bonus = 'bestMove';
 					}
-					else if (is_array($player->extra_points))
+					else if (is_array($player->bonus))
 					{
-						$player->extra_points[] = 'bestMove';
+						$player->bonus[] = 'bestMove';
 					}
 					else
 					{
-						$player->extra_points = array($player->extra_points, 'bestMove');
+						$player->bonus = array($player->bonus, 'bestMove');
 					}
 				}
 			}
-			$this->flags = $feature_flags;
+			$this->expected_flags = $this->flags = $feature_flags;
 		}
 		catch (Exception $e)
 		{
@@ -464,6 +479,7 @@ class Game
 			}
 		}
 		$this->flags |= ($this->expected_flags & (GAME_FEATURE_FLAG_VOTING_KILL_ALL | GAME_FEATURE_FLAG_LEGACY | GAME_FEATURE_FLAG_DEATH_TIME));
+		$this->data->features = Game::feature_flags_to_leters($this->flags);
 	}
 	
 	function check_game_result($fix = false)
@@ -2163,13 +2179,14 @@ class Game
 	
 	function remove_flags($flags)
 	{
-		if (($this->flags & $flags) == 0)
+		$flags &= $this->flags;
+		if ($flags == 0)
 		{
 			return;
 		}
 		
 		$reinit_votings = false;
-		while ($flags != 0)
+		do
 		{
 			$next_flags = ($flags - 1) & $flags;
 			$flag = ($flags - $next_flags) & $this->flags;
@@ -2396,11 +2413,209 @@ class Game
 			$this->flags &= ~$flag;
 			$flags = $next_flags;
 		}
+		while ($flags != 0);
 		
 		if (isset($this->votings) && $reinit_votings)
 		{
 			$this->init_votings();
 		}
+		$this->data->features = Game::feature_flags_to_leters($this->flags);
+	}
+	
+	static function feature_flags_to_leters($flags)
+	{
+		$letters = '';
+		if ($flags & GAME_FEATURE_FLAG_ARRANGEMENT)
+		{
+			$letters .= 'a';
+		}
+		if ($flags & GAME_FEATURE_FLAG_DON_CHECKS)
+		{
+			$letters .= 'g';
+		}
+		if ($flags & GAME_FEATURE_FLAG_SHERIFF_CHECKS)
+		{
+			$letters .= 's';
+		}
+		if ($flags & GAME_FEATURE_FLAG_DEATH)
+		{
+			$letters .= 'd';
+		}
+		if ($flags & GAME_FEATURE_FLAG_DEATH_ROUND)
+		{
+			$letters .= 'u';
+		}
+		if ($flags & GAME_FEATURE_FLAG_DEATH_TYPE)
+		{
+			$letters .= 't';
+		}
+		if ($flags & GAME_FEATURE_FLAG_DEATH_TIME)
+		{
+			$letters .= 'c';
+		}
+		if ($flags & GAME_FEATURE_FLAG_LEGACY)
+		{
+			$letters .= 'l';
+		}
+		if ($flags & GAME_FEATURE_FLAG_SHOOTING)
+		{
+			$letters .= 'h';
+		}
+		if ($flags & GAME_FEATURE_FLAG_VOTING)
+		{
+			$letters .= 'v';
+		}
+		if ($flags & GAME_FEATURE_FLAG_VOTING_KILL_ALL)
+		{
+			$letters .= 'k';
+		}
+		if ($flags & GAME_FEATURE_FLAG_NOMINATING)
+		{
+			$letters .= 'n';
+		}
+		if ($flags & GAME_FEATURE_FLAG_WARNINGS)
+		{
+			$letters .= 'w';
+		}
+		if ($flags & GAME_FEATURE_FLAG_WARNINGS_DETAILS)
+		{
+			$letters .= 'r';
+		}
+		return $letters;
+	}
+	
+	static function leters_to_feature_flags($letters)
+	{
+		$flags = 0;
+		for ($i = 0; $i < strlen($letters); ++$i)
+		{
+			switch ($letters[$i])
+			{
+				case 'a':
+					$flags |= GAME_FEATURE_FLAG_ARRANGEMENT;
+					break;
+				case 'g':
+					$flags |= GAME_FEATURE_FLAG_DON_CHECKS;
+					break;
+				case 's':
+					$flags |= GAME_FEATURE_FLAG_SHERIFF_CHECKS;
+					break;
+				case 'd':
+					$flags |= GAME_FEATURE_FLAG_DEATH;
+					break;
+				case 'u':
+					$flags |= GAME_FEATURE_FLAG_DEATH_ROUND;
+					break;
+				case 't':
+					$flags |= GAME_FEATURE_FLAG_DEATH_TYPE;
+					break;
+				case 'c':
+					$flags |= GAME_FEATURE_FLAG_DEATH_TIME;
+					break;
+				case 'l':
+					$flags |= GAME_FEATURE_FLAG_LEGACY;
+					break;
+				case 'h':
+					$flags |= GAME_FEATURE_FLAG_SHOOTING;
+					break;
+				case 'v':
+					$flags |= GAME_FEATURE_FLAG_VOTING;
+					break;
+				case 'k':
+					$flags |= GAME_FEATURE_FLAG_VOTING_KILL_ALL;
+					break;
+				case 'n':
+					$flags |= GAME_FEATURE_FLAG_NOMINATING;
+					break;
+				case 'w':
+					$flags |= GAME_FEATURE_FLAG_WARNINGS;
+					break;
+				case 'r':
+					$flags |= GAME_FEATURE_FLAG_WARNINGS_DETAILS;
+					break;
+			}
+		}
+		return $flags;
+	}
+	
+	private static function add_time_help($param, $event)
+	{
+		$param->sub_param('round', 'round number when ' . $event . ' starting from 0');
+		$param->sub_param('time', 'what was happening in the game when ' . $event . '. Possible values are:<ul>
+			<li>"start": the game just started.</li>
+			<li>"arrangement": mafia is arranging.</li>
+			<li>"day start": a day just started.</li>
+			<li>"night kill speaking": a player killed in night is speaking.</li>
+			<li>"speaking": a player is speaking their normal day-speach.</li>
+			<li>"voting": players are voting</li>
+			<li>"day kill speaking": a voted-out player is speaking.</li>
+			<li>"shooting": mafia is shooting.</li>
+			<li>"don": don is checking.</li>
+			<li>"sheriff": sheriff is checking.</li>
+			<li>"end": the game just ended.</li>
+		</ul>');
+		$param->sub_param('speaker', 'an additional parameter specifying who was speaking when ' . $event . '. A number from 1 to 10. It must be set when time is one of: "speaking", "day kill speaking", or "night kill speaking". It can be set when time is "voting". When it is set for "voting" phase, this means that ' . $event . ' when one of the split players was speaking.', 'it is not applicable.');
+		$param->sub_param('votingRound', 'voting round number. It can be set when the type is "voting". For example we have 9 players: 1-2-3 voted for 4; 4-5-6 voted for 7; 7-8-9 voted for 1. We call it votingRound 0. Then: 1-2-3-5 voted for 4; 4-6-8-9 voted for 7; 7 voted for 1. We call it votingRound 1. Etc. So for example if our structure is { "time": "voting", "speaker":1, "votingRound":1 }, this means that ' . $event . ' when player 1 was speaking after the second split. If votingRound was 0 or missing, this would mean that 1 was speaking after the first split.', 'either voting round is 0, or type is not "voting"');
+		$param->sub_param('nominant', 'who were players voting for when ' . $event . '. It can only be set when time is "voting". For example: { "time":"voting", "nominant":1, "votingRound":1 } means that ' . $event . ' when town was voting for 1 in the second split (voting round 1).', $event . ' not in the voting phase.');
+	}
+	
+	private static function feature_flags_help($param, $text)
+	{
+		$text .= '<ul>';
+		$text .= '<li><b>a</b> - the game contains static arrangement information. Players who were staticaly arranged have "arrangement" field with round number that they were arranged for.</li>';
+		$text .= '<li><b>g</b> - the game contains don checks. Players checked by don have "don" field with round number when they were checked.</li>';
+		$text .= '<li><b>s</b> - the game contains sheriff checks. Players checked by sheriff have "sheriff" field with round number when they were checked.</li>';
+		$text .= '<li><b>d</b> - the game contains death information. Players who died during the game have "death" field that contains the details about their death. If u, t, and c are not set it is just a true/false boolean.</li>';
+		$text .= '<li><b>u</b> - the game contains death round information (<b>d</b> must be set when <b>u</b> is set). If <b>t</b> and <b>c</b> are not set - "death" is an integer, which means round number. If at least one of them is set, "death" is an object where property "round" contains round number.</li>';
+		$text .= '<li><b>t</b> - the game contains death type information (<b>d</b> must be set when <b>t</b> is set). If u and c are not set - "death" is a string containing death type. If at least one of them is set, "death" is an object where property "type" contains death type.';
+		$text .= '<li><b>c</b> - the game contains death time information (<b>d</b> must be set when <b>c</b> is set). If a player died of warnings, or was kicked out, or gave up, death.time field is set specifying when in the game it happened.</li>';
+		$text .= '<li><b>l</b> - the game contains player legacy. When player dies the first night (or any other night by some rules) they can leave a legacy (aka best move, or prima nota). In this case a player will have a field "legacy" with an array of integers.</li>';
+		$text .= '<li><b>h</b> - the game contains mafia shooting details. Mafia players have field "shooting" containing shooting details.</li>';
+		$text .= '<li><b>v</b> - the game contains voting details. Players have "voting" field containg the details about their voting.</li>';
+		$text .= '<li><b>k</b> - the game contains how players voted for killing all when the table was split (<b>v</b> must be set when <b>k</b> is set). The last value in "voting" array for a specific round is boolean flagging if a player voted for killin all.</li>';
+		$text .= '<li><b>n</b> - the game contains nominating details. Players have "nominating" field containg the details about their voting.</li>';
+		$text .= '<li><b>w</b> - the game contains warnings information. Players have "warnings" field containing what warnings each of them has.</li>';
+		$text .= '<li><b>r</b> - the game contains warnings details (<b>v</b> must be set when <b>r</b> is set). Player\'s "warnings" field contains an array with times in the game when warning was received.</li>';
+		$text .= '<ul>';
+		$param->sub_param('features', $text);
+	}
+	
+	static function api_help($param)
+	{
+		$param->add_description('<p>Round numbering works this way. <ul><li>Round 0</li><ul><li>Night 0: mafia is arranging.</li><li>Day 0: town is speaking, may be splitting, normally <u>not</u> killing.</li></ul></li><li>Round 1<ul><li>Night 1: mafia is shooting. Don and sheriff are checking.</li><li>Day 1: town is speaking, may be splitting, normally killing.</li></ul><li>Etc.</li></ul>');
+	
+		$param->sub_param('id', 'Game id. Unique game identifier.');
+		Game::feature_flags_help($param, 'what features this game record contains. This is a combination of letters. For example "gsdutclhnwr". Every letter means that the game contains some information:');
+		$param->sub_param('clubId', 'Club id. Unique club identifier.');
+		$param->sub_param('eventId', 'Event id. Unique event identifier.');
+		$param->sub_param('startTime', 'Game start in ISO-8601.');
+		$param->sub_param('endTime', 'Game end in ISO-8601.');
+		$param->sub_param('timezone', 'Timezone in text format. For example "America/New_York".');
+		$param->sub_param('language', 'Two letter code of the language the game was played. For example: "en" for English; "ru" for Russian.');
+		$param->sub_param('rules', 'Rules code for the rules used in the game. Use <a href="rules.php?help">Get Rules API</a> to convert it to something readable.');
+		$param->sub_param('winner', 'Who won the game. Possible values: "civ", "maf", or "tie".');
+		$param1 = $param->sub_param('moderator', 'Game moderator.');
+		$param1->sub_param('id', 'User id in ' . PRODUCT_NAME . ' of the moderator.');
+		$param1 = $param->sub_param('players', 'The array of players who played. Array size is always 10. Players index in the array matches their player number in the table from 1 to 10.');
+			$param1->sub_param('id', 'User id in ' . PRODUCT_NAME, 'the player is unknown. There is no user account for this player.');
+			$param1->sub_param('name', 'Name used in this game.');
+			$param1->sub_param('role', 'One of: "civ", "maf", "sheriff", or "don".', 'use "civ"');
+			$param1->sub_param('arranged', 'Was arranged by mafia to be shooted down in the round (starting from 0).', ' either the player was not arranged, or the game does not have arrangement information (<b>a</b> is missing from the "features").');
+			$param2 = $param1->sub_param('death', 'Player death information. Here are the options:<ul><li>When only <b>d</b> is set in "features": "death" is boolean meaning if the player died in the game or not.</li><li>When only <b>d</b> and <b>u</b> are set: "death" is an integer containing round number when the player died.</li><li>When only <b>d</b> and <b>t</b> are set: "death" is a string explained in death.type.</li><li>In any other case: "death" is an object explaned below.</li></ul>', 'either the player survived the game, or the game does not have death info (<b>d</b> is missing from the "features")');
+				$param2->sub_param('round', 'Round number when player died. Starting from 0.', 'the game does not contain death round information (<b>u</b> is missing from the "features").');
+				$param2->sub_param('type', 'Player\'s death type. Possible types are: <ul><li>"day" - voted out during a day.</li><li>"night" - killed in night by mafia.</li><li>"warnings" - got 4 warnings.</li><li>"kickOut" - kicked out from the game by the moderator.</li><li>"teamKickOut" - kicked out from the game by the moderator and their team lost because of that.</li><li>"giveUp" - gave up.</li></ul>.', 'the game does not contain death type information (<b>t</b> is missing from the "features").');
+				$param3 = $param2->sub_param('time', 'When the player died. There is no need to specify time when death type is "hight" or "day", so it is normally not set for these death types. But if death type is "warnings", "kickOut", "teamKickOut", or "giveUp", "death" field contains an object with "time" field where death time is specified.', 'either death.type is "day"/"night", or the game does not contain death time information (<b>c</b> is missing from the "features")');
+				Game::add_time_help($param3, 'the player died');
+			$param2 = $param1->sub_param('warnings', 'If <b>r</b> is set in "features" warnings contain an array of gametime objects specifying when each warning was received. If <b>r</b> is not set, it is just a number of warnings.', 'either the player has no warnings, or the game has no warnings information (<b>w</b> is missing from the "features")');
+			Game::add_time_help($param2, 'the player got warning');
+			$param1->sub_param('don', 'The round (starting from 0) when the don checked this player.', 'either the player was not checked by don, or the game has no don checking information (<b>g</b> is missing from the "features")');
+			$param1->sub_param('sheriff', 'The round (starting from 0) when the sheriff checked this player.', 'either the player was not checked by sheriff, or the game has no sheriff checking information (<b>s</b> is missing from the "features")');
+			$param1->sub_param('bonus', 'either number of bonus points for the game, or "bestPlayer", or "bestMove", or an array with any combination of these three.', 'there is no bonus for the player');
+			$param1->sub_param('legacy', 'When player dies the first night (or any other night by some rules) they can leave a legacy (aka best move, or prima nota). In this case a player will have a field "legacy" with an array of integers.', 'either the player was not shot the first night, or the player did not leave a legacy, or there is no legacy information in the game (<b>l</b> is missing from the "features").');
+			$param1->sub_param('comment', 'Moderator comment on the player. It is normally set for the players who have bonus. But it can be set for any player.', 'there is no moderator comment');
+			$param1->sub_param('voting', 'How the player was voting. An array per round. For example suppose "voting" is [null, 10, [5,5,true]]. The meaning of it is:<ul><li>In round 0 - null. The player did not vote. Apparently no one, or only one was nominated.</li><li>In round 1 - 10. The player voted for player number 10.</li><li>In round 2 - [5,5,true]. The player voted two times for player number 5 and then voted yes to kill all players in the split.</li></ul>', 'either the player never voted in the game, or the game does not contain voting information (<b>v</b> is missing from the "features")');
+			$param1->sub_param('nominating', 'How the player was nominating. An array per round. For example if "nominating" is [null,10,null,7], this means that the player nominated player 10 in round 1, player 7 in round 3, and did not nominatin in rounds 0 and 2.', 'either player did not nominate, or the game does not contain nominating information (<b>n</b> is missing from the "features")');
+			$param1->sub_param('shooting', 'For mafia only. An array of numbers per round. Unlike nomination and voting the array starts from round 1, because nobody is shooting in night 0. For example [2,null,10] means that the player was shooting 2 in night 1; 10 in night 3; and did not make a shot in night 2.', 'either player did not shoot, or the game does not contain shooting information (<b>h</b> is missing from the "features")');
 	}
 }
 
