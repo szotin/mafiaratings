@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/game_state.php';
+require_once __DIR__ . '/game.php';
 require_once __DIR__ . '/pdf/tfpdf.php';
 
 // define('A4_MAX_X', 297);
@@ -23,7 +23,7 @@ class FigmForm
 		$this->pdf->Output();
 	}
 
-	public function add($gs, $event_name, $tournament_name, $moder_name, $timezone)
+	public function add($game, $event_name, $tournament_name, $moder_name, $timezone)
 	{
 		$round_name = '';
 		if (!is_null($tournament_name))
@@ -130,12 +130,13 @@ class FigmForm
 		}
 		
 		// First page data
-		if (!is_null($gs))
+		if (!is_null($game))
 		{
+			$data = $game->data;
 			date_default_timezone_set($timezone);
-			$day = date('d', $gs->start_time);
-			$month = date('m', $gs->start_time);
-			$year = date('Y', $gs->start_time);
+			$day = date('d', $data->startTime);
+			$month = date('m', $data->startTime);
+			$year = date('Y', $data->startTime);
 			
 			$this->pdf->SetTextColor(0, 0, 128);
 			$this->pdf->SetFont('Arial', '', 12);
@@ -151,60 +152,65 @@ class FigmForm
 			$this->pdf->Cell(18.5, 7.7, $year, 0);
 			
 			$this->pdf->SetXY(132.5, 32.8);
-			$this->pdf->Cell(12.5, 7.7, '' . $gs->id, 0);
+			$this->pdf->Cell(12.5, 7.7, '' . $data->id, 0);
 			
 			$killed_first = 0;
 			$y = 52.2;
 			$extra_point_comments = '';
 			for ($i = 0; $i < 10; ++$i, $y += 10.1)
 			{
-				$player = $gs->players[$i];
+				$player = $data->players[$i];
 				$role = '';
 				$points = 0;
-				$extra_points = $player->extra_points;
-				switch ($player->role)
+				$extra_points = 0;
+				if (isset($player->bonus))
 				{
-					case PLAYER_ROLE_CIVILIAN:
-						if ($gs->gamestate == GAME_CIVIL_WON)
+					if (is_numeric($player->bonus))
+					{
+						$extra_points = $player->bonus;
+					}
+					else if (is_array($player->bonus))
+					{
+						foreach ($player->bonus as $bonus)
 						{
-							$points = 1;
+							if (is_numeric($bonus))
+							{
+								$extra_points += $bonus;
+							}
 						}
-						break;
-					case PLAYER_ROLE_SHERIFF:
-						if ($gs->gamestate == GAME_CIVIL_WON)
-						{
-							$points = 1;
-						}
-						$role = 'Ш';
-						break;
-					case PLAYER_ROLE_MAFIA:
-						if ($gs->gamestate == GAME_MAFIA_WON)
-						{
-							$points = 1;
-						}
-						$role = 'М';
-						break;
-					case PLAYER_ROLE_DON:
-						if ($gs->gamestate == GAME_MAFIA_WON)
-						{
-							$points = 1;
-						}
-						$role = 'Д';
-						break;
+					}
 				}
 				
-				if ($player->state == PLAYER_STATE_KILLED_NIGHT && $player->kill_reason == KILL_REASON_NORMAL && $player->kill_round == 0)
+				if (!isset($player->role) || $player->role == "civ")
+				{
+					$points = ($data->winner == "civ" ? 1 : 0);
+				}
+				else if ($player->role == "sheriff")
+				{
+					$points = ($data->winner == "civ" ? 1 : 0);
+					$role = 'Ш';
+				}
+				else if ($player->role == "maf")
+				{
+					$points = ($data->winner == "maf" ? 1 : 0);
+					$role = 'М';
+				}
+				else if ($player->role == "don")
+				{
+					$points = ($data->winner == "maf" ? 1 : 0);
+					$role = 'Д';
+				}
+				
+				if (isset($player->legacy))
 				{
 					$killed_first = $i + 1;
 					$guess_right = 0;
-					if ($gs->guess3 != NULL)
+					foreach ($player->legacy as $num)
 					{
-						foreach ($gs->guess3 as $num)
+						$p = $data->players[$num-1];
+						if (isset($p->role) && ($p->role == "maf" || $p->role == "don"))
 						{
-							if ($gs->players[$num]->role >= PLAYER_ROLE_MAFIA)
-							{
-								++$guess_right;
-							}
+							++$guess_right;
 						}
 					}
 					if ($guess_right >= 3)
@@ -217,27 +223,44 @@ class FigmForm
 					}
 				}
 				
-				switch ($player->kill_reason)
+				if (isset($player->death))
 				{
-					case KILL_REASON_WARNINGS:
+					$dt = NULL;
+					if (is_string($player->death))
+					{
+						$dt = $player->death;
+					}
+					else if ($player->death->type)
+					{
+						$dt = $player->death->type;
+					}
+					
+					if ($dt == DEATH_TYPE_WARNINGS)
+					{
 						$extra_points -= 0.5;
-						break;
-					case KILL_REASON_KICK_OUT:
+					}
+					else if ($dt == DEATH_TYPE_GIVE_UP || $dt == DEATH_TYPE_KICK_OUT || $dt == DEATH_TYPE_TEAM_KICK_OUT)
+					{
 						$extra_points -= 0.5;
 						$this->pdf->SetXY(112.425, $y);
 						$this->pdf->Cell(7.475, 10.1, '!', 0, 0, 'C'); // √
-						break;
+					}
 				}
 				
-				if ($player->state != PLAYER_STATE_ALIVE)
+				if (isset($player->death))
 				{
 					$this->pdf->SetXY(14.0, $y);
 					$this->pdf->Cell(4, 10.1, '*', 0);
 				}
 				$this->pdf->SetXY(25.9, $y);
-				$this->pdf->Cell(54.0, 10.1, $player->nick, 0);
+				$this->pdf->Cell(54.0, 10.1, $player->name, 0);
 				$this->pdf->Cell(10.1, 10.1, $role, 0, 0, 'C');
-				for ($j = 0; $j < $player->warnings; ++$j)
+				$warinings_count = 0;
+				if (isset($player->warnings))
+				{
+					$warinings_count = is_numeric($player->warnings) ? $player->warnings : count($player->warnings);
+				}
+				for ($j = 0; $j < $warinings_count; ++$j)
 				{
 					$this->pdf->Cell(7.475, 10.1, '*', 0, 0, 'C'); // √
 				}
@@ -248,7 +271,7 @@ class FigmForm
 					$this->pdf->Cell(13.2, 10.1, '' . $extra_points, 0, 0, 'C');
 				}
 				
-				if (!empty($player->comment))
+				if (isset($player->comment) && !empty($player->comment))
 				{
 					if (!empty($extra_point_comments))
 					{
@@ -259,28 +282,26 @@ class FigmForm
 			}
 			
 			$this->pdf->SetXY(80, 157.8);
-			switch ($gs->gamestate)
+			if ($data->winner == "civ")
 			{
-				case GAME_MAFIA_WON:
-					$this->pdf->Cell(65, 7.4, 'черные', 0, 0, 'C');
-					break;
-				case GAME_CIVIL_WON:
-					$this->pdf->Cell(65, 7.4, 'красные', 0, 0, 'C');
-					break;
+				$this->pdf->Cell(65, 7.4, 'красные', 0, 0, 'C');
+			}
+			else if ($data->winner == "maf")
+			{
+				$this->pdf->Cell(65, 7.4, 'черные', 0, 0, 'C');
 			}
 
 			if ($killed_first > 0)
 			{
+				$legacy = $data->players[$killed_first-1]->legacy;
 				$this->pdf->SetXY(128.5, 165.2);
 				$this->pdf->Cell(10.5, 10.1, '' . $killed_first, 0, 0, 'C');
-				if ($gs->guess3 != NULL)
+				
+				$x = 54.0;
+				for ($i = 0; $i < count($legacy) && $i < 3; ++$i, $x += 11.5)
 				{
-					$x = 54.0;
-					for ($i = 0; $i < count($gs->guess3) && $i < 3; ++$i, $x += 11.5)
-					{
-						$this->pdf->SetXY($x, 165.2);
-						$this->pdf->Cell(8.0, 10.1, '' . ($gs->guess3[$i] + 1), 0, 0, 'C');
-					}
+					$this->pdf->SetXY($x, 165.2);
+					$this->pdf->Cell(8.0, 10.1, '' . $legacy[$i], 0, 0, 'C');
 				}
 			}
 			
@@ -288,7 +309,7 @@ class FigmForm
 			$this->pdf->Cell(66, 10.1, $moder_name, 0, 0, 'C');
 			
 			$objections = '';
-			$query = new DbQuery('SELECT o.message, o.accept, u.id, u.name FROM objections o JOIN users u ON u.id = o.user_id WHERE o.game_id = ? ORDER BY timestamp', $gs->id);
+			$query = new DbQuery('SELECT o.message, o.accept, u.id, u.name FROM objections o JOIN users u ON u.id = o.user_id WHERE o.game_id = ? ORDER BY timestamp', $data->id);
 			while ($row = $query->next())
 			{
 				list ($message, $accept, $user_id, $user_name) = $row;
@@ -297,7 +318,7 @@ class FigmForm
 					$complainer = $user_name;
 					for ($i = 0; $i < 10; ++$i, $y += 10.1)
 					{
-						$player = $gs->players[$i];
+						$player = $data->players[$i];
 						if ($player->id == $user_id)
 						{
 							$complainer = 'Игрок ' . ($i + 1) . ' (' . $user_name . ')';
@@ -322,43 +343,64 @@ class FigmForm
 			}
 			
 			$this->pdf->SetFont('Arial', '', 10);
-			foreach ($gs->votings as $voting)
+			$game->init_votings(false);
+			$round_count = min(7, count($game->votings));
+			for ($round = 0; $round < $round_count; ++$round)
 			{
-				if ($voting->round >= 7 || $voting->is_canceled())
+				$voting = $game->votings[$round];
+				if (!isset($voting->nominants))
 				{
 					continue;
 				}
+				
+				// if (isset($voting->canceled) && $voting->canceled)
+				// {
+					// continue;
+				// }
 				
 				$x = 167.6;
 				for ($i = 0; $i < count($voting->nominants); ++$i)
 				{
 					$nominant = $voting->nominants[$i];
-					$count = 0;
-					if (isset($voting->votes) && is_array($voting->votes))
+					$nom_start = '';
+					$nom_end = '';
+					$p = $data->players[$nominant->nominant - 1]; 
+					if (isset($voting->winner) && isset($voting->killed) && $voting->killed)
 					{
-						foreach ($voting->votes as $vote)
+						if (is_array($voting->winner))
 						{
-							if ($vote == $i)
+							foreach ($voting->winner as $w)
 							{
-								++$count;
+								if ($w == $nominant->nominant)
+								{
+									$nom_start = '(';
+									$nom_end = ')';
+									break;
+								}
 							}
+						}
+						else if ($voting->winner == $nominant->nominant)
+						{
+							$nom_start = '(';
+							$nom_end = ')';
 						}
 					}
 					
-					$nom_start = '';
-					$nom_end = '';
-					$p = $gs->players[$nominant->player_num]; 
-					if ($p->kill_round == $voting->round && $p->kill_reason == KILL_REASON_NORMAL && $p->state == PLAYER_STATE_KILLED_DAY)
+					$this->pdf->SetXY($x, 22.5 + 25.0 * $round);
+					$this->pdf->Cell(10.2, 5.0, $nom_start . $nominant->nominant . $nom_end, 0, 2, 'C');
+					if (isset($nominant->voting) && is_array($nominant->voting) && count($nominant->voting) > 0)
 					{
-						$nom_start = '(';
-						$nom_end = ')';
-					}
-					
-					$this->pdf->SetXY($x, 22.5 + 10.0 * $voting->voting_round + 25.0 * $voting->round);
-					$this->pdf->Cell(10.2, 5.0, $nom_start . ($nominant->player_num + 1) . $nom_end, 0, 2, 'C');
-					if ($voting->round != 0 || count($voting->nominants) > 1)
-					{
-						$this->pdf->Cell(10.2, 5.0, '' . $count, 0, 2, 'C');
+						if (is_array($nominant->voting[0]))
+						{
+							for ($votingRound = 0; $votingRound < count($nominant->voting) && $votingRound < 2; ++$votingRound)
+							{
+								$this->pdf->Cell(10.2, 5.0, '' . count($nominant->voting[$votingRound]), 0, 2, 'C');
+							}
+						}
+						else
+						{
+							$this->pdf->Cell(10.2, 5.0, '' . count($nominant->voting), 0, 2, 'C');
+						}
 					}
 					$x += 10.2;
 				}
@@ -396,7 +438,7 @@ class FigmForm
 		$this->pdf->SetXY(9.9, 129.0);
 		$this->pdf->Cell(278.8, 16, 'КОММЕНТАРИИ К ПРОТЕСТУ', 0, 0, 'C');
 		
-		if (!is_null($gs))
+		if (!is_null($game))
 		{
 			$this->pdf->SetTextColor(0, 0, 128);
 			$this->pdf->SetFont('Arial', '', 10);

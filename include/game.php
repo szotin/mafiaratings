@@ -1763,6 +1763,7 @@ class Game
 			}
 		}
 		
+		$prev_voting_end_time = NULL;
 		$this->votings = array();
 		for ($round = 0; $round < $rounds_count; ++$round)
 		{
@@ -1803,6 +1804,7 @@ class Game
 			}
 			
 			// votings
+			$total_voting_rounds = 1;
 			for ($i = 0; $i < 10; ++$i)
 			{
 				$player = $this->data->players[$i];
@@ -1829,6 +1831,7 @@ class Game
 								$voting->voted_to_kill[] = $i + 1;
 							}
 						}
+						$total_voting_rounds = max($total_voting_rounds, $voting_rounds);
 						
 						for ($j = 0; $j < $voting_rounds; ++$j)
 						{
@@ -1850,10 +1853,13 @@ class Game
 								$voting->nominants[] = $nom;
 							}
 							
-							if (!isset($nom->voting) || !is_array($nom->voting) || count($nom->voting) != $voting_rounds)
+							if (!isset($nom->voting) || !is_array($nom->voting))
 							{
 								$nom->voting = array();
-								for ($k = 0; $k < $voting_rounds; ++$k)
+							}
+							if (count($nom->voting) < $j)
+							{
+								for ($k = 0; $k < $j; ++$k)
 								{
 									$nom->voting[] = array();
 								}
@@ -1975,26 +1981,55 @@ class Game
 					}
 				}
 			}
-			$this->votings[] = $voting;
-		}
-		
-		// Was voting canceled
-		if (($this->flags & (GAME_FEATURE_FLAG_DEATH_TYPE | GAME_FEATURE_FLAG_DEATH_ROUND)) == (GAME_FEATURE_FLAG_DEATH_TYPE | GAME_FEATURE_FLAG_DEATH_ROUND))
-		{
-			// todo check how antimonster rule is set: RULES_ANTIMONSTER - RULES_ANTIMONSTER_NO_VOTING, RULES_ANTIMONSTER_NO, RULES_ANTIMONSTER_NOMINATED, RULES_ANTIMONSTER_PARTICIPATION
-			// Note that player can be shot or voted out and killed by warnings at the same time. In this case voting is not canceled even if RULES_ANTIMONSTER_NO_VOTING is set.
-			// How to support it in data?
-			foreach ($this->data->players as $player)
+			
+			// Was voting canceled
+			if ($this->flags & GAME_FEATURE_FLAG_DEATH_TIME)
 			{
-				if (
-					isset($player->death) && 
-					$player->death->type != DEATH_TYPE_NIGHT &&
-					$player->death->type != DEATH_TYPE_DAY &&
-					$player->death->round < count($this->votings))
+				// todo check how antimonster rule is set: RULES_ANTIMONSTER - RULES_ANTIMONSTER_NO_VOTING, RULES_ANTIMONSTER_NO, RULES_ANTIMONSTER_NOMINATED, RULES_ANTIMONSTER_PARTICIPATION
+				// Note that player can be shot or voted out and killed by warnings at the same time. In this case voting is not canceled even if RULES_ANTIMONSTER_NO_VOTING is set.
+				// How to support it in data?
+				$voting_end_time = new stdClass();
+				if (isset($voting->winner))
 				{
-					$this->votings[$player->death->round]->canceled = true;
+					$voting_end_time->round = $round;
+					$voting_end_time->time = GAMETIME_VOTING;
+					$voting_end_time->votingRound = $total_voting_rounds - 1;
+					if (is_numeric($voting->winner))
+					{
+						$voting_end_time->nominant = $voting->winner;
+					}
+					else
+					{
+						$voting_end_time->nominant = $voting->winner[count($voting->winner)-1];
+					}
 				}
+				else
+				{
+					$voting_end_time->round = $round + 1;
+					$voting_end_time->time = GAMETIME_SHOOTING;
+				}
+				// echo 'round: ' . $round . '<br>';
+				// print_json($voting_end_time);
+				
+				foreach ($this->data->players as $player)
+				{
+					// todo check how antimonster rule is set: RULES_ANTIMONSTER - RULES_ANTIMONSTER_NO_VOTING, RULES_ANTIMONSTER_NO, RULES_ANTIMONSTER_NOMINATED, RULES_ANTIMONSTER_PARTICIPATION
+					// Note that player can be shot or voted out and killed by warnings at the same time. In this case voting is not canceled even if RULES_ANTIMONSTER_NO_VOTING is set.
+					// How to support it in data?
+					if (
+						isset($player->death) && 
+						$player->death->type != DEATH_TYPE_NIGHT && 
+						$player->death->type != DEATH_TYPE_DAY &&
+						$this->compare_gametimes($player->death->time, $voting_end_time) < 0 &&
+						($prev_voting_end_time == NULL || $this->compare_gametimes($prev_voting_end_time, $player->death->time) <= 0))
+					{
+						$voting->canceled = true;
+					}
+				}
+				$prev_voting_end_time = $voting_end_time;
 			}
+			
+			$this->votings[] = $voting;
 		}
 	}
 	

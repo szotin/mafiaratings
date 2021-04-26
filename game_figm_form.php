@@ -17,8 +17,8 @@ try
 	
 	if ($game_id > 0)
 	{
-		list ($tournament_name, $event_name, $game_log, $is_canceled, $timezone, $moder_name) = Db::record(get_label('game'), 
-			'SELECT t.name, e.name, g.log, g.canceled, c.timezone, u.name FROM games g' .
+		list ($tournament_name, $event_name, $json, $is_canceled, $timezone, $moder_name) = Db::record(get_label('game'), 
+			'SELECT t.name, e.name, g.json, g.canceled, c.timezone, u.name FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
 			' JOIN addresses a ON a.id = e.address_id' .
 			' JOIN cities c ON c.id = a.city_id' .
@@ -26,12 +26,11 @@ try
 			' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 			' WHERE g.id = ?', $game_id);
 		
-		$gs = new GameState();
-		$gs->init_existing($game_id, $game_log, $is_canceled);
+		$game = new Game($json);
 	}
 	else
 	{
-		$gs = NULL;
+		$game = NULL;
 		$tournament_name = NULL;
 		$event_name = NULL;
 		$moder_name = NULL;
@@ -39,7 +38,7 @@ try
 	}
 	
 	$form = new FigmForm();
-	$form->add($gs, $event_name, $tournament_name, $moder_name, $timezone);
+	$form->add($game, $event_name, $tournament_name, $moder_name, $timezone);
 	$form->output();
 }
 catch (Exception $e)

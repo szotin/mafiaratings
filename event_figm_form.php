@@ -22,7 +22,7 @@ try
 	
 	$form = new FigmForm();
 	$query = new DbQuery(
-		'SELECT g.id, t.name, e.name, g.log, g.canceled, c.timezone, u.name FROM games g' .
+		'SELECT g.id, t.name, e.name, g.json, g.canceled, c.timezone, u.name FROM games g' .
 		' JOIN events e ON e.id = g.event_id' .
 		' JOIN addresses a ON a.id = e.address_id' .
 		' JOIN cities c ON c.id = a.city_id' .
@@ -31,10 +31,9 @@ try
 		' WHERE e.id = ? AND g.result > 0 ORDER BY g.end_time', $event_id);
 	while ($row = $query->next())
 	{
-		list ($game_id, $tournament_name, $event_name, $game_log, $is_canceled, $timezone, $moder_name) = $row;
-		$gs = new GameState();
-		$gs->init_existing($game_id, $game_log, $is_canceled);
-		$form->add($gs, $event_name, $tournament_name, $moder_name, $timezone);
+		list ($game_id, $tournament_name, $event_name, $json, $is_canceled, $timezone, $moder_name) = $row;
+		$game = new Game($json);
+		$form->add($game, $event_name, $tournament_name, $moder_name, $timezone);
 	}
 	$form->output();
 }

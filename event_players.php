@@ -5,7 +5,7 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
-require_once 'include/game_state.php';
+require_once 'include/game.php';
 
 define("PAGE_SIZE",15);
 
@@ -21,13 +21,17 @@ class Page extends EventPageBase
 	private function init_players()
 	{
 		$players = array();
-		$query = new DbQuery('SELECT id, log, canceled FROM games WHERE event_id = ? AND result > 0', $this->event->id);
+		$query = new DbQuery('SELECT id, json, canceled FROM games WHERE event_id = ? AND result > 0', $this->event->id);
 		while ($row = $query->next())
 		{
-			list ($id, $log, $is_canceled) = $row;
-			$gs = new GameState();
-			$gs->init_existing($id, $log, $is_canceled);
-			foreach ($gs->players as $p)
+			list ($id, $json, $is_canceled) = $row;
+			if ($is_canceled)
+			{
+				continue;
+			}
+			
+			$game = new Game($json);
+			foreach ($game->data->players as $p)
 			{
 				if (isset($players[$p->id]))
 				{
@@ -37,7 +41,7 @@ class Page extends EventPageBase
 				{
 					$player = new stdClass();
 					$player->id = $p->id;
-					$player->name = $p->nick;
+					$player->name = $p->name;
 					$player->games = 0;
 					$players[$p->id] = $player;
 				}
