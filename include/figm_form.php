@@ -343,7 +343,7 @@ class FigmForm
 			}
 			
 			$this->pdf->SetFont('Arial', '', 10);
-			$game->init_votings(false);
+			$game->init_votings();
 			$round_count = min(7, count($game->votings));
 			for ($round = 0; $round < $round_count; ++$round)
 			{

@@ -42,6 +42,16 @@ define('DEATH_TYPE_TEAM_KICK_OUT', 'teamKickOut'); // Kicked out with team loose
 define('DEATH_TYPE_NIGHT', 'night');
 define('DEATH_TYPE_DAY', 'day');
 
+define('GAME_ACTION_ARRANGEMENT', 'arrangement');
+define('GAME_ACTION_LEAVING', 'leaving');
+define('GAME_ACTION_WARNING', 'warning');
+define('GAME_ACTION_DON', 'don');
+define('GAME_ACTION_SHERIFF', 'sheriff');
+define('GAME_ACTION_LEGACY', 'legacy');
+define('GAME_ACTION_NOMINATING', 'nominating');
+define('GAME_ACTION_VOTING', 'voting');
+define('GAME_ACTION_SHOOTING', 'shooting');
+
 class Game
 {
 	public $data;
@@ -1612,6 +1622,20 @@ class Game
 		return 10;
 	}
 	
+	static function is_night($gametime)
+	{
+		switch ($gametime->time)
+		{
+			case GAMETIME_START:
+			case GAMETIME_ARRANGEMENT:
+			case GAMETIME_SHOOTING:
+			case GAMETIME_DON:
+			case GAMETIME_SHERIFF:
+				return true;
+		}
+		return false;
+	}
+	
 	function get_last_round()
 	{
 		$last_round = 0;
@@ -1639,6 +1663,34 @@ class Game
 			}
 		}
 		return $last_round;
+	}
+	
+	function get_last_gametime($including_speech = false)
+	{
+		$gametime = NULL;
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $this->data->players[$i];
+			if (isset($player->death))
+			{
+				$g = $this->get_player_death_time($i + 1, $including_speech);
+				if ($gametime == NULL || $this->compare_gametimes($gametime, $g) < 0)
+				{
+					$gametime = $g;
+				}
+			}
+			if (isset($player->warnings) && is_array($player->warnings))
+			{
+				foreach ($player->warnings as $warning)
+				{
+					if ($gametime == NULL || $this->compare_gametimes($gametime, $warning) < 0)
+					{
+						$gametime = $warning;
+					}
+				}
+			}
+		}
+		return $gametime;
 	}
 	
 	// For players who were shot this is stooting time.
@@ -1742,7 +1794,7 @@ class Game
 		return $candidate;
 	}
 	
-	function init_votings($force = true)
+	function init_votings($force = false)
 	{
 		if (!$force && isset($this->votings))
 		{
@@ -2146,6 +2198,7 @@ class Game
 						return isset($gt2->speaker) ? -1 : 1;
 					}
 					
+					$this->init_votings(); // we probably should not use votings in compare_gametimes, but this is the easiest fix
 					if ($gt1->nominant != $gt2->nominant && $gt1->round < count($this->votings))
 					{
 						$voting = $this->votings[$gt1->round];
@@ -2171,10 +2224,11 @@ class Game
 						return 1;
 					}
 					
+					$this->init_votings(); // we probably should not use votings in compare_gametimes, but this is the easiest fix
 					if ($gt1->speaker != $gt2->speaker && $gt1->round < count($this->votings))
 					{
 						$voting = $this->votings[$gt1->round];
-						foreach ($voting as $nom)
+						foreach ($voting->nominants as $nom)
 						{
 							if ($nom->nominant == $gt1->speaker)
 							{
@@ -2192,10 +2246,11 @@ class Game
 				return isset($gt2->nominant) || isset($gt2->speaker) ? -1 : 0;
 				
 			case GAMETIME_DAY_KILL_SPEAKING:
+				$this->init_votings(); // we probably should not use votings in compare_gametimes, but this is the easiest fix
 				if ($gt1->speaker != $gt2->speaker && $gt1->round < count($this->votings))
 				{
-						$voting = $this->votings[$gt1->round];
-					foreach ($voting as $nom)
+					$voting = $this->votings[$gt1->round];
+					foreach ($voting->nominants as $nom)
 					{
 						if ($nom->nominant == $gt1->speaker)
 						{
@@ -2452,7 +2507,7 @@ class Game
 		
 		if (isset($this->votings) && $reinit_votings)
 		{
-			$this->init_votings();
+			$this->init_votings(true);
 		}
 		$this->data->features = Game::feature_flags_to_leters($this->flags);
 	}
@@ -2573,6 +2628,161 @@ class Game
 		return $flags;
 	}
 	
+	function get_actions()
+	{
+		$actions = array();
+		$arrangement = NULL;
+		$shooting = array();
+		for($i = 0; $i < 10; ++$i)
+		{
+			$player = $this->data->players[$i];
+			if (isset($player->arranged))
+			{
+				if ($arrangement == NULL)
+				{
+					$arrangement = new stdClass();
+					$arrangement->round = 0;
+					$arrangement->time = GAMETIME_ARRANGEMENT;
+					$arrangement->action = GAME_ACTION_ARRANGEMENT;
+					$arrangement->players = array();
+					$actions[] = $arrangement;
+				}
+				for ($j = count($arrangement->players); $j < $player->arranged - 1; ++$j)
+				{
+					$arrangement->players[$j] = NULL;
+				}
+				$arrangement->players[$player->arranged - 1] = $i + 1;
+			}
+			if (isset($player->death))
+			{
+				$action = $this->get_player_death_time($i + 1, true);
+				$action->action = GAME_ACTION_LEAVING;
+				$action->player = $i + 1;
+				$actions[] = $action;
+			}
+			if (isset($player->warnings) && is_array($player->warnings))
+			{
+				foreach ($player->warnings as $warning)
+				{
+					$action = clone $warning;
+					$action->action = GAME_ACTION_WARNING;
+					$action->player = $i + 1;
+					$actions[] = $action;
+				}
+			}
+			if (isset($player->don))
+			{
+				$action = new stdClass();
+				$action->round = $player->don;
+				$action->time = GAMETIME_DON;
+				$action->action = GAME_ACTION_DON;
+				$action->player = $i + 1;
+				$actions[] = $action;
+			}
+			if (isset($player->sheriff))
+			{
+				$action = new stdClass();
+				$action->round = $player->sheriff;
+				$action->time = GAMETIME_SHERIFF;
+				$action->action = GAME_ACTION_SHERIFF;
+				$action->player = $i + 1;
+				$actions[] = $action;
+			}
+			if (isset($player->legacy))
+			{
+				$action = new stdClass();
+				$action->round = 1;
+				if (isset($player->dead))
+				{
+					if (is_numeric($player->dead))
+					{
+						$action->round = $player->dead;
+					}
+					else if(isset($player->dead->round))
+					{
+						$action->round = $player->dead->round;
+					}
+				}
+				$action->time = GAMETIME_NIGHT_KILL_SPEAKING;
+				$action->action = GAME_ACTION_LEGACY;
+				$action->player = $i + 1;
+				$action->legacy = $player->legacy;
+				$actions[] = $action;
+			}
+			if (isset($player->shooting))
+			{
+				for ($round = count($shooting); $round < count($player->shooting); ++$round)
+				{
+					$action = new stdClass();
+					$action->round = $round + 1;
+					$action->time = GAMETIME_SHOOTING;
+					$action->action = GAME_ACTION_SHOOTING;
+					$action->shooting = array();
+					$actions[] = $action;
+					$shooting[] = $action;
+				}
+				
+				for ($round = 0; $round < count($player->shooting); ++$round)
+				{
+					$shooting[$round]->shooting[$player->shooting[$round]][] = $i+1;
+				}
+			}
+		}
+		
+		$this->init_votings();
+		for ($round = 0; $round < count($this->votings); ++$round)
+		{
+			$voting = $this->votings[$round];
+			if (!isset($voting->nominants))
+			{
+				continue;
+			}
+			foreach ($voting->nominants as $nominant)
+			{
+				if (isset($nominant->by))
+				{
+					$action = new stdClass();
+					$action->round = $round;
+					$action->time = GAMETIME_SPEAKING;
+					$action->action = GAME_ACTION_NOMINATING;
+					$action->speaker = $nominant->by;
+					$action->nominant = $nominant->nominant;
+					$actions[] = $action;
+				}
+				if (isset($nominant->voting) && count($nominant->voting) > 0)
+				{
+					if (is_array($nominant->voting[0]))
+					{
+						for ($votingRound = 0; $votingRound < count($nominant->voting); ++$votingRound)
+						{
+							$action = new stdClass();
+							$action->round = $round;
+							$action->time = GAMETIME_VOTING;
+							$action->votingRound = $votingRound;
+							$action->nominant = $nominant->nominant;
+							$action->action = GAME_ACTION_VOTING;
+							$action->votes = $nominant->voting[$votingRound];
+							$actions[] = $action;
+						}
+					}
+					else
+					{
+						$action = new stdClass();
+						$action->round = $round;
+						$action->time = GAMETIME_VOTING;
+						$action->votingRound = 0;
+						$action->nominant = $nominant->nominant;
+						$action->action = GAME_ACTION_VOTING;
+						$action->votes = $nominant->voting;
+						$actions[] = $action;
+					}
+				}
+			}
+		}
+		usort($actions, array($this, 'compare_gametimes'));
+		return $actions;
+	}
+	
 	private static function add_time_help($param, $event)
 	{
 		$param->sub_param('round', 'round number when ' . $event . ' starting from 0');
@@ -2592,6 +2802,54 @@ class Game
 		$param->sub_param('speaker', 'an additional parameter specifying who was speaking when ' . $event . '. A number from 1 to 10. It must be set when time is one of: "speaking", "day kill speaking", or "night kill speaking". It can be set when time is "voting". When it is set for "voting" phase, this means that ' . $event . ' when one of the split players was speaking.', 'it is not applicable.');
 		$param->sub_param('votingRound', 'voting round number. It can be set when the type is "voting". For example we have 9 players: 1-2-3 voted for 4; 4-5-6 voted for 7; 7-8-9 voted for 1. We call it votingRound 0. Then: 1-2-3-5 voted for 4; 4-6-8-9 voted for 7; 7 voted for 1. We call it votingRound 1. Etc. So for example if our structure is { "time": "voting", "speaker":1, "votingRound":1 }, this means that ' . $event . ' when player 1 was speaking after the second split. If votingRound was 0 or missing, this would mean that 1 was speaking after the first split.', 'either voting round is 0, or type is not "voting"');
 		$param->sub_param('nominant', 'who were players voting for when ' . $event . '. It can only be set when time is "voting". For example: { "time":"voting", "nominant":1, "votingRound":1 } means that ' . $event . ' when town was voting for 1 in the second split (voting round 1).', $event . ' not in the voting phase.');
+	}
+	
+	function get_gametime_text($gametime, $output_player_function = 'get_player_number_html')
+	{
+		switch ($gametime->time)
+		{
+			case GAMETIME_START:
+				return get_label('at the beginning of the game');
+			case GAMETIME_ARRANGEMENT:
+				return get_label('when mafia arranges');
+			case GAMETIME_DAY_START:
+				return get_label('at the beginning of the day');
+			case GAMETIME_NIGHT_KILL_SPEAKING:
+				for ($i = 0; $i < 10; ++$i)
+				{
+					$player = $this->data->players[$i];
+					if (isset($player->death) && isset($player->death->type) && isset($player->death->round) && $player->death->type == DEATH_TYPE_NIGHT && $player->death->round == $gametime->round)
+					{
+						return get_label('during [0]\'s last speech', call_user_func($output_player_function, $this, $i+1));
+					}
+				}
+				return get_label('during night kill last speech');
+				break;
+			case GAMETIME_SPEAKING:
+				return get_label('during [0]\'s speech', call_user_func($output_player_function, $this, $gametime->speaker));
+			case GAMETIME_VOTING:
+				if (isset($gametime->nominant))
+				{
+					return get_label('during voting for [0]', call_user_func($output_player_function, $this, $gametime->nominant));
+				}
+				else if (isset($gametime->speaker))
+				{
+					return get_label('when [0] gives their 30 second speech on split', call_user_func($output_player_function, $this, $gametime->speaker));
+				}
+				return get_label('during votings');
+			case GAMETIME_DAY_KILL_SPEAKING:
+				return get_label('during [0]\'s last speech', call_user_func($output_player_function, $this, $gametime->speaker));
+				break;
+			case GAMETIME_SHOOTING:
+				return get_label('when the mafia shoots');
+			case GAMETIME_DON:
+				return get_label('when the don checks');
+			case GAMETIME_SHERIFF:
+				return get_label('when the sheriff checks');
+			case GAMETIME_END:
+				return get_label('at the end of the game');
+		}
+		return '';
 	}
 	
 	private static function feature_flags_help($param, $text)

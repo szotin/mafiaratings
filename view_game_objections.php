@@ -4,6 +4,8 @@ require_once 'include/view_game.php';
 require_once 'include/user.php';
 require_once 'include/message.php';
 
+// It is not used but I leave it as an example of using objections
+
 class Page extends ViewGamePageBase
 {
 	protected function show_body()

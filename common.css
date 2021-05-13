@@ -49,9 +49,6 @@ input.dropdown { height: 12px; margin: 0px; padding: 3px; border: 0px; }
 .dropdown-btn:hover { border: 1px solid #748080; padding: 0px; }
 .dropdown-btn:active { border: 1px solid #748080; padding: 0px; }
 
-
-
-
 h2 { padding-left: 16px;  margin: 0px; }
 h2.event { color: #168fec; }
 h2.club { color: #c42b0d; }
@@ -106,6 +103,17 @@ img.menu_image { vertical-align:middle; border: 0; text-align: left; }
 textarea.comment
 {
 	width:224px;
+	height:16px;
+	overflow:hidden;
+	border-radius:10px;
+	padding:5px;
+	resize: none;
+	font: 12px Arial;
+}
+
+textarea.wider_comment
+{
+	width:540px;
 	height:16px;
 	overflow:hidden;
 	border-radius:10px;

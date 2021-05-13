@@ -66,7 +66,7 @@ var dlg = new function()
 			'buttons': buttons
 		});
 	}
-
+	
 	this.onScreen = function()
 	{
 		return _lastId > 0;
@@ -109,7 +109,7 @@ var dlg = new function()
 		}
 		return dlg.custom(text, title, width, 
 		{
-			ok: { id:"dlg-ok", text: l("Ok"), click: function() { $(this).dialog("close"); } }
+			ok: { id:"dlg-ok", text: l("Close"), click: function() { $(this).dialog("close"); } }
 		}, onClose);
 	}
 
@@ -216,7 +216,7 @@ var dlg = new function()
 			id = '#dlg' + _lastId;
 			dlg.custom(text, title, width, 
 			{
-				ok: { id:"dlg-ok", text: l("Ok"), click: function() { $(this).dialog("close"); } }
+				ok: { id:"dlg-ok", text: l("Close"), click: function() { $(this).dialog("close"); } }
 			});
 		}
 		

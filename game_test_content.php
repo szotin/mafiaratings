@@ -12,6 +12,7 @@ define('SHOW_GAME', 'g');
 define('SHOW_VOTING', 'v');
 define('SHOW_ORIGINAL', 'o');
 define('SHOW_FIXED', 'f');
+define('SHOW_ACTIONS', 'a');
 define('DEFAULT_SHOW', 'ig');
 
 initiate_session();
@@ -144,6 +145,14 @@ try
 					{
 						show_game($fixed, get_label('Fixed version of the game'));
 					}
+					break;
+					
+				case SHOW_ACTIONS:
+					echo '<tr class="th darker"><td colspan="3">' . get_label('Game actions') . '</td></tr>';
+					$actions = $game->get_actions();
+					echo '<tr><td colspan="3">';
+					print_json($actions);
+					echo '</td></tr>';
 					break;
 			}
 		}

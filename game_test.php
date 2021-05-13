@@ -25,6 +25,9 @@ class Page extends GeneralPageBase
 		echo '</tr><tr>';
 		echo '<td width="200"><input type="checkbox" id="show-original" onclick="refresh()"> ' . get_label('show original game record') . '</td>';
 		echo '<td width="200"><input type="checkbox" id="show-fixed" onclick="refresh()"> ' . get_label('show fixed game version') . '</td>';
+		echo '</tr><tr>';
+		echo '<td width="200"><input type="checkbox" id="show-actions" onclick="refresh()"> ' . get_label('show game actions') . '</td>';
+		echo '<td width="200"></td>';
 		echo '</tr>';
 		echo '</table></td>';
 
@@ -61,6 +64,10 @@ class Page extends GeneralPageBase
 				if ($("#show-fixed").attr("checked"))
 				{
 					lastParams.show += "f";
+				}
+				if ($("#show-actions").attr("checked"))
+				{
+					lastParams.show += "a";
 				}
 				
 				if (typeof lastParams.json != "undefined")

@@ -1140,7 +1140,7 @@ var mr = new function()
 						json.post("api/ops/" + object_name + ".php", { op: "comment", id: object_id, comment: message }, function()
 						{
 							$("#comment").val("");
-							mr.showComments(object_name, object_id, limit, show_all);
+							mr.showComments(object_name, object_id, limit, show_all, edit_class);
 						});
 					}
 					return false;
