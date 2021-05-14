@@ -313,7 +313,7 @@ try
 					++$this_round;
 				}
 			}
-			echo '<big><big><table class="transp" width="100%"><tr><td>';
+			echo '<big><table class="transp" width="100%"><tr><td>';
 			for ($j = 0; $j < $prev_rounds; ++$j)
 			{
 				echo '✔';
@@ -323,7 +323,7 @@ try
 			{
 				echo '✔';
 			}
-			echo '</td></tr></table></big></big>';
+			echo '</td></tr></table></big>';
 		}
 		echo '</td>';
 		

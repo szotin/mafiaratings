@@ -4,7 +4,6 @@ require_once '../../include/api.php';
 require_once '../../include/game_stats.php';
 require_once '../../include/event.php';
 require_once '../../include/email.php';
-require_once '../../include/view_game.php';
 require_once '../../include/video.php';
 require_once '../../include/game.php';
 
