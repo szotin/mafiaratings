@@ -136,6 +136,10 @@ class Page extends GeneralPageBase
 				echo '<td class="dark" width="120">';
 				echo '<button class="icon" onclick="mr.gotoObjections(' . $game_id . ')" title="' . get_label('File an objection to the game [0] results.', $game_id) . '"><img src="images/objection.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';
+				if ($this->is_admin)
+				{
+					echo '<button class="icon" onclick="rawEditGame(' . $game_id . ')" title="' . get_label('Edit game json [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
+				}
 				//echo '<button class="icon" onclick="mr.editGame(' . $game_id . ')" title="' . get_label('Edit game [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
 				if ($video_id == NULL)
 				{
@@ -257,6 +261,17 @@ class Page extends GeneralPageBase
 	protected function get_filter_js()
 	{
 		return '+ "&results=" + $("#results").val() + "&filter=" + getGamesFilter()';
+	}
+	
+	protected function js()
+	{
+		parent::js();
+?>		
+		function rawEditGame(gameId)
+		{
+			dlg.form("form/game_raw_edit.php?game_id=" + gameId, refr, 1200);
+		}
+<?php
 	}
 }
 
