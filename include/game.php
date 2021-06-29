@@ -104,7 +104,7 @@ class Game
 				}
 				else
 				{
-					throw new Exc('The game ' . $g->id . ' is not finished yet.');
+					throw new Exc(get_label('The game [0] is not finished yet.', $g->id);
 				}
 				$this->data->moderator = new stdClass();
 				$this->data->moderator->id = $g->moder_id;

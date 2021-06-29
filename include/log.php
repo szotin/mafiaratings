@@ -224,7 +224,7 @@ function formatted_json($object, $newLine = "\n")
 	}
 	else if (is_string($object))
 	{
-		$result = '"' . $object . '"';
+		$result = '"' . addslashes($object) . '"';
 	}
 	else if (is_bool($object))
 	{

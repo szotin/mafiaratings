@@ -2,7 +2,6 @@
 
 require_once '../../include/api.php';
 require_once '../../include/video.php';
-require_once '../../include/view_game.php';
 
 define('CURRENT_VERSION', 0);
 

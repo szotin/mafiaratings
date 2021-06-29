@@ -798,14 +798,22 @@ class ApiPage extends OpsApiPageBase
 		$console = array();
 		if (isset($_REQUEST['game']))
 		{
-			$game_str = str_replace('\"', '"', $_REQUEST['game']);
+			$game_str = $_REQUEST['game'];
 			$game->create_from_json(json_decode($game_str));
 
 			$output = ($club_id != $game->club_id);
 			$data = NULL;
 			if (isset($_REQUEST['data']))
 			{
-				$data = json_decode(str_replace('\"', '"', $_REQUEST['data']));
+				// $myfile = fopen("testfile.txt", "w");
+				// fwrite($myfile, stripcslashes($_REQUEST['data']));
+				// fclose($myfile);
+				
+				$data = json_decode($_REQUEST['data']);
+				if ($data == NULL)
+				{
+					throw new Exc(get_label('Invalid json format.'));
+				}
 				if (count($data) <= 0)
 				{
 					$data = NULL;
@@ -1397,6 +1405,10 @@ class ApiPage extends OpsApiPageBase
 		
 		$game_id = (int)get_required_param('game_id');
 		$src = json_decode(get_required_param('json'));
+		if ($src == NULL)
+		{
+			throw new Exc(get_label('Invalid json format.'));
+		}
 		
 		Db::begin();
 		check_permissions(PERMISSION_ADMIN);
