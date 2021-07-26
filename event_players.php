@@ -33,6 +33,10 @@ class Page extends EventPageBase
 			$game = new Game($json);
 			foreach ($game->data->players as $p)
 			{
+				if (!isset($p->id))
+				{
+					continue;
+				}
 				if (isset($players[$p->id]))
 				{
 					$player = $players[$p->id];

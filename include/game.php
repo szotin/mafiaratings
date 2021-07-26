@@ -104,7 +104,7 @@ class Game
 				}
 				else
 				{
-					throw new Exc(get_label('The game [0] is not finished yet.', $g->id);
+					throw new Exc(get_label('The game [0] is not finished yet.', $g->id));
 				}
 				$this->data->moderator = new stdClass();
 				$this->data->moderator->id = $g->moder_id;
@@ -113,7 +113,7 @@ class Game
 				{
 					$p = $g->players[$i];
 					$player = new stdClass();
-					if ($p->id > 0)
+					if ($p->id != 0)
 					{
 						$player->id = $p->id;
 					}
