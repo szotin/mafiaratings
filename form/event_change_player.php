@@ -64,25 +64,7 @@ try
 	
 ?>	
 	<script>
-	// todo: remove in the bright future when problems with incomers and incomer_suspects will be solved
-	var INCOMERS_IMPLEMENTATION_COMPLETE = false;
-	
 	var newUserId = <?php echo $user_id; ?>;
-	var deleteButton = '<button class="icon" onclick="remove()"><img src="images/delete.png" title="<?php echo get_label('Replace [0] with a temporaty player who has no account.', $user_name); ?>"></button>';
-	setEnables();
-	
-	function setEnables()
-	{
-		if (newUserId > 0 && INCOMERS_IMPLEMENTATION_COMPLETE)
-		{
-			$("#form-del").html(deleteButton);
-		}
-		else
-		{
-			$("#form-del").html('');
-			$('#form-user').val('');
-		}
-	}
 	
 	function onSelect(_user)
 	{
@@ -94,13 +76,6 @@ try
 		{
 			newUserId = <?php echo $user_id; ?>;
 		}
-		setEnables();
-	}
-	
-	function remove()
-	{
-		newUserId = 0;
-		setEnables();
 	}
 	
 	function commit(onSuccess)

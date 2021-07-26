@@ -219,7 +219,7 @@ function show_user_input($name, $value, $condition, $title, $js_function = 'mr.g
 {
 	global $_profile, $_lang_code;
 
-	echo '<input type="text" id="' . $name . '" value="' . $value . '" title="' . $title . '"/>';
+	echo '<input type="text" id="' . $name . '" placeholder="' . get_label('Select player') . '" title="' . $title . '"/>';
 	$url = 'api/control/user.php?';
 	if (!empty($condition))
 	{
@@ -237,7 +237,8 @@ function show_user_input($name, $value, $condition, $title, $js_function = 'mr.g
 			, select: function(event, ui) { <?php echo $js_function; ?>(ui.item); }
 			, minLength: 0
 		})
-		.on("focus", function () { $(this).autocomplete("search", ''); });
+		.on("focus", function () { $(this).autocomplete("search", ''); })
+		.val("<?php echo $value; ?>");
 		</script>
 <?php
 }

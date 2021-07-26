@@ -757,17 +757,79 @@ class ApiPage extends OpsApiPageBase
 	{
 		$event_id = (int)get_required_param('event_id');
 		$user_id = (int)get_required_param('user_id');
-		$new_user_id = (int)get_optional_param('new_user_id', $user_id);
+		$new_user_id = (int)get_optional_param('new_user_id', 0);
 		$nickname = get_optional_param('nick', NULL);
 		$changed = false;
 		
 		list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
-		Db::begin();
-		if ($nickname == NULL)
+		if ($user_id == 0)
 		{
-			list($nickname) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $new_user_id);
+			throw new Exc(get_label('Unknown [0]', get_label('player')));
+		}
+		
+		Db::begin();
+		if ($user_id < 0)
+		{
+			$incomer_id = -$user_id;
+			if ($new_user_id > 0)
+			{
+				if ($nickname == NULL)
+				{
+					list($nickname) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $new_user_id);
+				}
+				
+				Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ?, nick_name = ?, incomer_id = NULL WHERE incomer_id = ? AND event_id = ?', $new_user_id, $nickname, $incomer_id, $event_id);
+				$changed = $changed || Db::affected_rows() > 0;
+				
+				Db::exec(get_label('registration'), 'DELETE FROM incomers WHERE id = ?', $incomer_id);
+				$changed = $changed || Db::affected_rows() > 0;
+			}
+			else 
+			{
+				$new_user_id = $user_id;
+				if ($nickname != NULL)
+				{
+					Db::exec(get_label('registration'), 'UPDATE registrations SET nick_name = ? WHERE incomer_id = ? AND event_id = ?', $nickname, $incomer_id, $event_id);
+					$changed = $changed || Db::affected_rows() > 0;
+					
+					Db::exec(get_label('registration'), 'UPDATE incomers SET nick_name = ? WHERE id = ?', $nickname, $incomer_id);
+					$changed = $changed || Db::affected_rows() > 0;
+				}
+			}
+		}
+		else if ($new_user_id <= 0)
+		{
+			if ($nickname == NULL)
+			{
+				list($nickname, $flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $user_id);
+			}
+			else
+			{
+				list($flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $user_id);
+			}
+				
+			Db::exec(get_label('registration'), 'INSERT INTO incomers (event_id, name, flags) VALUES (?, ?, ?)', $event_id, $nickname, $flags);
+			list ($incomer_id) = Db::record(get_label('registration'), 'SELECT LAST_INSERT_ID()');
+			$new_user_id = -$incomer_id;
+			
+			Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = NULL, nick_name = ?, incomer_id = ? WHERE user_id = ? AND event_id = ?', $nickname, $incomer_id, $user_id, $event_id);
+			$changed = $changed || Db::affected_rows() > 0;
+		}
+		else if ($user_id != $new_user_id)
+		{
+			if ($nickname == NULL)
+			{
+				list($nickname) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $new_user_id);
+			}
+			Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ?, nick_name = ? WHERE user_id = ? AND event_id = ?', $new_user_id, $nickname, $user_id, $event_id);
+			$changed = $changed || Db::affected_rows() > 0;
+		}
+		else if ($nickname != NULL)
+		{
+			Db::exec(get_label('registration'), 'UPDATE registrations SET nick_name = ? WHERE user_id = ? AND event_id = ?', $nickname, $user_id, $event_id);
+			$changed = $changed || Db::affected_rows() > 0;
 		}
 		
 		$query = new DbQuery('SELECT id, log, canceled FROM games WHERE event_id = ? AND result > 0', $event_id);
@@ -782,31 +844,6 @@ class ApiPage extends OpsApiPageBase
 				Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
 				$changed = true;
 			}
-		}
-		
-		list($new_user_registration) = Db::record(get_label('registration'), 'SELECT count(*) FROM registrations WHERE user_id = ? AND event_id = ?', $new_user_id, $event_id);
-		if ($new_user_registration > 0)
-		{
-			Db::exec(get_label('registration'), 'UPDATE registrations SET nick_name = ? WHERE user_id = ? AND event_id = ?', $nickname, $new_user_id, $event_id);
-			if (Db::affected_rows() > 0)
-			{
-				$changed = true;
-			}
-			
-			Db::exec(get_label('registration'), 'DELETE FROM registrations WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
-			if (Db::affected_rows() > 0)
-			{
-				$changed = true;
-			}
-		}
-		else
-		{
-			Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ?, nick_name = ? WHERE user_id = ? AND event_id = ?', $new_user_id, $nickname, $user_id, $event_id);
-			if (Db::affected_rows() == 0)
-			{
-				Db::exec(get_label('registration'), 'INSERT INTO registrations (club_id, user_id, nick_name, event_id) VALUES (?, ?, ?, ?)', $club_id, $new_user_id, $nickname, $event_id);
-			}
-			$changed = true;
 		}
 		
 		if ($changed)

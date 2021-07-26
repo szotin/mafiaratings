@@ -666,7 +666,7 @@ class GameState
 			return false;
 		}
 		
-		if ($this->has_played($new_user_id))
+		if ($new_user_id != $user_id && $this->has_played($new_user_id))
 		{
 			throw new Exc(get_label('Unable to change one user to another in the game [0] because they both participated in it.', $this->id));
 		}
