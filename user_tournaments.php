@@ -37,25 +37,24 @@ class Page extends UserPageBase
 		echo '</td></tr></table>';
 		
 		$condition = new SQL(
-			' FROM events e' .
-			' JOIN games g ON g.event_id = e.id' .
+			' FROM tournaments t' .
+			' JOIN games g ON g.tournament_id = t.id' .
 			' JOIN players p ON p.game_id = g.id' .
-			' JOIN addresses a ON e.address_id = a.id' .
-			' JOIN clubs c ON e.club_id = c.id' . 
-			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' . 
-			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0 AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0', $this->id);
+			' JOIN addresses a ON t.address_id = a.id' .
+			' JOIN clubs c ON t.club_id = c.id' .
+			' JOIN cities ct ON ct.id = a.city_id' . 
+			' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0 AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0', $this->id);
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
 			{
-				$condition->add(' AND e.club_id = ?', $ccc_id);
+				$condition->add(' AND t.club_id = ?', $ccc_id);
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add(' AND e.club_id IN (' . $_profile->get_comma_sep_clubs() . ')');
+				$condition->add(' AND t.club_id IN (' . $_profile->get_comma_sep_clubs() . ')');
 			}
 			break;
 		case CCCF_CITY:
@@ -66,38 +65,40 @@ class Page extends UserPageBase
 			break;
 		}
 		
-		list ($count) = Db::record(get_label('event'), 'SELECT count(DISTINCT e.id)', $condition);
+		list ($count) = Db::record(get_label('tournament'), 'SELECT count(DISTINCT t.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags, SUM(p.rating_earned), COUNT(g.id), SUM(p.won)',
+			'SELECT t.id, t.name, t.flags, t.start_time, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, SUM(p.rating_earned), COUNT(g.id), SUM(p.won)',
 			$condition);
-		$query->add(' GROUP BY e.id ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query->add(' GROUP BY t.id ORDER BY t.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
-		echo '<td colspan="2">' . get_label('Event') . '</td>';
+		echo '<td colspan="3">' . get_label('Tournament') . '</td>';
 		echo '<td width="60" align="center">'.get_label('Rating earned').'</td>';
 		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="60" align="center">'.get_label('Wins').'</td>';
 		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
 		echo '<td width="60" align="center">'.get_label('Rating per game').'</td></tr>';
 
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$club_pic = new Picture(CLUB_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tour_id, $tour_name, $tour_flags, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $rating, $games_played, $games_won) = $row;
+			list ($tournament_id, $tournament_name, $tournament_flags, $tournament_time, $timezone, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $rating, $games_played, $games_won) = $row;
 			
 			echo '<tr>';
 			
 			echo '<td width="50" class="dark">';
-			$event_pic->
-				set($event_id, $event_name, $event_flags)->
-				set($tour_id, $tour_name, $tour_flags)->
-				set($club_id, $club_name, $club_flags);
-			$event_pic->show(ICONS_DIR, true, 50);
+			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
+			$tournament_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
-			echo '<td>' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
+			echo '<td width="50" class="dark">';
+			$club_pic->set($club_id, $club_name, $club_flags);
+			$club_pic->show(ICONS_DIR, true, 50);
+			echo '</td>';
+			echo '<td>' . $tournament_name . '<br><b>' . format_date('l, F d, Y', $tournament_time, $timezone) . '</b></td>';
 			
 			echo '<td align="center" class="dark">' . number_format($rating, 2) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
@@ -137,6 +138,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Events'));
+$page->run(get_label('Tournaments'));
 
 ?>

@@ -157,6 +157,7 @@ class UserPageBase extends PageBase
 			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information')),
 			new MenuItem('user_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How [0] competes with the other players', $this->title)),
 			new MenuItem('user_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('[0] clubs', $this->title)),
+			new MenuItem('user_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->title)),
 			new MenuItem('user_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->title)),
 			new MenuItem('user_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->title)),
 			new MenuItem('#stats', get_label('Reports'), NULL, array
