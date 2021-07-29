@@ -76,28 +76,37 @@ class Page extends UserPageBase
 			
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
-		echo '<td colspan="2">' . get_label('Event') . '</td>';
+		echo '<td colspan="3">' . get_label('Event') . '</td>';
 		echo '<td width="60" align="center">'.get_label('Rating earned').'</td>';
 		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="60" align="center">'.get_label('Wins').'</td>';
 		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
 		echo '<td width="60" align="center">'.get_label('Rating per game').'</td></tr>';
 
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(CLUB_PICTURE));
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tour_id, $tour_name, $tour_flags, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $rating, $games_played, $games_won) = $row;
+			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $rating, $games_played, $games_won) = $row;
 			
 			echo '<tr>';
 			
 			echo '<td width="50" class="dark">';
-			$event_pic->
-				set($event_id, $event_name, $event_flags)->
-				set($tour_id, $tour_name, $tour_flags)->
-				set($club_id, $club_name, $club_flags);
+			$event_pic->set($event_id, $event_name, $event_flags)->set($club_id, $club_name, $club_flags);
 			$event_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
-			echo '<td>' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
+			if (is_null($tournament_id))
+			{
+				echo '<td colspan="2">';
+			}
+			else
+			{
+				echo '<td width="50" class="dark" align="center">';
+				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
+				$tournament_pic->show(ICONS_DIR, true, 40);
+				echo '</td><td>';
+			}
+			echo  $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
 			
 			echo '<td align="center" class="dark">' . number_format($rating, 2) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';

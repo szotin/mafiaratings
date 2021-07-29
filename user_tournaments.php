@@ -94,9 +94,9 @@ class Page extends UserPageBase
 			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 			$tournament_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
-			echo '<td width="50" class="dark">';
+			echo '<td width="50" class="dark" align="center">';
 			$club_pic->set($club_id, $club_name, $club_flags);
-			$club_pic->show(ICONS_DIR, true, 50);
+			$club_pic->show(ICONS_DIR, true, 40);
 			echo '</td>';
 			echo '<td>' . $tournament_name . '<br><b>' . format_date('l, F d, Y', $tournament_time, $timezone) . '</b></td>';
 			
