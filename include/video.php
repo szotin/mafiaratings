@@ -63,10 +63,10 @@ function get_youtube_info($youtube_id)
 	}
 	
 	$json = file_get_contents('https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=' . $youtube_id . '&format=json');
-	if (empty($json))
-	{
-		throw new Exc(get_label('[0] is not a valid youtube video id.', $youtube_id));
-	}
+	// if (empty($json))
+	// {
+		// throw new Exc(get_label('[0] is not a valid youtube video id.', $youtube_id));
+	// }
 	$info = json_decode($json, true);
 	return $info;
 }
