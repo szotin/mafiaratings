@@ -62,7 +62,7 @@ function get_youtube_info($youtube_id)
 		throw new Exc(get_label('Please enter a valid youtube link or youtube video id.', $youtube_id));
 	}
 	
-	$json = file_get_contents('http://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=' . $youtube_id . '&format=json');
+	$json = file_get_contents('https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=' . $youtube_id . '&format=json');
 	if (empty($json))
 	{
 		throw new Exc(get_label('[0] is not a valid youtube video id.', $youtube_id));
