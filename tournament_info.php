@@ -5,7 +5,7 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/event.php';
 
-define('COLUMN_COUNT', 5);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('ROW_COUNT', 6);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 define('COMMENTS_WIDTH', 300);

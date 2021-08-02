@@ -6,8 +6,8 @@ require_once 'include/image.php';
 require_once 'include/tournament.php';
 require_once 'include/address.php';
 
-define('PAGE_SIZE', 20);
-define('COLUMN_COUNT', 5);
+define('ROW_COUNT', DEFAULT_ROW_COUNT);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends ClubPageBase
@@ -17,7 +17,7 @@ class Page extends ClubPageBase
 		global $_page, $_lang_code, $_profile;
 		
 		$is_manager = ($_profile != NULL && $_profile->is_club_manager($this->id));
-		$page_size = PAGE_SIZE;
+		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$tournament_count = 0;
 		$column_count = 0;
 		

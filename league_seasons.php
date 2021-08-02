@@ -4,7 +4,7 @@ require_once 'include/pages.php';
 require_once 'include/league.php';
 require_once 'include/languages.php';
 
-define("PAGE_SIZE",10);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 class Page extends LeaguePageBase
 {

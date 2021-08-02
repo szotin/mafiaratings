@@ -36,7 +36,7 @@ class ApiPage extends GetApiPageBase
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);
 		$page = (int)get_optional_param('page', 0);
-		$page_size = (int)get_optional_param('page_size', DEFAULT_PAGE_SIZE);
+		$page_size = (int)get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
 		
 		$condition = new SQL(' WHERE TRUE');
 		if (!empty($name_contains))
@@ -290,7 +290,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('lod', 'Level of details. 0 - basic (default); 1 - extended. Include club name/icon, city/country name, etc. For example: <a href="tournaments.php?club=1&lod=1">' . PRODUCT_URL . '/api/get/tournaments.php?club=1&lod=1</a> returns tournaments with all the fields that have lod >= 1.', '-');
 		$help->request_param('count', 'Returns tournaments count instead of the tournaments themselves. For example: <a href="tournaments.php?name_contains=an&count">' . PRODUCT_URL . '/api/get/tournaments.php?name_contains=an&count</a> returns how many tournaments contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="tournaments.php?page=1">' . PRODUCT_URL . '/api/get/tournaments.php?page=1</a> returns the second page of tournaments by time from newest to oldest.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="tournaments.php?page_size=32">' . PRODUCT_URL . '/api/get/tournaments.php?page_size=32</a> returns first 32 tournaments; <a href="tournaments.php?page_size=0">' . PRODUCT_URL . '/api/get/tournaments.php?page_size=0</a> returns tournaments in one page; <a href="tournaments.php">' . PRODUCT_URL . '/api/get/tournaments.php</a> returns first ' . DEFAULT_PAGE_SIZE . ' tournaments by alphabet.', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="tournaments.php?page_size=32">' . PRODUCT_URL . '/api/get/tournaments.php?page_size=32</a> returns first 32 tournaments; <a href="tournaments.php?page_size=0">' . PRODUCT_URL . '/api/get/tournaments.php?page_size=0</a> returns tournaments in one page; <a href="tournaments.php">' . PRODUCT_URL . '/api/get/tournaments.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' tournaments by alphabet.', '-');
 
 		$param = $help->response_param('tournaments', 'The array of tournaments. Tournaments are always sorted in time order from newest to oldest. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'Tournament id.');

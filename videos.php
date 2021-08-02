@@ -7,9 +7,10 @@ require_once 'include/event.php';
 require_once 'include/image.php';
 require_once 'include/languages.php';
 
-define('NUM_COLUMNS', 10);
-define('COLUMN_COUNT', 4);
+define('ROW_COUNT', DEFAULT_ROW_COUNT);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
+define('PICTURE_WIDTH', (CONTENT_WIDTH / COLUMN_COUNT) - 10);
 
 class Page extends GeneralPageBase
 {
@@ -33,7 +34,7 @@ class Page extends GeneralPageBase
 			$langs = $_profile->user_langs;
 		}
 		
-		$page_size = NUM_COLUMNS * COLUMN_COUNT;
+		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$video_count = 0;
 		$column_count = 0;
 		$can_add = $_profile != NULL && $_profile->user_club_id != NULL;
@@ -83,23 +84,18 @@ class Page extends GeneralPageBase
 				echo '<tr>';
 			}
 			
-			echo '<td valign="bottom"';
+			echo '<td valign="top"';
 			echo ' width="' . COLUMN_WIDTH . '%" align="center" valign="center">';
 			
-			echo '<p><span style="position:relative;">';
-			echo '<a href="video.php?bck=1&id=' . $video_id . '&vtype=' . $video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="200" title="' . $title . '">';
-			echo '<img src="images/' . ICONS_DIR . 'lang' . $lang . '.png" title="' . $title . '" width="24" style="position:absolute; margin-left:-28px;">';
-			echo '</a></span></p><p>';
 			if ($game_id != NULL)
 			{
-				echo get_label('Game [0]: [1]', $game_id, $title);
+				echo '<p><b>' . get_label('Game [0]', $game_id) . '</b></p>';
 			}
-			else
-			{
-				echo $title;
-			}
-
-			echo '</p></td>';
+			
+			echo '<p><span style="position:relative;">';
+			echo '<a href="video.php?bck=1&id=' . $video_id . '&vtype=' . $video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="' . PICTURE_WIDTH . '" title="' . $title . '">';
+			echo '<img src="images/' . ICONS_DIR . 'lang' . $lang . '.png" title="' . $title . '" width="24" style="position:absolute; margin-left:-28px;">';
+			echo '</a></span></p><p>' . $title . '</p></td>';
 			
 			++$video_count;
 			++$column_count;

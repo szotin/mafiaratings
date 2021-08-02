@@ -7,7 +7,7 @@ require_once 'include/club.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 
-define("PAGE_SIZE",15);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 define('ROLES_COUNT', 7);
 	
 class Page extends GeneralPageBase

@@ -33,7 +33,7 @@ class ApiPage extends GetApiPageBase
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);
 		$page = (int)get_optional_param('page', 0);
-		$page_size = (int)get_optional_param('page_size', DEFAULT_PAGE_SIZE);
+		$page_size = (int)get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
 		
 		$condition = new SQL('');
 		if (!empty($started_before))
@@ -186,7 +186,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('games_filter', 'Game importance filter. A bit flag of: 1 - include tournament games; 2 - include rating games; 4 - include non-rating games. For example: <a href="games.php?games_filter=3"><?php echo PRODUCT_URL; ?>/api/get/games.php?games_filter=3</a> excludes all non-reting games from the list', '-');
 		$help->request_param('count', 'Returns game count but does not return the games. For example: <a href="games.php?user_id=25&count"><?php echo PRODUCT_URL; ?>/api/get/games.php?user_id=25&count</a> returns how many games Fantomas have played; <a href="games.php?event=7927&count"><?php echo PRODUCT_URL; ?>/api/get/games.php?event=7927&count</a> returns how many games were played in VaWaCa-2017 tournament.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="games.php?club=1&page=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1&page=1</a> returns the second page for Vancouver Mafia Club.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="games.php?club=1&page_size=32"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1&page_size=32</a> returns last 32 games for Vancouver Mafia Club; <a href="games.php?club=6&page_size=0"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=6&page_size=0</a> returns all games for Empire of Mafia club in one page; <a href="games.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1</a> returns last ' . DEFAULT_PAGE_SIZE . ' games for Vancouver Mafia Club;', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="games.php?club=1&page_size=32"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1&page_size=32</a> returns last 32 games for Vancouver Mafia Club; <a href="games.php?club=6&page_size=0"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=6&page_size=0</a> returns all games for Empire of Mafia club in one page; <a href="games.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1</a> returns last ' . API_DEFAULT_PAGE_SIZE . ' games for Vancouver Mafia Club;', '-');
 
 		$param = $help->response_param('games', 'The array of games. Games are always sorted from latest to oldest. There is no way to change sorting order in the current version of the API.');
 		Game::api_help($param);

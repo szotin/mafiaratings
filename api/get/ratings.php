@@ -203,7 +203,7 @@ class ApiPage extends GetApiPageBase
 			$in_after = (int)$_REQUEST['in_after'];
 		}
 		
-		$page_size = DEFAULT_PAGE_SIZE;
+		$page_size = API_DEFAULT_PAGE_SIZE;
 		if (isset($_REQUEST['page_size']))
 		{
 			$page_size = (int)$_REQUEST['page_size'];
@@ -434,7 +434,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('in_after', 'Unix timestamp. For example: <a href="ratings.php?in_after=1483228800">' . PRODUCT_URL . '/api/get/ratings.php?in_after=1483228800</a> returns ratings earned after January 1, 2017; <a href="ratings.php?in_after=1483228800&in_before=1485907200">' . PRODUCT_URL . '/api/get/ratings.php?in_after=1483228800&in_before=1485907200</a> returns ratings earned in January 2017', '-');
 		$help->request_param('count', 'Returns game count instead of players list. For example: <a href="ratings.php?club=1&count">' . PRODUCT_URL . '/api/get/ratings.php?club=1&count</a> returns how many players with ratings are there in Vancouver Mafia Club; <a href="ratings.php?event=7927&count">' . PRODUCT_URL . '/api/get/ratings.php?event=7927&count</a> returns how many players with ratings participated in VaWaCa-2017 tournament.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="ratings.php?club=1&page=1">' . PRODUCT_URL . '/api/get/ratings.php?club=1&page=1</a> returns the second page of ratings for Vancouver Mafia Club players.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="ratings.php?club=1&page_size=32">' . PRODUCT_URL . '/api/get/ratings.php?club=1&page_size=32</a> returns top 32 players for Vancouver Mafia Club; <a href="ratings.php?club=6&page_size=0">' . PRODUCT_URL . '/api/get/ratings.php?club=6&page_size=0</a> returns all players for Empire of Mafia club in one page; <a href="ratings.php?club=1">' . PRODUCT_URL . '/api/get/ratings.php?club=1</a> returns top ' . DEFAULT_PAGE_SIZE . ' players for Vancouver Mafia Club;', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="ratings.php?club=1&page_size=32">' . PRODUCT_URL . '/api/get/ratings.php?club=1&page_size=32</a> returns top 32 players for Vancouver Mafia Club; <a href="ratings.php?club=6&page_size=0">' . PRODUCT_URL . '/api/get/ratings.php?club=6&page_size=0</a> returns all players for Empire of Mafia club in one page; <a href="ratings.php?club=1">' . PRODUCT_URL . '/api/get/ratings.php?club=1</a> returns top ' . API_DEFAULT_PAGE_SIZE . ' players for Vancouver Mafia Club;', '-');
 
 		$param = $help->response_param('ratings', 'The array of ratings. Ratings are always sorted in descending order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('num', 'Number in the current list.');

@@ -8,7 +8,7 @@ require_once 'include/user.php';
 require_once 'include/event.php';
 require_once 'include/games.php';
 
-define("PAGE_SIZE", 20);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 class Page extends AddressPageBase
 {

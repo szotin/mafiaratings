@@ -4,7 +4,7 @@ require_once 'include/general_page_base.php';
 require_once 'include/event.php';
 require_once 'include/club.php';
 
-define('COLUMN_COUNT', 5);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends GeneralPageBase

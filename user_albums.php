@@ -7,7 +7,6 @@ require_once 'include/image.php';
 require_once 'include/photo_album.php';
 
 define("CUT_NAME",45);
-define("PAGE_SIZE",15);
 
 class Page extends UserPageBase
 {

@@ -2,8 +2,6 @@
 
 require_once 'include/league.php';
 
-define('PAGE_SIZE', 20);
-
 class Page extends LeaguePageBase
 {
 	protected function show_body()

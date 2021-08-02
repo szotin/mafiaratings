@@ -3,10 +3,6 @@
 require_once 'include/general_page_base.php';
 require_once 'include/game.php';
 
-define('COLUMN_COUNT', 5);
-define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
-define('LEGACY_SUPPORTED_SINSE', 0);
-
 class Page extends GeneralPageBase
 {
 	protected function show_body()

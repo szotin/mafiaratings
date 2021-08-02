@@ -2,8 +2,6 @@
 
 require_once 'include/general_page_base.php';
 
-define("PAGE_SIZE", 20);
-
 class Page extends GeneralPageBase
 {
 	protected function show_body()

@@ -7,7 +7,7 @@ require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/game.php';
 
-define("PAGE_SIZE",15);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 function compare_players($player1, $player2)
 {

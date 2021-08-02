@@ -8,8 +8,8 @@ require_once 'include/country.php';
 require_once 'include/image.php';
 require_once 'include/user_location.php';
 
-define('PAGE_SIZE', 30);
-define('COLUMN_COUNT', 6);
+define('ROW_COUNT', DEFAULT_ROW_COUNT);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends GeneralPageBase
@@ -82,7 +82,7 @@ class Page extends GeneralPageBase
 			break;
 		}
 		
-		$page_size = PAGE_SIZE;
+		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$column_count = 0;
 		$clubs_count = 0;
 		if ($_profile != NULL && !$retired)

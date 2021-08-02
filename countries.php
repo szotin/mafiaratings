@@ -4,7 +4,8 @@ require_once 'include/general_page_base.php';
 require_once 'include/pages.php';
 require_once 'include/country.php';
 
-define("PAGE_SIZE",20);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+
 class Page extends GeneralPageBase
 {
 	protected function show_body()

@@ -8,9 +8,10 @@ require_once 'include/user.php';
 require_once 'include/image.php';
 require_once 'include/languages.php';
 
-define('NUM_COLUMNS', 10);
-define('COLUMN_COUNT', 4);
+define('ROW_COUNT', DEFAULT_ROW_COUNT);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
+define('PICTURE_WIDTH', (CONTENT_WIDTH / COLUMN_COUNT) - 10);
 
 class Page extends UserPageBase
 {
@@ -41,7 +42,7 @@ class Page extends UserPageBase
 	{
 		global $_profile, $_page;
 		
-		$page_size = NUM_COLUMNS * COLUMN_COUNT;
+		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$video_count = 0;
 		$column_count = 0;
 		
@@ -96,14 +97,18 @@ class Page extends UserPageBase
 			echo '<td valign="bottom"';
 			echo ' width="' . COLUMN_WIDTH . '%" align="center" valign="center">';
 			
+			if ($game_id != NULL)
+			{
+				echo '<p><b>' . get_label('Game [0]', $game_id) . '</b></p>';
+			}
+			
 			echo '<p><span style="position:relative;">';
-			echo '<a href="video.php?bck=1&id=' . $video_id . '&user_id=' . $this->id . '&vtype=' . $this->video_type . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="200" title="' . $title . '">';
+			echo '<a href="video.php?bck=1&id=' . $video_id . '&user_id=' . $this->id . '&vtype=' . $this->video_type . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="' . PICTURE_WIDTH . '" title="' . $title . '">';
 			if (!is_valid_lang($this->langs))
 			{
 				echo '<img src="images/' . ICONS_DIR . 'lang' . $lang . '.png" title="' . $title . '" width="24" style="position:absolute; margin-left:-28px;">';
 			}
-			echo '</a></span></p>';
-
+			echo '</a></span></p><p>' . $title . '</p>';
 			echo '</td>';
 			
 			++$video_count;

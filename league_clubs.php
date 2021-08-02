@@ -7,7 +7,7 @@ require_once 'include/country.php';
 require_once 'include/image.php';
 require_once 'include/user_location.php';
 
-define('COLUMN_COUNT', 6);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 define('FLAG_SHOW_ACTIVE', 1);

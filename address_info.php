@@ -6,10 +6,6 @@ require_once 'include/club.php';
 require_once 'include/languages.php';
 require_once 'include/address.php';
 
-define('ADDR_COLUMN_COUNT', 5);
-define('ADDR_COLUMN_WIDTH', (100 / ADDR_COLUMN_COUNT));
-
-
 class Page extends AddressPageBase
 {
 	protected function show_body()

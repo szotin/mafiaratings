@@ -8,8 +8,6 @@ require_once 'include/address.php';
 require_once 'include/pages.php';
 require_once 'include/photo_album.php';
 
-define("PAGE_SIZE",30);
-
 class Page extends AddressPageBase
 {
 	private $link_params;

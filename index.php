@@ -11,7 +11,7 @@ require_once 'include/snapshot.php';
 require_once 'include/scoring.php';
 require_once 'include/picture.php';
 
-define('COLUMN_COUNT', 5);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('ROW_COUNT', 3);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 

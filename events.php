@@ -7,7 +7,7 @@ require_once 'include/pages.php';
 require_once 'include/event.php';
 require_once 'include/ccc_filter.php';
 
-define("PAGE_SIZE",15);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 define('ETYPE_WITH_GAMES', 0);
 define('ETYPE_NOT_CANCELED', 1);

@@ -7,7 +7,7 @@ require_once 'include/address.php';
 require_once 'include/pages.php';
 require_once 'include/tournament.php';
 
-define("PAGE_SIZE",15);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 class Page extends AddressPageBase
 {

@@ -18,7 +18,7 @@ class ApiPage extends GetApiPageBase
 		$league_id = (int)get_optional_param('league_id', -1);
 		$count_only = isset($_REQUEST['count']);
 		$page = (int)get_optional_param('page', 0);
-		$page_size = (int)get_optional_param('page_size', DEFAULT_PAGE_SIZE);
+		$page_size = (int)get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
 		
 		$condition = new SQL(' WHERE 1');
 		if ($scoring_id > 0)

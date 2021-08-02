@@ -132,6 +132,10 @@ define('POINTS_DON', 6);
 define('GAME_FLAG_FUN', 1);
 define('GAME_FLAG_SIMPLIFIED_CLIENT', 2);
 
+define('DEFAULT_PAGE_SIZE', 50);
+define('DEFAULT_ROW_COUNT', 20);
+define('DEFAULT_COLUMN_COUNT', 5);
+
 // event flags
 // 1 - 0x0001 -      1 - event should not be shown in the event list before the end of the event
 // 2 - 0x0002 -      2 - event should not be shown in the event list after the end of the event

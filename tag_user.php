@@ -4,7 +4,7 @@ require_once 'include/page_base.php';
 require_once 'include/image.php';
 require_once 'include/pages.php';
 
-define("PAGE_SIZE", 20);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 class Page extends PageBase
 {

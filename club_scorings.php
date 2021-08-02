@@ -2,8 +2,6 @@
 
 require_once 'include/club.php';
 
-define('PAGE_SIZE', 20);
-
 class Page extends ClubPageBase
 {
 	protected function show_body()

@@ -7,7 +7,7 @@ require_once 'include/pages.php';
 require_once 'include/languages.php';
 require_once 'include/address.php';
 
-define('COLUMN_COUNT', 5);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends ClubPageBase

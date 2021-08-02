@@ -8,8 +8,7 @@ require_once 'include/event.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/scoring.php';
 
-define("PAGE_SIZE",15);
-
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 define('ETYPE_ALL', 0);
 
 class Page extends UserPageBase

@@ -37,7 +37,7 @@ class ApiPage extends GetApiPageBase
 			}
 		}
 		
-		$page_size = DEFAULT_PAGE_SIZE;
+		$page_size = API_DEFAULT_PAGE_SIZE;
 		if (isset($_REQUEST['page_size']))
 		{
 			$page_size = (int)$_REQUEST['page_size'];
@@ -104,7 +104,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('country', 'Country id or country name. For example: <a href="countries.php?country=1"><?php echo PRODUCT_URL; ?>/api/get/countries.php?country=1</a> returns information about Canada; <a href="countries.php?country=russia"><?php echo PRODUCT_URL; ?>/api/get/countries.php?country=russia</a> returns information about Russia.', '-');
 		$help->request_param('count', 'Returns countries count instead of the countries themselves. For example: <a href="countries.php?contains=an&count"><?php echo PRODUCT_URL; ?>/api/get/countries.php?contains=an&count</a> returns how many countries contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="countries.php?page=1"><?php echo PRODUCT_URL; ?>/api/get/countries.php?page=1</a> returns the second page of countries by alphabet.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="countries.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/countries.php?page_size=32</a> returns first 32 countries; <a href="countries.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/countries.php?page_size=0</a> returns countries in one page; <a href="countries.php"><?php echo PRODUCT_URL; ?>/api/get/countries.php</a> returns first ' . DEFAULT_PAGE_SIZE . ' countries by alphabet.', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="countries.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/countries.php?page_size=32</a> returns first 32 countries; <a href="countries.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/countries.php?page_size=0</a> returns countries in one page; <a href="countries.php"><?php echo PRODUCT_URL; ?>/api/get/countries.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' countries by alphabet.', '-');
 		
 		$param = $help->response_param('countries', 'The array of countries. Countries are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'Country id.');

@@ -3,10 +3,6 @@
 require_once 'include/session.php';
 require_once 'include/game.php';
 
-define('COLUMN_COUNT', 5);
-define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
-define('LEGACY_SUPPORTED_SINCE', 1366393836);
-
 define('SHOW_ISSUES', 'i');
 define('SHOW_GAME', 'g');
 define('SHOW_VOTING', 'v');

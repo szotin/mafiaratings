@@ -3,8 +3,6 @@
 require_once 'include/club.php';
 require_once 'include/league.php';
 
-define('PAGE_SIZE', 20);
-
 class Page extends ClubPageBase
 {
 	protected function show_body()

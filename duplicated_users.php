@@ -3,7 +3,7 @@
 require_once 'include/general_page_base.php';
 require_once 'include/pages.php';
 
-define("PAGE_SIZE", 40);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 class Page extends GeneralPageBase
 {

@@ -27,7 +27,7 @@ class ApiPage extends GetApiPageBase
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);
 		$page = (int)get_optional_param('page', 0);
-		$page_size = (int)get_optional_param('page_size', DEFAULT_PAGE_SIZE);
+		$page_size = (int)get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
 		
 		$condition = new SQL(' WHERE (c.flags & ?) = 0', CLUB_FLAG_RETIRED);
 		if ($name_contains != '')
@@ -194,7 +194,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('scoring_id', 'Scoring id. For example: <a href="clubs.php?scoring_id=21">' . PRODUCT_URL . '/api/get/clubs.php?scoring_id=21</a> returns all clubs using VaWaCa scoring.', '-');
 		$help->request_param('count', 'Returns clubs count instead of the clubs themselves. For example: <a href="clubs.php?contains=an&count"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?contains=an&count</a> returns how many clubs contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="clubs.php?page=1"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page=1</a> returns the second page of clubs by alphabet.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="clubs.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page_size=32</a> returns first 32 clubs; <a href="clubs.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page_size=0</a> returns clubs in one page; <a href="clubs.php"><?php echo PRODUCT_URL; ?>/api/get/clubs.php</a> returns first ' . DEFAULT_PAGE_SIZE . ' clubs by alphabet.', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="clubs.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page_size=32</a> returns first 32 clubs; <a href="clubs.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/clubs.php?page_size=0</a> returns clubs in one page; <a href="clubs.php"><?php echo PRODUCT_URL; ?>/api/get/clubs.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' clubs by alphabet.', '-');
 
 		$param = $help->response_param('clubs', 'The array of clubs. Clubs are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'Club id.');

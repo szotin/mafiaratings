@@ -8,7 +8,7 @@ require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/event.php';
 
-define('COLUMN_COUNT', 5);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('ROW_COUNT', 2);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 

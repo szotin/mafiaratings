@@ -4,7 +4,7 @@ require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/api_help.php';
 
-define('DEFAULT_PAGE_SIZE', 16);
+define('API_DEFAULT_PAGE_SIZE', 30);
 
 class ApiPageBase
 {

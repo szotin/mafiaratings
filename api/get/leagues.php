@@ -23,7 +23,7 @@ class ApiPage extends GetApiPageBase
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);
 		$page = (int)get_optional_param('page', 0);
-		$page_size = (int)get_optional_param('page_size', DEFAULT_PAGE_SIZE);
+		$page_size = (int)get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
 		
 		$condition = new SQL(' WHERE (l.flags & ?) = 0', LEAGUE_FLAG_RETIRED);
 		if ($name_contains != '')
@@ -191,7 +191,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('rules_code', 'Rules code. For example: <a href="leagues.php?rules_code=00100000000100200300000120000">' . PRODUCT_URL . '/api/get/leagues.php?rules_code=00100000000100200300000120000</a> returns all leagues where the rules with the code 00100000000100200300000120000 are allowed. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('count', 'Returns leagues count instead of the leagues themselves. For example: <a href="leagues.php?contains=an&count"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?contains=an&count</a> returns how many leagues contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="leagues.php?page=1"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?page=1</a> returns the second page of leagues by alphabet.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is ' . DEFAULT_PAGE_SIZE . '. For example: <a href="leagues.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?page_size=32</a> returns first 32 leagues; <a href="leagues.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?page_size=0</a> returns leagues in one page; <a href="leagues.php"><?php echo PRODUCT_URL; ?>/api/get/leagues.php</a> returns first ' . DEFAULT_PAGE_SIZE . ' leagues by alphabet.', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="leagues.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?page_size=32</a> returns first 32 leagues; <a href="leagues.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?page_size=0</a> returns leagues in one page; <a href="leagues.php"><?php echo PRODUCT_URL; ?>/api/get/leagues.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' leagues by alphabet.', '-');
 
 		$param = $help->response_param('leagues', 'The array of leagues. Leagues are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'League id.');

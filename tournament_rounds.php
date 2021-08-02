@@ -6,8 +6,8 @@ require_once 'include/image.php';
 require_once 'include/event.php';
 require_once 'include/address.php';
 
-define('COLUMN_COUNT', 5);
-define('ROW_COUNT', 6);
+define('ROW_COUNT', DEFAULT_ROW_COUNT);
+define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends TournamentPageBase

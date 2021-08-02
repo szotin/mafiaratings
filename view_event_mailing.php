@@ -5,7 +5,7 @@ require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/event_mailing.php';
 
-define("PAGE_SIZE",40);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 class Page extends PageBase
 {

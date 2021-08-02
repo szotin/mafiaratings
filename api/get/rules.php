@@ -15,7 +15,7 @@ class ApiPage extends GetApiPageBase
 		$event_id = (int)get_optional_param('event_id');
 		$tournament_id = (int)get_optional_param('tournament_id');
 		$club_id = (int)get_optional_param('club_id');
-		$page_size = (int)get_optional_param('page_size', DEFAULT_PAGE_SIZE);
+		$page_size = (int)get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
 		$page = (int)get_optional_param('page');
 		$detailed = isset($_REQUEST['detailed']) || (isset($_REQUEST['lod']) && $_REQUEST['lod'] > 0);
 		

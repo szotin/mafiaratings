@@ -3,7 +3,7 @@
 require_once 'include/club.php';
 require_once 'include/pages.php';
 
-define('PAGE_SIZE', 20);
+define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 class Page extends ClubPageBase
 {
