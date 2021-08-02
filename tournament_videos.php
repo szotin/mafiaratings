@@ -88,7 +88,7 @@ class Page extends TournamentPageBase
 			' JOIN clubs c ON c.id = v.club_id' .
 			' JOIN tournaments t ON t.id = e.tournament_id' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
-			' WHERE t.id = ? AND v.type = ? AND (v.lang & ?) <> 0 ORDER BY v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size, $this->id, $this->video_type, $langs);
+			' WHERE t.id = ? AND v.type = ? AND (v.lang & ?) <> 0 ORDER BY g.start_time DESC, v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size, $this->id, $this->video_type, $langs);
 		while ($row = $query->next())
 		{
 			list($video_id, $video, $title, $lang, $game_id, $club_id, $club_name, $club_flags, $tournament_id, $tournament_name, $tournament_flags) = $row;

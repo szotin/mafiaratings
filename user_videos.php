@@ -61,7 +61,7 @@ class Page extends UserPageBase
 			$query->add('(');
 		}
 		$query->add(
-			'SELECT v.id as video_id, v.video, v.name, v.lang, v.post_time as post_time, g.id, c.id, c.name, c.flags, e.id, e.name, e.flags FROM user_videos u' .
+			'SELECT v.id as video_id, v.video, v.name, v.lang, v.post_time as post_time, g.id, g.start_time as start_time, c.id, c.name, c.flags, e.id, e.name, e.flags FROM user_videos u' .
 			' JOIN videos v ON u.video_id = v.id' .
 			' JOIN clubs c ON c.id = v.club_id' .
 			' LEFT OUTER JOIN events e ON e.id = v.event_id' .
@@ -70,17 +70,17 @@ class Page extends UserPageBase
 		if ($this->video_type == VIDEO_TYPE_GAME)
 		{
 			$query->add(
-				') UNION (SELECT v.id as video_id, v.video, v.name, v.lang, v.post_time as post_time, g.id, c.id, c.name, c.flags, e.id, e.name, e.flags FROM players p' .
+				') UNION (SELECT v.id as video_id, v.video, v.name, v.lang, v.post_time as post_time, g.id, g.start_time as start_time, c.id, c.name, c.flags, e.id, e.name, e.flags FROM players p' .
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN videos v ON g.video_id = v.id' .
 				' JOIN clubs c ON c.id = v.club_id' .
 				' LEFT OUTER JOIN events e ON e.id = v.event_id' .
 				' WHERE p.user_id = ? AND v.type = ?)', $this->id, $this->video_type);
 		}
-		$query->add(' ORDER BY post_time DESC, video_id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+		$query->add(' ORDER BY start_time DESC, post_time DESC, video_id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		while ($row = $query->next())
 		{
-			list($video_id, $video, $title, $lang, $post_time, $game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags) = $row;
+			list($video_id, $video, $title, $lang, $post_time, $game_id, $game_start_time, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags) = $row;
 			if ($column_count == 0)
 			{
 				if ($video_count == 0)
