@@ -160,12 +160,16 @@ class Page extends PageBase
 		echo '<table class="bordered light" width="100%"><tr><td>';
 		echo '<table class="transp" width="100%"><tr height="80"><td align="center">';
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		if ($this->event_id != NULL)
+		if ($this->tour_id != NULL)
 		{
-			$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, $this->club_pic));
-			$event_pic->
-				set($this->event_id, $this->event_name, $this->event_flags)->
-				set($this->tour_id, $this->tour_name, $this->tour_flags);
+			$tour_pic = new Picture(TOURNAMENT_PICTURE, $this->club_pic);
+			$tour_pic->set($this->tour_id, $this->tour_name, $this->tour_flags);
+			$tour_pic->show(ICONS_DIR, true, 64);
+		}
+		else if ($this->event_id != NULL)
+		{
+			$event_pic = new Picture(EVENT_PICTURE);
+			$event_pic->set($this->event_id, $this->event_name, $this->event_flags);
 			$event_pic->show(ICONS_DIR, true, 64);
 		}
 		else

@@ -48,10 +48,6 @@ class Page extends PageBase
 			throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 		}
 		
-		$this->user_pic = new Picture(USER_PICTURE);
-		$this->event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE));
-		$this->address_pic = new Picture(ADDRESS_PICTURE);
-		
 		list (
 			$this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
 			$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $this->moder_id, $this->moder_name, $this->moder_flags, 
@@ -67,6 +63,10 @@ class Page extends PageBase
 				' JOIN users m ON m.id = g.moderator_id' .
 				' WHERE g.id = ?',
 			$this->id);
+		
+		$this->user_pic = new Picture(USER_PICTURE);
+		$this->event_pic = new Picture($this->tournament_id == NULL ? EVENT_PICTURE : TOURNAMENT_PICTURE);
+		$this->address_pic = new Picture(ADDRESS_PICTURE);
 		
 		$this->game = new Game($json);
 		
@@ -93,13 +93,21 @@ class Page extends PageBase
 					$state = get_label('Mafia wins.');
 					break;
 			}
-			if ($this->flags & GAME_FLAG_FUN)
+			if ($this->tournament_name == NULL)
 			{
-				$this->_title = get_label('Game [0] (non-rating). [1]', $this->id, $state);
+				$this->_title = $this->event_name . '. ';
 			}
 			else
 			{
-				$this->_title = get_label('Game [0]. [1]', $this->id, $state);
+				$this->_title = $this->tournament_name . ': ' . $this->event_name . '. ';
+			}
+			if ($this->flags & GAME_FLAG_FUN)
+			{
+				$this->_title .= get_label('Game [0] (non-rating). [1]', $this->id, $state);
+			}
+			else
+			{
+				$this->_title .= get_label('Game [0]. [1]', $this->id, $state);
 			}
 		}
 		
@@ -262,7 +270,7 @@ class Page extends PageBase
 		// Game info icons
 		echo '<table class="transp" width="100%"><tr>';
 		echo '<td rowspan="2"><table class="bordered">';
-		echo '<tr align="center" class="th dark" padding="5px"><td width="90">' . get_label('Club') . '</td><td width="90">' . get_label('Event') . '</td><td width="90">' . get_label('Address') . '</td><td width="90">' . get_label('Moderator') . '</td><td width="90">'.get_label('Time').'</td><td width="90">'.get_label('Duration').'</td><td width="90">'.get_label('Language').'</td>';
+		echo '<tr align="center" class="th dark" padding="5px"><td width="90">' . get_label('Club') . '</td><td width="90">' . ($this->tournament_id == NULL ? get_label('Event') : get_label('Tournament')) . '</td><td width="90">' . get_label('Address') . '</td><td width="90">' . get_label('Moderator') . '</td><td width="90">'.get_label('Time').'</td><td width="90">'.get_label('Duration').'</td><td width="90">'.get_label('Language').'</td>';
 		if ($this->civ_odds >= 0 && $this->civ_odds <= 1)
 		{
 			echo '<td width="90">'.get_label('Civs odds').'</td>';
@@ -276,9 +284,14 @@ class Page extends PageBase
 		$this->club_pic->show(ICONS_DIR, true, 48);
 		echo '</td><td>';
 		
-		$this->event_pic->
-			set($this->event_id, $this->event_name, $this->event_flags)->
-			set($this->tournament_id, $this->tournament_name, $this->tournament_flags);
+		if ($this->tournament_id == NULL)
+		{
+			$this->event_pic->set($this->event_id, $this->event_name, $this->event_flags);
+		}
+		else
+		{
+			$this->event_pic->set($this->tournament_id, $this->tournament_name, $this->tournament_flags);
+		}
 		$this->event_pic->show(ICONS_DIR, true, 48);
 		
 		echo '</td><td>';
