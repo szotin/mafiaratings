@@ -3,7 +3,7 @@
 require_once '../include/session.php';
 require_once '../include/user.php';
 
-define('COLUMN_COUNT', 12);
+define('COLUMN_COUNT', 11);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 initiate_session();
@@ -49,13 +49,13 @@ try
 	$remaining_columns = 0;
 	if ($game_id == NULL)
 	{
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, v.tagged_by_id FROM user_videos v JOIN users u ON u.id = v.user_id WHERE v.video_id = ? ORDER BY u.name', $video_id);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, v.tagged_by_id, 0 FROM user_videos v JOIN users u ON u.id = v.user_id WHERE v.video_id = ? ORDER BY u.name', $video_id);
 	}
 	else
 	{
 		$query = new DbQuery(
-			'(SELECT u.id, u.name as name, u.flags, NULL FROM players p JOIN users u ON u.id = p.user_id WHERE p.game_id = ?) UNION ' .
-			'(SELECT u.id, u.name as name, u.flags, NULL FROM games g  JOIN users u ON u.id = g.moderator_id WHERE g.id = ?) ORDER BY name', $game_id, $game_id);
+			'(SELECT u.id, u.name as name, u.flags, NULL, p.number as number FROM players p JOIN users u ON u.id = p.user_id WHERE p.game_id = ?) UNION ' .
+			'(SELECT u.id, u.name as name, u.flags, NULL, 0 as number FROM games g  JOIN users u ON u.id = g.moderator_id WHERE g.id = ?) ORDER BY number', $game_id, $game_id);
 	}
 	while ($row = $query->next())
 	{
@@ -71,7 +71,7 @@ try
 		}
 		--$remaining_columns;
 		
-		list ($user_id, $user_name, $user_flags, $tagged_by) = $row;
+		list ($user_id, $user_name, $user_flags, $tagged_by, $number) = $row;
 		
 		echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
 		$can_untag = false;
@@ -79,12 +79,26 @@ try
 		{
 			$can_untag = ($can_manage || $user_id == $self_id);
 		}
+		else
+		{
+			echo '<p><b>';
+			if ($number > 0)
+			{
+				echo $number;
+			}
+			else
+			{
+				echo get_label('Moderator');
+			}
+			echo '</b></p>';
+		}
 		
 		if ($can_untag)
 		{
 			echo '<table class="transp" width="100%"><tr><td align="center">';
 		}
-		echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
+		
+		echo '<p><a href="user_info.php?bck=1&id=' . $user_id . '">';
 		$user_pic->set($user_id, $user_name, $user_flags);
 		$user_pic->show(ICONS_DIR, false, 48);
 		echo '<br>' . $user_name;
@@ -95,7 +109,7 @@ try
 			echo '<br><button class="icon" onclick="mr.untagVideo(' . $user_id . ', ' . $video_id . ')" title="' . get_label('Untag [0]', $user_name) . '"><img src="images/delete.png" border="0"></button>';
 			echo '</td></tr></table>';
 		}
-		echo '</td>';
+		echo '</p></td>';
 	}
 	if ($remaining_columns > 0)
 	{
