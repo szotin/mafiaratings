@@ -229,5 +229,23 @@ class TournamentPageBase extends PageBase
 		echo '</table>';
 	}
 }
+
+function tournament_stars_str($stars)
+{
+	$stars_str = '';
+	for ($i = 0; $i < floor($stars) && $i < 5; ++$i)
+	{
+		$stars_str .= '★';
+	}
+	for (; $i < $stars && $i < 5; ++$i)
+	{
+		$stars_str .= '✯';
+	}
+	for (; $i < 5; ++$i)
+	{
+		$stars_str .= '☆';
+	}
+	return $stars_str;
+}
 	
 ?>

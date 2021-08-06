@@ -10,24 +10,6 @@ require_once '../../include/image.php';
 
 define('CURRENT_VERSION', 0);
 
-function stars_str($stars)
-{
-	$stars_str = '';
-	for ($i = 0; $i < floor($stars) && $i < 5; ++$i)
-	{
-		$stars_str .= '★';
-	}
-	for (; $i < $stars && $i < 5; ++$i)
-	{
-		$stars_str .= '✯';
-	}
-	for (; $i < 5; ++$i)
-	{
-		$stars_str .= '☆';
-	}
-	return $stars_str;
-}
-
 function create_event($event_name, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $league_id)
 {
 	Db::exec(
@@ -368,7 +350,7 @@ class ApiPage extends OpsApiPageBase
 					'tournament_id' => new Tag($tournament_id),
 					'tournament_name' => new Tag($name),
 					'stars' => new Tag($stars),
-					'stars_str' => new Tag(stars_str($stars)),
+					'stars_str' => new Tag(tournament_stars_str($stars)),
 					'club_id' => new Tag($club_id),
 					'club_name' => new Tag($club->name),
 					'sender' => new Tag($_profile->user_name));
@@ -570,7 +552,7 @@ class ApiPage extends OpsApiPageBase
 							'tournament_id' => new Tag($tournament_id),
 							'tournament_name' => new Tag($name),
 							'stars' => new Tag($stars),
-							'stars_str' => new Tag(stars_str($stars)),
+							'stars_str' => new Tag(tournament_stars_str($stars)),
 							'club_id' => new Tag($club_id),
 							'club_name' => new Tag($club->name),
 							'sender' => new Tag($_profile->user_name));
