@@ -14,26 +14,26 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		$club_id = 0;
-		if (isset($_REQUEST['club_id']))
-		{
-			$club_id = (int)$_REQUEST['club_id'];
-		}
-		
-		$event_id = NULL;
 		if (isset($_REQUEST['event_id']))
 		{
 			$event_id = (int)$_REQUEST['event_id'];
-			if ($club_id == 0)
-			{
-				list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
-			}
+			list($club_id, $tournament_id) = Db::record(get_label('club'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
 		}
-		
-		if ($club_id == 0)
+		else if (isset($_REQUEST['tournament_id']))
+		{
+			$event_id = NULL;
+			$tournament_id = (int)$_REQUEST['tournament_id'];
+			list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		}
+		else if (isset($_REQUEST['club_id']))
+		{
+			$club_id = (int)$_REQUEST['club_id'];
+			$event_id = $tournament_id = NULL;
+		}
+		else
 		{
 			// No localization because this is an assert. The calling code must fix it.
-			throw new Exc('Neither "event_id" nor "club_id" are set in ' . $this->title . ': create');
+			throw new Exc('Please set one of: event_id, tournament_id, or club_id. ' . $this->title . ': create');
 		}
 		check_permissions(PERMISSION_CLUB_MEMBER, $club_id);
 		
@@ -50,16 +50,13 @@ class ApiPage extends OpsApiPageBase
 			$video_time = $post_time;
 		}
 		
-		$vtype = VIDEO_TYPE_LEARNING;
+		$vtype = VIDEO_TYPE_CUSTOM;
 		if (isset($_REQUEST['vtype']))
 		{
 			$t = (int)$_REQUEST['vtype'];
-			switch ($t)
+			if ($t >= VIDEO_TYPE_MIN && $t <= VIDEO_TYPE_MAX)
 			{
-				case VIDEO_TYPE_LEARNING:
-				case VIDEO_TYPE_GAME:
-					$vtype = $t;
-					break;
+				$vtype = $t;
 			}
 		}
 		
@@ -91,8 +88,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id, vtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$title, $video, $vtype, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id, $vtime);
+		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id, vtime, tournament_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$title, $video, $vtype, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id, $vtime, $tournament_id);
 		list ($video_id) = Db::record(get_label('video'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -100,6 +97,14 @@ class ApiPage extends OpsApiPageBase
 		$log_details->type = $vtype;
 		$log_details->lang = $lang;
 		$log_details->time = $video_time;
+		if ($event_id != NULL)
+		{
+			$log_details->event_id = $event_id;
+		}
+		if ($tournament_id != NULL)
+		{
+			$log_details->tournament_id = $tournament_id;
+		}
 		db_log(LOG_OBJECT_VIDEO, 'created', $log_details, $video_id, $club_id);
 		
 		Db::commit();
@@ -114,11 +119,15 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param(
 			'club_id', 
 			'Id of the club this video belongs to.', 
-			'<q>event_id</q> must be set. A video must belong to a club or event.');
+			'<q>event_id</q> or <q>tournament_id</q> must be set. A video must belong to a club, tournament, or event.');
 		$help->request_param(
 			'event_id', 
 			'Id of the event this video belongs to.', 
-			'<q>club_id</q> must be set. A video must belong to a club or event.');
+			'<q>club_id</q> or <q>tournament_id</q> must be set. A video must belong to a club, tournament, or event.');
+		$help->request_param(
+			'tournament_id', 
+			'Id of the tournament this video belongs to.', 
+			'<q>club_id</q> or <q>event_id</q> must be set. A video must belong to a club, tournament, or event.');
 		$help->request_param(
 			'time', 
 			'Unix timestamp of the time when this video was recorded.', 
@@ -171,12 +180,9 @@ class ApiPage extends OpsApiPageBase
 		if (isset($_REQUEST['vtype']))
 		{
 			$t = (int)$_REQUEST['vtype'];
-			switch ($t)
+			if ($t >= VIDEO_TYPE_MIN && $t <= VIDEO_TYPE_MAX)
 			{
-				case VIDEO_TYPE_LEARNING:
-				case VIDEO_TYPE_GAME:
-					$type = $t;
-					break;
+				$vtype = $t;
 			}
 		}
 		
@@ -293,7 +299,7 @@ class ApiPage extends OpsApiPageBase
 		$post_time = time();
 		
 		Db::begin();
-		list($club_id, $event_id, $video_time, $lang, $old_video) = Db::record(get_label('game'), 'SELECT g.club_id, g.event_id, g.start_time, g.language, v.video FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $game_id);
+		list($club_id, $event_id, $tournament_id, $video_time, $lang, $old_video) = Db::record(get_label('game'), 'SELECT g.club_id, g.event_id, g.tournament_id, g.start_time, g.language, v.video FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, $club_id);
 		
 		if ($old_video != NULL)
@@ -301,7 +307,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please remove old video first'));
 		}
 		
-		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id, vtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $title, $video, VIDEO_TYPE_GAME, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id, $vtime);
+		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id, vtime, tournament_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $title, $video, VIDEO_TYPE_GAME, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id, $vtime, $tournament_id);
 		list ($video_id) = Db::record(get_label('video'), 'SELECT LAST_INSERT_ID()');
 		Db::exec(get_label('game'), 'UPDATE games SET video_id = ? WHERE id = ?', $video_id, $game_id);
 		

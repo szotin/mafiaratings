@@ -21,21 +21,12 @@ class Page extends UserPageBase
 	{
 		parent::prepare();
 		
-		$this->video_type = VIDEO_TYPE_LEARNING;
+		$this->video_type = -1;
 		if (isset($_REQUEST['vtype']))
 		{
 			$this->video_type = (int)$_REQUEST['vtype'];
 		}
-		
-		switch ($this->video_type)
-		{
-			case VIDEO_TYPE_LEARNING:
-				$this->_title = get_label('Learning Videos');
-				break;
-			case VIDEO_TYPE_GAME:
-				$this->_title = get_label('Game Videos');
-				break;
-		}
+		$this->_title = get_videos_title($this->video_type);
 	}
 	
 	protected function show_body()
@@ -46,41 +37,49 @@ class Page extends UserPageBase
 		$video_count = 0;
 		$column_count = 0;
 		
-		list ($count1) = Db::record(get_label('video'), 'SELECT count(*) FROM user_videos u JOIN videos v ON v.id = u.video_id WHERE u.user_id = ? AND v.type = ?', $this->id, $this->video_type);
-		list ($count2) = Db::record(get_label('video'), 'SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id JOIN videos v ON v.id = g.video_id WHERE p.user_id = ? AND v.type = ?', $this->id, $this->video_type);
+		$condition = new SQL();
+		if ($this->video_type >= 0)
+		{
+			$condition->add(' AND v.type = ?', $this->video_type);
+		}
+		
+		list ($count1) = Db::record(get_label('video'), 'SELECT count(*) FROM user_videos u JOIN videos v ON v.id = u.video_id WHERE u.user_id = ?', $this->id, $condition);
+		list ($count2) = Db::record(get_label('video'), 'SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id JOIN videos v ON v.id = g.video_id WHERE p.user_id = ?', $this->id, $condition);
 		$count = $count1 + $count2;
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
-		show_pages_navigation($page_size, $count);
+		show_video_type_select($this->video_type, 'vtype', 'filter()');
 		echo '</td><td align="right">';
 		echo '</tr></table></p>';
+		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery();
-		if ($this->video_type == VIDEO_TYPE_GAME)
+		if ($this->video_type <= VIDEO_TYPE_GAME)
 		{
 			$query->add('(');
 		}
 		$query->add(
-			'SELECT v.id as video_id, v.video, v.name, v.lang, v.post_time as post_time, g.id, g.start_time as start_time, c.id, c.name, c.flags, e.id, e.name, e.flags FROM user_videos u' .
+			'SELECT v.id as video_id, v.video, v.name, v.lang, v.type, v.post_time as post_time, g.id, g.start_time as start_time, c.id, c.name, c.flags, e.id, e.name, e.flags FROM user_videos u' .
 			' JOIN videos v ON u.video_id = v.id' .
 			' JOIN clubs c ON c.id = v.club_id' .
 			' LEFT OUTER JOIN events e ON e.id = v.event_id' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
-			' WHERE u.user_id = ? AND v.type = ?', $this->id, $this->video_type);
-		if ($this->video_type == VIDEO_TYPE_GAME)
+			' WHERE u.user_id = ?', $this->id, $condition);
+		if ($this->video_type <= VIDEO_TYPE_GAME)
 		{
 			$query->add(
-				') UNION (SELECT v.id as video_id, v.video, v.name, v.lang, v.post_time as post_time, g.id, g.start_time as start_time, c.id, c.name, c.flags, e.id, e.name, e.flags FROM players p' .
+				') UNION (SELECT v.id as video_id, v.video, v.name, v.lang, v.type, v.post_time as post_time, g.id, g.start_time as start_time, c.id, c.name, c.flags, e.id, e.name, e.flags FROM players p' .
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN videos v ON g.video_id = v.id' .
 				' JOIN clubs c ON c.id = v.club_id' .
 				' LEFT OUTER JOIN events e ON e.id = v.event_id' .
-				' WHERE p.user_id = ? AND v.type = ?)', $this->id, $this->video_type);
+				' WHERE p.user_id = ?', $this->id, $condition);
+			$query->add(')');
 		}
 		$query->add(' ORDER BY start_time DESC, post_time DESC, video_id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		while ($row = $query->next())
 		{
-			list($video_id, $video, $title, $lang, $post_time, $game_id, $game_start_time, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags) = $row;
+			list($video_id, $video, $title, $lang, $type, $post_time, $game_id, $game_start_time, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags) = $row;
 			if ($column_count == 0)
 			{
 				if ($video_count == 0)
@@ -94,22 +93,29 @@ class Page extends UserPageBase
 				echo '<tr>';
 			}
 			
-			echo '<td valign="bottom"';
+			echo '<td valign="top"';
 			echo ' width="' . COLUMN_WIDTH . '%" align="center" valign="center">';
 			
-			if ($game_id != NULL)
+			echo '<table width="100%" class="transp"><tr class="darker" style="height: 30px;" align="center"><td><b>';
+			if (is_null($game_id))
 			{
-				echo '<p><b>' . get_label('Game [0]', $game_id) . '</b></p>';
+				echo get_video_title($type);
 			}
+			else
+			{
+				echo get_label('Game [0]', $game_id);
+			}
+			echo '</b></td></tr>';
 			
-			echo '<p><span style="position:relative;">';
+			echo '<tr><td><span style="position:relative;">';
 			echo '<a href="video.php?bck=1&id=' . $video_id . '&user_id=' . $this->id . '&vtype=' . $this->video_type . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="' . PICTURE_WIDTH . '" title="' . $title . '">';
 			if (!is_valid_lang($this->langs))
 			{
 				echo '<img src="images/' . ICONS_DIR . 'lang' . $lang . '.png" title="' . $title . '" width="24" style="position:absolute; margin-left:-28px;">';
 			}
-			echo '</a></span></p><p>' . $title . '</p>';
-			echo '</td>';
+			echo '</a></span></td></tr>';
+			echo '<tr><td align="center">' . $title . '</td></tr>';
+			echo '</table>';
 			
 			++$video_count;
 			++$column_count;
@@ -134,7 +140,7 @@ class Page extends UserPageBase
 ?>
 		function filter()
 		{
-			goTo({ 'langs': mr.getLangs() });
+			goTo({ 'langs': mr.getLangs(), vtype: $('#vtype').val(), page: 0 });
 		}
 <?php	
 	}

@@ -1155,7 +1155,7 @@ var mr = new function()
 		var val = elem.scrollHeight;
 		var h = elem.offsetHeight;
 		var cal = parseInt(h) - 2;
-		if(val > cal)
+		if (val > cal)
 		{
 			var fontSize = parseInt($('#comment').css("fontSize"));
 			cal = cal + fontSize;
@@ -1166,16 +1166,22 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// videos
 	//--------------------------------------------------------------------------------------
-	this.createVideo = function(vtype, clubId, eventId)
+	this.createVideo = function(vtype, clubId, eventId, tournamentId)
 	{
-		if (typeof eventId != "undefined")
+		var url = "form/video_create.php?vtype=" + vtype;
+		if (typeof clubId != "undefined" && clubId != null)
 		{
-			dlg.form("form/video_create.php?event=" + eventId + "&vtype=" + vtype, refr, 600);
+			url += '&club_id=' + clubId;
 		}
-		else
+		if (typeof eventId != "undefined" && eventId != null)
 		{
-			dlg.form("form/video_create.php?club=" + clubId + "&vtype=" + vtype, refr, 600);
+			url += '&event_id=' + eventId;
 		}
+		if (typeof tournamentId != "undefined" && tournamentId != null)
+		{
+			url += '&tournament_id=' + tournamentId;
+		}
+		dlg.form(url, refr, 600);
 	}
 	
 	this.editVideo = function(videoId)

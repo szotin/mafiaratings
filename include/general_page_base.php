@@ -67,8 +67,7 @@ class GeneralPageBase extends PageBase
 			(
 				new MenuItem('rules.php', get_label('Rulebook'), get_label('Rules of the game in [0]', PRODUCT_NAME)),
 				new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums')),
-				new MenuItem('videos.php' . $ccc . $delim . 'vtype=' . VIDEO_TYPE_GAME, get_label('Game videos'), get_label('Game videos from various tournaments.')),
-				new MenuItem('videos.php' . $ccc . $delim . 'vtype=' . VIDEO_TYPE_LEARNING, get_label('Learning videos'), get_label('Masterclasses, lectures, seminars.')),
+				new MenuItem('videos.php' . $ccc, get_label('Videos'), get_label('Videos from various events.')),
 				// new MenuItem('tasks.php' . $ccc, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
 				// new MenuItem('articles.php' . $ccc, get_label('Articles'), get_label('Books and articles.')),
 				// new MenuItem('links.php' . $ccc, get_label('Links'), get_label('Links to custom mafia web sites.')),

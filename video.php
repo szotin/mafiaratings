@@ -95,12 +95,17 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
-		$type = $this->type;
+		$condition = new SQL();
+		$type = VIDEO_TYPE_NONE;
 		if (isset($_REQUEST['vtype']))
 		{
 			$type = (int)$_REQUEST['vtype'];
 		}
-		$condition = new SQL(' AND type = ?', $type);
+		
+		if ($type >= VIDEO_TYPE_MIN && $type <= VIDEO_TYPE_MAX)
+		{
+			$condition->add(' AND type = ?', $type);
+		}
 
 		if (isset($_REQUEST['langs']))
 		{

@@ -67,5 +67,53 @@ function get_youtube_info($youtube_id)
 	return $info;
 }
 
+function get_videos_title($video_type)
+{
+	switch ($video_type)
+	{
+		case VIDEO_TYPE_GAME:
+			return get_label('Game videos');
+		case VIDEO_TYPE_LEARNING:
+			return get_label('Learning videos');
+		case VIDEO_TYPE_AWARD:
+			return get_label('Award ceremony videos');
+		case VIDEO_TYPE_PARTY:
+			return get_label('Party videos');
+	}
+	return get_label('Videos');
+}
+
+function get_video_title($video_type)
+{
+	switch ($video_type)
+	{
+		case VIDEO_TYPE_GAME:
+			return get_label('Game video');
+		case VIDEO_TYPE_LEARNING:
+			return get_label('Learning video');
+		case VIDEO_TYPE_AWARD:
+			return get_label('Award ceremony video');
+		case VIDEO_TYPE_PARTY:
+			return get_label('Party video');
+	}
+	return get_label('Video');
+}
+
+function show_video_type_select($video_type, $select_id, $on_change)
+{
+	echo '<select id="' . $select_id . '"';
+	if ($on_change != NULL)
+	{
+		echo ' onchange="' . $on_change . '"';
+	}
+	echo '>';
+	show_option(-1, $video_type, get_label('All videos'));
+	show_option(VIDEO_TYPE_GAME, $video_type, get_label('Game videos'));
+	show_option(VIDEO_TYPE_LEARNING, $video_type, get_label('Learning videos'));
+	show_option(VIDEO_TYPE_AWARD, $video_type, get_label('Award ceremony videos'));
+	show_option(VIDEO_TYPE_PARTY, $video_type, get_label('Party videos'));
+	show_option(VIDEO_TYPE_CUSTOM, $video_type, get_label('Custom videos'));
+	echo '</select>';
+}
 
 ?>
