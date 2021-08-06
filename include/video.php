@@ -72,13 +72,13 @@ function get_videos_title($video_type)
 	switch ($video_type)
 	{
 		case VIDEO_TYPE_GAME:
-			return get_label('Game videos');
+			return get_label('Games');
 		case VIDEO_TYPE_LEARNING:
-			return get_label('Learning videos');
+			return get_label('Lectures');
 		case VIDEO_TYPE_AWARD:
-			return get_label('Award ceremony videos');
+			return get_label('Award ceremonies');
 		case VIDEO_TYPE_PARTY:
-			return get_label('Party videos');
+			return get_label('Parties');
 	}
 	return get_label('Videos');
 }
@@ -88,13 +88,13 @@ function get_video_title($video_type)
 	switch ($video_type)
 	{
 		case VIDEO_TYPE_GAME:
-			return get_label('Game video');
+			return get_label('Game');
 		case VIDEO_TYPE_LEARNING:
-			return get_label('Learning video');
+			return get_label('Lecture');
 		case VIDEO_TYPE_AWARD:
-			return get_label('Award ceremony video');
+			return get_label('Award ceremony');
 		case VIDEO_TYPE_PARTY:
-			return get_label('Party video');
+			return get_label('Party');
 	}
 	return get_label('Video');
 }
@@ -108,11 +108,11 @@ function show_video_type_select($video_type, $select_id, $on_change)
 	}
 	echo '>';
 	show_option(-1, $video_type, get_label('All videos'));
-	show_option(VIDEO_TYPE_GAME, $video_type, get_label('Game videos'));
-	show_option(VIDEO_TYPE_LEARNING, $video_type, get_label('Learning videos'));
-	show_option(VIDEO_TYPE_AWARD, $video_type, get_label('Award ceremony videos'));
-	show_option(VIDEO_TYPE_PARTY, $video_type, get_label('Party videos'));
-	show_option(VIDEO_TYPE_CUSTOM, $video_type, get_label('Custom videos'));
+	show_option(VIDEO_TYPE_GAME, $video_type, get_label('Games'));
+	show_option(VIDEO_TYPE_LEARNING, $video_type, get_label('Lectures'));
+	show_option(VIDEO_TYPE_AWARD, $video_type, get_label('Award ceremonies'));
+	show_option(VIDEO_TYPE_PARTY, $video_type, get_label('Parties'));
+	show_option(VIDEO_TYPE_CUSTOM, $video_type, get_label('Other'));
 	echo '</select>';
 }
 
