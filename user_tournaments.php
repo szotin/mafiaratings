@@ -43,7 +43,7 @@ class Page extends UserPageBase
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = a.city_id' . 
-			' JOIN leagues l ON l.id = t.league_id' . 
+			' LEFT OUTER JOIN leagues l ON l.id = t.league_id' . 
 			' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0 AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0', $this->id);
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
