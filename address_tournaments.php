@@ -72,7 +72,7 @@ class Page extends AddressPageBase
 			echo '<br>' . format_date('F d, Y', $tournament_time, $timezone) . '</a></td>';
 			if ($videos_count > 0)
 			{
-				echo '<td align="right"><a href="tournament_videos.php?id=' . $tournament_id . '&bck=1" title="' . get_label('Videos from [0]', $tournament_name) . '"><img src="images/video.png"></a></td>';
+				echo '<td align="right"><a href="tournament_videos.php?id=' . $tournament_id . '&bck=1" title="' . get_label('Videos from [0]', $tournament_name) . '"><img src="images/video.png" width="40" height="40"></a></td>';
 			}
 			echo '</tr></table>';
 			echo '</td>';
