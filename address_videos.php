@@ -67,7 +67,7 @@ class Page extends AddressPageBase
 			' JOIN clubs c ON c.id = e.club_id' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
 			' WHERE e.address_id = ?', $this->id, $condition);
-		$query->add(' ORDER BY g.start_time DESC, v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+		$query->add(' ORDER BY v.video_time DESC, v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		while ($row = $query->next())
 		{
 			list($video_id, $video, $title, $lang, $type, $game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags) = $row;
