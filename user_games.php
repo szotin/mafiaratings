@@ -5,9 +5,20 @@ require_once 'include/player_stats.php';
 require_once 'include/pages.php';
 require_once 'include/scoring.php';
 require_once 'include/event.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+
+define('FLAG_FILTER_VIDEO', 0x0001);
+define('FLAG_FILTER_NO_VIDEO', 0x0002);
+define('FLAG_FILTER_TOURNAMENT', 0x0004);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0008);
+define('FLAG_FILTER_RATING', 0x0010);
+define('FLAG_FILTER_NO_RATING', 0x0020);
+define('FLAG_FILTER_CANCELED', 0x0040);
+define('FLAG_FILTER_NO_CANCELED', 0x0080);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
 
 class Page extends UserPageBase
 {
@@ -27,13 +38,45 @@ class Page extends UserPageBase
 			$result_filter = (int)$_REQUEST['result'];
 		}
 		
-		$filter = GAMES_FILTER_ALL;
+		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		$condition = get_games_filter_condition($filter);
+		$condition = new SQL();
+		if ($filter & FLAG_FILTER_VIDEO)
+		{
+			$condition->add(' AND g.video_id IS NOT NULL');
+		}
+		if ($filter & FLAG_FILTER_NO_VIDEO)
+		{
+			$condition->add(' AND g.video_id IS NULL');
+		}
+		if ($filter & FLAG_FILTER_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($filter & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($filter & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($filter & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
+		if ($filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.canceled <> 0');
+		}
+		if ($filter & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.canceled = 0');
+		}
 		
 		echo '<p>';
 		echo '<select id="moder" onChange = "filterChanged()">';
@@ -57,7 +100,7 @@ class Page extends UserPageBase
 			show_option(1, $result_filter, get_label('Town wins'));
 			show_option(2, $result_filter, get_label('Mafia wins'));
 			echo '</select>';
-			show_games_filter($filter, 'filterChanged');
+			show_checkbox_filter(array(get_label('games with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 			echo '</p>';
 			
 			switch ($result_filter)
@@ -199,7 +242,7 @@ class Page extends UserPageBase
 			show_option(4, $result_filter, get_label('[0] losses', $this->name));
 			echo '</select> ';
 			show_roles_select($roles, 'filterChanged()', get_label('Games where [0] was in a specific role.', $this->name), ROLE_NAME_FLAG_SINGLE);
-			show_games_filter($filter, 'filterChanged');
+			show_checkbox_filter(array(get_label('games with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 			echo '</p>';
 			
 			$condition->add(get_roles_condition($roles));
@@ -374,7 +417,7 @@ class Page extends UserPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({roles: $('#roles').val(), result: $('#result').val(), moder: $('#moder').val(), filter: getGamesFilter() });
+			goTo({roles: $('#roles').val(), result: $('#result').val(), moder: $('#moder').val(), filter: checkboxFilterFlags() });
 		}
 <?php
 	}

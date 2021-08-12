@@ -4,7 +4,14 @@ require_once 'include/user.php';
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/scoring.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
+
+define('FLAG_FILTER_TOURNAMENT', 0x0001);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
+define('FLAG_FILTER_RATING', 0x0004);
+define('FLAG_FILTER_NO_RATING', 0x0008);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
 
 class Page extends UserPageBase
 {
@@ -22,7 +29,7 @@ class Page extends UserPageBase
 			$roles = (int)$_REQUEST['roles'];
 		}
 		
-		$filter = GAMES_FILTER_RATING;
+		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
@@ -40,10 +47,27 @@ class Page extends UserPageBase
 		echo '</select> ';
 		show_roles_select($roles, 'filterChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
 		echo ' ';
-		show_games_filter($filter, 'filterChanged', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table>';
 		
-		$stats = new PlayerStats($this->id, $club_id, $roles, $filter);
+		$condition = new SQL();
+		if ($filter & FLAG_FILTER_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($filter & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($filter & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($filter & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
+		$stats = new PlayerStats($this->id, $club_id, $roles, $condition);
 		
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr class="th-short darker"><td colspan="2">' . get_label('Playing') . '</td></tr>';
@@ -323,7 +347,7 @@ class Page extends UserPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({filter: getGamesFilter(), club: $('#club').val(), roles: $('#roles').val()});
+			goTo({filter: checkboxFilterFlags(), club: $('#club').val(), roles: $('#roles').val()});
 		}
 <?php
 	}

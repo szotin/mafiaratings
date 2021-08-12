@@ -4,9 +4,14 @@ require_once 'include/tournament.php';
 require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/user.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+
+define('FLAG_FILTER_RATING', 0x0001);
+define('FLAG_FILTER_NO_RATING', 0x0002);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
 
 class Page extends TournamentPageBase
 {
@@ -14,7 +19,7 @@ class Page extends TournamentPageBase
 	{
 		global $_page;
 		
-		$filter = GAMES_FILTER_RATING;
+		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
@@ -22,10 +27,18 @@ class Page extends TournamentPageBase
 		
 		echo '<p>';
 		echo '<table class="transp" width="100%"><tr><td>';
-		show_games_filter($filter, 'filterChanged', GAMES_FILTER_NO_TOURNAMENT | GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		show_checkbox_filter(array(get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 		
-		$condition = get_games_filter_condition($filter);
+		$condition = new SQL();
+		if ($filter & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($filter & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -92,7 +105,7 @@ class Page extends TournamentPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({filter: getGamesFilter()});
+			goTo({filter: checkboxFilterFlags()});
 		}
 <?php
 	}

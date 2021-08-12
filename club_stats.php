@@ -4,7 +4,14 @@ require_once 'include/page_base.php';
 require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
+
+define('FLAG_FILTER_TOURNAMENT', 0x0001);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
+define('FLAG_FILTER_RATING', 0x0004);
+define('FLAG_FILTER_NO_RATING', 0x0008);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
 
 class Page extends ClubPageBase
 {
@@ -30,7 +37,7 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_lang_code;
 		
-		$filter = GAMES_FILTER_RATING;
+		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
@@ -39,11 +46,26 @@ class Page extends ClubPageBase
 		echo '<table class="transp" width="100%"><tr><td>';
 		$this->season = show_club_seasons_select($this->id, $this->season, 'filterChanged()', get_label('Show stats of a specific season.'));
 		echo ' ';
-		show_games_filter($filter, 'filterChanged', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table>';
 		
 		$condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
-		$condition->add(get_games_filter_condition($filter));
+		if ($filter & FLAG_FILTER_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($filter & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($filter & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($filter & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
 
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.club_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $condition);
 		
@@ -172,7 +194,7 @@ class Page extends ClubPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({filter: getGamesFilter(), season: $('#season').val()});
+			goTo({filter: checkboxFilterFlags(), season: $('#season').val()});
 		}
 <?php
 	}

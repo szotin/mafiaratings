@@ -6,9 +6,20 @@ require_once 'include/address.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/event.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+
+define('FLAG_FILTER_VIDEO', 0x0001);
+define('FLAG_FILTER_NO_VIDEO', 0x0002);
+define('FLAG_FILTER_TOURNAMENT', 0x0004);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0008);
+define('FLAG_FILTER_RATING', 0x0010);
+define('FLAG_FILTER_NO_RATING', 0x0020);
+define('FLAG_FILTER_CANCELED', 0x0040);
+define('FLAG_FILTER_NO_CANCELED', 0x0080);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
 
 class Page extends AddressPageBase
 {
@@ -26,7 +37,7 @@ class Page extends AddressPageBase
 			}
 		}
 		
-		$filter = GAMES_FILTER_ALL;
+		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
@@ -42,7 +53,7 @@ class Page extends AddressPageBase
 			show_option(0, $result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
-		show_games_filter($filter, 'filterChanged');
+		show_checkbox_filter(array(get_label('games with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 
 		$condition = new SQL(' WHERE e.address_id = ?', $this->id);
@@ -55,7 +66,38 @@ class Page extends AddressPageBase
 			$condition->add(' AND g.result = ?', $result_filter);
 		}
 		
-		$condition->add(get_games_filter_condition($filter));
+		if ($filter & FLAG_FILTER_VIDEO)
+		{
+			$condition->add(' AND g.video_id IS NOT NULL');
+		}
+		if ($filter & FLAG_FILTER_NO_VIDEO)
+		{
+			$condition->add(' AND g.video_id IS NULL');
+		}
+		if ($filter & FLAG_FILTER_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($filter & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($filter & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($filter & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
+		if ($filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.canceled <> 0');
+		}
+		if ($filter & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.canceled = 0');
+		}
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -201,7 +243,7 @@ class Page extends AddressPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({results: $('#results').val(), filter: getGamesFilter() });
+			goTo({results: $('#results').val(), filter: checkboxFilterFlags() });
 		}
 <?php
 	}

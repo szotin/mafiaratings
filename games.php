@@ -6,15 +6,26 @@ require_once 'include/club.php';
 require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/ccc_filter.php';
+require_once 'include/checkbox_filter.php';
 require_once 'include/user.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+
+define('FLAG_FILTER_VIDEO', 0x0001);
+define('FLAG_FILTER_NO_VIDEO', 0x0002);
+define('FLAG_FILTER_TOURNAMENT', 0x0004);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0008);
+define('FLAG_FILTER_RATING', 0x0010);
+define('FLAG_FILTER_NO_RATING', 0x0020);
+define('FLAG_FILTER_CANCELED', 0x0040);
+define('FLAG_FILTER_NO_CANCELED', 0x0080);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
 
 class Page extends GeneralPageBase
 {
 	private $result_filter;
-	private $with_video;
 	private $is_admin;
 
 	protected function prepare()
@@ -35,16 +46,10 @@ class Page extends GeneralPageBase
 			}
 		}
 		
-		$this->with_video = 0;
-		if (isset($_REQUEST['video']))
-		{
-			$this->with_video = (int)$_REQUEST['video'];
-		}
-		
-		$this->filter = GAMES_FILTER_ALL;
+		$this->flag_filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
-			$this->filter = (int)$_REQUEST['filter'];
+			$this->flag_filter = (int)$_REQUEST['filter'];
 		}
 	}
 
@@ -66,12 +71,38 @@ class Page extends GeneralPageBase
 			$condition->add(' WHERE g.result = ?', $this->result_filter);
 		}
 		
-		if ($this->with_video)
+		if ($this->flag_filter & FLAG_FILTER_VIDEO)
 		{
 			$condition->add(' AND g.video_id IS NOT NULL');
 		}
-		
-		$condition->add(get_games_filter_condition($this->filter));
+		if ($this->flag_filter & FLAG_FILTER_NO_VIDEO)
+		{
+			$condition->add(' AND g.video_id IS NULL');
+		}
+		if ($this->flag_filter & FLAG_FILTER_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($this->flag_filter & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($this->flag_filter & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($this->flag_filter & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
+		if ($this->flag_filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.canceled <> 0');
+		}
+		if ($this->flag_filter & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.canceled = 0');
+		}
 		
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
@@ -255,12 +286,12 @@ class Page extends GeneralPageBase
 			show_option(0, $this->result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
-		show_games_filter($this->filter, 'filter');
+		show_checkbox_filter(array(get_label('games with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->flag_filter, 'filter');
 	}
 	
 	protected function get_filter_js()
 	{
-		return '+ "&results=" + $("#results").val() + "&filter=" + getGamesFilter()';
+		return '+ "&results=" + $("#results").val() + "&filter=" + checkboxFilterFlags()';
 	}
 	
 	protected function js()

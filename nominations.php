@@ -4,7 +4,14 @@ require_once 'include/general_page_base.php';
 require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
+
+define('FLAG_FILTER_TOURNAMENT', 0x0001);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
+define('FLAG_FILTER_RATING', 0x0004);
+define('FLAG_FILTER_NO_RATING', 0x0008);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
 
 class Page extends GeneralPageBase
 {
@@ -49,7 +56,7 @@ class Page extends GeneralPageBase
 			array(get_label('Checked by sheriff'), 'SUM(IF(p.checked_by_sheriff >= 0, 1, 0))', 'count(*)', 1),
 		);
 		
-		$this->filter = GAMES_FILTER_RATING;
+		$this->filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$this->filter = (int)$_REQUEST['filter'];
@@ -69,7 +76,22 @@ class Page extends GeneralPageBase
 		
 		date_default_timezone_set(get_timezone());
 		$this->condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
-		$this->condition->add(get_games_filter_condition($this->filter));
+		if ($this->filter & FLAG_FILTER_TOURNAMENT)
+		{
+			$this->condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($this->filter & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$this->condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($this->filter & FLAG_FILTER_RATING)
+		{
+			$this->condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($this->filter & FLAG_FILTER_NO_RATING)
+		{
+			$this->condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
 		
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.canceled = FALSE AND g.result > 0 ', $this->condition);
 		$this->condition->add(get_roles_condition($this->roles));
@@ -231,7 +253,7 @@ class Page extends GeneralPageBase
 			}
 		}
 		echo '</select> ';
-		show_games_filter($this->filter, 'filter', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter, 'filter');
 	}
 	
 	protected function show_search_fields()
@@ -246,7 +268,7 @@ class Page extends GeneralPageBase
 	
 	protected function get_filter_js()
 	{
-		return '+ "&season=" + $("#season").val() + "&roles=" + $("#roles").val() + "&min=" + $("#min").val() + "&nom=" + $("#nom").val() + "&sort=" + sort + "&filter=" + getGamesFilter()';
+		return '+ "&season=" + $("#season").val() + "&roles=" + $("#roles").val() + "&min=" + $("#min").val() + "&nom=" + $("#nom").val() + "&sort=" + sort + "&filter=" + checkboxFilterFlags()';
 	}
 	
 	protected function js()

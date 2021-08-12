@@ -10,8 +10,9 @@ require_once 'include/ccc_filter.php';
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 define('ETYPE_WITH_GAMES', 0);
-define('ETYPE_NOT_CANCELED', 1);
-define('ETYPE_ALL', 2);
+define('ETYPE_WITH_VIDEOS', 1);
+define('ETYPE_NOT_CANCELED', 2);
+define('ETYPE_ALL', 3);
 
 class Page extends GeneralPageBase
 {
@@ -55,9 +56,11 @@ class Page extends GeneralPageBase
 			break;
 		}
 		
-		
 		switch ($this->events_type)
 		{
+			case ETYPE_WITH_VIDEOS:
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0 AND EXISTS (SELECT v.id FROM videos v WHERE v.event_id = e.id)');
+				break;
 			case ETYPE_NOT_CANCELED:
 				$condition->add(' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0');
 				break;
@@ -77,34 +80,47 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags,' .
 			' (SELECT count(*) FROM games WHERE event_id = e.id AND result IN (1, 2)) as games,' .
-			' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users',
+			' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users,' .
+			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);
 		$query->add(' ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
 		echo '<td colspan="2">' . get_label('Event') . '</td>';
-		echo '<td>' . get_label('Address') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Games played') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Players attended') . '</td></tr>';
 		
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE));
+		$club_pic = new Picture(CLUB_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tour_id, $tour_name, $tour_flags, $club_id, $club_name, $club_flags, $languages, $addr_id, $addr, $addr_flags, $games_count, $users_count) = $row;
+			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tour_id, $tour_name, $tour_flags, $club_id, $club_name, $club_flags, $languages, $addr_id, $addr, $addr_flags, $games_count, $users_count, $videos_count) = $row;
 			
+			if ($tour_name != NULL)
+			{
+				$event_name = $tour_name . ': ' . $event_name;
+			}
 			echo '<tr>';
 			
-			echo '<td width="50" class="dark">';
-			$event_pic->
-				set($event_id, $event_name, $event_flags)->
-				set($tour_id, $tour_name, $tour_flags)->
-				set($club_id, $club_name, $club_flags);
-			$event_pic->show(ICONS_DIR, true, 50);
+			echo '<td width="60" class="dark">';
+			$event_pic->set($event_id, $event_name, $event_flags)->set($tour_id, $tour_name, $tour_flags);
+			$event_pic->show(ICONS_DIR, true, 60);
 			echo '</td>';
-			echo '<td width="180">' . $event_name . '<br><b>' . format_date('l, F d, Y', $event_time, $timezone) . '</b></td>';
 			
-			echo '<td>' . $addr . '</td>';
+			echo '<td><table width="100%" class="transp"><tr>';
+			echo '<td width="60" align="center" valign="center">';
+			$club_pic->set($club_id, $club_name, $club_flags);
+			$club_pic->show(ICONS_DIR, false, 40);
+			echo '</td><td>';
+			echo '<b><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
+			echo '<br>' . format_date('F d, Y', $event_time, $timezone) . '</a></td>';
+			if ($videos_count > 0)
+			{
+				echo '<td align="right"><a href="event_videos.php?id=' . $event_id . '&bck=1" title="' . get_label('[0] videos from [1]', $videos_count, $event_name) . '"><img src="images/video.png" width="40" height="40"></a></td>';
+			}
+			echo '</tr></table>';
+			echo '</td>';
 			
 			echo '<td align="center"><a href="event_games.php?bck=1&id=' . $event_id . '">' . $games_count . '</a></td>';
 			echo '<td align="center"><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
@@ -118,6 +134,7 @@ class Page extends GeneralPageBase
 	{
 		echo '<select id="etype" onchange="filter()">';
 		show_option(ETYPE_WITH_GAMES, $this->events_type, get_label('Events'));
+		show_option(ETYPE_WITH_VIDEOS, $this->events_type, get_label('Events with video'));
 		show_option(ETYPE_NOT_CANCELED, $this->events_type, get_label('Events including empty'));
 		show_option(ETYPE_ALL, $this->events_type, get_label('Events including canceled'));
 		echo '</select>';

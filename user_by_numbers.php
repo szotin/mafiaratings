@@ -4,7 +4,7 @@ require_once 'include/user.php';
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/scoring.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
 
 define('SORT_TYPE_BY_NUMBERS', 0);
 define('SORT_TYPE_BY_GAMES', 1);
@@ -16,7 +16,15 @@ define('SORT_TYPE_BY_DON_CHECK', 6);
 define('SORT_TYPE_BY_KILLED_NIGHT', 7);
 define('SORT_TYPE_BY_KILLED_FIRST_NIGHT', 8);
 
+define('FLAG_FILTER_TOURNAMENT', 0x0001);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
+define('FLAG_FILTER_RATING', 0x0004);
+define('FLAG_FILTER_NO_RATING', 0x0008);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
+
 $sort_type = SORT_TYPE_BY_WIN * 2 + 1;
+
 function compare_numbers($row1, $row2)
 {
 	global $sort_type;
@@ -173,7 +181,7 @@ class Page extends UserPageBase
 			$roles = (int)$_REQUEST['roles'];
 		}
 		
-		$filter = GAMES_FILTER_RATING;
+		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
@@ -192,7 +200,7 @@ class Page extends UserPageBase
 		echo '</select> ';
 		show_roles_select($roles, 'filterChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
 		echo ' ';
-		show_games_filter($filter, 'filterChanged', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 
 		$numbers = array();
@@ -200,7 +208,22 @@ class Page extends UserPageBase
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
 			' FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id);
 		$query->add(get_roles_condition($roles));
-		$query->add(get_games_filter_condition($filter));
+		if ($filter & FLAG_FILTER_TOURNAMENT)
+		{
+			$query->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($filter & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$query->add(' AND g.tournament_id IS NULL');
+		}
+		if ($filter & FLAG_FILTER_RATING)
+		{
+			$query->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($filter & FLAG_FILTER_NO_RATING)
+		{
+			$query->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
 		if ($club_id > 0)
 		{
 			$query->add(' AND g.club_id = ?', $club_id);
@@ -272,7 +295,7 @@ class Page extends UserPageBase
 ?>		
 		function filterChanged()
 		{
-			goTo({ roles: $('#roles').val(), filter: getGamesFilter(), club: $('#club').val() });
+			goTo({ roles: $('#roles').val(), filter: checkboxFilterFlags(), club: $('#club').val() });
 		}
 <?php
 	}

@@ -2,7 +2,6 @@
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/scoring.php';
-require_once __DIR__ . '/games.php';
 
 define("AVERAGE_PLAYER", -1);
 define("ROLE_CIVIL", 1);
@@ -45,7 +44,6 @@ class PlayerStats
 	public $guess2maf;
 	
 	public $roles;
-	public $game_filter;
 	
     public $voted_civil;
     public $voted_mafia;
@@ -71,12 +69,11 @@ class PlayerStats
 	
 	// if $user_id <= 0: gives stats of an average player
 	// if $club_id <= 0: gives stats for all clubs
-	function __construct($user_id, $club_id, $roles, $game_filter)
+	function __construct($user_id, $club_id, $roles, $condition)
 	{
 		$this->club_id = $club_id;
 		$this->user_id = $user_id;
 		$this->roles = $roles;
-		$this->game_filter = $game_filter;
 		
 		$this->games_played = 0;
 		$this->games_won = 0;
@@ -100,14 +97,11 @@ class PlayerStats
 		$this->surviving = array();
 		$this->version1_games_played = 0;
 		
-		$condition = new SQL(' FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE');
 		$condition->add(get_roles_condition($roles));
-		$condition->add(get_games_filter_condition($game_filter));
 		if ($club_id > 0)
 		{
 			$condition->add(' AND g.club_id = ?', $club_id);
 		}
-		
 		$count = 1; 
 		if ($user_id > 0)
 		{
@@ -115,7 +109,7 @@ class PlayerStats
 		}
 		else
 		{
-			list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id)', $condition);
+			list ($count) = Db::record(get_label('player'), 'SELECT count(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE', $condition);
 			if ($count <= 0)
 			{
 				$count = 1;
@@ -131,7 +125,8 @@ class PlayerStats
 				'SUM(p.warns), SUM(IF(p.was_arranged >= 0, 1, 0)), ' .
 				'SUM(IF(p.checked_by_don >= 0, 1, 0)), SUM(IF(p.checked_by_sheriff >= 0, 1, 0)), ' .
 				'SUM(IF(g.log_version > 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)), ' .
-				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0)) ',
+				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0)) ' .
+				' FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE',
 			$condition);
 		
 		$row = $query->record(get_label('player'));
@@ -163,7 +158,7 @@ class PlayerStats
 			$this->guess2maf = $row[23] / $count;
 		}
 		
-		$query = new DbQuery('SELECT p.kill_round, p.kill_type, count(*)', $condition);
+		$query = new DbQuery('SELECT p.kill_round, p.kill_type, count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE', $condition);
 		$query->add(' GROUP BY p.kill_type, p.kill_round ORDER BY p.kill_round, p.kill_type');
 		while ($row = $query->next())
 		{

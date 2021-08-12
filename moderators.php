@@ -5,9 +5,16 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/user.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+
+define('FLAG_FILTER_TOURNAMENT', 0x0001);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
+define('FLAG_FILTER_RATING', 0x0004);
+define('FLAG_FILTER_NO_RATING', 0x0008);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
 
 class Page extends GeneralPageBase
 {
@@ -25,7 +32,7 @@ class Page extends GeneralPageBase
 		
 		$this->ccc_title = get_label('Filter moderators by club, city, or country.');
 		
-		$this->filter = GAMES_FILTER_RATING;
+		$this->filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$this->filter = (int)$_REQUEST['filter'];
@@ -74,7 +81,22 @@ class Page extends GeneralPageBase
 			$condition->add(' AND u.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $ccc_id);
 			break;
 		}
-		$condition->add(get_games_filter_condition($this->filter));
+		if ($this->filter & FLAG_FILTER_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($this->filter & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($this->filter & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($this->filter & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
 		
 		if ($this->user_id > 0)
 		{
@@ -211,7 +233,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_filter_fields()
 	{
-		show_games_filter($this->filter, 'filter', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter, 'filter');
 	}
 	
 	protected function show_search_fields()
@@ -222,7 +244,7 @@ class Page extends GeneralPageBase
 	
 	protected function get_filter_js()
 	{
-		$result = '+ "&filter=" + getGamesFilter()';
+		$result = '+ "&filter=" + checkboxFilterFlags()';
 		if ($this->user_id > 0)
 		{
 			$result .= ' + "&page=-' . $this->user_id . '"';

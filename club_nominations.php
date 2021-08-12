@@ -5,7 +5,14 @@ require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/club.php';
-require_once 'include/games.php';
+require_once 'include/checkbox_filter.php';
+
+define('FLAG_FILTER_TOURNAMENT', 0x0001);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
+define('FLAG_FILTER_RATING', 0x0004);
+define('FLAG_FILTER_NO_RATING', 0x0008);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
 
 class Page extends ClubPageBase
 {
@@ -27,7 +34,7 @@ class Page extends ClubPageBase
 			$this->season = $_REQUEST['season'];
 		}
 		
-		$this->filter = GAMES_FILTER_RATING;
+		$this->filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$this->filter = (int)$_REQUEST['filter'];
@@ -126,7 +133,7 @@ class Page extends ClubPageBase
 			}
 		}
 		echo '</select> ';
-		show_games_filter($this->filter, 'filterChanged', GAMES_FILTER_NO_VIDEO | GAMES_FILTER_NO_CANCELED);
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter, 'filterChanged');
 		echo '</td><td align="right">';
 		echo '<select id="nom" onchange="filterChanged()">';
 		for ($i = 0; $i < count($noms); ++$i)
@@ -138,7 +145,23 @@ class Page extends ClubPageBase
 		
 		$condition = get_roles_condition($roles);
 		$condition->add($this->season_condition);
-		$condition->add(get_games_filter_condition($this->filter));
+		if ($this->filter & FLAG_FILTER_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($this->filter & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($this->filter & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($this->filter & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
+		
 		$query = new DbQuery(
 			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags' .
 				' FROM players p JOIN games g ON p.game_id = g.id' .
@@ -254,7 +277,7 @@ class Page extends ClubPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({roles: $('#roles').val(), season: $('#season').val(), filter: getGamesFilter(), min: $('#min').val(), nom: $('#nom').val() });
+			goTo({roles: $('#roles').val(), season: $('#season').val(), filter: checkboxFilterFlags(), min: $('#min').val(), nom: $('#nom').val() });
 		}
 <?php
 	}
