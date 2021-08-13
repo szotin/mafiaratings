@@ -6,7 +6,6 @@ require_once 'include/club.php';
 require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/ccc_filter.php';
-require_once 'include/checkbox_filter.php';
 require_once 'include/user.php';
 require_once 'include/checkbox_filter.php';
 
@@ -286,7 +285,7 @@ class Page extends GeneralPageBase
 			show_option(0, $this->result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
-		show_checkbox_filter(array(get_label('games with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->flag_filter, 'filter');
+		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->flag_filter, 'filter');
 	}
 	
 	protected function get_filter_js()

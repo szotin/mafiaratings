@@ -100,7 +100,7 @@ class Page extends UserPageBase
 			show_option(1, $result_filter, get_label('Town wins'));
 			show_option(2, $result_filter, get_label('Mafia wins'));
 			echo '</select>';
-			show_checkbox_filter(array(get_label('games with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
+			show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 			echo '</p>';
 			
 			switch ($result_filter)
@@ -242,7 +242,7 @@ class Page extends UserPageBase
 			show_option(4, $result_filter, get_label('[0] losses', $this->name));
 			echo '</select> ';
 			show_roles_select($roles, 'filterChanged()', get_label('Games where [0] was in a specific role.', $this->name), ROLE_NAME_FLAG_SINGLE);
-			show_checkbox_filter(array(get_label('games with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
+			show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 			echo '</p>';
 			
 			$condition->add(get_roles_condition($roles));

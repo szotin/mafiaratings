@@ -53,7 +53,7 @@ class Page extends AddressPageBase
 			show_option(0, $result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
-		show_checkbox_filter(array(get_label('games with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
+		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 
 		$condition = new SQL(' WHERE e.address_id = ?', $this->id);

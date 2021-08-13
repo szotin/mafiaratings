@@ -50,7 +50,7 @@ class Page extends TournamentPageBase
 			show_option(0, $result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
-		show_checkbox_filter(array(get_label('games with video'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
+		show_checkbox_filter(array(get_label('with video'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(' WHERE g.tournament_id = ?', $this->id);
