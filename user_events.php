@@ -165,12 +165,12 @@ class Page extends UserPageBase
 ?>
 		function onCCC(code)
 		{
-			goTo({ ccc: code });
+			goTo({ ccc: code, page: 0 });
 		}
 
 		function filterEvents()
 		{
-			goTo({ filter: checkboxFilterFlags() });
+			goTo({ filter: checkboxFilterFlags(), page: 0 });
 		}
 <?php	
 	}

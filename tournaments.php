@@ -6,8 +6,18 @@ require_once 'include/languages.php';
 require_once 'include/pages.php';
 require_once 'include/tournament.php';
 require_once 'include/ccc_filter.php';
+require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+
+define('FLAG_FILTER_VIDEOS', 0x0001);
+define('FLAG_FILTER_NO_VIDEOS', 0x0002);
+define('FLAG_FILTER_EMPTY', 0x0004);
+define('FLAG_FILTER_NOT_EMPTY', 0x0008);
+define('FLAG_FILTER_CANCELED', 0x0010);
+define('FLAG_FILTER_NOT_CANCELED', 0x0020);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
 class Page extends GeneralPageBase
 {
@@ -15,6 +25,11 @@ class Page extends GeneralPageBase
 	{
 		parent::prepare();
 		$this->ccc_title = get_label('Filter tournaments by club, city, or country.');
+		$this->filter = FLAG_FILTER_DEFAULT;
+		if (isset($_REQUEST['filter']))
+		{
+			$this->filter = (int)$_REQUEST['filter'];
+		}
 	}
 
 	protected function show_body()
@@ -27,7 +42,7 @@ class Page extends GeneralPageBase
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
-			' WHERE t.start_time < UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0');
+			' WHERE t.start_time < UNIX_TIMESTAMP()');
 		
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
@@ -50,6 +65,30 @@ class Page extends GeneralPageBase
 			break;
 		}
 		
+		if ($this->filter & FLAG_FILTER_VIDEOS)
+		{
+			$condition->add(' AND EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');
+		}
+		if ($this->filter & FLAG_FILTER_NO_VIDEOS)
+		{
+			$condition->add(' AND NOT EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');
+		}
+		if ($this->filter & FLAG_FILTER_EMPTY)
+		{
+			$condition->add(' AND NOT EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0)');
+		}
+		if ($this->filter & FLAG_FILTER_NOT_EMPTY)
+		{
+			$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0)');
+		}
+		if ($this->filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') <> 0');
+		}
+		if ($this->filter & FLAG_FILTER_NOT_CANCELED)
+		{
+			$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0');
+		}
 		
 		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -117,6 +156,16 @@ class Page extends GeneralPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+	}
+	
+	protected function show_filter_fields()
+	{
+		show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $this->filter, 'filter');
+	}
+	
+	protected function get_filter_js()
+	{
+		return '+ "&filter=" + checkboxFilterFlags()';
 	}
 }
 

@@ -6,8 +6,18 @@ require_once 'include/club.php';
 require_once 'include/address.php';
 require_once 'include/pages.php';
 require_once 'include/tournament.php';
+require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+
+define('FLAG_FILTER_VIDEOS', 0x0001);
+define('FLAG_FILTER_NO_VIDEOS', 0x0002);
+define('FLAG_FILTER_EMPTY', 0x0004);
+define('FLAG_FILTER_NOT_EMPTY', 0x0008);
+define('FLAG_FILTER_CANCELED', 0x0010);
+define('FLAG_FILTER_NOT_CANCELED', 0x0020);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
 class Page extends AddressPageBase
 {
@@ -21,10 +31,17 @@ class Page extends AddressPageBase
 			$season = (int)$_REQUEST['season'];
 		}
 		
+		$filter = FLAG_FILTER_DEFAULT;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter = (int)$_REQUEST['filter'];
+		}
+		
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
 		$season = show_club_seasons_select($this->club_id, $season, 'document.clubForm.submit()', get_label('Show tournaments of a specific season.'));
+		show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $filter, 'filterTournaments');
 		echo '</td></tr></table></form>';
 		
 		$condition = new SQL(
@@ -35,6 +52,30 @@ class Page extends AddressPageBase
 				' WHERE t.start_time < UNIX_TIMESTAMP() AND t.address_id = ? AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0',
 			$this->id);
 		$condition->add(get_club_season_condition($season, 't.start_time', '(t.start_time + t.duration)'));
+		if ($filter & FLAG_FILTER_VIDEOS)
+		{
+			$condition->add(' AND EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');
+		}
+		if ($filter & FLAG_FILTER_NO_VIDEOS)
+		{
+			$condition->add(' AND NOT EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');
+		}
+		if ($filter & FLAG_FILTER_EMPTY)
+		{
+			$condition->add(' AND NOT EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0)');
+		}
+		if ($filter & FLAG_FILTER_NOT_EMPTY)
+		{
+			$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0)');
+		}
+		if ($filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') <> 0');
+		}
+		if ($filter & FLAG_FILTER_NOT_CANCELED)
+		{
+			$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0');
+		}
 		
 		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -94,6 +135,16 @@ class Page extends AddressPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+	}
+	
+	protected function js()
+	{
+?>
+		function filterTournaments()
+		{
+			goTo({ filter: checkboxFilterFlags(), page: 0 });
+		}
+<?php
 	}
 }
 

@@ -84,8 +84,8 @@ class Page extends UserPageBase
 		show_option(1, $moder, get_label('As a moderator'));
 		echo '</select>';
 		
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(LEAGUE_PICTURE));
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$event_pic = new Picture(EVENT_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
 		
 		if ($moder != 0)
@@ -120,23 +120,22 @@ class Page extends UserPageBase
 			show_pages_navigation(PAGE_SIZE, $count);
 			
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker" align="center"><td colspan="3"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Result').'</td><td width="48">'.get_label('Video').'</td></tr>';
+			echo '<tr class="th darker" align="center"><td colspan="2"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Result').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, g.flags, c.id, c.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, g.canceled, v.video, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
+				'SELECT g.id, g.flags, c.id, c.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, g.canceled, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
-				' LEFT OUTER JOIN videos v ON v.id = g.video_id' .
 				' WHERE g.moderator_id = ?',
 				$this->id, $condition);
 			$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			while ($row = $query->next())
 			{
-				list ($game_id, $game_flags, $club_id, $club_name, $club_flags, $timezone, $start, $duration, $game_result, $is_canceled, $video, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
+				list ($game_id, $game_flags, $club_id, $club_name, $club_flags, $timezone, $start, $duration, $game_result, $is_canceled, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
 				
 				echo '<tr align="center"';
 				if ($is_canceled || ($game_flags & GAME_FLAG_FUN))
@@ -145,33 +144,34 @@ class Page extends UserPageBase
 				}
 				echo '>';
 
-				if ($is_canceled)
+				if ($is_canceled || ($game_flags & GAME_FLAG_FUN) != 0)
 				{
-					echo '<td align="left" width="120"><s>' . format_date('M j Y, H:i', $start, $timezone) . '</s></td>';
-					echo '<td align="left"><s>';
+					echo '<td align="left" style="padding-left:12px;">';
 				}
-				else 
+				else
 				{
-					echo '<td align="left" width="120">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
-					if ($game_flags & GAME_FLAG_FUN)
-					{
-						echo '<td align="left">';
-					}
-					else
-					{
-						echo '<td align="left" colspan="2">';
-					}
+					echo '<td align="left" colspan="2" style="padding-left:12px;">';
 				}
-				echo '<a href="view_game.php?moderator_id=' . $this->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id);
-				echo '<br>';
-				if (!is_null($tournament_id))
+				
+				if ($video_id != NULL)
+				{
+					echo '<table class="transp" width="100%"><tr><td>';
+				}
+				echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
+				if ($tournament_name != NULL)
 				{
 					echo $tournament_name . ': ';
 				}
-				echo $event_name . '</a>';
+				echo $event_name . '<br>' . format_date('F d Y, H:i', $start, $timezone) . '</a>';
+				if ($video_id != NULL)
+				{
+					echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
+					echo '</td></tr></table>';
+				}
+			
 				if ($is_canceled)
 				{
-					echo '</s></td><td width="100" class="darker"><b>' . get_label('Canceled');
+					echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
 					if ($game_flags & GAME_FLAG_FUN)
 					{
 						echo '<br>' . get_label('Non-rating');
@@ -185,22 +185,17 @@ class Page extends UserPageBase
 				echo '</td>';
 				
 				echo '<td>';
-				$club_pic->
-					set($club_id, $club_name, $club_flags);
+				$club_pic->set($club_id, $club_name, $club_flags);
 				$club_pic->show(ICONS_DIR, true, 48);
 				echo '</td>';
 				
 				echo '<td>';
-				$event_pic->
-					set($event_id, $event_name, $event_flags)->
-					set($address_id, $address_name, $address_flags);
+				$event_pic->set($event_id, $event_name, $event_flags);
 				$event_pic->show(ICONS_DIR, true, 48);
 				echo '</td>';
 				
 				echo '<td>';
-				$tournament_pic->
-					set($tournament_id, $tournament_name, $tournament_flags)->
-					set($league_id, $league_name, $league_flags);
+				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 				$tournament_pic->show(ICONS_DIR, true, 48);
 				echo '</td>';
 				
@@ -215,11 +210,6 @@ class Page extends UserPageBase
 					case 2: // mafia won
 						echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 						break;
-				}
-				echo '</td><td>';
-				if ($video != NULL)
-				{
-					echo '<button class="icon" onclick="mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/film.png" border="0"></button>';
 				}
 				echo '</td></tr>';
 				++$count;
@@ -268,10 +258,10 @@ class Page extends UserPageBase
 			list ($count) = Db::record(get_label('player'), 'SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?', $this->id, $condition);
 			show_pages_navigation(PAGE_SIZE, $count);
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker" align="center"><td colspan="2"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td><td width="48">'.get_label('Video').'</td></tr>';
+			echo '<tr class="th darker" align="center"><td></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, g.flags, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.canceled, p.role, p.rating_before, p.rating_earned, v.video, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM players p' .
+				'SELECT g.id, g.flags, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.canceled, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM players p' .
 				' JOIN games g ON g.id = p.game_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
@@ -280,7 +270,6 @@ class Page extends UserPageBase
 				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
-				' LEFT OUTER JOIN videos v ON v.id = g.video_id' .
 				' WHERE p.user_id = ?', 
 				$this->id, $condition);
 			$query->add(' ORDER BY g.start_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -288,7 +277,7 @@ class Page extends UserPageBase
 			{
 				list (
 					$game_id, $game_flags, $club_id, $club_name, $club_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, 
-					$game_result, $is_canceled, $role, $rating_before, $rating_earned, $video, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
+					$game_result, $is_canceled, $role, $rating_before, $rating_earned, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
 			
 				echo '<tr align="center"';
 				if ($is_canceled || ($game_flags & GAME_FLAG_FUN))
@@ -297,26 +286,21 @@ class Page extends UserPageBase
 				}
 				echo '>';
 			
-				if ($is_canceled)
+				echo '<td align="left" style="padding-left:12px;">';
+				if ($video_id != NULL)
 				{
-					echo '<td align="left" width="120"><s>' . format_date('M j Y, H:i', $start, $timezone) . '</s></td>';
-					echo '<td align="left"><s>';
+					echo '<table class="transp" width="100%"><tr><td>';
 				}
-				else
-				{
-					echo '<td align="left" width="120">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
-					echo '<td align="left">';
-				}
-				echo '<a href="view_game.php?user_id=' . $this->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id);
-				echo '<br>';
-				if (!is_null($tournament_id))
+				echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
+				if ($tournament_name != NULL)
 				{
 					echo $tournament_name . ': ';
 				}
-				echo $event_name . '</a>';
-				if ($is_canceled)
+				echo $event_name . '<br>' . format_date('F d Y, H:i', $start, $timezone) . '</a>';
+				if ($video_id != NULL)
 				{
-					echo '</s>';
+					echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
+					echo '</td></tr></table>';
 				}
 				echo '</td>';
 				
@@ -327,16 +311,13 @@ class Page extends UserPageBase
 				echo '</td>';
 				
 				echo '<td>';
-				$event_pic->
-					set($event_id, $event_name, $event_flags)->
-					set($address_id, $address_name, $address_flags);
+				$event_pic->set($event_id, $event_name, $event_flags);
 				$event_pic->show(ICONS_DIR, true, 48);
 				echo '</td>';
 				
 				echo '<td>';
 				$tournament_pic->
-					set($tournament_id, $tournament_name, $tournament_flags)->
-					set($league_id, $league_name, $league_flags);
+					set($tournament_id, $tournament_name, $tournament_flags);
 				$tournament_pic->show(ICONS_DIR, true, 48);
 				echo '</td>';
 
@@ -401,11 +382,6 @@ class Page extends UserPageBase
 					echo ' = ' . format_rating($rating_before + $rating_earned);
 				}
 				// echo '<td>' . format_rating($rating_earned);
-				echo '</td><td>';
-				if ($video != NULL)
-				{
-					echo '<button class="icon" onclick="mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/film.png" border="0"></button>';
-				}
 				echo '</td></tr>';
 			}
 			echo '</table>';
@@ -417,7 +393,7 @@ class Page extends UserPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({roles: $('#roles').val(), result: $('#result').val(), moder: $('#moder').val(), filter: checkboxFilterFlags() });
+			goTo({roles: $('#roles').val(), result: $('#result').val(), moder: $('#moder').val(), filter: checkboxFilterFlags(), page: 0 });
 		}
 <?php
 	}

@@ -8,32 +8,31 @@ require_once 'include/event.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/scoring.php';
 require_once 'include/tournament.php';
+require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
-define('ETYPE_ALL', 0);
+
+define('FLAG_FILTER_VIDEOS', 0x0001);
+define('FLAG_FILTER_NO_VIDEOS', 0x0002);
+
+define('FLAG_FILTER_DEFAULT', 0);
 
 class Page extends UserPageBase
 {
-	private $ccc_filter;
-	private $events_type;
-
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
-		$this->events_type = ETYPE_ALL;
-		if (isset($_REQUEST['etype']))
-		{
-			$this->events_type = (int)$_REQUEST['etype'];
-		}
-	}
-	
 	protected function show_body()
 	{
 		global $_profile, $_page;
 		
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$filter = FLAG_FILTER_DEFAULT;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter = (int)$_REQUEST['filter'];
+		}
+		
 		echo '<table class="transp" width="100%"><tr><td>';
-		$this->ccc_filter->show('onCCC', get_label('Filter events by club, city, or country.'));
+		$ccc_filter->show('onCCC', get_label('Filter events by club, city, or country.'));
+		show_checkbox_filter(array(get_label('with video')), $filter, 'filterTournaments');
 		echo '</td></tr></table>';
 		
 		$condition = new SQL(
@@ -45,8 +44,8 @@ class Page extends UserPageBase
 			' JOIN cities ct ON ct.id = a.city_id' . 
 			' LEFT OUTER JOIN leagues l ON l.id = t.league_id' . 
 			' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0 AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0', $this->id);
-		$ccc_id = $this->ccc_filter->get_id();
-		switch($this->ccc_filter->get_type())
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
@@ -64,6 +63,14 @@ class Page extends UserPageBase
 		case CCCF_COUNTRY:
 			$condition->add(' AND ct.country_id = ?', $ccc_id);
 			break;
+		}
+		if ($filter & FLAG_FILTER_VIDEOS)
+		{
+			$condition->add(' AND EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');
+		}
+		if ($filter & FLAG_FILTER_NO_VIDEOS)
+		{
+			$condition->add(' AND NOT EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');
 		}
 		
 		list ($count) = Db::record(get_label('tournament'), 'SELECT count(DISTINCT t.id)', $condition);
@@ -143,17 +150,14 @@ class Page extends UserPageBase
 	function js()
 	{
 ?>
-		var code = "<?php echo is_null($this->ccc_filter) ? '' : $this->ccc_filter->get_code(); ?>";
-		function onCCC(_code)
+		function onCCC(code)
 		{
-			code = _code;
-			filter();
+			goTo({ ccc: code, page: 0 });
 		}
 
-		function filter()
+		function filterTournaments()
 		{
-			var loc = "?id=<?php echo $this->id; ?>&ccc=" + code + "&etype=" + $("#etype").val();
-			window.location.replace(loc);
+			goTo({ filter: checkboxFilterFlags(), page: 0 });
 		}
 <?php	
 	}

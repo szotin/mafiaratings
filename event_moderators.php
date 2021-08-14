@@ -104,7 +104,7 @@ class Page extends EventPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({filter: checkboxFilterFlags()});
+			goTo({filter: checkboxFilterFlags(), page: 0});
 		}
 <?php
 	}

@@ -205,7 +205,7 @@ class Page extends LeaguePageBase
 			{
 				flags &= ~<?php echo FLAG_SHOW_RETIRED; ?>;
 			}
-			goTo({ flags: flags });
+			goTo({ flags: flags, page: 0 });
 		}
 <?php	
 	}

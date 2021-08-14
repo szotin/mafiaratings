@@ -230,7 +230,7 @@ class Page extends TournamentPageBase
 			
 			function submitScoring(s)
 			{
-				goTo({ sid: s.sId, sver: s.sVer, nid: s.nId, nver: s.nVer, sops: s.ops });
+				goTo({ sid: s.sId, sver: s.sVer, nid: s.nId, nver: s.nVer, sops: s.ops, page: 0 });
 			}
 		</script>
 <?php

@@ -103,20 +103,20 @@ class Page extends AddressPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$event_pic = new Picture(EVENT_PICTURE);
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(LEAGUE_PICTURE));
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$moder_pic = new Picture(USER_PICTURE);
 		$is_user = is_permitted(PERMISSION_USER);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td';
 		if ($is_user)
 		{
-			echo ' colspan="4"';
+			echo ' colspan="3"';
 		}
 		else
 		{
-			echo ' colspan="3"';
+			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td><td width="48">'.get_label('Video').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, g.flags, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.canceled, e.id, e.name, e.flags, t.id, t.name, t.flags, l.id, l.name, l.flags FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
@@ -159,33 +159,34 @@ class Page extends AddressPageBase
 				echo '</td>';
 			}
 			
-			if ($is_canceled)
+			if ($is_canceled || ($game_flags & GAME_FLAG_FUN) != 0)
 			{
-				echo '<td width="120" align="left"><s>' . format_date('M j Y, H:i', $start, $this->timezone) . '</s></td>';
-				echo '<td align="left"><s>';
+				echo '<td align="left" style="padding-left:12px;">';
 			}
 			else
 			{
-				echo '<td width="120" align="left">' . format_date('M j Y, H:i', $start, $this->timezone) . '</td>';
-				if ($game_flags & GAME_FLAG_FUN)
-				{
-					echo '<td align="left">';
-				}
-				else
-				{
-					echo '<td align="left" colspan="2">';
-				}
+				echo '<td align="left" colspan="2" style="padding-left:12px;">';
 			}
-			echo '<a href="view_game.php?address_id=' . $this->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id);
-			echo '<br>';
-			if (!is_null($tournament_id))
+			
+			if ($video_id != NULL)
+			{
+				echo '<table class="transp" width="100%"><tr><td>';
+			}
+			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
+			if ($tournament_name != NULL)
 			{
 				echo $tournament_name . ': ';
 			}
-			echo $event_name . '</a>';
+			echo $event_name . '<br>' . format_date('F d Y, H:i', $start, $this->timezone) . '</a>';
+			if ($video_id != NULL)
+			{
+				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
+				echo '</td></tr></table>';
+			}
+			
 			if ($is_canceled)
 			{
-				echo '</s></td><td width="100" class="darker"><b>' . get_label('Canceled');
+				echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
 				if ($game_flags & GAME_FLAG_FUN)
 				{
 					echo '<br>' . get_label('Non-rating');
@@ -204,9 +205,7 @@ class Page extends AddressPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			$tournament_pic
-				->set($tournament_id, $tournament_name, $tournament_flags)
-				->set($league_id, $league_name, $league_flags);
+			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 			$tournament_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
@@ -228,11 +227,6 @@ class Page extends AddressPageBase
 					break;
 			}
 
-			echo '</td><td>';
-			if ($video_id != NULL)
-			{
-				echo '<button class="icon" onclick="mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/film.png" border="0"></button>';
-			}
 			echo '</td></tr>';
 		}
 		echo '</table>';
@@ -243,7 +237,7 @@ class Page extends AddressPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({results: $('#results').val(), filter: checkboxFilterFlags() });
+			goTo({results: $('#results').val(), filter: checkboxFilterFlags(), page: 0 });
 		}
 <?php
 	}

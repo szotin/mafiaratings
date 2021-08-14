@@ -156,7 +156,7 @@ class Page extends ClubPageBase
 ?>
 		function filterEvents()
 		{
-			goTo({ filter: checkboxFilterFlags() });
+			goTo({ filter: checkboxFilterFlags(), page: 0 });
 		}
 <?php
 	}

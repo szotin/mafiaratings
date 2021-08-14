@@ -56,8 +56,8 @@ class Page extends GeneralPageBase
 	{
 		global $_page, $_profile;
 		
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(LEAGUE_PICTURE));
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$event_pic = new Picture(EVENT_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
 		
 		$condition = new SQL();
@@ -132,13 +132,13 @@ class Page extends GeneralPageBase
 		echo '<tr class="th darker" align="center"><td'; 
 		if ($is_user)
 		{
-			echo ' colspan="4"';
+			echo ' colspan="3"';
 		}
 		else
 		{
-			echo ' colspan="3"';
+			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td><td width="48">'.get_label('Video').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, g.flags, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.canceled, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
@@ -188,33 +188,34 @@ class Page extends GeneralPageBase
 				echo '</td>';
 			}
 			
-			if ($is_canceled)
+			if ($is_canceled || ($game_flags & GAME_FLAG_FUN) != 0)
 			{
-				echo '<td align="left" width="120"><s>' . format_date('M j Y, H:i', $start, $timezone) . '</s></td>';
-				echo '<td align="left"><s>';
+				echo '<td align="left" style="padding-left:12px;">';
 			}
-			else 
+			else
 			{
-				echo '<td align="left" width="120">' . format_date('M j Y, H:i', $start, $timezone) . '</td>';
-				if ($game_flags & GAME_FLAG_FUN)
-				{
-					echo '<td align="left">';
-				}
-				else
-				{
-					echo '<td align="left" colspan="2">';
-				}
+				echo '<td align="left" colspan="2" style="padding-left:12px;">';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id);
-			echo '<br>';
-			if (!is_null($tournament_id))
+			
+			if ($video_id != NULL)
+			{
+				echo '<table class="transp" width="100%"><tr><td>';
+			}
+			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
+			if ($tournament_name != NULL)
 			{
 				echo $tournament_name . ': ';
 			}
-			echo $event_name . '</a>';
+			echo $event_name . '<br>' . format_date('F d Y, H:i', $start, $timezone) . '</a>';
+			if ($video_id != NULL)
+			{
+				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
+				echo '</td></tr></table>';
+			}
+			
 			if ($is_canceled)
 			{
-				echo '</s></td><td width="100" class="darker"><b>' . get_label('Canceled');
+				echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
 				if ($game_flags & GAME_FLAG_FUN)
 				{
 					echo '<br>' . get_label('Non-rating');
@@ -234,16 +235,12 @@ class Page extends GeneralPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			$event_pic->
-				set($event_id, $event_name, $event_flags)->
-				set($address_id, $address_name, $address_flags);
+			$event_pic->set($event_id, $event_name, $event_flags);
 			$event_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
 			echo '<td>';
-			$tournament_pic->
-				set($tournament_id, $tournament_name, $tournament_flags)->
-				set($league_id, $league_name, $league_flags);
+			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 			$tournament_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
@@ -263,11 +260,6 @@ class Page extends GeneralPageBase
 				case 2: // mafia won
 					echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 					break;
-			}
-			echo '</td><td>';
-			if ($video_id != NULL)
-			{
-				echo '<button class="icon" onclick="mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/film.png" border="0"></button>';
 			}
 			echo '</td></tr>';
 		}

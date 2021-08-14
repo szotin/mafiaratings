@@ -179,7 +179,7 @@ class Page extends EventPageBase
 			
 			function submitScoring(s)
 			{
-				goTo({ scoring_id: s.sId, scoring_version: s.sVer, scoring_ops: s.ops });
+				goTo({ scoring_id: s.sId, scoring_version: s.sVer, scoring_ops: s.ops, page: 0 });
 			}
 		</script>
 <?php

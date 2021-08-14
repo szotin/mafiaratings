@@ -144,7 +144,7 @@ class Page extends AddressPageBase
 ?>
 		function filterEvents()
 		{
-			goTo({ filter: checkboxFilterFlags() });
+			goTo({ filter: checkboxFilterFlags(), page: 0 });
 		}
 <?php
 	}

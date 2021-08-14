@@ -121,7 +121,7 @@ class Page extends ClubPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({filter: checkboxFilterFlags(), season: $('#season').val()});
+			goTo({filter: checkboxFilterFlags(), season: $('#season').val(), page: 0});
 		}
 <?php
 	}

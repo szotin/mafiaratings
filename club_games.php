@@ -36,24 +36,17 @@ class Page extends ClubPageBase
 			}
 		}
 		
-		$season = SEASON_LATEST;
-		if (isset($_REQUEST['season']))
-		{
-			$season = (int)$_REQUEST['season'];
-		}
-		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(LEAGUE_PICTURE));
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$event_pic = new Picture(EVENT_PICTURE);
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
-		$season = show_club_seasons_select($this->id, $season, 'filterChanged()', get_label('Show games of a specific season.'));
-		echo ' <select id="results" onChange="filterChanged()">';
+		echo '<select id="results" onChange="filterChanged()">';
 		show_option(-1, $result_filter, get_label('All games'));
 		show_option(1, $result_filter, get_label('Town wins'));
 		show_option(2, $result_filter, get_label('Mafia wins'));
@@ -108,8 +101,6 @@ class Page extends ClubPageBase
 			$condition->add(' AND g.canceled = 0');
 		}
 		
-		$condition->add(get_club_season_condition($season, 'g.start_time', 'g.end_time'));
-		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
@@ -118,13 +109,13 @@ class Page extends ClubPageBase
 		echo '<tr class="th darker" align="center"><td';
 		if ($is_user)
 		{
-			echo ' colspan="4"';
+			echo ' colspan="3"';
 		}
 		else
 		{
-			echo ' colspan="3"';
+			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td><td width="48">'.get_label('Video').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, g.flags, c.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.canceled, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
@@ -169,33 +160,34 @@ class Page extends ClubPageBase
 				echo '</td>';
 			}
 			
-			if ($is_canceled)
+			if ($is_canceled || ($game_flags & GAME_FLAG_FUN) != 0)
 			{
-				echo '<td align="left" width="120"><s>' . format_date('M j Y, H:i', $start, $this->timezone) . '</s></td>';
-				echo '<td align="left"><s>';
+				echo '<td align="left" style="padding-left:12px;">';
 			}
 			else
 			{
-				echo '<td align="left" width="120">' . format_date('M j Y, H:i', $start, $this->timezone) . '</td>';
-				if ($game_flags & GAME_FLAG_FUN)
-				{
-					echo '<td align="left">';
-				}
-				else
-				{
-					echo '<td align="left" colspan="2">';
-				}
+				echo '<td align="left" colspan="2" style="padding-left:12px;">';
 			}
-			echo '<a href="view_game.php?club_id=' . $this->id . '&id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id);
-			echo '<br>';
-			if (!is_null($tournament_id))
+			
+			if ($video_id != NULL)
+			{
+				echo '<table class="transp" width="100%"><tr><td>';
+			}
+			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
+			if ($tournament_name != NULL)
 			{
 				echo $tournament_name . ': ';
 			}
-			echo $event_name . '</a>';
+			echo $event_name . '<br>' . format_date('F d Y, H:i', $start, $timezone) . '</a>';
+			if ($video_id != NULL)
+			{
+				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
+				echo '</td></tr></table>';
+			}
+			
 			if ($is_canceled)
 			{
-				echo '</s></td><td width="100" class="darker"><b>' . get_label('Canceled');
+				echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
 				if ($game_flags & GAME_FLAG_FUN)
 				{
 					echo '<br>' . get_label('Non-rating');
@@ -209,16 +201,12 @@ class Page extends ClubPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			$event_pic->
-				set($event_id, $event_name, $event_flags)->
-				set($address_id, $address_name, $address_flags);
+			$event_pic->set($event_id, $event_name, $event_flags);
 			$event_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
 			echo '<td>';
-			$tournament_pic->
-				set($tournament_id, $tournament_name, $tournament_flags)->
-				set($league_id, $league_name, $league_flags);
+			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 			$tournament_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
@@ -239,11 +227,6 @@ class Page extends ClubPageBase
 					echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 					break;
 			}
-			echo '</td><td>';
-			if ($video_id != NULL)
-			{
-				echo '<button class="icon" onclick="mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/film.png" border="0"></button>';
-			}
 			echo '</td></tr>';
 		}
 		echo '</table>';
@@ -254,7 +237,7 @@ class Page extends ClubPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({results: $('#results').val(), season: $('#season').val(), filter: checkboxFilterFlags() });
+			goTo({results: $('#results').val(), filter: checkboxFilterFlags(), page: 0 });
 		}
 <?php
 	}
