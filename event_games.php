@@ -160,7 +160,7 @@ class Page extends EventPageBase
 			{
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id);
+			echo '<a href="view_game.php?id=' . $game_id . '&event_id=' . $this->event->id . '&bck=1"><b>' . get_label('Game #[0]', $game_id);
 			echo '</b><br>' . format_date('F d Y, H:i', $start, $timezone) . '</a>';
 			if ($video_id != NULL)
 			{

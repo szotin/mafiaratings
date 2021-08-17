@@ -157,7 +157,7 @@ class Page extends UserPageBase
 				{
 					echo '<table class="transp" width="100%"><tr><td>';
 				}
-				echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
+				echo '<a href="view_game.php?id=' . $game_id . '&moderator_id=' . $this->id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
 				if ($tournament_name != NULL)
 				{
 					echo $tournament_name . ': ';
@@ -291,7 +291,7 @@ class Page extends UserPageBase
 				{
 					echo '<table class="transp" width="100%"><tr><td>';
 				}
-				echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
+				echo '<a href="view_game.php?id=' . $game_id . '&user_id=' . $this->id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
 				if ($tournament_name != NULL)
 				{
 					echo $tournament_name . ': ';
