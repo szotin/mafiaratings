@@ -390,6 +390,8 @@ mafia.ui = new function()
 			_backPage = backPage;
 		}
 		
+		document.querySelector('#game-area').addEventListener('keyup', mafia.ui.keyUp);
+		
 		var html = 
 			'<div id="demo">' + l('Demo') + '</div>' +
 			'<table class="bordered" width="100%" id="players">' +
@@ -1190,7 +1192,16 @@ mafia.ui = new function()
 			$('#info').html(l(info, game.round + 1));
 			if (voting != null && voting.canceled <= 0 && voting.nominants.length > 0)
 			{
-				$('#noms').html('<button class="noms" onclick="mafia.ui.showNominants()">' + l('ShowNoms') + '</button>');
+				var nominants = "";
+				var voting = mafia.curVoting();
+				for (var i = 0; i < voting.nominants.length; ++i)
+				{
+					p = game.players[voting.nominants[i].player_num];
+					if (i > 0)
+						nominants += ", ";
+					nominants += (voting.nominants[i].player_num + 1);
+				}
+				$('#noms').html(l('ShowNoms', nominants));
 			}
 			else
 			{
@@ -1216,20 +1227,6 @@ mafia.ui = new function()
 		_oldState = game.gamestate;
 	}
 	
-	this.showNominants = function()
-	{
-		var game = mafia.data().game;
-		var voting = mafia.curVoting();
-		var n = '<table class="bordered" width="100%">';
-		for (var i = 0; i < voting.nominants.length; ++i)
-		{
-			p = game.players[voting.nominants[i].player_num];
-			n += '<tr><td width="24" align="center">' + (p.number + 1) + '</td><td>' + mafia.userTitle(p.id) + '</td></tr>';
-		}
-		n += '</table>';
-		dlg.info(n, l('Noms'));
-	}
-
 	this.fillEvents = function()
 	{
 		var timestamp = mafia.time();
@@ -1737,44 +1734,120 @@ mafia.ui = new function()
 		_enable($('#dlg-moder').html(html), allCanModer);
 	}
 	
-	this.nextRole = function(i)
+	this.nextRole = function(i, add)
 	{
 		var game = mafia.data().game;
 		var p = game.players[i];
-		var role = p.role + 1;
+		var role = p.role + add;
 		if (role > /*ROLE_DON*/3) role = /*ROLE_CIVILIAN*/0;
+		else if (role < /*ROLE_CIVILIAN*/0) role = /*ROLE_DON*/3;
 		mafia.setPlayerRole(i, role);
 	}
 	
-	this.keyUp = function(code)
+	this.keyUp = function(e)
 	{
+		var code = e.keyCode;
 		var data = mafia.data();
 		var game = data.game;
+		var num = -1;
+		if (code >= /*1*/49 && code <= /*9*/57)
+			num = code - /*1*/49;
+		else if (code >= /*1*/97 && code <= /*9*/105)
+			num = code - /*1*/97;
+		else if (code == /*0*/48 || code == /*0*/96)
+			num = 9;
 		
-//		console.log(code);
-		if (code == /*enter*/13)
+		console.log(e);
+		console.log("Code: " + code + "; Gamestate: " + game.gamestate);
+		if (!timer._hidden)
+		{
+			if (code == /*space*/32)
+			{
+				timer.toggle();
+				return;
+			}
+			else if (code == /*up*/38)
+			{
+				timer.inc(5);
+				return;
+			}
+			else if (code == /*down*/40)
+			{
+				timer.inc(-5);
+				return;
+			}
+		}
+		
+		if (code == /*enter*/13 || code == /*right*/39)
 		{
 			mafia.ui.next();
 		}
-		else if (code == /*del*/46)
+		else if (code == /*back*/8 || code == /*left*/37)
 		{
 			if (mafia.canBack()) mafia.ui.back();
+		}
+		else if (e.altKey)
+		{
+			if (num >= 0)
+			{
+				if (e.shiftKey)
+					mafia.giveUp(num);
+				else if (e.ctrlKey)
+					mafia.kickOut(num);
+				else 
+					mafia.warnPlayer(num);
+			}
 		}
 		else switch (game.gamestate)
 		{
 			case /*GAME_STATE_NOT_STARTED*/0:
-				if (code >= /*1*/49 && code <= /*9*/57)
-					mafia.ui.register(code - /*1*/49);
-				else if (code == /*0*/48)
-					mafia.ui.register(9);
+				if (num >= 0)
+					mafia.ui.register(num);
 				else if (code == /*insert*/45)
 					eventForm.show();
 				break;
 			case /*GAME_STATE_NIGHT0_START*/1:
-				if (code >= /*1*/49 && code <= /*9*/57)
-					mafia.ui.nextRole(code - /*1*/49);
-				else if (code == /*0*/48)
-					mafia.ui.nextRole(9);
+				if (num >= 0)
+					mafia.ui.nextRole(num, e.shiftKey ? -1 : 1);
+				else if (code == /*space*/32)
+					mafia.generateRoles();
+				break;
+			case /*GAME_STATE_DAY_START*/3:
+				if (num > 0 && game.round == 1 && mafia.getRule(/*RULES_LEGACY*/15) == /*RULES_LEGACY_FIRST*/0)
+					mafia.guess(num);
+				break;
+			case /*GAME_STATE_NIGHT0_ARRANGE*/2:
+				if (num >= 0)
+					mafia.arrangePlayer(num, game.players[num].arranged == 0 ? -1 : 0);
+				break;
+			case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
+				if (num >= 0)
+					mafia.nominatePlayer(game.current_nominant == num ? -1 : num);
+				break;
+			case /*GAME_STATE_VOTING*/8:
+				if (num >= 0)
+				{
+					if (mafia.curVoting().votes[num] == game.current_nominant)
+						mafia.vote(num, false);
+					else if (mafia.curVoting().votes[num] > game.current_nominant)
+						mafia.vote(num, true);
+				}
+				break;
+			case /*GAME_STATE_NIGHT_SHOOTING*/12:
+				if (num >= 0)
+					mafia.shoot(num);
+				break;
+			case /*GAME_STATE_NIGHT_DON_CHECK*/13:
+				if (num >= 0)
+					mafia.donCheck(num);
+				break;
+			case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
+				if (num >= 0)
+					mafia.sheriffCheck(num);
+				break;
+			case /*GAME_STATE_END*/25:
+				if (num >= 0)
+					mafia.ui.extraPoints(num);
 				break;
 		}
 	}

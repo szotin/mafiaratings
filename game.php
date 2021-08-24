@@ -55,7 +55,7 @@ class Page extends PageBase
 	
 	protected function show_body()
 	{
-		echo '<div id="game-area"></div>';
+		echo '<div id="game-area" tabindex="0"></div>';
 	}
 	
 	protected function js_on_load()
