@@ -1461,6 +1461,8 @@ $labelMenu = array (
 'unplayed events' => 'несыгранные', // address_events.php, club_events.php, events.php
 'canceled events' => 'отмененные', // address_events.php, club_events.php, events.php
 'Videos from [0]' => 'Видео с [0]', // tournaments.php
+'unplayed tournaments' => 'несыгранные', // address_tournaments.php, club_tournaments.php, tournaments.php
+'canceled tournaments' => 'отмененные', // address_tournaments.php, club_tournaments.php, tournaments.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1474,8 +1476,7 @@ $labelMenu = array (
 'during [0]\'s last speech' => 'во время последней речи [0]', // include/game.php, include/game.php
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
-'unplayed tournaments' => 'несыгранные', // address_tournaments.php, club_tournaments.php, tournaments.php
-'canceled tournaments' => 'отмененные', // address_tournaments.php, club_tournaments.php, tournaments.php
+'no one' => 'никого', // view_game.php
 );
 
 return $labelMenu;

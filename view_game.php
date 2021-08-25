@@ -5,6 +5,11 @@ require_once 'include/game.php';
 
 function get_player_number_html($game, $num)
 {
+	if (!is_numeric($num) || $num < 1 || $num > 10)
+	{
+		return get_label('no one');
+	}
+	
 	$player = $game->data->players[$num-1];
 	$role_add = '';
 	if (!isset($player->role) || $player->role == 'civ')
