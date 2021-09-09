@@ -3,9 +3,19 @@
 require_once '../../include/api.php';
 require_once '../../include/game.php';
 require_once '../../include/datetime.php';
-require_once '../../include/games.php';
 
 define('CURRENT_VERSION', 0);
+
+define('FLAG_FILTER_VIDEO', 0x0001);
+define('FLAG_FILTER_NO_VIDEO', 0x0002);
+define('FLAG_FILTER_TOURNAMENT', 0x0004);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0008);
+define('FLAG_FILTER_RATING', 0x0010);
+define('FLAG_FILTER_NO_RATING', 0x0020);
+define('FLAG_FILTER_CANCELED', 0x0040);
+define('FLAG_FILTER_NO_CANCELED', 0x0080);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
 
 class ApiPage extends GetApiPageBase
 {
@@ -28,7 +38,7 @@ class ApiPage extends GetApiPageBase
 		$country_id = (int)get_optional_param('country_id', -1);
 		$user_id = (int)get_optional_param('user_id', -1);
 		$langs = (int)get_optional_param('langs', 0);
-		$games_filter = (int)get_optional_param('games_filter', GAMES_FILTER_ALL);
+		$filter_flags = (int)get_optional_param('filter_flags', FLAG_FILTER_DEFAULT);
 		$rules_code = get_optional_param('rules_code');
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);
@@ -113,8 +123,39 @@ class ApiPage extends GetApiPageBase
 		{
 			$condition->add(' AND (g.language & ?) <> 0', $langs);
 		}
-		
-		$condition->add(get_games_filter_condition($games_filter));
+
+		if ($filter_flags & FLAG_FILTER_VIDEO)
+		{
+			$condition->add(' AND g.video_id IS NOT NULL');
+		}
+		if ($filter_flags & FLAG_FILTER_NO_VIDEO)
+		{
+			$condition->add(' AND g.video_id IS NULL');
+		}
+		if ($filter_flags & FLAG_FILTER_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($filter_flags & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($filter_flags & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+		}
+		if ($filter_flags & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+		}
+		if ($filter_flags & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.canceled <> 0');
+		}
+		if ($filter_flags & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.canceled = 0');
+		}
 		
 		if (!empty($rules_code))
 		{
@@ -183,7 +224,15 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('rules_code', 'Rules code. For example: <a href="games.php?rules_code=00000000100101010200000000000">' . PRODUCT_URL . '/api/get/games.php?rules_code=00000000100101010200000000000</a> returns all games played by the rules with the code 00000000100101010200000000000 was used. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('user_id', 'User id. For example: <a href="games.php?user_id=25"><?php echo PRODUCT_URL; ?>/api/get/games.php?user_id=25</a> returns all games where Fantomas played. If missing, all games for all users are returned.', '-');
 		$help->request_param('langs', 'Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="games.php?langs=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?langs=1</a> returns all games played in English; <a href="games.php?club=1&langs=3"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1&langs=3</a> returns all English and Russian games of Vancouver Mafia Club', '-');
-		$help->request_param('games_filter', 'Game importance filter. A bit flag of: 1 - include tournament games; 2 - include rating games; 4 - include non-rating games. For example: <a href="games.php?games_filter=3"><?php echo PRODUCT_URL; ?>/api/get/games.php?games_filter=3</a> excludes all non-reting games from the list', '-');
+		$param = $help->request_param('filter_flags', 'Bit flags helping to filter games. For example <a href="games.php?filter_flags=5">' . PRODUCT_URL . '/api/get/games.php?filter_flags=5</a> returns only tournament games with video. The flags are:', '-');
+			$param->sub_param('1', 'Return only the games with video.', '-');
+			$param->sub_param('2', 'Return only the games without video.', '-');
+			$param->sub_param('4', 'Return only tournament games.', '-');
+			$param->sub_param('8', 'Return only non-tournament games.', '-');
+			$param->sub_param('16', 'Return only rating games.', '-');
+			$param->sub_param('32', 'Return only non-rating games.', '-');
+			$param->sub_param('64', 'Return only canceled games.', '-');
+			$param->sub_param('128', 'Return only non-canceled games.', '-');
 		$help->request_param('count', 'Returns game count but does not return the games. For example: <a href="games.php?user_id=25&count"><?php echo PRODUCT_URL; ?>/api/get/games.php?user_id=25&count</a> returns how many games Fantomas have played; <a href="games.php?event=7927&count"><?php echo PRODUCT_URL; ?>/api/get/games.php?event=7927&count</a> returns how many games were played in VaWaCa-2017 tournament.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="games.php?club=1&page=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1&page=1</a> returns the second page for Vancouver Mafia Club.', '-');
 		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="games.php?club=1&page_size=32"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1&page_size=32</a> returns last 32 games for Vancouver Mafia Club; <a href="games.php?club=6&page_size=0"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=6&page_size=0</a> returns all games for Empire of Mafia club in one page; <a href="games.php?club=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?club=1</a> returns last ' . API_DEFAULT_PAGE_SIZE . ' games for Vancouver Mafia Club;', '-');
