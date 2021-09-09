@@ -128,7 +128,7 @@ class GamePlayerStats
 			$this->scoring_flags |= SCORING_FLAG_BEST_MOVE;
 		}
 		
-		if ($player->state == PLAYER_STATE_KILLED_NIGHT)
+		if ($player->state == PLAYER_STATE_KILLED_NIGHT && $player->kill_reason == KILL_REASON_NORMAL)
 		{
 			if ($player->kill_round == 0)
 			{
