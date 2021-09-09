@@ -19,9 +19,7 @@ try
 	echo '<tr><td width="80">' . get_label('Player').':</td><td><input type="text" id="form-player" title="' . get_label('Select player.') . '"/></td></tr>';
 	echo '<tr><td>' . get_label('Reason').':</td><td><input id="form-reason"></td></tr>';
 	echo '<tr><td valign="top">' . get_label('Details').':</td><td><textarea id="form-details" cols="93" rows="8"></textarea></td></tr>';
-	echo '<tr><td>' . get_label('Points') . ':</td><td>';
-	echo '<table class="transp"><tr><td width="80"><input type="number" style="width: 45px;" step="0.1" id="form-points"></td><td><input type="checkbox" id="form-av-points" onclick="averageClicked()"> ' . get_label('average points per game for this event.') . '</td></tr></table>';
-	echo '</td></tr>';
+	echo '<tr><td>' . get_label('Points') . ':</td><td><input type="number" style="width: 45px;" step="0.1" id="form-points"></td></tr>';
 	echo '</table>';
 
 ?>
@@ -50,26 +48,13 @@ try
 	})
 	.on("focus", function () { $(this).autocomplete("search", ''); });
 	
-	function averageClicked()
-	{
-		if ($("#form-av-points").attr("checked"))
-		{
-			savedPoints = $("#form-points").val();
-			$("#form-points").val('').prop('disabled', true);
-		}
-		else
-		{
-			$("#form-points").val(savedPoints).prop('disabled', false);
-		}
-	}
-	
 	function commit(onSuccess)
 	{
 		if (userInfo == null)
 		{
 			dlg.error("<?php echo get_label('Please enter player.'); ?>");
 		}
-		else if ($("#form-points").val() == 0 && !$("#form-av-points").attr("checked"))
+		else if ($("#form-points").val() == 0)
 		{
 			dlg.error("<?php echo get_label('Please enter points.'); ?>");
 		}

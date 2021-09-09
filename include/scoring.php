@@ -974,6 +974,32 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 		add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options);
 	}
 	
+	// Add event extra points
+	$query = new DbQuery('SELECT user_id, points FROM event_extra_points WHERE event_id = ?', $event_id);
+	while ($row = $query->next())
+	{
+		list ($player_id, $points) = $row;
+		if (isset($players[$player_id]))
+		{
+			if (isset($options->weight))
+			{
+				$points *= $options->weight;
+			}
+			
+			$player = $players[$player_id];
+			if (isset($player->extra_points))
+			{
+				$player->extra_points += $points;
+			}
+			if (isset($player->extra) && is_array($player->extra) && isset($player->extra[0]))
+			{
+				$player->extra[0] += $points;
+			}
+			$player->points += $points;
+		}
+	}
+	
+	
 	// Prepare and sort scores
     if ($lod_flags & SCORING_LOD_NO_SORTING)
     {
@@ -1401,6 +1427,34 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $op, $event_name);
 		}
     }
+	
+	// Add event extra points
+	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id);
+	while ($row = $query->next())
+	{
+		list ($event_id, $player_id, $points) = $row;
+		if (isset($players[$player_id]))
+		{
+			if (isset($event_scorings[$event_id]))
+			{
+				$op = $event_scorings[$event_id]->options;
+				if (isset($op->weight))
+				{
+					$points *= $op->weight;
+				}
+			}
+			$player = $players[$player_id];
+			if (isset($player->extra_points))
+			{
+				$player->extra_points += $points;
+			}
+			if (isset($player->extra) && is_array($player->extra) && isset($player->extra[0]))
+			{
+				$player->extra[0] += $points;
+			}
+			$player->points += $points;
+		}
+	}
     
     // Prepare and sort scores
     if ($lod_flags & SCORING_LOD_NO_SORTING)
