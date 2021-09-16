@@ -345,7 +345,7 @@ try
 	if ($emails_remaining > 0)
 	{
 		$changes = '';
-		$query = new DbQuery('SELECT time, action FROM rebuild_stats WHERE email_sent = 0');
+		$query = new DbQuery('SELECT time, action FROM rebuild_ratings WHERE email_sent = 0');
 		while ($row = $query->next())
 		{
 			list($time, $action) = $row;
@@ -359,7 +359,7 @@ try
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
 				$lang = get_lang_code($admin_def_lang);
-				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email/rebuild_stats.php';
+				list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email/rebuild_ratings.php';
 				
 				$tags = array(
 					'root' => new Tag(get_server_url()),
@@ -371,7 +371,7 @@ try
 				send_email($admin_email, $body, $text_body, $subj);
 				--$emails_remaining;
 			}
-			Db::exec('stats', 'UPDATE rebuild_stats SET email_sent = 1');
+			Db::exec('stats', 'UPDATE rebuild_ratings SET email_sent = 1');
 		}
 	}
 

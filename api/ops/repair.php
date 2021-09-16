@@ -389,7 +389,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['last_id'] = $last_id;
 		if ($c <= 0)
 		{
-			Db::exec('stats', 'DELETE FROM rebuild_stats');
+			Db::exec('stats', 'DELETE FROM rebuild_ratings');
 			lock_site(false);
 		}
 	}
@@ -458,11 +458,11 @@ class ApiPage extends OpsApiPageBase
 				if (!$as_is)
 				{
 					Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ?', $id);
-					if (!$as_is && isset($game->issues))
+					if (isset($game->issues))
 					{
 						//echo 'Game ' . $id . "\n";
 						$old_json = $game->to_json();
-						$game->check($feature_flags, true);
+						$game->check(true);
 						if (isset($game->issues))
 						{
 							$issues = '<ul>';

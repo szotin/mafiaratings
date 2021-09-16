@@ -61,7 +61,7 @@ class ApiPage extends OpsApiPageBase
 				$log_details = new stdClass();
 				$log_details->canceled = true;
 				db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
-				Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is canceled');
+				Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is canceled');
 			}
 		}
 		Db::commit();
@@ -144,7 +144,7 @@ class ApiPage extends OpsApiPageBase
 					$log_details = new stdClass();
 					$log_details->canceled = true;
 					db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
-					Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is canceled');
+					Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is canceled');
 				}
 			}
 			else
@@ -158,7 +158,7 @@ class ApiPage extends OpsApiPageBase
 						$log_details = new stdClass();
 						$log_details->canceled = false;
 						db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
-						Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is restored');
+						Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is restored');
 					}
 				}
 			}
@@ -207,7 +207,7 @@ class ApiPage extends OpsApiPageBase
 					$log_details = new stdClass();
 					$log_details->canceled = false;
 					db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
-					Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is restored');
+					Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is restored');
 				}
 			}
 		}

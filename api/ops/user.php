@@ -45,7 +45,7 @@ class ApiPage extends OpsApiPageBase
 			if ($gs->change_user($src_id, $dst_id))
 			{
 				rebuild_game_stats($gs);
-				Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
+				Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
 			}
 		}
 		

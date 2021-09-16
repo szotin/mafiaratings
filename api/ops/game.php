@@ -1123,7 +1123,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
-		Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is deleted');
+		Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is deleted');
 		
 		db_log(LOG_OBJECT_GAME, 'deleted', NULL, $game_id, $club_id);
 		Db::commit();
@@ -1183,7 +1183,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM players WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'UPDATE games SET result = 0, user_id = ? WHERE id = ?', $_profile->user_id, $game_id);
-		Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
+		Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
 		
 		$log_details = new stdClass();
 		$log_details->old_log = $log;
