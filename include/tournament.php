@@ -241,10 +241,10 @@ function tournament_stars_str($stars)
 	{
 		$stars_str .= '✯';
 	}
-	for (; $i < 5; ++$i)
-	{
-		$stars_str .= '☆';
-	}
+//	for (; $i < 5; ++$i)
+//	{
+//		$stars_str .= '☆';
+//	}
 	return $stars_str;
 }
 	
