@@ -118,8 +118,9 @@ class Page extends UserPageBase
 	private function standard_compare($role)
 	{
 		$mafia_role = ($role == (ROLE_MAFIA | ROLE_DON) ? -1 : 1);
-		$stats1 = new PlayerStats($this->id, -1, $role, GAMES_FILTER_NO_CANCELED); // consider adding GAMES_FILTER_RATING
-		$stats2 = new PlayerStats($this->id2, -1, $role, GAMES_FILTER_NO_CANCELED);
+		$condition = new SQL(' AND g.canceled = 0');
+		$stats1 = new PlayerStats($this->id, -1, $role, $condition);
+		$stats2 = new PlayerStats($this->id2, -1, $role, $condition);
 		
 		$winning_percentage1 = 0;
 		$rating_per_game1 = 0;
@@ -486,12 +487,6 @@ class Page extends UserPageBase
 		if (isset($_REQUEST['view']))
 		{
 			$view = $_REQUEST['view'];
-		}
-		
-		$filter = GAMES_FILTER_TOURNAMENT | GAMES_FILTER_RATING;
-		if (isset($_REQUEST['filter']))
-		{
-			$filter = (int)$_REQUEST['filter'];
 		}
 		
 		echo '<form method="get" name="form" action="player_compare.php">';
