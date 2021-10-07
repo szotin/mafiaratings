@@ -3127,7 +3127,7 @@ class Game
 		$timezone = $this->setup_event();
 		
 		$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
-		$game_flags = isset($data->fun) && $data->fun ? GAME_FLAG_FUN : 0;
+		$game_flags = isset($data->rating) && !$data->rating ? GAME_FLAG_FUN : 0;
 		if ($data->winner == 'maf')
 		{
 			$game_result = 2;
