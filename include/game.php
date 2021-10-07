@@ -94,6 +94,15 @@ class Game
 				$this->data->language = get_lang_code($g->lang);
 				$this->data->rules = $g->rules_code;
 				$this->data->features = Game::feature_flags_to_leters($feature_flags);
+				if (!is_null($g->tournament_id))
+				{
+					$this->data->tournamentId = (int)$g->tournament_id;
+				}
+				if ($g->flags & GAME_FLAG_FUN)
+				{
+					$this->data->rating = false;
+				}
+				
 				if ($g->gamestate == GAME_MAFIA_WON)
 				{
 					$this->data->winner = 'maf';
