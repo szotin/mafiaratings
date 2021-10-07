@@ -11,7 +11,7 @@ define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 define('FLAG_FILTER_RATING', 0x0001);
 define('FLAG_FILTER_NO_RATING', 0x0002);
 
-define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
+define('FLAG_FILTER_DEFAULT', 0);
 
 class Page extends EventPageBase
 {
