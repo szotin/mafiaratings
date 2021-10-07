@@ -198,7 +198,6 @@ class ApiPage extends GetApiPageBase
 			$game->data->startTime = date("Y-m-d\TH:i:sO", $game->data->startTime);
 			$game->data->endTime = date("Y-m-d\TH:i:sO", $game->data->endTime);
 			$game->data->timezone = $timezone;
-			$game->data->features = Game::feature_flags_to_leters($game->flags);
 			//$game->data->rules = rules_code_to_object($game->data->rules);
 			$games[] = $game->data;
 		}

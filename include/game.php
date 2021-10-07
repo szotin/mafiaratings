@@ -3,7 +3,7 @@
 require_once __DIR__ . '/game_state.php';
 require_once __DIR__ . '/rules.php';
 require_once __DIR__ . '/datetime.php';
-require_once __DIR__ . '/rules.php';
+require_once __DIR__ . '/event.php';
 
 define('GAME_FEATURE_FLAG_ARRANGEMENT',                 0x00000001);
 define('GAME_FEATURE_FLAG_DON_CHECKS',                  0x00000002);
@@ -51,6 +51,8 @@ define('GAME_ACTION_LEGACY', 'legacy');
 define('GAME_ACTION_NOMINATING', 'nominating');
 define('GAME_ACTION_VOTING', 'voting');
 define('GAME_ACTION_SHOOTING', 'shooting');
+
+define('GAME_TO_EVENT_MAX_DISTANCE', 10800);
 
 class Game
 {
@@ -2852,6 +2854,358 @@ class Game
 		return '';
 	}
 	
+	function is_participant($user_id)
+	{
+		if ($this->data->moderator->id == $user_id)
+		{
+			return true;
+		}
+		
+		for ($i = 0; $i < 10; ++$i)
+		{
+			if ($this->data->players[$i]->id == $user_id)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	function change_user($user_id, $new_user_id, $nickname)
+	{
+		if ($user_id == 0 || !$this->is_participant($user_id))
+		{
+			return false;
+		}
+		
+		$data = $this->data;
+		if ($new_user_id != $user_id && $this->is_participant($new_user_id))
+		{
+			throw new Exc(get_label('Unable to change one user to another in the game [0] because they both participated in it.', $data->id));
+		}
+		
+		if ($data->moderator->id == $user_id)
+		{
+			$this->moderator->id = $new_user_id;
+		}
+		else for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $data->players[$i];
+			if ($player->id == $user_id)
+			{
+				$player->id = $new_user_id;
+				if ($nickname != NULL)
+				{
+					$player->name = $nickname;
+				}
+				break;
+			}
+		}
+		return true;
+	}
+	
+	function setup_event()
+	{
+		global $_profile;
+		
+		$data = $this->data;
+		$club = $_profile->clubs[$data->clubId];
+		$timezone = $club->timezone;
+		if (!isset($data->rules))
+		{
+			$data->rules = $club->rules_code;
+		}
+		
+		$tournament_id = NULL;
+		if (isset($data->eventId))
+		{
+			list($tournament_id, $timezone, $event_start, $event_duration) = Db::record(get_label('event'), 'SELECT e.tournament_id, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE e.id = ?', $data->eventId);
+		}
+		else
+		{
+			$start_time = $data->startTime;
+			if (!is_numeric($start_time))
+			{
+				$start_time = get_datetime($start_time, $timezone);
+			}
+			
+			$end_time = $data->endTime;
+			if (!is_numeric($end_time))
+			{
+				$end_time = get_datetime($end_time, $timezone);
+			}
+			
+			$events = array();
+			$query = new DbQuery('SELECT e.id, c.timezone, e.start_time, e.duration, e.tournament_id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE e.club_id = ? AND e.start_time + e.duration + ' . GAME_TO_EVENT_MAX_DISTANCE . ' >= ? AND e.start_time - ' . GAME_TO_EVENT_MAX_DISTANCE . ' <= ?', $data->clubId, $start_time, $end_time);
+			while ($row = $query->next())
+			{
+				$events[] = $row;
+			}
+			
+			switch (count($events))
+			{
+				case 0:
+					// create event
+					list($address_id, $address_name, $timezone, $address_count) = Db::record(get_label('address'), 'SELECT a.id, a.name, c.timezone, (SELECT count(*) FROM events e WHERE e.address_id = a.id) cnt FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY cnt DESC, a.id DESC LIMIT 1', $data->clubId);
+					list($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $club->scoring_id);
+					
+					$event_name = get_label('Regular Event');
+					$scoring_options = '{}';
+					
+					if (!is_numeric($data->startTime))
+					{
+						$data->startTime = $start_time = get_datetime($data->startTime, $timezone);
+					}
+					if (!is_numeric($data->endTime))
+					{
+						$data->endTime = $end_time = get_datetime($data->endTime, $timezone);
+					}
+					$event_start = $start_time;
+					$event_duration = $end_time - $start_time;
+					
+					Db::exec(
+						get_label('event'), 
+						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options) ' .
+						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						$name, '', $address_id, $data->clubId, $event_start, 
+						'', $event_duration, EVENT_FLAG_ALL_MODERATE, $club->langs, $data->rules, 
+						$club->scoring_id, $scoring_version, $scoring_options);
+					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
+				
+					$log_details = new stdClass();
+					$log_details->name = $event_name;
+					$log_details->address_name = $address_name;
+					$log_details->address_id = $address_id;
+					$log_details->start = format_date('d/m/y H:i', $event_start, $timezone);
+					$log_details->duration = $event_duration;
+					$log_details->flags = EVENT_FLAG_ALL_MODERATE;
+					$log_details->langs = $club->langs;
+					$log_details->rules_code = $data->rules;
+					$log_details->scoring_id = $club->scoring_id;
+					$log_details->scoring_version = $scoring_version;
+					db_log(LOG_OBJECT_EVENT, 'created', $log_details, $event_id, $data->clubId);
+					break;
+					
+				case 1:
+					list($event_id, $timezone, $event_start, $event_duration, $tournament_id) = $events[0];
+					break;
+					
+				default:
+					// find the closest event
+					$event = $events[0];
+					$distance = GAME_TO_EVENT_MAX_DISTANCE;
+					foreach ($events as $row)
+					{
+						list($event_id, $event_timezone, $event_start, $event_duration, $tournament_id) = $row;
+						$event_distance = max($event_start - $end_time, $start_time - $event_start - $event_duration);
+						if ($event_distance < $distance)
+						{
+							$event = $event_id;
+							$distance = $event_distance;
+						}
+					}
+					list($event_id, $event_timezone, $event_start, $event_duration, $tournament_id) = $event;
+					break;
+			}
+			$data->eventId = (int)$event_id;
+		}
+		
+		// Change times to timestamps using event timezone if needed
+		if (!is_numeric($data->startTime))
+		{
+			$data->startTime = get_datetime($data->startTime, $timezone);
+		}
+		if (!is_numeric($data->endTime))
+		{
+			$data->endTime = get_datetime($data->endTime, $timezone);
+		}
+		
+		// Update event if needed
+		$update_event = false;
+		if ($event_start > $data->startTime)
+		{
+			$update_event = true;
+			$event_start = $data->startTime;
+		}
+		if ($event_start + $event_duration < $data->endTime)
+		{
+			$update_event = true;
+			$event_duration = $data->endTime - $event_start;
+		}
+		if ($update_event)
+		{
+			Db::exec(get_label('event'), 'UPDATE events SET start_time = ?, duration = ? WHERE id = ?', $event_start, $event_duration, $event_id);
+		}
+		
+		// Now make sure tournament field is ok
+		if (isset($data->tournamentId) && $data->tournamentId != $tournament_id)
+		{
+			list($tournament_name, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT name, flags FROM tournaments WHERE id = ?', $data->tournamentId);
+			if (($tournament_flags | TOURNAMENT_FLAG_SINGLE_GAME) == 0)
+			{
+				throw new Exc(get_label('Game [0] can not be played in the tournament [1]', $this->id, $tournament_name));
+			}
+		}
+		return $timezone;
+	}
+	
+	function update()
+	{
+		$this->check(false);
+		$data = $this->data;
+		$json = $this->to_json();
+		$feature_flags = Game::leters_to_feature_flags($data->features);
+		
+		if (!isset($data->id))
+		{
+			throw new Exc(get_label('Game number is not set.'));
+		}
+				
+		if (!isset($data->clubId))
+		{
+			throw new Exc(get_label('Club id is not set.'));
+		}
+		
+		if (!isset($data->startTime))
+		{
+			throw new Exc(get_label('Game start time is not set.'));
+		}
+		
+		if (!isset($data->endTime))
+		{
+			throw new Exc(get_label('Game end time is not set.'));
+		}
+		
+		if (!isset($data->language))
+		{
+			$data->language = 'ru';
+		}
+		$language = get_lang_by_code($data->language);
+		
+		if (!isset($data->rules))
+		{
+			$data->rules = default_rules_code();
+		}
+		
+		Db::begin();
+		
+		// clean up stats
+		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated - 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $data->id);
+		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $data->id);
+		Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $data->id);
+		Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $data->id);
+		Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $data->id);
+		Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $data->id, $feature_flags);
+		
+		// Fix json if needed and save original json to game_issues table
+		if (isset($this->issues))
+		{
+			$this->check(true);
+			$new_json = $this->to_json();
+			$new_feature_flags = Game::leters_to_feature_flags($data->features);
+			$issues = '<ul>';
+			foreach ($this->issues as $issue)
+			{
+				$issues .= '<li>' . $issue . '</li>';
+			}
+			$issues .= '</ul>';
+			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $data->id, $json, $issues, $feature_flags, $new_feature_flags);
+			$json = $new_json;
+			$feature_flags = $new_feature_flags;
+		}
+		
+		// Save game json and feature flags
+		$timezone = $this->setup_event();
+		
+		$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
+		$game_flags = isset($data->fun) && $data->fun ? GAME_FLAG_FUN : 0;
+		if ($data->winner == 'maf')
+		{
+			$game_result = 2;
+		}
+		else if ($data->winner == 'civ')
+		{
+			$game_result = 1;
+		}
+		else
+		{
+			$game_result = 3;
+		}
+		
+		Db::exec(get_label('game'),
+			'UPDATE games SET json = ?, end_time = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
+				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
+				'rules = ?, flags = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
+			$json, $data->endTime, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
+			$language, $data->start_time, $data->endTime, $game_result,
+			$data->rules, $game_flags, $data->id);
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		// ...
+		$stats = array();
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$stats[] = new GamePlayerStats($gs, $i);
+		}
+		
+		// calculate ratings
+		$maf_sum = 0;
+		$maf_count = 0;
+		$civ_sum = 0;
+		$civ_count = 0;
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $gs->players[$i];
+			if ($player->id > 0)
+			{
+				switch ($player->role)
+				{
+					case PLAYER_ROLE_CIVILIAN:
+					case PLAYER_ROLE_SHERIFF:
+						$civ_sum += $stats[$i]->rating_before;
+						++$civ_count;
+						break;
+					case PLAYER_ROLE_MAFIA:
+					case PLAYER_ROLE_DON:
+						$maf_sum += $stats[$i]->rating_before;
+						++$maf_count;
+						break;
+				}
+			}
+		}
+		
+		$civ_odds = NULL;
+		if ($maf_count > 0 && $civ_count > 0)
+		{
+			$civ_odds = 1.0 / (1.0 + pow(10.0, ($maf_sum / $maf_count - $civ_sum / $civ_count) / 400));
+			for ($i = 0; $i < 10; ++$i)
+			{
+				$stats[$i]->calculate_rating($civ_odds);
+			}
+		}
+		
+		// save stats
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$stats[$i]->save();
+		}
+		Db::exec(get_label('game'), 'UPDATE games SET result = ?, flags = ?, civ_odds = ?, json = ?, feature_flags = ? WHERE id = ?', $game_result, $gs->flags, $civ_odds, $game->to_json(), $game->flags, $gs->id);
+		
+		
+		
+		
+		save_game_results($gs);
+		db_log(LOG_OBJECT_GAME, 'updated', NULL, $data->id, $data->club_id);
+		Db::commit();
+	}
+	
 	private static function feature_flags_help($param, $text)
 	{
 		$text .= '<ul>';
@@ -2881,6 +3235,8 @@ class Game
 		Game::feature_flags_help($param, 'what features this game record contains. This is a combination of letters. For example "gsdutclhnwr". Every letter means that the game contains some information:');
 		$param->sub_param('clubId', 'Club id. Unique club identifier.');
 		$param->sub_param('eventId', 'Event id. Unique event identifier.');
+		$param->sub_param('tournamentId', 'Tournament id. Unique tournament identifier. Event in this case is a tournament round - semifinal, final, etc.', 'this is not a tournament game.');
+		$param->sub_param('fun', 'When true this is non-rating game played for fun. It is kept in the database for user stats but it is not used in rating calculation nor tournament/event scoring.', 'this is a rating game.');
 		$param->sub_param('startTime', 'Game start in ISO-8601.');
 		$param->sub_param('endTime', 'Game end in ISO-8601.');
 		$param->sub_param('timezone', 'Timezone in text format. For example "America/New_York".');
