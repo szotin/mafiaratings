@@ -2,12 +2,6 @@
 
 require_once __DIR__ . '/localization.php';
 require_once __DIR__ . '/scoring.php';
-require_once __DIR__ . '/game.php';
-
-define('ROLE_CIVILIAN', 0);
-define('ROLE_SHERIFF', 1);
-define('ROLE_MAFIA', 2);
-define('ROLE_DON', 3);
 
 class GamePlayersStats
 {
@@ -214,7 +208,7 @@ class GamePlayersStats
 			if (isset($game_player->legacy))
 			{
 				$mafs_guessed = 0;
-				for ($game_player->legacy as $legacy)
+				foreach ($game_player->legacy as $legacy)
 				{
 					$p = $data->players[$legacy - 1];
 					if (isset($p->role) && ($p->role == 'maf' || $p->role == 'don'))
@@ -251,7 +245,7 @@ class GamePlayersStats
 				$player->scoring_flags |= SCORING_FLAG_RED_CHECKS;
 			}
 			
-			if (isset($game_player->bonus)
+			if (isset($game_player->bonus))
 			{
 				$player->scoring_flags |= SCORING_FLAG_EXTRA_POINTS;
 			}
@@ -263,7 +257,6 @@ class GamePlayersStats
         $this->game = $game;
 		$this->players = array();
 		$mafs = array();
-		$game_mafs = array();
 		$don = NULL;
 		$sheriff = NULL;
 		$data = $game->data;
@@ -296,8 +289,7 @@ class GamePlayersStats
 			{
 				$player->role = ROLE_MAFIA;
 				$player->won = $data->winner == 'maf' ? 1 : 0;
-				$mafs[] = $player;
-				$game_mafs[] = $game_player;
+				$mafs[] = $i;
 				
 				$player->shots1_ok = 0;
 				$player->shots1_miss = 0;
@@ -315,8 +307,7 @@ class GamePlayersStats
 			{
 				$player->role = ROLE_DON;
 				$player->won = $data->winner == 'maf' ? 1 : 0;
-				$mafs[] = $player;
-				$game_mafs[] = $game_player;
+				$mafs[] = $i;
 				$don = $player;
 				
 				$player->shots1_ok = 0;
@@ -474,6 +465,10 @@ class GamePlayersStats
 			{
 				foreach ($game_player->nominating as $n)
 				{
+					if (is_null($n))
+					{
+						continue;
+					}
 					$p = $this->players[$n-1];
 					switch ($p->role)
 					{
@@ -506,8 +501,10 @@ class GamePlayersStats
 			
 			if (isset($game_player->voting))
 			{
-				foreach ($game_player->voting as $v)
+				// We exclude voting in round 0 because this is mostly splitting. 
+				for ($j = 1; $j < count($game_player->voting); ++$j)
 				{
+					$v = $game_player->voting[$j];
 					if (is_null($v))
 					{
 						continue;
@@ -609,10 +606,10 @@ class GamePlayersStats
 		{
 			for ($j = 0; $j < count($mafs); )
 			{
-				$m = $game_mafs[$j];
-				if ($game->compare_gametimes($game->get_player_death_time($m->number), $shooting_time) < 0)
+				$n = $mafs[$j];
+				$m = $data->players[$n];
+				if ($game->compare_gametimes($game->get_player_death_time($n + 1), $shooting_time) < 0)
 				{
-					array_splice($game_mafs, $j, 1);
 					array_splice($mafs, $j, 1);
 				}
 				else
@@ -629,135 +626,135 @@ class GamePlayersStats
 			switch ($j)
 			{
 				case 1:
-					if (!isset($game_mafs[0]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[0]->shooting[$shooting_time->round - 1]))
+					if (!isset($data->players[$mafs[0]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[0]]->shooting[$shooting_time->round - 1]))
 					{
-						++$mafs[0]->shots1_miss;
+						++$this->players[$mafs[0]]->shots1_miss;
 					}
 					else
 					{
-						++$mafs[0]->shots1_ok;
+						++$this->players[$mafs[0]]->shots1_ok;
 					}
 					break;
 				case 2:
-					if (!isset($game_mafs[0]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[0]->shooting[$shooting_time->round - 1]))
+					if (!isset($data->players[$mafs[0]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[0]]->shooting[$shooting_time->round - 1]))
 					{
-						++$mafs[0]->shots2_blank;
-						if (!isset($game_mafs[1]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[1]->shooting[$shooting_time->round - 1]))
+						++$this->players[$mafs[0]]->shots2_blank;
+						if (!isset($data->players[$mafs[1]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[1]]->shooting[$shooting_time->round - 1]))
 						{
-							++$mafs[1]->shots2_blank;
+							++$this->players[$mafs[1]]->shots2_blank;
 						}
 						else
 						{
-							++$mafs[1]->shots2_miss;
+							++$this->players[$mafs[1]]->shots2_miss;
 						}
 					}
-					else if (!isset($game_mafs[1]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[1]->shooting[$shooting_time->round - 1]))
+					else if (!isset($data->players[$mafs[1]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[1]]->shooting[$shooting_time->round - 1]))
 					{
-						++$mafs[0]->shots2_miss;
-						++$mafs[1]->shots2_blank;
+						++$this->players[$mafs[0]]->shots2_miss;
+						++$this->players[$mafs[1]]->shots2_blank;
 					}
-					else if ($game_mafs[0]->shooting[$shooting_time->round - 1] != $game_mafs[1]->shooting[$shooting_time->round - 1])
+					else if ($data->players[$mafs[0]]->shooting[$shooting_time->round - 1] != $data->players[$mafs[1]]->shooting[$shooting_time->round - 1])
 					{
-						++$mafs[0]->shots2_miss;
-						++$mafs[1]->shots2_miss;
+						++$this->players[$mafs[0]]->shots2_miss;
+						++$this->players[$mafs[1]]->shots2_miss;
 					}
 					else
 					{
-						++$mafs[0]->shots2_ok;
-						++$mafs[1]->shots2_ok;
-						$victim_num = $game_mafs[0]->shooting[$shooting_time->round - 1];
+						++$this->players[$mafs[0]]->shots2_ok;
+						++$this->players[$mafs[1]]->shots2_ok;
+						$victim_num = $data->players[$mafs[0]]->shooting[$shooting_time->round - 1];
 						$victim = $data->players[$victim_num-1];
 						if (!isset($victim->arranged) || $victim->arranged != $victim_num)
 						{
-							++$mafs[0]->shots2_rearrange;
-							++$mafs[1]->shots2_rearrange;
+							++$this->players[$mafs[0]]->shots2_rearrange;
+							++$this->players[$mafs[1]]->shots2_rearrange;
 						}
 					}
 					break;
 					
 				case 3:
-					if (!isset($game_mafs[0]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[0]->shooting[$shooting_time->round - 1]))
+					if (!isset($data->players[$mafs[0]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[0]]->shooting[$shooting_time->round - 1]))
 					{
-						++$mafs[0]->shots3_blank;
-						if (!isset($game_mafs[1]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[1]->shooting[$shooting_time->round - 1]))
+						++$this->players[$mafs[0]]->shots3_blank;
+						if (!isset($data->players[$mafs[1]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[1]]->shooting[$shooting_time->round - 1]))
 						{
-							++$mafs[1]->shots3_blank;
-							if (!isset($game_mafs[2]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[2]->shooting[$shooting_time->round - 1]))
+							++$this->players[$mafs[1]]->shots3_blank;
+							if (!isset($data->players[$mafs[2]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[2]]->shooting[$shooting_time->round - 1]))
 							{
-								++$mafs[2]->shots3_blank;
+								++$this->players[$mafs[2]]->shots3_blank;
 							}
 							else
 							{
-								++$mafs[2]->shots3_miss;
+								++$this->players[$mafs[2]]->shots3_miss;
 							}
 						}
-						else if (!isset($game_mafs[2]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[2]->shooting[$shooting_time->round - 1]))
+						else if (!isset($data->players[$mafs[2]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[2]]->shooting[$shooting_time->round - 1]))
 						{
-							++$mafs[1]->shots3_miss;
-							++$mafs[2]->shots3_blank;
+							++$this->players[$mafs[1]]->shots3_miss;
+							++$this->players[$mafs[2]]->shots3_blank;
 						}
 						else
 						{
-							++$mafs[1]->shots3_miss;
-							++$mafs[2]->shots3_miss;
+							++$this->players[$mafs[1]]->shots3_miss;
+							++$this->players[$mafs[2]]->shots3_miss;
 						}
 					}
-					else if (!isset($game_mafs[1]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[1]->shooting[$shooting_time->round - 1]))
+					else if (!isset($data->players[$mafs[1]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[1]]->shooting[$shooting_time->round - 1]))
 					{
-						++$mafs[0]->shots3_miss;
-						++$mafs[1]->shots3_blank;
-						if (!isset($game_mafs[2]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[2]->shooting[$shooting_time->round - 1]))
+						++$this->players[$mafs[0]]->shots3_miss;
+						++$this->players[$mafs[1]]->shots3_blank;
+						if (!isset($data->players[$mafs[2]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[2]]->shooting[$shooting_time->round - 1]))
 						{
-							++$mafs[2]->shots3_blank;
+							++$this->players[$mafs[2]]->shots3_blank;
 						}
 						else
 						{
-							++$mafs[2]->shots3_miss;
+							++$this->players[$mafs[2]]->shots3_miss;
 						}
 					}
-					else if (!isset($game_mafs[2]->shooting[$shooting_time->round - 1]) || is_null($game_mafs[2]->shooting[$shooting_time->round - 1]))
+					else if (!isset($data->players[$mafs[2]]->shooting[$shooting_time->round - 1]) || is_null($data->players[$mafs[2]]->shooting[$shooting_time->round - 1]))
 					{
-						++$mafs[0]->shots3_miss;
-						++$mafs[1]->shots3_miss;
-						++$mafs[2]->shots3_blank;
+						++$this->players[$mafs[0]]->shots3_miss;
+						++$this->players[$mafs[1]]->shots3_miss;
+						++$this->players[$mafs[2]]->shots3_blank;
 					}
-					else if ($game_mafs[0]->shooting[$shooting_time->round - 1] != $game_mafs[1]->shooting[$shooting_time->round - 1])
+					else if ($data->players[$mafs[0]]->shooting[$shooting_time->round - 1] != $data->players[$mafs[1]]->shooting[$shooting_time->round - 1])
 					{
-						if ($game_mafs[0]->shooting[$shooting_time->round - 1] == $game_mafs[2]->shooting[$shooting_time->round - 1])
+						if ($data->players[$mafs[0]]->shooting[$shooting_time->round - 1] == $data->players[$mafs[2]]->shooting[$shooting_time->round - 1])
 						{
-							++$mafs[0]->shots3_miss;
-							++$mafs[1]->shots3_fail;
+							++$this->players[$mafs[0]]->shots3_miss;
+							++$this->players[$mafs[1]]->shots3_fail;
 						}
-						else if ($game_mafs[1]->shooting[$shooting_time->round - 1] == $game_mafs[2]->shooting[$shooting_time->round - 1])
+						else if ($data->players[$mafs[1]]->shooting[$shooting_time->round - 1] == $data->players[$mafs[2]]->shooting[$shooting_time->round - 1])
 						{
-							++$mafs[0]->shots3_fail;
-							++$mafs[1]->shots3_miss;
+							++$this->players[$mafs[0]]->shots3_fail;
+							++$this->players[$mafs[1]]->shots3_miss;
 						}
 						else
 						{
-							++$mafs[0]->shots3_miss;
-							++$mafs[1]->shots3_miss;
+							++$this->players[$mafs[0]]->shots3_miss;
+							++$this->players[$mafs[1]]->shots3_miss;
 						}
-						++$mafs[2]->shots3_miss;
+						++$this->players[$mafs[2]]->shots3_miss;
 					}
-					else if ($game_mafs[0]->shooting[$shooting_time->round - 1] != $game_mafs[2]->shooting[$shooting_time->round - 1])
+					else if ($data->players[$mafs[0]]->shooting[$shooting_time->round - 1] != $data->players[$mafs[2]]->shooting[$shooting_time->round - 1])
 					{
-						++$mafs[0]->shots3_miss;
-						++$mafs[1]->shots3_miss;
-						++$mafs[2]->shots3_fail;
+						++$this->players[$mafs[0]]>shots3_miss;
+						++$this->players[$mafs[1]]->shots3_miss;
+						++$this->players[$mafs[2]]->shots3_fail;
 					}
 					else
 					{
-						++$mafs[0]->shots3_ok;
-						++$mafs[1]->shots3_ok;
-						++$mafs[2]->shots3_ok;
-						$victim_num = $game_mafs[0]->shooting[$shooting_time->round - 1];
+						++$this->players[$mafs[0]]->shots3_ok;
+						++$this->players[$mafs[1]]->shots3_ok;
+						++$this->players[$mafs[2]]->shots3_ok;
+						$victim_num = $data->players[$mafs[0]]->shooting[$shooting_time->round - 1];
 						$victim = $data->players[$victim_num-1];
 						if (!isset($victim->arranged) || $victim->arranged != $victim_num)
 						{
-							++$mafs[0]->shots3_rearrange;
-							++$mafs[1]->shots3_rearrange;
-							++$mafs[2]->shots3_rearrange;
+							++$this->players[$mafs[0]]->shots3_rearrange;
+							++$this->players[$mafs[1]]->shots3_rearrange;
+							++$this->players[$mafs[2]]->shots3_rearrange;
 						}
 					}
 					break;
@@ -823,18 +820,6 @@ class GamePlayersStats
 						$player->shots3_blank, $player->shots3_fail, $player->shots3_rearrange);
 					break;
 			}
-			
-			$query = new DbQuery('UPDATE users SET games = games + 1, games_won = games_won + ?', $player->won);
-			if ($player->scoring_flags & SCORING_FLAG_KILLED_FIRST_NIGHT)
-			{
-				$query->add(', flags = (flags | ' . USER_FLAG_IMMUNITY . ')');
-			}
-			else
-			{
-				$query->add(', flags = (flags & ' . ~USER_FLAG_IMMUNITY . ')');
-			}
-			$query->add(' WHERE id = ?', $player->id);
-			Db::exec(get_label('user'), $query);
 		}
     }
 }

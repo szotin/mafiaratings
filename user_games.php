@@ -272,7 +272,7 @@ class Page extends UserPageBase
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' WHERE p.user_id = ?', 
 				$this->id, $condition);
-			$query->add(' ORDER BY g.start_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+			$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			while ($row = $query->next())
 			{
 				list (

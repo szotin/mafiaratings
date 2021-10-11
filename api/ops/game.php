@@ -812,6 +812,10 @@ class ApiPage extends OpsApiPageBase
 				$data = json_decode($_REQUEST['data']);
 				if ($data == NULL)
 				{
+					if (is_permitted(PERMISSION_ADMIN))
+					{
+						throw new Exc(get_label('Invalid json format.') . '<p>' . $_REQUEST['data'] . '</p>');
+					}
 					throw new Exc(get_label('Invalid json format.'));
 				}
 				if (count($data) <= 0)
@@ -1127,8 +1131,6 @@ class ApiPage extends OpsApiPageBase
 		
 		db_log(LOG_OBJECT_GAME, 'deleted', NULL, $game_id, $club_id);
 		Db::commit();
-		
-		$this->response['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
 	}
 	
 	function delete_op_help()
@@ -1189,8 +1191,6 @@ class ApiPage extends OpsApiPageBase
 		$log_details->old_log = $log;
 		db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id);
 		Db::commit();
-		
-		$this->response['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
 	}
 	
 	// function change_op_help()
@@ -1404,55 +1404,24 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$game_id = (int)get_required_param('game_id');
-		$src = json_decode(get_required_param('json'));
-		if ($src == NULL)
+		$json = get_required_param('json');
+		if ($json == NULL)
 		{
 			throw new Exc(get_label('Invalid json format.'));
 		}
 		
 		Db::begin();
-		check_permissions(PERMISSION_ADMIN);
-		
-		$gs = new GameState();
-		$gs->create_from_json($src);
+		list($club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, moderator_id FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		
 		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
-		$game = new Game($gs, $feature_flags);
-		$game->check();
-		if (isset($game->data->features))
-		{
-			$feature_flags = Game::leters_to_feature_flags($game->data->features);
-		}
-		
-		Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $game_id, $feature_flags);
-		// This line is temporary - for removing converted game issues. Delete later.
-		Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = 0', $game_id);
-		if (isset($game->issues))
-		{
-			$old_json = $game->to_json();
-			$game->fix();
-			if (isset($game->issues))
-			{
-				$issues = '<ul>';
-				foreach ($game->issues as $issue)
-				{
-					$issues .= '<li>' . $issue . '</li>';
-				}
-				$issues .= '</ul>';
-			}
-			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $game_id, $old_json, $issues, $feature_flags, Game::leters_to_feature_flags($game->data->features));
-		}
-		
-		Db::exec(get_label('game'), 'UPDATE games SET log = ?, json = ?, feature_flags = ?, rules = ? WHERE id = ?', $gs->write(), $game->to_json(), $game->flags, $gs->rules_code, $game_id);
+		$game = new Game($json, $feature_flags);
+		$game->update();
 		Db::commit();
 		
 		if (isset($issues))
 		{
 			$this->response['message'] = $issues;
-		}
-		else
-		{
-			$this->response['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
 		}
 	}
 	

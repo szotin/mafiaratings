@@ -300,4 +300,9 @@ define('UPLOAD_LOGO_MAX_SIZE', 2097152);
 define('UPLOAD_SOUND_MAX_SIZE', 2097152);
 define('UPLOAD_PHOTO_MAX_SIZE', 2097152);
 
+define('ROLE_CIVILIAN', 0);
+define('ROLE_SHERIFF', 1);
+define('ROLE_MAFIA', 2);
+define('ROLE_DON', 3);
+
 ?>

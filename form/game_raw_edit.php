@@ -1,7 +1,7 @@
 <?php
 
 require_once '../include/session.php';
-require_once '../include/game_state.php';
+require_once '../include/game.php';
 
 initiate_session();
 
@@ -15,10 +15,9 @@ try
 	}
 	$game_id = $_REQUEST['game_id'];
 	
-	list ($game_log, $is_canceled) = Db::record(get_label('game'), 'SELECT log, canceled FROM games WHERE id = ?', $game_id);
-	$gs = new GameState();
-	$gs->init_existing($game_id, $game_log, $is_canceled);
-	echo '<textarea id="form-json" cols="165" rows="60">' . formatted_json($gs) . '</textarea>';
+	list ($json, $is_canceled) = Db::record(get_label('game'), 'SELECT json, canceled FROM games WHERE id = ?', $game_id);
+	$game = new Game($json);
+	echo '<textarea id="form-json" cols="165" rows="60">' . formatted_json($game->data) . '</textarea>';
 	
 ?>	
 	<script>

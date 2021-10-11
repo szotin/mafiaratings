@@ -562,7 +562,7 @@ class GameState
 				}
 				
 				$g = $this->players[$n];
-				if ($g->role == PLAYER_ROLE_DON || $g->role == PLAYER_ROLE_MAFIA)
+				if ($g->role == ROLE_DON || $g->role == ROLE_MAFIA)
 				{
 					++$mafs;
 				}

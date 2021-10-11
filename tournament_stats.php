@@ -150,16 +150,16 @@ class Page extends TournamentPageBase
 					echo '<tr><td width="200">';
 					switch ($role)
 					{
-					case PLAYER_ROLE_CIVILIAN:
+					case ROLE_CIVILIAN:
 						echo get_label('Civilians');
 						break;
-					case PLAYER_ROLE_SHERIFF:
+					case ROLE_SHERIFF:
 						echo get_label('Sheriffs');
 						break;
-					case PLAYER_ROLE_MAFIA:
+					case ROLE_MAFIA:
 						echo get_label('Mafiosies');
 						break;
-					case PLAYER_ROLE_DON:
+					case ROLE_DON:
 						echo get_label('Dons');
 						break;
 					}

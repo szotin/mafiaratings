@@ -202,7 +202,7 @@ class Page extends UserPageBase
 			}
 			echo '</table></p>';
 			
-			if (($roles & (ROLE_MAFIA | ROLE_DON)) != 0)
+			if (($roles & (ROLE_FLAG_MAFIA | ROLE_FLAG_DON)) != 0)
 			{
 				$mafia_stats = new MafiaStats($this->id, $club_id, $roles);
 				echo '<p><table class="bordered light" width="100%">';
@@ -241,7 +241,7 @@ class Page extends UserPageBase
 				echo '</table></p>';
 			}
 			
-			if (($roles & ROLE_SHERIFF) != 0)
+			if (($roles & ROLE_FLAG_SHERIFF) != 0)
 			{
 				$sheriff_stats = new SheriffStats($this->id, $club_id);
 				$count = $sheriff_stats->civil_found + $sheriff_stats->mafia_found;
@@ -255,7 +255,7 @@ class Page extends UserPageBase
 				}
 			}
 			
-			if (($roles & ROLE_DON) != 0)
+			if (($roles & ROLE_FLAG_DON) != 0)
 			{
 				$don_stats = new DonStats($this->id, $club_id);
 				if ($don_stats->games_played > 0)
@@ -272,11 +272,11 @@ class Page extends UserPageBase
 			echo '<tr class="th-short darker"><td colspan="2">' . get_label('Miscellaneous') . '</td></tr>';
 			echo '<tr><td class="dark" width="300">'.get_label('Warnings').':</td><td>' . $stats->warnings . ' (' . number_format($stats->warnings/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
 			echo '<tr><td class="dark" width="300">'.get_label('Arranged by mafia').':</td><td>' . $stats->arranged . ' (' . number_format($stats->arranged/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
-			if (($roles & (ROLE_CIVIL | ROLE_SHERIFF)) != 0)
+			if (($roles & (ROLE_FLAG_CIVIL | ROLE_FLAG_SHERIFF)) != 0)
 			{
 				echo '<tr><td class="dark" width="300">'.get_label('Checked by don').':</td><td>' . $stats->checked_by_don . ' (' . number_format($stats->checked_by_don/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
 			}
-			if ($roles != ROLE_SHERIFF)
+			if ($roles != ROLE_FLAG_SHERIFF)
 			{
 				echo '<tr><td class="dark" width="300">'.get_label('Checked by sheriff').':</td><td>' . $stats->checked_by_sheriff . ' (' . number_format($stats->checked_by_sheriff/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
 			}

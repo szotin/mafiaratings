@@ -4,6 +4,8 @@ require_once __DIR__ . '/game_state.php';
 require_once __DIR__ . '/rules.php';
 require_once __DIR__ . '/datetime.php';
 require_once __DIR__ . '/event.php';
+require_once __DIR__ . '/game_ratings.php';
+require_once __DIR__ . '/game_players_stats.php';
 
 define('GAME_FEATURE_FLAG_ARRANGEMENT',                 0x00000001);
 define('GAME_FEATURE_FLAG_DON_CHECKS',                  0x00000002);
@@ -151,16 +153,16 @@ class Game
 					}
 					switch ($p->role)
 					{
-						case PLAYER_ROLE_SHERIFF:
+						case ROLE_SHERIFF:
 							$player->role = 'sheriff';
 							break;
-						case PLAYER_ROLE_DON:
+						case ROLE_DON:
 							$player->role = 'don';
 							break;
-						case PLAYER_ROLE_MAFIA:
+						case ROLE_MAFIA:
 							$player->role = 'maf';
 							break;
-						case PLAYER_ROLE_CIVILIAN: 
+						case ROLE_CIVILIAN: 
 							// If role is not set - civ is assumed, so we are not setting role in this case. Although 'civ' can also be set.
 							// $player->role = 'civ';
 							break;
@@ -2928,7 +2930,7 @@ class Game
 		$tournament_id = NULL;
 		if (isset($data->eventId))
 		{
-			list($tournament_id, $timezone, $event_start, $event_duration) = Db::record(get_label('event'), 'SELECT e.tournament_id, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE e.id = ?', $data->eventId);
+			list($tournament_id, $timezone, $event_start, $event_duration) = Db::record(get_label('event'), 'SELECT e.tournament_id, c.timezone, e.start_time, e.duration FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE e.id = ?', $data->eventId);
 		}
 		else
 		{
@@ -3064,6 +3066,7 @@ class Game
 		$data = $this->data;
 		$json = $this->to_json();
 		$feature_flags = Game::leters_to_feature_flags($data->features);
+		$is_rating_game = !isset($data->rating) || $data->rating;
 		
 		if (!isset($data->id))
 		{
@@ -3097,9 +3100,14 @@ class Game
 		}
 		
 		Db::begin();
+		if ($is_rating_game)
+		{
+			list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & ' . GAME_FLAG_FUN . ') = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+		}
 		
 		// clean up stats
 		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated - 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $data->id);
+		Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games - 1, u.games_won = u.games_won - p.won, u.rating = u.rating - p.rating_earned WHERE p.game_id = ?', $data->id);
 		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $data->id);
 		Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $data->id);
 		Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $data->id);
@@ -3142,76 +3150,49 @@ class Game
 		}
 		
 		Db::exec(get_label('game'),
-			'UPDATE games SET json = ?, end_time = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
+			'UPDATE games SET json = ?, feature_flags = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
 				'rules = ?, flags = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
-			$json, $data->endTime, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
-			$language, $data->start_time, $data->endTime, $game_result,
+			$json, $feature_flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
+			$language, $data->startTime, $data->endTime, $game_result,
 			$data->rules, $game_flags, $data->id);
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		// ...
-		$stats = array();
-		for ($i = 0; $i < 10; ++$i)
-		{
-			$stats[] = new GamePlayerStats($gs, $i);
-		}
+		$stats = new GamePlayersStats($this);
+		$stats->save();
 		
 		// calculate ratings
-		$maf_sum = 0;
-		$maf_count = 0;
-		$civ_sum = 0;
-		$civ_count = 0;
-		for ($i = 0; $i < 10; ++$i)
+		update_game_ratings($data->id, $is_rating_game);
+		
+		Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games + 1, u.games_won = u.games_won + p.won, u.rating = u.rating + p.rating_earned WHERE p.game_id = ?', $data->id);
+		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated + 1 WHERE id = ?', $data->moderator->id);
+		
+		if ($is_rating_game)
 		{
-			$player = $gs->players[$i];
-			if ($player->id > 0)
+			if ($games_after_count <= 0)
 			{
-				switch ($player->role)
+				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & ' . GAME_FLAG_FUN . ') = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+			}
+			
+			if ($games_after_count > 0)
+			{
+				// Some players of this game played later, so ratings requiere rebuilding.
+				$query = new DbQuery('SELECT r.id, r.game_id, g.end_time FROM rebuild_ratings r JOIN games g ON g.id = r.game_id WHERE r.start_time = 0');
+				if ($row = $query->next())
 				{
-					case PLAYER_ROLE_CIVILIAN:
-					case PLAYER_ROLE_SHERIFF:
-						$civ_sum += $stats[$i]->rating_before;
-						++$civ_count;
-						break;
-					case PLAYER_ROLE_MAFIA:
-					case PLAYER_ROLE_DON:
-						$maf_sum += $stats[$i]->rating_before;
-						++$maf_count;
-						break;
+					list($rebuild_id, $old_game_id, $old_game_end_time) = $row;
+					if ($data->endTime < $old_game_end_time || ($data->endTime < $old_game_end_time && $data->id < $old_game_id))
+					{
+						Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE id = ?', $data->id, $rebuild_id);
+					}
+				}
+				else
+				{
+					Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (start_time, end_time, game_id) VALUES (0, 0, ?)', $data->id);
 				}
 			}
 		}
 		
-		$civ_odds = NULL;
-		if ($maf_count > 0 && $civ_count > 0)
-		{
-			$civ_odds = 1.0 / (1.0 + pow(10.0, ($maf_sum / $maf_count - $civ_sum / $civ_count) / 400));
-			for ($i = 0; $i < 10; ++$i)
-			{
-				$stats[$i]->calculate_rating($civ_odds);
-			}
-		}
-		
-		// save stats
-		for ($i = 0; $i < 10; ++$i)
-		{
-			$stats[$i]->save();
-		}
-		Db::exec(get_label('game'), 'UPDATE games SET result = ?, flags = ?, civ_odds = ?, json = ?, feature_flags = ? WHERE id = ?', $game_result, $gs->flags, $civ_odds, $game->to_json(), $game->flags, $gs->id);
-		
-		
-		
-		
-		save_game_results($gs);
-		db_log(LOG_OBJECT_GAME, 'updated', NULL, $data->id, $data->club_id);
+		db_log(LOG_OBJECT_GAME, 'updated', NULL, $data->id, $data->clubId);
 		Db::commit();
 	}
 	

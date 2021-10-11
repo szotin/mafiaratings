@@ -4,11 +4,11 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/scoring.php';
 
 define("AVERAGE_PLAYER", -1);
-define("ROLE_CIVIL", 1);
-define("ROLE_SHERIFF", 2);
-define("ROLE_MAFIA", 4);
-define("ROLE_DON", 8);
-define("ROLE_ANY", 15);
+define("ROLE_FLAG_CIVIL", 1);
+define("ROLE_FLAG_SHERIFF", 2);
+define("ROLE_FLAG_MAFIA", 4);
+define("ROLE_FLAG_DON", 8);
+define("ROLE_FLAG_ANY", 15);
 
 define("SURVIVED", 0);
 define("DAY_KILL", 1);

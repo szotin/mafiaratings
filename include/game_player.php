@@ -3,12 +3,6 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/game_log.php';
 
-// roles
-define('PLAYER_ROLE_CIVILIAN', 0);
-define('PLAYER_ROLE_SHERIFF', 1);
-define('PLAYER_ROLE_MAFIA', 2);
-define('PLAYER_ROLE_DON', 3);
-
 // player states
 define('PLAYER_STATE_ALIVE', 0);
 define('PLAYER_STATE_KILLED_NIGHT', 1);
@@ -46,7 +40,7 @@ class Player
 		$this->nick = '';
 		$this->is_male = 1;
 		$this->has_immunity = false;
-		$this->role = PLAYER_ROLE_CIVILIAN;
+		$this->role = ROLE_CIVILIAN;
 		$this->warnings = 0;
 		$this->state = PLAYER_STATE_ALIVE;
 		$this->kill_round = -1;
@@ -144,11 +138,11 @@ class Player
     {
         switch ($this->role)
         {
-            case PLAYER_ROLE_SHERIFF:
+            case ROLE_SHERIFF:
                 return get_label('sheriff');
-            case PLAYER_ROLE_DON:
+            case ROLE_DON:
                 return get_label('don');
-            case PLAYER_ROLE_MAFIA:
+            case ROLE_MAFIA:
                 return get_label('mafia');
         }
         if ($show_civils)
@@ -307,12 +301,12 @@ class Player
 	
 	function is_red()
 	{
-		return $this->role == PLAYER_ROLE_CIVILIAN || $this->role == PLAYER_ROLE_SHERIFF;
+		return $this->role == ROLE_CIVILIAN || $this->role == ROLE_SHERIFF;
 	}
 	
 	function is_dark()
 	{
-		return $this->role == PLAYER_ROLE_MAFIA || $this->role == PLAYER_ROLE_DON;
+		return $this->role == ROLE_MAFIA || $this->role == ROLE_DON;
 	}
 }
 

@@ -64,7 +64,7 @@ class GamePlayerStats
 		{
 			if ($p->state == PLAYER_STATE_KILLED_DAY)
 			{
-				if ($p->role == PLAYER_ROLE_MAFIA || $p->role == PLAYER_ROLE_DON)
+				if ($p->role == ROLE_MAFIA || $p->role == ROLE_DON)
 				{
 					++$maf_day_kills;
 				}
@@ -75,7 +75,7 @@ class GamePlayerStats
 			}
 		}
 		
-		if ($player->role >= PLAYER_ROLE_MAFIA)
+		if ($player->role >= ROLE_MAFIA)
 		{
 			if ($gs->gamestate == GAME_CIVIL_WON)
 			{
@@ -172,7 +172,7 @@ class GamePlayerStats
 		
 		foreach ($gs->players as $p)
 		{
-			if ($p->role == PLAYER_ROLE_SHERIFF)
+			if ($p->role == ROLE_SHERIFF)
 			{
 				if ($p->state == PLAYER_STATE_KILLED_NIGHT)
 				{
@@ -204,7 +204,7 @@ class GamePlayerStats
 				continue;
 			}
 			
-			if ($p->role >= PLAYER_ROLE_MAFIA)
+			if ($p->role >= ROLE_MAFIA)
 			{
 				++$black_checks;
 			}
@@ -241,12 +241,12 @@ class GamePlayerStats
 		$this->won = 0;
 		if ($gs->gamestate == GAME_CIVIL_WON)
 		{
-			if ($player->role <= PLAYER_ROLE_SHERIFF)
+			if ($player->role <= ROLE_SHERIFF)
 			{
 				$this->won = 1;
 			}
 		}
-		else if ($player->role > PLAYER_ROLE_SHERIFF)
+		else if ($player->role > ROLE_SHERIFF)
 		{
 			$this->won = 1;
 		}
@@ -284,14 +284,14 @@ class GamePlayerStats
 					{
 						switch ($gs->players[$nominant->nominated_by]->role)
 						{
-							case PLAYER_ROLE_CIVILIAN:
+							case ROLE_CIVILIAN:
 								++$this->nominated_by_civil;
 								break;
-							case PLAYER_ROLE_SHERIFF:
+							case ROLE_SHERIFF:
 								++$this->nominated_by_sheriff;
 								break;
-							case PLAYER_ROLE_MAFIA:
-							case PLAYER_ROLE_DON:
+							case ROLE_MAFIA:
+							case ROLE_DON:
 								++$this->nominated_by_mafia;
 								break;
 						}
@@ -302,14 +302,14 @@ class GamePlayerStats
                 {
                     switch ($gs->players[$nominant->player_num]->role)
                     {
-                        case PLAYER_ROLE_CIVILIAN:
+                        case ROLE_CIVILIAN:
                             ++$this->nominated_civil;
                             break;
-                        case PLAYER_ROLE_SHERIFF:
+                        case ROLE_SHERIFF:
                             ++$this->nominated_sheriff;
                             break;
-                        case PLAYER_ROLE_MAFIA:
-                        case PLAYER_ROLE_DON:
+                        case ROLE_MAFIA:
+                        case ROLE_DON:
                             ++$this->nominated_mafia;
                             break;
                     }
@@ -323,14 +323,14 @@ class GamePlayerStats
 				{
 					switch ($gs->players[$voting->nominants[$nominant]->player_num]->role)
 					{
-						case PLAYER_ROLE_CIVILIAN:
+						case ROLE_CIVILIAN:
 							++$this->voted_civil;
 							break;
-						case PLAYER_ROLE_SHERIFF:
+						case ROLE_SHERIFF:
 							++$this->voted_sheriff;
 							break;
-						case PLAYER_ROLE_MAFIA:
-						case PLAYER_ROLE_DON:
+						case ROLE_MAFIA:
+						case ROLE_DON:
 							++$this->voted_mafia;
 							break;
 					}
@@ -344,14 +344,14 @@ class GamePlayerStats
 						{
 							switch ($gs->players[$i]->role)
 							{
-								case PLAYER_ROLE_CIVILIAN:
+								case ROLE_CIVILIAN:
 									++$this->voted_by_civil;
 									break;
-								case PLAYER_ROLE_SHERIFF:
+								case ROLE_SHERIFF:
 									++$this->voted_by_sheriff;
 									break;
-								case PLAYER_ROLE_MAFIA:
-								case PLAYER_ROLE_DON:
+								case ROLE_MAFIA:
+								case ROLE_DON:
 									++$this->voted_by_mafia;
 									break;
 							}
@@ -390,7 +390,7 @@ class GamePlayerStats
         // Sheriff
         $this->civil_found = 0;
         $this->mafia_found = 0;
-        if ($player->role == PLAYER_ROLE_SHERIFF)
+        if ($player->role == ROLE_SHERIFF)
         {
             foreach ($gs->players as $player)
             {
@@ -398,11 +398,11 @@ class GamePlayerStats
                 {
                     switch ($player->role)
                     {
-                        case PLAYER_ROLE_CIVILIAN:
+                        case ROLE_CIVILIAN:
                             ++$this->civil_found;
                             break;
-                        case PLAYER_ROLE_MAFIA:
-                        case PLAYER_ROLE_DON:
+                        case ROLE_MAFIA:
+                        case ROLE_DON:
                             ++$this->mafia_found;
                             break;
                     }
@@ -422,7 +422,7 @@ class GamePlayerStats
         $this->shots3_blank = 0;
         $this->shots3_fail = 0;
         $this->shots3_rearrange = 0;
-        if ($player->role == PLAYER_ROLE_MAFIA || $player->role == PLAYER_ROLE_DON)
+        if ($player->role == ROLE_MAFIA || $player->role == ROLE_DON)
         {
             $partner1 = -1;
             $partner2 = -1;
@@ -431,7 +431,7 @@ class GamePlayerStats
                 if ($i != $player_num)
                 {
                     $p = $gs->players[$i];
-                    if ($p->role == PLAYER_ROLE_MAFIA || $p->role == PLAYER_ROLE_DON)
+                    if ($p->role == ROLE_MAFIA || $p->role == ROLE_DON)
                     {
                         if ($partner1 < 0)
                         {
@@ -546,12 +546,12 @@ class GamePlayerStats
         // Don
         $this->sheriff_found = -1;
         $this->sheriff_arranged = -1;
-        if ($player->role == PLAYER_ROLE_DON)
+        if ($player->role == ROLE_DON)
         {
             for ($i = 0; $i < 10; ++$i)
             {
                 $p = $gs->players[$i];
-                if ($p->role == PLAYER_ROLE_SHERIFF)
+                if ($p->role == ROLE_SHERIFF)
                 {
                     $this->sheriff_arranged = $p->arranged;
                     $this->sheriff_found = $p->don_check;
@@ -606,8 +606,8 @@ class GamePlayerStats
 		$LOOSING_K = 15;
 		switch ($player->role)
 		{
-			case PLAYER_ROLE_CIVILIAN:
-			case PLAYER_ROLE_SHERIFF:
+			case ROLE_CIVILIAN:
+			case ROLE_SHERIFF:
 				if ($gs->gamestate == GAME_CIVIL_WON)
 				{
 					$this->rating_earned = $WINNING_K * (1 - $civ_odds);
@@ -617,8 +617,8 @@ class GamePlayerStats
 					$this->rating_earned = - $LOOSING_K * $civ_odds;
 				}
 				break;
-			case PLAYER_ROLE_MAFIA:
-			case PLAYER_ROLE_DON:
+			case ROLE_MAFIA:
+			case ROLE_DON:
 				if ($gs->gamestate == GAME_CIVIL_WON)
 				{
 					$this->rating_earned = $LOOSING_K * ($civ_odds - 1);
@@ -666,18 +666,18 @@ class GamePlayerStats
 			
 		switch ($player->role)
 		{
-			case PLAYER_ROLE_CIVILIAN:
+			case ROLE_CIVILIAN:
 				break;
-			case PLAYER_ROLE_SHERIFF:
+			case ROLE_SHERIFF:
 				Db::exec(
 					get_label('sheriff'), 
 					'INSERT INTO sheriffs VALUES (?, ?, ?, ?)',
 					$gs->id, $player->id, $this->civil_found, $this->mafia_found);
 				break;
-			case PLAYER_ROLE_DON:
+			case ROLE_DON:
 				Db::exec(
 					get_label('mafioso'), 
-					'INSERT INTO mafiosos VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . ($player->role == PLAYER_ROLE_DON ? 'true' : 'false') . ')',
+					'INSERT INTO mafiosos VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . ($player->role == ROLE_DON ? 'true' : 'false') . ')',
 					$gs->id, $player->id, $this->shots1_ok, $this->shots1_miss, $this->shots2_ok,
 					$this->shots2_miss, $this->shots2_blank, $this->shots2_rearrange, $this->shots3_ok, $this->shots3_miss,
 					$this->shots3_blank, $this->shots3_fail, $this->shots3_rearrange);
@@ -686,10 +686,10 @@ class GamePlayerStats
 					'INSERT INTO dons VALUES (?, ?, ?, ?)',
 					$gs->id, $player->id, $this->sheriff_found, $this->sheriff_arranged);
 				break;
-			case PLAYER_ROLE_MAFIA:
+			case ROLE_MAFIA:
 				Db::exec(
 					get_label('mafioso'), 
-					'INSERT INTO mafiosos VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . ($player->role == PLAYER_ROLE_DON ? 'true' : 'false') . ')',
+					'INSERT INTO mafiosos VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . ($player->role == ROLE_DON ? 'true' : 'false') . ')',
 					$gs->id, $player->id, $this->shots1_ok, $this->shots1_miss, $this->shots2_ok,
 					$this->shots2_miss, $this->shots2_blank, $this->shots2_rearrange, $this->shots3_ok, $this->shots3_miss,
 					$this->shots3_blank, $this->shots3_fail, $this->shots3_rearrange);
@@ -802,13 +802,13 @@ function save_game_results($gs)
 			{
 				switch ($player->role)
 				{
-					case PLAYER_ROLE_CIVILIAN:
-					case PLAYER_ROLE_SHERIFF:
+					case ROLE_CIVILIAN:
+					case ROLE_SHERIFF:
 						$civ_sum += $stats[$i]->rating_before;
 						++$civ_count;
 						break;
-					case PLAYER_ROLE_MAFIA:
-					case PLAYER_ROLE_DON:
+					case ROLE_MAFIA:
+					case ROLE_DON:
 						$maf_sum += $stats[$i]->rating_before;
 						++$maf_count;
 						break;
