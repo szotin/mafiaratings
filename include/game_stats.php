@@ -753,16 +753,20 @@ function save_game_results($gs)
 	}
 	$game = new Game($gs, $feature_flags);
 	$game->check(false);
+    if (isset($game->data->features))
+    {
+        $feature_flags = Game::leters_to_feature_flags($game->data->features);
+    }
 	
 	try
 	{
 		Db::begin();
 		
-		Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ?', $gs->id);
+        Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $gs->id, $feature_flags);
 		if (isset($game->issues))
 		{
 			$old_json = $game->to_json();
-			$game->check($feature_flags, true);
+            $game->check(true);
 			if (isset($game->issues))
 			{
 				$issues = '<ul>';
@@ -772,17 +776,7 @@ function save_game_results($gs)
 				}
 				$issues .= '</ul>';
 			}
-			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues) VALUES (?, ?, ?)', $gs->id, $old_json, $issues);
-		}
-		
-		$best_player_id = NULL;
-		if ($gs->best_player >= 0 && $gs->best_player < 10)
-		{
-			$best_player_id = $gs->players[$gs->best_player]->id;
-			if ($best_player_id <= 0)
-			{
-				$best_player_id = NULL;
-			}
+            Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $gs->id, $old_json, $issues, $feature_flags, Game::leters_to_feature_flags($data->features));
 		}
 		
 		Db::exec(get_label('user'), 'UPDATE users u, games g SET u.games_moderated = u.games_moderated + 1 WHERE u.id = g.moderator_id AND g.id = ?', $gs->id);
@@ -837,7 +831,7 @@ function save_game_results($gs)
 		{
 			$stats[$i]->save();
 		}
-		Db::exec(get_label('game'), 'UPDATE games SET result = ?, best_player_id = ?, flags = ?, civ_odds = ?, json = ?, feature_flags = ? WHERE id = ?', $game_result, $best_player_id, $gs->flags, $civ_odds, $game->to_json(), $game->flags, $gs->id);
+        Db::exec(get_label('game'), 'UPDATE games SET result = ?, flags = ?, civ_odds = ?, json = ?, feature_flags = ? WHERE id = ?', $game_result, $gs->flags, $civ_odds, $game->to_json(), $game->flags, $gs->id);
 		Db::commit();
 	}
 	catch (FatalExc $e)

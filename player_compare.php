@@ -382,7 +382,7 @@ class Page extends UserPageBase
 			' SUM(p1.voted_by_civil + p1.voted_by_mafia + p1.voted_by_sheriff), SUM(p2.voted_by_civil + p2.voted_by_mafia + p2.voted_by_sheriff),' .
 			' SUM(p1.nominated_by_civil + p1.nominated_by_mafia + p1.nominated_by_sheriff), SUM(p2.nominated_by_civil + p2.nominated_by_mafia + p2.nominated_by_sheriff),' .
 			' SUM(IF(p1.checked_by_sheriff >= 0, 1, 0)), SUM(IF(p2.checked_by_sheriff >= 0, 1, 0)),' .
-			' SUM(IF(g.best_player_id = p1.user_id, 1, 0)), SUM(IF(g.best_player_id = p2.user_id, 1, 0))' .
+            ' SUM(p1.extra_points), SUM(p2.extra_points)' .
 			' FROM players p1, players p2, games g' .
 			' WHERE g.id = p1.game_id AND g.id = p2.game_id AND p1.user_id = ? AND p2.user_id = ?', $this->id, $this->id2);
 			
@@ -434,7 +434,7 @@ class Page extends UserPageBase
 			$games_played, $rating1, $rating2, $won1, $won2,
 			$survived1, $survived2, $voted_by1, $voted_by2,
 			$nominated_by1, $nominated_by2, $sheriff_check1, $sheriff_check2,
-			$best_player1, $best_player2) = $query->record(get_label('player'));
+            $extra_points1, $extra_points2) = $query->record(get_label('player'));
 	
 		echo '<form method="get" name="roleform" action="player_compare.php">';
 		echo '<input type="hidden" name="id1" value="' . $this->id . '">';
@@ -452,7 +452,7 @@ class Page extends UserPageBase
 		{
 			row(get_label('Wins'), $won1, $won2, $games_played, $games_played);
 			row(get_label('Rating'), $rating1, $rating2, $games_played, $games_played);
-			row(get_label('Best player'), $best_player1, $best_player2, $games_played, $games_played);
+            row(get_label('Bonus Points'), $extra_points1, $extra_points2, $games_played, $games_played);
 			row(get_label('Survived'), $survived1, $survived2, $games_played, $games_played);
 			row(get_label('Voted by others'), -$voted_by1, -$voted_by2, $games_played, $games_played, $voted_by1, $voted_by2);
 			row(get_label('Nominated by others'), -$nominated_by1, -$nominated_by2, $games_played, $games_played, $nominated_by1, $nominated_by2);

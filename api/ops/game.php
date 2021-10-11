@@ -1416,10 +1416,17 @@ class ApiPage extends OpsApiPageBase
 		$gs = new GameState();
 		$gs->create_from_json($src);
 		
-		$game = new Game($gs);
-		$game->check();
-		
-		Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
+        $feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
+        $game = new Game($gs, $feature_flags);
+        $game->check();
+        if (isset($game->data->features))
+        {
+            $feature_flags = Game::leters_to_feature_flags($game->data->features);
+        }
+        
+        Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $game_id, $feature_flags);
+        // This line is temporary - for removing converted game issues. Delete later.
+        Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = 0', $game_id);
 		if (isset($game->issues))
 		{
 			$old_json = $game->to_json();
@@ -1433,7 +1440,7 @@ class ApiPage extends OpsApiPageBase
 				}
 				$issues .= '</ul>';
 			}
-			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues) VALUES (?, ?, ?)', $game_id, $old_json, $issues);
+            Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $game_id, $old_json, $issues, $feature_flags, Game::leters_to_feature_flags($game->data->features));
 		}
 		
 		Db::exec(get_label('game'), 'UPDATE games SET log = ?, json = ?, feature_flags = ?, rules = ? WHERE id = ?', $gs->write(), $game->to_json(), $game->flags, $gs->rules_code, $game_id);
@@ -1464,9 +1471,17 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$game_id = (int)get_required_param('game_id');
+        $feature_flags = (int)get_optional_param('features', -1);
 		
 		Db::begin();
-		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
+        if ($feature_flags < 0)
+        {
+            Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
+        }
+        else
+        {
+            Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $game_id, $feature_flags);
+        }
 		Db::exec(get_label('game'), 'UPDATE games SET as_is = TRUE WHERE id = ?', $game_id);
 		Db::commit();
 	}

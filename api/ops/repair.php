@@ -453,11 +453,17 @@ class ApiPage extends OpsApiPageBase
 				}
 				$game = new Game($gs, $feature_flags);
 				$game->check(false);
+                if (isset($game->data->features))
+                {
+                    $feature_flags = Game::leters_to_feature_flags($game->data->features);
+                }
 				
 				Db::begin();
 				if (!$as_is)
 				{
-					Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ?', $id);
+                    Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $id, $feature_flags);
+                    // This line is temporary - for removing converted game issues. Delete later.
+                    Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = 0', $id);
 					if (isset($game->issues))
 					{
 						//echo 'Game ' . $id . "\n";
@@ -472,7 +478,7 @@ class ApiPage extends OpsApiPageBase
 							}
 							$issues .= '</ul>';
 						}
-						Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues) VALUES (?, ?, ?)', $id, $old_json, $issues);
+                        Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $id, $old_json, $issues, $feature_flags, Game::leters_to_feature_flags($game->data->features));
 					}
 				}
 				Db::exec(get_label('game'), 'UPDATE games SET json = ?, feature_flags = ? WHERE id = ?', $game->to_json(), $game->flags, $id);
