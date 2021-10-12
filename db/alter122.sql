@@ -14,3 +14,4 @@ CREATE TABLE `rebuild_ratings` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+ALTER TABLE games DROP COLUMN as_is;

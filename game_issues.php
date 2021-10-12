@@ -31,8 +31,8 @@ class Page extends GeneralPageBase
 			echo '<tr>';
 			
 			echo '<td valign="top">';
-			echo '<button class="icon" onclick="rawEditGame(' . $game_id . ')" title="' . get_label('Edit game json [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
-			echo '<button class="icon" onclick="deleteGameIssue(' . $game_id .  ')" title="' . get_label('Mark as no issue') . '"><img src="images/accept.png" border="0"></button>';
+			echo '<button class="icon" onclick="rawEditGame(' . $game_id . ', ' . $feature_flags . ')" title="' . get_label('Edit game json [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
+			echo '<button class="icon" onclick="deleteGameIssue(' . $game_id .  ', ' . $feature_flags . ')" title="' . get_label('Mark as no issue') . '"><img src="images/accept.png" border="0"></button>';
 			echo '</td>';
 			
 			echo '<td>';
@@ -55,14 +55,14 @@ class Page extends GeneralPageBase
 	protected function js()
 	{
 ?>		
-		function rawEditGame(gameId)
+		function rawEditGame(gameId, featureFlags)
 		{
-			dlg.form("form/game_raw_edit.php?game_id=" + gameId, refr, 1200);
+			dlg.form("form/game_raw_edit.php?game_id=" + gameId + "&features=" + featureFlags + "&issue", refr, 1200);
 		}
 		
-		function deleteGameIssue(gameId)
+		function deleteGameIssue(gameId, featureFlags)
 		{
-			json.post("api/ops/game.php", { op: "delete_issue", game_id: gameId }, function()
+			json.post("api/ops/game.php", { op: "delete_issue", game_id: gameId, features: featureFlags }, function()
 			{
 				dlg.info("<?php echo get_label('Game is accepted as is. Issue record is deleted.'); ?>", "<?php echo get_label('Game'); ?>" + gameId, undefined, refr);
 			});

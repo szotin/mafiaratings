@@ -1419,9 +1419,15 @@ class ApiPage extends OpsApiPageBase
 		$game->update();
 		Db::commit();
 		
-		if (isset($issues))
+		if (isset($game->issues))
 		{
-			$this->response['message'] = $issues;
+			$text = get_label('The game contains the next issues:') . '<ul>';
+			foreach ($game->issues as $issue)
+			{
+				$text .= '<li>' . $issue . '</li>';
+			}
+			$text .= '</ul>' . get_label('They are all fixed but the original version of the game is also saved. Please check Game Issues in the management menu.');
+			$this->response['message'] = $text;
 		}
 	}
 	
