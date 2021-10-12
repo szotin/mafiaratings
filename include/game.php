@@ -3101,7 +3101,7 @@ class Game
 		
 		if ($is_rating_game)
 		{
-			list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & ' . GAME_FLAG_FUN . ') = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+			list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & ' . GAME_FLAG_FUN . ') = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
 		}
 		
 		// clean up stats
@@ -3169,7 +3169,7 @@ class Game
 		{
 			if ($games_after_count <= 0)
 			{
-				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & ' . GAME_FLAG_FUN . ') = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & ' . GAME_FLAG_FUN . ') = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
 			}
 			
 			if ($games_after_count > 0)

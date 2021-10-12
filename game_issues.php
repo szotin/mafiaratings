@@ -32,7 +32,7 @@ class Page extends GeneralPageBase
 			
 			echo '<td valign="top">';
 			echo '<button class="icon" onclick="rawEditGame(' . $game_id . ', ' . $feature_flags . ')" title="' . get_label('Edit game json [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
-			echo '<button class="icon" onclick="deleteGameIssue(' . $game_id .  ', ' . $feature_flags . ')" title="' . get_label('Mark as no issue') . '"><img src="images/accept.png" border="0"></button>';
+			echo '<button class="icon" onclick="deleteGameIssue(' . $game_id .  ', ' . $feature_flags . ')" title="' . get_label('Not an issue.') . '"><img src="images/delete.png" border="0"></button>';
 			echo '</td>';
 			
 			echo '<td>';

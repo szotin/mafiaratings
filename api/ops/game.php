@@ -1457,7 +1457,6 @@ class ApiPage extends OpsApiPageBase
 		{
 			Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $game_id, $feature_flags);
 		}
-		Db::exec(get_label('game'), 'UPDATE games SET as_is = TRUE WHERE id = ?', $game_id);
 		Db::commit();
 	}
 	

@@ -590,20 +590,26 @@ class GamePlayersStats
 			
 			if (isset($game_player->don) && $player->role == ROLE_SHERIFF)
 			{
-				$don->sheriff_found = $game_player->don - 1;
+				$don->sheriff_found = $game_player->don;
 			}
 			
-			if (isset($game_player->arranged))
+			if (isset($game_player->arranged) && $player->role == ROLE_SHERIFF)
 			{
-				$don->sheriff_arranged = $game_player->arranged - 1;
+				$don->sheriff_arranged = $game_player->arranged;
 			}
 		}
 		
 		$shooting_time = new stdClass();
 		$shooting_time->time = GAMETIME_SHOOTING;
 		$shooting_time->round = 1;
+		$last_gametime = $game->get_last_gametime(true);
 		while (true)
 		{
+			if ($game->compare_gametimes($last_gametime, $shooting_time) < 0)
+			{
+				break;
+			}
+			
 			for ($j = 0; $j < count($mafs); )
 			{
 				$n = $mafs[$j];
@@ -739,7 +745,7 @@ class GamePlayersStats
 					}
 					else if ($data->players[$mafs[0]]->shooting[$shooting_time->round - 1] != $data->players[$mafs[2]]->shooting[$shooting_time->round - 1])
 					{
-						++$this->players[$mafs[0]]>shots3_miss;
+						++$this->players[$mafs[0]]->shots3_miss;
 						++$this->players[$mafs[1]]->shots3_miss;
 						++$this->players[$mafs[2]]->shots3_fail;
 					}
@@ -750,7 +756,7 @@ class GamePlayersStats
 						++$this->players[$mafs[2]]->shots3_ok;
 						$victim_num = $data->players[$mafs[0]]->shooting[$shooting_time->round - 1];
 						$victim = $data->players[$victim_num-1];
-						if (!isset($victim->arranged) || $victim->arranged != $victim_num)
+						if (!isset($victim->arranged) || $victim->arranged != $shooting_time->round)
 						{
 							++$this->players[$mafs[0]]->shots3_rearrange;
 							++$this->players[$mafs[1]]->shots3_rearrange;
