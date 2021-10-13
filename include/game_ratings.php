@@ -3,14 +3,14 @@
 require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/db.php';
 
-function update_game_ratings($game_id, $is_rating_game)
+function update_game_ratings($game_id)
 {
 	$players = array();
-	$query = new DbQuery('SELECT p.user_id, p1.rating_before + p1.rating_earned, p.role, p.won FROM players p JOIN games g ON g.id = p.game_id LEFT OUTER JOIN games g1 ON g1.id = (SELECT g2.id FROM players p2 JOIN games g2 ON g2.id = p2.game_id WHERE p2.user_id = p.user_id AND (g2.end_time < g.end_time OR (g2.end_time = g.end_time AND g2.id < g.id)) ORDER BY g2.end_time DESC, g2.id DESC LIMIT 1) LEFT OUTER JOIN players p1 ON p.user_id = p1.user_id AND p1.game_id = g1.id WHERE g.id = ?', $game_id);
+	$query = new DbQuery('SELECT p.user_id, p1.rating_before + p1.rating_earned, p.role, p.won, g.flags FROM players p JOIN games g ON g.id = p.game_id LEFT OUTER JOIN games g1 ON g1.id = (SELECT g2.id FROM players p2 JOIN games g2 ON g2.id = p2.game_id WHERE p2.user_id = p.user_id AND (g2.end_time < g.end_time OR (g2.end_time = g.end_time AND g2.id < g.id)) ORDER BY g2.end_time DESC, g2.id DESC LIMIT 1) LEFT OUTER JOIN players p1 ON p.user_id = p1.user_id AND p1.game_id = g1.id WHERE g.id = ?', $game_id);
 	while ($row = $query->next())
 	{
 		$player = new stdClass();
-		list ($player->user_id, $player->rating, $player->role, $player->won) = $row;
+		list ($player->user_id, $player->rating, $player->role, $player->won, $game_flags) = $row;
 		if (is_null($player->rating))
 		{
 			$player->rating = USER_INITIAL_RATING;
@@ -45,7 +45,7 @@ function update_game_ratings($game_id, $is_rating_game)
 		$civ_odds = 1.0 / (1.0 + pow(10.0, ($maf_sum / $maf_count - $civ_sum / $civ_count) / 400));
 	}
 	
-	if ($is_rating_game)
+	if (($game_flags & GAME_FLAG_FUN) == 0)
 	{
 		foreach ($players as $player)
 		{

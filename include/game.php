@@ -3160,7 +3160,7 @@ class Game
 		$stats->save();
 		
 		// calculate ratings
-		update_game_ratings($data->id, $is_rating_game);
+		update_game_ratings($data->id);
 		
 		Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games + 1, u.games_won = u.games_won + p.won, u.rating = u.rating + p.rating_earned WHERE p.game_id = ?', $data->id);
 		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated + 1 WHERE id = ?', $data->moderator->id);
