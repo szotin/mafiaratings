@@ -410,7 +410,7 @@ class ApiPage extends OpsApiPageBase
 	function convert_op()
 	{
 		$last_id = 0;
-		$query = new DbQuery('SELECT id, log, end_time, canceled, as_is FROM games WHERE result > 0');
+		$query = new DbQuery('SELECT id, log, end_time, canceled, as_is, event_id FROM games WHERE result > 0');
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
@@ -433,7 +433,7 @@ class ApiPage extends OpsApiPageBase
 		$c = 0;
 		foreach ($games as $row)
 		{
-			list($id, $log, $end_time, $is_canceled, $as_is) = $row;
+			list($id, $log, $end_time, $is_canceled, $as_is, $event_id) = $row;
 			$last_id = $id;
 			++$c;
 			try
@@ -441,6 +441,7 @@ class ApiPage extends OpsApiPageBase
 				// echo $id . '<br>';
 				$gs = new GameState();
 				$gs->init_existing($id, $log, $is_canceled);
+				$gs->event_id = $event_id;
 				
 				$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
 				if ($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT)
