@@ -18,6 +18,12 @@ function update_game_ratings($game_id)
 		$players[] = $player;
 	}
 	
+	if (!isset($game_flags))
+	{
+		echo get_label('Game [0] has no players. Deleting it makes much sense.', $game_id) . '<br>';
+		$game_flags = GAME_FLAG_FUN;
+	}
+	
 	$maf_sum = 0.0;
 	$maf_count = 0;
 	$civ_sum = 0.0;

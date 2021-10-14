@@ -337,7 +337,7 @@ class ApiPage extends OpsApiPageBase
 			catch (Exception $e)
 			{
 				Db::rollback();
-				echo $e->getMessage() . '<br>';
+				echo 'Game ' . $id . ': ' . $e->getMessage() . '<br>';
 			}
 		}
 		$this->response['recs'] = $c;
@@ -364,7 +364,7 @@ class ApiPage extends OpsApiPageBase
 	function convert_op()
 	{
 		$last_id = 0;
-		$query = new DbQuery('SELECT id, log, end_time, canceled FROM games WHERE result > 0');
+		$query = new DbQuery('SELECT id, log, end_time, canceled, event_id FROM games WHERE result > 0');
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
@@ -387,7 +387,7 @@ class ApiPage extends OpsApiPageBase
 		$c = 0;
 		foreach ($games as $row)
 		{
-			list($id, $log, $end_time, $is_canceled) = $row;
+			list($id, $log, $end_time, $is_canceled, $event_id) = $row;
 			$last_id = $id;
 			++$c;
 			try
@@ -395,6 +395,7 @@ class ApiPage extends OpsApiPageBase
 				// echo $id . '<br>';
 				$gs = new GameState();
 				$gs->init_existing($id, $log, $is_canceled);
+				$gs->event_id = $event_id;
 				
 				$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
 				if ($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT)
