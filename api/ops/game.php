@@ -1117,10 +1117,10 @@ class ApiPage extends OpsApiPageBase
 		$game_id = (int)get_required_param('game_id');
 		
 		Db::begin();
-		list($club_id, $moderator_id, $end_time, $game_flags) = Db::record(get_label('game'), 'SELECT club_id, moderator_id, end_time, flags FROM games WHERE id = ?', $game_id);
+		list($club_id, $moderator_id, $end_time, $is_non_rating) = Db::record(get_label('game'), 'SELECT club_id, moderator_id, end_time, flags FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		
-		if (($game_flags & GAME_FLAG_FUN) == 0)
+		if (!$is_non_rating)
 		{
 			$prev_game_id = NULL;
 			$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);

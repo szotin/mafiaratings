@@ -57,7 +57,7 @@ class Voting
 	function __construct($gs)
 	{
 		$this->gs = $gs;
-		if ($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT)
+		if ($gs->flags & 2)
 		{
 			$this->votes = NULL;
 		}
@@ -82,7 +82,7 @@ class Voting
 			$this->nominants[] = $nominant;
 		}
 		
-		if (($this->gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT) == 0)
+		if (($this->gs->flags & 2) == 0)
 		{
 			$this->votes = $data->votes;
 		}
@@ -108,7 +108,7 @@ class Voting
 			$out .= $this->nominants[$i]->write();
 		}
 
-		if (($this->gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT) == 0)
+		if (($this->gs->flags & 2) == 0)
 		{
 			for ($i = 0; $i < 10; ++$i)
 			{
@@ -181,7 +181,7 @@ class Voting
 			}
 		}
 
-		if (($this->gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT) == 0)
+		if (($this->gs->flags & 2) == 0)
 		{
 			for ($i = 0; $i < 10; ++$i)
 			{

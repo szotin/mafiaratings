@@ -142,11 +142,11 @@ class ApiPage extends GetApiPageBase
 		}
 		if ($filter_flags & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+			$condition->add(' AND g.non_rating = 0');
 		}
 		if ($filter_flags & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+			$condition->add(' AND g.non_rating <> 0');
 		}
 		if ($filter_flags & FLAG_FILTER_CANCELED)
 		{

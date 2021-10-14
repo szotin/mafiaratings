@@ -316,7 +316,7 @@ class GamePlayerStats
                 }
             }
 
-			if (($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT) == 0)
+			if (($gs->flags & 2) == 0)
 			{
 				$nominant = $voting->votes[$player_num];
 				if ($nominant >= 0 )
@@ -581,7 +581,7 @@ class GamePlayerStats
 			$this->rating_before = USER_INITIAL_RATING;
 		}
 		
-		$query = new DbQuery('SELECT p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE g.id = ? AND p.user_id = ? AND (g.flags | ' . GAME_FLAG_FUN . ') = 0 AND canceled = 0', $gs->id, $player->id);
+		$query = new DbQuery('SELECT p.rating_earned FROM players p JOIN games g ON p.game_id = g.id WHERE g.id = ? AND p.user_id = ? AND g.non_rating = 0 AND canceled = 0', $gs->id, $player->id);
 		if ($row = $query->next())
 		{
 			list($this->rating_earned) = $row;
@@ -591,7 +591,7 @@ class GamePlayerStats
 	function calculate_rating($civ_odds)
 	{
         $gs = $this->gs;
-		if ($gs->is_canceled || ($gs->flags & GAME_FLAG_FUN) != 0)
+		if ($gs->is_canceled || ($gs->flags & 1) != 0) // used to be GAME_FLAG_FUN
 		{
 			return;
 		}
@@ -696,7 +696,7 @@ class GamePlayerStats
 				break;
 		}
 		
-		if (!$gs->is_canceled && ($gs->flags & GAME_FLAG_FUN) == 0)
+		if (!$gs->is_canceled && ($gs->flags & 1) == 0) // used to be GAME_FLAG_FUN
 		{
 			$query = new DbQuery('UPDATE users SET rating = ?, games = games + 1, games_won = games_won + ?', $this->rating_before + $this->rating_earned, $this->won);
 			if ($player->kill_round == 0 && $player->state == PLAYER_STATE_KILLED_NIGHT)
@@ -743,7 +743,7 @@ function save_game_results($gs)
     }
 	
 	$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
-	if ($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT)
+	if ($gs->flags & 2)
 	{
 		$feature_flags &= ~GAME_FEATURE_FLAG_VOTING;
 	}

@@ -91,11 +91,11 @@ class Page extends GeneralPageBase
 		}
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+			$condition->add(' AND g.non_rating = 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+			$condition->add(' AND g.non_rating <> 0');
 		}
 		
 		if ($this->user_id > 0)

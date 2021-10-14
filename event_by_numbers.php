@@ -192,11 +192,11 @@ class Page extends EventPageBase
 		$query->add(get_roles_condition($roles));
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$query->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+			$query->add(' AND g.non_rating = 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$query->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+			$query->add(' AND g.non_rating <> 0');
 		}
 		$query->add(' GROUP BY p.number');
 		while ($row = $query->next())

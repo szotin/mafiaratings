@@ -56,7 +56,7 @@ class ApiPage extends ControlApiPageBase
 					$this->response[] = new ChartData('', $_chart_colors[$current_color++]);
 				}
 			
-				list($min_time, $max_time) = Db::record(get_label('game'), 'SELECT MIN(g.end_time), MAX(g.end_time) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id IN (' . $player_list . ') AND g.canceled = FALSE AND g.result > 0 AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+				list($min_time, $max_time) = Db::record(get_label('game'), 'SELECT MIN(g.end_time), MAX(g.end_time) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id IN (' . $player_list . ') AND g.canceled = FALSE AND g.result > 0 AND g.non_rating = 0');
 				if ($min_time != NULL && $max_time != NULL) // || $max_time - $min_time < MIN_PERIOD_ON_GRAPH)
 				{
 					$period = floor(($max_time - $min_time) / MAX_POINTS_ON_GRAPH);
@@ -64,7 +64,7 @@ class ApiPage extends ControlApiPageBase
 					{
 						$period = MIN_PERIOD;
 					}
-					$query = new DbQuery('SELECT u.id, CEILING(g.end_time/' . $period . ') * ' . $period . ' as period, u.name, SUM(p.rating_earned) FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON p.user_id = u.id WHERE u.id IN (' . $player_list . ') AND g.canceled = FALSE AND g.result > 0 AND (g.flags & ' . GAME_FLAG_FUN . ') = 0 GROUP BY u.id, period ORDER BY u.id, period');
+					$query = new DbQuery('SELECT u.id, CEILING(g.end_time/' . $period . ') * ' . $period . ' as period, u.name, SUM(p.rating_earned) FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON p.user_id = u.id WHERE u.id IN (' . $player_list . ') AND g.canceled = FALSE AND g.result > 0 AND g.non_rating = 0 GROUP BY u.id, period ORDER BY u.id, period');
 					
 					$current_user_id = -1;
 					while ($row = $query->next())

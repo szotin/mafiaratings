@@ -66,7 +66,7 @@ try
 		$gs = new GameState();
 		$gs->init_existing($game_id, $game_log, $is_canceled);
 		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
-		if ($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT)
+		if ($gs->flags & 2)
 		{
 			$feature_flags &= ~GAME_FEATURE_FLAG_VOTING;
 		}

@@ -43,11 +43,11 @@ class Page extends AddressPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+			$condition->add(' AND g.non_rating = 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+			$condition->add(' AND g.non_rating <> 0');
 		}
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g JOIN events e ON e.id = g.event_id WHERE e.address_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $condition);

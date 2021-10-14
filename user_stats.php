@@ -61,11 +61,11 @@ class Page extends UserPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+			$condition->add(' AND g.non_rating = 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+			$condition->add(' AND g.non_rating <> 0');
 		}
 		$stats = new PlayerStats($this->id, $club_id, $roles, $condition);
 		

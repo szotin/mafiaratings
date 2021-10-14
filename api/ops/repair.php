@@ -398,7 +398,7 @@ class ApiPage extends OpsApiPageBase
 				$gs->event_id = $event_id;
 				
 				$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
-				if ($gs->flags & GAME_FLAG_SIMPLIFIED_CLIENT)
+				if ($gs->flags & 2) // Used to be GAME_FLAG_SIMPLIFIED_CLIENT, but the flag is removed. This code will soon be removed too.
 				{
 					$feature_flags &= ~GAME_FEATURE_FLAG_VOTING;
 				}

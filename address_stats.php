@@ -51,11 +51,11 @@ class Page extends AddressPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+			$condition->add(' AND g.non_rating = 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+			$condition->add(' AND g.non_rating <> 0');
 		}
 		
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $condition);

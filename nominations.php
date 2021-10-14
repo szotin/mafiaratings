@@ -86,11 +86,11 @@ class Page extends GeneralPageBase
 		}
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$this->condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+			$this->condition->add(' AND g.non_rating = 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$this->condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+			$this->condition->add(' AND g.non_rating <> 0');
 		}
 		
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.canceled = FALSE AND g.result > 0 ', $this->condition);

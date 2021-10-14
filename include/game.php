@@ -102,7 +102,7 @@ class Game
 				{
 					$this->data->tournamentId = (int)$g->tournament_id;
 				}
-				if ($g->flags & GAME_FLAG_FUN)
+				if ($g->flags & 1) // Used to be named constant, but its removed now. This code will also be removed soon, so hardcoding it to 1.
 				{
 					$this->data->rating = false;
 				}
@@ -3101,7 +3101,7 @@ class Game
 		
 		if ($is_rating_game)
 		{
-			list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & ' . GAME_FLAG_FUN . ') = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+			list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.non_rating = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
 		}
 		
 		// clean up stats
@@ -3134,7 +3134,7 @@ class Game
 		$timezone = $this->setup_event();
 		
 		$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
-		$game_flags = isset($data->rating) && !$data->rating ? GAME_FLAG_FUN : 0;
+		$is_non_rating = isset($data->rating) && !$data->rating ? 1 : 0;
 		if ($data->winner == 'maf')
 		{
 			$game_result = 2;
@@ -3151,10 +3151,10 @@ class Game
 		Db::exec(get_label('game'),
 			'UPDATE games SET json = ?, feature_flags = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
-				'rules = ?, flags = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
+				'rules = ?, non_rating = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
 			$json, $feature_flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
 			$language, $data->startTime, $data->endTime, $game_result,
-			$data->rules, $game_flags, $data->id);
+			$data->rules, $is_non_rating, $data->id);
 		
 		$stats = new GamePlayersStats($this);
 		$stats->save();
@@ -3169,7 +3169,7 @@ class Game
 		{
 			if ($games_after_count <= 0)
 			{
-				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & ' . GAME_FLAG_FUN . ') = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.non_rating = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
 			}
 			
 			if ($games_after_count > 0)
