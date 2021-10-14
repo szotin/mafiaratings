@@ -4,7 +4,7 @@ CREATE TABLE `rebuild_ratings` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`start_time` INT(11) NOT NULL,
 	`end_time` INT(11) NOT NULL,
-	`game_id` INT(11) NOT NULL,
+	`game_id` INT(11) NULL,
 	`current_game_id` INT(11) NULL,
 	`average_game_proceeding_time` DOUBLE NOT NULL,
 	`batch_size` INT(11) NOT NULL,

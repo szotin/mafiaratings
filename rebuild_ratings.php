@@ -105,7 +105,14 @@ try
 			}
 			
 			// get next game
-			$query = new DbQuery('SELECT g1.id FROM games g JOIN games g1 ON g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id) WHERE g.id = ? AND g1.result > 0 AND g1.canceled = 0 ORDER BY g1.end_time, g1.id LIMIT 1', $rebuild->game_id);
+			if (is_null($rebuild->game_id))
+			{
+				$query = new DbQuery('SELECT id FROM games ORDER BY end_time, id LIMIT 1');
+			}
+			else
+			{
+				$query = new DbQuery('SELECT g1.id FROM games g JOIN games g1 ON g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id) WHERE g.id = ? AND g1.result > 0 AND g1.canceled = 0 ORDER BY g1.end_time, g1.id LIMIT 1', $rebuild->game_id);
+			}
 			if ($row = $query->next())
 			{
 				list($game_id) = $row;

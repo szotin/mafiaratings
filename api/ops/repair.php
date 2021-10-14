@@ -301,7 +301,7 @@ class ApiPage extends OpsApiPageBase
 	function stats_op()
 	{
 		$last_id = 0;
-		$query = new DbQuery('SELECT id, log, end_time, canceled FROM games WHERE result > 0');
+		$query = new DbQuery('SELECT id, json, feature_flags, end_time, canceled FROM games WHERE result > 0');
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
@@ -313,15 +313,6 @@ class ApiPage extends OpsApiPageBase
 			list ($count) = Db::record('games', 'SELECT count(*) FROM games WHERE result > 0');
 			$this->response['count'] = $count;
 			lock_site(true);
-			
-			Db::begin();
-			Db::exec(get_label('don'), 'DELETE FROM dons');
-			Db::exec(get_label('mafioso'), 'DELETE FROM mafiosos');
-			Db::exec(get_label('sheriff'), 'DELETE FROM sheriffs');
-			Db::exec(get_label('player'), 'DELETE FROM players');
-			Db::exec(get_label('player'), 'DELETE FROM snapshots');
-			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = 0, rating = ' . USER_INITIAL_RATING . ', games = 0, games_won = 0');
-			Db::commit();
 		}
 		$query->add(' ORDER BY end_time, id LIMIT 10');
 		$c = 0;
@@ -331,52 +322,16 @@ class ApiPage extends OpsApiPageBase
 			$games[] = $row;
 		}
 		
-		$snapshot_time = 0;
-		$query = new DbQuery('SELECT time FROM snapshots ORDER BY time DESC LIMIT 1');
-		if ($row = $query->next())
-		{
-			list($snapshot_time) = $row;
-			$snapshot_time = Snapshot::snapshot_time($snapshot_time) + SNAPSHOT_INTERVAL;
-		}
-		
 		foreach ($games as $row)
 		{
-			list($id, $log, $end_time, $is_canceled) = $row;
-			if ($snapshot_time == 0)
-			{
-				$snapshot_time = Snapshot::snapshot_time($end_time) + SNAPSHOT_INTERVAL;
-			}
-			
-			if ($end_time >= $snapshot_time)
-			{
-				try
-				{
-					$snapshot = new Snapshot($snapshot_time);
-					Db::begin();
-					$snapshot->shot();
-					$snapshot->save();
-					Db::commit();
-				}
-				catch (Exception $e)
-				{
-					Db::rollback();
-					echo $e->getMessage() . '<br>';
-				}
-				$snapshot_time = Snapshot::snapshot_time($end_time) + SNAPSHOT_INTERVAL;
-			}
-			
+			list($id, $json, $features, $end_time, $is_canceled) = $row;
 			$last_id = $id;
 			++$c;
 			try
 			{
 				Db::begin();
-				$gs = new GameState();
-				$gs->init_existing($id, $log, $is_canceled);
-				if ($gs->error != NULL)
-				{
-					echo '<a href="view_game.php?id="' . $id . '" target="_blank">Game ' . $id . '</a> error: ' . $gs->error . '<br>';
-				}
-				save_game_results($gs);
+				$game = new Game($json, $features);
+				$game->update();
 				Db::commit();
 			}
 			catch (Exception $e)
@@ -389,7 +344,6 @@ class ApiPage extends OpsApiPageBase
 		$this->response['last_id'] = $last_id;
 		if ($c <= 0)
 		{
-			Db::exec('stats', 'DELETE FROM rebuild_ratings');
 			lock_site(false);
 		}
 	}
@@ -410,7 +364,7 @@ class ApiPage extends OpsApiPageBase
 	function convert_op()
 	{
 		$last_id = 0;
-		$query = new DbQuery('SELECT id, log, end_time, canceled, as_is FROM games WHERE result > 0');
+		$query = new DbQuery('SELECT id, log, end_time, canceled FROM games WHERE result > 0');
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
@@ -433,7 +387,7 @@ class ApiPage extends OpsApiPageBase
 		$c = 0;
 		foreach ($games as $row)
 		{
-			list($id, $log, $end_time, $is_canceled, $as_is) = $row;
+			list($id, $log, $end_time, $is_canceled) = $row;
 			$last_id = $id;
 			++$c;
 			try
@@ -459,27 +413,24 @@ class ApiPage extends OpsApiPageBase
 				}
 				
 				Db::begin();
-				if (!$as_is)
+				Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $id, $feature_flags);
+				// This line is temporary - for removing converted game issues. Delete later.
+				Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = 0', $id);
+				if (isset($game->issues))
 				{
-					Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $id, $feature_flags);
-					// This line is temporary - for removing converted game issues. Delete later.
-					Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = 0', $id);
+					//echo 'Game ' . $id . "\n";
+					$old_json = $game->to_json();
+					$game->check(true);
 					if (isset($game->issues))
 					{
-						//echo 'Game ' . $id . "\n";
-						$old_json = $game->to_json();
-						$game->check(true);
-						if (isset($game->issues))
+						$issues = '<ul>';
+						foreach ($game->issues as $issue)
 						{
-							$issues = '<ul>';
-							foreach ($game->issues as $issue)
-							{
-								$issues .= '<li>' . $issue . '</li>';
-							}
-							$issues .= '</ul>';
+							$issues .= '<li>' . $issue . '</li>';
 						}
-						Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $id, $old_json, $issues, $feature_flags, Game::leters_to_feature_flags($game->data->features));
+						$issues .= '</ul>';
 					}
+					Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $id, $old_json, $issues, $feature_flags, Game::leters_to_feature_flags($game->data->features));
 				}
 				Db::exec(get_label('game'), 'UPDATE games SET json = ?, feature_flags = ? WHERE id = ?', $game->to_json(), $game->flags, $id);
 				Db::commit();

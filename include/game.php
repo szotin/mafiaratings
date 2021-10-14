@@ -3215,7 +3215,7 @@ class Game
 		$param->sub_param('features', $text);
 	}
 	
-	static function api_help($param)
+	static function api_help($param, $for_update)
 	{
 		$param->add_description('<p>Round numbering works this way. <ul><li>Round 0</li><ul><li>Night 0: mafia is arranging.</li><li>Day 0: town is speaking, may be splitting, normally <u>not</u> killing.</li></ul></li><li>Round 1<ul><li>Night 1: mafia is shooting. Don and sheriff are checking.</li><li>Day 1: town is speaking, may be splitting, normally killing.</li></ul><li>Etc.</li></ul>');
 	
@@ -3224,7 +3224,7 @@ class Game
 		$param->sub_param('clubId', 'Club id. Unique club identifier.');
 		$param->sub_param('eventId', 'Event id. Unique event identifier.');
 		$param->sub_param('tournamentId', 'Tournament id. Unique tournament identifier. Event in this case is a tournament round - semifinal, final, etc.', 'this is not a tournament game.');
-		$param->sub_param('fun', 'When true this is non-rating game played for fun. It is kept in the database for user stats but it is not used in rating calculation nor tournament/event scoring.', 'this is a rating game.');
+		$param->sub_param('rating', 'When false this is non-rating game played for fun. It is kept in the database for user stats but it is not used in rating calculation nor tournament/event scoring.', 'True. This is a rating game.');
 		$param->sub_param('startTime', 'Game start in ISO-8601.');
 		$param->sub_param('endTime', 'Game end in ISO-8601.');
 		$param->sub_param('timezone', 'Timezone in text format. For example "America/New_York".');

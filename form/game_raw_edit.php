@@ -52,7 +52,7 @@ try
 	{
 		json.post("api/ops/game.php",
 		{
-			op: "raw_change"
+			op: "change"
 			, game_id: <?php echo $game_id; ?>
 			, json: $('#form-json').val()
 		},

@@ -840,7 +840,6 @@ class ApiPage extends OpsApiPageBase
 			if ($game->change_user($user_id, $new_user_id, $nickname))
 			{
 				$game->update();
-				Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
 				$changed = true;
 			}
 		}
