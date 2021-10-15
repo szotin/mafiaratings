@@ -41,6 +41,41 @@ function get_player_number_html($game, $num)
 
 class Page extends PageBase
 {
+	function generate_title()
+	{
+		$title = '';
+		$state = '';
+		switch ($this->result)
+		{
+			case 0:
+				$state = get_label('Still playing.');
+				break;
+			case 1:
+				$state = get_label('Town wins.');
+				break;
+			case 2:
+				$state = get_label('Mafia wins.');
+				break;
+		}
+		if ($this->tournament_name == NULL)
+		{
+			$title = $this->event_name . '. ';
+		}
+		else
+		{
+			$title = $this->tournament_name . ': ' . $this->event_name . '. ';
+		}
+		if ($this->is_non_rating)
+		{
+			$title .= get_label('Game [0] (non-rating). [1]', $this->id, $state);
+		}
+		else
+		{
+			$title .= get_label('Game [0]. [1]', $this->id, $state);
+		}
+		return $title;
+	}
+	
 	protected function prepare()
 	{
 		$this->id = -1;
@@ -81,39 +116,11 @@ class Page extends PageBase
 		
 		if ($this->is_canceled)
 		{
-			$this->_title = '<s>' . $this->vg->get_title() . '</s> <big><span style="color:blue;">' . get_label('Game canceled') . '.</span></big>';
+			$this->_title = '<s>' . $this->generate_title() . '</s> <big><span style="color:blue;">' . get_label('Game canceled') . '.</span></big>';
 		}
 		else
 		{
-			$state = '';
-			switch ($this->result)
-			{
-				case 0:
-					$state = get_label('Still playing.');
-					break;
-				case 1:
-					$state = get_label('Town wins.');
-					break;
-				case 2:
-					$state = get_label('Mafia wins.');
-					break;
-			}
-			if ($this->tournament_name == NULL)
-			{
-				$this->_title = $this->event_name . '. ';
-			}
-			else
-			{
-				$this->_title = $this->tournament_name . ': ' . $this->event_name . '. ';
-			}
-			if ($this->is_non_rating)
-			{
-				$this->_title .= get_label('Game [0] (non-rating). [1]', $this->id, $state);
-			}
-			else
-			{
-				$this->_title .= get_label('Game [0]. [1]', $this->id, $state);
-			}
+			$this->_title = $this->generate_title();
 		}
 		
 		// Players
@@ -326,16 +333,7 @@ class Page extends PageBase
 		echo '<td align="right" valign="top">';
 		if ($_profile != NULL)
 		{
-			echo '<button class="icon" onclick="';
-			if ($this->gametime >= 0)
-			{
-				echo 'mr.gotoObjections(' . $this->id . ', false)';
-			}
-			else
-			{
-				echo 'mr.createObjection(' . $this->id . ')';
-			}
-			echo '" title="' . get_label('File an objection to the game [0] results.', $this->id) . '">';
+			echo '<button class="icon" onclick="mr.gotoObjections(' . $this->id . ')" title="' . get_label('File an objection to the game [0] results.', $this->id) . '">';
 			echo '<img src="images/objection.png" border="0"></button>';
 		}
 		

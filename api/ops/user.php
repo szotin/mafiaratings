@@ -36,17 +36,13 @@ class ApiPage extends OpsApiPageBase
 	
 	function merge_users($src_id, $dst_id)
 	{
-		$query = new DbQuery('SELECT g.id, g.log, g.canceled FROM games g LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = ? WHERE p.user_id IS NOT NULL OR g.moderator_id = ? OR g.user_id = ?', $src_id, $src_id, $src_id);
+		$query = new DbQuery('SELECT g.id, g.json, g.feature_flags FROM games g LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = ? WHERE p.user_id IS NOT NULL OR g.moderator_id = ? OR g.user_id = ?', $src_id, $src_id, $src_id);
 		while ($row = $query->next())
 		{
-			list ($game_id, $game_log, $is_canceled) = $row;
-			$gs = new GameState();
-			$gs->init_existing($game_id, $game_log, $is_canceled);
-			if ($gs->change_user($src_id, $dst_id))
-			{
-				rebuild_game_stats($gs);
-				Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
-			}
+			list ($game_id, $json, $feature_flags) = $row;
+			$game = new Game($json, $feature_flags);
+			$game->change_user($src_id, $dst_id);
+			$game->update();
 		}
 		
 		list($src_name, $src_games_moderated, $src_games, $src_rating, $src_reg_time, $src_city_id, $src_club_id, $src_flags) = 
@@ -106,24 +102,15 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_user($user_id)
 	{
-		list ($moderator_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE moderator_id = ? OR user_id = ?', $user_id, $user_id);
-		if ($moderator_count > 0)
-		{
-			throw new Exc(get_label('Unable to delete user because they moderated some games. Try to merge them instead.'));
-		}
-		
-		$query = new DbQuery('SELECT g.id, g.log, g.canceled FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?', $user_id);
+		$query = new DbQuery('SELECT g.id, g.json, g.feature_flags FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?', $user_id);
 		if ($row = $query->next())
 		{
 			do
 			{
-				list ($game_id, $game_log, $is_canceled) = $row;
-				$gs = new GameState();
-				$gs->init_existing($game_id, $game_log, $is_canceled);
-				if ($gs->change_user($user_id, -1))
-				{
-					rebuild_game_stats($gs);
-				}
+				list ($game_id, $json, $feature_flags) = $row;
+				$game = new Game($json, $feature_flags);
+				$game->change_user($user_id, -1);
+				$game->update();
 				
 			} while ($row = $query->next());
 			

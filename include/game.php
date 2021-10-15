@@ -2882,7 +2882,7 @@ class Game
 		return false;
 	}
 	
-	function change_user($user_id, $new_user_id, $nickname)
+	function change_user($user_id, $new_user_id, $nickname = NULL)
 	{
 		if ($user_id == 0 || !$this->is_participant($user_id))
 		{
@@ -2890,13 +2890,17 @@ class Game
 		}
 		
 		$data = $this->data;
-		if ($new_user_id != $user_id && $this->is_participant($new_user_id))
+		if ($new_user_id != $user_id && $new_user_id > 0 && $this->is_participant($new_user_id))
 		{
 			throw new Exc(get_label('Unable to change one user to another in the game [0] because they both participated in it.', $data->id));
 		}
 		
 		if ($data->moderator->id == $user_id)
 		{
+			if ($new_user_id <= 0)
+			{
+				throw new Exc(get_label('Unable to delete user from the game [0] because they moderated it. Try to merge them with someone instead.', $data->id));
+			}
 			$this->moderator->id = $new_user_id;
 		}
 		else for ($i = 0; $i < 10; ++$i)
@@ -2904,7 +2908,14 @@ class Game
 			$player = $data->players[$i];
 			if ($player->id == $user_id)
 			{
-				$player->id = $new_user_id;
+				if ($new_user_id > 0)
+				{
+					$player->id = $new_user_id;
+				}
+				else
+				{
+					unset($player->id);
+				}
 				if ($nickname != NULL)
 				{
 					$player->name = $nickname;
@@ -3072,6 +3083,7 @@ class Game
 		{
 			throw new Exc(get_label('Game number is not set.'));
 		}
+		list($is_canceled) = Db::record(get_label('game'), 'SELECT canceled FROM games WHERE id = ?', $data->id);
 				
 		if (!isset($data->clubId))
 		{
@@ -3099,20 +3111,6 @@ class Game
 			$data->rules = default_rules_code();
 		}
 		
-		if ($is_rating_game)
-		{
-			list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.non_rating = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
-		}
-		
-		// clean up stats
-		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated - 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $data->id);
-		Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games - 1, u.games_won = u.games_won - p.won, u.rating = u.rating - p.rating_earned WHERE p.game_id = ?', $data->id);
-		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $data->id);
-		Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $data->id);
-		Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $data->id);
-		Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $data->id);
-		Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $data->id, $feature_flags);
-		
 		// Fix json if needed and save original json to game_issues table
 		if (isset($this->issues))
 		{
@@ -3128,6 +3126,23 @@ class Game
 			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $data->id, $json, $issues, $feature_flags, $new_feature_flags);
 			$json = $new_json;
 			$feature_flags = $new_feature_flags;
+		}
+		
+		if (!$is_canceled)
+		{
+			if ($is_rating_game)
+			{
+				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.non_rating = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+			}
+			
+			// clean up stats
+			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated - 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $data->id);
+			Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games - 1, u.games_won = u.games_won - p.won, u.rating = u.rating - p.rating_earned WHERE p.game_id = ?', $data->id);
+			Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $data->id);
+			Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $data->id);
+			Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $data->id);
+			Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $data->id);
+			Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $data->id, $feature_flags);
 		}
 		
 		// Save game json and feature flags
@@ -3156,41 +3171,43 @@ class Game
 			$language, $data->startTime, $data->endTime, $game_result,
 			$data->rules, $is_non_rating, $data->id);
 		
-		$stats = new GamePlayersStats($this);
-		$stats->save();
-		
-		// calculate ratings
-		update_game_ratings($data->id);
-		
-		Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games + 1, u.games_won = u.games_won + p.won, u.rating = u.rating + p.rating_earned WHERE p.game_id = ?', $data->id);
-		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated + 1 WHERE id = ?', $data->moderator->id);
-		
-		if ($is_rating_game)
+		if (!$is_canceled)
 		{
-			if ($games_after_count <= 0)
-			{
-				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.non_rating = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
-			}
+			$stats = new GamePlayersStats($this);
+			$stats->save();
 			
-			if ($games_after_count > 0)
+			// calculate ratings
+			update_game_ratings($data->id);
+			
+			Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games + 1, u.games_won = u.games_won + p.won, u.rating = u.rating + p.rating_earned WHERE p.game_id = ?', $data->id);
+			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated + 1 WHERE id = ?', $data->moderator->id);
+			
+			if ($is_rating_game)
 			{
-				// Some players of this game played later, so ratings requiere rebuilding.
-				$query = new DbQuery('SELECT r.id, r.game_id, g.end_time FROM rebuild_ratings r JOIN games g ON g.id = r.game_id WHERE r.start_time = 0');
-				if ($row = $query->next())
+				if ($games_after_count <= 0)
 				{
-					list($rebuild_id, $old_game_id, $old_game_end_time) = $row;
-					if ($data->endTime < $old_game_end_time || ($data->endTime < $old_game_end_time && $data->id < $old_game_id))
-					{
-						Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE id = ?', $data->id, $rebuild_id);
-					}
+					list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.non_rating = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
 				}
-				else
+				
+				if ($games_after_count > 0)
 				{
-					Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (start_time, end_time, game_id) VALUES (0, 0, ?)', $data->id);
+					// Some players of this game played later, so ratings requiere rebuilding.
+					$query = new DbQuery('SELECT r.id, r.game_id, g.end_time FROM rebuild_ratings r JOIN games g ON g.id = r.game_id WHERE r.start_time = 0');
+					if ($row = $query->next())
+					{
+						list($rebuild_id, $old_game_id, $old_game_end_time) = $row;
+						if ($data->endTime < $old_game_end_time || ($data->endTime < $old_game_end_time && $data->id < $old_game_id))
+						{
+							Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE id = ?', $data->id, $rebuild_id);
+						}
+					}
+					else
+					{
+						Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (start_time, end_time, game_id) VALUES (0, 0, ?)', $data->id);
+					}
 				}
 			}
 		}
-		
 		db_log(LOG_OBJECT_GAME, 'updated', NULL, $data->id, $data->clubId);
 	}
 	

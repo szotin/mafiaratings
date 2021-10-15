@@ -1,17 +1,21 @@
 <?php
 
-require_once 'include/view_game.php';
 require_once 'include/user.php';
 require_once 'include/message.php';
 
 // It is not used but I leave it as an example of using objections
 
-class Page extends ViewGamePageBase
+class Page extends PageBase
 {
 	protected function show_body()
 	{
+		if (!isset($_REQUEST['id']))
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('game')));
+		}
 		$is_empty = true;
-		$game_id = $this->vg->gs->id;
+		$game_id = (int)$_REQUEST['id'];
+		list($club_id, $timezone) = Db::record(get_label('game'), 'SELECT g.club_id, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE g.id = ?', $game_id);
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';
@@ -37,7 +41,7 @@ class Page extends ViewGamePageBase
 			if (is_permitted(PERMISSION_USER))
 			{
 				echo '<td valign="top">';
-				if (is_permitted(PERMISSION_CLUB_MANAGER, $this->vg->club_id))
+				if (is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 				{
 					if (is_null($parent_id))
 					{
@@ -77,7 +81,7 @@ class Page extends ViewGamePageBase
 			{
 				echo get_label('Responce to the objection #[0]', $parent_id);
 			}
-			echo '</b><br><i>' . format_date('l, F d, Y, H:i', $timestamp, $this->vg->timezone) . '</i></p><p>' . $message . '</p></td></tr>';
+			echo '</b><br><i>' . format_date('l, F d, Y, H:i', $timestamp, $timezone) . '</i></p><p>' . $message . '</p></td></tr>';
 			$is_empty = false;
 		}
 		echo '</table>';
@@ -89,14 +93,9 @@ class Page extends ViewGamePageBase
 			echo '<script>mr.createObjection(' . $game_id . ');</script>';
 		}
 	}
-	
-	protected function js_on_load()
-	{
-		// we do not call parent::js_on_load() because we do not want comments to be shown. They are confusing in this page.
-	}
 }
 
 $page = new Page();
-$page->run(get_label('Game'));
+$page->run(get_label('Objections'));
 
 ?>

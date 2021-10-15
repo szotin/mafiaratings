@@ -4,8 +4,42 @@ require_once '../../include/api.php';
 require_once '../../include/club.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
+require_once '../../include/game.php';
 
 define('CURRENT_VERSION', 0);
+
+function cancel_game($game_id, $club_id, $league_id)
+{
+	Db::exec(get_label('game'), 'UPDATE games SET canceled = TRUE WHERE id = ?', $game_id);
+	if (Db::affected_rows() > 0)
+	{
+		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated - 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $game_id);
+		Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games - 1, u.games_won = u.games_won - p.won, u.rating = u.rating - p.rating_earned WHERE p.game_id = ?', $game_id);
+		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
+		Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
+		Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
+		Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (game_id) VALUES (?)', $game_id);
+		
+		$log_details = new stdClass();
+		$log_details->canceled = true;
+		db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
+	}
+}
+
+function uncancel_game($game_id, $club_id, $league_id)
+{
+	Db::exec(get_label('game'), 'UPDATE games SET canceled = FALSE WHERE id = ?', $game_id);
+	if (Db::affected_rows() > 0)
+	{
+		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated + 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $game_id);
+		$game = new Game($game_id);
+		$game->update();
+		$log_details = new stdClass();
+		$log_details->canceled = false;
+		db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
+	}
+}
 
 class ApiPage extends OpsApiPageBase
 {
@@ -55,14 +89,7 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($accept > 0)
 		{
-			Db::exec(get_label('game'), 'UPDATE games SET canceled = TRUE WHERE id = ?', $game_id);
-			if (Db::affected_rows() > 0)
-			{
-				$log_details = new stdClass();
-				$log_details->canceled = true;
-				db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
-				Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is canceled');
-			}
+			cancel_game($game_id, $club_id, $league_id);
 		}
 		Db::commit();
 		$this->response['objection_id'] = $objection_id;
@@ -138,28 +165,14 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($accept > 0)
 			{
-				Db::exec(get_label('game'), 'UPDATE games SET canceled = TRUE WHERE id = ?', $game_id);
-				if (Db::affected_rows() > 0)
-				{
-					$log_details = new stdClass();
-					$log_details->canceled = true;
-					db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
-					Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is canceled');
-				}
+				cancel_game($game_id, $club_id, $league_id);
 			}
 			else
 			{
 				list ($accept_count) = Db::record(get_label('objection'), 'SELECT count(*) FROM objections o WHERE game_id = ? AND accept = 1', $game_id);
 				if ($accept_count == 0)
 				{
-					Db::exec(get_label('game'), 'UPDATE games SET canceled = FALSE WHERE id = ?', $game_id);
-					if (Db::affected_rows() > 0)
-					{
-						$log_details = new stdClass();
-						$log_details->canceled = false;
-						db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
-						Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is restored');
-					}
+					uncancel_game($game_id, $club_id, $league_id);
 				}
 			}
 		}
@@ -201,14 +214,7 @@ class ApiPage extends OpsApiPageBase
 			list ($accept_count) = Db::record(get_label('objection'), 'SELECT count(*) FROM objections o WHERE game_id = ? AND accept = 1', $game_id);
 			if ($accept_count == 0)
 			{
-				Db::exec(get_label('game'), 'UPDATE games SET canceled = FALSE WHERE id = ?', $game_id);
-				if (Db::affected_rows() > 0)
-				{
-					$log_details = new stdClass();
-					$log_details->canceled = false;
-					db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
-					Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is restored');
-				}
+				uncancel_game($game_id, $club_id, $league_id);
 			}
 		}
 		
