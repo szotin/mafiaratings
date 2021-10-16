@@ -48,22 +48,22 @@ class ApiPage extends GetApiPageBase
 		$condition = new SQL('');
 		if (!empty($started_before))
 		{
-			$condition->add(' AND g.start_time < ?', get_datetime($started_before, $_profile->timezone)->getTimestamp());
+			$condition->add(' AND g.start_time < ?', get_datetime($started_before)->getTimestamp());
 		}
 
 		if (!empty($ended_before))
 		{
-			$condition->add(' AND g.end_time < ?', get_datetime($ended_before, $_profile->timezone)->getTimestamp());
+			$condition->add(' AND g.end_time < ?', get_datetime($ended_before)->getTimestamp());
 		}
 
 		if (!empty($started_after))
 		{
-			$condition->add(' AND g.start_time >= ?', get_datetime($started_after, $_profile->timezone)->getTimestamp());
+			$condition->add(' AND g.start_time >= ?', get_datetime($started_after)->getTimestamp());
 		}
 
 		if (!empty($ended_after))
 		{
-			$condition->add(' AND g.end_time >= ?', get_datetime($ended_after, $_profile->timezone)->getTimestamp());
+			$condition->add(' AND g.end_time >= ?', get_datetime($ended_after)->getTimestamp());
 		}
 
 		if ($game_id > 0)

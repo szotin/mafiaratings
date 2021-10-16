@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/session.php';
 
 define('DEF_DATETIME_FORMAT', 'Y-m-d\TH:i');
 define('DEF_DATETIME_FORMAT_NO_TIME', 'Y-m-d');
@@ -13,9 +14,13 @@ function timestamp_to_string($timestamp, $timezone, $include_time = true)
 	return date(DEF_DATETIME_FORMAT_NO_TIME, $timestamp);
 }
 
-function get_datetime($str, $timezone)
+function get_datetime($str, $timezone = NULL)
 {
-	if (is_string($timezone))
+	if ($timezone == NULL)
+	{
+		$timezone = new DateTimeZone(get_timezone());
+	}
+	else if (is_string($timezone))
 	{
 		$timezone = new DateTimeZone($timezone);
 	}

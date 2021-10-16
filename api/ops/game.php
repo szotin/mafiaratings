@@ -716,13 +716,10 @@ class CommandQueue
 		{
 			throw new Exc(get_label('Invalid request'));
 		}
-		$game = new GameState();
-		$game->create_from_json($rec->game);
+		$game = new Game($rec->game);
 		if ($game->event_id > 0)
 		{
-			$this->correct_game($game);
-			$game->save();
-			save_game_results($game);
+			$game->update();
 		}
 		else
 		{
@@ -1080,14 +1077,13 @@ class ApiPage extends OpsApiPageBase
 			{
 				$user_id = -$incomer_id;
 			}
-			$query = new DbQuery('SELECT id, log, canceled FROM games WHERE result > 0 event_id = ?', $event_id);
+			$query = new DbQuery('SELECT id, json, feature_flags FROM games WHERE result > 0 event_id = ?', $event_id);
 			while($row = $query->next())
 			{
-				$gs = new GameState();
-				$gs->init_existing($row[0], $row[1], $row[2]);
-				if ($gs->change_user($old_user_id, $user_id))
+				$game = new Game($row[1], $row[2]);
+				if ($game->change_user($old_user_id, $user_id))
 				{
-					rebuild_game_stats($gs);
+					$game->update();
 				}
 			}
 			Db::commit();
@@ -1211,23 +1207,40 @@ class ApiPage extends OpsApiPageBase
 		}
 		$reason = str_replace(":", "&#58;", $reason);
 		
-        list($game_log, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT log, club_id, moderator_id, canceled FROM games WHERE id = ?', $game_id);
+        list($json, $feature_flags, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, moderator_id, canceled FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 
-        $gs = new GameState();
-        $gs->init_existing($game_id, $game_log, $is_canceled);
-        foreach ($gs->players as $player)
+		$game = new Game($json, $feature_flags);
+        foreach ($game->data->players as $player)
         {
             if ($user_id == $player->id)
             {
 				Db::begin();
-                $player->extra_points = $points;
+				if (!isset($player->bonus) || is_numeric($player->bonus))
+				{
+					$player->bonus = $points;
+				}
+				else if (is_array($player->bonus))
+				{
+					for ($i = 0; $i < count($player->bonus); ++$i)
+					{
+						if (is_numeric($player->bonus[$i]))
+						{
+							$player->bonus[$i] = $points;
+							break;
+						}
+					}
+					if ($i >= count($player->bonus))
+					{
+						$player->bonus[] = $points;
+					}
+				}
+				else
+				{
+					$player->bonus = array($player->bonus, $points);
+				}
 				$player->comment = $reason;
-                rebuild_game_stats($gs);
-
-                $log_details = new stdClass();
-                $log_details->user_id = $user_id;
-                db_log(LOG_OBJECT_GAME, 'extra_points', $log_details, $game_id, $club_id);
+				$game->update();
                 Db::commit();
 				return;
             }
