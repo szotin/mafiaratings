@@ -87,7 +87,7 @@ class Game
 			{
 				$this->data = clone $g->data;
 			}
-			else if ($g instanceof GameState)
+			else
 			{
 				$this->data = new stdClass();
 				$this->data->id = (int)$g->id;
@@ -143,7 +143,7 @@ class Game
 					{
 						$player->sheriff = $p->sheriff_check + 1;
 					}
-					if ($p->extra_points)
+					if (isset($p->extra_points) && $p->extra_points)
 					{
 						$player->bonus = $p->extra_points;
 					}

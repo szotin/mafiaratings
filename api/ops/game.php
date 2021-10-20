@@ -84,7 +84,7 @@ class GClub
 	public $icon;
 	public $rules_code;
 	
-	function __construct($id, $game)
+	function __construct($id, $gs)
 	{
 		global $_profile;
 		$club = $_profile->clubs[$id];
@@ -184,7 +184,7 @@ class GClub
 			}
 			
 			$events_str = '(0';
-			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, t.id, t.name FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $game->event_id);
+			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, t.id, t.name FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
 			while ($row = $query->next())
 			{
 				$e = new stdClass();
@@ -385,19 +385,19 @@ class CommandQueue
 		$this->users_map = array();
 	}
 	
-	private function correct_game($game)
+	private function correct_game($gs)
 	{
-		if (isset($this->events_map[$game->event_id]))
+		if (isset($this->events_map[$gs->event_id]))
 		{
-			$game->event_id = $this->events_map[$game->event_id];
+			$gs->event_id = $this->events_map[$gs->event_id];
 		}
-		if (isset($this->users_map[$game->moder_id]))
+		if (isset($this->users_map[$gs->moder_id]))
 		{
-			$game->moder_id = $this->users_map[$game->moder_id];
+			$gs->moder_id = $this->users_map[$gs->moder_id];
 		}
 		for ($i = 0; $i < 10; ++$i)
 		{
-			$player = $game->players[$i];
+			$player = $gs->players[$i];
 			if (isset($this->users_map[$player->id]))
 			{
 				$player->id = $this->users_map[$player->id];
@@ -405,7 +405,7 @@ class CommandQueue
 		}
 	}
 	
-	public function exec($queue, $game)
+	public function exec($queue, $gs)
 	{
 		try
 		{
@@ -459,7 +459,7 @@ class CommandQueue
 			return get_label('Failed to submit data to the server: [0].<p>[1] administration will contact you ASAP to resolve this issue.</p><p>Sorry for the inconvenience.</p>', $e->getMessage(), PRODUCT_NAME);
 		}
 		
-		$this->correct_game($game);
+		$this->correct_game($gs);
 		return NULL;
 	}
 	
@@ -716,9 +716,10 @@ class CommandQueue
 		{
 			throw new Exc(get_label('Invalid request'));
 		}
-		$game = new Game($rec->game);
-		if ($game->event_id > 0)
+		
+		if ($rec->game->event_id > 0)
 		{
+			$game = new Game($rec->game);
 			$game->update();
 		}
 		else
@@ -791,14 +792,14 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$output = true;
-		$game = new GameState();
+		$gs = new stdClass();
 		$console = array();
 		if (isset($_REQUEST['game']))
 		{
-			$game_str = $_REQUEST['game'];
-			$game->create_from_json(json_decode($game_str));
-
-			$output = ($club_id != $game->club_id);
+			$json_str = $_REQUEST['game'];
+			$gs = json_decode($json_str);
+			
+			$output = ($club_id != $gs->club_id);
 			$data = NULL;
 			if (isset($_REQUEST['data']))
 			{
@@ -824,29 +825,88 @@ class ApiPage extends OpsApiPageBase
 			if ($data != NULL)
 			{
 				$output = true;
-				$queue = new CommandQueue($game->club_id);
-				$fail = $queue->exec($data, $game);
+				$queue = new CommandQueue($gs->club_id);
+				$fail = $queue->exec($data, $gs);
 				if ($fail != NULL)
 				{
 					$this->response['fail'] = $fail;
 				}
 			}
 			
-			$gid = $game->id;
-			if ($game->event_id > 0)
+			$gid = $gs->id;
+			if ($gs->event_id > 0)
 			{
-				$game->save();
+				$tournament_id = NULL;
+				if ($gs->tournament_id > 0)
+				{
+					list($tournament_name, $tournament_flags, $event_id) = Db::record(get_label('tournament'), 'SELECT t.name, t.flags, e.id FROM tournaments t LEFT OUTER JOIN events e ON e.id = ? AND e.tournament_id = t.id WHERE t.id = ?', $gs->event_id, $this->tournament_id);
+					if (($tournament_flags | TOURNAMENT_FLAG_SINGLE_GAME) == 0 && is_null($event_id))
+					{
+						throw new Exc(get_label('Game [0] can not be played in the tournament [1]', $gs->id, $tournament_name));
+					}
+					$tournament_id = $gs->tournament_id;
+				}
+				
+				$result_code = 0; // GAME_RESULT_PLAYING
+				switch ($gs->gamestate)
+				{
+					case 17: // GAME_MAFIA_WON
+						$result_code = 2; // GAME_RESULT_MAFIA;
+					case 18: // GAME_CIVIL_WON
+						$result_code = 1; // GAME_RESULT_TOWN;
+				}
+				
+				list($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE id = ?', $gs->id);
+				if ($count <= 0)
+				{
+					$query = new DbQuery('SELECT id FROM games WHERE user_id = ? AND result = 0 AND club_id = ? ORDER BY id LIMIT 1', $gs->user_id, $gs->club_id);
+					if ($row = $query->next())
+					{
+						$gs->id = (int)$row[0];
+						$json_str = json_encode($gs);
+						$count = 1;
+					}
+				}
+				
+				$moder_id = NULL;
+				if ($gs->moder_id > 0)
+				{
+					$moder_id = $gs->moder_id;
+				}
+				
+				if ($count > 0)
+				{
+					Db::exec(get_label('game'),
+						'UPDATE games SET log = ?, end_time = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
+							'user_id = ?, language = ?, start_time = ?, end_time = ?, result = ?, ' .
+							'rules = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
+						$json_str, $gs->end_time, $gs->club_id, $gs->event_id, $tournament_id, $moder_id,
+						$gs->user_id, $gs->lang, $gs->start_time, $gs->end_time, $result_code,
+						$gs->rules_code, $gs->id);
+				}
+				else
+				{
+					Db::exec(get_label('game'),
+						'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, log, start_time, end_time, result, rules, log_version) ' .
+							'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . CURRENT_LOG_VERSION . ')',
+						$gs->club_id, $gs->event_id, $tournament_id, $moder_id, $gs->user_id, $gs->lang,
+						$json_str, $gs->start_time, $gs->end_time, $result_code, $gs->rules_code);
+					list ($gs->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');
+					$gs->id = (int)$gs->id;
+					$json_str = json_encode($gs);
+					Db::exec(get_label('game'), 'UPDATE games SET log = ? WHERE id = ?', $json_str, $gs->id);
+				}
 			}
-			else if ($game->club_id == $club_id)
+			else if ($gs->club_id == $club_id)
 			{
-				$_SESSION['demo_game'] = $game_str;
+				$_SESSION['demo_game'] = $json_str;
 			}
 			else
 			{
 				unset($_SESSION['demo_game']);
 			}
 			
-			if ($game->id != $gid)
+			if ($gs->id != $gid)
 			{
 				$output = true;
 			}
@@ -858,7 +918,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		catch (LoginExc $e)
 		{
-			$query = new DbQuery('SELECT name FROM users WHERE id = ?', $game->user_id);
+			$query = new DbQuery('SELECT name FROM users WHERE id = ?', $gs->user_id);
 			if ($row = $query->next())
 			{
 				$e->user_name = $row[0];
@@ -873,26 +933,86 @@ class ApiPage extends OpsApiPageBase
 				$club_id = def_club();
 			}
 		
-			$query = new DbQuery('SELECT id, log, canceled FROM games WHERE user_id = ? AND result = 0 AND club_id = ?', $_profile->user_id, $club_id);
+			$query = new DbQuery('SELECT id, log, canceled FROM games WHERE user_id = ? AND result = 0 AND club_id = ? ORDER BY id LIMIT 1', $_profile->user_id, $club_id);
 			if ($row = $query->next())
 			{
-				list($game_id, $log, $is_canceled) = $row;
+				list($game_id, $json_str, $is_canceled) = $row;
 				// $console[] = 'game id = ' . $game_id;
 				// $console[] = 'log = ' . $log;
-				$game->init_existing($game_id, $log, $is_canceled);
+				$gs = json_decode($json_str);
+				$gs->is_canceled = (bool)$is_canceled;
 			}
 			else if (isset($_SESSION['demo_game']))
 			{
-				$game->create_from_json(json_decode($_SESSION['demo_game']));
+				$gs = json_decode($_SESSION['demo_game']);
 			}
 			else
 			{
-				$game->init_new($_profile->user_id, $club_id);
+				$gs->gamestate = 0; // GAME_NOT_STARTED
+				$gs->id = 0;
+				$gs->club_id = $club_id;
+				$gs->user_id = $_profile->user_id;
+				$gs->moder_id = 0;
+				$gs->lang = 0;
+				$gs->event_id = 0;
+				$gs->tournament_id = 0;
+				$gs->start_time = 0;
+				$gs->end_time = 0;
+				$gs->best_player = -1;
+				$gs->best_move = -1;
+				$gs->guess3 = NULL;
+				$gs->error = NULL;
+				$gs->is_canceled = false;
+				$gs->flags = 0;
+				$gs->rules_code = default_rules_code();
+				$gs->players = array();
+				for ($i = 0; $i < 10; ++$i)
+				{
+					$player = new stdClass();
+					$player->number = $i;
+					$player->id = -1;
+					$player->nick = '';
+					$player->is_male = 1;
+					$player->has_immunity = false;
+					$player->role = ROLE_CIVILIAN;
+					$player->warnings = 0;
+					$player->state = 0; // PLAYER_STATE_ALIVE
+					$player->kill_round = -1;
+					$player->kill_reason = -1;
+					$player->arranged = -1;
+					$player->don_check = -1;
+					$player->sheriff_check = -1;
+					$player->mute = -1;
+					$player->extra_points = 0;
+					$player->comment = '';
+					$gs->players[] = $player;
+				}
+				
+				if ($club_id > 0 )
+				{
+					$query = new DbQuery('SELECT id, flags, languages, tournament_id FROM events WHERE start_time <= UNIX_TIMESTAMP() AND start_time + duration > UNIX_TIMESTAMP() AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?', $club_id);
+					if ($row = $query->next())
+					{
+						$gs->event_id = (int)$row[0];
+						$event_flags = (int)$row[1];
+						$event_langs = (int)$row[2];
+						$gs->set_tournament_id($row[3]);
+						if (($event_flags & EVENT_FLAG_ALL_MODERATE) == 0)
+						{
+							$gs->moder_id = $_profile->user_id;
+						}
+						if (is_valid_lang($event_langs))
+						{
+							$gs->lang = $event_langs;
+						}
+					}
+				}
 			}
 			
+			//throw new Exc(json_encode($gs));
 			$this->response['user'] = new GUser($club_id);
-			$this->response['club'] = new GClub($club_id, $game);
-			$this->response['game'] = $game;
+			$this->response['club'] = new GClub($club_id, $gs);
+			$this->response['game'] = $gs;
 			$this->response['time'] = time();
 		}
 		
