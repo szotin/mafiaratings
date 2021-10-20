@@ -4,9 +4,9 @@ require_once '../../include/api.php';
 require_once '../../include/event.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
-require_once '../../include/game_stats.php';
 require_once '../../include/datetime.php';
 require_once '../../include/image.php';
+require_once '../../include/scoring.php';
 
 define('CURRENT_VERSION', 0);
 

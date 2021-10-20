@@ -2,7 +2,6 @@
 
 require_once '../../include/api.php';
 require_once '../../include/image.php';
-require_once '../../include/game_stats.php';
 require_once '../../include/game.php';
 require_once '../../include/rules.php';
 require_once '../../include/snapshot.php';

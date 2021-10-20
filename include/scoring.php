@@ -3,7 +3,6 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/constants.php';
-require_once __DIR__ . '/game_player.php';
 
 define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIGM)
 define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.

@@ -1,6 +1,5 @@
 <?php
 
-require_once __DIR__ . '/game_state.php';
 require_once __DIR__ . '/rules.php';
 require_once __DIR__ . '/datetime.php';
 require_once __DIR__ . '/event.php';
@@ -107,11 +106,11 @@ class Game
 					$this->data->rating = false;
 				}
 				
-				if ($g->gamestate == GAME_MAFIA_WON)
+				if ($g->gamestate == 17 /*GAME_MAFIA_WON*/)
 				{
 					$this->data->winner = 'maf';
 				}
-				else if ($g->gamestate == GAME_CIVIL_WON)
+				else if ($g->gamestate == 18 /*GAME_CIVIL_WON*/)
 				{
 					$this->data->winner = 'civ';
 				}
@@ -169,11 +168,11 @@ class Game
 						default:
 							throw new Exc('Invalid role for player ' . ($i + 1) . ': ' . $p->role);
 					}
-					if ($p->state != PLAYER_STATE_ALIVE)
+					if ($p->state != 0 /*PLAYER_STATE_ALIVE*/)
 					{
 						$player->death = new stdClass();
 						$player->death->round = $p->kill_round;
-						if ($p->state == PLAYER_STATE_KILLED_NIGHT && $p->kill_reason == KILL_REASON_NORMAL)
+						if ($p->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/ && $p->kill_reason == 0 /*KILL_REASON_NORMAL*/)
 						{
 							if ($p->kill_round == 0 && $g->guess3 != NULL)
 							{
@@ -189,18 +188,18 @@ class Game
 						}
 						switch ($p->kill_reason)
 						{
-							case KILL_REASON_GIVE_UP:
+							case 1 /*KILL_REASON_GIVE_UP*/:
 								$player->death->type = DEATH_TYPE_GIVE_UP;
 								break;
-							case KILL_REASON_WARNINGS:
+							case 2 /*KILL_REASON_WARNINGS*/:
 								$player->death->type = DEATH_TYPE_WARNINGS;
 								break;
-							case KILL_REASON_KICK_OUT:
+							case 3 /*KILL_REASON_KICK_OUT*/:
 								$player->death->type = DEATH_TYPE_KICK_OUT;
 								break;
-							case KILL_REASON_NORMAL:
+							case 0 /*KILL_REASON_NORMAL*/:
 							default:
-								if ($p->state == PLAYER_STATE_KILLED_NIGHT)
+								if ($p->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/)
 								{
 									$player->death->type = DEATH_TYPE_NIGHT;
 								}
@@ -302,7 +301,7 @@ class Game
 							$this->data->players[$log->player]->death->time = Game::get_gametime_info($g, $log);
 							break;
 						case LOGREC_NORMAL:
-							if ($log->gamestate == GAME_DAY_PLAYER_SPEAKING && $log->current_nominant >= 0)
+							if ($log->gamestate == 5 /*GAME_DAY_PLAYER_SPEAKING*/ && $log->current_nominant >= 0)
 							{
 								$player = $this->data->players[$log->player_speaking];
 								if (!isset($player->nominating))
@@ -1495,16 +1494,16 @@ class Game
 		$gametime = new stdClass();
 		switch ($log->gamestate)
 		{
-			case GAME_NOT_STARTED:
-			case GAME_NIGHT0_START:
+			case 0: // GAME_NOT_STARTED:
+			case 1: // GAME_NIGHT0_START:
 				$gametime->round = 0;
 				$gametime->time = GAMETIME_START;
 				break;
-			case GAME_NIGHT0_ARRANGE:
+			case 2: // GAME_NIGHT0_ARRANGE:
 				$gametime->round = 0;
 				$gametime->time = GAMETIME_ARRANGEMENT;
 				break;
-			case GAME_DAY_START:
+			case 3: // GAME_DAY_START:
 				$gametime->round = $log->round;
 				if ($log->player_speaking >= 0)
 				{
@@ -1515,28 +1514,28 @@ class Game
 					$gametime->time = GAMETIME_DAY_START;
 				}
 				break;
-			case GAME_DAY_KILLED_SPEAKING:
-			case GAME_DAY_GUESS3:
+			case 4: // GAME_DAY_KILLED_SPEAKING:
+			case 21: // GAME_DAY_GUESS3:
 				$gametime->round = $log->round;
 				$gametime->time = GAMETIME_NIGHT_KILL_SPEAKING;
 				break;
-			case GAME_DAY_PLAYER_SPEAKING:
+			case 5: // GAME_DAY_PLAYER_SPEAKING:
 				$gametime->round = $log->round;
 				$gametime->time = GAMETIME_SPEAKING;
 				$gametime->speaker = $log->player_speaking + 1;
 				break;
-			case GAME_VOTING_START:
-			case GAME_DAY_FREE_DISCUSSION:
+			case 6: // GAME_VOTING_START:
+			case 20: // GAME_DAY_FREE_DISCUSSION:
 				$gametime->round = $log->round;
 				$gametime->votingRound = 0;
 				$gametime->time = GAMETIME_VOTING;
 				break;
-			case GAME_VOTING_KILLED_SPEAKING:
+			case 7: // GAME_VOTING_KILLED_SPEAKING:
 				$gametime->round = $log->round;
 				$gametime->time = GAMETIME_DAY_KILL_SPEAKING;
 				$gametime->speaker = $log->player_speaking + 1;
 				break;
-			case GAME_VOTING:
+			case 8: // GAME_VOTING:
 				// check that the nominant field is correct
 				$gametime->round = $log->round;
 				$gametime->time = GAMETIME_VOTING;
@@ -1550,56 +1549,56 @@ class Game
 					}
 				}
 				break;
-			case GAME_VOTING_MULTIPLE_WINNERS:
+			case 9: // GAME_VOTING_MULTIPLE_WINNERS:
 				$gametime->round = $log->round;
 				$gametime->votingRound = 1;
 				$gametime->time = GAMETIME_VOTING;
 				break;
-			case GAME_VOTING_NOMINANT_SPEAKING:
+			case 10: // GAME_VOTING_NOMINANT_SPEAKING:
 				$gametime->round = $log->round;
 				$gametime->time = GAMETIME_VOTING;
 				$gametime->votingRound = 0; // how to find out voting round??
 				$gametime->speaker = $log->player_speaking + 1;
 				break;
-			case GAME_NIGHT_START:
-			case GAME_NIGHT_SHOOTING:
+			case 11: // GAME_NIGHT_START:
+			case 12: // GAME_NIGHT_SHOOTING:
 				$gametime->round = $log->round + 1;
 				$gametime->time = GAMETIME_SHOOTING;
 				break;
-			case GAME_NIGHT_DON_CHECK:
-			case GAME_NIGHT_DON_CHECK_END:
+			case 13: // GAME_NIGHT_DON_CHECK:
+			case 14: // GAME_NIGHT_DON_CHECK_END:
 				$gametime->round = $log->round + 1;
 				$gametime->time = GAMETIME_DON;
 				break;
-			case GAME_NIGHT_SHERIFF_CHECK:
-			case GAME_NIGHT_SHERIFF_CHECK_END:
+			case 15: // GAME_NIGHT_SHERIFF_CHECK:
+			case 16: // GAME_NIGHT_SHERIFF_CHECK_END:
 				$gametime->round = $log->round + 1;
 				$gametime->time = GAMETIME_SHERIFF;
 				break;
-			case GAME_MAFIA_WON:
-			case GAME_CIVIL_WON:
-			case GAME_CHOOSE_BEST_PLAYER:
-			case GAME_CHOOSE_BEST_MOVE:
+			case 17: // GAME_MAFIA_WON:
+			case 18: // GAME_CIVIL_WON:
+			case 22: // GAME_CHOOSE_BEST_PLAYER:
+			case 23: // GAME_CHOOSE_BEST_MOVE:
 				$gametime->round = $log->round;
 				$gametime->time = GAMETIME_END;
 				$pl = $gs->players[0];
-				if ($pl->state != PLAYER_STATE_ALIVE && $pl->kill_reason == KILL_REASON_NORMAL)
+				if ($pl->state != 0 /*PLAYER_STATE_ALIVE*/ && $pl->kill_reason == 0 /*KILL_REASON_NORMAL*/)
 				{
 					$gametime->speaker = 1;
-					$gametime->time = ($pl->state == PLAYER_STATE_KILLED_NIGHT ? GAMETIME_NIGHT_KILL_SPEAKING : GAMETIME_DAY_KILL_SPEAKING);
+					$gametime->time = ($pl->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/ ? GAMETIME_NIGHT_KILL_SPEAKING : GAMETIME_DAY_KILL_SPEAKING);
 				}
 				for ($i = 1; $i < 10; ++$i)
 				{
 					$p = $gs->players[$i];
-					if ($p->state == PLAYER_STATE_ALIVE || $p->kill_reason != KILL_REASON_NORMAL)
+					if ($p->state == 0 /*PLAYER_STATE_ALIVE*/ || $p->kill_reason != 0 /*KILL_REASON_NORMAL*/)
 					{
 						continue;
 					}
-					if ($p->kill_round > $pl->kill_round || ($p->kill_round == $pl->kill_round && $p->state == PLAYER_STATE_KILLED_DAY))
+					if ($p->kill_round > $pl->kill_round || ($p->kill_round == $pl->kill_round && $p->state == 2 /*PLAYER_STATE_KILLED_DAY*/))
 					{
 						$pl = p;
 						$gametime->speaker = $i + 1;
-						$gametime->time = ($p->state == PLAYER_STATE_KILLED_NIGHT ? GAMETIME_NIGHT_KILL_SPEAKING : GAMETIME_DAY_KILL_SPEAKING);
+						$gametime->time = ($p->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/ ? GAMETIME_NIGHT_KILL_SPEAKING : GAMETIME_DAY_KILL_SPEAKING);
 					}
 				}
 				break;

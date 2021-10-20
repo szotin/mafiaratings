@@ -1,7 +1,6 @@
 <?php
 
 require_once 'include/page_base.php';
-require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/club.php';

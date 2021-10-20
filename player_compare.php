@@ -2,7 +2,6 @@
 
 require_once 'include/user.php';
 require_once 'include/player_stats.php';
-require_once 'include/game_player.php';
 
 function row($title, $value1, $value2, $count1, $count2, $value1_str = NULL, $value2_str = NULL)
 {

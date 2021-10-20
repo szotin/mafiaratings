@@ -2,7 +2,6 @@
 
 require_once '../../include/api.php';
 require_once '../../include/user_location.php';
-require_once '../../include/game_stats.php';
 
 define('CURRENT_VERSION', 0);
 
