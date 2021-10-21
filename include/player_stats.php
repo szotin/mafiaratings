@@ -4,11 +4,11 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/scoring.php';
 
 define("AVERAGE_PLAYER", -1);
-define("ROLE_CIVIL", 1);
-define("ROLE_SHERIFF", 2);
-define("ROLE_MAFIA", 4);
-define("ROLE_DON", 8);
-define("ROLE_ANY", 15);
+define("ROLE_FLAG_CIVIL", 1);
+define("ROLE_FLAG_SHERIFF", 2);
+define("ROLE_FLAG_MAFIA", 4);
+define("ROLE_FLAG_DON", 8);
+define("ROLE_FLAG_ANY", 15);
 
 define("SURVIVED", 0);
 define("DAY_KILL", 1);
@@ -65,8 +65,6 @@ class PlayerStats
 	
 	public $surviving;
 	
-	public $version1_games_played; // games played after announce sheriff feature was added
-	
 	// if $user_id <= 0: gives stats of an average player
 	// if $club_id <= 0: gives stats for all clubs
 	function __construct($user_id, $club_id, $roles, $condition)
@@ -95,7 +93,6 @@ class PlayerStats
 		$this->checked_by_don = 0;
 		$this->checked_by_sheriff = 0;
 		$this->surviving = array();
-		$this->version1_games_played = 0;
 		
 		$condition->add(get_roles_condition($roles));
 		if ($club_id > 0)
@@ -124,7 +121,7 @@ class PlayerStats
 				'SUM(p.nominated_by_civil), SUM(p.nominated_by_mafia), SUM(p.nominated_by_sheriff), ' .
 				'SUM(p.warns), SUM(IF(p.was_arranged >= 0, 1, 0)), ' .
 				'SUM(IF(p.checked_by_don >= 0, 1, 0)), SUM(IF(p.checked_by_sheriff >= 0, 1, 0)), ' .
-				'SUM(IF(g.log_version > 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)), ' .
+				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)), ' .
 				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0)) ' .
 				' FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE',
 			$condition);
@@ -151,11 +148,10 @@ class PlayerStats
 			$this->arranged = $row[16] / $count;
 			$this->checked_by_don = $row[17] / $count;
 			$this->checked_by_sheriff = $row[18] / $count;
-			$this->version1_games_played = $row[19] / $count;
-			$this->best_player = $row[20] / $count;
-			$this->best_move = $row[21] / $count;
-			$this->guess3maf = $row[22] / $count;
-			$this->guess2maf = $row[23] / $count;
+			$this->best_player = $row[19] / $count;
+			$this->best_move = $row[20] / $count;
+			$this->guess3maf = $row[21] / $count;
+			$this->guess2maf = $row[22] / $count;
 		}
 		
 		$query = new DbQuery('SELECT p.kill_round, p.kill_type, count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE', $condition);

@@ -41,6 +41,41 @@ function get_player_number_html($game, $num)
 
 class Page extends PageBase
 {
+	function generate_title()
+	{
+		$title = '';
+		$state = '';
+		switch ($this->result)
+		{
+			case 0:
+				$state = get_label('Still playing.');
+				break;
+			case 1:
+				$state = get_label('Town wins.');
+				break;
+			case 2:
+				$state = get_label('Mafia wins.');
+				break;
+		}
+		if ($this->tournament_name == NULL)
+		{
+			$title = $this->event_name . '. ';
+		}
+		else
+		{
+			$title = $this->tournament_name . ': ' . $this->event_name . '. ';
+		}
+		if ($this->is_non_rating)
+		{
+			$title .= get_label('Game [0] (non-rating). [1]', $this->id, $state);
+		}
+		else
+		{
+			$title .= get_label('Game [0]. [1]', $this->id, $state);
+		}
+		return $title;
+	}
+	
 	protected function prepare()
 	{
 		$this->id = -1;
@@ -56,10 +91,10 @@ class Page extends PageBase
 		list (
 			$this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
 			$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $this->moder_id, $this->moder_name, $this->moder_flags, 
-			$this->start_time, $this->duration, $this->language_code, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->flags, $json) =
+			$this->start_time, $this->duration, $this->language_code, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_non_rating, $json) =
 		Db::record(
 			get_label('game'),
-			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, c.id, c.name, c.flags, a.id, a.name, a.flags, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.canceled, g.flags, g.json FROM games g' .
+			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, c.id, c.name, c.flags, a.id, a.name, a.flags, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.canceled, g.non_rating, g.json FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' JOIN clubs c ON c.id = g.club_id' . 
@@ -81,39 +116,11 @@ class Page extends PageBase
 		
 		if ($this->is_canceled)
 		{
-			$this->_title = '<s>' . $this->vg->get_title() . '</s> <big><span style="color:blue;">' . get_label('Game canceled') . '.</span></big>';
+			$this->_title = '<s>' . $this->generate_title() . '</s> <big><span style="color:blue;">' . get_label('Game canceled') . '.</span></big>';
 		}
 		else
 		{
-			$state = '';
-			switch ($this->result)
-			{
-				case 0:
-					$state = get_label('Still playing.');
-					break;
-				case 1:
-					$state = get_label('Town wins.');
-					break;
-				case 2:
-					$state = get_label('Mafia wins.');
-					break;
-			}
-			if ($this->tournament_name == NULL)
-			{
-				$this->_title = $this->event_name . '. ';
-			}
-			else
-			{
-				$this->_title = $this->tournament_name . ': ' . $this->event_name . '. ';
-			}
-			if ($this->flags & GAME_FLAG_FUN)
-			{
-				$this->_title .= get_label('Game [0] (non-rating). [1]', $this->id, $state);
-			}
-			else
-			{
-				$this->_title .= get_label('Game [0]. [1]', $this->id, $state);
-			}
+			$this->_title = $this->generate_title();
 		}
 		
 		// Players
@@ -326,16 +333,7 @@ class Page extends PageBase
 		echo '<td align="right" valign="top">';
 		if ($_profile != NULL)
 		{
-			echo '<button class="icon" onclick="';
-			if ($this->gametime >= 0)
-			{
-				echo 'mr.gotoObjections(' . $this->id . ', false)';
-			}
-			else
-			{
-				echo 'mr.createObjection(' . $this->id . ')';
-			}
-			echo '" title="' . get_label('File an objection to the game [0] results.', $this->id) . '">';
+			echo '<button class="icon" onclick="mr.gotoObjections(' . $this->id . ')" title="' . get_label('File an objection to the game [0] results.', $this->id) . '">';
 			echo '<img src="images/objection.png" border="0"></button>';
 		}
 		

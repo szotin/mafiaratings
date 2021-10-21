@@ -908,7 +908,6 @@ mafia.ui = new function()
 					break;
 					
 				case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-					console.log('Killed speaking -----------------------------------');
 					p = game.players[game.player_speaking];
 					$('#r' + game.player_speaking).removeClass().addClass('day-mark');
 					if (mafia.isKillingThisDay())
@@ -938,7 +937,6 @@ mafia.ui = new function()
 					break;
 					
 				case /*GAME_STATE_VOTING*/8:
-					console.log('Voting --------------------------------------------');
 					if (voting.canceled > 0)
 					{
 						status = l('VotingCanceled') + ' ' + l('StartNight');
@@ -1001,7 +999,6 @@ mafia.ui = new function()
 					break;
 					
 				case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
-					console.log('Multiple winners ----------------------------------');
 					if (voting.canceled > 0)
 					{
 						status = l('VotingCanceled') + ' ' + l('StartNight');
@@ -1057,7 +1054,6 @@ mafia.ui = new function()
 					break;
 					
 				case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
-					console.log('Nominant speaking ---------------------------------');
 					if (voting.canceled > 0)
 					{
 						status = l('VotingCanceled') + ' ' + l('StartNight');
@@ -1757,8 +1753,8 @@ mafia.ui = new function()
 		else if (code == /*0*/48 || code == /*0*/96)
 			num = 9;
 		
-		console.log(e);
-		console.log("Code: " + code + "; Gamestate: " + game.gamestate);
+		//console.log(e);
+		//console.log("Code: " + code + "; Gamestate: " + game.gamestate);
 		if (!timer._hidden)
 		{
 			if (code == /*space*/32)

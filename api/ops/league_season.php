@@ -47,8 +47,8 @@ class ApiPage extends OpsApiPageBase
 		$name = get_required_param('name');
 		$this->check_name($name, $league_id);
 
-		$start = get_datetime(get_required_param('start'), $_profile->timezone);
-		$end = get_datetime(get_required_param('end'), $_profile->timezone);
+		$start = get_datetime(get_required_param('start'));
+		$end = get_datetime(get_required_param('end'));
 		if ($start >= $end)
 		{
 			throw new Exc(get_label('Season ends before or right after the start.'));
@@ -97,8 +97,8 @@ class ApiPage extends OpsApiPageBase
 		$name = get_optional_param('name', $old_name);
 		$this->check_name($name, $league_id, $season_id);
 		
-		$start_datetime = get_datetime(get_optional_param('start', $old_start), $_profile->timezone);
-		$end_datetime = get_datetime(get_optional_param('end', $old_end), $_profile->timezone);
+		$start_datetime = get_datetime(get_optional_param('start', $old_start));
+		$end_datetime = get_datetime(get_optional_param('end', $old_end));
 		$start = $start_datetime->getTimestamp();
 		$end = $end_datetime->getTimestamp();
 		if ($start >= $end)

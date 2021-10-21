@@ -4,9 +4,9 @@ require_once '../../include/api.php';
 require_once '../../include/event.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
-require_once '../../include/game_stats.php';
 require_once '../../include/datetime.php';
 require_once '../../include/image.php';
+require_once '../../include/scoring.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -832,16 +832,14 @@ class ApiPage extends OpsApiPageBase
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		
-		$query = new DbQuery('SELECT id, log, canceled FROM games WHERE event_id = ? AND result > 0', $event_id);
+		$query = new DbQuery('SELECT id, json, feature_flags, canceled FROM games WHERE event_id = ? AND result > 0', $event_id);
 		while ($row = $query->next())
 		{
-			list ($game_id, $game_log, $is_canceled) = $row;
-			$gs = new GameState();
-			$gs->init_existing($game_id, $game_log, $is_canceled);
-			if ($gs->change_user($user_id, $new_user_id, $nickname))
+			list ($game_id, $json, $feature_flags, $is_canceled) = $row;
+			$game = new Game($json, $feature_flags);
+			if ($game->change_user($user_id, $new_user_id, $nickname))
 			{
-				rebuild_game_stats($gs);
-				Db::exec(get_label('game'), 'INSERT INTO rebuild_stats (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
+				$game->update();
 				$changed = true;
 			}
 		}

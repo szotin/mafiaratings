@@ -1,7 +1,6 @@
 <?php
 
 require_once 'include/tournament.php';
-require_once 'include/game_player.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
@@ -41,11 +40,11 @@ class Page extends TournamentPageBase
 		$condition = new SQL();
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+			$condition->add(' AND g.non_rating = 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+			$condition->add(' AND g.non_rating <> 0');
 		}
 		
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.tournament_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $condition);
@@ -150,16 +149,16 @@ class Page extends TournamentPageBase
 					echo '<tr><td width="200">';
 					switch ($role)
 					{
-					case PLAYER_ROLE_CIVILIAN:
+					case ROLE_CIVILIAN:
 						echo get_label('Civilians');
 						break;
-					case PLAYER_ROLE_SHERIFF:
+					case ROLE_SHERIFF:
 						echo get_label('Sheriffs');
 						break;
-					case PLAYER_ROLE_MAFIA:
+					case ROLE_MAFIA:
 						echo get_label('Mafiosies');
 						break;
-					case PLAYER_ROLE_DON:
+					case ROLE_DON:
 						echo get_label('Dons');
 						break;
 					}

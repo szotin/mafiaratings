@@ -1,7 +1,6 @@
 <?php
 
 require_once '../../include/api.php';
-require_once '../../include/game_stats.php';
 require_once '../../include/event.php';
 require_once '../../include/email.php';
 require_once '../../include/video.php';
@@ -84,7 +83,7 @@ class GClub
 	public $icon;
 	public $rules_code;
 	
-	function __construct($id, $game)
+	function __construct($id, $gs)
 	{
 		global $_profile;
 		$club = $_profile->clubs[$id];
@@ -184,7 +183,7 @@ class GClub
 			}
 			
 			$events_str = '(0';
-			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, t.id, t.name FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $game->event_id);
+			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, t.id, t.name FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
 			while ($row = $query->next())
 			{
 				$e = new stdClass();
@@ -385,19 +384,19 @@ class CommandQueue
 		$this->users_map = array();
 	}
 	
-	private function correct_game($game)
+	private function correct_game($gs)
 	{
-		if (isset($this->events_map[$game->event_id]))
+		if (isset($this->events_map[$gs->event_id]))
 		{
-			$game->event_id = $this->events_map[$game->event_id];
+			$gs->event_id = $this->events_map[$gs->event_id];
 		}
-		if (isset($this->users_map[$game->moder_id]))
+		if (isset($this->users_map[$gs->moder_id]))
 		{
-			$game->moder_id = $this->users_map[$game->moder_id];
+			$gs->moder_id = $this->users_map[$gs->moder_id];
 		}
 		for ($i = 0; $i < 10; ++$i)
 		{
-			$player = $game->players[$i];
+			$player = $gs->players[$i];
 			if (isset($this->users_map[$player->id]))
 			{
 				$player->id = $this->users_map[$player->id];
@@ -405,7 +404,7 @@ class CommandQueue
 		}
 	}
 	
-	public function exec($queue, $game)
+	public function exec($queue, $gs)
 	{
 		try
 		{
@@ -459,7 +458,7 @@ class CommandQueue
 			return get_label('Failed to submit data to the server: [0].<p>[1] administration will contact you ASAP to resolve this issue.</p><p>Sorry for the inconvenience.</p>', $e->getMessage(), PRODUCT_NAME);
 		}
 		
-		$this->correct_game($game);
+		$this->correct_game($gs);
 		return NULL;
 	}
 	
@@ -716,13 +715,11 @@ class CommandQueue
 		{
 			throw new Exc(get_label('Invalid request'));
 		}
-		$game = new GameState();
-		$game->create_from_json($rec->game);
-		if ($game->event_id > 0)
+		
+		if ($rec->game->event_id > 0)
 		{
-			$this->correct_game($game);
-			$game->save();
-			save_game_results($game);
+			$game = new Game($rec->game);
+			$game->update();
 		}
 		else
 		{
@@ -794,14 +791,14 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$output = true;
-		$game = new GameState();
+		$gs = new stdClass();
 		$console = array();
 		if (isset($_REQUEST['game']))
 		{
-			$game_str = $_REQUEST['game'];
-			$game->create_from_json(json_decode($game_str));
-
-			$output = ($club_id != $game->club_id);
+			$json_str = $_REQUEST['game'];
+			$gs = json_decode($json_str);
+			
+			$output = ($club_id != $gs->club_id);
 			$data = NULL;
 			if (isset($_REQUEST['data']))
 			{
@@ -812,6 +809,10 @@ class ApiPage extends OpsApiPageBase
 				$data = json_decode($_REQUEST['data']);
 				if ($data == NULL)
 				{
+					if (is_permitted(PERMISSION_ADMIN))
+					{
+						throw new Exc(get_label('Invalid json format.') . '<p>' . $_REQUEST['data'] . '</p>');
+					}
 					throw new Exc(get_label('Invalid json format.'));
 				}
 				if (count($data) <= 0)
@@ -823,29 +824,88 @@ class ApiPage extends OpsApiPageBase
 			if ($data != NULL)
 			{
 				$output = true;
-				$queue = new CommandQueue($game->club_id);
-				$fail = $queue->exec($data, $game);
+				$queue = new CommandQueue($gs->club_id);
+				$fail = $queue->exec($data, $gs);
 				if ($fail != NULL)
 				{
 					$this->response['fail'] = $fail;
 				}
 			}
 			
-			$gid = $game->id;
-			if ($game->event_id > 0)
+			$gid = $gs->id;
+			if ($gs->event_id > 0)
 			{
-				$game->save();
+				$tournament_id = NULL;
+				if ($gs->tournament_id > 0)
+				{
+					list($tournament_name, $tournament_flags, $event_id) = Db::record(get_label('tournament'), 'SELECT t.name, t.flags, e.id FROM tournaments t LEFT OUTER JOIN events e ON e.id = ? AND e.tournament_id = t.id WHERE t.id = ?', $gs->event_id, $this->tournament_id);
+					if (($tournament_flags | TOURNAMENT_FLAG_SINGLE_GAME) == 0 && is_null($event_id))
+					{
+						throw new Exc(get_label('Game [0] can not be played in the tournament [1]', $gs->id, $tournament_name));
+					}
+					$tournament_id = $gs->tournament_id;
+				}
+				
+				$result_code = 0; // GAME_RESULT_PLAYING
+				switch ($gs->gamestate)
+				{
+					case 17: // GAME_MAFIA_WON
+						$result_code = 2; // GAME_RESULT_MAFIA;
+					case 18: // GAME_CIVIL_WON
+						$result_code = 1; // GAME_RESULT_TOWN;
+				}
+				
+				list($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE id = ?', $gs->id);
+				if ($count <= 0)
+				{
+					$query = new DbQuery('SELECT id FROM games WHERE user_id = ? AND result = 0 AND club_id = ? ORDER BY id LIMIT 1', $gs->user_id, $gs->club_id);
+					if ($row = $query->next())
+					{
+						$gs->id = (int)$row[0];
+						$json_str = json_encode($gs);
+						$count = 1;
+					}
+				}
+				
+				$moder_id = NULL;
+				if ($gs->moder_id > 0)
+				{
+					$moder_id = $gs->moder_id;
+				}
+				
+				if ($count > 0)
+				{
+					Db::exec(get_label('game'),
+						'UPDATE games SET log = ?, end_time = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
+							'user_id = ?, language = ?, start_time = ?, end_time = ?, result = ?, ' .
+							'rules = ? WHERE id = ?',
+						$json_str, $gs->end_time, $gs->club_id, $gs->event_id, $tournament_id, $moder_id,
+						$gs->user_id, $gs->lang, $gs->start_time, $gs->end_time, $result_code,
+						$gs->rules_code, $gs->id);
+				}
+				else
+				{
+					Db::exec(get_label('game'),
+						'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, log, start_time, end_time, result, rules) ' .
+							'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						$gs->club_id, $gs->event_id, $tournament_id, $moder_id, $gs->user_id, $gs->lang,
+						$json_str, $gs->start_time, $gs->end_time, $result_code, $gs->rules_code);
+					list ($gs->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');
+					$gs->id = (int)$gs->id;
+					$json_str = json_encode($gs);
+					Db::exec(get_label('game'), 'UPDATE games SET log = ? WHERE id = ?', $json_str, $gs->id);
+				}
 			}
-			else if ($game->club_id == $club_id)
+			else if ($gs->club_id == $club_id)
 			{
-				$_SESSION['demo_game'] = $game_str;
+				$_SESSION['demo_game'] = $json_str;
 			}
 			else
 			{
 				unset($_SESSION['demo_game']);
 			}
 			
-			if ($game->id != $gid)
+			if ($gs->id != $gid)
 			{
 				$output = true;
 			}
@@ -857,7 +917,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		catch (LoginExc $e)
 		{
-			$query = new DbQuery('SELECT name FROM users WHERE id = ?', $game->user_id);
+			$query = new DbQuery('SELECT name FROM users WHERE id = ?', $gs->user_id);
 			if ($row = $query->next())
 			{
 				$e->user_name = $row[0];
@@ -872,26 +932,86 @@ class ApiPage extends OpsApiPageBase
 				$club_id = def_club();
 			}
 		
-			$query = new DbQuery('SELECT id, log, canceled FROM games WHERE user_id = ? AND result = 0 AND club_id = ?', $_profile->user_id, $club_id);
+			$query = new DbQuery('SELECT id, log, canceled FROM games WHERE user_id = ? AND result = 0 AND club_id = ? ORDER BY id LIMIT 1', $_profile->user_id, $club_id);
 			if ($row = $query->next())
 			{
-				list($game_id, $log, $is_canceled) = $row;
+				list($game_id, $json_str, $is_canceled) = $row;
 				// $console[] = 'game id = ' . $game_id;
 				// $console[] = 'log = ' . $log;
-				$game->init_existing($game_id, $log, $is_canceled);
+				$gs = json_decode($json_str);
+				$gs->is_canceled = (bool)$is_canceled;
 			}
 			else if (isset($_SESSION['demo_game']))
 			{
-				$game->create_from_json(json_decode($_SESSION['demo_game']));
+				$gs = json_decode($_SESSION['demo_game']);
 			}
 			else
 			{
-				$game->init_new($_profile->user_id, $club_id);
+				$gs->gamestate = 0; // GAME_NOT_STARTED
+				$gs->id = 0;
+				$gs->club_id = $club_id;
+				$gs->user_id = $_profile->user_id;
+				$gs->moder_id = 0;
+				$gs->lang = 0;
+				$gs->event_id = 0;
+				$gs->tournament_id = 0;
+				$gs->start_time = 0;
+				$gs->end_time = 0;
+				$gs->best_player = -1;
+				$gs->best_move = -1;
+				$gs->guess3 = NULL;
+				$gs->error = NULL;
+				$gs->is_canceled = false;
+				$gs->flags = 0;
+				$gs->rules_code = default_rules_code();
+				$gs->players = array();
+				for ($i = 0; $i < 10; ++$i)
+				{
+					$player = new stdClass();
+					$player->number = $i;
+					$player->id = -1;
+					$player->nick = '';
+					$player->is_male = 1;
+					$player->has_immunity = false;
+					$player->role = ROLE_CIVILIAN;
+					$player->warnings = 0;
+					$player->state = 0; // PLAYER_STATE_ALIVE
+					$player->kill_round = -1;
+					$player->kill_reason = -1;
+					$player->arranged = -1;
+					$player->don_check = -1;
+					$player->sheriff_check = -1;
+					$player->mute = -1;
+					$player->extra_points = 0;
+					$player->comment = '';
+					$gs->players[] = $player;
+				}
+				
+				if ($club_id > 0 )
+				{
+					$query = new DbQuery('SELECT id, flags, languages, tournament_id FROM events WHERE start_time <= UNIX_TIMESTAMP() AND start_time + duration > UNIX_TIMESTAMP() AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND club_id = ?', $club_id);
+					if ($row = $query->next())
+					{
+						$gs->event_id = (int)$row[0];
+						$event_flags = (int)$row[1];
+						$event_langs = (int)$row[2];
+						$gs->set_tournament_id($row[3]);
+						if (($event_flags & EVENT_FLAG_ALL_MODERATE) == 0)
+						{
+							$gs->moder_id = $_profile->user_id;
+						}
+						if (is_valid_lang($event_langs))
+						{
+							$gs->lang = $event_langs;
+						}
+					}
+				}
 			}
 			
+			//throw new Exc(json_encode($gs));
 			$this->response['user'] = new GUser($club_id);
-			$this->response['club'] = new GClub($club_id, $game);
-			$this->response['game'] = $game;
+			$this->response['club'] = new GClub($club_id, $gs);
+			$this->response['game'] = $gs;
 			$this->response['time'] = time();
 		}
 		
@@ -1076,14 +1196,13 @@ class ApiPage extends OpsApiPageBase
 			{
 				$user_id = -$incomer_id;
 			}
-			$query = new DbQuery('SELECT id, log, canceled FROM games WHERE result > 0 event_id = ?', $event_id);
+			$query = new DbQuery('SELECT id, json, feature_flags FROM games WHERE result > 0 event_id = ?', $event_id);
 			while($row = $query->next())
 			{
-				$gs = new GameState();
-				$gs->init_existing($row[0], $row[1], $row[2]);
-				if ($gs->change_user($old_user_id, $user_id))
+				$game = new Game($row[1], $row[2]);
+				if ($game->change_user($old_user_id, $user_id))
 				{
-					rebuild_game_stats($gs);
+					$game->update();
 				}
 			}
 			Db::commit();
@@ -1113,9 +1232,19 @@ class ApiPage extends OpsApiPageBase
 		$game_id = (int)get_required_param('game_id');
 		
 		Db::begin();
-		list($club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, moderator_id FROM games WHERE id = ?', $game_id);
+		list($club_id, $moderator_id, $end_time, $is_non_rating) = Db::record(get_label('game'), 'SELECT club_id, moderator_id, end_time, flags FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		
+		if (!$is_non_rating)
+		{
+			$prev_game_id = NULL;
+			$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
+			if ($row = $query->next())
+			{
+				list($prev_game_id) = $row;
+			}
+			Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (game_id) VALUES (?)', $prev_game_id);
+		}
 		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
@@ -1123,12 +1252,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
-		Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is deleted');
 		
 		db_log(LOG_OBJECT_GAME, 'deleted', NULL, $game_id, $club_id);
 		Db::commit();
-		
-		$this->response['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
 	}
 	
 	function delete_op_help()
@@ -1145,60 +1271,42 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		
-		$game_id = (int)$_REQUEST['game_id'];
+		$game_id = (int)get_required_param('game_id');
+		$json = get_required_param('json');
+		if ($json == NULL)
+		{
+			throw new Exc(get_label('Invalid json format.'));
+		}
 		
 		Db::begin();
-		list($club_id, $club_name, $log, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT c.id, c.name, g.log, g.moderator_id, g.canceled FROM games g JOIN clubs c ON c.id = g.club_id WHERE g.id = ?', $game_id);
+		list($club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, moderator_id FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
-		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MODER) == 0)
-		{
-			throw new Exc(get_label('No permissions'));
-		}
-		$this->response['club_id'] = $club_id;
 		
-		$query = new DbQuery('SELECT id, log, canceled FROM games WHERE user_id = ? AND club_id = ? AND result = 0', $_profile->user_id, $club_id);
-		while ($row = $query->next())
-		{
-			list($gid, $glog, $gcanceled) = $row;
-			$gs = new GameState();
-			$gs->init_existing($game_id, $glog, $gcanceled);
-			if ($gs->gamestate == GAME_NOT_STARTED)
-			{
-				Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $gid);
-			}
-			else
-			{
-				$this->response['open_game_anyway'] = true;
-				throw new Exc(get_label('You are already editing a game for [0]. Please finish it first.', $club_name));
-			}
-		}
-		
-		$gs = new GameState();
-		$gs->init_existing($game_id, $log, $is_canceled);
-		$gs->user_id = $_profile->user_id;
-		$gs->save();
-		
-		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
-		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
-		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
-		Db::exec(get_label('game'), 'DELETE FROM players WHERE game_id = ?', $game_id);
-		Db::exec(get_label('game'), 'UPDATE games SET result = 0, user_id = ? WHERE id = ?', $_profile->user_id, $game_id);
-		Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (time, action, email_sent) VALUES (UNIX_TIMESTAMP(), ?, 0)', 'Game ' . $game_id . ' is changed');
-		
-		$log_details = new stdClass();
-		$log_details->old_log = $log;
-		db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id);
+		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
+		$game = new Game($json, $feature_flags);
+		$game->update();
 		Db::commit();
 		
-		$this->response['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
+		if (isset($game->issues))
+		{
+			$text = get_label('The game contains the next issues:') . '<ul>';
+			foreach ($game->issues as $issue)
+			{
+				$text .= '<li>' . $issue . '</li>';
+			}
+			$text .= '</ul>' . get_label('They are all fixed but the original version of the game is also saved. Please check Game Issues in the management menu.');
+			$this->response['message'] = $text;
+		}
 	}
 	
-	// function change_op_help()
-	// {
-		// echo '';
-		// $this->show_help_request_params_head();
-		// $this->show_help_response_params_head();
-	// }
+	function change_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Add extra points for a player.');
+		$help->request_param('game_id', 'Game id.');
+		$param = $help->response_param('json', 'Game description in json format.');
+		Game::api_help($param, true);
+		return $help;
+	}
 	
 	//-------------------------------------------------------------------------------------------------------
 	// extra_points
@@ -1218,23 +1326,40 @@ class ApiPage extends OpsApiPageBase
 		}
 		$reason = str_replace(":", "&#58;", $reason);
 		
-        list($game_log, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT log, club_id, moderator_id, canceled FROM games WHERE id = ?', $game_id);
+        list($json, $feature_flags, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, moderator_id, canceled FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 
-        $gs = new GameState();
-        $gs->init_existing($game_id, $game_log, $is_canceled);
-        foreach ($gs->players as $player)
+		$game = new Game($json, $feature_flags);
+        foreach ($game->data->players as $player)
         {
             if ($user_id == $player->id)
             {
 				Db::begin();
-                $player->extra_points = $points;
+				if (!isset($player->bonus) || is_numeric($player->bonus))
+				{
+					$player->bonus = $points;
+				}
+				else if (is_array($player->bonus))
+				{
+					for ($i = 0; $i < count($player->bonus); ++$i)
+					{
+						if (is_numeric($player->bonus[$i]))
+						{
+							$player->bonus[$i] = $points;
+							break;
+						}
+					}
+					if ($i >= count($player->bonus))
+					{
+						$player->bonus[] = $points;
+					}
+				}
+				else
+				{
+					$player->bonus = array($player->bonus, $points);
+				}
 				$player->comment = $reason;
-                rebuild_game_stats($gs);
-
-                $log_details = new stdClass();
-                $log_details->user_id = $user_id;
-                db_log(LOG_OBJECT_GAME, 'extra_points', $log_details, $game_id, $club_id);
+				$game->update();
                 Db::commit();
 				return;
             }
@@ -1397,73 +1522,6 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
-	// raw_change
-	//-------------------------------------------------------------------------------------------------------
-	function raw_change_op()
-	{
-		global $_profile;
-		
-		$game_id = (int)get_required_param('game_id');
-		$src = json_decode(get_required_param('json'));
-		if ($src == NULL)
-		{
-			throw new Exc(get_label('Invalid json format.'));
-		}
-		
-		Db::begin();
-		check_permissions(PERMISSION_ADMIN);
-		
-		$gs = new GameState();
-		$gs->create_from_json($src);
-		
-        $feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
-        $game = new Game($gs, $feature_flags);
-        $game->check();
-        if (isset($game->data->features))
-        {
-            $feature_flags = Game::leters_to_feature_flags($game->data->features);
-        }
-        
-        Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $game_id, $feature_flags);
-        // This line is temporary - for removing converted game issues. Delete later.
-        Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = 0', $game_id);
-		if (isset($game->issues))
-		{
-			$old_json = $game->to_json();
-			$game->fix();
-			if (isset($game->issues))
-			{
-				$issues = '<ul>';
-				foreach ($game->issues as $issue)
-				{
-					$issues .= '<li>' . $issue . '</li>';
-				}
-				$issues .= '</ul>';
-			}
-            Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $game_id, $old_json, $issues, $feature_flags, Game::leters_to_feature_flags($game->data->features));
-		}
-		
-		Db::exec(get_label('game'), 'UPDATE games SET log = ?, json = ?, feature_flags = ?, rules = ? WHERE id = ?', $gs->write(), $game->to_json(), $game->flags, $gs->rules_code, $game_id);
-		Db::commit();
-		
-		if (isset($issues))
-		{
-			$this->response['message'] = $issues;
-		}
-		else
-		{
-			$this->response['message'] = get_label('Please note that ratings will not be updated immediately. We will send an email to the site administrator to review the changes and update the scores.');
-		}
-	}
-	
-	// function raw_change_op_help()
-	// {
-		// echo '';
-		// $this->show_help_request_params_head();
-		// $this->show_help_response_params_head();
-	// }
-	
-	//-------------------------------------------------------------------------------------------------------
 	// delete_issue
 	//-------------------------------------------------------------------------------------------------------
 	function delete_issue_op()
@@ -1471,18 +1529,17 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$game_id = (int)get_required_param('game_id');
-        $feature_flags = (int)get_optional_param('features', -1);
+		$feature_flags = (int)get_optional_param('features', -1);
 		
 		Db::begin();
-        if ($feature_flags < 0)
-        {
-            Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
-        }
-        else
-        {
-            Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $game_id, $feature_flags);
-        }
-		Db::exec(get_label('game'), 'UPDATE games SET as_is = TRUE WHERE id = ?', $game_id);
+		if ($feature_flags < 0)
+		{
+			Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
+		}
+		else
+		{
+			Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $game_id, $feature_flags);
+		}
 		Db::commit();
 	}
 	

@@ -84,11 +84,11 @@ class Page extends AddressPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') = 0');
+			$condition->add(' AND g.non_rating = 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND (g.flags & ' . GAME_FLAG_FUN . ') <> 0');
+			$condition->add(' AND g.non_rating <> 0');
 		}
 		if ($filter & FLAG_FILTER_CANCELED)
 		{
@@ -118,7 +118,7 @@ class Page extends AddressPageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, g.flags, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.canceled, e.id, e.name, e.flags, t.id, t.name, t.flags, l.id, l.name, l.flags FROM games g' .
+			'SELECT g.id, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.non_rating, g.canceled, e.id, e.name, e.flags, t.id, t.name, t.flags, l.id, l.name, l.flags FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
 			' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 			' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
@@ -127,10 +127,10 @@ class Page extends AddressPageBase
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $game_flags, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_canceled, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $league_id, $league_name, $league_flags) = $row;
+			list ($game_id, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_non_rating, $is_canceled, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $league_id, $league_name, $league_flags) = $row;
 			
 			echo '<tr align="center"';
-			if ($is_canceled || ($game_flags & GAME_FLAG_FUN))
+			if ($is_canceled || $is_non_rating)
 			{
 				echo ' class="dark"';
 			}
@@ -159,7 +159,7 @@ class Page extends AddressPageBase
 				echo '</td>';
 			}
 			
-			if ($is_canceled || ($game_flags & GAME_FLAG_FUN) != 0)
+			if ($is_canceled || $is_non_rating != 0)
 			{
 				echo '<td align="left" style="padding-left:12px;">';
 			}
@@ -187,13 +187,13 @@ class Page extends AddressPageBase
 			if ($is_canceled)
 			{
 				echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
-				if ($game_flags & GAME_FLAG_FUN)
+				if ($is_non_rating)
 				{
 					echo '<br>' . get_label('Non-rating');
 				}
 				echo '</b></td>';
 			}
-			else if ($game_flags & GAME_FLAG_FUN)
+			else if ($is_non_rating)
 			{
 				echo '</td><td width="100" class="darker"><b>' . get_label('Non-rating') . '</b></td>';
 			}

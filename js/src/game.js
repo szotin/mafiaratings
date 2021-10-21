@@ -312,11 +312,9 @@ var mafia = new function()
 				_data['requests'] = [];
 			
 			_curVoting = null;
-			_logVoting("011");
 			if (game.votings != null && game.votings.length > 0)
 			{
 				_curVoting = game.votings[game.votings.length - 1];
-				_logVoting("012");
 			}
 			
 			if (game.lang == 0 || ((game.lang - 1) & game.lang) != 0)
@@ -941,21 +939,6 @@ var mafia = new function()
 	}
 	
 // =================================================== The game
-	function _logVoting(str)
-	{
-		console.log("...... " + str + " .........");
-		if (_curVoting)
-		{
-			console.log("round = " + _curVoting.round);
-			console.log("vround = " + _curVoting.voting_round);
-		}
-		else
-		{
-			console.log("null");
-		}
-		console.log("....................");
-	}
-
 	function _getNomIndex(num)
 	{
 		for (var i = 0; i < _curVoting.nominants.length; ++i)
@@ -983,7 +966,6 @@ var mafia = new function()
 				multiple_kill: false,
 				canceled: 0
 			};
-			_logVoting("001");
 			
 			if (game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2)
 			{
@@ -1022,7 +1004,6 @@ var mafia = new function()
 			{
 				game.votings.pop();
 				_curVoting = prev;
-				_logVoting("002");
 			}
 		}
 	}
@@ -1375,7 +1356,6 @@ var mafia = new function()
 			multiple_kill: false,
 			canceled: 0
 		};
-		_logVoting("003");
 		if (game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2)
 		{
 			_curVoting.votes = null;
@@ -1653,23 +1633,14 @@ var mafia = new function()
 
 			case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
 				/*_assert_(mafia.votingWinners().length > 1);*/
-				console.log('... beg');
-				console.log(_curVoting.round);
-				console.log(_curVoting.voting_round);
-				console.log(mafia.playersCount());
 				if (_curVoting.voting_round == 0)
 				{
-					console.log(mafia.isKillingThisDay());
-					console.log(mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11));
 					if (!mafia.isKillingThisDay())
 					{
-						console.log(game.current_nominant);
-						console.log(mafia.votingWinners());
 						// round0 - nobody is killed they all are speaking
 						game.current_nominant = 0;
 						if (game.current_nominant >= mafia.votingWinners().length)
 						{
-							console.log('game.gamestate = /*GAME_STATE_NIGHT_START*/11');
 							game.gamestate = /*GAME_STATE_NIGHT_START*/11;
 							_newVoting(game.round + 1);
 							game.player_speaking = -1;
@@ -1677,18 +1648,12 @@ var mafia = new function()
 						}
 						else
 						{
-							console.log('game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7');
 							game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
 							game.player_speaking = mafia.votingWinners()[game.current_nominant];
 						}
 					}
 					else if (_curVoting.canceled > 0 || (mafia.playersCount() == 4 && mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11) == /*RULES_SPLIT_ON_FOUR_PROHIBITED*/1))
 					{
-						console.log('game.gamestate = /*GAME_STATE_NIGHT_START*/11');
-						console.log('_curVoting.canceled = ' + _curVoting.canceled);
-						console.log('mafia.playersCount() = ' + mafia.playersCount());
-						console.log('mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11) = ' + mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11));
-						
 						// A special case: 4 players, multiple winners - no second voting. Nobody is killed.
 						game.gamestate = /*GAME_STATE_NIGHT_START*/11;
 						_newVoting(game.round + 1);
@@ -1698,19 +1663,14 @@ var mafia = new function()
 					else
 					{
 						// vote again
-						console.log(game.round);
-						console.log(game.current_nominant);
-						console.log(_curVoting.nominants.length);
 						_newVoting(game.round);
 						game.current_nominant = 0;
 						if (game.current_nominant >= _curVoting.nominants.length)
 						{
-							console.log('game.gamestate = /*GAME_STATE_VOTING*/8');
 							game.gamestate = /*GAME_STATE_VOTING*/8;
 						}
 						else
 						{
-							console.log('game.gamestate = /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10');
 							game.gamestate = /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10;
 						}
 						game.player_speaking = _curVoting.nominants[game.current_nominant].player_num;
@@ -1718,14 +1678,12 @@ var mafia = new function()
 				}
 				else if (!_curVoting.multiple_kill || mafia.playersCount() == 3)
 				{
-					console.log('game.gamestate = game.gamestate = /*GAME_STATE_NIGHT_START*/11');
 					// 3 players is a special case. They can't be all killed, so we ignore multiple_kill flag.
 					game.gamestate = /*GAME_STATE_NIGHT_START*/11;
 					_newVoting(game.round + 1);
 				}
 				else
 				{
-					console.log('game.gamestate = game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7');
 					game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
 					game.current_nominant = 0;
 					var winners = mafia.votingWinners();
@@ -1736,7 +1694,6 @@ var mafia = new function()
 						_killPlayer(winners[i], false, /*PLAYER_KR_NORMAL*/0, game.round);
 					}
 				}
-				console.log('... end');
 				break;
 
 			case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
@@ -1901,7 +1858,6 @@ var mafia = new function()
 								{
 									game.votings.pop();
 									_curVoting = game.votings[game.votings.length - 1];
-									_logVoting("004");
 								}
 								break;
 							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
@@ -1932,7 +1888,6 @@ var mafia = new function()
 								{
 									game.votings.pop();
 									_curVoting = game.votings[game.votings.length - 1];
-									_logVoting("005");
 								}
 								break;
 							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
@@ -1951,7 +1906,6 @@ var mafia = new function()
 								{
 									game.votings.pop();
 									_curVoting = game.votings[game.votings.length - 1];
-									_logVoting("006");
 								}
 								break;
 							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
@@ -1984,7 +1938,6 @@ var mafia = new function()
 								{
 									game.votings.pop();
 									_curVoting = game.votings[game.votings.length - 1];
-									_logVoting("007");
 								}
 								break;
 							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
@@ -2018,7 +1971,6 @@ var mafia = new function()
 								{
 									game.votings.pop();
 									_curVoting = game.votings[game.votings.length - 1];
-									_logVoting("008");
 								}
 								break;
 							/*case /GAME_STATE_VOTING_NOMINANT_SPEAKING/10:
@@ -2692,7 +2644,6 @@ var mafia = new function()
 			p.kill_round = p.kill_reason = p.arranged = p.don_check = p.sheriff_check = -1;
 		}
 		_curVoting = null;
-		_logVoting("009");
 		
 		dirty();
 		_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
@@ -2775,7 +2726,6 @@ var mafia = new function()
 		{
 			_data.game = _newGame();
 			_curVoting = null;
-			_logVoting("010");
 			if (game.event_id != 0)
 			{
 				var req =

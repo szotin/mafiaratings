@@ -54,22 +54,22 @@ class ApiPage extends GetApiPageBase
 
 		if (!empty($started_before))
 		{
-			$condition->add(' AND e.start_time < ?', get_datetime($started_before, $_profile->timezone)->getTimestamp());
+			$condition->add(' AND e.start_time < ?', get_datetime($started_before)->getTimestamp());
 		}
 
 		if (!empty($ended_before))
 		{
-			$condition->add(' AND e.start_time + e.duration < ?', get_datetime($ended_before, $_profile->timezone)->getTimestamp());
+			$condition->add(' AND e.start_time + e.duration < ?', get_datetime($ended_before)->getTimestamp());
 		}
 
 		if (!empty($started_after))
 		{
-			$condition->add(' AND e.start_time >= ?', get_datetime($started_after, $_profile->timezone)->getTimestamp());
+			$condition->add(' AND e.start_time >= ?', get_datetime($started_after)->getTimestamp());
 		}
 
 		if (!empty($ended_after))
 		{
-			$condition->add(' AND e.start_time + e.duration >= ?', get_datetime($ended_after, $_profile->timezone)->getTimestamp());
+			$condition->add(' AND e.start_time + e.duration >= ?', get_datetime($ended_after)->getTimestamp());
 		}
 
 		if ($event_id > 0)

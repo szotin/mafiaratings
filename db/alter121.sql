@@ -4,4 +4,3 @@ ALTER TABLE game_issues DROP PRIMARY KEY, ADD PRIMARY KEY(game_id, feature_flags
 
 ALTER TABLE games DROP FOREIGN KEY game_best_player;
 ALTER TABLE games DROP COLUMN best_player_id;
-

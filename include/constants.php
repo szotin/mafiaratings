@@ -129,9 +129,6 @@ define('POINTS_SHERIFF', 4);
 define('POINTS_MAFIA', 5);
 define('POINTS_DON', 6);
 
-define('GAME_FLAG_FUN', 1);
-define('GAME_FLAG_SIMPLIFIED_CLIENT', 2);
-
 define('DEFAULT_PAGE_SIZE', 50);
 define('DEFAULT_ROW_COUNT', 20);
 define('DEFAULT_COLUMN_COUNT', 5);
@@ -299,5 +296,10 @@ function set_flag($flags, $flag, $value)
 define('UPLOAD_LOGO_MAX_SIZE', 2097152);
 define('UPLOAD_SOUND_MAX_SIZE', 2097152);
 define('UPLOAD_PHOTO_MAX_SIZE', 2097152);
+
+define('ROLE_CIVILIAN', 0);
+define('ROLE_SHERIFF', 1);
+define('ROLE_MAFIA', 2);
+define('ROLE_DON', 3);
 
 ?>

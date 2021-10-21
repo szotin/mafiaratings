@@ -2,7 +2,6 @@
 
 require_once 'include/user.php';
 require_once 'include/player_stats.php';
-require_once 'include/game_player.php';
 
 function row($title, $value1, $value2, $count1, $count2, $value1_str = NULL, $value2_str = NULL)
 {
@@ -117,7 +116,7 @@ class Page extends UserPageBase
 
 	private function standard_compare($role)
 	{
-		$mafia_role = ($role == (ROLE_MAFIA | ROLE_DON) ? -1 : 1);
+		$mafia_role = ($role == (ROLE_FLAG_MAFIA | ROLE_FLAG_DON) ? -1 : 1);
 		$condition = new SQL(' AND g.canceled = 0');
 		$stats1 = new PlayerStats($this->id, -1, $role, $condition);
 		$stats2 = new PlayerStats($this->id2, -1, $role, $condition);
@@ -194,21 +193,21 @@ class Page extends UserPageBase
 		row(get_label('Rating per game'), $rating_per_game1, $rating_per_game2, $stats1->games_played, $stats2->games_played, number_format($rating_per_game1, 2), number_format($rating_per_game2, 2));
 		row(get_label('Winning rate'), $winning_percentage1, $winning_percentage2, $stats1->games_played, $stats2->games_played, number_format($winning_percentage1, 1) . '%', number_format($winning_percentage2, 1) . '%');
 		row(get_label('Surviving rate'), $survived1, $survived2, $stats1->games_played, $stats2->games_played, number_format($survived1, 1) . '%', number_format($survived2, 1) . '%');
-		if ($role != ROLE_ANY)
+		if ($role != ROLE_FLAG_ANY)
 		{
 			row(get_label('Votes against mafia'), $voted_mafia1 * $mafia_role, $voted_mafia2 * $mafia_role, $stats1->games_played, $stats2->games_played, number_format($voted_mafia1, 2) . get_label(' per game'), number_format($voted_mafia2, 2) . get_label(' per game'));
 			row(get_label('Votes against civilians'), -$voted_civil1 * $mafia_role, -$voted_civil2 * $mafia_role, $stats1->games_played, $stats2->games_played, number_format($voted_civil1, 2) . get_label(' per game'), number_format($voted_civil2, 2) . get_label(' per game'));
 			row(get_label('Votes against sheriff'), -$voted_sheriff1 * $mafia_role, -$voted_sheriff2 * $mafia_role, $stats1->games_played, $stats2->games_played, number_format($voted_sheriff1, 2) . get_label(' per game'), number_format($voted_sheriff2, 2) . get_label(' per game'));
 		}
 		row(get_label('Voted by others'), -$voted_by1, -$voted_by2, $stats1->games_played, $stats2->games_played, number_format($voted_by1, 2) . get_label(' per game'), number_format($voted_by2, 2) . get_label(' per game'));
-		if ($role != ROLE_ANY)
+		if ($role != ROLE_FLAG_ANY)
 		{
 			row(get_label('Nominates mafia'), $nominated_mafia1 * $mafia_role, $nominated_mafia2 * $mafia_role, $stats1->games_played, $stats2->games_played, number_format($nominated_mafia1, 2) . get_label(' per game'), number_format($nominated_mafia2, 2) . get_label(' per game'));
 			row(get_label('Nominates civilians'), -$nominated_civil1 * $mafia_role, -$nominated_civil2 * $mafia_role, $stats1->games_played, $stats2->games_played, number_format($nominated_civil1, 2) . get_label(' per game'), number_format($nominated_civil2, 2) . get_label(' per game'));
 			row(get_label('Nominates sheriff'), -$nominated_sheriff1 * $mafia_role, -$nominated_sheriff2 * $mafia_role, $stats1->games_played, $stats2->games_played, number_format($nominated_sheriff1, 2) . get_label(' per game'), number_format($nominated_sheriff2, 2) . get_label(' per game'));
 		}
 		row(get_label('Nominated by others'), -$nominated_by1, -$nominated_by2, $stats1->games_played, $stats2->games_played, number_format($nominated_by1, 2) . get_label(' per game'), number_format($nominated_by2, 2) . get_label(' per game'));
-		if ($role != ROLE_SHERIFF)
+		if ($role != ROLE_FLAG_SHERIFF)
 		{
 			row(get_label('Checked by sheriff'), -$checked_by_sheriff1, -$checked_by_sheriff2, $stats1->games_played, $stats2->games_played, number_format($checked_by_sheriff1, 2) . get_label(' per game'), number_format($checked_by_sheriff2, 2) . get_label(' per game'));
 		}
@@ -382,51 +381,51 @@ class Page extends UserPageBase
 			' SUM(p1.voted_by_civil + p1.voted_by_mafia + p1.voted_by_sheriff), SUM(p2.voted_by_civil + p2.voted_by_mafia + p2.voted_by_sheriff),' .
 			' SUM(p1.nominated_by_civil + p1.nominated_by_mafia + p1.nominated_by_sheriff), SUM(p2.nominated_by_civil + p2.nominated_by_mafia + p2.nominated_by_sheriff),' .
 			' SUM(IF(p1.checked_by_sheriff >= 0, 1, 0)), SUM(IF(p2.checked_by_sheriff >= 0, 1, 0)),' .
-            ' SUM(p1.extra_points), SUM(p2.extra_points)' .
+			' SUM(p1.extra_points), SUM(p2.extra_points)' .
 			' FROM players p1, players p2, games g' .
 			' WHERE g.id = p1.game_id AND g.id = p2.game_id AND p1.user_id = ? AND p2.user_id = ?', $this->id, $this->id2);
 			
 		switch ($role1)
 		{
 			case 1: // Red player
-				$query->add(' AND p1.role <= ' . PLAYER_ROLE_SHERIFF);
+				$query->add(' AND p1.role <= ' . ROLE_SHERIFF);
 				break;
 			case 2: // Dark player
-				$query->add(' AND p1.role >= ' . PLAYER_ROLE_MAFIA);
+				$query->add(' AND p1.role >= ' . ROLE_MAFIA);
 				break;
 			case 3: // Civilian
-				$query->add(' AND p1.role = ' . PLAYER_ROLE_CIVILIAN);
+				$query->add(' AND p1.role = ' . ROLE_CIVILIAN);
 				break;
 			case 4: // Sheriff
-				$query->add(' AND p1.role = ' . PLAYER_ROLE_SHERIFF);
+				$query->add(' AND p1.role = ' . ROLE_SHERIFF);
 				break;
 			case 5: // Mafiosi
-				$query->add(' AND p1.role = ' . PLAYER_ROLE_MAFIA);
+				$query->add(' AND p1.role = ' . ROLE_MAFIA);
 				break;
 			case 6: // Don
-				$query->add(' AND p1.role = ' . PLAYER_ROLE_DON);
+				$query->add(' AND p1.role = ' . ROLE_DON);
 				break;
 		}
 			
 		switch ($role2)
 		{
 			case 1: // Red player
-				$query->add(' AND p2.role <= ' . PLAYER_ROLE_SHERIFF);
+				$query->add(' AND p2.role <= ' . ROLE_SHERIFF);
 				break;
 			case 2: // Dark player
-				$query->add(' AND p2.role >= ' . PLAYER_ROLE_MAFIA);
+				$query->add(' AND p2.role >= ' . ROLE_MAFIA);
 				break;
 			case 3: // Civilian
-				$query->add(' AND p2.role = ' . PLAYER_ROLE_CIVILIAN);
+				$query->add(' AND p2.role = ' . ROLE_CIVILIAN);
 				break;
 			case 4: // Sheriff
-				$query->add(' AND p2.role = ' . PLAYER_ROLE_SHERIFF);
+				$query->add(' AND p2.role = ' . ROLE_SHERIFF);
 				break;
 			case 5: // Mafiosi
-				$query->add(' AND p2.role = ' . PLAYER_ROLE_MAFIA);
+				$query->add(' AND p2.role = ' . ROLE_MAFIA);
 				break;
 			case 6: // Don
-				$query->add(' AND p2.role = ' . PLAYER_ROLE_DON);
+				$query->add(' AND p2.role = ' . ROLE_DON);
 				break;
 		}
 		
@@ -434,7 +433,7 @@ class Page extends UserPageBase
 			$games_played, $rating1, $rating2, $won1, $won2,
 			$survived1, $survived2, $voted_by1, $voted_by2,
 			$nominated_by1, $nominated_by2, $sheriff_check1, $sheriff_check2,
-            $extra_points1, $extra_points2) = $query->record(get_label('player'));
+			$extra_points1, $extra_points2) = $query->record(get_label('player'));
 	
 		echo '<form method="get" name="roleform" action="player_compare.php">';
 		echo '<input type="hidden" name="id1" value="' . $this->id . '">';
@@ -452,7 +451,7 @@ class Page extends UserPageBase
 		{
 			row(get_label('Wins'), $won1, $won2, $games_played, $games_played);
 			row(get_label('Rating'), $rating1, $rating2, $games_played, $games_played);
-            row(get_label('Bonus Points'), $extra_points1, $extra_points2, $games_played, $games_played);
+			row(get_label('Bonus Points'), $extra_points1, $extra_points2, $games_played, $games_played);
 			row(get_label('Survived'), $survived1, $survived2, $games_played, $games_played);
 			row(get_label('Voted by others'), -$voted_by1, -$voted_by2, $games_played, $games_played, $voted_by1, $voted_by2);
 			row(get_label('Nominated by others'), -$nominated_by1, -$nominated_by2, $games_played, $games_played, $nominated_by1, $nominated_by2);
@@ -501,41 +500,41 @@ class Page extends UserPageBase
 			case 1: // red
 				echo '<table class="bordered" width="100%">';
 				echo '<tr class="darker"><td>&nbsp;</td><td width="280">' . cut_long_name($this->name, 40) . '</td><td width="280">' . cut_long_name($this->name2, 40) . '</td></tr>';
-				$this->standard_compare(ROLE_CIVIL | ROLE_SHERIFF);
+				$this->standard_compare(ROLE_FLAG_CIVIL | ROLE_FLAG_SHERIFF);
 				echo '</table>';
 				break;
 			case 2: // dark
 				echo '<table class="bordered" width="100%">';
 				echo '<tr class="darker"><td>&nbsp;</td><td width="280">' . cut_long_name($this->name, 40) . '</td><td width="280">' . cut_long_name($this->name2, 40) . '</td></tr>';
-				$this->standard_compare(ROLE_MAFIA | ROLE_DON);
-				$this->mafia_compare(ROLE_MAFIA | ROLE_DON);
+				$this->standard_compare(ROLE_FLAG_MAFIA | ROLE_FLAG_DON);
+				$this->mafia_compare(ROLE_FLAG_MAFIA | ROLE_FLAG_DON);
 				echo '</table>';
 				break;
 			case 3: // civil
 				echo '<table class="bordered" width="100%">';
 				echo '<tr class="darker"><td>&nbsp;</td><td width="280">' . cut_long_name($this->name, 40) . '</td><td width="280">' . cut_long_name($this->name2, 40) . '</td></tr>';
-				$this->standard_compare(ROLE_CIVIL);
+				$this->standard_compare(ROLE_FLAG_CIVIL);
 				echo '</table>';
 				break;
 			case 4: // sheriff
 				echo '<table class="bordered" width="100%">';
 				echo '<tr class="darker"><td>&nbsp;</td><td width="280">' . cut_long_name($this->name, 40) . '</td><td width="280">' . cut_long_name($this->name2, 40) . '</td></tr>';
-				$this->standard_compare(ROLE_SHERIFF);
+				$this->standard_compare(ROLE_FLAG_SHERIFF);
 				$this->sheriff_compare();
 				echo '</table>';
 				break;
 			case 5: // mafia
 				echo '<table class="bordered" width="100%">';
 				echo '<tr class="darker"><td>&nbsp;</td><td width="280">' . cut_long_name($this->name, 40) . '</td><td width="280">' . cut_long_name($this->name2, 40) . '</td></tr>';
-				$this->standard_compare(ROLE_MAFIA);
-				$this->mafia_compare(ROLE_MAFIA);
+				$this->standard_compare(ROLE_FLAG_MAFIA);
+				$this->mafia_compare(ROLE_FLAG_MAFIA);
 				echo '</table>';
 				break;
 			case 6: // don
 				echo '<table class="bordered" width="100%">';
 				echo '<tr class="darker"><td>&nbsp;</td><td width="280">' . cut_long_name($this->name, 40) . '</td><td width="280">' . cut_long_name($this->name2, 40) . '</td></tr>';
-				$this->standard_compare(ROLE_DON);
-				$this->mafia_compare(ROLE_DON);
+				$this->standard_compare(ROLE_FLAG_DON);
+				$this->mafia_compare(ROLE_FLAG_DON);
 				echo '</table>';
 				break;
 			case 7: // player vs player
@@ -552,7 +551,7 @@ class Page extends UserPageBase
 				
 				echo '<table class="bordered" width="100%">';
 				echo '<tr class="darker"><td>&nbsp;</td><td width="280">' . cut_long_name($this->name, 40) . '</td><td width="280">' . cut_long_name($this->name2, 40) . '</td></tr>';
-				$this->standard_compare(ROLE_ANY);
+				$this->standard_compare(ROLE_FLAG_ANY);
 				echo '</table>';
 				break;
 		}
