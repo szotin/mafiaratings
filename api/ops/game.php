@@ -878,7 +878,7 @@ class ApiPage extends OpsApiPageBase
 					Db::exec(get_label('game'),
 						'UPDATE games SET log = ?, end_time = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 							'user_id = ?, language = ?, start_time = ?, end_time = ?, result = ?, ' .
-							'rules = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
+							'rules = ? WHERE id = ?',
 						$json_str, $gs->end_time, $gs->club_id, $gs->event_id, $tournament_id, $moder_id,
 						$gs->user_id, $gs->lang, $gs->start_time, $gs->end_time, $result_code,
 						$gs->rules_code, $gs->id);
@@ -886,8 +886,8 @@ class ApiPage extends OpsApiPageBase
 				else
 				{
 					Db::exec(get_label('game'),
-						'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, log, start_time, end_time, result, rules, log_version) ' .
-							'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ' . CURRENT_LOG_VERSION . ')',
+						'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, log, start_time, end_time, result, rules) ' .
+							'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$gs->club_id, $gs->event_id, $tournament_id, $moder_id, $gs->user_id, $gs->lang,
 						$json_str, $gs->start_time, $gs->end_time, $result_code, $gs->rules_code);
 					list ($gs->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');

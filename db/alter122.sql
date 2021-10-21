@@ -32,5 +32,6 @@ CREATE INDEX player_user_time_game ON players (user_id, game_end_time, game_id);
 ALTER TABLE games ADD COLUMN non_rating BOOLEAN NOT NULL;
 UPDATE games SET non_rating = ((flags & 1) <> 0);
 ALTER TABLE games DROP COLUMN flags;
+ALTER TABLE games DROP COLUMN log_version;
 
 DELETE FROM games WHERE result = 0;

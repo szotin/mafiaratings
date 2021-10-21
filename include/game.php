@@ -286,7 +286,7 @@ class Game
 				{
 					switch ($log->type)
 					{
-						case LOGREC_WARNING:
+						case 2 /*LOGREC_WARNING*/:
 							$player = $this->data->players[$log->player];
 							$player->warnings[] = Game::get_gametime_info($g, $log);
 							if (count($player->warnings) > 3)
@@ -294,13 +294,13 @@ class Game
 								$player->death->time = $player->warnings[3];
 							}
 							break;
-						case LOGREC_GIVE_UP:
+						case 3 /*LOGREC_GIVE_UP*/:
 							$this->data->players[$log->player]->death->time = Game::get_gametime_info($g, $log);
 							break;
-						case LOGREC_KICK_OUT:
+						case 4 /*LOGREC_KICK_OUT*/:
 							$this->data->players[$log->player]->death->time = Game::get_gametime_info($g, $log);
 							break;
-						case LOGREC_NORMAL:
+						case 0 /*LOGREC_NORMAL*/:
 							if ($log->gamestate == 5 /*GAME_DAY_PLAYER_SPEAKING*/ && $log->current_nominant >= 0)
 							{
 								$player = $this->data->players[$log->player_speaking];
@@ -3165,7 +3165,7 @@ class Game
 		Db::exec(get_label('game'),
 			'UPDATE games SET json = ?, feature_flags = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
-				'rules = ?, non_rating = ?, log_version = ' . CURRENT_LOG_VERSION . ' WHERE id = ?',
+				'rules = ?, non_rating = ? WHERE id = ?',
 			$json, $feature_flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
 			$language, $data->startTime, $data->endTime, $game_result,
 			$data->rules, $is_non_rating, $data->id);
