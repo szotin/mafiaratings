@@ -267,7 +267,7 @@ class Page extends GeneralPageBase
 		
 		$snapshot = new Snapshot(time());
 		$snapshot->shot();
-		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT 2');
+		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT 10'); // probably limit is not needed at all
 		while ($row = $query->next())
 		{
 			list ($prev_time, $json) = $row;

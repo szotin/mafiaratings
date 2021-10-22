@@ -9,7 +9,6 @@ require_once 'include/languages.php';
 require_once 'include/constants.php';
 require_once 'include/localization.php';
 require_once 'include/error.php';
-require_once 'include/snapshot.php';
 require_once 'include/event_mailing.php';
 
 if (PHP_SAPI == 'cli')
@@ -342,26 +341,6 @@ try
 	}
 
 	Db::commit();
-	
-	if ($emails_remaining == MAX_EMAILS)
-	{
-		// If there is no emails to send, check if it's time to make a new snapshot
-		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT 1');
-		if ($row = $query->next())
-		{
-			list($time, $json) = $row;
-			$now = time();
-			if (Snapshot::snapshot_time($time) < Snapshot::snapshot_time($now))
-			{
-				echo 'Making snapshot<br>';
-				$snapshot = new Snapshot($now);
-				Db::begin();
-				$snapshot->shot();
-				$snapshot->save();
-				Db::commit();
-			}
-		}
-	}
 }
 catch (Exception $e)
 {

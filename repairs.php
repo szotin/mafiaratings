@@ -73,6 +73,14 @@ class Page extends GeneralPageBase
 		echo '<input type="submit" class="btn long" value="Rebuild stats" onclick="rebuildStats()">';
 		echo '</p>';
 		
+		if (file_exists("rebuild_ratings.log"))
+		{
+			echo '<table class="transp" width="100%">';
+			echo '<tr><td width="40"><button class="icon" onclick="deleteRatingsLog()" title="Delete rebuild ratings log"><img src="images/delete.png" border="0"></button></td>';
+			echo '<td><a href="rebuild_ratings.log">View rebuild raitings log</a></td></tr>';
+			echo '</table>';
+		}
+		
 		$this->show_error_logs();
 	}
 	
@@ -229,6 +237,14 @@ class Page extends GeneralPageBase
 			dlg.yesNo("Are you sure you want to delete " + dir + "error.log?", null, null, function()
 			{
 				json.post("api/ops/repair.php", { op: 'delete_error_log', dir: dir }, refr);
+			});
+		}
+		
+		function deleteRatingsLog()
+		{
+			dlg.yesNo("Are you sure you want to delete rebuild_ratings.log?", null, null, function()
+			{
+				json.post("api/ops/repair.php", { op: 'delete_rebuild_ratings_log' }, refr);
 			});
 		}
 <?php

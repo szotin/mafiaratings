@@ -7,6 +7,7 @@ require_once 'include/localization.php';
 require_once 'include/db.php';
 require_once 'include/constants.php';
 require_once 'include/game_ratings.php';
+require_once 'include/snapshot.php';
 
 if (PHP_SAPI == 'cli')
 {
@@ -50,6 +51,7 @@ function get_rebuild_object()
 		$obj = new stdClass();
 		$obj->id = (int)$id;
 		$obj->start_time = (int)$start_time;
+		$obj->initial_game_id = (int)$game_id;
 		if (is_null($current_game_id))
 		{
 			$obj->game_id = (int)$game_id;
@@ -71,15 +73,42 @@ function get_rebuild_object()
 	return $obj;
 }
 
+function get_snapshot_time()
+{
+	$query = new DbQuery('SELECT time FROM snapshots ORDER BY time DESC LIMIT 1');
+	if ($row = $query->next())
+	{
+		$time = (int)$row[0];
+	}
+	else
+	{
+		$query = new DbQuery('SELECT end_time FROM games ORDER BY end_time LIMIT 1');
+		if ($row = $query->next())
+		{
+			$time = (int)$row[0];
+		}
+		else
+		{
+			$time = time();
+		}
+	}
+	$time = Snapshot::next_snapshot_time($time);
+	if ($time < time())
+	{
+		return $time;
+	}
+	return 0;
+}
+
 try
 {
 	$exec_start_time = time();
 	$rebuild = get_rebuild_object();
 	if ($rebuild != NULL)
 	{
+		Db::begin();
 		$batch_count = 0;
 		$batch_start_time = time();
-		Db::begin();
 		while (true)
 		{
 			if ($batch_count >= GAMES_IN_A_BATCH)
@@ -140,9 +169,47 @@ try
 					echo 'Final query took ' . (time() - $start_final_query) . ' sec' . EOL;
 					echo 'Ratings updated for ' . $ratings_changed . ' users' . EOL;
 					Db::exec('rebuild object', 'UPDATE rebuild_ratings SET end_time = ?, ratings_changed = ? WHERE id = ?', time(), $ratings_changed, $rebuild->id);
+					if (is_null($rebuild->initial_game_id))
+					{
+						Db::exec('snapshot', 'DELETE FROM snapshots');
+					}
+					else
+					{
+						Db::exec('snapshot', 'DELETE FROM snapshots WHERE time > (SELECT end_time FROM games WHERE id = ?)', $rebuild->initial_game_id);
+					}
 					echo 'Rebuild complete ' . EOL;
 				}
+				else if (PHP_SAPI != 'cli')
+				{
+					echo '<script>window.location.reload();</script>';
+				}
 				Db::commit();
+				break;
+			}
+		}
+	}
+	else
+	{
+		// Nothing to rebuild. Let's check if all the latest snapshots are available
+		// Note that there is no transaction by purpose. No other code is changing snapshots.
+		$max_snapshot_create_time = 0;
+		$snapshot_create_time = time();
+		while (($time = get_snapshot_time()) > 0) 
+		{
+			$snapshot = new Snapshot($time);
+			$snapshot->shot();
+			Db::exec(get_label('snapshot'), 'INSERT INTO snapshots (time, snapshot) VALUES (?, ?)', $snapshot->time, $snapshot->get_json());
+			$snapshot_create_time = time() - $snapshot_create_time;
+			$max_snapshot_create_time = max($max_snapshot_create_time, $snapshot_create_time);
+			echo 'Snapshot created for ' . date('F d, Y', $time) . ' in ' . $snapshot_create_time . ' sec' . EOL;
+			$snapshot_create_time = time();
+			if (MAX_EXEC_TIME - $max_snapshot_create_time < $snapshot_create_time - $exec_start_time)
+			{
+				echo 'Time is up' . EOL;
+				if (PHP_SAPI != 'cli')
+				{
+					echo '<script>window.location.reload();</script>';
+				}
 				break;
 			}
 		}
@@ -155,6 +222,5 @@ catch (Exception $e)
 	echo $e->getMessage() . EOL;
 }
 
-echo 'done' . EOL;
 
 ?>

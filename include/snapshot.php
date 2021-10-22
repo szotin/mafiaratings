@@ -70,6 +70,11 @@ class Snapshot
 		return floor($time / SNAPSHOT_INTERVAL) * SNAPSHOT_INTERVAL;
 	}
 	
+	public static function next_snapshot_time($time)
+	{
+		return Snapshot::snapshot_time($time) + SNAPSHOT_INTERVAL;
+	}
+	
 	public function get_snapshot_time()
 	{
 		return Snapshot::snapshot_time($this->time);
@@ -104,7 +109,34 @@ class Snapshot
 	public function shot()
 	{
 		$this->top100 = array();
-		$query = new DbQuery('SELECT u.id, u.rating, u.name, u.flags, c.id, c.name, c.flags FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE u.reg_time <= ? ORDER BY u.rating DESC, u.games_won DESC, u.games DESC, u.id LIMIT 100', $this->time);
+		$query = new DbQuery('SELECT id FROM games WHERE end_time > ? AND non_rating = 0 AND canceled = 0 LIMIT 1', $this->time);
+		if ($query->next())
+		{
+			$query = new DbQuery(
+				'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, u.name, u.flags, c.id, c.name, c.flags
+					FROM players p
+					JOIN users u ON u.id = p.user_id
+					LEFT OUTER JOIN clubs c ON c.id = u.club_id 
+					WHERE p.game_id = (
+						SELECT p1.game_id 
+						FROM players p1 
+						WHERE p1.user_id = p.user_id AND p1.game_end_time <= ?
+						ORDER BY p1.game_end_time DESC, p1.game_id DESC
+						LIMIT 1)
+					ORDER BY rating DESC, p.user_id DESC 
+					LIMIT 100', $this->time);
+		}
+		else
+		{
+			$query = new DbQuery(
+				'SELECT u.id, u.rating, u.name, u.flags, c.id, c.name, c.flags' . 
+				' FROM users u' . 
+				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
+				' WHERE u.reg_time <= ?' . 
+				' ORDER BY u.rating DESC, u.games_won DESC, u.games DESC, u.id' . 
+				' LIMIT 100', $this->time);
+		}
+		
 		while ($row = $query->next())
 		{
 			$this->top100[] = new SnapshotPlayer($row);
@@ -146,26 +178,28 @@ class Snapshot
 		}
 	}
 	
-	public function save()
-	{
-		$query = new DbQuery('SELECT time, snapshot FROM snapshots WHERE time <= ? ORDER BY time DESC LIMIT 1', $this->time);
-		if ($row = $query->next())
-		{
-			list($time, $json) = $row;
-			if (Snapshot::snapshot_time($this->time) > Snapshot::snapshot_time($time))
-			{
-				$latest_snapshot = new Snapshot($time, $json);
-				if ($this->is_much_different($latest_snapshot))
-				{
-					Db::exec(get_label('snapshot'), 'INSERT INTO snapshots (time, snapshot) VALUES (?, ?)', $this->time, $this->get_json());
-				}
-			}
-		}
-		else
-		{
-			Db::exec(get_label('snapshot'), 'INSERT INTO snapshots (time, snapshot) VALUES (?, ?)', $this->time, $this->get_json());
-		}
-	}
+	// // I'm not sure. Currently we are saving every snapshot even if it is not different from the previous one.
+	// // This function skips similar snapshots. Possibly this is right and we will switch to it in the future. But then rebuilding snapshots should be reworked.
+	// public function save()
+	// {
+		// $query = new DbQuery('SELECT time, snapshot FROM snapshots WHERE time <= ? ORDER BY time DESC LIMIT 1', $this->time);
+		// if ($row = $query->next())
+		// {
+			// list($time, $json) = $row;
+			// if (Snapshot::snapshot_time($this->time) > Snapshot::snapshot_time($time))
+			// {
+				// $latest_snapshot = new Snapshot($time, $json);
+				// if ($this->is_much_different($latest_snapshot))
+				// {
+					// Db::exec(get_label('snapshot'), 'INSERT INTO snapshots (time, snapshot) VALUES (?, ?)', $this->time, $this->get_json());
+				// }
+			// }
+		// }
+		// else
+		// {
+			// Db::exec(get_label('snapshot'), 'INSERT INTO snapshots (time, snapshot) VALUES (?, ?)', $this->time, $this->get_json());
+		// }
+	// }
 	
 	public function is_much_different($snapshot)
 	{

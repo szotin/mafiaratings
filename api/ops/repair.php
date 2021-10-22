@@ -4,7 +4,6 @@ require_once '../../include/api.php';
 require_once '../../include/image.php';
 require_once '../../include/game.php';
 require_once '../../include/rules.php';
-require_once '../../include/snapshot.php';
 
 class ApiPage extends OpsApiPageBase
 {
@@ -378,6 +377,29 @@ class ApiPage extends OpsApiPageBase
 	// }
 	
 	function delete_error_log_op_permissions()
+	{
+		return PERMISSION_ADMIN;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// delete_rebuild_ratings_log
+	//-------------------------------------------------------------------------------------------------------
+	function delete_rebuild_ratings_log_op()
+	{
+		if (!unlink('../../rebuild_ratings.log'))
+		{
+			throw new Exc('Failed to delete rebuild_ratings.log');
+		}
+	}
+	
+	// No help. We want to keep this API internal.
+	// function delete_rebuild_ratings_log_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_ADMIN, 'Delete error log file.');
+		// return $help;
+	// }
+	
+	function delete_rebuild_ratings_log_op_permissions()
 	{
 		return PERMISSION_ADMIN;
 	}
