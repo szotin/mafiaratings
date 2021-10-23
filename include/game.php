@@ -2940,7 +2940,7 @@ class Game
 		$tournament_id = NULL;
 		if (isset($data->eventId))
 		{
-			list($tournament_id, $timezone, $event_start, $event_duration) = Db::record(get_label('event'), 'SELECT e.id, e.tournament_id, c.timezone, e.start_time, e.duration FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE e.id = ?', $data->eventId);
+			list($tournament_id, $timezone, $event_start, $event_duration) = Db::record(get_label('event'), 'SELECT e.tournament_id, c.timezone, e.start_time, e.duration FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE e.id = ?', $data->eventId);
 		}
 		else
 		{
