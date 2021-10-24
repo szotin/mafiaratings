@@ -59,7 +59,7 @@ class Page extends EventPageBase
 			}
 			else
 			{
-				list ($user_name) = Db::record(get_label('user'), 'SELECT name FROM USERS WHERE id = ?', $this->user_id);
+				list ($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->user_id);
 				$this->user_id = 0;
 				$event_name = $this->event->name;
 				if (!is_null($this->event->tournament_id))

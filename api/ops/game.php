@@ -995,7 +995,7 @@ class ApiPage extends OpsApiPageBase
 						$gs->event_id = (int)$row[0];
 						$event_flags = (int)$row[1];
 						$event_langs = (int)$row[2];
-						$gs->set_tournament_id($row[3]);
+						$gs->tournament_id = is_null($row[3]) ? 0 : (int)$row[3];
 						if (($event_flags & EVENT_FLAG_ALL_MODERATE) == 0)
 						{
 							$gs->moder_id = $_profile->user_id;
