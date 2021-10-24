@@ -11,13 +11,13 @@ require_once 'include/localization.php';
 require_once 'include/error.php';
 require_once 'include/event_mailing.php';
 
-if (PHP_SAPI == 'cli')
+if ($_SERVER['HTTP_HOST'])
 {
-	define('EOL', "\n");
+	define('EOL', " <br>\n");
 }
 else
 {
-	define('EOL', " <br>\n");
+	define('EOL', "\n");
 }
 
 function setDir()

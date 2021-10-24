@@ -9,19 +9,20 @@ require_once 'include/constants.php';
 require_once 'include/game_ratings.php';
 require_once 'include/snapshot.php';
 
-if (PHP_SAPI == 'cli')
-{
-	define('EOL', "\n");
-	define('MAX_EXEC_TIME', 180); // 3 minutes
-	define('NEEDED_TIME_FOR_FINAL_QUERY', 120); // 2 minutes
-}
-else
+if ($_SERVER['HTTP_HOST'])
 {
 	define('EOL', " <br>\n");
 	define('MAX_EXEC_TIME', 25);
 	define('NEEDED_TIME_FOR_FINAL_QUERY', 10);
 }
+else
+{
+	define('EOL', "\n");
+	define('MAX_EXEC_TIME', 180); // 3 minutes
+	define('NEEDED_TIME_FOR_FINAL_QUERY', 120); // 2 minutes
+}
 define('GAMES_IN_A_BATCH', 50); // how many games per transaction
+
 
 function setDir()
 {
