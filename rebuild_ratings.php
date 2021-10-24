@@ -1,7 +1,7 @@
 <?php
 
-setDir();
 
+setDir();
 require_once 'include/branding.php';
 require_once 'include/localization.php';
 require_once 'include/db.php';
@@ -9,20 +9,44 @@ require_once 'include/constants.php';
 require_once 'include/game_ratings.php';
 require_once 'include/snapshot.php';
 
-if ($_SERVER['HTTP_HOST'])
+$_web = isset($_SERVER['HTTP_HOST']);
+$_filename = 'rebuild_ratings.log';
+$_file = NULL;
+ 
+if ($_web)
 {
-	define('EOL', " <br>\n");
+	if (isset($_REQUEST['no_log']))
+	{
+		$_filename = NULL;
+	}
 	define('MAX_EXEC_TIME', 25);
 	define('NEEDED_TIME_FOR_FINAL_QUERY', 10);
 }
 else
 {
-	define('EOL', "\n");
 	define('MAX_EXEC_TIME', 180); // 3 minutes
 	define('NEEDED_TIME_FOR_FINAL_QUERY', 120); // 2 minutes
 }
 define('GAMES_IN_A_BATCH', 50); // how many games per transaction
 
+function writeLog($str)
+{
+	global $_web, $_file, $_filename;
+	if ($_web)
+	{
+		echo $str . " <br>\n";
+	}
+	
+	if ($_filename)
+	{
+		if (is_null($_file))
+		{
+			$_file = fopen($_filename, 'a');
+			fwrite($_file, "------\n");
+		}
+		fwrite($_file, $str . "\n");
+	}
+}
 
 function setDir()
 {
@@ -66,8 +90,8 @@ function get_rebuild_object()
 		if ($obj->start_time <= 0)
 		{
 			$obj->start_time = time();
-			Db::exec('rebuild object', 'UPDATE rebuild_ratings SET current_game_id = game_id, start_time = ?, batch_size = ? WHERE id = ?', $obj->start_time, GAMES_IN_A_BATCH, $obj->id);
-			echo 'Starting rebuild' . EOL;
+			Db::exec('rebuild plan', 'UPDATE rebuild_ratings SET current_game_id = game_id, start_time = ?, batch_size = ? WHERE id = ?', $obj->start_time, GAMES_IN_A_BATCH, $obj->id);
+			writeLog('Starting rebuild');
 		}
 	}
 	Db::commit();
@@ -119,16 +143,20 @@ try
 				$batch_count = 0;
 				$batch_start_time = time();
 				
-				Db::exec('rebuild object', 'UPDATE rebuild_ratings SET current_game_id = ?, games_proceeded = ?, average_game_proceeding_time = ? WHERE id = ?', $rebuild->game_id, $rebuild->games_proceeded, $rebuild->average_time, $rebuild->id);
+				Db::exec('rebuild plan', 'UPDATE rebuild_ratings SET current_game_id = ?, games_proceeded = ?, average_game_proceeding_time = ? WHERE id = ?', $rebuild->game_id, $rebuild->games_proceeded, $rebuild->average_time, $rebuild->id);
 				Db::commit();
 				
-				echo 'Batch end. Average game time: ' . $rebuild->average_time . '; Games proceeded: ' . $rebuild->games_proceeded . EOL;
+				writeLog('Batch end. Average game time: ' . number_format($rebuild->average_time, 3) . ' sec; Games proceeded: ' . $rebuild->games_proceeded);
 				if ($batch_start_time - $exec_start_time + $rebuild->average_time * GAMES_IN_A_BATCH > MAX_EXEC_TIME)
 				{
 					// No time for one more batch.
-					echo 'No time left' . EOL;
-					echo 'Elapsed: ' . ($batch_start_time - $exec_start_time) . ' sec' . EOL;
-					echo 'Predicted: ' . ($rebuild->average_time * GAMES_IN_A_BATCH) . ' sec' . EOL;
+					writeLog('Time is up');
+					writeLog('Elapsed: ' . ($batch_start_time - $exec_start_time) . ' sec');
+					writeLog('Predicted: ' . number_format($rebuild->average_time * GAMES_IN_A_BATCH, 0) . ' sec');
+					if ($_web)
+					{
+						echo '<script>window.location.reload();</script>';
+					}
 					break;
 				}
 				Db::begin();
@@ -156,8 +184,8 @@ try
 				{
 					$rebuild->games_proceeded += $batch_count;
 					$rebuild->average_time = ($rebuild->average_time * $rebuild->games_proceeded + time() - $batch_start_time) / $rebuild->games_proceeded;
-					Db::exec('rebuild object', 'UPDATE rebuild_ratings SET current_game_id = ?, games_proceeded = ?, average_game_proceeding_time = ? WHERE id = ?', $rebuild->game_id, $rebuild->games_proceeded, $rebuild->average_time, $rebuild->id);
-					echo 'Batch end. Average game time: ' . $rebuild->average_time . '; Games proceeded: ' . $rebuild->games_proceeded . EOL;
+					Db::exec('rebuild plan', 'UPDATE rebuild_ratings SET current_game_id = ?, games_proceeded = ?, average_game_proceeding_time = ? WHERE id = ?', $rebuild->game_id, $rebuild->games_proceeded, $rebuild->average_time, $rebuild->id);
+					writeLog('Batch end. Average game time: ' . number_format($rebuild->average_time, 3) . ' sec; Games proceeded: ' . $rebuild->games_proceeded);
 				}
 				
 				// The end. Apply latest ratings from players table to users table.
@@ -167,9 +195,9 @@ try
 					$start_final_query = time();
 					Db::exec('user', 'UPDATE users u JOIN players p ON u.id = p.user_id SET u.rating = p.rating_before + p.rating_earned WHERE p.game_id = (SELECT p1.game_id FROM players p1 WHERE p1.user_id = p.user_id ORDER BY p1.game_end_time DESC, p1.game_id DESC LIMIT 1)');
 					list($ratings_changed) = Db::record('user', 'SELECT ROW_COUNT()');
-					echo 'Final query took ' . (time() - $start_final_query) . ' sec' . EOL;
-					echo 'Ratings updated for ' . $ratings_changed . ' users' . EOL;
-					Db::exec('rebuild object', 'UPDATE rebuild_ratings SET end_time = ?, ratings_changed = ? WHERE id = ?', time(), $ratings_changed, $rebuild->id);
+					writeLog('Final query took ' . (time() - $start_final_query) . ' sec');
+					writeLog('Ratings updated for ' . $ratings_changed . ' users');
+					Db::exec('rebuild plan', 'UPDATE rebuild_ratings SET end_time = ?, ratings_changed = ? WHERE id = ?', time(), $ratings_changed, $rebuild->id);
 					if (is_null($rebuild->initial_game_id))
 					{
 						Db::exec('snapshot', 'DELETE FROM snapshots');
@@ -178,13 +206,13 @@ try
 					{
 						Db::exec('snapshot', 'DELETE FROM snapshots WHERE time > (SELECT end_time FROM games WHERE id = ?)', $rebuild->initial_game_id);
 					}
-					echo 'Rebuild complete ' . EOL;
+					writeLog('Rebuild complete ');
 				}
-				else if (PHP_SAPI != 'cli')
+				Db::commit();
+				if ($_web)
 				{
 					echo '<script>window.location.reload();</script>';
 				}
-				Db::commit();
 				break;
 			}
 		}
@@ -202,12 +230,12 @@ try
 			Db::exec(get_label('snapshot'), 'INSERT INTO snapshots (time, snapshot) VALUES (?, ?)', $snapshot->time, $snapshot->get_json());
 			$snapshot_create_time = time() - $snapshot_create_time;
 			$max_snapshot_create_time = max($max_snapshot_create_time, $snapshot_create_time);
-			echo 'Snapshot created for ' . date('F d, Y', $time) . ' in ' . $snapshot_create_time . ' sec' . EOL;
+			writeLog('Snapshot created for ' . date('F d, Y', $time) . ' in ' . $snapshot_create_time . ' sec');
 			$snapshot_create_time = time();
 			if (MAX_EXEC_TIME - $max_snapshot_create_time < $snapshot_create_time - $exec_start_time)
 			{
-				echo 'Time is up' . EOL;
-				if (PHP_SAPI != 'cli')
+				writeLog('Time is up');
+				if ($_web)
 				{
 					echo '<script>window.location.reload();</script>';
 				}
@@ -220,8 +248,12 @@ catch (Exception $e)
 {
 	Db::rollback();
 	Exc::log($e, true);
-	echo $e->getMessage() . EOL;
+	writeLog($e->getMessage());
 }
 
+if (!is_null($_file))
+{
+	fclose($_file);
+}
 
 ?>
