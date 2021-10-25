@@ -54,32 +54,50 @@ class Page extends GeneralPageBase
 		check_permissions(PERMISSION_ADMIN);
 		if ($this->_locked)
 		{
-			echo '<p><input type="submit" class="btn long" value="Unlock the site" onclick="mr.lockSite(false)"></p>';
+			echo '<p align="center"><input type="submit" class="btn long" value="Unlock the site" onclick="mr.lockSite(false)"></p>';
 		}
 		else
 		{
-			echo '<p><input type="submit" class="btn long" value="Lock the site" onclick="mr.lockSite(true)"></p>';
+			echo '<p align="center"><input type="submit" class="btn long" value="Lock the site" onclick="mr.lockSite(true)"></p>';
 		}
 			
+		echo '<h3>' . 'Rebuild assets' . '</h3>';
 		echo '<p>';
-		echo '<input type="submit" class="btn long" value="Rebuild address icons" onclick="rebuildAddrIcons()">';
-		echo '<input type="submit" class="btn long" value="Rebuild user icons" onclick="rebuildUserIcons()">';
-		echo '<input type="submit" class="btn long" value="Rebuild club icons" onclick="rebuildClubIcons()">';
-		echo '<input type="submit" class="btn long" value="Rebuild album icons" onclick="rebuildAlbumIcons()">';
-		echo '<input type="submit" class="btn long" value="Rebuild photo icons" onclick="rebuildPhotoIcons()">';
+		echo '<input type="submit" class="btn long" value="Rebuild address icons" onclick="rebuildAddrIcons()"> ';
+		echo '<input type="submit" class="btn long" value="Rebuild user icons" onclick="rebuildUserIcons()"> ';
+		echo '<input type="submit" class="btn long" value="Rebuild club icons" onclick="rebuildClubIcons()"> ';
+		echo '<input type="submit" class="btn long" value="Rebuild album icons" onclick="rebuildAlbumIcons()"> ';
+		echo '<input type="submit" class="btn long" value="Rebuild photo icons" onclick="rebuildPhotoIcons()"> ';
 		echo '</p>';
 	
+		echo '<h3>' . 'Rebuild games statistics' . '</h3>';
 		echo '<p>';
-		echo '<input type="submit" class="btn long" value="Rebuild stats" onclick="rebuildStats()">';
+		echo '<input type="submit" class="btn long" value="Rebuild stats" onclick="rebuildStats()"> ';
+		echo '</p>';
+		
+		echo '<h3>' . 'Rebuild ratings' . '</h3>';
+		echo '<p>';
+		echo '<input type="submit" class="btn long" value="For the last month" onclick="rebuildRatings(31)"> ';
+		echo '<input type="submit" class="btn long" value="For the last 3 month" onclick="rebuildRatings(91)"> ';
+		echo '<input type="submit" class="btn long" value="For the last year" onclick="rebuildRatings(365)"> ';
+		echo '<input type="submit" class="btn long" value="All of them" onclick="rebuildRatings(0)"> ';
 		echo '</p>';
 		
 		if (file_exists("rebuild_ratings.log"))
 		{
-			echo '<table class="transp" width="100%">';
+			echo '<p><table class="transp" width="100%">';
 			echo '<tr><td width="40"><button class="icon" onclick="deleteRatingsLog()" title="Delete rebuild ratings log"><img src="images/delete.png" border="0"></button></td>';
 			echo '<td><a href="rebuild_ratings.log">View rebuild raitings log</a></td></tr>';
-			echo '</table>';
+			echo '</table></p>';
 		}
+		
+		echo '<h3>' . 'Rebuild Snapshots' . '</h3>';
+		echo '<p>';
+		echo '<input type="submit" class="btn long" value="For the last month" onclick="rebuildSnapshots(31)"> ';
+		echo '<input type="submit" class="btn long" value="For the last 3 month" onclick="rebuildRatings(91)"> ';
+		echo '<input type="submit" class="btn long" value="For the last year" onclick="rebuildSnapshots(365)"> ';
+		echo '<input type="submit" class="btn long" value="All of them" onclick="rebuildSnapshots(0)"> ';
+		echo '</p>';
 		
 		$this->show_error_logs();
 	}
@@ -245,6 +263,28 @@ class Page extends GeneralPageBase
 			dlg.yesNo("Are you sure you want to delete rebuild_ratings.log?", null, null, function()
 			{
 				json.post("api/ops/repair.php", { op: 'delete_rebuild_ratings_log' }, refr);
+			});
+		}
+		
+		function rebuildRatings(days)
+		{
+			json.post("api/ops/repair.php", { op: 'rebuild_ratings', days: days }, function(data)
+			{
+				if (days > 0)
+					dlg.info('Ratings for the last ' + days + ' days are scheduled to rebuild successfuly', 'Done', null, function() {});
+				else
+					dlg.info('Ratings are scheduled to rebuild successfuly', 'Done', null, function() {});
+			});
+		}
+		
+		function rebuildSnapshots(days)
+		{
+			json.post("api/ops/repair.php", { op: 'rebuild_snapshots', days: days }, function(data)
+			{
+				if (days > 0)
+					dlg.info('Snapshots for the last ' + days + ' days are scheduled to rebuild successfuly', 'Done', null, function() {});
+				else
+					dlg.info('Snapshots are scheduled to rebuild successfuly', 'Done', null, function() {});
 			});
 		}
 <?php

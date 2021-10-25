@@ -3070,19 +3070,74 @@ class Game
 		return $timezone;
 	}
 	
+	private function is_players_result_changed()
+	{
+		$db_players = array(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		$query = new DbQuery('SELECT number, user_id, won FROM players WHERE game_id = ?', $this->data->id);
+		while ($row = $query->next())
+		{
+			$db_players[(int)$row[0]-1] = $row;
+		}
+		
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $this->data->players[$i];
+			$db_player = $db_players[$i];
+			if ($db_player != NULL)
+			{
+				list($number, $user_id, $won) = $db_player;
+				if (!isset($player->id) || $player->id != $user_id)
+				{
+					return true;
+				}
+				else if ($this->data->winner == 'civ')
+				{
+					if (isset($player->role) && ($player->role == 'maf' || $player->role == 'don'))
+					{
+						if ($won)
+						{
+							return true;
+						}
+					}
+					else if (!$won)
+					{
+						return true;
+					}
+				}
+				else if (isset($player->role) && ($player->role == 'maf' || $player->role == 'don'))
+				{
+					if (!$won)
+					{
+						return true;
+					}
+				}
+				else if ($won)
+				{
+					return true;
+				}
+			}
+			else if (isset($player->id) && $player->id > 0)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	// returns true if the ratings are to be rebuild as the result of the update
 	function update()
 	{
 		$this->check(false);
 		$data = $this->data;
 		$json = $this->to_json();
 		$feature_flags = Game::leters_to_feature_flags($data->features);
-		$is_rating_game = !isset($data->rating) || $data->rating;
+		$is_data_rating = !isset($data->rating) || $data->rating;
 		
 		if (!isset($data->id))
 		{
 			throw new Exc(get_label('Game number is not set.'));
 		}
-		list($is_canceled) = Db::record(get_label('game'), 'SELECT canceled FROM games WHERE id = ?', $data->id);
+		list($is_canceled, $is_non_rating) = Db::record(get_label('game'), 'SELECT canceled, non_rating FROM games WHERE id = ?', $data->id);
 				
 		if (!isset($data->clubId))
 		{
@@ -3127,11 +3182,23 @@ class Game
 			$feature_flags = $new_feature_flags;
 		}
 		
+		$rebuild_ratings = false;
 		if (!$is_canceled)
 		{
-			if ($is_rating_game)
+			if ($is_data_rating || !$is_non_rating)
 			{
 				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.non_rating = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+				if ($games_after_count > 0)
+				{
+					if ($is_data_rating && !$is_non_rating)
+					{
+						$rebuild_ratings = $this->is_players_result_changed();
+					}
+					else
+					{
+						$rebuild_ratings = true;
+					}
+				}
 			}
 			
 			// clean up stats
@@ -3180,34 +3247,28 @@ class Game
 			
 			Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games + 1, u.games_won = u.games_won + p.won, u.rating = u.rating + p.rating_earned WHERE p.game_id = ?', $data->id);
 			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated + 1 WHERE id = ?', $data->moderator->id);
-			
-			if ($is_rating_game)
+		}
+		
+		if ($rebuild_ratings)
+		{
+			// Some players of this game played later, so ratings requiere rebuilding.
+			$query = new DbQuery('SELECT r.id, r.game_id, g.end_time FROM rebuild_ratings r LEFT OUTER JOIN games g ON g.id = r.game_id WHERE r.start_time = 0');
+			if ($row = $query->next())
 			{
-				if ($games_after_count <= 0)
+				list($rebuild_id, $old_game_id, $old_game_end_time) = $row;
+				if ($data->endTime < $old_game_end_time || ($data->endTime = $old_game_end_time && $data->id < $old_game_id))
 				{
-					list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.non_rating = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
-				}
-				
-				if ($games_after_count > 0)
-				{
-					// Some players of this game played later, so ratings requiere rebuilding.
-					$query = new DbQuery('SELECT r.id, r.game_id, g.end_time FROM rebuild_ratings r JOIN games g ON g.id = r.game_id WHERE r.start_time = 0');
-					if ($row = $query->next())
-					{
-						list($rebuild_id, $old_game_id, $old_game_end_time) = $row;
-						if ($data->endTime < $old_game_end_time || ($data->endTime < $old_game_end_time && $data->id < $old_game_id))
-						{
-							Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE id = ?', $data->id, $rebuild_id);
-						}
-					}
-					else
-					{
-						Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (start_time, end_time, game_id) VALUES (0, 0, ?)', $data->id);
-					}
+					Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE id = ?', $data->id, $rebuild_id);
 				}
 			}
+			else
+			{
+				Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (game_id) VALUES (?)', $data->id);
+			}
 		}
+		
 		db_log(LOG_OBJECT_GAME, 'updated', NULL, $data->id, $data->clubId);
+		return $rebuild_ratings;
 	}
 	
 	private static function feature_flags_help($param, $text)

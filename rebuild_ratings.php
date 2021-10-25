@@ -2,10 +2,7 @@
 
 
 setDir();
-require_once 'include/branding.php';
-require_once 'include/localization.php';
-require_once 'include/db.php';
-require_once 'include/constants.php';
+require_once 'include/security.php';
 require_once 'include/game_ratings.php';
 require_once 'include/snapshot.php';
 
@@ -42,7 +39,7 @@ function writeLog($str)
 		if (is_null($_file))
 		{
 			$_file = fopen($_filename, 'a');
-			fwrite($_file, "------\n");
+			fwrite($_file, '------ ' . date('F d, Y H:i:s', time()) . "\n");
 		}
 		fwrite($_file, $str . "\n");
 	}
@@ -76,13 +73,19 @@ function get_rebuild_object()
 		$obj = new stdClass();
 		$obj->id = (int)$id;
 		$obj->start_time = (int)$start_time;
-		$obj->initial_game_id = (int)$game_id;
-		if (is_null($current_game_id))
+		if (is_null($game_id))
 		{
+			$obj->initial_game_id = NULL;
+			$obj->game_id = NULL;
+		}
+		else if (is_null($current_game_id))
+		{
+			$obj->initial_game_id = (int)$game_id;
 			$obj->game_id = (int)$game_id;
 		}
 		else
 		{
+			$obj->initial_game_id = (int)$game_id;
 			$obj->game_id = (int)$current_game_id;
 		}
 		$obj->average_time = (double)$average_time;
@@ -127,6 +130,13 @@ function get_snapshot_time()
 
 try
 {
+	date_default_timezone_set('America/Vancouver');
+	if ($_web)
+	{
+		initiate_session();
+		check_permissions(PERMISSION_ADMIN);
+	}
+	
 	$exec_start_time = time();
 	$rebuild = get_rebuild_object();
 	if ($rebuild != NULL)
@@ -206,7 +216,7 @@ try
 					{
 						Db::exec('snapshot', 'DELETE FROM snapshots WHERE time > (SELECT end_time FROM games WHERE id = ?)', $rebuild->initial_game_id);
 					}
-					writeLog('Rebuild complete ');
+					writeLog('Rebuilding ratings complete');
 				}
 				Db::commit();
 				if ($_web)
@@ -223,15 +233,10 @@ try
 		// Note that there is no transaction by purpose. No other code is changing snapshots.
 		$max_snapshot_create_time = 0;
 		$snapshot_create_time = time();
+		$complete = false;
 		while (($time = get_snapshot_time()) > 0) 
 		{
-			$snapshot = new Snapshot($time);
-			$snapshot->shot();
-			Db::exec(get_label('snapshot'), 'INSERT INTO snapshots (time, snapshot) VALUES (?, ?)', $snapshot->time, $snapshot->get_json());
-			$snapshot_create_time = time() - $snapshot_create_time;
-			$max_snapshot_create_time = max($max_snapshot_create_time, $snapshot_create_time);
-			writeLog('Snapshot created for ' . date('F d, Y', $time) . ' in ' . $snapshot_create_time . ' sec');
-			$snapshot_create_time = time();
+			$complete = true;
 			if (MAX_EXEC_TIME - $max_snapshot_create_time < $snapshot_create_time - $exec_start_time)
 			{
 				writeLog('Time is up');
@@ -239,8 +244,20 @@ try
 				{
 					echo '<script>window.location.reload();</script>';
 				}
+				$complete = false;
 				break;
 			}
+			$snapshot = new Snapshot($time);
+			$snapshot->shot();
+			Db::exec(get_label('snapshot'), 'INSERT INTO snapshots (time, snapshot) VALUES (?, ?)', $snapshot->time, $snapshot->get_json());
+			$snapshot_create_time = time() - $snapshot_create_time;
+			$max_snapshot_create_time = max($max_snapshot_create_time, $snapshot_create_time);
+			writeLog('Snapshot created for ' . date('F d, Y', $time) . ' in ' . $snapshot_create_time . ' sec');
+			$snapshot_create_time = time();
+		}
+		if ($complete)
+		{
+			writeLog('Rebuilding snapshots complete');
 		}
 	}
 }

@@ -1284,7 +1284,7 @@ class ApiPage extends OpsApiPageBase
 		
 		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
 		$game = new Game($json, $feature_flags);
-		$game->update();
+		$this->response['rebuild_ratings'] = $game->update();
 		Db::commit();
 		
 		if (isset($game->issues))

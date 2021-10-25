@@ -56,7 +56,18 @@ try
 			, game_id: <?php echo $game_id; ?>
 			, json: $('#form-json').val()
 		},
-		onSuccess);
+		function(data)
+		{
+			if (data.rebuild_ratings)
+			{
+				console.log(data);
+				dlg.info('<?php echo get_label('Ratings will be rebuilt as a result of this change.'); ?>', '<?php echo get_label('Game saved'); ?>', null, onSuccess);
+			}
+			else
+			{
+				onSuccess();
+			}
+		});
 	}
 	</script>
 <?php
