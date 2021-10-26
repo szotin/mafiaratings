@@ -977,18 +977,7 @@ var mr = new function()
 	
 	this.editGame = function(gameId)
 	{
-		var gotoGame = function(data)
-		{
-			var link = "game.php?edit&back=" + encodeURIComponent(window.location.href);
-			if (typeof data.club_id !== "undefined")
-				link += "&club=" + data.club_id;
-			window.location.replace(link);
-		}
-		
-		json.post("api/ops/game.php", { op: 'change', game_id: gameId  }, gotoGame, function(errorMessage, data) 
-		{
-			gotoGame(data);
-		});
+		dlg.form("form/game_raw_edit.php?game_id=" + gameId, refr, 1200);
 	}
 	
 	this.setGameVideo = function(gameId)
