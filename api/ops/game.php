@@ -1235,16 +1235,20 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $moderator_id, $end_time, $is_rating) = Db::record(get_label('game'), 'SELECT club_id, moderator_id, end_time, is_rating FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		
+		$prev_game_id = NULL;
+		$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
+		if ($row = $query->next())
+		{
+			list($prev_game_id) = $row;
+		}
+		
 		if ($is_rating)
 		{
-			$prev_game_id = NULL;
-			$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
-			if ($row = $query->next())
-			{
-				list($prev_game_id) = $row;
-			}
 			Game::rebuild_ratings($prev_game_id, $end_time);
 		}
+		
+		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id = ?', $prev_game_id, $game_id);
+		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET current_game_id = ? WHERE current_game_id = ?', $prev_game_id, $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
