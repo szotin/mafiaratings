@@ -3250,24 +3250,27 @@ class Game
 		
 		if ($rebuild_ratings)
 		{
-			// Some players of this game played later, so ratings requiere rebuilding.
-			$query = new DbQuery('SELECT r.id, r.game_id, g.end_time FROM rebuild_ratings r LEFT OUTER JOIN games g ON g.id = r.game_id WHERE r.start_time = 0');
-			if ($row = $query->next())
-			{
-				list($rebuild_id, $old_game_id, $old_game_end_time) = $row;
-				if ($data->endTime < $old_game_end_time || ($data->endTime = $old_game_end_time && $data->id < $old_game_id))
-				{
-					Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE id = ?', $data->id, $rebuild_id);
-				}
-			}
-			else
-			{
-				Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (game_id) VALUES (?)', $data->id);
-			}
+			Game::rebuild_ratings($data->id, $data->endTime);
 		}
-		
 		db_log(LOG_OBJECT_GAME, 'updated', NULL, $data->id, $data->clubId);
 		return $rebuild_ratings;
+	}
+	
+	static function rebuild_ratings($game_id, $end_time)
+	{
+		$query = new DbQuery('SELECT r.id, r.game_id, g.end_time FROM rebuild_ratings r LEFT OUTER JOIN games g ON g.id = r.game_id WHERE r.start_time = 0');
+		if ($row = $query->next())
+		{
+			list($rebuild_id, $old_game_id, $old_game_end_time) = $row;
+			if (is_null($game_id) || (!is_null($old_game_id) && ($end_time < $old_game_end_time || ($end_time == $old_game_end_time && $game_id < $old_game_id))))
+			{
+				Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE id = ?', $game_id, $rebuild_id);
+			}
+		}
+		else
+		{
+			Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (game_id) VALUES (?)', $game_id);
+		}
 	}
 	
 	private static function feature_flags_help($param, $text)

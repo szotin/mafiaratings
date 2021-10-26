@@ -13,13 +13,24 @@ function cancel_game($game_id, $club_id, $league_id)
 	Db::exec(get_label('game'), 'UPDATE games SET is_canceled = TRUE WHERE id = ?', $game_id);
 	if (Db::affected_rows() > 0)
 	{
+		list($end_time, $is_rating) = Db::record(get_label('game'), 'SELECT end_time, is_rating FROM games WHERE id = ?', $game_id);
+		
 		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated - 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $game_id);
 		Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games - 1, u.games_won = u.games_won - p.won, u.rating = u.rating - p.rating_earned WHERE p.game_id = ?', $game_id);
 		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
 		Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $game_id);
 		Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);
 		Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $game_id);
-		Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (game_id) VALUES (?)', $game_id);
+		if ($is_rating)
+		{
+			$prev_game_id = NULL;
+			$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
+			if ($row = $query->next())
+			{
+				list($prev_game_id) = $row;
+			}
+			Game::rebuild_ratings($prev_game_id, $end_time);
+		}
 		
 		$log_details = new stdClass();
 		$log_details->canceled = true;

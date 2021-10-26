@@ -1243,7 +1243,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($prev_game_id) = $row;
 			}
-			Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (game_id) VALUES (?)', $prev_game_id);
+			Game::rebuild_ratings($prev_game_id, $end_time);
 		}
 		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM mafiosos WHERE game_id = ?', $game_id);

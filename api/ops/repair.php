@@ -391,22 +391,9 @@ class ApiPage extends OpsApiPageBase
 		$game_id = NULL;
 		if ($days > 0)
 		{
-			list($game_id) = Db::record(get_label('games'), 'SELECT id FROM games WHERE result > 0 AND is_canceled = 0 AND end_time > ? ORDER BY end_time, id LIMIT 1', $end_time);
+			list($game_id, $end_time) = Db::record(get_label('games'), 'SELECT id, end_time FROM games WHERE result > 0 AND is_canceled = 0 AND end_time > ? ORDER BY end_time, id LIMIT 1', $end_time);
 		}
-		
-		$query = new DbQuery('SELECT r.id, r.game_id, g.end_time FROM rebuild_ratings r LEFT OUTER JOIN games g ON g.id = r.game_id WHERE r.start_time = 0');
-		if ($row = $query->next())
-		{
-			list($rebuild_id, $old_game_id, $old_game_end_time) = $row;
-			if (!is_null($old_game_id) && (is_null($game_id) || $end_time < $old_game_end_time || ($end_time == $old_game_end_time && $game_id < $old_game_id)))
-			{
-				Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE id = ?', $game_id, $rebuild_id);
-			}
-		}
-		else
-		{
-			Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (game_id) VALUES (?)', $game_id);
-		}
+		Game::rebuild_ratings($game_id, $end_time);
 	}
 	
 	// No help. We want to keep this API internal.

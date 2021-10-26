@@ -340,7 +340,7 @@ class Page extends PageBase
 		if ($_profile != NULL && ($_profile->is_admin() || $_profile->is_club_manager($this->club_id)))
 		{
 			echo '<button class="icon" onclick="deleteGame(' . $this->id . ')" title="' . get_label('Delete game [0]', $this->id) . '"><img src="images/delete.png" border="0"></button>';
-			//echo '<button class="icon" onclick="mr.editGame(' . $this->id . ')" title="' . get_label('Edit game [0]', $this->id) . '"><img src="images/edit.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.editGame(' . $this->id . ')" title="' . get_label('Edit game [0]', $this->id) . '"><img src="images/edit.png" border="0"></button>';
 			if ($this->video_id == NULL)
 			{
 				echo '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Add game [0] video', $this->id) . '"><img src="images/film-add.png" border="0"></button>';
