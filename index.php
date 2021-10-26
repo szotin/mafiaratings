@@ -499,7 +499,7 @@ class Page extends GeneralPageBase
 			echo '</p>';
 		}
 
-		$this->show_changes(10, 1);
+		$this->show_changes(15, 1);
 		
 		// ratings
 		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE u.games > 0');

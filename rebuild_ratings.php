@@ -93,7 +93,7 @@ function get_rebuild_object()
 		if ($obj->start_time <= 0)
 		{
 			$obj->start_time = time();
-			Db::exec('rebuild plan', 'UPDATE rebuild_ratings SET current_game_id = game_id, start_time = ?, batch_size = ? WHERE id = ?', $obj->start_time, GAMES_IN_A_BATCH, $obj->id);
+			Db::exec('rebuild plan', 'UPDATE rebuild_ratings SET start_time = ?, batch_size = ? WHERE id = ?', $obj->start_time, GAMES_IN_A_BATCH, $obj->id);
 			writeLog('Starting rebuild');
 		}
 	}
