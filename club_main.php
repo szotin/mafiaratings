@@ -270,7 +270,7 @@ class Page extends ClubPageBase
 		$playing_count = 0;
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
-		$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND canceled = FALSE GROUP BY result', $this->id);
+		$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND is_canceled = FALSE GROUP BY result', $this->id);
 		while ($row = $query->next())
 		{
 			switch ($row[0])
@@ -442,13 +442,13 @@ class Page extends ClubPageBase
 				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p, games g WHERE p.game_id = g.id AND g.club_id = ?', $this->id);
 				echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 				
-				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT moderator_id) FROM games WHERE club_id = ? AND canceled = FALSE AND result > 0', $this->id);
+				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT moderator_id) FROM games WHERE club_id = ? AND is_canceled = FALSE AND result > 0', $this->id);
 				echo '<tr><td>'.get_label('People moderated').':</td><td>' . $counter . '</td></tr>';
 				
 				list ($a_game, $s_game, $l_game) = Db::record(
 					get_label('game'),
 					'SELECT AVG(end_time - start_time), MIN(end_time - start_time), MAX(end_time - start_time) ' .
-						'FROM games WHERE canceled = FALSE AND result > 0 AND club_id = ?', 
+						'FROM games WHERE is_canceled = FALSE AND result > 0 AND club_id = ?', 
 					$this->id);
 				echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 				echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';

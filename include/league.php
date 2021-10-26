@@ -159,7 +159,7 @@ function get_current_league_season($league_id)
 		$condition->add(' AND g.league_id = ?', $league_id);
 	}
 	
-	$query = new DbQuery('SELECT g.end_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id WHERE g.canceled = FALSE AND g.result > 0', $condition);
+	$query = new DbQuery('SELECT g.end_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
 	$query->add(' ORDER BY g.end_time DESC LIMIT 1');
 	if ($row = $query->next())
 	{
@@ -201,7 +201,7 @@ function show_league_seasons_select($league_id, $option, $on_change, $title)
 	}
 	else
 	{
-		$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id WHERE g.canceled = FALSE AND g.result > 0', $condition);
+		$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
 		$query->add(' ORDER BY g.start_time LIMIT 1');
 		if ($row = $query->next())
 		{
@@ -209,7 +209,7 @@ function show_league_seasons_select($league_id, $option, $on_change, $title)
 			date_default_timezone_set($timezone);
 			$first_year = (int)date('Y', $timestamp);
 			
-			$query = new DbQuery('SELECT g.end_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id WHERE g.canceled = FALSE AND g.result > 0', $condition);
+			$query = new DbQuery('SELECT g.end_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
 			$query->add(' ORDER BY g.end_time DESC LIMIT 1');
 			if ($row = $query->next())
 			{

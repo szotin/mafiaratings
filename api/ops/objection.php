@@ -10,7 +10,7 @@ define('CURRENT_VERSION', 0);
 
 function cancel_game($game_id, $club_id, $league_id)
 {
-	Db::exec(get_label('game'), 'UPDATE games SET canceled = TRUE WHERE id = ?', $game_id);
+	Db::exec(get_label('game'), 'UPDATE games SET is_canceled = TRUE WHERE id = ?', $game_id);
 	if (Db::affected_rows() > 0)
 	{
 		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated - 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $game_id);
@@ -29,7 +29,7 @@ function cancel_game($game_id, $club_id, $league_id)
 
 function uncancel_game($game_id, $club_id, $league_id)
 {
-	Db::exec(get_label('game'), 'UPDATE games SET canceled = FALSE WHERE id = ?', $game_id);
+	Db::exec(get_label('game'), 'UPDATE games SET is_canceled = FALSE WHERE id = ?', $game_id);
 	if (Db::affected_rows() > 0)
 	{
 		Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated + 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $game_id);

@@ -21,7 +21,7 @@ class Page extends EventPageBase
 	private function init_players()
 	{
 		$players = array();
-		$query = new DbQuery('SELECT id, json, canceled FROM games WHERE event_id = ? AND result > 0', $this->event->id);
+		$query = new DbQuery('SELECT id, json, is_canceled FROM games WHERE event_id = ? AND result > 0', $this->event->id);
 		while ($row = $query->next())
 		{
 			list ($id, $json, $is_canceled) = $row;

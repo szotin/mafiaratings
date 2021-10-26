@@ -142,19 +142,19 @@ class ApiPage extends GetApiPageBase
 		}
 		if ($filter_flags & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.non_rating = 0');
+			$condition->add(' AND g.is_rating <> 0');
 		}
 		if ($filter_flags & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.non_rating <> 0');
+			$condition->add(' AND g.is_rating = 0');
 		}
 		if ($filter_flags & FLAG_FILTER_CANCELED)
 		{
-			$condition->add(' AND g.canceled <> 0');
+			$condition->add(' AND g.is_canceled <> 0');
 		}
 		if ($filter_flags & FLAG_FILTER_NO_CANCELED)
 		{
-			$condition->add(' AND g.canceled = 0');
+			$condition->add(' AND g.is_canceled = 0');
 		}
 		
 		if (!empty($rules_code))
@@ -167,11 +167,11 @@ class ApiPage extends GetApiPageBase
 		if ($user_id > 0)
 		{
 			$count_query = new DbQuery('SELECT count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.result > 0 AND p.user_id = ?', $user_id, $condition);
-			$query = new DbQuery('SELECT g.id, g.json, g.feature_flags, c.timezone FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE g.canceled = FALSE AND g.result > 0 AND p.user_id = ?', $user_id, $condition);
+			$query = new DbQuery('SELECT g.id, g.json, g.feature_flags, c.timezone FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE g.is_canceled = FALSE AND g.result > 0 AND p.user_id = ?', $user_id, $condition);
 		}
 		else
 		{
-			$count_query = new DbQuery('SELECT count(*) FROM games g WHERE g.canceled = FALSE AND g.result > 0', $condition);
+			$count_query = new DbQuery('SELECT count(*) FROM games g WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
 			$query = new DbQuery('SELECT g.id, g.json, g.feature_flags, c.timezone FROM games g JOIN events e ON g.event_id = e.id JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE g.result > 0', $condition);
 		}
 		

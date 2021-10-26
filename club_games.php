@@ -86,19 +86,19 @@ class Page extends ClubPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.non_rating = 0');
+			$condition->add(' AND g.is_rating <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.non_rating <> 0');
+			$condition->add(' AND g.is_rating = 0');
 		}
 		if ($filter & FLAG_FILTER_CANCELED)
 		{
-			$condition->add(' AND g.canceled <> 0');
+			$condition->add(' AND g.is_canceled <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_CANCELED)
 		{
-			$condition->add(' AND g.canceled = 0');
+			$condition->add(' AND g.is_canceled = 0');
 		}
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
@@ -117,7 +117,7 @@ class Page extends ClubPageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.non_rating, g.canceled, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
+			'SELECT g.id, c.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
@@ -128,10 +128,10 @@ class Page extends ClubPageBase
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_non_rating, $is_canceled, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
+			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
 			
 			echo '<tr align="center"';
-			if ($is_canceled || $is_non_rating)
+			if ($is_canceled || !$is_rating)
 			{
 				echo ' class="dark"';
 			}
@@ -160,7 +160,7 @@ class Page extends ClubPageBase
 				echo '</td>';
 			}
 			
-			if ($is_canceled || $is_non_rating)
+			if ($is_canceled || !$is_rating)
 			{
 				echo '<td align="left" style="padding-left:12px;">';
 			}
@@ -188,13 +188,13 @@ class Page extends ClubPageBase
 			if ($is_canceled)
 			{
 				echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
-				if ($is_non_rating)
+				if (!$is_rating)
 				{
 					echo '<br>' . get_label('Non-rating');
 				}
 				echo '</b></td>';
 			}
-			else if ($is_non_rating)
+			else if (!$is_rating)
 			{
 				echo '</td><td width="100" class="darker"><b>' . get_label('Non-rating') . '</b></td>';
 			}

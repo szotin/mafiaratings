@@ -40,21 +40,21 @@ class Page extends UserPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.non_rating = 0');
+			$condition->add(' AND g.is_rating <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.non_rating <> 0');
+			$condition->add(' AND g.is_rating = 0');
 		}
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $condition);
+		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.flags, count(g.id) as gcount, SUM(p.rating_earned) as rating, SUM(p.won) as gwon FROM players p' .
 			' JOIN games g ON p.game_id = g.id' .
 			' JOIN users u ON g.moderator_id = u.id' .
-			' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0',
+			' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0',
 			$this->id, $condition);
 		$query->add(' GROUP BY u.id ORDER BY gcount DESC, rating DESC, gwon DESC, p.user_id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		

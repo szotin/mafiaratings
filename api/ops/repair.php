@@ -299,7 +299,7 @@ class ApiPage extends OpsApiPageBase
 	function stats_op()
 	{
 		$last_id = 0;
-		$query = new DbQuery('SELECT id, json, feature_flags, end_time, canceled FROM games WHERE result > 0');
+		$query = new DbQuery('SELECT id, json, feature_flags, end_time, is_canceled FROM games WHERE result > 0');
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
@@ -391,7 +391,7 @@ class ApiPage extends OpsApiPageBase
 		$game_id = NULL;
 		if ($days > 0)
 		{
-			list($game_id) = Db::record(get_label('games'), 'SELECT id FROM games WHERE result > 0 AND canceled = 0 AND end_time > ? ORDER BY end_time, id LIMIT 1', $end_time);
+			list($game_id) = Db::record(get_label('games'), 'SELECT id FROM games WHERE result > 0 AND is_canceled = 0 AND end_time > ? ORDER BY end_time, id LIMIT 1', $end_time);
 		}
 		
 		$query = new DbQuery('SELECT r.id, r.game_id, g.end_time FROM rebuild_ratings r LEFT OUTER JOIN games g ON g.id = r.game_id WHERE r.start_time = 0');

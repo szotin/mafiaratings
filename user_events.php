@@ -45,7 +45,7 @@ class Page extends UserPageBase
 			' JOIN clubs c ON e.club_id = c.id' . 
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' . 
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0 AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0', $this->id);
+			' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0', $this->id);
 		$ccc_id = $ccc_filter->get_id();
 		switch($ccc_filter->get_type())
 		{

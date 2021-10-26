@@ -109,7 +109,7 @@ class Snapshot
 	public function shot()
 	{
 		$this->top100 = array();
-		$query = new DbQuery('SELECT id FROM games WHERE end_time > ? AND result > 0 AND non_rating = 0 AND canceled = 0 LIMIT 1', $this->time);
+		$query = new DbQuery('SELECT id FROM games WHERE end_time > ? AND result > 0 AND is_rating <> 0 AND is_canceled = 0 LIMIT 1', $this->time);
 		if ($query->next())
 		{
 			$query = new DbQuery(

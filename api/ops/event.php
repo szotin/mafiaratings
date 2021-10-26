@@ -7,6 +7,7 @@ require_once '../../include/message.php';
 require_once '../../include/datetime.php';
 require_once '../../include/image.php';
 require_once '../../include/scoring.php';
+require_once '../../include/game.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -832,7 +833,7 @@ class ApiPage extends OpsApiPageBase
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		
-		$query = new DbQuery('SELECT id, json, feature_flags, canceled FROM games WHERE event_id = ? AND result > 0', $event_id);
+		$query = new DbQuery('SELECT id, json, feature_flags, is_canceled FROM games WHERE event_id = ? AND result > 0', $event_id);
 		while ($row = $query->next())
 		{
 			list ($game_id, $json, $feature_flags, $is_canceled) = $row;

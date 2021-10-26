@@ -3137,7 +3137,7 @@ class Game
 		{
 			throw new Exc(get_label('Game number is not set.'));
 		}
-		list($is_canceled, $is_non_rating) = Db::record(get_label('game'), 'SELECT canceled, non_rating FROM games WHERE id = ?', $data->id);
+		list($is_canceled, $is_rating) = Db::record(get_label('game'), 'SELECT is_canceled, is_rating FROM games WHERE id = ?', $data->id);
 				
 		if (!isset($data->clubId))
 		{
@@ -3185,12 +3185,12 @@ class Game
 		$rebuild_ratings = false;
 		if (!$is_canceled)
 		{
-			if ($is_data_rating || !$is_non_rating)
+			if ($is_data_rating || $is_rating)
 			{
-				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.non_rating = 0 AND g1.canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.is_rating <> 0 AND g1.is_canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
 				if ($games_after_count > 0)
 				{
-					if ($is_data_rating && !$is_non_rating)
+					if ($is_data_rating && $is_rating)
 					{
 						$rebuild_ratings = $this->is_players_result_changed();
 					}
@@ -3215,7 +3215,6 @@ class Game
 		$timezone = $this->setup_event();
 		
 		$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
-		$is_non_rating = isset($data->rating) && !$data->rating ? 1 : 0;
 		if ($data->winner == 'maf')
 		{
 			$game_result = 2;
@@ -3232,10 +3231,10 @@ class Game
 		Db::exec(get_label('game'),
 			'UPDATE games SET json = ?, feature_flags = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
-				'rules = ?, non_rating = ? WHERE id = ?',
+				'rules = ?, is_rating = ? WHERE id = ?',
 			$json, $feature_flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
 			$language, $data->startTime, $data->endTime, $game_result,
-			$data->rules, $is_non_rating, $data->id);
+			$data->rules, $is_data_rating, $data->id);
 		
 		if (!$is_canceled)
 		{

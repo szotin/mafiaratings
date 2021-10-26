@@ -200,11 +200,11 @@ class Page extends GeneralPageBase
 		}
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.non_rating = 0');
+			$condition->add(' AND g.non_rating <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.non_rating <> 0');
+			$condition->add(' AND g.non_rating = 0');
 		}
 		
 		$ccc_id = $this->ccc_filter->get_id();
@@ -231,7 +231,7 @@ class Page extends GeneralPageBase
 		$numbers = array();
 		$query = new DbQuery(
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
-			' FROM players p JOIN games g ON p.game_id = g.id AND g.canceled = FALSE AND g.result > 0', $condition);
+			' FROM players p JOIN games g ON p.game_id = g.id AND g.is_canceled = FALSE AND g.result > 0', $condition);
 		$query->add(' GROUP BY p.number');
 		while ($row = $query->next())
 		{

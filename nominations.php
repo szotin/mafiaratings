@@ -85,14 +85,14 @@ class Page extends GeneralPageBase
 		}
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$this->condition->add(' AND g.non_rating = 0');
+			$this->condition->add(' AND g.is_rating <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$this->condition->add(' AND g.non_rating <> 0');
+			$this->condition->add(' AND g.is_rating = 0');
 		}
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.canceled = FALSE AND g.result > 0 ', $this->condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.is_canceled = FALSE AND g.result > 0 ', $this->condition);
 		$this->condition->add(get_roles_condition($this->roles));
 		
 		if (isset($_REQUEST['min']))
@@ -131,7 +131,7 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $this->noms[$this->nom][1] . ') as abs, (' . $this->noms[$this->nom][1] . ') / (' . $this->noms[$this->nom][2] . ') as val, c.id, c.name, c.flags' .
 				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-				' WHERE g.canceled = FALSE AND g.result > 0',
+				' WHERE g.is_canceled = FALSE AND g.result > 0',
 			$this->condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $this->min_games);
 		

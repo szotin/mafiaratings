@@ -110,7 +110,7 @@ function get_snapshot_time()
 	}
 	else
 	{
-		$query = new DbQuery('SELECT end_time FROM games WHERE result > 0 AND canceled = 0 AND non_rating = 0 ORDER BY end_time LIMIT 1');
+		$query = new DbQuery('SELECT end_time FROM games WHERE result > 0 AND is_canceled = 0 AND is_rating <> 0 ORDER BY end_time LIMIT 1');
 		if ($row = $query->next())
 		{
 			$time = (int)$row[0];
@@ -175,11 +175,11 @@ try
 			// get next game
 			if (is_null($rebuild->game_id))
 			{
-				$query = new DbQuery('SELECT id FROM games WHERE result > 0 AND canceled = 0 ORDER BY end_time, id LIMIT 1');
+				$query = new DbQuery('SELECT id FROM games WHERE result > 0 AND is_canceled = 0 ORDER BY end_time, id LIMIT 1');
 			}
 			else
 			{
-				$query = new DbQuery('SELECT g1.id FROM games g JOIN games g1 ON g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id) WHERE g.id = ? AND g1.result > 0 AND g1.canceled = 0 ORDER BY g1.end_time, g1.id LIMIT 1', $rebuild->game_id);
+				$query = new DbQuery('SELECT g1.id FROM games g JOIN games g1 ON g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id) WHERE g.id = ? AND g1.result > 0 AND g1.is_canceled = 0 ORDER BY g1.end_time, g1.id LIMIT 1', $rebuild->game_id);
 			}
 			if ($row = $query->next())
 			{

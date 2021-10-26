@@ -68,7 +68,7 @@ class Page extends UserPageBase
 		$query = new DbQuery(
 			'SELECT p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
 				' JOIN games g ON g.id = p.game_id' .
-				' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0 GROUP BY p.role ORDER BY p.role',
+				' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 GROUP BY p.role ORDER BY p.role',
 			$this->id);
 		while ($row = $query->next())
 		{
@@ -84,7 +84,7 @@ class Page extends UserPageBase
 				' JOIN games g ON g.club_id = c.id' .
 				' JOIN user_clubs u ON u.club_id = c.id' .
 				' JOIN players p ON p.user_id = u.user_id AND p.game_id = g.id' .
-				' WHERE u.user_id = ? AND g.canceled = FALSE AND g.result > 0 GROUP BY c.id, p.role ORDER BY c.id, p.role',
+				' WHERE u.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 GROUP BY c.id, p.role ORDER BY c.id, p.role',
 			$this->id);
 		while ($row = $query->next())
 		{
@@ -120,7 +120,7 @@ class Page extends UserPageBase
 			'SELECT c.id, c.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM clubs c' . 
 				' JOIN games g ON g.club_id = c.id' .
 				' JOIN players p ON p.game_id = g.id' .
-				' WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0 AND c.id NOT IN (SELECT u.club_id FROM user_clubs u WHERE u.user_id = p.user_id) GROUP BY c.id, p.role ORDER BY c.id, p.role',
+				' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 AND c.id NOT IN (SELECT u.club_id FROM user_clubs u WHERE u.user_id = p.user_id) GROUP BY c.id, p.role ORDER BY c.id, p.role',
 			$this->id);
 		while ($row = $query->next())
 		{

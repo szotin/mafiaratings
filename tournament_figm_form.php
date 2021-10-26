@@ -22,7 +22,7 @@ try
 	
 	$form = new FigmForm();
 	$query = new DbQuery(
-		'SELECT g.id, t.name, e.name, g.json, g.canceled, c.timezone, u.name FROM games g' .
+		'SELECT g.id, t.name, e.name, g.json, g.is_canceled, c.timezone, u.name FROM games g' .
 		' JOIN events e ON e.id = g.event_id' .
 		' JOIN addresses a ON a.id = e.address_id' .
 		' JOIN cities c ON c.id = a.city_id' .

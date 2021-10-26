@@ -97,8 +97,8 @@ class Page extends GeneralPageBase
 		$colunm_counter = 0;
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.flags, t.stars, t.start_time, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, l.id, l.name, l.flags,' .
-			' (SELECT count(DISTINCT _p.user_id) FROM players _p JOIN games _g ON _g.id = _p.game_id WHERE _g.tournament_id = t.id AND _g.canceled = FALSE AND _g.result > 0) as players,' .
-			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND canceled = FALSE AND result > 0) as games,' .
+			' (SELECT count(DISTINCT _p.user_id) FROM players _p JOIN games _g ON _g.id = _p.game_id WHERE _g.tournament_id = t.id AND _g.is_canceled = FALSE AND _g.result > 0) as players,' .
+			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND is_canceled = FALSE AND result > 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
 			$condition);

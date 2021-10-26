@@ -89,7 +89,7 @@ class Page extends ClubPageBase
 
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.name, a.flags, a.address,' .
-				' (SELECT count(*) FROM games WHERE event_id = e.id AND canceled = FALSE AND result > 0) as games,' .
+				' (SELECT count(*) FROM games WHERE event_id = e.id AND is_canceled = FALSE AND result > 0) as games,' .
 				' (SELECT count(*) FROM registrations WHERE event_id = e.id) as users,' .
 				' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);

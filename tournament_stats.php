@@ -40,19 +40,19 @@ class Page extends TournamentPageBase
 		$condition = new SQL();
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.non_rating = 0');
+			$condition->add(' AND g.is_rating <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.non_rating <> 0');
+			$condition->add(' AND g.is_rating = 0');
 		}
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.tournament_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.tournament_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
 		
 		$playing_count = 0;
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
-		$query = new DbQuery('SELECT g.result, count(*) FROM games g WHERE g.tournament_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $condition);
+		$query = new DbQuery('SELECT g.result, count(*) FROM games g WHERE g.tournament_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
 		$query->add(' GROUP BY result');
 		while ($row = $query->next())
 		{
@@ -86,16 +86,16 @@ class Page extends TournamentPageBase
 		
 		if ($civils_win_count + $mafia_win_count > 0)
 		{
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.tournament_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.tournament_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
 			echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 			
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g WHERE g.tournament_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g WHERE g.tournament_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
 			echo '<tr><td>'.get_label('People moderated').':</td><td>' . $counter . '</td></tr>';
 			
 			list ($a_game, $s_game, $l_game) = Db::record(
 				get_label('game'),
 				'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) ' .
-					'FROM games g WHERE g.canceled = FALSE AND g.result > 0 AND g.tournament_id = ?', 
+					'FROM games g WHERE g.is_canceled = FALSE AND g.result > 0 AND g.tournament_id = ?', 
 				$this->id);
 			echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';
@@ -105,7 +105,7 @@ class Page extends TournamentPageBase
 		
 		if ($games_count > 0)
 		{
-			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.tournament_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id);
+			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.tournament_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
 			$query->add(' GROUP BY p.kill_type, p.role');
 			$killed = array();
 			while ($row = $query->next())

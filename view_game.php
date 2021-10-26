@@ -65,13 +65,13 @@ class Page extends PageBase
 		{
 			$title = $this->tournament_name . ': ' . $this->event_name . '. ';
 		}
-		if ($this->is_non_rating)
+		if ($this->is_rating)
 		{
-			$title .= get_label('Game [0] (non-rating). [1]', $this->id, $state);
+			$title .= get_label('Game [0]. [1]', $this->id, $state);
 		}
 		else
 		{
-			$title .= get_label('Game [0]. [1]', $this->id, $state);
+			$title .= get_label('Game [0] (non-rating). [1]', $this->id, $state);
 		}
 		return $title;
 	}
@@ -91,10 +91,10 @@ class Page extends PageBase
 		list (
 			$this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
 			$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $this->moder_id, $this->moder_name, $this->moder_flags, 
-			$this->start_time, $this->duration, $this->language_code, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_non_rating, $json) =
+			$this->start_time, $this->duration, $this->language_code, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json) =
 		Db::record(
 			get_label('game'),
-			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, c.id, c.name, c.flags, a.id, a.name, a.flags, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.canceled, g.non_rating, g.json FROM games g' .
+			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, c.id, c.name, c.flags, a.id, a.name, a.flags, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' JOIN clubs c ON c.id = g.club_id' . 

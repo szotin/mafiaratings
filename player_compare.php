@@ -117,7 +117,7 @@ class Page extends UserPageBase
 	private function standard_compare($role)
 	{
 		$mafia_role = ($role == (ROLE_FLAG_MAFIA | ROLE_FLAG_DON) ? -1 : 1);
-		$condition = new SQL(' AND g.canceled = 0');
+		$condition = new SQL(' AND g.is_canceled = 0');
 		$stats1 = new PlayerStats($this->id, -1, $role, $condition);
 		$stats2 = new PlayerStats($this->id2, -1, $role, $condition);
 		

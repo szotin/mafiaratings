@@ -61,11 +61,11 @@ class Page extends UserPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.non_rating = 0');
+			$condition->add(' AND g.is_rating <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.non_rating <> 0');
+			$condition->add(' AND g.is_rating <> 0');
 		}
 		$stats = new PlayerStats($this->id, $club_id, $roles, $condition);
 		
@@ -293,11 +293,11 @@ class Page extends UserPageBase
 			$mafia_win_count = 0;
 			if ($club_id > 0)
 			{
-				$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND moderator_id = ? AND canceled = FALSE GROUP BY result', $club_id, $this->id);
+				$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND moderator_id = ? AND is_canceled = FALSE GROUP BY result', $club_id, $this->id);
 			}
 			else
 			{
-				$query = new DbQuery('SELECT result, count(*) FROM games WHERE moderator_id = ? AND canceled = FALSE GROUP BY result', $this->id);
+				$query = new DbQuery('SELECT result, count(*) FROM games WHERE moderator_id = ? AND is_canceled = FALSE GROUP BY result', $this->id);
 			}
 			while ($row = $query->next())
 			{

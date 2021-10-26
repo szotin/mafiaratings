@@ -204,7 +204,7 @@ class Page extends ClubPageBase
 		$numbers = array();
 		$query = new DbQuery(
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 0 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
-			' FROM players p JOIN games g ON p.game_id = g.id WHERE g.club_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id);
+			' FROM players p JOIN games g ON p.game_id = g.id WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
 		$query->add(get_roles_condition($roles));
 		$query->add(get_club_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		if ($filter & FLAG_FILTER_TOURNAMENT)
@@ -217,11 +217,11 @@ class Page extends ClubPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$query->add(' AND g.non_rating = 0');
+			$query->add(' AND g.is_rating <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$query->add(' AND g.non_rating <> 0');
+			$query->add(' AND g.is_rating = 0');
 		}
 		$query->add(' GROUP BY p.number');
 		while ($row = $query->next())

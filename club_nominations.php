@@ -40,7 +40,7 @@ class Page extends ClubPageBase
 		}
 		
 		$this->season_condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.club_id = ? AND g.canceled = FALSE AND g.result > 0', $this->id, $this->season_condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $this->season_condition);
 		if (isset($_REQUEST['min']))
 		{
 			$this->min_games = $_REQUEST['min'];
@@ -154,11 +154,11 @@ class Page extends ClubPageBase
 		}
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.non_rating = 0');
+			$condition->add(' AND g.is_rating <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.non_rating <> 0');
+			$condition->add(' AND g.is_rating = 0');
 		}
 		
 		$query = new DbQuery(
@@ -166,7 +166,7 @@ class Page extends ClubPageBase
 				' FROM players p JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON u.id = p.user_id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' WHERE g.club_id = ? AND g.canceled = FALSE AND g.result > 0',
+				' WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0',
 			$this->id, $condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $min_games);
 		

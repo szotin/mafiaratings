@@ -33,14 +33,14 @@ class Page extends EventPageBase
 		$condition = new SQL();
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.non_rating = 0');
+			$condition->add(' AND g.is_rating <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.non_rating <> 0');
+			$condition->add(' AND g.is_rating = 0');
 		}
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND g.canceled = FALSE AND g.result > 0', $this->event->id, $condition);
+		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->event->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
@@ -48,7 +48,7 @@ class Page extends EventPageBase
 				' FROM users u' .
 				' JOIN games g ON g.moderator_id = u.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' WHERE g.event_id = ? AND canceled = FALSE AND result > 0',
+				' WHERE g.event_id = ? AND is_canceled = FALSE AND result > 0',
 			$this->event->id, $condition);
 		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';

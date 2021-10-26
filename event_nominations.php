@@ -21,7 +21,7 @@ class Page extends EventPageBase
 		list($timezone) = Db::record(get_label('event'), 'SELECT c.timezone FROM events e JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE e.id = ?', $this->event->id);
 		date_default_timezone_set($timezone);
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND g.canceled = FALSE AND g.result > 0', $this->event->id);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->event->id);
 	}
 	
 	protected function show_body()
@@ -98,11 +98,11 @@ class Page extends EventPageBase
 		$condition = get_roles_condition($roles);
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.non_rating = 0');
+			$condition->add(' AND g.is_rating <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.non_rating <> 0');
+			$condition->add(' AND g.is_rating = 0');
 		}
 		$query = new DbQuery(
 			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags' .
@@ -110,7 +110,7 @@ class Page extends EventPageBase
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON u.id = p.user_id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' WHERE g.event_id = ? AND g.canceled = FALSE AND g.result > 0',
+				' WHERE g.event_id = ? AND g.is_canceled = FALSE AND g.result > 0',
 			$this->event->id, $condition);
 		$query->add(' GROUP BY p.user_id');
 		

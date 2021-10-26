@@ -932,7 +932,7 @@ class ApiPage extends OpsApiPageBase
 				$club_id = def_club();
 			}
 		
-			$query = new DbQuery('SELECT id, log, canceled FROM games WHERE user_id = ? AND result = 0 AND club_id = ? ORDER BY id LIMIT 1', $_profile->user_id, $club_id);
+			$query = new DbQuery('SELECT id, log, is_canceled FROM games WHERE user_id = ? AND result = 0 AND club_id = ? ORDER BY id LIMIT 1', $_profile->user_id, $club_id);
 			if ($row = $query->next())
 			{
 				list($game_id, $json_str, $is_canceled) = $row;
@@ -1232,10 +1232,10 @@ class ApiPage extends OpsApiPageBase
 		$game_id = (int)get_required_param('game_id');
 		
 		Db::begin();
-		list($club_id, $moderator_id, $end_time, $is_non_rating) = Db::record(get_label('game'), 'SELECT club_id, moderator_id, end_time, flags FROM games WHERE id = ?', $game_id);
+		list($club_id, $moderator_id, $end_time, $is_rating) = Db::record(get_label('game'), 'SELECT club_id, moderator_id, end_time, is_rating FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 		
-		if (!$is_non_rating)
+		if ($is_rating)
 		{
 			$prev_game_id = NULL;
 			$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
@@ -1326,7 +1326,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		$reason = str_replace(":", "&#58;", $reason);
 		
-        list($json, $feature_flags, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, moderator_id, canceled FROM games WHERE id = ?', $game_id);
+        list($json, $feature_flags, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, moderator_id, is_canceled FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
 
 		$game = new Game($json, $feature_flags);

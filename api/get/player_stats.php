@@ -2,9 +2,19 @@
 
 require_once '../../include/api.php';
 require_once '../../include/scoring.php';
-require_once '../../include/games.php';
 
 define('CURRENT_VERSION', 0);
+
+define('FLAG_FILTER_VIDEO', 0x0001);
+define('FLAG_FILTER_NO_VIDEO', 0x0002);
+define('FLAG_FILTER_TOURNAMENT', 0x0004);
+define('FLAG_FILTER_NO_TOURNAMENT', 0x0008);
+define('FLAG_FILTER_RATING', 0x0010);
+define('FLAG_FILTER_NO_RATING', 0x0020);
+define('FLAG_FILTER_CANCELED', 0x0040);
+define('FLAG_FILTER_NO_CANCELED', 0x0080);
+
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 
 class ApiPage extends GetApiPageBase
 {
@@ -24,7 +34,7 @@ class ApiPage extends GetApiPageBase
 		$area_id = (int)get_optional_param('area_id');
 		$city_id = (int)get_optional_param('city_id');
 		$langs = (int)get_optional_param('langs', LANG_ALL);
-		$games_filter = (int)get_optional_param('games_filter', GAMES_FILTER_ALL);
+		$filter_flags = (int)get_optional_param('filter_flags', FLAG_FILTER_DEFAULT);
 		$number = (int)get_optional_param('number');
 		$role = POINTS_ALL;
 		if (isset($_REQUEST['role']))
@@ -53,6 +63,94 @@ class ApiPage extends GetApiPageBase
 			}
 		}
 		
+		$condition = get_roles_condition($role);
+		if ($before > 0)
+		{
+			$condition->add(' AND g.start_time < ?', $before);
+		}
+
+		if ($after > 0)
+		{
+			$condition->add(' AND g.start_time >= ?', $after);
+		}
+
+		if ($club_id > 0)
+		{
+			$condition->add(' AND g.club_id = ?', $club_id);
+		}
+
+		if ($game_id > 0)
+		{
+			$condition->add(' AND g.id = ?', $game_id);
+		}
+		else if ($event_id > 0)
+		{
+			$condition->add(' AND g.event_id = ?', $event_id);
+		}
+		else if ($address_id > 0)
+		{
+			$condition->add(' AND g.event_id IN (SELECT id FROM events WHERE address_id = ?)', $address_id);
+		}
+		else if ($city_id > 0)
+		{
+			$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id WHERE a1.city_id = ?)', $city_id);
+		}
+		else if ($area_id > 0)
+		{
+			$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.area_id = (SELECT area_id FROM cities WHERE id = ?))', $area_id);
+		}
+		else if ($country_id > 0)
+		{
+			$condition->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.country_id = ?)', $country_id);
+		}
+		
+		if ($langs != LANG_ALL)
+		{
+			$condition->add(' AND (g.language & ?) <> 0', $langs);
+		}
+		
+		if ($with_user > 0)
+		{
+			$condition->add(' AND g.id IN (SELECT game_id FROM players WHERE user_id = ?)', $with_user);
+		}
+		
+		if ($number > 0)
+		{
+			$condition->add(' AND p.number = ?', $number);
+		}
+		
+		if ($filter_flags & FLAG_FILTER_VIDEO)
+		{
+			$condition->add(' AND g.video_id IS NOT NULL');
+		}
+		if ($filter_flags & FLAG_FILTER_NO_VIDEO)
+		{
+			$condition->add(' AND g.video_id IS NULL');
+		}
+		if ($filter_flags & FLAG_FILTER_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NOT NULL');
+		}
+		if ($filter_flags & FLAG_FILTER_NO_TOURNAMENT)
+		{
+			$condition->add(' AND g.tournament_id IS NULL');
+		}
+		if ($filter_flags & FLAG_FILTER_RATING)
+		{
+			$condition->add(' AND g.is_rating <> 0');
+		}
+		if ($filter_flags & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND g.is_rating = 0');
+		}
+		if ($filter_flags & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled <> 0');
+		}
+		if ($filter_flags & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled = 0');
+		}
 		
 		$query = new DbQuery(
 			'SELECT COUNT(*), SUM(p.won), SUM(p.rating_earned), SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)),' .
@@ -60,66 +158,7 @@ class ApiPage extends GetApiPageBase
 			' SUM(p.voted_civil), SUM(p.voted_mafia), SUM(p.voted_sheriff), SUM(p.voted_by_civil), SUM(p.voted_by_mafia), SUM(p.voted_by_sheriff),' .
 			' SUM(p.nominated_civil), SUM(p.nominated_mafia), SUM(p.nominated_sheriff), SUM(p.nominated_by_civil), SUM(p.nominated_by_mafia), SUM(p.nominated_by_sheriff),' .
 			' SUM(IF(p.was_arranged < 0, 0, 1)), SUM(IF(p.was_arranged <> 0, 0, 1)), SUM(IF(p.checked_by_don < 0, 0, 1)), SUM(IF(p.checked_by_sheriff < 0, 0, 1))' .
-			' FROM players p JOIN games g ON  p.game_id = g.id WHERE p.user_id = ? AND g.canceled = FALSE AND g.result > 0', $user_id);
-		$query->add(get_roles_condition($role));
-		
-		if ($before > 0)
-		{
-			$query->add(' AND g.start_time < ?', $before);
-		}
-
-		if ($after > 0)
-		{
-			$query->add(' AND g.start_time >= ?', $after);
-		}
-
-		if ($club_id > 0)
-		{
-			$query->add(' AND g.club_id = ?', $club_id);
-		}
-
-		if ($game_id > 0)
-		{
-			$query->add(' AND g.id = ?', $game_id);
-		}
-		else if ($event_id > 0)
-		{
-			$query->add(' AND g.event_id = ?', $event_id);
-		}
-		else if ($address_id > 0)
-		{
-			$query->add(' AND g.event_id IN (SELECT id FROM events WHERE address_id = ?)', $address_id);
-		}
-		else if ($city_id > 0)
-		{
-			$query->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id WHERE a1.city_id = ?)', $city_id);
-		}
-		else if ($area_id > 0)
-		{
-			$query->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.area_id = (SELECT area_id FROM cities WHERE id = ?))', $area_id);
-		}
-		else if ($country_id > 0)
-		{
-			$query->add(' AND g.event_id IN (SELECT e1.id FROM events e1 JOIN addresses a1 ON e1.address_id = a1.id JOIN cities c1 ON a1.city_id = c1.id WHERE c1.country_id = ?)', $country_id);
-		}
-		
-		if ($langs != LANG_ALL)
-		{
-			$query->add(' AND (g.language & ?) <> 0', $langs);
-		}
-		
-		$query->add(get_games_filter_condition($games_filter));
-		
-		if ($with_user > 0)
-		{
-			$query->add(' AND g.id IN (SELECT game_id FROM players WHERE user_id = ?)', $with_user);
-		}
-		
-		if ($number > 0)
-		{
-			$query->add(' AND p.number = ?', $number);
-		}
-
+			' FROM players p JOIN games g ON  p.game_id = g.id WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0', $user_id, $condition);
 		if ($row = $query->next())
 		{
 			list ($games, $won, $rating, $best_player, $best_move, $guess_3_maf, $guess_2_maf, $warinigs, $voted_civ, $voted_maf, $voted_sheriff, $voted_by_civ, $voted_by_maf, $voted_by_sheriff, $nominated_civ, $nominated_maf, $nominated_sheriff, $nominated_by_civ, $nominated_by_maf, $nominated_by_sheriff, $arranged, $arranged_1_night, $checked_by_don, $checked_by_sheriff) = $row;
@@ -169,7 +208,15 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('country_id', 'Country id. For example: <a href="player_stats.php?user_id=25&country_id=2"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php?user_id=25&country_id=2</a> returns Fantomas stats in the games played in Russia. List of the countries and their ids can be obtained using <a href="countries.php?help"><?php echo PRODUCT_URL; ?>/api/get/countries.php</a>.', '-');
 		$help->request_param('with_user', 'User id. For example: <a href="player_stats.php?user_id=25&with_user=4"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php?user_id=25&with_user=4</a> returns Fantomas stats in the games that he played with lilya.', '-');
 		$help->request_param('langs', 'Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="player_stats.php?user_id=25&langs=1"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php?user_id=25&langs=1</a> returns Fantomas stats in the games played in English.', '-');
-		$help->request_param('games_filter', 'Games importance filter. What kind of games to use for stats. A bit combination of: 1 - include tournament games; 2 - include rating games; 4 - include non-rating games. For example: <a href="player_stats.php?user_id=25&games_filter=4"><?php echo PRODUCT_URL; ?>/api/get/player_stats.php?user_id=25&games_filter=4</a> returns Fantomas stats in non-rating games only.', '-');
+		$param = $help->request_param('filter_flags', 'Bit flags helping to filter games. For example <a href="player_stats.php?user_id=25&filter_flags=5">' . PRODUCT_URL . '/api/get/player_stats.php?user_id=25&filter_flags=5</a> returns stats for only tournament games with video. The flags are:', '-');
+			$param->sub_param('1', 'Return only the games with video.', '-');
+			$param->sub_param('2', 'Return only the games without video.', '-');
+			$param->sub_param('4', 'Return only tournament games.', '-');
+			$param->sub_param('8', 'Return only non-tournament games.', '-');
+			$param->sub_param('16', 'Return only rating games.', '-');
+			$param->sub_param('32', 'Return only non-rating games.', '-');
+			$param->sub_param('64', 'Return only canceled games.', '-');
+			$param->sub_param('128', 'Return only non-canceled games.', '-');
 		$help->request_param('role', 'Player stats in the specified role only. Possible values are:
 				<ul>
 					<li>a - all roles (default)</li>
