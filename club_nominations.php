@@ -74,7 +74,7 @@ class Page extends ClubPageBase
 			array(get_label('Survived'), 'SUM(IF(p.kill_type = 0, 1, 0))', 'count(*)', 1),
 			array(get_label('Killed in day'), 'SUM(IF(p.kill_type = 1, 1, 0))', 'count(*)', 1),
 			array(get_label('Killed in night'), 'SUM(IF(p.kill_type = 2, 1, 0))', 'count(*)', 1),
-			array(get_label('Killed first night'), 'SUM(IF(p.kill_type = 2 AND p.kill_round = 0, 1, 0))', 'count(*)', 1),
+			array(get_label('Killed first night'), 'SUM(IF(p.kill_type = 2 AND p.kill_round = 1, 1, 0))', 'count(*)', 1),
 			array(get_label('Warnings'), 'SUM(p.warns)', 'count(*)', 0),
 			array(get_label('Arranged'), 'SUM(IF(p.was_arranged >= 0, 1, 0))', 'count(*)', 1),
 			array(get_label('Arranged first night'), 'SUM(IF(p.was_arranged = 0, 1, 0))', 'count(*)', 1),
