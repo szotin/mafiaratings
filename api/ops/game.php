@@ -838,7 +838,7 @@ class ApiPage extends OpsApiPageBase
 				$tournament_id = NULL;
 				if ($gs->tournament_id > 0)
 				{
-					list($tournament_name, $tournament_flags, $event_id) = Db::record(get_label('tournament'), 'SELECT t.name, t.flags, e.id FROM tournaments t LEFT OUTER JOIN events e ON e.id = ? AND e.tournament_id = t.id WHERE t.id = ?', $gs->event_id, $this->tournament_id);
+					list($tournament_name, $tournament_flags, $event_id) = Db::record(get_label('tournament'), 'SELECT t.name, t.flags, e.id FROM tournaments t LEFT OUTER JOIN events e ON e.id = ? AND e.tournament_id = t.id WHERE t.id = ?', $gs->event_id, $gs->tournament_id);
 					if (($tournament_flags | TOURNAMENT_FLAG_SINGLE_GAME) == 0 && is_null($event_id))
 					{
 						throw new Exc(get_label('Game [0] can not be played in the tournament [1]', $gs->id, $tournament_name));

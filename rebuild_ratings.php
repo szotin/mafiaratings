@@ -76,18 +76,21 @@ function get_rebuild_object()
 		if (is_null($game_id))
 		{
 			$obj->initial_game_id = NULL;
-			$obj->game_id = NULL;
-		}
-		else if (is_null($current_game_id))
-		{
-			$obj->initial_game_id = (int)$game_id;
-			$obj->game_id = (int)$game_id;
 		}
 		else
 		{
 			$obj->initial_game_id = (int)$game_id;
+		}
+		
+		if (is_null($current_game_id))
+		{
+			$obj->game_id = $obj->initial_game_id;
+		}
+		else
+		{
 			$obj->game_id = (int)$current_game_id;
 		}
+		
 		$obj->average_time = (double)$average_time;
 		$obj->games_proceeded = (int)$games_proceeded;
 		if ($obj->start_time <= 0)
