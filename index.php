@@ -479,6 +479,7 @@ class Page extends GeneralPageBase
 		$events_count = (COLUMN_COUNT * ROW_COUNT) - count($tournaments);
 		if ($events_count > 0)
 		{
+			$clubs = array();
 			$query = new DbQuery(
 				'SELECT e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM events e' .
 				' JOIN addresses a ON e.address_id = a.id' .
@@ -489,7 +490,11 @@ class Page extends GeneralPageBase
 			$query->add(' ORDER BY e.start_time + e.duration, e.name, e.id LIMIT ' . $events_count);
 			while ($row = $query->next())
 			{
-				$events[] = $row;
+				if (!isset($clubs[$row[9]]))
+				{
+					$events[] = $row;
+					$clubs[$row[9]] = true;
+				}
 			}
 		}
 		$have_tables = $this->show_happenings($events, $tournaments) || $have_tables;
