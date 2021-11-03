@@ -237,7 +237,7 @@ class Snapshot
 				if (isset($players[$player1->id]))
 				{
 					$p1 = $players[$player1->id];
-					if ($p1->rating == $player1->rating)
+					if (abs($p1->rating - $player1->rating) < 0.01)
 					{
 						unset($players[$player1->id]);
 					}
@@ -250,7 +250,7 @@ class Snapshot
 				if (isset($players[$player2->id]))
 				{
 					$p2 = $players[$player2->id];
-					if ($p2->rating == $player2->rating)
+					if (abs($p2->rating - $player2->rating) < 0.01)
 					{
 						unset($players[$player2->id]);
 					}
