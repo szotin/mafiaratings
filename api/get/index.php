@@ -14,6 +14,43 @@ require_once '../../include/api.php';
 <p><a href="..">Back to the <?php echo PRODUCT_NAME; ?> API reference</a></p>
 <p>These services do not require authentification. <?php echo PRODUCT_NAME; ?> is fully accessible for reading to everyone.</p>
 
+<table class="transp" width="100%"><tr><td align="center" colspan="2"><h3>Data model</h3></td></tr><tr>
+<td><img src="../../images/GeneralDiagram.png" width="600" usemap="#general_map"></td>
+<td align="right"><img src="../../images/ScoringsDiagram.png" width="600" usemap="#scoring_map"></td>
+</tr></table>
+
+<map name="general_map">
+  <area shape="rect" coords="147,11,239,46" title="Leagues" href="leagues.php?help">
+  <area shape="rect" coords="294,17,352,41" title="Clubs" href="clubs.php?help">
+  <area shape="rect" coords="401,17,459,41" title="Clubs" href="clubs.php?help">
+  <!-- <area shape="rect" coords="34,83,157,108" title="Tournament Series" href="series.php?help"> -->
+  <area shape="rect" coords="245,83,335,108" title="Tournaments" href="tournaments.php?help">
+  <area shape="rect" coords="401,83,456,108" title="Events" href="events.php?help">
+  <area shape="rect" coords="523,83,578,108" title="Games" href="games.php?help">
+  <area shape="rect" coords="12,170,81,194" title="Cities" href="cities.php?help">
+  <area shape="rect" coords="170,170,228,194" title="Clubs" href="clubs.php?help">
+  <area shape="rect" coords="12,238,81,261" title="Countries" href="countries.php?help">
+  <!-- <area shape="rect" coords="165,238,234,261" title="Addresses" href="addresses.php?help"> -->
+</map>
+
+<map name="scoring_map">
+  <area shape="rect" coords="12,56,102,90" title="Leagues" href="leagues.php?help">
+  <!-- <area shape="rect" coords="156,12,291,36" title="Rules filters" href="rules_filters.php?help"> -->
+  <!-- <area shape="rect" coords="156,44,291,69" title="Scoring filters" href="scoring_filters.php?help"> -->
+  <!-- <area shape="rect" coords="156,78,291,103" title="Normalizer filters" href="normalizer_filters.php?help"> -->
+  <!-- <area shape="rect" coords="156,112,291,136" title="Gaining filters" href="gaining_filters.php?help"> -->
+  <area shape="rect" coords="12,211,68,235" title="Clubs" href="clubs.php?help">
+  <area shape="rect" coords="156,167,291,191" title="Game rules" href="rules.php?help">
+  <area shape="rect" coords="156,200,291,225" title="Scoring systems" href="scorings.php?help">
+  <area shape="rect" coords="156,233,291,258" title="Scoring Normalizers" href="normalizers.php?help">
+  <!-- <area shape="rect" coords="156,266,291,291" title="Gaining systems" href="gainings.php?help"> -->
+  <area shape="rect" coords="345,167,423,191" title="Games" href="games.php?help">
+  <area shape="rect" coords="345,200,423,225" title="Events" href="events.php?help">
+  <area shape="rect" coords="381,234,446,258" title="Tournaments" href="tournaments.php?help">
+  <!-- <area shape="rect" coords="345,266,490,291" title="Tournament Series" href="series.php?help"> -->
+</map>
+
+
 <table class="bordered light" width="100%">
 <tr class="darker"><th width="200">Service</th><th>Link</th><th>Description</th></tr>
 

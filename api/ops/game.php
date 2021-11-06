@@ -1556,6 +1556,6 @@ class ApiPage extends OpsApiPageBase
 }
 
 $page = new ApiPage();
-$page->run('User Operations', CURRENT_VERSION);
+$page->run('Game Operations', CURRENT_VERSION);
 
 ?>
