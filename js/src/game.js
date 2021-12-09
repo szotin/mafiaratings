@@ -2754,17 +2754,8 @@ var mafia = new function()
 			}
 			dirty();
 			
-			if (_data.user.settings.g_autosave != 0)
-			{
-				if (http.connected())
-					mafia.sync();
-				else
-					mafia.save();
-			}
-			else if (_data.user.settings.l_autosave != 0)
-			{
-				mafia.save();
-			}
+			mafia.sync();
+			mafia.save();
 			
 			_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
 		}
@@ -2773,9 +2764,6 @@ var mafia = new function()
 	this.settings = function(lAutosave, gAutosave, promptSound, endSound, flags)
 	{
 		var s = _data.user.settings;
-		lAutosave = Math.floor(lAutosave / 10) * 10;
-		gAutosave = Math.floor(gAutosave / 60) * 60;
-		
 		s.flags = flags;
 		s.l_autosave = lAutosave;
 		s.g_autosave = gAutosave;
@@ -2785,7 +2773,7 @@ var mafia = new function()
 		{
 			action: 'settings',
 			l_autosave: lAutosave,
-			g_autosave: lAutosave,
+			g_autosave: gAutosave,
 			prompt_sound: promptSound,
 			end_sound: endSound,
 			flags: flags

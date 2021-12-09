@@ -518,29 +518,23 @@ mafia.ui = new function()
 			setInterval(function()
 			{
 				var s = mafia.data().user.settings;
-				_lCounter += 10;
-				_gCounter += 10;
-				if (_gCounter >= s.g_autosave)
-				{
-					var s = true;
-					_gCounter = 0;
-					if (mafia.globalDirty())
-					{
-						var w = http.waiter(statusWaiter);
-						mafia.sync();
-						http.waiter(w);
-						s = false;
-					}
-					if (s)
-						mafia.save();
-					if (_lCounter >= s.l_autosave) _lCounter = 0;
-				}
-				else if (_lCounter >= s.l_autosave)
+				++_lCounter;
+				if (mafia.localDirty() && s.l_autosave > 0 && _lCounter >= s.l_autosave)
 				{
 					_lCounter = 0;
 					mafia.save();
 				}
-			}, 10000);
+				
+				++_gCounter;
+				if (mafia.globalDirty() && s.g_autosave > 0 && _gCounter >= s.g_autosave)
+				{
+					_gCounter = 0;
+					var w = http.waiter(statusWaiter);
+					mafia.sync();
+					http.waiter(w);
+					s = false;
+				}
+			}, 1000);
 		});
 	}
 
@@ -2485,8 +2479,8 @@ var settingsForm = new function()
 		
 		var html = 
 			'<audio id="test-snd" preload></audio><table class="dialog_form" width="100%">' +
-			'<tr><td width="200">' + l('SaveLocal') + ':</td><td><select id="l-autosave"><option value="0">' + l('off') + '</option><option value="-1">' + l('OnGameEnd') + '</option><option value="60">' + l('1min') + '</option><option value="30">' + l('30sec') + '</option><option value="20">' + l('20sec') + '</option><option value="10">' + l('10sec') + '</option></select></td></tr>' +
-			'<tr><td>' + l('Sync') + ':</td><td><select id="g-autosave"><option value="0">' + l('off') + '</option><option value="-1">' + l('OnGameEnd') + '</option><option value="1800">' + l('30min') + '</option><option value="600">' + l('10min') + '</option><option value="300">' + l('5min') + '</option><option value="120">' + l('2min') + '</option><option value="60">' + l('1min') + '</option></select></td></tr>' +
+			'<tr><td width="200">' + l('SaveLocal') + ':</td><td><select id="l-autosave"><option value="0">' + l('OnGameEnd') + '</option><option value="600">' + l('10min') + '</option><option value="300">' + l('5min') + '</option><option value="60">' + l('1min') + '</option><option value="30">' + l('30sec') + '</option><option value="10">' + l('10sec') + '</option><option value="1">' + l('1sec') + '</option></select></td></tr>' +
+			'<tr><td>' + l('Sync') + ':</td><td><select id="g-autosave"><option value="0">' + l('OnGameEnd') + '</option><option value="600">' + l('10min') + '</option><option value="300">' + l('5min') + '</option><option value="60">' + l('1min') + '</option><option value="30">' + l('30sec') + '</option><option value="10">' + l('10sec') + '</option><option value="1">' + l('1sec') + '</option></select></td></tr>' +
 			'<tr><td>' + l('TStart') + ':</td><td><select id="t-start"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>' +
 			'<tr><td>' + l('TPrompt') + ':</td><td><select id="t-prompt" onchange="settingsForm.playSound(0)">' + soundsHtml + '</select></td></tr>' +
 			'<tr><td>' + l('TEnd') + ':</td><td><select id="t-end" onchange="settingsForm.playSound(1)">' + soundsHtml + '</select></td></tr>' +
@@ -2507,12 +2501,29 @@ var settingsForm = new function()
 		});
 	}
 	
+	this.normalize = function(autosave)
+	{
+		if (autosave <= 0)
+			return 0;
+		if (autosave < 5)
+			return 1;
+		if (autosave < 20)
+			return 10;
+		if (autosave < 45)
+			return 30;
+		if (autosave < 180)
+			return 60;
+		if (autosave < 450)
+			return 300;
+		return 600;
+	}
+	
 	this.init = function()
 	{
 		var s = mafia.data().user.settings;
 		var f = s.flags;
-		$('#l-autosave').val(s.l_autosave);
-		$('#g-autosave').val(s.g_autosave);
+		$('#l-autosave').val(settingsForm.normalize(s.l_autosave));
+		$('#g-autosave').val(settingsForm.normalize(s.g_autosave));
 		$('#t-start').val((f & /*S_FLAG_START_TIMER*/0x2) ? 1 : 0);
 		$('#t-blink').val((f & /*S_FLAG_NO_BLINKING*/0x8) ? 0 : 1);
 		$('#s-client').val((f & /*S_FLAG_SIMPLIFIED_CLIENT*/0x1) ? 1 : 0);
