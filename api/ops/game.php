@@ -1712,6 +1712,7 @@ class ApiPage extends OpsApiPageBase
 				$player->id = $p->id;
 				$player->name = $p->nick;
 				$player->number = $p->number + 1;
+				$player->isSpeaking = ($p->number == $gs->player_speaking);
 				
 				$player_flags = 0;
 				if ($player->id > 0)
@@ -1862,6 +1863,20 @@ class ApiPage extends OpsApiPageBase
 					$game->round = $gs->round;
 					break;
 			}
+			
+			$game->moderator = new stdClass();
+			$game->moderator->id = $gs->moder_id;
+			if ($gs->moder_id > 0)
+			{
+				list($game->moderator->name, $moderator_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $game->moderator->id);
+			}
+			else
+			{
+				$game->moderator->name = '';
+				$moderator_flags = 0;
+			}
+			$user_pic->set($game->moderator->id, $game->moderator->name, $moderator_flags);
+			$game->moderator->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
 		}
 		
 		$this->response['game'] = $game;
@@ -1869,17 +1884,34 @@ class ApiPage extends OpsApiPageBase
 	
 	function incomplete_game_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'List of incomplete games.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Incomplete game state.');
 		$help->request_param('game_id', 'Return the specified game.', 'user_id or moderator_id must be set');
 		$help->request_param('user_id', 'Return incomplete game for the specified user account.', 'game_id or moderator_id must be set');
 		$help->request_param('moderator_id', 'Return incomplete game of the specified moderator.', 'user_id or game_id must be set');
-		// $param = $help->response_param('games', 'Array of incomplete games.');
-			// $param->sub_param('id', 'Game id.');
-			// $param->sub_param('clubId', 'Club id of this game.');
-			// $param->sub_param('eventId', 'Event id of this game.');
-			// $param->sub_param('tournamentId', 'Tournament id of this game.', 'this is not a tournament game');
-			// $param->sub_param('moderatorId', 'User id of the moderator.', 'moderator is not assigned yet');
-			// $param->sub_param('startTime', 'Game start time.', 'game is not started yet');
+		$param = $help->response_param('game', 'Game state.');
+			$param->sub_param('id', 'Game id.');
+			$param->sub_param('name', 'Game name.');
+			$players = $param->sub_param('players', 'Players.');
+				$players->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
+				$players->sub_param('name', 'Player nickname.');
+				$players->sub_param('number', 'Number in the game.');
+				$players->sub_param('photoUrl', 'A link to the user photo. If user is missing - a link to a transparent image.');
+				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don".');
+				$players->sub_param('warnings', 'Number of warnings.');
+				$players->sub_param('isSpeaking', 'A boolean which is true when the player is speaking.');
+				$players->sub_param('state', 'Player state - "dead" or "alive".');
+				$players->sub_param('deathRound', 'If player state is "dead" it is set to the round number when they died.');
+				$players->sub_param('deathType', 'If player state is "dead" it is set to the type of their death. One of: "voting", "shooting", "warnings", "giveUp", or "kickOut".');
+				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened.');
+				$players->sub_param('checkedBySheriff', 'If a player was checked by the sheriff it contains the round number when it happened.');
+			$moderator = $param->sub_param('moderator', 'Moderator.');
+				$moderator->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
+				$moderator->sub_param('name', 'Moderator nickname.');
+				$moderator->sub_param('photoUrl', 'A link to the moderator photo.');
+ 			$param->sub_param('phase', 'Current game phase - "day" or "night".');
+ 			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speacking" - normal day speaches.</li><li>"nightKillSpeacking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeacking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
+ 			$param->sub_param('round', 'Current round number. Game starts with night-0; then day-0; then night-1; day-1; etc.');
+				
 		return $help;
 	}
 }
