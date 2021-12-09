@@ -1564,6 +1564,8 @@ class ApiPage extends OpsApiPageBase
 		$club_id = (int)get_optional_param('club_id', 0);
 		$tournament_id = (int)get_optional_param('tournament_id', 0);
 		$event_id = (int)get_optional_param('event_id', 0);
+		$user_id = (int)get_optional_param('user_id', 0);
+		$moderator_id = (int)get_optional_param('moderator_id', 0);
 		if ($event_id > 0)
 		{
 			list($club_id, $tournament_id) = Db::record(get_label('club'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
@@ -1601,6 +1603,14 @@ class ApiPage extends OpsApiPageBase
 		{
 			$query->add(' AND club_id = ?', $club_id);
 		}
+		if ($moderator_id  > 0)
+		{
+			$query->add(' AND moderator_id = ?', $moderator_id);
+		}
+		if ($user_id  > 0)
+		{
+			$query->add(' AND user_id = ?', $user_id);
+		}
 
 		$games = array();
 		while ($row = $query->next())
@@ -1629,6 +1639,8 @@ class ApiPage extends OpsApiPageBase
 	function incomplete_games_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'List of incomplete games.');
+		$help->request_param('user_id', 'Return incomplete games for the specified user account.', 'All incomplete games are returned');
+		$help->request_param('moderator_id', 'Return incomplete games of the specified moderator.', 'All incomplete games are returned');
 		$help->request_param('event_id', 'Return incomplete games for the specified event.', 'All incomplete games are returned');
 		$help->request_param('tournament_id', 'Return incomplete games for the specified tournament.', 'All incomplete games are returned');
 		$help->request_param('club_id', 'Return incomplete games for the specified club.', 'All incomplete games are returned');
@@ -1639,6 +1651,235 @@ class ApiPage extends OpsApiPageBase
 			$param->sub_param('tournamentId', 'Tournament id of this game.', 'this is not a tournament game');
 			$param->sub_param('moderatorId', 'User id of the moderator.', 'moderator is not assigned yet');
 			$param->sub_param('startTime', 'Game start time.', 'game is not started yet');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// incomplete_game
+	//-------------------------------------------------------------------------------------------------------
+	function incomplete_game_op()
+	{
+		global $_profile;
+		
+		$game_id = (int)get_optional_param('game_id', 0);
+		$user_id = (int)get_optional_param('user_id', 0);
+		$moderator_id = (int)get_optional_param('moderator_id', 0);
+		
+		$query = new DbQuery('SELECT id, club_id, log FROM games WHERE result = 0');
+		if ($game_id > 0)
+		{
+			$query->add(' AND id = ?', $game_id);
+		}
+		if ($moderator_id  > 0)
+		{
+			$query->add(' AND moderator_id = ?', $moderator_id);
+		}
+		if ($user_id  > 0)
+		{
+			$query->add(' AND user_id = ?', $user_id);
+		}
+		$query->add(' ORDER BY id');
+
+		$gs = NULL;
+		while ($row = $query->next())
+		{
+			list($game_id, $club_id, $log) = $row;
+			if (is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
+			{
+				$gs = json_decode($log);
+				break;
+			}
+		}
+		
+		if ($gs == NULL)
+		{
+			throw new Exc(get_label('No game'));
+		}
+		
+		$game = new stdClass();
+		if (isset($gs->id))
+		{
+			$game->id = $gs->id;
+			$game->name = get_label('Game #[0]', $gs->id);
+		}
+		if (isset($gs->players))
+		{
+			$user_pic = new Picture(USER_PICTURE);
+			$game->players = array();
+			foreach ($gs->players as $p)
+			{
+				$player = new stdClass();
+				$player->id = $p->id;
+				$player->name = $p->nick;
+				$player->number = $p->number + 1;
+				
+				$player_flags = 0;
+				if ($player->id > 0)
+				{
+					list($player_flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $player->id);
+				}
+				$user_pic->set($player->id, $player->name, $player_flags);
+				$player->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
+				
+				switch ($p->role)
+				{
+					case 0:
+						$player->role = 'town';
+						break;
+					case 1:
+						$player->role = 'sheriff';
+						break;
+					case 2:
+						$player->role = 'maf';
+						break;
+					case 3:
+						$player->role = 'don';
+						break;
+				}
+				$player->warnings = $p->warnings;
+				if ($p->don_check >= 0)
+				{
+					$player->checkedByDon = $p->don_check + 1;
+				}
+				if ($p->sheriff_check >= 0)
+				{
+					$player->checkedBySheriff = $p->sheriff_check + 1;
+				}
+				
+				if ($p->state == 0 /*PLAYER_STATE_ALIVE*/)
+				{
+					$player->state = 'alive';
+				}
+				else
+				{
+					$player->state = 'dead';
+					$player->deathRound = $p->kill_round;
+					switch ($p->kill_reason)
+					{
+						case 1 /*KILL_REASON_GIVE_UP*/:
+							$player->deathType = 'giveUp';
+							break;
+						case 2 /*KILL_REASON_WARNINGS*/:
+							$player->deathType = 'warnings';
+							break;
+						case 3 /*KILL_REASON_KICK_OUT*/:
+							$player->deathType = 'kickOut';
+							break;
+						case 0 /*KILL_REASON_NORMAL*/:
+						default:
+							if ($p->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/)
+							{
+								$player->deathType = 'shooting';
+							}
+							else
+							{
+								$player->death->type = 'voting';
+							}
+							break;
+					}
+				}
+				
+				// $player->photoUrl = get_server_url() . '/images/' . TNAILS_DIR . 'user.png';
+				$game->players[] = $player;
+			}
+			
+			switch ($gs->gamestate)
+			{
+				case /*GAME_STATE_NOT_STARTED*/0:
+					$game->phase = 'night';
+					$game->state = 'notStarted';
+					$game->round = 0;
+					break;
+				case /*GAME_STATE_NIGHT0_START*/1:
+					$game->phase = 'night';
+					$game->state = 'starting';
+					$game->round = 0;
+					break;
+				case /*GAME_STATE_NIGHT0_ARRANGE*/2:
+					$game->phase = 'night';
+					$game->state = 'arranging';
+					$game->round = 0;
+					break;
+				case /*GAME_STATE_DAY_START*/3:
+					$game->phase = 'day';
+					$game->state = 'starting';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
+					$game->phase = 'day';
+					$game->state = 'speacking';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
+					$game->phase = 'day';
+					$game->state = 'nightKillSpeacking';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_VOTING*/8:
+				case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
+					$game->phase = 'day';
+					$game->state = 'voting';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+					$game->phase = 'day';
+					$game->state = 'nomineeSpeacking';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_NIGHT_START*/11:
+					$game->phase = 'night';
+					$game->state = 'starting';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_NIGHT_SHOOTING*/12:
+					$game->phase = 'night';
+					$game->state = 'shooting';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_NIGHT_DON_CHECK*/13:
+					$game->phase = 'night';
+					$game->state = 'donChecking';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
+					$game->phase = 'night';
+					$game->state = 'sheriffChecking';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_MAFIA_WON*/17:
+					$game->phase = 'day';
+					$game->state = 'mafiaWon';
+					$game->round = $gs->round;
+					break;
+				case /*GAME_STATE_CIVIL_WON*/18:
+					$game->phase = 'day';
+					$game->state = 'townWon';
+					$game->round = $gs->round;
+					break;
+				default:
+					$game->phase = 'day';
+					$game->state = 'unknown';
+					$game->round = $gs->round;
+					break;
+			}
+		}
+		
+		$this->response['game'] = $game;
+	}
+	
+	function incomplete_game_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'List of incomplete games.');
+		$help->request_param('game_id', 'Return the specified game.', 'user_id or moderator_id must be set');
+		$help->request_param('user_id', 'Return incomplete game for the specified user account.', 'game_id or moderator_id must be set');
+		$help->request_param('moderator_id', 'Return incomplete game of the specified moderator.', 'user_id or game_id must be set');
+		// $param = $help->response_param('games', 'Array of incomplete games.');
+			// $param->sub_param('id', 'Game id.');
+			// $param->sub_param('clubId', 'Club id of this game.');
+			// $param->sub_param('eventId', 'Event id of this game.');
+			// $param->sub_param('tournamentId', 'Tournament id of this game.', 'this is not a tournament game');
+			// $param->sub_param('moderatorId', 'User id of the moderator.', 'moderator is not assigned yet');
+			// $param->sub_param('startTime', 'Game start time.', 'game is not started yet');
 		return $help;
 	}
 }
