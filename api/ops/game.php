@@ -308,7 +308,7 @@ class GUser
 		{
 			$this->settings->flags = 0;
 			$this->settings->l_autosave = 10;
-			$this->settings->g_autosave = 60;
+			$this->settings->g_autosave = 10;
 			$this->settings->prompt_sound = NULL;
 			$this->settings->end_sound = NULL;
 		}
@@ -1553,6 +1553,94 @@ class ApiPage extends OpsApiPageBase
 		// $help->request_param('game_id', 'Game id.');
 		// return $help;
 	// }
+
+	//-------------------------------------------------------------------------------------------------------
+	// incomplete_games
+	//-------------------------------------------------------------------------------------------------------
+	function incomplete_games_op()
+	{
+		global $_profile;
+		
+		$club_id = (int)get_optional_param('club_id', 0);
+		$tournament_id = (int)get_optional_param('tournament_id', 0);
+		$event_id = (int)get_optional_param('event_id', 0);
+		if ($event_id > 0)
+		{
+			list($club_id, $tournament_id) = Db::record(get_label('club'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+			if (is_null($tournament_id))
+			{
+				$tournament_id = 0;
+			}
+			$club_id = (int)$club_id;
+		}
+		else if ($tournament_id > 0)
+		{
+			list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+			$club_id = (int)$club_id;
+		}
+		
+		if ($club_id > 0)
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		}
+		else
+		{
+			check_permissions(PERMISSION_ADMIN, $club_id);
+		}
+		
+		$query = new DbQuery('SELECT id, club_id, event_id, tournament_id, moderator_id, start_time FROM games WHERE result = 0');
+		if ($event_id > 0)
+		{
+			$query->add(' AND event_id = ?', $event_id);
+		}
+		else if ($tournament_id > 0)
+		{
+			$query->add(' AND tournament_id = ?', $tournament_id);
+		}
+		else if ($club_id > 0)
+		{
+			$query->add(' AND club_id = ?', $club_id);
+		}
+
+		$games = array();
+		while ($row = $query->next())
+		{
+			$game = new stdClass();
+			$game->id = (int)$row[0];
+			$game->clubId = (int)$row[1];
+			$game->eventId = (int)$row[2];
+			if (!is_null($row[3]))
+			{
+				$game->tournamentId = (int)$row[3];
+			}
+			if (!is_null($row[4]))
+			{
+				$game->moderatorId = (int)$row[4];
+			}
+			if (!is_null($row[5]) && $row[5] > 0)
+			{
+				$game->startTime = (int)$row[5];
+			}
+			$games[] = $game;
+		}
+		$this->response['games'] = $games;
+	}
+	
+	function incomplete_games_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'List of incomplete games.');
+		$help->request_param('event_id', 'Return incomplete games for the specified event.', 'All incomplete games are returned');
+		$help->request_param('tournament_id', 'Return incomplete games for the specified tournament.', 'All incomplete games are returned');
+		$help->request_param('club_id', 'Return incomplete games for the specified club.', 'All incomplete games are returned');
+		$param = $help->response_param('games', 'Array of incomplete games.');
+			$param->sub_param('id', 'Game id.');
+			$param->sub_param('clubId', 'Club id of this game.');
+			$param->sub_param('eventId', 'Event id of this game.');
+			$param->sub_param('tournamentId', 'Tournament id of this game.', 'this is not a tournament game');
+			$param->sub_param('moderatorId', 'User id of the moderator.', 'moderator is not assigned yet');
+			$param->sub_param('startTime', 'Game start time.', 'game is not started yet');
+		return $help;
+	}
 }
 
 $page = new ApiPage();
