@@ -1709,7 +1709,7 @@ class ApiPage extends OpsApiPageBase
 			foreach ($gs->players as $p)
 			{
 				$player = new stdClass();
-				$player->id = $p->id;
+				$player->id = (int)$p->id;
 				$player->name = $p->nick;
 				$player->number = $p->number + 1;
 				$player->isSpeaking = ($p->number == $gs->player_speaking);
@@ -1797,6 +1797,29 @@ class ApiPage extends OpsApiPageBase
 				$game->players[] = $player;
 			}
 			
+			$game->moderator = new stdClass();
+			$game->moderator->id = (int)$gs->moder_id;
+			if ($gs->moder_id > 0)
+			{
+				list($game->moderator->name, $moderator_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $game->moderator->id);
+				if ($moderator_flags & USER_FLAG_MALE)
+				{
+					$game->moderator->gender = 'male';
+				}
+				else
+				{
+					$game->moderator->gender = 'female';
+				}
+			}
+			else
+			{
+				$game->moderator->name = '';
+				$moderator_flags = 0;
+			}
+			$user_pic->set($game->moderator->id, $game->moderator->name, $moderator_flags);
+			$game->moderator->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
+			$game->moderator->hasPhoto = $user_pic->hasImage();
+			
 			switch ($gs->gamestate)
 			{
 				case /*GAME_STATE_NOT_STARTED*/0:
@@ -1876,20 +1899,6 @@ class ApiPage extends OpsApiPageBase
 					$game->round = $gs->round;
 					break;
 			}
-			
-			$game->moderator = new stdClass();
-			$game->moderator->id = $gs->moder_id;
-			if ($gs->moder_id > 0)
-			{
-				list($game->moderator->name, $moderator_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $game->moderator->id);
-			}
-			else
-			{
-				$game->moderator->name = '';
-				$moderator_flags = 0;
-			}
-			$user_pic->set($game->moderator->id, $game->moderator->name, $moderator_flags);
-			$game->moderator->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
 		}
 		
 		$this->response['game'] = $game;
@@ -1923,6 +1932,8 @@ class ApiPage extends OpsApiPageBase
 				$moderator->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
 				$moderator->sub_param('name', 'Moderator nickname.');
 				$moderator->sub_param('photoUrl', 'A link to the moderator photo.');
+				$moderator->sub_param('hasPhoto', 'True - if a moderator has custom photo. False - when moderator did not upload photo, or when id<=0, which means there is no moderator yet.');
+				$moderator->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
  			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speacking" - normal day speaches.</li><li>"nightKillSpeacking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeacking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
  			$param->sub_param('round', 'Current round number. Game starts with night-0; then day-0; then night-1; day-1; etc.');
