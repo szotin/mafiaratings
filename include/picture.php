@@ -109,6 +109,19 @@ class Picture
 		return $this->alt;
 	}
 	
+	public function hasImage()
+	{
+		if (!is_null($this->id) && $this->id > 0 && ($this->flags & $this->mask) != 0)
+		{
+			return true;
+		}
+		if (!is_null($this->alt))
+		{
+			return $this->alt->hasImage();
+		}
+		return false;
+	}
+	
 	private function _url($dir)
 	{
 		if (!is_null($this->id) && $this->id > 0 && ($this->flags & $this->mask) != 0)

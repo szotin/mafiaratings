@@ -1714,13 +1714,27 @@ class ApiPage extends OpsApiPageBase
 				$player->number = $p->number + 1;
 				$player->isSpeaking = ($p->number == $gs->player_speaking);
 				
-				$player_flags = 0;
 				if ($player->id > 0)
 				{
 					list($player_flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $player->id);
+					if ($p->is_male)
+					{
+						$player->gender = 'male';
+					}
+					else
+					{
+						$player->gender = 'female';
+					}
+				}
+				else
+				{
+					$player_flags = 0;
+					$player->gender = 'unknown';
 				}
 				$user_pic->set($player->id, $player->name, $player_flags);
 				$player->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
+				$player->hasPhoto = $user_pic->hasImage();
+				
 				
 				switch ($p->role)
 				{
