@@ -1729,7 +1729,6 @@ class ApiPage extends OpsApiPageBase
 				else
 				{
 					$player_flags = 0;
-					$player->gender = 'unknown';
 				}
 				$user_pic->set($player->id, $player->name, $player_flags);
 				$player->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
@@ -1910,6 +1909,8 @@ class ApiPage extends OpsApiPageBase
 				$players->sub_param('name', 'Player nickname.');
 				$players->sub_param('number', 'Number in the game.');
 				$players->sub_param('photoUrl', 'A link to the user photo. If user is missing - a link to a transparent image.');
+				$players->sub_param('hasPhoto', 'True - if a player has custom photo. False - when player did not upload photo, or when id<=0, which means there is no player.');
+				$players->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
 				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don".');
 				$players->sub_param('warnings', 'Number of warnings.');
 				$players->sub_param('isSpeaking', 'A boolean which is true when the player is speaking.');
