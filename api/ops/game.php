@@ -931,7 +931,8 @@ class ApiPage extends OpsApiPageBase
 			{
 				$club_id = def_club();
 			}
-		
+			
+			Db::exec(get_label('game'), 'DELETE games FROM games JOIN events ON events.id = games.event_id WHERE games.user_id = ? AND games.result = 0 AND games.start_time = 0 AND events.start_time + events.duration + ' . EVENT_ALIVE_TIME . ' <= UNIX_TIMESTAMP()', $_profile->user_id);
 			$query = new DbQuery('SELECT id, log, is_canceled FROM games WHERE user_id = ? AND result = 0 AND club_id = ? ORDER BY id LIMIT 1', $_profile->user_id, $club_id);
 			if ($row = $query->next())
 			{
@@ -1691,217 +1692,214 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		if ($gs == NULL)
+		if ($gs != NULL)
 		{
-			throw new Exc(get_label('No game'));
-		}
-		
-		$game = new stdClass();
-		if (isset($gs->id))
-		{
-			$game->id = $gs->id;
-			$game->name = get_label('Game #[0]', $gs->id);
-		}
-		if (isset($gs->players))
-		{
-			$user_pic = new Picture(USER_PICTURE);
-			$game->players = array();
-			foreach ($gs->players as $p)
+			$game = new stdClass();
+			if (isset($gs->id))
 			{
-				$player = new stdClass();
-				$player->id = (int)$p->id;
-				$player->name = $p->nick;
-				$player->number = $p->number + 1;
-				$player->isSpeaking = ($p->number == $gs->player_speaking);
-				
-				if ($player->id > 0)
+				$game->id = $gs->id;
+				$game->name = get_label('Game #[0]', $gs->id);
+			}
+			if (isset($gs->players))
+			{
+				$user_pic = new Picture(USER_PICTURE);
+				$game->players = array();
+				foreach ($gs->players as $p)
 				{
-					list($player_flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $player->id);
-					if ($p->is_male)
+					$player = new stdClass();
+					$player->id = (int)$p->id;
+					$player->name = $p->nick;
+					$player->number = $p->number + 1;
+					$player->isSpeaking = ($p->number == $gs->player_speaking);
+					
+					if ($player->id > 0)
 					{
-						$player->gender = 'male';
+						list($player_flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $player->id);
+						if ($p->is_male)
+						{
+							$player->gender = 'male';
+						}
+						else
+						{
+							$player->gender = 'female';
+						}
 					}
 					else
 					{
-						$player->gender = 'female';
+						$player_flags = 0;
 					}
-				}
-				else
-				{
-					$player_flags = 0;
-				}
-				$user_pic->set($player->id, $player->name, $player_flags);
-				$player->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
-				$player->hasPhoto = $user_pic->hasImage();
-				
-				
-				switch ($p->role)
-				{
-					case 0:
-						$player->role = 'town';
-						break;
-					case 1:
-						$player->role = 'sheriff';
-						break;
-					case 2:
-						$player->role = 'maf';
-						break;
-					case 3:
-						$player->role = 'don';
-						break;
-				}
-				$player->warnings = $p->warnings;
-				if ($p->don_check >= 0)
-				{
-					$player->checkedByDon = $p->don_check + 1;
-				}
-				if ($p->sheriff_check >= 0)
-				{
-					$player->checkedBySheriff = $p->sheriff_check + 1;
-				}
-				
-				if ($p->state == 0 /*PLAYER_STATE_ALIVE*/)
-				{
-					$player->state = 'alive';
-				}
-				else
-				{
-					$player->state = 'dead';
-					$player->deathRound = $p->kill_round;
-					switch ($p->kill_reason)
+					$user_pic->set($player->id, $player->name, $player_flags);
+					$player->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
+					$player->hasPhoto = $user_pic->hasImage();
+					
+					
+					switch ($p->role)
 					{
-						case 1 /*KILL_REASON_GIVE_UP*/:
-							$player->deathType = 'giveUp';
+						case 0:
+							$player->role = 'town';
 							break;
-						case 2 /*KILL_REASON_WARNINGS*/:
-							$player->deathType = 'warnings';
+						case 1:
+							$player->role = 'sheriff';
 							break;
-						case 3 /*KILL_REASON_KICK_OUT*/:
-							$player->deathType = 'kickOut';
+						case 2:
+							$player->role = 'maf';
 							break;
-						case 0 /*KILL_REASON_NORMAL*/:
-						default:
-							if ($p->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/)
-							{
-								$player->deathType = 'shooting';
-							}
-							else
-							{
-								$player->death->type = 'voting';
-							}
+						case 3:
+							$player->role = 'don';
 							break;
 					}
+					$player->warnings = $p->warnings;
+					if ($p->don_check >= 0)
+					{
+						$player->checkedByDon = $p->don_check + 1;
+					}
+					if ($p->sheriff_check >= 0)
+					{
+						$player->checkedBySheriff = $p->sheriff_check + 1;
+					}
+					
+					if ($p->state == 0 /*PLAYER_STATE_ALIVE*/)
+					{
+						$player->state = 'alive';
+					}
+					else
+					{
+						$player->state = 'dead';
+						$player->deathRound = $p->kill_round;
+						switch ($p->kill_reason)
+						{
+							case 1 /*KILL_REASON_GIVE_UP*/:
+								$player->deathType = 'giveUp';
+								break;
+							case 2 /*KILL_REASON_WARNINGS*/:
+								$player->deathType = 'warnings';
+								break;
+							case 3 /*KILL_REASON_KICK_OUT*/:
+								$player->deathType = 'kickOut';
+								break;
+							case 0 /*KILL_REASON_NORMAL*/:
+							default:
+								if ($p->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/)
+								{
+									$player->deathType = 'shooting';
+								}
+								else
+								{
+									$player->death->type = 'voting';
+								}
+								break;
+						}
+					}
+					
+					// $player->photoUrl = get_server_url() . '/images/' . TNAILS_DIR . 'user.png';
+					$game->players[] = $player;
 				}
 				
-				// $player->photoUrl = get_server_url() . '/images/' . TNAILS_DIR . 'user.png';
-				$game->players[] = $player;
-			}
-			
-			$game->moderator = new stdClass();
-			$game->moderator->id = (int)$gs->moder_id;
-			if ($gs->moder_id > 0)
-			{
-				list($game->moderator->name, $moderator_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $game->moderator->id);
-				if ($moderator_flags & USER_FLAG_MALE)
+				$game->moderator = new stdClass();
+				$game->moderator->id = (int)$gs->moder_id;
+				if ($gs->moder_id > 0)
 				{
-					$game->moderator->gender = 'male';
+					list($game->moderator->name, $moderator_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $game->moderator->id);
+					if ($moderator_flags & USER_FLAG_MALE)
+					{
+						$game->moderator->gender = 'male';
+					}
+					else
+					{
+						$game->moderator->gender = 'female';
+					}
 				}
 				else
 				{
-					$game->moderator->gender = 'female';
+					$game->moderator->name = '';
+					$moderator_flags = 0;
+				}
+				$user_pic->set($game->moderator->id, $game->moderator->name, $moderator_flags);
+				$game->moderator->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
+				$game->moderator->hasPhoto = $user_pic->hasImage();
+				
+				switch ($gs->gamestate)
+				{
+					case /*GAME_STATE_NOT_STARTED*/0:
+						$game->phase = 'night';
+						$game->state = 'notStarted';
+						$game->round = 0;
+						break;
+					case /*GAME_STATE_NIGHT0_START*/1:
+						$game->phase = 'night';
+						$game->state = 'starting';
+						$game->round = 0;
+						break;
+					case /*GAME_STATE_NIGHT0_ARRANGE*/2:
+						$game->phase = 'night';
+						$game->state = 'arranging';
+						$game->round = 0;
+						break;
+					case /*GAME_STATE_DAY_START*/3:
+						$game->phase = 'day';
+						$game->state = 'starting';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
+						$game->phase = 'day';
+						$game->state = 'speaking';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
+						$game->phase = 'day';
+						$game->state = 'nightKillSpeaking';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_VOTING*/8:
+					case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
+						$game->phase = 'day';
+						$game->state = 'voting';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+						$game->phase = 'day';
+						$game->state = 'nomineeSpeaking';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_NIGHT_START*/11:
+						$game->phase = 'night';
+						$game->state = 'starting';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_NIGHT_SHOOTING*/12:
+						$game->phase = 'night';
+						$game->state = 'shooting';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_NIGHT_DON_CHECK*/13:
+						$game->phase = 'night';
+						$game->state = 'donChecking';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
+						$game->phase = 'night';
+						$game->state = 'sheriffChecking';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_MAFIA_WON*/17:
+						$game->phase = 'day';
+						$game->state = 'mafiaWon';
+						$game->round = $gs->round;
+						break;
+					case /*GAME_STATE_CIVIL_WON*/18:
+						$game->phase = 'day';
+						$game->state = 'townWon';
+						$game->round = $gs->round;
+						break;
+					default:
+						$game->phase = 'day';
+						$game->state = 'unknown';
+						$game->round = $gs->round;
+						break;
 				}
 			}
-			else
-			{
-				$game->moderator->name = '';
-				$moderator_flags = 0;
-			}
-			$user_pic->set($game->moderator->id, $game->moderator->name, $moderator_flags);
-			$game->moderator->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
-			$game->moderator->hasPhoto = $user_pic->hasImage();
-			
-			switch ($gs->gamestate)
-			{
-				case /*GAME_STATE_NOT_STARTED*/0:
-					$game->phase = 'night';
-					$game->state = 'notStarted';
-					$game->round = 0;
-					break;
-				case /*GAME_STATE_NIGHT0_START*/1:
-					$game->phase = 'night';
-					$game->state = 'starting';
-					$game->round = 0;
-					break;
-				case /*GAME_STATE_NIGHT0_ARRANGE*/2:
-					$game->phase = 'night';
-					$game->state = 'arranging';
-					$game->round = 0;
-					break;
-				case /*GAME_STATE_DAY_START*/3:
-					$game->phase = 'day';
-					$game->state = 'starting';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-					$game->phase = 'day';
-					$game->state = 'speacking';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-					$game->phase = 'day';
-					$game->state = 'nightKillSpeacking';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_VOTING*/8:
-				case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
-					$game->phase = 'day';
-					$game->state = 'voting';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
-					$game->phase = 'day';
-					$game->state = 'nomineeSpeacking';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_NIGHT_START*/11:
-					$game->phase = 'night';
-					$game->state = 'starting';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_NIGHT_SHOOTING*/12:
-					$game->phase = 'night';
-					$game->state = 'shooting';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_NIGHT_DON_CHECK*/13:
-					$game->phase = 'night';
-					$game->state = 'donChecking';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
-					$game->phase = 'night';
-					$game->state = 'sheriffChecking';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_MAFIA_WON*/17:
-					$game->phase = 'day';
-					$game->state = 'mafiaWon';
-					$game->round = $gs->round;
-					break;
-				case /*GAME_STATE_CIVIL_WON*/18:
-					$game->phase = 'day';
-					$game->state = 'townWon';
-					$game->round = $gs->round;
-					break;
-				default:
-					$game->phase = 'day';
-					$game->state = 'unknown';
-					$game->round = $gs->round;
-					break;
-			}
+			$this->response['game'] = $game;
 		}
-		
-		$this->response['game'] = $game;
 	}
 	
 	function incomplete_game_op_help()
@@ -1935,7 +1933,7 @@ class ApiPage extends OpsApiPageBase
 				$moderator->sub_param('hasPhoto', 'True - if a moderator has custom photo. False - when moderator did not upload photo, or when id<=0, which means there is no moderator yet.');
 				$moderator->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
- 			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speacking" - normal day speaches.</li><li>"nightKillSpeacking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeacking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
+ 			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speaking" - normal day speaches.</li><li>"nightKillSpeaking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeaking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
  			$param->sub_param('round', 'Current round number. Game starts with night-0; then day-0; then night-1; day-1; etc.');
 				
 		return $help;
