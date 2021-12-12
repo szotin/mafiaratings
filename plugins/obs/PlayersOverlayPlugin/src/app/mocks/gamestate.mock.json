@@ -1,0 +1,140 @@
+{
+  "logged_in": "Sniper",
+  "game": {
+    "id": 6669,
+    "name": "\u0418\u0433\u0440\u0430 \u21166669",
+    "players": [
+      {
+        "id": 851,
+        "name": "Eluha",
+        "number": 1,
+        "isSpeaking": false,
+        "gender": "male",
+        "photoUrl": "https://www.mafiaratings.com/pics/user/tnails/851.png?1",
+        "hasPhoto": true,
+        "role": "town",
+        "warnings": 0,
+        "state": "alive"
+      },
+      {
+        "id": 1269,
+        "name": "Batman",
+        "number": 2,
+        "isSpeaking": false,
+        "gender": "male",
+        "photoUrl": "https://www.mafiaratings.com/pics/user/tnails/1269.png?3",
+        "hasPhoto": true,
+        "role": "sheriff",
+        "warnings": 0,
+        "state": "alive"
+      },
+      {
+        "id": 208,
+        "name": "babadysia",
+        "number": 3,
+        "isSpeaking": false,
+        "gender": "female",
+        "photoUrl": "https://www.mafiaratings.com/pics/user/tnails/208.png?1",
+        "hasPhoto": true,
+        "role": "maf",
+        "warnings": 0,
+        "state": "alive"
+      },
+      {
+        "id": 1088,
+        "name": "Eva",
+        "number": 4,
+        "isSpeaking": false,
+        "gender": "female",
+        "photoUrl": "https://www.mafiaratings.com/images/tnails/female.png",
+        "hasPhoto": false,
+        "role": "town",
+        "warnings": 0,
+        "state": "alive"
+      },
+      {
+        "id": 873,
+        "name": "InnaChe",
+        "number": 5,
+        "isSpeaking": false,
+        "gender": "female",
+        "photoUrl": "https://www.mafiaratings.com/images/tnails/female.png",
+        "hasPhoto": false,
+        "role": "town",
+        "warnings": 0,
+        "state": "alive"
+      },
+      {
+        "id": 1136,
+        "name": "Joker",
+        "number": 6,
+        "isSpeaking": false,
+        "gender": "male",
+        "photoUrl": "https://www.mafiaratings.com/pics/user/tnails/1136.png?5",
+        "hasPhoto": true,
+        "role": "town",
+        "warnings": 0,
+        "state": "alive"
+      },
+      {
+        "id": 1797,
+        "name": "Matilda",
+        "number": 7,
+        "isSpeaking": false,
+        "gender": "female",
+        "photoUrl": "https://www.mafiaratings.com/images/tnails/female.png",
+        "hasPhoto": false,
+        "role": "town",
+        "warnings": 0,
+        "state": "alive"
+      },
+      {
+        "id": 1043,
+        "name": "Scorpion",
+        "number": 8,
+        "isSpeaking": false,
+        "gender": "male",
+        "photoUrl": "https://www.mafiaratings.com/pics/user/tnails/1043.png?4",
+        "hasPhoto": true,
+        "role": "maf",
+        "warnings": 0,
+        "state": "alive"
+      },
+      {
+        "id": 1862,
+        "name": "\u0428\u043d\u0443\u0440\u043e\u043a",
+        "number": 9,
+        "isSpeaking": false,
+        "gender": "female",
+        "photoUrl": "https://www.mafiaratings.com/images/tnails/female.png",
+        "hasPhoto": false,
+        "role": "town",
+        "warnings": 0,
+        "state": "alive"
+      },
+      {
+        "id": 2124,
+        "name": "Sasha Sasha",
+        "number": 10,
+        "isSpeaking": false,
+        "gender": "female",
+        "photoUrl": "https://www.mafiaratings.com/pics/user/tnails/2124.png?2",
+        "hasPhoto": true,
+        "role": "don",
+        "warnings": 0,
+        "state": "alive"
+      }
+    ],
+    "moderator": {
+      "id": 805,
+      "name": "Sniper",
+      "gender": "male",
+      "photoUrl": "https://www.mafiaratings.com/pics/user/tnails/805.png?1",
+      "hasPhoto": true
+    },
+    "phase": "night",
+    "state": "starting",
+    "round": 0
+  },
+  "version": 1
+}

@@ -1,0 +1,27 @@
+<div
+  class="player"
+  style="background-image: url({{
+    item.hasPhoto
+      ? item.photoUrl
+      : 'https://sp-ao.shortpixel.ai/client/to_auto,q_glossy,ret_img,w_140,h_94/https://americanmafialeague.com/wp-content/uploads/2019/12/cropped-logo-aml-140x94.png'
+  }});"
+  [ngClass]="[
+    item.role,
+    'player-number' + item.number,
+    'player-status-' + item.state,
+    'player-isSpeaking-' + item.isSpeaking
+  ]"
+>
+  <div class="player-info">
+    <!-- <span>
+      <i class="fas fa-exclamation"></i>
+    </span> -->
+  </div>
+  <div class="player-profile">
+    <div class="player-role"></div>
+    <div class="player-profile-text">
+      <!-- nickname -->
+      <h2 class="player-nickname">{{ item?.name }}</h2>
+    </div>
+  </div>
+</div>

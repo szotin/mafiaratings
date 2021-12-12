@@ -1,0 +1,17 @@
+h1 {
+  font-family: Lato;
+}
+
+.players {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  width: 100vw;
+  max-height: 200px;
+  max-width: 1280px;
+  min-height: 200px;
+  min-width: 1280px;
+  justify-content: space-around;
+  align-items: center;
+  margin: 0 auto;
+}
