@@ -19,7 +19,7 @@ export class GameSnapshotService {
     this.httpOptions = {
       headers: new HttpHeaders({
         'Content-Type': 'application/json',
-        Authorization: 'Basic ' + btoa('Sniper:Asta3gjtm7z'),
+        Authorization: 'Basic ' + btoa('user:pwd'),
       }),
     };
   }
