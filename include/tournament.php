@@ -49,6 +49,7 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 					echo '<button class="icon" onclick="mr.cancelTournament(' . $id . ', \'' . get_label('Are you sure you want to cancel the tournament?') . '\')" title="' . get_label('Cancel the tournament') . '"><img src="images/delete.png" border="0"></button>';
 				}
 			}
+			echo '<button class="icon" onclick="mr.showTournamentToken(' . $id . ')" title="' . get_label('Show security token for this tournament.') . '"><img src="images/obs.png" border="0"></button>';
 			$no_buttons = false;
 		}
 	}

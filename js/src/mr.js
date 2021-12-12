@@ -620,6 +620,11 @@ var mr = new function()
 		}
 	}
 	
+	this.showEventToken = function(id)
+	{
+		dlg.infoForm("form/event_token.php?event_id=" + id, 400);
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// tournament
 	//--------------------------------------------------------------------------------------
@@ -666,6 +671,11 @@ var mr = new function()
 		{
 			goTo("tournament_info.php?id=" + id);
 		}, 600);
+	}
+	
+	this.showTournamentToken = function(id)
+	{
+		dlg.infoForm("form/tournament_token.php?tournament_id=" + id, 400);
 	}
 
 	//--------------------------------------------------------------------------------------

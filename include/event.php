@@ -686,6 +686,7 @@ class Event
 				{
 					echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
 				}
+				echo '<button class="icon" onclick="mr.showEventToken(' . $id . ')" title="' . get_label('Show security token for this event.') . '"><img src="images/obs.png" border="0"></button>';
 				$no_buttons = false;
 			}
 			
