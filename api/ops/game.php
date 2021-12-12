@@ -1700,6 +1700,17 @@ class ApiPage extends OpsApiPageBase
 				$game->id = $gs->id;
 				$game->name = get_label('Game #[0]', $gs->id);
 			}
+			switch ($gs->gamestate)
+			{
+				case /*GAME_STATE_NOT_STARTED*/0:
+				case /*GAME_STATE_VOTING*/8:
+				case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
+					$speachPossible = false;
+					break;
+				default:
+					$speachPossible  = true;
+					break;
+			}
 			if (isset($gs->players))
 			{
 				$user_pic = new Picture(USER_PICTURE);
@@ -1710,7 +1721,7 @@ class ApiPage extends OpsApiPageBase
 					$player->id = (int)$p->id;
 					$player->name = $p->nick;
 					$player->number = $p->number + 1;
-					$player->isSpeaking = ($p->number == $gs->player_speaking);
+					$player->isSpeaking = ($speachPossible && $p->number == $gs->player_speaking);
 					
 					if ($player->id > 0)
 					{
@@ -1897,6 +1908,33 @@ class ApiPage extends OpsApiPageBase
 						$game->round = $gs->round;
 						break;
 				}
+				
+				if ($game->phase != 'night')
+				{
+					$voting = NULL;
+					foreach ($gs->votings as $v)
+					{
+						if ($v->round == $gs->round && $v->voting_round == 0)
+						{
+							$voting = $v;
+							break;
+						}
+					}
+					if ($voting != NULL)
+					{
+						$game->votingCanceled = ($voting->canceled != 0);
+						$nominees = array();
+						foreach ($voting->nominants as $n)
+						{
+							$nominees[] = $n->player_num + 1;
+						}
+						if ($gs->gamestate == 5 /*GAME_DAY_PLAYER_SPEAKING*/ && $gs->current_nominant >= 0)
+						{
+							$nominees[] = $gs->current_nominant + 1;
+						}
+						$game->nominees = $nominees;
+					}
+				}
 			}
 			$this->response['game'] = $game;
 		}
@@ -1935,6 +1973,8 @@ class ApiPage extends OpsApiPageBase
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
  			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speaking" - normal day speaches.</li><li>"nightKillSpeaking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeaking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
  			$param->sub_param('round', 'Current round number. Game starts with night-0; then day-0; then night-1; day-1; etc.');
+ 			$param->sub_param('nominees', 'Array of players currently nominated. It is set only in the day phase.');
+ 			$param->sub_param('votingCanceled', 'Boolean which is true when votings were canceled (most likely because someone was mod-killed). It is set only in the day phase.');
 				
 		return $help;
 	}
