@@ -1,21 +1,26 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { environment } from 'src/environments/environment';
 import { GameSnapshot } from './gamesnapshot.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GamesnapshotService {
-  // configUrl =
-  //   'https://mafiaratings.com/api/ops/game.php?op=incomplete_game&user_id=805';
+  private configUrl_prod =
+    '/api/get/current_game.php';
 
-  private configUrl =
-    'http://localhost:8010/proxy/api/get/current_game.php';
+  private configUrl_dev =
+    'http://localhost:8010/proxy' + this.configUrl_prod;
+
+  private configUrl;
 
   private urlParams: HttpParams = new HttpParams();
 
   constructor(private http: HttpClient, private activatedRoute: ActivatedRoute) {
+
+    this.configUrl = environment.production ? this.configUrl_prod : this.configUrl_dev;
 
     this.activatedRoute.queryParams.subscribe(params => {
       let token = params['token'];
