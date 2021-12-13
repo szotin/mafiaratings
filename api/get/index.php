@@ -180,6 +180,15 @@ require_once '../../include/api.php';
 	</td>
 </tr>
 
+<tr>
+	<td>Current Game</td>
+	<td><a href="current_game.php?help"><?php echo PRODUCT_URL; ?>/api/get/current_game.php</a></td>
+	<td>
+		<p>Shows current game status for OBS integration.</p>
+		<p>This request allows to create pages that can be embedded to OBS Studio to show current game status - who is playing; roles; who is speaking; warnings; current nominees; current stage of the game; etc..</p>
+	</td>
+</tr>
+
 </table>
 
 </body></html>
