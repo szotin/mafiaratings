@@ -22,7 +22,7 @@ export class GamesnapshotService {
 
     this.configUrl = environment.production ? this.configUrl_prod : this.configUrl_dev;
 
-    this.activatedRoute.queryParams.subscribe(params => {
+    this.activatedRoute.queryParams.subscribe((params: { [x: string]: any; }) => {
       let token = params['token'];
       let moderatorId = params['moderator_id'];
       let gameId = params['game_id'];
