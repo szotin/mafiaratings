@@ -20,7 +20,7 @@
   }
 
   .player-profile {
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     position: absolute;
@@ -31,8 +31,8 @@
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
 
-    .player-profile-number{
-      color:white;
+    .player-profile-number {
+      color: white;
       text-align: center;
       font-size: 1rem;
       width: 30px;
@@ -40,6 +40,7 @@
       vertical-align: middle;
       padding-top: 3px;
       border-bottom-left-radius: 10px;
+
       h2 {
         color: white;
         font-size: 1rem;
@@ -83,35 +84,37 @@
 
   &.sheriff {
     .player-profile-number {
-      background-color: rgba(255,0,0,0.5);
+      background-color: rgba(255, 0, 0, 0.5);
     }
 
     .player-role {
-        background-image: url('/assets/sheriff.png');
+      background-image: url('/assets/sheriff.png');
     }
   }
 
   &.don {
     .player-profile-number {
-      background-color: rgba(0, 0, 0,0.5);
+      background-color: rgba(0, 0, 0, 0.5);
     }
+
     .player-role {
-        background-image: url('/assets/don.png');
+      background-image: url('/assets/don.png');
     }
   }
 
   &.maf {
     .player-profile-number {
-      background-color: rgba(0, 0, 0,0.5);
+      background-color: rgba(0, 0, 0, 0.5);
     }
+
     .player-role {
-        background-image: url('/assets/maf.png');
+      background-image: url('/assets/maf.png');
     }
   }
 
   &.town {
     .player-profile-number {
-      background-color: rgba(255,0,0,0.7);
+      background-color: rgba(255, 0, 0, 0.7);
     }
   }
 }

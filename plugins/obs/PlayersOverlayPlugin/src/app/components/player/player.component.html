@@ -1,13 +1,10 @@
-<div
-  class="player"
-  style="background-image: url({{item.hasPhoto ? item.photoUrl : 'assets/aml_masters.jpg' }});"
+<div class="player" style="background-image: url({{item.hasPhoto ? item.photoUrl : 'assets/aml_masters.jpg' }});"
   [ngClass]="[
     item.role,
     'player-number' + item.number,
     'player-status-' + item.state,
     'player-isSpeaking-' + item.isSpeaking
-  ]"
->
+  ]">
   <div class="player-role"></div>
 
   <div class="player-info">

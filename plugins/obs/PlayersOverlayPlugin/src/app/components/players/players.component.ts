@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { retry, share, Subject, Subscription, switchMap, timer } from 'rxjs';
-import { GameSnapshot, GameState } from 'src/app/services/gamesnapshot.model';
+import { GameSnapshot, GameState, Player } from 'src/app/services/gamesnapshot.model';
 import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
 
 @Component({
@@ -25,17 +25,21 @@ export class PlayersComponent implements OnInit {
         // takeUntil(this.stopPolling)
       )
       .subscribe(
-        (res) => {
+        (res: { body: GameSnapshot | null | undefined; }) => {
           let gameSnapshot = res.body;
           this.showPlayers = gameSnapshot?.game.state != GameState.notStarted ?? false;
           this.gameSnapshot = res.body;
 
         },
-        (err) => console.log(err)
+        (err: any) => console.log(err)
       );
   }
 
   private getGameSnapshot() {
     return this.gameSnapshotService.getGameSnapshot();
+  }
+
+  trackPlayerById(index:number, player:Player): number {
+    return player.id;
   }
 }
