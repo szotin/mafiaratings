@@ -40,8 +40,10 @@ class PlayerStats
 	public $rating;
 	public $best_player;
 	public $best_move;
+	public $bonus;
 	public $guess3maf;
 	public $guess2maf;
+	public $killed_first_night;
 	
 	public $roles;
 	
@@ -122,7 +124,11 @@ class PlayerStats
 				'SUM(p.warns), SUM(IF(p.was_arranged >= 0, 1, 0)), ' .
 				'SUM(IF(p.checked_by_don >= 0, 1, 0)), SUM(IF(p.checked_by_sheriff >= 0, 1, 0)), ' .
 				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)), ' .
-				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)), SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0)) ' .
+				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), ' .
+				'SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)), ' .
+				'SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0)), ' .
+				'SUM(IF((p.flags & ' . SCORING_FLAG_KILLED_FIRST_NIGHT . ') <> 0, 1, 0)), ' .
+				'SUM(p.extra_points) ' .
 				' FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE',
 			$condition);
 		
@@ -152,6 +158,8 @@ class PlayerStats
 			$this->best_move = $row[20] / $count;
 			$this->guess3maf = $row[21] / $count;
 			$this->guess2maf = $row[22] / $count;
+			$this->killed_first_night = $row[23] / $count;
+			$this->bonus = $row[24] / $count;
 		}
 		
 		$query = new DbQuery('SELECT p.kill_round, p.kill_type, count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE', $condition);

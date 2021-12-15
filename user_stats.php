@@ -92,11 +92,13 @@ class Page extends UserPageBase
 		if ($stats->games_played > 0)
 		{
 			echo '<tr><td class="dark" width="300">'.get_label('Wins').':</td><td>' . $stats->games_won . ' (' . number_format($stats->games_won*100.0/$stats->games_played, 1) . '%)</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Rating').':</td><td>' . get_label('[0] ([1] per game)', number_format($stats->rating, 2), number_format($stats->rating/$stats->games_played, 2)) . '</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Best player').':</td><td>' . $stats->best_player . '</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Best move').':</td><td>' . $stats->best_move . '</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Guessed 3 mafia').':</td><td>' . $stats->guess3maf . '</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Guessed 2 mafia').':</td><td>' . $stats->guess2maf . '</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Rating').':</td><td>' . get_label('[0] ([1] per game)', number_format($stats->rating, 2), number_format($stats->rating/$stats->games_played, 3)) . '</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Best player').':</td><td>' . $stats->best_player . ' (' . number_format($stats->best_player*100.0/$stats->games_played, 1) . '%)</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Best move').':</td><td>' . $stats->best_move . ' (' . number_format($stats->best_move*100.0/$stats->games_played, 1) . '%)</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Bonus points').':</td><td>' . number_format($stats->bonus, 2) . ' (' . number_format($stats->bonus/$stats->games_played, 3) . ' ' . get_label('per game') . ')</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Killed first night').':</td><td>' . $stats->killed_first_night . '</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Guessed 3 mafia').':</td><td>' . $stats->guess3maf . ' (' . number_format($stats->guess3maf*100.0/$stats->killed_first_night, 1) . '%)</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Guessed 2 mafia').':</td><td>' . $stats->guess2maf . ' (' . number_format($stats->guess2maf*100.0/$stats->killed_first_night, 1) . '%)</td></tr>';
 			echo '</table>';
 		
 			echo '<p><table class="bordered light" width="100%">';
@@ -289,14 +291,8 @@ class Page extends UserPageBase
 			echo '<tr class="th-short darker"><td colspan="2">' . get_label('Miscellaneous') . '</td></tr>';
 			echo '<tr><td class="dark" width="300">'.get_label('Warnings').':</td><td>' . $stats->warnings . ' (' . number_format($stats->warnings/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
 			echo '<tr><td class="dark" width="300">'.get_label('Arranged by mafia').':</td><td>' . $stats->arranged . ' (' . number_format($stats->arranged/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
-			if (($roles & (ROLE_FLAG_CIVIL | ROLE_FLAG_SHERIFF)) != 0)
-			{
-				echo '<tr><td class="dark" width="300">'.get_label('Checked by don').':</td><td>' . $stats->checked_by_don . ' (' . number_format($stats->checked_by_don/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
-			}
-			if ($roles != ROLE_FLAG_SHERIFF)
-			{
-				echo '<tr><td class="dark" width="300">'.get_label('Checked by sheriff').':</td><td>' . $stats->checked_by_sheriff . ' (' . number_format($stats->checked_by_sheriff/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
-			}
+			echo '<tr><td class="dark" width="300">'.get_label('Checked by don').':</td><td>' . $stats->checked_by_don . ' (' . number_format($stats->checked_by_don/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
+			echo '<tr><td class="dark" width="300">'.get_label('Checked by sheriff').':</td><td>' . $stats->checked_by_sheriff . ' (' . number_format($stats->checked_by_sheriff/$stats->games_played, 2) . ' '.get_label('per game').')</td></tr>';
 		}
 		echo '</table></p>';
 		
