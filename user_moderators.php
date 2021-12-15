@@ -3,6 +3,7 @@
 require_once 'include/user.php';
 require_once 'include/pages.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
@@ -19,17 +20,32 @@ class Page extends UserPageBase
 	{
 		global $_page;
 		
+		$year = 0;
+		if (isset($_REQUEST['year']))
+		{
+			$year = (int)$_REQUEST['year'];
+		}
+		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
+		$min_time = $max_time = 0;
+		$query = new DbQuery('SELECT MIN(game_end_time), MAX(game_end_time) FROM players WHERE user_id = ?', $this->id);
+		if ($row = $query->next())
+		{
+			list($min_time, $max_time) = $row;
+		}
+		
 		echo '<p><table class="transp" width="100%"><tr><td>';
+		show_year_select($year, $min_time, $max_time, 'filterChanged()');
+		echo ' ';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL();
+		$condition = get_year_condition($year);
 		if ($filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NOT NULL');
@@ -101,7 +117,7 @@ class Page extends UserPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({filter: checkboxFilterFlags(), page: 0});
+			goTo({filter: checkboxFilterFlags(), year: $('#year').val(), page: 0});
 		}
 <?php
 	}

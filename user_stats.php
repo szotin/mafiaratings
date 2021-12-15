@@ -5,6 +5,7 @@ require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('FLAG_FILTER_TOURNAMENT', 0x0001);
 define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
@@ -17,6 +18,8 @@ class Page extends UserPageBase
 {
 	protected function show_body()
 	{
+		global $_profile;
+		
 		$club_id = 0;
 		if (isset($_REQUEST['club']))
 		{
@@ -29,15 +32,29 @@ class Page extends UserPageBase
 			$roles = (int)$_REQUEST['roles'];
 		}
 		
+		$year = 0;
+		if (isset($_REQUEST['year']))
+		{
+			$year = (int)$_REQUEST['year'];
+		}
+		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
+		$min_time = $max_time = 0;
+		$query = new DbQuery('SELECT MIN(game_end_time), MAX(game_end_time) FROM players WHERE user_id = ?', $this->id);
+		if ($row = $query->next())
+		{
+			list($min_time, $max_time) = $row;
+		}
+		
 		echo '<table class="transp" width="100%"><tr><td>';
+		show_year_select($year, $min_time, $max_time, 'filterChanged()');
 		$query = new DbQuery('SELECT DISTINCT c.id, c.name FROM players p, games g, clubs c WHERE p.game_id = g.id AND g.club_id = c.id AND p.user_id = ? ORDER BY c.name', $this->id);
-		echo '<select id="club" onChange="filterChanged()">';
+		echo ' <select id="club" onChange="filterChanged()">';
 		show_option(ALL_CLUBS, $club_id, get_label('All clubs'));
 		while ($row = $query->next())
 		{
@@ -50,7 +67,7 @@ class Page extends UserPageBase
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table>';
 		
-		$condition = new SQL();
+		$condition = get_year_condition($year);
 		if ($filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NOT NULL');
@@ -347,7 +364,7 @@ class Page extends UserPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({filter: checkboxFilterFlags(), club: $('#club').val(), roles: $('#roles').val()});
+			goTo({filter: checkboxFilterFlags(), club: $('#club').val(), roles: $('#roles').val(), year: $('#year').val()});
 		}
 <?php
 	}

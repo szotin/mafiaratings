@@ -5,6 +5,7 @@ require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('SORT_TYPE_BY_NUMBERS', 0);
 define('SORT_TYPE_BY_GAMES', 1);
@@ -181,16 +182,29 @@ class Page extends UserPageBase
 			$roles = (int)$_REQUEST['roles'];
 		}
 		
+		$year = 0;
+		if (isset($_REQUEST['year']))
+		{
+			$year = (int)$_REQUEST['year'];
+		}
+		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		echo '<p><table class="transp" width="100%"><tr><td>';
+		$min_time = $max_time = 0;
+		$query = new DbQuery('SELECT MIN(game_end_time), MAX(game_end_time) FROM players WHERE user_id = ?', $this->id);
+		if ($row = $query->next())
+		{
+			list($min_time, $max_time) = $row;
+		}
 		
+		echo '<p><table class="transp" width="100%"><tr><td>';
+		show_year_select($year, $min_time, $max_time, 'filterChanged()');
 		$query = new DbQuery('SELECT DISTINCT c.id, c.name FROM players p, games g, clubs c WHERE p.game_id = g.id AND g.club_id = c.id AND p.user_id = ? ORDER BY c.name', $this->id);
-		echo '<select id="club" onChange="filterChanged()">';
+		echo ' <select id="club" onChange="filterChanged()">';
 		show_option(0, $club_id, get_label('All clubs'));
 		while ($row = $query->next())
 		{
@@ -208,6 +222,7 @@ class Page extends UserPageBase
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 1 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
 			' FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
 		$query->add(get_roles_condition($roles));
+		$query->add(get_year_condition($year));
 		if ($filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$query->add(' AND g.tournament_id IS NOT NULL');
@@ -295,7 +310,7 @@ class Page extends UserPageBase
 ?>		
 		function filterChanged()
 		{
-			goTo({ roles: $('#roles').val(), filter: checkboxFilterFlags(), club: $('#club').val() });
+			goTo({ roles: $('#roles').val(), filter: checkboxFilterFlags(), club: $('#club').val(), year: $('#year').val() });
 		}
 <?php
 	}
