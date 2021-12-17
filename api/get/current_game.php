@@ -12,10 +12,14 @@ class ApiPage extends GetApiPageBase
 	{
 		global $_profile;
 		
-		$token = (int)get_optional_param('token', 0);
+		$token = (int)get_required_param('token');
 		$game_id = (int)get_optional_param('game_id', 0);
 		$user_id = (int)get_optional_param('user_id', 0);
 		$moderator_id = (int)get_optional_param('moderator_id', 0);
+		if ($game_id <= 0 && $user_id <= 0 && $moderator_id <= 0)
+		{
+			throw new Exc('Either game_id, user_id, or moderator_id must be set');
+		}
 		
 		$query = new DbQuery('SELECT g.id, g.log, e.security_token, t.security_token FROM games g JOIN events e ON e.id = g.event_id LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id WHERE g.result = 0');
 		if ($game_id > 0)

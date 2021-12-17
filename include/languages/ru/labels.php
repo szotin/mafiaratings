@@ -231,7 +231,7 @@ $labelMenu = array (
 'times guilty in misses.' => ' раз виноват(а) в промахах.', // user_stats.php
 'Single shooter' => 'Единственный стрелок', // user_stats.php
 'Red checks' => 'Красные проверки', // user_stats.php
-'per game' => 'за игру', // user_stats.php, user_stats.php, user_stats.php, user_stats.php, user_stats.php, user_stats.php, user_stats.php
+'per game' => 'за игру', // user_stats.php, user_stats.php, user_stats.php, user_stats.php, user_stats.php
 'Black checks' => 'Черные проверки', // user_stats.php
 'Don stats' => 'Статистика дона', // user_stats.php
 'Sheriff found' => 'Шериф найден', // user_stats.php
@@ -1452,6 +1452,7 @@ $labelMenu = array (
 'Show security token for this event.' => 'Показать security token для этого игрового дня.', // include/event.php
 'Show security token for this tournament.' => 'Показать security token для этого турнира.', // include/tournament.php
 'Security token' => 'Security token', // form/event_token.php, form/tournament_token.php
+'Bonus points' => 'Доп. баллы', // user_stats.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1465,7 +1466,7 @@ $labelMenu = array (
 'during [0]\'s last speech' => 'во время последней речи [0]', // include/game.php, include/game.php
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
-'Bonus points' => 'Доп. баллы', // user_stats.php
+'Page is temporarily inavalable until [0].' => 'Страница временно недоступна до [0].', // user_stats.php
 );
 
 return $labelMenu;
