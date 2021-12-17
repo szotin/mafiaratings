@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { retry, share, Subject, Subscription, switchMap, timer } from 'rxjs';
-import { GameSnapshot, GameState, Player } from 'src/app/services/gamesnapshot.model';
+import { GamePhase, GameSnapshot, GameState, Player } from 'src/app/services/gamesnapshot.model';
 import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
 
 @Component({
@@ -12,7 +12,6 @@ export class PlayersComponent implements OnInit {
   gameSnapshot: GameSnapshot | null | undefined;
   showPlayers: boolean = false;
   private timeInterval: Subscription | undefined;
-  // private stopPolling = new Subject();
 
   constructor(private gameSnapshotService: GamesnapshotService) { }
 
@@ -22,14 +21,13 @@ export class PlayersComponent implements OnInit {
         switchMap(() => this.getGameSnapshot()),
         retry(20),
         share(),
-        // takeUntil(this.stopPolling)
       )
       .subscribe(
         (res: { body: GameSnapshot | null | undefined; }) => {
           let gameSnapshot = res.body;
-          this.showPlayers = gameSnapshot?.game?.state != GameState.notStarted ?? false;
+          let game = gameSnapshot?.game;
           this.gameSnapshot = gameSnapshot;
-
+          this.showPlayers = (game && game.state != GameState.notStarted) ?? false;
         },
         (err: any) => console.log(err)
       );
