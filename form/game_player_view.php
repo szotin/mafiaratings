@@ -340,20 +340,20 @@ try
 			case GAME_ACTION_NOMINATING:
 				if ($action->speaker == $player_num)
 				{
-					$action_text = get_label('[0] nominates [1].', $player_name, get_player_number_html($game, $action->nominant));
+					$action_text = get_label('[0] nominates [1].', $player_name, get_player_number_html($game, $action->nominee));
 				}
-				else if ($action->nominant == $player_num)
+				else if ($action->nominee == $player_num)
 				{
 					$action_text = get_label('[0] nominates [1].', get_player_number_html($game, $action->speaker), $player_name);
 				}
 				break;
 			case GAME_ACTION_VOTING:
-				if ($action->nominant == $player_num)
+				if ($action->nominee == $player_num)
 				{
 					switch (count($action->votes))
 					{
 						case 0:
-							$action_text = get_label('No one votes for [0].', get_player_number_html($game, $action->nominant));
+							$action_text = get_label('No one votes for [0].', get_player_number_html($game, $action->nominee));
 							break;
 						case 1:
 							$action_text = get_label('Only [0] votes for [1].', get_player_number_html($game, $action->votes[0]), $player_name);
@@ -394,11 +394,11 @@ try
 					{
 						if (empty($voters))
 						{
-							$action_text = get_label('[0] votes for [1] alone.', $player_name, get_player_number_html($game, $action->nominant));
+							$action_text = get_label('[0] votes for [1] alone.', $player_name, get_player_number_html($game, $action->nominee));
 						}
 						else
 						{
-							$action_text = get_label('[0] with [1] vote for [2].', $player_name, $voters, get_player_number_html($game, $action->nominant));
+							$action_text = get_label('[0] with [1] vote for [2].', $player_name, $voters, get_player_number_html($game, $action->nominee));
 						}
 					}
 				}

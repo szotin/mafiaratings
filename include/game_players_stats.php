@@ -251,6 +251,36 @@ class GamePlayersStats
 			}
 		}
 	}
+	
+	private static function add_voting_stats($nominee, $voter)
+	{
+		switch ($nominee->role)
+		{
+			case ROLE_CIVILIAN:
+				++$voter->voted_civil;
+				break;
+			case ROLE_SHERIFF:
+				++$voter->voted_sheriff;
+				break;
+			case ROLE_MAFIA:
+			case ROLE_DON:
+				++$voter->voted_mafia;
+				break;
+		}
+		switch ($voter->role)
+		{
+			case ROLE_CIVILIAN:
+				++$nominee->voted_by_civil;
+				break;
+			case ROLE_SHERIFF:
+				++$nominee->voted_by_sheriff;
+				break;
+			case ROLE_MAFIA:
+			case ROLE_DON:
+				++$nominee->voted_by_mafia;
+				break;
+		}
+	}
 		
 	function __construct($game)
     {
@@ -456,125 +486,90 @@ class GamePlayersStats
 		}
 		
 		// Votings and nominations
-		for ($i = 0; $i < 10; ++$i)
+		if (isset($game->vvvvv))
 		{
-			$game_player = $data->players[$i];
-			$player = $this->players[$i];
-			
-			if (isset($game_player->nominating))
+			for ($i = 0; $i < count($game->vvvvv); ++$i)
 			{
-				foreach ($game_player->nominating as $n)
+				$v = $game->vvvvv[$i];
+				if (!isset($v->nominees))
 				{
-					if (is_null($n))
-					{
-						continue;
-					}
-					$p = $this->players[$n-1];
-					switch ($p->role)
-					{
-						case ROLE_CIVILIAN:
-							++$player->nominated_civil;
-							break;
-						case ROLE_SHERIFF:
-							++$player->nominated_sheriff;
-							break;
-						case ROLE_MAFIA:
-						case ROLE_DON:
-							++$player->nominated_mafia;
-							break;
-					}
-					switch ($player->role)
-					{
-						case ROLE_CIVILIAN:
-							++$p->nominated_by_civil;
-							break;
-						case ROLE_SHERIFF:
-							++$p->nominated_by_sheriff;
-							break;
-						case ROLE_MAFIA:
-						case ROLE_DON:
-							++$p->nominated_by_mafia;
-							break;
-					}
+					continue;
 				}
-			}
-			
-			if (isset($game_player->voting))
-			{
-				// We exclude voting in round 0 because this is mostly splitting. 
-				for ($j = 1; $j < count($game_player->voting); ++$j)
+				
+				foreach ($v->nominees as $nom)
 				{
-					$v = $game_player->voting[$j];
-					if (is_null($v))
+					if (!isset($nom->by))
 					{
 						continue;
 					}
 					
-					if (is_array($v))
+					$nominee = $this->players[$nom->nominee - 1];
+					$nominator = $this->players[$nom->by - 1];
+					switch ($nominee->role)
 					{
-						foreach ($v as $v1)
-						{
-							$p = $this->players[$v1-1];
-							switch ($p->role)
-							{
-								case ROLE_CIVILIAN:
-									++$player->voted_civil;
-									break;
-								case ROLE_SHERIFF:
-									++$player->voted_sheriff;
-									break;
-								case ROLE_MAFIA:
-								case ROLE_DON:
-									++$player->voted_mafia;
-									break;
-							}
-							switch ($player->role)
-							{
-								case ROLE_CIVILIAN:
-									++$p->voted_by_civil;
-									break;
-								case ROLE_SHERIFF:
-									++$p->voted_by_sheriff;
-									break;
-								case ROLE_MAFIA:
-								case ROLE_DON:
-									++$p->voted_by_mafia;
-									break;
-							}
-						}
+						case ROLE_CIVILIAN:
+							++$nominator->nominated_civil;
+							break;
+						case ROLE_SHERIFF:
+							++$nominator->nominated_sheriff;
+							break;
+						case ROLE_MAFIA:
+						case ROLE_DON:
+							++$nominator->nominated_mafia;
+							break;
 					}
-					else
+					switch ($nominator->role)
 					{
-						$p = $this->players[$v-1];
-						switch ($p->role)
+						case ROLE_CIVILIAN:
+							++$nominee->nominated_by_civil;
+							break;
+						case ROLE_SHERIFF:
+							++$nominee->nominated_by_sheriff;
+							break;
+						case ROLE_MAFIA:
+						case ROLE_DON:
+							++$nominee->nominated_by_mafia;
+							break;
+					}
+				}
+				
+				// We exclude voting in round 0 because this is mostly splitting. 
+				if ($i == 0)
+				{
+					continue;
+				}
+				
+				foreach ($v->nominees as $nom)
+				{
+					if (!isset($nom->votes))
+					{
+						continue;
+					}
+					
+					$nominee = $this->players[$nom->nominee - 1];
+					foreach ($nom->votes as $v)
+					{
+						if (is_numeric($v))
 						{
-							case ROLE_CIVILIAN:
-								++$player->voted_civil;
-								break;
-							case ROLE_SHERIFF:
-								++$player->voted_sheriff;
-								break;
-							case ROLE_MAFIA:
-							case ROLE_DON:
-								++$player->voted_mafia;
-								break;
+							GamePlayersStats::add_voting_stats($nominee, $this->players[$v - 1]);
 						}
-						switch ($player->role)
+						if (is_array($v))
 						{
-							case ROLE_CIVILIAN:
-								++$p->voted_by_civil;
-								break;
-							case ROLE_SHERIFF:
-								++$p->voted_by_sheriff;
-								break;
-							case ROLE_MAFIA:
-							case ROLE_DON:
-								++$p->voted_by_mafia;
-								break;
+							foreach ($v as $vv)
+							{
+								GamePlayersStats::add_voting_stats($nominee, $this->players[$vv - 1]);
+							}
 						}
 					}
 				}
 			}
+		}
+		
+		// don and sheriff checks
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$game_player = $data->players[$i];
+			$player = $this->players[$i];
 			
 			if (isset($game_player->sheriff))
 			{

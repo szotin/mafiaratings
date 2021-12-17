@@ -595,16 +595,16 @@ class Page extends PageBase
 					echo get_label('[0]\'s legacy is [1].', get_player_number_html($this->game, $action->player), $legacy);
 					break;
 				case GAME_ACTION_NOMINATING:
-					echo get_label('[0] nominates [1].', get_player_number_html($this->game, $action->speaker), get_player_number_html($this->game, $action->nominant));
+					echo get_label('[0] nominates [1].', get_player_number_html($this->game, $action->speaker), get_player_number_html($this->game, $action->nominee));
 					break;
 				case GAME_ACTION_VOTING:
 					switch (count($action->votes))
 					{
 						case 0:
-							echo get_label('No one votes for [0].', get_player_number_html($this->game, $action->nominant));
+							echo get_label('No one votes for [0].', get_player_number_html($this->game, $action->nominee));
 							break;
 						case 1:
-							echo get_label('[0] votes for [1].', get_player_number_html($this->game, $action->votes[0]), get_player_number_html($this->game, $action->nominant));
+							echo get_label('[0] votes for [1].', get_player_number_html($this->game, $action->votes[0]), get_player_number_html($this->game, $action->nominee));
 							break;
 						default:
 							$voters = '';
@@ -616,7 +616,7 @@ class Page extends PageBase
 								}
 								$voters .= get_player_number_html($this->game, $vote);
 							}
-							echo get_label('[0] vote for [1].', $voters, get_player_number_html($this->game, $action->nominant));
+							echo get_label('[0] vote for [1].', $voters, get_player_number_html($this->game, $action->nominee));
 					}
 					break;
 				case GAME_ACTION_SHOOTING:

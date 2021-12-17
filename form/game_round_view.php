@@ -169,13 +169,14 @@ try
 	if ($is_day)
 	{
 		echo '<p><h3>' . get_label('Day [0].', $round) . '</h3></p>';
+		echo '<table class="bordered light" width="100%">';
 	}
 	else
 	{
 		echo '<p><h3>' . get_label('Night [0].', $round) . '</h3></p>';
+		echo '<table class="bordered dark" width="100%">';
 	}
 	
-	echo '<table class="bordered light" width="100%">';
 	echo '<tr class="header" align="center"><td colspan="2">';
 	if ($is_day)
 	{
@@ -189,6 +190,44 @@ try
 	{
 		echo '<td width="160"><b>' . get_label('Arranged') . '</b></td>';
 	}
+	
+	$voting = array('', '', '', '', '', '', '', '', '', '');
+	if (isset($game->data->vvvvv) && $round < count($game->data->vvvvv))
+	{
+		$r = $game->data->vvvvv[$round];
+		if (isset($r->nominees) && is_array($r->nominees))
+		{
+			foreach ($r->nominees as $n)
+			{
+				if (!isset($n->votes) || !is_array($n->votes))
+				{
+					continue;
+				}
+				foreach ($n->votes as $v)
+				{
+					if (is_numeric($v))
+					{
+						$voting[$v-1] = $n->player;
+					}
+					else if (is_array($v))
+					{
+						foreach ($v as $vv)
+						{
+							if (empty($voting[$vv-1]))
+							{
+								$voting[$vv-1] = $n->player;
+							}
+							else
+							{
+								$voting[$vv-1] .= ', ' . $n->player;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
 	echo '<td width="100"><b>' . get_label('Warnings') . '</b></td><td width="100"><b>' . get_label('Killed') . '</b></td><td width="36"><b>' . get_label('Role') . '</b></td></tr>';
 	for ($i = 1; $i <= 10; ++$i)
 	{
@@ -217,32 +256,7 @@ try
 			}
 			echo '</td>';
 			
-			echo '<td align="center">';
-			if (isset($player->voting[$round]))
-			{
-				if (is_array($player->voting[$round]))
-				{
-					$delim = '';
-					foreach ($player->voting[$round] as $vote)
-					{
-						echo $delim;
-						$delim = ', ';
-						if (is_bool($vote))
-						{
-							echo get_label('kill');
-						}
-						else
-						{
-							echo $vote;
-						}
-					}
-				}
-				else
-				{
-					echo $player->voting[$round];
-				}
-			}
-			echo '</td>';
+			echo '<td align="center">' . $voting[$i-1] . '</td>';
 		}
 		else if ($round > 0)
 		{
@@ -313,7 +327,7 @@ try
 					++$this_round;
 				}
 			}
-			echo '<big><table class="transp" width="100%"><tr><td>';
+			echo '<font color="#808000" size="4"><b><table class="transp" width="100%"><tr><td>';
 			for ($j = 0; $j < $prev_rounds; ++$j)
 			{
 				echo '✔';
@@ -323,7 +337,7 @@ try
 			{
 				echo '✔';
 			}
-			echo '</td></tr></table></big>';
+			echo '</td></tr></table></b></font>';
 		}
 		echo '</td>';
 		

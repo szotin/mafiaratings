@@ -343,35 +343,30 @@ class FigmForm
 			}
 			
 			$this->pdf->SetFont('Arial', '', 10);
-			$game->init_votings();
-			$round_count = min(7, count($game->votings));
+			$round_count = min(7, count($game->data->vvvvv));
 			for ($round = 0; $round < $round_count; ++$round)
 			{
-				$voting = $game->votings[$round];
-				if (!isset($voting->nominants))
+				$voting = $game->data->vvvvv[$round];
+				if (!isset($voting->nominees))
 				{
 					continue;
 				}
 				
-				// if (isset($voting->canceled) && $voting->canceled)
-				// {
-					// continue;
-				// }
-				
+				$voting_results = $game->get_voting_results($round);
 				$x = 167.6;
-				for ($i = 0; $i < count($voting->nominants); ++$i)
+				for ($i = 0; $i < count($voting->nominees); ++$i)
 				{
-					$nominant = $voting->nominants[$i];
+					$nominee = $voting->nominees[$i];
 					$nom_start = '';
 					$nom_end = '';
-					$p = $data->players[$nominant->nominant - 1]; 
-					if (isset($voting->winner) && isset($voting->killed) && $voting->killed)
+					$p = $data->players[$nominee->player - 1]; 
+					if ($voting_results != NULL && isset($voting_results->winner) && isset($voting_results->killed) && $voting_results->killed)
 					{
-						if (is_array($voting->winner))
+						if (is_array($voting_results->winner))
 						{
-							foreach ($voting->winner as $w)
+							foreach ($voting_results->winner as $w)
 							{
-								if ($w == $nominant->nominant)
+								if ($w == $nominee->player)
 								{
 									$nom_start = '(';
 									$nom_end = ')';
@@ -379,7 +374,7 @@ class FigmForm
 								}
 							}
 						}
-						else if ($voting->winner == $nominant->nominant)
+						else if ($voting_results->winner == $nominee->player)
 						{
 							$nom_start = '(';
 							$nom_end = ')';
@@ -387,19 +382,19 @@ class FigmForm
 					}
 					
 					$this->pdf->SetXY($x, 22.5 + 25.0 * $round);
-					$this->pdf->Cell(10.2, 5.0, $nom_start . $nominant->nominant . $nom_end, 0, 2, 'C');
-					if (isset($nominant->voting) && is_array($nominant->voting) && count($nominant->voting) > 0)
+					$this->pdf->Cell(10.2, 5.0, $nom_start . $nominee->player . $nom_end, 0, 2, 'C');
+					if (isset($nominee->votes) && is_array($nominee->votes) && count($nominee->votes) > 0)
 					{
-						if (is_array($nominant->voting[0]))
+						if (is_array($nominee->votes[0]))
 						{
-							for ($votingRound = 0; $votingRound < count($nominant->voting) && $votingRound < 2; ++$votingRound)
+							for ($votingRound = 0; $votingRound < count($nominee->votes) && $votingRound < 2; ++$votingRound)
 							{
-								$this->pdf->Cell(10.2, 5.0, '' . count($nominant->voting[$votingRound]), 0, 2, 'C');
+								$this->pdf->Cell(10.2, 5.0, '' . count($nominee->votes[$votingRound]), 0, 2, 'C');
 							}
 						}
 						else
 						{
-							$this->pdf->Cell(10.2, 5.0, '' . count($nominant->voting), 0, 2, 'C');
+							$this->pdf->Cell(10.2, 5.0, '' . count($nominee->votes), 0, 2, 'C');
 						}
 					}
 					$x += 10.2;
