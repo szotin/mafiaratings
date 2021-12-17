@@ -1892,34 +1892,16 @@ var nickForm = new function()
 		{
 			$("#nf-sex").hide();
 		}
-
-		var str = '<option value=""></option>';
-		var nick = null;
-		var nameFound = false;
+		var str = '<option value=""></option><option value="' + _user.name + '" + selected>' + _user.name + '</option>';
 		for (n of _user.nicks)
 		{
-			str += '<option value="' + n + '"';
-			if (nick == null)
+			if (n != _user.name)
 			{
-				nick = n;
-				str += ' selected';
+				str += '<option value="' + n + '">' + n + '</option>';
 			}
-			str += '>' + n + '</option>';
-			if (n == _user.name)
-				nameFound = true;
 		}
-		if (!nameFound)
-		{
-			str += '<option value="' + _user.name + '"';
-			if (nick == null)
-			{
-				nick = _user.name;
-				str += ' selected';
-			}
-			str += '>' + _user.name + '</option>';
-		}
-		$('#nf-nick').val(nick);
-		$('#nf-nicks').html(str).val(nick);
+		$('#nf-nick').val(_user.name);
+		$('#nf-nicks').html(str).val(_user.name);
 	}
 		
 	this.onSelect = function()
