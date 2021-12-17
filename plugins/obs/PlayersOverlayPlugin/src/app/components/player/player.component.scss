@@ -1,0 +1,126 @@
+.player {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  width: 120px;
+  height: 150px;
+  position: relative;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.315);
+  border-radius: 10px;
+
+  .player-info {
+    position: absolute;
+    right: 0;
+    left: 5px;
+    top: 5px;
+    display: flex;
+    align-items: flex-end;
+    padding: 2px 2px;
+    color: rgb(255, 0, 0);
+  }
+
+  .player-profile {
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    position: absolute;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    min-height: 30px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+
+    .player-profile-number {
+      color: white;
+      text-align: center;
+      font-size: 1rem;
+      width: 30px;
+      height: 30px;
+      vertical-align: middle;
+      padding-top: 3px;
+      border-bottom-left-radius: 10px;
+
+      h2 {
+        color: white;
+        font-size: 1rem;
+        text-overflow: ellipsis;
+        text-align: center;
+      }
+    }
+
+    .player-profile-text {
+      width: 100%;
+
+      h2 {
+        color: #ffffff;
+        font-size: 1rem;
+        text-overflow: ellipsis;
+        text-align: center;
+      }
+    }
+  }
+
+  &.player-status-dead {
+    filter: opacity(30%);
+    margin-top: 30px;
+  }
+
+  &.player-isSpeaking-true {
+    width: 130px;
+    height: 170px;
+  }
+
+  .player-role {
+    top: -80px;
+    left: 0;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    width: 120px;
+    height: 80px;
+    position: absolute;
+  }
+
+  &.sheriff {
+    .player-profile-number {
+      background-color: rgba(255, 0, 0, 0.5);
+    }
+
+    .player-role {
+      background-image: url('/assets/sheriff.png');
+    }
+  }
+
+  &.don {
+    .player-profile-number {
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .player-role {
+      background-image: url('/assets/don.png');
+    }
+  }
+
+  &.maf {
+    .player-profile-number {
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .player-role {
+      background-image: url('/assets/maf.png');
+    }
+  }
+
+  &.town {
+    .player-profile-number {
+      background-color: rgba(255, 0, 0, 0.7);
+    }
+  }
+}
+
+@for $i from 1 through 10 {
+  .player.player-number#{$i} {
+    order: $i;
+  }
+}
