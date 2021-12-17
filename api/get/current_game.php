@@ -12,7 +12,7 @@ class ApiPage extends GetApiPageBase
 	{
 		global $_profile;
 		
-		$token = (int)get_required_param('token');
+		$token = get_required_param('token');
 		$game_id = (int)get_optional_param('game_id', 0);
 		$user_id = (int)get_optional_param('user_id', 0);
 		$moderator_id = (int)get_optional_param('moderator_id', 0);
@@ -40,7 +40,7 @@ class ApiPage extends GetApiPageBase
 		while ($row = $query->next())
 		{
 			list($game_id, $log, $event_token, $tournament_token) = $row;
-			if ((!is_null($event_token) && $event_token == $token) || (!is_null($tournament_token) && $tournament_token == $token))
+			if ((!is_null($event_token) && $event_token === $token) || (!is_null($tournament_token) && $tournament_token === $token))
 			{
 				$gs = json_decode($log);
 				break;
@@ -151,7 +151,7 @@ class ApiPage extends GetApiPageBase
 								}
 								else
 								{
-									$player->death->type = 'voting';
+									$player->deathType = 'voting';
 								}
 								break;
 						}
