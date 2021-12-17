@@ -27,8 +27,8 @@ export class PlayersComponent implements OnInit {
       .subscribe(
         (res: { body: GameSnapshot | null | undefined; }) => {
           let gameSnapshot = res.body;
-          this.showPlayers = gameSnapshot?.game.state != GameState.notStarted ?? false;
-          this.gameSnapshot = res.body;
+          this.showPlayers = gameSnapshot?.game?.state != GameState.notStarted ?? false;
+          this.gameSnapshot = gameSnapshot;
 
         },
         (err: any) => console.log(err)
