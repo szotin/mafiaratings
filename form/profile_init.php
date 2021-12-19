@@ -140,7 +140,7 @@ try
 			, male: isMale
 			, club_id: clubId
 		};
-		json.post("api/ops/account.php", params, onSuccess);
+		json.post("api/ops/user.php", params, onSuccess);
 	}
 	
 	$("#form-club").change(function() { clubSetManually = true; });
@@ -152,7 +152,7 @@ try
 	
 	function uploadLogo(onSuccess)
 	{
-		json.upload('api/ops/account.php', 
+		json.upload('api/ops/user.php', 
 		{
 			op: "edit",
 			picture: document.getElementById("upload").files[0]

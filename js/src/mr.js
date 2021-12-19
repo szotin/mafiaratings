@@ -352,14 +352,14 @@ var mr = new function()
 
 	this.joinClub = function(id)
 	{
-		json.post("api/ops/account.php", { op: 'join_club', club_id: id }, refr);
+		json.post("api/ops/user.php", { op: 'join_club', club_id: id }, refr);
 	}
 
 	this.quitClub = function(id, confirmMessage)
 	{
 		function proceed()
 		{
-			json.post("api/ops/account.php", { op: 'quit_club', club_id: id }, refr);
+			json.post("api/ops/user.php", { op: 'quit_club', club_id: id }, refr);
 		}
 		
 		if (typeof confirmMessage == "string")
@@ -386,7 +386,19 @@ var mr = new function()
 	{
 		dlg.form("form/club_decline.php?id=" + id, refr);
 	}
+	
+	this.addClubMember = function(id, onSuccess)
+	{
+		if (typeof onSuccess == "undefined")
+			onSuccess = refr;
+		dlg.form("form/club_add_member.php?club_id=" + id, onSuccess, 400);
+	}
 
+	this.removeClubMember = function(userId, clubId)
+	{
+		json.post("api/ops/user.php", { op: "quit_club", club_id: clubId, user_id: userId }, refr);
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// league
 	//--------------------------------------------------------------------------------------
@@ -1103,6 +1115,11 @@ var mr = new function()
 			url += "&club=" + clubId;
 		}
 		dlg.form(url, refr, 400);
+	}
+	
+	this.editUser = function(userId)
+	{
+		dlg.form("form/account_edit.php?user_id=" + userId, refr, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------

@@ -13,31 +13,46 @@ initiate_session();
 try
 {
 	dialog_title(get_label('Settings'));
+	
 	if ($_profile == NULL)
 	{
-		throw new FatalExc(get_label('No permissions'));
+		throw new Exc(get_label('No permissions'));
+	}
+	$owner_id = $_profile->user_id;
+	
+	if (isset($_REQUEST['user_id']))
+	{
+		$user_id = (int)$_REQUEST['user_id'];
+	}
+	else
+	{
+		$user_id = $owner_id;
 	}
 	
+	list($user_club_id, $user_name, $user_flags, $user_city_id, $user_email, $user_langs, $user_phone) = Db::record(get_label('user'), 'SELECT club_id, name, flags, city_id, email, languages, phone FROM users WHERE id = ?', $user_id);
+	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $user_club_id, $user_id);
+
+	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td class="dark">' . get_label('User name') . ':</td><td class="light"><input id="form-name" value="' . $_profile->user_name . '"></td>';
+	echo '<tr><td class="dark">' . get_label('User name') . ':</td><td class="light"><input id="form-name" value="' . $user_name . '"></td>';
 	echo '</td><td align="center" valign="top" rowspan="8">';
 	start_upload_logo_button();
 	echo get_label('Change picture') . '<br>';
 	$user_pic = new Picture(USER_PICTURE);
-	$user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
+	$user_pic->set($user_id, $user_name, $user_flags);
 	$user_pic->show(ICONS_DIR, false);
-	end_upload_logo_button(USER_PIC_CODE, $_profile->user_id);
+	end_upload_logo_button(USER_PIC_CODE, $user_id);
 	echo '</td></tr>';
 	
-	$club_id = $_profile->user_club_id;
+	$club_id = $user_club_id;
 	if ($club_id == NULL)
 	{
 		$club_id = 0;
 	}
 	
-	list ($city_name, $country_name) = Db::record(get_label('city'), 'SELECT ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ' FROM cities ct JOIN countries cr ON cr.id = ct.country_id WHERE ct.id = ?', $_profile->city_id);
+	list ($city_name, $country_name) = Db::record(get_label('city'), 'SELECT ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ' FROM cities ct JOIN countries cr ON cr.id = ct.country_id WHERE ct.id = ?', $user_city_id);
 	
-	echo '<tr><td class="dark">' . get_label('Email') . ':</td><td class="light"><input id="form-email" value="' . $_profile->user_email . '"></td></tr>';
+	echo '<tr><td class="dark">' . get_label('Email') . ':</td><td class="light"><input id="form-email" value="' . $user_email . '"></td></tr>';
 	
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
 	show_country_input('form-country', $country_name, 'form-city');
@@ -62,9 +77,9 @@ try
 	echo '</select></td></tr>';
 	
 	echo '<tr><td class="dark" valign="top">' . get_label('Gender') . ':</td><td class="light">';
-	if ($_profile->user_flags & USER_FLAG_MALE)
+	if ($user_flags & USER_FLAG_MALE)
 	{
-		if ($_profile->user_flags & USER_ICON_MASK)
+		if ($user_flags & USER_ICON_MASK)
 		{
 			echo '<input type="radio" id="form-male" name="is_male" value="1" checked/>'.get_label('male').'<br>';
 			echo '<input type="radio" name="is_male" value="0"/>'.get_label('female');
@@ -75,7 +90,7 @@ try
 			echo '<input type="radio" name="is_male" value="0" onClick="document.profileForm.submit()"/>'.get_label('female');
 		}
 	}
-	else if ($_profile->user_flags & USER_ICON_MASK)
+	else if ($user_flags & USER_ICON_MASK)
 	{
 		echo '<input type="radio" id="form-male" name="is_male" value="1"/>'.get_label('male').'<br>';
 		echo '<input type="radio" name="is_male" value="0" checked/>'.get_label('female');
@@ -88,21 +103,21 @@ try
 	echo '</td></tr>';
 	
 	echo '<tr><td class="dark" valign="top">'.get_label('Languages').':</td><td class="light">';
-	langs_checkboxes($_profile->user_langs);
+	langs_checkboxes($user_langs);
 	echo '</td></tr>';
 	
-	echo '<tr><td class="dark">' . get_label('Phone') . ':</td><td class="light"><input id="form-phone" value="' . $_profile->user_phone . '"></td></tr>';
+	echo '<tr><td class="dark">' . get_label('Phone') . ':</td><td class="light"><input id="form-phone" value="' . $user_phone . '"></td></tr>';
 	
 	echo '</table>';
 	
 	echo '<p><input type="checkbox" id="form-message_notify"';
-	if (($_profile->user_flags & USER_FLAG_MESSAGE_NOTIFY) != 0)
+	if (($user_flags & USER_FLAG_MESSAGE_NOTIFY) != 0)
 	{
 		echo ' checked';
 	}
 	echo '>'.get_label('I would like to receive emails when someone replies to me or sends me a private message.');
 	echo '<br><input type="checkbox" id="form-photo_notify"';
-	if (($_profile->user_flags & USER_FLAG_PHOTO_NOTIFY) != 0)
+	if (($user_flags & USER_FLAG_PHOTO_NOTIFY) != 0)
 	{
 		echo ' checked';
 	}
@@ -114,9 +129,10 @@ try
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
-		json.post("api/ops/account.php",
+		json.post("api/ops/user.php",
 		{
 			op: 'edit'
+			, user_id: <?php echo $user_id; ?>
 			, name: $("#form-name").val()
 			, email: $("#form-email").val()
 			, club_id: $("#form-club").val()
@@ -133,10 +149,11 @@ try
 	
 	function uploadLogo(onSuccess)
 	{
-		json.upload('api/ops/account.php', 
+		json.upload('api/ops/user.php', 
 		{
-			op: "edit",
-			picture: document.getElementById("upload").files[0]
+			op: "edit"
+			, user_id: <?php echo $user_id; ?>
+			, picture: document.getElementById("upload").files[0]
 		}, 
 		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
 		onSuccess);
