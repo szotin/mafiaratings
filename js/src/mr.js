@@ -33,11 +33,6 @@ var mr = new function()
 		dlg.form("form/password_reset.php", refr, 400);
 	}
 
-	this.editAccount = function()
-	{
-		dlg.form("form/account_edit.php", refr, 600);
-	}
-	
 	//--------------------------------------------------------------------------------------
 	// administration
 	//--------------------------------------------------------------------------------------

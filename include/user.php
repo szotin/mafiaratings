@@ -192,9 +192,9 @@ class UserPageBase extends PageBase
 		echo '</td></tr>';	
 		
 		echo '<tr><td rowspan="2" width="' . TNAIL_WIDTH . '"><table class="bordered light"><tr><td class="dark" valign="top" style="min-width:28px; padding:4px;">';
-		if ($_profile != NULL && $_profile->user_id == $this->id)
+		if (is_permitted(PERMISSION_ADMIN | PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $this->club_id, $this->id))
 		{
-			echo '<button class="icon" onclick="mr.editAccount()" title="' . get_label('Account settings') . '"><img src="images/settings.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.editUser(' . $this->id . ')" title="' . get_label('Account settings') . '"><img src="images/edit.png" border="0"></button>';
 		}
 		echo '</td><td style="padding: 4px 2px 4px 1px;">';
 		$user_pic = new Picture(USER_PICTURE);
