@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { GameSnapshot } from './gamesnapshot.model';
+import { retry, share, Subject, Subscription, switchMap, timer } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +19,7 @@ export class GamesnapshotService {
   private configUrl;
 
   private urlParams: HttpParams = new HttpParams();
+  private timeInterval: Subscription | undefined;
 
   constructor(private http: HttpClient, private activatedRoute: ActivatedRoute) {
 
@@ -58,7 +60,6 @@ export class GamesnapshotService {
    }
 
    getGameSnapshot(): Observable<HttpResponse<GameSnapshot>> {
-
     return this.http.get<GameSnapshot>(this.configUrl, { observe: 'response', params: this.urlParams });
   }
 }
