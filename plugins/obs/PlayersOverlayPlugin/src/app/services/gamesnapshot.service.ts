@@ -1,6 +1,7 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { GameSnapshot } from './gamesnapshot.model';
 
@@ -56,7 +57,7 @@ export class GamesnapshotService {
     });
    }
 
-   getGameSnapshot() {
+   getGameSnapshot(): Observable<HttpResponse<GameSnapshot>> {
 
     return this.http.get<GameSnapshot>(this.configUrl, { observe: 'response', params: this.urlParams });
   }
