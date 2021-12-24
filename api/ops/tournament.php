@@ -853,7 +853,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			list($reg_count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE event_id = ? AND coming_odds > 0', $event_id);
+			list($reg_count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE event_id = ? AND coming_odds > 0 OR coming_odds IS NULL', $event_id);
 			if ($reg_count > 0)
 			{
 				$this->response['question'] = get_label('Some users have already registered for this event. Do you want to send cancellation email?'); 

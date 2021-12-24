@@ -244,7 +244,7 @@ class ApiPage extends GetApiPageBase
 		}
 		else if ($event > 0)
 		{
-			$condition->add(' AND u.id IN (SELECT user_id FROM registrations WHERE event_id = ?)', $event);
+			$condition->add(' AND u.id IN (SELECT p1.user_id FROM players p1 JOIN games g1 ON g1.id = p1.game_id WHERE g1.event_id = ?)', $event);
 		}
 		else if ($address > 0)
 		{

@@ -46,7 +46,7 @@ function check_password($password, $confirm)
 function nick_name_chooser($user_id, $user_name, $nickname = NULL)
 {
 	$nicks = array();
-	$query = new DbQuery('SELECT nick_name FROM registrations WHERE user_id = ? GROUP BY nick_name ORDER BY COUNT(*) DESC', $user_id);
+	$query = new DbQuery('SELECT nickname FROM event_users WHERE user_id = ? GROUP BY nickname ORDER BY COUNT(*) DESC', $user_id);
 	$nicks[] = $user_name;
 	$nick = $user_name;
 	if ($row = $query->next())
@@ -112,16 +112,12 @@ function check_nickname($nick, $event_id)
 	}
 
 	check_name($nick, get_label('nick-name'));
+	$count = 0;
 	if ($event_id > 0)
 	{
-		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM registrations WHERE event_id = ? AND nick_name = ?', $event_id, $nick);
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE event_id = ? AND nickname = ?', $event_id, $nick);
 	}
-	else
-	{
-		list ($count) = Db::record(
-			get_label('registration'), 
-			'SELECT count(*) FROM registrations WHERE event_id IS NULL AND club_id = ? AND nick_name = ? AND UNIX_TIMESTAMP() < start_time + duration AND UNIX_TIMESTAMP() >= start_time', -$event_id, $nick);
-	}
+	
 	if ($count > 0)
 	{
 		throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Nick-name'), $nick));

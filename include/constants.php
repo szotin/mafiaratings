@@ -39,6 +39,16 @@ define('USER_CLUB_FLAG_BANNED', 0x20);
 define('USER_CLUB_NEW_PLAYER_FLAGS', 0x11); // USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED
 define('USER_CLUB_PERM_MASK', 0x7); // USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER
 
+// user-event flags
+define('USER_EVENT_PERM_PLAYER', 0x1);
+define('USER_EVENT_PERM_MODER', 0x2);
+define('USER_EVENT_PERM_MANAGER', 0x4);
+
+// user-tournament flags
+define('USER_TOURNAMENT_PERM_PLAYER', 0x1);
+define('USER_TOURNAMENT_PERM_MODER', 0x2);
+define('USER_TOURNAMENT_PERM_MANAGER', 0x4);
+
 // user flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
 // 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag moder)

@@ -37,9 +37,6 @@ class Page extends PageBase
 			{
 				Db::exec(get_label('event'), 'INSERT INTO event_users (event_id, user_id, coming_odds, people_with_me) VALUES (?, ?, 0, 0)', $event_id, $_profile->user_id);
 			}
-			
-			Db::exec(get_label('registration'), 'DELETE FROM registrations WHERE event_id = ? AND user_id = ?', $event_id, $_profile->user_id);
-			
 			Db::commit();
 			throw new RedirectExc('event_info.php?id=' . $event_id);
 		}

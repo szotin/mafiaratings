@@ -26,8 +26,6 @@ class ApiPage extends OpsApiPageBase
 			Db::record(get_label('user'), 'SELECT name, games_moderated, games, rating, reg_time, city_id, club_id, flags FROM users WHERE id = ?', $src_id);
 		
 		Db::exec(get_label('email'), 'UPDATE emails SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
-		Db::exec(get_label('registration'), 'DELETE FROM registrations WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM registrations WHERE user_id = ?) x)', $src_id, $dst_id);
-		Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('club'), 'DELETE FROM user_clubs WHERE user_id = ? AND club_id IN (SELECT club_id FROM (SELECT club_id FROM user_clubs WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('club'), 'UPDATE user_clubs SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM event_users WHERE user_id = ?) x)', $src_id, $dst_id);
@@ -95,7 +93,6 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::exec(get_label('email'), 'DELETE FROM emails WHERE user_id = ?', $user_id);
-		Db::exec(get_label('registration'), 'DELETE FROM registrations WHERE user_id = ?', $user_id);
 		Db::exec(get_label('club'), 'DELETE FROM user_clubs WHERE user_id = ?', $user_id);
 		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ?', $user_id);
 		Db::exec(get_label('log'), 'DELETE FROM log WHERE user_id = ?', $user_id);

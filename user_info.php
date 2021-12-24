@@ -90,7 +90,7 @@ class Page extends UserPageBase
             echo '<tr><td class="dark">'.get_label('Banned').':</td><td>'.get_label('yes').'</td></tr>';
         }
 		
-		$query = new DbQuery('SELECT DISTINCT nick_name FROM registrations WHERE user_id = ? ORDER BY nick_name', $this->id);
+		$query = new DbQuery('SELECT DISTINCT nickname FROM event_users WHERE user_id = ? ORDER BY nickname', $this->id);
 		if ($row = $query->next())
 		{
 			echo '<tr><td class="dark">'.get_label('Nicks').':</td><td>' . cut_long_name($row[0], 88);

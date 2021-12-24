@@ -150,7 +150,7 @@ try
 			
 				echo '<center><h2>' . get_label('The event hasn\'t started yet. Current ratings:') . '</h2></center>';
 				$query = new DbQuery(
-					'SELECT u.id, u.name, r.nick_name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM registrations r' . 
+					'SELECT u.id, u.name, r.nickname, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM event_users r' . 
 					' JOIN users u ON r.user_id = u.id' .
 					' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 					' WHERE r.event_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,

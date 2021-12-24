@@ -131,7 +131,7 @@ class GClub
 			}
 		}
 		
-        $query = new DbQuery('SELECT u.user_id, r.nick_name, r.club_id, count(*), MAX(e.start_time) FROM user_clubs u JOIN registrations r ON r.user_id = u.user_id JOIN events e ON e.id = r.event_id WHERE u.club_id = ? GROUP BY r.user_id, r.nick_name, r.club_id', $id);
+        $query = new DbQuery('SELECT u.user_id, r.nickname, e.club_id, count(*), MAX(e.start_time) FROM user_clubs u JOIN event_users r ON r.user_id = u.user_id JOIN events e ON e.id = r.event_id WHERE u.club_id = ? GROUP BY r.user_id, r.nickname, e.club_id', $id);
 		while ($row = $query->next())
 		{
 			list ($user_id, $nick, $club_id, $count, $time) = $row;
@@ -208,7 +208,7 @@ class GClub
 			}
 			$events_str .= ')';
 			
-			$query = new DbQuery('SELECT r.user_id, r.event_id, r.nick_name, u.name, c.name, u.flags FROM registrations r JOIN users u ON u.id = r.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE r.event_id IN ' . $events_str);
+			$query = new DbQuery('SELECT r.user_id, r.event_id, r.nickname, u.name, c.name, u.flags FROM event_users r JOIN users u ON u.id = r.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE r.event_id IN ' . $events_str);
 			while ($row = $query->next())
 			{
 				list ($user_id, $event_id, $nick, $user_name, $club_name, $user_flags) = $row;
@@ -227,15 +227,15 @@ class GClub
 				}
 			}
 			
-			$query = new DbQuery('SELECT r.incomer_id, r.event_id, r.nick_name, i.name, i.flags FROM registrations r JOIN incomers i ON i.id = r.incomer_id WHERE r.event_id IN ' . $events_str);
+			$query = new DbQuery('SELECT i.id, i.event_id, i.name, i.flags FROM event_incomers i WHERE i.event_id IN ' . $events_str);
 			while ($row = $query->next())
 			{
-				list ($incomer_id, $event_id, $nick, $incomer_name, $incomer_flags) = $row;
+				list ($incomer_id, $event_id, $incomer_name, $incomer_flags) = $row;
 				$incomer_id = -$incomer_id;
 				if (isset($this->events[$event_id]))
 				{
 					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, $this->name, NEW_USER_FLAGS, $incomer_flags | USER_CLUB_PERM_PLAYER);
-					$this->events[$event_id]->reg[$incomer_id] = $nick;
+					$this->events[$event_id]->reg[$incomer_id] = $incomer_name;
 					if ($haunters_count < 50)
 					{
 						$this->haunters[] = (int)$incomer_id;
@@ -535,13 +535,13 @@ class CommandQueue
 			$event_id = $this->events_map[$event_id];
 		}
 		
-		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM registrations WHERE user_id = ? AND event_id = ?', $rec->id, $event_id);
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE user_id = ? AND event_id = ?', $rec->id, $event_id);
 		if ($count == 0)
 		{
 			Db::exec(
 				get_label('registration'), 
-				'INSERT INTO registrations (club_id, user_id, nick_name, event_id) values (?, ?, ?, ?)',
-				$this->club_id, $rec->id, $rec->nick, $event_id);
+				'INSERT INTO event_users (event_id, user_id, nickname) values (?, ?, ?)',
+				$event_id, $rec->id, $rec->nick);
 			return true;
 		}
 		return false;
@@ -584,7 +584,7 @@ class CommandQueue
 			else
 			{
 				$incomer_id = -$user_id;
-				$query = new DbQuery('SELECT id FROM incomers WHERE event_id = ? AND name = ?', $event_id, $rec->name);
+				$query = new DbQuery('SELECT id FROM event_incomers WHERE event_id = ? AND name = ?', $event_id, $rec->name);
 				if ($row = $query->next())
 				{
 					list ($iid) = $row;
@@ -592,27 +592,22 @@ class CommandQueue
 				}
 				else
 				{
-					Db::exec(get_label('user'), 'INSERT INTO incomers (event_id, name, flags) VALUES (?, ?, ?)', $event_id, $rec->name, $rec->flags | INCOMER_FLAGS_EXISTING);
+					Db::exec(get_label('user'), 'INSERT INTO event_incomers (event_id, name, flags) VALUES (?, ?, ?)', $event_id, $rec->name, $rec->flags | INCOMER_FLAGS_EXISTING);
 					list ($iid) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
 					$this->users_map[$user_id] = -$iid;
 					$incomer_id = $iid;
-					
-					Db::exec(
-						get_label('registration'), 
-						'INSERT INTO registrations (club_id, incomer_id, nick_name, event_id) values (?, ?, ?, ?)',
-						$this->club_id, $incomer_id, $nick, $event_id);
 				}
 				return;
 			}
 		}
 		
-		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM registrations WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
 		if ($count == 0)
 		{
 			Db::exec(
 				get_label('registration'), 
-				'INSERT INTO registrations (club_id, user_id, nick_name, event_id) values (?, ?, ?, ?)',
-				$this->club_id, $user_id, $rec->nick, $event_id);
+				'INSERT INTO event_users (user_id, nickname, event_id) values (?, ?, ?)',
+				$user_id, $rec->nick, $event_id);
 		}
 	}
 	
@@ -688,18 +683,14 @@ class CommandQueue
 			$user_id = create_user($name, $email, $flags, $this->club_id);
 			Db::exec(
 				get_label('registration'), 
-				'INSERT INTO registrations (club_id, user_id, nick_name, event_id) values (?, ?, ?, ?)',
-				$this->club_id, $user_id, $rec->nick, $event_id);
+				'INSERT INTO event_users (user_id, nickname, event_id) VALUES (?, ?, ?)',
+				$user_id, $rec->nick, $event_id);
 			$this->users_map[$rec->id] = $user_id;
 		}
 		else
 		{
-			Db::exec(get_label('user'), 'INSERT INTO incomers (event_id, name, flags) VALUES (?, ?, ?)', $event_id, $rec->name, $rec->flags & ~INCOMER_FLAGS_EXISTING);
+			Db::exec(get_label('user'), 'INSERT INTO event_incomers (event_id, name, flags) VALUES (?, ?, ?)', $event_id, $rec->name, $rec->flags & ~INCOMER_FLAGS_EXISTING);
 			list ($incomer_id) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
-			Db::exec(
-				get_label('registration'), 
-				'INSERT INTO registrations (club_id, incomer_id, nick_name, event_id) values (?, ?, ?, ?)',
-				$this->club_id, $incomer_id, $rec->nick, $event_id);
 			$this->users_map[$rec->id] = -$incomer_id;
 		}
 		
@@ -1101,7 +1092,7 @@ class ApiPage extends OpsApiPageBase
 			$query->add(
 					' AND (u.name LIKE ? OR' .
 					' u.email LIKE ? OR' .
-					' u.id IN (SELECT DISTINCT user_id FROM registrations WHERE nick_name LIKE ?))',
+					' u.id IN (SELECT DISTINCT user_id FROM event_users WHERE nickname LIKE ?))',
 				$name_wildcard,
 				$name_wildcard,
 				$name_wildcard);
@@ -1158,69 +1149,6 @@ class ApiPage extends OpsApiPageBase
 						<dd>Array of nicknames that were used by the user.</dd>
 				<dl>');
 		return $help;
-	}
-	
-	//-------------------------------------------------------------------------------------------------------
-	// replace_incomer
-	//-------------------------------------------------------------------------------------------------------
-	function replace_incomer_op()
-	{
-		$incomer_id = (int)get_required_param('incomer_id');
-		$user_id = (int)get_required_param('user_id');
-		
-		list ($reg_id, $old_user_id, $event_id, $club_id, $name) = Db::record(get_label('player'), 'SELECT r.id, r.user_id, e.id, e.club_id, i.name FROM incomers i JOIN registrations r ON r.incomer_id = i.id JOIN events e ON r.event_id = e.id WHERE i.id = ?', $incomer_id);
-		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MODER) == 0)
-		{
-			throw new Exc(get_label('No permissions'));
-		}
-		if ($user_id <= 0)
-		{
-			$user_name = get_label('[unknown]');
-			$user_id = NULL;
-		}
-		else
-		{
-			list ($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
-		}
-		
-		if ($old_user_id != $user_id)
-		{
-			Db::begin();
-			Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ? WHERE id = ?', $user_id, $reg_id);
-			
-			if ($old_user_id == NULL)
-			{
-				$old_user_id = -$incomer_id;
-			}
-			
-			if ($user_id == NULL)
-			{
-				$user_id = -$incomer_id;
-			}
-			$query = new DbQuery('SELECT id, json, feature_flags FROM games WHERE result > 0 event_id = ?', $event_id);
-			while($row = $query->next())
-			{
-				$game = new Game($row[1], $row[2]);
-				if ($game->change_user($old_user_id, $user_id))
-				{
-					$game->update();
-				}
-			}
-			Db::commit();
-		}
-		echo get_label('Event information is updated. Thank you.<p>[0] is [1].</p>', $name, $user_name);
-	}
-	
-	// function replace_incomer_op_help()
-	// {
-		// echo '';
-		// $this->show_help_request_params_head();
-		// $this->show_help_response_params_head();
-	// }
-	
-	function replace_incomer_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------

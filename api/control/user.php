@@ -46,9 +46,9 @@ class ApiPage extends ControlApiPageBase
 				'SELECT id, name, NULL FROM users ' .
 					' WHERE name LIKE ? AND (flags & ' . USER_FLAG_BANNED . ') = 0' .
 					' UNION' .
-					' SELECT DISTINCT u.id, u.name, r.nick_name FROM users u' . 
-					' JOIN registrations r ON r.user_id = u.id' .
-					' WHERE r.nick_name <> u.name AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND r.nick_name LIKE ? ORDER BY name',
+					' SELECT DISTINCT u.id, u.name, r.nickname FROM users u' . 
+					' JOIN event_users r ON r.user_id = u.id' .
+					' WHERE r.nickname <> u.name AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND r.nickname LIKE ? ORDER BY name',
 				'%' . $term . '%',
 				'%' . $term . '%');
 		}

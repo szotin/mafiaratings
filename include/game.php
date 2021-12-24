@@ -2907,7 +2907,7 @@ class Game
 			$player = $data->players[$i];
 			if ($player->id == $user_id)
 			{
-				if ($new_user_id > 0)
+				if ($new_user_id != 0)
 				{
 					$player->id = $new_user_id;
 				}

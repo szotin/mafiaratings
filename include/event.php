@@ -360,14 +360,6 @@ class Event
 			$log_details->scoring_version = $this->scoring_version;
 			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $this->id, $this->club_id);
 		}
-		
-		if ($this->timestamp != $old_timestamp || $this->duration != $old_duration)
-		{
-			Db::exec(
-				get_label('registration'), 
-				'UPDATE registrations SET start_time = ?, duration = ? WHERE event_id = ?',
-				$this->timestamp, $this->duration, $this->id);
-		}
 		Db::commit();
 	}
 

@@ -11,25 +11,6 @@ class Page extends EventPageBase
 	{
 		global $_profile;
 		
-		// if (isset($_PROFILE['attend']))
-		// {
-		// }
-		// else if (isset($_PROFILE['decline']))
-		// {
-			// Db::begin();
-			// list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $_profile->user_id);
-			// if ($count > 0)
-			// {
-				// Db::exec(get_label('event'), 'UPDATE event_users SET coming_odds = 0 WHERE event_id = ? AND user_id = ?', $event_id, $_profile->user_id);
-			// }
-			// else
-			// {
-				// Db::exec(get_label('event'), 'INSERT INTO event_users (event_id, user_id, coming_odds, people_with_me) VALUES (?, ?, 0, 0)', $event_id, $_profile->user_id);
-			// }
-			// Db::exec(get_label('registration'), 'DELETE FROM registrations WHERE event_id = ? AND user_id = ?', $event_id, $_profile->user_id);
-			// Db::commit();
-		// }
-			
 		if ($_profile != NULL && ($this->event->flags & EVENT_FLAG_CANCELED) == 0 && time() < $this->event->timestamp + $this->event->duration)
 		{
 			echo '<table class="transp" width="100%"><tr>';

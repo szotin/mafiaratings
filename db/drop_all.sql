@@ -39,6 +39,8 @@ DROP TABLE IF EXISTS `tournament_invitations`;
 ALTER TABLE `clubs` DROP FOREIGN KEY club_prompt_sound;
 ALTER TABLE `clubs` DROP FOREIGN KEY club_end_sound;
 DROP TABLE IF EXISTS `sounds`;
+DROP TABLE IF EXISTS `event_users`;
+DROP TABLE IF EXISTS `tournament_users`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `events`;
 DROP TABLE IF EXISTS `tournaments`;

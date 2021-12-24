@@ -23,10 +23,11 @@ try
 	$odds = 100;
 	$friends = 0;
 	$late = 0;
-	$query = new DbQuery('SELECT coming_odds, people_with_me, late FROM event_users WHERE event_id = ? AND user_id = ?', $id, $_profile->user_id);
+	$nickname = NULL;
+	$query = new DbQuery('SELECT coming_odds, people_with_me, late, nickname FROM event_users WHERE event_id = ? AND user_id = ?', $id, $_profile->user_id);
 	if ($row = $query->next())
 	{
-		list ($odds, $friends, $late) = $row;
+		list ($odds, $friends, $late, $nickname) = $row;
 	}
 	if ($odds == 0)
 	{
@@ -34,14 +35,6 @@ try
 	}
 	
 	list($event_flags) = Db::record(get_label('event'), 'SELECT flags FROM events WHERE id = ?', $id);
-	
-	$nickname = NULL;
-	$query = new DbQuery('SELECT nick_name FROM registrations WHERE event_id = ? AND user_id = ?', $id, $_profile->user_id);
-	if ($row = $query->next())
-	{
-		list ($nickname) = $row;
-	}
-
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="210">'.get_label('The chance that I am coming is').':</td><td>';
 	echo '<select id="odds" onChange = "oddsChanged()">';
@@ -125,7 +118,7 @@ try
 				, event_id: <?php echo $id; ?>
 				, odds: $("#odds").val()
 				, friends: $("#friends").val()
-				, nick: $("#nick").val()
+				, nickname: $("#nick").val()
 				, late: $("#late").val()
 			},
 			onSuccess);
