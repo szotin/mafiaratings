@@ -1,11 +1,11 @@
-<div class="player" style="background-image: url({{item.hasPhoto ? item.photoUrl : 'assets/aml_masters.jpg' }});"
+<div class="player" style="background-image: url({{player.hasPhoto ? player.photoUrl : 'assets/aml_masters.jpg' }});"
   [ngClass]="[
-    item.role,
-    'player-number' + item.number,
-    'player-status-' + item.state,
-    'player-isSpeaking-' + item.isSpeaking
+    player.role,
+    'player-number' + player.number,
+    'player-status-' + player.state,
+    'player-isSpeaking-' + player.isSpeaking
   ]">
-  <div class="player-role"></div>
+  <div class="player-role" *ngIf="showRoles"></div>
 
   <div class="player-info">
     <!-- <span>
@@ -15,11 +15,11 @@
   <div class="player-profile">
     <div class="player-profile-number">
       <!-- nickname -->
-      <h2>{{item.number}}</h2>
+      <h2>{{player.number}}</h2>
     </div>
     <div class="player-profile-text">
       <!-- nickname -->
-      <h2 class="player-nickname">{{ item?.name || 'Player ' +  item.number}}</h2>
+      <h2 class="player-nickname">{{ player?.name || 'Player ' +  player.number}}</h2>
     </div>
   </div>
 </div>

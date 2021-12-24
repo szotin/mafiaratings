@@ -10,6 +10,7 @@ export interface Game {
   state: GameState;
   round: number;
   players: Player[];
+  nominees: number[];
 }
 
 export enum GamePhase {
