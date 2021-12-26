@@ -99,9 +99,9 @@ class Page extends GeneralPageBase
 		}
 		
 		list ($count) = Db::record(get_label('club'), 'SELECT count(*) FROM clubs c ' .
-				' LEFT OUTER JOIN user_clubs u ON u.user_id = ? AND u.club_id = c.id' .
+				' LEFT OUTER JOIN club_users u ON u.user_id = ? AND u.club_id = c.id' .
 				' JOIN cities i ON c.city_id = i.id',
-				' LEFT OUTER JOIN user_clubs u ON u.user_id = ? AND u.club_id = c.id' .
+				' LEFT OUTER JOIN club_users u ON u.user_id = ? AND u.club_id = c.id' .
 				' JOIN cities i ON c.city_id = i.id',
 			$user_id, $condition);
 		
@@ -109,7 +109,7 @@ class Page extends GeneralPageBase
 		
 		$query = new DbQuery(
 			'SELECT c.id, c.name, c.flags, c.web_site, i.name_' . $_lang_code . ', u.flags, (SELECT count(*) FROM games g WHERE g.club_id = c.id AND g.is_canceled = FALSE AND g.result > 0) as games FROM clubs c' .
-				' LEFT OUTER JOIN user_clubs u ON u.user_id = ? AND u.club_id = c.id' .
+				' LEFT OUTER JOIN club_users u ON u.user_id = ? AND u.club_id = c.id' .
 				' JOIN cities i ON c.city_id = i.id',
 			$user_id, $condition);
 		$query->add(' ORDER BY ISNULL(u.flags), games DESC, c.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);

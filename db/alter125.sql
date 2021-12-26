@@ -36,3 +36,4 @@ INSERT INTO event_users(event_id, user_id, nickname) SELECT r.event_id, r.user_i
 DROP TABLE event_users1;
 DROP TABLE registrations;
 
+RENAME TABLE `user_clubs` TO `club_users`;

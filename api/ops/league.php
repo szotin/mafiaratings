@@ -605,7 +605,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
 				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_CLUB_PERM_MANAGER, $club_id);
+				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM club_users uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
 				while ($row = $query->next())
 				{
 					list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -712,7 +712,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
 			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_CLUB_PERM_MANAGER, $club_id);
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM club_users uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
 			while ($row = $query->next())
 			{
 				list($user_id, $user_name, $user_email, $user_lang) = $row;

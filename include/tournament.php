@@ -155,6 +155,16 @@ class TournamentPageBase extends PageBase
 				// new MenuItem('tournament_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
+		if (is_permitted(PERMISSION_CLUB_MANAGER, $this->club_id))
+		{
+			$manager_menu = array
+			(
+				new MenuItem('tournament_users.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name)),
+				// new MenuItem('tournament_players.php?id=' . $this->id, get_label('Players'), get_label('Manage players paricipaing in [0]', $this->name)),
+			);
+			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
+		}
+		
 		echo '<tr><td colspan="4">';
 		PageBase::show_menu($menu);
 		echo '</td></tr>';

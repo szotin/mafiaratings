@@ -47,7 +47,7 @@ class Page extends LeaguePageBase
 		{
 			foreach ($_profile->clubs as $club)
 			{
-				if (($club->flags & USER_CLUB_PERM_MANAGER) != 0 && ($club->club_flags & CLUB_FLAG_RETIRED) == 0)
+				if (($club->flags & USER_PERM_MANAGER) != 0 && ($club->club_flags & CLUB_FLAG_RETIRED) == 0)
 				{
 					++$managed_clubs_not_in_league_count;
 				}

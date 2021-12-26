@@ -27,12 +27,12 @@ function def_club()
 		$priority = 0;
 		foreach ($_profile->clubs as $club)
 		{
-			if ($club->flags & (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) == (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER))
+			if ($club->flags & (USER_PERM_MODER | USER_PERM_MANAGER) == (USER_PERM_MODER | USER_PERM_MANAGER))
 			{
 				$club_id = $club->id;
 				break;
 			}
-			else if ($club->flags & USER_CLUB_PERM_MODER)
+			else if ($club->flags & USER_PERM_MODER)
 			{
 				$priority = 1;
 				$club_id = $club->id;
@@ -63,7 +63,7 @@ class GPlayer
 		$this->name = $name;
 		$this->club = $club; 
 		$this->nicks = array();
-		$this->flags = (int)(($user_club_flags & (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
+		$this->flags = (int)(($user_club_flags & (USER_PERM_PLAYER | USER_PERM_MODER)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
 	}
 }
 
@@ -111,11 +111,11 @@ class GClub
 		$this->haunters = array();
 		$this->players = array();
 		$query = new DbQuery(
-			'SELECT u.id, u.name, c.name, u.flags, uc.flags FROM user_clubs uc' .
+			'SELECT u.id, u.name, c.name, u.flags, uc.flags FROM club_users uc' .
 				' JOIN users u ON u.id = uc.user_id' .
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' WHERE (uc.flags & ' . USER_CLUB_FLAG_BANNED .
-					') = 0 AND (uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER) .
+					') = 0 AND (uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_MODER) .
 					') <> 0 AND (u.flags & ' . USER_FLAG_BANNED .
 					') = 0 AND uc.club_id = ?' .
 				' ORDER BY u.rating DESC',
@@ -131,7 +131,7 @@ class GClub
 			}
 		}
 		
-        $query = new DbQuery('SELECT u.user_id, r.nickname, e.club_id, count(*), MAX(e.start_time) FROM user_clubs u JOIN event_users r ON r.user_id = u.user_id JOIN events e ON e.id = r.event_id WHERE u.club_id = ? GROUP BY r.user_id, r.nickname, e.club_id', $id);
+        $query = new DbQuery('SELECT u.user_id, r.nickname, e.club_id, count(*), MAX(e.start_time) FROM club_users u JOIN event_users r ON r.user_id = u.user_id JOIN events e ON e.id = r.event_id WHERE u.club_id = ? GROUP BY r.user_id, r.nickname, e.club_id', $id);
 		while ($row = $query->next())
 		{
 			list ($user_id, $nick, $club_id, $count, $time) = $row;
@@ -171,7 +171,7 @@ class GClub
 		
 		$this->tournaments = array();
 		$this->events = array();
-		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & USER_CLUB_PERM_MODER))
+		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & USER_PERM_MODER))
 		{
 			$query = new DbQuery('SELECT t.id, t.name FROM tournaments t WHERE t.start_time + t.duration >= UNIX_TIMESTAMP() AND t.start_time <= UNIX_TIMESTAMP() AND (t.flags & ' . (TOURNAMENT_FLAG_CANCELED | TOURNAMENT_FLAG_SINGLE_GAME) . ') = ' . TOURNAMENT_FLAG_SINGLE_GAME . ' AND t.club_id = ?', $id);
 			while ($row = $query->next())
@@ -208,7 +208,7 @@ class GClub
 			}
 			$events_str .= ')';
 			
-			$query = new DbQuery('SELECT r.user_id, r.event_id, r.nickname, u.name, c.name, u.flags FROM event_users r JOIN users u ON u.id = r.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE r.event_id IN ' . $events_str);
+			$query = new DbQuery('SELECT r.user_id, r.event_id, r.nickname, u.name, c.name, u.flags FROM event_users r JOIN users u ON u.id = r.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE (r.coming_odds > 0 OR r.coming_odds IS NULL) AND r.event_id IN ' . $events_str);
 			while ($row = $query->next())
 			{
 				list ($user_id, $event_id, $nick, $user_name, $club_name, $user_flags) = $row;
@@ -216,7 +216,7 @@ class GClub
 				{
 					if (!isset($this->players[$user_id]))
 					{
-						$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $user_flags, USER_CLUB_PERM_PLAYER);
+						$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $user_flags, USER_PERM_PLAYER);
 						if ($haunters_count < 50)
 						{
 							$this->haunters[] = (int)$user_id;
@@ -234,7 +234,7 @@ class GClub
 				$incomer_id = -$incomer_id;
 				if (isset($this->events[$event_id]))
 				{
-					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, $this->name, NEW_USER_FLAGS, $incomer_flags | USER_CLUB_PERM_PLAYER);
+					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, $this->name, NEW_USER_FLAGS, $incomer_flags | USER_PERM_PLAYER);
 					$this->events[$event_id]->reg[$incomer_id] = $incomer_name;
 					if ($haunters_count < 50)
 					{
@@ -292,7 +292,7 @@ class GUser
 		$this->id = (int)$_profile->user_id;
 		$this->name = $_profile->user_name;
 		$this->flags = (int)$_profile->user_flags;
-		$this->manager = ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MANAGER) ? 1 : 0;
+		$this->manager = ($_profile->clubs[$club_id]->flags & USER_PERM_MANAGER) ? 1 : 0;
 		
 		$query = new DbQuery('SELECT flags, l_autosave, g_autosave, prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $this->id);
 		$this->settings = new stdClass();
@@ -474,7 +474,7 @@ class CommandQueue
 		}
 		
 		$club = $_profile->clubs[$this->club_id];
-		if (($club->flags & USER_CLUB_PERM_MANAGER) == 0)
+		if (($club->flags & USER_PERM_MANAGER) == 0)
 		{
 			throw new Exc(get_label('No permissions'));
 		}
@@ -1099,7 +1099,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else if ($club_id > 0)
 		{
-			$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM user_clubs WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)', $club_id);
+			$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM club_users WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)', $club_id);
 		}
 		$query->add(' ORDER BY games_count DESC');
 		

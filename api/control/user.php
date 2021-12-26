@@ -36,7 +36,7 @@ class ApiPage extends ControlApiPageBase
 			}
 			else if (isset($_REQUEST['club']))
 			{
-				$query->add(' AND u.id IN (SELECT user_id FROM user_clubs WHERE club_id = ?)', $_REQUEST['club']);
+				$query->add(' AND u.id IN (SELECT user_id FROM club_users WHERE club_id = ?)', $_REQUEST['club']);
 			}
 			$query->add(' ORDER BY rating DESC');
 		}

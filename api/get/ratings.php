@@ -235,7 +235,7 @@ class ApiPage extends GetApiPageBase
 		}
 		else if ($club_members > 0)
 		{
-			$condition->add(' AND u.id IN (SELECT user_id FROM user_clubs WHERE club_id = ?)', $club_members);
+			$condition->add(' AND u.id IN (SELECT user_id FROM club_users WHERE club_id = ?)', $club_members);
 		}
 		
 		if ($game > 0)

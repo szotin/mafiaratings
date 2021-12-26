@@ -23,6 +23,11 @@ define('AGENT_WEBOS', 5);
 define('USER_LEAGUE_PERM_MANAGER', 0x8000);
 define('USER_LEAGUE_PERM_MASK', 0x8000); // USER_LEAGUE_PERM_MANAGER
 
+// permission flags - applicable to user-club; user-event; and user-tournament
+define('USER_PERM_PLAYER', 0x1);
+define('USER_PERM_MODER', 0x2);
+define('USER_PERM_MANAGER', 0x4);
+
 // user-club flags
 // 01 - 0x0001 -      1 - perm player
 // 02 - 0x0002 -      2 - perm mod
@@ -31,23 +36,24 @@ define('USER_LEAGUE_PERM_MASK', 0x8000); // USER_LEAGUE_PERM_MANAGER
 // 05 - 0x0010 -     16 - subscribed
 // 06 - 0x0020 -     32 - banned
 // 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
-define('USER_CLUB_PERM_PLAYER', 0x1);
-define('USER_CLUB_PERM_MODER', 0x2);
-define('USER_CLUB_PERM_MANAGER', 0x4);
 define('USER_CLUB_FLAG_SUBSCRIBED', 0x10);
 define('USER_CLUB_FLAG_BANNED', 0x20); 
-define('USER_CLUB_NEW_PLAYER_FLAGS', 0x11); // USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED
-define('USER_CLUB_PERM_MASK', 0x7); // USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER
+define('USER_CLUB_NEW_PLAYER_FLAGS', 0x11); // USER_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED
+define('USER_CLUB_PERM_MASK', 0x7); // USER_PERM_PLAYER | USER_PERM_MODER | USER_PERM_MANAGER
 
 // user-event flags
-define('USER_EVENT_PERM_PLAYER', 0x1);
-define('USER_EVENT_PERM_MODER', 0x2);
-define('USER_EVENT_PERM_MANAGER', 0x4);
+// 01 - 0x0001 -      1 - perm player
+// 02 - 0x0002 -      2 - perm mod
+// 03 - 0x0004 -      4 - perm manager
+// 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
+define('USER_EVENT_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
 
 // user-tournament flags
-define('USER_TOURNAMENT_PERM_PLAYER', 0x1);
-define('USER_TOURNAMENT_PERM_MODER', 0x2);
-define('USER_TOURNAMENT_PERM_MANAGER', 0x4);
+// 01 - 0x0001 -      1 - perm player
+// 02 - 0x0002 -      2 - perm mod
+// 03 - 0x0004 -      4 - perm manager
+// 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
+define('USER_TOURNAMENT_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
 
 // user flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)

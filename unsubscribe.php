@@ -15,7 +15,7 @@ class Page extends PageBase
 		if ($_profile->is_admin())
 		{
 			$this->clubs = array();
-			$query = new DbQuery('SELECT c.id, c.name, u.flags FROM user_clubs u JOIN clubs c ON c.id = u.club_id WHERE u.user_id = ?', $_profile->user_id);
+			$query = new DbQuery('SELECT c.id, c.name, u.flags FROM club_users u JOIN clubs c ON c.id = u.club_id WHERE u.user_id = ?', $_profile->user_id);
 			while ($row = $query->next())
 			{
 				$club = new ProfileClub();
@@ -37,7 +37,7 @@ class Page extends PageBase
 					if (($club->flags & USER_CLUB_FLAG_SUBSCRIBED) == 0)
 					{
 						Db::begin();
-						Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
+						Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
 						if (Db::affected_rows() > 0)
 						{
 							db_log(LOG_OBJECT_USER, 'subscribed', NULL, $_profile->user_id, $club->id);
@@ -49,7 +49,7 @@ class Page extends PageBase
 				else if (($club->flags & USER_CLUB_FLAG_SUBSCRIBED) != 0)
 				{
 					Db::begin();
-					Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
+					Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags & ~' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $_profile->user_id, $club->id);
 					if (Db::affected_rows() > 0)
 					{
 						db_log(LOG_OBJECT_USER, 'unsubscribed', NULL, $_profile->user_id, $club->id);

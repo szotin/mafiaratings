@@ -386,7 +386,7 @@ var mr = new function()
 	{
 		if (typeof onSuccess == "undefined")
 			onSuccess = refr;
-		dlg.form("form/club_add_member.php?club_id=" + id, onSuccess, 400);
+		dlg.form("form/add_user.php?club_id=" + id, onSuccess, 400);
 	}
 
 	this.removeClubMember = function(userId, clubId)
@@ -632,6 +632,18 @@ var mr = new function()
 		dlg.infoForm("form/event_token.php?event_id=" + id, 400);
 	}
 	
+	this.addEventUser = function(id, onSuccess)
+	{
+		if (typeof onSuccess == "undefined")
+			onSuccess = refr;
+		dlg.form("form/add_user.php?event_id=" + id, onSuccess, 400);
+	}
+
+	this.removeEventUser = function(userId, eventId)
+	{
+		json.post("api/ops/user.php", { op: "quit_event", event_id: eventId, user_id: userId }, refr);
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// tournament
 	//--------------------------------------------------------------------------------------
@@ -685,6 +697,18 @@ var mr = new function()
 		dlg.infoForm("form/tournament_token.php?tournament_id=" + id, 400);
 	}
 
+	this.addTournamentUser = function(id, onSuccess)
+	{
+		if (typeof onSuccess == "undefined")
+			onSuccess = refr;
+		dlg.form("form/add_user.php?tournament_id=" + id, onSuccess, 400);
+	}
+
+	this.removeTournamentUser = function(userId, tournamentId)
+	{
+		json.post("api/ops/user.php", { op: "quit_tournament", tournament_id: tournamentId, user_id: userId }, refr);
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// scoring system
 	//--------------------------------------------------------------------------------------
@@ -1102,14 +1126,24 @@ var mr = new function()
 		}
 	}
 	
-	this.editUserAccess = function(userId, clubId)
+	this.editUserAccess = function(userId)
 	{
-		var url = "form/user_access.php?id=" + userId;
-		if (typeof clubId != "undefined")
-		{
-			url += "&club=" + clubId;
-		}
-		dlg.form(url, refr, 400);
+		dlg.form("form/user_access.php?user_id=" + userId, refr, 400);
+	}
+	
+	this.editClubAccess = function(userId, clubId)
+	{
+		dlg.form("form/user_access.php?user_id=" + userId + "&club_id=" + clubId, refr, 400);
+	}
+	
+	this.editEventAccess = function(userId, eventId)
+	{
+		dlg.form("form/user_access.php?user_id=" + userId + "&event_id=" + eventId, refr, 400);
+	}
+	
+	this.editTournamentAccess = function(userId, tournamentId)
+	{
+		dlg.form("form/user_access.php?user_id=" + userId + "&tournament_id=" + tournamentId, refr, 400);
 	}
 	
 	this.editUser = function(userId)

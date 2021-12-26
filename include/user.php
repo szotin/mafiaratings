@@ -103,7 +103,7 @@ function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $c
 	
 	if ($club_id != NULL)
 	{
-		Db::exec(get_label('user'), 'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
+		Db::exec(get_label('user'), 'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
 		db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
 	}
 	

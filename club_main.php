@@ -458,7 +458,7 @@ class Page extends ClubPageBase
 		}
 		
 		// managers
-		$query = new DbQuery('SELECT u.id, u.name, u.flags FROM user_clubs c JOIN users u ON u.id = c.user_id WHERE c.club_id = ? AND (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0', $this->id);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags FROM club_users c JOIN users u ON u.id = c.user_id WHERE c.club_id = ? AND (c.flags & ' . USER_PERM_MANAGER . ') <> 0', $this->id);
 		if ($row = $query->next())
 		{
 			$managers_count = 0;

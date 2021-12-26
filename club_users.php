@@ -29,7 +29,7 @@ class Page extends ClubPageBase
 			if ($row = $query->next())
 			{
 				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
-				list($is_member) = Db::record(get_label('user'), 'SELECT count(*) FROM user_clubs WHERE user_id = ? AND club_id = ?', $this->user_id, $this->id);
+				list($is_member) = Db::record(get_label('user'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $this->user_id, $this->id);
 				if ($is_member <= 0)
 				{
 					$this->errorMessage(get_label('[0] is not a member of [1].', $this->user_name, $this->name));
@@ -45,7 +45,7 @@ class Page extends ClubPageBase
 		
 		if (isset($_REQUEST['ban']))
 		{
-			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['ban'], $this->id);
+			Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['ban'], $this->id);
 			if (Db::affected_rows() > 0)
 			{
 				db_log(LOG_OBJECT_USER, 'banned', NULL, $_REQUEST['ban'], $this->id);
@@ -53,7 +53,7 @@ class Page extends ClubPageBase
 		}
 		else if (isset($_REQUEST['unban']))
 		{
-			Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['unban'], $this->id);
+			Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['unban'], $this->id);
 			if (Db::affected_rows() > 0)
 			{
 				db_log(LOG_OBJECT_USER, 'unbanned', NULL, $_REQUEST['unban'], $this->id);
@@ -68,7 +68,7 @@ class Page extends ClubPageBase
 		$condition = new SQL('u.id = uc.user_id AND uc.club_id = ?', $this->id);
 		if ($this->user_id > 0)
 		{
-			$pos_query = new DbQuery('SELECT count(*) FROM user_clubs uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND u.name < ?', $this->id, $this->user_name);
+			$pos_query = new DbQuery('SELECT count(*) FROM club_users uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND u.name < ?', $this->id, $this->user_name);
 			list($user_pos) = $pos_query->next();
 			$_page = floor($user_pos / PAGE_SIZE);
 		}
@@ -82,7 +82,7 @@ class Page extends ClubPageBase
 		
 		$can_edit = $_profile->is_club_manager($this->id);
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users u, user_clubs uc WHERE ', $condition);
+		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users u, club_users uc WHERE ', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		echo '<table class="bordered light" width="100%">';
@@ -97,7 +97,7 @@ class Page extends ClubPageBase
 
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.email, u.flags, uc.flags, c.id, c.name, c.flags' .
-			' FROM user_clubs uc' .
+			' FROM club_users uc' .
 			' JOIN users u ON uc.user_id = u.id' .
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' WHERE uc.club_id = ?' .
@@ -126,7 +126,7 @@ class Page extends ClubPageBase
 				else
 				{
 					echo '<button class="icon" onclick="mr.banUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Ban [0]', $name) . '"><img src="images/ban.png" border="0"></button>';
-					echo '<button class="icon" onclick="mr.editUserAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.editClubAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
 					if ($club_id == $this->id)
 					{
 						echo '<button class="icon" onclick="mr.editUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
@@ -167,7 +167,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="24">';
 			}
-			if ($user_club_flags & USER_CLUB_PERM_PLAYER)
+			if ($user_club_flags & USER_PERM_PLAYER)
 			{
 				echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
 			}
@@ -175,7 +175,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($user_club_flags & USER_CLUB_PERM_MODER)
+			if ($user_club_flags & USER_PERM_MODER)
 			{
 				echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
 			}
@@ -183,7 +183,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($user_club_flags & USER_CLUB_PERM_MANAGER)
+			if ($user_club_flags & USER_PERM_MANAGER)
 			{
 				echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
 			}

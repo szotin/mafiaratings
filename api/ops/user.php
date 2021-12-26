@@ -9,6 +9,46 @@ require_once '../../include/image.php';
 
 define('CURRENT_VERSION', 0);
 
+function access_flags($flags)
+{
+	if (isset($_REQUEST['manager']))
+	{
+		if ((int)$_REQUEST['manager'])
+		{
+			$flags |= USER_PERM_MANAGER;
+		}
+		else
+		{
+			$flags &= ~USER_PERM_MANAGER;
+		}
+	}
+	
+	if (isset($_REQUEST['moder']))
+	{
+		if ((int)$_REQUEST['moder'])
+		{
+			$flags |= USER_PERM_MODER;
+		}
+		else
+		{
+			$flags &= ~USER_PERM_MODER;
+		}
+	}
+	
+	if (isset($_REQUEST['player']))
+	{
+		if ((int)$_REQUEST['player'])
+		{
+			$flags |= USER_PERM_PLAYER;
+		}
+		else
+		{
+			$flags &= ~USER_PERM_PLAYER;
+		}
+	}
+	return $flags;
+}
+
 class ApiPage extends OpsApiPageBase
 {
 	function merge_users($src_id, $dst_id)
@@ -26,8 +66,8 @@ class ApiPage extends OpsApiPageBase
 			Db::record(get_label('user'), 'SELECT name, games_moderated, games, rating, reg_time, city_id, club_id, flags FROM users WHERE id = ?', $src_id);
 		
 		Db::exec(get_label('email'), 'UPDATE emails SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
-		Db::exec(get_label('club'), 'DELETE FROM user_clubs WHERE user_id = ? AND club_id IN (SELECT club_id FROM (SELECT club_id FROM user_clubs WHERE user_id = ?) x)', $src_id, $dst_id);
-		Db::exec(get_label('club'), 'UPDATE user_clubs SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('club'), 'DELETE FROM club_users WHERE user_id = ? AND club_id IN (SELECT club_id FROM (SELECT club_id FROM club_users WHERE user_id = ?) x)', $src_id, $dst_id);
+		Db::exec(get_label('club'), 'UPDATE club_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM event_users WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('event'), 'UPDATE event_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('log'), 'UPDATE log SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
@@ -93,7 +133,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::exec(get_label('email'), 'DELETE FROM emails WHERE user_id = ?', $user_id);
-		Db::exec(get_label('club'), 'DELETE FROM user_clubs WHERE user_id = ?', $user_id);
+		Db::exec(get_label('club'), 'DELETE FROM club_users WHERE user_id = ?', $user_id);
 		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ?', $user_id);
 		Db::exec(get_label('log'), 'DELETE FROM log WHERE user_id = ?', $user_id);
 		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE objection_id IN (SELECT id FROM (SELECT id FROM objections WHERE user_id = ?) x)', $user_id);
@@ -113,7 +153,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
-		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_USER, 'banned', NULL, $user_id, $club_id);
@@ -139,7 +179,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
-		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_USER, 'unbanned', NULL, $user_id, $club_id);
@@ -161,53 +201,77 @@ class ApiPage extends OpsApiPageBase
 	function access_op()
 	{
 		$user_id = (int)get_required_param('user_id');
-		$club_id = (int)get_required_param('club_id');
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		$club_id = (int)get_optional_param('club_id', 0);
+		$event_id = (int)get_optional_param('event_id', 0);
+		$tournament_id = (int)get_optional_param('tournament_id', 0);
 		
 		Db::begin();
-		list($flags) = Db::record(get_label('user'), 'SELECT flags FROM user_clubs uc WHERE uc.user_id = ? AND uc.club_id = ?', $user_id, $club_id);
-		if (isset($_REQUEST['manager']))
+		if ($event_id > 0)
 		{
-			if ((int)$_REQUEST['manager'])
+			list($club_id, $flags) = Db::record(get_label('event'), 'SELECT e.club_id, eu.flags FROM event_users eu JOIN events e ON e.id = eu.event_id WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			$flags = access_flags($flags);
+			
+			Db::exec(get_label('user'), 'UPDATE event_users SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
+			if (Db::affected_rows() > 0)
 			{
-				$flags |= USER_CLUB_PERM_MANAGER;
-			}
-			else
-			{
-				$flags &= ~USER_CLUB_PERM_MANAGER;
+				$log_details = new stdClass();
+				$log_details->event_id = $event_id;
+				$log_details->event_flags = $flags;
+				db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id);
 			}
 		}
-		
-		if (isset($_REQUEST['moder']))
+		else if ($tournament_id > 0)
 		{
-			if ((int)$_REQUEST['moder'])
+			list($club_id, $flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, tu.flags FROM tournament_users tu JOIN tournaments t ON t.id = tu.tournament_id WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			$flags = access_flags($flags);
+			
+			Db::exec(get_label('user'), 'UPDATE tournament_users SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
+			if (Db::affected_rows() > 0)
 			{
-				$flags |= USER_CLUB_PERM_MODER;
-			}
-			else
-			{
-				$flags &= ~USER_CLUB_PERM_MODER;
+				$log_details = new stdClass();
+				$log_details->tournament_id = $tournament_id;
+				$log_details->tournament_flags = $flags;
+				db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id);
 			}
 		}
-		
-		if (isset($_REQUEST['player']))
+		else if ($club_id > 0)
 		{
-			if ((int)$_REQUEST['player'])
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			list($flags) = Db::record(get_label('club'), 'SELECT cu.flags FROM club_users cu JOIN clubs c ON c.id = cu.club_id WHERE cu.club_id = ? AND cu.user_id = ?', $club_id, $user_id);
+			$flags = access_flags($flags);
+			
+			Db::exec(get_label('user'), 'UPDATE club_users SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
+			if (Db::affected_rows() > 0)
 			{
-				$flags |= USER_CLUB_PERM_PLAYER;
-			}
-			else
-			{
-				$flags &= ~USER_CLUB_PERM_PLAYER;
+				$log_details = new stdClass();
+				$log_details->club_flags = $flags;
+				db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id);
 			}
 		}
-		
-		Db::exec(get_label('user'), 'UPDATE user_clubs SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
-		if (Db::affected_rows() > 0)
+		else
 		{
-			$log_details = new stdClass();
-			$log_details->club_flags = $flags;
-			db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id);
+			check_permissions(PERMISSION_ADMIN);
+			list($flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $user_id);
+			if (isset($_REQUEST['admin']))
+			{
+				if ((int)$_REQUEST['admin'])
+				{
+					$flags |= USER_PERM_ADMIN;
+				}
+				else
+				{
+					$flags &= ~USER_PERM_ADMIN;
+				}
+			}
+			Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $user_id);
+			if (Db::affected_rows() > 0)
+			{
+				$log_details = new stdClass();
+				$log_details->flags = $flags;
+				db_log(LOG_OBJECT_USER, 'site permissions changed', $log_details, $user_id);
+			}
 		}
 		Db::commit();
 	}
@@ -216,10 +280,13 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Set user permissions in the club.');
 		$help->request_param('user_id', 'User id.');
-		$help->request_param('club_id', 'Club id.');
-		$help->request_param('player', 'Player permission in the club. 1 to grand the permission, 0 to revoke it.', 'remains the same');
-		$help->request_param('moder', 'Moderator permission in the club. 1 to grand the permission, 0 to revoke it.', 'remains the same');
-		$help->request_param('manager', 'Manager permission in the club. 1 to grand the permission, 0 to revoke it.', 'remains the same');
+		$help->request_param('event_id', 'Event id.', 'whole site access is controlled (admin permission is requred for it).');
+		$help->request_param('tournament_id', 'Tournament id.', 'whole site access is controlled (admin permission is requred for it).');
+		$help->request_param('club_id', 'Club id.', 'whole site access is controlled (admin permission is requred for it).');
+		$help->request_param('player', 'Player permission in the club. 1 to grand the permission, 0 to revoke it. Does not work when none of club_id, event_id, or tournament_id is set.', 'remains the same');
+		$help->request_param('moder', 'Moderator permission in the club. 1 to grand the permission, 0 to revoke it. Does not work when none of club_id, event_id, or tournament_id is set.', 'remains the same');
+		$help->request_param('manager', 'Manager permission in the club. 1 to grand the permission, 0 to revoke it. Does not work when none of club_id, event_id, or tournament_id is set.', 'remains the same');
+		$help->request_param('admin', 'Administrator permission for the site. 1 to grand the permission, 0 to revoke it. Does not work when club_id, event_id, or tournament_id is set.', 'remains the same');
 		return $help;
 	}
 	
@@ -271,45 +338,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 
-	//-------------------------------------------------------------------------------------------------------
-	// site_access
-	//-------------------------------------------------------------------------------------------------------
-	function site_access_op()
-	{
-		$user_id = (int)get_required_param('user_id');
-		check_permissions(PERMISSION_ADMIN);
-		
-		Db::begin();
-		list($flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $user_id);
-		if (isset($_REQUEST['admin']))
-		{
-			if ((int)$_REQUEST['admin'])
-			{
-				$flags |= USER_PERM_ADMIN;
-			}
-			else
-			{
-				$flags &= ~USER_PERM_ADMIN;
-			}
-		}
-		Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $user_id);
-		if (Db::affected_rows() > 0)
-		{
-			$log_details = new stdClass();
-			$log_details->flags = $flags;
-			db_log(LOG_OBJECT_USER, 'site permissions changed', $log_details, $user_id);
-		}
-		Db::commit();
-	}
-
-	function site_access_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_ADMIN, 'Set user permissions in ' . PRODUCT_NAME . '.');
-		$help->request_param('user_id', 'User id.');
-		$help->request_param('admin', 'Administrator permission in ' . PRODUCT_NAME . '. 1 to grand the permission, 0 to revoke it.', 'remains the same');
-		return $help;
-	}
-	
 	//-------------------------------------------------------------------------------------------------------
 	// merge
 	//-------------------------------------------------------------------------------------------------------
@@ -457,18 +485,18 @@ class ApiPage extends OpsApiPageBase
 		
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
 		
-		list ($count) = Db::record(get_label('membership'), 'SELECT count(*) FROM user_clubs WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		Db::begin();
+		list ($count) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if ($count == 0)
 		{
-			Db::begin();
-			Db::exec(get_label('membership'), 'INSERT INTO user_clubs (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
+			Db::exec(get_label('membership'), 'INSERT INTO club_users (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
 			db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
-			Db::commit();
 			if ($user_id == $owner_id)
 			{
 				$_profile->update_clubs();
 			}
 		}
+		Db::commit();
 		
 		$this->response['club_id'] = $club_id;
 		$this->response['user_id'] = $user_id;
@@ -503,7 +531,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
 		
 		Db::begin();
-		Db::exec(get_label('membership'), 'DELETE FROM user_clubs WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		Db::exec(get_label('membership'), 'DELETE FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_USER, 'left club', NULL, $user_id, $club_id);
@@ -525,6 +553,180 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('club_id', 'Club id.');
 		$help->response_param('user_id', 'User id.');
 		$help->response_param('club_id', 'Club id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// join_event
+	//-------------------------------------------------------------------------------------------------------
+	function join_event_op()
+	{
+		global $_profile;
+		
+		$owner_id = 0;
+		if ($_profile != NULL)
+		{
+			$owner_id = $_profile->user_id;
+		}
+		
+		$user_id = (int)get_optional_param('user_id', $owner_id);
+		$event_id = (int)get_required_param('event_id');
+		
+		Db::begin();
+		list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
+		if ($count == 0)
+		{
+			Db::exec(get_label('registration'), 'INSERT INTO event_users (user_id, event_id, flags) values (?, ?, ' . USER_EVENT_NEW_PLAYER_FLAGS . ')', $user_id, $event_id);
+			$log_details = new stdClass();
+			$log_details->event_id = $event_id;
+			db_log(LOG_OBJECT_USER, 'joined event', $log_details, $user_id, $club_id);
+		}
+		Db::commit();
+		
+		$this->response['event_id'] = $event_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function join_event_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Register user to an event.');
+		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('event_id', 'Event id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('event_id', 'Event id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// quit_event
+	//-------------------------------------------------------------------------------------------------------
+	function quit_event_op()
+	{
+		global $_profile;
+		
+		$owner_id = 0;
+		if ($_profile != NULL)
+		{
+			$owner_id = $_profile->user_id;
+		}
+		
+		$user_id = (int)get_optional_param('user_id', $owner_id);
+		$event_id = (int)get_required_param('event_id');
+		
+		Db::begin();
+		list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		
+		Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->event_id = $event_id;
+			db_log(LOG_OBJECT_USER, 'left event', $log_details, $user_id, $club_id);
+		}
+		Db::commit();
+		
+		$this->response['event_id'] = $event_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function quit_event_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Remove user from the registrations to the event.');
+		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('event_id', 'Event id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('event_id', 'Event id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// join_tournament
+	//-------------------------------------------------------------------------------------------------------
+	function join_tournament_op()
+	{
+		global $_profile;
+		
+		$owner_id = 0;
+		if ($_profile != NULL)
+		{
+			$owner_id = $_profile->user_id;
+		}
+		
+		$user_id = (int)get_optional_param('user_id', $owner_id);
+		$tournament_id = (int)get_required_param('tournament_id');
+		
+		Db::begin();
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		if ($count == 0)
+		{
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_users (user_id, tournament_id, flags) values (?, ?, ' . USER_TOURNAMENT_NEW_PLAYER_FLAGS . ')', $user_id, $tournament_id);
+			$log_details = new stdClass();
+			$log_details->tournament_id = $tournament_id;
+			db_log(LOG_OBJECT_USER, 'joined tournament', $log_details, $user_id, $club_id);
+		}
+		Db::commit();
+		
+		$this->response['tournament_id'] = $tournament_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function join_tournament_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Register user to an tournament.');
+		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// quit_tournament
+	//-------------------------------------------------------------------------------------------------------
+	function quit_tournament_op()
+	{
+		global $_profile;
+		
+		$owner_id = 0;
+		if ($_profile != NULL)
+		{
+			$owner_id = $_profile->user_id;
+		}
+		
+		$user_id = (int)get_optional_param('user_id', $owner_id);
+		$tournament_id = (int)get_required_param('tournament_id');
+		
+		Db::begin();
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		
+		Db::exec(get_label('registration'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->tournament_id = $tournament_id;
+			db_log(LOG_OBJECT_USER, 'left tournament', $log_details, $user_id, $club_id);
+		}
+		Db::commit();
+		
+		$this->response['tournament_id'] = $tournament_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function quit_tournament_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Remove user from the registrations to the tournament.');
+		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('tournament_id', 'Tournament id.');
 		return $help;
 	}
 	
@@ -669,10 +871,10 @@ class ApiPage extends OpsApiPageBase
 			$name, $flags, $city_id, $langs, $phone, $club_id, $user_id);
 		if (Db::affected_rows() > 0)
 		{
-			list($is_member) = Db::record(get_label('membership'), 'SELECT count(*) FROM user_clubs WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+			list($is_member) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 			if ($is_member <= 0)
 			{
-				Db::exec(get_label('membership'), 'INSERT INTO user_clubs (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
+				Db::exec(get_label('membership'), 'INSERT INTO club_users (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
 				db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
 				$update_clubs = true;
 			}

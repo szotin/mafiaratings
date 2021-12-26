@@ -24,14 +24,14 @@ function show_permissions($user_flags)
 		$image = 'player.png';
 	}
 	
-	if (($user_flags & USER_CLUB_PERM_MODER) != 0)
+	if (($user_flags & USER_PERM_MODER) != 0)
 	{
 		$title .= $sep . get_label('moderator');
 		$sep = '; ';
 		$image = 'moderator.png';
 	}
 	
-	if (($user_flags & USER_CLUB_PERM_MANAGER) != 0)
+	if (($user_flags & USER_PERM_MANAGER) != 0)
 	{
 		$title .= $sep . get_label('manager');
 		$sep = '; ';
@@ -117,7 +117,7 @@ class Page extends UserPageBase
 			{
 				$status = get_label('activated');
 			}
-			$query = new DbQuery('SELECT flags FROM user_clubs WHERE user_id = ? AND club_id = ?', $this->id, $this->club_id);
+			$query = new DbQuery('SELECT flags FROM club_users WHERE user_id = ? AND club_id = ?', $this->id, $this->club_id);
 			if ($row = $query->next())
 			{
 				list($club_flags) = $row;

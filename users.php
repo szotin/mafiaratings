@@ -74,7 +74,7 @@ class Page extends GeneralPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM user_clubs WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
+				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
 				$sep = ' AND ';
 			}
 			break;
@@ -107,11 +107,11 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.email, u.flags, c.id,
 			c.name, c.flags' . 
-			', SUM(IF((uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ') = ' . USER_CLUB_PERM_PLAYER . ', 1, 0))' . 
-			', SUM(IF((uc.flags & ' . (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ') = ' . USER_CLUB_PERM_MODER . ', 1, 0))' . 
-			', SUM(IF((uc.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0, 1, 0))' . 
+			', SUM(IF((uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_MODER | USER_PERM_MANAGER) . ') = ' . USER_PERM_PLAYER . ', 1, 0))' . 
+			', SUM(IF((uc.flags & ' . (USER_PERM_MODER | USER_PERM_MANAGER) . ') = ' . USER_PERM_MODER . ', 1, 0))' . 
+			', SUM(IF((uc.flags & ' . USER_PERM_MANAGER . ') <> 0, 1, 0))' . 
 			' FROM users u' .
-			' LEFT OUTER JOIN user_clubs uc ON uc.user_id = u.id' .
+			' LEFT OUTER JOIN club_users uc ON uc.user_id = u.id' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id', $condition);
 		$query->add(' GROUP BY u.id ORDER BY u.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
