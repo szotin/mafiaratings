@@ -1,6 +1,6 @@
 <div class="player" style="background-image: url({{player.hasPhoto ? player.photoUrl : 'assets/aml_masters.jpg' }});"
   [ngClass]="[
-    player.role,
+    showRoles ? player.role : '',
     'player-number' + player.number,
     'player-status-' + player.state,
     'player-isSpeaking-' + player.isSpeaking
