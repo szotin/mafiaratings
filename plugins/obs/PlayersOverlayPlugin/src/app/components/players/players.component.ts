@@ -21,15 +21,6 @@ export class PlayersComponent implements OnInit {
         switchMap(() => this.getGameSnapshot()),
         retry(20),
         share(),
-      )
-      .subscribe(
-        (res: { body: GameSnapshot | null | undefined; }) => {
-          let gameSnapshot = res.body;
-          let game = gameSnapshot?.game;
-          this.gameSnapshot = gameSnapshot;
-          this.showPlayers = (game && game.state != GameState.notStarted) ?? false;
-        },
-        (err: any) => console.log(err)
       );
   }
 
