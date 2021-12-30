@@ -811,7 +811,7 @@ class EventPageBase extends PageBase
 {
 	protected $event;
 	protected $is_manager;
-
+	
 	protected function prepare()
 	{
 		global $_profile;

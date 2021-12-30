@@ -29,7 +29,7 @@ try
 	echo '<tr><td width="140">' . get_label('League name') . ':</td><td><input class="longest" id="form-league_name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="8">';
-	start_upload_logo_button();
+	start_upload_logo_button($id);
 	echo get_label('Change logo') . '<br>';
 	$league_pic = new Picture(LEAGUE_PICTURE);
 	$league_pic->set($id, $name, $flags);
@@ -89,12 +89,12 @@ try
 		onSuccess);
 	}
 	
-	function uploadLogo(onSuccess)
+	function uploadLogo(leagueId, onSuccess)
 	{
 		json.upload('api/ops/league.php', 
 		{
 			op: "change"
-			, league_id: <?php echo $id; ?>
+			, league_id: leagueId
 			, logo: document.getElementById("upload").files[0]
 		}, 
 		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 

@@ -954,6 +954,159 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('message', 'Localized user message when there is something to tell user.');
 		return $help;
 	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// custom_photo
+	//-------------------------------------------------------------------------------------------------------
+	function custom_photo_op()
+	{
+		global $_profile, $_lang_code;
+		$user_id = get_required_param('user_id');
+		$event_id = get_optional_param('event_id', 0);
+		$club_id = get_optional_param('club_id', 0);
+		$tournament_id = get_optional_param('tournament_id', 0);
+		
+		if (!isset($_FILES['picture']))
+		{
+			throw new Exc('Please specify a picture to upload in picture URI parameter.');
+		}
+		
+		if ($event_id > 0)
+		{
+			$query = new DbQuery('SELECT e.club_id, eu.flags FROM event_users eu JOIN events e ON e.id = eu.event_id WHERE eu.user_id = ? AND eu.event_id = ?', $user_id, $event_id);
+			if ($row = $query->next())
+			{
+				list($club_id, $flags) = $row;
+			}
+			else
+			{
+				list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+				list($event_name) = Db::record(get_label('event'), 'SELECT name FROM events WHERE id = ?', $event_id);
+				throw new Exc(get_label('[0] is not registered for [1]', $user_name, $event_name));
+			}
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+
+			upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT, 'e' . $event_id);
+			
+			$icon_version = (($flags & USER_EVENT_ICON_MASK) >> USER_EVENT_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > USER_EVENT_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~USER_EVENT_ICON_MASK) + ($icon_version << USER_EVENT_ICON_MASK_OFFSET);
+			
+			Db::begin();
+			Db::exec(get_label('user'), 'UPDATE event_users SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
+			if (Db::affected_rows() > 0)
+			{
+				$log_details = new stdClass();
+				$log_details->event_id = $event_id;
+				db_log(LOG_OBJECT_USER, 'event picture uploaded', $log_details, $user_id);
+			}
+			Db::commit();
+		}
+		else if ($tournament_id > 0)
+		{
+			$query = new DbQuery('SELECT e.club_id, eu.flags FROM tournament_users eu JOIN tournaments e ON e.id = eu.tournament_id WHERE eu.user_id = ? AND eu.tournament_id = ?', $user_id, $tournament_id);
+			if ($row = $query->next())
+			{
+				list($club_id, $flags) = $row;
+			}
+			else
+			{
+				list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+				list($tournament_name) = Db::record(get_label('tournament'), 'SELECT name FROM tournaments WHERE id = ?', $tournament_id);
+				throw new Exc(get_label('[0] is not registered for [1]', $user_name, $tournament_name));
+			}
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+
+			upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT, 't' . $tournament_id);
+			
+			$icon_version = (($flags & USER_TOURNAMENT_ICON_MASK) >> USER_TOURNAMENT_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > USER_TOURNAMENT_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~USER_TOURNAMENT_ICON_MASK) + ($icon_version << USER_TOURNAMENT_ICON_MASK_OFFSET);
+			
+			Db::begin();
+			Db::exec(get_label('user'), 'UPDATE tournament_users SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
+			if (Db::affected_rows() > 0)
+			{
+				$log_details = new stdClass();
+				$log_details->tournament_id = $tournament_id;
+				db_log(LOG_OBJECT_USER, 'tournament picture uploaded', $log_details, $user_id);
+			}
+			Db::commit();
+		}
+		else if ($club_id > 0)
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			$query = new DbQuery('SELECT flags FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+			}
+			else
+			{
+				list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+				throw new Exc(get_label('[0] is not a member of [1]', $user_name, $club_name));
+			}
+
+			upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT, 'c' . $club_id);
+			
+			$icon_version = (($flags & USER_CLUB_ICON_MASK) >> USER_CLUB_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > USER_CLUB_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~USER_CLUB_ICON_MASK) + ($icon_version << USER_CLUB_ICON_MASK_OFFSET);
+			
+			Db::begin();
+			Db::exec(get_label('user'), 'UPDATE club_users SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
+			if (Db::affected_rows() > 0)
+			{
+				$log_details = new stdClass();
+				$log_details->club_id = $club_id;
+				db_log(LOG_OBJECT_USER, 'club picture uploaded', $log_details, $user_id);
+			}
+			Db::commit();		
+		}
+		else
+		{
+			check_permissions(PERMISSION_ADMIN);
+			list ($flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE user_id = ?', $user_id);
+			
+			upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT);
+			
+			$icon_version = (($flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET) + 1;
+			if ($icon_version > USER_ICON_MAX_VERSION)
+			{
+				$icon_version = 1;
+			}
+			$flags = ($flags & ~USER_ICON_MASK) + ($icon_version << USER_ICON_MASK_OFFSET);
+			
+			Db::begin();
+			Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $user_id);
+			if (Db::affected_rows() > 0)
+			{
+				db_log(LOG_OBJECT_USER, 'picture uploaded', $log_details, $user_id);
+			}
+			Db::commit();		
+		}
+	}
+	
+	function custom_photo_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_USER, 'Upload custom user photo for a specific activity - event, tournament, or club.');
+		$help->request_param('user_id', 'User id');
+		$help->request_param('event_id', 'Event id. User must be registered for this event.', 'root user picture is uploaded.');
+		$help->request_param('tournament_id', 'Tournament id. User must be registered for this tournament.', 'root user picture is uploaded.');
+		$help->request_param('club_id', 'Club id. User must be a member of this club.', 'root user picture is uploaded.');
+		$help->request_param('picture', 'Png or jpeg file to be uploaded for multicast multipart/form-data.');
+		return $help;
+	}
 }
 $page = new ApiPage();
 $page->run('User Operations', CURRENT_VERSION);

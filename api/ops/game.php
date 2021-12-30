@@ -212,6 +212,10 @@ class GClub
 			while ($row = $query->next())
 			{
 				list ($user_id, $event_id, $nick, $user_name, $club_name, $user_flags) = $row;
+				if (is_null($nick))
+				{
+					$nick = $user_name;
+				}
 				if (isset($this->events[$event_id]))
 				{
 					if (!isset($this->players[$user_id]))

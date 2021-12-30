@@ -42,23 +42,6 @@ class Page extends ClubPageBase
 				$this->user_id = 0;
 			}
 		}
-		
-		if (isset($_REQUEST['ban']))
-		{
-			Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['ban'], $this->id);
-			if (Db::affected_rows() > 0)
-			{
-				db_log(LOG_OBJECT_USER, 'banned', NULL, $_REQUEST['ban'], $this->id);
-			}
-		}
-		else if (isset($_REQUEST['unban']))
-		{
-			Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $_REQUEST['unban'], $this->id);
-			if (Db::affected_rows() > 0)
-			{
-				db_log(LOG_OBJECT_USER, 'unbanned', NULL, $_REQUEST['unban'], $this->id);
-			}
-		}
 	}
 	
 	protected function show_body()
@@ -73,6 +56,8 @@ class Page extends ClubPageBase
 			$_page = floor($user_pos / PAGE_SIZE);
 		}
 		
+		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td align="right">';
@@ -87,7 +72,7 @@ class Page extends ClubPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker">';
-		echo '<td width="116">';
+		echo '<td width="145">';
 		if ($can_edit)
 		{
 			echo '<button class="icon" onclick="addMember()" title="' . get_label('Add club member') . '"><img src="images/create.png" border="0"></button>';
@@ -130,6 +115,7 @@ class Page extends ClubPageBase
 					if ($club_id == $this->id)
 					{
 						echo '<button class="icon" onclick="mr.editUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
+						echo '<button class="icon" onclick="mr.clubUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
 					}
 				}
 			}
@@ -140,8 +126,8 @@ class Page extends ClubPageBase
 			echo '</td>';
 			
 			echo '<td width="60" align="center">';
-			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, true, 50);
+			$club_user_pic->set($id, $name, $user_club_flags, 'c' . $this->id)->set($id, $name, $flags);
+			$club_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
 			echo '<td width="200">';

@@ -35,25 +35,45 @@ define('USER_PERM_MANAGER', 0x4);
 // 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
 // 05 - 0x0010 -     16 - subscribed
 // 06 - 0x0020 -     32 - banned
+// 07 - 0x0040 -     64 - icon mask
+// 08 - 0x0080 -    128 - icon mask
+// 09 - 0x0100 -    256 - icon mask
 // 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
 define('USER_CLUB_FLAG_SUBSCRIBED', 0x10);
 define('USER_CLUB_FLAG_BANNED', 0x20); 
 define('USER_CLUB_NEW_PLAYER_FLAGS', 0x11); // USER_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED
-define('USER_CLUB_PERM_MASK', 0x7); // USER_PERM_PLAYER | USER_PERM_MODER | USER_PERM_MANAGER
+
+define('USER_CLUB_ICON_MASK', 0x1c0);
+define('USER_CLUB_ICON_MASK_OFFSET', 6);
+define('USER_CLUB_ICON_MAX_VERSION', 7);
 
 // user-event flags
 // 01 - 0x0001 -      1 - perm player
 // 02 - 0x0002 -      2 - perm mod
 // 03 - 0x0004 -      4 - perm manager
 // 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
+// 05 - 0x0010 -     16 - icon mask
+// 06 - 0x0020 -     32 - icon mask
+// 07 - 0x0040 -     64 - icon mask
 define('USER_EVENT_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
+
+define('USER_EVENT_ICON_MASK', 0x70);
+define('USER_EVENT_ICON_MASK_OFFSET', 4);
+define('USER_EVENT_ICON_MAX_VERSION', 7);
 
 // user-tournament flags
 // 01 - 0x0001 -      1 - perm player
 // 02 - 0x0002 -      2 - perm mod
 // 03 - 0x0004 -      4 - perm manager
 // 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
+// 05 - 0x0800 -     16 - icon mask
+// 06 - 0x1000 -     32 - icon mask
+// 07 - 0x2000 -     64 - icon mask
 define('USER_TOURNAMENT_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
+
+define('USER_TOURNAMENT_ICON_MASK', 0x70);
+define('USER_TOURNAMENT_ICON_MASK_OFFSET', 4);
+define('USER_TOURNAMENT_ICON_MAX_VERSION', 7);
 
 // user flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
@@ -123,6 +143,9 @@ define('PHOTO_COL_COUNT',5);
 
 define('ADDRESS_PIC_CODE', 'a');
 define('USER_PIC_CODE', 'u');
+define('USER_CLUB_PIC_CODE', 'b');
+define('USER_EVENT_PIC_CODE', 'v');
+define('USER_TOURNAMENT_PIC_CODE', 'o');
 define('CLUB_PIC_CODE', 'c');
 define('LEAGUE_PIC_CODE', 'l');
 define('ALBUM_PIC_CODE', 'p');
@@ -256,7 +279,6 @@ define('COUNTRY_FLAG_NOT_CONFIRMED', 1);
 // 2 - 0x0002 -      2 - club membership is not approved by the club
 define('LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED', 0x0001);
 define('LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED', 0x0002);
-
 
 // album flags
 // 1 - 0x0001 -      1 - icon mask

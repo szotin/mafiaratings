@@ -1,0 +1,162 @@
+<?php
+
+require_once '../include/session.php';
+require_once '../include/user.php';
+require_once '../include/city.php';
+require_once '../include/country.php';
+require_once '../include/timezone.php';
+require_once '../include/image.php';
+require_once '../include/languages.php';
+
+initiate_session();
+
+try
+{
+	if (!isset($_REQUEST['user_id']))
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('User')));
+	}
+	$user_id = (int)$_REQUEST['user_id'];
+	
+	if (isset($_REQUEST['event_id']))
+	{
+		$event_id = (int)$_REQUEST['event_id'];
+		list (
+				$name, 
+				$user_event_name, $user_event_flags, 
+				$tournament_id, $user_tournament_flags,
+				$club_id, $user_club_flags,
+				$user_name, $user_flags) = 
+		Db::record(get_label('user'), 
+				'SELECT e.name, eu.nickname, eu.flags, tu.tournament_id, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
+				' FROM users u' .
+				' JOIN events e ON e.id = ?' .
+				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
+				' WHERE u.id = ?', $event_id, $user_id);
+
+		$secondary_id = 'e' . $event_id;
+		$code = USER_EVENT_PIC_CODE;
+		$attribute = ', event_id: ' . $event_id;
+
+		$user_pic = 
+			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE))));
+		$user_pic->
+			set($user_id, $user_event_name, $user_event_flags, $secondary_id)->
+			set($user_id, $user_name, $user_tournament_flags, 't' . $tournament_id)->
+			set($user_id, $user_name, $user_club_flags, 'c' . $club_id)->
+			set($user_id, $user_name, $user_flags);
+	}
+	else if (isset($_REQUEST['tournament_id']))
+	{
+		$tournament_id = (int)$_REQUEST['tournament_id'];
+		list (
+				$name, 
+				$user_tournament_flags,
+				$club_id, $user_club_flags,
+				$user_name, $user_flags) = 
+		Db::record(get_label('user'), 
+				'SELECT t.name, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
+				' FROM users u' .
+				' JOIN tournaments t ON t.id = ?' .
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = t.id' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = t.club_id' .
+				' WHERE u.id = ?', $tournament_id, $user_id);
+
+		$secondary_id = 't' . $tournament_id;
+		$code = USER_TOURNAMENT_PIC_CODE;
+		$attribute = ', tournament_id: ' . $tournament_id;
+
+		$user_pic = 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE)));
+		$user_pic->
+			set($user_id, $user_name, $user_tournament_flags, $secondary_id)->
+			set($user_id, $user_name, $user_club_flags, 'c' . $club_id)->
+			set($user_id, $user_name, $user_flags);
+	}
+	else if (isset($_REQUEST['club_id']))
+	{
+		$club_id = (int)$_REQUEST['club_id'];
+		list (
+				$name, 
+				$user_club_flags,
+				$user_name, $user_flags) = 
+		Db::record(get_label('user'), 
+				'SELECT c.name, cu.flags, u.name, u.flags' .
+				' FROM users u' .
+				' JOIN clubs c ON c.id = ?' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = c.id' .
+				' WHERE u.id = ?', $club_id, $user_id);
+
+		$secondary_id = 'c' . $club_id;
+		$code = USER_CLUB_PIC_CODE;
+		$attribute = ', club_id: ' . $club_id;
+
+		$user_pic = 
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE));
+		$user_pic->
+			set($user_id, $user_name, $user_club_flags, $secondary_id)->
+			set($user_id, $user_name, $user_flags);
+	}
+	else
+	{
+		list ($user_name, $user_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE u.id = ?', $user_id);
+		$user_pic = new Picture(USER_CLUB_PICTURE);
+		$user_pic->set($user_id, $user_name, $user_flags);
+
+		$secondary_id = NULL;
+		$code = USER_PIC_CODE;
+		$attribute = '';
+	}
+	
+	if (isset($club_id))
+	{
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		dialog_title(get_label('Custom [0] photo for [1]', $user_name, $name));
+	}
+	else
+	{
+		check_permissions(PERMISSION_ADMIN);
+		dialog_title(get_label('[0] photo', $user_name));
+	}
+	
+	echo '<table class="dialog_form" width="100%"><tr><td align="center">';
+	$user_pic->show(TNAILS_DIR, false);
+	echo '</td><td align="center" width="48" valign="top">';
+	start_upload_logo_button($user_id);
+	$user_pic->custom_title = get_label('Upload custom picture for [0].', $user_name);
+	$user_pic->show(ICONS_DIR, false);
+	end_upload_logo_button($code, $user_id, $secondary_id);
+	echo '</td></tr></table>';
+?>
+	<script>
+	function uploadLogo(userId, onSuccess)
+	{
+		json.upload('api/ops/user.php', 
+		{
+			op: "custom_photo"
+			<?php echo $attribute; ?>
+			, user_id: userId
+			, picture: document.getElementById("upload").files[0]
+		}, 
+		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
+		onSuccess);
+	}
+	</script>
+<?php
+	echo '<ok>';
+}
+catch (Exception $e)
+{
+	Exc::log($e);
+	echo '<error=' . $e->getMessage() . '>';
+}
+
+?>

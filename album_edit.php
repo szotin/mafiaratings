@@ -42,7 +42,7 @@ class Page extends AlbumPageBase
 		global $_profile;
 	
 		echo '<table class="transp" width="100%"><tr><td align="right" valign="center"></td><td height="52" width="60">';
-		start_upload_logo_button();
+		start_upload_logo_button($this->album->id);
 		echo get_label('Change logo') . '<br>';
 		end_upload_logo_button(ALBUM_PIC_CODE, $this->album->id);
 		echo '</td></tr></table>';
@@ -125,12 +125,12 @@ class Page extends AlbumPageBase
 			nameInput.value = enentSelect.options[index].text;
 		}
 		
-		function uploadLogo(onSuccess)
+		function uploadLogo(albumId, onSuccess)
 		{
 			json.upload('api/ops/album.php', 
 			{
 				op: "change",
-				album_id: <?php echo $this->album->id; ?>,
+				album_id: albumId,
 				logo: document.getElementById("upload").files[0]
 			}, 
 			<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 

@@ -24,7 +24,7 @@ try
 	echo '</td>';
 	
 	echo '<td width="' . ICON_WIDTH . '" align="center" valign="top" rowspan="8">';
-	start_upload_logo_button();
+	start_upload_logo_button($_profile->user_id);
 	echo get_label('Change picture') . '<br>';
 	$user_pic = new Picture(USER_PICTURE);
 	$user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
@@ -150,7 +150,7 @@ try
 	$("#en" ).change(updateClub);
 	updateClub();
 	
-	function uploadLogo(onSuccess)
+	function uploadLogo(userId, onSuccess)
 	{
 		json.upload('api/ops/user.php', 
 		{

@@ -1146,6 +1146,21 @@ var mr = new function()
 		dlg.form("form/user_access.php?user_id=" + userId + "&tournament_id=" + tournamentId, refr, 400);
 	}
 	
+	this.eventUserPhoto = function(userId, eventId)
+	{
+		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&event_id=" + eventId, 400);
+	}
+	
+	this.tournamentUserPhoto = function(userId, tournamentId)
+	{
+		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&tournament_id=" + tournamentId, 400);
+	}
+	
+	this.clubUserPhoto = function(userId, clubId)
+	{
+		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&club_id=" + clubId, 400);
+	}
+	
 	this.editUser = function(userId)
 	{
 		dlg.form("form/account_edit.php?user_id=" + userId, refr, 600);

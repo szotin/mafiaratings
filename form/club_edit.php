@@ -33,7 +33,7 @@ try
 	echo '<tr><td width="140">' . get_label('Club name') . ':</td><td><input class="longest" id="form-club_name" value="' . htmlspecialchars($club->name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="10">';
-	start_upload_logo_button();
+	start_upload_logo_button($id);
 	echo get_label('Change logo') . '<br>';
 	$club_pic = new Picture(CLUB_PICTURE);
 	$club_pic->set($id, $club->name, $flags);
@@ -118,12 +118,12 @@ try
 		onSuccess);
 	}
 	
-	function uploadLogo(onSuccess)
+	function uploadLogo(clubId, onSuccess)
 	{
 		json.upload('api/ops/club.php', 
 		{
 			op: "change",
-			club_id: <?php echo $id; ?>,
+			club_id: clubId,
 			logo: document.getElementById("upload").files[0]
 		}, 
 		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 

@@ -36,7 +36,7 @@ try
 	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="12" width="120">';
-	start_upload_logo_button();
+	start_upload_logo_button($tournament_id);
 	echo get_label('Change logo') . '<br>';
 	$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 	$tournament_pic->set($tournament_id, $name, $flags);
@@ -241,12 +241,12 @@ try
 		json.post("api/ops/tournament.php", params, onSuccess);
 	}
 	
-	function uploadLogo(onSuccess)
+	function uploadLogo(tournamentId, onSuccess)
 	{
 		json.upload('api/ops/tournament.php', 
 		{
 			op: "change"
-			, tournament_id: <?php echo $tournament_id; ?>
+			, tournament_id: tournamentId
 			, logo: document.getElementById("upload").files[0]
 		}, 
 		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 

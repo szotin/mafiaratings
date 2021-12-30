@@ -239,13 +239,20 @@ function upload_photo($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT)
 	imagedestroy($img);
 }
 
-function build_pic_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
+function build_pic_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL, $secondary_id = NULL)
 {
+	if (is_null($secondary_id))
+	{
+		$filename = $id . '.png';
+	}
+	else
+	{
+		$filename = $id . '-' . $secondary_id . '.png';
+	}
 	$kill_image = false;
 	if ($img == NULL)
 	{
-		date_default_timezone_set('America/Vancouver');
-		$file = $dir . $id . '.png';
+		$file = $dir . $filename;
 		if (!file_exists($file))
 		{
 			throw new Exc(get_label('Missing file [0]', $file));
@@ -264,7 +271,7 @@ function build_pic_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
 	{
 		mkdir($t_dir);
 	}
-	imagepng($t_img, $t_dir . $id . '.png');
+	imagepng($t_img, $t_dir . $filename);
 	imagedestroy($t_img);
 	
 	$t_img = generate_thumbnail($img, ICON_WIDTH, ICON_HEIGHT, $t_option);
@@ -273,7 +280,7 @@ function build_pic_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
 	{
 		mkdir($t_dir);
 	}
-	imagepng($t_img, $t_dir . $id . '.png');
+	imagepng($t_img, $t_dir . $filename);
 	imagedestroy($t_img);
 	
 	if ($kill_image)
@@ -282,14 +289,21 @@ function build_pic_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
 	}
 }
 
-function upload_logo($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT)
+function upload_logo($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT, $secondary_id = NULL)
 {
 	if (!is_dir($dir))
 	{
 		mkdir($dir);
 	}
-	$img = upload_image($input_name, $dir . $id . '.png');
-	build_pic_tnail($dir, $id, $t_option, $img);
+	if (is_null($secondary_id))
+	{
+		$img = upload_image($input_name, $dir . $id . '.png');
+	}
+	else
+	{
+		$img = upload_image($input_name, $dir . $id . '-' . $secondary_id . '.png');
+	}
+	build_pic_tnail($dir, $id, $t_option, $img, $secondary_id);
 	imagedestroy($img);
 }
 
@@ -334,26 +348,26 @@ function show_photo_thumbnails($page, $condition)
 	echo '</table>';
 }
 
-function start_upload_logo_button()
+function start_upload_logo_button($id)
 {
-	echo '<input type="file" id="upload" style="display:none" onchange="uploadLogo(onLogoUploadSuccess)">';
+	echo '<input type="file" id="upload" style="display:none" onchange="uploadLogo(' . $id . ', onLogoUploadSuccess)">';
 	echo '<button class="upload" onclick="$(\'#upload\').trigger(\'click\');">';
 }
 
-function end_upload_logo_button($pic_code, $id)
+function end_upload_logo_button($pic_code, $id, $secondary_id = NULL)
 {
 	echo '</button>';
+	$code = $pic_code . $id . (is_null($secondary_id) ? '' : $secondary_id);
 ?>
 	<script>
 	function onLogoUploadSuccess()
 	{
 		var d = (new Date()).getTime();
-		$("img[code=<?php echo $pic_code . $id; ?>]").each(function()
+		$("img[code=<?php echo $code; ?>]").each(function()
 		{
 			$(this).attr('src', $(this).attr('origin') + '?' + d);
 		});
 	}
-	
 	</script>
 <?php
 }

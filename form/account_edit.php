@@ -36,7 +36,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td class="dark">' . get_label('User name') . ':</td><td class="light"><input id="form-name" value="' . $user_name . '"></td>';
 	echo '</td><td align="center" valign="top" rowspan="8">';
-	start_upload_logo_button();
+	start_upload_logo_button($user_id);
 	echo get_label('Change picture') . '<br>';
 	$user_pic = new Picture(USER_PICTURE);
 	$user_pic->set($user_id, $user_name, $user_flags);
@@ -147,12 +147,12 @@ try
 		onSuccess);
 	}
 	
-	function uploadLogo(onSuccess)
+	function uploadLogo(userId, onSuccess)
 	{
 		json.upload('api/ops/user.php', 
 		{
 			op: "edit"
-			, user_id: <?php echo $user_id; ?>
+			, user_id: userId
 			, picture: document.getElementById("upload").files[0]
 		}, 
 		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 

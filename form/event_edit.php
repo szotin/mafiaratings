@@ -38,7 +38,7 @@ try
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="13">';
-	start_upload_logo_button();
+	start_upload_logo_button($event_id);
 	echo get_label('Change logo') . '<br>';
 	$event_pic = new Picture(EVENT_PICTURE);
 	$event_pic->set($event_id, $name, $flags);
@@ -278,12 +278,12 @@ try
 		$("#dlg-ok").button("option", "disabled", strToTimespan($("#form-duration").val()) <= 0);
 	}
 	
-	function uploadLogo(onSuccess)
+	function uploadLogo(eventId, onSuccess)
 	{
 		json.upload('api/ops/event.php', 
 		{
 			op: "change",
-			event_id: <?php echo $event_id; ?>,
+			event_id: eventId,
 			logo: document.getElementById("upload").files[0]
 		}, 
 		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
