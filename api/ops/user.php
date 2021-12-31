@@ -49,6 +49,14 @@ function access_flags($flags)
 	return $flags;
 }
 
+function delete_file($path)
+{
+	if (file_exists($path))
+	{
+		unlink($path);
+	}
+}
+
 class ApiPage extends OpsApiPageBase
 {
 	function merge_users($src_id, $dst_id)
@@ -965,11 +973,7 @@ class ApiPage extends OpsApiPageBase
 		$event_id = get_optional_param('event_id', 0);
 		$club_id = get_optional_param('club_id', 0);
 		$tournament_id = get_optional_param('tournament_id', 0);
-		
-		if (!isset($_FILES['picture']))
-		{
-			throw new Exc('Please specify a picture to upload in picture URI parameter.');
-		}
+		$upload = isset($_FILES['picture']);
 		
 		if ($event_id > 0)
 		{
@@ -986,14 +990,25 @@ class ApiPage extends OpsApiPageBase
 			}
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 
-			upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT, 'e' . $event_id);
-			
-			$icon_version = (($flags & USER_EVENT_ICON_MASK) >> USER_EVENT_ICON_MASK_OFFSET) + 1;
-			if ($icon_version > USER_EVENT_ICON_MAX_VERSION)
+			if ($upload)
 			{
-				$icon_version = 1;
+				upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT, 'e' . $event_id);
+			
+				$icon_version = (($flags & USER_EVENT_ICON_MASK) >> USER_EVENT_ICON_MASK_OFFSET) + 1;
+				if ($icon_version > USER_EVENT_ICON_MAX_VERSION)
+				{
+					$icon_version = 1;
+				}
+				$flags = ($flags & ~USER_EVENT_ICON_MASK) + ($icon_version << USER_EVENT_ICON_MASK_OFFSET);
 			}
-			$flags = ($flags & ~USER_EVENT_ICON_MASK) + ($icon_version << USER_EVENT_ICON_MASK_OFFSET);
+			else
+			{
+				$filename = $user_id . '-e' . $event_id . '.png';
+				delete_file('../../' . USER_PICS_DIR . $filename);
+				delete_file('../../' . USER_PICS_DIR . TNAILS_DIR . $filename);
+				delete_file('../../' . USER_PICS_DIR . ICONS_DIR . $filename);
+				$flags = ($flags & ~USER_EVENT_ICON_MASK);
+			}
 			
 			Db::begin();
 			Db::exec(get_label('user'), 'UPDATE event_users SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
@@ -1001,7 +1016,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details = new stdClass();
 				$log_details->event_id = $event_id;
-				db_log(LOG_OBJECT_USER, 'event picture uploaded', $log_details, $user_id);
+				db_log(LOG_OBJECT_USER, $upload ? 'event picture uploaded' : 'event picture reset', $log_details, $user_id);
 			}
 			Db::commit();
 		}
@@ -1020,14 +1035,25 @@ class ApiPage extends OpsApiPageBase
 			}
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 
-			upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT, 't' . $tournament_id);
-			
-			$icon_version = (($flags & USER_TOURNAMENT_ICON_MASK) >> USER_TOURNAMENT_ICON_MASK_OFFSET) + 1;
-			if ($icon_version > USER_TOURNAMENT_ICON_MAX_VERSION)
+			if ($upload)
 			{
-				$icon_version = 1;
+				upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT, 't' . $tournament_id);
+				
+				$icon_version = (($flags & USER_TOURNAMENT_ICON_MASK) >> USER_TOURNAMENT_ICON_MASK_OFFSET) + 1;
+				if ($icon_version > USER_TOURNAMENT_ICON_MAX_VERSION)
+				{
+					$icon_version = 1;
+				}
+				$flags = ($flags & ~USER_TOURNAMENT_ICON_MASK) + ($icon_version << USER_TOURNAMENT_ICON_MASK_OFFSET);
 			}
-			$flags = ($flags & ~USER_TOURNAMENT_ICON_MASK) + ($icon_version << USER_TOURNAMENT_ICON_MASK_OFFSET);
+			else
+			{
+				$filename = $user_id . '-t' . $tournament_id . '.png';
+				delete_file('../../' . USER_PICS_DIR . $filename);
+				delete_file('../../' . USER_PICS_DIR . TNAILS_DIR . $filename);
+				delete_file('../../' . USER_PICS_DIR . ICONS_DIR . $filename);
+				$flags = ($flags & ~USER_EVENT_ICON_MASK);
+			}
 			
 			Db::begin();
 			Db::exec(get_label('user'), 'UPDATE tournament_users SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
@@ -1035,7 +1061,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details = new stdClass();
 				$log_details->tournament_id = $tournament_id;
-				db_log(LOG_OBJECT_USER, 'tournament picture uploaded', $log_details, $user_id);
+				db_log(LOG_OBJECT_USER, $upload ? 'tournament picture uploaded' : 'tournament picture reset', $log_details, $user_id);
 			}
 			Db::commit();
 		}
@@ -1054,14 +1080,25 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('[0] is not a member of [1]', $user_name, $club_name));
 			}
 
-			upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT, 'c' . $club_id);
-			
-			$icon_version = (($flags & USER_CLUB_ICON_MASK) >> USER_CLUB_ICON_MASK_OFFSET) + 1;
-			if ($icon_version > USER_CLUB_ICON_MAX_VERSION)
+			if ($upload)
 			{
-				$icon_version = 1;
+				upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT, 'c' . $club_id);
+				
+				$icon_version = (($flags & USER_CLUB_ICON_MASK) >> USER_CLUB_ICON_MASK_OFFSET) + 1;
+				if ($icon_version > USER_CLUB_ICON_MAX_VERSION)
+				{
+					$icon_version = 1;
+				}
+				$flags = ($flags & ~USER_CLUB_ICON_MASK) + ($icon_version << USER_CLUB_ICON_MASK_OFFSET);
 			}
-			$flags = ($flags & ~USER_CLUB_ICON_MASK) + ($icon_version << USER_CLUB_ICON_MASK_OFFSET);
+			else
+			{
+				$filename = $user_id . '-c' . $club_id . '.png';
+				delete_file('../../' . USER_PICS_DIR . $filename);
+				delete_file('../../' . USER_PICS_DIR . TNAILS_DIR . $filename);
+				delete_file('../../' . USER_PICS_DIR . ICONS_DIR . $filename);
+				$flags = ($flags & ~USER_CLUB_ICON_MASK);
+			}
 			
 			Db::begin();
 			Db::exec(get_label('user'), 'UPDATE club_users SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
@@ -1069,7 +1106,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details = new stdClass();
 				$log_details->club_id = $club_id;
-				db_log(LOG_OBJECT_USER, 'club picture uploaded', $log_details, $user_id);
+				db_log(LOG_OBJECT_USER, $upload ? 'club picture uploaded' : 'club picture reset', $log_details, $user_id);
 			}
 			Db::commit();		
 		}
@@ -1078,20 +1115,31 @@ class ApiPage extends OpsApiPageBase
 			check_permissions(PERMISSION_ADMIN);
 			list ($flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE user_id = ?', $user_id);
 			
-			upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT);
-			
-			$icon_version = (($flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET) + 1;
-			if ($icon_version > USER_ICON_MAX_VERSION)
+			if ($upload)
 			{
-				$icon_version = 1;
+				upload_logo('picture', '../../' . USER_PICS_DIR, $user_id, TNAIL_OPTION_FIT);
+				
+				$icon_version = (($flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET) + 1;
+				if ($icon_version > USER_ICON_MAX_VERSION)
+				{
+					$icon_version = 1;
+				}
+				$flags = ($flags & ~USER_ICON_MASK) + ($icon_version << USER_ICON_MASK_OFFSET);
 			}
-			$flags = ($flags & ~USER_ICON_MASK) + ($icon_version << USER_ICON_MASK_OFFSET);
+			else
+			{
+				$filename = $user_id . '.png';
+				delete_file('../../' . USER_PICS_DIR . $filename);
+				delete_file('../../' . USER_PICS_DIR . TNAILS_DIR . $filename);
+				delete_file('../../' . USER_PICS_DIR . ICONS_DIR . $filename);
+				$flags = ($flags & ~USER_ICON_MASK);
+			}
 			
 			Db::begin();
 			Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $user_id);
 			if (Db::affected_rows() > 0)
 			{
-				db_log(LOG_OBJECT_USER, 'picture uploaded', $log_details, $user_id);
+				db_log(LOG_OBJECT_USER, $upload ? 'picture uploaded' : 'picture reset', $log_details, $user_id);
 			}
 			Db::commit();		
 		}
@@ -1104,7 +1152,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('event_id', 'Event id. User must be registered for this event.', 'root user picture is uploaded.');
 		$help->request_param('tournament_id', 'Tournament id. User must be registered for this tournament.', 'root user picture is uploaded.');
 		$help->request_param('club_id', 'Club id. User must be a member of this club.', 'root user picture is uploaded.');
-		$help->request_param('picture', 'Png or jpeg file to be uploaded for multicast multipart/form-data.');
+		$help->request_param('picture', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', 'the picture is reset to a default value');
 		return $help;
 	}
 }

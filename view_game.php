@@ -243,7 +243,7 @@ class Page extends PageBase
 		}
 		else
 		{
-			echo '<img src="images/icons/user.png">';
+			echo '<img src="images/icons/user_null.png" width="48" height="48">';
 			$player_name = $player->name;
 		}
 		echo '</a></td><td><a href="javascript:viewPlayer(' . $num . ')">' . $player_name . '</a></td><td align="right"';

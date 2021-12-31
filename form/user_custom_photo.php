@@ -37,19 +37,19 @@ try
 				' WHERE u.id = ?', $event_id, $user_id);
 
 		$secondary_id = 'e' . $event_id;
-		$code = USER_EVENT_PIC_CODE;
-		$attribute = ', event_id: ' . $event_id;
-
-		$user_pic = 
-			new Picture(USER_EVENT_PICTURE, 
+		$reset_pic = 
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
-			new Picture(USER_PICTURE))));
+			new Picture(USER_PICTURE)));
+		$user_pic = new Picture(USER_EVENT_PICTURE, $reset_pic);
 		$user_pic->
 			set($user_id, $user_event_name, $user_event_flags, $secondary_id)->
 			set($user_id, $user_name, $user_tournament_flags, 't' . $tournament_id)->
 			set($user_id, $user_name, $user_club_flags, 'c' . $club_id)->
 			set($user_id, $user_name, $user_flags);
+			
+		$attribute = ', event_id: ' . $event_id;
+		$code = USER_EVENT_PIC_CODE;
 	}
 	else if (isset($_REQUEST['tournament_id']))
 	{
@@ -71,10 +71,10 @@ try
 		$code = USER_TOURNAMENT_PIC_CODE;
 		$attribute = ', tournament_id: ' . $tournament_id;
 
-		$user_pic = 
-			new Picture(USER_TOURNAMENT_PICTURE,
+		$reset_pic = 
 			new Picture(USER_CLUB_PICTURE,
-			new Picture(USER_PICTURE)));
+			new Picture(USER_PICTURE));
+		$user_pic = new Picture(USER_TOURNAMENT_PICTURE, $reset_pic);
 		$user_pic->
 			set($user_id, $user_name, $user_tournament_flags, $secondary_id)->
 			set($user_id, $user_name, $user_club_flags, 'c' . $club_id)->
@@ -98,23 +98,27 @@ try
 		$code = USER_CLUB_PIC_CODE;
 		$attribute = ', club_id: ' . $club_id;
 
-		$user_pic = 
-			new Picture(USER_CLUB_PICTURE,
-			new Picture(USER_PICTURE));
+		$reset_pic = new Picture(USER_PICTURE);
+		$user_pic = new Picture(USER_CLUB_PICTURE, $reset_pic);
 		$user_pic->
 			set($user_id, $user_name, $user_club_flags, $secondary_id)->
 			set($user_id, $user_name, $user_flags);
 	}
 	else
 	{
-		list ($user_name, $user_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE u.id = ?', $user_id);
-		$user_pic = new Picture(USER_CLUB_PICTURE);
+		list ($user_name, $user_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $user_id);
+		$reset_pic = new Picture(USER_PICTURE);
+		$user_pic = new Picture(USER_PICTURE);
+		$reset_pic->set(0, '', 0);
 		$user_pic->set($user_id, $user_name, $user_flags);
 
 		$secondary_id = NULL;
 		$code = USER_PIC_CODE;
 		$attribute = '';
 	}
+	
+	$reset_icon_url = $reset_pic->url(ICONS_DIR);
+	$reset_tnail_url = $reset_pic->url(TNAILS_DIR);
 	
 	if (isset($club_id))
 	{
@@ -127,16 +131,24 @@ try
 		dialog_title(get_label('[0] photo', $user_name));
 	}
 	
-	echo '<table class="dialog_form" width="100%"><tr><td align="center">';
+	echo '<table class="dialog_form" width="100%"><tr height="240"><td align="center">';
 	$user_pic->show(TNAILS_DIR, false);
 	echo '</td><td align="center" width="48" valign="top">';
 	start_upload_logo_button($user_id);
+	echo get_label('Upload photo');
 	$user_pic->custom_title = get_label('Upload custom picture for [0].', $user_name);
 	$user_pic->show(ICONS_DIR, false);
-	end_upload_logo_button($code, $user_id, $secondary_id);
-	echo '</td></tr></table>';
+	$image_code = end_upload_logo_button($code, $user_id, $secondary_id);
+	echo '<div id="reset"><p><button class="upload" onclick="resetPhoto()">' . get_label('Reset photo');
+	$reset_pic->show(ICONS_DIR, false);
+	echo '</button></p></div>';
+	echo '</td></tr></table><script>';
+	if (!$user_pic->has_image(true))
+	{
+		echo '$("#reset").hide();';
+	}
 ?>
-	<script>
+	
 	function uploadLogo(userId, onSuccess)
 	{
 		json.upload('api/ops/user.php', 
@@ -147,11 +159,46 @@ try
 			, picture: document.getElementById("upload").files[0]
 		}, 
 		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 
-		onSuccess);
+		function()
+		{
+			$("#reset").fadeIn();
+			if (onSuccess)
+				onSuccess();
+		});
 	}
-	</script>
+	
+	function resetPhoto()
+	{
+		dlg.yesNo("<?php echo get_label("Are you sure you want to reset user photo?"); ?>", null, null, function()
+		{
+			json.post("api/ops/user.php",
+			{
+				op: "custom_photo"
+				<?php echo $attribute; ?>
+				, user_id: <?php echo $user_id; ?>
+			},
+			function()
+			{
+				var d = (new Date()).getTime();
+				$("img[code=<?php echo $image_code; ?>]").each(function()
+				{
+					let url = $(this).attr('origin');
+					console.log(url);
+					
+					let pos = url.lastIndexOf('<?php echo TNAILS_DIR; ?>');
+					if (pos >= 0)
+						url = "<?php echo $reset_tnail_url; ?>";
+					else
+						url = "<?php echo $reset_icon_url; ?>";
+					$(this).attr('src', url);
+					console.log(url);
+				});
+				$("#reset").fadeOut();
+			});
+		});
+	}
 <?php
-	echo '<ok>';
+	echo '</script><ok>';
 }
 catch (Exception $e)
 {

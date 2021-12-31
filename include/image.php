@@ -370,6 +370,7 @@ function end_upload_logo_button($pic_code, $id, $secondary_id = NULL)
 	}
 	</script>
 <?php
+	return $code;
 }
 
 ?>

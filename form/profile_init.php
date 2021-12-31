@@ -43,14 +43,14 @@ try
 	echo '</td></tr>';
 	
 	echo '<tr><td width="120" valign="top">' . get_label('Gender') . ':</td><td>';
-	echo '<input type="radio" name="form-is_male" id="form-male" value="1" onClick="maleClick(true)"';
+	echo '<input type="radio" name="form-is_male" id="form-male" value="1"';
 	if ($_profile->user_flags & USER_FLAG_MALE)
 	{
 		echo ' checked';
 	}
 	echo '/>'.get_label('male').'<br>';
 		
-	echo '<input type="radio" name="form-is_male" id="form-female" value="0" onClick="maleClick(false)"';
+	echo '<input type="radio" name="form-is_male" id="form-female" value="0"';
 	if (($_profile->user_flags & USER_FLAG_MALE) == 0)
 	{
 		echo ' checked';
@@ -101,25 +101,6 @@ try
 				console.log(obj);
 				$("#form-club").val(obj['club_id']);
 			});
-		}
-	}
-	
-	function maleClick(male)
-	{
-		var id = "<?php echo $_profile->user_id; ?>";
-		var mIcon = "images/icons/male.png";
-		var fIcon = "images/icons/female.png";
-		var src = $("#" + id).attr("src");
-		if (male)
-		{
-			if (src == fIcon)
-			{
-				$("img").each(function() { if ($(this).attr('code') == id) $(this).attr("src", mIcon); });
-			}
-		}
-		else if (src == mIcon)
-		{
-			$("img").each(function() { if ($(this).attr('code') == id) $(this).attr("src", fIcon); });
 		}
 	}
 	

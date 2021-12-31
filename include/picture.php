@@ -65,7 +65,7 @@ class Picture
 				$this->mask = USER_ICON_MASK;
 				$this->mask_offset = USER_ICON_MASK_OFFSET;
 				$this->pic_dir = USER_PICS_DIR;
-				$this->def_filename = 'male.png';
+				$this->def_filename = 'user.png';
 				$this->code = USER_PIC_CODE;
 				break;
 			case LEAGUE_PICTURE:
@@ -86,21 +86,21 @@ class Picture
 				$this->mask = USER_CLUB_ICON_MASK;
 				$this->mask_offset = USER_CLUB_ICON_MASK_OFFSET;
 				$this->pic_dir = USER_PICS_DIR;
-				$this->def_filename = 'male.png';
+				$this->def_filename = 'user.png';
 				$this->code = USER_CLUB_PIC_CODE;
 				break;
 			case USER_EVENT_PICTURE:
 				$this->mask = USER_EVENT_ICON_MASK;
 				$this->mask_offset = USER_EVENT_ICON_MASK_OFFSET;
 				$this->pic_dir = USER_PICS_DIR;
-				$this->def_filename = 'male.png';
+				$this->def_filename = 'user.png';
 				$this->code = USER_EVENT_PIC_CODE;
 				break;
 			case USER_TOURNAMENT_PICTURE:
 				$this->mask = USER_TOURNAMENT_ICON_MASK;
 				$this->mask_offset = USER_TOURNAMENT_ICON_MASK_OFFSET;
 				$this->pic_dir = USER_PICS_DIR;
-				$this->def_filename = 'male.png';
+				$this->def_filename = 'user.png';
 				$this->code = USER_TOURNAMENT_PIC_CODE;
 				break;
 			default:
@@ -136,15 +136,15 @@ class Picture
 		return $this->alt;
 	}
 	
-	public function hasImage()
+	public function has_image($own_only = false)
 	{
 		if (!is_null($this->id) && $this->id > 0 && ($this->flags & $this->mask) != 0)
 		{
 			return true;
 		}
-		if (!is_null($this->alt))
+		if (!$own_only &&!is_null($this->alt))
 		{
-			return $this->alt->hasImage();
+			return $this->alt->has_image();
 		}
 		return false;
 	}
@@ -178,10 +178,6 @@ class Picture
 		$url = $this->_url($dir);
 		if (is_null($url))
 		{
-			if ($this->type == USER_PICTURE && ($this->flags & USER_FLAG_MALE) == 0)
-			{
-				return 'images/' . $dir . 'female.png';
-			}
 			return 'images/' . $dir . $this->def_filename;
 		}
 		return $url;

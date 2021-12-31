@@ -76,8 +76,8 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('league'),
-				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ' . SCORING_DEFAULT_ID . ', ' . NORMALIZER_DEFAULT_ID . ')',
-				$name, $langs, $url, $email, $phone);
+				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?)',
+				$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
@@ -319,8 +319,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ' . SCORING_DEFAULT_ID . ', ' . NORMALIZER_DEFAULT_ID . ')',
-			$name, $langs, $url, $email, $phone);
+			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?)',
+			$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		

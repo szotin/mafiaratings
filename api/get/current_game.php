@@ -115,8 +115,7 @@ class ApiPage extends GetApiPageBase
 						set($player->id, $player->name, $user_club_flags, 'c' . $club_id)->
 						set($player->id, $player->name, $user_flags);
 					$player->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
-					$player->hasPhoto = $user_pic->hasImage();
-					
+					$player->hasPhoto = $user_pic->has_image();
 					
 					switch ($p->role)
 					{
@@ -176,7 +175,6 @@ class ApiPage extends GetApiPageBase
 						}
 					}
 					
-					// $player->photoUrl = get_server_url() . '/images/' . TNAILS_DIR . 'user.png';
 					$game->players[] = $player;
 				}
 				
@@ -216,7 +214,7 @@ class ApiPage extends GetApiPageBase
 					set($gs->moder_id, $game->moderator->name, $user_club_flags, 'c' . $club_id)->
 					set($gs->moder_id, $game->moderator->name, $user_flags);
 				$game->moderator->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
-				$game->moderator->hasPhoto = $user_pic->hasImage();
+				$game->moderator->hasPhoto = $user_pic->has_image();
 				
 				switch ($gs->gamestate)
 				{
