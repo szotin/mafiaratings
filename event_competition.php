@@ -81,6 +81,7 @@ class Page extends EventPageBase
 		chartParams.name = "<?php echo get_label('Competition chart'); ?>"; 
 		chartParams.players = "<?php echo $this->players_list; ?>";
 		chartParams.charts = <?php echo NUM_PLAYERS; ?>;
+		chartParams.event_id = <?php echo $this->event->id; ?>;
 		initChart("<?php echo get_label('Points'); ?>");
 <?php 
 	}

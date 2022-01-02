@@ -14,14 +14,27 @@ class Page extends ClubPageBase
 		global $_profile;
 		parent::prepare();
 		
+		$user_id = 0;
+		if (isset($_REQUEST['user_id']))
+		{
+			$user_id = (int)$_REQUEST['user_id'];
+		}
+		
 		$separator = '';
 		$this->players_list = '';
-		$query = new DbQuery('SELECT u.id FROM users u WHERE u.games > 0 AND u.club_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . NUM_PLAYERS, $this->id);
-		while ($row = $query->next())
+		if ($user_id <= 0)
 		{
-			list ($user_id) = $row;
-			$this->players_list .= $separator . $user_id;
-			$separator = ',';
+			$query = new DbQuery('SELECT u.id FROM users u WHERE u.games > 0 AND u.club_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . NUM_PLAYERS, $this->id);
+			while ($row = $query->next())
+			{
+				list ($user_id) = $row;
+				$this->players_list .= $separator . $user_id;
+				$separator = ',';
+			}
+		}
+		else
+		{
+			// todo - implement a query around this user
 		}
 	}
 	
@@ -45,6 +58,7 @@ class Page extends ClubPageBase
 		chartParams.name = "<?php echo get_label('Competition chart'); ?>";
 		chartParams.players = "<?php echo $this->players_list; ?>";
 		chartParams.charts = "<?php echo NUM_PLAYERS; ?>";
+		chartParams.club_id = "<?php echo $this->id; ?>";
 		initChart("<?php echo get_label('Rating'); ?>");
 <?php
 	}

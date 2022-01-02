@@ -1456,6 +1456,18 @@ $labelMenu = array (
 'Manage registrations for [0]' => 'Управление регистрациями на [0]', // include/event.php, include/tournament.php
 'Add new participant to [0]' => 'Добавить нового участника [0]', // form/add_user.php
 'Add new member to [0]' => 'Добавить нового члена [0]', // form/add_user.php
+'Set [0] photo for [1].' => 'Подгрузить отдельное фото игрока [0] для [1].', // club_users.php, event_users.php, tournament_users.php
+'Guessed [0] mafia' => 'Угадал [0] мафиози', // user_stats.php, user_stats.php, user_stats.php
+'Mafia in legacy' => 'Мафия в завещании', // user_stats.php
+'Participation fee: [0]' => 'Плата за участие: [0]', // include/event.php, include/tournament.php
+'[0] is not registered for [1]' => '[0] не зарегистрирован(а) на [1]', // api/ops/user.php, api/ops/user.php
+'[0] permissions in [1]' => 'права игрока [0] на [1]', // form/user_access.php
+'Custom [0] photo for [1]' => 'Специальное фото игрока [0] для [1]', // form/user_custom_photo.php
+'[0] photo' => 'фотография [0]', // form/user_custom_photo.php
+'Upload photo' => 'Подгрузить фото', // form/user_custom_photo.php
+'Upload custom picture for [0].' => 'Подгрузить отдельную фотографию для [0].', // form/user_custom_photo.php
+'Reset photo' => 'Убрать фото', // form/user_custom_photo.php
+'Are you sure you want to reset user photo?' => 'Вы уверены, что хотите убрать фотографию игрока?', // form/user_custom_photo.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1469,18 +1481,6 @@ $labelMenu = array (
 'during [0]\'s last speech' => 'во время последней речи [0]', // include/game.php, include/game.php
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
-'Set [0] photo for [1].' => 'Подгрузить отдельное фото игрока [0] для [1].', // club_users.php, event_users.php, tournament_users.php
-'Guessed [0] mafia' => 'Угадал [0] мафиози', // user_stats.php, user_stats.php, user_stats.php
-'Mafia in legacy' => 'Мафия в завещании', // user_stats.php
-'Participation fee: [0]' => 'Плата за участие: [0]', // include/event.php, include/tournament.php
-'[0] is not registered for [1]' => '[0] не зарегистрирован(а) на [1]', // api/ops/user.php, api/ops/user.php
-'[0] permissions in [1]' => 'права игрока [0] на [1]', // form/user_access.php
-'Custom [0] photo for [1]' => 'Специальное фото игрока [0] для [1]', // form/user_custom_photo.php
-'[0] photo' => 'фотография [0]', // form/user_custom_photo.php
-'Upload photo' => 'Подгрузить фото', // form/user_custom_photo.php
-'Upload custom picture for [0].' => 'Подгрузить отдельную фотографию для [0].', // form/user_custom_photo.php
-'Reset photo' => 'Убрать фото', // form/user_custom_photo.php
-'Are you sure you want to reset user photo?' => 'Вы уверены, что хотите убрать фотографию игрока?', // form/user_custom_photo.php
 );
 
 return $labelMenu;

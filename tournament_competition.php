@@ -102,6 +102,7 @@ class Page extends TournamentPageBase
 		chartParams.name = "<?php echo get_label('Competition chart'); ?>"; 
 		chartParams.players = "<?php echo $this->players_list; ?>";
 		chartParams.charts = <?php echo NUM_PLAYERS; ?>;
+		chartParams.tournament_id = <?php echo $this->id; ?>;
 		initChart("<?php echo get_label('Points'); ?>");
 <?php 
 	}
