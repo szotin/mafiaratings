@@ -436,14 +436,29 @@ class Event
 			$min_coming = 0;
 			$max_coming = 0;
 			$declined = 0;
-			$query = new DbQuery('SELECT u.id, u.name, a.coming_odds, a.people_with_me, u.flags, a.late FROM event_users a JOIN users u ON a.user_id = u.id WHERE a.event_id = ? ORDER BY a.coming_odds DESC, a.late, a.people_with_me DESC, u.name', $this->id);
+			$query = new DbQuery(
+				'SELECT u.id, u.name, eu.nickname, eu.coming_odds, eu.people_with_me, u.flags, eu.late, eu.flags, e.tournament_id, tu.flags, e.club_id, cu.flags' . 
+				' FROM event_users eu' . 
+				' JOIN events e ON e.id = eu.event_id ' .
+				' JOIN users u ON eu.user_id = u.id' . 
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
+				' WHERE e.id = ? ORDER BY eu.coming_odds DESC, eu.late, eu.people_with_me DESC, u.name', $this->id);
 			while ($row = $query->next())
 			{
-				$attendance[] = $row;
-				$odds = $row[2];
-				$bringing = $row[3];
+				$odds = $row[3];
+				if (is_null($odds))
+				{
+					$odds = 100;
+				}
+				$bringing = $row[4];
+				if (is_null($bringing))
+				{
+					$bringing = 0;
+				}
 				if ($odds >= 100)
 				{
+					$odds = 100;
 					$min_coming += 1 + $bringing;
 					$max_coming += 1 + $bringing;
 					$coming += 1 + $bringing;
@@ -456,17 +471,25 @@ class Event
 				else
 				{
 					++$declined;
-				}
+				} 
+				$row[3] = $odds;
+				$row[4] = $bringing;
+				$attendance[] = $row;
 			}
 			
-			$user_pic = new Picture(USER_PICTURE);
+			$event_user_pic =
+				new Picture(USER_EVENT_PICTURE, 
+				new Picture(USER_TOURNAMENT_PICTURE,
+				new Picture(USER_CLUB_PICTURE,
+				new Picture(USER_PICTURE))));
+		
 			if (BRIEF_ATTENDANCE)
 			{
 				$found = false;
 				$col = 0;
 				foreach ($attendance as $a)
 				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
+					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $user_event_flags, $tournament_id, $user_tournament_flags, $club_id, $user_club_flags) = $a;
 					if ($odds > 0)
 					{
 						if ($col == 0)
@@ -507,9 +530,24 @@ class Event
 							echo 'class="lighter"';
 						}
 						echo 'align="center">';
-						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, true, 50);
-						echo '<br>' . $name;
+						$event_user_pic->
+							set($user_id, $nickname, $user_event_flags, 'e' . $this->id)->
+							set($user_id, $name, $user_tournament_flags, 't' . $tournament_id)->
+							set($user_id, $name, $user_club_flags, 'c' . $club_id)->
+							set($user_id, $name, $user_flags);
+						$event_user_pic->show(ICONS_DIR, true, 50);
+						if (empty($nickname))
+						{
+							echo '<br>' . $name;
+						}
+						else
+						{
+							echo '<br>' . $nickname;
+							if (!empty($name) && $name != $nickname)
+							{
+								echo ' (' . $name . ')';
+							}
+						}
 						if ($bringing > 0)
 						{
 							echo ' + ' . $bringing; 
@@ -543,7 +581,7 @@ class Event
 				$col = 0;
 				foreach ($attendance as $a)
 				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
+					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $user_event_flags, $tournament_id, $user_tournament_flags, $club_id, $user_club_flags) = $a;
 					if ($odds <= 0)
 					{
 						if ($col == 0)
@@ -561,8 +599,12 @@ class Event
 						}
 						
 						echo '<td width="16.66%" align="center">';
-						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, true, 50);
+						$event_user_pic->
+							set($user_id, $nickname, $user_event_flags, 'e' . $this->id)->
+							set($user_id, $name, $user_tournament_flags, 't' . $tournament_id)->
+							set($user_id, $name, $user_club_flags, 'c' . $club_id)->
+							set($user_id, $name, $user_flags);
+						$event_user_pic->show(ICONS_DIR, true, 50);
 						echo '<br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -600,7 +642,7 @@ class Event
 
 				foreach ($attendance as $a)
 				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
+					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $user_event_flags, $tournament_id, $user_tournament_flags, $club_id, $user_club_flags) = $a;
 					if ($odds > 50)
 					{
 						echo '<tr class="lighter">';
@@ -615,8 +657,12 @@ class Event
 					}
 					
 					echo '<td width="50">';
-					$user_pic->set($user_id, $name, $user_flags);
-					$user_pic->show(ICONS_DIR, true, 50);
+					$event_user_pic->
+						set($user_id, $nickname, $user_event_flags, 'e' . $this->id)->
+						set($user_id, $name, $user_tournament_flags, 't' . $tournament_id)->
+						set($user_id, $name, $user_club_flags, 'c' . $club_id)->
+						set($user_id, $name, $user_flags);
+					$event_user_pic->show(ICONS_DIR, true, 50);
 					echo '</td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . cut_long_name($name, 80) . '</a></td><td width="280" align="center"><b>';
 					echo Event::odds_str($odds, $bringing, $late) . '</b></td></tr>';
 				}
@@ -916,7 +962,12 @@ class EventPageBase extends PageBase
 		
 		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->get_full_name();
 		$time = time();
-		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
+		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p>';
+		if (!empty($this->event->price))
+		{
+			echo '<p class="subtitle"><b>' . get_label('Participation fee: [0]', $this->event->price) . '</b></p>';
+		}
+		echo '</td>';
 		
 		echo '<td valign="top" align="right">';
 		show_back_button();

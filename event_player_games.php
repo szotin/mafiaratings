@@ -48,26 +48,36 @@ class Page extends EventPageBase
 			$this->user_id = (int)$_REQUEST['user_id'];
 		}
 		
-		$this->user_name = '';
 		if ($this->user_id > 0)
 		{
 			$data = event_scores($this->event->id, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->scoring_options);
 			if (isset($data[$this->user_id]))
 			{
 				$this->player = $data[$this->user_id];
-				$this->user_name = $this->player->name;
 			}
 			else
 			{
-				list ($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->user_id);
-				$this->user_id = 0;
-				$event_name = $this->event->name;
-				if (!is_null($this->event->tournament_id))
-				{
-					$event_name = $this->event->tournament_name . ': ' . $event_name;
-				}
-				$this->errorMessage(get_label('[0] was not playing in [1].', $user_name, $event_name));
+				$this->player = new stdClass();
+				$this->player->id = $this->user_id;
+				$this->player->games = array();
+				$this->player->points = 0;
+				list ($this->player->name, $this->player->flags, $this->player->nickname, $this->player->event_flags, $this->player->tournament_flags, $this->player->club_flags) = 
+					Db::record(get_label('user'), 
+						'SELECT u.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM users u' .
+						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
+						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+						' WHERE id = ?', $this->event->id, $this->event->id, $this->event->id, $this->user_id);
 			}
+		}
+		else
+		{
+			$this->player = new stdClass();
+			$this->player->id = $this->user_id;
+			$this->player->games = array();
+			$this->player->points = 0;
+			$this->player->nickname = $this->player->name = '';
+			$this->player->flags = $this->player->event_flags = $this->player->tournament_flags = $this->player->club_flags = 0;
 		}
 	}
 	
@@ -81,21 +91,47 @@ class Page extends EventPageBase
 		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
 		echo '</td><td align="right">';
 		echo get_label('Select a player') . ': ';
-		show_user_input('user_name', $this->user_name, 'event=' . $this->event->id, get_label('Select a player'), 'selectPlayer');
+		show_user_input('user_name', $this->player->name, 'event=' . $this->event->id, get_label('Select a player'), 'selectPlayer');
 		echo '</td></tr></table></p>';
-			
-		if ($this->user_id <= 0)
-		{
-			return;
-		}
+		
+		$event_user_pic =
+			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			$this->user_pic)));
+		$event_user_pic->
+			set($this->player->id, $this->player->nickname, $this->player->event_flags, 'e' . $this->event->id)->
+			set($this->player->id, $this->player->name, $this->player->tournament_flags, 't' . $this->event->tournament_id)->
+			set($this->player->id, $this->player->name, $this->player->club_flags, 'c' . $this->event->club_id)->
+			set($this->player->id, $this->player->name, $this->player->flags);
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td rowspan="2">';
 		echo '<table class="transp"><tr><td width="72">';
-		$this->user_pic->set($this->player->id, $this->player->name, $this->player->flags);
-		$this->user_pic->show(ICONS_DIR, true, 64);
-		echo '</td><td>' . $this->player->name . '</td></tr></table>';
-		echo '</td>';
+		if ($this->player->id > 0)
+		{
+			echo '<a href="user_info.php?bck=1&id=' . $this->player->id . '">';
+			$event_user_pic->show(ICONS_DIR, false, 64);
+			echo '</a>';
+		}
+		else
+		{
+			$event_user_pic->show(ICONS_DIR, false, 64);
+		}
+		echo '</td><td>';
+		if (empty($this->player->nickname))
+		{
+			echo $this->player->name;
+		}
+		else
+		{
+			echo $this->player->nickname;
+			if (!empty($this->player->name) && $this->player->name != $this->player->nickname)
+			{
+				echo ' (' . $this->player->name . ')';
+			}
+		}
+		echo '</td></tr></table></td>';
 		foreach ($_scoring_groups as $group)
 		{
 			$count = get_scoring_group_policies_count($group, $this->scoring, $this->scoring_options);

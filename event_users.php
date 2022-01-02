@@ -35,7 +35,7 @@ class Page extends EventPageBase
 			' JOIN events e ON e.id = eu.event_id' .
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = e.tournament_id AND tu.user_id = eu.user_id' .
-			' LEFT OUTER JOIN club_users cu ON cu.club_id = e.tournament_id AND cu.user_id = eu.user_id' .
+			' LEFT OUTER JOIN club_users cu ON cu.club_id = e.club_id AND cu.user_id = eu.user_id' .
 			' WHERE eu.event_id = ?' .
 			' ORDER BY u.name',
 			$this->event->id);

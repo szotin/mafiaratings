@@ -73,23 +73,17 @@ try
 	function oddsChanged()
 	{
 		var odds = $('#odds').val();
-		if (odds < 100)
-		{
-			$('#nick_tr').hide();
-		}
-		else
-		{
-			$('#nick_tr').show();
-		}
 		if (odds > 0)
 		{
 			$('#friends_tr').show();
 			$('#late_tr').show();
+			$('#nick_tr').show();
 		}
 		else
 		{
 			$('#friends_tr').hide();
 			$('#late_tr').hide();
+			$('#nick_tr').hide();
 		}
 	}
 	

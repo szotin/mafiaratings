@@ -82,21 +82,34 @@ class Page extends TournamentPageBase
 			$this->user_id = (int)$_REQUEST['user_id'];
 		}
 		
-		$this->user_name = '';
 		if ($this->user_id > 0)
 		{
 			$data = tournament_scores($this->id, $this->flags, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->normalizer, $this->scoring_options);
 			if (isset($data[$this->user_id]))
 			{
 				$this->player = $data[$this->user_id];
-				$this->user_name = $this->player->name;
 			}
 			else
 			{
-				list ($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->user_id);
-				$this->user_id = 0;
-				$this->errorMessage(get_label('[0] was not playing in [1].', $user_name, $this->name));
+				$this->player = new stdClass();
+				$this->player->id = $this->user_id;
+				$this->player->games = array();
+				$this->player->normalization = 1;
+				$this->player->points = 0;
+				$this->player->raw_points = 0;
+				list ($this->player->name, $this->player->flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $this->user_id);
 			}
+		}
+		else
+		{
+			$this->player = new stdClass();
+			$this->player->id = $this->user_id;
+			$this->player->games = array();
+			$this->player->normalization = 1;
+			$this->player->points = 0;
+			$this->player->raw_points = 0;
+			$this->player->name = '';
+			$this->player->flags = 0;
 		}
 	}
 	
@@ -119,14 +132,9 @@ class Page extends TournamentPageBase
 		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
 		echo '</td><td align="right">';
 		echo get_label('Select a player') . ': ';
-		show_user_input('user_name', $this->user_name, 'tournament=' . $this->id, get_label('Select a player'), 'selectPlayer');
+		show_user_input('user_name', $this->player->name, 'tournament=' . $this->id, get_label('Select a player'), 'selectPlayer');
 		echo '</td></tr></table></p>';
 			
-		if ($this->user_id <= 0)
-		{
-			return;
-		}
-		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td rowspan="2">';
 		echo '<table class="transp" width="100%"><tr><td width="72">';

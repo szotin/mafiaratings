@@ -112,10 +112,10 @@ class Page extends ClubPageBase
 				{
 					echo '<button class="icon" onclick="mr.banUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Ban [0]', $name) . '"><img src="images/ban.png" border="0"></button>';
 					echo '<button class="icon" onclick="mr.editClubAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.clubUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
 					if ($club_id == $this->id)
 					{
 						echo '<button class="icon" onclick="mr.editUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
-						echo '<button class="icon" onclick="mr.clubUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
 					}
 				}
 			}

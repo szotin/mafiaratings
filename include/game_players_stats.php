@@ -224,6 +224,10 @@ class GamePlayersStats
 				{
 					$player->scoring_flags |= SCORING_FLAG_FIRST_LEGACY_2;
 				}
+				else if ($mafs_guessed >= 1)
+				{
+					$player->scoring_flags |= SCORING_FLAG_FIRST_LEGACY_1;
+				}
 			}
 			
 			if ($player->voted_civil + $player->voted_sheriff == 0 && $player->voted_mafia >= 3)

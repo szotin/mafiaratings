@@ -206,7 +206,12 @@ class TournamentPageBase extends PageBase
 		
 		echo '<td rowspan="2" valign="top"><h2 class="tournament">' . $title . '</h2><br><h3>' . $this->name;
 		$time = time();
-		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->start_time, $this->timezone) . '</p></td>';
+		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->start_time, $this->timezone) . '</p>';
+		if (!empty($this->price))
+		{
+			echo '<p class="subtitle"><b>' . get_label('Participation fee: [0]', $this->price) . '</b></p>';
+		}
+		echo '</td>';
 		
 		echo '<td valign="top" align="right">';
 		show_back_button();

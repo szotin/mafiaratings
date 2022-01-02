@@ -193,11 +193,11 @@ class Picture
 		{
 			if (!is_null($alt->id) && $alt->id >= 0)
 			{
-				if (is_null($this->name))
+				if (is_null($this->name) || $this->name == $alt->name)
 				{
 					return $alt->name;
 				}
-				return $alt->name . ': ' . $this->name;
+				return $this->name . ': ' . $alt->name;
 			}
 		}
 		return $this->name;
@@ -223,9 +223,9 @@ class Picture
 			case ALBUM_PICTURE:
 				return 'album_photos.php?bck=1&id=' . $this->id;
 			case USER_EVENT_PICTURE:
-				return 'event_player_games.php?bck=1&user_id=' . $this->id . '&id=' . $this->secondary_id;
+				return 'event_player_games.php?bck=1&user_id=' . $this->id . '&id=' . substr($this->secondary_id, 1);
 			case USER_TOURNAMENT_PICTURE:
-				return 'tournament_player_games.php?bck=1&user_id=' . $this->id . '&id=' . $this->secondary_id;
+				return 'tournament_player_games.php?bck=1&user_id=' . $this->id . '&id=' . substr($this->secondary_id, 1);
 		}
 		return '';
 	}

@@ -46,6 +46,7 @@ define('SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT', 0x80000); // 524288: Matter 19
 define('SCORING_FLAG_BLACK_CHECKS', 0x100000); // 1048576: Matter 20 - Sheriff did three black checks in a row
 define('SCORING_FLAG_RED_CHECKS', 0x200000); // 2097152: Matter 21 - All sheriff checks are red
 define('SCORING_FLAG_EXTRA_POINTS', 0x400000); // 4194304: Matter 22 - Player has manually assigned extra points
+define('SCORING_FLAG_FIRST_LEGACY_1', 0x800000); // 8388608: Matter 23 - Guessed 1 mafia after being killed first night
 
 define('SCORING_STAT_FLAG_GAME_DIFFICULTY', 0x1);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING', 0x2);
@@ -938,7 +939,21 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 	}
 	
 	// Calculate first night kill rates and games count per player
-	$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $event_id, $condition);
+	$query = new DbQuery(
+		'SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id)' .
+		', SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0))' .
+		', SUM(p.won)' .
+		', SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))' .
+		', eu.nickname, eu.flags, tu.flags, cu.flags' .
+			' FROM players p' .
+			' JOIN games g ON g.id = p.game_id' .
+			' JOIN users u ON u.id = p.user_id' .
+			' JOIN events e ON e.id = g.event_id' .
+			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+			' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
+			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
+			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
+			' WHERE g.event_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $event_id, $condition);
     $query->add(' GROUP BY u.id');
 	while ($row = $query->next())
 	{
@@ -954,6 +969,10 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 		$player->killed_first_count = (int)$row[8];
 		$player->wins = (int)$row[9];
 		$player->special_role_wins = (int)$row[10];
+		$player->nickname = $row[11];
+		$player->event_flags = (int)$row[12];
+		$player->tournament_flags = (int)$row[13];
+		$player->club_flags = (int)$row[14];
 
         init_player_score($player, $scoring, $lod_flags);
         $players[$player->id] = $player;
@@ -1601,6 +1620,9 @@ function get_scoring_matter_label($policy, $include_roles = false)
 				break;
 			case SCORING_FLAG_EXTRA_POINTS:
 				$l = get_label('actions in the game rated by the moderator');
+				break;
+			case SCORING_FLAG_FIRST_LEGACY_1:
+				$l = get_label('guessing [0] mafia (after being killed the first night)', 1);
 				break;
 		}
 		if ($delim == NULL)
