@@ -61,13 +61,17 @@ function show_player_html($game, $players, $user_pic, $num)
 	echo '<table class="transp" width="100%"><tr><td width="54"><a href="javascript:viewPlayer(' . $num . ')">';
 	if (isset($player->id) && isset($players[$player->id]))
 	{
-		list($player_id, $player_name, $player_flags) = $players[$player->id];
+		list($player_id, $player_name, $player_flags, $event_player_nickname, $event_player_flags, $tournament_player_flags, $club_player_flags) = $players[$player->id];
 		if ($player_name != $player->name)
 		{
 			$player_name = $player->name . ' (' . $player_name . ')';
 		}
 		
-		$user_pic->set($player_id, $player_name, $player_flags);
+		$user_pic->
+			set($player_id, $event_player_nickname, $event_player_flags, 'e' . $game->data->eventId)->
+			set($player_id, $player_name, $tournament_player_flags, 't' . (isset($game->data->tournamentId) ? $game->data->tournamentId : ''))->
+			set($player_id, $player_name, $club_player_flags, 'c' . $game->data->clubId)->
+			set($player_id, $player_name, $player_flags);
 		$user_pic->show(ICONS_DIR, false, 48);
 		echo '</a>';
 		
@@ -126,13 +130,25 @@ try
 	$game = new Game($json);
 	
 	$players = array();
-	$query = new DbQuery('SELECT u.id, u.name, u.flags FROM players p JOIN users u ON u.id = p.user_id WHERE p.game_id = ?', $game_id);
+	$query = new DbQuery(
+		'SELECT u.id, u.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags' . 
+			' FROM players p' . 
+			' JOIN games g ON g.id = p.game_id' . 
+			' JOIN users u ON u.id = p.user_id' . 
+			' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = g.event_id' . 
+			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' . 
+			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' . 
+			' WHERE p.game_id = ?', $game_id);
 	while ($row = $query->next())
 	{
 		$players[$row[0]] = $row;
 	}
 	
-	$user_pic = new Picture(USER_PICTURE);
+	$user_pic =
+		new Picture(USER_EVENT_PICTURE, 
+		new Picture(USER_TOURNAMENT_PICTURE,
+		new Picture(USER_CLUB_PICTURE,
+		new Picture(USER_PICTURE))));
 	
 	if ($is_day)
 	{

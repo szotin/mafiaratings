@@ -89,8 +89,12 @@ class Page extends EventPageBase
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$moder_pic = new Picture(USER_PICTURE);
-		
+		$moder_pic =
+			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE))));
+	
 		$is_user = is_permitted(PERMISSION_USER);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td';
@@ -104,18 +108,26 @@ class Page extends EventPageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, t.id, t.name, t.flags, l.id, l.name, l.flags FROM games g' .
+			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled,' .
+			' t.id, t.name, t.flags, l.id, l.name, l.flags,' . 
+			' eu.nickname, eu.flags, tu.flags, cu.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
+				' LEFT OUTER JOIN event_users eu ON eu.user_id = m.id AND eu.event_id = g.event_id' .
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = m.id AND tu.tournament_id = g.tournament_id' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
 				' JOIN cities ct ON ct.id = c.city_id',
 			$condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, $tournament_id, $tournament_name, $tournament_flags, $league_id, $league_name, $league_flags) = $row;
+			list (
+				$game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, 
+				$tournament_id, $tournament_name, $tournament_flags, $league_id, $league_name, $league_flags,
+				$event_moder_nickname, $event_moder_flags, $tournament_moder_flags, $club_moder_flags) = $row;
 			
 			echo '<tr align="center"';
 			if ($is_canceled || !$is_rating)
@@ -182,7 +194,11 @@ class Page extends EventPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			$moder_pic->set($moder_id, $moder_name, $moder_flags);
+			$moder_pic->
+				set($moder_id, $event_moder_nickname, $event_moder_flags, 'e' . $this->event->id)->
+				set($moder_id, $moder_name, $tournament_moder_flags, 't' . $this->event->tournament_id)->
+				set($moder_id, $moder_name, $club_moder_flags, 'c' . $this->event->club_id)->
+				set($moder_id, $moder_name, $moder_flags);
 			$moder_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
