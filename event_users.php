@@ -62,7 +62,6 @@ class Page extends EventPageBase
 				set($id, $name, $user_tournament_flags, 't' . $tournament_id)->
 				set($id, $name, $user_club_flags, 'c' . $user_club_id)->
 				set($id, $name, $user_flags);
-			
 			$event_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';

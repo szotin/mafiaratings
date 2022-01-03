@@ -68,13 +68,24 @@ class Page extends EventPageBase
 		
 		if (!empty($this->users))
 		{
-			$query = new DbQuery('SELECT id, name, flags FROM users WHERE id IN (' . $this->users . ')');
+			$query = new DbQuery(
+				'SELECT u.id, u.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags' . 
+					' FROM users u' . 
+					' LEFT OUTER JOIN event_users eu ON eu.event_id = ? AND eu.user_id = u.id' .
+					' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = ? AND tu.user_id = u.id' .
+					' LEFT OUTER JOIN club_users cu ON cu.club_id = ? AND cu.user_id = u.id' .
+					' WHERE u.id IN (' . $this->users . ')',
+					$this->event->id, $this->event->tournament_id, $this->event->club_id);
 			while ($row = $query->next())
 			{
-				list ($id, $name, $flags) = $row;
+				list ($id, $name, $flags, $nickname, $event_flags, $tournament_flags, $club_flags) = $row;
 				$player = $players[$id];
 				$player->user_name = $name;
 				$player->flags = $flags;
+				$player->nickname = $nickname;
+				$player->event_flags = $event_flags;
+				$player->tournament_flags = $tournament_flags;
+				$player->club_flags = $club_flags;
 			}
 		}
 		
@@ -90,6 +101,12 @@ class Page extends EventPageBase
 		
 		show_pages_navigation(PAGE_SIZE, sizeof($this->players));
 		
+		$event_user_pic =
+			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			$this->user_pic)));
+
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="30"></td>';
 		echo '<td colspan="2">'.get_label('Player').'</td>';
@@ -111,8 +128,12 @@ class Page extends EventPageBase
 			echo '<td width="60" align="center">';
 			if ($player->id > 0)
 			{
-				$this->user_pic->set($player->id, $player->user_name, $player->flags);
-				$this->user_pic->show(ICONS_DIR, true, 50);
+				$event_user_pic->
+					set($player->id, $player->nickname, $player->event_flags, 'e' . $this->event->id)->
+					set($player->id, $player->user_name, $player->tournament_flags, 't' . $this->event->tournament_id)->
+					set($player->id, $player->user_name, $player->club_flags, 'c' . $this->event->club_id)->
+					set($player->id, $player->user_name, $player->flags);
+				$event_user_pic->show(ICONS_DIR, true, 50);
 			}
 			else
 			{
