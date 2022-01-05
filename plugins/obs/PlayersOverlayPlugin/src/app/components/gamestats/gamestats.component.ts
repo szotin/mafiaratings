@@ -12,9 +12,10 @@ import { map } from 'rxjs/operators';
   styleUrls: ['./gamestats.component.scss']
 })
 export class GamestatsComponent implements OnInit {  
-  nominees$?: Observable<number[]>;
+  nominees$?: Observable<Player[]>;
   checkedBySheriff$?: Observable<Player[]>;
   checkedByDon$?: Observable<Player[]>;
+  players$?: Observable<Player[]>;
 
   // checkedBySheriffNights$?: Observable<number[]>;
   // checkedByDonNights$?: Observable<number[]>;
@@ -26,6 +27,7 @@ export class GamestatsComponent implements OnInit {
     this.nominees$ = this.gameSnapshotService.getNominees();
     this.checkedBySheriff$ = this.gameSnapshotService.getCheckedBySheriff();
     this.checkedByDon$ = this.gameSnapshotService.getCheckedByDon();
+    this.players$ = this.gameSnapshotService.getPlayers();
 
     // this.checkedBySheriffNights$ = this.checkedBySheriff$.pipe(
     //   map((players: Player[]) => players.map((player: Player) => player.number ?? 0)));

@@ -1,3 +1,5 @@
+$sheriff-bg-color: rgb(66, 128, 58);
+
 .player {
   background-repeat: no-repeat;
   background-position: center;
@@ -15,7 +17,7 @@
     position: absolute;
     right: 0;
     left: 5px;
-    top: 5px;
+    top: 5px; 
     display: flex;
     align-items: flex-end;
     padding: 2px 2px;
@@ -88,7 +90,7 @@
 
   &.sheriff {
     .player-profile-number {
-      background-color: rgba(255, 0, 0, 0.5);
+      background-color: $sheriff-bg-color;
     }
 
     .player-role {

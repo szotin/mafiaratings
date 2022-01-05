@@ -50,9 +50,9 @@ export class GamesnapshotService {
       map((it?: Game) => it?.players ?? []));
   }
 
-  getNominees(): Observable<number[]> {
+  getNominees(): Observable<Player[]> {
     return this.getCurrentGame().pipe(
-      map((it?: Game) => it?.nominees ?? []));
+      map((it?: Game) => it?.nominatedPlayers ?? []));
   }
 
   getCheckedBySheriff(): Observable<Player[]> {
@@ -75,7 +75,15 @@ export class GamesnapshotService {
     return this.http
       .get<GameSnapshot>(this.configUrl, { observe: 'response', params: this.urlParams })
       .pipe(
-        map((it: HttpResponse<GameSnapshot>) => it.body ?? { version:0 }));
+        map((it: HttpResponse<GameSnapshot>) => it.body ?? { version:0 }),
+        map((it: GameSnapshot) => {
+          if (it.game) {
+            let players: Player[] = it.game?.players ?? [];
+            it.game.nominatedPlayers = it.game?.nominees.map((nominee: number) => players[nominee-1]) || [];
+          }
+
+          return it;
+        }));
   }
 
   private setGameSnapshot(gameSnapshot: GameSnapshot) {

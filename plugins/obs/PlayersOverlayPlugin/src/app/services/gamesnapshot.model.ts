@@ -11,6 +11,7 @@ export interface Game {
   round: number;
   players: Player[];
   nominees: number[];
+  nominatedPlayers: Player[];
 }
 
 export enum GamePhase {

@@ -2,8 +2,8 @@
     <div class="row nominees">
         <span class="label">Выставления: </span>
         <span class="elements">
-            <span *ngFor="let element of (nominees$| async)" class="element-wrapper">
-                <span class="element">{{element}}</span>
+            <span *ngFor="let element of (nominees$| async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
+                <span class="element">{{element.number}}</span>
             </span>
         </span>
     </div>
@@ -18,7 +18,7 @@
     <div class="row don-check">
         <span class="label">Проверены доном: </span>
         <span class="elements">
-            <span *ngFor="let element of (checkedByDon$| async); trackBy: trackPlayerById" class="element-wrapper">
+            <span *ngFor="let element of (checkedByDon$| async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
                 <span class="element">{{element.number}}</span>
             </span>
         </span>
