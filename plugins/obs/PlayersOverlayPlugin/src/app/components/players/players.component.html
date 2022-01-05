@@ -1,8 +1,8 @@
-<div *ngIf="showPlayers">
+<div *ngIf="showPlayers$ | async" class="component-root">
   <!-- <h1>{{ gameSnapshot?.game?.name }}</h1> -->
   <div class="players">
-    <div *ngFor="let player of gameSnapshot?.game?.players; trackBy: trackPlayerById" class="player-wrapper">
-      <player [player]="player" [game]="gameSnapshot?.game"></player>
+    <div *ngFor="let player of (game$| async)?.players; trackBy: trackPlayerById" class="player-wrapper">
+      <player [player]="player" [game]="game$ | async"></player>
     </div>
   </div>
 </div>

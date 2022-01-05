@@ -1,5 +1,5 @@
 export interface GameSnapshot {
-  game: Game;
+  game?: Game;
   version: number;
 }
 
@@ -33,6 +33,8 @@ export interface Player {
   state: PlayerState;
   isSpeaking: boolean;
   hasPhoto: boolean;
+  checkedBySheriff?: number;
+  checkedByDon?: number;
 }
 
 export enum PlayerRole {

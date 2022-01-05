@@ -1,0 +1,45 @@
+p {
+    font-size: 2em;
+}
+
+.component-root {
+    padding: 20px;
+
+    .row {
+        padding-top: 15px;
+        padding-bottom: 15px;
+
+        .label {
+            background-color: rgba(128,128,128,0.9);
+            padding: 10px;
+        }
+
+        &.nominees {
+            .elements { 
+                background-color: rgba(0,0,255,0.9);
+            }
+        }
+
+        &.sheriff-check {
+            .elements { 
+                background-color: rgba(255,0,0,0.9);
+            }
+        }
+
+        &.don-check {
+            .elements { 
+                background-color: rgba(0,0,0,0.9);
+            }
+        }
+    }
+
+    .elements {
+        padding: 10px;
+    }
+    
+    .element-wrapper { 
+        margin: 0;
+        padding: 10px;
+        color: white;
+    }
+}

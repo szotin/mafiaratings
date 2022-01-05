@@ -2,6 +2,12 @@ h1 {
   font-family: Lato;
 }
 
+.component-root {
+  justify-content: center;
+  align-items: center;
+  padding-top: 50px;
+}
+
 .players {
   display: flex;
   flex-direction: row;

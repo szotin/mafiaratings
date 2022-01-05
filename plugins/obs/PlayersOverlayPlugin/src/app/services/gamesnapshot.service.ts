@@ -1,10 +1,11 @@
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable, timer, BehaviorSubject } from 'rxjs';
+import { retry, share, switchMap, pluck, map } from 'rxjs/operators';
+
 import { ActivatedRoute } from '@angular/router';
-import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { GameSnapshot } from './gamesnapshot.model';
-import { retry, share, Subject, Subscription, switchMap, timer } from 'rxjs';
+import { GameSnapshot, Game, Player } from './gamesnapshot.model';
 
 @Injectable({
   providedIn: 'root'
@@ -15,17 +16,70 @@ export class GamesnapshotService {
   private configUrl = environment.production ? this.configUrl_prod : this.configUrl_dev;
 
   private urlParams: HttpParams = new HttpParams();
-  private timeInterval: Subscription | undefined;
+  // private snapshotObservable: Observable<HttpResponse<GameSnapshot>>;
+
+  private gameSnapshot$: BehaviorSubject<GameSnapshot>;
 
   constructor(private http: HttpClient, private activatedRoute: ActivatedRoute) {
+
+    this.gameSnapshot$ = new BehaviorSubject<GameSnapshot>({ version:0 });
+
     this.activatedRoute.queryParams.subscribe((params: { [x: string]: any; }) => {
       this.urlParams = this.getUrlParams(params);
     });
+
+    timer(0, 2000)
+      .pipe(
+        switchMap(() => this.getGameSnapshotData()),
+        retry(20),
+        share(),
+      ).subscribe((gameSnapshot: any) => this.setGameSnapshot(gameSnapshot));
    }
 
-   getGameSnapshot(): Observable<HttpResponse<GameSnapshot>> {
+  getGameSnapshot() {
+     return this.gameSnapshot$;
+  }
+
+  getCurrentGame(): Observable<Game | undefined> {
+    return this.gameSnapshot$.pipe(
+      map((it?: GameSnapshot) => it?.game));
+  }
+
+  getPlayers(): Observable<Player[]> {
+    return this.getCurrentGame().pipe(
+      map((it?: Game) => it?.players ?? []));
+  }
+
+  getNominees(): Observable<number[]> {
+    return this.getCurrentGame().pipe(
+      map((it?: Game) => it?.nominees ?? []));
+  }
+
+  getCheckedBySheriff(): Observable<Player[]> {
+    return this.getPlayers().pipe(
+      map(
+        (it: Player[]) => it
+          .filter((player: Player) => player.checkedBySheriff) ?? []
+          .sort((left: Player, right: Player) => (left?.checkedBySheriff ?? 0) - (right?.checkedBySheriff ?? 0))));
+  }
+
+  getCheckedByDon(): Observable<Player[]> {
+    return this.getPlayers().pipe(
+      map(
+        (it: Player[]) => it
+          .filter((player: Player) => player.checkedByDon) ?? []
+          .sort((left: Player, right: Player) => (left?.checkedByDon ?? 0) - (right?.checkedByDon ?? 0))));
+  }
+
+  private getGameSnapshotData(): Observable<GameSnapshot> {
     return this.http
-      .get<GameSnapshot>(this.configUrl, { observe: 'response', params: this.urlParams });
+      .get<GameSnapshot>(this.configUrl, { observe: 'response', params: this.urlParams })
+      .pipe(
+        map((it: HttpResponse<GameSnapshot>) => it.body ?? { version:0 }));
+  }
+
+  private setGameSnapshot(gameSnapshot: GameSnapshot) {
+    this.gameSnapshot$.next(gameSnapshot);
   }
 
   private getUrlParams(params: { [x: string]: any; }) {
