@@ -28,12 +28,6 @@ export class GamestatsComponent implements OnInit {
     this.checkedBySheriff$ = this.gameSnapshotService.getCheckedBySheriff();
     this.checkedByDon$ = this.gameSnapshotService.getCheckedByDon();
     this.players$ = this.gameSnapshotService.getPlayers();
-
-    // this.checkedBySheriffNights$ = this.checkedBySheriff$.pipe(
-    //   map((players: Player[]) => players.map((player: Player) => player.number ?? 0)));
-
-    //   this.checkedByDonNights$ = this.checkedByDon$.pipe(
-    //     map((players: Player[]) => players.map((player: Player) => player.number ?? 0)));
   }
 
   trackPlayerById(index:number, player:Player): number {

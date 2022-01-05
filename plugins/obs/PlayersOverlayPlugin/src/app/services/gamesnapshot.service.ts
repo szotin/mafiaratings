@@ -58,16 +58,21 @@ export class GamesnapshotService {
   getCheckedBySheriff(): Observable<Player[]> {
     return this.getPlayers().pipe(
       map(
-        (it: Player[]) => it
-          .filter((player: Player) => player.checkedBySheriff) ?? []
-          .sort((left: Player, right: Player) => (left?.checkedBySheriff ?? 0) - (right?.checkedBySheriff ?? 0))));
+        (it: Player[]) => {
+          it = it
+            .filter((player: Player) => player.checkedBySheriff)
+            .sort((left: Player, right: Player) => (left?.checkedBySheriff ?? 0) - (right?.checkedBySheriff ?? 0));
+
+          return it;
+        }
+          ));
   }
 
   getCheckedByDon(): Observable<Player[]> {
     return this.getPlayers().pipe(
       map(
         (it: Player[]) => it
-          .filter((player: Player) => player.checkedByDon) ?? []
+          .filter((player: Player) => player.checkedByDon)
           .sort((left: Player, right: Player) => (left?.checkedByDon ?? 0) - (right?.checkedByDon ?? 0))));
   }
 
@@ -79,7 +84,7 @@ export class GamesnapshotService {
         map((it: GameSnapshot) => {
           if (it.game) {
             let players: Player[] = it.game?.players ?? [];
-            it.game.nominatedPlayers = it.game?.nominees.map((nominee: number) => players[nominee-1]) || [];
+            it.game.nominatedPlayers = it.game?.nominees?.map((nominee: number) => players[nominee-1]) || [];
           }
 
           return it;
