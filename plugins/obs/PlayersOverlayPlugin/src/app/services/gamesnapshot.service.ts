@@ -16,7 +16,6 @@ export class GamesnapshotService {
   private configUrl = environment.production ? this.configUrl_prod : this.configUrl_dev;
 
   private urlParams: HttpParams = new HttpParams();
-  // private snapshotObservable: Observable<HttpResponse<GameSnapshot>>;
 
   private gameSnapshot$: BehaviorSubject<GameSnapshot>;
 
