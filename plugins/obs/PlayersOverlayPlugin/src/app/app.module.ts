@@ -7,12 +7,14 @@ import { AppComponent } from './app.component';
 import { PlayersComponent } from './components/players/players.component';
 import { PlayerComponent } from './components/player/player.component';
 import { GamesnapshotService } from './services/gamesnapshot.service';
+import { GamestatsComponent } from './components/gamestats/gamestats.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     PlayersComponent,
-    PlayerComponent
+    PlayerComponent,
+    GamestatsComponent
   ],
   imports: [
     BrowserModule,

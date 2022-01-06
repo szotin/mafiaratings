@@ -12,7 +12,7 @@ Run `ng generate component component-name` to generate a new component. You can 
 
 ## Build for prod deployment
 
-Run `ng build --base-href /obs_plugins/players-overlay-plugin` to build the project. The build artifacts will be stored in the `dist/` directory.
+Run `ng build --base-href /obs_plugins/players-overlay-plugin/` to build the project. The build artifacts will be stored in the `dist/` directory.
 
 ## Running unit tests
 

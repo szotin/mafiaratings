@@ -1,0 +1,87 @@
+$default-text-opacity: 0.8;
+$element-bg-color: rgba(90, 90, 90, $default-text-opacity);
+$label-bg-color: rgba(128, 128, 128, $default-text-opacity);
+$sheriff-bg-color: rgba(153, 187, 153, $default-text-opacity);
+$town-bg-color: rgba(250, 137, 123, $default-text-opacity);
+$mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
+
+.test {
+    color:#a3de83;
+}
+
+.component-root {
+    padding: 20px;
+    line-height: normal;
+    font-size: 2em;
+
+    .row {
+        padding-top: 15px;
+        padding-bottom: 15px;
+
+        .label {
+            background-color: $label-bg-color;
+            padding: 10px;
+        }
+
+        &.nominees {
+            .elements { 
+                .element-wrapper {
+                    &.town {
+                        background-color: $town-bg-color;
+                    }
+
+                    &.don, &.maf {
+                        background-color: $mafia-bg-color;
+                    }
+
+                    &.sheriff {
+                        background-color: $sheriff-bg-color;
+                    }
+                }
+            }
+        }
+
+        &.sheriff-check {
+            .elements { 
+                .element-wrapper {
+                    &.town {
+                        background-color: $town-bg-color;
+                    }
+
+                    &.don, &.maf {
+                        background-color: $mafia-bg-color;
+                    }
+                }
+            }
+        }
+
+        &.don-check {
+            .elements { 
+                .element-wrapper {
+                    &.sheriff {
+                        background-color: $sheriff-bg-color;
+                    }
+
+                    &.town {
+                        background-color: $town-bg-color;
+                    }
+                }
+            }
+        }
+    }
+
+    .element-wrapper { 
+        margin: 0;
+        padding: 10px;
+        color: white;
+
+        &.placeholder {
+            background-color: $label-bg-color;
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+            width: 1px;
+            padding-left: 0;
+            padding-right: 0;
+        }
+    }
+}

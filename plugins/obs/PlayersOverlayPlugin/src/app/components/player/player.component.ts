@@ -8,7 +8,7 @@ import { Game, GamePhase, GameState, Player, PlayerRole } from 'src/app/services
 })
 export class PlayerComponent implements OnInit {
   @Input() player!: Player;
-  @Input() game!: Game | undefined;
+  @Input() game!: Game | null | undefined;
 
   showRoles: boolean = false;
 
@@ -39,11 +39,8 @@ export class PlayerComponent implements OnInit {
       game
       && game.state != GameState.notStarted 
       && (game.state !== GameState.starting
-         || (game.phase === GamePhase.night && (game.round > 0 || this.isDayOccured))// "starting"
+         || (game.phase === GamePhase.night && (game.round > 0 || this.isDayOccured)) // "starting"
          || (game.phase === GamePhase.day && game.round >= 0)
       )) ?? false;
-
-    console.log(changes);
-    console.log(this.showRoles);
   }
 }
