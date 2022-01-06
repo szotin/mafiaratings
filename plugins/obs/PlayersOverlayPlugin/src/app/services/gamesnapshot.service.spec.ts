@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-
 import { GamesnapshotService } from './gamesnapshot.service';
 
 describe('GamesnapshotService', () => {
