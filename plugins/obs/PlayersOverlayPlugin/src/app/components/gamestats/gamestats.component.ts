@@ -4,8 +4,6 @@ import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-
-
 @Component({
   selector: 'gamestats',
   templateUrl: './gamestats.component.html',
@@ -15,8 +13,10 @@ export class GamestatsComponent implements OnInit {
   nominees$?: Observable<Player[]>;
   checkedBySheriff$?: Observable<Player[]>;
   checkedByDon$?: Observable<Player[]>;
+  isOffline$: Observable<boolean>;
 
   constructor(private gameSnapshotService: GamesnapshotService) {
+    this.isOffline$ = this.gameSnapshotService.isOffline$;
   }
 
   ngOnInit(): void {
@@ -25,7 +25,7 @@ export class GamestatsComponent implements OnInit {
     this.checkedByDon$ = this.gameSnapshotService.getCheckedByDon();
   }
 
-  trackPlayerById(index:number, player:Player): number {
+  trackPlayerById(index: number, player: Player): number {
     return player.id;
   }
 }

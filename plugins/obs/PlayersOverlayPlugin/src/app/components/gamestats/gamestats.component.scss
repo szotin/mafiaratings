@@ -14,6 +14,16 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
     line-height: normal;
     font-size: 2em;
 
+    &.is-offline-true {
+        opacity: 0.8;
+    }
+
+    .connection-status {
+        font-size:.7em;
+        color:rgba(255,0,0,1);
+        
+    }
+
     .row {
         padding-top: 15px;
         padding-bottom: 15px;

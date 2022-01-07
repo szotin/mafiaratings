@@ -20,6 +20,7 @@ export class GamesnapshotService {
 
   private gameSnapshot$: BehaviorSubject<GameSnapshot> = new BehaviorSubject<GameSnapshot>({ version:0 });
   private timer$: BehaviorSubject<string> = new BehaviorSubject('');
+  isOffline$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(private http: HttpClient, private activatedRoute: ActivatedRoute) {
 
@@ -27,14 +28,17 @@ export class GamesnapshotService {
       this.urlParams = this.getUrlParams(params);
     });
 
+    // Observable with game snapshot data
     const data$: Observable<GameSnapshot> = this.getGameSnapshotData();
 
+    // Observable to signal when to refresh data from server
     const whenToRefresh$ = of('').pipe(
       delay(this.retryDelay),
       tap(_ => this.timer$.next('')),
       skip(1),
     );
 
+    // Combining 2 observables
     const poll$ = data$.pipe(concatWith(whenToRefresh$));
 
     this.timer$
@@ -43,9 +47,15 @@ export class GamesnapshotService {
         retryWhen(errors => errors
                   .pipe(
                       delayWhen(() => timer(2000)),
-                      tap(() => console.log('retrying...')))),
+                      tap(() => { 
+                        console.log('retrying...'); 
+                        this.isOffline$.next(true);
+                      }))),
         share())
-      .subscribe((gameSnapshot: any) => this.setGameSnapshot(gameSnapshot));
+      .subscribe((gameSnapshot: any) => { 
+        this.setGameSnapshot(gameSnapshot);
+        this.isOffline$.next(false);
+      });
    }
 
   getGameSnapshot() {

@@ -1,4 +1,4 @@
-<div class="component-root">
+<div class="component-root" [ngClass]="'is-offline-' + (isOffline$ | async)">
     <div class="row nominees">
         <span class="label">Выставления: </span>
         <span class="elements">
@@ -22,5 +22,8 @@
                 <span class="element">{{element.number}}</span>
             </span>
         </span>
+    </div>
+    <div class="connection-status" *ngIf="(isOffline$ | async)">
+        OFFLINE
     </div>
 </div>
