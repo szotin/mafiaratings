@@ -970,9 +970,9 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 		$player->wins = (int)$row[9];
 		$player->special_role_wins = (int)$row[10];
 		$player->nickname = $row[11];
-		$player->event_flags = (int)$row[12];
-		$player->tournament_flags = (int)$row[13];
-		$player->club_flags = (int)$row[14];
+		$player->event_user_flags = (int)$row[12];
+		$player->tournament_user_flags = (int)$row[13];
+		$player->club_user_flags = (int)$row[14];
 
         init_player_score($player, $scoring, $lod_flags);
         $players[$player->id] = $player;
@@ -1236,12 +1236,23 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			list($uid, $games_played, $rounds_played) = $row;
 			$max_games_played = max($max_games_played, $games_played);
 			$max_rounds_played = max($max_rounds_played, $rounds_played);
-			
 		}
 	}
 	
     $players = array();
-	$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), COUNT(DISTINCT g.event_id), SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $condition);
+	$query = new DbQuery(
+		'SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags,' . 
+		' COUNT(g.id), COUNT(DISTINCT g.event_id),' . 
+		' SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0)),' . 
+		' SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)),' . 
+		' tu.flags, cu.flags' .
+			' FROM players p' . 
+			' JOIN games g ON g.id = p.game_id' . 
+			' JOIN users u ON u.id = p.user_id' . 
+			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
+			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
+			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
+			' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $condition);
 	$query->add(' GROUP BY u.id');
 	while ($row = $query->next())
 	{
@@ -1259,6 +1270,8 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$player->wins = (int)$row[10];
 		$player->special_role_wins = (int)$row[11];
 		$player->normalizer = $normalizer;
+		$player->tournament_user_flags = (int)$row[12];
+		$player->club_user_flags = (int)$row[13];
 		
 		$max_games_played = max($max_games_played, $player->games_count);
 		$max_rounds_played = max($max_rounds_played, $player->events_count);

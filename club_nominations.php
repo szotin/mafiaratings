@@ -162,10 +162,11 @@ class Page extends ClubPageBase
 		}
 		
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags' .
+			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags, cu.flags' .
 				' FROM players p JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON u.id = p.user_id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
 				' WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0',
 			$this->id, $condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $min_games);
@@ -237,16 +238,18 @@ class Page extends ClubPageBase
 		}
 		echo '</a></td></tr>';
 		
+		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+		
 		$number = 0;
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags) = $row;
+			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
 
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
-			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, true, 50);
+			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
+			$club_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($club_id))

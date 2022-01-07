@@ -14,7 +14,11 @@ try
 	
 	$club_pic = new Picture(CLUB_PICTURE);
 	$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, $club_pic));
-	$user_pic = new Picture(USER_PICTURE);
+	$event_user_pic =
+		new Picture(USER_EVENT_PICTURE, 
+		new Picture(USER_TOURNAMENT_PICTURE,
+		new Picture(USER_CLUB_PICTURE,
+		new Picture(USER_PICTURE))));
 	
 	$event = new Event();
 	$event->load($_REQUEST['id']);
@@ -150,12 +154,14 @@ try
 			
 				echo '<center><h2>' . get_label('The event hasn\'t started yet. Current ratings:') . '</h2></center>';
 				$query = new DbQuery(
-					'SELECT u.id, u.name, r.nickname, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM event_users r' . 
-					' JOIN users u ON r.user_id = u.id' .
-					' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-					' WHERE r.event_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
-					$event->id);
-				
+					'SELECT u.id, u.name, r.nickname, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, r.flags, tu.flags, cu.flags' . 
+						' FROM event_users r' . 
+						' JOIN users u ON r.user_id = u.id' .
+						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+						' WHERE r.event_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
+					$event->tournament_id, $event->club_id, $event->id);
 				while ($row = $query->next())
 				{
 					$players[] = $row;
@@ -164,8 +170,9 @@ try
 				if (count($players) == 0)
 				{
 					$query = new DbQuery(
-						'SELECT u.id, u.name, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM users u' . 
+						'SELECT u.id, u.name, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, NULL, NULL, cu.flags FROM users u' . 
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = c.id' .
 						' WHERE c.id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
 						$event->club_id);
 					while ($row = $query->next())
@@ -185,7 +192,7 @@ try
 						{
 							break;
 						}
-						list ($id, $name, $nick, $points, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $players[$number++];
+						list ($id, $name, $nick, $points, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags, $event_user_flags, $tournament_user_flags, $club_user_flags) = $players[$number++];
 						
 						if (!empty($nick) && $nick != $name)
 						{
@@ -207,8 +214,12 @@ try
 						echo '<tr>';
 						echo '<td align="center" class="dark">' . $number . '</td>';
 						echo '<td width="50">';
-						$user_pic->set($id, $name, $flags);
-						$user_pic->show(ICONS_DIR, false, 50);
+						$event_user_pic->
+							set($id, $nick, $event_user_flags, 'e' . $event->id)->
+							set($id, $name, $tournament_user_flags, 't' . $event->tournament_id)->
+							set($id, $name, $club_user_flags, 'c' . $event->club_id)->
+							set($id, $name, $flags);
+						$event_user_pic->show(ICONS_DIR, false, 50);
 						echo '</td><td>' . $name . '</td>';
 						echo '<td width="50" align="center">';
 						$club_pic->set($club_id, $club_name, $club_flags);
@@ -255,8 +266,12 @@ try
 						echo '<tr>';
 						echo '<td align="center" class="dark">' . $number . '</td>';
 						echo '<td width="50">';
-						$user_pic->set($player->id, $player->name, $player->flags);
-						$user_pic->show(ICONS_DIR, false, 50);
+						$event_user_pic->
+							set($player->id, $player->nickname, $player->event_user_flags, 'e' . $event->id)->
+							set($player->id, $player->name, $player->tournament_user_flags, 't' . $event->tournament_id)->
+							set($player->id, $player->name, $player->club_user_flags, 'c' . $event->club_id)->
+							set($player->id, $player->name, $player->flags);
+						$event_user_pic->show(ICONS_DIR, false, 50);
 						echo '</td><td>' . $player->name . '</td>';
 						echo '<td width="50" align="center">';
 						if (!is_null($player->club_id) && $player->club_id > 0)

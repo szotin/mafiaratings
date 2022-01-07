@@ -38,7 +38,7 @@ class Page extends TournamentPageBase
 			$this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $email, $user_flags, $user_tournament_flags, $club_id, $club_name, $club_flags, $user_club_id, $user_club_flags) = $row;
+			list($id, $name, $email, $user_flags, $tournament_user_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_user_flags) = $row;
 		
 			echo '<tr class="light"><td class="dark">';
 			if ($can_edit)
@@ -55,10 +55,9 @@ class Page extends TournamentPageBase
 			
 			echo '<td width="60" align="center">';
 			$tournament_user_pic->
-				set($id, $name, $user_tournament_flags, 't' . $this->id)->
-				set($id, $name, $user_club_flags, 'c' . $user_club_id)->
+				set($id, $name, $tournament_user_flags, 't' . $this->id)->
+				set($id, $name, $club_user_flags, 'c' . $user_club_id)->
 				set($id, $name, $user_flags);
-			
 			$tournament_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
@@ -77,7 +76,7 @@ class Page extends TournamentPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			if ($user_tournament_flags & USER_PERM_PLAYER)
+			if ($tournament_user_flags & USER_PERM_PLAYER)
 			{
 				echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
 			}
@@ -85,7 +84,7 @@ class Page extends TournamentPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($user_tournament_flags & USER_PERM_MODER)
+			if ($tournament_user_flags & USER_PERM_MODER)
 			{
 				echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
 			}
@@ -93,7 +92,7 @@ class Page extends TournamentPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($user_tournament_flags & USER_PERM_MANAGER)
+			if ($tournament_user_flags & USER_PERM_MANAGER)
 			{
 				echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
 			}

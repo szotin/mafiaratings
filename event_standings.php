@@ -145,9 +145,9 @@ class Page extends EventPageBase
 			echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
 			echo '<td width="50">';
 			$event_user_pic->
-				set($player->id, $player->nickname, $player->event_flags, 'e' . $this->event->id)->
-				set($player->id, $player->name, $player->tournament_flags, 't' . $this->event->tournament_id)->
-				set($player->id, $player->name, $player->club_flags, 'c' . $this->event->club_id)->
+				set($player->id, $player->nickname, $player->event_user_flags, 'e' . $this->event->id)->
+				set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->event->tournament_id)->
+				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->event->club_id)->
 				set($player->id, $player->name, $player->flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td><a href="event_player_games.php?user_id=' . $player->id . $this->event_player_params . '">' . $player->name . '</a></td>';

@@ -57,13 +57,13 @@ function compare_players($player1, $player2)
 
 class GPlayer
 {
-	function __construct($id, $name, $club, $u_flags, $user_club_flags)
+	function __construct($id, $name, $club, $u_flags, $club_user_flags)
 	{
 		$this->id = (int)$id;
 		$this->name = $name;
 		$this->club = $club; 
 		$this->nicks = array();
-		$this->flags = (int)(($user_club_flags & (USER_PERM_PLAYER | USER_PERM_MODER)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
+		$this->flags = (int)(($club_user_flags & (USER_PERM_PLAYER | USER_PERM_MODER)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
 	}
 }
 
@@ -122,8 +122,8 @@ class GClub
 			$id);
 		while ($row = $query->next())
 		{
-			list ($user_id, $user_name, $user_club, $u_flags, $user_club_flags) = $row;
-			$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $u_flags, $user_club_flags);
+			list ($user_id, $user_name, $user_club, $u_flags, $club_user_flags) = $row;
+			$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $u_flags, $club_user_flags);
 			if ($haunters_count < 50)
 			{
 				$this->haunters[] = (int)$user_id;

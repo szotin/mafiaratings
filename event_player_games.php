@@ -61,7 +61,7 @@ class Page extends EventPageBase
 				$this->player->id = $this->user_id;
 				$this->player->games = array();
 				$this->player->points = 0;
-				list ($this->player->name, $this->player->flags, $this->player->nickname, $this->player->event_flags, $this->player->tournament_flags, $this->player->club_flags) = 
+				list ($this->player->name, $this->player->flags, $this->player->nickname, $this->player->event_user_flags, $this->player->tournament_user_flags, $this->player->club_user_flags) = 
 					Db::record(get_label('user'), 
 						'SELECT u.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM users u' .
 						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
@@ -77,7 +77,7 @@ class Page extends EventPageBase
 			$this->player->games = array();
 			$this->player->points = 0;
 			$this->player->nickname = $this->player->name = '';
-			$this->player->flags = $this->player->event_flags = $this->player->tournament_flags = $this->player->club_flags = 0;
+			$this->player->flags = $this->player->event_user_flags = $this->player->tournament_user_flags = $this->player->club_user_flags = 0;
 		}
 	}
 	
@@ -100,9 +100,9 @@ class Page extends EventPageBase
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic)));
 		$event_user_pic->
-			set($this->player->id, $this->player->nickname, $this->player->event_flags, 'e' . $this->event->id)->
-			set($this->player->id, $this->player->name, $this->player->tournament_flags, 't' . $this->event->tournament_id)->
-			set($this->player->id, $this->player->name, $this->player->club_flags, 'c' . $this->event->club_id)->
+			set($this->player->id, $this->player->nickname, $this->player->event_user_flags, 'e' . $this->event->id)->
+			set($this->player->id, $this->player->name, $this->player->tournament_user_flags, 't' . $this->event->tournament_id)->
+			set($this->player->id, $this->player->name, $this->player->club_user_flags, 'c' . $this->event->club_id)->
 			set($this->player->id, $this->player->name, $this->player->flags);
 		
 		echo '<table class="bordered light" width="100%">';

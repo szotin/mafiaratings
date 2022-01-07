@@ -89,7 +89,7 @@ class ApiPage extends GetApiPageBase
 					
 					if ($player->id > 0)
 					{
-						list($user_event_flags, $user_tournament_flags, $user_club_flags, $user_flags) = Db::record(get_label('user'), 
+						list($event_user_flags, $tournament_user_flags, $club_user_flags, $user_flags) = Db::record(get_label('user'), 
 							'SELECT eu.flags, tu.flags, cu.flags, u.flags FROM users u' .
 							' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
 							' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
@@ -107,12 +107,12 @@ class ApiPage extends GetApiPageBase
 					}
 					else
 					{
-						$user_event_flags = $user_tournament_flags = $user_club_flags = $user_flags = 0;
+						$event_user_flags = $tournament_user_flags = $club_user_flags = $user_flags = 0;
 					}
 					$user_pic->
-						set($player->id, $player->name, $user_event_flags, 'e' . $event_id)->
-						set($player->id, $player->name, $user_tournament_flags, 't' . $tournament_id)->
-						set($player->id, $player->name, $user_club_flags, 'c' . $club_id)->
+						set($player->id, $player->name, $event_user_flags, 'e' . $event_id)->
+						set($player->id, $player->name, $tournament_user_flags, 't' . $tournament_id)->
+						set($player->id, $player->name, $club_user_flags, 'c' . $club_id)->
 						set($player->id, $player->name, $user_flags);
 					$player->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
 					$player->hasPhoto = $user_pic->has_image();
@@ -182,7 +182,7 @@ class ApiPage extends GetApiPageBase
 				$game->moderator->id = (int)$gs->moder_id;
 				if ($gs->moder_id > 0)
 				{
-					list($game->moderator->name, $user_event_flags, $user_tournament_flags, $user_club_flags, $user_name, $user_flags) = Db::record(get_label('user'), 
+					list($game->moderator->name, $event_user_flags, $tournament_user_flags, $club_user_flags, $user_name, $user_flags) = Db::record(get_label('user'), 
 						'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, u.name, u.flags FROM users u' .
 						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
 						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
@@ -206,12 +206,12 @@ class ApiPage extends GetApiPageBase
 				else
 				{
 					$game->moderator->name = '';
-					$user_event_flags = $user_tournament_flags = $user_club_flags = $user_flags = 0;
+					$event_user_flags = $tournament_user_flags = $club_user_flags = $user_flags = 0;
 				}
 				$user_pic->
-					set($gs->moder_id, $game->moderator->name, $user_event_flags, 'e' . $event_id)->
-					set($gs->moder_id, $game->moderator->name, $user_tournament_flags, 't' . $tournament_id)->
-					set($gs->moder_id, $game->moderator->name, $user_club_flags, 'c' . $club_id)->
+					set($gs->moder_id, $game->moderator->name, $event_user_flags, 'e' . $event_id)->
+					set($gs->moder_id, $game->moderator->name, $tournament_user_flags, 't' . $tournament_id)->
+					set($gs->moder_id, $game->moderator->name, $club_user_flags, 'c' . $club_id)->
 					set($gs->moder_id, $game->moderator->name, $user_flags);
 				$game->moderator->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
 				$game->moderator->hasPhoto = $user_pic->has_image();

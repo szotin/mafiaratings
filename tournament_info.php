@@ -5,9 +5,11 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/event.php';
 
-define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
-define('ROW_COUNT', 6);
-define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
+define('ROUND_COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
+define('ROUND_ROW_COUNT', 6);
+define('ROUND_COLUMN_WIDTH', (100 / ROUND_COLUMN_COUNT));
+define('USER_COLUMN_COUNT', 6);
+define('USER_COLUMN_WIDTH', (100 / USER_COLUMN_COUNT));
 define('COMMENTS_WIDTH', 300);
 
 class Page extends TournamentPageBase
@@ -16,11 +18,106 @@ class Page extends TournamentPageBase
 	{
 		global $_page, $_lang_code, $_profile;
 		
-		$page_size = ROW_COUNT * COLUMN_COUNT;
-		$event_count = 0;
+		$row_count = 0;
 		$column_count = 0;
 		$now = time();
 		
+		list($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0', $this->id);
+		
+		if ($games_count > 0)
+		{
+			$query = new DbQuery(
+				'SELECT DISTINCT u.id, u.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
+				' FROM players p' . 
+				' JOIN users u ON p.user_id = u.id' . 
+				' JOIN games g ON p.game_id = g.id' . 
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
+				' WHERE g.tournament_id = ? ORDER BY u.name', $this->id);
+		}
+		else
+		{
+			$query = new DbQuery(
+				'SELECT u.id, u.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
+				' FROM tournament_users tu' . 
+				' JOIN users u ON tu.user_id = u.id' . 
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+				' WHERE tu.tournament_id = ? ORDER BY u.name', $this->club_id, $this->id);
+		}
+		
+		$tournament_user_pic =
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			$this->user_pic));
+		$club_pic = new Picture(CLUB_PICTURE);
+		while ($row = $query->next())
+		{
+			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_user_flags, $club_user_flags) = $row;
+			if ($column_count == 0)
+			{
+				if ($row_count == 0)
+				{
+					echo '<table class="bordered light" width="100%"><tr class="darker"><td colspan="' . USER_COLUMN_COUNT . '"><b>' . get_label('Participants') . '</b></td></tr>';
+				}
+				else
+				{
+					echo '</tr>';
+				}
+				echo '<tr>';
+				
+			}
+			
+			echo '<td width="' . USER_COLUMN_WIDTH . '%" align="center" valign="top">';
+			echo '<table class="transp" width="100%"><tr class="dark"><td width="36">';
+			$club_pic->set($user_club_id, $user_club_name, $user_club_flags);
+			$club_pic->show(ICONS_DIR, false, 24);
+			echo '</td><td><b>' . $user_name . '</b></td></tr>';
+			echo '<tr><td colspan="2" align="center">';
+			$tournament_user_pic->
+				set($user_id, $user_name, $tournament_user_flags, 't' . $this->id)->
+				set($user_id, $user_name, $club_user_flags, 'c' . $this->club_id)->
+				set($user_id, $user_name, $user_flags);
+			if ($games_count > 0)
+			{
+				$tournament_user_pic->show(ICONS_DIR, true, 64);
+			}
+			else
+			{
+				echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
+				$tournament_user_pic->show(ICONS_DIR, false, 64);
+				echo '</a>';
+			}
+			echo '</td></tr></table>';
+			echo '</td>';
+			
+			++$row_count;
+			++$column_count;
+			if ($column_count >= USER_COLUMN_COUNT)
+			{
+				$column_count = 0;
+			}
+		}
+		
+		if ($row_count > 0)
+		{
+			if ($column_count > 0)
+			{
+				echo '<td colspan="' . (USER_COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
+			}
+			echo '</tr></table>';
+		}
+		
+		$page_size = ROUND_ROW_COUNT * ROUND_COLUMN_COUNT;
+		list ($count) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE tournament_id = ? AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0', $this->id);
+		if ($count > 0)
+		{
+			show_pages_navigation($page_size, $count);
+		}
+		
+		$row_count = 0;
+		$column_count = 0;
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.start_time, e.duration, e.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', ct.timezone, a.id, a.flags, a.address, a.map_url, a.name FROM events e' .
 			' JOIN addresses a ON e.address_id = a.id' .
@@ -54,9 +151,9 @@ class Page extends TournamentPageBase
 			}
 			if ($column_count == 0)
 			{
-				if ($event_count == 0)
+				if ($row_count == 0)
 				{
-					echo '<table class="bordered light" width="100%">';
+					echo '<table class="bordered light" width="100%"><tr class="darker"><td colspan="' . ROUND_COLUMN_COUNT . '"><b>' . get_label('Rounds') . '</b></td></tr>';
 				}
 				else
 				{
@@ -65,7 +162,7 @@ class Page extends TournamentPageBase
 				echo '<tr>';
 			}
 			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
+			echo '<td width="' . ROUND_COLUMN_WIDTH . '%" align="center" valign="top">';
 			
 			echo '<table class="transp" width="100%">';
 			echo '<tr' . $dark_class . '><td align="center" style="height: 32px;"><b>' . $name . '</b></td></tr>';
@@ -80,18 +177,18 @@ class Page extends TournamentPageBase
 			
 			echo '</td>';
 			
-			++$event_count;
+			++$row_count;
 			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
+			if ($column_count >= ROUND_COLUMN_COUNT)
 			{
 				$column_count = 0;
 			}
 		}
-		if ($event_count > 0)
+		if ($row_count > 0)
 		{
 			if ($column_count > 0)
 			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
+				echo '<td colspan="' . (ROUND_COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
 			}
 			echo '</tr></table>';
 		}
@@ -100,9 +197,6 @@ class Page extends TournamentPageBase
 	protected function show_body()
 	{
 		global $_profile;
-		
-		list ($count) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE tournament_id = ? AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0', $this->id);
-		show_pages_navigation(ROW_COUNT * COLUMN_COUNT, $count);
 		
 		echo '<table width="100%"><tr valign="top"><td>';
 		$this->show_details();

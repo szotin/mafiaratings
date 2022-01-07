@@ -97,7 +97,12 @@ class Page extends TournamentPageBase
 				$this->player->normalization = 1;
 				$this->player->points = 0;
 				$this->player->raw_points = 0;
-				list ($this->player->name, $this->player->flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $this->user_id);
+				list ($this->player->name, $this->player->flags, $this->player->tournament_user_flags, $this->player->club_user_flags) = 
+					Db::record(get_label('user'), 
+						'SELECT u.name, u.flags, tu.flags, cu.flags FROM users u' .
+						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+						' WHERE id = ?', $this->id, $this->club_id, $this->user_id);
 			}
 		}
 		else
@@ -109,7 +114,7 @@ class Page extends TournamentPageBase
 			$this->player->points = 0;
 			$this->player->raw_points = 0;
 			$this->player->name = '';
-			$this->player->flags = 0;
+			$this->player->flags = $this->player->tournament_user_flags = $this->player->club_user_flags = 0;
 		}
 	}
 	
@@ -135,11 +140,21 @@ class Page extends TournamentPageBase
 		show_user_input('user_name', $this->player->name, 'tournament=' . $this->id, get_label('Select a player'), 'selectPlayer');
 		echo '</td></tr></table></p>';
 			
+		$tournament_user_pic =
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			$this->user_pic));
+		$tournament_user_pic->
+			set($this->player->id, $this->player->name, $this->player->tournament_user_flags, 't' . $this->id)->
+			set($this->player->id, $this->player->name, $this->player->club_user_flags, 'c' . $this->club_id)->
+			set($this->player->id, $this->player->name, $this->player->flags);
+		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td rowspan="2">';
 		echo '<table class="transp" width="100%"><tr><td width="72">';
-		$this->user_pic->set($this->player->id, $this->player->name, $this->player->flags);
-		$this->user_pic->show(ICONS_DIR, true, 64);
+		echo '<a href="user_info.php?bck=1&id=' . $this->player->id . '">';
+		$tournament_user_pic->show(ICONS_DIR, false, 64);
+		echo '</a>';
 		echo '</td><td>' . $this->player->name . '</td></tr>';
 		if ($this->player->normalization != 1)
 		{

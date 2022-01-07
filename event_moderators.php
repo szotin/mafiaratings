@@ -74,14 +74,14 @@ class Page extends EventPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $civil_wins, $mafia_wins, $club_id, $club_name, $club_flags, $user_nickname, $user_event_flags, $user_tournament_flags, $user_club_flags) = $row;
+			list ($id, $name, $flags, $civil_wins, $mafia_wins, $club_id, $club_name, $club_flags, $user_nickname, $event_user_flags, $tournament_user_flags, $club_user_flags) = $row;
 
 			echo '<tr><td align="center" width="40" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
 			$event_user_pic->
-				set($id, $user_nickname, $user_event_flags, 'e' . $this->event->id)->
-				set($id, $name, $user_tournament_flags, 't' . $this->event->tournament_id)->
-				set($id, $name, $user_club_flags, 'c' . $this->event->club_id)->
+				set($id, $user_nickname, $event_user_flags, 'e' . $this->event->id)->
+				set($id, $name, $tournament_user_flags, 't' . $this->event->tournament_id)->
+				set($id, $name, $club_user_flags, 'c' . $this->event->club_id)->
 				set($id, $name, $flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
 			echo '<td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';

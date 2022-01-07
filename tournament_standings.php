@@ -148,6 +148,11 @@ class Page extends TournamentPageBase
 		
 		show_pages_navigation(PAGE_SIZE, $players_count);
 		
+		$tournament_user_pic =
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			$this->user_pic));
+		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
 		echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
@@ -184,8 +189,11 @@ class Page extends TournamentPageBase
 			}
 			echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
 			echo '<td width="50"><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">';
-			$this->user_pic->set($player->id, $player->name, $player->flags);
-			$this->user_pic->show(ICONS_DIR, false, 50);
+			$tournament_user_pic->
+				set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
+				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
+				set($player->id, $player->name, $player->flags);
+			$tournament_user_pic->show(ICONS_DIR, false, 50);
 			echo '</a></td><td><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">' . $player->name . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($player->club_id) && $player->club_id > 0)

@@ -489,7 +489,7 @@ class Event
 				$col = 0;
 				foreach ($attendance as $a)
 				{
-					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $user_event_flags, $tournament_id, $user_tournament_flags, $club_id, $user_club_flags) = $a;
+					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $a;
 					if ($odds > 0)
 					{
 						if ($col == 0)
@@ -531,9 +531,9 @@ class Event
 						}
 						echo 'align="center">';
 						$event_user_pic->
-							set($user_id, $nickname, $user_event_flags, 'e' . $this->id)->
-							set($user_id, $name, $user_tournament_flags, 't' . $tournament_id)->
-							set($user_id, $name, $user_club_flags, 'c' . $club_id)->
+							set($user_id, $nickname, $event_user_flags, 'e' . $this->id)->
+							set($user_id, $name, $tournament_user_flags, 't' . $tournament_id)->
+							set($user_id, $name, $club_user_flags, 'c' . $club_id)->
 							set($user_id, $name, $user_flags);
 						$event_user_pic->show(ICONS_DIR, true, 50);
 						if (empty($nickname))
@@ -581,7 +581,7 @@ class Event
 				$col = 0;
 				foreach ($attendance as $a)
 				{
-					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $user_event_flags, $tournament_id, $user_tournament_flags, $club_id, $user_club_flags) = $a;
+					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $a;
 					if ($odds <= 0)
 					{
 						if ($col == 0)
@@ -600,9 +600,9 @@ class Event
 						
 						echo '<td width="16.66%" align="center">';
 						$event_user_pic->
-							set($user_id, $nickname, $user_event_flags, 'e' . $this->id)->
-							set($user_id, $name, $user_tournament_flags, 't' . $tournament_id)->
-							set($user_id, $name, $user_club_flags, 'c' . $club_id)->
+							set($user_id, $nickname, $event_user_flags, 'e' . $this->id)->
+							set($user_id, $name, $tournament_user_flags, 't' . $tournament_id)->
+							set($user_id, $name, $club_user_flags, 'c' . $club_id)->
 							set($user_id, $name, $user_flags);
 						$event_user_pic->show(ICONS_DIR, true, 50);
 						echo '<br>' . $name . '</td>';
@@ -642,7 +642,7 @@ class Event
 
 				foreach ($attendance as $a)
 				{
-					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $user_event_flags, $tournament_id, $user_tournament_flags, $club_id, $user_club_flags) = $a;
+					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $a;
 					if ($odds > 50)
 					{
 						echo '<tr class="lighter">';
@@ -658,9 +658,9 @@ class Event
 					
 					echo '<td width="50">';
 					$event_user_pic->
-						set($user_id, $nickname, $user_event_flags, 'e' . $this->id)->
-						set($user_id, $name, $user_tournament_flags, 't' . $tournament_id)->
-						set($user_id, $name, $user_club_flags, 'c' . $club_id)->
+						set($user_id, $nickname, $event_user_flags, 'e' . $this->id)->
+						set($user_id, $name, $tournament_user_flags, 't' . $tournament_id)->
+						set($user_id, $name, $club_user_flags, 'c' . $club_id)->
 						set($user_id, $name, $user_flags);
 					$event_user_pic->show(ICONS_DIR, true, 50);
 					echo '</td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . cut_long_name($name, 80) . '</a></td><td width="280" align="center"><b>';

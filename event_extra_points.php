@@ -47,7 +47,7 @@ class Page extends EventPageBase
 				' WHERE p.event_id = ?', $this->event->id);
 		while ($row = $query->next())
 		{
-			list($points_id, $user_id, $user_name, $user_flags, $reason, $details, $points, $user_nickname, $user_event_flags, $user_tournament_flags, $user_club_flags) = $row;
+			list($points_id, $user_id, $user_name, $user_flags, $reason, $details, $points, $user_nickname, $event_user_flags, $tournament_user_flags, $club_user_flags) = $row;
 			
 			echo '<tr>';
 			echo '<td valign="center">';
@@ -57,9 +57,9 @@ class Page extends EventPageBase
 			echo '<td width="60" align="center">';
 			$this->user_pic->set($user_id, $user_name, $user_flags);
 			$event_user_pic->
-				set($user_id, $user_nickname, $user_event_flags, 'e' . $this->event->id)->
-				set($user_id, $user_name, $user_tournament_flags, 't' . $this->event->tournament_id)->
-				set($user_id, $user_name, $user_club_flags, 'c' . $this->event->club_id)->
+				set($user_id, $user_nickname, $event_user_flags, 'e' . $this->event->id)->
+				set($user_id, $user_name, $tournament_user_flags, 't' . $this->event->tournament_id)->
+				set($user_id, $user_name, $club_user_flags, 'c' . $this->event->club_id)->
 				set($user_id, $user_name, $user_flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td>';

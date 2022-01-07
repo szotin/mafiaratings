@@ -4,11 +4,6 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/scoring.php';
 
 define("AVERAGE_PLAYER", -1);
-define("ROLE_FLAG_CIVIL", 1);
-define("ROLE_FLAG_SHERIFF", 2);
-define("ROLE_FLAG_MAFIA", 4);
-define("ROLE_FLAG_DON", 8);
-define("ROLE_FLAG_ANY", 15);
 
 define("SURVIVED", 0);
 define("DAY_KILL", 1);
@@ -33,7 +28,6 @@ class Surviving
 
 class PlayerStats
 {
-	public $club_id;
     public $user_id;
 	public $games_played;
 	public $games_won;
@@ -43,6 +37,7 @@ class PlayerStats
 	public $bonus;
 	public $guess3maf;
 	public $guess2maf;
+	public $guess1maf;
 	public $killed_first_night;
 	
 	public $roles;
@@ -68,10 +63,8 @@ class PlayerStats
 	public $surviving;
 	
 	// if $user_id <= 0: gives stats of an average player
-	// if $club_id <= 0: gives stats for all clubs
-	function __construct($user_id, $club_id, $roles, $condition)
+	function __construct($user_id, $roles, $condition = NULL)
 	{
-		$this->club_id = $club_id;
 		$this->user_id = $user_id;
 		$this->roles = $roles;
 		
@@ -94,13 +87,21 @@ class PlayerStats
 		$this->arranged = 0;
 		$this->checked_by_don = 0;
 		$this->checked_by_sheriff = 0;
+		$this->sheriff_found_first_night = 0;
+		$this->sheriff_killed_first_night = 0;
+		$this->bonus = 0;
 		$this->surviving = array();
-		
-		$condition->add(get_roles_condition($roles));
-		if ($club_id > 0)
+
+		if ($condition == NULL)
 		{
-			$condition->add(' AND g.club_id = ?', $club_id);
+			$condition = new SQL();
 		}
+		else
+		{
+			$condition = clone $condition;
+		}
+		$condition->add(get_roles_condition($roles));
+
 		$count = 1; 
 		if ($user_id > 0)
 		{
@@ -129,8 +130,10 @@ class PlayerStats
 				'SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0)), ' .
 				'SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_1 . ') <> 0, 1, 0)), ' .
 				'SUM(IF((p.flags & ' . SCORING_FLAG_KILLED_FIRST_NIGHT . ') <> 0, 1, 0)), ' .
+				'SUM(IF((p.flags & ' . SCORING_FLAG_SHERIFF_FOUND_FIRST_NIGHT . ') <> 0, 1, 0)), ' .
+				'SUM(IF((p.flags & ' . SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT . ') <> 0, 1, 0)), ' .
 				'SUM(p.extra_points) ' .
-				' FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE',
+				'FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE',
 			$condition);
 		
 		$row = $query->record(get_label('player'));
@@ -161,21 +164,22 @@ class PlayerStats
 			$this->guess2maf = $row[22] / $count;
 			$this->guess1maf = $row[23] / $count;
 			$this->killed_first_night = $row[24] / $count;
-			$this->bonus = $row[25] / $count;
+			$this->sheriff_found_first_night = $row[25] / $count;
+			$this->sheriff_killed_first_night = $row[26] / $count;
+			$this->bonus = $row[27] / $count;
 		}
 		
 		$query = new DbQuery('SELECT p.kill_round, p.kill_type, count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE', $condition);
 		$query->add(' GROUP BY p.kill_type, p.kill_round ORDER BY p.kill_round, p.kill_type');
 		while ($row = $query->next())
 		{
-			$this->surviving[] = new Surviving($row[0] + 1, $row[1], $row[2] / $count);
+			$this->surviving[] = new Surviving($row[0], $row[1], $row[2] / $count);
 		}
 	}
 }
 
 class SheriffStats
 {
-	public $club_id;
     public $user_id;
 	public $games_played;
 	
@@ -183,46 +187,46 @@ class SheriffStats
     public $mafia_found;
 	
 	// if $user_id <= 0: gives stats of an average player
-	// if $club_id <= 0: gives stats for all clubs
-	function __construct($user_id, $club_id)
+	function __construct($user_id, $condition = NULL)
 	{
 		$this->games_played = 0;
 		$this->civil_found = 0;
 		$this->mafia_found = 0;
 
-		$this->club_id = $club_id;
 		$this->user_id = $user_id;
 		
 		$count = 1; 
-		if ($user_id <= 0)
+		if ($user_id > 0)
 		{
-			if ($club_id <= 0)
+			if ($condition == NULL)
 			{
-				$query = new DbQuery('SELECT count(DISTINCT user_id) FROM sheriffs');
+				$condition = new SQL();
 			}
 			else
 			{
-				$query = new DbQuery('SELECT count(DISTINCT s.user_id) FROM sheriffs s, games g WHERE g.id = s.game_id AND g.club_id = ?', $club_id);
+				$condition = clone $condition;
 			}
-			
-			list ($count) = $query->record(get_label('player'));
+			$condition->add(' AND p.user_id = ?', $user_id);
+		}
+		else
+		{
+			list ($count) = Db::record(get_label('player'), 
+				'SELECT count(DISTINCT user_id)' .
+					' FROM sheriffs s ' .
+					' JOIN players p ON p.game_id = s.game_id AND p.user_id = s.user_id' . 
+					' JOIN games g ON g.id = s.game_id', $condition);
 			if ($count <= 0)
 			{
 				$count = 1;
 			}
 		}
 		
-		$query = new DbQuery('SELECT count(*), SUM(s.civil_found), SUM(s.mafia_found) FROM sheriffs s, games g WHERE g.id = s.game_id');
-		if ($user_id > 0)
-		{
-			$query->add(' AND s.user_id = ?', $user_id);
-		}
-		if ($club_id > 0)
-		{
-			$query->add(' AND g.club_id = ?', $club_id);
-		}
-		
-		$row = $query->record(get_label('player'));
+		$row = Db::record(get_label('player'),
+			'SELECT count(*), SUM(s.civil_found), SUM(s.mafia_found)' . 
+				' FROM sheriffs s ' .
+				' JOIN players p ON p.game_id = s.game_id AND p.user_id = s.user_id' . 
+				' JOIN games g ON g.id = s.game_id' .
+				' WHERE TRUE', $condition);
 		$this->games_played = $row[0] / $count;
 		if ($this->games_played > 0)
 		{
@@ -234,11 +238,10 @@ class SheriffStats
 
 class MafiaStats
 {
-	public $club_id;
     public $user_id;
 	public $games_played;
 	
-	public $roles;
+	public $role;
 	
     public $shots1_ok;
     public $shots1_miss;
@@ -253,12 +256,10 @@ class MafiaStats
     public $shots3_rearrange; // 3 mafia players are alive: killed a player who was not arranged
 	
 	// if $user_id <= 0: gives stats of an average player
-	// if $club_id <= 0: gives stats for all clubs
-	function __construct($user_id, $club_id, $roles)
+	function __construct($user_id, $role, $condition = NULL)
 	{
-		$this->club_id = $club_id;
 		$this->user_id = $user_id;
-		$this->roles = $roles;
+		$this->role = $role;
 		
 		$this->games_played = 0;
 		$this->shots1_ok = 0;
@@ -273,40 +274,37 @@ class MafiaStats
 		$this->shots3_fail = 0;     
 		$this->shots3_rearrange = 0;
 		
-		$role_query = NULL;
-		switch ($roles & (ROLE_MAFIA | ROLE_DON))
+		if ($condition == NULL)
 		{
-			case ROLE_MAFIA:
-				$role_query = new SQL('m.is_don = false');
-				break;
-			case ROLE_DON:
-				$role_query = new SQL('m.is_don = true');
-				break;
-			case 0:
-				return;
+			$condition = new SQL();
+		}
+		else
+		{
+			$condition = clone $condition;
+		}
+		
+		if ($role == POINTS_MAFIA)
+		{
+			$condition->add(' AND m.is_don = false');
+		}
+		else if ($role == POINTS_DON)
+		{
+			$condition->add(' AND m.is_don = true');
 		}
 		
 		$count = 1; 
-		if ($user_id <= 0)
+		if ($user_id > 0)
 		{
-			if ($club_id <= 0)
-			{
-				$query = new DbQuery('SELECT count(DISTINCT m.user_id) FROM mafiosos m');
-				if ($role_query != NULL)
-				{
-					$query->add(' WHERE ', $role_query);
-				}
-			}
-			else
-			{
-				$query = new DbQuery('SELECT count(DISTINCT m.user_id) FROM mafiosos m, games g WHERE g.id = m.game_id AND g.club_id = ?', $club_id);
-				if ($role_query != NULL)
-				{
-					$query->add(' AND ', $role_query);
-				}
-			}
-			
-			list ($count) = $query->record(get_label('player'));
+			$condition->add(' AND m.user_id = ?', $user_id);
+		}
+		else
+		{
+			list ($count) = Db::record(get_label('player'),
+				'SELECT count(DISTINCT m.user_id)' . 
+					' FROM mafiosos m' .
+					' JOIN players p ON p.game_id = m.game_id AND p.user_id = m.user_id' . 
+					' JOIN games g ON g.id = m.game_id' .
+					' WHERE TRUE', $condition);
 			if ($count <= 0)
 			{
 				$count = 1;
@@ -317,22 +315,11 @@ class MafiaStats
 			'SELECT count(*), ' .
 				'SUM(m.shots1_ok), SUM(m.shots1_miss), ' .
 				'SUM(m.shots2_ok), SUM(m.shots2_miss), SUM(m.shots2_blank), SUM(m.shots2_rearrange), ' .
-				'SUM(m.shots3_ok), SUM(m.shots3_miss), SUM(m.shots3_blank), SUM(m.shots3_fail), SUM(m.shots3_rearrange) FROM mafiosos m, games g WHERE m.game_id = g.id');
-		if ($role_query != NULL)
-		{
-			$query->add(' AND ', $role_query);
-		}
-			
-		if ($user_id > 0)
-		{
-			$query->add(' AND m.user_id = ?', $user_id);
-		}
-		if ($club_id > 0)
-		{
-			$query->add(' AND g.club_id = ?', $club_id);
-		}
-		
-		
+				'SUM(m.shots3_ok), SUM(m.shots3_miss), SUM(m.shots3_blank), SUM(m.shots3_fail), SUM(m.shots3_rearrange)' .
+					' FROM mafiosos m' .
+					' JOIN players p ON p.game_id = m.game_id AND p.user_id = m.user_id' . 
+					' JOIN games g ON g.id = m.game_id' .
+					' WHERE TRUE', $condition);
 		$row = $query->record(get_label('player'));
 		$this->games_played = $row[0] / $count;
 		if ($this->games_played > 0)
@@ -354,7 +341,6 @@ class MafiaStats
 
 class DonStats
 {
-    public $club_id;
     public $user_id;
 	public $games_played;
 	
@@ -362,54 +348,50 @@ class DonStats
     public $sheriff_arranged;
 	
 	// if $user_id <= 0: gives stats of an average player
-	// if $club_id <= 0: gives stats for all clubs
-	function __construct($user_id, $club_id)
+	function __construct($user_id, $condition = NULL)
 	{
-		$this->club_id = $club_id;
 		$this->user_id = $user_id;
 		$this->games_played = 0;
 		$this->sheriff_found = 0;
 		$this->sheriff_arranged = 0;
 		
-		$count = 1; 
-		if ($user_id <= 0)
+		if ($condition == NULL)
 		{
-			if ($club_id <= 0)
-			{
-				$query = new DbQuery('SELECT count(DISTINCT user_id) FROM dons');
-			}
-			else
-			{
-				$query = new DbQuery('SELECT count(DISTINCT d.user_id) FROM dons d, games g WHERE g.id = d.game_id AND g.club_id = ?', $club_id);
-			}
-			
-			if ($row = $query->next())
-			{
-				$count = $row[0];
-				if ($count <= 0)
-				{
-					$count = 1;
-				}
-			}
+			$condition = new SQL();
+		}
+		else
+		{
+			$condition = clone $condition;
 		}
 		
-		$query = new DbQuery('SELECT count(*), SUM(IF(d.sheriff_found >= 0, 1, 0)), SUM(IF(d.sheriff_arranged >= 0, 1, 0)) FROM dons d, games g WHERE d.game_id = g.id');
+		$count = 1; 
 		if ($user_id > 0)
 		{
-			$query->add(' AND d.user_id = ?', $user_id);
+			$condition->add(' AND p.user_id = ?', $user_id);
 		}
-		if ($club_id > 0)
+		else
 		{
-			$query->add(' AND g.club_id = ?', $club_id);
+			list($count) = Db::record(
+				'SELECT count(DISTINCT duser_id)' . 
+				' FROM dons d' .
+				' JOIN players p ON p.game_id = d.game_id AND p.user_id = d.user_id' . 
+				' JOIN games g ON g.id = d.game_id' .
+				' WHERE TRUE', $condition);
+			if ($count <= 0)
+			{
+				$count = 1;
+			}
 		}
 		
-		$row = $query->record(get_label('player'));
+		$row = Db::record(get_label('player'),
+			'SELECT count(*), SUM(IF(d.sheriff_found >= 0, 1, 0)), SUM(IF(d.sheriff_arranged >= 0, 1, 0))' . 
+				' FROM dons d' .
+				' JOIN players p ON p.game_id = d.game_id AND p.user_id = d.user_id' . 
+				' JOIN games g ON g.id = d.game_id' .
+				' WHERE TRUE', $condition);
 		$this->games_played = $row[0] / $count;
-		if ($this->games_played > 0)
-		{
-			$this->sheriff_found = $row[1] / $count;
-			$this->sheriff_arranged = $row[2] / $count;
-		}
+		$this->sheriff_found = $row[1] / $count;
+		$this->sheriff_arranged = $row[2] / $count;
 	}
 }
 

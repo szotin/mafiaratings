@@ -90,7 +90,7 @@ class Page extends ClubPageBase
 			$this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $email, $flags, $user_club_flags, $club_id, $club_name, $club_flags) = $row;
+			list($id, $name, $email, $flags, $club_user_flags, $club_id, $club_name, $club_flags) = $row;
 		
 			if ($id == $this->user_id)
 			{
@@ -104,7 +104,7 @@ class Page extends ClubPageBase
 			if ($can_edit)
 			{
 				echo '<button class="icon" onclick="mr.removeClubMember(' . $id . ', ' . $this->id . ')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
-				if ($user_club_flags & USER_CLUB_FLAG_BANNED)
+				if ($club_user_flags & USER_CLUB_FLAG_BANNED)
 				{
 					echo '<button class="icon" onclick="mr.unbanUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Unban [0]', $name) . '"><img src="images/undelete.png" border="0"></button>';
 				}
@@ -126,7 +126,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 			
 			echo '<td width="60" align="center">';
-			$club_user_pic->set($id, $name, $user_club_flags, 'c' . $this->id)->set($id, $name, $flags);
+			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
 			$club_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
@@ -145,7 +145,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			if ($user_club_flags & USER_CLUB_FLAG_SUBSCRIBED)
+			if ($club_user_flags & USER_CLUB_FLAG_SUBSCRIBED)
 			{	
 				echo '<img src="images/email.png" width="24" title="' . get_label('Subscribed') . '">';
 			}
@@ -153,7 +153,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="24">';
 			}
-			if ($user_club_flags & USER_PERM_PLAYER)
+			if ($club_user_flags & USER_PERM_PLAYER)
 			{
 				echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
 			}
@@ -161,7 +161,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($user_club_flags & USER_PERM_MODER)
+			if ($club_user_flags & USER_PERM_MODER)
 			{
 				echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
 			}
@@ -169,7 +169,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($user_club_flags & USER_PERM_MANAGER)
+			if ($club_user_flags & USER_PERM_MANAGER)
 			{
 				echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
 			}

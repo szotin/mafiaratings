@@ -97,7 +97,11 @@ class Page extends UserPageBase
 		{
 			$condition->add(' AND g.is_rating <> 0');
 		}
-		$stats = new PlayerStats($this->id, $club_id, $roles, $condition);
+		if ($club_id > 0)
+		{
+			$condition->add(' AND g.club_id = ?', $club_id);
+		}
+		$stats = new PlayerStats($this->id, $roles, $condition);
 		$mafs_in_legacy = $stats->guess3maf * 3 + $stats->guess2maf * 2 + $stats->guess1maf;
 		
 		echo '<p><table class="bordered light" width="100%">';
@@ -111,10 +115,20 @@ class Page extends UserPageBase
 			echo '<tr><td class="dark">'.get_label('Best move').':</td><td>' . $stats->best_move . ' (' . number_format($stats->best_move*100.0/$stats->games_played, 1) . '%)</td></tr>';
 			echo '<tr><td class="dark">'.get_label('Bonus points').':</td><td>' . number_format($stats->bonus, 2) . ' (' . number_format($stats->bonus/$stats->games_played, 3) . ' ' . get_label('per game') . ')</td></tr>';
 			echo '<tr><td class="dark">'.get_label('Killed first night').':</td><td>' . $stats->killed_first_night . ' (' . number_format($stats->killed_first_night*100.0/$stats->games_played, 1) . '%)</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Guessed [0] mafia', 3).':</td><td>' . $stats->guess3maf . ' (' . number_format($stats->guess3maf*100.0/$stats->killed_first_night, 1) . '%)</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Guessed [0] mafia', 2).':</td><td>' . $stats->guess2maf . ' (' . number_format($stats->guess2maf*100.0/$stats->killed_first_night, 1) . '%)</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Guessed [0] mafia', 1).':</td><td>' . $stats->guess1maf . ' (' . number_format($stats->guess1maf*100.0/$stats->killed_first_night, 1) . '%)</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Mafia in legacy', 1).':</td><td>' . $mafs_in_legacy . ' (' . number_format($mafs_in_legacy*100.0/($stats->killed_first_night * 3), 1) . '%)</td></tr>';
+			if ($stats->killed_first_night > 0)
+			{
+				echo '<tr><td class="dark">'.get_label('Guessed [0] mafia', 3).':</td><td>' . $stats->guess3maf . ' (' . number_format($stats->guess3maf*100.0/$stats->killed_first_night, 1) . '%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Guessed [0] mafia', 2).':</td><td>' . $stats->guess2maf . ' (' . number_format($stats->guess2maf*100.0/$stats->killed_first_night, 1) . '%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Guessed [0] mafia', 1).':</td><td>' . $stats->guess1maf . ' (' . number_format($stats->guess1maf*100.0/$stats->killed_first_night, 1) . '%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Mafia in legacy', 1).':</td><td>' . $mafs_in_legacy . ' (' . number_format($mafs_in_legacy*100.0/($stats->killed_first_night * 3), 1) . '%)</td></tr>';
+			}
+			else
+			{
+				echo '<tr><td class="dark">'.get_label('Guessed [0] mafia', 3).':</td><td>' . $stats->guess3maf . ' (0.0%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Guessed [0] mafia', 2).':</td><td>' . $stats->guess2maf . ' (0.0%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Guessed [0] mafia', 1).':</td><td>' . $stats->guess1maf . ' (0.0%)</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Mafia in legacy', 1).':</td><td>' . $mafs_in_legacy . ' (0.0%)</td></tr>';
+			}
 			echo '</table>';
 		
 			echo '<p><table class="bordered light" width="100%">';
@@ -237,9 +251,9 @@ class Page extends UserPageBase
 			}
 			echo '</table></p>';
 			
-			if (($roles & (ROLE_FLAG_MAFIA | ROLE_FLAG_DON)) != 0)
+			if ($roles == POINTS_DARK || $roles == POINTS_MAFIA || $roles == POINTS_DON)
 			{
-				$mafia_stats = new MafiaStats($this->id, $club_id, $roles);
+				$mafia_stats = new MafiaStats($this->id, $roles, $condition);
 				echo '<p><table class="bordered light" width="100%">';
 				echo '<tr class="th-short darker"><td colspan="2">' . get_label('Mafia shooting') . '</td></tr>';
 				
@@ -276,9 +290,9 @@ class Page extends UserPageBase
 				echo '</table></p>';
 			}
 			
-			if (($roles & ROLE_FLAG_SHERIFF) != 0)
+			if ($roles == POINTS_SHERIFF)
 			{
-				$sheriff_stats = new SheriffStats($this->id, $club_id);
+				$sheriff_stats = new SheriffStats($this->id, $condition);
 				$count = $sheriff_stats->civil_found + $sheriff_stats->mafia_found;
 				if ($count > 0)
 				{
@@ -290,15 +304,17 @@ class Page extends UserPageBase
 				}
 			}
 			
-			if (($roles & ROLE_FLAG_DON) != 0)
+			if ($roles == POINTS_DON)
 			{
-				$don_stats = new DonStats($this->id, $club_id);
+				$don_stats = new DonStats($this->id, $condition);
 				if ($don_stats->games_played > 0)
 				{
 					echo '<p><table class="bordered light" width="100%">';
 					echo '<tr class="th-short darker"><td colspan="2">' . get_label('Don stats') . '</td></tr>';
-					echo '<tr><td class="dark" width="300">'.get_label('Sheriff found').':</td><td>' . $don_stats->sheriff_found . ' (' . number_format($don_stats->sheriff_found*100/$don_stats->games_played, 1) . '%)</td></tr>';
+					echo '<tr><td class="dark" width="300">'.get_label('Sheriff found').':</td><td>' . $don_stats->sheriff_found . ' ' . $don_stats->games_played . '(' . number_format($don_stats->sheriff_found*100/$don_stats->games_played, 1) . '%)</td></tr>';
 					echo '<tr><td class="dark" width="300">'.get_label('Sheriff arranged').':</td><td>' . $don_stats->sheriff_arranged . ' (' . number_format($don_stats->sheriff_arranged*100/$don_stats->games_played, 1) . '%)</td></tr>';
+					echo '<tr><td class="dark" width="300">'.get_label('Sheriff found first night').':</td><td>' . $stats->sheriff_found_first_night . ' (' . number_format($stats->sheriff_found_first_night*100/$don_stats->games_played, 1) . '%)</td></tr>';
+					echo '<tr><td class="dark" width="300">'.get_label('Sheriff killed first night').':</td><td>' . $stats->sheriff_killed_first_night . ' (' . number_format($stats->sheriff_killed_first_night*100/$don_stats->games_played, 1) . '%)</td></tr>';
 					echo '</table></p>';
 				}
 			}

@@ -41,7 +41,7 @@ class Page extends EventPageBase
 			$this->event->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $email, $user_flags, $user_nickname, $user_event_flags, $tournament_id, $user_tournament_flags, $club_id, $club_name, $club_flags, $user_club_id, $user_club_flags) = $row;
+			list($id, $name, $email, $user_flags, $user_nickname, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_user_flags) = $row;
 		
 			echo '<tr class="light"><td class="dark">';
 			if ($can_edit)
@@ -58,9 +58,9 @@ class Page extends EventPageBase
 			
 			echo '<td width="60" align="center">';
 			$event_user_pic->
-				set($id, $user_nickname, $user_event_flags, 'e' . $this->event->id)->
-				set($id, $name, $user_tournament_flags, 't' . $tournament_id)->
-				set($id, $name, $user_club_flags, 'c' . $user_club_id)->
+				set($id, $user_nickname, $event_user_flags, 'e' . $this->event->id)->
+				set($id, $name, $tournament_user_flags, 't' . $tournament_id)->
+				set($id, $name, $club_user_flags, 'c' . $user_club_id)->
 				set($id, $name, $user_flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
@@ -80,7 +80,7 @@ class Page extends EventPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			if ($user_event_flags & USER_PERM_PLAYER)
+			if ($event_user_flags & USER_PERM_PLAYER)
 			{
 				echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
 			}
@@ -88,7 +88,7 @@ class Page extends EventPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($user_event_flags & USER_PERM_MODER)
+			if ($event_user_flags & USER_PERM_MODER)
 			{
 				echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
 			}
@@ -96,7 +96,7 @@ class Page extends EventPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($user_event_flags & USER_PERM_MANAGER)
+			if ($event_user_flags & USER_PERM_MANAGER)
 			{
 				echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
 			}

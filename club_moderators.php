@@ -59,9 +59,10 @@ class Page extends ClubPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)), c.id, c.name, c.flags FROM users u' .
+			'SELECT u.id, u.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)), c.id, c.name, c.flags, cu.flags FROM users u' .
 				' JOIN games g ON g.moderator_id = u.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
 				' WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0',
 			$this->id, $condition);
 		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -73,16 +74,18 @@ class Page extends ClubPageBase
 		echo '<td width="100" align="center">'.get_label('Mafia wins').'</td>';
 		echo '</tr>';
 
+		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+		
 		$number = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $civil_wins, $mafia_wins, $club_id, $club_name, $club_flags) = $row;
+			list ($id, $name, $flags, $civil_wins, $mafia_wins, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
 
 			echo '<tr><td class="dark" align="center">' . $number . '</td>';
 			echo '<td width="50">';
-			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, true, 50);
+			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
+			$club_user_pic->show(ICONS_DIR, true, 50);
 			echo '<td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($club_id))

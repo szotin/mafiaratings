@@ -23,9 +23,9 @@ try
 		$event_id = (int)$_REQUEST['event_id'];
 		list (
 				$name, 
-				$user_event_name, $user_event_flags, 
-				$tournament_id, $user_tournament_flags,
-				$club_id, $user_club_flags,
+				$user_event_name, $event_user_flags, 
+				$tournament_id, $tournament_user_flags,
+				$club_id, $club_user_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
 				'SELECT e.name, eu.nickname, eu.flags, tu.tournament_id, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
@@ -43,9 +43,9 @@ try
 			new Picture(USER_PICTURE)));
 		$user_pic = new Picture(USER_EVENT_PICTURE, $reset_pic);
 		$user_pic->
-			set($user_id, $user_event_name, $user_event_flags, $secondary_id)->
-			set($user_id, $user_name, $user_tournament_flags, 't' . $tournament_id)->
-			set($user_id, $user_name, $user_club_flags, 'c' . $club_id)->
+			set($user_id, $user_event_name, $event_user_flags, $secondary_id)->
+			set($user_id, $user_name, $tournament_user_flags, 't' . $tournament_id)->
+			set($user_id, $user_name, $club_user_flags, 'c' . $club_id)->
 			set($user_id, $user_name, $user_flags);
 			
 		$attribute = ', event_id: ' . $event_id;
@@ -56,8 +56,8 @@ try
 		$tournament_id = (int)$_REQUEST['tournament_id'];
 		list (
 				$name, 
-				$user_tournament_flags,
-				$club_id, $user_club_flags,
+				$tournament_user_flags,
+				$club_id, $club_user_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
 				'SELECT t.name, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
@@ -76,8 +76,8 @@ try
 			new Picture(USER_PICTURE));
 		$user_pic = new Picture(USER_TOURNAMENT_PICTURE, $reset_pic);
 		$user_pic->
-			set($user_id, $user_name, $user_tournament_flags, $secondary_id)->
-			set($user_id, $user_name, $user_club_flags, 'c' . $club_id)->
+			set($user_id, $user_name, $tournament_user_flags, $secondary_id)->
+			set($user_id, $user_name, $club_user_flags, 'c' . $club_id)->
 			set($user_id, $user_name, $user_flags);
 	}
 	else if (isset($_REQUEST['club_id']))
@@ -85,7 +85,7 @@ try
 		$club_id = (int)$_REQUEST['club_id'];
 		list (
 				$name, 
-				$user_club_flags,
+				$club_user_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
 				'SELECT c.name, cu.flags, u.name, u.flags' .
@@ -101,7 +101,7 @@ try
 		$reset_pic = new Picture(USER_PICTURE);
 		$user_pic = new Picture(USER_CLUB_PICTURE, $reset_pic);
 		$user_pic->
-			set($user_id, $user_name, $user_club_flags, $secondary_id)->
+			set($user_id, $user_name, $club_user_flags, $secondary_id)->
 			set($user_id, $user_name, $user_flags);
 	}
 	else
