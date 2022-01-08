@@ -59,23 +59,5 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
                 }
             }
         }
-
-        &.nominees, &.sheriff-check, &.don-check {
-            .elements { 
-                .element-wrapper {
-                    &.town {
-                        background-color: $town-bg-color;
-                    }
-
-                    &.sheriff {
-                        background-color: $sheriff-bg-color;
-                    }
-
-                    &.don, &.maf {
-                        background-color: $mafia-bg-color;
-                    }
-                }
-            }
-        }
     }
 }
