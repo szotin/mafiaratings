@@ -1,12 +1,9 @@
-<div class="component-root">
+<div class="component-root" [ngClass]="'is-offline-' + (isOffline$ | async)">
     <div class="row nominees">
         <span class="label">Выставления: </span>
         <span class="elements">
             <span *ngFor="let element of (nominees$| async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
                 <span class="element">{{element.number}}</span>
-            </span>
-            <span class="element-wrapper placeholder">
-                <span class="element">&nbsp;</span>
             </span>
         </span>
     </div>
@@ -16,9 +13,6 @@
             <span *ngFor="let element of (checkedBySheriff$| async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
                 <span class="element">{{element.number}}</span>
             </span>
-            <span class="element-wrapper placeholder">
-                <span class="element">&nbsp;</span>
-            </span>
         </span>
     </div>
     <div class="row don-check">
@@ -27,9 +21,9 @@
             <span *ngFor="let element of (checkedByDon$| async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
                 <span class="element">{{element.number}}</span>
             </span>
-            <span class="element-wrapper placeholder">
-                <span class="element">&nbsp;</span>
-            </span>
         </span>
+    </div>
+    <div class="connection-status" *ngIf="(isOffline$ | async)">
+        OFFLINE
     </div>
 </div>
