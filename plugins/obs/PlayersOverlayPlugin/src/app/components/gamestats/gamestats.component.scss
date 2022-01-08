@@ -33,70 +33,31 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
             padding: 10px;
         }
 
-        &.nominees {
-            .elements { 
-                .element-wrapper {
-                    &.town {
-                        background-color: $town-bg-color;
-                    }
+        .elements {
+            .element-wrapper { 
+                margin: 0;
+                padding: 10px;
+                color: white;
+                animation: flash;
+                animation-duration: 1.5s;
 
-                    &.don, &.maf {
-                        background-color: $mafia-bg-color;
-                    }
-
-                    &.sheriff {
-                        background-color: $sheriff-bg-color;
-                    }
+                &:last-child {
+                    border-top-right-radius: 10px;
+                    border-bottom-right-radius: 10px;
+                }
+    
+                &.town {
+                    background-color: $town-bg-color;
+                }
+    
+                &.don, &.maf {
+                    background-color: $mafia-bg-color;
+                }
+                
+                &.sheriff {
+                    background-color: $sheriff-bg-color;
                 }
             }
-        }
-
-        &.sheriff-check {
-            .elements { 
-                .element-wrapper {
-                    &.town {
-                        background-color: $town-bg-color;
-                    }
-
-                    &.don, &.maf {
-                        background-color: $mafia-bg-color;
-                    }
-                }
-            }
-        }
-
-        &.don-check {
-            .elements { 
-                .element-wrapper {
-                    &.sheriff {
-                        background-color: $sheriff-bg-color;
-                    }
-
-                    &.town {
-                        background-color: $town-bg-color;
-                    }
-                }
-            }
-        }
-    }
-
-    .element-wrapper { 
-        margin: 0;
-        padding: 10px;
-        color: white;
-
-        &:last-child {
-            border-top-right-radius: 10px;
-            border-bottom-right-radius: 10px;
-        }
-
-        &.placeholder {
-            background-color: $label-bg-color;
-            border-top-right-radius: 10px;
-            border-bottom-right-radius: 10px;
-            width: 1px;
-            padding-left: 0;
-            padding-right: 0;
         }
     }
 }
