@@ -19,6 +19,8 @@
     "@angular/platform-browser": "~13.1.0",
     "@angular/platform-browser-dynamic": "~13.1.0",
     "@angular/router": "~13.1.0",
+    "@ngx-translate/core": "^14.0.0",
+    "@ngx-translate/http-loader": "^7.0.0",
     "animate.css": "^4.1.1",
     "obs-websocket-js": "^4.0.3",
     "rxjs": "^7.5.1",
