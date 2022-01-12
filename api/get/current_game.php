@@ -323,6 +323,18 @@ class ApiPage extends GetApiPageBase
 					}
 				}
 			}
+			if ($gs->guess3 != NULL)
+			{
+				$game->legacy = array();
+				foreach ($gs->guess3 as $n)
+				{
+					if ($n >= 0 && $n < 10)
+					{
+						$game->legacy[] = $n + 1;
+					}
+				}
+				sort($game->legacy);
+			}
 			$this->response['game'] = $game;
 		}
 	}
