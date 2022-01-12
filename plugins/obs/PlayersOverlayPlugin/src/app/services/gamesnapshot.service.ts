@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, timer, BehaviorSubject } from 'rxjs';
-import { retry, share, switchMap, pluck, map } from 'rxjs/operators';
+import { Observable, timer, BehaviorSubject, of } from 'rxjs';
+import { retry, share, switchMap, pluck, map, catchError, delay, skip, tap, concat, concatWith, concatMap, retryWhen, delayWhen } from 'rxjs/operators';
 
 import { ActivatedRoute } from '@angular/router';
 import { environment } from 'src/environments/environment';
@@ -14,25 +14,48 @@ export class GamesnapshotService {
   private configUrl_prod = '/api/get/current_game.php';
   private configUrl_dev = `http://localhost:8010/proxy${this.configUrl_prod}`;
   private configUrl = environment.production ? this.configUrl_prod : this.configUrl_dev;
+  private retryDelay: number = 2000;
 
   private urlParams: HttpParams = new HttpParams();
 
-  private gameSnapshot$: BehaviorSubject<GameSnapshot>;
+  private gameSnapshot$: BehaviorSubject<GameSnapshot> = new BehaviorSubject<GameSnapshot>({ version:0 });
+  private timer$: BehaviorSubject<string> = new BehaviorSubject('');
+  isOffline$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(private http: HttpClient, private activatedRoute: ActivatedRoute) {
-
-    this.gameSnapshot$ = new BehaviorSubject<GameSnapshot>({ version:0 });
 
     this.activatedRoute.queryParams.subscribe((params: { [x: string]: any; }) => {
       this.urlParams = this.getUrlParams(params);
     });
 
-    timer(0, 2000)
+    // Observable with game snapshot data
+    const data$: Observable<GameSnapshot> = this.getGameSnapshotData();
+
+    // Observable to signal when to refresh data from server
+    const whenToRefresh$ = of('').pipe(
+      delay(this.retryDelay),
+      tap(_ => this.timer$.next('')),
+      skip(1),
+    );
+
+    // Combining 2 observables
+    const poll$ = data$.pipe(concatWith(whenToRefresh$));
+
+    this.timer$
       .pipe(
-        switchMap(() => this.getGameSnapshotData()),
-        retry(20),
-        share(),
-      ).subscribe((gameSnapshot: any) => this.setGameSnapshot(gameSnapshot));
+        concatMap(_ => poll$),
+        retryWhen(errors => errors
+                  .pipe(
+                      delayWhen(() => timer(2000)),
+                      tap(() => { 
+                        console.log('retrying...'); 
+                        this.isOffline$.next(true);
+                      }))),
+        share())
+      .subscribe((gameSnapshot: any) => { 
+        this.setGameSnapshot(gameSnapshot);
+        this.isOffline$.next(false);
+      });
    }
 
   getGameSnapshot() {
@@ -101,6 +124,8 @@ export class GamesnapshotService {
     const userId = params['user_id'];
     const apiVersion = params['version'];
 
+    const retryDelay = params['retry_delay'];
+
     let parsedParams = new HttpParams();
 
     if (token) {
@@ -121,6 +146,10 @@ export class GamesnapshotService {
 
     if (apiVersion) {
       parsedParams = parsedParams.append('version', apiVersion);
+    }
+
+    if (retryDelay) {
+      this.retryDelay = retryDelay;
     }
 
     return parsedParams;

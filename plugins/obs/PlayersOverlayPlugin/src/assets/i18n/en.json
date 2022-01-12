@@ -1,0 +1,7 @@
+{
+  "gamestats": {
+    "sheriffChecks" : "Sheriff's checks: ",
+    "donChecks": "Don's checks: ",
+    "nominees": "Nominees: "
+  }
+}
