@@ -5,13 +5,14 @@ import { ObsControlComponent } from './components/obs-control/obs-control.compon
 import { PlayersComponent } from './components/players/players.component';
 
 const routes: Routes = [
+  { path: '', component: GamestatsComponent },
   { path: 'players', component: PlayersComponent },
   { path: 'gamestats', component: GamestatsComponent },
   { path: 'obs-control', component: ObsControlComponent }
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes, { useHash: true })],
-  exports: [RouterModule]
+  imports: [ RouterModule.forRoot(routes, { useHash: true }) ],
+  exports: [ RouterModule ]
 })
 export class AppRoutingModule { }
