@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { Game, GamePhase, GameState, Player, PlayerRole } from 'src/app/services/gamesnapshot.model';
+import { UrlParametersService } from 'src/app/services/url-parameters.service';
 
 @Component({
   selector: 'player',
@@ -10,11 +11,15 @@ export class PlayerComponent implements OnInit {
   @Input() player!: Player;
   @Input() game!: Game | null | undefined;
 
+  hideRolesUrlParameter: boolean = false;
   showRoles: boolean = false;
 
   private isDayOccured: boolean = false;
 
-  constructor() { }
+  constructor(urlParameterService: UrlParametersService) {
+    urlParameterService.getHideRoles$()
+      .subscribe((it: boolean)=> this.hideRolesUrlParameter = it);
+   }
 
   ngOnInit(): void {
   }
@@ -35,12 +40,12 @@ export class PlayerComponent implements OnInit {
       this.isDayOccured = this.isDayOccured || game.phase === GamePhase.day;
     }
 
-    this.showRoles = (
+    this.showRoles = !this.hideRolesUrlParameter && ((
       game
-      && game.state != GameState.notStarted 
+      && game.state != GameState.notStarted
       && (game.state !== GameState.starting
          || (game.phase === GamePhase.night && (game.round > 0 || this.isDayOccured)) // "starting"
          || (game.phase === GamePhase.day && game.round >= 0)
-      )) ?? false;
+      )) ?? false);
   }
 }
