@@ -3,9 +3,10 @@ import { Injectable } from '@angular/core';
 import { Observable, timer, BehaviorSubject, of } from 'rxjs';
 import { retry, share, switchMap, pluck, map, catchError, delay, skip, tap, concat, concatWith, concatMap, retryWhen, delayWhen } from 'rxjs/operators';
 
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Params } from '@angular/router';
 import { environment } from 'src/environments/environment';
 import { GameSnapshot, Game, Player } from './gamesnapshot.model';
+import { UrlParametersService } from './url-parameters.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,26 +15,19 @@ export class GamesnapshotService {
   private configUrl_prod = '/api/get/current_game.php';
   private configUrl_dev = `http://localhost:8010/proxy${this.configUrl_prod}`;
   private configUrl = environment.production ? this.configUrl_prod : this.configUrl_dev;
-  private retryDelay: number = 2000;
-
-  private urlParams: HttpParams = new HttpParams();
 
   private gameSnapshot$: BehaviorSubject<GameSnapshot> = new BehaviorSubject<GameSnapshot>({ version:0 });
   private timer$: BehaviorSubject<string> = new BehaviorSubject('');
   isOffline$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
-  constructor(private http: HttpClient, private activatedRoute: ActivatedRoute) {
-
-    this.activatedRoute.queryParams.subscribe((params: { [x: string]: any; }) => {
-      this.urlParams = this.getUrlParams(params);
-    });
+  constructor(private http: HttpClient, private urlParameterService: UrlParametersService) {
 
     // Observable with game snapshot data
     const data$: Observable<GameSnapshot> = this.getGameSnapshotData();
 
     // Observable to signal when to refresh data from server
     const whenToRefresh$ = of('').pipe(
-      delay(this.retryDelay),
+      delay(this.urlParameterService.retryDelay),
       tap(_ => this.timer$.next('')),
       skip(1),
     );
@@ -46,13 +40,13 @@ export class GamesnapshotService {
         concatMap(_ => poll$),
         retryWhen(errors => errors
                   .pipe(
-                      delayWhen(() => timer(2000)),
-                      tap(() => { 
-                        console.log('retrying...'); 
+                      delayWhen(() => timer(this.urlParameterService.retryDelay)),
+                      tap(() => {
+                        console.log('retrying...');
                         this.isOffline$.next(true);
                       }))),
         share())
-      .subscribe((gameSnapshot: any) => { 
+      .subscribe((gameSnapshot: any) => {
         this.setGameSnapshot(gameSnapshot);
         this.isOffline$.next(false);
       });
@@ -75,6 +69,11 @@ export class GamesnapshotService {
   getNominees(): Observable<Player[]> {
     return this.getCurrentGame().pipe(
       map((it?: Game) => it?.nominatedPlayers ?? []));
+  }
+
+  getLegacyPlayers(): Observable<Player[]> {
+    return this.getCurrentGame().pipe(
+      map((it?: Game) => it?.legacyPlayers ?? []));
   }
 
   getCheckedBySheriff(): Observable<Player[]> {
@@ -100,13 +99,15 @@ export class GamesnapshotService {
 
   private getGameSnapshotData(): Observable<GameSnapshot> {
     return this.http
-      .get<GameSnapshot>(this.configUrl, { observe: 'response', params: this.urlParams })
+      .get<GameSnapshot>(this.configUrl, { observe: 'response', params: this.urlParameterService.gameSnapshotUrlParams })
       .pipe(
         map((it: HttpResponse<GameSnapshot>) => it.body ?? { version:0 }),
         map((it: GameSnapshot) => {
           if (it.game) {
             let players: Player[] = it.game?.players ?? [];
             it.game.nominatedPlayers = it.game?.nominees?.map((nominee: number) => players[nominee-1]) || [];
+
+            it.game.legacyPlayers = it.game?.legacy?.map((it: number)=> players[it-1]) || [];
           }
 
           return it;
@@ -115,43 +116,5 @@ export class GamesnapshotService {
 
   private setGameSnapshot(gameSnapshot: GameSnapshot) {
     this.gameSnapshot$.next(gameSnapshot);
-  }
-
-  private getUrlParams(params: { [x: string]: any; }) {
-    const token = params['token'];
-    const moderatorId = params['moderator_id'];
-    const gameId = params['game_id'];
-    const userId = params['user_id'];
-    const apiVersion = params['version'];
-
-    const retryDelay = params['retry_delay'];
-
-    let parsedParams = new HttpParams();
-
-    if (token) {
-      parsedParams = parsedParams.append('token', token);
-    }
-
-    if (moderatorId) {
-      parsedParams = parsedParams.append('moderator_id', moderatorId);
-    }
-
-    if (gameId) {
-      parsedParams = parsedParams.append('game_id', gameId);
-    }
-
-    if (userId) {
-      parsedParams = parsedParams.append('user_id', userId);
-    }
-
-    if (apiVersion) {
-      parsedParams = parsedParams.append('version', apiVersion);
-    }
-
-    if (retryDelay) {
-      this.retryDelay = retryDelay;
-    }
-
-    return parsedParams;
   }
 }

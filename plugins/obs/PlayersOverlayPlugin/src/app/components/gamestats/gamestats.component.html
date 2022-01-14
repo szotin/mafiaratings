@@ -1,16 +1,18 @@
-<div class="component-root" [ngClass]="'is-offline-' + (isOffline$ | async)">
-    <div class="row nominees">
-        <span class="label">{{ 'gamestats.nominees' | translate }}</span>
-        <span class="elements">
-            <span *ngFor="let element of (nominees$| async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
-                <span class="element">{{element.number}}</span>
-            </span>
+<div class="component-root" [ngClass]="[
+  'is-offline-' + (isOffline$ | async),
+  'hide-roles-' + (hideRoles$ | async)]">
+    <div class="row legacy">
+      <span class="label">{{ 'gamestats.legacy' | translate }}</span>
+      <span class="elements">
+        <span *ngFor="let element of (legacyPlayers$ | async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
+            <span class="element">{{element.number}}</span>
         </span>
+      </span>
     </div>
     <div class="row sheriff-check">
         <span class="label">{{ 'gamestats.sheriffChecks' | translate }} </span>
         <span class="elements">
-            <span *ngFor="let element of (checkedBySheriff$| async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
+            <span *ngFor="let element of (checkedBySheriff$ | async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
                 <span class="element">{{element.number}}</span>
             </span>
         </span>
@@ -18,10 +20,18 @@
     <div class="row don-check">
         <span class="label">{{ 'gamestats.donChecks' | translate }}</span>
         <span class="elements">
-            <span *ngFor="let element of (checkedByDon$| async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
+            <span *ngFor="let element of (checkedByDon$ | async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
                 <span class="element">{{element.number}}</span>
             </span>
         </span>
+    </div>
+    <div class="row nominees">
+      <span class="label">{{ 'gamestats.nominees' | translate }}</span>
+      <span class="elements">
+          <span *ngFor="let element of (nominees$ | async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
+              <span class="element">{{element.number}}</span>
+          </span>
+      </span>
     </div>
     <div class="connection-status" *ngIf="(isOffline$ | async)">
         OFFLINE

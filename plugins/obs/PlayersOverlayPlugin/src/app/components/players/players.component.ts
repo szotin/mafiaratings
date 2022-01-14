@@ -19,7 +19,8 @@ export class PlayersComponent implements OnInit {
 
   ngOnInit(): void {
     this.game$ = this.gameSnapshotService.getCurrentGame();
-    this.showPlayers$ = this.game$.pipe(map((it?: Game) => (it?.state != GameState.notStarted) ?? false));
+    this.showPlayers$ = this.game$.pipe(
+      map((it?: Game) => (it?.state != GameState.notStarted) ?? false));
   }
 
   trackPlayerById(index:number, player:Player): number {
