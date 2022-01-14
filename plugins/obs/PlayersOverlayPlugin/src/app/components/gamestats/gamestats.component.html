@@ -1,4 +1,6 @@
-<div class="component-root" [ngClass]="'is-offline-' + (isOffline$ | async)">
+<div class="component-root" [ngClass]="[
+  'is-offline-' + (isOffline$ | async),
+  'hide-roles-' + (hideRoles$ | async)]">
     <div class="row sheriff-check">
         <span class="label">{{ 'gamestats.sheriffChecks' | translate }} </span>
         <span class="elements">
