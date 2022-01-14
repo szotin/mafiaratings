@@ -12,6 +12,7 @@ import { Observable } from 'rxjs';
 })
 export class GamestatsComponent implements OnInit {
   nominees$?: Observable<Player[]>;
+  legacyPlayers$?: Observable<Player[]>;
   checkedBySheriff$?: Observable<Player[]>;
   checkedByDon$?: Observable<Player[]>;
   hideRoles$?: Observable<boolean>;
@@ -29,6 +30,7 @@ export class GamestatsComponent implements OnInit {
     this.nominees$ = this.gameSnapshotService.getNominees();
     this.checkedBySheriff$ = this.gameSnapshotService.getCheckedBySheriff();
     this.checkedByDon$ = this.gameSnapshotService.getCheckedByDon();
+    this.legacyPlayers$ = this.gameSnapshotService.getLegacyPlayers();
     this.hideRoles$ = this.urlParameterService.getHideRoles$();
   }
 

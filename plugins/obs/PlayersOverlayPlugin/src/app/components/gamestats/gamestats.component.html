@@ -25,6 +25,14 @@
           </span>
       </span>
     </div>
+    <div class="row nominees">
+      <span class="label">{{ 'gamestats.legacy' | translate }}</span>
+      <span class="elements">
+          <span *ngFor="let element of (legacyPlayers$ | async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
+              <span class="element">{{element.number}}</span>
+          </span>
+      </span>
+    </div>
     <div class="connection-status" *ngIf="(isOffline$ | async)">
         OFFLINE
     </div>

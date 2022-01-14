@@ -12,6 +12,8 @@ export interface Game {
   players: Player[];
   nominees: number[];
   nominatedPlayers: Player[];
+  legacy: number[];
+  legacyPlayers: Player[];
 }
 
 export enum GamePhase {

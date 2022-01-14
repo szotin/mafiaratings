@@ -71,6 +71,11 @@ export class GamesnapshotService {
       map((it?: Game) => it?.nominatedPlayers ?? []));
   }
 
+  getLegacyPlayers(): Observable<Player[]> {
+    return this.getCurrentGame().pipe(
+      map((it?: Game) => it?.legacyPlayers ?? []));
+  }
+
   getCheckedBySheriff(): Observable<Player[]> {
     return this.getPlayers().pipe(
       map(
@@ -101,6 +106,8 @@ export class GamesnapshotService {
           if (it.game) {
             let players: Player[] = it.game?.players ?? [];
             it.game.nominatedPlayers = it.game?.nominees?.map((nominee: number) => players[nominee-1]) || [];
+
+            it.game.legacyPlayers = it.game?.legacy?.map((it: number)=> players[it-1]) || [];
           }
 
           return it;
