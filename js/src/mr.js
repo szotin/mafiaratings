@@ -627,11 +627,6 @@ var mr = new function()
 		}
 	}
 	
-	this.showEventToken = function(id)
-	{
-		dlg.infoForm("form/event_token.php?event_id=" + id, 400);
-	}
-	
 	this.addEventUser = function(id, onSuccess)
 	{
 		if (typeof onSuccess == "undefined")
@@ -642,6 +637,11 @@ var mr = new function()
 	this.removeEventUser = function(userId, eventId)
 	{
 		json.post("api/ops/user.php", { op: "quit_event", event_id: eventId, user_id: userId }, refr);
+	}
+	
+	this.eventObs = function(eventId)
+	{
+		dlg.infoForm("form/obs_urls.php?event_id=" + eventId, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------
@@ -692,11 +692,6 @@ var mr = new function()
 		}, 600);
 	}
 	
-	this.showTournamentToken = function(id)
-	{
-		dlg.infoForm("form/tournament_token.php?tournament_id=" + id, 400);
-	}
-
 	this.addTournamentUser = function(id, onSuccess)
 	{
 		if (typeof onSuccess == "undefined")
@@ -707,6 +702,11 @@ var mr = new function()
 	this.removeTournamentUser = function(userId, tournamentId)
 	{
 		json.post("api/ops/user.php", { op: "quit_tournament", tournament_id: tournamentId, user_id: userId }, refr);
+	}
+	
+	this.tournamentObs = function(tournamentId)
+	{
+		dlg.infoForm("form/obs_urls.php?tournament_id=" + tournamentId, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------

@@ -371,6 +371,7 @@ mafia.ui = new function()
 		_enableMenuItem($('#save'), mafia.localDirty());
 		_enableMenuItem($('#sync'), mafia.globalDirty());
 		_enableMenuItem($('#club'), data != null && data.user.clubs.length > 1);
+		_enableMenuItem($('#obs'), data.game.id > 0);
 		
 		var v = mafia.curVoting();
 		_enableMenuItem($('#voting'), v != null);
@@ -410,9 +411,10 @@ mafia.ui = new function()
 									'<li type="separator"></li>';
 		if (flags & this.FLAG_ONLINE)
 			html +=
-									'<li id="offline" class="ops-item"><a href="#" onclick="mafia.ui.offline()"><img src="images/disconnected.png" class="text"> ' + l('Offline') + '</a></li>'
+									'<li id="offline" class="ops-item"><a href="#" onclick="mafia.ui.offline()"><img src="images/disconnected.png" class="text"> ' + l('Offline') + '</a></li>';
 						
 		html +=
+									'<li id="obs" class="ops-item"><a href="#" onclick="mafia.ui.obs()"><img src="images/obs.png" class="text"> ' + l('OBS') + '</a></li>' +
 									'<li id="settings" class="ops-item"><a href="#" onclick="mafia.ui.settings()"><img src="images/settings.png" class="text"> ' + l('Settings') + '</a></li>' +
 								'</ul>' +
 							'</td>' +
@@ -1859,7 +1861,56 @@ mafia.ui = new function()
 	{
 		dlg.info(l('OfflineText', _mobile ? 'mob-' : ''), l('Offline'));
 	}
+	
+	this.obs = function()
+	{
+		obsForm.show();
+	}
 } // mafia.ui
+
+var obsForm = new function()
+{
+	this.show = function()
+	{
+		var html =
+			'<table class="dialog_form" width="100%">' +
+			'<tr><td width="120">' + l('Lang') + '</td>' + 
+			'<td><select id="form-lang" onchange="obsForm.showInstr()">' +
+			'<option value="en">' + l('Eng') + '</option>' + 
+			'<option value="ru">' + l('Rus') + '</option>' +
+			'</select></td></tr>' +
+			'<tr><td colspan="2"><input id="form-roles" type="checkbox" checked onclick="obsForm.showInstr()"> ' + l('ShowRoles') + '</td></tr>' +
+			'</table><p><table class="dialog_form" width = 100%' +
+			'<tr><td id="form-instr"></td></tr>' +
+			'</table><script>obsForm.showInstr()</script>';
+			
+		dlg.info(html, l('OBS'), 600);
+	}
+	
+	this.showInstr = function()
+	{
+		var data = mafia.data();
+		var params = '?user_id=' + data.game.user_id + '&token=' + data.club.events[data.game.event_id].token + '&locale=' + $('#form-lang').val();
+		if (!$('#form-roles').attr('checked'))
+			params += '&hide_roles';
+		var url1 = data.site + '/obs_plugins/players-overlay-plugin/#/players' + params;
+		var url2 = data.site + '/obs_plugins/players-overlay-plugin/#/gamestats' + params;
+		
+		var html =
+			'<p><h4>' + l('Instr') + '</h4></p>' +
+			'<p><ol>' +
+			'<li>' + l('Instr1') + '</li>' +
+			'<li>' + l('Instr2') + '</li>' +
+			'<li>' + l('Instr3') + '</li>' +
+			'<ol>' +
+			'<li>' + l('Instr3a') + ':<br><a href="' + url1 + '" target="_blank">' + url1 + '</a></li>' +
+			'<li>' + l('Instr3b') + ':<br><a href="' + url2 + '" target="_blank">' + url2 + '</a></li>' +
+			'</ol>' +
+			'<li>' + l('Instr4') + '</li>' +
+			'</ol></p>';
+		$('#form-instr').html(html);
+	}
+}
 
 var nickForm = new function()
 {

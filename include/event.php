@@ -724,7 +724,6 @@ class Event
 				{
 					echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
 				}
-				echo '<button class="icon" onclick="mr.showEventToken(' . $id . ')" title="' . get_label('Show security token for this event.') . '"><img src="images/obs.png" border="0"></button>';
 				$no_buttons = false;
 			}
 			
@@ -888,7 +887,6 @@ class EventPageBase extends PageBase
 				new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
 				new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event')),
-				new MenuItem('event_figm_form.php?event_id=' . $this->event->id, get_label('FIGM'), get_label('PDF report for sending to FIGM Mafia World Tour'), NULL, true),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
@@ -909,6 +907,7 @@ class EventPageBase extends PageBase
 				new MenuItem('event_players.php?id=' . $this->event->id, get_label('Players'), get_label('Manage players paricipaing in [0]', $this->event->name)),
 				new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name)),
 				new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name)),
+				new MenuItem('javascript:mr.eventObs(' . $this->event->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
 			);
 			if (is_null($this->event->tournament_id))
 			{

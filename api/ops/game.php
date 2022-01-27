@@ -183,11 +183,11 @@ class GClub
 			}
 			
 			$events_str = '(0';
-			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, t.id, t.name FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
+			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, e.security_token, t.id, t.name, t.security_token FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
 			while ($row = $query->next())
 			{
 				$e = new stdClass();
-				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->tournament_id, $tournament_name) = $row;
+				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->token, $e->tournament_id, $tournament_name, $tournament_token) = $row;
 				$e->id = (int)$e->id;
 				$e->start_time = (int)$e->start_time;
 				$e->langs = (int)$e->langs;
@@ -198,10 +198,24 @@ class GClub
 				{
 					$e->tournament_id = (int)$e->tournament_id;
 					$e->tournament_name = $tournament_name;
+					if (!is_null($tournament_token))
+					{
+						$e->token = $tournament_token;
+					}
+					else
+					{
+						$e->token = rand_string(32);
+						Db::exec(get_label('tournament'), 'UPDATE tournaments SET security_token = ? WHERE id = ?', $e->token, $e->tournament_id);
+					}
 				}
 				else
 				{
 					$e->tournament_id = 0;
+					if (is_null($e->token))
+					{
+						$e->token = rand_string(32);
+						Db::exec(get_label('event'), 'UPDATE events SET security_token = ? WHERE id = ?', $e->token, $e->id);
+					}
 				}
 				$this->events[$e->id] = $e;
 				$events_str .= ', ' . $e->id;
@@ -1005,6 +1019,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			//throw new Exc(json_encode($gs));
+			$this->response['site'] = get_server_url();
 			$this->response['user'] = new GUser($club_id);
 			$this->response['club'] = new GClub($club_id, $gs);
 			$this->response['game'] = $gs;
