@@ -108,12 +108,19 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
+	echo '<input type="checkbox" id="form-team"';
+	if ($flags & TOURNAMENT_FLAG_TEAM)
+	{
+		echo ' checked';
+	}
+	echo  '> ' . get_label('team tournament') . '<br>';
+	
 	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"';
 	if ($flags & TOURNAMENT_FLAG_LONG_TERM)
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('long term tournament. Like a seasonal club championship.').'<br>';
+	echo '> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
 	
 	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"';
 	if (($flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
@@ -124,7 +131,7 @@ try
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('single games from non-tournament events can be assigned to the tournament.').'<br>';
+	echo '> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '<br>';
 	
 	echo '<input type="checkbox" id="form-use_rounds_scoring"';
 	if ($flags & TOURNAMENT_FLAG_SINGLE_GAME)
@@ -135,10 +142,9 @@ try
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('scoring rules can be custom in tournament rounds.').'<br>';
+	echo '> ' . get_label('scoring rules can be custom in tournament rounds.') . '<br>';
 	
 	echo '</td></tr>';
-	
 	echo '</table>';
 	
 ?>	
@@ -213,6 +219,7 @@ try
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-use_rounds_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_USE_ROUNDS_SCORING; ?>;
+		if ($("#form-team").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_TEAM; ?>;
 		
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive

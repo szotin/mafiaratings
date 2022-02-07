@@ -17,7 +17,7 @@ try
 	else if (isset($_REQUEST['tournament_id']))
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
-		list($club_id, $name) = Db::record(get_label('tournament'), 'SELECT club_id, name FROM tournaments WHERE id = ?', $tournament_id);
+		list($club_id, $name, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, name, flags FROM tournaments WHERE id = ?', $tournament_id);
 	}
 	else if (isset($_REQUEST['club_id']))
 	{
@@ -38,9 +38,31 @@ try
 	}
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="120">' . get_label('User') . ':</td><td>';
-	show_user_input('form-user', '', '', get_label('Select user.'), 'onSelect');
+	echo '<tr><td width="120">' . get_label('Player') . ':</td><td>';
+	show_user_input('form-user', '', '', get_label('Select player.'), 'onSelect');
 	echo '</td></tr>';
+	if (isset($tournament_id) && ($flags & TOURNAMENT_FLAG_TEAM) != 0)
+	{
+		echo '<tr><td>' . get_label('Team') . ':</td><td>';
+		
+		echo '<input type="text" id="form-team" placeholder="' . get_label('Select team') . '" title="Select player\'s team in the tournament."/>';
+		$url = 'api/control/team.php?tournament_id=' . $tournament_id . '&term=';
+?>
+		<script>
+		$("#form-team").autocomplete(
+		{ 
+			source: function(request, response)
+			{
+				$.getJSON("<?php echo $url; ?>" + $("#form-team").val(), null, response);
+			},
+			minLength: 0
+		})
+		.on("focus", function () { $(this).autocomplete("search", ''); });
+		</script>
+<?php
+		
+		echo '</td></tr>';
+	}
 	echo '</table>';
 
 ?>
@@ -74,6 +96,12 @@ try
 				, user_id: user.id
 				, tournament_id: <?php echo $tournament_id; ?>
 <?php
+		if ($flags & TOURNAMENT_FLAG_TEAM)
+		{
+?>
+				, team: $('#form-team').val()
+<?php
+		}
 	}
 	else
 	{

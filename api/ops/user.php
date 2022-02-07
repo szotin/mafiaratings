@@ -666,17 +666,67 @@ class ApiPage extends OpsApiPageBase
 		
 		$user_id = (int)get_optional_param('user_id', $owner_id);
 		$tournament_id = (int)get_required_param('tournament_id');
+		$team = get_optional_param('team', NULL);
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
 		
-		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
-		if ($count == 0)
+		$query = new DbQuery('SELECT t.id, t.name FROM tournament_users u LEFT OUTER JOIN tournament_teams t ON u.team_id = t.id WHERE u.user_id = ? AND u.tournament_id = ?', $user_id, $tournament_id);
+		if ($row = $query->next())
 		{
-			Db::exec(get_label('registration'), 'INSERT INTO tournament_users (user_id, tournament_id, flags) values (?, ?, ' . USER_TOURNAMENT_NEW_PLAYER_FLAGS . ')', $user_id, $tournament_id);
+			list($old_team_id, $old_team) = $row;
+			if ($team != $old_team)
+			{
+				if ($team == NULL || empty($team))
+				{
+					Db::exec(get_label('registration'), 'UPDATE tournament_users SET team_id = NULL WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+				}
+				else
+				{
+					$query = new DbQuery('SELECT id FROM tournament_teams WHERE name = ?', $team);
+					if ($row = $query->next())
+					{
+						list($team_id) = $row;
+					}
+					else
+					{
+						Db::exec(get_label('team'), 'INSERT INTO tournament_teams (tournament_id, name) VALUES (?, ?)', $tournament_id, $team);
+						list ($team_id) = Db::record(get_label('team'), 'SELECT LAST_INSERT_ID()');
+					}
+					Db::exec(get_label('registration'), 'UPDATE tournament_users SET team_id = ? WHERE user_id = ? AND tournament_id = ?', $team_id, $user_id, $tournament_id);
+				}
+				
+				list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_users WHERE team_id = ? AND tournament_id = ?', $old_team_id, $tournament_id);
+				if ($count <= 0)
+				{
+					Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE id = ?', $old_team_id);
+				}
+			}
+		}
+		else
+		{
+			$team_id = NULL;
+			if ($team != NULL && !empty($team))
+			{
+				$query = new DbQuery('SELECT id FROM tournament_teams WHERE name = ?', $team);
+				if ($row = $query->next())
+				{
+					list($team_id) = $row;
+				}
+				else
+				{
+					Db::exec(get_label('team'), 'INSERT INTO tournament_teams (tournament_id, name) VALUES (?, ?)', $tournament_id, $team);
+					list ($team_id) = Db::record(get_label('team'), 'SELECT LAST_INSERT_ID()');
+				}
+			}
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_users (user_id, tournament_id, flags, team_id) values (?, ?, ' . USER_TOURNAMENT_NEW_PLAYER_FLAGS . ', ?)', $user_id, $tournament_id, $team_id);
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
+			if ($team_id != NULL)
+			{
+				$log_details->team = $team;
+			}
 			db_log(LOG_OBJECT_USER, 'joined tournament', $log_details, $user_id, $club_id);
 		}
 		Db::commit();
@@ -715,12 +765,22 @@ class ApiPage extends OpsApiPageBase
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
 		
+		
+		list($team_id) = Db::record(get_label('registration'), 'SELECT team_id FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 		Db::exec(get_label('registration'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
 			db_log(LOG_OBJECT_USER, 'left tournament', $log_details, $user_id, $club_id);
+		}
+		if (!is_null($team_id))
+		{
+			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_users WHERE team_id = ? AND tournament_id = ?', $team_id, $tournament_id);
+			if ($count <= 0)
+			{
+				Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE id = ?', $team_id);
+			}
 		}
 		Db::commit();
 		

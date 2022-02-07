@@ -12,6 +12,14 @@ class Page extends TournamentPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $this->club_id);
 		$can_edit = $_profile->is_club_manager($this->club_id);
 		
+		$is_team_tournament = (($this->flags & TOURNAMENT_FLAG_TEAM) != 0);
+		if (!$is_team_tournament)
+		{
+			// Event if it is not a team tournament, teams can exist. Team in this case is a set of players who should not play with each other.
+			list($count) = Db::record(get_label('team'), 'SELECT count(*) FROM tournament_teams WHERE tournament_id = ?', $this->id);
+			$is_team_tournament = ($count > 0);
+		}
+		
 		$tournament_user_pic =
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
@@ -19,88 +27,163 @@ class Page extends TournamentPageBase
 
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker">';
+		if ($is_team_tournament)
+		{
+			echo '<td width="200">' . get_label('Team') . '</td>';
+		}
 		echo '<td width="87">';
 		if ($can_edit)
 		{
 			echo '<button class="icon" onclick="mr.addTournamentUser(' . $this->id . ')" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button>';
 		}
 		echo '</td>';
-		echo '<td colspan="4">' . get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
+		echo '<td colspan="4">' . get_label('Player') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
 
+		
+		$teams = array();
+		$no_team = NULL;
+		$current_team = NULL;
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.email, u.flags, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags' .
+			'SELECT t.name, u.id, u.name, u.email, u.flags, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags' .
 			' FROM tournament_users tu' .
 			' JOIN users u ON tu.user_id = u.id' .
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' LEFT OUTER JOIN club_users cu ON cu.club_id = tu.tournament_id AND cu.user_id = tu.user_id' .
+			' LEFT OUTER JOIN tournament_teams t ON tu.team_id = t.id' .
 			' WHERE tu.tournament_id = ?' .
-			' ORDER BY u.name',
+			' ORDER BY t.name, u.name',
 			$this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $email, $user_flags, $tournament_user_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_user_flags) = $row;
-		
-			echo '<tr class="light"><td class="dark">';
-			if ($can_edit)
+			$team_name = $row[0];
+			if ($team_name == NULL)
 			{
-				echo '<button class="icon" onclick="mr.removeTournamentUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.editTournamentAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.tournamentUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
+				if ($no_team == NULL)
+				{
+					$no_team = new stdClass();
+					$no_team->players = array();
+				}
+				$no_team->players[] = $row;
 			}
-			else
+			else 
 			{
-				echo '<img src="images/transp.png" height="32" border="0">';
+				if ($current_team == NULL)
+				{
+					$current_team = new stdClass();
+					$current_team->name = $team_name;
+					$current_team->players = array();
+				}
+				else if ($current_team->name != $team_name)
+				{
+					$teams[] = $current_team;
+					$current_team = new stdClass();
+					$current_team->name = $team_name;
+					$current_team->players = array();
+				}
+				$current_team->players[] = $row;
 			}
-			echo '</td>';
+		}
+		if ($current_team != NULL)
+		{
+			$teams[] = $current_team;
+		}
+		if ($no_team != NULL)
+		{
+			$teams[] = $no_team;
+		}
 			
-			echo '<td width="60" align="center">';
-			$tournament_user_pic->
-				set($id, $name, $tournament_user_flags, 't' . $this->id)->
-				set($id, $name, $club_user_flags, 'c' . $user_club_id)->
-				set($id, $name, $user_flags);
-			$tournament_user_pic->show(ICONS_DIR, true, 50);
-			echo '</td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
-			echo '<td width="200">';
-			if ($_profile->is_club_manager($club_id))
+		foreach ($teams as $team)
+		{
+			$players_count = count($team->players);
+			for ($i = 0; $i < $players_count; ++$i)
 			{
-				echo $email;
-			}
-			echo '</td>';
-			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, true, 40);
-			}
-			echo '</td>';
+				$row = $team->players[$i];
+				list($team_name, $id, $name, $email, $user_flags, $tournament_user_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_user_flags) = $row;
 			
-			echo '<td>';
-			if ($tournament_user_flags & USER_PERM_PLAYER)
-			{
-				echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
+				echo '<tr class="light">';
+				if ($is_team_tournament && $i == 0)
+				{
+					if (is_null($team_name))
+					{
+						echo '<td class="dark"';
+						if ($players_count > 1)
+						{
+							echo ' rowspan="' . $players_count . '"';
+						}
+						echo ' align="center">' . get_label('No team') . '</td>';
+					}
+					else
+					{
+						echo '<td';
+						if ($players_count > 1)
+						{
+							echo ' rowspan="' . $players_count . '"';
+						}
+						echo ' align="center">' . $team_name . '</td>';
+					}
+				}
+				echo '<td class="dark">';
+				if ($can_edit)
+				{
+					echo '<button class="icon" onclick="mr.removeTournamentUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.editTournamentAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.tournamentUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
+				}
+				else
+				{
+					echo '<img src="images/transp.png" height="32" border="0">';
+				}
+				echo '</td>';
+				
+				echo '<td width="60" align="center">';
+				$tournament_user_pic->
+					set($id, $name, $tournament_user_flags, 't' . $this->id)->
+					set($id, $name, $club_user_flags, 'c' . $user_club_id)->
+					set($id, $name, $user_flags);
+				$tournament_user_pic->show(ICONS_DIR, true, 50);
+				echo '</td>';
+				echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
+				echo '<td width="200">';
+				if ($_profile->is_club_manager($club_id))
+				{
+					echo $email;
+				}
+				echo '</td>';
+				echo '<td width="50" align="center">';
+				if (!is_null($club_id))
+				{
+					$this->club_pic->set($club_id, $club_name, $club_flags);
+					$this->club_pic->show(ICONS_DIR, true, 40);
+				}
+				echo '</td>';
+				
+				echo '<td>';
+				if ($tournament_user_flags & USER_PERM_PLAYER)
+				{
+					echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
+				}
+				else
+				{
+					echo '<img src="images/transp.png" width="32">';
+				}
+				if ($tournament_user_flags & USER_PERM_MODER)
+				{
+					echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
+				}
+				else
+				{
+					echo '<img src="images/transp.png" width="32">';
+				}
+				if ($tournament_user_flags & USER_PERM_MANAGER)
+				{
+					echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
+				}
+				else
+				{
+					echo '<img src="images/transp.png" width="32">';
+				}
+				echo '</td></tr>';
 			}
-			else
-			{
-				echo '<img src="images/transp.png" width="32">';
-			}
-			if ($tournament_user_flags & USER_PERM_MODER)
-			{
-				echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
-			}
-			else
-			{
-				echo '<img src="images/transp.png" width="32">';
-			}
-			if ($tournament_user_flags & USER_PERM_MANAGER)
-			{
-				echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
-			}
-			else
-			{
-				echo '<img src="images/transp.png" width="32">';
-			}
-			echo '</td></tr>';
 		}
 		echo '</table>';
 	}

@@ -45,7 +45,7 @@ try
 	show_option(TOURNAMENT_TYPE_AML_THREE_ROUNDS, $tournament_type, get_label('AML style tournament with three rounds - main, semi-final, and final.'));
 	show_option(TOURNAMENT_TYPE_SERIES, $tournament_type, get_label('Mini-tournament series.'));
 	show_option(TOURNAMENT_TYPE_CHAMPIONSHIP, $tournament_type, get_label('Seasonal championship.'));
-	echo '</td></tr>';
+	echo '</select></td></tr>';
 
 	if ($league_id > 0)
 	{
@@ -157,9 +157,10 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> '.get_label('long term tournament. Like a seasonal club championship.').'<br>';
-	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> '.get_label('single games from non-tournament events can be assigned to the tournament.').'<br>';
-	echo '<input type="checkbox" id="form-use_rounds_scoring"> '.get_label('scoring rules can be custom in tournament rounds.').'<br>';
+	echo '<input type="checkbox" id="form-team"> ' . get_label('team tournament') . '<br>';
+	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
+	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '<br>';
+	echo '<input type="checkbox" id="form-use_rounds_scoring"> ' . get_label('scoring rules can be custom in tournament rounds.') . '<br>';
 	echo '</table>';
 	
 	$figm_id = 0;
@@ -325,6 +326,7 @@ try
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-use_rounds_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_USE_ROUNDS_SCORING; ?>;
+		if ($("#form-team").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_TEAM; ?>;
 		
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
