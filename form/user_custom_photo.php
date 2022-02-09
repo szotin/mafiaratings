@@ -22,13 +22,13 @@ try
 	{
 		$event_id = (int)$_REQUEST['event_id'];
 		list (
-				$name, 
+				$name, $club_id,
 				$user_event_name, $event_user_flags, 
 				$tournament_id, $tournament_user_flags,
-				$club_id, $club_user_flags,
+				$user_club_id, $club_user_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
-				'SELECT e.name, eu.nickname, eu.flags, tu.tournament_id, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
+				'SELECT e.name, e.club_id, eu.nickname, eu.flags, tu.tournament_id, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
 				' FROM users u' .
 				' JOIN events e ON e.id = ?' .
 				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
@@ -45,7 +45,7 @@ try
 		$user_pic->
 			set($user_id, $user_event_name, $event_user_flags, $secondary_id)->
 			set($user_id, $user_name, $tournament_user_flags, 't' . $tournament_id)->
-			set($user_id, $user_name, $club_user_flags, 'c' . $club_id)->
+			set($user_id, $user_name, $club_user_flags, 'c' . $user_club_id)->
 			set($user_id, $user_name, $user_flags);
 			
 		$attribute = ', event_id: ' . $event_id;
@@ -55,12 +55,12 @@ try
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
 		list (
-				$name, 
+				$name, $club_id,
 				$tournament_user_flags,
-				$club_id, $club_user_flags,
+				$user_club_id, $club_user_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
-				'SELECT t.name, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
+				'SELECT t.name, t.club_id, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
 				' FROM users u' .
 				' JOIN tournaments t ON t.id = ?' .
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = t.id' .
@@ -77,12 +77,12 @@ try
 		$user_pic = new Picture(USER_TOURNAMENT_PICTURE, $reset_pic);
 		$user_pic->
 			set($user_id, $user_name, $tournament_user_flags, $secondary_id)->
-			set($user_id, $user_name, $club_user_flags, 'c' . $club_id)->
+			set($user_id, $user_name, $club_user_flags, 'c' . $user_club_id)->
 			set($user_id, $user_name, $user_flags);
 	}
 	else if (isset($_REQUEST['club_id']))
 	{
-		$club_id = (int)$_REQUEST['club_id'];
+		$user_club_id = $club_id = (int)$_REQUEST['club_id'];
 		list (
 				$name, 
 				$club_user_flags,
@@ -94,7 +94,7 @@ try
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = c.id' .
 				' WHERE u.id = ?', $club_id, $user_id);
 
-		$secondary_id = 'c' . $club_id;
+		$secondary_id = 'c' . $user_club_id;
 		$code = USER_CLUB_PIC_CODE;
 		$attribute = ', club_id: ' . $club_id;
 
