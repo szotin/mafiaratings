@@ -88,6 +88,7 @@ define('SCORING_LOD_PER_POLICY', 2); // scoring returns points per policy for ea
 define('SCORING_LOD_HISTORY', 4); // scoring returns player history in $player->history field. It contains an array of points with timestamp and scores according to SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
 define('SCORING_LOD_PER_GAME', 8); // scoring returns scores for every game a player played in $player->games field. It contains an array of games with timestamp, game_id, and scores according to SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
 define('SCORING_LOD_NO_SORTING', 16); // When set sorting returns associative array player_id => player. When not set scoring returns array of players sorted by total score.
+define('SCORING_LOD_TEAMS', 32); // Outputs team scores instead of player scores. Works for team tournaments only.
 
 define('SCORING_OPTION_NO_NIGHT_KILLS', 1); // Do not use policies dependent on the night kills
 define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent on the game difficulty
@@ -1214,6 +1215,68 @@ function set_player_normalization($player, $max_games_played, $max_rounds_played
 	}
 }
 
+function team_add_field($team, $player, $field_name)
+{
+	if (isset($player->$field_name))
+	{
+		if (isset($team->$field_name))
+		{
+			$team->$field_name += $player->$field_name;
+		}
+		else
+		{
+			$team->$field_name = $player->$field_name;
+		}
+	}
+}
+
+function team_max_field($team, $player, $field_name)
+{
+	if (isset($player->$field_name))
+	{
+		if (isset($team->$field_name))
+		{
+			$team->$field_name = max($team->$field_name, $player->$field_name);
+		}
+		else
+		{
+			$team->$field_name = $player->$field_name;
+		}
+	}
+}
+
+function team_set_field($team, $player, $field_name)
+{
+	if (isset($player->$field_name))
+	{
+		$team->$field_name = $player->$field_name;
+	}
+}
+
+function team_add_player($team, $player)
+{
+	$team->players[] = $player;
+	team_add_field($team, $player, 'games_count');
+	team_max_field($team, $player, 'events_count');
+	team_add_field($team, $player, 'killed_first_count');
+	team_add_field($team, $player, 'wins');
+	team_add_field($team, $player, 'special_role_wins');
+	
+	team_add_field($team, $player, 'points');
+	team_add_field($team, $player, 'main_points');
+	team_add_field($team, $player, 'extra_points');
+	team_add_field($team, $player, 'legacy_points');
+	team_add_field($team, $player, 'penalty_points');
+	team_add_field($team, $player, 'night1_points');
+	
+    team_add_field($team, $player, 'raw_points');
+    team_add_field($team, $player, 'raw_main_points');
+    team_add_field($team, $player, 'raw_extra_points');
+    team_add_field($team, $player, 'raw_legacy_points');
+    team_add_field($team, $player, 'raw_penalty_points');
+    team_add_field($team, $player, 'raw_night1_points');
+}
+
 function tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options)
 {
 	$event_scorings = NULL;
@@ -1486,28 +1549,70 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			$player->points += $points;
 		}
 	}
-    
-    // Prepare and sort scores
-    if ($lod_flags & SCORING_LOD_NO_SORTING)
-    {
+	
+	// Normalize scores
+	foreach ($players as $user_id => $player)
+	{
+		set_player_normalization($player, $max_games_played, $max_rounds_played);
+	}
+	
+	if (($tournament_flags & TOURNAMENT_FLAG_TEAM) != 0 && ($lod_flags & SCORING_LOD_TEAMS) != 0)
+	{
+		// Prepare teams
+		$scores = array();
+		$query = new DbQuery('SELECT u.user_id, u.team_id, t.name FROM tournament_users u JOIN tournament_teams t ON t.id = u.team_id WHERE u.tournament_id = ?', $tournament_id);
+		while ($row = $query->next())
+		{
+			list($user_id, $team_id, $team_name) = $row;
+			if (!isset($players[$user_id]))
+			{
+				continue;
+			}
+			
+			if (isset($scores[$team_id]))
+			{
+				$team = $scores[$team_id];
+			}
+			else
+			{
+				$scores[$team_id] = $team = new stdClass();
+				$team->id = $team_id;
+				$team->name = $team_name;
+				$team->scoring = $players[$user_id]->scoring;
+				$team->players = array();
+			}
+			team_add_player($team, $players[$user_id]);
+		}
+		
+		// Sort scores
+		if ($lod_flags & SCORING_LOD_NO_SORTING)
+		{
+			return $scores;
+		}
+		
+		foreach ($scores as $team)
+		{
+			usort($team->players, 'compare_scores');
+		}
+	}
+    else
+	{
+		// Prepare and sort scores
+		if ($lod_flags & SCORING_LOD_NO_SORTING)
+		{
+			return $players;
+		}
+		
+		$scores = array();
 		foreach ($players as $user_id => $player)
 		{
-			set_player_normalization($player, $max_games_played, $max_rounds_played);
+			if ($player->games_count > 0)
+			{
+				$scores[] = $player;
+			}
 		}
-        return $players;
     }
-    
-    $scores = array();
-    foreach ($players as $user_id => $player)
-    {
-        if ($player->games_count > 0)
-        {
-			set_player_normalization($player, $max_games_played, $max_rounds_played);
-            $scores[] = $player;
-        }
-    }
-    usort($scores, 'compare_scores');
-    
+	usort($scores, 'compare_scores');
     return $scores;
 }
     
