@@ -115,7 +115,7 @@ class Page extends ClubPageBase
 					echo '<button class="icon" onclick="mr.clubUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
 					if ($club_id == $this->id)
 					{
-						echo '<button class="icon" onclick="mr.editUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
+						echo '<button class="icon" onclick="mr.editUser(' . $id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
 					}
 				}
 			}

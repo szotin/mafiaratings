@@ -940,7 +940,7 @@ class ApiPage extends OpsApiPageBase
 		if (Db::affected_rows() > 0)
 		{
 			list($is_member) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
-			if ($is_member <= 0)
+			if ($is_member <= 0 && !is_null($club_id))
 			{
 				Db::exec(get_label('membership'), 'INSERT INTO club_users (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
 				db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);

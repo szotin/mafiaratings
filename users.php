@@ -101,7 +101,7 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="th darker">';
-		echo '<td width="58"></td>';
+		echo '<td width="87"></td>';
 		echo '<td colspan="4">' . get_label('User name') . '</td><td width="40"></td></tr>';
 
 		$query = new DbQuery(
@@ -137,6 +137,7 @@ class Page extends GeneralPageBase
 			{
 				echo '<button class="icon" onclick="mr.banUser(' . $id . ')" title="' . get_label('Ban [0]', $name) . '"><img src="images/ban.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editUserAccess(' . $id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.editUser(' . $id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
 			}
 			echo '</td>';
 			

@@ -65,14 +65,24 @@ try
 	// echo '<tr><td>' . get_label('Main club') . ':</td><td>';
 	// show_city_input('form-club', $city_name, 'form-country');
 	// echo '</td></tr>';
+	$is_club_found = false;
 	echo '<tr><td class="dark" valign="top">'.get_label('Main club').':</td><td class="light">';
 	echo '<select id="form-club">';
-	show_option(0, $club_id, '');
+	$is_club_found = show_option(0, $club_id, '') || $is_club_found;
 	$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_RETIRED . ') = 0 ORDER BY name');
 	while ($row = $query->next())
 	{
 		list ($c_id, $c_name) = $row;
-		show_option($c_id, $club_id, $c_name);
+		$is_club_found = show_option($c_id, $club_id, $c_name) || $is_club_found;
+	}
+	if (!$is_club_found)
+	{
+		$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_RETIRED . ') <> 0 ORDER BY name');
+		while ($row = $query->next())
+		{
+			list ($c_id, $c_name) = $row;
+			show_option($c_id, $club_id, $c_name);
+		}
 	}
 	echo '</select></td></tr>';
 	
