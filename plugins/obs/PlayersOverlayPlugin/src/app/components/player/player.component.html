@@ -22,4 +22,5 @@
       <h2 class="player-nickname">{{ player?.name || 'Player ' +  player.number}}</h2>
     </div>
   </div>
+  <div class="broken-glass" [ngClass]="'player-status-' + player.state"></div>
 </div>
