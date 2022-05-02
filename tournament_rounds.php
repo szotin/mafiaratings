@@ -16,7 +16,7 @@ class Page extends TournamentPageBase
 	{
 		global $_page, $_lang_code, $_profile;
 		
-		$is_manager = ($_profile != NULL && $_profile->is_club_manager($this->club_id));
+		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id, $this->id);
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$event_count = 0;
 		$column_count = 0;
@@ -87,7 +87,7 @@ class Page extends TournamentPageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr><td class="dark" style="padding:2px;">';
-				Event::show_buttons($id, $start_time, $duration, $flags, $this->club_id, $this->club_flags, ($come_odds != NULL && $come_odds > 0));
+				Event::show_buttons($id, $this->id, $start_time, $duration, $flags, $this->club_id, $this->club_flags, ($come_odds != NULL && $come_odds > 0));
 				echo '</td></tr>';	
 			}
 			

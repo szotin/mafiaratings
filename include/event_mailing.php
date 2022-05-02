@@ -51,7 +51,7 @@ function get_email_recipients($flags, $langs)
 	{
 		if (($langs & LANG_ALL) == LANG_ALL)
 		{
-			return get_label('everybody', get_lang_str($lang));
+			return get_label('everybody');
 		}
 		return get_label('players who know [0]', get_langs_str($langs, get_label(', or ')));
 	}

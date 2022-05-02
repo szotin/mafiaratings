@@ -72,9 +72,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
 		
-		$is_admin = $_profile->is_admin();
-		$is_parent_manager = $parent_id > 0 && $_profile->is_club_manager($parent_id);
-		if ($is_admin || $is_parent_manager)
+		$is_admin = is_permitted(PERMISSION_ADMIN);
+		if ($is_admin || is_permitted(PERMISSION_CLUB_MANAGER, $parent_id))
 		{
 			// Admin does not have to send a confirmation request. The club is confirmed instantly.
 			if ($parent_id > 0)

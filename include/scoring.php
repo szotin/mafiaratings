@@ -4,7 +4,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/constants.php';
 
-define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIGM)
+define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIIM)
 define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
 
 define('SCORING_ROLE_FLAGS_CIV', 1);
@@ -50,7 +50,7 @@ define('SCORING_FLAG_FIRST_LEGACY_1', 0x800000); // 8388608: Matter 23 - Guessed
 
 define('SCORING_STAT_FLAG_GAME_DIFFICULTY', 0x1);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING', 0x2);
-define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM', 0x4);
+define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIIM', 0x4);
 
 define('SCORING_SORTING_MAIN_POINTS', 'm');
 define('SCORING_SORTING_LEGACY_POINTS', 'g');
@@ -436,11 +436,11 @@ function get_scoring_stat_flags($scoring, $options)
 					$stat_flags |= SCORING_STAT_FLAG_FIRST_NIGHT_KILLING;
 				}
 			}
-			else if (isset($policy->figm_first_night_score))
+			else if (isset($policy->fiim_first_night_score))
 			{
 				if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
 				{
-					$stat_flags |= SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM;
+					$stat_flags |= SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIIM;
 				}
 			}
 		}
@@ -620,14 +620,14 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 					}
 				}
 			}
-			else if (isset($policy->figm_first_night_score))
+			else if (isset($policy->fiim_first_night_score))
 			{
 				if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
 				{
-					$points = round($games_count * $policy->figm_first_night_score);
+					$points = round($games_count * $policy->fiim_first_night_score);
 					if ($points != 0)
 					{
-						$points = max(min($killed_first_count * $policy->figm_first_night_score / $points, $policy->figm_first_night_score), 0);
+						$points = max(min($killed_first_count * $policy->fiim_first_night_score / $points, $policy->fiim_first_night_score), 0);
 					}
 				}
 			}

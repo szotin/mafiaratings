@@ -12,7 +12,8 @@ try
 	if (isset($_REQUEST['event_id']))
 	{
 		$event_id = (int)$_REQUEST['event_id'];
-		list($club_id, $token, $langs) = Db::record(get_label('event'), 'SELECT club_id, security_token, languages FROM events WHERE id = ?', $event_id);
+		list($club_id, $tournament_id, $token, $langs) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, security_token, languages FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $event_id, $tournament_id);
 		if (is_null($token))
 		{
 			$token = rand_string(32);
@@ -23,6 +24,7 @@ try
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
 		list($club_id, $token, $langs) = Db::record(get_label('tournament'), 'SELECT club_id, security_token, langs FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $tournament_id);
 		if (is_null($token))
 		{
 			$token = rand_string(32);
@@ -33,7 +35,6 @@ try
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('tournament')));
 	}
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	
 	if (is_valid_lang($langs))
 	{

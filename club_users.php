@@ -19,7 +19,10 @@ class Page extends ClubPageBase
 	
 		parent::prepare();
 		
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $this->id);
+		if (!$this->is_manager)
+		{
+			check_permissions(PERMISSION_CLUB_MODERATOR, $this->id);
+		}
 		$this->user_id = 0;
 		if ($_page < 0)
 		{
@@ -65,20 +68,23 @@ class Page extends ClubPageBase
 		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific user is located.'));
 		echo '</td></tr></table></form>';
 		
-		$can_edit = $_profile->is_club_manager($this->id);
-		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users u, club_users uc WHERE ', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker">';
-		echo '<td width="145">';
-		if ($can_edit)
+		if ($this->is_manager)
 		{
+			echo '<td width="145">';
 			echo '<button class="icon" onclick="addMember()" title="' . get_label('Add club member') . '"><img src="images/create.png" border="0"></button>';
+			echo '</td>';
+			echo '<td colspan="4">';
 		}
-		echo '</td>';
-		echo '<td colspan="4">' . get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
+		else
+		{
+			echo '<td colspan="3">';
+		}
+		echo get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
 
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.email, u.flags, uc.flags, c.id, c.name, c.flags' .
@@ -100,9 +106,9 @@ class Page extends ClubPageBase
 			{
 				echo '<tr class="light">';
 			}
-			echo '<td class="dark">';
-			if ($can_edit)
+			if ($this->is_manager)
 			{
+				echo '<td class="dark">';
 				echo '<button class="icon" onclick="mr.removeClubMember(' . $id . ', ' . $this->id . ')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
 				if ($club_user_flags & USER_CLUB_FLAG_BANNED)
 				{
@@ -118,24 +124,23 @@ class Page extends ClubPageBase
 						echo '<button class="icon" onclick="mr.editUser(' . $id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
 					}
 				}
+				echo '</td>';
 			}
-			else
-			{
-				echo '<img src="images/transp.png" height="32" border="0">';
-			}
-			echo '</td>';
 			
 			echo '<td width="60" align="center">';
 			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
 			$club_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
-			echo '<td width="200">';
-			if ($club_id == $this->id)
+			if ($this->is_manager)
 			{
-				echo $email;
+				echo '<td width="200">';
+				if ($club_id == $this->id)
+				{
+					echo $email;
+				}
+				echo '</td>';
 			}
-			echo '</td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($club_id))
 			{

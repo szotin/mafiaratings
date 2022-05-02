@@ -16,13 +16,13 @@ class Page extends ClubPageBase
 	{
 		global $_page, $_lang_code, $_profile;
 		
-		$is_manager = ($_profile != NULL && $_profile->is_club_manager($this->id));
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$event_count = 0;
 		$column_count = 0;
+		$can_create = $this->is_manager || $this->is_moder;
 		
 		$condition = new SQL('e.club_id = ? AND UNIX_TIMESTAMP() <= e.start_time + e.duration', $this->id);
-		if ($is_manager)
+		if ($can_create)
 		{
 			$condition->add(' + ' . EVENT_ALIVE_TIME); // managers should see the event for some time after the end to be able to extend it
 			
@@ -34,7 +34,7 @@ class Page extends ClubPageBase
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*) FROM events e WHERE ', $condition);
 		show_pages_navigation($page_size, $count);
 		
-		if ($is_manager)
+		if ($can_create)
 		{
 			echo '<table class="bordered light" width="100%"><tr>';
 			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top" class="light">';	
@@ -95,7 +95,7 @@ class Page extends ClubPageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr><td class="dark" style="padding:2px;">';
-				Event::show_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags, ($come_odds != NULL && $come_odds > 0));
+				Event::show_buttons($id, $tour_id, $start_time, $duration, $flags, $this->id, $this->flags, ($come_odds != NULL && $come_odds > 0));
 				echo '</td></tr>';	
 			}
 			

@@ -21,7 +21,6 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 		get_label('address'), 
 		'SELECT a.address, a.club_id, a.flags, a.city_id, i.name_en, o.name_en FROM addresses a JOIN cities i ON i.id = a.city_id JOIN countries o ON o.id = i.country_id WHERE a.id = ?', 
 		$addr_id);
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	$geo_address = str_replace(' ', '+', $address . ',' . $city_name . ',' . $country_name);
 	//echo $geo_address . '<br>';
 	$geo_address = urlencode($geo_address);
@@ -135,28 +134,17 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 
 function show_address_buttons($id, $name, $flags, $club_id)
 {
-	global $_profile;
-
-	$no_buttons = true;
-	if ($id > 0 && $_profile != NULL && $_profile->is_club_manager($club_id))
+	if (($flags & ADDRESS_FLAG_NOT_USED) != 0)
 	{
-		if (($flags & ADDRESS_FLAG_NOT_USED) != 0)
-		{
-			echo '<button class="icon" onclick="mr.restoreAddr(' . $id . ')" title="' . get_label('Mark [0] as used', $name) . '"><img src="images/undelete.png" border="0"></button>';
-			$no_buttons = false;
-		}
-		else 
-		{
-			echo '<button class="icon" onclick="mr.editAddr(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.genAddr(' . $id . ')" title="' . get_label('Locate [0] in google maps and generate map image.', $name) . '"><img src="images/map.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.retireAddr(' . $id . ')" title="' . get_label('Mark [0] as not used', $name) . '"><img src="images/delete.png" border="0"></button>';
-			$no_buttons = false;
-		}
+		echo '<button class="icon" onclick="mr.restoreAddr(' . $id . ')" title="' . get_label('Mark [0] as used', $name) . '"><img src="images/undelete.png" border="0"></button>';
+		$no_buttons = false;
 	}
-	
-	if ($no_buttons)
+	else 
 	{
-		echo '<img src="images/transp.png" height="26">';
+		echo '<button class="icon" onclick="mr.editAddr(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
+		echo '<button class="icon" onclick="mr.genAddr(' . $id . ')" title="' . get_label('Locate [0] in google maps and generate map image.', $name) . '"><img src="images/map.png" border="0"></button>';
+		echo '<button class="icon" onclick="mr.retireAddr(' . $id . ')" title="' . get_label('Mark [0] as not used', $name) . '"><img src="images/delete.png" border="0"></button>';
+		$no_buttons = false;
 	}
 }
 
@@ -233,7 +221,7 @@ class AddressPageBase extends PageBase
 				' JOIN countries cr ON cr.id = ct.country_id' .
 				' WHERE a.id = ?', $this->id);
 				
-		$this->is_manager = ($_profile != NULL && $_profile->is_club_manager($this->club_id));
+		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $this->club_id);
 	}
 
 	protected function show_title()
@@ -280,7 +268,10 @@ class AddressPageBase extends PageBase
 			echo 'light';
 		}
 		echo '"><tr><td width="1" valign="top" style="padding:4px;" class="dark">';
-		show_address_buttons($this->id, $this->name, $this->flags, $this->club_id);
+		if ($this->is_manager)
+		{
+			show_address_buttons($this->id, $this->name, $this->flags, $this->club_id);
+		}
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		$address_pic->set($this->id, $this->name, $this->flags);
 		if ($this->url != '')

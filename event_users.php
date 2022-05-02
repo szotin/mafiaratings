@@ -9,8 +9,8 @@ class Page extends EventPageBase
 	{
 		global $_profile, $_page;
 		
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $this->event->club_id);
-		$can_edit = $_profile->is_club_manager($this->event->club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $this->event->club_id, $this->event->id, $this->event->tournament_id);
+		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 		
 		$event_user_pic =
 			new Picture(USER_EVENT_PICTURE, 
@@ -46,7 +46,7 @@ class Page extends EventPageBase
 			echo '<tr class="light"><td class="dark">';
 			if ($can_edit)
 			{
-				echo '<button class="icon" onclick="mr.removeEventUser(' . $id . ', ' . $this->event->id . ')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.removeEventUser(' . $id . ', ' . $this->event->id . ')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editEventAccess(' . $id . ', ' . $this->event->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.eventUserPhoto(' . $id . ', ' . $this->event->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->event->name) . '"><img src="images/photo.png" border="0"></button>';
 			}

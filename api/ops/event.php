@@ -91,6 +91,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		$tournament_id = get_optional_param('tournament_id', 0);
+		$default_flags = EVENT_FLAG_ALL_MODERATE;
 		if ($tournament_id <= 0)
 		{
 			$club_id = (int)get_required_param('club_id');
@@ -98,11 +99,32 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			list($club_id) = db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+			list($club_id, $tournament_flags) = db::record(get_label('tournament'), 'SELECT club_id, flags FROM tournaments WHERE id = ?', $tournament_id);
+			if (($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
+			{
+				$default_flags |= EVENT_MASK_HIDDEN;
+			}
 		}
 		
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		$club = $_profile->clubs[$club_id];
+		$is_club_moderator_creating = false;
+		if (is_null($tournament_id))
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $club_id);
+			$is_club_moderator_creating = !is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		}
+		else
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		}
+		if (isset($_profile->clubs[$club_id]))
+		{
+			$club = $_profile->clubs[$club_id];
+		}
+		else
+		{
+			$club = new stdClass();
+			list($club->rules_code, $club->scoring_id) = Db::record(get_label('club'), 'SELECT rules, scoring_id FROM clubs WHERE id = ?', $club_id);
+		}
 		
 		$name = get_required_param('name');
 		if ($name == '')
@@ -119,8 +141,8 @@ class ApiPage extends OpsApiPageBase
 		$scoring_options = get_optional_param('scoring_options', '{}');
 		$notes = get_optional_param('notes', '');
 		
-		$editable_mask = EVENT_EDITABLE_MASK;
-		$flags = (int)get_optional_param('flags', EVENT_FLAG_ALL_MODERATE);// & $editable_mask;
+		$flags = (int)get_optional_param('flags', $default_flags);
+		$flags = ($flags & EVENT_EDITABLE_MASK) + ($default_flags & ~EVENT_EDITABLE_MASK);
 		
 		$langs = get_optional_param('langs', 0);
 		if (($langs & LANG_ALL) == 0)
@@ -192,6 +214,15 @@ class ApiPage extends OpsApiPageBase
 					db_log(LOG_OBJECT_EVENT, 'created', $log_details, $event_id, $club_id);
 					
 					$event_ids[] = $event_id;
+					
+					if ($is_club_moderator_creating)
+					{
+						// Club moderator who is creating the event should have management permissions for the event
+						Db::exec(
+							get_label('registration'), 
+							'INSERT INTO event_users (event_id, user_id, flags) VALUES (?, ?, ?)',
+							$event_id, $_profile->user_id, USER_PERM_MANAGER);
+					}
 				}
 				$start_datetime->add($interval);
 				$weekday <<= 1;
@@ -226,7 +257,17 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_EVENT, 'created', $log_details, $event_id, $club_id);
 			
 			$event_ids[] = $event_id;
+			
+			if ($is_club_moderator_creating)
+			{
+				// Club moderator who is creating the event should have management permissions for the event
+				Db::exec(
+					get_label('registration'), 
+					'INSERT INTO event_users (event_id, user_id, flags) VALUES (?, ?, ?)',
+					$event_id, $_profile->user_id, USER_PERM_MANAGER);
+			}
 		}
+		
 		Db::commit();
 		
 		$this->response['events'] = $event_ids;
@@ -235,7 +276,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Create event.');
 		$help->request_param('club_id', 'Club id.', 'tournament_id must be set.');
 		$help->request_param('tournament_id', 'Tournament id. When set the event becomes a tournament round.', 'club_id must be set.');
 		$help->request_param('name', 'Event name.');
@@ -284,7 +325,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
-		global $_profile;
+		global $_profile, $_lang_code;
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
@@ -295,8 +336,21 @@ class ApiPage extends OpsApiPageBase
 				'JOIN addresses a ON a.id = e.address_id ' . 
 				'JOIN cities c ON c.id = a.city_id ' . 
 				'WHERE e.id = ?', $event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		$club = $_profile->clubs[$club_id];
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $old_tournament_id);
+		if (isset($_profile->clubs[$club_id]))
+		{
+			$club = $_profile->clubs[$club_id];
+		}
+		else
+		{
+			$club = new stdClass();
+			list($club->id, $club->timezone, $club->country_id, $club->city_id) = 
+				Db::record(get_label('club'), 
+					'SELECT c.id, ct.timezone, cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', c.rules, c.name, c.langs FROM clubs c ' .
+					'JOIN cities ct ON ct.id = c.city_id ' .
+					'JOIN countries cr ON cr.id = ct.country_id ' .
+					'WHERE c.id = ?', $club_id);
+		}
 
 		$name = get_optional_param('name', $old_name);
 		$tournament_id = get_optional_param('tournament_id', $old_tournament_id);
@@ -332,7 +386,14 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($tournament_id != $old_tournament_id && !is_null($tournament_id))
 		{
-			list ($scoring_id, $scoring_version, $rules_code) = Db::record(get_label('tournament'), 'SELECT scoring_id, scoring_version, rules FROM tournaments WHERE id = ?', $tournament_id);
+			list ($new_club_id, $scoring_id, $scoring_version, $rules_code) = Db::record(get_label('tournament'), 'SELECT club_id, scoring_id, scoring_version, rules FROM tournaments WHERE id = ?', $tournament_id);
+			if ($new_club_id != $club_id)
+			{
+				// Currently there is no API for changing event club. However in the future such an API might exist.
+				// This is one of the cases how club can be changed. This is moving event to a tournament of another club.
+				throw new Exc(get_label('Event can not be moved to the tournament of another club.'));
+			}
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $new_club_id, $tournament_id);
 		}
 		else if ($scoring_version <= 0)
 		{
@@ -440,7 +501,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Edit event.');
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('tournament_id', 'Tournament id. When set the event becomes a tournament round.', 'remains the same.');
 		$help->request_param('name', 'Event name.', 'remains the same.');
@@ -627,7 +688,7 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		$event = new Event();
 		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, $event->club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $event->club_id, $event->id, $event->tournament_id);
 		
 		if ($event->timestamp + $event->duration + EVENT_ALIVE_TIME < time())
 		{
@@ -648,7 +709,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function extend_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, 'Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('duration', 'New event duration. Send 0 if you want to end event now.');
 		return $help;
@@ -662,7 +723,7 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		$event = new Event();
 		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $event->club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $event->club_id, $event->id, $event->tournament_id);
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
@@ -688,7 +749,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function cancel_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Cancel event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Cancel event.');
 		$help->request_param('event_id', 'Event id.');
 		return $help;
 	}
@@ -701,7 +762,7 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		$event = new Event();
 		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $event->club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $event->club_id, $event->id, $event->tournament_id);
 		
 		Db::begin();
 		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_CANCELED . ') WHERE id = ?', $event_id);
@@ -726,7 +787,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Restore canceled event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Restore canceled event.');
 		$help->request_param('event_id', 'Event id.');
 		return $help;
 	}
@@ -742,8 +803,8 @@ class ApiPage extends OpsApiPageBase
 		$nickname = get_optional_param('nick', NULL);
 		$changed = false;
 		
-		list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 		
 		if ($user_id == 0)
 		{
@@ -831,15 +892,21 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_USER, 'replaced', $log_details, $new_user_id);
 		}
 		Db::commit();
+		
+		$this->response['user_id'] = $new_user_id;
+		$this->response['nickname'] = $nickname;
 	}
 	
 	function change_player_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change player on the event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change player on the event.');
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('user_id', 'User id of a player who played on this event. It can be negative for temporary players.');
 		$help->request_param('new_user_id', 'If it is different from user_id, player is replaced in this event with the player new_user_id. If it is 0 or negative, user is replaced with a temporary player existing for this event only.', 'user_id is used.');
 		$help->request_param('nick', 'Nickname for this event. If it is empty, user name is used.', 'user name is used.');
+		
+		$help->response_param('user_id', 'New user id.');
+		$help->response_param('nickname', 'New nickname.');
 		return $help;
 	}
 
@@ -860,8 +927,11 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | 
+			PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 
+			$club_id, $event_id, $tournament_id);
 		
 		Db::exec(get_label('points'), 'INSERT INTO event_extra_points (time, event_id, user_id, reason, details, points) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?, ?)', $event_id, $user_id, $reason, $details, $points);
 		list ($points_id) = Db::record(get_label('points'), 'SELECT LAST_INSERT_ID()');
@@ -885,7 +955,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function add_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Add extra points.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 'Add extra points.');
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('user_id', 'User id. The user who is receiving or loosing points.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.');
@@ -904,9 +974,12 @@ class ApiPage extends OpsApiPageBase
 		$points_id = (int)get_required_param('points_id');
 		
 		Db::begin();
-		list($user_id, $event_id, $club_id, $old_reason, $old_details, $old_points) = 
-			Db::record(get_label('points'), 'SELECT p.user_id, p.event_id, e.club_id, p.reason, p.details, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		list($user_id, $event_id, $tournament_id, $club_id, $old_reason, $old_details, $old_points) = 
+			Db::record(get_label('points'), 'SELECT p.user_id, p.event_id, e.tournament_id, e.club_id, p.reason, p.details, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | 
+			PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 
+			$club_id, $event_id, $tournament_id);
 		
 		$reason = get_optional_param('reason', $old_reason);
 		if (empty($reason))
@@ -940,7 +1013,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change extra points.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 'Change extra points.');
 		$help->request_param('points_id', 'Id of extra points object.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.', 'remains the same');
 		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.', 'remains the same');
@@ -956,8 +1029,11 @@ class ApiPage extends OpsApiPageBase
 		$points_id = (int)get_required_param('points_id');
 		
 		Db::begin();
-		list($club_id) = Db::record(get_label('points'), 'SELECT e.club_id FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		list($club_id, $event_id, $tournament_id) = Db::record(get_label('points'), 'SELECT e.club_id, e.id, e.tournament_id FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | 
+			PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR,
+			$club_id, $event_id, $tournament_id);
 		
 		Db::exec(get_label('points'), 'DELETE FROM event_extra_points WHERE id = ?', $points_id);
 		if (Db::affected_rows() > 0)
@@ -969,7 +1045,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete extra points.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 'Delete extra points.');
 		$help->request_param('points_id', 'Id of extra points object.');
 		return $help;
 	}
@@ -1008,8 +1084,8 @@ class ApiPage extends OpsApiPageBase
 		$langs = 0;
 		foreach ($event_ids as $event_id)
 		{
-			list($club_id, $lgs) = Db::record(get_label('event'), 'SELECT club_id, languages FROM events WHERE id = ?', $event_id);
-			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			list($club_id, $tournament_id, $lgs) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, languages FROM events WHERE id = ?', $event_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 			$langs |= $lgs;
 		}
 		$langs = (int)get_optional_param('langs', $langs);
@@ -1042,7 +1118,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_mailing_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, '');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, '');
 		$help->request_param('events', 'Coma separated array of ids of the events. Mailings will be created for all these events. Examples: "1123,1124,1125", "1123", "1123, 1124".');
 		$help->request_param('type', 'Mailing type. Possible values are:<ol><li value="0">invitation email.</li><li>notifiaction that the event has been canceled.</li><li>notification that start time has been changed.</li><li>notification that address has been changed.</li></ol>', '0 (invitation) is used');
 		$help->request_param('time', 'When the emails should be sent. In seconds before the event start.');
@@ -1058,8 +1134,8 @@ class ApiPage extends OpsApiPageBase
 	function change_mailing_op()
 	{
 		$mailing_id = (int)get_required_param('mailing_id');
-		list($club_id, $old_time, $status, $old_flags, $old_langs, $old_type) = Db::record(get_label('mailing'), 'SELECT e.club_id, m.send_time, m.status, m.flags, m.langs, m.type FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		list($event_id, $tournament_id, $club_id, $old_time, $status, $old_flags, $old_langs, $old_type) = Db::record(get_label('mailing'), 'SELECT e.id, e.tournament_id, e.club_id, m.send_time, m.status, m.flags, m.langs, m.type FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 		if ($status != MAILING_WAITING)
 		{
 			throw new Exc(get_label('Can not change mailing. Some emails are already sent.', get_label('mailing')));
@@ -1117,7 +1193,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_mailing_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, '');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, '');
 		$help->request_param('mailing_id', 'Id of the event mailing.');
 		$help->request_param('type', 'Mailing type. Possible values are:<ol><li value="0">invitation email.</li><li>notifiaction that the event has been canceled.</li><li>notification that start time has been changed.</li><li>notification that address has been changed.</li></ol>', 'remains the same.');
 		$help->request_param('time', 'When the emails should be sent. In seconds before the event start.', 'remains the same.');
@@ -1132,8 +1208,8 @@ class ApiPage extends OpsApiPageBase
 	function delete_mailing_op()
 	{
 		$mailing_id = (int)get_required_param('mailing_id');
-		list($club_id) = Db::record(get_label('mailing'), 'SELECT e.club_id FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		list($event_id, $tournament_id, $club_id) = Db::record(get_label('mailing'), 'SELECT e.id, e.tournament_id, e.club_id FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 		
 		Db::begin();
 		Db::exec(get_label('mailing'), 'DELETE FROM event_mailings WHERE id = ?', $mailing_id);
@@ -1143,7 +1219,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_mailing_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, '');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, '');
 		$help->request_param('mailing_id', 'Id of the event mailing.');
 		return $help;
 	}
@@ -1159,7 +1235,6 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options, $rules, $flags, $tournament_id) = 
 			Db::record(get_label('event'), 'SELECT club_id, name, address_id, start_time, duration, languages, notes, price, scoring_id, scoring_version, scoring_options, rules, flags, tournament_id FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		
 		if (!is_null($tournament_id))
 		{
 			throw new Exc(get_label('Event [0] is already a tournament round.', $name));
@@ -1175,6 +1250,15 @@ class ApiPage extends OpsApiPageBase
 			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_version, scoring_options, rules, flags, stars) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options, $rules, 0, 0);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
+		
+		$query = new DbQuery('SELECT user_id, flags FROM event_users WHERE event_id = ?', $event_id);
+		while ($row = $query->next())
+		{
+			list($user_id, $user_flags) = $row;
+			$user_flags &= USER_PERM_MASK;
+			// Note that we are loosing user custom picture here if exists. We can fix it in the future if it is a problem.
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_users (tournament_id, user_id, flags) values (?, ?, ?)', $tournament_id, $user_id, $user_flags);
+		}
 			
 		$log_details = new stdClass();
 		$log_details->name = $name;

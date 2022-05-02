@@ -4,6 +4,7 @@ require_once '../include/session.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
 require_once '../include/timezone.php';
+require_once '../include/security.php';
 
 initiate_session();
 
@@ -15,11 +16,8 @@ try
 	}
 	$id = $_REQUEST['game'];
 	
-	list($club_id, $video) = Db::record(get_label('game'), 'SELECT g.club_id, v.video FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $id);
-	if ($_profile == NULL || !isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & USER_PERM_MODER) == 0)
-	{
-		throw new FatalExc(get_label('No permissions'));
-	}
+	list($club_id, $video, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT g.club_id, v.video, g.user_id, g.event_id, g.tournament_id FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $id);
+	check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
 		
 	dialog_title(get_label('Set game [0] video', $id));
 		

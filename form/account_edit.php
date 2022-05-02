@@ -30,7 +30,7 @@ try
 	}
 	
 	list($user_club_id, $user_name, $user_flags, $user_city_id, $user_email, $user_langs, $user_phone) = Db::record(get_label('user'), 'SELECT club_id, name, flags, city_id, email, languages, phone FROM users WHERE id = ?', $user_id);
-	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $user_club_id, $user_id);
+	check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $user_club_id);
 
 	
 	echo '<table class="dialog_form" width="100%">';

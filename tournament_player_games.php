@@ -138,6 +138,11 @@ class Page extends TournamentPageBase
 		echo '</td><td align="right">';
 		echo get_label('Select a player') . ': ';
 		show_user_input('user_name', $this->player->name, 'tournament=' . $this->id, get_label('Select a player'), 'selectPlayer');
+		if ($this->player->id > 0 && is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id, $this->id))
+		{
+			echo '</td><td><button class="icon" onclick="changeTournamentPlayer(' . $this->id . ', ' . $this->player->id . ', \'' . $this->player->name . '\')" title="' . get_label('Replace [0] with someone else in [1].', $this->player->name, $this->name) . '">';
+			echo '<img src="images/user_change.png" border="0"></button>';
+		}
 		echo '</td></tr></table></p>';
 			
 		$tournament_user_pic =
@@ -320,6 +325,14 @@ class Page extends TournamentPageBase
 		function submitScoring(s)
 		{
 			goTo({ sid: s.sId, sver: s.sVer, nid: s.nId, nver: s.nVer, sops: s.ops });
+		}
+		
+		function changeTournamentPlayer(tournamentId, userId, nickname)
+		{
+			dlg.form("form/tournament_change_player.php?tournament_id=" + tournamentId + "&user_id=" + userId + "&nick=" + nickname, function(r)
+			{
+				goTo({ 'user_id': r.user_id });
+			});
 		}
 <?php	
 	}

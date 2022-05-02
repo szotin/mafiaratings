@@ -32,14 +32,14 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value=""></td></tr>';
 	
-	$tournament_type = TOURNAMENT_TYPE_CUSTOM;
+	$tournament_type = TOURNAMENT_TYPE_FIIM_ONE_ROUND;
 	echo '<tr><td>' . get_label('Tournament type') . '</td><td><select id="form-type" onchange="typeChanged()">';
 	show_option(TOURNAMENT_TYPE_CUSTOM, $tournament_type, get_label('Custom tournament. I will set up everything manually.'));
-	show_option(TOURNAMENT_TYPE_FIGM_ONE_ROUND, $tournament_type, get_label('FIGM style tournament with only one round. (Mini-tournament).'));
-	show_option(TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS3, $tournament_type, get_label('FIGM style tournament with two rounds - main, and final. The final round has less than 4 games.'));
-	show_option(TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS4, $tournament_type, get_label('FIGM style tournament with two rounds - main, and final. The final round has 4 games or more.'));
-	show_option(TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS3, $tournament_type, get_label('FIGM style tournament with three rounds - main, semi-final, and final. The final round has less than 4 games.'));
-	show_option(TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS4, $tournament_type, get_label('FIGM style tournament with three rounds - main, semi-final, and final. The final round has 4 games or more.'));
+	show_option(TOURNAMENT_TYPE_FIIM_ONE_ROUND, $tournament_type, get_label('FIIM style tournament with only one round. (Mini-tournament).'));
+	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3, $tournament_type, get_label('FIIM style tournament with two rounds - main, and final. The final round has less than 4 games.'));
+	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4, $tournament_type, get_label('FIIM style tournament with two rounds - main, and final. The final round has 4 games or more.'));
+	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3, $tournament_type, get_label('FIIM style tournament with three rounds - main, semi-final, and final. The final round has less than 4 games.'));
+	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4, $tournament_type, get_label('FIIM style tournament with three rounds - main, semi-final, and final. The final round has 4 games or more.'));
 	show_option(TOURNAMENT_TYPE_AML_ONE_ROUND, $tournament_type, get_label('AML style tournament with only one round. (Mini-tournament).'));
 	show_option(TOURNAMENT_TYPE_AML_TWO_ROUNDS, $tournament_type, get_label('AML style tournament with two rounds - main, and final.'));
 	show_option(TOURNAMENT_TYPE_AML_THREE_ROUNDS, $tournament_type, get_label('AML style tournament with three rounds - main, semi-final, and final.'));
@@ -163,11 +163,11 @@ try
 	echo '<input type="checkbox" id="form-use_rounds_scoring"> ' . get_label('scoring rules can be custom in tournament rounds.') . '<br>';
 	echo '</table>';
 	
-	$figm_id = 0;
+	$fiim_id = 0;
 	$query = new DbQuery('SELECT id FROM scorings where club_id IS NULL AND name="ФИИМ"');
 	if ($row = $query->next())
 	{
-		list($figm_id) = $row;
+		list($fiim_id) = $row;
 	}
 	
 ?>	
@@ -281,14 +281,14 @@ try
 		{
 			case <?php echo TOURNAMENT_TYPE_CUSTOM; ?>:
 				break;
-			case <?php echo TOURNAMENT_TYPE_FIGM_ONE_ROUND; ?>:
-				scoringId = <?php echo $figm_id; ?>;
+			case <?php echo TOURNAMENT_TYPE_FIIM_ONE_ROUND; ?>:
+				scoringId = <?php echo $fiim_id; ?>;
 				break;
-			case <?php echo TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS3; ?>:
-			case <?php echo TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS4; ?>:
-			case <?php echo TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS3; ?>:
-			case <?php echo TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS4; ?>:
-				scoringId = <?php echo $figm_id; ?>;
+			case <?php echo TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3; ?>:
+			case <?php echo TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4; ?>:
+			case <?php echo TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3; ?>:
+			case <?php echo TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4; ?>:
+				scoringId = <?php echo $fiim_id; ?>;
 				r = true;
 				break;
 			case <?php echo TOURNAMENT_TYPE_AML_ONE_ROUND; ?>:

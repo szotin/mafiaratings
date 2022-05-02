@@ -82,7 +82,7 @@ class ApiPage extends OpsApiPageBase
 		
 		$album_id = (int)get_required_param('album_id');
 		list ($club_id, $user_id, $old_flags) = Db::record(get_label('photo album'), 'SELECT club_id, user_id, flags FROM photo_albums WHERE id = ?', $album_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
 		
 		// Only upload is implemented yet.
 		if (isset($_FILES['logo']))
@@ -128,7 +128,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$album_id = (int)get_required_param('album_id');
 		list ($club_id, $user_id) = Db::record(get_label('photo album'), 'SELECT club_id, user_id FROM photo_albums WHERE id = ?', $album_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
 		
 		Db::begin();
 		Db::exec(get_label('photo album'), 'DELETE FROM photo_albums WHERE id = ?', $album_id);
@@ -138,7 +138,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete photo album.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Delete photo album.');
 		$help->request_param('album_id', 'Album id.');
 		return $help;
 	}

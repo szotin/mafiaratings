@@ -38,7 +38,7 @@ class Page extends GeneralPageBase
 			return;
 		}
 		
-		$admin = $_profile->is_admin();
+		$admin = is_permitted(PERMISSION_ADMIN);
 		$condition = new SQL();
 		if (!$admin)
 		{

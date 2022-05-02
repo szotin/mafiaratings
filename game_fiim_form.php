@@ -1,6 +1,6 @@
 <?php
 require_once 'include/session.php';
-require_once 'include/figm_form.php';
+require_once 'include/fiim_form.php';
 
 // define('A4_MAX_X', 297);
 // define('A4_MAX_Y', 210);
@@ -37,7 +37,7 @@ try
 		$timezone = NULL;
 	}
 	
-	$form = new FigmForm();
+	$form = new FiimForm();
 	$form->add($game, $event_name, $tournament_name, $moder_name, $timezone);
 	$form->output();
 }

@@ -92,6 +92,11 @@ class Page extends EventPageBase
 		echo '</td><td align="right">';
 		echo get_label('Select a player') . ': ';
 		show_user_input('user_name', $this->player->name, 'event=' . $this->event->id, get_label('Select a player'), 'selectPlayer');
+		if ($this->player->id > 0 && is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id))
+		{
+			echo '</td><td><button class="icon" onclick="changeEventPlayer(' . $this->event->id . ', ' . $this->player->id . ', \'' . $this->player->name . '\')" title="' . get_label('Replace [0] with someone else in [1].', $this->player->name, $this->event->name) . '">';
+			echo '<img src="images/user_change.png" border="0"></button>';
+		}
 		echo '</td></tr></table></p>';
 		
 		$event_user_pic =
@@ -119,6 +124,7 @@ class Page extends EventPageBase
 			$event_user_pic->show(ICONS_DIR, false, 64);
 		}
 		echo '</td><td>';
+			
 		if (empty($this->player->nickname))
 		{
 			echo $this->player->name;
@@ -281,6 +287,14 @@ class Page extends EventPageBase
 		function submitScoring(s)
 		{
 			goTo({ scoring_id: s.sId, scoring_version: s.sVer, scoring_ops: s.ops });
+		}
+		
+		function changeEventPlayer(eventId, userId, nickname)
+		{
+			dlg.form("form/event_change_player.php?event_id=" + eventId + "&user_id=" + userId + "&nick=" + nickname, function(r)
+			{
+				goTo({ 'user_id': r.user_id });
+			});
 		}
 <?php	
 	}

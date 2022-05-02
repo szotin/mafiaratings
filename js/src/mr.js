@@ -553,11 +553,6 @@ var mr = new function()
 		});
 	}
 
-	this.eventMailing = function(id)
-	{
-		window.location.replace("event_mailings.php?bck=1&id=" + id);
-	}
-	
 	this.createEventMailing = function(events, mailingType)
 	{
 		var url = "form/event_mailing_create.php?events=" + events;
@@ -814,7 +809,7 @@ var mr = new function()
 					{
 						difDisabled = false;
 					}
-					else if (p.min_night1 || p.max_night1 || p.figm_first_night_score)
+					else if (p.min_night1 || p.max_night1 || p.fiim_first_night_score)
 					{
 						night1Disabled = false;
 					}
@@ -1031,9 +1026,9 @@ var mr = new function()
 		dlg.page("form/game_video.php?game=" + gameId);
 	}
 	
-	this.figmGameForm = function(gameId)
+	this.fiimGameForm = function(gameId)
 	{
-		window.open('game_figm_form.php?game_id=' + gameId, '_blank').focus();
+		window.open('game_fiim_form.php?game_id=' + gameId, '_blank').focus();
 	}
 	
 	this.gameExtraPoints = function(gameId, userId)

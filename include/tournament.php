@@ -13,11 +13,11 @@ require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
 
 define('TOURNAMENT_TYPE_CUSTOM', 0);
-define('TOURNAMENT_TYPE_FIGM_ONE_ROUND', 1);
-define('TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS3', 2);
-define('TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS4', 3);
-define('TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS3', 4);
-define('TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS4', 5);
+define('TOURNAMENT_TYPE_FIIM_ONE_ROUND', 1);
+define('TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3', 2);
+define('TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4', 3);
+define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3', 4);
+define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4', 5);
 define('TOURNAMENT_TYPE_AML_ONE_ROUND', 6);
 define('TOURNAMENT_TYPE_AML_TWO_ROUNDS', 7);
 define('TOURNAMENT_TYPE_AML_THREE_ROUNDS', 8);
@@ -130,6 +130,7 @@ class TournamentPageBase extends PageBase
 	{
 		echo '<table class="head" width="100%">';
 
+		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $this->club_id, $this->id);
 		$menu = array
 		(
 			new MenuItem('tournament_info.php?id=' . $this->id, get_label('Tournament'), get_label('General tournament information')),
@@ -143,10 +144,11 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('tournament_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
 				new MenuItem('tournament_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of the tournament')),
-				new MenuItem('tournament_figm_form.php?tournament_id=' . $this->id, get_label('FIGM'), get_label('PDF report for sending to FIGM Mafia World Tour'), NULL, true),
+				new MenuItem('tournament_fiim_form.php?tournament_id=' . $this->id, get_label('FIIM'), get_label('PDF report for sending to FIIM Mafia World Tour'), NULL, true),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
+				new MenuItem('tournament_rules.php?id=' . $this->id, get_label('Rulebook'), get_label('Rules of the game in [0]', $this->name)),
 				new MenuItem('tournament_albums.php?id=' . $this->id, get_label('Photos'), get_label('Tournament photo albums')),
 				new MenuItem('tournament_videos.php?id=' . $this->id, get_label('Videos'), get_label('Videos from the tournament.')),
 				// new MenuItem('tournament_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
@@ -154,12 +156,12 @@ class TournamentPageBase extends PageBase
 				// new MenuItem('tournament_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
-		if (is_permitted(PERMISSION_CLUB_MANAGER, $this->club_id))
+		if ($is_manager)
 		{
 			$manager_menu = array
 			(
 				new MenuItem('tournament_users.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name)),
-				// new MenuItem('tournament_players.php?id=' . $this->id, get_label('Players'), get_label('Manage players paricipaing in [0]', $this->name)),
+				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 				new MenuItem('javascript:mr.tournamentObs(' . $this->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);

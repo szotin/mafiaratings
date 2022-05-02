@@ -51,7 +51,7 @@ class Page extends TournamentPageBase
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$video_count = 0;
 		$column_count = 0;
-		$can_add = $_profile != NULL && isset($_profile->clubs[$this->club_id]);
+		$can_add = is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $this->club_id, $this->id);
 		
 		if ($can_add)
 		{

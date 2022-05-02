@@ -161,11 +161,11 @@ try
 						$higher_text);
 				}
 			}
-			else if (isset($policy->figm_first_night_score))
+			else if (isset($policy->fiim_first_night_score))
 			{
 				if (($opt_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
 				{
-					$text = get_label('[0] get points depending on kill rate using FIGM rules.', get_scoring_roles_label($roles));
+					$text = get_label('[0] get points depending on kill rate using FIIM rules.', get_scoring_roles_label($roles));
 				}
 			}
 			else

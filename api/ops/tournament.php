@@ -7,6 +7,7 @@ require_once '../../include/message.php';
 require_once '../../include/datetime.php';
 require_once '../../include/scoring.php';
 require_once '../../include/image.php';
+require_once '../../include/game.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -231,7 +232,7 @@ class ApiPage extends OpsApiPageBase
 		$round_names = include '../../include/languages/' . $lang_code . '/rounds.php';
 		switch ($type)
 		{
-			case TOURNAMENT_TYPE_FIGM_ONE_ROUND:
+			case TOURNAMENT_TYPE_FIIM_ONE_ROUND:
 				$ops = new stdClass();
 				if (isset($scoring_options->flags))
 				{
@@ -239,7 +240,7 @@ class ApiPage extends OpsApiPageBase
 				}
 				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
 				break;
-			case TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS3:
+			case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3:
 				$ops = new stdClass();
 				$ops->group = 'main';
 				$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
@@ -252,7 +253,7 @@ class ApiPage extends OpsApiPageBase
 				$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
 				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
 				break;
-			case TOURNAMENT_TYPE_FIGM_TWO_ROUNDS_FINALS4:
+			case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4:
 				$ops = new stdClass();
 				$ops->group = 'main';
 				$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
@@ -264,7 +265,7 @@ class ApiPage extends OpsApiPageBase
 				$ops->group = 'final';
 				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
 				break;
-			case TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS3:
+			case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3:
 				$ops = new stdClass();
 				$ops->group = 'main';
 				$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
@@ -278,7 +279,7 @@ class ApiPage extends OpsApiPageBase
 				$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
 				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $request_league_id);
 				break;
-			case TOURNAMENT_TYPE_FIGM_THREE_ROUNDS_FINALS4:
+			case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4:
 				$ops = new stdClass();
 				$ops->group = 'main';
 				$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
@@ -893,6 +894,83 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Restore canceled event.');
 		$help->request_param('event_id', 'Event id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// change_player
+	//-------------------------------------------------------------------------------------------------------
+	function change_player_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$user_id = (int)get_required_param('user_id');
+		$new_user_id = (int)get_optional_param('new_user_id', 0);
+		$nickname = get_optional_param('nick', NULL);
+		$changed = false;
+		
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		
+		if ($user_id <= 0 || $new_user_id <= 0)
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('player')));
+		}
+		
+		Db::begin();
+		if ($user_id != $new_user_id)
+		{
+			if ($nickname == NULL)
+			{
+				list($nickname) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $new_user_id);
+			}
+			Db::exec(get_label('registration'), 'UPDATE event_users eu JOIN events e ON eu.event_id = e.id SET eu.user_id = ?, eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $new_user_id, $nickname, $user_id, $tournament_id);
+			$changed = $changed || Db::affected_rows() > 0;
+			
+			Db::exec(get_label('registration'), 'UPDATE tournament_users SET user_id = ? WHERE user_id = ? AND tournament_id = ?', $new_user_id, $user_id, $tournament_id);
+			$changed = $changed || Db::affected_rows() > 0;
+		}
+		else if ($nickname != NULL)
+		{
+			Db::exec(get_label('registration'), 'UPDATE event_users eu JOIN events e ON eu.event_id = e.id SET eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $nickname, $user_id, $tournament_id);
+			$changed = $changed || Db::affected_rows() > 0;
+		}
+		
+		$query = new DbQuery('SELECT id, json, feature_flags, is_canceled FROM games WHERE tournament_id = ? AND result > 0', $tournament_id);
+		while ($row = $query->next())
+		{
+			list ($game_id, $json, $feature_flags, $is_canceled) = $row;
+			$game = new Game($json, $feature_flags);
+			if ($game->change_user($user_id, $new_user_id, $nickname))
+			{
+				$game->update();
+				$changed = true;
+			}
+		}
+		
+		if ($changed)
+		{
+			$log_details = new stdClass();
+			$log_details->tournament_id = $tournament_id;
+			$log_details->old_user_id = $user_id;
+			$log_details->nickname = $nickname;
+			db_log(LOG_OBJECT_USER, 'replaced', $log_details, $new_user_id);
+		}
+		Db::commit();
+		
+		$this->response['user_id'] = $new_user_id;
+		$this->response['nickname'] = $nickname;
+	}
+	
+	function change_player_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change player on the tournament.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('user_id', 'User id of a player who played on this tournament.');
+		$help->request_param('new_user_id', 'If it is different from user_id, player is replaced in this tournament with the player new_user_id.', 'user_id is used.');
+		$help->request_param('nick', 'Nickname for this tournament. If it is empty, user name is used.', 'user name is used.');
+		
+		$help->response_param('user_id', 'New user id.');
+		$help->response_param('nickname', 'New nickname.');
 		return $help;
 	}
 

@@ -73,7 +73,7 @@ class Page extends PageBase
 				statPoints: "<?php echo get_label('Static points'); ?>",
 				difPoints: "<?php echo get_label('Depending on the game difficulty'); ?>",
 				shotPoints: "<?php echo get_label('Depending on number of times player was killed first night'); ?>",
-				shotPointsFigm: "<?php echo get_label('Depending on number of times player was killed first night by FIGM rules'); ?>",
+				shotPointsFiim: "<?php echo get_label('Depending on number of times player was killed first night by FIIM rules'); ?>",
 				points: "<?php echo get_label('points'); ?>",
 				minDif: "<?php echo get_label('min difficulty'); ?>",
 				maxDif: "<?php echo get_label('max difficulty'); ?>",

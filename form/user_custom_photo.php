@@ -35,6 +35,9 @@ try
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
 				' WHERE u.id = ?', $event_id, $user_id);
+				
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
+		dialog_title(get_label('Custom [0] photo for [1]', $user_name, $name));
 
 		$secondary_id = 'e' . $event_id;
 		$reset_pic = 
@@ -66,6 +69,9 @@ try
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = t.id' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = t.club_id' .
 				' WHERE u.id = ?', $tournament_id, $user_id);
+				
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		dialog_title(get_label('Custom [0] photo for [1]', $user_name, $name));
 
 		$secondary_id = 't' . $tournament_id;
 		$code = USER_TOURNAMENT_PIC_CODE;
@@ -93,6 +99,9 @@ try
 				' JOIN clubs c ON c.id = ?' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = c.id' .
 				' WHERE u.id = ?', $club_id, $user_id);
+				
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		dialog_title(get_label('Custom [0] photo for [1]', $user_name, $name));
 
 		$secondary_id = 'c' . $user_club_id;
 		$code = USER_CLUB_PIC_CODE;
@@ -106,6 +115,9 @@ try
 	}
 	else
 	{
+		check_permissions(PERMISSION_ADMIN);
+		dialog_title(get_label('[0] photo', $user_name));
+		
 		list ($user_name, $user_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $user_id);
 		$reset_pic = new Picture(USER_PICTURE);
 		$user_pic = new Picture(USER_PICTURE);
@@ -119,17 +131,6 @@ try
 	
 	$reset_icon_url = $reset_pic->url(ICONS_DIR);
 	$reset_tnail_url = $reset_pic->url(TNAILS_DIR);
-	
-	if (isset($club_id))
-	{
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		dialog_title(get_label('Custom [0] photo for [1]', $user_name, $name));
-	}
-	else
-	{
-		check_permissions(PERMISSION_ADMIN);
-		dialog_title(get_label('[0] photo', $user_name));
-	}
 	
 	echo '<table class="dialog_form" width="100%"><tr height="240"><td align="center">';
 	$user_pic->show(TNAILS_DIR, false);

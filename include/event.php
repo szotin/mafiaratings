@@ -681,11 +681,19 @@ class Event
 		return $this->name;
 	}
 	
-	static function show_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $attending)
+	static function show_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, $attending, $is_manager = NULL, $is_moderator = NULL)
 	{
 		global $_profile;
 
 		$now = time();
+		if ($is_manager === NULL)
+		{
+			$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $id, $tournament_id);
+		}
+		if ($is_moderator === NULL)
+		{
+			$is_moderator = is_permitted(PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $id, $tournament_id);
+		}
 		
 		$no_buttons = true;
 		if ($_profile != NULL && $id > 0 && ($club_flags & CLUB_FLAG_RETIRED) == 0)
@@ -705,9 +713,8 @@ class Event
 				$no_buttons = false;
 			}
 			
-			if ($_profile->is_club_manager($club_id))
+			if ($is_manager)
 			{
-				echo '<button class="icon" onclick="mr.eventMailing(' . $id . ')" title="' . get_label('Manage event emails') . '"><img src="images/email.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editEvent(' . $id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
 				if ($start_time >= $now)
 				{
@@ -720,16 +727,15 @@ class Event
 						echo '<button class="icon" onclick="mr.cancelEvent(' . $id . ', \'' . get_label('Are you sure you want to cancel the event?') . '\')" title="' . get_label('Cancel the event') . '"><img src="images/delete.png" border="0"></button>';
 					}
 				}
-				else if ($start_time + $duration + EVENT_ALIVE_TIME >= $now)
-				{
-					echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
-				}
 				$no_buttons = false;
 			}
-			
-			if ($_profile->is_club_moder($club_id) && $start_time < $now && $start_time + $duration >= $now)
+			if ($is_moderator && $start_time < $now && $start_time + $duration + EVENT_ALIVE_TIME >= $now)
 			{
-				echo '<button class="icon" onclick="mr.playEvent(' . $id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
+				if ($start_time + $duration >= $now)
+				{
+					echo '<button class="icon" onclick="mr.playEvent(' . $id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
+				}
 				$no_buttons = false;
 			}
 		}
@@ -868,7 +874,8 @@ class EventPageBase extends PageBase
 		
 		$this->event = new Event();
 		$this->event->load($_REQUEST['id']);
-		$this->is_manager = ($_profile != NULL && $_profile->is_club_manager($this->event->club_id));
+		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id);
+		$this->is_moderator = is_permitted(PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 	}
 	
 	protected function show_title()
@@ -890,7 +897,6 @@ class EventPageBase extends PageBase
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
-			
 				new MenuItem('event_rules.php?id=' . $this->event->id, get_label('Rulebook'), get_label('Rules of the game in [0]', $this->event->name)),
 				new MenuItem('event_albums.php?id=' . $this->event->id, get_label('Photos'), get_label('Event photo albums')),
 				new MenuItem('event_videos.php?id=' . $this->event->id, get_label('Videos'), get_label('Videos from the event.')),
@@ -899,17 +905,19 @@ class EventPageBase extends PageBase
 				// new MenuItem('event_links.php?id=' . $this->event->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
-		if ($this->is_manager)
+		if ($this->is_manager || $this->is_moderator)
 		{
-			$manager_menu = array
-			(
-				new MenuItem('event_users.php?id=' . $this->event->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->event->name)),
-				new MenuItem('event_players.php?id=' . $this->event->id, get_label('Players'), get_label('Manage players paricipaing in [0]', $this->event->name)),
-				new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name)),
-				new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name)),
-				new MenuItem('javascript:mr.eventObs(' . $this->event->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
-			);
-			if (is_null($this->event->tournament_id))
+			$manager_menu = array();
+			
+			$manager_menu[] = new MenuItem('event_users.php?id=' . $this->event->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->event->name));
+			if (!$this->is_moderator)
+			{
+				$manager_menu[] = new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name));
+			}
+			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name));
+			$manager_menu[] = new MenuItem('javascript:mr.eventObs(' . $this->event->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.'));
+			
+			if (is_null($this->event->tournament_id) && is_permitted(PERMISSION_CLUB_MANAGER, $this->event->club_id))
 			{
 				$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->event->id . ', \'' . get_label('Are you sure you want to convert [0] to a tournament?', $this->event->name) . '\')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->event->name));
 			}
@@ -933,12 +941,14 @@ class EventPageBase extends PageBase
 		echo '"><tr><td width="1" valign="top" style="padding:4px;" class="dark">';
 		Event::show_buttons(
 			$this->event->id,
+			$this->event->tournament_id,
 			$this->event->timestamp,
 			$this->event->duration,
 			$this->event->flags,
 			$this->event->club_id,
 			$this->event->club_flags,
-			$this->event->coming_odds != NULL && $this->event->coming_odds > 0);
+			$this->event->coming_odds != NULL && $this->event->coming_odds > 0,
+			$this->is_manager, $this->is_moderator);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));

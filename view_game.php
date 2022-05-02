@@ -89,13 +89,13 @@ class Page extends PageBase
 		}
 		
 		list (
-			$this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
+			$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
 			$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
 			$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
 			$this->start_time, $this->duration, $this->language_code, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json) =
 		Db::record(
 			get_label('game'),
-			'SELECT e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags,' .
+			'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags,' .
 			' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
 			' m.id, m.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
 			' g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json' .
@@ -112,7 +112,7 @@ class Page extends PageBase
 				' WHERE g.id = ?',
 			$this->id);
 		
-		$this->user_pic =
+		$this->player_pic =
 			new Picture(USER_EVENT_PICTURE, 
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
@@ -253,12 +253,12 @@ class Page extends PageBase
 				$player_name = $player->name . ' (' . $player_name . ')';
 			}
 			
-			$this->user_pic->
+			$this->player_pic->
 				set($player_id, $event_player_nickname, $event_player_flags, 'e' . $this->event_id)->
 				set($player_id, $player_name, $tournament_player_flags, 't' . $this->tournament_id)->
 				set($player_id, $player_name, $club_player_flags, 'c' . $this->club_id)->
 				set($player_id, $player_name, $player_flags);
-			$this->user_pic->show(ICONS_DIR, false, 48);
+			$this->player_pic->show(ICONS_DIR, false, 48);
 			echo '</a>';
 			
 			$player_name = '' . $player_name . '</a>';
@@ -332,12 +332,12 @@ class Page extends PageBase
 		$this->address_pic->set($this->address_id, $this->address, $this->address_flags);
 		$this->address_pic->show(ICONS_DIR, true, 48);
 		echo '</td><td>';
-		$this->user_pic->
+		$this->player_pic->
 			set($this->moder_id, $this->event_moder_nickname, $this->event_moder_flags, 'e' . $this->event_id)->
 			set($this->moder_id, $this->moder_name, $this->tournament_moder_flags, 't' . $this->tournament_id)->
 			set($this->moder_id, $this->moder_name, $this->club_moder_flags, 'c' . $this->club_id)->
 			set($this->moder_id, $this->moder_name, $this->moder_flags);
-		$this->user_pic->show(ICONS_DIR, true, 48);
+		$this->player_pic->show(ICONS_DIR, true, 48);
 		echo '</td><td>' . $this->start_time . '</td><td>' . $this->duration . '</td><td>';
 		show_language_picture($this->language_code, ICONS_DIR, 48, 48);
 		if ($this->civ_odds >= 0 && $this->civ_odds <= 1)
@@ -357,26 +357,25 @@ class Page extends PageBase
 		
 		// Buttons to manage the game
 		echo '<td align="right" valign="top">';
-		if ($_profile != NULL)
+		if (is_permitted(PERMISSION_USER))
 		{
 			echo '<button class="icon" onclick="mr.gotoObjections(' . $this->id . ')" title="' . get_label('File an objection to the game [0] results.', $this->id) . '">';
 			echo '<img src="images/objection.png" border="0"></button>';
-		}
-		
-		if ($_profile != NULL && ($_profile->is_admin() || $_profile->is_club_manager($this->club_id)))
-		{
-			echo '<button class="icon" onclick="deleteGame(' . $this->id . ')" title="' . get_label('Delete game [0]', $this->id) . '"><img src="images/delete.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.editGame(' . $this->id . ')" title="' . get_label('Edit game [0]', $this->id) . '"><img src="images/edit.png" border="0"></button>';
-			if ($this->video_id == NULL)
+			if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->user_id, $this->club_id, $this->event_id, $this->tournament_id))
 			{
-				echo '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Add game [0] video', $this->id) . '"><img src="images/film-add.png" border="0"></button>';
-			}
-			else
-			{
-				echo '<button class="icon" onclick="mr.deleteVideo(' . $this->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $this->id) . '\')" title="' . get_label('Remove game [0] video', $this->id) . '"><img src="images/film-delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="deleteGame(' . $this->id . ')" title="' . get_label('Delete game [0]', $this->id) . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.editGame(' . $this->id . ')" title="' . get_label('Edit game [0]', $this->id) . '"><img src="images/edit.png" border="0"></button>';
+				if ($this->video_id == NULL)
+				{
+					echo '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Add game [0] video', $this->id) . '"><img src="images/film-add.png" border="0"></button>';
+				}
+				else
+				{
+					echo '<button class="icon" onclick="mr.deleteVideo(' . $this->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $this->id) . '\')" title="' . get_label('Remove game [0] video', $this->id) . '"><img src="images/film-delete.png" border="0"></button>';
+				}
 			}
 		}
-		echo '<button class="icon" onclick="mr.figmGameForm(' . $this->id . ')" title="' . get_label('FIGM game [0] form', $this->id) . '"><img src="images/figm.png" border="0"></button>';
+		echo '<button class="icon" onclick="mr.fiimGameForm(' . $this->id . ')" title="' . get_label('FIIM game [0] form', $this->id) . '"><img src="images/fiim.png" border="0"></button>';
 		echo '</td></tr><tr><td align="right" valign="bottom"></td></tr></table>';
 		
 		// Next game button

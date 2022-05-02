@@ -15,9 +15,12 @@ try
 	}
 	$points_id = (int)$_REQUEST['points_id'];
 	
-	list($user_id, $event_id, $club_id, $reason, $details, $points) = 
-		Db::record(get_label('points'), 'SELECT p.user_id, p.event_id, e.club_id, p.reason, p.details, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+	list($user_id, $event_id, $club_id, $tournament_id, $reason, $details, $points) = 
+		Db::record(get_label('points'), 'SELECT p.user_id, p.event_id, e.club_id, e.tournament_id, p.reason, p.details, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
+	check_permissions(
+		PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+		PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR
+		, $club_id, $event_id, $tournament_id);
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="120">' . get_label('Reason') . ':</td><td><input id="form-reason" value="' . $reason . '"></td></tr>';

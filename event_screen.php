@@ -23,7 +23,7 @@ try
 	$event = new Event();
 	$event->load($_REQUEST['id']);
 	
-	$is_manager = ($_profile != NULL && $_profile->is_club_manager($event->club_id));
+	$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $event->club_id, $event->id, $event->tournament_id);
 	$rows = 0;
 	$cols = 0;
 	$refr = 0;
@@ -203,7 +203,12 @@ try
 						{
 							echo '<td width="' . (100 / $cols) . '%" valign="top"><table class="bordered light" width="100%">';
 							echo '<tr class="th-long darker">';
-							echo '<td width="20"><button class="icon" onclick="window.location.replace(\'event_screen.php?id=' . $event->id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button></td>';
+							echo '<td width="20">';
+							if ($is_manager)
+							{
+								echo '<button class="icon" onclick="window.location.replace(\'event_screen.php?id=' . $event->id . '&settings\')" title="' . get_label('Settings') . '"><img src="images/settings.png" border="0"></button>';
+							}
+							echo '</td>';
 							echo '<td colspan="3">'.get_label('Player').'</td>';
 							echo '<td width="60" align="center">'.get_label('Rating').'</td>';
 							echo '<td width="60" align="center">'.get_label('Games played').'</td>';

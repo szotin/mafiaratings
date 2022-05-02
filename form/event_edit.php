@@ -29,8 +29,21 @@ try
 			'JOIN cities c ON c.id = a.city_id ' . 
 			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' . 
 			'WHERE e.id = ?', $event_id);
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-	$club = $_profile->clubs[$club_id];
+	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
+	if (isset($_profile->clubs[$club_id]))
+	{
+		$club = $_profile->clubs[$club_id];
+	}
+	else
+	{
+		$club = new stdClass();
+		list ($club->country, $club->city, $club->rules_code, $club->name, $club->langs) = 
+			Db::record(get_label('club'), 
+				'SELECT cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', c.rules, c.name, c.langs FROM clubs c ' .
+				'JOIN cities ct ON ct.id = c.city_id ' .
+				'JOIN countries cr ON cr.id = ct.country_id ' .
+				'WHERE c.id = ?', $club_id);
+	}
 	
 	$start = get_datetime($start_time, $timezone);
 	

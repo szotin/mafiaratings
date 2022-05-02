@@ -61,8 +61,8 @@ function spinnerChange(controlId)
         case 'maxnight1':
             policy.max_night1 = value;
             break;
-		case 'figm_night':
-            policy.figm_first_night_score = value;
+		case 'fiim_night':
+            policy.fiim_first_night_score = value;
             break;
     }
     dirty(true);
@@ -77,8 +77,8 @@ function pointsPolicyChange(sectionName, policyNum)
         case 1:
             if (typeof policy.points != "undefined")
                 policy.min_points = policy.max_points = policy.points;
-			else if (typeof policy.figm_first_night_score != "undefined")
-                policy.min_points = policy.max_points = policy.figm_first_night_score;
+			else if (typeof policy.fiim_first_night_score != "undefined")
+                policy.min_points = policy.max_points = policy.fiim_first_night_score;
             if (typeof policy.min_difficulty == "undefined")
             {
                 policy.min_difficulty = 0;
@@ -91,7 +91,7 @@ function pointsPolicyChange(sectionName, policyNum)
                 if (typeof policy.max_night1 != "undefined")
                     policy.max_difficulty = policy.max_night1;
             }
-			delete policy.figm_first_night_score;
+			delete policy.fiim_first_night_score;
             delete policy.points;
             delete policy.min_night1;
             delete policy.max_night1;
@@ -99,8 +99,8 @@ function pointsPolicyChange(sectionName, policyNum)
         case 2:
             if (typeof policy.points != "undefined")
                 policy.min_points = policy.max_points = policy.points;
-			else if (typeof policy.figm_first_night_score != "undefined")
-                policy.min_points = policy.max_points = policy.figm_first_night_score;
+			else if (typeof policy.fiim_first_night_score != "undefined")
+                policy.min_points = policy.max_points = policy.fiim_first_night_score;
             if (typeof policy.min_night1 == "undefined")
             {
                 policy.min_night1 = 0;
@@ -113,15 +113,15 @@ function pointsPolicyChange(sectionName, policyNum)
                 if (typeof policy.max_difficulty != "undefined")
                     policy.max_night1 = policy.max_difficulty;
             }
-			delete policy.figm_first_night_score;
+			delete policy.fiim_first_night_score;
             delete policy.points;
             delete policy.min_difficulty;
             delete policy.max_difficulty;
             break;
         case 3:
-			if (typeof policy.figm_first_night_score == "undefined")
+			if (typeof policy.fiim_first_night_score == "undefined")
 			{
-				policy.figm_first_night_score = 0.4;
+				policy.fiim_first_night_score = 0.4;
 			}
             delete policy.points;
             delete policy.min_points;
@@ -139,10 +139,10 @@ function pointsPolicyChange(sectionName, policyNum)
                     policy.points = policy.max_points;
                 else if (typeof policy.max_points != "undefined")
                     policy.points = policy.min_points;
-				else if (typeof policy.figm_first_night_score != "undefined")
-					policy.points = policy.figm_first_night_score;
+				else if (typeof policy.fiim_first_night_score != "undefined")
+					policy.points = policy.fiim_first_night_score;
             }
-			delete policy.figm_first_night_score;
+			delete policy.fiim_first_night_score;
             delete policy.min_points;
             delete policy.max_points;
             delete policy.min_night1;
@@ -160,7 +160,7 @@ function pointsPolicySelect(sectionName, policyNum, option)
     html += '<option value="0"' + (option == 0 ? ' selected' : '') + '>' + _data.strings.statPoints + '</option>';
     html += '<option value="1"' + (option == 1 ? ' selected' : '') + '>' + _data.strings.difPoints + '</option>';
     html += '<option value="2"' + (option == 2 ? ' selected' : '') + '>' + _data.strings.shotPoints + '</option>';
-    html += '<option value="3"' + (option == 3 ? ' selected' : '') + '>' + _data.strings.shotPointsFigm + '</option>';
+    html += '<option value="3"' + (option == 3 ? ' selected' : '') + '>' + _data.strings.shotPointsFiim + '</option>';
     html += '</select><p>';
     return html;
 }
@@ -186,10 +186,10 @@ function pointsHtml(sectionName, policyNum)
         html += _data.strings.maxNight1 + ': <input type="number" style="width: 45px;" id="' + base + '-maxnight1" step="0.1" min="0" max="1" onChange="spinnerChange(\'' + base + '-maxnight1\')"> ';
         html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-maxpoints" step="0.1" onChange="spinnerChange(\'' + base + '-maxpoints\')">';
     }
-    else if (typeof policy.figm_first_night_score != "undefined")
+    else if (typeof policy.fiim_first_night_score != "undefined")
     {
         html += pointsPolicySelect(sectionName, policyNum, 3);
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-figm_night" step="0.1" onChange="spinnerChange(\'' + base + '-figm_night\')">';
+        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-fiim_night" step="0.1" onChange="spinnerChange(\'' + base + '-fiim_night\')">';
     }
     else
     {
@@ -531,9 +531,9 @@ function refreshScoringEditor(isDirty)
 					$(base + '-maxnight1').val(policy.max_night1);
 					$(base + '-maxpoints').val(policy.max_points);
 				}
-				else if (typeof policy.figm_first_night_score != "undefined")
+				else if (typeof policy.fiim_first_night_score != "undefined")
 				{
-					$(base + '-figm_night').val(policy.figm_first_night_score);
+					$(base + '-fiim_night').val(policy.fiim_first_night_score);
 				}
 				else
 				{

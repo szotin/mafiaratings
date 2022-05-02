@@ -16,10 +16,10 @@ try
 	}
 	$mailing_id = $_REQUEST['mailing_id'];
 	
-	list ($event_id, $club_id, $time, $status, $flags, $langs, $type) = 
-		Db::record(get_label('mailing'), 'SELECT m.event_id, e.club_id, m.send_time, m.status, m.flags, m.langs, m.type FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
+	list ($event_id, $club_id, $time, $status, $flags, $langs, $type, $tournament_id) = 
+		Db::record(get_label('mailing'), 'SELECT m.event_id, e.club_id, m.send_time, m.status, m.flags, m.langs, m.type, e.tournament_id FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
 
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 	if ($status != MAILING_WAITING)
 	{
 		throw new Exc(get_label('Can not change mailing. Some emails are already sent.', get_label('mailing')));

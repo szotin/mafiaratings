@@ -16,7 +16,7 @@ define('USER_TOURNAMENT_PICTURE', 9);
 class Picture
 {
 	private $type;
-	private $mask;
+	public $mask;
 	private $mask_offset;
 	private $pic_dir;
 	private $def_filename;

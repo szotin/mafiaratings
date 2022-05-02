@@ -28,7 +28,10 @@ class Page extends EventPageBase
 	{
 		global $_profile;
 		
-		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
+		if (!$this->is_manager)
+		{
+			no_permission();
+		}
 		
 		echo '<table class="bordered light" width="100%">';
 		if (isset($_REQUEST['msg']))

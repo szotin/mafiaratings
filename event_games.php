@@ -108,7 +108,7 @@ class Page extends EventPageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled,' .
+			'SELECT g.id, g.user_id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled,' .
 			' t.id, t.name, t.flags, l.id, l.name, l.flags,' . 
 			' eu.nickname, eu.flags, tu.flags, cu.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
@@ -125,7 +125,7 @@ class Page extends EventPageBase
 		while ($row = $query->next())
 		{
 			list (
-				$game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, 
+				$game_id, $game_user_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, 
 				$tournament_id, $tournament_name, $tournament_flags, $league_id, $league_name, $league_flags,
 				$event_moder_nickname, $event_moder_flags, $tournament_moder_flags, $club_moder_flags) = $row;
 			
@@ -136,7 +136,7 @@ class Page extends EventPageBase
 			}
 			echo '>';
 			
-			if ($this->is_manager)
+			if ($this->is_manager || is_permitted(PERMISSION_OWNER, $game_user_id))
 			{
 				echo '<td class="dark" width="90">';
 				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';

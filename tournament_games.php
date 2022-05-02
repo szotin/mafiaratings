@@ -22,7 +22,7 @@ class Page extends TournamentPageBase
 	{
 		global $_page;
 		
-		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->club_id);
+		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id, $this->id);
 		
 		$result_filter = -1;
 		if (isset($_REQUEST['results']))
@@ -109,7 +109,7 @@ class Page extends TournamentPageBase
 		}
 		echo '>&nbsp;</td><td width="100">'.get_label('Round').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled,' . 
+			'SELECT g.id, g.user_id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled,' . 
 			' e.id, e.name, e.flags, a.id, a.name, a.flags, tu.flags, cu.flags' . 
 				' FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
@@ -124,7 +124,7 @@ class Page extends TournamentPageBase
 		while ($row = $query->next())
 		{
 			list (
-				$game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, 
+				$game_id, $game_user_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, 
 				$event_id, $event_name, $event_flags, $address_id, $address_name, $address_flags, $tournament_moder_flags, $club_moder_flags) = $row;
 
 			echo '<tr align="center"';
@@ -134,7 +134,7 @@ class Page extends TournamentPageBase
 			}
 			echo '>';
 			
-			if ($is_manager)
+			if ($is_manager || is_permitted(PERMISSION_OWNER, $game_user_id))
 			{
 				echo '<td class="dark" width="90">';
 				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';

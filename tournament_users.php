@@ -9,8 +9,8 @@ class Page extends TournamentPageBase
 	{
 		global $_profile, $_page;
 		
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $this->club_id);
-		$can_edit = $_profile->is_club_manager($this->club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $this->club_id,$this->id);
+		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id,$this->id);
 		
 		$is_team_tournament = (($this->flags & TOURNAMENT_FLAG_TEAM) != 0);
 		if (!$is_team_tournament)

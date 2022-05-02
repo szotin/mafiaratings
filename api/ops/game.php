@@ -1180,8 +1180,8 @@ class ApiPage extends OpsApiPageBase
 		$game_id = (int)get_required_param('game_id');
 		
 		Db::begin();
-		list($club_id, $moderator_id, $end_time, $is_rating) = Db::record(get_label('game'), 'SELECT club_id, moderator_id, end_time, is_rating FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		list($club_id, $user_id, $event_id, $tournament_id, $end_time, $is_rating) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id, end_time, is_rating FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$prev_game_id = NULL;
 		$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
@@ -1211,7 +1211,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete game.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Delete game.');
 		$help->request_param('game_id', 'Game id.');
 		return $help;
 	}
@@ -1231,8 +1231,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		list($club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, moderator_id FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		list($club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
 		$game = new Game($json, $feature_flags);
@@ -1253,7 +1253,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Add extra points for a player.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change the game.');
 		$help->request_param('game_id', 'Game id.');
 		$param = $help->response_param('json', 'Game description in json format.');
 		Game::api_help($param, true);
@@ -1278,8 +1278,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		$reason = str_replace(":", "&#58;", $reason);
 		
-        list($json, $feature_flags, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, moderator_id, is_canceled FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+        list($json, $feature_flags, $club_id, $game_user_id, $is_canceled) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, user_id, is_canceled FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $game_user_id, $club_id);
 
 		$game = new Game($json, $feature_flags);
         foreach ($game->data->players as $player)
@@ -1323,7 +1323,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Add extra points for a player.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Add extra points for a player.');
 		$help->request_param('game_id', 'Game id.');
 		$help->request_param('user_id', 'User id. User must be a player in this game.');
 		$help->request_param('points', 'Extra points. Floating point number from -0.4 to 0.7');
@@ -1339,9 +1339,9 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$game_id = (int)get_required_param('game_id');
-		list ($club_id, $old_table, $old_number, $old_objection_user_id, $old_objection, $moderator_id) =
-			Db::record(get_label('game'), 'SELECT club_id, table_name, game_number, objection_user_id, objection, moderator_id FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		list ($club_id, $old_table, $old_number, $old_objection_user_id, $old_objection, $game_user_id) =
+			Db::record(get_label('game'), 'SELECT club_id, table_name, game_number, objection_user_id, objection, user_id FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $game_user_id, $club_id);
 		
 		$table = get_optional_param('table', $old_table);
 		if (empty($table))
@@ -1482,7 +1482,8 @@ class ApiPage extends OpsApiPageBase
 		
 		$game_id = (int)get_required_param('game_id');
 		$feature_flags = (int)get_optional_param('features', -1);
-		
+		check_permissions(PERMISSION_ADMIN);
+	
 		Db::begin();
 		if ($feature_flags < 0)
 		{
@@ -1497,7 +1498,7 @@ class ApiPage extends OpsApiPageBase
 	
 	// function delete_op_help()
 	// {
-		// $help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete game.');
+		// $help = new ApiHelp(PERMISSION_ADMIN, 'Delete game.');
 		// $help->request_param('game_id', 'Game id.');
 		// return $help;
 	// }

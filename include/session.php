@@ -217,15 +217,132 @@ class Profile
 	
 	function is_league_manager($league_id)
 	{
-		global $_profile;
-	
-		if ($_profile->is_admin())
+		if ($this->is_admin())
 		{
 			return true;
 		}
-			
-		list ($count) = Db::record(get_label('league'), 'SELECT count(*) FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $_profile->user_id);
+		
+		if (!is_numeric($league_id) || $league_id <= 0)
+		{
+			return false;
+		}
+		
+		list ($count) = Db::record(get_label('league'), 'SELECT count(*) FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $this->user_id);
 		return $count > 0;
+	}
+	
+	function is_event_player($event_id)
+	{
+		if ($this->is_admin())
+		{
+			return true;
+		}
+
+		if (is_numeric($event_id) && $event_id > 0)
+		{
+			$query = new DbQuery('SELECT flags FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $this->user_id);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+				return ($flags & USER_PERM_PLAYER) != 0;
+			}
+		}
+		return false;
+	}
+	
+	function is_event_moderator($event_id)
+	{
+		if ($this->is_admin())
+		{
+			return true;
+		}
+
+		if (is_numeric($event_id) && $event_id > 0)
+		{
+			$query = new DbQuery('SELECT flags FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $this->user_id);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+				return ($flags & USER_PERM_MODER) != 0;
+			}
+		}
+		return false;
+	}
+	
+	function is_event_manager($event_id)
+	{
+		if ($this->is_admin())
+		{
+			return true;
+		}
+
+		if (is_numeric($event_id) && $event_id > 0)
+		{
+			$query = new DbQuery('SELECT flags FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $this->user_id);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+				return ($flags & USER_PERM_MANAGER) != 0;
+			}
+		}
+		return false;
+	}
+	
+	function is_tournament_player($tournament_id)
+	{
+		if ($this->is_admin())
+		{
+			return true;
+		}
+
+		if (is_numeric($tournament_id) && $tournament_id > 0)
+		{
+			$query = new DbQuery('SELECT flags FROM tournament_users WHERE tournament_id = ? AND user_id = ?', $tournament_id, $this->user_id);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+				return ($flags & USER_PERM_PLAYER) != 0;
+			}
+		}
+		return false;
+	}
+	
+	function is_tournament_moderator($tournament_id)
+	{
+		if ($this->is_admin())
+		{
+			return true;
+		}
+
+		if (is_numeric($tournament_id) && $tournament_id > 0)
+		{
+			$query = new DbQuery('SELECT flags FROM tournament_users WHERE tournament_id = ? AND user_id = ?', $tournament_id, $this->user_id);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+				return ($flags & USER_PERM_MODER) != 0;
+			}
+		}
+		return false;
+	}
+	
+	function is_tournament_manager($tournament_id)
+	{
+		if ($this->is_admin())
+		{
+			return true;
+		}
+
+		if (is_numeric($tournament_id) && $tournament_id > 0)
+		{
+			$query = new DbQuery('SELECT flags FROM tournament_users WHERE tournament_id = ? AND user_id = ?', $tournament_id, $this->user_id);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+				return ($flags & USER_PERM_MANAGER) != 0;
+			}
+		}
+		return false;
 	}
 }
 

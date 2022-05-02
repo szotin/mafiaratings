@@ -26,8 +26,8 @@ try
 	$langs = 0;
 	foreach ($event_ids as $event_id)
 	{
-		list($club_id, $lgs) = Db::record(get_label('event'), 'SELECT club_id, languages FROM events WHERE id = ?', $event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		list($club_id, $tournament_id, $lgs) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, languages FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 		$langs |= $lgs;
 	}
 	

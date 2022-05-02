@@ -43,6 +43,7 @@ DROP TABLE IF EXISTS `event_users`;
 DROP TABLE IF EXISTS `tournament_users`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `events`;
+DROP TABLE IF EXISTS `tournament_teams`;
 DROP TABLE IF EXISTS `tournaments`;
 DROP TABLE IF EXISTS `league_seasons`;
 ALTER TABLE `scorings` DROP FOREIGN KEY system_league;

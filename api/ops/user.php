@@ -216,8 +216,8 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		if ($event_id > 0)
 		{
-			list($club_id, $flags) = Db::record(get_label('event'), 'SELECT e.club_id, eu.flags FROM event_users eu JOIN events e ON e.id = eu.event_id WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
-			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			list($club_id, $tour_id, $flags) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, eu.flags FROM event_users eu JOIN events e ON e.id = eu.event_id WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
 			$flags = access_flags($flags);
 			
 			Db::exec(get_label('user'), 'UPDATE event_users SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
@@ -232,7 +232,7 @@ class ApiPage extends OpsApiPageBase
 		else if ($tournament_id > 0)
 		{
 			list($club_id, $flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, tu.flags FROM tournament_users tu JOIN tournaments t ON t.id = tu.tournament_id WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
-			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 			$flags = access_flags($flags);
 			
 			Db::exec(get_label('user'), 'UPDATE tournament_users SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
@@ -491,7 +491,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_optional_param('user_id', $owner_id);
 		$club_id = (int)get_required_param('club_id');
 		
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
 		
 		Db::begin();
 		list ($count) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
@@ -512,7 +512,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function join_club_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Make user a club member.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Make user a club member.');
 		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
 		$help->request_param('club_id', 'Club id.');
 		$help->response_param('user_id', 'User id.');
@@ -536,7 +536,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_optional_param('user_id', $owner_id);
 		$club_id = (int)get_required_param('club_id');
 		
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
 		
 		Db::begin();
 		Db::exec(get_label('membership'), 'DELETE FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
@@ -556,7 +556,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function quit_club_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Remove user from the members of the club.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Remove user from the members of the club.');
 		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');
 		$help->request_param('club_id', 'Club id.');
 		$help->response_param('user_id', 'User id.');
@@ -581,8 +581,8 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
-		list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
 		
 		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
 		if ($count == 0)
@@ -600,7 +600,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function join_event_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Register user to an event.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Register user to an event.');
 		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
 		$help->request_param('event_id', 'Event id.');
 		$help->response_param('user_id', 'User id.');
@@ -625,8 +625,8 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
-		list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
 		
 		Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
 		if (Db::affected_rows() > 0)
@@ -643,7 +643,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function quit_event_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Remove user from the registrations to the event.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Remove user from the registrations to the event.');
 		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');
 		$help->request_param('event_id', 'Event id.');
 		$help->response_param('user_id', 'User id.');
@@ -670,7 +670,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
 		
 		$query = new DbQuery('SELECT t.id, t.name FROM tournament_users u LEFT OUTER JOIN tournament_teams t ON u.team_id = t.id WHERE u.user_id = ? AND u.tournament_id = ?', $user_id, $tournament_id);
 		if ($row = $query->next())
@@ -737,7 +737,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function join_tournament_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Register user to an tournament.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Register user to an tournament.');
 		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->response_param('user_id', 'User id.');
@@ -763,8 +763,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
-		
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
 		
 		list($team_id) = Db::record(get_label('registration'), 'SELECT team_id FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 		Db::exec(get_label('registration'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
@@ -790,7 +789,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function quit_tournament_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Remove user from the registrations to the tournament.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Remove user from the registrations to the tournament.');
 		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->response_param('user_id', 'User id.');
@@ -812,7 +811,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_optional_param('user_id', $_profile->user_id);
 		
 		list($user_club_id, $user_name, $user_flags, $user_city_id, $user_country_id, $user_email, $user_langs, $user_phone) = Db::record(get_label('user'), 'SELECT u.club_id, u.name, u.flags, u.city_id, ct.country_id, u.email, u.languages, u.phone FROM users u JOIN cities ct ON ct.id = u.city_id WHERE u.id = ?', $user_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $user_club_id, $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $user_club_id);
 		
 		$name = get_optional_param('name', $user_name);
 		if ($name != $user_name)
@@ -1037,10 +1036,10 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($event_id > 0)
 		{
-			$query = new DbQuery('SELECT e.club_id, eu.flags FROM event_users eu JOIN events e ON e.id = eu.event_id WHERE eu.user_id = ? AND eu.event_id = ?', $user_id, $event_id);
+			$query = new DbQuery('SELECT e.club_id, e.tournament_id, eu.flags FROM event_users eu JOIN events e ON e.id = eu.event_id WHERE eu.user_id = ? AND eu.event_id = ?', $user_id, $event_id);
 			if ($row = $query->next())
 			{
-				list($club_id, $flags) = $row;
+				list($club_id, $tour_id, $flags) = $row;
 			}
 			else
 			{
@@ -1048,7 +1047,7 @@ class ApiPage extends OpsApiPageBase
 				list($event_name) = Db::record(get_label('event'), 'SELECT name FROM events WHERE id = ?', $event_id);
 				throw new Exc(get_label('[0] is not registered for [1]', $user_name, $event_name));
 			}
-			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
 
 			if ($upload)
 			{
@@ -1093,7 +1092,7 @@ class ApiPage extends OpsApiPageBase
 				list($tournament_name) = Db::record(get_label('tournament'), 'SELECT name FROM tournaments WHERE id = ?', $tournament_id);
 				throw new Exc(get_label('[0] is not registered for [1]', $user_name, $tournament_name));
 			}
-			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 
 			if ($upload)
 			{

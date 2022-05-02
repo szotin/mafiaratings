@@ -27,6 +27,8 @@ define('USER_LEAGUE_PERM_MASK', 0x8000); // USER_LEAGUE_PERM_MANAGER
 define('USER_PERM_PLAYER', 0x1);
 define('USER_PERM_MODER', 0x2);
 define('USER_PERM_MANAGER', 0x4);
+define('USER_PERM_ADMIN', 0x8);
+define('USER_PERM_MASK', 0xf); // USER_PERM_ADMIN
 
 // user-club flags
 // 01 - 0x0001 -      1 - perm player
@@ -92,7 +94,6 @@ define('USER_TOURNAMENT_ICON_MAX_VERSION', 7);
 // 14 - 0x2000 -   8192 - icon mask
 // 15 - 0x4000 -  16384 - name was changed during registration
 // 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
-define('USER_PERM_ADMIN', 0x8);
 define('USER_FLAG_NO_PASSWORD', 0x20);
 define('USER_FLAG_MALE', 0x40);
 define('USER_FLAG_BANNED', 0x80);
@@ -100,7 +101,6 @@ define('USER_FLAG_MESSAGE_NOTIFY', 0x100);
 define('USER_FLAG_PHOTO_NOTIFY', 0x200);
 define('USER_FLAG_IMMUNITY', 0x400);
 define('USER_FLAG_NAME_CHANGED', 0x4000);
-define('USER_PERM_MASK', 0x8); // USER_PERM_ADMIN
 
 define('USER_INITIAL_RATING', 0);
 

@@ -12,21 +12,29 @@ try
 	if (isset($_REQUEST['event_id']))
 	{
 		$event_id = (int)$_REQUEST['event_id'];
-		list($club_id, $name) = Db::record(get_label('event'), 'SELECT club_id, name FROM events WHERE id = ?', $event_id);
+		list($club_id, $tour_id, $name) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, name FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
 	}
 	else if (isset($_REQUEST['tournament_id']))
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
 		list($club_id, $name, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, name, flags FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 	}
 	else if (isset($_REQUEST['club_id']))
 	{
 		$club_id = (int)$_REQUEST['club_id'];
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	}
 	
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-	
-	$club = $_profile->clubs[$club_id];
+	if (isset($_profile->clubs[$club_id]))
+	{
+		$club_name = $_profile->clubs[$club_id]->name;
+	}
+	else
+	{
+		list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+	}
 
 	if (isset($event_id) || isset($tournament_id))
 	{
@@ -34,7 +42,7 @@ try
 	}
 	else 
 	{
-		dialog_title(get_label('Add new member to [0]', $club->name));
+		dialog_title(get_label('Add new member to [0]', $club_name));
 	}
 	
 	echo '<table class="dialog_form" width="100%">';

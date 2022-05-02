@@ -1,6 +1,6 @@
 <?php
 require_once 'include/session.php';
-require_once 'include/figm_form.php';
+require_once 'include/fiim_form.php';
 
 // define('A4_MAX_X', 297);
 // define('A4_MAX_Y', 210);
@@ -20,7 +20,7 @@ try
 		throw new FatalExc(get_label('Unknown [0]', get_label('event')));
 	}
 	
-	$form = new FigmForm();
+	$form = new FiimForm();
 	$query = new DbQuery(
 		'SELECT g.id, t.name, e.name, g.json, g.is_canceled, c.timezone, u.name FROM games g' .
 		' JOIN events e ON e.id = g.event_id' .

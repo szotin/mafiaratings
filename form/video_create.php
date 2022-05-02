@@ -11,11 +11,6 @@ try
 {
 	dialog_title(get_label('Add [0]', get_label('video')));
 	
-	if ($_profile == NULL)
-	{
-		throw new FatalExc(get_label('No permissions'));
-	}
-
 	//throw new Exc(formatted_json($_REQUEST));
 	if (isset($_REQUEST['event_id']))
 	{
@@ -29,6 +24,7 @@ try
 		{
 			$title = $tournament_name . ': ' . $event_name;
 		}
+		check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $event_id, $tournament_id);
 	}
 	else if (isset($_REQUEST['tournament_id']))
 	{
@@ -36,23 +32,30 @@ try
 		$event_id = NULL;
 		list($club_id, $timestamp, $tournament_name, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.start_time, t.name, t.flags FROM tournaments t WHERE t.id = ?', $tournament_id);
 		$title = $tournament_name;
+		check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $tournament_id);
 	}
 	else if (isset($_REQUEST['club_id']))
 	{
 		$club_id = (int)$_REQUEST['club_id'];
 		$tournament_id = $event_id = NULL;
 		$timestamp = time();
+		check_permissions(PERMISSION_CLUB_MEMBER, $club_id);
 	}
 	else
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('club')));
 	}
 	
-	if (!isset($_profile->clubs[$club_id]))
+	if (isset($_profile->clubs[$club_id]))
 	{
-		throw new FatalExc(get_label('No permissions'));
+		$club = $_profile->clubs[$club_id];
 	}
-	$club = $_profile->clubs[$club_id];
+	else
+	{
+		$club = new stdClass();
+		list($club->name, $club->langs, $club->club_flags, $club->timezone) = Db::record(get_label('club'), 'SELECT c.name, c.langs, c.flags, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+	}
+	
 	if (!isset($title))
 	{
 		$title = $club->name;

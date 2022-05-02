@@ -26,7 +26,7 @@ try
 		' JOIN cities c ON c.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
 	
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 	
 	$start = new DateTime();
 	$duration = 6 * 3600;

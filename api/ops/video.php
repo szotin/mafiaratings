@@ -18,26 +18,36 @@ class ApiPage extends OpsApiPageBase
 		{
 			$event_id = (int)$_REQUEST['event_id'];
 			list($club_id, $tournament_id) = Db::record(get_label('club'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+			check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $event_id, $tournament_id);
 		}
 		else if (isset($_REQUEST['tournament_id']))
 		{
 			$event_id = NULL;
 			$tournament_id = (int)$_REQUEST['tournament_id'];
 			list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+			check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $tournament_id);
 		}
 		else if (isset($_REQUEST['club_id']))
 		{
 			$club_id = (int)$_REQUEST['club_id'];
 			$event_id = $tournament_id = NULL;
+			check_permissions(PERMISSION_CLUB_MEMBER, $club_id);
 		}
 		else
 		{
 			// No localization because this is an assert. The calling code must fix it.
 			throw new Exc('Please set one of: event_id, tournament_id, or club_id. ' . $this->title . ': create');
 		}
-		check_permissions(PERMISSION_CLUB_MEMBER, $club_id);
 		
-		$club = $_profile->clubs[$club_id];
+		if (isset($_profile->clubs[$club_id]))
+		{
+			$club = $_profile->clubs[$club_id];
+		}
+		else
+		{
+			$club = new stdClass();
+			list($club->langs) = Db::record(get_label('club'), 'SELECT c.name, c.langs, c.flags, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+		}
 		
 		$post_time = time();
 		if (isset($_REQUEST['time']))
@@ -62,19 +72,14 @@ class ApiPage extends OpsApiPageBase
 		
 		get_youtube_id(get_required_param('video'), $video, $vtime);
 		
-		$lang = 0;
+		$lang = $_profile->user_def_lang;
 		if (isset($_REQUEST['lang']))
 		{
 			$lang = (int)$_REQUEST['lang'];
 		}
-		if (!is_valid_lang($lang, $club->langs))
+		if (!is_valid_lang($lang))
 		{
-			$lang = $_profile->user_def_lang;
-		}
-		if (!is_valid_lang($lang, $club->langs))
-		{
-			$lang = $club->langs;
-			$lang -= $lang & ($lang - 1);
+			$lang = LANG_DEFAULT;
 		}
 		
 		$info = get_youtube_info($video);
@@ -169,7 +174,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new FatalExc(get_label('No permissions'));
 		}
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
 		
 		if ($game_id != NULL)
 		{
@@ -231,7 +236,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Change an existing youtube video reference on ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Change an existing youtube video reference on ' . PRODUCT_NAME . '.');
 		
 		$help->request_param('video_id', 'Id of the video.');
 		$help->request_param('lang', 'Language of the video. 1 for English; 2 for Russian. Other languages/values are not supported.', 'remains the same');
@@ -258,7 +263,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list ($club_id, $user_id, $old_video, $game_id) = Db::record(get_label('video'), 'SELECT v.club_id, v.user_id, v.video, g.id FROM videos v LEFT OUTER JOIN games g ON g.video_id = v.id WHERE v.id = ?', $video_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
 
 		Db::exec(get_label('game'), 'UPDATE games SET video_id = NULL WHERE video_id = ?', $video_id);
 		Db::exec(get_label('video'), 'DELETE FROM user_videos WHERE video_id = ?', $video_id);
@@ -272,7 +277,7 @@ class ApiPage extends OpsApiPageBase
 
 	function delete_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete youtube video reference on ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Delete youtube video reference on ' . PRODUCT_NAME . '.');
 		$help->request_param('video_id', 'Id of the video.');
 		return $help;
 	}
@@ -299,8 +304,8 @@ class ApiPage extends OpsApiPageBase
 		$post_time = time();
 		
 		Db::begin();
-		list($club_id, $event_id, $tournament_id, $video_time, $lang, $old_video) = Db::record(get_label('game'), 'SELECT g.club_id, g.event_id, g.tournament_id, g.start_time, g.language, v.video FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $game_id);
-		check_permissions(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, $club_id);
+		list($club_id, $user_id, $event_id, $tournament_id, $video_time, $lang, $old_video) = Db::record(get_label('game'), 'SELECT g.club_id, g.user_id, g.event_id, g.tournament_id, g.start_time, g.language, v.video FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
 		
 		if ($old_video != NULL)
 		{
@@ -342,7 +347,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		
 		list ($club_id, $owner_id) = Db::record(get_label('video'), 'SELECT club_id, user_id FROM videos WHERE id = ?', $video_id);
-		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $club_id, $owner_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $owner_id, $club_id);
 		
 		list($count) = Db::record(get_label('user'), 'SELECT count(*) FROM user_videos WHERE video_id = ? AND user_id = ?', $video_id, $user_id);
 		if ($count <= 0)
@@ -376,7 +381,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		
 		list ($club_id, $owner_id) = Db::record(get_label('video'), 'SELECT club_id, user_id FROM videos WHERE id = ?', $video_id);
-		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $club_id, $owner_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $owner_id, $club_id);
 		
 		list($count) = Db::record(get_label('user'), 'SELECT count(*) FROM user_videos WHERE video_id = ? AND user_id = ?', $video_id, $user_id);
 		if ($count > 0)

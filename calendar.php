@@ -106,7 +106,7 @@ class Page extends GeneralPageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr class="dark"><td style="padding:2px;">';
-				Event::show_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, ($come_odds != NULL && $come_odds > 0));
+				Event::show_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, ($come_odds != NULL && $come_odds > 0));
 				echo '</td></tr>';	
 			}
 			

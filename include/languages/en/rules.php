@@ -395,7 +395,7 @@ return array
 				),
 				array
 				(
-					'Manual. Using FIGM rules.',
+					'Manual. Using FIIM rules.',
 					'One «best player» from the winnig team; many «best moves» from any team.',
 					'One «best player».',
 					'One «best player» and one «best move».',
