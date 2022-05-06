@@ -688,7 +688,10 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		$event = new Event();
 		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $event->club_id, $event->id, $event->tournament_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+			PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR,
+			$event->club_id, $event->id, $event->tournament_id);
 		
 		if ($event->timestamp + $event->duration + EVENT_ALIVE_TIME < time())
 		{

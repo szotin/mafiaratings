@@ -64,10 +64,19 @@ try
 	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= ? AND start_time + duration >= ? ORDER BY name', $club_id, $start_time, $start_time);
 	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
 	show_option(0, $tour_id, '');
+	$tournament_found = false;
 	while ($row = $query->next())
 	{
 		list($tid, $tname) = $row;
 		show_option($tid, $tour_id, $tname);
+		if ($tour_id == $tid)
+		{
+			$tournament_found = true;
+		}
+	}
+	if (!$tournament_found)
+	{
+		show_option($tour_id, $tour_id, $tour_name);
 	}
 	echo '</select></td></tr>';
 	
