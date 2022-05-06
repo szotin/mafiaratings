@@ -13,8 +13,10 @@ define('FLAG_FILTER_TOURNAMENT', 0x0001);
 define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
 define('FLAG_FILTER_RATING', 0x0004);
 define('FLAG_FILTER_NO_RATING', 0x0008);
+define('FLAG_FILTER_CANCELED', 0x0010);
+define('FLAG_FILTER_NO_CANCELED', 0x0020);
 
-define('FLAG_FILTER_DEFAULT', 0);
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 
 class Page extends GeneralPageBase
 {
@@ -96,6 +98,14 @@ class Page extends GeneralPageBase
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
 			$condition->add(' AND g.is_rating = 0');
+		}
+		if ($this->filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled <> 0');
+		}
+		if ($this->filter & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled = 0');
 		}
 		
 		if ($this->user_id > 0)
@@ -233,7 +243,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_filter_fields()
 	{
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter, 'filter');
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->filter, 'filter');
 	}
 	
 	protected function show_search_fields()

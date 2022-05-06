@@ -11,8 +11,10 @@ define('FLAG_FILTER_TOURNAMENT', 0x0001);
 define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
 define('FLAG_FILTER_RATING', 0x0004);
 define('FLAG_FILTER_NO_RATING', 0x0008);
+define('FLAG_FILTER_CANCELED', 0x0010);
+define('FLAG_FILTER_NO_CANCELED', 0x0020);
 
-define('FLAG_FILTER_DEFAULT', 0);
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 
 class Page extends ClubPageBase
 {
@@ -35,7 +37,7 @@ class Page extends ClubPageBase
 		echo '<table class="transp" width="100%"><tr><td>';
 		$season = show_club_seasons_select($this->id, $season, 'filterChanged()', get_label('Show refereess of a specific season.'));
 		echo ' ';
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table>';
 		
 		$condition = get_club_season_condition($season, 'g.start_time', 'g.end_time');
@@ -55,6 +57,15 @@ class Page extends ClubPageBase
 		{
 			$condition->add(' AND g.is_rating = 0');
 		}
+		if ($filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled <> 0');
+		}
+		if ($filter & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled = 0');
+		}
+		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND is_canceled = FALSE AND result > 0', $this->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		

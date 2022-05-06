@@ -11,8 +11,10 @@ define('FLAG_FILTER_TOURNAMENT', 0x0001);
 define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
 define('FLAG_FILTER_RATING', 0x0004);
 define('FLAG_FILTER_NO_RATING', 0x0008);
+define('FLAG_FILTER_CANCELED', 0x0010);
+define('FLAG_FILTER_NO_CANCELED', 0x0020);
 
-define('FLAG_FILTER_DEFAULT', 0);
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 
 class Page extends UserPageBase
 {
@@ -42,7 +44,7 @@ class Page extends UserPageBase
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		show_year_select($year, $min_time, $max_time, 'filterChanged()');
 		echo ' ';
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 		
 		$condition = get_year_condition($year);
@@ -61,6 +63,14 @@ class Page extends UserPageBase
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
 			$condition->add(' AND g.is_rating = 0');
+		}
+		if ($filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled <> 0');
+		}
+		if ($filter & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled = 0');
 		}
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);

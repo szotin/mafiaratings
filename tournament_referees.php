@@ -10,8 +10,10 @@ define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 define('FLAG_FILTER_RATING', 0x0001);
 define('FLAG_FILTER_NO_RATING', 0x0002);
+define('FLAG_FILTER_CANCELED', 0x0004);
+define('FLAG_FILTER_NO_CANCELED', 0x0008);
 
-define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
 
 class Page extends TournamentPageBase
 {
@@ -27,7 +29,7 @@ class Page extends TournamentPageBase
 		
 		echo '<p>';
 		echo '<table class="transp" width="100%"><tr><td>';
-		show_checkbox_filter(array(get_label('rating games')), $filter, 'filterChanged');
+		show_checkbox_filter(array(get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 		
 		$condition = new SQL();
@@ -38,6 +40,14 @@ class Page extends TournamentPageBase
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
 			$condition->add(' AND g.is_rating = 0');
+		}
+		if ($filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled <> 0');
+		}
+		if ($filter & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled = 0');
 		}
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
