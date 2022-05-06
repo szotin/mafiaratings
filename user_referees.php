@@ -76,7 +76,7 @@ class Page extends UserPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="2">'.get_label('Moderator') . '</td>';
+		echo '<td colspan="2">'.get_label('Referee') . '</td>';
 		echo '<td width="80" align="center">'.get_label('Rating earned').'</td>';
 		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="80" align="center">'.get_label('Wins').'</td>';
@@ -124,6 +124,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Moderators'));
+$page->run(get_label('Referees'));
 
 ?>

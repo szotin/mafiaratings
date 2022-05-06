@@ -22,7 +22,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$club_id = (int)get_required_param('club_id');
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
 		$address = get_required_param('address');
@@ -76,7 +76,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Create address.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Create address.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('address', 'Street address.');
 		$help->request_param('name', 'Address name.', '<q>address</q> is used as a name.');
@@ -96,7 +96,7 @@ class ApiPage extends OpsApiPageBase
 		
 		$address_id = (int)get_required_param('address_id');
 		list($club_id, $old_name, $old_address, $old_city_id, $old_flags) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id, flags FROM addresses WHERE id = ?', $address_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		
 		if (isset($_REQUEST['address']))
 		{
@@ -189,7 +189,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Change address.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Change address.');
 		$help->request_param('address_id', 'Address id.');
 		$help->request_param('address', 'Street address.', 'remains the same.');
 		$help->request_param('name', 'Address name.', 'remains the same.');
@@ -208,7 +208,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$address_id = (int)get_required_param('address_id');
 		list($club_id, $name, $address, $city_id) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id FROM addresses WHERE id = ?', $address_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		
 		Db::begin();
 		Db::exec(get_label('address'), 'UPDATE addresses SET flags = (flags | ' . ADDRESS_FLAG_NOT_USED . ') WHERE id = ?', $address_id);
@@ -222,7 +222,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function retire_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Mark address as retired. So it no longer appear in the list of addresses for the new events of the club. This means that this address is no longer used.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Mark address as retired. So it no longer appear in the list of addresses for the new events of the club. This means that this address is no longer used.');
 		$help->request_param('address_id', 'Address id.');
 		return $help;
 	}
@@ -234,7 +234,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$address_id = (int)get_required_param('address_id');
 		list($club_id, $name, $address, $city_id) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id FROM addresses WHERE id = ?', $address_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		
 		Db::begin();
 		Db::exec(get_label('address'), 'UPDATE addresses SET flags = (flags & ~' . ADDRESS_FLAG_NOT_USED . ') WHERE id = ?', $address_id);
@@ -248,7 +248,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Restore the retired address. So it can be used for new events again.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Restore the retired address. So it can be used for new events again.');
 		$help->request_param('address_id', 'Address id.');
 		return $help;
 	}
@@ -264,7 +264,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM addresses WHERE id = ?', $address_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		$warning = load_map_info($address_id, $set_url, $change_picture);
 		Db::commit();
 		
@@ -276,7 +276,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function google_map_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Generate and save google map URL for the address. And also generates an icon/logo for the address using snapshot from google maps.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Generate and save google map URL for the address. And also generates an icon/logo for the address using snapshot from google maps.');
 		$help->request_param('address_id', 'Address id.');
 		$help->request_param('picture', '1 if address picture should be changed to the one from google maps; 0 - for leaving the existing picture.', '1.');
 		$help->request_param('url', '1 to add google maps link to the address; 0 - for leaving existing google maps link.', '1.');

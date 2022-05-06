@@ -60,7 +60,7 @@ class GeneralPageBase extends PageBase
 				new MenuItem('stats.php' . $ccc, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
 				new MenuItem('by_numbers.php' . $ccc, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('nominations.php' . $ccc, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
-				new MenuItem('moderators.php' . $ccc, get_label('Moderators'), get_label('Moderators statistics')),
+				new MenuItem('referees.php' . $ccc, get_label('Referees'), get_label('Referees statistics')),
 			)),
 			// new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums')),
 			new MenuItem('#resources', get_label('Resources'), NULL, array

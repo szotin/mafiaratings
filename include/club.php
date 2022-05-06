@@ -38,9 +38,9 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 				{
 					$quit_params .= ', \'' . get_label('You are a manager of this club. You lose your status once you leave it. Are you sure you want to quit?') . '\'';
 				}
-				else if ($memb_flags & USER_PERM_MODER)
+				else if ($memb_flags & USER_PERM_REFEREE)
 				{
-					$quit_params .= ', \'' . get_label('You are a moderator of this club. You lose your status once you leave it. Are you sure you want to quit?') . '\'';
+					$quit_params .= ', \'' . get_label('You are a referee in this club. You lose your status once you leave it. Are you sure you want to quit?') . '\'';
 				}
 			
 				echo '<button class="icon" onclick="mr.quitClub(' . $quit_params . ')" title="' . get_label('Quit [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
@@ -63,7 +63,7 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 				$no_buttons = false;
 			}
 			
-			if ($_profile->is_admin() || ($memb_flags & USER_PERM_MODER) != 0)
+			if ($_profile->is_admin() || ($memb_flags & USER_PERM_REFEREE) != 0)
 			{
 				echo '<button class="icon" onclick="mr.playClub(' . $id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
 				$no_buttons = false;
@@ -93,7 +93,7 @@ class ClubPageBase extends PageBase
 	protected $scoring_id;
 	protected $memb_flags;
 	protected $is_manager;
-	protected $is_moder;
+	protected $is_referee;
 	protected $timezone;
 	protected $parent_id;
 	protected $parent_name;
@@ -113,13 +113,13 @@ class ClubPageBase extends PageBase
 		$this->id = $_REQUEST['id'];
 
 		$this->is_manager = false;
-		$this->is_moder = false;
+		$this->is_referee = false;
 		$user_id = -1;
 		if ($_profile != NULL)
 		{
 			$user_id = $_profile->user_id;
 			$this->is_manager = $_profile->is_club_manager($this->id);
-			$this->is_moder = $_profile->is_club_moder($this->id);
+			$this->is_referee = $_profile->is_club_referee($this->id);
 		}
 		
 		list ($this->name, $this->flags, $this->url, $this->langs, $this->rules_code, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags, $this->scoring_id, $this->timezone, $this->parent_id, $this->parent_name, $this->parent_flags) = 
@@ -154,7 +154,7 @@ class ClubPageBase extends PageBase
 				new MenuItem('club_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
 				, new MenuItem('club_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
 				, new MenuItem('club_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
-				, new MenuItem('club_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name))
+				, new MenuItem('club_referees.php?id=' . $this->id, get_label('Referees'), get_label('Referees statistics of [0]', $this->name))
 			))
 			, new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
@@ -167,7 +167,7 @@ class ClubPageBase extends PageBase
 			))
 		);
 			
-		if ($this->is_manager || $this->is_moder)
+		if ($this->is_manager || $this->is_referee)
 		{
 			$managment_menu = array(new MenuItem('club_users.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name)));
 			$managment_menu[] = new MenuItem('club_addresses.php?id=' . $this->id, get_label('Addresses'), get_label('[0] addresses', $this->name));

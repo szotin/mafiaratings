@@ -17,11 +17,11 @@ function show_permissions($user_flags)
 		$image = 'player.png';
 	}
 	
-	if (($user_flags & USER_PERM_MODER) != 0)
+	if (($user_flags & USER_PERM_REFEREE) != 0)
 	{
-		$title .= $sep . get_label('moderator');
+		$title .= $sep . get_label('Referee');
 		$sep = '; ';
-		$image = 'moderator.png';
+		$image = 'referee.png';
 	}
 	
 	if (($user_flags & USER_PERM_MANAGER) != 0)

@@ -16,7 +16,7 @@ function create_event($event_name, $address_id, $club_id, $start, $end, $notes, 
 	Db::exec(
 		get_label('round'), 
 		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_version, scoring_options, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-		$event_name, $address_id, $club_id, $start, $end - $start, $notes, EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_MODERATE, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code);
+		$event_name, $address_id, $club_id, $start, $end - $start, $notes, EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code);
 		
 	$log_details = new stdClass();
 	$log_details->name = $event_name;
@@ -32,7 +32,7 @@ function create_event($event_name, $address_id, $club_id, $start, $end, $notes, 
 	$log_details->scoring_version = $scoring_version;
 	$log_details->scoring_options = $scoring_options;
 	$log_details->rules_code = $rules_code;
-	$log_details->flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_MODERATE;
+	$log_details->flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
 	db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id, $league_id);
 }
 

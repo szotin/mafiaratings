@@ -31,9 +31,9 @@ try
 		' WHERE e.id = ? AND g.result > 0 ORDER BY g.end_time', $event_id);
 	while ($row = $query->next())
 	{
-		list ($game_id, $tournament_name, $event_name, $json, $is_canceled, $timezone, $moder_name) = $row;
+		list ($game_id, $tournament_name, $event_name, $json, $is_canceled, $timezone, $referee_name) = $row;
 		$game = new Game($json);
-		$form->add($game, $event_name, $tournament_name, $moder_name, $timezone);
+		$form->add($game, $event_name, $tournament_name, $referee_name, $timezone);
 	}
 	$form->output();
 }

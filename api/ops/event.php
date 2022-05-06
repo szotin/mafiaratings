@@ -91,7 +91,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		$tournament_id = get_optional_param('tournament_id', 0);
-		$default_flags = EVENT_FLAG_ALL_MODERATE;
+		$default_flags = EVENT_FLAG_ALL_CAN_REFEREE;
 		if ($tournament_id <= 0)
 		{
 			$club_id = (int)get_required_param('club_id');
@@ -106,11 +106,11 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		$is_club_moderator_creating = false;
+		$is_club_referee_creating = false;
 		if (is_null($tournament_id))
 		{
-			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $club_id);
-			$is_club_moderator_creating = !is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
+			$is_club_referee_creating = !is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		}
 		else
 		{
@@ -215,7 +215,7 @@ class ApiPage extends OpsApiPageBase
 					
 					$event_ids[] = $event_id;
 					
-					if ($is_club_moderator_creating)
+					if ($is_club_referee_creating)
 					{
 						// Club moderator who is creating the event should have management permissions for the event
 						Db::exec(
@@ -258,7 +258,7 @@ class ApiPage extends OpsApiPageBase
 			
 			$event_ids[] = $event_id;
 			
-			if ($is_club_moderator_creating)
+			if ($is_club_referee_creating)
 			{
 				// Club moderator who is creating the event should have management permissions for the event
 				Db::exec(
@@ -276,7 +276,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Create event.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Create event.');
 		$help->request_param('club_id', 'Club id.', 'tournament_id must be set.');
 		$help->request_param('tournament_id', 'Tournament id. When set the event becomes a tournament round.', 'club_id must be set.');
 		$help->request_param('name', 'Event name.');
@@ -690,7 +690,7 @@ class ApiPage extends OpsApiPageBase
 		$event->load($event_id);
 		check_permissions(
 			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
-			PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR,
+			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
 			$event->club_id, $event->id, $event->tournament_id);
 		
 		if ($event->timestamp + $event->duration + EVENT_ALIVE_TIME < time())
@@ -933,7 +933,7 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
 		check_permissions(
 			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | 
-			PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 
+			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 
 			$club_id, $event_id, $tournament_id);
 		
 		Db::exec(get_label('points'), 'INSERT INTO event_extra_points (time, event_id, user_id, reason, details, points) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?, ?)', $event_id, $user_id, $reason, $details, $points);
@@ -958,7 +958,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function add_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 'Add extra points.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Add extra points.');
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('user_id', 'User id. The user who is receiving or loosing points.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.');
@@ -981,7 +981,7 @@ class ApiPage extends OpsApiPageBase
 			Db::record(get_label('points'), 'SELECT p.user_id, p.event_id, e.tournament_id, e.club_id, p.reason, p.details, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
 		check_permissions(
 			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | 
-			PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 
+			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 
 			$club_id, $event_id, $tournament_id);
 		
 		$reason = get_optional_param('reason', $old_reason);
@@ -1016,7 +1016,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 'Change extra points.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Change extra points.');
 		$help->request_param('points_id', 'Id of extra points object.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.', 'remains the same');
 		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.', 'remains the same');
@@ -1035,7 +1035,7 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $event_id, $tournament_id) = Db::record(get_label('points'), 'SELECT e.club_id, e.id, e.tournament_id FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
 		check_permissions(
 			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | 
-			PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR,
+			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
 			$club_id, $event_id, $tournament_id);
 		
 		Db::exec(get_label('points'), 'DELETE FROM event_extra_points WHERE id = ?', $points_id);
@@ -1048,7 +1048,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, 'Delete extra points.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Delete extra points.');
 		$help->request_param('points_id', 'Id of extra points object.');
 		return $help;
 	}

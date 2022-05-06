@@ -2898,7 +2898,7 @@ class Game
 		{
 			if ($new_user_id <= 0)
 			{
-				throw new Exc(get_label('Unable to delete user from the game [0] because they moderated it. Try to merge them with someone instead.', $data->id));
+				throw new Exc(get_label('Unable to delete user from the game [0] because they refereed it. Try to merge them with someone instead.', $data->id));
 			}
 			$this->moderator->id = $new_user_id;
 		}
@@ -3000,7 +3000,7 @@ class Game
 						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options) ' .
 						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$name, '', $address_id, $data->clubId, $event_start, 
-						'', $event_duration, EVENT_FLAG_ALL_MODERATE, $club_langs, $data->rules, 
+						'', $event_duration, EVENT_FLAG_ALL_CAN_REFEREE, $club_langs, $data->rules, 
 						$club_scoring_id, $scoring_version, $scoring_options);
 					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 				
@@ -3010,7 +3010,7 @@ class Game
 					$log_details->address_id = $address_id;
 					$log_details->start = format_date('d/m/y H:i', $event_start, $timezone);
 					$log_details->duration = $event_duration;
-					$log_details->flags = EVENT_FLAG_ALL_MODERATE;
+					$log_details->flags = EVENT_FLAG_ALL_CAN_REFEREE;
 					$log_details->langs = $club_langs;
 					$log_details->rules_code = $data->rules;
 					$log_details->scoring_id = $club_scoring_id;

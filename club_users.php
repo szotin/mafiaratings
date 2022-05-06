@@ -21,7 +21,7 @@ class Page extends ClubPageBase
 		
 		if (!$this->is_manager)
 		{
-			check_permissions(PERMISSION_CLUB_MODERATOR, $this->id);
+			check_permissions(PERMISSION_CLUB_REFEREE, $this->id);
 		}
 		$this->user_id = 0;
 		if ($_page < 0)
@@ -166,9 +166,9 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($club_user_flags & USER_PERM_MODER)
+			if ($club_user_flags & USER_PERM_REFEREE)
 			{
-				echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
+				echo '<img src="images/referee.png" width="32" title="' . get_label('Referee') . '">';
 			}
 			else
 			{

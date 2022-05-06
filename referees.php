@@ -30,7 +30,7 @@ class Page extends GeneralPageBase
 		
 		parent::prepare();
 		
-		$this->ccc_title = get_label('Filter moderators by club, city, or country.');
+		$this->ccc_title = get_label('Filter referees by club, city, or country.');
 		
 		$this->filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
@@ -137,7 +137,7 @@ class Page extends GeneralPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
 		echo '<td colspan="3">'.get_label('User name') . '</td>';
-		echo '<td width="60" align="center">'.get_label('Games moderated').'</td>';
+		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
 		echo '<td width="100" align="center">'.get_label('Civil wins').'</td>';
 		echo '<td width="100" align="center">'.get_label('Mafia wins').'</td>';
 		echo '</tr>';
@@ -226,7 +226,7 @@ class Page extends GeneralPageBase
 		}
 		else
 		{
-			$message = get_label('[0] moderated no games.', $this->user_name);
+			$message = get_label('[0] refereed no games.', $this->user_name);
 		}
 		$this->errorMessage($message);
 	}
@@ -254,6 +254,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Moderators.'));
+$page->run(get_label('Referees'));
 
 ?>

@@ -125,7 +125,7 @@ class Profile
 		if ($this->is_admin())
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, ' . (USER_PERM_PLAYER | USER_PERM_MODER | USER_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.price, c.parent_id FROM clubs c' .
+				'SELECT c.id, c.name, ' . (USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.price, c.parent_id FROM clubs c' .
 					' JOIN cities i ON c.city_id = i.id ' .
 					' JOIN countries o ON i.country_id = o.id ' .
 					' ORDER BY c.name');
@@ -163,9 +163,9 @@ class Profile
 		return isset($this->clubs[$club_id]) && ($this->clubs[$club_id]->flags & $perm) != 0;
 	}
 	
-	function is_club_moder($club_id)
+	function is_club_referee($club_id)
 	{
-		return $this->has_club_perm(USER_PERM_MODER, $club_id);
+		return $this->has_club_perm(USER_PERM_REFEREE, $club_id);
 	}
 	
 	function is_club_manager($club_id)
@@ -250,7 +250,7 @@ class Profile
 		return false;
 	}
 	
-	function is_event_moderator($event_id)
+	function is_event_regeree($event_id)
 	{
 		if ($this->is_admin())
 		{
@@ -263,7 +263,7 @@ class Profile
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
-				return ($flags & USER_PERM_MODER) != 0;
+				return ($flags & USER_PERM_REFEREE) != 0;
 			}
 		}
 		return false;
@@ -307,7 +307,7 @@ class Profile
 		return false;
 	}
 	
-	function is_tournament_moderator($tournament_id)
+	function is_tournament_regeree($tournament_id)
 	{
 		if ($this->is_admin())
 		{
@@ -320,7 +320,7 @@ class Profile
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
-				return ($flags & USER_PERM_MODER) != 0;
+				return ($flags & USER_PERM_REFEREE) != 0;
 			}
 		}
 		return false;

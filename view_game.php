@@ -304,7 +304,7 @@ class Page extends PageBase
 		// Game info icons
 		echo '<table class="transp" width="100%"><tr>';
 		echo '<td rowspan="2"><table class="bordered">';
-		echo '<tr align="center" class="th dark" padding="5px"><td width="90">' . get_label('Club') . '</td><td width="90">' . ($this->tournament_id == NULL ? get_label('Event') : get_label('Tournament')) . '</td><td width="90">' . get_label('Address') . '</td><td width="90">' . get_label('Moderator') . '</td><td width="90">'.get_label('Time').'</td><td width="90">'.get_label('Duration').'</td><td width="90">'.get_label('Language').'</td>';
+		echo '<tr align="center" class="th dark" padding="5px"><td width="90">' . get_label('Club') . '</td><td width="90">' . ($this->tournament_id == NULL ? get_label('Event') : get_label('Tournament')) . '</td><td width="90">' . get_label('Address') . '</td><td width="90">' . get_label('Referee') . '</td><td width="90">'.get_label('Time').'</td><td width="90">'.get_label('Duration').'</td><td width="90">'.get_label('Language').'</td>';
 		if ($this->civ_odds >= 0 && $this->civ_odds <= 1)
 		{
 			echo '<td width="90">'.get_label('Civs odds').'</td>';

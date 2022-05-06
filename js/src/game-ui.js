@@ -1316,7 +1316,7 @@ mafia.ui = new function()
 		$('#tournaments_div').html(html);
 		
 		var sReg = mafia.sReg(event.id);
-		var allCanModer = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8);
+		var allCanModer = (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8);
 		if (allCanModer)
 		{
 			$('#reg-moder').show();
@@ -1350,7 +1350,7 @@ mafia.ui = new function()
 		{
 			var user_id = sReg[i];
 			var u = club.players[user_id];
-			if (typeof u == "object" && (u.flags & /*U_PERM_PLAYER*/1) && (game.moder_id != user_id || (game.gamestate == /*GAME_STATE_NOT_STARTED*/0 && (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8))))
+			if (typeof u == "object" && (u.flags & /*U_PERM_PLAYER*/1) && (game.moder_id != user_id || (game.gamestate == /*GAME_STATE_NOT_STARTED*/0 && (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8))))
 			{
 				html += _option(user_id, -1, mafia.userTitle(user_id));
 			}
@@ -1708,7 +1708,7 @@ mafia.ui = new function()
 		
 		var html = '';
 		var sReg = mafia.sReg(event.id);
-		var allCanModer = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8);
+		var allCanModer = (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8);
 		if (allCanModer)
 		{
 			html = _option(0, game.moder_id, "");
@@ -2013,7 +2013,7 @@ var eventForm = new function()
 			try
 			{
 				var aid = $("#form-addr").val();
-				var f = $('#form-all_mod').attr('checked') ? /*EVENT_FLAG_ALL_MODERATE*/8 : 0;
+				var f = $('#form-all_mod').attr('checked') ? /*EVENT_FLAG_ALL_CAN_REFEREE*/8 : 0;
 				if ($('#form-fun').attr('checked'))
 				{
 					f |= /*EVENT_FLAG_FUN*/32;

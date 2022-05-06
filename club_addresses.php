@@ -16,7 +16,7 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_lang_code;
 	
-		$can_edit = $this->is_manager || $this->is_moder;
+		$can_edit = $this->is_manager || $this->is_referee;
 		
 		echo '<p><table class="bordered light" width="100%"><tr class="darker"><td colspan="5"><b>' . get_label('Addresses') . '</b></td></tr>';
 		$column_count = 0;

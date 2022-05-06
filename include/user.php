@@ -165,7 +165,7 @@ class UserPageBase extends PageBase
 				new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('General statistics. How many games played, winning percentage, nominating/voting, etc.')),
 				new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				//new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)),
-				new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->title)),
+				new MenuItem('user_referees.php?id=' . $this->id, get_label('Referees'), get_label('How [0] played with different referees', $this->title)),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(

@@ -51,7 +51,7 @@ class Page extends EventPageBase
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$video_count = 0;
 		$column_count = 0;
-		$can_add = is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $this->event->club_id, $this->event->id, $this->event->tournament_id);
+		$can_add = is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 		
 		if ($can_add)
 		{

@@ -17,7 +17,7 @@ try
 	}
 	$club_id = $_REQUEST['club'];
 	
-	check_permissions(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, $club_id);
+	check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER, $club_id);
 	list($city_name, $country_name) = Db::record(get_label('club'),
 		'SELECT i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM clubs c' .
 			' JOIN cities i ON c.city_id = i.id' .

@@ -160,11 +160,11 @@ try
 	echo '<tr><td colspan="2">';
 		
 	echo '<input type="checkbox" id="form-all_mod"';
-	if (($flags & EVENT_FLAG_ALL_MODERATE) != 0)
+	if (($flags & EVENT_FLAG_ALL_CAN_REFEREE) != 0)
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('everyone can moderate games.');
+	echo '> '.get_label('everyone can referee games.');
 	
 	echo '<br><input type="checkbox" id="form-fun"';
 	if (($flags & EVENT_FLAG_FUN) != 0)
@@ -263,7 +263,7 @@ try
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
-		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
+		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		
 		var params =

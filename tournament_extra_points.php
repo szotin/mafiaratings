@@ -18,7 +18,7 @@ class Page extends TournamentPageBase
 		
 		check_permissions(
 			PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
-			PERMISSION_CLUB_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR,
+			PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
 			$this->club_id, $this->id);
 		
 		list ($count) = Db::record(get_label('extra points'), 'SELECT count(*) FROM event_extra_points p JOIN events e ON p.event_id = e.id WHERE e.tournament_id = ?', $this->id);

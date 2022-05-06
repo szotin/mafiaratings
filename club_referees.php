@@ -33,7 +33,7 @@ class Page extends ClubPageBase
 		}
 		
 		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_club_seasons_select($this->id, $season, 'filterChanged()', get_label('Show moderators who moderated in a specific season.'));
+		$season = show_club_seasons_select($this->id, $season, 'filterChanged()', get_label('Show refereess of a specific season.'));
 		echo ' ';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table>';
@@ -69,7 +69,7 @@ class Page extends ClubPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="20">&nbsp;</td>';
 		echo '<td colspan="3">'.get_label('User name') . '</td>';
-		echo '<td width="60" align="center">'.get_label('Games moderated').'</td>';
+		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
 		echo '<td width="100" align="center">'.get_label('Civil wins').'</td>';
 		echo '<td width="100" align="center">'.get_label('Mafia wins').'</td>';
 		echo '</tr>';
@@ -131,6 +131,6 @@ class Page extends ClubPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Moderators'));
+$page->run(get_label('Referees'));
 
 ?>

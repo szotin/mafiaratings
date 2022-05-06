@@ -9,7 +9,7 @@ class Page extends EventPageBase
 	{
 		global $_profile, $_page;
 		
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $this->event->club_id, $this->event->id, $this->event->tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 		
 		$event_user_pic =
@@ -88,9 +88,9 @@ class Page extends EventPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($event_user_flags & USER_PERM_MODER)
+			if ($event_user_flags & USER_PERM_REFEREE)
 			{
-				echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
+				echo '<img src="images/referee.png" width="32" title="' . get_label('Referee') . '">';
 			}
 			else
 			{

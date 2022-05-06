@@ -19,7 +19,7 @@ class Page extends ClubPageBase
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$event_count = 0;
 		$column_count = 0;
-		$can_create = $this->is_manager || $this->is_moder;
+		$can_create = $this->is_manager || $this->is_referee;
 		
 		$condition = new SQL('e.club_id = ? AND UNIX_TIMESTAMP() <= e.start_time + e.duration', $this->id);
 		if ($can_create)

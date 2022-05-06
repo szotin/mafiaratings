@@ -221,7 +221,7 @@ class AddressPageBase extends PageBase
 				' JOIN countries cr ON cr.id = ct.country_id' .
 				' WHERE a.id = ?', $this->id);
 				
-		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, $this->club_id);
+		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $this->club_id);
 	}
 
 	protected function show_title()
@@ -237,7 +237,7 @@ class AddressPageBase extends PageBase
 				new MenuItem('address_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME))
 				, new MenuItem('address_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
 				, new MenuItem('address_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
-				, new MenuItem('address_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of [0]', $this->name))
+				, new MenuItem('address_referees.php?id=' . $this->id, get_label('Referees'), get_label('Referees statistics of [0]', $this->name))
 			))
 			, new MenuItem('#resources', get_label('Resources'), NULL, array
 			(

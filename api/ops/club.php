@@ -117,7 +117,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				Db::exec(
 					get_label('user'), 
-					'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_MODER | USER_PERM_MANAGER) . ')',
+					'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_REFEREE | USER_PERM_MANAGER) . ')',
 					$_profile->user_id, $club_id);
 				db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $_profile->user_id, $club_id);
 			}
@@ -554,7 +554,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				Db::exec(
 					get_label('user'), 
-					'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_MODER | USER_PERM_MANAGER) . ')',
+					'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_REFEREE | USER_PERM_MANAGER) . ')',
 					$user_id, $club_id);
 				db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $user_id, $club_id);
 			}

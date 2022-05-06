@@ -24,11 +24,11 @@ function show_permissions($user_flags)
 		$image = 'player.png';
 	}
 	
-	if (($user_flags & USER_PERM_MODER) != 0)
+	if (($user_flags & USER_PERM_REFEREE) != 0)
 	{
-		$title .= $sep . get_label('moderator');
+		$title .= $sep . get_label('Referee');
 		$sep = '; ';
-		$image = 'moderator.png';
+		$image = 'referee.png';
 	}
 	
 	if (($user_flags & USER_PERM_MANAGER) != 0)
@@ -103,7 +103,7 @@ class Page extends UserPageBase
 		
 		if ($this->games_moderated > 0)
 		{
-			echo '<tr><td class="dark">'.get_label('Games moderated').':</td><td>' . $this->games_moderated . '</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Games refereed').':</td><td>' . $this->games_moderated . '</td></tr>';
 		}
 		
 		if (is_permitted(PERMISSION_CLUB_MANAGER, $this->club_id))

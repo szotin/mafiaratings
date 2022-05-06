@@ -18,14 +18,14 @@ class ApiPage extends OpsApiPageBase
 		{
 			$event_id = (int)$_REQUEST['event_id'];
 			list($club_id, $tournament_id) = Db::record(get_label('club'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
-			check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $event_id, $tournament_id);
+			check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
 		}
 		else if (isset($_REQUEST['tournament_id']))
 		{
 			$event_id = NULL;
 			$tournament_id = (int)$_REQUEST['tournament_id'];
 			list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
-			check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $tournament_id);
+			check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
 		}
 		else if (isset($_REQUEST['club_id']))
 		{
@@ -329,7 +329,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function game_video_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER, 'Create and assign new video to the existing game in ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER, 'Create and assign new video to the existing game in ' . PRODUCT_NAME . '.');
 		$help->request_param('game_id', 'Game id.');
 		$help->request_param('video', 'Youtube URL of the video, or youtube id of the video. Youtube id can be found in the youtube URL - this is "v" parameter. For example: the id for this video <a href="https://www.youtube.com/watch?v=PtS2YqyKAwI" target="_blank">https://www.youtube.com/watch?v=PtS2YqyKAwI</a> is <q>PtS2YqyKAwI</q>.');
 		$help->response_param('video_id', 'Id of the newly created video.');

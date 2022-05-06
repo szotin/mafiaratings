@@ -11,7 +11,7 @@
 // /*LOGREC_TYPE_RESUME_VOTING*/7
 
 // /*EVENT_FLAG_CANCELED*/4
-// /*EVENT_FLAG_ALL_MODERATE*/8
+// /*EVENT_FLAG_ALL_CAN_REFEREE*/8
 // /*EVENT_FLAG_CHAMPIONSHIP*/0x20
 
 // /*ROLE_CIVILIAN*/0
@@ -335,7 +335,7 @@ var mafia = new function()
 			
 			if (game.moder_id == 0)
 			{
-				game.moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : _data.user.id;
+				game.moder_id = (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) ? 0 : _data.user.id;
 			}
 			
 			_callStateChange(stateChangeFlags);
@@ -483,7 +483,7 @@ var mafia = new function()
 				
 				if (id == game.moder_id)
 				{
-					if (game.gamestate != /*GAME_STATE_NOT_STARTED*/0 || (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) == 0)
+					if (game.gamestate != /*GAME_STATE_NOT_STARTED*/0 || (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) == 0)
 						return -1;
 					game.moder_id = 0;
 					result = 10;
@@ -617,7 +617,7 @@ var mafia = new function()
 				game.lang = 0;
 			}
 			
-			if ((event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) == 0)
+			if ((event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) == 0)
 			{
 				game.moder_id = _data.user.id;
 			}
@@ -2564,7 +2564,7 @@ var mafia = new function()
 		var user = _data.user;
 		var rules = _data.club.rules_code;
 		var event = club.events[_data.game.event_id];
-		var moder_id = (event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) ? 0 : user.id;
+		var moder_id = (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) ? 0 : user.id;
 		var flags = (event.flags & /*EVENT_FLAG_FUN*/32) ? /*GAME_FLAG_FUN*/1 : 0;
 		if (typeof id == "undefined")
 		{
@@ -2574,7 +2574,7 @@ var mafia = new function()
 		if (typeof event != "undefined")
 		{
 			lang = event.langs;
-			if ((event.flags & /*EVENT_FLAG_ALL_MODERATE*/8) == 0)
+			if ((event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) == 0)
 			{
 				mid = user.id;
 			}

@@ -24,7 +24,7 @@ try
 		{
 			$title = $tournament_name . ': ' . $event_name;
 		}
-		check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $event_id, $tournament_id);
+		check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
 	}
 	else if (isset($_REQUEST['tournament_id']))
 	{
@@ -32,7 +32,7 @@ try
 		$event_id = NULL;
 		list($club_id, $timestamp, $tournament_name, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.start_time, t.name, t.flags FROM tournaments t WHERE t.id = ?', $tournament_id);
 		$title = $tournament_name;
-		check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $tournament_id);
+		check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
 	}
 	else if (isset($_REQUEST['club_id']))
 	{

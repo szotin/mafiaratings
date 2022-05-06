@@ -27,11 +27,11 @@ function access_flags($flags)
 	{
 		if ((int)$_REQUEST['moder'])
 		{
-			$flags |= USER_PERM_MODER;
+			$flags |= USER_PERM_REFEREE;
 		}
 		else
 		{
-			$flags &= ~USER_PERM_MODER;
+			$flags &= ~USER_PERM_REFEREE;
 		}
 	}
 	

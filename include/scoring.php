@@ -1737,7 +1737,7 @@ function get_scoring_matter_label($policy, $include_roles = false)
 				$l = get_label('the first three checks of the sheriff being red');
 				break;
 			case SCORING_FLAG_EXTRA_POINTS:
-				$l = get_label('actions in the game rated by the moderator');
+				$l = get_label('actions in the game rated by the referee');
 				break;
 			case SCORING_FLAG_FIRST_LEGACY_1:
 				$l = get_label('guessing [0] mafia (after being killed the first night)', 1);

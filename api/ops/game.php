@@ -27,12 +27,12 @@ function def_club()
 		$priority = 0;
 		foreach ($_profile->clubs as $club)
 		{
-			if ($club->flags & (USER_PERM_MODER | USER_PERM_MANAGER) == (USER_PERM_MODER | USER_PERM_MANAGER))
+			if ($club->flags & (USER_PERM_REFEREE | USER_PERM_MANAGER) == (USER_PERM_REFEREE | USER_PERM_MANAGER))
 			{
 				$club_id = $club->id;
 				break;
 			}
-			else if ($club->flags & USER_PERM_MODER)
+			else if ($club->flags & USER_PERM_REFEREE)
 			{
 				$priority = 1;
 				$club_id = $club->id;
@@ -63,7 +63,7 @@ class GPlayer
 		$this->name = $name;
 		$this->club = $club; 
 		$this->nicks = array();
-		$this->flags = (int)(($club_user_flags & (USER_PERM_PLAYER | USER_PERM_MODER)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
+		$this->flags = (int)(($club_user_flags & (USER_PERM_PLAYER | USER_PERM_REFEREE)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
 	}
 }
 
@@ -115,7 +115,7 @@ class GClub
 				' JOIN users u ON u.id = uc.user_id' .
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' WHERE (uc.flags & ' . USER_CLUB_FLAG_BANNED .
-					') = 0 AND (uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_MODER) .
+					') = 0 AND (uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_REFEREE) .
 					') <> 0 AND (u.flags & ' . USER_FLAG_BANNED .
 					') = 0 AND uc.club_id = ?' .
 				' ORDER BY u.rating DESC',
@@ -171,7 +171,7 @@ class GClub
 		
 		$this->tournaments = array();
 		$this->events = array();
-		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & USER_PERM_MODER))
+		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & USER_PERM_REFEREE))
 		{
 			$query = new DbQuery('SELECT t.id, t.name FROM tournaments t WHERE t.start_time + t.duration >= UNIX_TIMESTAMP() AND t.start_time <= UNIX_TIMESTAMP() AND (t.flags & ' . (TOURNAMENT_FLAG_CANCELED | TOURNAMENT_FLAG_SINGLE_GAME) . ') = ' . TOURNAMENT_FLAG_SINGLE_GAME . ' AND t.club_id = ?', $id);
 			while ($row = $query->next())
@@ -922,7 +922,7 @@ class ApiPage extends OpsApiPageBase
 		
 		try
 		{
-			check_permissions(PERMISSION_CLUB_MODERATOR, $club_id);
+			check_permissions(PERMISSION_CLUB_REFEREE, $club_id);
 		}
 		catch (LoginExc $e)
 		{
@@ -1006,7 +1006,7 @@ class ApiPage extends OpsApiPageBase
 						$event_flags = (int)$row[1];
 						$event_langs = (int)$row[2];
 						$gs->tournament_id = is_null($row[3]) ? 0 : (int)$row[3];
-						if (($event_flags & EVENT_FLAG_ALL_MODERATE) == 0)
+						if (($event_flags & EVENT_FLAG_ALL_CAN_REFEREE) == 0)
 						{
 							$gs->moder_id = $_profile->user_id;
 						}
@@ -1035,7 +1035,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function sync_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MODERATOR, 'Sychronize game client data with the server.');
+		$help = new ApiHelp(PERMISSION_CLUB_REFEREE, 'Sychronize game client data with the server.');
 		$help->request_param('club_id', 'Club id.', 'default club is used, which is the main club of the logged user. If logged user does not have main club, then a random club where he/she has permissions is used.');
 		$help->request_param('game', 'Json string fully describing current game state. TODO!!! Explain it is a separate document.');
 		$help->request_param('data', 'Command queue with some additional actions.  TODO!!! Provide more details.
@@ -1150,7 +1150,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function ulist_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Get user list for the game client application. TODO!!! Move it to get-API.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Get user list for the game client application. TODO!!! Move it to get-API.');
 		$help->request_param('club_id', 'Club id. It is used to filter users when <q>name</q> is missing or empty. Not required.');
 		$help->request_param('num', 'Number of users to return.', 'all matching users are returned.');
 		$help->request_param('name', 'Name filter. Only the users with matching nicknames are returned.', 'all users are returned.');

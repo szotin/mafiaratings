@@ -84,7 +84,7 @@ class Page extends TournamentPageBase
 		$rounds = array();
 		while ($row = $query->next())
 		{
-			if (!is_null($row[0]) && ($row[0] & (USER_PERM_MANAGER | USER_PERM_MODER)) != NULL)
+			if (!is_null($row[0]) && ($row[0] & (USER_PERM_MANAGER | USER_PERM_REFEREE)) != NULL)
 			{
 				$buttons_needed = true;
 			}
@@ -149,7 +149,7 @@ class Page extends TournamentPageBase
 						}
 					}
 				}
-				if ($user_event_flags & USER_PERM_MODER && $event_time + $event_duration + EVENT_ALIVE_TIME >= $now)
+				if ($user_event_flags & USER_PERM_REFEREE && $event_time + $event_duration + EVENT_ALIVE_TIME >= $now)
 				{
 					echo '<button class="icon" onclick="mr.extendEvent(' . $event_id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
 					if ($event_time + $event_duration >= $now)

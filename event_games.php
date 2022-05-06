@@ -89,7 +89,7 @@ class Page extends EventPageBase
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$moder_pic =
+		$referee_pic =
 			new Picture(USER_EVENT_PICTURE, 
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
@@ -106,7 +106,7 @@ class Page extends EventPageBase
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, g.user_id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled,' .
 			' t.id, t.name, t.flags, l.id, l.name, l.flags,' . 
@@ -125,9 +125,9 @@ class Page extends EventPageBase
 		while ($row = $query->next())
 		{
 			list (
-				$game_id, $game_user_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, 
+				$game_id, $game_user_id, $timezone, $referee_id, $referee_name, $referee_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, 
 				$tournament_id, $tournament_name, $tournament_flags, $league_id, $league_name, $league_flags,
-				$event_moder_nickname, $event_moder_flags, $tournament_moder_flags, $club_moder_flags) = $row;
+				$event_referee_nickname, $event_referee_flags, $tournament_referee_flags, $club_referee_flags) = $row;
 			
 			echo '<tr align="center"';
 			if ($is_canceled || !$is_rating)
@@ -194,12 +194,12 @@ class Page extends EventPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			$moder_pic->
-				set($moder_id, $event_moder_nickname, $event_moder_flags, 'e' . $this->event->id)->
-				set($moder_id, $moder_name, $tournament_moder_flags, 't' . $this->event->tournament_id)->
-				set($moder_id, $moder_name, $club_moder_flags, 'c' . $this->event->club_id)->
-				set($moder_id, $moder_name, $moder_flags);
-			$moder_pic->show(ICONS_DIR, true, 48);
+			$referee_pic->
+				set($referee_id, $event_referee_nickname, $event_referee_flags, 'e' . $this->event->id)->
+				set($referee_id, $referee_name, $tournament_referee_flags, 't' . $this->event->tournament_id)->
+				set($referee_id, $referee_name, $club_referee_flags, 'c' . $this->event->club_id)->
+				set($referee_id, $referee_name, $referee_flags);
+			$referee_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
 			echo '<td>';

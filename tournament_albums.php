@@ -21,7 +21,7 @@ class Page extends TournamentPageBase
 		global $_profile;
 		
 		$create_link = NULL;
-		if (is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $this->club_id, $this->id))
+		if (is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id))
 		{
 			$create_link = 'create_album.php?bck=1&club=' . $this->club_id . '&tournament=' . $this->id;
 		}

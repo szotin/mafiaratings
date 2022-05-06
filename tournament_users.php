@@ -9,7 +9,7 @@ class Page extends TournamentPageBase
 	{
 		global $_profile, $_page;
 		
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $this->club_id,$this->id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $this->club_id,$this->id);
 		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id,$this->id);
 		
 		$is_team_tournament = (($this->flags & TOURNAMENT_FLAG_TEAM) != 0);
@@ -166,9 +166,9 @@ class Page extends TournamentPageBase
 				{
 					echo '<img src="images/transp.png" width="32">';
 				}
-				if ($tournament_user_flags & USER_PERM_MODER)
+				if ($tournament_user_flags & USER_PERM_REFEREE)
 				{
-					echo '<img src="images/moderator.png" width="32" title="' . get_label('Moderator') . '">';
+					echo '<img src="images/referee.png" width="32" title="' . get_label('Referee') . '">';
 				}
 				else
 				{

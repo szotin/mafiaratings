@@ -82,7 +82,7 @@ class Event
 		$this->club_flags = NEW_CLUB_FLAGS;
 		$this->club_url = '';
 		$this->notes = '';
-		$this->flags = EVENT_FLAG_ALL_MODERATE;
+		$this->flags = EVENT_FLAG_ALL_CAN_REFEREE;
 		$this->langs = LANG_ALL;
 		$this->rules_code = default_rules_code();
 		$this->scoring_id = -1;
@@ -681,7 +681,7 @@ class Event
 		return $this->name;
 	}
 	
-	static function show_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, $attending, $is_manager = NULL, $is_moderator = NULL)
+	static function show_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, $attending, $is_manager = NULL, $is_referee = NULL)
 	{
 		global $_profile;
 
@@ -690,9 +690,9 @@ class Event
 		{
 			$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $id, $tournament_id);
 		}
-		if ($is_moderator === NULL)
+		if ($is_referee === NULL)
 		{
-			$is_moderator = is_permitted(PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $id, $tournament_id);
+			$is_referee = is_permitted(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $id, $tournament_id);
 		}
 		
 		$no_buttons = true;
@@ -729,7 +729,7 @@ class Event
 				}
 				$no_buttons = false;
 			}
-			if ($is_moderator && $start_time < $now && $start_time + $duration + EVENT_ALIVE_TIME >= $now)
+			if ($is_referee && $start_time < $now && $start_time + $duration + EVENT_ALIVE_TIME >= $now)
 			{
 				echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
 				if ($start_time + $duration >= $now)
@@ -875,7 +875,7 @@ class EventPageBase extends PageBase
 		$this->event = new Event();
 		$this->event->load($_REQUEST['id']);
 		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id);
-		$this->is_moderator = is_permitted(PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $this->event->club_id, $this->event->id, $this->event->tournament_id);
+		$this->is_referee = is_permitted(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 	}
 	
 	protected function show_title()
@@ -893,7 +893,7 @@ class EventPageBase extends PageBase
 				new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.')),
 				new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
-				new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event')),
+				new MenuItem('event_referees.php?id=' . $this->event->id, get_label('Referees'), get_label('Referees statistics of [0]', $this->event->name)),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
@@ -905,12 +905,12 @@ class EventPageBase extends PageBase
 				// new MenuItem('event_links.php?id=' . $this->event->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
-		if ($this->is_manager || $this->is_moderator)
+		if ($this->is_manager || $this->is_referee)
 		{
 			$manager_menu = array();
 			
 			$manager_menu[] = new MenuItem('event_users.php?id=' . $this->event->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->event->name));
-			if (!$this->is_moderator)
+			if (!$this->is_referee)
 			{
 				$manager_menu[] = new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name));
 			}
@@ -948,7 +948,7 @@ class EventPageBase extends PageBase
 			$this->event->club_id,
 			$this->event->club_flags,
 			$this->event->coming_odds != NULL && $this->event->coming_odds > 0,
-			$this->is_manager, $this->is_moderator);
+			$this->is_manager, $this->is_referee);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));

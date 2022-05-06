@@ -107,8 +107,8 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.email, u.flags, c.id,
 			c.name, c.flags' . 
-			', SUM(IF((uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_MODER | USER_PERM_MANAGER) . ') = ' . USER_PERM_PLAYER . ', 1, 0))' . 
-			', SUM(IF((uc.flags & ' . (USER_PERM_MODER | USER_PERM_MANAGER) . ') = ' . USER_PERM_MODER . ', 1, 0))' . 
+			', SUM(IF((uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ') = ' . USER_PERM_PLAYER . ', 1, 0))' . 
+			', SUM(IF((uc.flags & ' . (USER_PERM_REFEREE | USER_PERM_MANAGER) . ') = ' . USER_PERM_REFEREE . ', 1, 0))' . 
 			', SUM(IF((uc.flags & ' . USER_PERM_MANAGER . ') <> 0, 1, 0))' . 
 			' FROM users u' .
 			' LEFT OUTER JOIN club_users uc ON uc.user_id = u.id' .
@@ -191,7 +191,7 @@ class Page extends GeneralPageBase
 			{
 				if (empty($image_title))
 				{
-					echo 'moderator.png';
+					echo 'referee.png';
 				}
 				else
 				{
@@ -199,15 +199,15 @@ class Page extends GeneralPageBase
 				}
 				if ($all_clubs < 2)
 				{
-					$image_title .= get_label('Moderator');
+					$image_title .= get_label('Referee');
 				}
 				else if ($clubs_moder < 2)
 				{
-					$image_title .= get_label('Moderator in 1 club');
+					$image_title .= get_label('Referee in 1 club');
 				}
 				else
 				{
-					$image_title .= get_label('Moderator in [0] clubs', $clubs_moder);
+					$image_title .= get_label('Referee in [0] clubs', $clubs_moder);
 				}
 			}
 			

@@ -8,21 +8,21 @@ define('PERMISSION_OWNER', 0x0004);                // An owner of the object rep
 define('PERMISSION_CLUB_MEMBER', 0x0008);          // Any user who has a club membership
 define('PERMISSION_CLUB_REPRESENTATIVE', 0x0010);  // Club users who tread this club as their main club
 define('PERMISSION_CLUB_PLAYER', 0x0020);          // Users having player permission in the club
-define('PERMISSION_CLUB_MODERATOR', 0x0040);       // Users having moderator permission in the club
+define('PERMISSION_CLUB_REFEREE', 0x0040);         // Users having referee permission in the club
 define('PERMISSION_CLUB_MANAGER', 0x0080);         // Users having manager permission in the club
 define('PERMISSION_LEAGUE_MANAGER', 0x0100);       // Users having manager permission in the league
 define('PERMISSION_EVENT_PLAYER', 0x0200);         // Users having player permission in the event
-define('PERMISSION_EVENT_MODERATOR', 0x0400);      // Users having moderator permission for the event
+define('PERMISSION_EVENT_REFEREE', 0x0400);        // Users having referee permission for the event
 define('PERMISSION_EVENT_MANAGER', 0x0800);        // Users having manager permission for the event
 define('PERMISSION_TOURNAMENT_PLAYER', 0x1000);    // Users having player permission in the tournament
-define('PERMISSION_TOURNAMENT_MODERATOR', 0x2000); // Users having moderator permission for the tournament
+define('PERMISSION_TOURNAMENT_REFEREE', 0x2000);   // Users having referee permission for the tournament
 define('PERMISSION_TOURNAMENT_MANAGER', 0x4000);   // Users having manager permission for the tournament
 define('PERMISSION_ADMIN', 0x8000);                // Mafia Ratings administrators
 
-define('PERMISSION_MASK_CLUB', 0x00f8);       // PERMISSION_CLUB_MEMBER | PERMISSION_CLUB_REPRESENTATIVE | PERMISSION_CLUB_PLAYER | PERMISSION_CLUB_MODERATOR | PERMISSION_CLUB_MANAGER
+define('PERMISSION_MASK_CLUB', 0x00f8);       // PERMISSION_CLUB_MEMBER | PERMISSION_CLUB_REPRESENTATIVE | PERMISSION_CLUB_PLAYER | PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER
 define('PERMISSION_MASK_LEAGUE', 0x0100);     // PERMISSION_LEAGUE_MANAGER
-define('PERMISSION_MASK_EVENT', 0x0f00);      // PERMISSION_EVENT_PLAYER | PERMISSION_EVENT_MODERATOR | PERMISSION_EVENT_MANAGER
-define('PERMISSION_MASK_TOURNAMENT', 0xf000); // PERMISSION_TOURNAMENT_PLAYER | PERMISSION_TOURNAMENT_MODERATOR | PERMISSION_TOURNAMENT_MANAGER
+define('PERMISSION_MASK_EVENT', 0x0f00);      // PERMISSION_EVENT_PLAYER | PERMISSION_EVENT_REFEREE | PERMISSION_EVENT_MANAGER
+define('PERMISSION_MASK_TOURNAMENT', 0xf000); // PERMISSION_TOURNAMENT_PLAYER | PERMISSION_TOURNAMENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER
 define('PERMISSION_MASK_OWNER', 0x0004);      // PERMISSION_OWNER
 
 define('PERMISSION_OFFSET_EVENT', 9);
@@ -168,8 +168,8 @@ function is_permitted($permissions, $id1 = 0, $id2 = 0, $id3 = 0, $id4 = 0, $id5
 				}
 				break;
 				
-			case PERMISSION_CLUB_MODERATOR:
-				if ($_profile->is_club_moder($club_id))
+			case PERMISSION_CLUB_REFEREE:
+				if ($_profile->is_club_referee($club_id))
 				{
 					return true;
 				}
@@ -190,7 +190,7 @@ function is_permitted($permissions, $id1 = 0, $id2 = 0, $id3 = 0, $id4 = 0, $id5
 				break;
 				
 			case PERMISSION_EVENT_PLAYER:
-			case PERMISSION_EVENT_MODERATOR:
+			case PERMISSION_EVENT_REFEREE:
 			case PERMISSION_EVENT_MANAGER:
 				if ($event_permissions < 0)
 				{
@@ -203,7 +203,7 @@ function is_permitted($permissions, $id1 = 0, $id2 = 0, $id3 = 0, $id4 = 0, $id5
 				break;
 
 			case PERMISSION_TOURNAMENT_PLAYER:
-			case PERMISSION_TOURNAMENT_MODERATOR:
+			case PERMISSION_TOURNAMENT_REFEREE:
 			case PERMISSION_TOURNAMENT_MANAGER:
 				if ($tournament_permissions < 0)
 				{
@@ -244,8 +244,8 @@ function no_permission()
 // check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_CLUB_MANAGER, $club_id, $league_id);
 // check_permissions(PERMISSION_OWNER | PERMISSION_LEAGUE_MANAGER, $user_id, $league_id);
 // check_permissions(PERMISSION_OWNER | PERMISSION_LEAGUE_MANAGER | PERMISSION_CLUB_REPRESENTATIVE, $user_id, $club_id, $league_id);
-// check_permissions(PERMISSION_LEAGUE_MANAGER | TOURNAMENT_MANAGER, $league_id, $tournament_id);
-// check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MODERATOR | EVENT_MODERATOR, $user_id, $club_id, $event_id);
+// check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $league_id, $tournament_id);
+// check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, $user_id, $club_id, $event_id);
 function check_permissions($permissions, $id1 = 0, $id2 = 0, $id3 = 0, $id4 = 0, $id5 = 0)
 {
 	if (!is_permitted($permissions, $id1, $id2, $id3, $id4, $id5))
@@ -270,22 +270,22 @@ function permission_name($perm)
 			return 'club-representative';
 		case PERMISSION_CLUB_PLAYER:
 			return 'club-player';
-		case PERMISSION_CLUB_MODERATOR:
-			return 'club-moderator';
+		case PERMISSION_CLUB_REFEREE:
+			return 'club-regeree';
 		case PERMISSION_CLUB_MANAGER:
 			return 'club-manager';
 		case PERMISSION_LEAGUE_MANAGER:
 			return 'league-manager';
 		case PERMISSION_EVENT_PLAYER:
 			return 'event-player';
-		case PERMISSION_EVENT_MODERATOR:
-			return 'event-moderator';
+		case PERMISSION_EVENT_REFEREE:
+			return 'event-regeree';
 		case PERMISSION_EVENT_MANAGER:
 			return 'event-manager';
 		case PERMISSION_TOURNAMENT_PLAYER:
 			return 'tournament-player';
-		case PERMISSION_TOURNAMENT_MODERATOR:
-			return 'tournament-moderator';
+		case PERMISSION_TOURNAMENT_REFEREE:
+			return 'tournament-regeree';
 		case PERMISSION_TOURNAMENT_MANAGER:
 			return 'tournament-manager';
 		case PERMISSION_ADMIN:

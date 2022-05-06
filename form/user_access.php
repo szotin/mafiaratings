@@ -49,7 +49,7 @@ try
 	if ($club_id > 0)
 	{
 		echo '<input type="checkbox" id="form-manager" value="1"' . ((($user_flags & USER_PERM_MANAGER) != 0) ? ' checked' : '') . '> '.get_label('Manager');
-		echo '<br><input type="checkbox" id="form-moder" value="1"' . ((($user_flags & USER_PERM_MODER) != 0) ? ' checked' : '') . '> '.get_label('Moderator');
+		echo '<br><input type="checkbox" id="form-referee" value="1"' . ((($user_flags & USER_PERM_REFEREE) != 0) ? ' checked' : '') . '> '.get_label('Referee');
 		echo '<br><input type="checkbox" id="form-player" value="1"' . ((($user_flags & USER_PERM_PLAYER) != 0) ? ' checked' : '') . '> '.get_label('Player');
 		if (isset($event_id))
 		{
@@ -63,7 +63,7 @@ try
 					user_id: <?php echo $user_id; ?>,
 					event_id: <?php echo $event_id; ?>,
 					manager: ($("#form-manager").attr("checked") ? 1 : 0),
-					moder: ($("#form-moder").attr("checked") ? 1 : 0),
+					moder: ($("#form-referee").attr("checked") ? 1 : 0),
 					player: ($("#form-player").attr("checked") ? 1 : 0)
 				},
 				onSuccess);
@@ -83,7 +83,7 @@ try
 					user_id: <?php echo $user_id; ?>,
 					tournament_id: <?php echo $tournament_id; ?>,
 					manager: ($("#form-manager").attr("checked") ? 1 : 0),
-					moder: ($("#form-moder").attr("checked") ? 1 : 0),
+					moder: ($("#form-referee").attr("checked") ? 1 : 0),
 					player: ($("#form-player").attr("checked") ? 1 : 0)
 				},
 				onSuccess);
@@ -103,7 +103,7 @@ try
 					user_id: <?php echo $user_id; ?>,
 					club_id: <?php echo $club_id; ?>,
 					manager: ($("#form-manager").attr("checked") ? 1 : 0),
-					moder: ($("#form-moder").attr("checked") ? 1 : 0),
+					moder: ($("#form-referee").attr("checked") ? 1 : 0),
 					player: ($("#form-player").attr("checked") ? 1 : 0)
 				},
 				onSuccess);

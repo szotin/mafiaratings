@@ -116,7 +116,7 @@ class Page extends ClubPageBase
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, c.timezone, m.id, m.name, m.flags, cu.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
@@ -130,7 +130,7 @@ class Page extends ClubPageBase
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $club_moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
+			list ($game_id, $timezone, $referee_id, $referee_name, $referee_flags, $club_referee_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
 			
 			echo '<tr align="center"';
 			if ($is_canceled || !$is_rating)
@@ -211,7 +211,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			$club_user_pic->set($moder_id, $moder_name, $club_moder_flags, 'c' . $this->id)->set($moder_id, $moder_name, $moder_flags);
+			$club_user_pic->set($referee_id, $referee_name, $club_referee_flags, 'c' . $this->id)->set($referee_id, $referee_name, $referee_flags);
 			$club_user_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			

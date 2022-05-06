@@ -19,7 +19,7 @@ class Page extends EventPageBase
 	protected function show_body()
 	{
 		$create_link = NULL;
-		if (is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_MODERATOR, $this->event->club_id, $this->event->id, $this->event->tournament_id))
+		if (is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id))
 		{
 			$create_link = 'create_album.php?bck=1&club=' . $this->event->club_id . '&event=' . $this->event->id;
 		}

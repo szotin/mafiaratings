@@ -130,7 +130,7 @@ class TournamentPageBase extends PageBase
 	{
 		echo '<table class="head" width="100%">';
 
-		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $this->club_id, $this->id);
+		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id);
 		$menu = array
 		(
 			new MenuItem('tournament_info.php?id=' . $this->id, get_label('Tournament'), get_label('General tournament information')),
@@ -143,7 +143,7 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
 				new MenuItem('tournament_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('tournament_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
-				new MenuItem('tournament_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('Moderators statistics of the tournament')),
+				new MenuItem('tournament_referees.php?id=' . $this->id, get_label('Referees'), get_label('Statistics of the tournament referees')),
 				new MenuItem('tournament_fiim_form.php?tournament_id=' . $this->id, get_label('FIIM'), get_label('PDF report for sending to FIIM Mafia World Tour'), NULL, true),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array

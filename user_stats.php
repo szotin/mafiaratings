@@ -331,7 +331,7 @@ class Page extends UserPageBase
 		if ($this->games_moderated > 0)
 		{
 			echo '<p><table class="bordered light" width="100%">';
-			echo '<tr class="th-short darker"><td colspan="2">' . get_label('Moderating') . '</td></tr>';
+			echo '<tr class="th-short darker"><td colspan="2">' . get_label('Refereeing') . '</td></tr>';
 			
 			$playing_count = 0;
 			$civils_win_count = 0;
@@ -360,7 +360,7 @@ class Page extends UserPageBase
 				}
 			}
 			
-			echo '<tr><td class="dark" width="300">'.get_label('Games moderated').':</td><td>' . ($civils_win_count + $mafia_win_count) . '</td></tr>';
+			echo '<tr><td class="dark" width="300">'.get_label('Games refereed').':</td><td>' . ($civils_win_count + $mafia_win_count) . '</td></tr>';
 			if ($civils_win_count + $mafia_win_count > 0)
 			{
 				echo '<tr><td class="dark">'.get_label('Mafia wins').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
@@ -380,7 +380,7 @@ class Page extends UserPageBase
 				}
 				
 				list ($players_moderated, $gave_warnings) = $query->record(get_label('player'));
-				echo '<tr><td class="dark">'.get_label('Moderated players').':</td><td>' . $players_moderated . '</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Refereed players').':</td><td>' . $players_moderated . '</td></tr>';
 				echo '<tr><td class="dark">'.get_label('Gave warnings').':</td><td>' . get_label('[0] ([1] per game)', $gave_warnings, number_format($gave_warnings/($civils_win_count + $mafia_win_count), 2)) . '</td></tr>';
 			}
 			echo '</table></p>';

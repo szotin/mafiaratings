@@ -13,7 +13,7 @@ try
 	{
 		$event_id = (int)$_REQUEST['event_id'];
 		list($club_id, $tournament_id, $token, $langs) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, security_token, languages FROM events WHERE id = ?', $event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $event_id, $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
 		if (is_null($token))
 		{
 			$token = rand_string(32);
@@ -24,7 +24,7 @@ try
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
 		list($club_id, $token, $langs) = Db::record(get_label('tournament'), 'SELECT club_id, security_token, langs FROM tournaments WHERE id = ?', $tournament_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $club_id, $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
 		if (is_null($token))
 		{
 			$token = rand_string(32);
@@ -56,7 +56,7 @@ try
 	echo '</select>';
 	echo '</td></tr>';
 	echo '<tr><td>' . get_label('User account') . '</td><td>';
-	show_user_input('form-user', '', '', get_label('Please select user account that will be used to moderate games.'), 'changeUser');
+	show_user_input('form-user', '', '', get_label('Please select user account that will be used to referee games.'), 'changeUser');
 	echo '</td></tr>';
 	echo '<tr><td>' . get_label('Roles') . '</td><td><input id="form-roles" type="checkbox" checked onclick="showInstr()"> ' . get_label('Show roles') . '</td></tr>';
 	echo '</table><p><table class="dialog_form" width = 100%';
@@ -97,7 +97,7 @@ try
 		}
 		else
 		{
-			html = '<?php echo get_label('Please select user account that will be used to moderate games.'); ?>';
+			html = '<?php echo get_label('Please select user account that will be used to referee games.'); ?>';
 		}
 		$('#form-instr').html(html);
 	}

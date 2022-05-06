@@ -23,7 +23,7 @@ try
 	$event = new Event();
 	$event->load($_REQUEST['id']);
 	
-	$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_MODERATOR | PERMISSION_EVENT_MODERATOR | PERMISSION_TOURNAMENT_MODERATOR, $event->club_id, $event->id, $event->tournament_id);
+	$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $event->club_id, $event->id, $event->tournament_id);
 	$rows = 0;
 	$cols = 0;
 	$refr = 0;
