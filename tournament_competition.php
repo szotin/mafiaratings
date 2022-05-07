@@ -5,16 +5,23 @@ require_once 'include/general_page_base.php';
 require_once 'include/scoring.php';
 require_once 'include/chart.php';
 
-define('NUM_PLAYERS', 5);
+define('NUM_PLAYERS', 4);
 
 class Page extends TournamentPageBase
 {
 	private $players_list;
+	private $first;
 	
 	protected function prepare()
 	{
 		global $_profile;
 		parent::prepare();
+		
+		$this->first = 0;
+		if (isset($_REQUEST['first']))
+		{
+			$this->first = (int)$_REQUEST['first'];
+		}
 		
 		list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 		if ($this->normalizer_id != NULL && $this->normalizer_id > 0)
@@ -29,19 +36,21 @@ class Page extends TournamentPageBase
 		$this->scoring = json_decode($this->scoring);
 		$this->normalizer = json_decode($this->normalizer);
         $players = tournament_scores($this->id, $this->flags, NULL, 0, $this->scoring, $this->normalizer, $this->scoring_options);
-		
 		$players_count = count($players);
-		if ($players_count > NUM_PLAYERS)
-		{
-			$players_count = NUM_PLAYERS;
-		}
 		
 		$separator = '';
-		for ($num = 0; $num < $players_count; ++$num)
+		$num = $this->first;
+		for ($i = 0; $i < NUM_PLAYERS; ++$i)
 		{
+			if ($num >= $players_count)
+			{
+				break;
+			}
+			
 			$player = $players[$num];
 			$this->players_list .= $separator . $player->id;
 			$separator = ',';
+			++$num;
 		}
 		
 		while ($num < NUM_PLAYERS)
@@ -73,7 +82,14 @@ class Page extends TournamentPageBase
 		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'doUpdateChart', $scoring_select_flags);
 		echo '</form></p>';
 		
+		echo '<table width="100%"><tr><td width="36">';
+		if ($this->first > 0)
+		{
+			echo '<button class="navigate-btn" onclick="goPrev()"><img src="images/prev.png" class="text"></button>';
+		}
+		echo '</td><td>';
 		show_chart_legend();
+		echo '</td><td><td align="right" width="34"><button class="navigate-btn" onclick="goNext()"><img src="images/next.png" class="text"></button></td></tr></table>';
 		show_chart(CONTENT_WIDTH, floor(CONTENT_WIDTH/1.618)); // fibonacci golden ratio 1.618:1
 	}
 	
@@ -89,6 +105,16 @@ class Page extends TournamentPageBase
 			chartParams.normalizer_version = s.nVer;
 			chartParams.scoring_options = s.opt;
 			updateChart();
+		}
+	
+		function goNext()
+		{
+			goTo({first: <?php echo $this->first + 1; ?>});
+		}
+		
+		function goPrev()
+		{
+			goTo({first: <?php echo $this->first - 1; ?>});
 		}
 <?php 
 	}
