@@ -86,8 +86,8 @@ function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $c
 	
 	Db::exec(
 		get_label('user'), 
-		'INSERT INTO users (name, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id, games, games_won, rating, max_rating, max_rating_time) ' .
-			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?, 0, 0, ' . USER_INITIAL_RATING . ', ' . USER_INITIAL_RATING . ', UNIX_TIMESTAMP())',
+		'INSERT INTO users (name, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id, games, games_won, rating) ' .
+			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?, 0, 0, ' . USER_INITIAL_RATING . ')',
 		$name, md5(rand_string(8)), '', $email, $flags, $club_id, $langs, $lang, $city_id);
 	list ($user_id) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
 	
