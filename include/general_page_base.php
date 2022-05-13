@@ -49,10 +49,17 @@ class GeneralPageBase extends PageBase
 			new MenuItem('index.php' . $ccc, get_label('Home'), get_label('Main page')),
 			new MenuItem('ratings.php' . $ccc, get_label('Ratings'), get_label('Players ratings')),
 			new MenuItem('competition.php' . $ccc, get_label('Competition chart'), get_label('Competition chart at the top of the rating.')),
-			// new MenuItem('leagues.php' . $ccc, get_label('Leagues'), get_label('Leagues list')),
-			new MenuItem('clubs.php' . $ccc, get_label('Clubs'), get_label('Clubs list')),
-			new MenuItem('tournaments.php' . $ccc, get_label('Tournaments'), get_label('Tournaments history')),
-			new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
+			new MenuItem('#orgs', get_label('Organizations'), NULL, array
+			(
+				new MenuItem('clubs.php' . $ccc, get_label('Clubs'), get_label('Clubs list')),
+				new MenuItem('leagues.php' . $ccc, get_label('Leagues'), get_label('Leagues list')),
+			)),
+			new MenuItem('#competitions', get_label('Competitions'), NULL, array
+			(
+				new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
+				new MenuItem('tournaments.php' . $ccc, get_label('Tournaments'), get_label('Tournaments history')),
+//				new MenuItem('series.php' . $ccc, get_label('Tournament series'), get_label('Tournament series history')),
+			)),
 			new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games')),
 			// new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),
 			new MenuItem('#stats', get_label('Reports'), NULL, array

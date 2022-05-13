@@ -39,61 +39,93 @@ class Page extends ClubPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		echo '<table class="transp" width="100%"><tr><td>';
-		show_checkbox_filter(array(get_label('with video'), get_label('tournament events'), get_label('unplayed events'), get_label('canceled events')), $filter, 'filterEvents');
-		echo '</td></tr></table>';
+		$future = false;
+		if (isset($_REQUEST['future']))
+		{
+			$future = ((int)$_REQUEST['future'] > 0);
+		}
 		
 		$condition = new SQL(
 			' FROM events e ' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
-				' WHERE e.start_time < UNIX_TIMESTAMP() AND e.club_id = ?',
+				' WHERE e.club_id = ?',
 			$this->id);
+		if ($future)
+		{
+			$condition->add(' AND e.start_time + e.duration >= UNIX_TIMESTAMP()');
+		}
+		else
+		{
+			$condition->add(' AND e.start_time < UNIX_TIMESTAMP()');
+			
+			if ($filter & FLAG_FILTER_VIDEOS)
+			{
+				$condition->add(' AND EXISTS (SELECT v.id FROM videos v WHERE v.event_id = e.id)');
+			}
+			if ($filter & FLAG_FILTER_NO_VIDEOS)
+			{
+				$condition->add(' AND NOT EXISTS (SELECT v.id FROM videos v WHERE v.event_id = e.id)');
+			}
+			if ($filter & FLAG_FILTER_TOURNAMENT)
+			{
+				$condition->add(' AND e.tournament_id IS NOT NULL');
+			}
+			if ($filter & FLAG_FILTER_NOT_TOURNAMENT)
+			{
+				$condition->add(' AND e.tournament_id IS NULL');
+			}
+			if ($filter & FLAG_FILTER_EMPTY)
+			{
+				$condition->add(' AND NOT EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id AND g.result > 0)');
+			}
+			if ($filter & FLAG_FILTER_NOT_EMPTY)
+			{
+				$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id AND g.result > 0)');
+			}
+			if ($filter & FLAG_FILTER_CANCELED)
+			{
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') <> 0');
+			}
+			if ($filter & FLAG_FILTER_NOT_CANCELED)
+			{
+				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');
+			}
+		}
 		$condition->add(get_club_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
-		if ($filter & FLAG_FILTER_VIDEOS)
+		
+		echo '<div class="tab">';
+		echo '<button ' . ($future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
+		echo '<button ' . (!$future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
+		echo '</div>';
+		echo '<div class="tabcontent">';
+		
+		if (!$future)
 		{
-			$condition->add(' AND EXISTS (SELECT v.id FROM videos v WHERE v.event_id = e.id)');
-		}
-		if ($filter & FLAG_FILTER_NO_VIDEOS)
-		{
-			$condition->add(' AND NOT EXISTS (SELECT v.id FROM videos v WHERE v.event_id = e.id)');
-		}
-		if ($filter & FLAG_FILTER_TOURNAMENT)
-		{
-			$condition->add(' AND e.tournament_id IS NOT NULL');
-		}
-		if ($filter & FLAG_FILTER_NOT_TOURNAMENT)
-		{
-			$condition->add(' AND e.tournament_id IS NULL');
-		}
-		if ($filter & FLAG_FILTER_EMPTY)
-		{
-			$condition->add(' AND NOT EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id AND g.result > 0)');
-		}
-		if ($filter & FLAG_FILTER_NOT_EMPTY)
-		{
-			$condition->add(' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id AND g.result > 0)');
-		}
-		if ($filter & FLAG_FILTER_CANCELED)
-		{
-			$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') <> 0');
-		}
-		if ($filter & FLAG_FILTER_NOT_CANCELED)
-		{
-			$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');
+			echo '<p><table class="transp" width="100%"><tr><td>';
+			show_checkbox_filter(array(get_label('with video'), get_label('tournament events'), get_label('unplayed events'), get_label('canceled events')), $filter, 'filterEvents');
+			echo '</td></tr></table></p>';
 		}
 		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
-
+		
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.name, a.flags, a.address,' .
 				' (SELECT count(*) FROM games WHERE event_id = e.id AND is_canceled = FALSE AND result > 0) as games,' .
 				' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 				' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);
-		$query->add(' ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		if ($future)
+		{
+			$query->add(' ORDER BY e.start_time, e.id');
+		}
+		else
+		{
+			$query->add(' ORDER BY e.start_time DESC, e.id DESC');
+		}
+		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';
@@ -120,8 +152,7 @@ class Page extends ClubPageBase
 			{
 				echo '<tr>';
 			}
-			
-			echo '<td width="60" class="dark">';
+						echo '<td width="60" class="dark">';
 			$event_pic->set($event_id, $event_name, $event_flags);
 			$event_pic->show(ICONS_DIR, true, 60);
 			echo '</td>';
