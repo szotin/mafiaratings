@@ -32,7 +32,7 @@ class Page extends GeneralPageBase
 		
 		parent::prepare();
 		
-		$this->ccc_title = get_label('Filter referees by club, city, or country.');
+		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		
 		$this->filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
@@ -61,6 +61,15 @@ class Page extends GeneralPageBase
 	protected function show_body()
 	{
 		global $_page, $_profile;
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('referees')));
+		echo ' ';
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->filter);
+		echo '</td><td align="right"><img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
+		echo '</td></tr></table></p>';
 		
 		$condition = new SQL();
 		$ccc_id = $this->ccc_filter->get_id();
@@ -239,27 +248,6 @@ class Page extends GeneralPageBase
 			$message = get_label('[0] refereed no games.', $this->user_name);
 		}
 		$this->errorMessage($message);
-	}
-	
-	protected function show_filter_fields()
-	{
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->filter, 'filter');
-	}
-	
-	protected function show_search_fields()
-	{
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
-	}
-	
-	protected function get_filter_js()
-	{
-		$result = '+ "&filter=" + checkboxFilterFlags()';
-		if ($this->user_id > 0)
-		{
-			$result .= ' + "&page=-' . $this->user_id . '"';
-		}
-		return $result;
 	}
 }
 

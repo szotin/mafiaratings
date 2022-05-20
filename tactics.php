@@ -21,6 +21,15 @@ class Page extends GeneralPageBase
 	{
 		global $_lang_code;
 		
+		echo '<p><table class="transp" width="100%"><tr><td>';
+		echo '<form name="roleForm" method="get"><select name="role" onchange="document.roleForm.submit()">';
+		show_option(0, $this->role, get_label('How a Sheriff should play'));
+		show_option(1, $this->role, get_label('How a civilian should play'));
+		show_option(2, $this->role, get_label('How a mafiosi should play'));
+		show_option(3, $this->role, get_label('How a don should play'));
+		echo '</select></form>';
+		echo '</td></tr></table></p>';
+		
 		switch ($this->role)
 		{
 			case 1:
@@ -40,20 +49,9 @@ class Page extends GeneralPageBase
 		echo '<hr>';
 		echo get_label('Photos are kindly provided by our partner in Moscow - <a href="http://www.mafiapro.ru" target="_blank">Mafia Pro Club</a>.');
 	}
-
-	protected function show_filter_fields()
-	{
-		echo '<form name="roleForm" method="get"><select name="role" onchange="document.roleForm.submit()">';
-		show_option(0, $this->role, get_label('How a Sheriff should play'));
-		show_option(1, $this->role, get_label('How a civilian should play'));
-		show_option(2, $this->role, get_label('How a mafiosi should play'));
-		show_option(3, $this->role, get_label('How a don should play'));
-		echo '</select></form>';
-	}
 }
 
 $page = new Page();
-$page->set_ccc(CCCS_NO);
 $page->run(get_label('Game tactics'));
 
 ?>

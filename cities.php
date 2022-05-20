@@ -13,6 +13,12 @@ class Page extends GeneralPageBase
 	{
 		global $_lang_code, $_page;
 		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('cities')));
+		echo '</td></tr></table></p>';
+		
 		check_permissions(PERMISSION_ADMIN);
 		$query = new DbQuery(
 			'SELECT i.id, i.name_' . $_lang_code . ', i.flags, o.name_' . $_lang_code . ', i.timezone FROM cities i' . 
@@ -37,8 +43,8 @@ class Page extends GeneralPageBase
 		}
 		
 		$condition = new SQL(' WHERE (i.flags & ' . CITY_FLAG_NOT_CONFIRMED . ') = 0');
-		$ccc_id = $this->ccc_filter->get_id();
-		switch($this->ccc_filter->get_type())
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)

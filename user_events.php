@@ -33,7 +33,7 @@ class Page extends UserPageBase
 		}
 		
 		echo '<table class="transp" width="100%"><tr><td>';
-		$ccc_filter->show('onCCC', get_label('Filter events by club, city, or country.'));
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('events')));
 		show_checkbox_filter(array(get_label('with video'), get_label('tournament events')), $filter, 'filterEvents');
 		echo '</td></tr></table>';
 		

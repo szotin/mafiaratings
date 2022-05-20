@@ -31,7 +31,7 @@ class Page extends UserPageBase
 		}
 		
 		echo '<table class="transp" width="100%"><tr><td>';
-		$ccc_filter->show('onCCC', get_label('Filter events by club, city, or country.'));
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
 		show_checkbox_filter(array(get_label('with video')), $filter, 'filterTournaments');
 		echo '</td></tr></table>';
 		
@@ -150,11 +150,6 @@ class Page extends UserPageBase
 	function js()
 	{
 ?>
-		function onCCC(code)
-		{
-			goTo({ ccc: code, page: 0 });
-		}
-
 		function filterTournaments()
 		{
 			goTo({ filter: checkboxFilterFlags(), page: 0 });

@@ -13,6 +13,7 @@ class Page extends GeneralPageBase
 	protected function prepare()
 	{
 		parent::prepare();
+		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$this->link_params = array('ccc' => $this->ccc_filter->get_code());
 		PhotoAlbum::prepare_list($this->link_params);
 		$this->ccc_title = get_label('Filter photo albums by club, city, or country.');
@@ -21,6 +22,11 @@ class Page extends GeneralPageBase
 	protected function show_body()
 	{
 		global $_profile;
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('albums')));
+		echo '</td></tr></table></p>';
 		
 		$create_link = NULL;
 		$condition = NULL;

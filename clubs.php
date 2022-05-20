@@ -14,14 +14,17 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends GeneralPageBase
 {
-	protected function prepare()
+	protected function show_body()
 	{
-		parent::prepare();
-		$this->ccc_title = get_label('Show only clubs from a specific city, or country.');
-	}
-	
-	protected function show_filter_fields()
-	{
+		global $_profile, $_lang_code, $_page;
+		
+		$retired = isset($_REQUEST['retired']);
+		$root_only = isset($_REQUEST['root']);
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('clubs')));
 		echo '<input type="checkbox" id="retired" onclick="filter()"';
 		if (isset($_REQUEST['retired']))
 		{
@@ -35,19 +38,7 @@ class Page extends GeneralPageBase
 			echo ' checked';
 		}
 		echo '> ' . get_label('Root clubs only');
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ ($("#retired").attr("checked") ? "&retired=" : "") + ($("#root").attr("checked") ? "&root=" : "")';
-	}
-
-	protected function show_body()
-	{
-		global $_profile, $_lang_code, $_page;
-		
-		$retired = isset($_REQUEST['retired']);
-		$root_only = isset($_REQUEST['root']);
+		echo '</td></tr></table></p>';
 		
 		$delimiter = ' WHERE ';
 		$condition = new SQL();
@@ -61,8 +52,8 @@ class Page extends GeneralPageBase
 			$condition->add($delimiter . 'c.parent_id IS NULL');
 			$delimiter = ' AND ';
 		}
-		$ccc_id = $this->ccc_filter->get_id();
-		switch($this->ccc_filter->get_type())
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
@@ -177,6 +168,22 @@ class Page extends GeneralPageBase
 			}
 			echo '</tr></table>';
 		}
+	}
+	
+	protected function js()
+	{
+		parent::js();
+?>
+		function filter()
+		{
+			var params = 
+			{
+				retired: $("#retired").attr("checked") ? null : undefined,
+				root: $("#root").attr("checked") ? null : undefined
+			};
+			goTo(params);
+		}
+<?php
 	}
 }
 

@@ -34,10 +34,47 @@ class Page extends GeneralPageBase
 			$langs = $_profile->user_langs;
 		}
 		
+		echo '<p><table class="transp" width="100%"><tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('videos')));
+		show_video_type_select($video_type, 'vtype', 'filter()');
+		echo '</td><td align="right">';
+		langs_checkboxes($langs, LANG_ALL, NULL, ' ', '', 'filter()');
+		echo '</tr></table></p>';
+		
 		$condition = new SQL(' AND (v.lang & ?) <> 0', $langs);
 		if ($video_type >= 0)
 		{
 			$condition->add(' AND v.type = ?', $video_type);
+		}
+		
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
+		{
+		case CCCF_CLUB:
+			if ($ccc_id > 0)
+			{
+				$condition->add(' AND v.club_id = ?', $ccc_id);
+			}
+			else if ($ccc_id == 0 && $_profile != NULL)
+			{
+				$condition->add(' AND v.club_id IN (' . $_profile->get_comma_sep_clubs() . ')');
+			}
+			break;
+		case CCCF_CITY:
+			$condition->add(
+				' AND ((v.tournament_id IS NULL AND v.event_id IS NULL AND v.club_id IN (SELECT c1.id FROM clubs c1 JOIN cities i1 ON i1.id = c1.city_id WHERE i1.id = ? OR i1.area_id = ?))' .
+				' OR (v.event_id IS NULL AND v.event_id IN (SELECT e2.id FROM events e2 JOIN addresses a2 ON a2.id = e2.address_id JOIN cities i2 ON i2.id = a2.city_id WHERE i2.id = ? OR i2.area_id = ?))' .
+				' OR v.tournament_id IN (SELECT t3.id FROM tournaments t3 JOIN addresses a3 ON a3.id = t3.address_id JOIN cities i3 ON i3.id = a3.city_id WHERE i3.id = ? OR i3.area_id = ?))'
+				, $ccc_id, $ccc_id, $ccc_id, $ccc_id, $ccc_id, $ccc_id);
+			break;
+		case CCCF_COUNTRY:
+			$condition->add(
+				' AND ((v.tournament_id IS NULL AND v.event_id IS NULL AND v.club_id IN (SELECT c1.id FROM clubs c1 JOIN cities i1 ON i1.id = c1.city_id WHERE i1.country_id = ?))' .
+				' OR (v.event_id IS NULL AND v.event_id IN (SELECT e2.id FROM events e2 JOIN addresses a2 ON a2.id = e2.address_id JOIN cities i2 ON i2.id = a2.city_id WHERE i2.country_id = ?))' .
+				' OR v.tournament_id IN (SELECT t3.id FROM tournaments t3 JOIN addresses a3 ON a3.id = t3.address_id JOIN cities i3 ON i3.id = a3.city_id WHERE i3.country_id = ?))'
+				, $ccc_id, $ccc_id, $ccc_id, $ccc_id, $ccc_id, $ccc_id);
+			break;
 		}
 		
 		$page_size = ROW_COUNT * COLUMN_COUNT;
@@ -53,12 +90,6 @@ class Page extends GeneralPageBase
 		}
 		
 		list ($count) = Db::record(get_label('video'), 'SELECT count(*) FROM videos v WHERE TRUE', $condition);
-		
-		echo '<p><table class="transp" width="100%"><tr><td>';
-		show_video_type_select($video_type, 'vtype', 'filter()');
-		echo '</td><td align="right">';
-		langs_checkboxes($langs, LANG_ALL, NULL, ' ', '', 'filter()');
-		echo '</tr></table></p>';
 		
 		show_pages_navigation($page_size, $count);
 		

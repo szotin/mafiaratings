@@ -41,12 +41,21 @@ class Page extends GeneralPageBase
 		{
 			$this->season = $_REQUEST['season'];
 		}
-		$this->ccc_title = get_label('Show statistics in a specific club, city, or country.');
 	}
 	
 	protected function show_body()
 	{
 		global $_profile, $_lang_code;
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
+		echo ' ';
+		$this->season = show_club_seasons_select(0, $this->season, 'filterSeasons()', get_label('Show stats of a specific season.'));
+		echo ' ';
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter);
+		echo '</td></tr></table></p>';
 		
 		$condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
 		if ($this->filter & FLAG_FILTER_TOURNAMENT)
@@ -66,8 +75,8 @@ class Page extends GeneralPageBase
 			$condition->add(' AND g.is_rating = 0');
 		}
 		
-		$ccc_id = $this->ccc_filter->get_id();
-		switch ($this->ccc_filter->get_type())
+		$ccc_id = $ccc_filter->get_id();
+		switch ($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
@@ -209,16 +218,15 @@ class Page extends GeneralPageBase
 		}
 	}
 	
-	protected function show_filter_fields()
+	protected function js()
 	{
-		$this->season = show_club_seasons_select(0, $this->season, 'filter()', get_label('Show stats of a specific season.'));
-		echo ' ';
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter, 'filter');
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ "&season=" + $("#season").val() + "&filter=" + checkboxFilterFlags()';
+		parent::js();
+?>
+		function filterSeasons()
+		{
+			goTo({season: $("#season").val()});
+		}
+<?php
 	}
 }
 
@@ -226,15 +234,3 @@ $page = new Page();
 $page->run(get_label('Statistics'));
 
 ?>
-
-<script>
-function sortBy(s)
-{
-	if (s != $('#sort').val())
-	{
-		$('#sort').val(s);
-		//console.log($('#sort').val());
-		document.filter.submit();
-	}
-}
-</script>

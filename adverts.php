@@ -13,7 +13,23 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page;
 		
-		$expired = isset($_REQUEST['expired']);
+		$expired = 0;
+		if (isset($_REQUEST['expired']))
+		{
+			$expired = $_REQUEST['expired'];
+		}
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('adverts')));
+		echo '<input type="checkbox" id="expired" onclick="filterExpired()"';
+		if ($expired)
+		{
+			echo ' checked';
+		}
+		echo '> ' . get_label('show expired adverts');
+		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(' FROM news n JOIN clubs c ON c.id = n.club_id JOIN cities ct ON ct.id = c.city_id');
 		$delim = ' WHERE ';
@@ -24,8 +40,8 @@ class Page extends GeneralPageBase
 			$delim = ' AND ';
 		}
 		
-		$ccc_id = $this->ccc_filter->get_id();
-		switch($this->ccc_filter->get_type())
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
@@ -64,19 +80,15 @@ class Page extends GeneralPageBase
 		echo '</table>';
 	}
 	
-	protected function show_filter_fields()
+	protected function js()
 	{
-		echo '<input type="checkbox" id="expired" onclick="filter()"';
-		if (isset($_REQUEST['expired']))
+		parent::js();
+?>
+		function filterExpired()
 		{
-			echo ' checked';
+			goTo({expired: ($("#expired").attr("checked") ? 1 : 0), page: undefined});
 		}
-		echo '> ' . get_label('show expired adverts');
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ ($("#expired").attr("checked") ? "&expired=" : "")';
+<?php
 	}
 }
 

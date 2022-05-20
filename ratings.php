@@ -26,14 +26,13 @@ class Page extends GeneralPageBase
 		
 		parent::prepare();
 		
-		$this->ccc_title = get_label('Filter players by club, city, or country.');
-		
 		$this->role = POINTS_ALL;
 		if (isset($_REQUEST['role']))
 		{
 			$this->role = $_REQUEST['role'];
 		}
 		
+		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$this->ccc_value = $this->ccc_filter->get_value();
 		if ($this->role != POINTS_ALL)
 		{
@@ -82,14 +81,6 @@ class Page extends GeneralPageBase
 		switch ($this->ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
-/*			if ($ccc_id > 0)
-			{
-				$condition->add(' AND u.id IN (SELECT user_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND club_id = ?)', $ccc_id);
-			}
-			else if ($ccc_id == 0 && $_profile != NULL)
-			{
-				$condition->add(' AND u.id IN (SELECT user_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND club_id IN (SELECT club_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?))', $_profile->user_id);
-			}*/
 			if ($ccc_id > 0)
 			{
 				$condition->add(' AND u.club_id = ?', $ccc_id);
@@ -156,6 +147,15 @@ class Page extends GeneralPageBase
 	protected function show_body()
 	{
 		global $_page, $_profile;
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('players')));
+		echo ' ';
+		show_roles_select($this->role, 'filterRoles()', get_label('Use only the rating earned in a specific role.'));
+		echo '</td><td align="right"><img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
+		echo '</td></tr></table></p>';
 		
 		$condition = $this->common_condition();
 		if ($this->role == POINTS_ALL)
@@ -271,30 +271,19 @@ class Page extends GeneralPageBase
 		echo '</table>';
 	}
 	
-	protected function show_filter_fields()
+	protected function js()
 	{
-		show_roles_select($this->role, 'filter()', get_label('Use only the rating earned in a specific role.'));
-	}
-	
-	protected function show_search_fields()
-	{
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
-	}
-	
-	protected function get_filter_js()
-	{
-		$result = '+ "&role=" + $("#roles option:selected").val()';
-		if ($this->user_id > 0)
+		parent::js();
+?>
+		function filterRoles()
 		{
-			$result .= ' + "&page=-' . $this->user_id . '"';
+			goTo({role: $("#roles option:selected").val(), page: undefined});
 		}
-		return $result;
+<?php
 	}
 }
 
 $page = new Page();
-$page->set_ccc(CCCS_ALL);
 $page->run();
 
 ?>

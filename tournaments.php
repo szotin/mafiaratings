@@ -24,7 +24,6 @@ class Page extends GeneralPageBase
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->ccc_title = get_label('Filter tournaments by club, city, or country.');
 		$this->filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
@@ -41,6 +40,16 @@ class Page extends GeneralPageBase
 	protected function show_body()
 	{
 		global $_profile, $_page;
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
+		if (!$this->future)
+		{
+			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $this->filter);
+		}
+		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(
 			' FROM tournaments t' .
@@ -82,8 +91,8 @@ class Page extends GeneralPageBase
 			}
 		}
 		
-		$ccc_id = $this->ccc_filter->get_id();
-		switch($this->ccc_filter->get_type())
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
@@ -194,19 +203,6 @@ class Page extends GeneralPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
-	}
-	
-	protected function show_filter_fields()
-	{
-		if (!$this->future)
-		{
-			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $this->filter, 'filter');
-		}
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ "&filter=" + checkboxFilterFlags()';
 	}
 }
 

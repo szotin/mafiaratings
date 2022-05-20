@@ -1,11 +1,18 @@
 <?php
 
-function show_checkbox_filter($labels, $flags, $on_change)
+function show_checkbox_filter($labels, $flags, $on_change = NULL)
 {
 	for($i = 0; $i < count($labels); ++$i)
 	{
 		$label = $labels[$i];
-		echo ' <input type="checkbox" id="cf' . $i . '" onclick="cf(' . $i . ', ' . $on_change . ')"> ' . $label;
+		if ($on_change == NULL)
+		{
+			echo ' <input type="checkbox" id="cf' . $i . '" onclick="cf(' . $i . ', ' . $on_change . ')"> ' . $label;
+		}
+		else
+		{
+			echo ' <input type="checkbox" id="cf' . $i . '" onclick="cf(' . $i . ', null)"> ' . $label;
+		}
 	}
 	
 ?>
@@ -31,7 +38,14 @@ function show_checkbox_filter($labels, $flags, $on_change)
 			var c = $("#cf" + i).data('checked');
 			if (++c > 2) c = 0;
 			cfSetState(i, c);
-			onclick();
+			if (onclick != null)
+			{
+				onclick();
+			}
+			else
+			{
+				goTo({filter: checkboxFilterFlags()});
+			}
 		}
 		
 		function checkboxFilterFlags()

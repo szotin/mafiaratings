@@ -21,6 +21,7 @@ class Page extends GeneralPageBase
 			$this->first = (int)$_REQUEST['first'];
 		}
 		
+		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$query = new DbQuery('SELECT u.id FROM users u WHERE u.games > 0');
 		$ccc_id = $this->ccc_filter->get_id();
 		switch ($this->ccc_filter->get_type())
@@ -62,6 +63,11 @@ class Page extends GeneralPageBase
 	
 	protected function show_body()
 	{
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('players')));
+		echo '</td></tr></table></p>';
+		
 		echo '<table width="100%"><tr><td width="36">';
 		if ($this->first > 0)
 		{

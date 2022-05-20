@@ -109,7 +109,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->set_ccc(CCCS_NO);
 $page->run(get_label('Game test'));
 
 ?>

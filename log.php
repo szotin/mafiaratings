@@ -50,8 +50,26 @@ class Page extends GeneralPageBase
 		$condition = new SQL();
 		$delim = ' WHERE ';
 		
-		$ccc_id = $this->ccc_filter->get_id();
-		switch($this->ccc_filter->get_type())
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('records')));
+		echo '<td align="right" width="400"><select id="obj" onChange="filterObjects()">';
+		show_option('', $this->filter_obj, 'All objects');
+		foreach ($this->objects as $key => $value)
+		{
+			show_option($key, $this->filter_obj, $key);
+		}
+		echo '</select> ';
+		show_user_input('user_filter', $this->filter_user_name, '', get_label('Show actions of a specific user.'), 'filterUser');
+		if ($this->filter_obj != '' || $this->filter_obj_id > 0 || $this->filter_user_id > 0 || $ccc_filter->get_value() != NULL)
+		{
+			echo '</td><td width="32" align="right"><button class="icon" onclick="unfilter()" title="' . get_label('Remove all filters') . '"><img src="images/no_filter.png"></button></td>';
+		}
+		echo '</td></tr></table></p>';
+		
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
@@ -196,46 +214,9 @@ class Page extends GeneralPageBase
 		echo '</table>';
 	}
 	
-	protected function show_search_fields()
-	{
-		echo '<table class="transp"><tr>';
-		if ($this->filter_obj != '' || $this->filter_obj_id > 0 || $this->filter_user_id > 0)
-		{
-			echo '<td width="36"><button class="icon" onclick="unfilter()" title="' . get_label('Remove all filters') . '"><img src="images/no_filter.png"></button></td>';
-		}
-		echo '<td><select id="obj" onChange="filter()">';
-		show_option('', $this->filter_obj, 'All objects');
-		foreach ($this->objects as $key => $value)
-		{
-			show_option($key, $this->filter_obj, $key);
-		}
-		echo '</select> ';
-		show_user_input('user_filter', $this->filter_user_name, '', get_label('Show actions of a specific user.'), 'filterUser');
-		echo '</td></tr></table>';
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ "&obj=" + $("#obj").val()';
-	}
-	
 	protected function js()
 	{
 		parent::js();
-		
-		$delim = '?';
-		$user_filter = '';
-		if ($this->filter_obj != '')
-		{
-			$user_filter .= $delim . 'obj=' . $this->filter_obj;
-			$delim = '&';
-		}
-		if ($this->filter_obj_id > 0)
-		{
-			$user_filter .= $delim . 'obj_id=' . $this->filter_obj_id;
-			$delim = '&';
-		}
-		$user_filter .= $delim . 'user_id=';
 		
 ?>		
 		function showDetails(id)
@@ -246,10 +227,15 @@ class Page extends GeneralPageBase
 			}
 			html.get("log_details.php?id=" + id, loaded);
 		}
+		
+		function filterObjects()
+		{
+			goTo({obj: $("#obj").val(), page: undefined});
+		}
 
 		function filterUser(data)
 		{
-			window.location.replace("<?php echo $user_filter; ?>" + data.id);
+			goTo({user_id: data.id, page: undefined});
 		}
 
 		function unfilter()
@@ -261,7 +247,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->set_ccc(CCCS_ALL);
 $page->run(get_label('Log'));
 
 ?>

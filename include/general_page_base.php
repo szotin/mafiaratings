@@ -11,27 +11,6 @@ define('CCCS_NO', 2);
 
 class GeneralPageBase extends PageBase
 {
-	protected $ccc_filter;
-	protected $ccc_state = CCCS_ALL;
-	protected $ccc_title = '';
-	
-	public function set_ccc($ccc_state) { $this->ccc_state = $ccc_state; }
-	
-	protected function prepare()
-	{
-		parent::prepare();
-		
-		switch ($this->ccc_state)
-		{
-		case CCCS_MY:
-			$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_MY);
-			break;
-		case CCCS_ALL:
-			$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
-			break;
-		}
-	}
-	
 	protected function show_title()
 	{
 		global $_profile;
@@ -119,52 +98,7 @@ class GeneralPageBase extends PageBase
 		echo '<tr><td><p>' . $this->standard_title() . '</p></td><td align="right" valign="top">';
 		show_back_button();
 		echo '</td></tr>';
-		echo '</table>';
-		
-		echo '<table class="transp" width="100%">';
-		echo '<tr><td>';
-		if ($this->ccc_filter != NULL)
-		{
-			$this->ccc_filter->show('onCCC', $this->ccc_title);
-		}
-		echo ' ';
-		$this->show_filter_fields();
-		echo '</td><td align="right">';
-		$this->show_search_fields();
 		echo '</table></p>';
-	}
-	
-	protected function show_filter_fields()
-	{
-	}
-	
-	protected function show_search_fields()
-	{
-	}
-	
-	protected function get_filter_js()
-	{
-		return '';
-	}
-	
-	protected function js()
-	{
-		if ($this->ccc_filter != NULL)
-		{
-?>
-			var cccCode = "<?php echo $this->ccc_filter->get_code(); ?>";
-			function onCCC(code)
-			{
-				cccCode = code;
-				filter();
-			}
-			
-			function filter()
-			{
-				window.location.replace("?ccc=" + cccCode <?php echo $this->get_filter_js(); ?>);
-			}
-<?php
-		}
 	}
 }
 

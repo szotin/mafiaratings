@@ -189,17 +189,6 @@ class Page extends ClubPageBase
 		}
 		echo '</table>';
 	}
-	
-	protected function show_filter_fields()
-	{
-		show_roles_select($this->role, 'filter()', get_label('Use only the rating earned in a specific role.'));
-	}
-	
-	protected function show_search_fields()
-	{
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
-	}
 }
 
 $page = new Page();

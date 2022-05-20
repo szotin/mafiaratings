@@ -20,6 +20,7 @@ class Page extends GeneralPageBase
 	
 		parent::prepare();
 		
+		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		check_permissions(PERMISSION_ADMIN);
 		$this->user_id = 0;
 		if ($_page < 0)
@@ -61,6 +62,14 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page;
 		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('users')));
+		echo '</td><td align="right">';
+		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific user is located.'));
+		echo '</td></tr></table></p>';
+		
 		$condition = new SQL();
 		$sep = ' WHERE ';
 		$ccc_id = $this->ccc_filter->get_id();
@@ -69,7 +78,7 @@ class Page extends GeneralPageBase
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
 			{
-				$condition->add($sep . 'u.club_id = ?)', $ccc_id);
+				$condition->add($sep . 'u.club_id = ?', $ccc_id);
 				$sep = ' AND ';
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
@@ -243,22 +252,6 @@ class Page extends GeneralPageBase
 			echo '</td></tr>';
 		}
 		echo '</table>';
-	}
-	
-	protected function show_search_fields()
-	{
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific user is located.'));
-	}
-	
-	protected function get_filter_js()
-	{
-		$result = '';
-		if ($this->user_id > 0)
-		{
-			$result .= ' + "&page=-' . $this->user_id . '"';
-		}
-		return $result;
 	}
 }
 

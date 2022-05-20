@@ -400,10 +400,16 @@ class Page extends GeneralPageBase
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$this->event_pic = new Picture(EVENT_PICTURE);
 		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', ''));
+		echo '</td></tr></table></p>';
+		
 		$condition = new SQL();
-		$ccc_id = $this->ccc_filter->get_id();
-		$ccc_code = $this->ccc_filter->get_code();
-		$ccc_type = $this->ccc_filter->get_type();
+		$ccc_id = $ccc_filter->get_id();
+		$ccc_code = $ccc_filter->get_code();
+		$ccc_type = $ccc_filter->get_type();
 		switch($ccc_type)
 		{
 		case CCCF_CLUB:
