@@ -14,7 +14,6 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
 
 class Page extends GeneralPageBase
 {
-	private $season;
 	private $roles;
 	private $min_games;
 	private $games_count;
@@ -61,12 +60,6 @@ class Page extends GeneralPageBase
 			$this->filter = (int)$_REQUEST['filter'];
 		}
 		
-		$this->season = 0;
-		if (isset($_REQUEST['season']))
-		{
-			$this->season = $_REQUEST['season'];
-		}
-		
 		$this->roles = POINTS_ALL;
 		if (isset($_REQUEST['roles']))
 		{
@@ -74,7 +67,7 @@ class Page extends GeneralPageBase
 		}
 		
 		date_default_timezone_set(get_timezone());
-		$this->condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
+		$this->condition = new SQL();
 		if ($this->filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$this->condition->add(' AND g.tournament_id IS NOT NULL');
@@ -151,8 +144,6 @@ class Page extends GeneralPageBase
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
 		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('players')));
-		echo ' ';
-		$this->season = show_club_seasons_select(0, $this->season, 'filterSeason()', get_label('Show nomimations of a specific season.'));
 		show_roles_select($this->roles, 'filterRoles()', get_label('Use only the stats of a specific role.'));
 		
 		echo ' <select id="min" onchange="filterNumber()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
@@ -295,11 +286,6 @@ class Page extends GeneralPageBase
 			{
 				goTo({sort: s});
 			}
-		}
-		
-		function filterSeason()
-		{
-			goTo({season: $("#season").val()});
 		}
 		
 		function filterRoles()

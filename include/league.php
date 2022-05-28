@@ -73,10 +73,9 @@ class LeaguePageBase extends PageBase
 		$menu = array
 		(
 			new MenuItem('league_main.php?id=' . $this->id, get_label('League'), get_label('[0] main page', $this->name)),
-			// new MenuItem('league_standings.php?id=' . $this->id, get_label('Standings'), get_label('[0] standings', $this->name)),
-			// new MenuItem('league_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing in the league.')),
 			new MenuItem('league_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('Member clubs of [0].', $this->name)),
-			// new MenuItem('league_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name)),
+			new MenuItem('league_series.php?id=' . $this->id, get_label('Tournament Series'), get_label('[0] tournament series history', $this->name)),
+			new MenuItem('league_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->name)),
 			// new MenuItem('league_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)),
 			// new MenuItem('#stats', get_label('Stats'), NULL, array
 			// (
@@ -101,7 +100,7 @@ class LeaguePageBase extends PageBase
 			$menu[] = new MenuItem('#other', get_label('Management'), NULL, array
 			(
 				new MenuItem('league_managers.php?id=' . $this->id, get_label('Managers'), get_label('[0] managers', $this->name)),
-				new MenuItem('league_seasons.php?id=' . $this->id, get_label('Seasons'), get_label('[0] seasons', $this->name)),
+				new MenuItem('league_upcoming_series.php?id=' . $this->id, get_label('Tournament series'), get_label('[0] tournament series', $this->name)),
 				// new MenuItem('league_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name)),
 				// new MenuItem('league_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name)),
 				new MenuItem('league_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name)),
@@ -144,107 +143,6 @@ class LeaguePageBase extends PageBase
 		show_back_button();
 		echo '</td></tr></table>';
 	}
-}
-
-function get_current_league_season($league_id)
-{
-	$condition = new SQL();
-	if ($league_id > 0)
-	{
-		$query = new DbQuery('SELECT id, name, start_time, end_time FROM league_seasons WHERE league_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $league_id);
-		while ($row = $query->next())
-		{
-			return (int)$row[0];
-		}
-		$condition->add(' AND g.league_id = ?', $league_id);
-	}
-	
-	$query = new DbQuery('SELECT g.end_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
-	$query->add(' ORDER BY g.end_time DESC LIMIT 1');
-	if ($row = $query->next())
-	{
-		list($timestamp, $timezone) = $row;
-		date_default_timezone_set($timezone);
-		$last_year = (int)date('Y', $timestamp);
-		return -$last_year;
-	}
-	return -date('Y');
-}
-
-function show_league_seasons_select($league_id, $option, $on_change, $title)
-{
-	$seasons = array();
-	$condition = new SQL();
-	if ($league_id > 0)
-	{
-		$query = new DbQuery('SELECT id, name, start_time, end_time FROM league_seasons WHERE league_id = ? AND start_time < UNIX_TIMESTAMP() ORDER BY end_time DESC', $league_id);
-		while ($row = $query->next())
-		{
-			$seasons[] = $row;
-		}
-		$condition->add(' AND g.league_id = ?', $league_id);
-	}
-	
-	if ($option == SEASON_LATEST && count($seasons) > 0)
-	{
-		$option = $seasons[0][0];
-	}
-	echo '<select name="season" id="season" onChange="' . $on_change . '" title="' . $title . '">';
-	show_option(SEASON_ALL_TIME, $option, get_label('All time'));
-	if (count($seasons) > 0)
-	{
-		foreach ($seasons as $season)
-		{
-			list($id, $name, $start, $end) = $season;
-			show_option($id, $option, $name);
-		}
-	}
-	else
-	{
-		$query = new DbQuery('SELECT g.start_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
-		$query->add(' ORDER BY g.start_time LIMIT 1');
-		if ($row = $query->next())
-		{
-			list($timestamp, $timezone) = $row;
-			date_default_timezone_set($timezone);
-			$first_year = (int)date('Y', $timestamp);
-			
-			$query = new DbQuery('SELECT g.end_time, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
-			$query->add(' ORDER BY g.end_time DESC LIMIT 1');
-			if ($row = $query->next())
-			{
-				list($timestamp, $timezone) = $row;
-				date_default_timezone_set($timezone);
-				$last_year = (int)date('Y', $timestamp);
-				if ($option == 0)
-				{
-					$option = -$last_year;
-				}
-				for ($y = $last_year; $y >= $first_year; --$y)
-				{
-					show_option(-$y, $option, $y);
-				}
-			}
-		}
-	}
-	echo '</select> ';
-	return $option;
-}
-
-function get_league_season_condition($season, $start_field, $end_field)
-{
-	$condition = new SQL('');
-	if ($season > SEASON_LATEST)
-	{
-		$condition->add(' AND EXISTS(SELECT _s.id FROM league_seasons _s WHERE _s.start_time <= ' . $end_field . ' AND _s.end_time > ' . $start_field . ' AND _s.id = ?)', $season);
-	}
-	else if ($season < SEASON_ALL_TIME)
-	{
-		$start = mktime(0, 0, 0, 1, 1, -$season);
-		$end = mktime(0, 0, 0, 1, 1, 1 - $season);
-		$condition->add(' AND ' . $end_field . ' >= ? AND ' . $start_field . ' < ?', $start, $end);
-	}
-	return $condition;
 }
 
 ?>

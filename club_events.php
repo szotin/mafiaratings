@@ -27,12 +27,6 @@ class Page extends ClubPageBase
 	{
 		global $_profile, $_page;
 		
-		$season = SEASON_LATEST;
-		if (isset($_REQUEST['season']))
-		{
-			$season = (int)$_REQUEST['season'];
-		}
-		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
@@ -93,7 +87,6 @@ class Page extends ClubPageBase
 				$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');
 			}
 		}
-		$condition->add(get_club_season_condition($season, 'e.start_time', '(e.start_time + e.duration)'));
 		
 		echo '<div class="tab">';
 		echo '<button ' . ($future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';

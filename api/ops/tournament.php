@@ -639,14 +639,15 @@ class ApiPage extends OpsApiPageBase
 			get_label('tournament'), 
 			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, price = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ? WHERE id = ?',
 			$name, $address_id, $start, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $tournament_id);
-		if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
-		{
-			Db::exec(
-				get_label('round'),
-				'UPDATE events SET scoring_id = ?, scoring_version = ? WHERE tournament_id = ?', $scoring_id, $scoring_version, $tournament_id);
-		}
 		if (Db::affected_rows() > 0)
 		{
+			if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
+			{
+				Db::exec(
+					get_label('round'),
+					'UPDATE events SET scoring_id = ?, scoring_version = ? WHERE tournament_id = ?', $scoring_id, $scoring_version, $tournament_id);
+			}
+			
 			$log_details = new stdClass();
 			if ($name != $old_name)
 			{
@@ -817,55 +818,24 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function cancel_op()
 	{
-		$event_id = (int)get_required_param('event_id');
-		$event = new Event();
-		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $event->club_id);
+		$tournament_id = (int)get_required_param('tournament_id');
 		
 		Db::begin();
-		list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
-		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags | ' . EVENT_FLAG_CANCELED . ') WHERE id = ?', $event_id);
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags | ' . TOURNAMENT_FLAG_CANCELED . ') WHERE id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log(LOG_OBJECT_TOURNAMENT, 'canceled', NULL, $event_id, $club_id);
-		}
-		
-		$some_sent = false;
-		$query = new DbQuery('SELECT id, status FROM event_mailings WHERE event_id = ?', $event_id);
-		while ($row = $query->next())
-		{
-			list ($mailing_id, $mailing_status) = $row;
-			switch ($mailing_status)
-			{
-				case MAILING_WAITING:
-					break;
-				case MAILING_SENDING:
-				case MAILING_COMPLETE:
-					$some_sent = true;
-					break;
-			}
+			db_log(LOG_OBJECT_TOURNAMENT, 'canceled', NULL, $tournament_id, $club_id);
 		}
 		Db::commit();
-		
-		if ($some_sent)
-		{
-			$this->response['question'] = get_label('Some event emails are already sent. Do you want to send cancellation email?'); 
-		}
-		else
-		{
-			list($reg_count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE event_id = ? AND coming_odds > 0 OR coming_odds IS NULL', $event_id);
-			if ($reg_count > 0)
-			{
-				$this->response['question'] = get_label('Some users have already registered for this event. Do you want to send cancellation email?'); 
-			}
-		}
 	}
 	
 	function cancel_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Cancel event.');
-		$help->request_param('event_id', 'Event id.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Cancel tournament.');
+		$help->request_param('tournament_id', 'Tournament id.');
 		return $help;
 	}
 
@@ -874,26 +844,24 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function restore_op()
 	{
-		$event_id = (int)get_required_param('event_id');
-		$event = new Event();
-		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $event->club_id);
+		$tournament_id = (int)get_required_param('tournament_id');
 		
 		Db::begin();
-		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_CANCELED . ') WHERE id = ?', $event_id);
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_CANCELED . ') WHERE id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
-			list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
-			db_log(LOG_OBJECT_TOURNAMENT, 'restored', NULL, $event_id, $club_id);
+			db_log(LOG_OBJECT_TOURNAMENT, 'restored', NULL, $tournament_id, $club_id);
 		}
 		Db::commit();
-		$this->response['question'] = get_label('The event is restored. Do you want to change event mailing?');
 	}
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Restore canceled event.');
-		$help->request_param('event_id', 'Event id.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Restore canceled tournament.');
+		$help->request_param('tournament_id', 'Tournament id.');
 		return $help;
 	}
 

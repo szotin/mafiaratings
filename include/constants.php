@@ -14,6 +14,13 @@ define('AGENT_IPAD', 3);
 define('AGENT_ANDROID', 4);
 define('AGENT_WEBOS', 5);
 
+// permission flags - applicable to user-club; user-league; user-event; user-tournament; and user-series
+define('USER_PERM_PLAYER', 0x1);
+define('USER_PERM_REFEREE', 0x2);
+define('USER_PERM_MANAGER', 0x4);
+define('USER_PERM_ADMIN', 0x8);
+define('USER_PERM_MASK', 0xf); // USER_PERM_ADMIN
+
 // user-league flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
 // 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag referee)
@@ -22,13 +29,6 @@ define('AGENT_WEBOS', 5);
 // 16 - 0x8000 -  32768 - perm manager
 define('USER_LEAGUE_PERM_MANAGER', 0x8000);
 define('USER_LEAGUE_PERM_MASK', 0x8000); // USER_LEAGUE_PERM_MANAGER
-
-// permission flags - applicable to user-club; user-event; and user-tournament
-define('USER_PERM_PLAYER', 0x1);
-define('USER_PERM_REFEREE', 0x2);
-define('USER_PERM_MANAGER', 0x4);
-define('USER_PERM_ADMIN', 0x8);
-define('USER_PERM_MASK', 0xf); // USER_PERM_ADMIN
 
 // user-club flags
 // 01 - 0x0001 -      1 - perm player
@@ -76,6 +76,20 @@ define('USER_TOURNAMENT_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
 define('USER_TOURNAMENT_ICON_MASK', 0x70);
 define('USER_TOURNAMENT_ICON_MASK_OFFSET', 4);
 define('USER_TOURNAMENT_ICON_MAX_VERSION', 7);
+
+// user-series flags
+// 01 - 0x0001 -      1 - perm player
+// 02 - 0x0002 -      2 - perm mod
+// 03 - 0x0004 -      4 - perm manager
+// 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
+// 05 - 0x0800 -     16 - icon mask
+// 06 - 0x1000 -     32 - icon mask
+// 07 - 0x2000 -     64 - icon mask
+define('USER_SERIES_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
+
+define('USER_SERIES_ICON_MASK', 0x70);
+define('USER_SERIES_ICON_MASK_OFFSET', 4);
+define('USER_SERIES_ICON_MAX_VERSION', 7);
 
 // user flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
@@ -134,6 +148,7 @@ define('LEAGUE_PICS_DIR', 'pics/league/');
 define('ALBUM_PICS_DIR', 'pics/album/');
 define('EVENT_PICS_DIR', 'pics/event/');
 define('TOURNAMENT_PICS_DIR', 'pics/tournament/');
+define('SERIES_PICS_DIR', 'pics/series/');
 define('SOUNDS_DIR', 'sounds/');
 
 define('TNAILS_DIR', 'tnails/');
@@ -146,15 +161,18 @@ define('USER_PIC_CODE', 'u');
 define('USER_CLUB_PIC_CODE', 'b');
 define('USER_EVENT_PIC_CODE', 'v');
 define('USER_TOURNAMENT_PIC_CODE', 'o');
+define('USER_SERIES_PIC_CODE', 'r');
 define('CLUB_PIC_CODE', 'c');
 define('LEAGUE_PIC_CODE', 'l');
 define('ALBUM_PIC_CODE', 'p');
 define('EVENT_PIC_CODE', 'e');
 define('TOURNAMENT_PIC_CODE', 't');
+define('SERIES_PIC_CODE', 's');
 define('PHOTO_CODE', 'h');
 
 define('EVENT_PHOTO_WIDTH', (CONTENT_WIDTH / PHOTO_COL_COUNT - 20));
 define('TOURNAMENT_PHOTO_WIDTH', (CONTENT_WIDTH / PHOTO_COL_COUNT - 20));
+define('SERIES_PHOTO_WIDTH', (CONTENT_WIDTH / PHOTO_COL_COUNT - 20));
 define('TNAIL_WIDTH', 280);
 define('TNAIL_HEIGHT', 160);
 define('ICON_WIDTH', 70);
@@ -218,6 +236,20 @@ define('TOURNAMENT_EDITABLE_MASK', 0x170); // TOURNAMENT_FLAG_LONG_TERM | TOURNA
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);
 define('TOURNAMENT_ICON_MAX_VERSION', 7);
+
+// series flags
+//  1 - 0x0001 -      1 - icon mask
+//  2 - 0x0002 -      2 - icon mask
+//  3 - 0x0004 -      4 - icon mask
+//  4 - 0x0008 -      8 - canceled
+//  8 - 0x0010 -     16 - series is finished - all scoring is complete
+define('SERIES_FLAG_CANCELED', 0x8);
+define('SERIES_FLAG_FINISHED', 0x10);
+define('SERIES_EDITABLE_MASK', 0x0); // 
+
+define('SERIES_ICON_MASK', 0x7);
+define('SERIES_ICON_MASK_OFFSET', 0);
+define('SERIES_ICON_MAX_VERSION', 7);
 
 // address flags
 // 1 - 0x0001 -      1 - not used
@@ -319,9 +351,6 @@ define('VIDEO_TYPE_MAX', 4);
 define('TOURNAMENT_INVITATION_STATUS_NO_RESPONCE', 0);
 define('TOURNAMENT_INVITATION_STATUS_ACCEPTED', 1);
 define('TOURNAMENT_INVITATION_STATUS_DECLINED', 2);
-
-define('SEASON_LATEST', 0);
-define('SEASON_ALL_TIME', -1);
 
 function set_flag($flags, $flag, $value)
 {

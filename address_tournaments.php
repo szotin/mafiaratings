@@ -25,12 +25,6 @@ class Page extends AddressPageBase
 	{
 		global $_profile, $_page;
 		
-		$season = SEASON_ALL_TIME;
-		if (isset($_REQUEST['season']))
-		{
-			$season = (int)$_REQUEST['season'];
-		}
-		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
@@ -40,7 +34,6 @@ class Page extends AddressPageBase
 		echo '<form method="get" name="clubForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_club_seasons_select($this->club_id, $season, 'document.clubForm.submit()', get_label('Show tournaments of a specific season.'));
 		show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $filter, 'filterTournaments');
 		echo '</td></tr></table></form>';
 		
@@ -51,7 +44,6 @@ class Page extends AddressPageBase
 				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' WHERE t.start_time < UNIX_TIMESTAMP() AND t.address_id = ? AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0',
 			$this->id);
-		$condition->add(get_club_season_condition($season, 't.start_time', '(t.start_time + t.duration)'));
 		if ($filter & FLAG_FILTER_VIDEOS)
 		{
 			$condition->add(' AND EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');

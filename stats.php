@@ -14,7 +14,6 @@ define('FLAG_FILTER_DEFAULT', 0);
 
 class Page extends GeneralPageBase
 {
-	private $season;
 	private $min_games;
 	private $games_count;
 
@@ -35,12 +34,6 @@ class Page extends GeneralPageBase
 		{
 			$this->filter = (int)$_REQUEST['filter'];
 		}
-		
-		$this->season = 0;
-		if (isset($_REQUEST['season']))
-		{
-			$this->season = $_REQUEST['season'];
-		}
 	}
 	
 	protected function show_body()
@@ -52,12 +45,10 @@ class Page extends GeneralPageBase
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
 		echo ' ';
-		$this->season = show_club_seasons_select(0, $this->season, 'filterSeasons()', get_label('Show stats of a specific season.'));
-		echo ' ';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter);
 		echo '</td></tr></table></p>';
 		
-		$condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
+		$condition = new SQL();
 		if ($this->filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NOT NULL');
@@ -216,17 +207,6 @@ class Page extends GeneralPageBase
 				echo '</table>';
 			}
 		}
-	}
-	
-	protected function js()
-	{
-		parent::js();
-?>
-		function filterSeasons()
-		{
-			goTo({season: $("#season").val()});
-		}
-<?php
 	}
 }
 
