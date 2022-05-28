@@ -48,9 +48,21 @@ class Page extends GeneralPageBase
 			' JOIN countries o ON i.country_id = o.id' .
 			' WHERE e.start_time + e.duration >= ? AND e.start_time < ? AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_BEFORE) . ') = 0',
 			$time, $end_time);
+			
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('events')));
+		echo ' ';
+		if ($this->week > 0)
+		{
+			echo '<input type="submit" name="prev" value="' . get_label('Prev week') . '" class="btn norm" onclick="goTo({week: ' . ($this->week - 1) . '})">';
+		}
+		echo '<input type="submit" name="next" value="' . get_label('Next week') . '" class="btn norm" onclick="goTo({week: ' . ($this->week + 1) . '})">';
+		echo '</td></tr></table></p>';
 		
-		$ccc_id = $this->ccc_filter->get_id();
-		switch($this->ccc_filter->get_type())
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
@@ -106,7 +118,7 @@ class Page extends GeneralPageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr class="dark"><td style="padding:2px;">';
-				Event::show_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, ($come_odds != NULL && $come_odds > 0));
+				Event::show_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, ($come_odds != NULL && $come_odds > 0));
 				echo '</td></tr>';	
 			}
 			
@@ -161,37 +173,6 @@ class Page extends GeneralPageBase
 		
 			echo '<b>' . get_label('There is no games from [0] to [1]', $date, $end_date) . '</b>';
 		}
-	}
-	
-	protected function show_filter_fields()
-	{
-		if ($this->week > 0)
-		{
-			echo '<input type="submit" name="prev" value="' . get_label('Prev week') . '" class="btn norm" onclick="prevWeek()">';
-		}
-		echo '<input type="submit" name="next" value="' . get_label('Next week') . '" class="btn norm" onclick="nextWeek()">';
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ "&week=' . $this->week . '"';
-	}
-	
-	protected function js()
-	{
-		parent::js();
-?>
-		var week = <?php echo $this->week; ?>;
-		function nextWeek()
-		{
-			window.location.replace("?week=" + (week + 1) + "&ccc=" + cccCode);
-		}
-		
-		function prevWeek()
-		{
-			window.location.replace("?week=" + (week - 1) + "&ccc=" + cccCode);
-		}
-<?php	
 	}
 }
 

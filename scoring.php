@@ -73,7 +73,7 @@ class Page extends PageBase
 				statPoints: "<?php echo get_label('Static points'); ?>",
 				difPoints: "<?php echo get_label('Depending on the game difficulty'); ?>",
 				shotPoints: "<?php echo get_label('Depending on number of times player was killed first night'); ?>",
-				shotPointsFigm: "<?php echo get_label('Depending on number of times player was killed first night by FIGM rules'); ?>",
+				shotPointsFiim: "<?php echo get_label('Depending on number of times player was killed first night by FIIM rules'); ?>",
 				points: "<?php echo get_label('points'); ?>",
 				minDif: "<?php echo get_label('min difficulty'); ?>",
 				maxDif: "<?php echo get_label('max difficulty'); ?>",
@@ -109,6 +109,7 @@ class Page extends PageBase
 				<?php echo '"' . SCORING_FLAG_KILLED_NIGHT . '": "' . $for . get_label('being killed in the night') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_FIRST_LEGACY_3 . '": "' . $for . get_label('guessing [0] mafia (after being killed the first night)', 3) . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_FIRST_LEGACY_2 . '": "' . $for . get_label('guessing [0] mafia (after being killed the first night)', 2) . '"'; ?>,
+				<?php echo '"' . SCORING_FLAG_FIRST_LEGACY_1 . '": "' . $for . get_label('guessing [0] mafia (after being killed the first night)', 1) . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_WARNINGS_4 . '": "' . $for . get_label('getting 4 warnigs') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_KICK_OUT . '": "' . $for . get_label('beign kicked out from the game') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_SURRENDERED . '": "' . $for . get_label('surrender (leaving the game by accepting the loss)') . '"'; ?>,
@@ -119,7 +120,7 @@ class Page extends PageBase
 				<?php echo '"' . SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT . '": "' . $for . get_label('sheriff being killed the first night') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_BLACK_CHECKS . '": "' . $for . get_label('the first three checks of the sheriff being black') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_RED_CHECKS . '": "' . $for . get_label('the first three checks of the sheriff being red') . '"'; ?>,
-				<?php echo '"' . SCORING_FLAG_EXTRA_POINTS . '": "' . $for . get_label('actions in the game rated by the moderator') . '"'; ?>
+				<?php echo '"' . SCORING_FLAG_EXTRA_POINTS . '": "' . $for . get_label('actions in the game rated by the referee') . '"'; ?>
 			},
 			sorting:
 			{

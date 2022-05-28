@@ -188,3 +188,10 @@ img.message-img
 	border: 1px solid #c0cccc;
 	border-top: none;
 }
+
+button.navigate-btn { height: 60px; width: 32px; margin: 0px; padding: 1px; border: 0px; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.navigate-btn:hover { border: 1px outset #cccccc; padding: 0px;  }
+button.navigate-btn:active { border: 1px inset #cccccc; padding: 0px;  }
+button.navigate-btn[disabled] { border: 1px solid #303030; padding: 0px; color: #808080; background-color: transparent; opacity: 0.2; }
+button.navigate-btn[disabled]:hover {}
+button.navigate-btn[disabled]:active {}

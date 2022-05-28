@@ -141,11 +141,11 @@ try
 	echo '<tr><td colspan="2">';
 		
 	echo '<input type="checkbox" id="form-all_mod"';
-	if (($event->flags & EVENT_FLAG_ALL_MODERATE) != 0)
+	if (($event->flags & EVENT_FLAG_ALL_CAN_REFEREE) != 0)
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('everyone can moderate games.');
+	echo '> '.get_label('everyone can referee games.');
 	
 	echo '<br><input type="checkbox" id="form-fun"';
 	if (($event->flags & EVENT_FLAG_FUN) != 0)
@@ -297,7 +297,7 @@ try
 			$("#form-scoring-ver").val(e.scoring_version);
 			$('#form-scoring-options').val(e.scoring_options);
 			$("#form-notes").val(e.notes);
-			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_MODERATE; ?>) != 0);
+			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>) != 0);
 			$("#form-fun").prop('checked', (e.flags & <?php echo EVENT_FLAG_FUN; ?>) != 0);
 			mr.setLangs(e.langs, "form-");
 			addressClick();
@@ -312,7 +312,7 @@ try
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
-		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
+		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		
 		var params =

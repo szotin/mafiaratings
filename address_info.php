@@ -56,7 +56,7 @@ class Page extends AddressPageBase
 				echo '<tr><td class="dark">'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 				
 				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE', $this->id);
-				echo '<tr><td class="dark">'.get_label('People moderated').':</td><td>' . $counter . '</td></tr>';
+				echo '<tr><td class="dark">'.get_label('Referees').':</td><td>' . $counter . '</td></tr>';
 				
 				list ($a_game, $s_game, $l_game) = Db::record(get_label('game'), 'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) FROM games g JOIN events e ON g.event_id = e.id WHERE g.result > 0 AND g.result < 3 AND e.address_id = ? AND g.is_canceled = FALSE', $this->id);
 				echo '<tr><td class="dark">'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';

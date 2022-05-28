@@ -24,14 +24,14 @@ function show_permissions($user_flags)
 		$image = 'player.png';
 	}
 	
-	if (($user_flags & USER_CLUB_PERM_MODER) != 0)
+	if (($user_flags & USER_PERM_REFEREE) != 0)
 	{
-		$title .= $sep . get_label('moderator');
+		$title .= $sep . get_label('Referee');
 		$sep = '; ';
-		$image = 'moderator.png';
+		$image = 'referee.png';
 	}
 	
-	if (($user_flags & USER_CLUB_PERM_MANAGER) != 0)
+	if (($user_flags & USER_PERM_MANAGER) != 0)
 	{
 		$title .= $sep . get_label('manager');
 		$sep = '; ';
@@ -90,7 +90,7 @@ class Page extends UserPageBase
             echo '<tr><td class="dark">'.get_label('Banned').':</td><td>'.get_label('yes').'</td></tr>';
         }
 		
-		$query = new DbQuery('SELECT DISTINCT nick_name FROM registrations WHERE user_id = ? ORDER BY nick_name', $this->id);
+		$query = new DbQuery('SELECT DISTINCT nickname FROM event_users WHERE user_id = ? ORDER BY nickname', $this->id);
 		if ($row = $query->next())
 		{
 			echo '<tr><td class="dark">'.get_label('Nicks').':</td><td>' . cut_long_name($row[0], 88);
@@ -103,7 +103,7 @@ class Page extends UserPageBase
 		
 		if ($this->games_moderated > 0)
 		{
-			echo '<tr><td class="dark">'.get_label('Games moderated').':</td><td>' . $this->games_moderated . '</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Games refereed').':</td><td>' . $this->games_moderated . '</td></tr>';
 		}
 		
 		if (is_permitted(PERMISSION_CLUB_MANAGER, $this->club_id))
@@ -117,7 +117,7 @@ class Page extends UserPageBase
 			{
 				$status = get_label('activated');
 			}
-			$query = new DbQuery('SELECT flags FROM user_clubs WHERE user_id = ? AND club_id = ?', $this->id, $this->club_id);
+			$query = new DbQuery('SELECT flags FROM club_users WHERE user_id = ? AND club_id = ?', $this->id, $this->club_id);
 			if ($row = $query->next())
 			{
 				list($club_flags) = $row;

@@ -82,7 +82,7 @@ class Event
 		$this->club_flags = NEW_CLUB_FLAGS;
 		$this->club_url = '';
 		$this->notes = '';
-		$this->flags = EVENT_FLAG_ALL_MODERATE;
+		$this->flags = EVENT_FLAG_ALL_CAN_REFEREE;
 		$this->langs = LANG_ALL;
 		$this->rules_code = default_rules_code();
 		$this->scoring_id = -1;
@@ -96,7 +96,7 @@ class Event
 			$timezone = get_timezone();
 			foreach ($_profile->clubs as $club)
 			{
-				if (($club->flags & USER_CLUB_PERM_MANAGER) != 0)
+				if (($club->flags & USER_PERM_MANAGER) != 0)
 				{
 					$this->club_id = $club->id;
 					$timezone = $club->timezone;
@@ -360,14 +360,6 @@ class Event
 			$log_details->scoring_version = $this->scoring_version;
 			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $this->id, $this->club_id);
 		}
-		
-		if ($this->timestamp != $old_timestamp || $this->duration != $old_duration)
-		{
-			Db::exec(
-				get_label('registration'), 
-				'UPDATE registrations SET start_time = ?, duration = ? WHERE event_id = ?',
-				$this->timestamp, $this->duration, $this->id);
-		}
 		Db::commit();
 	}
 
@@ -444,14 +436,29 @@ class Event
 			$min_coming = 0;
 			$max_coming = 0;
 			$declined = 0;
-			$query = new DbQuery('SELECT u.id, u.name, a.coming_odds, a.people_with_me, u.flags, a.late FROM event_users a JOIN users u ON a.user_id = u.id WHERE a.event_id = ? ORDER BY a.coming_odds DESC, a.late, a.people_with_me DESC, u.name', $this->id);
+			$query = new DbQuery(
+				'SELECT u.id, u.name, eu.nickname, eu.coming_odds, eu.people_with_me, u.flags, eu.late, eu.flags, e.tournament_id, tu.flags, e.club_id, cu.flags' . 
+				' FROM event_users eu' . 
+				' JOIN events e ON e.id = eu.event_id ' .
+				' JOIN users u ON eu.user_id = u.id' . 
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
+				' WHERE e.id = ? ORDER BY eu.coming_odds DESC, eu.late, eu.people_with_me DESC, u.name', $this->id);
 			while ($row = $query->next())
 			{
-				$attendance[] = $row;
-				$odds = $row[2];
-				$bringing = $row[3];
+				$odds = $row[3];
+				if (is_null($odds))
+				{
+					$odds = 100;
+				}
+				$bringing = $row[4];
+				if (is_null($bringing))
+				{
+					$bringing = 0;
+				}
 				if ($odds >= 100)
 				{
+					$odds = 100;
 					$min_coming += 1 + $bringing;
 					$max_coming += 1 + $bringing;
 					$coming += 1 + $bringing;
@@ -464,17 +471,25 @@ class Event
 				else
 				{
 					++$declined;
-				}
+				} 
+				$row[3] = $odds;
+				$row[4] = $bringing;
+				$attendance[] = $row;
 			}
 			
-			$user_pic = new Picture(USER_PICTURE);
+			$event_user_pic =
+				new Picture(USER_EVENT_PICTURE, 
+				new Picture(USER_TOURNAMENT_PICTURE,
+				new Picture(USER_CLUB_PICTURE,
+				new Picture(USER_PICTURE))));
+		
 			if (BRIEF_ATTENDANCE)
 			{
 				$found = false;
 				$col = 0;
 				foreach ($attendance as $a)
 				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
+					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $a;
 					if ($odds > 0)
 					{
 						if ($col == 0)
@@ -515,9 +530,24 @@ class Event
 							echo 'class="lighter"';
 						}
 						echo 'align="center">';
-						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, true, 50);
-						echo '<br>' . $name;
+						$event_user_pic->
+							set($user_id, $nickname, $event_user_flags, 'e' . $this->id)->
+							set($user_id, $name, $tournament_user_flags, 't' . $tournament_id)->
+							set($user_id, $name, $club_user_flags, 'c' . $club_id)->
+							set($user_id, $name, $user_flags);
+						$event_user_pic->show(ICONS_DIR, true, 50);
+						if (empty($nickname))
+						{
+							echo '<br>' . $name;
+						}
+						else
+						{
+							echo '<br>' . $nickname;
+							if (!empty($name) && $name != $nickname)
+							{
+								echo ' (' . $name . ')';
+							}
+						}
 						if ($bringing > 0)
 						{
 							echo ' + ' . $bringing; 
@@ -551,7 +581,7 @@ class Event
 				$col = 0;
 				foreach ($attendance as $a)
 				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
+					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $a;
 					if ($odds <= 0)
 					{
 						if ($col == 0)
@@ -569,8 +599,12 @@ class Event
 						}
 						
 						echo '<td width="16.66%" align="center">';
-						$user_pic->set($user_id, $name, $user_flags);
-						$user_pic->show(ICONS_DIR, true, 50);
+						$event_user_pic->
+							set($user_id, $nickname, $event_user_flags, 'e' . $this->id)->
+							set($user_id, $name, $tournament_user_flags, 't' . $tournament_id)->
+							set($user_id, $name, $club_user_flags, 'c' . $club_id)->
+							set($user_id, $name, $user_flags);
+						$event_user_pic->show(ICONS_DIR, true, 50);
 						echo '<br>' . $name . '</td>';
 						++$col;
 						if ($col == 6)
@@ -608,7 +642,7 @@ class Event
 
 				foreach ($attendance as $a)
 				{
-					list($user_id, $name, $odds, $bringing, $user_flags, $late) = $a;
+					list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $a;
 					if ($odds > 50)
 					{
 						echo '<tr class="lighter">';
@@ -623,8 +657,12 @@ class Event
 					}
 					
 					echo '<td width="50">';
-					$user_pic->set($user_id, $name, $user_flags);
-					$user_pic->show(ICONS_DIR, true, 50);
+					$event_user_pic->
+						set($user_id, $nickname, $event_user_flags, 'e' . $this->id)->
+						set($user_id, $name, $tournament_user_flags, 't' . $tournament_id)->
+						set($user_id, $name, $club_user_flags, 'c' . $club_id)->
+						set($user_id, $name, $user_flags);
+					$event_user_pic->show(ICONS_DIR, true, 50);
 					echo '</td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . cut_long_name($name, 80) . '</a></td><td width="280" align="center"><b>';
 					echo Event::odds_str($odds, $bringing, $late) . '</b></td></tr>';
 				}
@@ -643,11 +681,19 @@ class Event
 		return $this->name;
 	}
 	
-	static function show_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $attending)
+	static function show_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, $attending, $is_manager = NULL, $is_referee = NULL)
 	{
 		global $_profile;
 
 		$now = time();
+		if ($is_manager === NULL)
+		{
+			$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $id, $tournament_id);
+		}
+		if ($is_referee === NULL)
+		{
+			$is_referee = is_permitted(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $id, $tournament_id);
+		}
 		
 		$no_buttons = true;
 		if ($_profile != NULL && $id > 0 && ($club_flags & CLUB_FLAG_RETIRED) == 0)
@@ -667,9 +713,8 @@ class Event
 				$no_buttons = false;
 			}
 			
-			if ($_profile->is_club_manager($club_id))
+			if ($is_manager)
 			{
-				echo '<button class="icon" onclick="mr.eventMailing(' . $id . ')" title="' . get_label('Manage event emails') . '"><img src="images/email.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editEvent(' . $id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
 				if ($start_time >= $now)
 				{
@@ -682,17 +727,15 @@ class Event
 						echo '<button class="icon" onclick="mr.cancelEvent(' . $id . ', \'' . get_label('Are you sure you want to cancel the event?') . '\')" title="' . get_label('Cancel the event') . '"><img src="images/delete.png" border="0"></button>';
 					}
 				}
-				else if ($start_time + $duration + EVENT_ALIVE_TIME >= $now)
-				{
-					echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
-				}
-				echo '<button class="icon" onclick="mr.showEventToken(' . $id . ')" title="' . get_label('Show security token for this event.') . '"><img src="images/obs.png" border="0"></button>';
 				$no_buttons = false;
 			}
-			
-			if ($_profile->is_club_moder($club_id) && $start_time < $now && $start_time + $duration >= $now)
+			if ($is_referee && $start_time < $now && $start_time + $duration + EVENT_ALIVE_TIME >= $now)
 			{
-				echo '<button class="icon" onclick="mr.playEvent(' . $id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
+				if ($start_time + $duration >= $now)
+				{
+					echo '<button class="icon" onclick="mr.playEvent(' . $id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
+				}
 				$no_buttons = false;
 			}
 		}
@@ -819,7 +862,7 @@ class EventPageBase extends PageBase
 {
 	protected $event;
 	protected $is_manager;
-
+	
 	protected function prepare()
 	{
 		global $_profile;
@@ -831,59 +874,59 @@ class EventPageBase extends PageBase
 		
 		$this->event = new Event();
 		$this->event->load($_REQUEST['id']);
-		$this->is_manager = ($_profile != NULL && $_profile->is_club_manager($this->event->club_id));
+		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id);
+		$this->is_referee = is_permitted(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 	}
 	
 	protected function show_title()
 	{
 		echo '<table class="head" width="100%">';
 
-		if ($this->event->timestamp < time())
-		{
-			$menu = array
+		$menu = array
+		(
+			new MenuItem('event_info.php?id=' . $this->event->id, get_label('Event'), get_label('General event information')),
+			new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings')),
+			new MenuItem('event_competition.php?id=' . $this->event->id, get_label('Competition chart'), get_label('How players were competing on this event.')),
+			new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event')),
+			new MenuItem('#stats', get_label('Reports'), NULL, array
 			(
-				new MenuItem('event_info.php?id=' . $this->event->id, get_label('Event'), get_label('General event information')),
-				new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings')),
-				new MenuItem('event_competition.php?id=' . $this->event->id, get_label('Competition chart'), get_label('How players were competing on this event.')),
-				new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event')),
-				new MenuItem('#stats', get_label('Reports'), NULL, array
-				(
-					new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.')),
-					new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
-					new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
-					new MenuItem('event_moderators.php?id=' . $this->event->id, get_label('Moderators'), get_label('Moderators statistics of the event')),
-					new MenuItem('event_figm_form.php?event_id=' . $this->event->id, get_label('FIGM'), get_label('PDF report for sending to FIGM Mafia World Tour'), NULL, true),
-				)),
-				new MenuItem('#resources', get_label('Resources'), NULL, array
-				(
-				
-					new MenuItem('event_rules.php?id=' . $this->event->id, get_label('Rulebook'), get_label('Rules of the game in [0]', $this->event->name)),
-					new MenuItem('event_albums.php?id=' . $this->event->id, get_label('Photos'), get_label('Event photo albums')),
-					new MenuItem('event_videos.php?id=' . $this->event->id, get_label('Videos'), get_label('Videos from the event.')),
-					// new MenuItem('event_tasks.php?id=' . $this->event->id, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
-					// new MenuItem('event_articles.php?id=' . $this->event->id, get_label('Articles'), get_label('Books and articles.')),
-					// new MenuItem('event_links.php?id=' . $this->event->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
-				)),
-			);
-			if ($this->is_manager)
-			{
-				$manager_menu = array
-				(
-					new MenuItem('event_players.php?id=' . $this->event->id, get_label('Players'), get_label('Manage players paricipaing in [0]', $this->event->name)),
-					new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name)),
-					new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name)),
-				);
-				if (is_null($this->event->tournament_id))
-				{
-					$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->event->id . ', \'' . get_label('Are you sure you want to convert [0] to a tournament?', $this->event->name) . '\')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->event->name));
-				}
-				$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
-			}
+				new MenuItem('event_stats.php?id=' . $this->event->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.')),
+				new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+				new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
+				new MenuItem('event_referees.php?id=' . $this->event->id, get_label('Referees'), get_label('Referees statistics of [0]', $this->event->name)),
+			)),
+			new MenuItem('#resources', get_label('Resources'), NULL, array
+			(
+				new MenuItem('event_rules.php?id=' . $this->event->id, get_label('Rulebook'), get_label('Rules of the game in [0]', $this->event->name)),
+				new MenuItem('event_albums.php?id=' . $this->event->id, get_label('Photos'), get_label('Event photo albums')),
+				new MenuItem('event_videos.php?id=' . $this->event->id, get_label('Videos'), get_label('Videos from the event.')),
+				// new MenuItem('event_tasks.php?id=' . $this->event->id, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
+				// new MenuItem('event_articles.php?id=' . $this->event->id, get_label('Articles'), get_label('Books and articles.')),
+				// new MenuItem('event_links.php?id=' . $this->event->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
+			)),
+		);
+		if ($this->is_manager || $this->is_referee)
+		{
+			$manager_menu = array();
 			
-			echo '<tr><td colspan="4">';
-			PageBase::show_menu($menu);
-			echo '</td></tr>';
+			$manager_menu[] = new MenuItem('event_users.php?id=' . $this->event->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->event->name));
+			if (!$this->is_referee)
+			{
+				$manager_menu[] = new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name));
+			}
+			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name));
+			$manager_menu[] = new MenuItem('javascript:mr.eventObs(' . $this->event->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.'));
+			
+			if (is_null($this->event->tournament_id) && is_permitted(PERMISSION_CLUB_MANAGER, $this->event->club_id))
+			{
+				$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->event->id . ', \'' . get_label('Are you sure you want to convert [0] to a tournament?', $this->event->name) . '\')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->event->name));
+			}
+			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}
+		
+		echo '<tr><td colspan="4">';
+		PageBase::show_menu($menu);
+		echo '</td></tr>';
 		
 		echo '<tr><td rowspan="2" valign="top" align="left" width="1">';
 		echo '<table class="bordered ';
@@ -898,12 +941,14 @@ class EventPageBase extends PageBase
 		echo '"><tr><td width="1" valign="top" style="padding:4px;" class="dark">';
 		Event::show_buttons(
 			$this->event->id,
+			$this->event->tournament_id,
 			$this->event->timestamp,
 			$this->event->duration,
 			$this->event->flags,
 			$this->event->club_id,
 			$this->event->club_flags,
-			$this->event->coming_odds != NULL && $this->event->coming_odds > 0);
+			$this->event->coming_odds != NULL && $this->event->coming_odds > 0,
+			$this->is_manager, $this->is_referee);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
@@ -926,7 +971,12 @@ class EventPageBase extends PageBase
 		
 		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->get_full_name();
 		$time = time();
-		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p></td>';
+		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p>';
+		if (!empty($this->event->price))
+		{
+			echo '<p class="subtitle"><b>' . get_label('Participation fee: [0]', $this->event->price) . '</b></p>';
+		}
+		echo '</td>';
 		
 		echo '<td valign="top" align="right">';
 		show_back_button();

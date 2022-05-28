@@ -94,7 +94,14 @@ try
 	$player_flags = 0; 
 	if (isset($player->id) && $player->id > 0)
 	{
-		list($player_id, $pname, $player_flags) = Db::record(get_label('user'), 'SELECT id, name, flags FROM users WHERE id = ?', $player->id);
+		list($player_id, $pname, $player_flags, $event_player_nickname, $event_player_flags, $tournament_player_flags, $club_player_flags) = Db::record(get_label('user'), 
+			'SELECT u.id, u.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags' . 
+				' FROM users u' .
+				' JOIN games g ON g.id = ?' . 
+				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = g.event_id' . 
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' . 
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' . 
+				' WHERE u.id = ?', $game_id, $player->id);
 		if (empty($player_name))
 		{
 			$full_player_name = $player_name = $pname;
@@ -112,9 +119,19 @@ try
 	echo '<table class="bordered" width="100%"><tr><td width="1">';
 	if ($player_id > 0)
 	{
-		$user_pic = new Picture(USER_PICTURE);
-		$user_pic->set($player_id, $full_player_name, $player_flags);
-		$user_pic->show(TNAILS_DIR, true);
+		$user_pic =
+			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE))));
+		$user_pic->
+			set($player_id, $event_player_nickname, $event_player_flags, 'e' . $game->data->eventId)->
+			set($player_id, $full_player_name, $tournament_player_flags, 't' . (isset($game->data->tournamentId) ? $game->data->tournamentId : ''))->
+			set($player_id, $full_player_name, $club_player_flags, 'c' . $game->data->clubId)->
+			set($player_id, $full_player_name, $player_flags);
+		echo '<a href="user_info.php?bck=1&id=' . $player_id . '">';
+		$user_pic->show(TNAILS_DIR, false);
+		echo '</a>';
 	}
 	else
 	{

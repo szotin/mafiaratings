@@ -36,13 +36,13 @@ class Page extends EventPageBase
 		if (isset($_REQUEST['langs']))
 		{
 			$langs = (int)$_REQUEST['langs'];
+			$condition = new SQL(' AND (v.lang & ?) <> 0', $langs);
 		}
-		else if ($_profile != NULL)
+		else
 		{
-			$langs = $_profile->user_langs;
+			$condition = new SQL();
 		}
 		
-		$condition = new SQL(' AND (v.lang & ?) <> 0', $langs);
 		if ($this->video_type >= 0)
 		{
 			$condition->add(' AND v.type = ?', $this->video_type);
@@ -51,7 +51,7 @@ class Page extends EventPageBase
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$video_count = 0;
 		$column_count = 0;
-		$can_add = $_profile != NULL && isset($_profile->clubs[$this->event->club_id]);
+		$can_add = is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 		
 		if ($can_add)
 		{
@@ -116,7 +116,7 @@ class Page extends EventPageBase
 			
 			echo '<tr><td><span style="position:relative;">';
 			echo '<a href="video.php?bck=1&id=' . $video_id . '&event_id=' . $this->event->id . '&vtype=' . $this->video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="' . PICTURE_WIDTH . '" title="' . $title . '">';
-			if (!is_valid_lang($this->event->langs))
+			if (!is_valid_lang($this->event->langs) && is_valid_lang($lang))
 			{
 				echo '<img src="images/' . ICONS_DIR . 'lang' . $lang . '.png" title="' . $title . '" width="24" style="position:absolute; margin-left:-28px;">';
 			}

@@ -13,14 +13,14 @@ try
 	{
 		$game_id = (int)$_REQUEST['game_id'];
 		$parent_id = 0;
-		list ($club_id, $event_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, event_id, moderator_id FROM games WHERE id = ?', $game_id);
+		list ($club_id, $event_id, $tournament_id, $owner_id) = Db::record(get_label('game'), 'SELECT club_id, event_id, tournament_id, user_id FROM games WHERE id = ?', $game_id);
 	}
 	else if (isset($_REQUEST['parent_id']))
 	{
 		$parent_id = (int)$_REQUEST['parent_id'];
-		list ($game_id, $club_id, $event_id, $moderator_id, $parent_user_id, $parent_user_name, $parent_user_flags, $parent_message) = 
+		list ($game_id, $club_id, $event_id, $tournament_id, $owner_id, $parent_user_id, $parent_user_name, $parent_user_flags, $parent_message) = 
 			Db::record(get_label('game'), 
-				'SELECT g.id, g.club_id, g.event_id, g.moderator_id, u.id, u.name, u.flags, o.message FROM objections o' .
+				'SELECT g.id, g.club_id, g.event_id, g.tournament_id, g.user_id, u.id, u.name, u.flags, o.message FROM objections o' .
 				' JOIN games g ON g.id = o.game_id' .
 				' JOIN users u ON u.id = o.user_id' .
 				' WHERE o.id = ?', $parent_id);
@@ -33,12 +33,12 @@ try
 	if ($parent_id <= 0)
 	{
 		check_permissions(PERMISSION_USER);
-		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		$can_edit = is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $owner_id, $club_id, $event_id, $tournament_id);
 		dialog_title(get_label('File an objection to the game [0] results.', $game_id));
 	}
 	else
 	{
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $owner_id, $club_id, $event_id, $tournament_id);
 		$can_edit = true;
 		dialog_title(get_label('Respond to the objection [0].', $parent_id));
 		

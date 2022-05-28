@@ -22,12 +22,22 @@ try
 	}
 	$video_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $event_id, $user_id, $game_id, $type, $lang, $time) = Db::record(get_label('video'), 'SELECT v.club_id, v.event_id, v.user_id, g.id, v.type, v.lang, v.video_time FROM videos v LEFT OUTER JOIN games g ON g.video_id = v.id WHERE v.id = ?', $video_id);
+	list ($club_id, $event_id, $tournament_id, $user_id, $game_id, $type, $lang, $time) = Db::record(get_label('video'), 'SELECT v.club_id, v.event_id, v.tournament_id, v.user_id, g.id, v.type, v.lang, v.video_time FROM videos v LEFT OUTER JOIN games g ON g.video_id = v.id WHERE v.id = ?', $video_id);
+	check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+	
 	if (!$_profile->is_club_manager($club_id) && $_profile->user_id != $user_id)
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}
-	$club = $_profile->clubs[$club_id];
+	if (isset($_profile->clubs[$club_id]))
+	{
+		$club = $_profile->clubs[$club_id];
+	}
+	else
+	{
+		$club = new stdClass();
+		list($club->name, $club->langs, $club->club_flags, $club->timezone) = Db::record(get_label('club'), 'SELECT c.name, c.langs, c.flags, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+	}
 	
 	if ($game_id != NULL)
 	{

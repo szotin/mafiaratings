@@ -105,13 +105,18 @@ class Page extends EventPageBase
 			$condition->add(' AND g.is_rating = 0');
 		}
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags' .
+			'SELECT p.user_id, u.name, u.flags, count(*) as cnt,' . 
+			' (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val,' .
+			' c.id, c.name, c.flags, eu.nickname, eu.flags, tu.flags, cu.flags' .
 				' FROM players p' .
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON u.id = p.user_id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN event_users eu ON eu.event_id = ? AND eu.user_id = u.id' .
+				' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = ? AND tu.user_id = u.id' .
+				' LEFT OUTER JOIN club_users cu ON cu.club_id = ? AND cu.user_id = u.id' .
 				' WHERE g.event_id = ? AND g.is_canceled = FALSE AND g.result > 0',
-			$this->event->id, $condition);
+				$this->event->id, $this->event->tournament_id, $this->event->club_id, $this->event->id, $condition);
 		$query->add(' GROUP BY p.user_id');
 		
 		if ($sort & 2)
@@ -181,16 +186,26 @@ class Page extends EventPageBase
 		}
 		echo '</a></td></tr>';
 		
+		$event_user_pic =
+			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			$this->user_pic)));
+
 		$number = 0;
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags) = $row;
+			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags, $user_nickname, $event_user_flags, $tournament_user_flags, $club_user_flags) = $row;
 
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
-			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, true, 50);
+			$event_user_pic->
+				set($id, $user_nickname, $event_user_flags, 'e' . $this->event->id)->
+				set($id, $name, $tournament_user_flags, 't' . $this->event->tournament_id)->
+				set($id, $name, $club_user_flags, 'c' . $this->event->club_id)->
+				set($id, $name, $flags);
+			$event_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
 			$this->club_pic->set($club_id, $club_name, $club_flags);

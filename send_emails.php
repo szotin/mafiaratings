@@ -96,7 +96,7 @@ try
 				' AND u.email <> \'\'' .
 				' AND uc.user_id = u.id' .
 				' AND uc.club_id = ?' .
-				' AND (uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_BANNED | USER_CLUB_FLAG_SUBSCRIBED) . ') = ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED) .
+				' AND (uc.flags & ' . (USER_PERM_PLAYER | USER_CLUB_FLAG_BANNED | USER_CLUB_FLAG_SUBSCRIBED) . ') = ' . (USER_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED) .
 				' AND u.id NOT IN (SELECT user_id FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT . ' AND obj_id = ?)',
 				$mailing_langs, $club_id, $mailing_id);
 		
@@ -134,7 +134,7 @@ try
 				}
 			}
 			
-			$query1 = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang, u.languages FROM users u, user_clubs uc WHERE ', $condition);
+			$query1 = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang, u.languages FROM users u, club_users uc WHERE ', $condition);
 			$query1->add(' ORDER BY u.id LIMIT ' . $emails_remaining);
 			// echo $query1->get_parsed_sql();
 			// echo '</br>';

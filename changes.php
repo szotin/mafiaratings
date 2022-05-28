@@ -19,11 +19,11 @@ class Page extends GeneralPageBase
 		// case CCCF_CLUB:
 // /*			if ($ccc_id > 0)
 			// {
-				// $condition->add(' AND u.id IN (SELECT user_id FROM user_clubs WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND club_id = ?)', $ccc_id);
+				// $condition->add(' AND u.id IN (SELECT user_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND club_id = ?)', $ccc_id);
 			// }
 			// else if ($ccc_id == 0 && $_profile != NULL)
 			// {
-				// $condition->add(' AND u.id IN (SELECT user_id FROM user_clubs WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND club_id IN (SELECT club_id FROM user_clubs WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?))', $_profile->user_id);
+				// $condition->add(' AND u.id IN (SELECT user_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND club_id IN (SELECT club_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?))', $_profile->user_id);
 			// }*/
 			// if ($ccc_id > 0)
 			// {
@@ -31,7 +31,7 @@ class Page extends GeneralPageBase
 			// }
 			// else if ($ccc_id == 0 && $_profile != NULL)
 			// {
-				// $condition->add(' AND u.club_id IN (SELECT club_id FROM user_clubs WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
+				// $condition->add(' AND u.club_id IN (SELECT club_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
 			// }
 			// break;
 		// case CCCF_CITY:
@@ -134,7 +134,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->set_ccc(CCCS_ALL);
 $page->run();
 
 ?>

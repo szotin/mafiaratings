@@ -29,8 +29,21 @@ try
 			'JOIN cities c ON c.id = a.city_id ' . 
 			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' . 
 			'WHERE e.id = ?', $event_id);
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-	$club = $_profile->clubs[$club_id];
+	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
+	if (isset($_profile->clubs[$club_id]))
+	{
+		$club = $_profile->clubs[$club_id];
+	}
+	else
+	{
+		$club = new stdClass();
+		list ($club->country, $club->city, $club->rules_code, $club->name, $club->langs) = 
+			Db::record(get_label('club'), 
+				'SELECT cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', c.rules, c.name, c.langs FROM clubs c ' .
+				'JOIN cities ct ON ct.id = c.city_id ' .
+				'JOIN countries cr ON cr.id = ct.country_id ' .
+				'WHERE c.id = ?', $club_id);
+	}
 	
 	$start = get_datetime($start_time, $timezone);
 	
@@ -38,7 +51,7 @@ try
 	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="13">';
-	start_upload_logo_button();
+	start_upload_logo_button($event_id);
 	echo get_label('Change logo') . '<br>';
 	$event_pic = new Picture(EVENT_PICTURE);
 	$event_pic->set($event_id, $name, $flags);
@@ -51,10 +64,19 @@ try
 	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= ? AND start_time + duration >= ? ORDER BY name', $club_id, $start_time, $start_time);
 	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
 	show_option(0, $tour_id, '');
+	$tournament_found = false;
 	while ($row = $query->next())
 	{
 		list($tid, $tname) = $row;
 		show_option($tid, $tour_id, $tname);
+		if ($tour_id == $tid)
+		{
+			$tournament_found = true;
+		}
+	}
+	if (!$tournament_found)
+	{
+		show_option($tour_id, $tour_id, $tour_name);
 	}
 	echo '</select></td></tr>';
 	
@@ -138,11 +160,11 @@ try
 	echo '<tr><td colspan="2">';
 		
 	echo '<input type="checkbox" id="form-all_mod"';
-	if (($flags & EVENT_FLAG_ALL_MODERATE) != 0)
+	if (($flags & EVENT_FLAG_ALL_CAN_REFEREE) != 0)
 	{
 		echo ' checked';
 	}
-	echo '> '.get_label('everyone can moderate games.');
+	echo '> '.get_label('everyone can referee games.');
 	
 	echo '<br><input type="checkbox" id="form-fun"';
 	if (($flags & EVENT_FLAG_FUN) != 0)
@@ -241,7 +263,7 @@ try
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
-		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
+		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		
 		var params =
@@ -278,12 +300,12 @@ try
 		$("#dlg-ok").button("option", "disabled", strToTimespan($("#form-duration").val()) <= 0);
 	}
 	
-	function uploadLogo(onSuccess)
+	function uploadLogo(eventId, onSuccess)
 	{
 		json.upload('api/ops/event.php', 
 		{
 			op: "change",
-			event_id: <?php echo $event_id; ?>,
+			event_id: eventId,
 			logo: document.getElementById("upload").files[0]
 		}, 
 		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 

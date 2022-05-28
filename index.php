@@ -400,10 +400,16 @@ class Page extends GeneralPageBase
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$this->event_pic = new Picture(EVENT_PICTURE);
 		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', ''));
+		echo '</td></tr></table></p>';
+		
 		$condition = new SQL();
-		$ccc_id = $this->ccc_filter->get_id();
-		$ccc_code = $this->ccc_filter->get_code();
-		$ccc_type = $this->ccc_filter->get_type();
+		$ccc_id = $ccc_filter->get_id();
+		$ccc_code = $ccc_filter->get_code();
+		$ccc_type = $ccc_filter->get_type();
 		switch($ccc_type)
 		{
 		case CCCF_CLUB:
@@ -413,7 +419,7 @@ class Page extends GeneralPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add(' AND c.id IN (SELECT club_id FROM user_clubs WHERE user_id = ?)', $_profile->user_id);
+				$condition->add(' AND c.id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $_profile->user_id);
 			}
 			break;
 		case CCCF_CITY:
@@ -513,11 +519,11 @@ class Page extends GeneralPageBase
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
 			{
-				$query->add(' AND u.id IN (SELECT user_id FROM user_clubs WHERE club_id = ?)', $ccc_id);
+				$query->add(' AND u.id IN (SELECT user_id FROM club_users WHERE club_id = ?)', $ccc_id);
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$query->add(' AND u.id IN (SELECT user_id FROM user_clubs WHERE club_id IN (' . $_profile->get_comma_sep_clubs() . '))');
+				$query->add(' AND u.id IN (SELECT user_id FROM club_users WHERE club_id IN (' . $_profile->get_comma_sep_clubs() . '))');
 			}
 			break;
 		case CCCF_CITY:

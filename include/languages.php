@@ -415,11 +415,17 @@ function show_language_picture($lang, $dir, $width = 0, $height = 0)
 	echo '>';
 }
 
-function show_lang_select($name, $lang, $lang_mask = LANG_ALL)
+function show_lang_select($name, $lang, $lang_mask = LANG_ALL, $on_change = NULL)
 {
 	if ($lang_mask & ($lang_mask - 1))
 	{
-		echo '<select name="' . $name . '" id="' . $name . '">';
+		echo '<select name="' . $name . '" id="' . $name . '"';
+		if ($on_change != NULL)
+		{
+			echo ' onChange="' . $on_change . '"';
+		}
+		
+		echo '>';
 			
 		$l = LANG_NO;
 		while (($l = get_next_lang($l)) != LANG_NO)

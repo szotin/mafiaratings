@@ -3037,7 +3037,7 @@ class Game
 		{
 			if ($new_user_id <= 0)
 			{
-				throw new Exc(get_label('Unable to delete user from the game [0] because they moderated it. Try to merge them with someone instead.', $data->id));
+				throw new Exc(get_label('Unable to delete user from the game [0] because they refereed it. Try to merge them with someone instead.', $data->id));
 			}
 			$this->moderator->id = $new_user_id;
 		}
@@ -3046,7 +3046,7 @@ class Game
 			$player = $data->players[$i];
 			if ($player->id == $user_id)
 			{
-				if ($new_user_id > 0)
+				if ($new_user_id != 0)
 				{
 					$player->id = $new_user_id;
 				}
@@ -3069,11 +3069,22 @@ class Game
 		global $_profile;
 		
 		$data = $this->data;
-		$club = $_profile->clubs[$data->clubId];
-		$timezone = $club->timezone;
+		if (isset($_profile->clubs[$data->clubId]))
+		{
+			$club = $_profile->clubs[$data->clubId];
+			$timezone = $club->timezone;
+			$club_rules = $club->rules_code;
+			$club_scoring_id = $club->scoring_id;
+			$club_langs = $club->langs;
+		}
+		else
+		{
+			list($timezone, $club_rules, $club_scoring_id, $club_langs) = Db::record(get_label('club'), 'SELECT ct.timezone, c.rules, c.scoring_id, c.langs FROM clubs c JOIN cities ct ON c.city_id = ct.id WHERE c.id = ?', $data->clubId);
+		}
+		
 		if (!isset($data->rules))
 		{
-			$data->rules = $club->rules_code;
+			$data->rules = $club_rules;
 		}
 		
 		$tournament_id = NULL;
@@ -3107,7 +3118,7 @@ class Game
 				case 0:
 					// create event
 					list($address_id, $address_name, $timezone, $address_count) = Db::record(get_label('address'), 'SELECT a.id, a.name, c.timezone, (SELECT count(*) FROM events e WHERE e.address_id = a.id) cnt FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY cnt DESC, a.id DESC LIMIT 1', $data->clubId);
-					list($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $club->scoring_id);
+					list($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $club_scoring_id);
 					
 					$event_name = get_label('Regular Event');
 					$scoring_options = '{}';
@@ -3128,8 +3139,8 @@ class Game
 						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options) ' .
 						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$name, '', $address_id, $data->clubId, $event_start, 
-						'', $event_duration, EVENT_FLAG_ALL_MODERATE, $club->langs, $data->rules, 
-						$club->scoring_id, $scoring_version, $scoring_options);
+						'', $event_duration, EVENT_FLAG_ALL_CAN_REFEREE, $club_langs, $data->rules, 
+						$club_scoring_id, $scoring_version, $scoring_options);
 					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 				
 					$log_details = new stdClass();
@@ -3138,10 +3149,10 @@ class Game
 					$log_details->address_id = $address_id;
 					$log_details->start = format_date('d/m/y H:i', $event_start, $timezone);
 					$log_details->duration = $event_duration;
-					$log_details->flags = EVENT_FLAG_ALL_MODERATE;
-					$log_details->langs = $club->langs;
+					$log_details->flags = EVENT_FLAG_ALL_CAN_REFEREE;
+					$log_details->langs = $club_langs;
 					$log_details->rules_code = $data->rules;
-					$log_details->scoring_id = $club->scoring_id;
+					$log_details->scoring_id = $club_scoring_id;
 					$log_details->scoring_version = $scoring_version;
 					db_log(LOG_OBJECT_EVENT, 'created', $log_details, $event_id, $data->clubId);
 					break;

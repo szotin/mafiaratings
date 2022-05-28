@@ -13,8 +13,10 @@ define('FLAG_FILTER_TOURNAMENT', 0x0001);
 define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
 define('FLAG_FILTER_RATING', 0x0004);
 define('FLAG_FILTER_NO_RATING', 0x0008);
+define('FLAG_FILTER_CANCELED', 0x0010);
+define('FLAG_FILTER_NO_CANCELED', 0x0020);
 
-define('FLAG_FILTER_DEFAULT', 0);
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 
 class Page extends GeneralPageBase
 {
@@ -30,7 +32,7 @@ class Page extends GeneralPageBase
 		
 		parent::prepare();
 		
-		$this->ccc_title = get_label('Filter moderators by club, city, or country.');
+		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		
 		$this->filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
@@ -59,6 +61,15 @@ class Page extends GeneralPageBase
 	protected function show_body()
 	{
 		global $_page, $_profile;
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('referees')));
+		echo ' ';
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->filter);
+		echo '</td><td align="right"><img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
+		echo '</td></tr></table></p>';
 		
 		$condition = new SQL();
 		$ccc_id = $this->ccc_filter->get_id();
@@ -96,6 +107,14 @@ class Page extends GeneralPageBase
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
 			$condition->add(' AND g.is_rating = 0');
+		}
+		if ($this->filter & FLAG_FILTER_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled <> 0');
+		}
+		if ($this->filter & FLAG_FILTER_NO_CANCELED)
+		{
+			$condition->add(' AND g.is_canceled = 0');
 		}
 		
 		if ($this->user_id > 0)
@@ -137,7 +156,7 @@ class Page extends GeneralPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
 		echo '<td colspan="3">'.get_label('User name') . '</td>';
-		echo '<td width="60" align="center">'.get_label('Games moderated').'</td>';
+		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
 		echo '<td width="100" align="center">'.get_label('Civil wins').'</td>';
 		echo '<td width="100" align="center">'.get_label('Mafia wins').'</td>';
 		echo '</tr>';
@@ -226,34 +245,13 @@ class Page extends GeneralPageBase
 		}
 		else
 		{
-			$message = get_label('[0] moderated no games.', $this->user_name);
+			$message = get_label('[0] refereed no games.', $this->user_name);
 		}
 		$this->errorMessage($message);
-	}
-	
-	protected function show_filter_fields()
-	{
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter, 'filter');
-	}
-	
-	protected function show_search_fields()
-	{
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
-	}
-	
-	protected function get_filter_js()
-	{
-		$result = '+ "&filter=" + checkboxFilterFlags()';
-		if ($this->user_id > 0)
-		{
-			$result .= ' + "&page=-' . $this->user_id . '"';
-		}
-		return $result;
 	}
 }
 
 $page = new Page();
-$page->run(get_label('Moderators.'));
+$page->run(get_label('Referees'));
 
 ?>

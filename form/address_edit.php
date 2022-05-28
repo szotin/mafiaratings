@@ -27,17 +27,13 @@ try
 				' JOIN countries o ON o.id = i.country_id' .
 				' WHERE a.id = ?',
 			$id);
+	check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER, $club_id);
 			
-	if ($_profile == NULL || !$_profile->is_club_manager($club_id))
-	{
-		throw new FatalExc(get_label('No permissions'));
-	}
-	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="120">' . get_label('Address name') . ':</td><td><input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="5">';
-	start_upload_logo_button();
+	start_upload_logo_button($id);
 	echo get_label('Change logo') . '<br>';
 	$address_pic = new Picture(ADDRESS_PICTURE);
 	$address_pic->set($id, $name, $flags);
@@ -75,12 +71,12 @@ try
 		json.post("api/ops/address.php", params, onSuccess);
 	}
 	
-	function uploadLogo(onSuccess)
+	function uploadLogo(addressId, onSuccess)
 	{
 		json.upload('api/ops/address.php', 
 		{
 			op: "change",
-			address_id: <?php echo $id; ?>,
+			address_id: addressId,
 			logo: document.getElementById("upload").files[0]
 		}, 
 		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>, 

@@ -1,0 +1,8 @@
+{
+  "gamestats": {
+    "sheriffChecks" : "Проверки шерифа: ",
+    "donChecks": "Проверки дона: ",
+    "nominees": "Выставления: ",
+    "legacy": "Лучший ход:"
+  }
+}

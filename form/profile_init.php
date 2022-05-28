@@ -24,7 +24,7 @@ try
 	echo '</td>';
 	
 	echo '<td width="' . ICON_WIDTH . '" align="center" valign="top" rowspan="8">';
-	start_upload_logo_button();
+	start_upload_logo_button($_profile->user_id);
 	echo get_label('Change picture') . '<br>';
 	$user_pic = new Picture(USER_PICTURE);
 	$user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
@@ -43,14 +43,14 @@ try
 	echo '</td></tr>';
 	
 	echo '<tr><td width="120" valign="top">' . get_label('Gender') . ':</td><td>';
-	echo '<input type="radio" name="form-is_male" id="form-male" value="1" onClick="maleClick(true)"';
+	echo '<input type="radio" name="form-is_male" id="form-male" value="1"';
 	if ($_profile->user_flags & USER_FLAG_MALE)
 	{
 		echo ' checked';
 	}
 	echo '/>'.get_label('male').'<br>';
 		
-	echo '<input type="radio" name="form-is_male" id="form-female" value="0" onClick="maleClick(false)"';
+	echo '<input type="radio" name="form-is_male" id="form-female" value="0"';
 	if (($_profile->user_flags & USER_FLAG_MALE) == 0)
 	{
 		echo ' checked';
@@ -104,25 +104,6 @@ try
 		}
 	}
 	
-	function maleClick(male)
-	{
-		var id = "<?php echo $_profile->user_id; ?>";
-		var mIcon = "images/icons/male.png";
-		var fIcon = "images/icons/female.png";
-		var src = $("#" + id).attr("src");
-		if (male)
-		{
-			if (src == fIcon)
-			{
-				$("img").each(function() { if ($(this).attr('code') == id) $(this).attr("src", mIcon); });
-			}
-		}
-		else if (src == mIcon)
-		{
-			$("img").each(function() { if ($(this).attr('code') == id) $(this).attr("src", fIcon); });
-		}
-	}
-	
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
@@ -140,7 +121,7 @@ try
 			, male: isMale
 			, club_id: clubId
 		};
-		json.post("api/ops/account.php", params, onSuccess);
+		json.post("api/ops/user.php", params, onSuccess);
 	}
 	
 	$("#form-club").change(function() { clubSetManually = true; });
@@ -150,9 +131,9 @@ try
 	$("#en" ).change(updateClub);
 	updateClub();
 	
-	function uploadLogo(onSuccess)
+	function uploadLogo(userId, onSuccess)
 	{
-		json.upload('api/ops/account.php', 
+		json.upload('api/ops/user.php', 
 		{
 			op: "edit",
 			picture: document.getElementById("upload").files[0]

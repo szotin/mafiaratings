@@ -77,8 +77,11 @@ class Page extends ClubPageBase
 		if ($this->role == POINTS_ALL)
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.rating as rating, u.games as games, u.games_won as won, u.flags, c.id, c.name, c.flags FROM users u' . 
-				' JOIN clubs c ON u.club_id = c.id', $condition);
+				'SELECT u.id, u.name, u.rating as rating, u.games as games, u.games_won as won, u.flags, c.id, c.name, c.flags, cu.flags' .
+					' FROM users u' . 
+					' JOIN clubs c ON u.club_id = c.id' .
+					' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = u.id',
+					$condition);
 			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
 			if ($this->user_id > 0)
 			{
@@ -104,9 +107,11 @@ class Page extends ClubPageBase
 		{
 			$condition->add(get_roles_condition($this->role));
 			$query = new DbQuery(
-				'SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags FROM users u' . 
-				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' JOIN players p ON p.user_id = u.id', $condition);
+				'SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags, cu.flags' .
+					' FROM users u' . 
+					' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+					' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = u.id' .
+					' JOIN players p ON p.user_id = u.id', $condition);
 			$query->add(' GROUP BY u.id');
 			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id', $condition);
 			if ($this->user_id > 0)
@@ -130,6 +135,8 @@ class Page extends ClubPageBase
 		}
 		$query->add(' ORDER BY rating DESC, won DESC, games DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
+		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+			
 		list ($count) = Db::record(get_label('rating'), $count_query);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
@@ -147,7 +154,7 @@ class Page extends ClubPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $row;
+			list ($id, $name, $rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
 
 			if ($id == $this->user_id)
 			{
@@ -162,8 +169,8 @@ class Page extends ClubPageBase
 
 			echo '<td align="center" class="' . $highlight . '">' . $number . '</td>';
 			echo '<td width="60" align="center">';
-			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, true, 50);
+			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
+			$club_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td align="center" class="' . $highlight . '">' . format_rating($rating) . '</td>';
@@ -181,17 +188,6 @@ class Page extends ClubPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
-	}
-	
-	protected function show_filter_fields()
-	{
-		show_roles_select($this->role, 'filter()', get_label('Use only the rating earned in a specific role.'));
-	}
-	
-	protected function show_search_fields()
-	{
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
 	}
 }
 

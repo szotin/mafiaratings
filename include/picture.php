@@ -9,17 +9,21 @@ define('ADDRESS_PICTURE', 3);
 define('USER_PICTURE', 4);
 define('LEAGUE_PICTURE', 5);
 define('ALBUM_PICTURE', 6);
+define('USER_CLUB_PICTURE', 7);
+define('USER_EVENT_PICTURE', 8);
+define('USER_TOURNAMENT_PICTURE', 9);
 
 class Picture
 {
 	private $type;
-	private $mask;
+	public $mask;
 	private $mask_offset;
 	private $pic_dir;
 	private $def_filename;
 	private $code;
 	
 	private $id;
+	private $secondary_id;
 	private $name;
 	private $flags;
 	private $alt;
@@ -61,7 +65,7 @@ class Picture
 				$this->mask = USER_ICON_MASK;
 				$this->mask_offset = USER_ICON_MASK_OFFSET;
 				$this->pic_dir = USER_PICS_DIR;
-				$this->def_filename = 'male.png';
+				$this->def_filename = 'user.png';
 				$this->code = USER_PIC_CODE;
 				break;
 			case LEAGUE_PICTURE:
@@ -78,7 +82,27 @@ class Picture
 				$this->def_filename = 'album.png';
 				$this->code = ALBUM_PIC_CODE;
 				break;
-				
+			case USER_CLUB_PICTURE:
+				$this->mask = USER_CLUB_ICON_MASK;
+				$this->mask_offset = USER_CLUB_ICON_MASK_OFFSET;
+				$this->pic_dir = USER_PICS_DIR;
+				$this->def_filename = 'user.png';
+				$this->code = USER_CLUB_PIC_CODE;
+				break;
+			case USER_EVENT_PICTURE:
+				$this->mask = USER_EVENT_ICON_MASK;
+				$this->mask_offset = USER_EVENT_ICON_MASK_OFFSET;
+				$this->pic_dir = USER_PICS_DIR;
+				$this->def_filename = 'user.png';
+				$this->code = USER_EVENT_PIC_CODE;
+				break;
+			case USER_TOURNAMENT_PICTURE:
+				$this->mask = USER_TOURNAMENT_ICON_MASK;
+				$this->mask_offset = USER_TOURNAMENT_ICON_MASK_OFFSET;
+				$this->pic_dir = USER_PICS_DIR;
+				$this->def_filename = 'user.png';
+				$this->code = USER_TOURNAMENT_PIC_CODE;
+				break;
 			default:
 				$this->mask = 0;
 				$this->mask_offset = 0;
@@ -88,51 +112,60 @@ class Picture
 		}
 		
 		$this->id = NULL;
+		$this->secondary_id = NULL;
 		$this->name = NULL;
 		$this->flags = 0;
 		$this->alt = $alt;
 	}
 	
-	public function set($id, $name, $flags)
+	public function set($id, $name, $flags, $secondary_id = NULL)
 	{
 		$this->id = $id;
+		$this->secondary_id = $secondary_id;
 		$this->name = $name;
-		$this->flags = $flags;
+		$this->flags = (int)$flags;
 		return $this->alt;
 	}
 	
 	public function reset()
 	{
 		$this->id = NULL;
+		$this->secondary_id = NULL;
 		$this->name = NULL;
 		$this->flags = 0;
 		return $this->alt;
 	}
 	
-	public function hasImage()
+	public function has_image($own_only = false)
 	{
 		if (!is_null($this->id) && $this->id > 0 && ($this->flags & $this->mask) != 0)
 		{
 			return true;
 		}
-		if (!is_null($this->alt))
+		if (!$own_only &&!is_null($this->alt))
 		{
-			return $this->alt->hasImage();
+			return $this->alt->has_image();
 		}
 		return false;
 	}
 	
 	private function _url($dir)
 	{
+		$url = NULL;
 		if (!is_null($this->id) && $this->id > 0 && ($this->flags & $this->mask) != 0)
 		{
-			return $this->pic_dir . $dir . $this->id . '.png?' . (($this->flags & $this->mask) >> $this->mask_offset);
+			$url = $this->pic_dir . $dir . $this->id;
+			if (!is_null($this->secondary_id))
+			{
+				$url .= '-' . $this->secondary_id;
+			}
+			$url .= '.png?' . (($this->flags & $this->mask) >> $this->mask_offset);
 		}
 		else if (!is_null($this->alt))
 		{
-			return $this->alt->_url($dir);
+			$url = $this->alt->_url($dir);
 		}
-		return NULL;
+		return $url;
 	}
 	
 	public function url($dir)
@@ -145,10 +178,6 @@ class Picture
 		$url = $this->_url($dir);
 		if (is_null($url))
 		{
-			if ($this->type == USER_PICTURE && ($this->flags & USER_FLAG_MALE) == 0)
-			{
-				return 'images/' . $dir . 'female.png';
-			}
 			return 'images/' . $dir . $this->def_filename;
 		}
 		return $url;
@@ -156,11 +185,19 @@ class Picture
 	
 	public function title()
 	{
+		if (isset($this->custom_title))
+		{
+			return $this->custom_title;
+		}
 		for ($alt = $this->alt; !is_null($alt); $alt = $alt->alt)
 		{
 			if (!is_null($alt->id) && $alt->id >= 0)
 			{
-				return $alt->name . ': ' . $this->name;
+				if (is_null($this->name) || $this->name == $alt->name)
+				{
+					return $alt->name;
+				}
+				return $this->name . ': ' . $alt->name;
 			}
 		}
 		return $this->name;
@@ -179,11 +216,16 @@ class Picture
 			case ADDRESS_PICTURE:
 				return 'address_info.php?bck=1&id=' . $this->id;
 			case USER_PICTURE:
+			case USER_CLUB_PICTURE:
 				return 'user_info.php?bck=1&id=' . $this->id;
 			case LEAGUE_PICTURE:
 				return 'league_main.php?bck=1&id=' . $this->id;
 			case ALBUM_PICTURE:
 				return 'album_photos.php?bck=1&id=' . $this->id;
+			case USER_EVENT_PICTURE:
+				return 'event_player_games.php?bck=1&user_id=' . $this->id . '&id=' . substr($this->secondary_id, 1);
+			case USER_TOURNAMENT_PICTURE:
+				return 'tournament_player_games.php?bck=1&user_id=' . $this->id . '&id=' . substr($this->secondary_id, 1);
 		}
 		return '';
 	}
@@ -232,7 +274,9 @@ class Picture
 		
 		$title = $this->title();
 		$origin = $this->pic_dir . $dir . $this->id . '.png';
-		echo '<span style="position:relative;"><img code="' . $this->code . $this->id . '" origin="' . $this->pic_dir . $dir . $this->id . '.png" src="';
+		$code = $this->code . $this->id . (is_null($this->secondary_id) ? '' : $this->secondary_id);
+		$origin = $this->pic_dir . $dir . $this->id . (is_null($this->secondary_id) ? '' : '-' . $this->secondary_id);
+		echo '<span style="position:relative;"><img code="' . $code . '" origin="' . $origin . '.png" src="';
 		echo $this->url($dir);
 		echo '" title="' . $title . '" border="0"';
 

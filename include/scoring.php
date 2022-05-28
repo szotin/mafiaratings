@@ -4,7 +4,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/constants.php';
 
-define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIGM)
+define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIIM)
 define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
 
 define('SCORING_ROLE_FLAGS_CIV', 1);
@@ -46,10 +46,11 @@ define('SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT', 0x80000); // 524288: Matter 19
 define('SCORING_FLAG_BLACK_CHECKS', 0x100000); // 1048576: Matter 20 - Sheriff did three black checks in a row
 define('SCORING_FLAG_RED_CHECKS', 0x200000); // 2097152: Matter 21 - All sheriff checks are red
 define('SCORING_FLAG_EXTRA_POINTS', 0x400000); // 4194304: Matter 22 - Player has manually assigned extra points
+define('SCORING_FLAG_FIRST_LEGACY_1', 0x800000); // 8388608: Matter 23 - Guessed 1 mafia after being killed first night
 
 define('SCORING_STAT_FLAG_GAME_DIFFICULTY', 0x1);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING', 0x2);
-define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM', 0x4);
+define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIIM', 0x4);
 
 define('SCORING_SORTING_MAIN_POINTS', 'm');
 define('SCORING_SORTING_LEGACY_POINTS', 'g');
@@ -87,6 +88,7 @@ define('SCORING_LOD_PER_POLICY', 2); // scoring returns points per policy for ea
 define('SCORING_LOD_HISTORY', 4); // scoring returns player history in $player->history field. It contains an array of points with timestamp and scores according to SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
 define('SCORING_LOD_PER_GAME', 8); // scoring returns scores for every game a player played in $player->games field. It contains an array of games with timestamp, game_id, and scores according to SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
 define('SCORING_LOD_NO_SORTING', 16); // When set sorting returns associative array player_id => player. When not set scoring returns array of players sorted by total score.
+define('SCORING_LOD_TEAMS', 32); // Outputs team scores instead of player scores. Works for team tournaments only.
 
 define('SCORING_OPTION_NO_NIGHT_KILLS', 1); // Do not use policies dependent on the night kills
 define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent on the game difficulty
@@ -434,11 +436,11 @@ function get_scoring_stat_flags($scoring, $options)
 					$stat_flags |= SCORING_STAT_FLAG_FIRST_NIGHT_KILLING;
 				}
 			}
-			else if (isset($policy->figm_first_night_score))
+			else if (isset($policy->fiim_first_night_score))
 			{
 				if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
 				{
-					$stat_flags |= SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIGM;
+					$stat_flags |= SCORING_STAT_FLAG_FIRST_NIGHT_KILLING_FIIM;
 				}
 			}
 		}
@@ -618,14 +620,14 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 					}
 				}
 			}
-			else if (isset($policy->figm_first_night_score))
+			else if (isset($policy->fiim_first_night_score))
 			{
 				if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
 				{
-					$points = round($games_count * $policy->figm_first_night_score);
+					$points = round($games_count * $policy->fiim_first_night_score);
 					if ($points != 0)
 					{
-						$points = max(min($killed_first_count * $policy->figm_first_night_score / $points, $policy->figm_first_night_score), 0);
+						$points = max(min($killed_first_count * $policy->fiim_first_night_score / $points, $policy->fiim_first_night_score), 0);
 					}
 				}
 			}
@@ -938,7 +940,21 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 	}
 	
 	// Calculate first night kill rates and games count per player
-	$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $event_id, $condition);
+	$query = new DbQuery(
+		'SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id)' .
+		', SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0))' .
+		', SUM(p.won)' .
+		', SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))' .
+		', eu.nickname, eu.flags, tu.flags, cu.flags' .
+			' FROM players p' .
+			' JOIN games g ON g.id = p.game_id' .
+			' JOIN users u ON u.id = p.user_id' .
+			' JOIN events e ON e.id = g.event_id' .
+			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+			' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
+			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
+			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
+			' WHERE g.event_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $event_id, $condition);
     $query->add(' GROUP BY u.id');
 	while ($row = $query->next())
 	{
@@ -954,6 +970,10 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 		$player->killed_first_count = (int)$row[8];
 		$player->wins = (int)$row[9];
 		$player->special_role_wins = (int)$row[10];
+		$player->nickname = $row[11];
+		$player->event_user_flags = (int)$row[12];
+		$player->tournament_user_flags = (int)$row[13];
+		$player->club_user_flags = (int)$row[14];
 
         init_player_score($player, $scoring, $lod_flags);
         $players[$player->id] = $player;
@@ -1195,6 +1215,68 @@ function set_player_normalization($player, $max_games_played, $max_rounds_played
 	}
 }
 
+function team_add_field($team, $player, $field_name)
+{
+	if (isset($player->$field_name))
+	{
+		if (isset($team->$field_name))
+		{
+			$team->$field_name += $player->$field_name;
+		}
+		else
+		{
+			$team->$field_name = $player->$field_name;
+		}
+	}
+}
+
+function team_max_field($team, $player, $field_name)
+{
+	if (isset($player->$field_name))
+	{
+		if (isset($team->$field_name))
+		{
+			$team->$field_name = max($team->$field_name, $player->$field_name);
+		}
+		else
+		{
+			$team->$field_name = $player->$field_name;
+		}
+	}
+}
+
+function team_set_field($team, $player, $field_name)
+{
+	if (isset($player->$field_name))
+	{
+		$team->$field_name = $player->$field_name;
+	}
+}
+
+function team_add_player($team, $player)
+{
+	$team->players[] = $player;
+	team_add_field($team, $player, 'games_count');
+	team_max_field($team, $player, 'events_count');
+	team_add_field($team, $player, 'killed_first_count');
+	team_add_field($team, $player, 'wins');
+	team_add_field($team, $player, 'special_role_wins');
+	
+	team_add_field($team, $player, 'points');
+	team_add_field($team, $player, 'main_points');
+	team_add_field($team, $player, 'extra_points');
+	team_add_field($team, $player, 'legacy_points');
+	team_add_field($team, $player, 'penalty_points');
+	team_add_field($team, $player, 'night1_points');
+	
+    team_add_field($team, $player, 'raw_points');
+    team_add_field($team, $player, 'raw_main_points');
+    team_add_field($team, $player, 'raw_extra_points');
+    team_add_field($team, $player, 'raw_legacy_points');
+    team_add_field($team, $player, 'raw_penalty_points');
+    team_add_field($team, $player, 'raw_night1_points');
+}
+
 function tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options)
 {
 	$event_scorings = NULL;
@@ -1217,12 +1299,23 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			list($uid, $games_played, $rounds_played) = $row;
 			$max_games_played = max($max_games_played, $games_played);
 			$max_rounds_played = max($max_rounds_played, $rounds_played);
-			
 		}
 	}
 	
     $players = array();
-	$query = new DbQuery('SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id), COUNT(DISTINCT g.event_id), SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)) FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $condition);
+	$query = new DbQuery(
+		'SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags,' . 
+		' COUNT(g.id), COUNT(DISTINCT g.event_id),' . 
+		' SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0)),' . 
+		' SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)),' . 
+		' tu.flags, cu.flags' .
+			' FROM players p' . 
+			' JOIN games g ON g.id = p.game_id' . 
+			' JOIN users u ON u.id = p.user_id' . 
+			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
+			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
+			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
+			' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $condition);
 	$query->add(' GROUP BY u.id');
 	while ($row = $query->next())
 	{
@@ -1240,6 +1333,8 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$player->wins = (int)$row[10];
 		$player->special_role_wins = (int)$row[11];
 		$player->normalizer = $normalizer;
+		$player->tournament_user_flags = (int)$row[12];
+		$player->club_user_flags = (int)$row[13];
 		
 		$max_games_played = max($max_games_played, $player->games_count);
 		$max_rounds_played = max($max_rounds_played, $player->events_count);
@@ -1454,28 +1549,70 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			$player->points += $points;
 		}
 	}
-    
-    // Prepare and sort scores
-    if ($lod_flags & SCORING_LOD_NO_SORTING)
-    {
+	
+	// Normalize scores
+	foreach ($players as $user_id => $player)
+	{
+		set_player_normalization($player, $max_games_played, $max_rounds_played);
+	}
+	
+	if (($tournament_flags & TOURNAMENT_FLAG_TEAM) != 0 && ($lod_flags & SCORING_LOD_TEAMS) != 0)
+	{
+		// Prepare teams
+		$scores = array();
+		$query = new DbQuery('SELECT u.user_id, u.team_id, t.name FROM tournament_users u JOIN tournament_teams t ON t.id = u.team_id WHERE u.tournament_id = ?', $tournament_id);
+		while ($row = $query->next())
+		{
+			list($user_id, $team_id, $team_name) = $row;
+			if (!isset($players[$user_id]))
+			{
+				continue;
+			}
+			
+			if (isset($scores[$team_id]))
+			{
+				$team = $scores[$team_id];
+			}
+			else
+			{
+				$scores[$team_id] = $team = new stdClass();
+				$team->id = $team_id;
+				$team->name = $team_name;
+				$team->scoring = $players[$user_id]->scoring;
+				$team->players = array();
+			}
+			team_add_player($team, $players[$user_id]);
+		}
+		
+		// Sort scores
+		if ($lod_flags & SCORING_LOD_NO_SORTING)
+		{
+			return $scores;
+		}
+		
+		foreach ($scores as $team)
+		{
+			usort($team->players, 'compare_scores');
+		}
+	}
+    else
+	{
+		// Prepare and sort scores
+		if ($lod_flags & SCORING_LOD_NO_SORTING)
+		{
+			return $players;
+		}
+		
+		$scores = array();
 		foreach ($players as $user_id => $player)
 		{
-			set_player_normalization($player, $max_games_played, $max_rounds_played);
+			if ($player->games_count > 0)
+			{
+				$scores[] = $player;
+			}
 		}
-        return $players;
     }
-    
-    $scores = array();
-    foreach ($players as $user_id => $player)
-    {
-        if ($player->games_count > 0)
-        {
-			set_player_normalization($player, $max_games_played, $max_rounds_played);
-            $scores[] = $player;
-        }
-    }
-    usort($scores, 'compare_scores');
-    
+	usort($scores, 'compare_scores');
     return $scores;
 }
     
@@ -1600,7 +1737,10 @@ function get_scoring_matter_label($policy, $include_roles = false)
 				$l = get_label('the first three checks of the sheriff being red');
 				break;
 			case SCORING_FLAG_EXTRA_POINTS:
-				$l = get_label('actions in the game rated by the moderator');
+				$l = get_label('actions in the game rated by the referee');
+				break;
+			case SCORING_FLAG_FIRST_LEGACY_1:
+				$l = get_label('guessing [0] mafia (after being killed the first night)', 1);
 				break;
 		}
 		if ($delim == NULL)

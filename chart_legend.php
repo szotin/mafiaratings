@@ -45,11 +45,49 @@ try
 	
 	$player_array = chart_list_to_array($player_list, $chart_count);
 	$player_list = chart_array_to_list($player_array, 0);
+	$link = 'competition.php?user_id=';
 	
 	$players = array_fill(0, $chart_count, NULL);
 	if (!empty($player_list))
 	{
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, c.id, c.name, c.flags FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')');
+		if (isset($_REQUEST['event_id']))
+		{
+			$query = new DbQuery(
+				'SELECT u.id, u.name, u.flags, e.id, eu.nickname, eu.flags, e.tournament_id, tu.flags, e.club_id, cu.flags' . 
+				' FROM users u' . 
+				' JOIN events e ON e.id = ?' .
+				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
+				' WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')', $_REQUEST['event_id']);
+		}
+		else if (isset($_REQUEST['tournament_id']))
+		{
+			$query = new DbQuery(
+				'SELECT u.id, u.name, u.flags, NULL, NULL, NULL, t.id, tu.flags, t.club_id, cu.flags' . 
+				' FROM users u' . 
+				' JOIN tournaments t ON t.id = ?' .
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = t.id' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = t.club_id' .
+				' WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')', $_REQUEST['tournament_id']);
+		}
+		else if (isset($_REQUEST['club_id']))
+		{
+			$query = new DbQuery(
+				'SELECT u.id, u.name, u.flags, NULL, NULL, NULL, NULL, NULL, cu.club_id, cu.flags' . 
+				' FROM users u' . 
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+				' WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')', $_REQUEST['club_id']);
+			$link = 'club_competition.php?id=' . $_REQUEST['club_id'] . '&user_id=';
+		}
+		else
+		{
+			$query = new DbQuery(
+				'SELECT u.id, u.name, u.flags, NULL, NULL, NULL, NULL, NULL, NULL, NULL' . 
+				' FROM users u' . 
+				' WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')');
+		}
+		
 		$player_num = 0;
 		while (($row = $query->next()) && $player_num < $chart_count)
 		{
@@ -63,8 +101,12 @@ try
 		}
 	}
 	
-	$user_pic = new Picture(USER_PICTURE);
-	$club_pic = new Picture(CLUB_PICTURE);
+	$user_pic =
+		new Picture(USER_EVENT_PICTURE, 
+		new Picture(USER_TOURNAMENT_PICTURE,
+		new Picture(USER_CLUB_PICTURE,
+		new Picture(USER_PICTURE))));
+		
 	echo '<table class="bordered" width="100%"><tr align="center">';
 	$count = count($players);
 	$percentage = 100 / $count;
@@ -73,7 +115,7 @@ try
 		$player = $players[$i];
 		if ($player != NULL)
 		{
-			list($user_id, $user_name, $user_flags, $club_id, $club_name, $club_flags) = $player;
+			list($user_id, $user_name, $user_flags, $event_id, $event_user_nickname, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $player;
 			
 			if ($user_id != $main_player)
 			{
@@ -91,12 +133,17 @@ try
 			}
 			
 			echo '<td width="' . $percentage . '%"><table class="transp" width="100%"><tr><td width="50">' . $a_open . '<img src="images/chart' . ($i + 1) . '.png">' . $a_close . '</td>';
-			echo '<td width="64">' . $a_open . $user_name . $a_close . '</td><td><a href="user_competition.php?id=' . $user_id . '">';
-			$user_pic->set($user_id, $user_name, $user_flags);
-			$user_pic->show(ICONS_DIR, false, 32);
-			echo '</a>';
-			$club_pic->set($club_id, $club_name, $club_flags);
-			$club_pic->show(ICONS_DIR, true, 32);
+			echo '<td>' . $a_open . $user_name . $a_close . '</td><td width="42">';
+			// in the future implement links as navigation between competition charts
+			// I started doing it, but have no time at the moment. Check the $link variable.
+			// echo '<a href="' . $link . $user_id . '">';
+			$user_pic->
+				set($user_id, $event_user_nickname, $event_user_flags, 'e' . $event_id)->
+				set($user_id, $user_name, $tournament_user_flags, 't' . $tournament_id)->
+				set($user_id, $user_name, $club_user_flags, 'c' . $club_id)->
+				set($user_id, $user_name, $user_flags);
+			$user_pic->show(ICONS_DIR, false, 42);
+//			echo '</a></td>';
 			echo '</td>';
 		}
 		else

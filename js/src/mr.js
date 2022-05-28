@@ -33,11 +33,6 @@ var mr = new function()
 		dlg.form("form/password_reset.php", refr, 400);
 	}
 
-	this.editAccount = function()
-	{
-		dlg.form("form/account_edit.php", refr, 600);
-	}
-	
 	//--------------------------------------------------------------------------------------
 	// administration
 	//--------------------------------------------------------------------------------------
@@ -352,14 +347,14 @@ var mr = new function()
 
 	this.joinClub = function(id)
 	{
-		json.post("api/ops/account.php", { op: 'join_club', club_id: id }, refr);
+		json.post("api/ops/user.php", { op: 'join_club', club_id: id }, refr);
 	}
 
 	this.quitClub = function(id, confirmMessage)
 	{
 		function proceed()
 		{
-			json.post("api/ops/account.php", { op: 'quit_club', club_id: id }, refr);
+			json.post("api/ops/user.php", { op: 'quit_club', club_id: id }, refr);
 		}
 		
 		if (typeof confirmMessage == "string")
@@ -386,7 +381,19 @@ var mr = new function()
 	{
 		dlg.form("form/club_decline.php?id=" + id, refr);
 	}
+	
+	this.addClubMember = function(id, onSuccess)
+	{
+		if (typeof onSuccess == "undefined")
+			onSuccess = refr;
+		dlg.form("form/add_user.php?club_id=" + id, onSuccess, 400);
+	}
 
+	this.removeClubMember = function(userId, clubId)
+	{
+		json.post("api/ops/user.php", { op: "quit_club", club_id: clubId, user_id: userId }, refr);
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// league
 	//--------------------------------------------------------------------------------------
@@ -546,11 +553,6 @@ var mr = new function()
 		});
 	}
 
-	this.eventMailing = function(id)
-	{
-		window.location.replace("event_mailings.php?bck=1&id=" + id);
-	}
-	
 	this.createEventMailing = function(events, mailingType)
 	{
 		var url = "form/event_mailing_create.php?events=" + events;
@@ -620,9 +622,21 @@ var mr = new function()
 		}
 	}
 	
-	this.showEventToken = function(id)
+	this.addEventUser = function(id, onSuccess)
 	{
-		dlg.infoForm("form/event_token.php?event_id=" + id, 400);
+		if (typeof onSuccess == "undefined")
+			onSuccess = refr;
+		dlg.form("form/add_user.php?event_id=" + id, onSuccess, 400);
+	}
+
+	this.removeEventUser = function(userId, eventId)
+	{
+		json.post("api/ops/user.php", { op: "quit_event", event_id: eventId, user_id: userId }, refr);
+	}
+	
+	this.eventObs = function(eventId)
+	{
+		dlg.infoForm("form/obs_urls.php?event_id=" + eventId, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------
@@ -673,11 +687,23 @@ var mr = new function()
 		}, 600);
 	}
 	
-	this.showTournamentToken = function(id)
+	this.addTournamentUser = function(id, onSuccess)
 	{
-		dlg.infoForm("form/tournament_token.php?tournament_id=" + id, 400);
+		if (typeof onSuccess == "undefined")
+			onSuccess = refr;
+		dlg.form("form/add_user.php?tournament_id=" + id, onSuccess, 400);
 	}
 
+	this.removeTournamentUser = function(userId, tournamentId)
+	{
+		json.post("api/ops/user.php", { op: "quit_tournament", tournament_id: tournamentId, user_id: userId }, refr);
+	}
+	
+	this.tournamentObs = function(tournamentId)
+	{
+		dlg.infoForm("form/obs_urls.php?tournament_id=" + tournamentId, 600);
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// scoring system
 	//--------------------------------------------------------------------------------------
@@ -783,7 +809,7 @@ var mr = new function()
 					{
 						difDisabled = false;
 					}
-					else if (p.min_night1 || p.max_night1 || p.figm_first_night_score)
+					else if (p.min_night1 || p.max_night1 || p.fiim_first_night_score)
 					{
 						night1Disabled = false;
 					}
@@ -1000,9 +1026,9 @@ var mr = new function()
 		dlg.page("form/game_video.php?game=" + gameId);
 	}
 	
-	this.figmGameForm = function(gameId)
+	this.fiimGameForm = function(gameId)
 	{
-		window.open('game_figm_form.php?game_id=' + gameId, '_blank').focus();
+		window.open('game_fiim_form.php?game_id=' + gameId, '_blank').focus();
 	}
 	
 	this.gameExtraPoints = function(gameId, userId)
@@ -1095,14 +1121,44 @@ var mr = new function()
 		}
 	}
 	
-	this.editUserAccess = function(userId, clubId)
+	this.editUserAccess = function(userId)
 	{
-		var url = "form/user_access.php?id=" + userId;
-		if (typeof clubId != "undefined")
-		{
-			url += "&club=" + clubId;
-		}
-		dlg.form(url, refr, 400);
+		dlg.form("form/user_access.php?user_id=" + userId, refr, 400);
+	}
+	
+	this.editClubAccess = function(userId, clubId)
+	{
+		dlg.form("form/user_access.php?user_id=" + userId + "&club_id=" + clubId, refr, 400);
+	}
+	
+	this.editEventAccess = function(userId, eventId)
+	{
+		dlg.form("form/user_access.php?user_id=" + userId + "&event_id=" + eventId, refr, 400);
+	}
+	
+	this.editTournamentAccess = function(userId, tournamentId)
+	{
+		dlg.form("form/user_access.php?user_id=" + userId + "&tournament_id=" + tournamentId, refr, 400);
+	}
+	
+	this.eventUserPhoto = function(userId, eventId)
+	{
+		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&event_id=" + eventId, 400);
+	}
+	
+	this.tournamentUserPhoto = function(userId, tournamentId)
+	{
+		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&tournament_id=" + tournamentId, 400);
+	}
+	
+	this.clubUserPhoto = function(userId, clubId)
+	{
+		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&club_id=" + clubId, 400);
+	}
+	
+	this.editUser = function(userId)
+	{
+		dlg.form("form/account_edit.php?user_id=" + userId, refr, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------

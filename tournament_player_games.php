@@ -82,21 +82,39 @@ class Page extends TournamentPageBase
 			$this->user_id = (int)$_REQUEST['user_id'];
 		}
 		
-		$this->user_name = '';
 		if ($this->user_id > 0)
 		{
 			$data = tournament_scores($this->id, $this->flags, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->normalizer, $this->scoring_options);
 			if (isset($data[$this->user_id]))
 			{
 				$this->player = $data[$this->user_id];
-				$this->user_name = $this->player->name;
 			}
 			else
 			{
-				list ($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->user_id);
-				$this->user_id = 0;
-				$this->errorMessage(get_label('[0] was not playing in [1].', $user_name, $this->name));
+				$this->player = new stdClass();
+				$this->player->id = $this->user_id;
+				$this->player->games = array();
+				$this->player->normalization = 1;
+				$this->player->points = 0;
+				$this->player->raw_points = 0;
+				list ($this->player->name, $this->player->flags, $this->player->tournament_user_flags, $this->player->club_user_flags) = 
+					Db::record(get_label('user'), 
+						'SELECT u.name, u.flags, tu.flags, cu.flags FROM users u' .
+						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+						' WHERE id = ?', $this->id, $this->club_id, $this->user_id);
 			}
+		}
+		else
+		{
+			$this->player = new stdClass();
+			$this->player->id = $this->user_id;
+			$this->player->games = array();
+			$this->player->normalization = 1;
+			$this->player->points = 0;
+			$this->player->raw_points = 0;
+			$this->player->name = '';
+			$this->player->flags = $this->player->tournament_user_flags = $this->player->club_user_flags = 0;
 		}
 	}
 	
@@ -119,19 +137,29 @@ class Page extends TournamentPageBase
 		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
 		echo '</td><td align="right">';
 		echo get_label('Select a player') . ': ';
-		show_user_input('user_name', $this->user_name, 'tournament=' . $this->id, get_label('Select a player'), 'selectPlayer');
+		show_user_input('user_name', $this->player->name, 'tournament=' . $this->id, get_label('Select a player'), 'selectPlayer');
+		if ($this->player->id > 0 && is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id, $this->id))
+		{
+			echo '</td><td><button class="icon" onclick="changeTournamentPlayer(' . $this->id . ', ' . $this->player->id . ', \'' . $this->player->name . '\')" title="' . get_label('Replace [0] with someone else in [1].', $this->player->name, $this->name) . '">';
+			echo '<img src="images/user_change.png" border="0"></button>';
+		}
 		echo '</td></tr></table></p>';
 			
-		if ($this->user_id <= 0)
-		{
-			return;
-		}
+		$tournament_user_pic =
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			$this->user_pic));
+		$tournament_user_pic->
+			set($this->player->id, $this->player->name, $this->player->tournament_user_flags, 't' . $this->id)->
+			set($this->player->id, $this->player->name, $this->player->club_user_flags, 'c' . $this->club_id)->
+			set($this->player->id, $this->player->name, $this->player->flags);
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td rowspan="2">';
 		echo '<table class="transp" width="100%"><tr><td width="72">';
-		$this->user_pic->set($this->player->id, $this->player->name, $this->player->flags);
-		$this->user_pic->show(ICONS_DIR, true, 64);
+		echo '<a href="user_info.php?bck=1&id=' . $this->player->id . '">';
+		$tournament_user_pic->show(ICONS_DIR, false, 64);
+		echo '</a>';
 		echo '</td><td>' . $this->player->name . '</td></tr>';
 		if ($this->player->normalization != 1)
 		{
@@ -297,6 +325,14 @@ class Page extends TournamentPageBase
 		function submitScoring(s)
 		{
 			goTo({ sid: s.sId, sver: s.sVer, nid: s.nId, nver: s.nVer, sops: s.ops });
+		}
+		
+		function changeTournamentPlayer(tournamentId, userId, nickname)
+		{
+			dlg.form("form/tournament_change_player.php?tournament_id=" + tournamentId + "&user_id=" + userId + "&nick=" + nickname, function(r)
+			{
+				goTo({ 'user_id': r.user_id });
+			});
 		}
 <?php	
 	}

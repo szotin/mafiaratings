@@ -13,15 +13,15 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('objection')));
 	}
 	$objection_id = (int)$_REQUEST['objection_id'];
-	list ($objection_id, $game_id, $message, $user_id, $user_name, $club_id, $moderator_id, $parent_id, $accept) = 
+	list ($objection_id, $game_id, $message, $user_id, $user_name, $club_id, $event_id, $tournament_id, $owner_id, $parent_id, $accept) = 
 		Db::record(get_label('objection'), 
-			'SELECT o.id, o.game_id, o.message, u.id, u.name, g.club_id, g.moderator_id, o.objection_id, o.accept FROM objections o' .
+			'SELECT o.id, o.game_id, o.message, u.id, u.name, g.club_id, g.event_id, g.tournament_id, g.user_id, o.objection_id, o.accept FROM objections o' .
 			' JOIN users u ON u.id = o.user_id' .
 			' JOIN games g ON g.id = o.game_id' .
 			' WHERE o.id = ?', $objection_id);
 	
 	dialog_title(get_label('Edit objection [0] to the game [1] results.', $objection_id, $game_id));
-	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+	check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $owner_id, $club_id, $event_id, $tournament_id);
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="100" valign="top">' . get_label('Reason').':</td><td><textarea id="form-message" cols="62" rows="8">' . $message . '</textarea></td></tr>';

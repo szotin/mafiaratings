@@ -88,7 +88,7 @@ try
 			}
 			else
 			{
-				echo get_label('Moderator');
+				echo get_label('Referee');
 			}
 			echo '</b></p>';
 		}

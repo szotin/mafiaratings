@@ -20,6 +20,7 @@ define('RATING_POSITIONS', 15);
 class Page extends ClubPageBase
 {
 	private $tournament_pic;
+	private $club_user_pic;
 	
 	private function show_tournament($tournament)
 	{
@@ -245,24 +246,12 @@ class Page extends ClubPageBase
 		return false;
 	}
 	
-	protected function rating_row($row, $number)
-	{
-		list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
-
-		echo '<tr><td width="20" align="center">' . $number . '</td>';
-		echo '<td width="50">';
-		$this->user_pic->set($id, $name, $flags);
-		$this->user_pic->show(ICONS_DIR, true, 50);
-		echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-		echo '<td width="60" align="center">' . number_format($rating) . '</td>';
-		echo '</tr>';
-	}
-	
 	protected function show_body()
 	{
 		global $_profile, $_lang_code;
 		
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$this->club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 	
 		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
 		$have_tables = false;
@@ -443,7 +432,7 @@ class Page extends ClubPageBase
 				echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 				
 				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT moderator_id) FROM games WHERE club_id = ? AND is_canceled = FALSE AND result > 0', $this->id);
-				echo '<tr><td>'.get_label('People moderated').':</td><td>' . $counter . '</td></tr>';
+				echo '<tr><td>'.get_label('Referees').':</td><td>' . $counter . '</td></tr>';
 				
 				list ($a_game, $s_game, $l_game) = Db::record(
 					get_label('game'),
@@ -458,7 +447,8 @@ class Page extends ClubPageBase
 		}
 		
 		// managers
-		$query = new DbQuery('SELECT u.id, u.name, u.flags FROM user_clubs c JOIN users u ON u.id = c.user_id WHERE c.club_id = ? AND (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0', $this->id);
+		$query = new DbQuery(
+			'SELECT u.id, u.name, u.flags, c.flags FROM club_users c JOIN users u ON u.id = c.user_id WHERE c.club_id = ? AND (c.flags & ' . USER_PERM_MANAGER . ') <> 0', $this->id);
 		if ($row = $query->next())
 		{
 			$managers_count = 0;
@@ -467,7 +457,7 @@ class Page extends ClubPageBase
 			echo '<tr class="darker"><td colspan="' . MANAGER_COLUMNS . '"><b>' . get_label('Managers') . '</b></td></tr>';
 			do
 			{
-				list ($manager_id, $manager_name, $manager_flags) = $row;
+				list ($manager_id, $manager_name, $manager_flags, $club_manager_flags) = $row;
 				if ($columns_count == 0)
 				{
 					if ($managers_count > 0)
@@ -478,8 +468,8 @@ class Page extends ClubPageBase
 				}
 				echo '<td width="' . MANAGER_COLUMN_WIDTH . '%" align="center">';
 				echo '<a href="user_info.php?bck=1&id=' . $manager_id . '">' . $manager_name . '<br>';
-				$this->user_pic->set($manager_id, $manager_name, $manager_flags);
-				$this->user_pic->show(ICONS_DIR, false);
+				$this->club_user_pic->set($manager_id, $manager_name, $club_manager_flags, 'c' . $this->id)->set($manager_id, $manager_name, $manager_flags);
+				$this->club_user_pic->show(ICONS_DIR, false);
 				echo '</a></td>';
 				
 				++$columns_count;
@@ -543,19 +533,26 @@ class Page extends ClubPageBase
 		if ($games_count > 0)
 		{
 			echo '</td><td width="280" valign="top">';
-			$query = new DbQuery('SELECT id, name, rating, games, games_won, flags FROM users WHERE club_id = ? ORDER BY rating DESC, games, games_won DESC, id LIMIT ' . RATING_POSITIONS, $this->id);
+			$query = new DbQuery(
+				'SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags, cu.flags' .
+					' FROM users u' .
+					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = u.club_id' .
+					' WHERE u.club_id = ?' .
+					' ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id' .
+					' LIMIT ' . RATING_POSITIONS,
+					$this->id);
 					
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="4"><b>' . get_label('Best players') . '</b></td></tr>';
 			$number = 1;
 			while ($row = $query->next())
 			{
-				list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
+				list ($id, $name, $rating, $games_played, $games_won, $flags, $club_user_flags) = $row;
 
 				echo '<td width="20" align="center">' . $number . '</td>';
 				echo '<td width="50">';
-				$this->user_pic->set($id, $name, $flags);
-				$this->user_pic->show(ICONS_DIR, true, 50);
+				$this->club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
+				$this->club_user_pic->show(ICONS_DIR, true, 50);
 				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';

@@ -20,6 +20,7 @@ class Page extends GeneralPageBase
 	
 		parent::prepare();
 		
+		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		check_permissions(PERMISSION_ADMIN);
 		$this->user_id = 0;
 		if ($_page < 0)
@@ -61,6 +62,14 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page;
 		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('users')));
+		echo '</td><td align="right">';
+		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific user is located.'));
+		echo '</td></tr></table></p>';
+		
 		$condition = new SQL();
 		$sep = ' WHERE ';
 		$ccc_id = $this->ccc_filter->get_id();
@@ -69,12 +78,12 @@ class Page extends GeneralPageBase
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
 			{
-				$condition->add($sep . 'u.club_id = ?)', $ccc_id);
+				$condition->add($sep . 'u.club_id = ?', $ccc_id);
 				$sep = ' AND ';
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM user_clubs WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
+				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
 				$sep = ' AND ';
 			}
 			break;
@@ -101,17 +110,17 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="th darker">';
-		echo '<td width="58"></td>';
+		echo '<td width="87"></td>';
 		echo '<td colspan="4">' . get_label('User name') . '</td><td width="40"></td></tr>';
 
 		$query = new DbQuery(
 			'SELECT u.id, u.name, u.email, u.flags, c.id,
 			c.name, c.flags' . 
-			', SUM(IF((uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ') = ' . USER_CLUB_PERM_PLAYER . ', 1, 0))' . 
-			', SUM(IF((uc.flags & ' . (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ') = ' . USER_CLUB_PERM_MODER . ', 1, 0))' . 
-			', SUM(IF((uc.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0, 1, 0))' . 
+			', SUM(IF((uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ') = ' . USER_PERM_PLAYER . ', 1, 0))' . 
+			', SUM(IF((uc.flags & ' . (USER_PERM_REFEREE | USER_PERM_MANAGER) . ') = ' . USER_PERM_REFEREE . ', 1, 0))' . 
+			', SUM(IF((uc.flags & ' . USER_PERM_MANAGER . ') <> 0, 1, 0))' . 
 			' FROM users u' .
-			' LEFT OUTER JOIN user_clubs uc ON uc.user_id = u.id' .
+			' LEFT OUTER JOIN club_users uc ON uc.user_id = u.id' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id', $condition);
 		$query->add(' GROUP BY u.id ORDER BY u.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
@@ -137,6 +146,7 @@ class Page extends GeneralPageBase
 			{
 				echo '<button class="icon" onclick="mr.banUser(' . $id . ')" title="' . get_label('Ban [0]', $name) . '"><img src="images/ban.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editUserAccess(' . $id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.editUser(' . $id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
 			}
 			echo '</td>';
 			
@@ -190,7 +200,7 @@ class Page extends GeneralPageBase
 			{
 				if (empty($image_title))
 				{
-					echo 'moderator.png';
+					echo 'referee.png';
 				}
 				else
 				{
@@ -198,15 +208,15 @@ class Page extends GeneralPageBase
 				}
 				if ($all_clubs < 2)
 				{
-					$image_title .= get_label('Moderator');
+					$image_title .= get_label('Referee');
 				}
 				else if ($clubs_moder < 2)
 				{
-					$image_title .= get_label('Moderator in 1 club');
+					$image_title .= get_label('Referee in 1 club');
 				}
 				else
 				{
-					$image_title .= get_label('Moderator in [0] clubs', $clubs_moder);
+					$image_title .= get_label('Referee in [0] clubs', $clubs_moder);
 				}
 			}
 			
@@ -242,22 +252,6 @@ class Page extends GeneralPageBase
 			echo '</td></tr>';
 		}
 		echo '</table>';
-	}
-	
-	protected function show_search_fields()
-	{
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific user is located.'));
-	}
-	
-	protected function get_filter_js()
-	{
-		$result = '';
-		if ($this->user_id > 0)
-		{
-			$result .= ' + "&page=-' . $this->user_id . '"';
-		}
-		return $result;
 	}
 }
 

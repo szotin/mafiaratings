@@ -72,9 +72,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
 		
-		$is_admin = $_profile->is_admin();
-		$is_parent_manager = $parent_id > 0 && $_profile->is_club_manager($parent_id);
-		if ($is_admin || $is_parent_manager)
+		$is_admin = is_permitted(PERMISSION_ADMIN);
+		if ($is_admin || is_permitted(PERMISSION_CLUB_MANAGER, $parent_id))
 		{
 			// Admin does not have to send a confirmation request. The club is confirmed instantly.
 			if ($parent_id > 0)
@@ -118,7 +117,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				Db::exec(
 					get_label('user'), 
-					'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ')',
+					'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_REFEREE | USER_PERM_MANAGER) . ')',
 					$_profile->user_id, $club_id);
 				db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $_profile->user_id, $club_id);
 			}
@@ -146,7 +145,7 @@ class ApiPage extends OpsApiPageBase
 			list ($parent_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $parent_id);
 			
 			// send request to parent club managers
-			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0 AND u.email <> \'\' AND c.club_id = ?', $parent_id);
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM club_users c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . USER_PERM_MANAGER . ') <> 0 AND u.email <> \'\' AND c.club_id = ?', $parent_id);
 			while ($row = $query->next())
 			{
 				list($manager_id, $manager_name, $manager_email, $manager_def_lang) = $row;
@@ -382,7 +381,7 @@ class ApiPage extends OpsApiPageBase
 					db_log(LOG_OBJECT_CLUB, 'subclub request created', NULL, $club_id, $parent_id);
 					
 					// send request to parent club managers
-					$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0 AND u.email <> \'\' AND c.club_id = ?', $parent_id);
+					$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM club_users c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . USER_PERM_MANAGER . ') <> 0 AND u.email <> \'\' AND c.club_id = ?', $parent_id);
 					while ($row = $query->next())
 					{
 						list($manager_id, $manager_name, $manager_email, $manager_def_lang) = $row;
@@ -555,7 +554,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				Db::exec(
 					get_label('user'), 
-					'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) . ')',
+					'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_REFEREE | USER_PERM_MANAGER) . ')',
 					$user_id, $club_id);
 				db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $user_id, $club_id);
 			}
@@ -732,7 +731,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			// it is possible that the permission is missing because the club is retired
 			$query = new DbQuery(
-				'SELECT * FROM user_clubs WHERE user_id = ? AND club_id = ? AND (flags & ' . USER_CLUB_PERM_MANAGER . ') <> 0',
+				'SELECT * FROM club_users WHERE user_id = ? AND club_id = ? AND (flags & ' . USER_PERM_MANAGER . ') <> 0',
 				$_profile->user_id, $club_id);
 			if (!$query->next())
 			{

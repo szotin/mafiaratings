@@ -81,7 +81,7 @@ class Page extends UserPageBase
 		echo '<p>';
 		echo '<select id="moder" onChange = "filterChanged()">';
 		show_option(0, $moder, get_label('As a player'));
-		show_option(1, $moder, get_label('As a moderator'));
+		show_option(1, $moder, get_label('As a referee'));
 		echo '</select>';
 		
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);

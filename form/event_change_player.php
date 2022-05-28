@@ -32,6 +32,7 @@ try
 	{
 		$user_name = '';
 	}
+	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
 	
 	if (isset($_REQUEST['nick']))
 	{
@@ -71,6 +72,7 @@ try
 		if (typeof _user.id == "number")
 		{
 			newUserId = _user.id;
+			$("#form-nick").val(_user.name);
 		}
 		else
 		{
@@ -80,7 +82,6 @@ try
 	
 	function commit(onSuccess)
 	{
-		console.log(newUserId);
 		json.post("api/ops/event.php",
 		{
 			op: "change_player"

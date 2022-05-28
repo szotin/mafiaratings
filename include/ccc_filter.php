@@ -93,7 +93,7 @@ class CCCFilter
 		}
 	}
 	
-	function show($on_select, $title)
+	function show($title, $on_select = NULL)
 	{
 		global $_lang_code;
 	
@@ -136,7 +136,7 @@ class CCCFilter
 					term: $("#<?php echo $this->name; ?>").val()
 				}, response);
 			},	
-			select: function(event, ui) { <?php echo $on_select; ?>(ui.item.code); },
+			select: function(event, ui) { <?php if (is_null($on_select)) echo 'goTo({ ccc: ui.item.code, page: undefined });'; else echo $on_select . '(ui.item.code)'; ?>; },
 			minLength: 0,
 		})
 		.on("focus", function() { $(this).catcomplete("search", ''); });

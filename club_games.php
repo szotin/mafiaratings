@@ -44,6 +44,7 @@ class Page extends ClubPageBase
 		
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$event_pic = new Picture(EVENT_PICTURE);
+		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		echo '<select id="results" onChange="filterChanged()">';
@@ -115,20 +116,21 @@ class Page extends ClubPageBase
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
+			'SELECT g.id, c.timezone, m.id, m.name, m.flags, cu.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
+				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = m.id' .
 				' JOIN cities c ON c.id = a.city_id',
 			$condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
+			list ($game_id, $timezone, $referee_id, $referee_name, $referee_flags, $club_referee_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $league_id, $league_name, $league_flags) = $row;
 			
 			echo '<tr align="center"';
 			if ($is_canceled || !$is_rating)
@@ -209,8 +211,8 @@ class Page extends ClubPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			$this->user_pic->set($moder_id, $moder_name, $moder_flags);
-			$this->user_pic->show(ICONS_DIR, true, 48);
+			$club_user_pic->set($referee_id, $referee_name, $club_referee_flags, 'c' . $this->id)->set($referee_id, $referee_name, $referee_flags);
+			$club_user_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
 			echo '<td>';

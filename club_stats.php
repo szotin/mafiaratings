@@ -109,7 +109,7 @@ class Page extends ClubPageBase
 			echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 			
 			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
-			echo '<tr><td>'.get_label('People moderated').':</td><td>' . $counter . '</td></tr>';
+			echo '<tr><td>'.get_label('Referees').':</td><td>' . $counter . '</td></tr>';
 			
 			list ($a_game, $s_game, $l_game) = Db::record(
 				get_label('game'),
@@ -159,7 +159,7 @@ class Page extends ClubPageBase
 					echo get_label('Gave up');
 					break;
 				case 5:
-					echo get_label('Killed by moderator');
+					echo get_label('Kicked out');
 					break;
 				}
 				echo ':</b></td></tr>';

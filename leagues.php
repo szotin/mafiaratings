@@ -14,21 +14,6 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends GeneralPageBase
 {
-	protected function show_filter_fields()
-	{
-		echo '<input type="checkbox" id="retired" onclick="filter()"';
-		if (isset($_REQUEST['retired']))
-		{
-			echo ' checked';
-		}
-		echo '> ' . get_label('Show retired leagues');
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ ($("#retired").attr("checked") ? "&retired=" : "")';
-	}
-	
 	private function show_requests()
 	{
 		global $_profile;
@@ -38,7 +23,7 @@ class Page extends GeneralPageBase
 			return;
 		}
 		
-		$admin = $_profile->is_admin();
+		$admin = is_permitted(PERMISSION_ADMIN);
 		$condition = new SQL();
 		if (!$admin)
 		{
@@ -102,6 +87,18 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_lang_code, $_page;
 		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('leagues')));
+		echo ' <input type="checkbox" id="retired" onclick="filterRetired()"';
+		if (isset($_REQUEST['retired']))
+		{
+			echo ' checked';
+		}
+		echo '> ' . get_label('Show retired leagues');
+		echo '</td></tr></table></p>';
+		
 		$this->show_requests();
 		
 		$retired = isset($_REQUEST['retired']);
@@ -113,6 +110,27 @@ class Page extends GeneralPageBase
 		else
 		{
 			$condition->add(') = 0');
+		}
+		
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
+		{
+		case CCCF_CLUB:
+			if ($ccc_id > 0)
+			{
+				$condition->add(' AND l.id IN (SELECT league_id FROM league_clubs WHERE club_id = ?)', $ccc_id);
+			}
+			else if ($ccc_id == 0 && $_profile != NULL)
+			{
+				$condition->add(' AND l.id IN (SELECT league_id FROM league_clubs WHERE club_id IN (SELECT club_id FROM club_users WHERE user_id = ?))', $_profile->user_id);
+			}
+			break;
+		case CCCF_CITY:
+			$condition->add(' AND l.id IN (SELECT league_id FROM league_clubs WHERE club_id IN (SELECT id FROM clubs WHERE city_id = ?))', $ccc_id, $ccc_id);
+			break;
+		case CCCF_COUNTRY:
+			$condition->add(' AND l.id IN (SELECT league_id FROM league_clubs WHERE club_id IN (SELECT id FROM clubs WHERE city_id IN (SELECT id FROM cities WHERE country_id = ?)))', $ccc_id);
+			break;
 		}
 		
 		$page_size = ROW_COUNT * COLUMN_COUNT;
@@ -197,6 +215,17 @@ class Page extends GeneralPageBase
 			}
 			echo '</tr></table>';
 		}
+	}
+	
+	protected function js()
+	{
+		parent::js();
+?>
+		function filterRetired()
+		{
+			goTo({retired: ($("#retired").attr("checked") ? null : undefined), page: undefined});
+		}
+<?php
 	}
 }
 

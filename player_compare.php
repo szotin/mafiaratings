@@ -3,6 +3,14 @@
 require_once 'include/user.php';
 require_once 'include/player_stats.php';
 
+// Most likely using these flags is incorrect here.
+// The role that is sent is most likely one of POINTS_ALL, POINTS_RED, POINTS_DARK, etc.
+define("ROLE_FLAG_CIVIL", 1);
+define("ROLE_FLAG_SHERIFF", 2);
+define("ROLE_FLAG_MAFIA", 4);
+define("ROLE_FLAG_DON", 8);
+define("ROLE_FLAG_ANY", 15);
+
 function row($title, $value1, $value2, $count1, $count2, $value1_str = NULL, $value2_str = NULL)
 {
 //	$title = get_label($title);
@@ -118,8 +126,8 @@ class Page extends UserPageBase
 	{
 		$mafia_role = ($role == (ROLE_FLAG_MAFIA | ROLE_FLAG_DON) ? -1 : 1);
 		$condition = new SQL(' AND g.is_canceled = 0');
-		$stats1 = new PlayerStats($this->id, -1, $role, $condition);
-		$stats2 = new PlayerStats($this->id2, -1, $role, $condition);
+		$stats1 = new PlayerStats($this->id, $role, $condition);
+		$stats2 = new PlayerStats($this->id2, $role, $condition);
 		
 		$winning_percentage1 = 0;
 		$rating_per_game1 = 0;
@@ -215,8 +223,8 @@ class Page extends UserPageBase
 
 	private function mafia_compare($role)
 	{
-		$stats1 = new MafiaStats($this->id, -1, $role);
-		$stats2 = new MafiaStats($this->id2, -1, $role);
+		$stats1 = new MafiaStats($this->id, $role);
+		$stats2 = new MafiaStats($this->id2, $role);
 		
 		$shots_count1 = $stats1->shots1_ok + $stats1->shots1_miss + $stats1->shots2_ok + $stats1->shots2_miss + $stats1->shots3_ok + $stats1->shots3_miss;
 		$shots_percent1 = 0;
@@ -326,8 +334,8 @@ class Page extends UserPageBase
 
 	private function sheriff_compare()
 	{
-		$stats1 = new SheriffStats($this->id, -1);
-		$stats2 = new SheriffStats($this->id2, -1);
+		$stats1 = new SheriffStats($this->id);
+		$stats2 = new SheriffStats($this->id2);
 		
 		$checks_count1 = $stats1->civil_found + $stats1->mafia_found;
 		$checks_per_game1 = 0;

@@ -88,7 +88,7 @@ class Page extends PageBase
 		
 		if ($event_id != NULL && $event_only)
 		{
-			$from_str = new SQL('FROM users u, registrations r WHERE r.user_id = u.id AND r.event_id = ? AND ', $event_id);
+			$from_str = new SQL('FROM users u, event_events r WHERE r.user_id = u.id AND r.event_id = ? AND ', $event_id);
 		}
 		else
 		{

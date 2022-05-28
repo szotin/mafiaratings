@@ -26,7 +26,7 @@ try
 		' JOIN cities c ON c.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
 	
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 	
 	$start = new DateTime();
 	$duration = 6 * 3600;
@@ -83,7 +83,7 @@ try
 		
 	echo '<tr><td colspan="2">';
 		
-	echo '<input type="checkbox" id="form-all_mod" checked> '.get_label('everyone can moderate games.');
+	echo '<input type="checkbox" id="form-all_mod" checked> '.get_label('everyone can referee games.');
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -144,7 +144,7 @@ try
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
-		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_MODERATE; ?>;
+		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		
 		var params =
 		{

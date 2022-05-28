@@ -15,13 +15,13 @@ class Page extends PageBase
 		}
 		$is_empty = true;
 		$game_id = (int)$_REQUEST['id'];
-		list($club_id, $timezone) = Db::record(get_label('game'), 'SELECT g.club_id, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE g.id = ?', $game_id);
+		list($owner_id, $club_id, $event_id, $tournament_id, $timezone) = Db::record(get_label('game'), 'SELECT g.user_id, g.club_id, g.event_id, g.tournament_id, c.timezone FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE g.id = ?', $game_id);
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';
 		if (is_permitted(PERMISSION_USER))
 		{
-			echo '<td width="30"><button class="icon" onclick="mr.createObjection(' . $game_id . ')" title="' . get_label('File an objection to the game [0] results.', $game_id) . '"><img src="images/objection.png" border="0"></button></td>';
+			echo '<td width="84"><button class="icon" onclick="mr.createObjection(' . $game_id . ')" title="' . get_label('File an objection to the game [0] results.', $game_id) . '"><img src="images/objection.png" border="0"></button></td>';
 		}
 		echo '<td colspan="2"></td></tr>';
 		// echo '<td width="80">' . get_label('User') . '</td>';
@@ -40,25 +40,20 @@ class Page extends PageBase
 			
 			if (is_permitted(PERMISSION_USER))
 			{
-				echo '<td valign="top">';
-				if (is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
+				echo '<td valign="center">';
+				if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $owner_id, $club_id, $event_id, $tournament_id))
 				{
 					if (is_null($parent_id))
 					{
-						echo '<button class="icon" onclick="mr.replyObjection(' . $objection_id . ')" title="' . get_label('Reply to the objection #[0].', $objection_id) . '"><img src="images/reply.png" border="0"></button>';
-						echo '<button class="icon" onclick="mr.editObjection(' . $objection_id . ')" title="' . get_label('Edit objection #[0].', $objection_id) . '"><img src="images/edit.png" border="0"></button>';
 						echo '<button class="icon" onclick="mr.deleteObjection(' . $objection_id . ', \'' . get_label('Are you sure you want to delete objection #[0]?', $objection_id) . '\')" title="' . get_label('Delete objection #[0].', $objection_id) . '"><img src="images/delete.png" border="0"></button>';
+						echo '<button class="icon" onclick="mr.editObjection(' . $objection_id . ')" title="' . get_label('Edit objection #[0].', $objection_id) . '"><img src="images/edit.png" border="0"></button>';
+						echo '<button class="icon" onclick="mr.replyObjection(' . $objection_id . ')" title="' . get_label('Reply to the objection #[0].', $objection_id) . '"><img src="images/reply.png" border="0"></button>';
 					}
 					else
 					{
-						echo '<button class="icon" onclick="mr.editObjection(' . $objection_id . ')" title="' . get_label('Edit response to the objection #[0].', $parent_id) . '"><img src="images/edit.png" border="0"></button>';
 						echo '<button class="icon" onclick="mr.deleteObjection(' . $objection_id . ', \'' . get_label('Are you sure you want to delete response to the objection #[0]?', $parent_id) . '\')" title="' . get_label('Delete response to the objection #[0].', $objection_id) . '"><img src="images/delete.png" border="0"></button>';
+						echo '<button class="icon" onclick="mr.editObjection(' . $objection_id . ')" title="' . get_label('Edit response to the objection #[0].', $parent_id) . '"><img src="images/edit.png" border="0"></button>';
 					}
-				}
-				else if (is_permitted(PERMISSION_OWNER, $moderator_id))
-				{
-					echo '<button class="icon" onclick="mr.replyObjection(' . $objection_id . ')" title="' . get_label('Reply to the objection #[0].', $objection_id) . '"><img src="images/reply.png" border="0"></button>';
-					echo '<button class="icon" onclick="mr.editObjection(' . $objection_id . ')" title="' . get_label('Edit objection #[0].', $objection_id) . '"><img src="images/edit.png" border="0"></button>';
 				}
 				echo '</td>';
 			}

@@ -77,15 +77,15 @@ class ApiPage extends OpsApiPageBase
 		{
 			$parent_id = NULL;
 			$game_id = (int)get_required_param('game_id');
-			list ($club_id, $moderator_id, $league_id) = Db::record(get_label('game'), 'SELECT g.club_id, g.moderator_id, t.league_id FROM games g JOIN events e ON e.id = g.event_id LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE g.id = ?', $game_id);
+			list ($club_id, $event_id, $tournament_id, $owner_id, $league_id) = Db::record(get_label('game'), 'SELECT g.club_id, g.event_id, g.tournament_id, g.user_id, t.league_id FROM games g JOIN events e ON e.id = g.event_id LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE g.id = ?', $game_id);
 		}
 		else
 		{
-			list ($game_id, $club_id, $moderator_id, $league_id) = Db::record(get_label('game'), 'SELECT g.id, g.club_id, g.moderator_id, t.league_id FROM objections o JOIN games g ON g.id = o.game_id JOIN events e ON e.id = g.event_id LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE o.id = ?', $parent_id);
+			list ($game_id, $club_id, $event_id, $tournament_id, $owner_id, $league_id) = Db::record(get_label('game'), 'SELECT g.id, g.club_id, g.event_id, g.tournament_id, g.user_id, t.league_id FROM objections o JOIN games g ON g.id = o.game_id JOIN events e ON e.id = g.event_id LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE o.id = ?', $parent_id);
 		}
 		
 		$user_id = $_profile->user_id;
-		if (is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id))
+		if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $owner_id, $club_id, $event_id, $tournament_id))
 		{
 			$user_id = (int)get_optional_param('user_id', $user_id);
 		}
@@ -111,7 +111,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_USER, 'Create game result objection.');
 		$help->request_param('game_id', 'Game id.', 'parent_id must be set.');
 		$help->request_param('parent_id', 'Objection id that this objection replyes to.', 'game_id is used to create top level objection.');
-		$help->request_param('user_id', 'User id of the user who is objecting. Only the moderator of the game and club managers are allowed to set it. For others this parameter is ignored.', 'current user id is used.');
+		$help->request_param('user_id', 'User id of the user who is objecting. Only the owner of the game and club managers are allowed to set it. For others this parameter is ignored.', 'current user id is used.');
 		$help->request_param('message', 'Objection explanation.');
 		$help->response_param('objection_id', 'Newly created objection id.');
 		$help->request_param('accept', '1 to accept objection; -1 to decline; 0 to pospone the decision.', '0 is used.');
@@ -128,10 +128,10 @@ class ApiPage extends OpsApiPageBase
 		$objection_id = (int)get_required_param('objection_id');
 		
 		Db::begin();
-		list ($game_id, $moderator_id, $club_id, $league_id, $old_message, $old_user_id, $parent_id, $old_accept) = 
+		list ($game_id, $owner_id, $club_id, $event_id, $tournament_id, $league_id, $old_message, $old_user_id, $parent_id, $old_accept) = 
 			Db::record(
 				get_label('objection'), 
-				'SELECT g.id, g.moderator_id, g.club_id, t.league_id, o.message, o.user_id, o.objection_id, o.accept FROM objections o' .
+				'SELECT g.id, g.user_id, g.club_id, g.event_id, g.tournament_id, t.league_id, o.message, o.user_id, o.objection_id, o.accept FROM objections o' .
 				' JOIN games g ON g.id = o.game_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
@@ -139,7 +139,7 @@ class ApiPage extends OpsApiPageBase
 				
 		$accept = max(min((int)get_optional_param('accept', $old_accept), 1), -1);
 				
-		if (is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id))
+		if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $owner_id, $club_id, $event_id, $tournament_id))
 		{
 			$user_id = get_optional_param('user_id', $old_user_id);
 		}
@@ -192,8 +192,8 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change game result objection.');
-		$help->request_param('user_id', 'User id of the user who is objecting. Only the moderator of the game and club managers are allowed to set it. For others this parameter is ignored.', 'remains the same.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change game result objection.');
+		$help->request_param('user_id', 'User id of the user who is objecting. Only the owner of the game and club/event/tournament managers are allowed to set it. For others this parameter is ignored.', 'remains the same.');
 		$help->request_param('message', 'Objection explanation.', 'remains the same.');
 		$help->request_param('accept', '1 to accept objection; -1 to decline; 0 to pospone the decision.', 'remains the same.');
 		return $help;
@@ -207,14 +207,14 @@ class ApiPage extends OpsApiPageBase
 		$objection_id = (int)get_required_param('objection_id');
 		
 		Db::begin();
-		list ($game_id, $club_id, $moderator_id, $league_id, $accept) = 
+		list ($game_id, $club_id, $event_id, $tournament_id, $owner_id, $league_id, $accept) = 
 			Db::record(get_label('objection'), 
-				'SELECT g.id, g.club_id, g.moderator_id, t.league_id, o.accept FROM objections o' .
+				'SELECT g.id, g.club_id, g.event_id, g.tournament_id, g.user_id, t.league_id, o.accept FROM objections o' .
 				' JOIN games g ON g.id = o.game_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' WHERE o.id = ?', $objection_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $owner_id, $club_id, $event_id, $tournament_id);
 		
 		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE objection_id = ?', $objection_id);
 		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE id = ?', $objection_id);
@@ -234,7 +234,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete objectionisement.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Delete objection.');
 		$help->request_param('objection_id', 'Objection id.');
 		return $help;
 	}

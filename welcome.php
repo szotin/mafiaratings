@@ -25,6 +25,17 @@ class Page extends GeneralPageBase
 	
 	protected function show_body()
 	{
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		echo '<select id="vid" onChange="setVideo(0)">';
+		$video_count = count($this->videos);
+		for ($i = 0; $i < $video_count; ++$i)
+		{
+			show_option($i, $this->video, $this->videos[$i][0]);
+		}
+		echo '</select>';
+		echo '</td></tr></table></p>';
+		
 		global $_lang_code;
 		if ($_lang_code == 'ru')
 		{
@@ -40,12 +51,12 @@ class Page extends GeneralPageBase
 			echo '<table class="transp" align="center" width="100%"><tr><td>';
 			if ($this->video > 0)
 			{
-				echo '<input type="submit" value="' . get_label('Previous video') . '" class="btn long" onclick="prevVideo()">';
+				echo '<input type="submit" value="' . get_label('Previous video') . '" class="btn long" onclick="setVideo(-1)">';
 			}
 			echo '</td><td align="right">';
 			if ($this->video < 1)
 			{
-				echo '<input type="submit" value="' . get_label('Next video') . '" class="btn long" onclick="nextVideo()">';
+				echo '<input type="submit" value="' . get_label('Next video') . '" class="btn long" onclick="setVideo(1)">';
 			}
 			echo '</td></tr></table>';
 			
@@ -57,34 +68,14 @@ class Page extends GeneralPageBase
 		}
 	}
 
-	protected function show_filter_fields()
-	{
-		echo '<select id="vid" onChange="filter()">';
-		$video_count = count($this->videos);
-		for ($i = 0; $i < $video_count; ++$i)
-		{
-			show_option($i, $this->video, $this->videos[$i][0]);
-		}
-		echo '</select>';
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ "&vid=" + $("#vid").val()';
-	}
-	
 	protected function js()
 	{
 		parent::js();
 ?>
-		function prevVideo()
+		function setVideo(offset)
 		{
-			window.location.replace("?ccc=" + cccCode + '&vid=' + (parseInt($("#vid").val()) - 1));
-		}
-		
-		function nextVideo()
-		{
-			window.location.replace("?ccc=" + cccCode + '&vid=' + (parseInt($("#vid").val()) + 1));
+			var vid = parseInt($("#vid").val()) + offset;
+			goTo({vid: vid});
 		}
 <?php	
 	}

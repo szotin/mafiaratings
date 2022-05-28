@@ -1,5 +1,5 @@
 export interface GameSnapshot {
-  game: Game;
+  game?: Game;
   version: number;
 }
 
@@ -10,6 +10,10 @@ export interface Game {
   state: GameState;
   round: number;
   players: Player[];
+  nominees: number[];
+  nominatedPlayers: Player[];
+  legacy: number[];
+  legacyPlayers: Player[];
 }
 
 export enum GamePhase {
@@ -32,6 +36,8 @@ export interface Player {
   state: PlayerState;
   isSpeaking: boolean;
   hasPhoto: boolean;
+  checkedBySheriff?: number;
+  checkedByDon?: number;
 }
 
 export enum PlayerRole {

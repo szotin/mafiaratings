@@ -47,6 +47,10 @@ class ApiPage extends GetApiPageBase
 			}
 		}
 		
+		$event_id = isset($gs->event_id) ? $gs->event_id : 0;
+		$tournament_id = isset($gs->tournament_id) ? $gs->tournament_id : 0;
+		$club_id = isset($gs->club_id) ? $gs->club_id : 0;
+		
 		if ($gs != NULL)
 		{
 			$game = new stdClass();
@@ -68,7 +72,12 @@ class ApiPage extends GetApiPageBase
 			}
 			if (isset($gs->players))
 			{
-				$user_pic = new Picture(USER_PICTURE);
+				$user_pic =
+					new Picture(USER_EVENT_PICTURE, 
+					new Picture(USER_TOURNAMENT_PICTURE,
+					new Picture(USER_CLUB_PICTURE,
+					new Picture(USER_PICTURE))));
+				
 				$game->players = array();
 				foreach ($gs->players as $p)
 				{
@@ -80,7 +89,13 @@ class ApiPage extends GetApiPageBase
 					
 					if ($player->id > 0)
 					{
-						list($player_flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $player->id);
+						list($event_user_flags, $tournament_user_flags, $club_user_flags, $user_flags) = Db::record(get_label('user'), 
+							'SELECT eu.flags, tu.flags, cu.flags, u.flags FROM users u' .
+							' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
+							' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+							' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+							' WHERE u.id = ?', 
+							$event_id, $tournament_id, $club_id, $player->id);
 						if ($p->is_male)
 						{
 							$player->gender = 'male';
@@ -92,12 +107,15 @@ class ApiPage extends GetApiPageBase
 					}
 					else
 					{
-						$player_flags = 0;
+						$event_user_flags = $tournament_user_flags = $club_user_flags = $user_flags = 0;
 					}
-					$user_pic->set($player->id, $player->name, $player_flags);
+					$user_pic->
+						set($player->id, $player->name, $event_user_flags, 'e' . $event_id)->
+						set($player->id, $player->name, $tournament_user_flags, 't' . $tournament_id)->
+						set($player->id, $player->name, $club_user_flags, 'c' . $club_id)->
+						set($player->id, $player->name, $user_flags);
 					$player->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
-					$player->hasPhoto = $user_pic->hasImage();
-					
+					$player->hasPhoto = $user_pic->has_image();
 					
 					switch ($p->role)
 					{
@@ -157,7 +175,6 @@ class ApiPage extends GetApiPageBase
 						}
 					}
 					
-					// $player->photoUrl = get_server_url() . '/images/' . TNAILS_DIR . 'user.png';
 					$game->players[] = $player;
 				}
 				
@@ -165,8 +182,19 @@ class ApiPage extends GetApiPageBase
 				$game->moderator->id = (int)$gs->moder_id;
 				if ($gs->moder_id > 0)
 				{
-					list($game->moderator->name, $moderator_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $game->moderator->id);
-					if ($moderator_flags & USER_FLAG_MALE)
+					list($game->moderator->name, $event_user_flags, $tournament_user_flags, $club_user_flags, $user_name, $user_flags) = Db::record(get_label('user'), 
+						'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, u.name, u.flags FROM users u' .
+						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
+						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+						' WHERE u.id = ?', 
+						$event_id, $tournament_id, $club_id, $gs->moder_id);
+					if (is_null($game->moderator->name))
+					{
+						$game->moderator->name = $user_name;
+					}
+					
+					if ($user_flags & USER_FLAG_MALE)
 					{
 						$game->moderator->gender = 'male';
 					}
@@ -178,11 +206,15 @@ class ApiPage extends GetApiPageBase
 				else
 				{
 					$game->moderator->name = '';
-					$moderator_flags = 0;
+					$event_user_flags = $tournament_user_flags = $club_user_flags = $user_flags = 0;
 				}
-				$user_pic->set($game->moderator->id, $game->moderator->name, $moderator_flags);
+				$user_pic->
+					set($gs->moder_id, $game->moderator->name, $event_user_flags, 'e' . $event_id)->
+					set($gs->moder_id, $game->moderator->name, $tournament_user_flags, 't' . $tournament_id)->
+					set($gs->moder_id, $game->moderator->name, $club_user_flags, 'c' . $club_id)->
+					set($gs->moder_id, $game->moderator->name, $user_flags);
 				$game->moderator->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
-				$game->moderator->hasPhoto = $user_pic->hasImage();
+				$game->moderator->hasPhoto = $user_pic->has_image();
 				
 				switch ($gs->gamestate)
 				{
@@ -290,6 +322,18 @@ class ApiPage extends GetApiPageBase
 						$game->nominees = $nominees;
 					}
 				}
+			}
+			if ($gs->guess3 != NULL)
+			{
+				$game->legacy = array();
+				foreach ($gs->guess3 as $n)
+				{
+					if ($n >= 0 && $n < 10)
+					{
+						$game->legacy[] = $n + 1;
+					}
+				}
+				sort($game->legacy);
 			}
 			$this->response['game'] = $game;
 		}

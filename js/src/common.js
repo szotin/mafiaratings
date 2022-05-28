@@ -662,14 +662,25 @@ function showMenuBar()
 function setUrlParam(url, key, value)
 {
 	var str = key;
-	if (typeof value == "object")
-		str += '=' + encodeURI(JSON.stringify(value));
-	else if (typeof value != "undefined")
-		str += '=' + encodeURI(value);
+	if (typeof value == "undefined")
+	{
+		str = null;
+	}
+	else if (value != null)
+	{
+		if (typeof value == "object")
+			str += '=' + encodeURI(JSON.stringify(value));
+		else 
+			str += '=' + encodeURI(value);
+	}
 	
 	var beg = url.indexOf('?') + 1;
 	if (beg <= 0)
+	{
+		if (str === null)
+			return url;
 		return url + '?' + str;
+	}
 	
 	while (true)
 	{
@@ -682,18 +693,28 @@ function setUrlParam(url, key, value)
 			if (epos >= 0)
 				k = s.substr(0, epos);
 			if (k == key)
+			{
+				if (str === null)
+					return url.substr(0, beg - 1);
 				return url.substr(0, beg) + str;
+			}
+			if (str === null)
+				return url;
 			return url + '&' + str;
 		}
 		else
 		{
-			var s = url.substr(beg, end);
+			var s = url.substr(beg, end - beg);
 			var k = s;
 			var epos = s.indexOf('=');
 			if (epos >= 0)
 				k = s.substr(0, epos);
 			if (k == key)
+			{
+				if (str === null)
+					return url.substr(0, beg) + url.substr(end + 1);
 				return url.substr(0, beg) + str + url.substr(end);
+			}
 		}
 		beg = end + 1;
 	}
@@ -707,7 +728,7 @@ function setUrlParams(url, params)
 	return url;
 }
 
-function goTo(url, params)
+function getUrlWithParams(url, params)
 {
 	if (typeof url == "object")
 	{
@@ -722,7 +743,12 @@ function goTo(url, params)
 	var p = url.indexOf('#');
 	if (p >= 0)
 		url = url.substr(0, p);
-	window.location.replace(url);
+	return url;
+}
+
+function goTo(url, params)
+{
+	window.location.replace(getUrlWithParams(url, params));
 }
 
 function refr()

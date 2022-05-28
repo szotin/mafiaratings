@@ -203,7 +203,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('email', 'Subj.', 'unknown');
 			$param->sub_param('phone', 'Subj.', 'unknown');
 			$param->sub_param('scoring_id', 'Default scoring system used in the league.');
-			api_rules_filter_help($param->sub_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Example: { "split_on_four": true, "extra_points": ["figm", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
+			api_rules_filter_help($param->sub_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Example: { "split_on_four": true, "extra_points": ["fiim", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
 		$help->response_param('count', 'Total number of leagues satisfying the request parameters.');
 		return $help;
 	}

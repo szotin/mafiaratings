@@ -13,6 +13,13 @@ class Page extends GeneralPageBase
 		global $_page, $_lang_code;
 
 		check_permissions(PERMISSION_ADMIN);
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('countries')));
+		echo '</td></tr></table></p>';
+		
 		$query = new DbQuery(
 			'SELECT id, name_' . $_lang_code .
 			', flags, code FROM  countries WHERE (flags & ' . COUNTRY_FLAG_NOT_CONFIRMED .
@@ -34,8 +41,8 @@ class Page extends GeneralPageBase
 		}
 		
 		$condition = new SQL(' WHERE (flags & ' . COUNTRY_FLAG_NOT_CONFIRMED . ') = 0');
-		$ccc_id = $this->ccc_filter->get_id();
-		switch($this->ccc_filter->get_type())
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)

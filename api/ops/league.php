@@ -76,8 +76,8 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('league'),
-				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ' . SCORING_DEFAULT_ID . ', ' . NORMALIZER_DEFAULT_ID . ')',
-				$name, $langs, $url, $email, $phone);
+				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?)',
+				$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
@@ -286,7 +286,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('langs', 'Languages used in the league. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
 		$help->request_param('email', 'League email.', 'remains the same.');
 		$help->request_param('phone', 'League phone. Just a text.', 'remains the same.');
-		api_rules_filter_help($help->request_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Contains json. Example: { "split_on_four": true, "extra_points": ["figm", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
+		api_rules_filter_help($help->request_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Contains json. Example: { "split_on_four": true, "extra_points": ["fiim", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
 		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		$help->request_param('scoring_id', 'Default scoring system for the league. This scoring system is suggested by default to all new tournaments of the league.', 'remains the same.');
 		$help->request_param('normalizer_id', 'Default scoring normalizer for the league. This scoring normalizer is suggested by default to all new tournaments of the league. Send 0 if the league does need to have default normalizer.', 'remains the same.');
@@ -319,8 +319,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ' . SCORING_DEFAULT_ID . ', ' . NORMALIZER_DEFAULT_ID . ')',
-			$name, $langs, $url, $email, $phone);
+			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?)',
+			$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		
@@ -605,7 +605,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
 				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_CLUB_PERM_MANAGER, $club_id);
+				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM club_users uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
 				while ($row = $query->next())
 				{
 					list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -712,7 +712,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
 			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM user_clubs uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_CLUB_PERM_MANAGER, $club_id);
+			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM club_users uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
 			while ($row = $query->next())
 			{
 				list($user_id, $user_name, $user_email, $user_lang) = $row;

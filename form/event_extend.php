@@ -15,11 +15,8 @@ try
 	}
 	$id = $_REQUEST['id'];
 	
-	list($club_id, $start_time, $duration) = Db::record(get_label('event'), 'SELECT club_id, start_time, duration FROM events WHERE id = ?', $id);
-	if ($_profile == NULL || !$_profile->is_club_manager($club_id))
-	{
-		throw new Exc(get_label('Unknown [0]', get_label('user')));
-	}
+	list($club_id, $tournament_id, $start_time, $duration) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, start_time, duration FROM events WHERE id = ?', $id);
+	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $id, $tournament_id);
 
 	$time = time();
 	$def_extend = 3 * 3600;

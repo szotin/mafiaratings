@@ -10,21 +10,21 @@ function show_permissions($user_flags)
 	$sep = '';
 	$title = '';
 	$image = NULL;
-	if (($user_flags & USER_CLUB_PERM_PLAYER) != 0)
+	if (($user_flags & USER_PERM_PLAYER) != 0)
 	{
 		$title .= $sep . get_label('player');
 		$sep = '; ';
 		$image = 'player.png';
 	}
 	
-	if (($user_flags & USER_CLUB_PERM_MODER) != 0)
+	if (($user_flags & USER_PERM_REFEREE) != 0)
 	{
-		$title .= $sep . get_label('moderator');
+		$title .= $sep . get_label('Referee');
 		$sep = '; ';
-		$image = 'moderator.png';
+		$image = 'referee.png';
 	}
 	
-	if (($user_flags & USER_CLUB_PERM_MANAGER) != 0)
+	if (($user_flags & USER_PERM_MANAGER) != 0)
 	{
 		$title .= $sep . get_label('manager');
 		$sep = '; ';
@@ -82,7 +82,7 @@ class Page extends UserPageBase
 		$query = new DbQuery(
 			'SELECT c.id, c.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM clubs c' . 
 				' JOIN games g ON g.club_id = c.id' .
-				' JOIN user_clubs u ON u.club_id = c.id' .
+				' JOIN club_users u ON u.club_id = c.id' .
 				' JOIN players p ON p.user_id = u.user_id AND p.game_id = g.id' .
 				' WHERE u.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 GROUP BY c.id, p.role ORDER BY c.id, p.role',
 			$this->id);
@@ -120,7 +120,7 @@ class Page extends UserPageBase
 			'SELECT c.id, c.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM clubs c' . 
 				' JOIN games g ON g.club_id = c.id' .
 				' JOIN players p ON p.game_id = g.id' .
-				' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 AND c.id NOT IN (SELECT u.club_id FROM user_clubs u WHERE u.user_id = p.user_id) GROUP BY c.id, p.role ORDER BY c.id, p.role',
+				' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 AND c.id NOT IN (SELECT u.club_id FROM club_users u WHERE u.user_id = p.user_id) GROUP BY c.id, p.role ORDER BY c.id, p.role',
 			$this->id);
 		while ($row = $query->next())
 		{
@@ -156,7 +156,7 @@ class Page extends UserPageBase
 		
 		$query = new DbQuery(
 			'SELECT c.id, c.name, c.flags, c.web_site, u.flags FROM clubs c' .
-			' JOIN user_clubs u ON u.club_id = c.id' .
+			' JOIN club_users u ON u.club_id = c.id' .
 			' WHERE u.user_id = ? AND u.club_id NOT IN (SELECT g.club_id FROM players p, games g WHERE p.game_id = g.id AND p.user_id = u.user_id) ORDER BY u.flags DESC', $this->id);
 		while ($row = $query->next())
 		{

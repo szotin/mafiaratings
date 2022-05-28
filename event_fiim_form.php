@@ -1,6 +1,6 @@
 <?php
 require_once 'include/session.php';
-require_once 'include/figm_form.php';
+require_once 'include/fiim_form.php';
 
 // define('A4_MAX_X', 297);
 // define('A4_MAX_Y', 210);
@@ -20,7 +20,7 @@ try
 		throw new FatalExc(get_label('Unknown [0]', get_label('event')));
 	}
 	
-	$form = new FigmForm();
+	$form = new FiimForm();
 	$query = new DbQuery(
 		'SELECT g.id, t.name, e.name, g.json, g.is_canceled, c.timezone, u.name FROM games g' .
 		' JOIN events e ON e.id = g.event_id' .
@@ -31,9 +31,9 @@ try
 		' WHERE e.id = ? AND g.result > 0 ORDER BY g.end_time', $event_id);
 	while ($row = $query->next())
 	{
-		list ($game_id, $tournament_name, $event_name, $json, $is_canceled, $timezone, $moder_name) = $row;
+		list ($game_id, $tournament_name, $event_name, $json, $is_canceled, $timezone, $referee_name) = $row;
 		$game = new Game($json);
-		$form->add($game, $event_name, $tournament_name, $moder_name, $timezone);
+		$form->add($game, $event_name, $tournament_name, $referee_name, $timezone);
 	}
 	$form->output();
 }

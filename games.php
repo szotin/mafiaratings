@@ -33,7 +33,6 @@ class Page extends GeneralPageBase
 		
 		parent::prepare();
 		
-		$this->ccc_title = get_label('Filter games by club, city, or country.');
 		$this->is_admin = ($_profile != NULL && $_profile->is_admin());
 		$this->result_filter = -1;
 		if (isset($_REQUEST['results']))
@@ -103,8 +102,24 @@ class Page extends GeneralPageBase
 			$condition->add(' AND g.is_canceled = 0');
 		}
 		
-		$ccc_id = $this->ccc_filter->get_id();
-		switch($this->ccc_filter->get_type())
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
+		echo ' <select id="results" onChange="filterResults()" title="' . get_label('Filter games by result.') . '">';
+		show_option(-1, $this->result_filter, get_label('All games'));
+		show_option(1, $this->result_filter, get_label('Town wins'));
+		show_option(2, $this->result_filter, get_label('Mafia wins'));
+		if ($this->is_admin)
+		{
+			show_option(0, $this->result_filter, get_label('Unfinished games'));
+		}
+		echo '</select>';
+		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->flag_filter);
+		echo '</td></tr></table></p>';
+		
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
@@ -138,7 +153,7 @@ class Page extends GeneralPageBase
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, a.id, a.name, a.flags, l.id, l.name, l.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
@@ -260,23 +275,15 @@ class Page extends GeneralPageBase
 		echo '</table>';
 	}
 	
-	protected function show_filter_fields()
+	protected function js()
 	{
-		echo '<select id="results" onChange="filter()" title="' . get_label('Filter games by result.') . '">';
-		show_option(-1, $this->result_filter, get_label('All games'));
-		show_option(1, $this->result_filter, get_label('Town wins'));
-		show_option(2, $this->result_filter, get_label('Mafia wins'));
-		if ($this->is_admin)
+		parent::js();
+?>
+		function filterResults()
 		{
-			show_option(0, $this->result_filter, get_label('Unfinished games'));
+			goTo({results: $("#results").val()});
 		}
-		echo '</select>';
-		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->flag_filter, 'filter');
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ "&results=" + $("#results").val() + "&filter=" + checkboxFilterFlags()';
+<?php
 	}
 }
 

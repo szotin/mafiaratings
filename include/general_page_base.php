@@ -11,27 +11,6 @@ define('CCCS_NO', 2);
 
 class GeneralPageBase extends PageBase
 {
-	protected $ccc_filter;
-	protected $ccc_state = CCCS_ALL;
-	protected $ccc_title = '';
-	
-	public function set_ccc($ccc_state) { $this->ccc_state = $ccc_state; }
-	
-	protected function prepare()
-	{
-		parent::prepare();
-		
-		switch ($this->ccc_state)
-		{
-		case CCCS_MY:
-			$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_MY);
-			break;
-		case CCCS_ALL:
-			$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
-			break;
-		}
-	}
-	
 	protected function show_title()
 	{
 		global $_profile;
@@ -49,10 +28,17 @@ class GeneralPageBase extends PageBase
 			new MenuItem('index.php' . $ccc, get_label('Home'), get_label('Main page')),
 			new MenuItem('ratings.php' . $ccc, get_label('Ratings'), get_label('Players ratings')),
 			new MenuItem('competition.php' . $ccc, get_label('Competition chart'), get_label('Competition chart at the top of the rating.')),
-			// new MenuItem('leagues.php' . $ccc, get_label('Leagues'), get_label('Leagues list')),
-			new MenuItem('clubs.php' . $ccc, get_label('Clubs'), get_label('Clubs list')),
-			new MenuItem('tournaments.php' . $ccc, get_label('Tournaments'), get_label('Tournaments history')),
-			new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
+			new MenuItem('#orgs', get_label('Organizations'), NULL, array
+			(
+				new MenuItem('clubs.php' . $ccc, get_label('Clubs'), get_label('Clubs list')),
+				new MenuItem('leagues.php' . $ccc, get_label('Leagues'), get_label('Leagues list')),
+			)),
+			new MenuItem('#competitions', get_label('Competitions'), NULL, array
+			(
+				new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
+				new MenuItem('tournaments.php' . $ccc, get_label('Tournaments'), get_label('Tournaments history')),
+//				new MenuItem('series.php' . $ccc, get_label('Tournament series'), get_label('Tournament series history')),
+			)),
 			new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games')),
 			// new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),
 			new MenuItem('#stats', get_label('Reports'), NULL, array
@@ -60,7 +46,7 @@ class GeneralPageBase extends PageBase
 				new MenuItem('stats.php' . $ccc, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
 				new MenuItem('by_numbers.php' . $ccc, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('nominations.php' . $ccc, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
-				new MenuItem('moderators.php' . $ccc, get_label('Moderators'), get_label('Moderators statistics')),
+				new MenuItem('referees.php' . $ccc, get_label('Referees'), get_label('Referees statistics')),
 			)),
 			// new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums')),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
@@ -112,52 +98,7 @@ class GeneralPageBase extends PageBase
 		echo '<tr><td><p>' . $this->standard_title() . '</p></td><td align="right" valign="top">';
 		show_back_button();
 		echo '</td></tr>';
-		echo '</table>';
-		
-		echo '<table class="transp" width="100%">';
-		echo '<tr><td>';
-		if ($this->ccc_filter != NULL)
-		{
-			$this->ccc_filter->show('onCCC', $this->ccc_title);
-		}
-		echo ' ';
-		$this->show_filter_fields();
-		echo '</td><td align="right">';
-		$this->show_search_fields();
 		echo '</table></p>';
-	}
-	
-	protected function show_filter_fields()
-	{
-	}
-	
-	protected function show_search_fields()
-	{
-	}
-	
-	protected function get_filter_js()
-	{
-		return '';
-	}
-	
-	protected function js()
-	{
-		if ($this->ccc_filter != NULL)
-		{
-?>
-			var cccCode = "<?php echo $this->ccc_filter->get_code(); ?>";
-			function onCCC(code)
-			{
-				cccCode = code;
-				filter();
-			}
-			
-			function filter()
-			{
-				window.location.replace("?ccc=" + cccCode <?php echo $this->get_filter_js(); ?>);
-			}
-<?php
-		}
 	}
 }
 

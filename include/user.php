@@ -86,8 +86,8 @@ function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $c
 	
 	Db::exec(
 		get_label('user'), 
-		'INSERT INTO users (name, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id, games, games_won, rating, max_rating, max_rating_time) ' .
-			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?, 0, 0, ' . USER_INITIAL_RATING . ', ' . USER_INITIAL_RATING . ', UNIX_TIMESTAMP())',
+		'INSERT INTO users (name, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id, games, games_won, rating) ' .
+			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?, 0, 0, ' . USER_INITIAL_RATING . ')',
 		$name, md5(rand_string(8)), '', $email, $flags, $club_id, $langs, $lang, $city_id);
 	list ($user_id) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
 	
@@ -103,7 +103,7 @@ function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $c
 	
 	if ($club_id != NULL)
 	{
-		Db::exec(get_label('user'), 'INSERT INTO user_clubs (user_id, club_id, flags) VALUES (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
+		Db::exec(get_label('user'), 'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
 		db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
 	}
 	
@@ -165,7 +165,7 @@ class UserPageBase extends PageBase
 				new MenuItem('user_stats.php?id=' . $this->id, get_label('Stats'), get_label('General statistics. How many games played, winning percentage, nominating/voting, etc.')),
 				new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				//new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)),
-				new MenuItem('user_moderators.php?id=' . $this->id, get_label('Moderators'), get_label('How [0] played with different moderators', $this->title)),
+				new MenuItem('user_referees.php?id=' . $this->id, get_label('Referees'), get_label('How [0] played with different referees', $this->title)),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
@@ -192,9 +192,9 @@ class UserPageBase extends PageBase
 		echo '</td></tr>';	
 		
 		echo '<tr><td rowspan="2" width="' . TNAIL_WIDTH . '"><table class="bordered light"><tr><td class="dark" valign="top" style="min-width:28px; padding:4px;">';
-		if ($_profile != NULL && $_profile->user_id == $this->id)
+		if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $this->id, $this->club_id))
 		{
-			echo '<button class="icon" onclick="mr.editAccount()" title="' . get_label('Account settings') . '"><img src="images/settings.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.editUser(' . $this->id . ')" title="' . get_label('Account settings') . '"><img src="images/edit.png" border="0"></button>';
 		}
 		echo '</td><td style="padding: 4px 2px 4px 1px;">';
 		$user_pic = new Picture(USER_PICTURE);

@@ -132,96 +132,192 @@ class Page extends TournamentPageBase
 		show_user_input('page', $this->user_name, 'tournament=' . $this->id, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table>';
 		
-		$condition = new SQL(' AND g.tournament_id = ?', $this->id);
-		
-		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->normalizer, $this->scoring_options);
-		$players_count = count($players);
-		if ($this->user_id > 0)
+		$is_teams = ($this->flags & TOURNAMENT_FLAG_TEAM) != 0;
+		$team_view = $is_teams && (!isset($_REQUEST['teams']) || $_REQUEST['teams'] == 1);
+		if ($is_teams)
 		{
-			$_page = get_user_page($players, $this->user_id, PAGE_SIZE);
-			if ($_page < 0)
+			echo '<div class="tab">';
+			echo '<button ' . (!$team_view ? '' : 'class="active" ') . 'onclick="goTo({teams:1})">' . get_label('Team standings') . '</button>';
+			echo '<button ' . ($team_view ? '' : 'class="active" ') . 'onclick="goTo({teams:0})">' . get_label('Player standings') . '</button>';
+			echo '</div>';
+			echo '<div class="tabcontent">';
+		}
+		
+		if ($team_view)
+		{
+			$teams = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_TEAMS, $this->scoring, $this->normalizer, $this->scoring_options);
+	//		print_json($teams);
+			$teams_count = count($teams);
+			
+			show_pages_navigation(PAGE_SIZE, $teams_count);
+			
+			$tournament_user_pic =
+				new Picture(USER_TOURNAMENT_PICTURE,
+				new Picture(USER_CLUB_PICTURE,
+				$this->user_pic));
+			
+			echo '<table class="bordered light" width="100%">';
+			echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
+			echo '<td colspan="2" rowspan="2">'.get_label('Team').'</td>';
+			echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Rounds played').'</td>';
+			echo '</tr>';
+			echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
+			
+			$page_start = $_page * PAGE_SIZE;
+			if ($teams_count > $page_start + PAGE_SIZE)
 			{
-				$_page = 0;
-				$this->no_user_error();
+				$teams_count = $page_start + PAGE_SIZE;
 			}
-		}
-		
-		show_pages_navigation(PAGE_SIZE, $players_count);
-		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
-		echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
-		echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Rounds played').'</td>';
-		if ($this->has_normalizer)
-		{
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Normalization rate').'</td>';
-		}
-		echo '</tr>';
-		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
-		
-		$page_start = $_page * PAGE_SIZE;
-		if ($players_count > $page_start + PAGE_SIZE)
-		{
-			$players_count = $page_start + PAGE_SIZE;
-		}
-		for ($number = $page_start; $number < $players_count; ++$number)
-		{
-			$player = $players[$number];
-			if ($player->id == $this->user_id)
+			for ($number = $page_start; $number < $teams_count; ++$number)
 			{
-				echo '<tr class="darker">';
-				$highlight = 'darkest';
-			}
-			else
-			{
+				$team = $teams[$number];
 				echo '<tr>';
-				$highlight = 'dark';
+				echo '<td align="center" class="dark">' . ($number + 1) . '</td>';
+				echo '<td width="' . (count($team->players) * 50) . '">';
+				foreach ($team->players as $player)
+				{
+					echo '<a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">';
+					$tournament_user_pic->
+						set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
+						set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
+						set($player->id, $player->name, $player->flags);
+					$tournament_user_pic->show(ICONS_DIR, false, 50);
+					echo '</a>';
+				}
+				echo '</td><td><b>' . $team->name . '</b></td>';
+				echo '<td align="center" class="dark"' . score_title($team->points, $team->raw_points, 1) . '>' . format_score($team->points) . '</td>';
+				echo '<td align="center"' . score_title($team->main_points, $team->raw_main_points, 1) . '>' . format_score($team->main_points) . '</td>';
+				echo '<td align="center"' . score_title($team->legacy_points, $team->raw_legacy_points, 1) . '>' . format_score($team->legacy_points) . '</td>';
+				echo '<td align="center"' . score_title($team->extra_points, $team->raw_extra_points, 1) . '>' . format_score($team->extra_points) . '</td>';
+				echo '<td align="center"' . score_title($team->penalty_points, $team->raw_penalty_points, 1) . '>' . format_score($team->penalty_points) . '</td>';
+				echo '<td align="center"' . score_title($team->night1_points, $team->raw_night1_points, 1) . '>' . format_score($team->night1_points) . '</td>';
+				echo '<td align="center">' . $team->games_count . '</td>';
+				echo '<td align="center">' . $team->wins . '</td>';
+				if ($team->games_count != 0)
+				{
+					echo '<td align="center">' . number_format(($team->wins * 100.0) / $team->games_count, 1) . '%</td>';
+					echo '<td align="center">';
+					echo format_score($team->raw_points / $team->games_count);
+					echo '</td>';
+				}
+				else
+				{
+					echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
+				}
+				echo '<td align="center">' . $team->events_count . '</td>';
+				echo '</tr>';
 			}
-			echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
-			echo '<td width="50"><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">';
-			$this->user_pic->set($player->id, $player->name, $player->flags);
-			$this->user_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">' . $player->name . '</a></td>';
-			echo '<td width="50" align="center">';
-			if (!is_null($player->club_id) && $player->club_id > 0)
+			echo '</table>';
+		}
+		else
+		{
+			$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->normalizer, $this->scoring_options);
+	//		print_json($players);
+			$players_count = count($players);
+			if ($this->user_id > 0)
 			{
-				$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
-				$this->club_pic->show(ICONS_DIR, true, 40);
+				$_page = get_user_page($players, $this->user_id, PAGE_SIZE);
+				if ($_page < 0)
+				{
+					$_page = 0;
+					$this->no_user_error();
+				}
 			}
-			echo '</td>';
-			echo '<td align="center" class="' . $highlight . '"' . score_title($player->points, $player->raw_points, $player->normalization) . '>' . format_score($player->points) . '</td>';
-			echo '<td align="center"' . score_title($player->main_points, $player->raw_main_points, $player->normalization) . '>' . format_score($player->main_points) . '</td>';
-			echo '<td align="center"' . score_title($player->legacy_points, $player->raw_legacy_points, $player->normalization) . '>' . format_score($player->legacy_points) . '</td>';
-			echo '<td align="center"' . score_title($player->extra_points, $player->raw_extra_points, $player->normalization) . '>' . format_score($player->extra_points) . '</td>';
-			echo '<td align="center"' . score_title($player->penalty_points, $player->raw_penalty_points, $player->normalization) . '>' . format_score($player->penalty_points) . '</td>';
-			echo '<td align="center"' . score_title($player->night1_points, $player->raw_night1_points, $player->normalization) . '>' . format_score($player->night1_points) . '</td>';
-			echo '<td align="center">' . $player->games_count . '</td>';
-			echo '<td align="center">' . $player->wins . '</td>';
-			if ($player->games_count != 0)
-			{
-				echo '<td align="center">' . number_format(($player->wins * 100.0) / $player->games_count, 1) . '%</td>';
-				echo '<td align="center">';
-				echo format_score($player->raw_points / $player->games_count);
-				echo '</td>';
-			}
-			else
-			{
-				echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
-			}
-			echo '<td align="center">' . $player->events_count . '</td>';
+			
+			show_pages_navigation(PAGE_SIZE, $players_count);
+			
+			$tournament_user_pic =
+				new Picture(USER_TOURNAMENT_PICTURE,
+				new Picture(USER_CLUB_PICTURE,
+				$this->user_pic));
+			
+			echo '<table class="bordered light" width="100%">';
+			echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
+			echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
+			echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
+			echo '<td width="36" align="center" rowspan="2">'.get_label('Rounds played').'</td>';
 			if ($this->has_normalizer)
 			{
-				echo '<td align="center">' . format_coeff($player->normalization) . '</td>';
+				echo '<td width="36" align="center" rowspan="2">'.get_label('Normalization rate').'</td>';
 			}
 			echo '</tr>';
+			echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
+			
+			$page_start = $_page * PAGE_SIZE;
+			if ($players_count > $page_start + PAGE_SIZE)
+			{
+				$players_count = $page_start + PAGE_SIZE;
+			}
+			for ($number = $page_start; $number < $players_count; ++$number)
+			{
+				$player = $players[$number];
+				if ($player->id == $this->user_id)
+				{
+					echo '<tr class="darker">';
+					$highlight = 'darkest';
+				}
+				else
+				{
+					echo '<tr>';
+					$highlight = 'dark';
+				}
+				echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
+				echo '<td width="50"><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">';
+				$tournament_user_pic->
+					set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
+					set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
+					set($player->id, $player->name, $player->flags);
+				$tournament_user_pic->show(ICONS_DIR, false, 50);
+				echo '</a></td><td><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">' . $player->name . '</a></td>';
+				echo '<td width="50" align="center">';
+				if (!is_null($player->club_id) && $player->club_id > 0)
+				{
+					$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
+					$this->club_pic->show(ICONS_DIR, true, 40);
+				}
+				echo '</td>';
+				echo '<td align="center" class="' . $highlight . '"' . score_title($player->points, $player->raw_points, $player->normalization) . '>' . format_score($player->points) . '</td>';
+				echo '<td align="center"' . score_title($player->main_points, $player->raw_main_points, $player->normalization) . '>' . format_score($player->main_points) . '</td>';
+				echo '<td align="center"' . score_title($player->legacy_points, $player->raw_legacy_points, $player->normalization) . '>' . format_score($player->legacy_points) . '</td>';
+				echo '<td align="center"' . score_title($player->extra_points, $player->raw_extra_points, $player->normalization) . '>' . format_score($player->extra_points) . '</td>';
+				echo '<td align="center"' . score_title($player->penalty_points, $player->raw_penalty_points, $player->normalization) . '>' . format_score($player->penalty_points) . '</td>';
+				echo '<td align="center"' . score_title($player->night1_points, $player->raw_night1_points, $player->normalization) . '>' . format_score($player->night1_points) . '</td>';
+				echo '<td align="center">' . $player->games_count . '</td>';
+				echo '<td align="center">' . $player->wins . '</td>';
+				if ($player->games_count != 0)
+				{
+					echo '<td align="center">' . number_format(($player->wins * 100.0) / $player->games_count, 1) . '%</td>';
+					echo '<td align="center">';
+					echo format_score($player->raw_points / $player->games_count);
+					echo '</td>';
+				}
+				else
+				{
+					echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
+				}
+				echo '<td align="center">' . $player->events_count . '</td>';
+				if ($this->has_normalizer)
+				{
+					echo '<td align="center">' . format_coeff($player->normalization) . '</td>';
+				}
+				echo '</tr>';
+			}
+			echo '</table>';
 		}
-		echo '</table>';
 		
+		if ($is_teams)
+		{
+			echo '</div>';
+		}
 		echo '<table width="100%"><tr valign="top"><td>';
 		echo '</td><td id="comments"></td></tr></table>';
 ?>

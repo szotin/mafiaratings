@@ -16,12 +16,19 @@ define('AGENT_WEBOS', 5);
 
 // user-league flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
-// 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag moder)
+// 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag referee)
 // 03 - 0x0004 -      4 - reserved (not to interfere with user-club perm flag manager)
 // 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
 // 16 - 0x8000 -  32768 - perm manager
 define('USER_LEAGUE_PERM_MANAGER', 0x8000);
 define('USER_LEAGUE_PERM_MASK', 0x8000); // USER_LEAGUE_PERM_MANAGER
+
+// permission flags - applicable to user-club; user-event; and user-tournament
+define('USER_PERM_PLAYER', 0x1);
+define('USER_PERM_REFEREE', 0x2);
+define('USER_PERM_MANAGER', 0x4);
+define('USER_PERM_ADMIN', 0x8);
+define('USER_PERM_MASK', 0xf); // USER_PERM_ADMIN
 
 // user-club flags
 // 01 - 0x0001 -      1 - perm player
@@ -30,18 +37,49 @@ define('USER_LEAGUE_PERM_MASK', 0x8000); // USER_LEAGUE_PERM_MANAGER
 // 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
 // 05 - 0x0010 -     16 - subscribed
 // 06 - 0x0020 -     32 - banned
+// 07 - 0x0040 -     64 - icon mask
+// 08 - 0x0080 -    128 - icon mask
+// 09 - 0x0100 -    256 - icon mask
 // 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
-define('USER_CLUB_PERM_PLAYER', 0x1);
-define('USER_CLUB_PERM_MODER', 0x2);
-define('USER_CLUB_PERM_MANAGER', 0x4);
 define('USER_CLUB_FLAG_SUBSCRIBED', 0x10);
 define('USER_CLUB_FLAG_BANNED', 0x20); 
-define('USER_CLUB_NEW_PLAYER_FLAGS', 0x11); // USER_CLUB_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED
-define('USER_CLUB_PERM_MASK', 0x7); // USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER
+define('USER_CLUB_NEW_PLAYER_FLAGS', 0x11); // USER_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED
+
+define('USER_CLUB_ICON_MASK', 0x1c0);
+define('USER_CLUB_ICON_MASK_OFFSET', 6);
+define('USER_CLUB_ICON_MAX_VERSION', 7);
+
+// user-event flags
+// 01 - 0x0001 -      1 - perm player
+// 02 - 0x0002 -      2 - perm mod
+// 03 - 0x0004 -      4 - perm manager
+// 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
+// 05 - 0x0010 -     16 - icon mask
+// 06 - 0x0020 -     32 - icon mask
+// 07 - 0x0040 -     64 - icon mask
+define('USER_EVENT_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
+
+define('USER_EVENT_ICON_MASK', 0x70);
+define('USER_EVENT_ICON_MASK_OFFSET', 4);
+define('USER_EVENT_ICON_MAX_VERSION', 7);
+
+// user-tournament flags
+// 01 - 0x0001 -      1 - perm player
+// 02 - 0x0002 -      2 - perm mod
+// 03 - 0x0004 -      4 - perm manager
+// 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
+// 05 - 0x0800 -     16 - icon mask
+// 06 - 0x1000 -     32 - icon mask
+// 07 - 0x2000 -     64 - icon mask
+define('USER_TOURNAMENT_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
+
+define('USER_TOURNAMENT_ICON_MASK', 0x70);
+define('USER_TOURNAMENT_ICON_MASK_OFFSET', 4);
+define('USER_TOURNAMENT_ICON_MAX_VERSION', 7);
 
 // user flags
 // 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
-// 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag moder)
+// 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag referee)
 // 03 - 0x0004 -      4 - reserved (not to interfere with user-club perm flag manager)
 // 04 - 0x0008 -      8 - perm admin
 // 05 - 0x0010 -     16 - reserved for future use
@@ -56,7 +94,6 @@ define('USER_CLUB_PERM_MASK', 0x7); // USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MO
 // 14 - 0x2000 -   8192 - icon mask
 // 15 - 0x4000 -  16384 - name was changed during registration
 // 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
-define('USER_PERM_ADMIN', 0x8);
 define('USER_FLAG_NO_PASSWORD', 0x20);
 define('USER_FLAG_MALE', 0x40);
 define('USER_FLAG_BANNED', 0x80);
@@ -64,7 +101,6 @@ define('USER_FLAG_MESSAGE_NOTIFY', 0x100);
 define('USER_FLAG_PHOTO_NOTIFY', 0x200);
 define('USER_FLAG_IMMUNITY', 0x400);
 define('USER_FLAG_NAME_CHANGED', 0x4000);
-define('USER_PERM_MASK', 0x8); // USER_PERM_ADMIN
 
 define('USER_INITIAL_RATING', 0);
 
@@ -77,7 +113,7 @@ define('NEW_USER_FLAGS', 0x320); // USER_FLAG_MESSAGE_NOTIFY | USER_FLAG_PHOTO_N
 define('INCOMER_FLAGS_MALE', USER_FLAG_MALE);
 define('INCOMER_FLAGS_EXISTING', 0x80);
 
-define('PERM_OFFICER', 14); // admin, manager or moderator
+define('PERM_OFFICER', 14); // admin, manager or referee
 define('PERM_ALL', 0xffffffff);
 
 define('FOR_EVERYONE', 0);
@@ -107,6 +143,9 @@ define('PHOTO_COL_COUNT',5);
 
 define('ADDRESS_PIC_CODE', 'a');
 define('USER_PIC_CODE', 'u');
+define('USER_CLUB_PIC_CODE', 'b');
+define('USER_EVENT_PIC_CODE', 'v');
+define('USER_TOURNAMENT_PIC_CODE', 'o');
 define('CLUB_PIC_CODE', 'c');
 define('LEAGUE_PIC_CODE', 'l');
 define('ALBUM_PIC_CODE', 'p');
@@ -137,7 +176,7 @@ define('DEFAULT_COLUMN_COUNT', 5);
 // 1 - 0x0001 -      1 - event should not be shown in the event list before the end of the event
 // 2 - 0x0002 -      2 - event should not be shown in the event list after the end of the event
 // 3 - 0x0004 -      4 - canceled
-// 4 - 0x0008 -      8 - everyone can moderate
+// 4 - 0x0008 -      8 - everyone can referee
 // 5 - 0x0010 -     16 - event is finished - all scoring is complete
 // 6 - 0x0020 -     32 - event is for fun, most of the games are non-rating
 // 7 - 0x0040 -     64 - icon mask
@@ -146,11 +185,11 @@ define('DEFAULT_COLUMN_COUNT', 5);
 define('EVENT_FLAG_HIDDEN_BEFORE', 0x1);
 define('EVENT_FLAG_HIDDEN_AFTER', 0x2);
 define('EVENT_FLAG_CANCELED', 0x4);
-define('EVENT_FLAG_ALL_MODERATE', 0x8);
+define('EVENT_FLAG_ALL_CAN_REFEREE', 0x8);
 define('EVENT_FLAG_FINISHED', 0x10);
 define('EVENT_FLAG_FUN', 0x20);
 define('EVENT_MASK_HIDDEN', 0x3); // EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_HIDDEN_AFTER
-define('EVENT_EDITABLE_MASK', 0x28); // EVENT_FLAG_ALL_MODERATE | EVENT_FLAG_FUN
+define('EVENT_EDITABLE_MASK', 0x28); // EVENT_FLAG_ALL_CAN_REFEREE | EVENT_FLAG_FUN
 
 define('EVENT_ICON_MASK', 0x1c0);
 define('EVENT_ICON_MASK_OFFSET', 6);
@@ -173,7 +212,8 @@ define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
 define('TOURNAMENT_FLAG_USE_ROUNDS_SCORING', 0x40);
 define('TOURNAMENT_FLAG_FINISHED', 0x80);
-define('TOURNAMENT_EDITABLE_MASK', 0x70); // TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_USE_ROUNDS_SCORING
+define('TOURNAMENT_FLAG_TEAM', 0x100);
+define('TOURNAMENT_EDITABLE_MASK', 0x170); // TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_USE_ROUNDS_SCORING | TOURNAMENT_FLAG_TEAM
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);
@@ -240,7 +280,6 @@ define('COUNTRY_FLAG_NOT_CONFIRMED', 1);
 // 2 - 0x0002 -      2 - club membership is not approved by the club
 define('LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED', 0x0001);
 define('LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED', 0x0002);
-
 
 // album flags
 // 1 - 0x0001 -      1 - icon mask

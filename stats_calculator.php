@@ -79,7 +79,7 @@ class Page extends PageBase
 		echo '</select></td>';
 		
 		echo '<td width="240">' . get_label('Filter') . ': ';
-		$this->ccc_filter->show('filterSelect', get_label('Filter games by club/city/country.'));
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')), 'filterSelect');
 		echo '</td>';
 		
 		echo '<td><input type="checkbox" id="chair"';

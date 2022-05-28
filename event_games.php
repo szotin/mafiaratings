@@ -89,8 +89,12 @@ class Page extends EventPageBase
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$moder_pic = new Picture(USER_PICTURE);
-		
+		$referee_pic =
+			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE))));
+	
 		$is_user = is_permitted(PERMISSION_USER);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td';
@@ -102,20 +106,28 @@ class Page extends EventPageBase
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Moderator').'</td><td width="48">'.get_label('Result').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, t.id, t.name, t.flags, l.id, l.name, l.flags FROM games g' .
+			'SELECT g.id, g.user_id, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled,' .
+			' t.id, t.name, t.flags, l.id, l.name, l.flags,' . 
+			' eu.nickname, eu.flags, tu.flags, cu.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
+				' LEFT OUTER JOIN event_users eu ON eu.user_id = m.id AND eu.event_id = g.event_id' .
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = m.id AND tu.tournament_id = g.tournament_id' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
 				' JOIN cities ct ON ct.id = c.city_id',
 			$condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($game_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, $tournament_id, $tournament_name, $tournament_flags, $league_id, $league_name, $league_flags) = $row;
+			list (
+				$game_id, $game_user_id, $timezone, $referee_id, $referee_name, $referee_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, 
+				$tournament_id, $tournament_name, $tournament_flags, $league_id, $league_name, $league_flags,
+				$event_referee_nickname, $event_referee_flags, $tournament_referee_flags, $club_referee_flags) = $row;
 			
 			echo '<tr align="center"';
 			if ($is_canceled || !$is_rating)
@@ -124,7 +136,7 @@ class Page extends EventPageBase
 			}
 			echo '>';
 			
-			if ($this->is_manager)
+			if ($this->is_manager || is_permitted(PERMISSION_OWNER, $game_user_id))
 			{
 				echo '<td class="dark" width="90">';
 				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';
@@ -182,8 +194,12 @@ class Page extends EventPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			$moder_pic->set($moder_id, $moder_name, $moder_flags);
-			$moder_pic->show(ICONS_DIR, true, 48);
+			$referee_pic->
+				set($referee_id, $event_referee_nickname, $event_referee_flags, 'e' . $this->event->id)->
+				set($referee_id, $referee_name, $tournament_referee_flags, 't' . $this->event->tournament_id)->
+				set($referee_id, $referee_name, $club_referee_flags, 'c' . $this->event->club_id)->
+				set($referee_id, $referee_name, $referee_flags);
+			$referee_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
 			echo '<td>';

@@ -5,7 +5,7 @@ require_once __DIR__ . '/pdf/tfpdf.php';
 // define('A4_MAX_X', 297);
 // define('A4_MAX_Y', 210);
 
-class FigmForm
+class FiimForm
 {
 	private $pdf;
 	

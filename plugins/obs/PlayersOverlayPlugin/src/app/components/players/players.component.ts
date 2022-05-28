@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { retry, share, Subject, Subscription, switchMap, timer } from 'rxjs';
-import { GameSnapshot, GameState, Player } from 'src/app/services/gamesnapshot.model';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { GamePhase, Game, GameState, Player } from 'src/app/services/gamesnapshot.model';
 import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
 
 @Component({
@@ -9,34 +11,16 @@ import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
   styleUrls: ['./players.component.scss']
 })
 export class PlayersComponent implements OnInit {
-  gameSnapshot: GameSnapshot | null | undefined;
-  showPlayers: boolean = false;
-  private timeInterval: Subscription | undefined;
-  // private stopPolling = new Subject();
+  game$?: Observable<Game | undefined>;
+  showPlayers$?: Observable<boolean>;;
 
-  constructor(private gameSnapshotService: GamesnapshotService) { }
-
-  ngOnInit(): void {
-    this.timeInterval = timer(0, 2000)
-      .pipe(
-        switchMap(() => this.getGameSnapshot()),
-        retry(20),
-        share(),
-        // takeUntil(this.stopPolling)
-      )
-      .subscribe(
-        (res: { body: GameSnapshot | null | undefined; }) => {
-          let gameSnapshot = res.body;
-          this.showPlayers = gameSnapshot?.game.state != GameState.notStarted ?? false;
-          this.gameSnapshot = res.body;
-
-        },
-        (err: any) => console.log(err)
-      );
+  constructor(private gameSnapshotService: GamesnapshotService) {
   }
 
-  private getGameSnapshot() {
-    return this.gameSnapshotService.getGameSnapshot();
+  ngOnInit(): void {
+    this.game$ = this.gameSnapshotService.getCurrentGame();
+    this.showPlayers$ = this.game$.pipe(
+      map((it?: Game) => (it?.state != GameState.notStarted) ?? false));
   }
 
   trackPlayerById(index:number, player:Player): number {

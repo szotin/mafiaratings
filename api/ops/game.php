@@ -27,12 +27,12 @@ function def_club()
 		$priority = 0;
 		foreach ($_profile->clubs as $club)
 		{
-			if ($club->flags & (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER) == (USER_CLUB_PERM_MODER | USER_CLUB_PERM_MANAGER))
+			if ($club->flags & (USER_PERM_REFEREE | USER_PERM_MANAGER) == (USER_PERM_REFEREE | USER_PERM_MANAGER))
 			{
 				$club_id = $club->id;
 				break;
 			}
-			else if ($club->flags & USER_CLUB_PERM_MODER)
+			else if ($club->flags & USER_PERM_REFEREE)
 			{
 				$priority = 1;
 				$club_id = $club->id;
@@ -57,13 +57,13 @@ function compare_players($player1, $player2)
 
 class GPlayer
 {
-	function __construct($id, $name, $club, $u_flags, $user_club_flags)
+	function __construct($id, $name, $club, $u_flags, $club_user_flags)
 	{
 		$this->id = (int)$id;
 		$this->name = $name;
 		$this->club = $club; 
 		$this->nicks = array();
-		$this->flags = (int)(($user_club_flags & (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
+		$this->flags = (int)(($club_user_flags & (USER_PERM_PLAYER | USER_PERM_REFEREE)) + ($u_flags & (USER_FLAG_MALE | USER_FLAG_IMMUNITY)));
 	}
 }
 
@@ -111,19 +111,19 @@ class GClub
 		$this->haunters = array();
 		$this->players = array();
 		$query = new DbQuery(
-			'SELECT u.id, u.name, c.name, u.flags, uc.flags FROM user_clubs uc' .
+			'SELECT u.id, u.name, c.name, u.flags, uc.flags FROM club_users uc' .
 				' JOIN users u ON u.id = uc.user_id' .
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' WHERE (uc.flags & ' . USER_CLUB_FLAG_BANNED .
-					') = 0 AND (uc.flags & ' . (USER_CLUB_PERM_PLAYER | USER_CLUB_PERM_MODER) .
+					') = 0 AND (uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_REFEREE) .
 					') <> 0 AND (u.flags & ' . USER_FLAG_BANNED .
 					') = 0 AND uc.club_id = ?' .
 				' ORDER BY u.rating DESC',
 			$id);
 		while ($row = $query->next())
 		{
-			list ($user_id, $user_name, $user_club, $u_flags, $user_club_flags) = $row;
-			$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $u_flags, $user_club_flags);
+			list ($user_id, $user_name, $user_club, $u_flags, $club_user_flags) = $row;
+			$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $u_flags, $club_user_flags);
 			if ($haunters_count < 50)
 			{
 				$this->haunters[] = (int)$user_id;
@@ -131,7 +131,7 @@ class GClub
 			}
 		}
 		
-        $query = new DbQuery('SELECT u.user_id, r.nick_name, r.club_id, count(*), MAX(e.start_time) FROM user_clubs u JOIN registrations r ON r.user_id = u.user_id JOIN events e ON e.id = r.event_id WHERE u.club_id = ? GROUP BY r.user_id, r.nick_name, r.club_id', $id);
+        $query = new DbQuery('SELECT u.user_id, r.nickname, e.club_id, count(*), MAX(e.start_time) FROM club_users u JOIN event_users r ON r.user_id = u.user_id JOIN events e ON e.id = r.event_id WHERE u.club_id = ? GROUP BY r.user_id, r.nickname, e.club_id', $id);
 		while ($row = $query->next())
 		{
 			list ($user_id, $nick, $club_id, $count, $time) = $row;
@@ -171,7 +171,7 @@ class GClub
 		
 		$this->tournaments = array();
 		$this->events = array();
-		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & USER_CLUB_PERM_MODER))
+		if (isset($_profile->clubs[$this->id]) && ($_profile->clubs[$this->id]->flags & USER_PERM_REFEREE))
 		{
 			$query = new DbQuery('SELECT t.id, t.name FROM tournaments t WHERE t.start_time + t.duration >= UNIX_TIMESTAMP() AND t.start_time <= UNIX_TIMESTAMP() AND (t.flags & ' . (TOURNAMENT_FLAG_CANCELED | TOURNAMENT_FLAG_SINGLE_GAME) . ') = ' . TOURNAMENT_FLAG_SINGLE_GAME . ' AND t.club_id = ?', $id);
 			while ($row = $query->next())
@@ -183,11 +183,11 @@ class GClub
 			}
 			
 			$events_str = '(0';
-			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, t.id, t.name FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
+			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, e.security_token, t.id, t.name, t.security_token FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
 			while ($row = $query->next())
 			{
 				$e = new stdClass();
-				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->tournament_id, $tournament_name) = $row;
+				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->token, $e->tournament_id, $tournament_name, $tournament_token) = $row;
 				$e->id = (int)$e->id;
 				$e->start_time = (int)$e->start_time;
 				$e->langs = (int)$e->langs;
@@ -198,25 +198,43 @@ class GClub
 				{
 					$e->tournament_id = (int)$e->tournament_id;
 					$e->tournament_name = $tournament_name;
+					if (!is_null($tournament_token))
+					{
+						$e->token = $tournament_token;
+					}
+					else
+					{
+						$e->token = rand_string(32);
+						Db::exec(get_label('tournament'), 'UPDATE tournaments SET security_token = ? WHERE id = ?', $e->token, $e->tournament_id);
+					}
 				}
 				else
 				{
 					$e->tournament_id = 0;
+					if (is_null($e->token))
+					{
+						$e->token = rand_string(32);
+						Db::exec(get_label('event'), 'UPDATE events SET security_token = ? WHERE id = ?', $e->token, $e->id);
+					}
 				}
 				$this->events[$e->id] = $e;
 				$events_str .= ', ' . $e->id;
 			}
 			$events_str .= ')';
 			
-			$query = new DbQuery('SELECT r.user_id, r.event_id, r.nick_name, u.name, c.name, u.flags FROM registrations r JOIN users u ON u.id = r.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE r.event_id IN ' . $events_str);
+			$query = new DbQuery('SELECT r.user_id, r.event_id, r.nickname, u.name, c.name, u.flags FROM event_users r JOIN users u ON u.id = r.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE (r.coming_odds > 0 OR r.coming_odds IS NULL) AND r.event_id IN ' . $events_str);
 			while ($row = $query->next())
 			{
 				list ($user_id, $event_id, $nick, $user_name, $club_name, $user_flags) = $row;
+				if (is_null($nick))
+				{
+					$nick = $user_name;
+				}
 				if (isset($this->events[$event_id]))
 				{
 					if (!isset($this->players[$user_id]))
 					{
-						$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $user_flags, USER_CLUB_PERM_PLAYER);
+						$this->players[$user_id] = new GPlayer($user_id, $user_name, $user_club, $user_flags, USER_PERM_PLAYER);
 						if ($haunters_count < 50)
 						{
 							$this->haunters[] = (int)$user_id;
@@ -227,15 +245,15 @@ class GClub
 				}
 			}
 			
-			$query = new DbQuery('SELECT r.incomer_id, r.event_id, r.nick_name, i.name, i.flags FROM registrations r JOIN incomers i ON i.id = r.incomer_id WHERE r.event_id IN ' . $events_str);
+			$query = new DbQuery('SELECT i.id, i.event_id, i.name, i.flags FROM event_incomers i WHERE i.event_id IN ' . $events_str);
 			while ($row = $query->next())
 			{
-				list ($incomer_id, $event_id, $nick, $incomer_name, $incomer_flags) = $row;
+				list ($incomer_id, $event_id, $incomer_name, $incomer_flags) = $row;
 				$incomer_id = -$incomer_id;
 				if (isset($this->events[$event_id]))
 				{
-					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, $this->name, NEW_USER_FLAGS, $incomer_flags | USER_CLUB_PERM_PLAYER);
-					$this->events[$event_id]->reg[$incomer_id] = $nick;
+					$this->players[$incomer_id] = new GPlayer($incomer_id, $incomer_name, $this->name, NEW_USER_FLAGS, $incomer_flags | USER_PERM_PLAYER);
+					$this->events[$event_id]->reg[$incomer_id] = $incomer_name;
 					if ($haunters_count < 50)
 					{
 						$this->haunters[] = (int)$incomer_id;
@@ -292,7 +310,7 @@ class GUser
 		$this->id = (int)$_profile->user_id;
 		$this->name = $_profile->user_name;
 		$this->flags = (int)$_profile->user_flags;
-		$this->manager = ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MANAGER) ? 1 : 0;
+		$this->manager = ($_profile->clubs[$club_id]->flags & USER_PERM_MANAGER) ? 1 : 0;
 		
 		$query = new DbQuery('SELECT flags, l_autosave, g_autosave, prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $this->id);
 		$this->settings = new stdClass();
@@ -474,7 +492,7 @@ class CommandQueue
 		}
 		
 		$club = $_profile->clubs[$this->club_id];
-		if (($club->flags & USER_CLUB_PERM_MANAGER) == 0)
+		if (($club->flags & USER_PERM_MANAGER) == 0)
 		{
 			throw new Exc(get_label('No permissions'));
 		}
@@ -535,13 +553,13 @@ class CommandQueue
 			$event_id = $this->events_map[$event_id];
 		}
 		
-		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM registrations WHERE user_id = ? AND event_id = ?', $rec->id, $event_id);
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE user_id = ? AND event_id = ?', $rec->id, $event_id);
 		if ($count == 0)
 		{
 			Db::exec(
 				get_label('registration'), 
-				'INSERT INTO registrations (club_id, user_id, nick_name, event_id) values (?, ?, ?, ?)',
-				$this->club_id, $rec->id, $rec->nick, $event_id);
+				'INSERT INTO event_users (event_id, user_id, nickname) values (?, ?, ?)',
+				$event_id, $rec->id, $rec->nick);
 			return true;
 		}
 		return false;
@@ -584,7 +602,7 @@ class CommandQueue
 			else
 			{
 				$incomer_id = -$user_id;
-				$query = new DbQuery('SELECT id FROM incomers WHERE event_id = ? AND name = ?', $event_id, $rec->name);
+				$query = new DbQuery('SELECT id FROM event_incomers WHERE event_id = ? AND name = ?', $event_id, $rec->name);
 				if ($row = $query->next())
 				{
 					list ($iid) = $row;
@@ -592,27 +610,22 @@ class CommandQueue
 				}
 				else
 				{
-					Db::exec(get_label('user'), 'INSERT INTO incomers (event_id, name, flags) VALUES (?, ?, ?)', $event_id, $rec->name, $rec->flags | INCOMER_FLAGS_EXISTING);
+					Db::exec(get_label('user'), 'INSERT INTO event_incomers (event_id, name, flags) VALUES (?, ?, ?)', $event_id, $rec->name, $rec->flags | INCOMER_FLAGS_EXISTING);
 					list ($iid) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
 					$this->users_map[$user_id] = -$iid;
 					$incomer_id = $iid;
-					
-					Db::exec(
-						get_label('registration'), 
-						'INSERT INTO registrations (club_id, incomer_id, nick_name, event_id) values (?, ?, ?, ?)',
-						$this->club_id, $incomer_id, $nick, $event_id);
 				}
 				return;
 			}
 		}
 		
-		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM registrations WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
 		if ($count == 0)
 		{
 			Db::exec(
 				get_label('registration'), 
-				'INSERT INTO registrations (club_id, user_id, nick_name, event_id) values (?, ?, ?, ?)',
-				$this->club_id, $user_id, $rec->nick, $event_id);
+				'INSERT INTO event_users (user_id, nickname, event_id) values (?, ?, ?)',
+				$user_id, $rec->nick, $event_id);
 		}
 	}
 	
@@ -688,18 +701,14 @@ class CommandQueue
 			$user_id = create_user($name, $email, $flags, $this->club_id);
 			Db::exec(
 				get_label('registration'), 
-				'INSERT INTO registrations (club_id, user_id, nick_name, event_id) values (?, ?, ?, ?)',
-				$this->club_id, $user_id, $rec->nick, $event_id);
+				'INSERT INTO event_users (user_id, nickname, event_id) VALUES (?, ?, ?)',
+				$user_id, $rec->nick, $event_id);
 			$this->users_map[$rec->id] = $user_id;
 		}
 		else
 		{
-			Db::exec(get_label('user'), 'INSERT INTO incomers (event_id, name, flags) VALUES (?, ?, ?)', $event_id, $rec->name, $rec->flags & ~INCOMER_FLAGS_EXISTING);
+			Db::exec(get_label('user'), 'INSERT INTO event_incomers (event_id, name, flags) VALUES (?, ?, ?)', $event_id, $rec->name, $rec->flags & ~INCOMER_FLAGS_EXISTING);
 			list ($incomer_id) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
-			Db::exec(
-				get_label('registration'), 
-				'INSERT INTO registrations (club_id, incomer_id, nick_name, event_id) values (?, ?, ?, ?)',
-				$this->club_id, $incomer_id, $rec->nick, $event_id);
 			$this->users_map[$rec->id] = -$incomer_id;
 		}
 		
@@ -913,7 +922,7 @@ class ApiPage extends OpsApiPageBase
 		
 		try
 		{
-			check_permissions(PERMISSION_CLUB_MODERATOR, $club_id);
+			check_permissions(PERMISSION_CLUB_REFEREE, $club_id);
 		}
 		catch (LoginExc $e)
 		{
@@ -997,7 +1006,7 @@ class ApiPage extends OpsApiPageBase
 						$event_flags = (int)$row[1];
 						$event_langs = (int)$row[2];
 						$gs->tournament_id = is_null($row[3]) ? 0 : (int)$row[3];
-						if (($event_flags & EVENT_FLAG_ALL_MODERATE) == 0)
+						if (($event_flags & EVENT_FLAG_ALL_CAN_REFEREE) == 0)
 						{
 							$gs->moder_id = $_profile->user_id;
 						}
@@ -1010,6 +1019,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			//throw new Exc(json_encode($gs));
+			$this->response['site'] = get_server_url();
 			$this->response['user'] = new GUser($club_id);
 			$this->response['club'] = new GClub($club_id, $gs);
 			$this->response['game'] = $gs;
@@ -1025,7 +1035,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function sync_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MODERATOR, 'Sychronize game client data with the server.');
+		$help = new ApiHelp(PERMISSION_CLUB_REFEREE, 'Sychronize game client data with the server.');
 		$help->request_param('club_id', 'Club id.', 'default club is used, which is the main club of the logged user. If logged user does not have main club, then a random club where he/she has permissions is used.');
 		$help->request_param('game', 'Json string fully describing current game state. TODO!!! Explain it is a separate document.');
 		$help->request_param('data', 'Command queue with some additional actions.  TODO!!! Provide more details.
@@ -1101,14 +1111,14 @@ class ApiPage extends OpsApiPageBase
 			$query->add(
 					' AND (u.name LIKE ? OR' .
 					' u.email LIKE ? OR' .
-					' u.id IN (SELECT DISTINCT user_id FROM registrations WHERE nick_name LIKE ?))',
+					' u.id IN (SELECT DISTINCT user_id FROM event_users WHERE nickname LIKE ?))',
 				$name_wildcard,
 				$name_wildcard,
 				$name_wildcard);
 		}
 		else if ($club_id > 0)
 		{
-			$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM user_clubs WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)', $club_id);
+			$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM club_users WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)', $club_id);
 		}
 		$query->add(' ORDER BY games_count DESC');
 		
@@ -1140,7 +1150,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function ulist_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_MODERATOR, 'Get user list for the game client application. TODO!!! Move it to get-API.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Get user list for the game client application. TODO!!! Move it to get-API.');
 		$help->request_param('club_id', 'Club id. It is used to filter users when <q>name</q> is missing or empty. Not required.');
 		$help->request_param('num', 'Number of users to return.', 'all matching users are returned.');
 		$help->request_param('name', 'Name filter. Only the users with matching nicknames are returned.', 'all users are returned.');
@@ -1161,69 +1171,6 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// replace_incomer
-	//-------------------------------------------------------------------------------------------------------
-	function replace_incomer_op()
-	{
-		$incomer_id = (int)get_required_param('incomer_id');
-		$user_id = (int)get_required_param('user_id');
-		
-		list ($reg_id, $old_user_id, $event_id, $club_id, $name) = Db::record(get_label('player'), 'SELECT r.id, r.user_id, e.id, e.club_id, i.name FROM incomers i JOIN registrations r ON r.incomer_id = i.id JOIN events e ON r.event_id = e.id WHERE i.id = ?', $incomer_id);
-		if (!isset($_profile->clubs[$club_id]) || ($_profile->clubs[$club_id]->flags & USER_CLUB_PERM_MODER) == 0)
-		{
-			throw new Exc(get_label('No permissions'));
-		}
-		if ($user_id <= 0)
-		{
-			$user_name = get_label('[unknown]');
-			$user_id = NULL;
-		}
-		else
-		{
-			list ($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
-		}
-		
-		if ($old_user_id != $user_id)
-		{
-			Db::begin();
-			Db::exec(get_label('registration'), 'UPDATE registrations SET user_id = ? WHERE id = ?', $user_id, $reg_id);
-			
-			if ($old_user_id == NULL)
-			{
-				$old_user_id = -$incomer_id;
-			}
-			
-			if ($user_id == NULL)
-			{
-				$user_id = -$incomer_id;
-			}
-			$query = new DbQuery('SELECT id, json, feature_flags FROM games WHERE result > 0 event_id = ?', $event_id);
-			while($row = $query->next())
-			{
-				$game = new Game($row[1], $row[2]);
-				if ($game->change_user($old_user_id, $user_id))
-				{
-					$game->update();
-				}
-			}
-			Db::commit();
-		}
-		echo get_label('Event information is updated. Thank you.<p>[0] is [1].</p>', $name, $user_name);
-	}
-	
-	// function replace_incomer_op_help()
-	// {
-		// echo '';
-		// $this->show_help_request_params_head();
-		// $this->show_help_response_params_head();
-	// }
-	
-	function replace_incomer_op_permissions()
-	{
-		return PERMISSION_CLUB_MANAGER;
-	}
-	
-	//-------------------------------------------------------------------------------------------------------
 	// delete
 	//-------------------------------------------------------------------------------------------------------
 	function delete_op()
@@ -1233,8 +1180,8 @@ class ApiPage extends OpsApiPageBase
 		$game_id = (int)get_required_param('game_id');
 		
 		Db::begin();
-		list($club_id, $moderator_id, $end_time, $is_rating) = Db::record(get_label('game'), 'SELECT club_id, moderator_id, end_time, is_rating FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		list($club_id, $user_id, $event_id, $tournament_id, $end_time, $is_rating) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id, end_time, is_rating FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$prev_game_id = NULL;
 		$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
@@ -1264,7 +1211,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete game.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Delete game.');
 		$help->request_param('game_id', 'Game id.');
 		return $help;
 	}
@@ -1284,8 +1231,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		list($club_id, $moderator_id) = Db::record(get_label('game'), 'SELECT club_id, moderator_id FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		list($club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
 		$game = new Game($json, $feature_flags);
@@ -1306,7 +1253,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Add extra points for a player.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change the game.');
 		$help->request_param('game_id', 'Game id.');
 		$param = $help->response_param('json', 'Game description in json format.');
 		Game::api_help($param, true);
@@ -1331,8 +1278,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		$reason = str_replace(":", "&#58;", $reason);
 		
-        list($json, $feature_flags, $club_id, $moderator_id, $is_canceled) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, moderator_id, is_canceled FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+        list($json, $feature_flags, $club_id, $game_user_id, $is_canceled) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, user_id, is_canceled FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $game_user_id, $club_id);
 
 		$game = new Game($json, $feature_flags);
         foreach ($game->data->players as $player)
@@ -1376,7 +1323,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Add extra points for a player.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Add extra points for a player.');
 		$help->request_param('game_id', 'Game id.');
 		$help->request_param('user_id', 'User id. User must be a player in this game.');
 		$help->request_param('points', 'Extra points. Floating point number from -0.4 to 0.7');
@@ -1392,9 +1339,9 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$game_id = (int)get_required_param('game_id');
-		list ($club_id, $old_table, $old_number, $old_objection_user_id, $old_objection, $moderator_id) =
-			Db::record(get_label('game'), 'SELECT club_id, table_name, game_number, objection_user_id, objection, moderator_id FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, $club_id, $moderator_id);
+		list ($club_id, $old_table, $old_number, $old_objection_user_id, $old_objection, $game_user_id) =
+			Db::record(get_label('game'), 'SELECT club_id, table_name, game_number, objection_user_id, objection, user_id FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $game_user_id, $club_id);
 		
 		$table = get_optional_param('table', $old_table);
 		if (empty($table))
@@ -1535,7 +1482,8 @@ class ApiPage extends OpsApiPageBase
 		
 		$game_id = (int)get_required_param('game_id');
 		$feature_flags = (int)get_optional_param('features', -1);
-		
+		check_permissions(PERMISSION_ADMIN);
+	
 		Db::begin();
 		if ($feature_flags < 0)
 		{
@@ -1550,7 +1498,7 @@ class ApiPage extends OpsApiPageBase
 	
 	// function delete_op_help()
 	// {
-		// $help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_OWNER, 'Delete game.');
+		// $help = new ApiHelp(PERMISSION_ADMIN, 'Delete game.');
 		// $help->request_param('game_id', 'Game id.');
 		// return $help;
 	// }

@@ -15,6 +15,7 @@ class GamePlayersStats
 		$civ_day_kills = 0;
 		$black_checks = 0;
 		$red_checks = 0;
+		$shared_scoring_flags = SCORING_FLAG_PLAY;
 		foreach ($data->players as $p)
 		{
 			if (isset($p->sheriff))
@@ -60,18 +61,18 @@ class GamePlayersStats
 						{
 							if ($death_round == $p->don + 1 && (!isset($p->arranged) || $death_round != $p->arranged))
 							{
-								$this->scoring_flags |= SCORING_FLAG_SHERIFF_KILLED_AFTER_FINDING;
+								$shared_scoring_flags |= SCORING_FLAG_SHERIFF_KILLED_AFTER_FINDING;
 							}
 							
 							if ($p->don == 1)
 							{
-								$this->scoring_flags |= SCORING_FLAG_SHERIFF_FOUND_FIRST_NIGHT;
+								$shared_scoring_flags |= SCORING_FLAG_SHERIFF_FOUND_FIRST_NIGHT;
 							}
 						}
 						
 						if ($death_round == 1)
 						{
-							$this->scoring_flags |= SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT;
+							$shared_scoring_flags |= SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT;
 						}
 					}
 				}
@@ -90,7 +91,7 @@ class GamePlayersStats
 		{
 			$game_player = $data->players[$i];
 			$player = $this->players[$i];
-			$player->scoring_flags = SCORING_FLAG_PLAY;
+			$player->scoring_flags = $shared_scoring_flags;
 			
 			if (isset($game_player->role) && ($game_player->role == 'maf' || $game_player->role == 'don'))
 			{
@@ -223,6 +224,10 @@ class GamePlayersStats
 				else if ($mafs_guessed >= 2)
 				{
 					$player->scoring_flags |= SCORING_FLAG_FIRST_LEGACY_2;
+				}
+				else if ($mafs_guessed >= 1)
+				{
+					$player->scoring_flags |= SCORING_FLAG_FIRST_LEGACY_1;
 				}
 			}
 			

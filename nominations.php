@@ -92,7 +92,29 @@ class Page extends GeneralPageBase
 			$this->condition->add(' AND g.is_rating = 0');
 		}
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.is_canceled = FALSE AND g.result > 0 ', $this->condition);
+		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_id = $this->ccc_filter->get_id();
+		switch($this->ccc_filter->get_type())
+		{
+		case CCCF_CLUB:
+			if ($ccc_id > 0)
+			{
+				$this->condition->add(' AND g.club_id = ?', $ccc_id);
+			}
+			else if ($ccc_id == 0 && $_profile != NULL)
+			{
+				$this->condition->add(' AND g.club_id IN (' . $_profile->get_comma_sep_clubs() . ')');
+			}
+			break;
+		case CCCF_CITY:
+			$this->condition->add(' AND a.city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)', $ccc_id, $ccc_id);
+			break;
+		case CCCF_COUNTRY:
+			$this->condition->add(' AND ct.country_id = ?', $ccc_id);
+			break;
+		}
+		
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities ct ON ct.id = a.city_id WHERE g.is_canceled = FALSE AND g.result > 0 ', $this->condition);
 		$this->condition->add(get_roles_condition($this->roles));
 		
 		if (isset($_REQUEST['min']))
@@ -120,17 +142,46 @@ class Page extends GeneralPageBase
 		{
 			$this->sort = $_REQUEST['sort'];
 		}
-		
-		$this->ccc_title = get_label('Consider only the games played in a specific club, city, or country.');
 	}
 	
 	protected function show_body()
 	{
 		global $_profile, $_lang_code;
 		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('players')));
+		echo ' ';
+		$this->season = show_club_seasons_select(0, $this->season, 'filterSeason()', get_label('Show nomimations of a specific season.'));
+		show_roles_select($this->roles, 'filterRoles()', get_label('Use only the stats of a specific role.'));
+		
+		echo ' <select id="min" onchange="filterNumber()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
+		$max_option = round($this->games_count / 20) * 10;
+		for ($i = 0; $i <= $max_option; $i += 10)
+		{
+			if ($i == 0)
+			{
+				show_option($i, $this->min_games, get_label('All players'));
+			}
+			else
+			{
+				show_option($i, $this->min_games, get_label('[0] or more games', $i));
+			}
+		}
+		echo '</select> ';
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter);
+		
+		echo '</td><td align="right"><select id="nom" onchange="filterNom()" title="' . get_label('Nomination to view.') . '">';
+		for ($i = 0; $i < count($this->noms); ++$i)
+		{
+			show_option($i, $this->nom, $this->noms[$i][0]);
+		}
+		echo '</select>';
+		echo '</td></tr></table></p>';
+		
 		$query = new DbQuery(
 			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $this->noms[$this->nom][1] . ') as abs, (' . $this->noms[$this->nom][1] . ') / (' . $this->noms[$this->nom][2] . ') as val, c.id, c.name, c.flags' .
-				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+				' FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id  JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities ct ON ct.id = a.city_id' .
 				' WHERE g.is_canceled = FALSE AND g.result > 0',
 			$this->condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $this->min_games);
@@ -233,43 +284,6 @@ class Page extends GeneralPageBase
 		echo '</table>';
 	}
 	
-	protected function show_filter_fields()
-	{
-		$this->season = show_club_seasons_select(0, $this->season, 'filter()', get_label('Show nomimations of a specific season.'));
-		show_roles_select($this->roles, 'filter()', get_label('Use only the stats of a specific role.'));
-		
-		echo ' <select id="min" onchange="filter()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
-		$max_option = round($this->games_count / 20) * 10;
-		for ($i = 0; $i <= $max_option; $i += 10)
-		{
-			if ($i == 0)
-			{
-				show_option($i, $this->min_games, get_label('All players'));
-			}
-			else
-			{
-				show_option($i, $this->min_games, get_label('[0] or more games', $i));
-			}
-		}
-		echo '</select> ';
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter, 'filter');
-	}
-	
-	protected function show_search_fields()
-	{
-		echo '<select id="nom" onchange="filter()" title="' . get_label('Nomination to view.') . '">';
-		for ($i = 0; $i < count($this->noms); ++$i)
-		{
-			show_option($i, $this->nom, $this->noms[$i][0]);
-		}
-		echo '</select>';
-	}
-	
-	protected function get_filter_js()
-	{
-		return '+ "&season=" + $("#season").val() + "&roles=" + $("#roles").val() + "&min=" + $("#min").val() + "&nom=" + $("#nom").val() + "&sort=" + sort + "&filter=" + checkboxFilterFlags()';
-	}
-	
 	protected function js()
 	{
 		parent::js();
@@ -279,9 +293,28 @@ class Page extends GeneralPageBase
 		{
 			if (s != sort)
 			{
-				sort = s;
-				filter();
+				goTo({sort: s});
 			}
+		}
+		
+		function filterSeason()
+		{
+			goTo({season: $("#season").val()});
+		}
+		
+		function filterRoles()
+		{
+			goTo({roles: $("#roles").val()});
+		}
+		
+		function filterNumber()
+		{
+			goTo({min: $("#min").val()});
+		}
+		
+		function filterNom()
+		{
+			goTo({nom: $("#nom").val()});
 		}
 <?php
 	}
