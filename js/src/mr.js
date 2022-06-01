@@ -601,7 +601,7 @@ var mr = new function()
 	{
 		function _cancel()
 		{
-			json.post("api/ops/tournament.php", { op: "cancel", tournament_id: id }, r)
+			json.post("api/ops/tournament.php", { op: "cancel", tournament_id: id }, refr);
 		}
 		
 		if (typeof confirmMessage == "string")
@@ -661,7 +661,7 @@ var mr = new function()
 	{
 		function _cancel()
 		{
-			json.post("api/ops/series.php", { op: "cancel", series_id: id }, r)
+			json.post("api/ops/series.php", { op: "cancel", series_id: id }, refr)
 		}
 		
 		if (typeof confirmMessage == "string")

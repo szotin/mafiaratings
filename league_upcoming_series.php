@@ -3,7 +3,7 @@
 require_once 'include/league.php';
 require_once 'include/pages.php';
 require_once 'include/image.php';
-require_once 'include/address.php';
+require_once 'include/series.php';
 
 define('ROW_COUNT', DEFAULT_ROW_COUNT);
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
@@ -34,7 +34,7 @@ class Page extends LeaguePageBase
 		if ($is_manager)
 		{
 			echo '<table class="bordered light" width="100%"><tr>';
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top" class="light">';	
+			echo '<td width="' . COLUMN_WIDTH . '%" align="center" class="light">';	
 			echo '<table class="transp" width="100%">';
 			echo '<tr class="light"></tr><tr><td align="center"><a href="#" onclick="mr.createSeries(' . $this->id . ')">' . get_label('Create [0]', get_label('tournament sеriеs'));
 			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '">';
@@ -49,11 +49,7 @@ class Page extends LeaguePageBase
 		$series_pic = new Picture(SERIES_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($id, $name, $start_time, $duration, $flags, $league_id, $league_name, $league_flags) = $row;
-			if ($name == $addr_name)
-			{
-				$name = $addr;
-			}
+			list ($id, $name, $start_time, $duration, $flags) = $row;
 			if ($column_count == 0)
 			{
 				if ($series_count == 0)
@@ -73,15 +69,15 @@ class Page extends LeaguePageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr><td class="dark" style="padding:2px;">';
-				show_series_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags, $league_id);
+				show_series_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags, $this->id);
 				echo '</td></tr>';	
 			}
 			
-			echo '<tr><td align="center"><a href="series_info.php?bck=1&id=' . $id . '"><b>' . format_date('l, F d, Y', $start_time, $timezone) . '</b><br>';
+			echo '<tr><td align="center"><a href="series_info.php?bck=1&id=' . $id . '">' . format_date('F d, Y', $start_time, $timezone) . ' - ' . format_date('F d, Y', $start_time + $duration, $timezone) . '<br>';
 			$series_pic->set($id, $name, $flags);
 			$series_pic->show(ICONS_DIR, false);
-			echo '</a><br>' . $name;
-			echo '</td></tr></table>';
+			echo '</a><br><b>' . $name;
+			echo '</b></td></tr></table>';
 			
 			echo '</td>';
 			

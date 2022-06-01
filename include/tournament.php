@@ -24,36 +24,37 @@ define('TOURNAMENT_TYPE_AML_THREE_ROUNDS', 8);
 define('TOURNAMENT_TYPE_CHAMPIONSHIP', 9);
 define('TOURNAMENT_TYPE_SERIES', 10);
 
-function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $league_id)
+function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $league_id, $is_manager = NULL, $is_league_manager = NULL)
 {
 	global $_profile;
+	
+	if ($is_league_manager === NULL)
+	{
+		$is_league_manager = is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id);
+	}
+	if ($is_manager === NULL)
+	{
+		$is_manager = $is_league_manager || is_permitted(PERMISSION_TOURNAMENT_MANAGER, $id);
+	}
 
 	$now = time();
-	
-	$no_buttons = true;
-	if ($_profile != NULL && $id > 0 && ($club_flags & CLUB_FLAG_RETIRED) == 0)
+	if ($is_manager && ($club_flags & CLUB_FLAG_RETIRED) == 0)
 	{
-		$can_manage = false;
-		
-		if ($_profile->is_club_manager($club_id))
+		echo '<button class="icon" onclick="mr.editTournament(' . $id . ')" title="' . get_label('Edit the tournament') . '"><img src="images/edit.png" border="0"></button>';
+		if ($start_time >= $now)
 		{
-			echo '<button class="icon" onclick="mr.editTournament(' . $id . ')" title="' . get_label('Edit the tournament') . '"><img src="images/edit.png" border="0"></button>';
-			if ($start_time >= $now)
+			if (($flags & TOURNAMENT_FLAG_CANCELED) != 0)
 			{
-				if (($flags & TOURNAMENT_FLAG_CANCELED) != 0)
-				{
-					echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
-				}
-				else
-				{
-					echo '<button class="icon" onclick="mr.cancelTournament(' . $id . ', \'' . get_label('Are you sure you want to cancel the tournament?') . '\')" title="' . get_label('Cancel the tournament') . '"><img src="images/delete.png" border="0"></button>';
-				}
+				echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
 			}
-			$no_buttons = false;
+			else
+			{
+				echo '<button class="icon" onclick="mr.cancelTournament(' . $id . ', \'' . get_label('Are you sure you want to cancel the tournament?') . '\')" title="' . get_label('Cancel the tournament') . '"><img src="images/delete.png" border="0"></button>';
+			}
 		}
 	}
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
-	if ($league_id > 0 && is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
+	if ($league_id > 0 && $is_league_manager)
 	{
 		echo '<button class="icon" onclick="mr.approveTournament(' . $id . ', ' . $league_id . ')" title="' . get_label('Open interactive standings page') . '"><img src="images/stars.png" border="0"></button>';
 	}

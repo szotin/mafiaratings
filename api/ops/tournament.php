@@ -427,8 +427,16 @@ class ApiPage extends OpsApiPageBase
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
 		
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		$club = $_profile->clubs[$club_id];
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		if (isset($_profile->clubs[$club_id]))
+		{
+			$club = $_profile->clubs[$club_id];
+		}
+		else
+		{
+			$club = new stdClass();
+			list($club->name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+		}
 		
 		$request_league_id = get_optional_param('league_id', $old_request_league_id);
 		if ($request_league_id <= 0)
@@ -706,7 +714,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change tournament.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change tournament.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->request_param('name', 'Tournament name.', 'remains the same.');
 		$help->request_param('league_id', 'League that this tournament belongs to. Set 0 or negative for internal club tournament.', 'remains the same.');
@@ -807,7 +815,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function approve_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('duration', 'New event duration. Send 0 if you want to end event now.');
 		return $help;
@@ -822,7 +830,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags | ' . TOURNAMENT_FLAG_CANCELED . ') WHERE id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
@@ -834,7 +842,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function cancel_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Cancel tournament.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Cancel tournament.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		return $help;
 	}
@@ -848,7 +856,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id);
 		
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_CANCELED . ') WHERE id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
@@ -860,7 +868,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Restore canceled tournament.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Restore canceled tournament.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		return $help;
 	}

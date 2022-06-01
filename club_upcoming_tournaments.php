@@ -16,7 +16,7 @@ class Page extends ClubPageBase
 	{
 		global $_page, $_lang_code, $_profile;
 		
-		$is_manager = ($_profile != NULL && $_profile->is_club_manager($this->id));
+		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$tournament_count = 0;
 		$column_count = 0;
@@ -80,7 +80,7 @@ class Page extends ClubPageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr><td class="dark" style="padding:2px;">';
-				show_tournament_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags, $league_id);
+				show_tournament_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags, $league_id, $is_manager);
 				echo '</td></tr>';	
 			}
 			

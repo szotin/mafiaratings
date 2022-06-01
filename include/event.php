@@ -721,7 +721,7 @@ class Event
 					if (($flags & EVENT_FLAG_CANCELED) != 0)
 					{
 						echo '<button class="icon" onclick="mr.restoreEvent(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
-					}
+					} 
 					else
 					{
 						echo '<button class="icon" onclick="mr.cancelEvent(' . $id . ', \'' . get_label('Are you sure you want to cancel the event?') . '\')" title="' . get_label('Cancel the event') . '"><img src="images/delete.png" border="0"></button>';

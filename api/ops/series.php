@@ -20,7 +20,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile, $_lang_code;
 		$league_id = (int)get_required_param('league_id');
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		list($league_name, $league_rules, $league_langs) = Db::record(get_label('league'), 'SELECT name, rules FROM leagues WHERE id = ?', $league_id);
+		list($league_name, $league_rules, $league_langs) = Db::record(get_label('league'), 'SELECT name, rules, langs FROM leagues WHERE id = ?', $league_id);
 		
 		$name = get_required_param('name');
 		if (empty($name))
@@ -93,14 +93,14 @@ class ApiPage extends OpsApiPageBase
 	{
 		global $_profile;
 		$series_id = (int)get_required_param('series_id');
-		
+		$timezone = get_timezone();
 		Db::begin();
 		
 		list ($league_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_flags) = 
 			Db::record(get_label('tournament sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, flags FROM series WHERE id = ?', $series_id);
 		
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		list($league_name, $league_rules, $league_langs) = Db::record(get_label('league'), 'SELECT name, rules FROM leagues WHERE id = ?', $league_id);
+		list($league_name, $league_rules, $league_langs) = Db::record(get_label('league'), 'SELECT name, rules, langs FROM leagues WHERE id = ?', $league_id);
 		
 		$name = get_optional_param('name', $old_name);
 		$notes = get_optional_param('notes', $old_notes);
@@ -108,8 +108,8 @@ class ApiPage extends OpsApiPageBase
 		$flags = (int)get_optional_param('flags', $old_flags);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + ($old_flags & ~SERIES_EDITABLE_MASK);
 		
-		$old_start_datetime = get_datetime($old_start, $old_timezone);
-		$old_end_datetime = get_datetime($old_start + $old_duration, $old_timezone);
+		$old_start_datetime = get_datetime($old_start, $timezone);
+		$old_end_datetime = get_datetime($old_start + $old_duration, $timezone);
 		$start_datetime = get_datetime(get_optional_param('start', datetime_to_string($old_start_datetime)), $timezone);
 		$end_datetime = get_datetime(get_optional_param('end', datetime_to_string($old_end_datetime)), $timezone);
 		$start = $start_datetime->getTimestamp();
@@ -169,7 +169,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->logo_uploaded = true;
 			}
-			db_log(LOG_OBJECT_SERIES, 'changed', $log_details, $series_id, NULL, $old_league_id);
+			db_log(LOG_OBJECT_SERIES, 'changed', $log_details, $series_id, NULL, $league_id);
 		}
 		Db::commit();
 	}

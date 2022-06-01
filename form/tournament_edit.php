@@ -25,8 +25,16 @@ try
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
-	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-	$club = $_profile->clubs[$club_id];
+	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+	if (isset($_profile->clubs[$club_id]))
+	{
+		$club = $_profile->clubs[$club_id];
+	}
+	else
+	{
+		$club = new stdClass();
+		list($club->langs) = Db::record(get_label('club'), 'SELECT langs FROM clubs WHERE id = ?', $club_id);
+	}
 	if (is_null($normalizer_id))
 	{
 		$normalizer_id = 0;
