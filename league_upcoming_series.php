@@ -15,7 +15,7 @@ class Page extends LeaguePageBase
 	{
 		global $_page, $_lang_code, $_profile;
 		
-		$is_manager = is_permitted(PERMISSION_LEAGUE_MANAGER);
+		$is_manager = is_permitted(PERMISSION_LEAGUE_MANAGER, $this->id);
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$series_count = 0;
 		$column_count = 0;

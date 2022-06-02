@@ -6,7 +6,7 @@ CREATE TABLE `series` (
   `duration` INT(11) NOT NULL,
   `langs` INT(11) NOT NULL,
   `notes` TEXT,
-  `final_id` INT(11) NULL,
+  `finals_id` INT(11) NULL,
   `flags` INT(11) NOT NULL,
   `rules` TEXT NOT NULL,
 
@@ -14,8 +14,8 @@ CREATE TABLE `series` (
   KEY (`start_time`),
   KEY (`league_id`, `start_time`),
   CONSTRAINT `series_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
-  KEY (`final_id`),
-  CONSTRAINT `series_final` FOREIGN KEY (`final_id`) REFERENCES `tournaments` (`id`)
+  KEY (`finals_id`),
+  CONSTRAINT `series_final` FOREIGN KEY (`finals_id`) REFERENCES `tournaments` (`id`)
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -34,7 +34,7 @@ CREATE TABLE `series_tournaments` (
 DROP TABLE club_seasons;
 DROP TABLE league_seasons;
 
-INSERT INTO series (name, start_time, duration, langs, league_id, rules, final_id) SELECT '2021', 1609488000, 31536000, 3, id, rules, 69 FROM leagues WHERE id = 2;
+INSERT INTO series (name, start_time, duration, langs, league_id, rules, finals_id) SELECT 'Season 2021', 1609488000, 31536000, 3, id, rules, 69 FROM leagues WHERE id = 2;
 SELECT @id := LAST_INSERT_ID();
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 46, 1);
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 50, 1);
@@ -58,7 +58,7 @@ INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 67
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 68, 2);
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 69, 5);
 
-INSERT INTO series (name, start_time, duration, langs, league_id, rules) SELECT '2022', 1641024000, 31536000, 3, id, rules FROM leagues WHERE id = 2;
+INSERT INTO series (name, start_time, duration, langs, league_id, rules) SELECT 'Season 2022', 1641024000, 31536000, 3, id, rules FROM leagues WHERE id = 2;
 SELECT @id := LAST_INSERT_ID();
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 70, 3);
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 71, 1);
@@ -70,7 +70,7 @@ INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 78
 
 INSERT INTO leagues (name, langs, scoring_id, flags, rules) SELECT 'МЛМ', langs, scoring_id, flags, rules FROM leagues WHERE id = 2;
 SELECT @league_id := LAST_INSERT_ID();
-INSERT INTO series (name, start_time, duration, langs, league_id, rules, final_id) SELECT 'МЛМ-2021', 1609488000, 31536000, 3, id, rules, 65 FROM leagues WHERE id = @league_id;
+INSERT INTO series (name, start_time, duration, langs, league_id, rules, finals_id) SELECT 'МЛМ-2021', 1609488000, 31536000, 3, id, rules, 65 FROM leagues WHERE id = @league_id;
 SELECT @id := LAST_INSERT_ID();
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 52, 1);
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 54, 1);

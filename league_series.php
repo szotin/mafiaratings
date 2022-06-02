@@ -33,7 +33,7 @@ class Page extends LeaguePageBase
 			$future = ((int)$_REQUEST['future'] > 0);
 		}
 		
-		$condition = new SQL(' FROM series s LEFT OUTER JOIN tournaments f ON f.id = s.final_id WHERE s.league_id = ?', $this->id);
+		$condition = new SQL(' FROM series s LEFT OUTER JOIN tournaments f ON f.id = s.finals_id WHERE s.league_id = ?', $this->id);
 		if ($future)
 		{
 			$condition->add(' AND s.start_time + s.duration >= UNIX_TIMESTAMP()');
@@ -100,7 +100,7 @@ class Page extends LeaguePageBase
 		echo '<td width="60" align="center">' . get_label('Finals') . '</td>';
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $languages, $tournaments_count, $final_id, $final_name, $final_flags) = $row;
+			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $languages, $tournaments_count, $finals_id, $finals_name, $finals_flags) = $row;
 
 			$playing =($now >= $series_time && $now < $series_time + $series_duration);
 			if ($playing)
@@ -129,8 +129,8 @@ class Page extends LeaguePageBase
 			
 			echo '<td align="center"><a href="series_tournaments.php?bck=1&id=' . $series_id . '">' . $tournaments_count . '</a></td>';
 			
-			echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $final_id . '">';
-			$tournament_pic->set($final_id, $final_name, $final_flags);
+			echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $finals_id . '">';
+			$tournament_pic->set($finals_id, $finals_name, $finals_flags);
 			$tournament_pic->show(ICONS_DIR, true, 56);
 			echo '</a></td>';
 			
