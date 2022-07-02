@@ -139,7 +139,7 @@ class LeaguePageBase extends PageBase
 		{
 			$league_pic->show(TNAILS_DIR, false);
 		}
-		echo '</td></tr></table><td valign="top"><h2 class="league">' . get_label('League [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3></td><td valign="top" align="right">';
+		echo '</td></tr></table><td valign="top"><h2 class="league">' . $this->name . '</h2><br><h3>' . $this->_title . '</h3></td><td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr></table>';
 	}

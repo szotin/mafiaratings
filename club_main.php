@@ -41,17 +41,7 @@ class Page extends ClubPageBase
 		echo '<table class="transp" width="100%">';
 		
 		echo '<tr' . $dark_class . ' style="height: 40px;">';
-		if (!is_null($tournament->league_id))
-		{
-			echo '<td width="32">';
-			$this->league_pic->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
-			$this->league_pic->show(ICONS_DIR, false, 30);
-			echo '</td><td colspan="2"';' align="center"><b>' . $tournament->name . '</b>';
-		}
-		else
-		{
-			echo '<td colspan="3"';
-		}
+		echo '<td colspan="3"';
 		echo ' align="center"><b>' . $tournament->name . '</b></td></tr>';
 		
 		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
@@ -142,8 +132,7 @@ class Page extends ClubPageBase
 			list (
 				$tournament->id, $tournament->name, $tournament->flags, 
 				$tournament->start_time, $tournament->duration, $tournament->timezone, 
-				$tournament->addr_id, $tournament->addr_flags, $tournament->addr, $tournament->addr_name, 
-				$tournament->league_id, $tournament->league_name, $tournament->league_flags) = $tournaments[0];
+				$tournament->addr_id, $tournament->addr_flags, $tournament->addr, $tournament->addr_name) = $tournaments[0];
 		}
 		else
 		{
@@ -198,8 +187,7 @@ class Page extends ClubPageBase
 					list (
 						$tournament->id, $tournament->name, $tournament->flags, 
 						$tournament->start_time, $tournament->duration, $tournament->timezone, 
-						$tournament->addr_id, $tournament->addr_flags, $tournament->addr, $tournament->addr_name, 
-						$tournament->league_id, $tournament->league_name, $tournament->league_flags) = $tournaments[$tournament_index];
+						$tournament->addr_id, $tournament->addr_flags, $tournament->addr, $tournament->addr_name) = $tournaments[$tournament_index];
 				}
 				else
 				{
@@ -314,10 +302,9 @@ class Page extends ClubPageBase
 		// tournaments and events
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, c.timezone, a.id, a.flags, a.address, a.name, l.id, l.name, l.flags FROM tournaments t' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, c.timezone, a.id, a.flags, a.address, a.name FROM tournaments t' .
 				' JOIN addresses a ON t.address_id = a.id' .
 				' JOIN cities c ON c.id = a.city_id' .
-				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND t.club_id = ? ORDER BY t.start_time + t.duration, t.name, t.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
 			$this->id);
 		while ($row = $query->next())

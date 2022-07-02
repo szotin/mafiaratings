@@ -967,9 +967,7 @@ class EventPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		$title = get_label('Event [0]', $this->_title);
-		
-		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->get_full_name();
+		echo '<td rowspan="2" valign="top"><h2 class="event">' . $this->event->get_full_name() . '</h2><br><h3>' . $this->_title;
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p>';
 		if (!empty($this->event->price))

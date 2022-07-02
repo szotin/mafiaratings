@@ -207,7 +207,7 @@ class Page extends TournamentPageBase
 		
 		function showScoring(id, version, flags)
 		{
-			dlg.infoForm("form/scoring_show.php?sid=" + id + "&sver=" + version + "&ops_flags=" + flags);
+			dlg.infoForm("form/scoring_show.php?id=" + id + "&version=" + version + "&ops_flags=" + flags);
 		}
 <?php
 	}

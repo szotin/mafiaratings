@@ -178,6 +178,6 @@ class Page extends UserPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Main Page'));
+$page->run(get_label('Clubs'));
 
 ?>

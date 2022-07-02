@@ -25,7 +25,7 @@ class ApiPage extends OpsApiPageBase
 		$name = get_required_param('name');
 		if (empty($name))
 		{
-			throw new Exc(get_label('Please enter [0].', get_label('tournament sеriеs name')));
+			throw new Exc(get_label('Please enter [0].', get_label('tournament series name')));
 		}
 		
 		$notes = get_optional_param('notes', '');
@@ -263,7 +263,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('comment'), 'INSERT INTO series_comments (time, user_id, comment, series_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $series_id, $lang);
 		
 		$timezone = get_timezone();
-		list($series_id, $series_name, $series_start_time) = Db::record(get_label('series'), 'SELECT id, name, start_time FROM series WHERE id = ?', $series_id);
+		list($series_id, $series_name, $series_start_time) = Db::record(get_label('tournament sеriеs'), 'SELECT id, name, start_time FROM series WHERE id = ?', $series_id);
 		
 		$query = new DbQuery(
 			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .

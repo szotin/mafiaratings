@@ -191,7 +191,7 @@ class Page extends LeaguePageBase
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
+			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
 			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND s.league_id = ?' .
 			' ORDER BY t.start_time + t.duration, t.name, t.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT), $this->id);
 		while ($row = $query->next())

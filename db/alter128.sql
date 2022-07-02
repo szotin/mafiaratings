@@ -67,6 +67,7 @@ INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 74
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 75, 3);
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 77, 2);
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 78, 3);
+INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 79, 1);
 
 INSERT INTO leagues (name, langs, scoring_id, flags, rules) SELECT 'МЛМ', langs, scoring_id, flags, rules FROM leagues WHERE id = 2;
 SELECT @league_id := LAST_INSERT_ID();
@@ -82,3 +83,9 @@ INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 60
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 61, 1);
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 64, 1);
 INSERT INTO series_tournaments (series_id, tournament_id, stars) VALUES (@id, 65, 3);
+
+ALTER TABLE tournaments DROP FOREIGN KEY tournament_league;
+ALTER TABLE tournaments DROP COLUMN league_id;
+ALTER TABLE tournaments DROP FOREIGN KEY fk_tournaments_request_league;
+ALTER TABLE tournaments DROP COLUMN request_league_id;
+ALTER TABLE tournaments DROP COLUMN stars;

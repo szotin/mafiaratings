@@ -214,7 +214,7 @@ class ClubPageBase extends PageBase
 		{
 			$this->club_pic->show(TNAILS_DIR, false);
 		}
-		echo '</td></tr></table><td valign="top" rowspan="2"><h2 class="club">' . get_label('Club [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
+		echo '</td></tr></table><td valign="top" rowspan="2"><h2 class="club">' . $this->name . '</h2><br><h3>' . $this->_title . '</h3><p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr>';
 		echo '</tr><td align="right" valign="bottom">';

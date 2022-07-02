@@ -30,6 +30,7 @@ class ApiPage extends GetApiPageBase
 		$game_id = (int)get_optional_param('game_id', -1);
 		$club_id = (int)get_optional_param('club_id', -1);
 		$league_id = (int)get_optional_param('league_id', -1);
+		$series_id = (int)get_optional_param('series_id', -1);
 		$event_id = (int)get_optional_param('event_id', -1);
 		$tournament_id = (int)get_optional_param('tournament_id', -1);
 		$address_id = (int)get_optional_param('address_id', -1);
@@ -76,13 +77,18 @@ class ApiPage extends GetApiPageBase
 			$condition->add(' AND g.club_id = ?', $club_id);
 		}
 
-		if ($league_id == 0)
+		if ($league_id > 0)
 		{
-			$condition->add(' AND g.event_id IN (SELECT _e.id FROM events _e LEFT OUTER JOIN tournaments _t ON _t.id = _e.tournament_id WHERE _t.id IS NULL OR _t.league_id IS NULL)');
+			$condition->add(' AND g.tournament_id IN (SELECT _st.tournament_id FROM series_tournaments _st JOIN series _s ON _s.id = _st.series_id WHERE _s.league_id = ?)', $league_id);
 		}
-		else if ($league_id > 0)
+
+		if ($series_id == 0)
 		{
-			$condition->add(' AND g.event_id IN (SELECT _e.id FROM events _e JOIN tournaments _t ON _t.id = _e.tournament_id WHERE _t.league_id = ?)', $league_id);
+			$condition->add(' AND g.tournament_id NOT IN (SELECT tournament_id FROM series_tournaments)');
+		}
+		else if ($series_id > 0)
+		{
+			$condition->add(' AND g.tournament_id IN (SELECT tournament_id FROM series_tournaments WHERE series_id = ?)', $series_id);
 		}
 
 		if ($event_id > 0)
@@ -213,7 +219,8 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are ended after a certain time. For example: <a href="games.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/games.php?ended_after=1483228800</a> returns all games ended after January 1, 2017; <a href="games.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/games.php?started_before=now&ended_after=now</a> returns all games that happening now. Logged user timezone is used for converting dates.', '-');
 		$help->request_param('game_id', 'Game id. For example: <a href="games.php?game_id=1299"><?php echo PRODUCT_URL; ?>/api/get/games.php?game_id=1299</a> returns only one game played in VaWaCa-2017 tournament.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="games.php?club_id=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?club_id=1</a> returns all games for Vancouver Mafia Club.', '-');
-		$help->request_param('league_id', 'League id. For example: <a href="games.php?league_id=2"><?php echo PRODUCT_URL; ?>/api/get/games.php?league_id=2</a> returns all games played in American Mafia League. <a href="games.php?league_id=0"><?php echo PRODUCT_URL; ?>/api/get/games.php?league_id=0</a> returns all games that were played outside of any league.', '-');
+		$help->request_param('league_id', 'League id. For example: <a href="games.php?league_id=2"><?php echo PRODUCT_URL; ?>/api/get/games.php?league_id=2</a> returns all games played in American Mafia League.', '-');
+		$help->request_param('series_id', 'Tournament series id. For example: <a href="games.php?series_id=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?series_id=1</a> returns all games played in American Mafia League 2022 season. <a href="games.php?series_id=0"><?php echo PRODUCT_URL; ?>/api/get/games.php?series_id=0</a> returns all games that were played outside of any tournament series.', '-');
 		$help->request_param('event_id', 'Event id. For example: <a href="games.php?event_id=7927"><?php echo PRODUCT_URL; ?>/api/get/games.php?event_id=7927</a> returns all games for VaWaCa-2017 tournament.', '-');
 		$help->request_param('tournament_id', 'Tournament id. For example: <a href="games.php?tournament_id=1"><?php echo PRODUCT_URL; ?>/api/get/games.php?tournament_id=1</a> returns all games for VaWaCa-2017 tournament. <a href="games.php?tournament_id=0"><?php echo PRODUCT_URL; ?>/api/get/games.php?tournament_id=0</a> returns all non tournament games.', '-');
 		$help->request_param('address_id', 'Address id. For example: <a href="games.php?address_id=10"><?php echo PRODUCT_URL; ?>/api/get/games.php?address_id=10</a> returns all games played in Tafs Cafe by Vancouver Mafia Club.', '-');

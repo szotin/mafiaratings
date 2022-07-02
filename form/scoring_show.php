@@ -8,15 +8,15 @@ initiate_session();
 
 try
 {
-	if (!isset($_REQUEST['sid']))
+	if (!isset($_REQUEST['id']))
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('scoring system')));
 	}
-	$scoring_id = (int)$_REQUEST['sid'];
+	$scoring_id = (int)$_REQUEST['id'];
 	
-	if (isset($_REQUEST['sver']))
+	if (isset($_REQUEST['version']))
 	{
-		$scoring_version = (int)$_REQUEST['sver'];
+		$scoring_version = (int)$_REQUEST['version'];
 		list($scoring, $name, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? AND v.version = ?', $scoring_id, $scoring_version);
 	}
 	else

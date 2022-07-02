@@ -40,10 +40,7 @@ try
 	end_upload_logo_button(SERIES_PIC_CODE, $series_id);
 	echo '</td></tr>';
 	
-	echo '<tr><td>' . get_label('Stars') . ':</td><td><div id="form-stars" class="stars"></div></td></tr>';
-	
-	
-	$end_time = $start_time + $duration - 24*60*60;
+s	$end_time = $start_time + $duration - 24*60*60;
 	if ($end_time < $start_time)
 	{
 		$end_time = $start_time;

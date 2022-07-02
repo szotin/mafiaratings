@@ -45,7 +45,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 		}
 		
-		$query = new DbQuery('SELECT t.id, t.name, t.start_time, t.duration, t.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', ct.timezone, a.id, a.flags, a.address, a.map_url, a.name, t.league_id FROM tournaments t');
+		$query = new DbQuery('SELECT t.id, t.name, t.start_time, t.duration, t.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', ct.timezone, a.id, a.flags, a.address, a.map_url, a.name FROM tournaments t');
 		$query->add(
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
@@ -56,7 +56,7 @@ class Page extends ClubPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE));
 		while ($row = $query->next())
 		{
-			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $tournament_timezone, $addr_id, $addr_flags, $addr, $addr_url, $addr_name, $league_id) = $row;
+			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $tournament_timezone, $addr_id, $addr_flags, $addr, $addr_url, $addr_name) = $row;
 			if ($name == $addr_name)
 			{
 				$name = $addr;
@@ -80,7 +80,7 @@ class Page extends ClubPageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr><td class="dark" style="padding:2px;">';
-				show_tournament_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags, $league_id, $is_manager);
+				show_tournament_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags, $is_manager);
 				echo '</td></tr>';	
 			}
 			

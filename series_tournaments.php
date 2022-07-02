@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/league.php';
+require_once 'include/series.php';
 require_once 'include/club.php';
 require_once 'include/languages.php';
 require_once 'include/pages.php';
@@ -19,7 +19,7 @@ define('FLAG_FILTER_NOT_CANCELED', 0x0020);
 
 define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
-class Page extends LeaguePageBase
+class Page extends SeriesPageBase
 {
 	protected function prepare()
 	{
@@ -58,8 +58,8 @@ class Page extends LeaguePageBase
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
-			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
-			' WHERE s.league_id = ?', $this->id);
+			' JOIN leagues l ON l.id = s.league_id' .
+			' WHERE st.series_id = ?', $this->id);
 		if ($this->future)
 		{
 			$condition->add(' AND t.start_time + t.duration >= UNIX_TIMESTAMP()');
@@ -170,7 +170,7 @@ class Page extends LeaguePageBase
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
 				' JOIN leagues l ON l.id = s.league_id' .
-				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id', $this->id);
+				' WHERE l.id <> ? AND st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id', $this->id);
 			$current_tournament = 0;
 			while ($row = $query->next())
 			{

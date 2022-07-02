@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/general_page_base.php';
+require_once 'include/series.php';
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/event.php';
@@ -13,16 +13,14 @@ define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
 define('FLAG_FILTER_VIDEO', 0x0001);
 define('FLAG_FILTER_NO_VIDEO', 0x0002);
-define('FLAG_FILTER_TOURNAMENT', 0x0004);
-define('FLAG_FILTER_NO_TOURNAMENT', 0x0008);
-define('FLAG_FILTER_RATING', 0x0010);
-define('FLAG_FILTER_NO_RATING', 0x0020);
-define('FLAG_FILTER_CANCELED', 0x0040);
-define('FLAG_FILTER_NO_CANCELED', 0x0080);
+define('FLAG_FILTER_RATING', 0x0004);
+define('FLAG_FILTER_NO_RATING', 0x0008);
+define('FLAG_FILTER_CANCELED', 0x0010);
+define('FLAG_FILTER_NO_CANCELED', 0x0020);
 
 define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 
-class Page extends GeneralPageBase
+class Page extends SeriesPageBase
 {
 	private $result_filter;
 	private $is_admin;
@@ -56,17 +54,16 @@ class Page extends GeneralPageBase
 		global $_page, $_profile;
 		
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$event_pic = new Picture(EVENT_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
 		
-		$condition = new SQL();
+		$condition = new SQL(' WHERE st.series_id = ?', $this->id);
 		if ($this->result_filter < 0)
 		{
-			$condition->add(' WHERE g.result <> 0');
+			$condition->add(' AND g.result <> 0');
 		}
 		else
 		{
-			$condition->add(' WHERE g.result = ?', $this->result_filter);
+			$condition->add(' AND g.result = ?', $this->result_filter);
 		}
 		
 		if ($this->flag_filter & FLAG_FILTER_VIDEO)
@@ -76,14 +73,6 @@ class Page extends GeneralPageBase
 		if ($this->flag_filter & FLAG_FILTER_NO_VIDEO)
 		{
 			$condition->add(' AND g.video_id IS NULL');
-		}
-		if ($this->flag_filter & FLAG_FILTER_TOURNAMENT)
-		{
-			$condition->add(' AND g.tournament_id IS NOT NULL');
-		}
-		if ($this->flag_filter & FLAG_FILTER_NO_TOURNAMENT)
-		{
-			$condition->add(' AND g.tournament_id IS NULL');
 		}
 		if ($this->flag_filter & FLAG_FILTER_RATING)
 		{
@@ -115,7 +104,7 @@ class Page extends GeneralPageBase
 			show_option(0, $this->result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
-		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->flag_filter);
+		show_checkbox_filter(array(get_label('with video'), get_label('rating games'), get_label('canceled games')), $this->flag_filter);
 		echo '</td></tr></table></p>';
 		
 		$ccc_id = $ccc_filter->get_id();
@@ -139,7 +128,7 @@ class Page extends GeneralPageBase
 			break;
 		}
 		
-		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
+		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$is_user = is_permitted(PERMISSION_USER);
@@ -153,9 +142,10 @@ class Page extends GeneralPageBase
 		{
 			echo ' colspan="2"';
 		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
+		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, a.id, a.name, a.flags FROM games g' .
+				' JOIN series_tournaments st ON st.tournament_id = g.tournament_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
@@ -245,11 +235,6 @@ class Page extends GeneralPageBase
 			echo '<td>';
 			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 			$tournament_pic->show(ICONS_DIR, true, 48);
-			echo '</td>';
-			
-			echo '<td>';
-			$event_pic->set($event_id, $event_name, $event_flags);
-			$event_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
 			echo '<td>';

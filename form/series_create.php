@@ -37,7 +37,7 @@ try
 	$league_pic->show(ICONS_DIR, false);
 	echo '</td><td align="center"><b>' . $league_name . '</b></td></tr></table></td></tr>';
 	
-	echo '<tr><td width="160">' . get_label('Tournament sеriеs name') . ':</td><td><input id="form-name" value=""></td></tr>';
+	echo '<tr><td width="160">' . get_label('Tournament series name') . ':</td><td><input id="form-name" value=""></td></tr>';
 	
 	$timezone = get_timezone();
 	$datetime = get_datetime(time(), $timezone);

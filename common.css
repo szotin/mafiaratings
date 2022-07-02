@@ -55,6 +55,8 @@ h2.club { color: #c42b0d; }
 h2.address { color: #06aba1; }
 h2.user { color: #b042aa; }
 h2.league { color: #fc7c23; }
+h2.tournament { color: #6eac54; }
+h2.series { color: #741b47; }
 
 h3 { padding-left: 16px;  margin: 0px; }
 h4 { padding-left: 16px;  margin: 0px; }

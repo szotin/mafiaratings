@@ -6,7 +6,6 @@ require_once __DIR__ . '/email.php';
 require_once __DIR__ . '/languages.php';
 require_once __DIR__ . '/image.php';
 require_once __DIR__ . '/names.php';
-require_once __DIR__ . '/address.php';
 require_once __DIR__ . '/league.php';
 require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
@@ -42,11 +41,13 @@ class SeriesPageBase extends PageBase
 	protected $league_id;
 	protected $league_name;
 	protected $league_flags;
+	protected $league_pic;
 	protected $start_time;
 	protected $duration;
 	protected $langs;
 	protected $notes;
 	protected $flags;
+	protected $timezone;
 	
 	protected function prepare()
 	{
@@ -57,12 +58,15 @@ class SeriesPageBase extends PageBase
 			throw new FatalExc(get_label('Unknown [0]', get_label('tournament sеriеs')));
 		}
 		$this->id = (int)$_REQUEST['id'];
+		
+		$this->timezone = get_timezone();
+		$this->league_pic = new Picture(LEAGUE_PICTURE);
 		list(
 			$this->name, $this->league_id, $this->league_name, $this->league_flags,
-			$this->start_time, $this->duration, $this->langs, $this->notes, $this->flags) =
+			$this->start_time, $this->duration, $this->langs, $this->notes, $this->flags, $this->rules) =
 		Db::record(
 			get_label('tournament sеriеs'),
-			'SELECT s.name, l.id, l.name, l.flags, s.start_time, s.duration, s.langs, s.notes, s.flags FROM series s' .
+			'SELECT s.name, l.id, l.name, l.flags, s.start_time, s.duration, s.langs, s.notes, s.flags, s.rules FROM series s' .
 				' JOIN leagues l ON l.id = s.league_id' .
 				' WHERE s.id = ?',
 			$this->id);
@@ -75,10 +79,10 @@ class SeriesPageBase extends PageBase
 		$is_manager = is_permitted(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $this->league_id, $this->id);
 		$menu = array
 		(
-			new MenuItem('series_info.php?id=' . $this->id, get_label('Tournament sеriеs'), get_label('General tournament series information')),
-			new MenuItem('series_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('Tournaments of this series')),
+			new MenuItem('series_info.php?id=' . $this->id, get_label('Tournament sеriеs '), get_label('General tournament series information')),
 			new MenuItem('series_standings.php?id=' . $this->id, get_label('Standings'), get_label('Series standings')),
 			new MenuItem('series_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this tournament series.')),
+			new MenuItem('series_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('Tournaments of this series')),
 			new MenuItem('series_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the tournament series')),
 			new MenuItem('#stats', get_label('Reports'), NULL, array
 			(
@@ -97,7 +101,7 @@ class SeriesPageBase extends PageBase
 				// new MenuItem('series_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
-		if ($is_manager)
+/*		if ($is_manager)
 		{
 			$manager_menu = array
 			(
@@ -105,7 +109,7 @@ class SeriesPageBase extends PageBase
 				new MenuItem('series_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
-		}
+		}*/
 		
 		echo '<tr><td colspan="4">';
 		PageBase::show_menu($menu);
@@ -133,20 +137,10 @@ class SeriesPageBase extends PageBase
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		$series_pic = new Picture(SERIES_PICTURE);
 		$series_pic->set($this->id, $this->name, $this->flags);
-		if ($this->address_url != '')
-		{
-			echo '<a href="address_info.php?bck=1&id=' . $this->address_id . '">';
-			$series_pic->show(TNAILS_DIR, false);
-			echo '</a>';
-		}
-		else
-		{
-			$series_pic->show(TNAILS_DIR, false);
-		}
+		$series_pic->show(TNAILS_DIR, false);
 		echo '</td></tr></table></td>';
-		$title = get_label('Tournament series [0]', $this->_title);
 		
-		echo '<td rowspan="2" valign="top"><h2 class="series">' . $title . '</h2><br><h3>' . $this->name;
+		echo '<td rowspan="2" valign="top"><h2 class="series">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->start_time, $this->timezone) . '</p>';
 		if (!empty($this->price))
@@ -162,26 +156,6 @@ class SeriesPageBase extends PageBase
 		$this->league_pic->set($this->league_id, $this->league_name, $this->league_flags);
 		$this->league_pic->show(ICONS_DIR, true, 48);
 		
-		if (!is_null($this->league_id))
-		{
-			$league_pic = new Picture(LEAGUE_PICTURE);
-			$league_pic->set($this->league_id, $this->league_name, $this->league_flags);
-			$league_pic->show(ICONS_DIR, true, 48);
-		}
-		
-		echo '</td></tr><tr><td>';
-		for ($i = 0; $i < floor($this->stars); ++$i)
-		{
-			echo '<img src="images/star.png">';
-		}
-		for (; $i < $this->stars; ++$i)
-		{
-			echo '<img src="images/star-half.png">';
-		}
-		for (; $i < 5; ++$i)
-		{
-			echo '<img src="images/star-empty.png">';
-		}
 		echo '</td></tr></table></td></tr>';
 		
 		echo '</table>';
