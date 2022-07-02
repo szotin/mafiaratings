@@ -267,7 +267,7 @@ class ApiPage extends ControlApiPageBase
 					<li>rating - returns chart data for global ratings. For example: <a href="chart.php?type=rating&players=264"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=rating&players=264</a> returns Tigra rating all time chart data.</li>
 					<li>event - returns chart data for event points. For example: <a href="chart.php?type=event&id=7927&players=264"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=event&id=7927&players=264</a> returns Tigra scoring chart data during VaWaCa-2017.</li>
 					<li>tournament - returns chart data for tournament points. For example: <a href="chart.php?type=tournament&id=22&players=264"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=tournament&id=22&players=264</a> returns Tigra scoring chart data during Alcatraz-2019.</li>
-					<li>club - returns chart data for club points. For example: <a href="chart.php?type=club&id=1&players=264"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=club&id=1&players=264</a> returns Tigra current season scoring chart data in Vancouver Mafia Club.</li>
+					<li>club - returns chart data for club points. For example: <a href="chart.php?type=club&id=1&players=264"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=club&id=1&players=264</a> returns Tigra scoring chart data in Vancouver Mafia Club.</li>
 				</ul>
 			</dd>
 		<dt>players</dt>
@@ -276,16 +276,6 @@ class ApiPage extends ControlApiPageBase
 			<dd>When the type is "event" or "club", this param must contain id of the respective object.</dd>
 		<dt>scoring</dt>
 			<dd>When the type is "event" or "club", this param can contain id of the alternative scoring system. </dd>
-		<dt>season</dt>
-			<dd>When the type "club", this param can contain season id to limit the chart with this season only.
-				<ul>
-					<li>If the value is positive, it is treated as a season id. For example: <a href="chart.php?type=club&id=41&season=4&players=851"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=club&id=41&season=4&players=851</a> returns Eluha score progress in The Black Cat club in season 2016-2017.</li>
-					<li>If the value is 0 (default), current season is used. For example: <a href="chart.php?type=club&id=41&season=0&players=851"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=club&id=41&season=0&players=851</a> returns Eluha score progress in The Black Cat club in the current season.</li>
-					<li>If the value is -1, all time data is returned. For example: <a href="chart.php?type=club&id=41&season=-1&players=851"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=club&id=41&season=-1&players=851</a> returns Eluha all time score progress in The Black Cat club.</li>
-					<li>If the value is -2, the data sinse the same day a year ago is returned. For example: <a href="chart.php?type=club&id=41&season=-2&players=851"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=club&id=41&season=-2&players=851</a> returns Eluha annual score progress in The Black Cat club.</li>
-					<li>If the value is another negative value, this value is used as a calendar year. For example: <a href="chart.php?type=club&id=41&season=-2017&players=851"><?php echo PRODUCT_URL; ?>/api/control/chart.php?type=club&id=41&season=-2017&players=851</a> returns Eluha score progress in The Black Cat club in 2017.</li>
-				</ul>
-			</dd>
 <?php
 	}
 }

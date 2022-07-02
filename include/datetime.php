@@ -24,11 +24,21 @@ function get_datetime($str, $timezone = NULL)
 	{
 		$timezone = new DateTimeZone($timezone);
 	}
+	
 	if (is_numeric($str))
 	{
 		date_default_timezone_set($timezone->getName());
 		$str = timestamp_to_string((int)$str, $timezone->getName());
 	}
+	
+	// jQUery sometimes sends time zone in brackets like for example "Fri Jun 17 2022 17:00:00 GMT-0700 (Pacific Daylight Time)"
+	// This causes double timezone exception. So we strip up the bracketed timezone.
+	$p = strpos($str, ' (');
+	if ($p !== false)
+	{
+		$str = substr($str, 0, $p);
+	}
+	
 	return new DateTime($str, $timezone);
 }
 

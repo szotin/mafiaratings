@@ -721,7 +721,7 @@ class Event
 					if (($flags & EVENT_FLAG_CANCELED) != 0)
 					{
 						echo '<button class="icon" onclick="mr.restoreEvent(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
-					}
+					} 
 					else
 					{
 						echo '<button class="icon" onclick="mr.cancelEvent(' . $id . ', \'' . get_label('Are you sure you want to cancel the event?') . '\')" title="' . get_label('Cancel the event') . '"><img src="images/delete.png" border="0"></button>';
@@ -967,9 +967,7 @@ class EventPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		$title = get_label('Event [0]', $this->_title);
-		
-		echo '<td rowspan="2" valign="top"><h2 class="event">' . $title . '</h2><br><h3>' . $this->event->get_full_name();
+		echo '<td rowspan="2" valign="top"><h2 class="event">' . $this->event->get_full_name() . '</h2><br><h3>' . $this->_title;
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p>';
 		if (!empty($this->event->price))

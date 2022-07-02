@@ -5,13 +5,14 @@ require_once __DIR__ . '/constants.php';
 define('CLUB_PICTURE', 0);
 define('EVENT_PICTURE', 1);
 define('TOURNAMENT_PICTURE', 2);
-define('ADDRESS_PICTURE', 3);
-define('USER_PICTURE', 4);
-define('LEAGUE_PICTURE', 5);
-define('ALBUM_PICTURE', 6);
-define('USER_CLUB_PICTURE', 7);
-define('USER_EVENT_PICTURE', 8);
-define('USER_TOURNAMENT_PICTURE', 9);
+define('SERIES_PICTURE', 3);
+define('ADDRESS_PICTURE', 4);
+define('USER_PICTURE', 5);
+define('LEAGUE_PICTURE', 6);
+define('ALBUM_PICTURE', 7);
+define('USER_CLUB_PICTURE', 8);
+define('USER_EVENT_PICTURE', 9);
+define('USER_TOURNAMENT_PICTURE', 10);
 
 class Picture
 {
@@ -53,6 +54,13 @@ class Picture
 				$this->pic_dir = TOURNAMENT_PICS_DIR;
 				$this->def_filename = 'tournament.png';
 				$this->code = TOURNAMENT_PIC_CODE;
+				break;
+			case SERIES_PICTURE:
+				$this->mask = SERIES_ICON_MASK;
+				$this->mask_offset = SERIES_ICON_MASK_OFFSET;
+				$this->pic_dir = SERIES_PICS_DIR;
+				$this->def_filename = 'series.png';
+				$this->code = SERIES_PIC_CODE;
 				break;
 			case ADDRESS_PICTURE:
 				$this->mask = ADDRESS_ICON_MASK;
@@ -213,6 +221,8 @@ class Picture
 				return 'event_standings.php?bck=1&id=' . $this->id;
 			case TOURNAMENT_PICTURE:
 				return 'tournament_standings.php?bck=1&id=' . $this->id;
+			case SERIES_PICTURE:
+				return 'series_standings.php?bck=1&id=' . $this->id;
 			case ADDRESS_PICTURE:
 				return 'address_info.php?bck=1&id=' . $this->id;
 			case USER_PICTURE:
@@ -328,6 +338,21 @@ class Picture
 				break;
 			case TOURNAMENT_PICTURE:
 				if ($this->flags & TOURNAMENT_FLAG_CANCELED)
+				{
+					echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
+					if ($width > 0)
+					{
+						echo ' width="' . $width . '"';
+					}
+					if ($height > 0)
+					{
+						echo ' height="' . $height . '"';
+					}
+					echo '>';
+				}
+				break;
+			case SERIES_PICTURE:
+				if ($this->flags & SERIES_FLAG_CANCELED)
 				{
 					echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
 					if ($width > 0)

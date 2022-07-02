@@ -161,18 +161,6 @@ function sorting_link($ref, $sort, $text)
 
 class Page extends ClubPageBase
 {
-	private $season;
-	
-	protected function prepare()
-	{
-		parent::prepare();
-		$this->season = SEASON_LATEST;
-		if (isset($_REQUEST['season']))
-		{
-			$this->season = $_REQUEST['season'];
-		}
-	}
-	
 	protected function show_body()
 	{
 		global $sort_type;
@@ -194,8 +182,6 @@ class Page extends ClubPageBase
 		}
 		
 		echo '<table class="transp" width="100%"><tr><td>';
-		$this->season = show_club_seasons_select($this->id, $this->season, 'filterChanged()', get_label('Show stats of a specific season.'));
-		echo ' ';
 		show_roles_select($roles, 'filterChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
 		echo ' ';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
@@ -206,7 +192,6 @@ class Page extends ClubPageBase
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 1 AND p.kill_type = 2, 1, 0)) as killed_first, SUM(IF(p.kill_type = 2, 1, 0)) as killed_night' .
 			' FROM players p JOIN games g ON p.game_id = g.id WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
 		$query->add(get_roles_condition($roles));
-		$query->add(get_club_season_condition($this->season, 'g.start_time', 'g.end_time'));
 		if ($filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$query->add(' AND g.tournament_id IS NOT NULL');
@@ -295,7 +280,7 @@ class Page extends ClubPageBase
 ?>		
 		function filterChanged()
 		{
-			goTo({ roles: $('#roles').val(), season: $('#season').val(), filter: checkboxFilterFlags() });
+			goTo({ roles: $('#roles').val(), filter: checkboxFilterFlags() });
 		}
 <?php
 	}

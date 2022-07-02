@@ -24,39 +24,32 @@ define('TOURNAMENT_TYPE_AML_THREE_ROUNDS', 8);
 define('TOURNAMENT_TYPE_CHAMPIONSHIP', 9);
 define('TOURNAMENT_TYPE_SERIES', 10);
 
-function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $league_id)
+function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $is_manager = NULL)
 {
 	global $_profile;
+	
+	if ($is_manager === NULL)
+	{
+		$is_manager = is_permitted(PERMISSION_TOURNAMENT_MANAGER, $id);
+	}
 
 	$now = time();
-	
-	$no_buttons = true;
-	if ($_profile != NULL && $id > 0 && ($club_flags & CLUB_FLAG_RETIRED) == 0)
+	if ($is_manager && ($club_flags & CLUB_FLAG_RETIRED) == 0)
 	{
-		$can_manage = false;
-		
-		if ($_profile->is_club_manager($club_id))
+		echo '<button class="icon" onclick="mr.editTournament(' . $id . ')" title="' . get_label('Edit the tournament') . '"><img src="images/edit.png" border="0"></button>';
+		if ($start_time >= $now)
 		{
-			echo '<button class="icon" onclick="mr.editTournament(' . $id . ')" title="' . get_label('Edit the tournament') . '"><img src="images/edit.png" border="0"></button>';
-			if ($start_time >= $now)
+			if (($flags & TOURNAMENT_FLAG_CANCELED) != 0)
 			{
-				if (($flags & TOURNAMENT_FLAG_CANCELED) != 0)
-				{
-					echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
-				}
-				else
-				{
-					echo '<button class="icon" onclick="mr.cancelTournament(' . $id . ', \'' . get_label('Are you sure you want to cancel the tournament?') . '\')" title="' . get_label('Cancel the tournament') . '"><img src="images/delete.png" border="0"></button>';
-				}
+				echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
 			}
-			$no_buttons = false;
+			else
+			{
+				echo '<button class="icon" onclick="mr.cancelTournament(' . $id . ', \'' . get_label('Are you sure you want to cancel the tournament?') . '\')" title="' . get_label('Cancel the tournament') . '"><img src="images/delete.png" border="0"></button>';
+			}
 		}
 	}
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
-	if ($league_id > 0 && is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
-	{
-		echo '<button class="icon" onclick="mr.approveTournament(' . $id . ', ' . $league_id . ')" title="' . get_label('Open interactive standings page') . '"><img src="images/stars.png" border="0"></button>';
-	}
 }
 
 
@@ -64,10 +57,6 @@ class TournamentPageBase extends PageBase
 {
 	protected $id;
 	protected $name;
-	protected $request_league_id;
-	protected $league_id;
-	protected $league_name;
-	protected $league_flags;
 	protected $club_id;
 	protected $club_name;
 	protected $club_flags;
@@ -93,7 +82,7 @@ class TournamentPageBase extends PageBase
 	protected $normalizer_version;
 	protected $rules_code;
 	protected $flags;
-	protected $stars;
+	protected $series;
 	
 	protected function prepare()
 	{
@@ -105,25 +94,33 @@ class TournamentPageBase extends PageBase
 		}
 		$this->id = (int)$_REQUEST['id'];
 		list(
-			$this->name, $this->request_league_id, $this->league_id, $this->league_name, $this->league_flags, $this->club_id, $this->club_name, $this->club_flags, 
+			$this->name, $this->club_id, $this->club_name, $this->club_flags, 
 			$this->address_id, $this->address_name, $this->address, $this->address_url, $this->address_flags,
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->price, 
-			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, $this->rules_code, $this->flags, $this->stars) =
+			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, $this->rules_code, $this->flags) =
 		Db::record(
 			get_label('tournament'),
-			'SELECT t.name, t.request_league_id, l.id, l.name, l.flags, c.id, c.name, c.flags,' . 
+			'SELECT t.name, c.id, c.name, c.flags,' . 
 				' a.id, a.name, a.address, a.map_url, a.flags,' . 
 				' ct.id, ct.name_' . $_lang_code . ', cr.id, cr.name_' . $_lang_code . ', ct.timezone,' . 
-				' t.start_time, t.duration, t.langs, t.notes, t.price, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.rules, t.flags, t.stars' .
+				' t.start_time, t.duration, t.langs, t.notes, t.price, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.rules, t.flags' .
 				' FROM tournaments t' .
-				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN addresses a ON a.id = t.address_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN countries cr ON cr.id = ct.country_id' .
 				' WHERE t.id = ?',
 			$this->id);
+			
+		$this->series = array();
+		$query = new DbQuery('SELECT s.id, s.name, s.flags, st.stars, l.id, l.name, l.flags FROM series_tournaments st JOIN series s ON s.id = st.series_id JOIN leagues l ON l.id = s.league_id WHERE st.tournament_id = ?', $this->id);
+		while ($row = $query->next())
+		{
+			$s = new stdClass();
+			list($s->series_id, $s->series_name, $s->series_flags, $s->stars, $s->league_id, $s->league_name, $s->league_flags) = $row;
+			$this->series[] = $s;
+		}
 	}
 	
 	protected function show_title()
@@ -188,8 +185,7 @@ class TournamentPageBase extends PageBase
 			$this->duration,
 			$this->flags,
 			$this->club_id,
-			$this->club_flags,
-			$this->league_id);
+			$this->club_flags);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$tournament_pic->set($this->id, $this->name, $this->flags);
@@ -204,9 +200,8 @@ class TournamentPageBase extends PageBase
 			$tournament_pic->show(TNAILS_DIR, false);
 		}
 		echo '</td></tr></table></td>';
-		$title = get_label('Tournament [0]', $this->_title);
 		
-		echo '<td rowspan="2" valign="top"><h2 class="tournament">' . $title . '</h2><br><h3>' . $this->name;
+		echo '<td rowspan="2" valign="top"><h2 class="tournament">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->start_time, $this->timezone) . '</p>';
 		if (!empty($this->price))
@@ -220,27 +215,31 @@ class TournamentPageBase extends PageBase
 		echo '</td></tr><tr><td align="right" valign="bottom"><table><tr><td align="center">';
 		
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		$this->club_pic->show(ICONS_DIR, true, 48);
+		$this->club_pic->show(ICONS_DIR, true, 54);
 		
-		if (!is_null($this->league_id))
+		if (count($this->series) > 0)
 		{
-			$league_pic = new Picture(LEAGUE_PICTURE);
-			$league_pic->set($this->league_id, $this->league_name, $this->league_flags);
-			$league_pic->show(ICONS_DIR, true, 48);
-		}
-		
-		echo '</td></tr><tr><td>';
-		for ($i = 0; $i < floor($this->stars); ++$i)
-		{
-			echo '<img src="images/star.png">';
-		}
-		for (; $i < $this->stars; ++$i)
-		{
-			echo '<img src="images/star-half.png">';
-		}
-		for (; $i < 5; ++$i)
-		{
-			echo '<img src="images/star-empty.png">';
+			$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+			foreach ($this->series as $s)
+			{
+				echo '<td align="center">';
+				$series_pic->set($s->series_id, $s->series_name, $s->series_flags)->set($s->league_id, $s->league_name, $s->league_flags);
+				$series_pic->show(ICONS_DIR, true, 48);
+				echo '<br>';
+				for ($i = 0; $i < floor($s->stars); ++$i)
+				{
+					echo '<img src="images/star.png" width="12">';
+				}
+				for (; $i < $s->stars; ++$i)
+				{
+					echo '<img src="images/star-half.png" width="12">';
+				}
+				for (; $i < 5; ++$i)
+				{
+					echo '<img src="images/star-empty.png" width="12">';
+				}
+				echo '</td>';
+			}
 		}
 		echo '</td></tr></table></td></tr>';
 		
@@ -248,18 +247,18 @@ class TournamentPageBase extends PageBase
 	}
 }
 
-function tournament_stars_str($stars)
+function tournament_stars_str($stars, $max_stars = 5)
 {
 	$stars_str = '';
-	for ($i = 0; $i < floor($stars) && $i < 5; ++$i)
+	for ($i = 0; $i < floor($stars) && $i < $max_stars; ++$i)
 	{
 		$stars_str .= '★';
 	}
-	for (; $i < $stars && $i < 5; ++$i)
+	for (; $i < $stars && $i < $max_stars; ++$i)
 	{
 		$stars_str .= '✯';
 	}
-//	for (; $i < 5; ++$i)
+//	for (; $i < $max_stars; ++$i)
 //	{
 //		$stars_str .= '☆';
 //	}

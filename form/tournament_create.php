@@ -23,12 +23,6 @@ try
 	check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 	$club = $_profile->clubs[$club_id];
 	
-	$league_id = 0;
-	if (isset($_REQUEST['league_id']))
-	{
-		$league_id = (int)$_REQUEST['league_id'];
-	}
-
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value=""></td></tr>';
 	
@@ -47,49 +41,18 @@ try
 	show_option(TOURNAMENT_TYPE_CHAMPIONSHIP, $tournament_type, get_label('Seasonal championship.'));
 	echo '</select></td></tr>';
 
-	if ($league_id > 0)
+	$scoring_id = $club->scoring_id;
+	$normalizer_id = $club->normalizer_id;
+	if (is_null($normalizer_id))
 	{
-		list($league_name, $league_flags, $scoring_id, $normalizer_id) = Db::record(get_label('league'), 'SELECT name, flags, scoring_id, normalizer_id FROM leagues WHERE id = ?', $league_id);
-		if (is_null($normalizer_id))
-		{
-			$normalizer_id = 0;
-		}
-		
-		echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="' . ICON_WIDTH . '">';
-		$league_pic = new Picture(LEAGUE_PICTURE);
-		$league_pic->set($league_id, $league_name, $league_flags);
-		$league_pic->show(ICONS_DIR, false);
-		echo '</td><td align="center"><b>' . $league_name . '</b><input type="hidden" id="form-league" value="' . $league_id . ',' . $scoring_id . ',' . $normalizer_id . '"></td></tr></table></td></tr>';
+		$normalizer_id = 0;
 	}
-	else
-	{
-		$scoring_id = $club->scoring_id;
-		$normalizer_id = $club->normalizer_id;
-		if (is_null($normalizer_id))
-		{
-			$normalizer_id = 0;
-		}
-		
-		echo '<tr><td>' . get_label('League') . ':</td><td><select id="form-league" onchange="onLeagueChange()">';
-		echo '<option value="0,' . $scoring_id . ',' . $normalizer_id . '" selected></option>';
-		$query = new DbQuery('SELECT l.id, l.name, l.scoring_id, l.normalizer_id FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER by l.name', $club_id);
-		while ($row = $query->next())
-		{
-			list($lid, $lname, $lsid, $lnid) = $row;
-			if (is_null($lnid))
-			{
-				$lnid = 0;
-			}
-			echo '<option value="' . $lid . ',' . $lsid . ',' . $lnid . '">' . $lname . '</option>';
-		}
-		echo '</select></td></tr>';
-	}
+	
+	echo '<tr><td>' . get_label('Tournament series') . ':</td><td><div id="form-series"></div></td></tr>';
 	
 	$normalizer_id = 0; // set it to null because long term is not checked
 	$normalizer_version = 0;
 	list($scoring_version) = Db::record(get_label('scoring system'), 'SELECT version FROM scorings WHERE id = ?', $scoring_id);
-	
-	echo '<tr><td>' . get_label('Stars') . ':</td><td><div id="form-stars" class="stars"></div></td></tr>';
 	
 	$datetime = get_datetime(time(), $club->timezone);
 	$date = datetime_to_string($datetime, false);
@@ -97,7 +60,7 @@ try
 	echo '<tr><td>'.get_label('Dates').':</td><td>';
 	echo '<input type="date" id="form-start" value="' . $date . '" onchange="onMinDateChange()">';
 	echo '  ' . get_label('to') . '  ';
-	echo '<input type="date" id="form-end" value="' . $date . '">';
+	echo '<input type="date" id="form-end" value="' . $date . '" onchange="setSeries()">';
 	echo '</td></tr>';
 	
 	$addr_id = -1;
@@ -135,7 +98,7 @@ try
 	show_country_input('form-country', $club->country, 'form-city');
 	echo ' ';
 	show_city_input('form-city', $club->city, 'form-country');
-	echo '</span></td></tr>';
+	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Admission rate') . ':</td><td><input id="form-price" value=""></td></tr>';
 	
@@ -175,6 +138,106 @@ try
 	<script type="text/javascript" src="js/rater.min.js"></script>
 	<script>
 	
+	var seriesList = new Object();
+	function setSeries()
+	{
+		json.post("api/get/series.php",
+		{
+			started_before: new Date($('#form-end').val())
+			, ended_after: new Date($('#form-start').val())
+			, club_id: <?php echo $club_id; ?>
+		},
+		function(series)
+		{
+			var html = '<table class="dialog_form" width="100%"><tr>';
+			var sl = new Object();
+			for (i = 0; i < series.series.length; ++i)
+			{
+				var s = series.series[i];
+				if (seriesList[s.id])
+				{
+					sl[s.id] = seriesList[s.id];
+				}
+				else
+				{
+					sl[s.id] =
+					{
+						id: s.id,
+						selected: false,
+						finals: false,
+						stars: 0
+					};
+				}
+				
+				html += '<tr><td width="80" align="center"><img src="' + s.icon + '" width="48"><br><b>' + s.name + '</td>';
+				
+				html += '<td><input type="checkbox" id="form-p-' + s.id + '" onclick="seriesParticipantClick(' + s.id + ')"'
+				if (sl[s.id].selected)
+				{
+					html += ' checked';
+				}
+				html += '> <?php echo get_label('participate'); ?>';
+				
+				html += '<br><input type="checkbox" id="form-f-' + s.id + '" onclick="seriesFinalsClick(' + s.id + ')"';
+				if (!sl[s.id].selected)
+				{
+					html += ' disabled';
+				}
+				if (sl[s.id].finals)
+				{
+					html += ' checked';
+				}
+				html += '> <?php echo get_label('finals'); ?></td>';
+				
+				html += '<td align="center"><div id="form-stars-' + s.id + '" class="stars"></div></td></tr>';
+			}
+			html += '</table>';
+			$('#form-series').html(html);
+			
+			seriesList = sl;
+			for (i = 0; i < series.series.length; ++i)
+			{
+				var s = series.series[i];
+				$("#form-stars-" + s.id).rate(
+				{
+					max_value: 5,
+					step_size: 1,
+					initial_value: seriesList[s.id].stars,
+				}).on("change", function(ev, data) { starsChanged(this, data.to); });
+			}
+		});
+	}
+	setSeries();
+	
+	function starsChanged(control, stars)
+	{
+		var seriesId = control.id.substr(control.id.lastIndexOf('-')+1);
+		$("#form-p-" + seriesId).prop('checked', true);
+		$("#form-f-" + seriesId).prop('disabled', false);
+		seriesList[seriesId].stars = stars;
+		seriesList[seriesId].selected = true;
+	}
+	
+	function seriesParticipantClick(seriesId)
+	{
+		var d = false;
+		if (!$("#form-p-" + seriesId).attr('checked'))
+		{
+			d = true;
+			$("#form-stars-" + seriesId).rate("setValue", 0);
+			$("#form-p-" + seriesId).prop('checked', false);
+			$("#form-f-" + seriesId).prop('checked', false);
+			seriesList[seriesId].finals = false;
+		}
+		$("#form-f-" + seriesId).prop('disabled', d);
+		seriesList[seriesId].selected = !d;
+	}
+	
+	function seriesFinalsClick(seriesId)
+	{
+		seriesList[seriesId].finals = $("#form-f-" + seriesId).attr('checked') ? true : false;
+	}
+	
 	function onMinDateChange()
 	{
 		$('#form-end').attr("min", $('#form-start').val());
@@ -184,6 +247,7 @@ try
 		{
 			$('#form-end').val($('#form-start').val());
 		}
+		setSeries();
 	}
 	
 	var scoringId = <?php echo $scoring_id; ?>;
@@ -191,7 +255,6 @@ try
 	var scoringOptions = '<?php echo $scoring_options; ?>';
 	function onScoringChange(s)
 	{
-		console.log(s);
 		scoringId = s.sId;
 		scoringVersion = s.sVer;
 		scoringOptions = JSON.stringify(s.ops);
@@ -205,7 +268,6 @@ try
 		$("#form-use_rounds_scoring").prop('checked', !c);
 		$("#form-single_game").prop('disabled', !c || type != 0);
 		$("#form-use_rounds_scoring").prop('disabled', c || type != 0);
-		$('#form-scoring-norm-sel').val(c ? $("#form-league").val().split(',')[2] : 0);
 		mr.onChangeNormalizer('form-scoring', 0);
 	}
 	
@@ -249,26 +311,6 @@ try
 		oldAddressValue = text;
 	}
 	addressClick();
-	
-	$("#form-stars").rate(
-	{
-		max_value: 5,
-		step_size: 0.5,
-		initial_value: 0,
-	});
-	
-	function onLeagueChange()
-	{
-		var league = $("#form-league").val().split(',');
-		if (!$("#form-long_term").attr('checked'))
-		{
-			league[2] = 0;
-		}
-		$('#form-scoring-sel').val(league[1]);
-		$('#form-scoring-norm-sel').val(league[2]);
-		mr.onChangeScoring('form-scoring', 0, onScoringChange);
-		mr.onChangeNormalizer('form-scoring', 0);
-	}
 	
 	function typeChanged()
 	{
@@ -331,13 +373,27 @@ try
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
 		
-		var league = $("#form-league").val().split(',');
+		var series = [];
+		for (const i in seriesList) 
+		{
+			var s = seriesList[i];
+			if (s.selected)
+			{
+				var _s = { id: s.id, stars: s.stars };
+				if (s.finals)
+				{
+					_s['finals'] = true;
+				}
+				series.push(_s);
+			}
+		}
+		series = JSON.stringify(series);
 		
 		var params =
 		{
 			op: "create",
 			club_id: <?php echo $club_id; ?>,
-			league_id: league[0],
+			series: series,
 			name: $("#form-name").val(),
 			type: $('#form-type').val(),
 			price: $("#form-price").val(),
@@ -352,7 +408,6 @@ try
 			end: dateToStr(_end),
 			langs: _langs,
 			flags: _flags,
-			stars: $("#form-stars").rate("getValue"),
 		};
 		
 		if (_addr > 0)

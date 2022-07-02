@@ -23,6 +23,7 @@ class ApiPage extends GetApiPageBase
 		$tournament_id = (int)get_optional_param('tournament_id', -1);
 		$club_id = (int)get_optional_param('club_id', -1);
 		$league_id = (int)get_optional_param('league_id', -1);
+		$series_id = (int)get_optional_param('series_id', -1);
 		$address_id = (int)get_optional_param('address_id', -1);
 		$city_id = (int)get_optional_param('city_id', -1);
 		$area_id = (int)get_optional_param('area_id', -1);
@@ -102,13 +103,18 @@ class ApiPage extends GetApiPageBase
 			$condition->add(' AND a.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $country_id);
 		}
 		
-		if ($league_id == 0)
+		if ($league_id > 0)
 		{
-			$condition->add(' AND t.league_id IS NULL');
+			$condition->add(' AND t.id IN (SELECT _st.tournament_id FROM series_tournaments _st JOIN series _s ON _s.id = _st.series_id WHERE _s.league_id = ?)', $league_id);
 		}
-		else if ($league_id > 0)
+		
+		if ($series_id == 0)
 		{
-			$condition->add(' AND t.league_id = ?', $league_id);
+			$condition->add(' AND t.id NOT IN (SELECT tournament_id FROM series_tournaments)');
+		}
+		else if ($series_id > 0)
+		{
+			$condition->add(' AND t.id IN (SELECT tournament_id FROM series_tournaments WHERE series_id = ?)', $series_id);
 		}
 		
 		if ($scoring_id > 0)
@@ -159,9 +165,8 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, c.name, c.flags, t.start_time, t.duration, t.notes, t.price, t.scoring_id, t.scoring_version, t.rules, l.id, l.name, l.flags, ct.timezone FROM tournaments t' . 
+				'SELECT t.id, t.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, c.name, c.flags, t.start_time, t.duration, t.notes, t.price, t.scoring_id, t.scoring_version, t.rules, ct.timezone FROM tournaments t' . 
 				' JOIN addresses a ON a.id = t.address_id' .
-				' LEFT OUTER JOIN leagues l ON l.id = t.league_id' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN cities ct ON ct.id = a.city_id', $condition);
 			$query->add(' ORDER BY t.start_time DESC, t.id DESC');
@@ -174,7 +179,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$tournament = new stdClass();
-				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->address_name, $address_flags, $tournament->club_id, $tournament->club_name, $club_flags, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament_scoring_id, $tournament_scoring_version, $rules_code, $tournament_league_id, $tournament_league_name, $tournament_league_flags, $tournament_timezone) = $row;
+				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->address_name, $address_flags, $tournament->club_id, $tournament->club_name, $club_flags, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament_scoring_id, $tournament_scoring_version, $rules_code, $tournament_timezone) = $row;
 				$tournament->id = (int)$tournament->id;
 				$tournament->langs = (int)$tournament->langs;
 				$tournament->address_id = (int)$tournament->address_id;
@@ -203,21 +208,7 @@ class ApiPage extends GetApiPageBase
 				$tournament->club_icon = $server_url . $club_pic->url(ICONS_DIR);
 				$tournament->club_picture = $server_url . $club_pic->url(TNAILS_DIR);
 				
-				if (!is_null($tournament_league_id))
-				{
-					$tournament->league_id = $tournament_league_id;
-					$tournament->league_name = $tournament_league_name;
-					$league_pic = new Picture(LEAGUE_PICTURE, $club_pic);
-					$league_pic->set($tournament_league_id, $tournament_league_name, $tournament_league_flags);
-					$tournament->league_icon = $server_url . $league_pic->url(ICONS_DIR);
-					$tournament->league_picture = $server_url . $league_pic->url(TNAILS_DIR);
-					
-					$tournament_pic = new Picture(TOURNAMENT_PICTURE, $league_pic);
-				}
-				else
-				{
-					$tournament_pic = new Picture(TOURNAMENT_PICTURE, $club_pic);
-				}
+				$tournament_pic = new Picture(TOURNAMENT_PICTURE, $club_pic);
 				
 				$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 				$tournament->icon = $server_url . $tournament_pic->url(ICONS_DIR);
@@ -230,7 +221,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.name, t.flags, t.langs, t.address_id, t.club_id, t.start_time, t.duration, t.notes, t.price, t.scoring_id, t.scoring_version, t.rules, t.league_id FROM tournaments t' . 
+				'SELECT t.id, t.name, t.flags, t.langs, t.address_id, t.club_id, t.start_time, t.duration, t.notes, t.price, t.scoring_id, t.scoring_version, t.rules FROM tournaments t' . 
 				' JOIN addresses a ON a.id = t.address_id', $condition);
 			$query->add(' ORDER BY t.start_time DESC, t.id DESC');
 			if ($page_size > 0)
@@ -242,7 +233,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$tournament = new stdClass();
-				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->club_id, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament_scoring_id, $tournament_scoring_version, $rules_code, $league_id) = $row;
+				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->club_id, $tournament->timestamp, $tournament->duration, $tournament->notes, $tournament->price, $tournament_scoring_id, $tournament_scoring_version, $rules_code) = $row;
 				$tournament->id = (int)$tournament->id;
 				$tournament->langs = (int)$tournament->langs;
 				$tournament->address_id = (int)$tournament->address_id;
@@ -253,10 +244,6 @@ class ApiPage extends GetApiPageBase
 				{
 					$tournament->scoring_id = (int)$tournament_scoring_id;
 					$tournament->scoring_version = (int)$tournament_scoring_version;
-				}
-				if (!is_null($league_id))
-				{
-					$tournament->league_id = (int)$league_id;
 				}
 				$tournament->rules = rules_code_to_object($rules_code);
 				$tournament->flags = (int)$tournament->flags | TOURNAMENT_EDITABLE_MASK;
@@ -277,7 +264,8 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns tournaments that are ended after a certain time. For example: <a href="tournaments.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/tournaments.php?ended_after=1483228800</a> returns all tournaments ended after January 1, 2017; <a href="tournaments.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/tournaments.php?started_before=now&ended_after=now</a> returns all tournaments that happening now. Logged user timezone is used for converting dates.', '-');
 		$help->request_param('tournament_id', 'Tournament id. For example: <a href="tournaments.php?tournament_id=1">' . PRODUCT_URL . '/api/get/tournaments.php?tournament_id=1</a> returns the tournament with id 1.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="tournaments.php?club_id=1">' . PRODUCT_URL . '/api/get/tournaments.php?club_id=1</a> returns all tournaments in Vancouver Mafia Club. List of the cities and their ids can be obtained using <a href="clubs.php?help">' . PRODUCT_URL . '/api/get/clubs.php</a>.', '-');
-		$help->request_param('league_id', 'League id. For example: <a href="tournaments.php?league_id=2">' . PRODUCT_URL . '/api/get/tournaments.php?league_id=2</a> returns all tournaments of the American Mafia League. <a href="tournaments.php?league_id=0">' . PRODUCT_URL . '/api/get/tournaments.php?league_id=0</a> returns all tournaments that do not belong to any league.', '-');
+		$help->request_param('league_id', 'League id. For example: <a href="tournaments.php?league_id=2">' . PRODUCT_URL . '/api/get/tournaments.php?league_id=2</a> returns all tournaments of the American Mafia League.', '-');
+		$help->request_param('series_id', 'Tournament series id. For example: <a href="tournaments.php?series_id=1">' . PRODUCT_URL . '/api/get/tournaments.php?series_id=1</a> returns all tournaments of the American Mafia League Season 2022. <a href="tournaments.php?series_id=0">' . PRODUCT_URL . '/api/get/tournaments.php?series_id=0</a> returns all tournaments that do not belong to any series.', '-');
 		$help->request_param('address_id', 'Address id. For example: <a href="tournaments.php?address_id=10">' . PRODUCT_URL . '/api/get/tournaments.php?address_id=10</a> returns all tournaments played in Tafs Cafe by Vancouver Mafia Club.', '-');
 		$help->request_param('city_id', 'City id. For example: <a href="tournaments.php?city_id=2">' . PRODUCT_URL . '/api/get/tournaments.php?city_id=2</a> returns all tournaments in Moscow. List of the cities and their ids can be obtained using <a href="cities.php?help">' . PRODUCT_URL . '/api/get/cities.php</a>.', '-');
 		$help->request_param('area_id', 'City id. The difference with city is that when area is set, the tournaments from all nearby cities are also returned. For example: <a href="tournaments.php?area_id=2">' . PRODUCT_URL . '/api/get/tournaments.php?area_id=2</a> returns all tournaments in Moscow and nearby cities like Podolsk, Himki, etc. Though <a href="tournaments.php?city_id=2">' . PRODUCT_URL . '/api/get/tournaments.php?city_id=2</a> returns only the tournaments in Moscow itself.', '-');
@@ -312,7 +300,6 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('end', 'Formatted date "yyyy-mm-dd HH:MM" for the end of the tournament. Tournament timezone is used.', 1);
 			$param->sub_param('notes', 'Tournament notes.');
 			$param->sub_param('price', 'Tournament admission rate.');
-			$param->sub_param('stars', 'Number of tournament stars.');
 			$param->sub_param('canceled', 'True for canceled tournaments, false for others.');
 			$param->sub_param('scoring_id', 'Id of the scoring system used in the tournament.', 'every round of the tournament is using its own scoring system.');
 			$param->sub_param('league_id', 'League id when the tournament belongs to a league.', 'the tournament is internal club tournament.');

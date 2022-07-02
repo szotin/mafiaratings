@@ -206,66 +206,6 @@ var mr = new function()
 	}
 
 	//--------------------------------------------------------------------------------------
-	// Club Season
-	//--------------------------------------------------------------------------------------
-	this.editClubSeason = function(id)
-	{
-		dlg.form("form/club_season_edit.php?season=" + id, refr);
-	}
-
-	this.deleteClubSeason = function(id, confirmMessage)
-	{
-		function _delete()
-		{
-			json.post("api/ops/club_season.php", { op: 'delete', season_id: id }, refr);
-		}
-
-		if (typeof confirmMessage == "string")
-		{
-			dlg.yesNo(confirmMessage, null, null, _delete);
-		}
-		else
-		{
-			_delete();
-		}
-	}
-
-	this.createClubSeason = function(clubId)
-	{
-		dlg.form("form/club_season_create.php?club=" + clubId, refr);
-	}
-
-	//--------------------------------------------------------------------------------------
-	// League Season
-	//--------------------------------------------------------------------------------------
-	this.editLeagueSeason = function(id)
-	{
-		dlg.form("form/league_season_edit.php?season=" + id, refr);
-	}
-
-	this.deleteLeagueSeason = function(id, confirmMessage)
-	{
-		function _delete()
-		{
-			json.post("api/ops/league_season.php", { op: 'delete', season_id: id }, refr);
-		}
-
-		if (typeof confirmMessage == "string")
-		{
-			dlg.yesNo(confirmMessage, null, null, _delete);
-		}
-		else
-		{
-			_delete();
-		}
-	}
-
-	this.createLeagueSeason = function(leagueId)
-	{
-		dlg.form("form/league_season_create.php?league=" + leagueId, refr);
-	}
-
-	//--------------------------------------------------------------------------------------
 	// address
 	//--------------------------------------------------------------------------------------
 	this.createAddr = function(clubId)
@@ -661,7 +601,7 @@ var mr = new function()
 	{
 		function _cancel()
 		{
-			json.post("api/ops/tournament.php", { op: "cancel", tournament_id: id }, r)
+			json.post("api/ops/tournament.php", { op: "cancel", tournament_id: id }, refr);
 		}
 		
 		if (typeof confirmMessage == "string")
@@ -702,6 +642,41 @@ var mr = new function()
 	this.tournamentObs = function(tournamentId)
 	{
 		dlg.infoForm("form/obs_urls.php?tournament_id=" + tournamentId, 600);
+	}
+	
+	//--------------------------------------------------------------------------------------
+	// series
+	//--------------------------------------------------------------------------------------
+	this.createSeries = function(leagueId)
+	{
+		dlg.form("form/series_create.php?league_id=" + leagueId, refr, 900);
+	}
+	
+	this.restoreSeries = function(id)
+	{
+		json.post("api/ops/series.php", { op: "restore", series_id: id }, refr);
+	}
+
+	this.cancelSeries = function(id, confirmMessage)
+	{
+		function _cancel()
+		{
+			json.post("api/ops/series.php", { op: "cancel", series_id: id }, refr)
+		}
+		
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _cancel);
+		}
+		else
+		{
+			_cancel();
+		}
+	}
+
+	this.editSeries = function(id)
+	{
+		dlg.form("form/series_edit.php?id=" + id, refr);
 	}
 	
 	//--------------------------------------------------------------------------------------

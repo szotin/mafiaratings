@@ -22,25 +22,17 @@ class Page extends ClubPageBase
 	{
 		global $_page;
 		
-		$season = SEASON_LATEST;
-		if (isset($_REQUEST['season']))
-		{
-			$season = (int)$_REQUEST['season'];
-		}
-		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		echo '<table class="transp" width="100%"><tr><td>';
-		$season = show_club_seasons_select($this->id, $season, 'filterChanged()', get_label('Show refereess of a specific season.'));
-		echo ' ';
+		echo '<p><table class="transp" width="100%"><tr><td>';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
-		echo '</td></tr></table>';
-		
-		$condition = get_club_season_condition($season, 'g.start_time', 'g.end_time');
+		echo '</td></tr></table></p>';
+
+		$condition = new SQL();
 		if ($filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NOT NULL');
@@ -135,7 +127,7 @@ class Page extends ClubPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({filter: checkboxFilterFlags(), season: $('#season').val(), page: 0});
+			goTo({filter: checkboxFilterFlags(), page: 0});
 		}
 <?php
 	}

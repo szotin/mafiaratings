@@ -22,7 +22,7 @@ try
 	list ($tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 		Db::record(get_label('tournament'), 'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags FROM tournaments t JOIN clubs c ON c.id = t.club_id WHERE t.id = ?', $_REQUEST['id']);
 	
-	$is_manager = ($_profile != NULL && $_profile->is_club_manager($club_id));
+	$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 	$rows = 0;
 	$cols = 0;
 	$refr = 0;

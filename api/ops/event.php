@@ -1250,8 +1250,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_version, scoring_options, rules, flags, stars) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options, $rules, 0, 0);
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_version, scoring_options, rules, flags) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $scoring_options, $rules, 0);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$query = new DbQuery('SELECT user_id, flags FROM event_users WHERE event_id = ?', $event_id);
@@ -1277,7 +1277,6 @@ class ApiPage extends OpsApiPageBase
 		$log_details->scoring_options = $scoring_options;
 		$log_details->rules_code = $rules;
 		$log_details->flags = 0;
-		$log_details->stars = 0;
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 			
 		$name = get_label('main round');

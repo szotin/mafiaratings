@@ -15,10 +15,8 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
 
 class Page extends ClubPageBase
 {
-	private $season;
 	private $min_games;
 	private $games_count;
-	private $season_condition;
 
 	protected function prepare()
 	{
@@ -27,20 +25,13 @@ class Page extends ClubPageBase
 		list($timezone) = Db::record(get_label('club'), 'SELECT i.timezone FROM clubs c JOIN cities i ON c.city_id = i.id WHERE c.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 		
-		$this->season = SEASON_LATEST;
-		if (isset($_REQUEST['season']))
-		{
-			$this->season = $_REQUEST['season'];
-		}
-		
 		$this->filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$this->filter = (int)$_REQUEST['filter'];
 		}
 		
-		$this->season_condition = get_club_season_condition($this->season, 'g.start_time', 'g.end_time');
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $this->season_condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
 		if (isset($_REQUEST['min']))
 		{
 			$this->min_games = $_REQUEST['min'];
@@ -115,8 +106,6 @@ class Page extends ClubPageBase
 		}
 	
 		echo '<p><table class="transp" width="100%"><tr><td>';
-		$this->season = show_club_seasons_select($this->id, $this->season, 'filterChanged()', get_label('Show stats of a specific season.'));
-		echo ' ';
 		show_roles_select($roles, 'filterChanged()', get_label('Use only the stats of a specific role.'));
 		echo ' <select id="min" onchange="filterChanged()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
 		$max_option = round($this->games_count / 20) * 10;
@@ -143,7 +132,6 @@ class Page extends ClubPageBase
 		echo '</td></tr></table></p>';
 		
 		$condition = get_roles_condition($roles);
-		$condition->add($this->season_condition);
 		if ($this->filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NOT NULL');
@@ -279,7 +267,7 @@ class Page extends ClubPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({roles: $('#roles').val(), season: $('#season').val(), filter: checkboxFilterFlags(), min: $('#min').val(), nom: $('#nom').val() });
+			goTo({roles: $('#roles').val(), filter: checkboxFilterFlags(), min: $('#min').val(), nom: $('#nom').val() });
 		}
 <?php
 	}

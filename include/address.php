@@ -286,7 +286,7 @@ class AddressPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		echo '<td rowspan="2" valign="top"><h2 class="address">' . get_label('Address [0]', $this->_title) . '</h2><br><h3>' . $this->name . '</h3><p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
+		echo '<td rowspan="2" valign="top"><h2 class="address">' . $this->name . '</h2><br><h3>' . $this->_title . '</h3><p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom" width="' . ICON_WIDTH . '"><table><tr><td>';
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);

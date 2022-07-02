@@ -200,7 +200,7 @@ class UserPageBase extends PageBase
 		$user_pic = new Picture(USER_PICTURE);
 		$user_pic->set($this->id, $this->name, $this->flags);
 		$user_pic->show(TNAILS_DIR, false);
-		echo '</td></tr></table><td valign="top"><h2 class="user">' . get_label('Player [0]', $this->_title) . '</h2><br><h3>' . $this->title . '</h3><p class="subtitle">';
+		echo '</td></tr></table><td valign="top"><h2 class="user">' . $this->title . '</h2><br><h3>' . $this->_title . '</h3><p class="subtitle">';
 		echo $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom" colspan="2">';

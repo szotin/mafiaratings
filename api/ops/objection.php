@@ -8,7 +8,7 @@ require_once '../../include/game.php';
 
 define('CURRENT_VERSION', 0);
 
-function cancel_game($game_id, $club_id, $league_id)
+function cancel_game($game_id, $club_id)
 {
 	Db::exec(get_label('game'), 'UPDATE games SET is_canceled = TRUE WHERE id = ?', $game_id);
 	if (Db::affected_rows() > 0)
@@ -34,11 +34,11 @@ function cancel_game($game_id, $club_id, $league_id)
 		
 		$log_details = new stdClass();
 		$log_details->canceled = true;
-		db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
+		db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id);
 	}
 }
 
-function uncancel_game($game_id, $club_id, $league_id)
+function uncancel_game($game_id, $club_id)
 {
 	Db::exec(get_label('game'), 'UPDATE games SET is_canceled = FALSE WHERE id = ?', $game_id);
 	if (Db::affected_rows() > 0)
@@ -48,7 +48,7 @@ function uncancel_game($game_id, $club_id, $league_id)
 		$game->update();
 		$log_details = new stdClass();
 		$log_details->canceled = false;
-		db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id, $league_id);
+		db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id);
 	}
 }
 
@@ -77,11 +77,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			$parent_id = NULL;
 			$game_id = (int)get_required_param('game_id');
-			list ($club_id, $event_id, $tournament_id, $owner_id, $league_id) = Db::record(get_label('game'), 'SELECT g.club_id, g.event_id, g.tournament_id, g.user_id, t.league_id FROM games g JOIN events e ON e.id = g.event_id LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE g.id = ?', $game_id);
+			list ($club_id, $event_id, $tournament_id, $owner_id) = Db::record(get_label('game'), 'SELECT g.club_id, g.event_id, g.tournament_id, g.user_id FROM games g WHERE g.id = ?', $game_id);
 		}
 		else
 		{
-			list ($game_id, $club_id, $event_id, $tournament_id, $owner_id, $league_id) = Db::record(get_label('game'), 'SELECT g.id, g.club_id, g.event_id, g.tournament_id, g.user_id, t.league_id FROM objections o JOIN games g ON g.id = o.game_id JOIN events e ON e.id = g.event_id LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE o.id = ?', $parent_id);
+			list ($game_id, $club_id, $event_id, $tournament_id, $owner_id) = Db::record(get_label('game'), 'SELECT g.id, g.club_id, g.event_id, g.tournament_id, g.user_id FROM objections o JOIN games g ON g.id = o.game_id WHERE o.id = ?', $parent_id);
 		}
 		
 		$user_id = $_profile->user_id;
@@ -96,11 +96,11 @@ class ApiPage extends OpsApiPageBase
 		$log_details->game_id = $game_id;
 		$log_details->user_id = $user_id;
 		$log_details->message = $message;
-		db_log(LOG_OBJECT_OBJECTION, 'created', $log_details, $objection_id, $club_id, $league_id);
+		db_log(LOG_OBJECT_OBJECTION, 'created', $log_details, $objection_id, $club_id);
 		
 		if ($accept > 0)
 		{
-			cancel_game($game_id, $club_id, $league_id);
+			cancel_game($game_id, $club_id);
 		}
 		Db::commit();
 		$this->response['objection_id'] = $objection_id;
@@ -128,13 +128,11 @@ class ApiPage extends OpsApiPageBase
 		$objection_id = (int)get_required_param('objection_id');
 		
 		Db::begin();
-		list ($game_id, $owner_id, $club_id, $event_id, $tournament_id, $league_id, $old_message, $old_user_id, $parent_id, $old_accept) = 
+		list ($game_id, $owner_id, $club_id, $event_id, $tournament_id, $old_message, $old_user_id, $parent_id, $old_accept) = 
 			Db::record(
 				get_label('objection'), 
-				'SELECT g.id, g.user_id, g.club_id, g.event_id, g.tournament_id, t.league_id, o.message, o.user_id, o.objection_id, o.accept FROM objections o' .
+				'SELECT g.id, g.user_id, g.club_id, g.event_id, g.tournament_id, o.message, o.user_id, o.objection_id, o.accept FROM objections o' .
 				' JOIN games g ON g.id = o.game_id' .
-				' JOIN events e ON e.id = g.event_id' .
-				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' WHERE o.id = ?', $objection_id);
 				
 		$accept = max(min((int)get_optional_param('accept', $old_accept), 1), -1);
@@ -169,21 +167,21 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->accept = $accept;
 			}
-			db_log(LOG_OBJECT_OBJECTION, 'changed', $log_details, $objection_id, $club_id, $league_id);
+			db_log(LOG_OBJECT_OBJECTION, 'changed', $log_details, $objection_id, $club_id);
 		}
 		
 		if ($accept != $old_accept)
 		{
 			if ($accept > 0)
 			{
-				cancel_game($game_id, $club_id, $league_id);
+				cancel_game($game_id, $club_id);
 			}
 			else
 			{
 				list ($accept_count) = Db::record(get_label('objection'), 'SELECT count(*) FROM objections o WHERE game_id = ? AND accept = 1', $game_id);
 				if ($accept_count == 0)
 				{
-					uncancel_game($game_id, $club_id, $league_id);
+					uncancel_game($game_id, $club_id);
 				}
 			}
 		}
@@ -207,12 +205,10 @@ class ApiPage extends OpsApiPageBase
 		$objection_id = (int)get_required_param('objection_id');
 		
 		Db::begin();
-		list ($game_id, $club_id, $event_id, $tournament_id, $owner_id, $league_id, $accept) = 
+		list ($game_id, $club_id, $event_id, $tournament_id, $owner_id, $accept) = 
 			Db::record(get_label('objection'), 
-				'SELECT g.id, g.club_id, g.event_id, g.tournament_id, g.user_id, t.league_id, o.accept FROM objections o' .
+				'SELECT g.id, g.club_id, g.event_id, g.tournament_id, g.user_id, o.accept FROM objections o' .
 				' JOIN games g ON g.id = o.game_id' .
-				' JOIN events e ON e.id = g.event_id' .
-				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' WHERE o.id = ?', $objection_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $owner_id, $club_id, $event_id, $tournament_id);
 		
@@ -225,7 +221,7 @@ class ApiPage extends OpsApiPageBase
 			list ($accept_count) = Db::record(get_label('objection'), 'SELECT count(*) FROM objections o WHERE game_id = ? AND accept = 1', $game_id);
 			if ($accept_count == 0)
 			{
-				uncancel_game($game_id, $club_id, $league_id);
+				uncancel_game($game_id, $club_id);
 			}
 		}
 		
