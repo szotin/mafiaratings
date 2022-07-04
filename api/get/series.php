@@ -230,6 +230,6 @@ class ApiPage extends GetApiPageBase
 }
 
 $page = new ApiPage();
-$page->run('Get Tournament Series', CURRENT_VERSION);
+$page->run('Get Series', CURRENT_VERSION);
 
 ?>

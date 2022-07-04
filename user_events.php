@@ -44,6 +44,7 @@ class Page extends UserPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' . 
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' . 
+			' LEFT OUTER JOIN event_places ep ON ep.event_id = e.id AND ep.user_id = p.user_id' . 
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0', $this->id);
 		$ccc_id = $ccc_filter->get_id();
@@ -88,7 +89,7 @@ class Page extends UserPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
+			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags, ep.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
 			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);
 		$query->add(' GROUP BY e.id ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -96,6 +97,7 @@ class Page extends UserPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
 		echo '<td colspan="2">' . get_label('Event') . '</td>';
+		echo '<td width="60" align="center">'.get_label('Place').'</td>';
 		echo '<td width="60" align="center">'.get_label('Rating earned').'</td>';
 		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
 		echo '<td width="60" align="center">'.get_label('Wins').'</td>';
@@ -107,7 +109,7 @@ class Page extends UserPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $rating, $games_played, $games_won, $videos_count) = $row;
+			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $place, $rating, $games_played, $games_won, $videos_count) = $row;
 			
 			if ($tournament_name != NULL)
 			{
@@ -142,7 +144,24 @@ class Page extends UserPageBase
 			echo '</tr></table>';
 			echo '</td>';
 			
-			echo '<td align="center" class="dark">' . number_format($rating, 2) . '</td>';
+			echo '<td align="center" class="dark">';
+			if (!is_null($place))
+			{
+				if ($place > 0 && $place < 4)
+				{
+					echo '<img src="images/' . $place . '-place.png" width="60" title="' . get_label('[0] place', $place) . '">';
+				}
+				else if ($place < 11)
+				{
+					echo '<b>' . $place . '</b>';
+				}
+				else
+				{
+					echo $place;
+				}
+			}
+			echo '</td>';
+			echo '<td align="center">' . number_format($rating, 2) . '</td>';
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)

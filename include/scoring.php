@@ -1279,6 +1279,11 @@ function team_add_player($team, $player)
 
 function tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options)
 {
+	if (is_null($normalizer))
+	{
+		$normalizer = new stdClass();
+	}
+	
 	$event_scorings = NULL;
 	if ($tournament_flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING)
 	{

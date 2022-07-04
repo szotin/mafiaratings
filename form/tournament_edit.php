@@ -69,7 +69,7 @@ try
 	end_upload_logo_button(TOURNAMENT_PIC_CODE, $tournament_id);
 	echo '</td></tr>';
 	
-	echo '<tr><td>' . get_label('Tournament series') . ':</td><td><div id="form-series"></div></td></tr>';
+	echo '<tr><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
 	
 	$end_time = $start_time + $duration - 24*60*60;
 	if ($end_time < $start_time)

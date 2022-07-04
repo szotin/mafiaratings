@@ -216,6 +216,24 @@ class Page extends PageBase
 		{
 			list($this->next_game_id) = $row;
 		}
+		
+		if ($this->next_game_id > 0)
+		{
+			$this->on_delete = 'goTo({"id":' . $this->next_game_id . '});';
+		}
+		else if ($this->prev_game_id > 0)
+		{
+			$this->on_delete = 'goTo({"id":' . $this->prev_game_id . '});';
+		}
+		else
+		{
+			$back_url = get_back_page();
+			if (empty($back_url))
+			{
+				$back_url = 'games.php';
+			}
+			$this->on_delete = 'goTo("' . $back_url . '");';
+		}
 	}
 	
 	private function show_bonus($bonus, $comment)
@@ -736,6 +754,14 @@ class Page extends PageBase
 				html.get("form/game_round_view.php?game_id=<?php echo $this->id; ?>&night&round=" + round, function(html)
 				{
 					dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 800);
+				});
+			}
+			
+			function deleteGame(id)
+			{
+				mr.deleteGame(id, '<?php echo get_label('Are you sure you want to delete the game [0]?', $this->id); ?>', function()
+				{
+					<?php echo $this->on_delete; ?>
 				});
 			}
 <?php

@@ -12,7 +12,7 @@ initiate_session();
 
 try
 {
-	dialog_title(get_label('Create [0]', get_label('tournament sеriеs')));
+	dialog_title(get_label('Create [0]', get_label('sеriеs')));
 	
 	if (!isset($_REQUEST['league_id']))
 	{
@@ -37,7 +37,7 @@ try
 	$league_pic->show(ICONS_DIR, false);
 	echo '</td><td align="center"><b>' . $league_name . '</b></td></tr></table></td></tr>';
 	
-	echo '<tr><td width="160">' . get_label('Tournament series name') . ':</td><td><input id="form-name" value=""></td></tr>';
+	echo '<tr><td width="160">' . get_label('Series name') . ':</td><td><input id="form-name" value=""></td></tr>';
 	
 	$timezone = get_timezone();
 	$datetime = get_datetime(time(), $timezone);

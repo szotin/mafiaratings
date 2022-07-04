@@ -73,7 +73,7 @@ class Page extends LeaguePageBase
 			echo '</td></tr></table></p>';
 		}
 		
-		list ($count) = Db::record(get_label('tournament series'), 'SELECT count(*)', $condition);
+		list ($count) = Db::record(get_label('series'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
 		$series_pic = new Picture(SERIES_PICTURE);
@@ -151,6 +151,6 @@ class Page extends LeaguePageBase
 }
 
 $page = new Page();
-$page->run(get_label('Tournament Series'));
+$page->run(get_label('Series'));
 
 ?>

@@ -28,7 +28,7 @@ class Page extends LeaguePageBase
 			++$column_count;
 		}
 		
-		list ($count) = Db::record(get_label('tournament series'), 'SELECT count(*) FROM series s WHERE ', $condition);
+		list ($count) = Db::record(get_label('series'), 'SELECT count(*) FROM series s WHERE ', $condition);
 		show_pages_navigation($page_size, $count);
 		
 		if ($is_manager)
@@ -36,7 +36,7 @@ class Page extends LeaguePageBase
 			echo '<table class="bordered light" width="100%"><tr>';
 			echo '<td width="' . COLUMN_WIDTH . '%" align="center" class="light">';	
 			echo '<table class="transp" width="100%">';
-			echo '<tr class="light"></tr><tr><td align="center"><a href="#" onclick="mr.createSeries(' . $this->id . ')">' . get_label('Create [0]', get_label('tournament sеriеs'));
+			echo '<tr class="light"></tr><tr><td align="center"><a href="#" onclick="mr.createSeries(' . $this->id . ')">' . get_label('Create [0]', get_label('sеriеs'));
 			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '">';
 			echo '</td></tr></table>';
 			echo '</td>';
@@ -100,6 +100,6 @@ class Page extends LeaguePageBase
 }
 
 $page = new Page();
-$page->run(get_label('Upcoming tournament series'));
+$page->run(get_label('Upcoming series'));
 
 ?>

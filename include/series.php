@@ -18,7 +18,7 @@ function show_series_buttons($id, $start_time, $duration, $flags, $league_id, $l
 	$now = time();
 	if (($league_flags & LEAGUE_FLAG_RETIRED) == 0 && is_permitted(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id,  $id))
 	{
-		echo '<button class="icon" onclick="mr.editSeries(' . $id . ')" title="' . get_label('Edit the tournament series') . '"><img src="images/edit.png" border="0"></button>';
+		echo '<button class="icon" onclick="mr.editSeries(' . $id . ')" title="' . get_label('Edit the series') . '"><img src="images/edit.png" border="0"></button>';
 		if ($start_time >= $now)
 		{
 			if (($flags & SERIES_FLAG_CANCELED) != 0)
@@ -27,7 +27,7 @@ function show_series_buttons($id, $start_time, $duration, $flags, $league_id, $l
 			}
 			else
 			{
-				echo '<button class="icon" onclick="mr.cancelSeries(' . $id . ', \'' . get_label('Are you sure you want to cancel the tournament series?') . '\')" title="' . get_label('Cancel the tournament series') . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.cancelSeries(' . $id . ', \'' . get_label('Are you sure you want to cancel the series?') . '\')" title="' . get_label('Cancel the series') . '"><img src="images/delete.png" border="0"></button>';
 			}
 		}
 	}
@@ -55,7 +55,7 @@ class SeriesPageBase extends PageBase
 		
 		if (!isset($_REQUEST['id']))
 		{
-			throw new FatalExc(get_label('Unknown [0]', get_label('tournament sеriеs')));
+			throw new FatalExc(get_label('Unknown [0]', get_label('sеriеs')));
 		}
 		$this->id = (int)$_REQUEST['id'];
 		
@@ -65,7 +65,7 @@ class SeriesPageBase extends PageBase
 			$this->name, $this->league_id, $this->league_name, $this->league_flags,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->flags, $this->rules) =
 		Db::record(
-			get_label('tournament sеriеs'),
+			get_label('sеriеs'),
 			'SELECT s.name, l.id, l.name, l.flags, s.start_time, s.duration, s.langs, s.notes, s.flags, s.rules FROM series s' .
 				' JOIN leagues l ON l.id = s.league_id' .
 				' WHERE s.id = ?',
@@ -79,23 +79,23 @@ class SeriesPageBase extends PageBase
 		$is_manager = is_permitted(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $this->league_id, $this->id);
 		$menu = array
 		(
-			new MenuItem('series_info.php?id=' . $this->id, get_label('Tournament sеriеs '), get_label('General tournament series information')),
+			new MenuItem('series_info.php?id=' . $this->id, get_label('Sеriеs '), get_label('General series information')),
 			new MenuItem('series_standings.php?id=' . $this->id, get_label('Standings'), get_label('Series standings')),
-			new MenuItem('series_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this tournament series.')),
+			new MenuItem('series_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this series.')),
 			new MenuItem('series_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('Tournaments of this series')),
-			new MenuItem('series_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the tournament series')),
+			new MenuItem('series_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the series')),
 			new MenuItem('#stats', get_label('Reports'), NULL, array
 			(
 				new MenuItem('series_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
 				new MenuItem('series_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('series_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
-				new MenuItem('series_referees.php?id=' . $this->id, get_label('Referees'), get_label('Statistics of the tournament series referees')),
+				new MenuItem('series_referees.php?id=' . $this->id, get_label('Referees'), get_label('Statistics of the series referees')),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
 				new MenuItem('series_rules.php?id=' . $this->id, get_label('Rulebook'), get_label('Rules of the game in [0]', $this->name)),
-				new MenuItem('series_albums.php?id=' . $this->id, get_label('Photos'), get_label('Tournament series photo albums')),
-				new MenuItem('series_videos.php?id=' . $this->id, get_label('Videos'), get_label('Videos from the tournament series.')),
+				new MenuItem('series_albums.php?id=' . $this->id, get_label('Photos'), get_label('Series photo albums')),
+				new MenuItem('series_videos.php?id=' . $this->id, get_label('Videos'), get_label('Videos from the series.')),
 				// new MenuItem('series_tasks.php?id=' . $this->id, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
 				// new MenuItem('series_articles.php?id=' . $this->id, get_label('Articles'), get_label('Books and articles.')),
 				// new MenuItem('series_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),

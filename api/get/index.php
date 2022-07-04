@@ -23,7 +23,7 @@ require_once '../../include/api.php';
   <area shape="rect" coords="147,11,239,46" title="Leagues" href="leagues.php?help">
   <area shape="rect" coords="294,17,352,41" title="Clubs" href="clubs.php?help">
   <area shape="rect" coords="401,17,459,41" title="Clubs" href="clubs.php?help">
-  <area shape="rect" coords="34,83,157,108" title="Tournament Series" href="series.php?help">
+  <area shape="rect" coords="34,83,157,108" title="Series" href="series.php?help">
   <area shape="rect" coords="245,83,335,108" title="Tournaments" href="tournaments.php?help">
   <area shape="rect" coords="401,83,456,108" title="Events" href="events.php?help">
   <area shape="rect" coords="523,83,578,108" title="Games" href="games.php?help">
@@ -47,7 +47,7 @@ require_once '../../include/api.php';
   <area shape="rect" coords="345,167,423,191" title="Games" href="games.php?help">
   <area shape="rect" coords="345,200,423,225" title="Events" href="events.php?help">
   <area shape="rect" coords="381,234,446,258" title="Tournaments" href="tournaments.php?help">
-  <!-- <area shape="rect" coords="345,266,490,291" title="Tournament Series" href="series.php?help"> -->
+  <area shape="rect" coords="345,266,490,291" title="Series" href="series.php?help">
 </map>
 
 
@@ -80,10 +80,10 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Tournament series</td>
+	<td>Series</td>
 	<td><a href="series.php?help"><?php echo PRODUCT_URL; ?>/api/get/series.php</a></td>
 	<td>
-		<p>Returns a list of past, current and future tournament series.</p>
+		<p>Returns a list of past, current and future series.</p>
 	</td>
 </tr>
 

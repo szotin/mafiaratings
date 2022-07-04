@@ -48,7 +48,7 @@ try
 		$normalizer_id = 0;
 	}
 	
-	echo '<tr><td>' . get_label('Tournament series') . ':</td><td><div id="form-series"></div></td></tr>';
+	echo '<tr><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
 	
 	$normalizer_id = 0; // set it to null because long term is not checked
 	$normalizer_version = 0;

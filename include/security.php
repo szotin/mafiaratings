@@ -17,9 +17,9 @@ define('PERMISSION_EVENT_MANAGER',       0x000800); // Users having manager perm
 define('PERMISSION_TOURNAMENT_PLAYER',   0x001000); // Users having player permission in the tournament
 define('PERMISSION_TOURNAMENT_REFEREE',  0x002000); // Users having referee permission for the tournament
 define('PERMISSION_TOURNAMENT_MANAGER',  0x004000); // Users having manager permission for the tournament
-define('PERMISSION_SERIES_PLAYER',       0x008000); // Users having player permission in the tournament series
-define('PERMISSION_SERIES_REFEREE',      0x010000); // Users having referee permission for the tournament series
-define('PERMISSION_SERIES_MANAGER',      0x020000); // Users having manager permission for the tournament series
+define('PERMISSION_SERIES_PLAYER',       0x008000); // Users having player permission in the series
+define('PERMISSION_SERIES_REFEREE',      0x010000); // Users having referee permission for the series
+define('PERMISSION_SERIES_MANAGER',      0x020000); // Users having manager permission for the series
 define('PERMISSION_ADMIN',               0x040000); // Mafia Ratings administrators
 
 define('PERMISSION_MASK_CLUB',           0x0000f8); // PERMISSION_CLUB_MEMBER | PERMISSION_CLUB_REPRESENTATIVE | PERMISSION_CLUB_PLAYER | PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER

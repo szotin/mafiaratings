@@ -25,7 +25,7 @@ class ApiPage extends OpsApiPageBase
 		$name = get_required_param('name');
 		if (empty($name))
 		{
-			throw new Exc(get_label('Please enter [0].', get_label('tournament series name')));
+			throw new Exc(get_label('Please enter [0].', get_label('Series name')));
 		}
 		
 		$notes = get_optional_param('notes', '');
@@ -41,14 +41,14 @@ class ApiPage extends OpsApiPageBase
 		$end = $end_datetime->getTimestamp();
 		if ($end <= $start)
 		{
-			throw new Exc(get_label('Tournament series end before or right after the start.'));
+			throw new Exc(get_label('Series end before or right after the start.'));
 		}
 		
 		Db::exec(
-			get_label('tournament sеriеs'), 
+			get_label('sеriеs'), 
 			'INSERT INTO series (name, league_id, start_time, duration, langs, notes, flags, rules) values (?, ?, ?, ?, ?, ?, ?, ?)',
 			$name, $league_id, $start, $end - $start, $langs, $notes, $flags, $league_rules);
-		list ($series_id) = Db::record(get_label('tournament sеriеs'), 'SELECT LAST_INSERT_ID()');
+		list ($series_id) = Db::record(get_label('sеriеs'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
 		$log_details->name = $name;
@@ -67,14 +67,14 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Create tournament series.');
-		$help->request_param('name', 'Tournament series name.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Create series.');
+		$help->request_param('name', 'Series name.');
 		$help->request_param('league_id', 'League id.');
-		$help->request_param('start', 'Tournament series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
-		$help->request_param('end', 'Tournament series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
-		$help->request_param('notes', 'Tournament series notes. Just a text.', 'empty.');
-		$help->request_param('langs', 'Languages on this tournament series. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all league languages are used.');
-		$help->request_param('flags', 'Tournament series flags. Currently not used');
+		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
+		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
+		$help->request_param('notes', 'Series notes. Just a text.', 'empty.');
+		$help->request_param('langs', 'Languages on this series. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all league languages are used.');
+		$help->request_param('flags', 'Series flags. Currently not used');
 /*		
 									'A bit cobination of:<ol>' .
 									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
@@ -97,7 +97,7 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		
 		list ($league_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_flags) = 
-			Db::record(get_label('tournament sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, flags FROM series WHERE id = ?', $series_id);
+			Db::record(get_label('sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, flags FROM series WHERE id = ?', $series_id);
 		
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		list($league_name, $league_rules, $league_langs) = Db::record(get_label('league'), 'SELECT name, rules, langs FROM leagues WHERE id = ?', $league_id);
@@ -117,7 +117,7 @@ class ApiPage extends OpsApiPageBase
 		$duration = $end - $start;
 		if ($duration <= 0)
 		{
-			throw new Exc(get_label('Tournament series end before or right after the start.'));
+			throw new Exc(get_label('Series end before or right after the start.'));
 		}
 		
 		$logo_uploaded = false;
@@ -135,7 +135,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::exec(
-			get_label('tournament sеriеs'), 
+			get_label('sеriеs'), 
 			'UPDATE series SET name = ?, start_time = ?, duration = ?, langs = ?, notes = ?, flags = ? WHERE id = ?',
 			$name, $start, $duration, $langs, $notes, $flags, $series_id);
 		if (Db::affected_rows() > 0)
@@ -176,14 +176,14 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Change tournament series.');
-		$help->request_param('series_id', 'Tournament series id.');
-		$help->request_param('name', 'Tournament series name.', 'remains the same.');
-		$help->request_param('start', 'Tournament series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
-		$help->request_param('end', 'Tournament series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
-		$help->request_param('notes', 'Tournament series notes. Just a text.', 'remains the same.');
-		$help->request_param('langs', 'Languages on this tournament series. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
-		$help->request_param('flags', 'Tournament series flags. Not used yet');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Change series.');
+		$help->request_param('series_id', 'Series id.');
+		$help->request_param('name', 'Series name.', 'remains the same.');
+		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
+		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
+		$help->request_param('notes', 'Series notes. Just a text.', 'remains the same.');
+		$help->request_param('langs', 'Languages on this series. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
+		$help->request_param('flags', 'Series flags. Not used yet');
 /*									'A bit cobination of:<ol>' .
 									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
 									'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .
@@ -200,10 +200,10 @@ class ApiPage extends OpsApiPageBase
 		$series_id = (int)get_required_param('series_id');
 		
 		Db::begin();
-		list($league_id) = Db::record(get_label('tournament sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
+		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
-		Db::exec(get_label('tournament sеriеs'), 'UPDATE series SET flags = (flags | ' . SERIES_FLAG_CANCELED . ') WHERE id = ?', $series_id);
+		Db::exec(get_label('sеriеs'), 'UPDATE series SET flags = (flags | ' . SERIES_FLAG_CANCELED . ') WHERE id = ?', $series_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_SERIES, 'canceled', NULL, $series_id, NULL, $league_id);
@@ -213,8 +213,8 @@ class ApiPage extends OpsApiPageBase
 	
 	function cancel_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Cancel tournament series.');
-		$help->request_param('series_id', 'Tournament series id.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Cancel series.');
+		$help->request_param('series_id', 'Series id.');
 		return $help;
 	}
 
@@ -226,10 +226,10 @@ class ApiPage extends OpsApiPageBase
 		$series_id = (int)get_required_param('series_id');
 		
 		Db::begin();
-		list($league_id) = Db::record(get_label('tournament sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
+		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
-		Db::exec(get_label('tournament sеriеs'), 'UPDATE series SET flags = (flags & ~' . SERIES_FLAG_CANCELED . ') WHERE id = ?', $series_id);
+		Db::exec(get_label('sеriеs'), 'UPDATE series SET flags = (flags & ~' . SERIES_FLAG_CANCELED . ') WHERE id = ?', $series_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_SERIES, 'restored', NULL, $series_id, NULL, $league_id);
@@ -239,8 +239,8 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Restore canceled tournament series.');
-		$help->request_param('series_id', 'Tournament series id.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Restore canceled series.');
+		$help->request_param('series_id', 'Series id.');
 		return $help;
 	}
 
@@ -263,7 +263,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('comment'), 'INSERT INTO series_comments (time, user_id, comment, series_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $series_id, $lang);
 		
 		$timezone = get_timezone();
-		list($series_id, $series_name, $series_start_time) = Db::record(get_label('tournament sеriеs'), 'SELECT id, name, start_time FROM series WHERE id = ?', $series_id);
+		list($series_id, $series_name, $series_start_time) = Db::record(get_label('sеriеs'), 'SELECT id, name, start_time FROM series WHERE id = ?', $series_id);
 		
 		$query = new DbQuery(
 			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .
@@ -316,6 +316,6 @@ class ApiPage extends OpsApiPageBase
 }
 
 $page = new ApiPage();
-$page->run('Tournament Series Operations', CURRENT_VERSION);
+$page->run('Series Operations', CURRENT_VERSION);
 
 ?>

@@ -1,0 +1,161 @@
+<?php
+
+
+setDir();
+require_once 'include/security.php';
+require_once 'include/scoring.php';
+
+$_web = isset($_SERVER['HTTP_HOST']);
+$_filename = 'complete_competitions.log';
+$_file = NULL;
+ 
+if ($_web)
+{
+	if (isset($_REQUEST['no_log']))
+	{
+		$_filename = NULL;
+	}
+	define('MAX_EXEC_TIME', 25);
+}
+else
+{
+	define('MAX_EXEC_TIME', 180); // 3 minutes
+}
+
+function writeLog($str)
+{
+	global $_web, $_file, $_filename;
+	if ($_web)
+	{
+		echo $str . " <br>\n";
+	}
+	
+	if ($_filename)
+	{
+		if (is_null($_file))
+		{
+			$_file = fopen($_filename, 'a');
+			fwrite($_file, '------ ' . date('F d, Y H:i:s', time()) . "\n");
+		}
+		fwrite($_file, $str . "\n");
+	}
+}
+
+function setDir()
+{
+	// Set the current working directory to the directory of the script.
+	// This script is sometimes called from the other directories - for auto sending, so we need to change the directory
+	$pos = strrpos(__FILE__, '/');
+	if ($pos === false)
+	{
+		$pos = strrpos(__FILE__, '\\');
+		if ($pos === false)
+		{
+			return;
+		}
+	}
+	$dir = substr(__FILE__, 0, $pos);
+	chdir($dir);
+}
+
+function complete_event()
+{
+	$result = false;
+	Db::begin();
+	$query = new DbQuery('SELECT e.id, sv.scoring, e.scoring_options FROM events e JOIN scoring_versions sv ON sv.scoring_id = e.scoring_id AND sv.version = e.scoring_version WHERE e.start_time + e.duration < UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_FINISHED . ') = 0 LIMIT 1');
+	if ($row = $query->next())
+	{
+		list($event_id, $scoring, $scoring_options) = $row;
+		$scoring = json_decode($scoring);
+		$scoring_options = json_decode($scoring_options);
+		
+		Db::exec(get_label('event'), 'DELETE FROM event_places WHERE event_id = ?', $event_id);
+		$players = event_scores($event_id, null, SCORING_LOD_PER_GROUP, $scoring, $scoring_options);
+		$players_count = count($players);
+		for ($number = 0; $number < $players_count; ++$number)
+		{
+			$player = $players[$number];
+			Db::exec(get_label('player'), 'INSERT INTO event_places (event_id, user_id, place) VALUES (?, ?, ?)', $event_id, $player->id, $number + 1);
+		}
+		Db::exec(get_label('event'), 'UPDATE events SET flags = flags | ' . EVENT_FLAG_FINISHED .  ' WHERE id = ?', $event_id);
+		writeLog('Wrote ' . $players_count . ' players to event ' . $event_id . '. Event is finished.');
+		$result = true;
+	}
+	Db::commit();
+	return $result;
+}
+
+function complete_tournament()
+{
+	$result = false;
+	Db::begin();
+	$query = new DbQuery(
+		'SELECT t.id, t.flags, sv.scoring, t.scoring_options, nv.normalizer FROM tournaments t' . 
+		' JOIN scoring_versions sv ON sv.scoring_id = t.scoring_id AND sv.version = t.scoring_version' .
+		' LEFT OUTER JOIN normalizer_versions nv ON nv.normalizer_id = t.normalizer_id AND nv.version = t.normalizer_version' .
+		' WHERE t.start_time + t.duration < UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_FINISHED . ') = 0 LIMIT 1');
+	if ($row = $query->next())
+	{
+		list($tournament_id, $tournament_flags, $scoring, $scoring_options, $normalizer) = $row;
+		$scoring = json_decode($scoring);
+		$scoring_options = json_decode($scoring_options);
+		if (!is_null($normalizer))
+		{
+			$normalizer = json_decode($normalizer);
+		}
+		
+		Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE tournament_id = ?', $tournament_id);
+		$players = tournament_scores($tournament_id, $tournament_flags, null, SCORING_LOD_PER_GROUP, $scoring, $normalizer, $scoring_options);
+		$players_count = count($players);
+		for ($number = 0; $number < $players_count; ++$number)
+		{
+			$player = $players[$number];
+			Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place) VALUES (?, ?, ?)', $tournament_id, $player->id, $number + 1);
+		}
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ' WHERE id = ?', $tournament_id);
+		writeLog('Wrote ' . $players_count . ' players to tournament ' . $tournament_id . '. Tournament is finished.');
+		$result = true;
+	}
+	Db::commit();
+	return $result;
+}
+
+function complete_series()
+{
+	return false;
+}
+
+try
+{
+	date_default_timezone_set('America/Vancouver');
+	if ($_web)
+	{
+		initiate_session();
+		check_permissions(PERMISSION_ADMIN);
+	}
+	
+	$exec_start_time = time();
+	$spent_time = 0;
+	while ($spent_time < MAX_EXEC_TIME)
+	{
+		if (!complete_series() && !complete_tournament() && !complete_event())
+		{
+			break;
+		}
+		$spent_time = time() - $exec_start_time;
+	}
+	writeLog('It took ' . $spent_time . ' sec.');
+}
+catch (Exception $e)
+{
+	Db::rollback();
+	Exc::log($e, true);
+	writeLog($e->getMessage());
+}
+
+if (!is_null($_file))
+{
+	fclose($_file);
+}
+
+?>

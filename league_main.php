@@ -78,7 +78,7 @@ class Page extends LeaguePageBase
 		
 		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="3" align="center"><b>' . $series->name . '</b></td></tr>';
 		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
-		echo '<a href="' . $url . '?bck=1&id=' . $series->id . '" title="' . get_label('View tournament series details.') . '">';
+		echo '<a href="' . $url . '?bck=1&id=' . $series->id . '" title="' . get_label('View series details.') . '">';
 		
 		$this->series_pic->set($series->id, $series->name, $series->flags);
 		$this->series_pic->show(ICONS_DIR, false, $future ? 56 : 70);
@@ -111,7 +111,7 @@ class Page extends LeaguePageBase
 				if ($tournament_count == 0)
 				{
 					echo '<table class="bordered light" width="100%">';
-					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . get_label('Tournaments and tournament series') . '</b></td></tr>';
+					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . get_label('Tournaments and series') . '</b></td></tr>';
 				}
 				else
 				{
@@ -140,7 +140,7 @@ class Page extends LeaguePageBase
 				if ($tournament_count == 0)
 				{
 					echo '<table class="bordered light" width="100%">';
-					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . get_label('Tournaments and tournament series') . '</b></td></tr>';
+					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . get_label('Tournaments and series') . '</b></td></tr>';
 				}
 				else
 				{

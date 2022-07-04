@@ -326,12 +326,12 @@ class ApiPage extends OpsApiPageBase
 		foreach ($series as $s)
 		{
 			Db::exec(
-				get_label('tournament sеriеs'), 
+				get_label('sеriеs'), 
 				'INSERT INTO series_tournaments (tournament_id, series_id, stars) values (?, ?, ?)',
 				$tournament_id, $s->id, $s->stars);
 			if (isset($s->finals) && $s->finals)
 			{
-				Db::exec(get_label('tournament sеriеs'), 'UPDATE series SET finals_id = ? WHERE id = ?', $tournament_id, $s->id);
+				Db::exec(get_label('sеriеs'), 'UPDATE series SET finals_id = ? WHERE id = ?', $tournament_id, $s->id);
 			}
 			send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
 		}
@@ -345,9 +345,9 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create tournament.');
 		$help->request_param('name', 'Tournament name.');
 		$help->request_param('club_id', 'Club id.');
-		$series_help = $help->request_param('series', 'Json array of tournament series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'tournament does not belong to any series - same as "[]".');
-			$series_help->sub_param('id', 'Tournament series id');
-			$series_help->sub_param('stars', 'Number of stars for this tournament series.');
+		$series_help = $help->request_param('series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'tournament does not belong to any series - same as "[]".');
+			$series_help->sub_param('id', 'Series id');
+			$series_help->sub_param('stars', 'Number of stars for this series.');
 			$series_help->sub_param('finals', 'true/false - if this tournament is a series finals.', 'false');
 		$help->request_param('start', 'Tournament start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
@@ -503,7 +503,7 @@ class ApiPage extends OpsApiPageBase
 					if ($os->stars != $s->stars)
 					{
 						Db::exec(
-							get_label('tournament sеriеs'), 
+							get_label('sеriеs'), 
 							'UPDATE series_tournaments SET stars = ? WHERE series_id = ? AND tournament_id = ?', $s->stars, $s->id, $tournament_id);
 						send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
 						$series_changed = true;
@@ -512,7 +512,7 @@ class ApiPage extends OpsApiPageBase
 					{
 						$finals_id = $finals ? $tournament_id : NULL;
 						Db::exec(
-							get_label('tournament sеriеs'), 
+							get_label('sеriеs'), 
 							'UPDATE series SET finals_id = ? WHERE id = ?', $finals_id, $s->id);
 						send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
 						$series_changed = true;
@@ -522,12 +522,12 @@ class ApiPage extends OpsApiPageBase
 				else
 				{
 					Db::exec(
-						get_label('tournament sеriеs'), 
+						get_label('sеriеs'), 
 						'INSERT INTO series_tournaments (tournament_id, series_id, stars) values (?, ?, ?)',
 						$tournament_id, $s->id, $s->stars);
 					if (isset($s->finals) && $s->finals)
 					{
-						Db::exec(get_label('tournament sеriеs'), 'UPDATE series SET finals_id = ? WHERE id = ?', $tournament_id, $s->id);
+						Db::exec(get_label('sеriеs'), 'UPDATE series SET finals_id = ? WHERE id = ?', $tournament_id, $s->id);
 					}
 					send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
 					$series_changed = true;
@@ -538,7 +538,7 @@ class ApiPage extends OpsApiPageBase
 		foreach ($old_series as $series_id => $s)
 		{
 			Db::exec(
-				get_label('tournament sеriеs'), 
+				get_label('sеriеs'), 
 				'DELETE FROM series_tournaments WHERE tournament_id = ? AND series_id = ?', $tournament_id, $series_id);
 			send_series_notification('tournament_series_remove', $tournament_id, $name, $club_id, $club->name, $s);
 		}
@@ -622,9 +622,9 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change tournament.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->request_param('name', 'Tournament name.', 'remains the same.');
-		$series_help = $help->request_param('series', 'Json array of tournament series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'remains the same.');
-			$series_help->sub_param('id', 'Tournament series id');
-			$series_help->sub_param('stars', 'Number of stars for this tournament series.');
+		$series_help = $help->request_param('series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'remains the same.');
+			$series_help->sub_param('id', 'Series id');
+			$series_help->sub_param('stars', 'Number of stars for this series.');
 			$series_help->sub_param('finals', 'true/false - if this tournament is a series finals.', 'false');
 		$help->request_param('start', 'Tournament start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');

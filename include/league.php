@@ -74,7 +74,7 @@ class LeaguePageBase extends PageBase
 		(
 			new MenuItem('league_main.php?id=' . $this->id, get_label('League'), get_label('[0] main page', $this->name)),
 			new MenuItem('league_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('Member clubs of [0].', $this->name)),
-			new MenuItem('league_series.php?id=' . $this->id, get_label('Tournament Series'), get_label('[0] tournament series history', $this->name)),
+			new MenuItem('league_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series history', $this->name)),
 			new MenuItem('league_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->name)),
 			// new MenuItem('league_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)),
 			// new MenuItem('#stats', get_label('Stats'), NULL, array
@@ -100,7 +100,7 @@ class LeaguePageBase extends PageBase
 			$menu[] = new MenuItem('#other', get_label('Management'), NULL, array
 			(
 				new MenuItem('league_managers.php?id=' . $this->id, get_label('Managers'), get_label('[0] managers', $this->name)),
-				new MenuItem('league_upcoming_series.php?id=' . $this->id, get_label('Tournament series'), get_label('[0] tournament series', $this->name)),
+				new MenuItem('league_upcoming_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series', $this->name)),
 				// new MenuItem('league_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name)),
 				// new MenuItem('league_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name)),
 				new MenuItem('league_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name)),

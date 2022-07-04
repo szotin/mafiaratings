@@ -37,7 +37,7 @@ class GeneralPageBase extends PageBase
 			(
 				new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
 				new MenuItem('tournaments.php' . $ccc, get_label('Tournaments'), get_label('Tournaments history')),
-				new MenuItem('series.php', get_label('Tournament series'), get_label('Tournament series history')),
+				new MenuItem('series.php', get_label('Series'), get_label('Series history')),
 			)),
 			new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games')),
 			// new MenuItem('adverts.php' . $ccc, get_label('Adverts'), get_label('Mafia adverts')),

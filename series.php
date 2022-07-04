@@ -42,7 +42,7 @@ class Page extends GeneralPageBase
 		echo '<tr><td>';
 		if (!$this->future)
 		{
-			show_checkbox_filter(array(get_label('unplayed tournament series'), get_label('canceled tournament series')), $this->filter);
+			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $this->filter);
 		}
 		echo '</td></tr></table></p>';
 		
@@ -81,7 +81,7 @@ class Page extends GeneralPageBase
 		echo '</div>';
 		echo '<div class="tabcontent">';
 		
-		list ($count) = Db::record(get_label('tournament sеriеs'), 'SELECT count(*)', $condition);
+		list ($count) = Db::record(get_label('sеriеs'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
 		$colunm_counter = 0;
@@ -101,7 +101,7 @@ class Page extends GeneralPageBase
 			
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
-		echo '<td colspan="2" align="center">' . get_label('Tournament sеriеs') . '</td>';
+		echo '<td colspan="2" align="center">' . get_label('Sеriеs') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Tournaments') . '</td></tr>';
 		
 		$timezone = get_timezone();
@@ -149,6 +149,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Tournament series'));
+$page->run(get_label('Series'));
 
 ?>

@@ -51,7 +51,7 @@ class Page extends GeneralPageBase
 		echo ' align="center"><b>' . $series_name . '</b></td></tr>';
 		
 		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
-		echo '<a href="' . $url . '?bck=1&id=' . $series_id . '" title="' . get_label('View tournament series details.') . '">';
+		echo '<a href="' . $url . '?bck=1&id=' . $series_id . '" title="' . get_label('View series details.') . '">';
 		$this->series_pic->set($series_id, $series_name, $series_flags);
 		$this->series_pic->show(ICONS_DIR, false, $future ? 56 : 70);
 		echo '</a>';

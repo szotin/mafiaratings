@@ -12,24 +12,24 @@ initiate_session();
 
 try
 {
-	dialog_title(get_label('Edit [0]', get_label('tournament sеriеs')));
+	dialog_title(get_label('Edit [0]', get_label('sеriеs')));
 	
 	if (!isset($_REQUEST['id']))
 	{
-		throw new Exc(get_label('Unknown [0]', get_label('tournament sеriеs')));
+		throw new Exc(get_label('Unknown [0]', get_label('sеriеs')));
 	}
 	$series_id = (int)$_REQUEST['id'];
 	$timezone = get_timezone();	
 	
 	list ($league_id, $name, $start_time, $duration, $langs, $notes, $flags, $league_langs) = 
-		Db::record(get_label('tournament sеriеs'), 
+		Db::record(get_label('sеriеs'), 
 			'SELECT s.league_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags, l.langs FROM series s' . 
 			' JOIN leagues l ON l.id = s.league_id' .
 			' WHERE s.id = ?', $series_id);
 	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">' . get_label('Tournament series name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
+	echo '<tr><td width="160">' . get_label('Series name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="12" width="120">';
 	start_upload_logo_button($series_id);

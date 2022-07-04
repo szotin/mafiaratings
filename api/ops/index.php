@@ -39,7 +39,7 @@ require_once '../../include/api.php';
   <area shape="rect" coords="147,11,239,46" title="Leagues" href="league.php?help">
   <area shape="rect" coords="294,17,352,41" title="Clubs" href="club.php?help">
   <area shape="rect" coords="401,17,459,41" title="Clubs" href="club.php?help">
-  <area shape="rect" coords="34,83,157,108" title="Tournament Series" href="series.php?help">
+  <area shape="rect" coords="34,83,157,108" title="Series" href="series.php?help">
   <area shape="rect" coords="245,83,335,108" title="Tournaments" href="tournament.php?help">
   <area shape="rect" coords="401,83,456,108" title="Events" href="event.php?help">
   <area shape="rect" coords="523,83,578,108" title="Games" href="game.php?help">
@@ -63,7 +63,7 @@ require_once '../../include/api.php';
   <area shape="rect" coords="345,167,423,191" title="Games" href="game.php?help">
   <area shape="rect" coords="345,200,423,225" title="Events" href="event.php?help">
   <area shape="rect" coords="381,234,446,258" title="Tournaments" href="tournament.php?help">
-  <area shape="rect" coords="345,266,490,291" title="Tournament Series" href="series.php?help">
+  <area shape="rect" coords="345,266,490,291" title="Series" href="series.php?help">
 </map>
 
 <table class="bordered light" width="100%">
@@ -112,11 +112,11 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Tournament Series Operations</td>
+	<td>Series Operations</td>
 	<td><a href="series.php?help"><?php echo PRODUCT_URL; ?>/api/ops/series.php</a></td>
 	<td>
-		<p>Manipulating tournament series. Tournament series is a set of tournaments.</p> 
-		<p>Players gain points by winning places in the tournaments. <a href="gaining.php?help">Gaining systems</a> are used to calculate tournament series points.</p>
+		<p>Manipulating series. Series is a set of tournaments.</p> 
+		<p>Players gain points by winning places in the tournaments. <a href="gaining.php?help">Gaining systems</a> are used to calculate series points.</p>
 	</td>
 </tr>
 
