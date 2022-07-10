@@ -72,10 +72,27 @@ function complete_event()
 		Db::exec(get_label('event'), 'DELETE FROM event_places WHERE event_id = ?', $event_id);
 		$players = event_scores($event_id, null, SCORING_LOD_PER_GROUP, $scoring, $scoring_options);
 		$players_count = count($players);
-		for ($number = 0; $number < $players_count; ++$number)
+		if ($players_count > 0)
 		{
-			$player = $players[$number];
-			Db::exec(get_label('player'), 'INSERT INTO event_places (event_id, user_id, place) VALUES (?, ?, ?)', $event_id, $player->id, $number + 1);
+			$coeff = log10($players_count) / $players_count;
+			for ($number = 0; $number < $players_count; ++$number)
+			{
+				$player = $players[$number];
+				$importance = ($players_count - $number) * $coeff;
+				if ($number == 0)
+				{
+					$importance *= 10;
+				}
+				else if ($number <= 3)
+				{
+					$importance *= 5;
+				}
+				else if ($number <= 10)
+				{
+					$importance *= 2;
+				}
+				Db::exec(get_label('player'), 'INSERT INTO event_places (event_id, user_id, place, importance) VALUES (?, ?, ?, ?)', $event_id, $player->id, $number + 1, $importance);
+			}
 		}
 		Db::exec(get_label('event'), 'UPDATE events SET flags = flags | ' . EVENT_FLAG_FINISHED .  ' WHERE id = ?', $event_id);
 		writeLog('Wrote ' . $players_count . ' players to event ' . $event_id . '. Event is finished.');
@@ -90,13 +107,17 @@ function complete_tournament()
 	$result = false;
 	Db::begin();
 	$query = new DbQuery(
-		'SELECT t.id, t.flags, sv.scoring, t.scoring_options, nv.normalizer FROM tournaments t' . 
+		'SELECT t.id, t.flags, sv.scoring, t.scoring_options, nv.normalizer, (SELECT max(st.stars) FROM series_tournaments st WHERE st.tournament_id = t.id) as stars FROM tournaments t' . 
 		' JOIN scoring_versions sv ON sv.scoring_id = t.scoring_id AND sv.version = t.scoring_version' .
 		' LEFT OUTER JOIN normalizer_versions nv ON nv.normalizer_id = t.normalizer_id AND nv.version = t.normalizer_version' .
 		' WHERE t.start_time + t.duration < UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_FINISHED . ') = 0 LIMIT 1');
 	if ($row = $query->next())
 	{
-		list($tournament_id, $tournament_flags, $scoring, $scoring_options, $normalizer) = $row;
+		list($tournament_id, $tournament_flags, $scoring, $scoring_options, $normalizer, $stars) = $row;
+		if (is_null($stars))
+		{
+			$stars = 1;
+		}
 		$scoring = json_decode($scoring);
 		$scoring_options = json_decode($scoring_options);
 		if (!is_null($normalizer))
@@ -107,10 +128,28 @@ function complete_tournament()
 		Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE tournament_id = ?', $tournament_id);
 		$players = tournament_scores($tournament_id, $tournament_flags, null, SCORING_LOD_PER_GROUP, $scoring, $normalizer, $scoring_options);
 		$players_count = count($players);
-		for ($number = 0; $number < $players_count; ++$number)
+		
+		if ($players_count > 0)
 		{
-			$player = $players[$number];
-			Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place) VALUES (?, ?, ?)', $tournament_id, $player->id, $number + 1);
+			$coeff = log10($players_count) * $stars / $players_count;
+			for ($number = 0; $number < $players_count; ++$number)
+			{
+				$player = $players[$number];
+				$importance = ($players_count - $number) * $coeff;
+				if ($number == 0)
+				{
+					$importance *= 10;
+				}
+				else if ($number <= 3)
+				{
+					$importance *= 5;
+				}
+				else if ($number <= 10)
+				{
+					$importance *= 2;
+				}
+				Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance) VALUES (?, ?, ?, ?)', $tournament_id, $player->id, $number + 1, $importance);
+			}
 		}
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ' WHERE id = ?', $tournament_id);
 		writeLog('Wrote ' . $players_count . ' players to tournament ' . $tournament_id . '. Tournament is finished.');
@@ -136,6 +175,7 @@ try
 	
 	$exec_start_time = time();
 	$spent_time = 0;
+	$count = 0;
 	while ($spent_time < MAX_EXEC_TIME)
 	{
 		if (!complete_series() && !complete_tournament() && !complete_event())
@@ -143,8 +183,13 @@ try
 			break;
 		}
 		$spent_time = time() - $exec_start_time;
+		++$count;
 	}
 	writeLog('It took ' . $spent_time . ' sec.');
+	if ($_web && $count > 0)
+	{
+		echo '<script>window.location.reload();</script>';
+	}
 }
 catch (Exception $e)
 {

@@ -12,6 +12,10 @@ define('MIN_PERIOD_ON_GRAPH', 10*24*60*60);
 define('RATINGS_BEFORE', 5);
 define('RATINGS_AFTER', 5);
 
+define('ACHIEVEMENT_COLUMNS', 5);
+define('ACHIEVEMENT_ROWS', 2);
+define('ACHIEVEMENT_COLUMN_WIDTH', 100 / ACHIEVEMENT_COLUMNS);
+
 function show_permissions($user_flags)
 {
 	$sep = '';
@@ -71,9 +75,82 @@ class Page extends UserPageBase
 			echo '<table width="100%"><tr><td valign="top" align="center">';
 		}
 		show_chart(640, 396); // fibonacci golden ratio 1.618:1
-        echo '<table class="bordered light" width="100%">';
-		
 		$timezone = get_timezone();
+		
+		// Achievements
+		$query = new DbQuery('SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, tp.place FROM tournament_places tp JOIN tournaments t ON t.id = tp.tournament_id JOIN clubs c ON c.id = t.club_id WHERE tp.user_id = ? ORDER BY tp.importance DESC', $this->id);
+		if ($row = $query->next())
+		{
+			$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+			$club_pic = new Picture(CLUB_PICTURE);
+			$achievements_count = 0;
+			$columns_count = 0;
+			$rows_count = 0;
+			echo '<p><table class="bordered light" width="100%">';
+			echo '<tr class="darker"><td colspan="' . ACHIEVEMENT_COLUMNS . '"><b>' . get_label('Achievements') . '</b></td></tr>';
+			do
+			{
+				list($tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $place) = $row;
+				if ($columns_count == 0)
+				{
+					if ($achievements_count > 0)
+					{
+						echo '</tr>';
+					}
+					echo '<tr>';
+				}
+				echo '<td width="' . ACHIEVEMENT_COLUMN_WIDTH . '%" align="center" valign="top">';
+				
+				echo '<table class="transp" width="100%">';
+				
+				echo '<tr class="dark" style="height: 40px;">';
+				echo '<td colspan="3"';
+				echo ' align="center"><b><big>';
+				if ($place == 1)
+				{
+					echo get_label('Winner');
+				}
+				else
+				{
+					echo get_label('[0] place', $place);
+				}
+				echo '</big></b></td></tr>';
+				
+				echo '<tr style="height: 80px;"><td colspan="3" align="center">';
+				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
+				$tournament_pic->show(ICONS_DIR, true, 64);
+				echo '</td></tr>';
+				
+				echo '<tr class="dark" style="height: 40px;"><td colspan="2" align="center"><b>' . $tournament_name . '</b></td><td width="34">';
+				$club_pic->set($club_id, $club_name, $club_flags);
+				$club_pic->show(ICONS_DIR, false, 30);
+				echo '</td></tr>';
+				
+				echo '</table></td>';
+				
+				++$columns_count;
+				++$achievements_count;
+				if ($columns_count >= ACHIEVEMENT_COLUMNS)
+				{
+					$columns_count = 0;
+					++$rows_count;
+					if ($rows_count >= ACHIEVEMENT_ROWS)
+					{
+						break;
+					}
+				}
+				
+			} while ($row = $query->next());
+			
+			if ($columns_count > 0)
+			{
+				echo '<td colspan="' . (ACHIEVEMENT_COLUMNS - $columns_count) . '"></td>';
+			}
+			echo '</tr></table></p>';
+		}
+		
+		// General info
+        echo '<table class="bordered light" width="100%">';
 		echo '<tr><td width="150" class="dark">'.get_label('Languages').':</td><td>' . get_langs_str($this->langs, ', ') . '</td><tr>';
 		echo '<tr><td class="dark">'.get_label('Registered since').':</td><td>' . format_date('F d, Y', $this->reg_date, $timezone) . '</td></tr>';
 		
@@ -135,7 +212,7 @@ class Page extends UserPageBase
 		}
 		echo '</table>';
 		
-		$prev_club_id = 0;
+/*		$prev_club_id = 0;
 		$role_titles = array(
 			get_label('Total'),
 			get_label('As a red'),
@@ -174,8 +251,9 @@ class Page extends UserPageBase
 		{
 			echo '<tr class="darker"><td>' . get_label('Total') . ':</td><td>' . $total_games . '</td><td>' . $total_won . '(' . number_format($total_won * 100 / $total_games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($total_rating), format_rating($total_rating/$total_games, 1)) . '</td></tr>';
 		}
-		echo '</table>';
+		echo '</table>';*/
 		
+		// Position in rating
 		if ($rating_pos >= 0)
 		{
 			echo '</td><td width="280" valign="top">';

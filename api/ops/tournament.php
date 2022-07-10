@@ -775,6 +775,34 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// rebuild_places
+	//-------------------------------------------------------------------------------------------------------
+	function rebuild_places_op()
+	{
+		$tournament_id = (int)get_optional_param('tournament_id', 0);
+		
+		Db::begin();
+		
+		if ($tournament_id > 0)
+		{
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ' . (~TOURNAMENT_FLAG_FINISHED) . ' WHERE id = ?', $tournament_id);
+		}
+		else
+		{
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ' . (~TOURNAMENT_FLAG_FINISHED));
+		}
+		db_log(LOG_OBJECT_TOURNAMENT, 'rebuild_places', NULL, $tournament_id);
+		Db::commit();
+	}
+	
+	function rebuild_places_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Schedules tournament places for rebuild. It is needed when in user tournaments view the place taken is wrong.');
+		$help->request_param('tournament_id', 'Tournament id to rebuild places.', 'places are rebuilt for all tournaments');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()

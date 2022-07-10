@@ -245,6 +245,34 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// rebuild_places
+	//-------------------------------------------------------------------------------------------------------
+	function rebuild_places_op()
+	{
+		$series_id = (int)get_optional_param('series_id', 0);
+		
+		Db::begin();
+		
+		if ($series_id > 0)
+		{
+			Db::exec(get_label('series'), 'UPDATE series SET flags = flags & ' . (~SERIES_FLAG_FINISHED) . ' WHERE id = ?', $series_id);
+		}
+		else
+		{
+			Db::exec(get_label('series'), 'UPDATE series SET flags = flags & ' . (~SERIES_FLAG_FINISHED));
+		}
+		db_log(LOG_OBJECT_SERIES, 'rebuild_places', NULL, $series_id);
+		Db::commit();
+	}
+	
+	function rebuild_places_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Schedules series places for rebuild. It is needed when in user series view the place taken is wrong.');
+		$help->request_param('series_id', 'Series id to rebuild places.', 'places are rebuilt for all series.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()

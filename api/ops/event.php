@@ -1306,6 +1306,34 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
+	// rebuild_places
+	//-------------------------------------------------------------------------------------------------------
+	function rebuild_places_op()
+	{
+		$event_id = (int)get_optional_param('event_id', 0);
+		
+		Db::begin();
+		
+		if ($event_id > 0)
+		{
+			Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ' . (~EVENT_FLAG_FINISHED) . ' WHERE id = ?', $event_id);
+		}
+		else
+		{
+			Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ' . (~EVENT_FLAG_FINISHED));
+		}
+		db_log(LOG_OBJECT_EVENT, 'rebuild_places', NULL, $event_id);
+		Db::commit();
+	}
+	
+	function rebuild_places_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER, 'Schedules event places for rebuild. It is needed when in user events view the place taken is wrong.');
+		$help->request_param('event_id', 'Event id to rebuild places.', 'places are rebuilt for all events');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()

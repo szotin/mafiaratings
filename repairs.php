@@ -99,6 +99,12 @@ class Page extends GeneralPageBase
 		echo '<input type="submit" class="btn long" value="All of them" onclick="rebuildSnapshots(0)"> ';
 		echo '</p>';
 		
+		echo '<h3>' . 'Rebuild Competition Places' . '</h3>';
+		echo '<p>';
+		echo '<input type="submit" class="btn long" value="Events" onclick="rebuildEvents()"> ';
+		echo '<input type="submit" class="btn long" value="Tournaments" onclick="rebuildTournaments()"> ';
+		echo '<input type="submit" class="btn long" value="Series" onclick="rebuildSeries()"> ';
+		echo '</p>';
 		$this->show_error_logs();
 	}
 	
@@ -285,6 +291,30 @@ class Page extends GeneralPageBase
 					dlg.info('Snapshots for the last ' + days + ' days are scheduled to rebuild successfuly', 'Done', null, function() {});
 				else
 					dlg.info('Snapshots are scheduled to rebuild successfuly', 'Done', null, function() {});
+			});
+		}
+		
+		function rebuildEvents()
+		{
+			json.post("api/ops/event.php", { op: 'rebuild_places' }, function(data)
+			{
+				dlg.info('Places for the events are scheduled for rebuild. It will be complete in about one hour.', 'Done', null, function() {});
+			});
+		}
+
+		function rebuildTournaments()
+		{
+			json.post("api/ops/tournament.php", { op: 'rebuild_places' }, function(data)
+			{
+				dlg.info('Places for the tournaments are scheduled for rebuild. It will be complete in about one hour.', 'Done', null, function() {});
+			});
+		}
+		
+		function rebuildSeries()
+		{
+			json.post("api/ops/series.php", { op: 'rebuild_places' }, function(data)
+			{
+				dlg.info('Places for the series are scheduled for rebuild. It will be complete in about one hour.', 'Done', null, function() {});
 			});
 		}
 <?php
