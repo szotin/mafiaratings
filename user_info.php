@@ -78,7 +78,7 @@ class Page extends UserPageBase
 		$timezone = get_timezone();
 		
 		// Achievements
-		$query = new DbQuery('SELECT t.id, t.name, t.flags, t.start_time, c.id, c.name, c.flags, tp.place FROM tournament_places tp JOIN tournaments t ON t.id = tp.tournament_id JOIN clubs c ON c.id = t.club_id WHERE tp.user_id = ? ORDER BY tp.importance DESC, tp.place', $this->id);
+		$query = new DbQuery('SELECT t.id, t.name, t.flags, t.start_time, t.duration, c.id, c.name, c.flags, tp.place FROM tournament_places tp JOIN tournaments t ON t.id = tp.tournament_id JOIN clubs c ON c.id = t.club_id WHERE tp.user_id = ? ORDER BY tp.importance DESC, tp.place', $this->id);
 		if ($row = $query->next())
 		{
 			$tournament_pic = new Picture(TOURNAMENT_PICTURE);
@@ -90,7 +90,7 @@ class Page extends UserPageBase
 			echo '<tr class="darker"><td colspan="' . ACHIEVEMENT_COLUMNS . '"><b>' . get_label('Achievements') . '</b></td></tr>';
 			do
 			{
-				list($tournament_id, $tournament_name, $tournament_flags, $tournament_start_time, $club_id, $club_name, $club_flags, $place) = $row;
+				list($tournament_id, $tournament_name, $tournament_flags, $tournament_start_time, $tournament_duration, $club_id, $club_name, $club_flags, $place) = $row;
 				if ($columns_count == 0)
 				{
 					if ($achievements_count > 0)
@@ -119,7 +119,7 @@ class Page extends UserPageBase
 				echo '<tr style="height: 80px;"><td colspan="3" align="center">';
 				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 				$tournament_pic->show(ICONS_DIR, true, 64);
-				echo '<p>' . format_date('F, Y', $tournament_start_time, $timezone) . '</p>';
+				echo '<p>' . format_date('F, Y', $tournament_start_time + $tournament_duration, $timezone) . '</p>';
 				echo '</td></tr>';
 				
 				echo '<tr class="dark" style="height: 40px;"><td colspan="2" align="center"><b>' . $tournament_name . '</b></td><td width="34">';
