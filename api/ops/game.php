@@ -1097,13 +1097,13 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		array();
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, c.id, c.name, a.id, a.name_' . $_lang_code . ', (', $games_count_query);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, c.id, c.name, a.id, a.name_' . $_lang_code . ', ct.id, ct.name_' . $_lang_code . ', (', $games_count_query);
 		$query->add(
 				') as games_count' .
 				' FROM users u' .
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' JOIN cities ct ON ct.id = u.city_id' .
-				' JOIN cities a ON a.id = ct.area_id' .
+				' LEFT OUTER JOIN cities a ON a.id = ct.area_id' .
 				' WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0');
 		if (!empty($name))
 		{
@@ -1133,7 +1133,12 @@ class ApiPage extends OpsApiPageBase
 		while ($row = $query->next())
 		{
 			$p = new stdClass();
-			list ($p->id, $p->name, $p->flags, $p_club_id, $p_club_name, $p_area_id, $p_area_name) = $row;
+			list ($p->id, $p->name, $p->flags, $p_club_id, $p_club_name, $p_area_id, $p_area_name, $p_city_id, $p_city_name) = $row;
+			if (is_null($p_area_id))
+			{
+				$p_area_id = $p_city_id;
+				$p_area_name = $p_city_name;
+			}
 			$p->full_name = $p->name;
 			if ($p_area_id != $area_id)
 			{
@@ -1146,6 +1151,7 @@ class ApiPage extends OpsApiPageBase
 		usort($list, 'compare_players');
 		
 		$this->response['list'] = $list;
+		//print_json($this->response);
 	}
 	
 	function ulist_op_help()
