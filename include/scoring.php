@@ -762,24 +762,6 @@ function compare_scores($player1, $player2)
 	for ($i = 0; $i < strlen($sorting); ++$i)
 	{
 		$char = $sorting[$i];
-		if ($char == '-')
-		{
-			$sign = -1;
-			continue;
-		}
-		else if ($char == '(')
-		{
-			$in_brackets = true;
-			$value1 = 0;
-			$value2 = 0;
-			continue;
-		}
-		else if ($char == ')')
-		{
-			$in_brackets = false;
-			continue;
-		}
-		
 		if (!$in_brackets)
 		{
 			$value1 = 0;
@@ -789,6 +771,15 @@ function compare_scores($player1, $player2)
 		//'legacy', 'penalty', 'night1'
 		switch ($char)
 		{
+			case '-':
+				$sign = -1;
+				continue;
+			case '(':
+				$in_brackets = true;
+				continue;
+			case ')':
+				$in_brackets = false;
+				break;
 			case SCORING_SORTING_MAIN_POINTS:
 				if (isset($player1->main_points))
 				{
