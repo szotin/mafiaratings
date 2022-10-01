@@ -77,6 +77,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			$normalizer = json_encode($normalizer);
 		}
+		else
+		{
+			check_json($normalizer);
+		}
 		
 		Db::begin();
 		$this->check_name($name, $club_id, $league_id);
@@ -151,6 +155,10 @@ class ApiPage extends OpsApiPageBase
 		if (!is_string($normalizer))
 		{
 			$normalizer = json_encode($normalizer);
+		}
+		else
+		{
+			check_json($normalizer);
 		}
 		
 		$overwrite = false;

@@ -728,8 +728,8 @@ var mr = new function()
 			}
 		}
 		dlg.infoForm("form/scoring_show.php" + 
-			"?sid=" + $('#' + name + '-sel').val() + 
-			"&sver=" + $('#' + name + '-ver').val() +
+			"?id=" + $('#' + name + '-sel').val() + 
+			"&version=" + $('#' + name + '-ver').val() +
 			"&nid=" + $('#' + name + '-norm-sel').val() + 
 			"&nver=" + $('#' + name + '-norm-ver').val() +
 			"&ops_flags=" + flags);
@@ -933,6 +933,39 @@ var mr = new function()
 	this.editNormalizer = function(id)
 	{
 		goTo("normalizer.php?bck=1&id=" + id);
+	}
+	
+	//--------------------------------------------------------------------------------------
+	// gaining system
+	//--------------------------------------------------------------------------------------
+	this.deleteGainingSystem = function(id, confirmMessage)
+	{
+		dlg.yesNo(confirmMessage, null, null, function()
+		{
+			json.post("api/ops/gaining.php", { op: 'delete', gaining_id: id }, refr);
+		});
+	}
+
+	this.createGainingSystem = function(leagueId)
+	{
+		var url = "form/gaining_create.php";
+		if (leagueId)
+		{
+			url += "?league=" + leagueId;
+		}
+		dlg.form(url, refr, 400);
+	}
+
+	this.editGainingSystem = function(id)
+	{
+		dlg.form("form/gaining_edit.php?gaining_id=" + id, refr, 1200);
+	}
+	
+	this.showGaining = function(name)
+	{
+		dlg.infoForm("form/gaining_show.php" + 
+			"?sid=" + $('#' + name + '-sel').val() + 
+			"&sver=" + $('#' + name + '-ver').val());
 	}
 	
 	//--------------------------------------------------------------------------------------

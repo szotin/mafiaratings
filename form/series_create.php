@@ -59,8 +59,18 @@ try
 		langs_checkboxes(LANG_ALL, $league_langs, NULL, '<br>', 'form-');
 		echo '</td></tr>';
 	}
+
+	list($default_gaining_id) = Db::record(get_label('league'), 'SELECT gaining_id FROM leagues WHERE id = ?', $league_id);
+	$query = new DbQuery('SELECT id, name FROM gainings WHERE league_id IS NULL OR league_id = ? ORDER BY name', $league_id);
+	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
+	while ($row = $query->next())
+	{
+		list($gaining_id, $gaining_name) = $row;
+		show_option($gaining_id, $default_gaining_id, $gaining_name);
+	}
+	echo '</select></td></tr>';
 	
-	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
+	echo '<tr><td>' . get_label('Notes') . ':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 		
 ?>	
 
@@ -90,14 +100,14 @@ try
 			op: "create",
 			league_id: <?php echo $league_id; ?>,
 			name: $("#form-name").val(),
-			type: $('#form-type').val(),
-			price: $("#form-price").val(),
 			notes: $("#form-notes").val(),
 			start: $('#form-start').val(),
+			gaining_id: $('#form-gaining').val(),
 			end: dateToStr(_end),
 			langs: _langs,
 			flags: _flags
 		};
+		console.log(params);
 		
 		json.post("api/ops/series.php", params, onSuccess);
 	}

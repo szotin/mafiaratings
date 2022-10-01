@@ -59,7 +59,7 @@ require_once '../../include/api.php';
   <area shape="rect" coords="156,167,291,191" title="Game rules" href="rules.php?help">
   <area shape="rect" coords="156,200,291,225" title="Scoring systems" href="scoring.php?help">
   <area shape="rect" coords="156,233,291,258" title="Scoring Normalizers" href="normalizer.php?help">
-  <!-- <area shape="rect" coords="156,266,291,291" title="Gaining systems" href="gaining.php?help"> -->
+  <area shape="rect" coords="156,266,291,291" title="Gaining systems" href="gaining.php?help">
   <area shape="rect" coords="345,167,423,191" title="Games" href="game.php?help">
   <area shape="rect" coords="345,200,423,225" title="Events" href="event.php?help">
   <area shape="rect" coords="381,234,446,258" title="Tournaments" href="tournament.php?help">
@@ -156,7 +156,7 @@ require_once '../../include/api.php';
 	<td>Scoring Operations</td>
 	<td><a href="scoring.php?help"><?php echo PRODUCT_URL; ?>/api/ops/scoring.php</a></td>
 	<td>
-		<p>Creating, editing, deleting, and manipulating scoring systems. Scoring system is a set of scoring rules that are used to calculate points in competitions. Examples of scoring systems are: Очковая система ФИИМ and 3-4-4-5.</p>
+		<p>Creating, editing, deleting, and manipulating scoring systems. Scoring system is a set of scoring rules that are used to calculate points in tournaments and events. Examples of scoring systems are: Очковая система ФИИМ and 3-4-4-5.</p>
 	</td>
 </tr>
 
@@ -165,6 +165,14 @@ require_once '../../include/api.php';
 	<td><a href="normalizer.php?help"><?php echo PRODUCT_URL; ?>/api/ops/normalizer.php</a></td>
 	<td>
 		<p>Scoring normalizers are used in the tournaments where players play different number of games. They normalize the result because otherwise a player who played more games wins no matter how good he/she is.</p><p>The simplest normalizer would divide player's score to the number of games played. This is not the best one because it gives the advantage to a player who played only one game and won it. Thus more complicated rules can be created to make normalization as fair as possible.</p>
+	</td>
+</tr>
+
+<tr>
+	<td>Gaining Operations</td>
+	<td><a href="gaining.php?help"><?php echo PRODUCT_URL; ?>/api/ops/gaining.php</a></td>
+	<td>
+		<p>Creating, editing, deleting, and manipulating gaining systems. Gaining system is a set of rules that are used to calculate points in series of tournaments. When users take a certain place in a tournament they gain a certain number of points. Gaining systems are used in series the same way as scoring systems are used in tournaments. The difference is that in a tournament users earn points in each game they play; though in series users earn points by winning a place in each tournament they play.</p>
 	</td>
 </tr>
 

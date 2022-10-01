@@ -20,13 +20,18 @@ class ApiPage extends OpsApiPageBase
 		global $_profile, $_lang_code;
 		$league_id = (int)get_required_param('league_id');
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		list($league_name, $league_rules, $league_langs) = Db::record(get_label('league'), 'SELECT name, rules, langs FROM leagues WHERE id = ?', $league_id);
+		list($league_name, $league_rules, $league_langs, $gaining_id) = Db::record(get_label('league'), 'SELECT name, rules, langs, gaining_id FROM leagues WHERE id = ?', $league_id);
+		
+		$gaining_id = (int)get_optional_param('gaining_id'); //, $gaining_id);
+		list($gaining_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $gaining_id);
+		$gaining_version = (int)get_optional_param('gaining_version', $gaining_version);
 		
 		$name = get_required_param('name');
 		if (empty($name))
 		{
 			throw new Exc(get_label('Please enter [0].', get_label('Series name')));
 		}
+		
 		
 		$notes = get_optional_param('notes', '');
 		$flags = (int)get_optional_param('flags', 0) & SERIES_EDITABLE_MASK;
@@ -46,8 +51,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('sеriеs'), 
-			'INSERT INTO series (name, league_id, start_time, duration, langs, notes, flags, rules) values (?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $start, $end - $start, $langs, $notes, $flags, $league_rules);
+			'INSERT INTO series (name, league_id, start_time, duration, langs, notes, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $league_id, $start, $end - $start, $langs, $notes, $flags, $league_rules, $gaining_id, $gaining_version);
 		list ($series_id) = Db::record(get_label('sеriеs'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -59,6 +64,8 @@ class ApiPage extends OpsApiPageBase
 		$log_details->notes = $notes;
 		$log_details->rules_code = $league_rules;
 		$log_details->flags = $flags;
+		$log_details->gaining_id = $gaining_id;
+		$log_details->gaining_version = $gaining_version;
 		db_log(LOG_OBJECT_SERIES, 'created', $log_details, $series_id, NULL, $league_id);
 		
 		Db::commit();
@@ -75,6 +82,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('notes', 'Series notes. Just a text.', 'empty.');
 		$help->request_param('langs', 'Languages on this series. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all league languages are used.');
 		$help->request_param('flags', 'Series flags. Currently not used');
+		$help->request_param('gaining_id', 'Gaining system id.', 'Default gaining of the league is used.');
+		$help->request_param('gaining_version', 'Gaining system version.', 'Latest gaining system version is used.');
 /*		
 									'A bit cobination of:<ol>' .
 									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
@@ -96,11 +105,18 @@ class ApiPage extends OpsApiPageBase
 		$timezone = get_timezone();
 		Db::begin();
 		
-		list ($league_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_flags) = 
-			Db::record(get_label('sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, flags FROM series WHERE id = ?', $series_id);
+		list ($league_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_flags, $old_gaining_id, $old_gaining_version) = 
+			Db::record(get_label('sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
 		
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		list($league_name, $league_rules, $league_langs) = Db::record(get_label('league'), 'SELECT name, rules, langs FROM leagues WHERE id = ?', $league_id);
+		
+		$gaining_id = (int)get_optional_param('gaining_id', $old_gaining_id);
+		if ($gaining_id != $old_gaining_id)
+		{
+			list($old_gaining_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $gaining_id);
+		}
+		$gaining_version = (int)get_optional_param('gaining_version', $old_gaining_version);
 		
 		$name = get_optional_param('name', $old_name);
 		$notes = get_optional_param('notes', $old_notes);
@@ -136,8 +152,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('sеriеs'), 
-			'UPDATE series SET name = ?, start_time = ?, duration = ?, langs = ?, notes = ?, flags = ? WHERE id = ?',
-			$name, $start, $duration, $langs, $notes, $flags, $series_id);
+			'UPDATE series SET name = ?, start_time = ?, duration = ?, langs = ?, notes = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
+			$name, $start, $duration, $langs, $notes, $flags, $gaining_id, $gaining_version, $series_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -165,6 +181,15 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->flags = $flags;
 			}
+			if ($gaining_id != $old_gaining_id)
+			{
+				$log_details->gaining_id = $gaining_id;
+				$log_details->gaining_version = $gaining_version;
+			}
+			else if ($gaining_version != $old_gaining_version)
+			{
+				$log_details->gaining_version = $gaining_version;
+			}
 			if ($logo_uploaded)
 			{
 				$log_details->logo_uploaded = true;
@@ -184,6 +209,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('notes', 'Series notes. Just a text.', 'remains the same.');
 		$help->request_param('langs', 'Languages on this series. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
 		$help->request_param('flags', 'Series flags. Not used yet');
+		$help->request_param('gaining_id', 'Gaining system id.', 'remains the same.');
+		$help->request_param('gaining_version', 'Gaining system version.', 'remains the same, or latest version of the gaining system is used if gaining system was changed.');
 /*									'A bit cobination of:<ol>' .
 									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
 									'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .

@@ -77,9 +77,13 @@ class ApiPage extends OpsApiPageBase
 		{
 			$scoring = json_encode($scoring);
 		}
+		else
+		{
+			check_json($scoring);
+		}
 		
 		Db::begin();
-		$this->check_name($name, $club_id, $league_id);
+		$this->check_name($name, $club_id);
 		
 		Db::exec(get_label('scoring system'), 'INSERT INTO scorings (club_id, league_id, name, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $name);
 		list ($scoring_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
@@ -94,7 +98,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::exec(get_label('scoring system'), 'INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (?, 1, ?)', $scoring_id, $scoring);
-		Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = 1', $club_id, $league_id, $name);
+		Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = 1 WHERE id = ?', $scoring_id);
 		
 		$log_details = new stdClass();
 		$log_details->name = $name;
@@ -152,6 +156,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			$scoring = json_encode($scoring);
 		}
+		else
+		{
+			check_json($scoring);
+		}
 		
 		$overwrite = false;
 		list ($old_scoring, $version) = Db::record(get_label('scoring system'), 'SELECT v.scoring, s.version FROM scorings s JOIN scoring_versions v ON v.scoring_id = s.id AND v.version = s.version WHERE s.id = ?', $scoring_id);
@@ -161,8 +169,8 @@ class ApiPage extends OpsApiPageBase
 			if ($usageCount <= 0)
 			{
 				list ($usageCount) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $scoring_id, $version);
-				$overwrite = ($usageCount <= 0);
 			}
+			$overwrite = ($usageCount <= 0);
 		}
 		else
 		{

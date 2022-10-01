@@ -14,6 +14,7 @@ define('LOG_OBJECT_CLUB_REQUEST', 'club request');
 define('LOG_OBJECT_RULES', 'rules');
 define('LOG_OBJECT_SCORING_SYSTEM', 'scoring system');
 define('LOG_OBJECT_SCORING_NORMALIZER', 'scoring normalizer');
+define('LOG_OBJECT_GAINING_SYSTEM', 'gaining system');
 define('LOG_OBJECT_ADDRESS', 'address');
 define('LOG_OBJECT_TOURNAMENT', 'tournament');
 define('LOG_OBJECT_SERIES', 'series');
@@ -44,6 +45,7 @@ function prepare_log_objects()
 		, LOG_OBJECT_CLUB_REQUEST => NULL
 		, LOG_OBJECT_RULES => NULL
 		, LOG_OBJECT_SCORING_SYSTEM => 'scoring.php?bck=1&id='
+		, LOG_OBJECT_GAINING_SYSTEM => 'gaining.php?bck=1&id='
 		, LOG_OBJECT_ADDRESS => 'address_info.php?bck=1&id='
 		, LOG_OBJECT_TOURNAMENT => 'tournament_info.php?bck=1&id='
 		, LOG_OBJECT_SERIES => 'series_info.php?bck=1&id='
@@ -233,6 +235,14 @@ function formatted_json($object, $newLine = "\n")
 		$result = $object;
 	}
 	return $result;
+}
+
+function check_json($string)
+{
+	if (json_decode($string) == null && json_last_error() != JSON_ERROR_NONE)
+	{
+		throw new Exc(json_last_error_msg());
+	}
 }
 
 function print_json($object)

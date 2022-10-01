@@ -21,9 +21,9 @@ try
 	$series_id = (int)$_REQUEST['id'];
 	$timezone = get_timezone();	
 	
-	list ($league_id, $name, $start_time, $duration, $langs, $notes, $flags, $league_langs) = 
+	list ($league_id, $name, $start_time, $duration, $langs, $notes, $flags, $league_langs, $gaining_id, $gaining_version) = 
 		Db::record(get_label('sеriеs'), 
-			'SELECT s.league_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags, l.langs FROM series s' . 
+			'SELECT s.league_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags, l.langs, s.gaining_id, s.gaining_version FROM series s' . 
 			' JOIN leagues l ON l.id = s.league_id' .
 			' WHERE s.id = ?', $series_id);
 	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
@@ -40,7 +40,7 @@ try
 	end_upload_logo_button(SERIES_PIC_CODE, $series_id);
 	echo '</td></tr>';
 	
-s	$end_time = $start_time + $duration - 24*60*60;
+	$end_time = $start_time + $duration - 24*60*60;
 	if ($end_time < $start_time)
 	{
 		$end_time = $start_time;
@@ -63,6 +63,15 @@ s	$end_time = $start_time + $duration - 24*60*60;
 		langs_checkboxes($langs, $league_langs, NULL, '<br>', 'form-');
 		echo '</td></tr>';
 	}
+	
+	$query = new DbQuery('SELECT id, name FROM gainings WHERE league_id IS NULL OR league_id = ? ORDER BY name', $league_id);
+	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
+	while ($row = $query->next())
+	{
+		list($gid, $gname) = $row;
+		show_option($gid, $gaining_id, $gname);
+	}
+	echo '</select></td></tr>';
 	
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
@@ -96,6 +105,7 @@ s	$end_time = $start_time + $duration - 24*60*60;
 			name: $("#form-name").val(),
 			notes: $("#form-notes").val(),
 			start: $('#form-start').val(),
+			gaining_id: $('#form-gaining').val(),
 			end: dateToStr(_end),
 			langs: _langs,
 		};

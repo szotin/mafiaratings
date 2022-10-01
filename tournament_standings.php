@@ -166,7 +166,7 @@ class Page extends TournamentPageBase
 			echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
 			echo '<td width="36" align="center" rowspan="2">'.get_label('Rounds played').'</td>';
 			echo '</tr>';
-			echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
+			echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
 			
 			$page_start = $_page * PAGE_SIZE;
 			if ($teams_count > $page_start + PAGE_SIZE)
@@ -250,7 +250,7 @@ class Page extends TournamentPageBase
 				echo '<td width="36" align="center" rowspan="2">'.get_label('Normalization rate').'</td>';
 			}
 			echo '</tr>';
-			echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Guess') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
+			echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
 			
 			$page_start = $_page * PAGE_SIZE;
 			if ($players_count > $page_start + PAGE_SIZE)

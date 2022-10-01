@@ -43,7 +43,7 @@ require_once '../../include/api.php';
   <area shape="rect" coords="156,167,291,191" title="Game rules" href="rules.php?help">
   <area shape="rect" coords="156,200,291,225" title="Scoring systems" href="scorings.php?help">
   <area shape="rect" coords="156,233,291,258" title="Scoring Normalizers" href="normalizers.php?help">
-  <!-- <area shape="rect" coords="156,266,291,291" title="Gaining systems" href="gainings.php?help"> -->
+  <area shape="rect" coords="156,266,291,291" title="Gaining systems" href="gainings.php?help">
   <area shape="rect" coords="345,167,423,191" title="Games" href="games.php?help">
   <area shape="rect" coords="345,200,423,225" title="Events" href="events.php?help">
   <area shape="rect" coords="381,234,446,258" title="Tournaments" href="tournaments.php?help">
@@ -185,6 +185,14 @@ require_once '../../include/api.php';
 	<td><a href="normalizers.php?help"><?php echo PRODUCT_URL; ?>/api/get/normalizers.php</a></td>
 	<td>
 		<p>Scoring normalizers. The configurable rules for normalizing tournament scores.</p><p>It is used in a long term tournaments where players play a significantly different number of games. In this case we don't want a user who plays more to win just because they played more games than others. So we use normalization. The simplest (but not the fairest) is to use average score per game. Normalizers can be way more complicated. Mafia Ratings lets users to configure custom normalizers and use whatever they think is the best way to normalize scores.</p>
+	</td>
+</tr>
+
+<tr>
+	<td>Gaining systems</td>
+	<td><a href="gainings.php?help"><?php echo PRODUCT_URL; ?>/api/get/gainings.php</a></td>
+	<td>
+		<p>Gaining systems. The configurable rules for calculating series scores. Scoring systems are applied to the tournaments. They calculate scores based on the tournament games. Gaining system is applied to series of tournaments. They calculate scores based on the results of players in the participating tournaments.</p>
 	</td>
 </tr>
 
