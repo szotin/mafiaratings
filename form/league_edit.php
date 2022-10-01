@@ -22,8 +22,8 @@ try
 		throw new FatalExc(get_label('No permissions'));
 	}
 	
-	list ($name, $url, $email, $phone, $langs, $flags, $league_scoring_id, $league_normalizer_id) =
-		Db::record(get_label('league'), 'SELECT name, web_site, email, phone, langs, flags, scoring_id, normalizer_id FROM leagues WHERE id = ?', $id);
+	list ($name, $url, $email, $phone, $langs, $flags, $league_scoring_id, $league_normalizer_id, $league_gaining_id) =
+		Db::record(get_label('league'), 'SELECT name, web_site, email, phone, langs, flags, scoring_id, normalizer_id, gaining_id FROM leagues WHERE id = ?', $id);
 		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140">' . get_label('League name') . ':</td><td><input class="longest" id="form-league_name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
@@ -67,6 +67,14 @@ try
 	} 
 	echo '</select></td></tr>';
 	
+	$query = new DbQuery('SELECT id, name FROM gainings WHERE league_id IS NULL OR league_id = ? ORDER BY name', $id);
+	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
+	while ($row = $query->next())
+	{
+		list($gaining_id, $gaining_name) = $row;
+		show_option($gaining_id, $league_gaining_id, $gaining_name);
+	}
+	echo '</select></td></tr>';
 	echo '</table>';
 	
 ?>	
@@ -84,6 +92,7 @@ try
 			, phone: $("#form-phone").val()
 			, scoring_id: $("#form-scoring").val()
 			, normalizer_id: $("#form-normalizer").val()
+			, gaining_id: $("#form-gaining").val()
 			, langs: languages
 		},
 		onSuccess);

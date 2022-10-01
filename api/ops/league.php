@@ -76,8 +76,8 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('league'),
-				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?)',
-				$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID);
+				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?, ?)',
+				$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
@@ -157,8 +157,8 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
-		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_normalizer_id, $old_rules, $old_flags) = Db::record(get_label('league'),
-			'SELECT name, web_site, email, phone, langs, scoring_id, normalizer_id, rules, flags FROM leagues c WHERE id = ?', $league_id);
+		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_normalizer_id, $old_gaining_id, $old_rules, $old_flags) = Db::record(get_label('league'),
+			'SELECT name, web_site, email, phone, langs, scoring_id, normalizer_id, gaining_id, rules, flags FROM leagues c WHERE id = ?', $league_id);
 		
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
@@ -174,6 +174,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$normalizer_id = NULL;
 		}
+		$gaining_id = get_optional_param('gaining_id', $old_gaining_id);
 		$langs = (int)get_optional_param('langs', $old_langs);
 		$rules = get_optional_param('rules', $old_rules);
 		if (!is_string($rules))
@@ -238,8 +239,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'), 
-			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ?, normalizer_id = ?, rules = ?, flags = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $scoring_id, $normalizer_id, $rules, $flags, $league_id);
+			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ?, normalizer_id = ?, gaining_id = ?, rules = ?, flags = ? WHERE id = ?',
+			$name, $url, $langs, $email, $phone, $scoring_id, $normalizer_id, $gaining_id, $rules, $flags, $league_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -272,6 +273,18 @@ class ApiPage extends OpsApiPageBase
 				$log_details->flags = $flags;
 				$log_details->logo_uploaded = true;
 			}
+			if ($scoring_id != $old_scoring_id)
+			{
+				$log_details->scoring_id = $scoring_id;
+			}
+			if ($normalizer_id != $old_normalizer_id)
+			{
+				$log_details->normalizer_id = $normalizer_id;
+			}
+			if ($gaining_id != $old_gaining_id)
+			{
+				$log_details->gaining_id = $gaining_id;
+			}
 			db_log(LOG_OBJECT_LEAGUE, 'changed', $log_details, $league_id, NULL, $league_id);
 		}
 		Db::commit();
@@ -288,8 +301,9 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('phone', 'League phone. Just a text.', 'remains the same.');
 		api_rules_filter_help($help->request_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Contains json. Example: { "split_on_four": true, "extra_points": ["fiim", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
 		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
-		$help->request_param('scoring_id', 'Default scoring system for the league. This scoring system is suggested by default to all new tournaments of the league.', 'remains the same.');
-		$help->request_param('normalizer_id', 'Default scoring normalizer for the league. This scoring normalizer is suggested by default to all new tournaments of the league. Send 0 if the league does need to have default normalizer.', 'remains the same.');
+		$help->request_param('scoring_id', 'Default tournament scoring system for the league. This scoring system is suggested by default to all new tournaments of the league.', 'remains the same.');
+		$help->request_param('normalizer_id', 'Default tournament scoring normalizer for the league. This scoring normalizer is suggested by default to all new tournaments of the league. Send 0 if the league does need to have default normalizer.', 'remains the same.');
+		$help->request_param('gaining_id', 'Default series scoring system for the league. This scoring system is suggested by default to all new tournament series of the league.', 'remains the same.');
 		return $help;
 	}
 	
@@ -319,8 +333,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?)',
-			$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID);
+			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?, ?)',
+			$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		

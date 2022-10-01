@@ -6,6 +6,7 @@ require_once __DIR__ . '/constants.php';
 
 define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIIM)
 define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
+define('GAINING_DEFAULT_ID', 1); // Default gaining system is hardcoded here to MWT (Mafia World Tour)
 
 define('SCORING_ROLE_FLAGS_CIV', 1);
 define('SCORING_ROLE_FLAGS_SHERIFF', 2);
