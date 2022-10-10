@@ -197,6 +197,14 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
+	<td>Gaining points</td>
+	<td><a href="gaining_points.php?help"><?php echo PRODUCT_URL; ?>/api/get/gaining_points.php</a></td>
+	<td>
+		<p>Gaining points. Returns gaining points for a tournament with a certain number of players and stars.</p>
+	</td>
+</tr>
+
+<tr>
 	<td>Current Game</td>
 	<td><a href="current_game.php?help"><?php echo PRODUCT_URL; ?>/api/get/current_game.php</a></td>
 	<td>

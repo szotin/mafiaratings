@@ -964,8 +964,8 @@ var mr = new function()
 	this.showGaining = function(name)
 	{
 		dlg.infoForm("form/gaining_show.php" + 
-			"?sid=" + $('#' + name + '-sel').val() + 
-			"&sver=" + $('#' + name + '-ver').val());
+			"?id=" + $('#' + name + '-sel').val() + 
+			"&version=" + $('#' + name + '-ver').val());
 	}
 	
 	//--------------------------------------------------------------------------------------

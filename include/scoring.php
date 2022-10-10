@@ -1869,6 +1869,382 @@ function get_scoring_group_policies_count($group, $scoring, $options = NULL)
 	return $count;
 }
 
+function _get_zero_gaining_points($players, $place)
+{
+	if ($place > 0)
+	{
+		return 0;
+	}
+	
+	$result = array();
+	for ($i = 0; $i < $players; ++$i)
+	{
+		$result[] = 0;
+	}
+	return $result;
+}
+
+function _get_gaining_points_for_players($gaining, $stars_obj, $players_obj, $players, $place)
+{
+	if (!isset($players_obj->points))
+	{
+		return _get_zero_gaining_points($players, $place);
+	}
+	
+	$min_points = isset($stars_obj->minPoints) ? $stars_obj->minPoints : 0;
+	if ($place > 0)
+	{
+		if ($place <= count($players_obj->points))
+		{
+			return $players_obj->points[$place - 1];
+		}
+		return $min_points;
+	}
+	
+	if ($place <= 0)
+	{
+		$result = array();
+		for ($i = 0; $i < $players && $i < count($players_obj->points); ++$i)
+		{
+			if ($players_obj->points[$i] < $min_points)
+			{
+				$result[] = $min_points;
+			}
+			else
+			{
+				$result[] = $players_obj->points[$i];
+			}
+		}
+		for ( ; $i < $players; ++$i)
+		{
+			$result[] = $min_points;
+		}
+	}
+	return $result;
+}
+
+function _get_gaining_points_for_stars($gaining, $stars_obj, $players, $place)
+{
+	if (!isset($stars_obj->points))
+	{
+		return _get_zero_gaining_points($players, $place);
+	}
+	
+	$players_obj1 = $players_obj2 = NULL;
+	$delta1 = $delta2 = 100000000;
+	for ($i = 0; $i < count($stars_obj->points); ++$i)
+	{
+		$players_obj = $stars_obj->points[$i];
+		$p = isset($players_obj->players) ? $players_obj->players : 10;
+		if ($players == $p)
+		{
+			$players_obj1 = $players_obj;
+			$players_obj2 = NULL;
+			break;
+		}
+		
+		$delta = abs($p - $players);
+		if ($delta < $delta1 && $delta2 <= $delta1)
+		{
+			$players_obj1 = $players_obj;
+			$delta1 = $delta;
+		}
+		else if ($delta < $delta2)
+		{
+			$players_obj2 = $players_obj;
+			$delta2 = $delta;
+		}
+	}
+	
+	if ($players_obj1 != NULL)
+	{
+		if ($players_obj2 != NULL)
+		{
+			$players1 = isset($players_obj1->players) ? $players_obj1->players : 1;
+			$players2 = isset($players_obj2->players) ? $players_obj2->players : 1;
+			if ($players1 > $players2)
+			{
+				$players_obj = $players_obj2;
+				$players_obj2 = $players_obj1;
+				$players_obj1 = $players_obj;
+				
+				$p = $players2;
+				$players2 = $players1;
+				$players1 = $p;
+			}
+			
+			$regression = false;
+			if ($players < $players1)
+			{
+				if (!isset($gaining->lessPlayers) || $gaining->lessPlayers == 'no')
+				{
+					return _get_zero_gaining_points($players, $place);
+				}
+				else if ($gaining->lessPlayers == 'closest')
+				{
+					return _get_gaining_points_for_players($gaining, $stars_obj, $players_obj1, $players, $place);
+				}
+				else if ($gaining->lessPlayers == 'extrapolate')
+				{
+					$regression = true;
+				}
+				else
+				{
+					throw new Exc('Invalid lessPlayers value "' . $gaining->lessStars . '". Valid values are: "no", "closest", and "extrapolate".');
+				}
+			}
+			else if ($players < $players2)
+			{
+				if (!isset($gaining->midPlayers) || $gaining->midPlayers == 'min')
+				{
+					return _get_gaining_points_for_players($gaining, $stars_obj, $players_obj1, $players, $place);
+				}
+				else if ($gaining->midPlayers == 'max')
+				{
+					return _get_gaining_points_for_players($gaining, $stars_obj, $players_obj2, $players, $place);
+				}
+				else if ($gaining->midPlayers == 'closest')
+				{
+					if (abs($players1 - $players) < abs($players2 - $players))
+					{
+						return _get_gaining_points_for_players($gaining, $stars_obj, $players_obj1, $players, $place);
+					}
+					return _get_gaining_points_for_players($gaining, $stars_obj, $players_obj2, $players, $place);
+				}
+				else if ($gaining->midPlayers == 'interpolate')
+				{
+					$regression = true;
+				}
+				else if ($gaining->midPlayers == 'no')
+				{
+					return _get_zero_gaining_points($players, $place);
+				}
+				else
+				{
+					throw new Exc('Invalid midPlayers value "' . $gaining->midPlayers . '". Valid values are: "no", "min", "max", "closest", and "interpolate".');
+				}
+			}
+			else
+			{
+				if (!isset($gaining->morePlayers) || $gaining->morePlayers == 'closest')
+				{
+					return _get_gaining_points_for_players($gaining, $stars_obj, $players_obj1, $players, $place);
+				}
+				else if ($gaining->morePlayers == 'no')
+				{
+					return _get_zero_gaining_points($players, $place);
+				}
+				else if ($gaining->morePlayers == 'extrapolate')
+				{
+					$regression = true;
+				}
+				else
+				{
+					throw new Exc('Invalid morePlayers value "' . $gaining->morePlayers . '". Valid values are: "no", "closest", and "extrapolate".');
+				}
+			}
+			
+			if ($regression)
+			{
+				$result = _get_gaining_points_for_players($gaining, $stars_obj, $players_obj1, $players, $place);
+				if ($players1 != $players2)
+				{
+					$result2 = _get_gaining_points_for_players($gaining, $stars_obj, $players_obj2, $players, $place);
+					if ($place <= 0)
+					{
+						for ($i = 0; $i < count($result); ++$i)
+						{
+							$p = ($result2[$i] * ($players - $players1) + $result[$i] * ($players2 - $players)) / ($players2 - $players1);
+							if ($p < $stars_obj->minPoints)
+							{
+								$p = $stars_obj->minPoints;
+							}
+							$result[$i] = $p;
+						}
+					}
+					else
+					{
+						$result = ($result2 * ($players - $players1) + $result * ($players2 - $players)) / ($players2 - $players1);
+						if ($result < $stars_obj->minPoints)
+						{
+							$result = $stars_obj->minPoints;
+						}
+					}
+				}
+				return $result;
+			}
+		}
+		else
+		{
+			return _get_gaining_points_for_players($gaining, $stars_obj, $players_obj1, $players, $place);
+		}
+	}
+	else if ($players_obj2 != NULL)
+	{
+		return _get_gaining_points_for_players($gaining, $stars_obj, $players_obj2, $players, $place);
+	}
+	return _get_zero_gaining_points($players, $place);
+}
+
+function get_gaining_points($gaining, $stars, $players, $place = 0)
+{
+	if (!isset($gaining->points))
+	{
+		return _get_zero_gaining_points($players, $place);
+	}
+	
+	$stars_array = $gaining->points;
+	$stars_obj1 = $stars_obj2 = NULL;
+	$delta1 = $delta2 = 100000000;
+	for ($i = 0; $i < count($stars_array); ++$i)
+	{
+		$stars_obj = $stars_array[$i];
+		$s = isset($stars_obj->stars) ? $stars_obj->stars : 1;
+		if ($s == $stars)
+		{
+			$stars_obj1 = $stars_obj;
+			$stars_obj2 = NULL;
+			break;
+		}
+		
+		$delta = abs($s - $stars);
+		if ($delta < $delta1 && $delta2 <= $delta1)
+		{
+			$stars_obj1 = $stars_obj;
+			$delta1 = $delta;
+		}
+		else if ($delta < $delta2)
+		{
+			$stars_obj2 = $stars_obj;
+			$delta2 = $delta;
+		}
+	}
+	
+	// print_json($stars_obj1);
+	// print_json($stars_obj2);
+	
+	if ($stars_obj1 != NULL)
+	{
+		if ($stars_obj2 != NULL)
+		{
+			$stars1 = isset($stars_obj1->stars) ? $stars_obj1->stars : 1;
+			$stars2 = isset($stars_obj2->stars) ? $stars_obj2->stars : 1;
+			if ($stars1 > $stars2)
+			{
+				$stars_obj = $stars_obj2;
+				$stars_obj2 = $stars_obj1;
+				$stars_obj1 = $stars_obj;
+				
+				$s = $stars2;
+				$stars2 = $stars1;
+				$stars1 = $s;
+			}
+			
+			$regression = false;
+			if ($stars < $stars1)
+			{
+				if (!isset($gaining->lessStars) || $gaining->lessStars == 'no')
+				{
+					return _get_zero_gaining_points($players, $place);
+				}
+				else if ($gaining->lessStars == 'closest')
+				{
+					return _get_gaining_points_for_stars($gaining, $stars_obj1, $players, $place);
+				}
+				else if ($gaining->lessStars == 'extrapolate')
+				{
+					$regression = true;
+				}
+				else
+				{
+					throw new Exc('Invalid lessStars value "' . $gaining->lessStars . '". Valid values are: "no", "closest", and "extrapolate".');
+				}
+			}
+			else if ($stars < $stars2)
+			{
+				if (!isset($gaining->midStars) || $gaining->midStars == 'closest')
+				{
+					if (abs($stars1 - $stars) < abs($stars2 - $stars))
+					{
+						return _get_gaining_points_for_stars($gaining, $stars_obj1, $players, $place);
+					}
+					return _get_gaining_points_for_stars($gaining, $stars_obj2, $players, $place);
+				}
+				else if ($gaining->midStars == 'min')
+				{
+					return _get_gaining_points_for_stars($gaining, $stars_obj1, $players, $place);
+				}
+				else if ($gaining->midStars == 'max')
+				{
+					return _get_gaining_points_for_stars($gaining, $stars_obj2, $players, $place);
+				}
+				else if ($gaining->midStars == 'interpolate')
+				{
+					$regression = true;
+				}
+				else if ($gaining->midStars == 'no')
+				{
+					return _get_zero_gaining_points($players, $place);
+				}
+				else
+				{
+					throw new Exc('Invalid midStars value "' . $gaining->midStars . '". Valid values are: "no", "min", "max", "closest", and "interpolate".');
+				}
+			}
+			else
+			{
+				if (!isset($gaining->moreStars) || $gaining->moreStars == 'no')
+				{
+					return _get_zero_gaining_points($players, $place);
+				}
+				else if ($gaining->moreStars == 'extrapolate')
+				{
+					$regression = true;
+				}
+				else if ($gaining->moreStars == 'closest')
+				{
+					return _get_gaining_points_for_stars($gaining, $stars_obj1, $players, $place);
+				}
+				else
+				{
+					throw new Exc('Invalid moreStars value "' . $gaining->moreStars . '". Valid values are: "no", "closest", and "extrapolate".');
+				}
+			}
+			
+			if ($regression)
+			{
+				$result = _get_gaining_points_for_stars($gaining, $stars_obj1, $players, $place);
+				if ($stars1 != $stars2)
+				{
+					$result2 = _get_gaining_points_for_stars($gaining, $stars_obj2, $players, $place);
+					if ($place <= 0)
+					{
+						for ($i = 0; $i < count($result); ++$i)
+						{
+							$result[$i] = ($result2[$i] * ($stars - $stars1) + $result[$i] * ($stars2 - $stars)) / ($stars2 - $stars1);
+						}
+					}
+					else
+					{
+						$result = ($result2 * ($stars - $stars1) + $result * ($stars2 - $stars)) / ($stars2 - $stars1);
+						
+					}
+				}
+				return $result;
+			}
+		}
+		else
+		{
+			return _get_gaining_points_for_stars($gaining, $stars_obj1, $players, $place);
+		}
+	}
+	else if ($stars_obj2 != NULL)
+	{
+		return _get_gaining_points_for_stars($gaining, $stars_obj2, $players, $place);
+	}
+	return _get_zero_gaining_points($players, $place);
+}
+
 function api_scoring_help($param)
 {
 	$param->sub_param('Help on scoring json structure is not implemented yet.', '', '-');
@@ -1877,6 +2253,11 @@ function api_scoring_help($param)
 function api_normalizer_help($param)
 {
 	$param->sub_param('Help on normalizer json structure is not implemented yet.', '', '-');
+}
+
+function api_gaining_help($param)
+{
+	$param->sub_param('Help on gaining json structure is not implemented yet.', '', '-');
 }
 
 ?>
