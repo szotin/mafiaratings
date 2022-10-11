@@ -216,11 +216,15 @@ class Page extends TournamentPageBase
 		}
 		else
 		{
-			$credited_players = array();
+			$credited_players = NULL;
 			$query = new DbQuery('SELECT user_id FROM tournament_places WHERE tournament_id = ?', $this->id);
 			while ($row = $query->next())
 			{
 				list($user_id) = $row;
+				if ($credited_players == NULL)
+				{
+					$credited_players = array();
+				}
 				$credited_players[$user_id] = true;
 			}
 			
@@ -269,7 +273,7 @@ class Page extends TournamentPageBase
 			for ($number = $page_start; $number < $players_count; ++$number)
 			{
 				$player = $players[$number];
-				$credited = isset($credited_players[$player->id]);
+				$credited = $credited_players == NULL || isset($credited_players[$player->id]);
 				if ($player->id == $this->user_id)
 				{
 					echo '<tr class="darker">';

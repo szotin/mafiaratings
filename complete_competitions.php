@@ -1,5 +1,6 @@
 <?php
 
+define('TOURNAMENT_CREDIT_GAMES_PERCENT', 60);
 
 setDir();
 require_once 'include/security.php';
@@ -130,9 +131,10 @@ function complete_tournament()
 		}
 		if ($player_count > 0)
 		{
-			// The tournament counts for a player only if they played more than a half of average games count. 
+			// The tournament counts for a player only if they played more than TOURNAMENT_CREDIT_GAMES_PERCENT (60%) of average games count. 
 			// We do it in a separate query because we calculate average using only main rounds - excluding finals and semi-finals.
-			$min_games = $sum_games / ($player_count * 2); 
+			$min_games = $sum_games / $player_count; // average
+			$min_games = $min_games * TOURNAMENT_CREDIT_GAMES_PERCENT / 100;
 		}
 		
 		// Write down the tournament places
