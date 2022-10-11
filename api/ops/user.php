@@ -6,6 +6,7 @@ require_once '../../include/user.php';
 require_once '../../include/city.php';
 require_once '../../include/country.php';
 require_once '../../include/image.php';
+require_once '../../include/game.php';
 
 define('CURRENT_VERSION', 0);
 

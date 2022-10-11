@@ -191,23 +191,25 @@ define('DEFAULT_ROW_COUNT', 20);
 define('DEFAULT_COLUMN_COUNT', 5);
 
 // event flags
-// 1 - 0x0001 -      1 - event should not be shown in the event list before the end of the event
-// 2 - 0x0002 -      2 - event should not be shown in the event list after the end of the event
-// 3 - 0x0004 -      4 - canceled
-// 4 - 0x0008 -      8 - everyone can referee
-// 5 - 0x0010 -     16 - event is finished - all scoring is complete
-// 6 - 0x0020 -     32 - event is for fun, most of the games are non-rating
-// 7 - 0x0040 -     64 - icon mask
-// 8 - 0x0080 -    128 - icon mask
-// 9 - 0x0100 -    256 - icon mask
+//  1 - 0x0001 -      1 - event should not be shown in the event list before the end of the event
+//  2 - 0x0002 -      2 - event should not be shown in the event list after the end of the event
+//  3 - 0x0004 -      4 - canceled
+//  4 - 0x0008 -      8 - everyone can referee
+//  5 - 0x0010 -     16 - event is finished - all scoring is complete
+//  6 - 0x0020 -     32 - event is for fun, most of the games are non-rating
+//  7 - 0x0040 -     64 - icon mask
+//  8 - 0x0080 -    128 - icon mask
+//  9 - 0x0100 -    256 - icon mask
+// 10 - 0x0200 -    512 - event with players selection - tournament finals, semi-finals, etc.
 define('EVENT_FLAG_HIDDEN_BEFORE', 0x1);
 define('EVENT_FLAG_HIDDEN_AFTER', 0x2);
 define('EVENT_FLAG_CANCELED', 0x4);
 define('EVENT_FLAG_ALL_CAN_REFEREE', 0x8);
 define('EVENT_FLAG_FINISHED', 0x10);
 define('EVENT_FLAG_FUN', 0x20);
+define('EVENT_FLAG_WITH_SELECTION', 0x200);
 define('EVENT_MASK_HIDDEN', 0x3); // EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_HIDDEN_AFTER
-define('EVENT_EDITABLE_MASK', 0x28); // EVENT_FLAG_ALL_CAN_REFEREE | EVENT_FLAG_FUN
+define('EVENT_EDITABLE_MASK', 0x228); // EVENT_FLAG_ALL_CAN_REFEREE | EVENT_FLAG_FUN | EVENT_FLAG_WITH_SELECTION
 
 define('EVENT_ICON_MASK', 0x1c0);
 define('EVENT_ICON_MASK_OFFSET', 6);

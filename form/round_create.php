@@ -84,6 +84,7 @@ try
 	echo '<tr><td colspan="2">';
 		
 	echo '<input type="checkbox" id="form-all_mod" checked> '.get_label('everyone can referee games.');
+	echo '<br><input type="checkbox" id="form-selection"> '.get_label('with players selection e.g. tournament finals, semi-finals, etc');
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -145,6 +146,7 @@ try
 		
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
+		if ($("#form-selection").attr('checked')) _flags |= <?php echo EVENT_FLAG_WITH_SELECTION; ?>;
 		
 		var params =
 		{

@@ -55,12 +55,17 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 	}
 }
 
-function create_event($event_name, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code)
+function create_event($event_name, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $with_selection)
 {
+	$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
+	if ($with_selection)
+	{
+		$flags |= EVENT_FLAG_WITH_SELECTION;
+	}
 	Db::exec(
 		get_label('round'), 
 		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_version, scoring_options, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-		$event_name, $address_id, $club_id, $start, $end - $start, $notes, EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code);
+		$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code);
 		
 	$log_details = new stdClass();
 	$log_details->name = $event_name;
@@ -76,7 +81,7 @@ function create_event($event_name, $address_id, $club_id, $start, $end, $notes, 
 	$log_details->scoring_version = $scoring_version;
 	$log_details->scoring_options = $scoring_options;
 	$log_details->rules_code = $rules_code;
-	$log_details->flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
+	$log_details->flags = $flags;
 	db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id);
 }
 
@@ -234,7 +239,7 @@ class ApiPage extends OpsApiPageBase
 				{
 					$ops->flags = $scoring_options->flags;
 				}
-				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
 				break;
 			case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3:
 				$ops = new stdClass();
@@ -244,10 +249,10 @@ class ApiPage extends OpsApiPageBase
 				{
 					$ops->flags |= $scoring_options->flags;
 				}
-				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
 				$ops->group = 'final';
 				$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 				break;
 			case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4:
 				$ops = new stdClass();
@@ -257,9 +262,9 @@ class ApiPage extends OpsApiPageBase
 				{
 					$ops->flags |= $scoring_options->flags;
 				}
-				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
 				$ops->group = 'final';
-				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 				break;
 			case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3:
 				$ops = new stdClass();
@@ -269,11 +274,11 @@ class ApiPage extends OpsApiPageBase
 				{
 					$ops->flags |= $scoring_options->flags;
 				}
-				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
-				create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
+				create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 				$ops->group = 'final';
 				$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 				break;
 			case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4:
 				$ops = new stdClass();
@@ -283,10 +288,10 @@ class ApiPage extends OpsApiPageBase
 				{
 					$ops->flags |= $scoring_options->flags;
 				}
-				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
-				create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
+				create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 				$ops->group = 'final';
-				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 				break;
 			case TOURNAMENT_TYPE_AML_ONE_ROUND:
 				$ops = new stdClass();
@@ -294,7 +299,7 @@ class ApiPage extends OpsApiPageBase
 				{
 					$ops->flags = $scoring_options->flags;
 				}
-				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
 				break;
 			case TOURNAMENT_TYPE_AML_TWO_ROUNDS:
 				$ops = new stdClass();
@@ -302,9 +307,9 @@ class ApiPage extends OpsApiPageBase
 				{
 					$ops->flags = $scoring_options->flags;
 				}
-				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
 				$ops->weight = 1.5;
-				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 				break;
 			case TOURNAMENT_TYPE_AML_THREE_ROUNDS:
 				$ops = new stdClass();
@@ -312,11 +317,11 @@ class ApiPage extends OpsApiPageBase
 				{
 					$ops->flags = $scoring_options->flags;
 				}
-				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
 				$ops->weight = 1.2;
-				create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 				$ops->weight = 1.5;
-				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code);
+				create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 				break;
 			default:
 				break;

@@ -153,6 +153,13 @@ try
 		echo ' checked';
 	}
 	echo '> '.get_label('non-rating event.');
+	
+	echo '<br><input type="checkbox" id="form-selection"';
+	if (($event->flags & EVENT_FLAG_WITH_SELECTION) != 0)
+	{
+		echo ' checked';
+	}
+	echo '> ' . get_label('with players selection e.g. tournament finals, semi-finals, etc');
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -218,6 +225,7 @@ try
 		if (tid > 0)
 		{
 			$("#form-scoring-group-div").show();
+			$("#form-selection").prop('disabled', false);
 			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
 			{
 				var t = obj.tournaments[0];
@@ -237,6 +245,7 @@ try
 			$("#form-rules").prop('disabled', false);
 			$("#form-scoring-sel").prop('disabled', false);
 			$("#form-scoring-ver").prop('disabled', false);
+			$("#form-selection").prop('disabled', true);
 		}
 	}
 	tournamentChange();
@@ -299,6 +308,7 @@ try
 			$("#form-notes").val(e.notes);
 			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>) != 0);
 			$("#form-fun").prop('checked', (e.flags & <?php echo EVENT_FLAG_FUN; ?>) != 0);
+			$("#form-selection").prop('checked', (e.flags & <?php echo EVENT_FLAG_WITH_SELECTION; ?>) != 0);
 			mr.setLangs(e.langs, "form-");
 			addressClick();
 			tournamentChange();
@@ -314,6 +324,7 @@ try
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
+		if ($("#form-selection").attr('checked')) _flags |= <?php echo EVENT_FLAG_WITH_SELECTION; ?>;
 		
 		var params =
 		{

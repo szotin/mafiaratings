@@ -106,6 +106,7 @@ function complete_tournament()
 {
 	$result = false;
 	Db::begin();
+	
 	$query = new DbQuery(
 		'SELECT t.id, t.flags, sv.scoring, t.scoring_options, nv.normalizer, (SELECT max(st.stars) FROM series_tournaments st WHERE st.tournament_id = t.id) as stars FROM tournaments t' . 
 		' JOIN scoring_versions sv ON sv.scoring_id = t.scoring_id AND sv.version = t.scoring_version' .
@@ -114,6 +115,27 @@ function complete_tournament()
 	if ($row = $query->next())
 	{
 		list($tournament_id, $tournament_flags, $scoring, $scoring_options, $normalizer, $stars) = $row;
+		
+		// find out minimum player games to count tournament for a player
+		$min_games = 0;
+		$sum_games = 0;
+		$player_count = 0;
+		$player_games = array();
+		$query1 = new DbQuery('SELECT p.user_id, count(g.id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ? AND (e.flags & ' . EVENT_FLAG_WITH_SELECTION . ') = 0 GROUP BY p.user_id', $tournament_id);
+		while ($row1 = $query1->next())
+		{
+			list($player_id, $games_played) = $row1;
+			$sum_games += $games_played;
+			++$player_count;
+		}
+		if ($player_count > 0)
+		{
+			// The tournament counts for a player only if they played more than a half of average games count. 
+			// We do it in a separate query because we calculate average using only main rounds - excluding finals and semi-finals.
+			$min_games = $sum_games / ($player_count * 2); 
+		}
+		
+		// Write down the tournament places
 		if (is_null($stars))
 		{
 			$stars = 1;
@@ -129,30 +151,37 @@ function complete_tournament()
 		$players = tournament_scores($tournament_id, $tournament_flags, null, SCORING_LOD_PER_GROUP, $scoring, $normalizer, $scoring_options);
 		$players_count = count($players);
 		
+		$real_count = 0;
 		if ($players_count > 0)
 		{
 			$coeff = log10($players_count) * $stars / $players_count;
 			for ($number = 0; $number < $players_count; ++$number)
 			{
 				$player = $players[$number];
-				$importance = ($players_count - $number) * $coeff;
-				if ($number == 0)
+				if ($player->games_count <= $min_games)
+				{
+					continue;
+				}
+				
+				$importance = ($players_count - $real_count) * $coeff;
+				if ($real_count == 0)
 				{
 					$importance *= 10;
 				}
-				else if ($number <= 3)
+				else if ($real_count <= 3)
 				{
 					$importance *= 5;
 				}
-				else if ($number <= 10)
+				else if ($real_count <= 10)
 				{
 					$importance *= 2;
 				}
-				Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance) VALUES (?, ?, ?, ?)', $tournament_id, $player->id, $number + 1, $importance);
+				++$real_count;
+				Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance) VALUES (?, ?, ?, ?)', $tournament_id, $player->id, $real_count, $importance);
 			}
 		}
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ' WHERE id = ?', $tournament_id);
-		writeLog('Wrote ' . $players_count . ' players to tournament ' . $tournament_id . '. Tournament is finished.');
+		writeLog('Wrote ' . $real_count . ' (out of ' . $players_count . ') players to tournament ' . $tournament_id . '. Minimum games requered for a player is ' . $min_games . ' Tournament is finished.');
 		$result = true;
 	}
 	Db::commit();
@@ -186,10 +215,10 @@ try
 		++$count;
 	}
 	writeLog('It took ' . $spent_time . ' sec.');
-	if ($_web && $count > 0)
-	{
-		echo '<script>window.location.reload();</script>';
-	}
+	// if ($_web && $count > 0)
+	// {
+		// echo '<script>window.location.reload();</script>';
+	// }
 }
 catch (Exception $e)
 {

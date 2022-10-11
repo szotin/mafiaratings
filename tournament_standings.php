@@ -216,6 +216,14 @@ class Page extends TournamentPageBase
 		}
 		else
 		{
+			$credited_players = array();
+			$query = new DbQuery('SELECT user_id FROM tournament_places WHERE tournament_id = ?', $this->id);
+			while ($row = $query->next())
+			{
+				list($user_id) = $row;
+				$credited_players[$user_id] = true;
+			}
+			
 			$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->normalizer, $this->scoring_options);
 	//		print_json($players);
 			$players_count = count($players);
@@ -257,20 +265,40 @@ class Page extends TournamentPageBase
 			{
 				$players_count = $page_start + PAGE_SIZE;
 			}
+			$place = 0;
 			for ($number = $page_start; $number < $players_count; ++$number)
 			{
 				$player = $players[$number];
+				$credited = isset($credited_players[$player->id]);
 				if ($player->id == $this->user_id)
 				{
 					echo '<tr class="darker">';
-					$highlight = 'darkest';
+					if ($credited)
+					{
+						$highlight = 'darkest';
+					}
+					else
+					{
+						$highlight = 'darker';
+					}
 				}
-				else
+				else if ($credited)
 				{
 					echo '<tr>';
 					$highlight = 'dark';
 				}
-				echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
+				else
+				{
+					echo '<tr class="dark">';
+					$highlight = 'dark';
+				}
+				echo '<td align="center" class="' . $highlight . '">';
+				if ($credited)
+				{
+					echo ++$place;
+				}
+				echo '</td>';
+				
 				echo '<td width="50"><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">';
 				$tournament_user_pic->
 					set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
