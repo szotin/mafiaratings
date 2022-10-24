@@ -261,7 +261,7 @@ try
 							echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 							echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 							echo '</tr>';
-							echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
+							echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
 						}
 						
 						echo '<tr>';

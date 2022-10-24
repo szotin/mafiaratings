@@ -138,7 +138,7 @@ class Page extends ClubPageBase
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
 				' JOIN leagues l ON l.id = s.league_id' .
-				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id');
+				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id DESC');
 			$current_tournament = 0;
 			while ($row = $query->next())
 			{
@@ -195,12 +195,12 @@ class Page extends ClubPageBase
 			echo '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</a></td>';
 			foreach ($tournament->series as $series)
 			{
-				echo '<td width="64" align="center" valign="center">';
-				echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
-				echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
+				echo '<td width="50" align="center" valign="center">';
+				echo '<a href="series_standings.php?bck=1&id=' . $series->id . '">';
 				$series_pic->set($series->id, $series->name, $series->flags)->set($series->league_id, $series->league_name, $series->league_flags);
-				$series_pic->show(ICONS_DIR, false, 32);
-				echo '</a></td>';
+				$series_pic->show(ICONS_DIR, false, 40);
+				echo '</a><br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($series->stars) . '</font>';
+				echo '</td>';
 			}
 			echo '</tr></table>';
 			echo '</td>';

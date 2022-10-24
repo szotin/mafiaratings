@@ -52,7 +52,7 @@ class Page extends GeneralPageBase
 		
 		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
 		echo '<a href="' . $url . '?bck=1&id=' . $series_id . '" title="' . get_label('View series details.') . '">';
-		$this->series_pic->set($series_id, $series_name, $series_flags);
+		$this->series_pic->set($series_id, $series_name, $series_flags)->set($series_league_id, $series_league_name, $series_league_flags);
 		$this->series_pic->show(ICONS_DIR, false, $future ? 56 : 70);
 		echo '</a>';
 		if ($future)
@@ -61,10 +61,7 @@ class Page extends GeneralPageBase
 		}
 		echo '</td></tr>';
 		
-		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="2" align="center">' . $series_league_name . '</td><td width="34">';
-		$this->league_pic->set($series_league_id, $series_league_name, $series_league_flags);
-		$this->league_pic->show(ICONS_DIR, false, 30);
-		echo '</td></tr>';
+		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="2" align="center">' . $series_league_name . '</td></tr>';
 		
 		echo '</table>';
 	}
@@ -461,7 +458,7 @@ class Page extends GeneralPageBase
 		
 		$this->league_pic = new Picture(LEAGUE_PICTURE);
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$this->series_pic = new Picture(SERIES_PICTURE);
+		$this->series_pic = new Picture(SERIES_PICTURE, $this->league_pic);
 		$this->event_pic = new Picture(EVENT_PICTURE);
 		
 		echo '<p><table class="transp" width="100%">';

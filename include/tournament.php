@@ -159,6 +159,7 @@ class TournamentPageBase extends PageBase
 			(
 				new MenuItem('tournament_users.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name)),
 				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
+				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
 				new MenuItem('javascript:mr.tournamentObs(' . $this->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
@@ -222,22 +223,22 @@ class TournamentPageBase extends PageBase
 			$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
 			foreach ($this->series as $s)
 			{
-				echo '<td align="center">';
+				echo '<td align="center" width="64">';
 				$series_pic->set($s->series_id, $s->series_name, $s->series_flags)->set($s->league_id, $s->league_name, $s->league_flags);
-				$series_pic->show(ICONS_DIR, true, 48);
-				echo '<br>';
-				for ($i = 0; $i < floor($s->stars); ++$i)
-				{
-					echo '<img src="images/star.png" width="12">';
-				}
-				for (; $i < $s->stars; ++$i)
-				{
-					echo '<img src="images/star-half.png" width="12">';
-				}
-				for (; $i < 5; ++$i)
-				{
-					echo '<img src="images/star-empty.png" width="12">';
-				}
+				$series_pic->show(ICONS_DIR, true, 42);
+				echo '<br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($s->stars) . '</font>';
+				// for ($i = 0; $i < floor($s->stars); ++$i)
+				// {
+					// echo '<img src="images/star.png" width="12">';
+				// }
+				// for (; $i < $s->stars; ++$i)
+				// {
+					// echo '<img src="images/star-half.png" width="12">';
+				// }
+				// for (; $i < 5; ++$i)
+				// {
+					// echo '<img src="images/star-empty.png" width="12">';
+				// }
 				echo '</td>';
 			}
 		}
@@ -264,5 +265,5 @@ function tournament_stars_str($stars, $max_stars = 5)
 //	}
 	return $stars_str;
 }
-	
+
 ?>

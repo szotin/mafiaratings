@@ -98,7 +98,7 @@ class Page extends GeneralPageBase
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 		}
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
-			
+		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
 		echo '<td colspan="2" align="center">' . get_label('Sеriеs') . '</td>';

@@ -32,11 +32,23 @@ class ApiPage extends ControlApiPageBase
 			}
 			else if (isset($_REQUEST['tournament']))
 			{
-				$query->add(' AND u.id IN (SELECT DISTINCT p.user_id FROM players p JOIN games g ON g.id = p.game_id WHERE g.tournament_id = ?)', $_REQUEST['tournament']);
+				list($tournament_flags) = Db::record(get_label('tournament'), 'SELECT flags FROM tournaments WHERE id = ?', $_REQUEST['tournament']);
+				if ($tournament_flags & TOURNAMENT_FLAG_MANUAL_SCORE)
+				{
+					$query->add(' AND u.id IN (SELECT user_id FROM tournament_places WHERE tournament_id = ?)', $_REQUEST['tournament']);
+				}
+				else
+				{
+					$query->add(' AND u.id IN (SELECT DISTINCT p.user_id FROM players p JOIN games g ON g.id = p.game_id WHERE g.tournament_id = ?)', $_REQUEST['tournament']);
+				}
 			}
 			else if (isset($_REQUEST['club']))
 			{
 				$query->add(' AND u.id IN (SELECT user_id FROM club_users WHERE club_id = ?)', $_REQUEST['club']);
+			}
+			else if (isset($_REQUEST['series']))
+			{
+				$query->add(' AND u.id IN (SELECT p1.user_id FROM tournament_places p1 JOIN series_tournaments s1 ON s1.tournament_id = p1.tournament_id AND s1.series_id = ?)', $_REQUEST['series']);
 			}
 			$query->add(' ORDER BY rating DESC');
 		}

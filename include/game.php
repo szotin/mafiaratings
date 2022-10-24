@@ -3263,6 +3263,10 @@ class Game
 		{
 			Game::rebuild_ratings($data->id, $data->endTime);
 		}
+		
+		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $data->eventId);
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
+		
 		db_log(LOG_OBJECT_GAME, 'updated', NULL, $data->id, $data->clubId);
 		return $rebuild_ratings;
 	}

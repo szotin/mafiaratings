@@ -149,6 +149,13 @@ try
 	}
 	echo '> ' . get_label('scoring rules can be custom in tournament rounds.') . '<br>';
 	
+	echo '<input type="checkbox" id="form-manual_scoring"';
+	if ($flags & TOURNAMENT_FLAG_MANUAL_SCORE)
+	{
+		echo ' checked';
+	}
+	echo  '> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
+	
 	echo '</td></tr>';
 	echo '</table>';
 	
@@ -307,6 +314,7 @@ try
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-use_rounds_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_USE_ROUNDS_SCORING; ?>;
 		if ($("#form-team").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_TEAM; ?>;
+		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		
 		var series = [];
 		for (const i in seriesList) 

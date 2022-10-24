@@ -487,18 +487,18 @@ class ApiPage extends OpsApiPageBase
 		// update series records
 		$series = json_decode(get_optional_param('series', NULL));
 		$series_changed = false;
-		$old_series = array();
-		$query = new DbQuery('SELECT s.id, st.stars, s.finals_id FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?', $tournament_id);
-		while ($row = $query->next())
+		if (!is_null($series))
 		{
-			$s = new stdClass();
-			list($s->id, $s->stars, $finals_id) = $row;
-			$s->finals = ($finals_id == $tournament_id);
-			$old_series[$s->id] = $s;
-		}
+			$old_series = array();
+			$query = new DbQuery('SELECT s.id, st.stars, s.finals_id FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?', $tournament_id);
+			while ($row = $query->next())
+			{
+				$s = new stdClass();
+				list($s->id, $s->stars, $finals_id) = $row;
+				$s->finals = ($finals_id == $tournament_id);
+				$old_series[$s->id] = $s;
+			}
 			
-		if ($series != NULL)
-		{
 			foreach ($series as $s)
 			{
 				if (isset($old_series[$s->id]))
@@ -538,14 +538,26 @@ class ApiPage extends OpsApiPageBase
 					$series_changed = true;
 				}
 			}
+			
+			foreach ($old_series as $series_id => $s)
+			{
+				Db::exec(
+					get_label('sеriеs'), 
+					'DELETE FROM series_tournaments WHERE tournament_id = ? AND series_id = ?', $tournament_id, $series_id);
+				send_series_notification('tournament_series_remove', $tournament_id, $name, $club_id, $club->name, $s);
+			}
 		}
 			
-		foreach ($old_series as $series_id => $s)
+		// reset TOURNAMENT_FLAG_FINISHED flag if needed
+		if (
+			(($old_flags & TOURNAMENT_FLAG_MANUAL_SCORE) != 0 && (($flags & TOURNAMENT_FLAG_MANUAL_SCORE) == 0)) ||
+			$old_scoring_id != $scoring_id ||
+			$old_scoring_options != $scoring_options ||
+			$old_scoring_version != $scoring_version ||
+			$old_normalizer_id != $normalizer_id ||
+			$old_normalizer_version != $normalizer_version)
 		{
-			Db::exec(
-				get_label('sеriеs'), 
-				'DELETE FROM series_tournaments WHERE tournament_id = ? AND series_id = ?', $tournament_id, $series_id);
-			send_series_notification('tournament_series_remove', $tournament_id, $name, $club_id, $club->name, $s);
+			$flags |= TOURNAMENT_FLAG_FINISHED;
 		}
 		
 		// update tournament
@@ -661,7 +673,7 @@ class ApiPage extends OpsApiPageBase
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		
-		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags | ' . TOURNAMENT_FLAG_CANCELED . ') WHERE id = ?', $tournament_id);
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = ((flags | ' . TOURNAMENT_FLAG_CANCELED . ') & ~' . TOURNAMENT_FLAG_FINISHED .') WHERE id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_TOURNAMENT, 'canceled', NULL, $tournament_id, $club_id);
@@ -687,7 +699,7 @@ class ApiPage extends OpsApiPageBase
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id);
 		
-		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_CANCELED . ') WHERE id = ?', $tournament_id);
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . (TOURNAMENT_FLAG_CANCELED | TOURNAMENT_FLAG_FINISHED) . ') WHERE id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_TOURNAMENT, 'restored', NULL, $tournament_id, $club_id);
@@ -790,11 +802,11 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($tournament_id > 0)
 		{
-			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ' . (~TOURNAMENT_FLAG_FINISHED) . ' WHERE id = ?', $tournament_id);
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
 		}
 		else
 		{
-			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ' . (~TOURNAMENT_FLAG_FINISHED));
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED);
 		}
 		db_log(LOG_OBJECT_TOURNAMENT, 'rebuild_places', NULL, $tournament_id);
 		Db::commit();
@@ -807,6 +819,104 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
+	//-------------------------------------------------------------------------------------------------------
+	// add_score
+	//-------------------------------------------------------------------------------------------------------
+	function add_score_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$user_id = (int)get_required_param('user_id');
+		$main_points = (double)get_optional_param('main_points', 0);
+		$bonus_points = get_optional_param('bonus_points', NULL);
+		$shot_points = get_optional_param('shot_points', NULL);
+		$games_count = get_optional_param('games_count', NULL);
+		if (!is_null($games_count) && $games_count <= 0)
+		{
+			$games_count = NULL;
+		}
+		
+		$points = 
+			$main_points + 
+			(is_null($bonus_points) ? 0 : $bonus_points) +
+			(is_null($shot_points) ? 0 : $shot_points);
+		
+		list($club_id, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, flags FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		
+		if (($flags & TOURNAMENT_FLAG_MANUAL_SCORE) == 0)
+		{
+			throw new Exc(get_label('Scoring for tournament [0] is calculated automatically. Manual editing of the scores is not allowed. Set manual-editing flag first.'));
+		}
+		
+		Db::begin();
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+		list($place) = Db::record(get_label('score'), 'SELECT count(*) FROM tournament_places WHERE tournament_id = ? AND (main_points + bonus_points + shot_points > ? OR (main_points + bonus_points + shot_points = ? AND user_id < ?))', $tournament_id, $points, $points, $user_id);
+		++$place;
+		Db::exec(get_label('score'), 'UPDATE tournament_places SET place = place + 1 WHERE tournament_id = ? AND place >= ?', $tournament_id, $place);
+		Db::exec(get_label('score'), 'INSERT INTO tournament_places (tournament_id, user_id, place, main_points, bonus_points, shot_points, games_count) VALUES (?, ?, ?, ?, ?, ?, ?)', $tournament_id, $user_id, $place, $main_points, $bonus_points, $shot_points, $games_count);
+
+		$log_details = new stdClass();
+		$log_details->tournament_id = $tournament_id;
+		$log_details->user_id = $user_id;
+		$log_details->main_points = $main_points;
+		$log_details->bonus_points = $bonus_points;
+		$log_details->shot_points = $shot_points;
+		$log_details->games_count = $games_count;
+		db_log(LOG_OBJECT_USER, 'added score', $log_details, $user_id);
+		Db::commit();
+	}
+	
+	function add_score_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Manually add player score for a tournament. Tournament must have no games. This is only for the tournaments where game inforation is missing.');
+		
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('user_id', 'User id of a player who played on this tournament.');
+		$help->request_param('main_points', 'Main poinst for the player.', '0.');
+		$help->request_param('bonus_points', 'Bonus (extra) poinst for the player.', 'null, which is unknown.');
+		$help->request_param('shot_points', 'Poinst for being shot first night for the player.', 'null, which is unknown');
+		$help->request_param('games_count', 'Number of games played.', 'null, which is unknown');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// remove_score
+	//-------------------------------------------------------------------------------------------------------
+	function remove_score_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$user_id = (int)get_required_param('user_id');
+		
+		list($club_id, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, flags FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		
+		if (($flags & TOURNAMENT_FLAG_MANUAL_SCORE) == 0)
+		{
+			throw new Exc(get_label('Scoring for tournament [0] is calculated automatically. Manual editing of the scores is not allowed. Set manual-editing flag first.'));
+		}
+		
+		Db::begin();
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+		list($place) = Db::record(get_label('score'), 'SELECT place FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
+		Db::exec(get_label('score'), 'UPDATE tournament_places SET place = place - 1 WHERE tournament_id = ? AND place > ?', $tournament_id, $place);
+		
+		$log_details = new stdClass();
+		$log_details->tournament_id = $tournament_id;
+		$log_details->user_id = $user_id;
+		db_log(LOG_OBJECT_USER, 'removed score', $log_details, $user_id);
+		Db::commit();
+	}
+	
+	function remove_score_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Manually remove player score for a tournament. Tournament must have no games. This is only for the tournaments where game inforation is missing.');
+		
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('user_id', 'User id of a player who played on this tournament.');
+		return $help;
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------

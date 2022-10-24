@@ -227,13 +227,16 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 //  6 - 0x0020 -     32 - single games from non-tournament events can be assigned to the tournament.
 //  7 - 0x0040 -     64 - rounds have different scoring options. If not set, all rounds are the same, just the weight is different. Example: points for being killed first night can be off in finals.
 //  8 - 0x0080 -    128 - tournament is finished - all scoring is complete
+//  9 - 0x0100 -    256 - teams tournament
+// 10 - 0x0200 -    512 - we have no games information about this tournament - scores are entered manually
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
 define('TOURNAMENT_FLAG_USE_ROUNDS_SCORING', 0x40);
 define('TOURNAMENT_FLAG_FINISHED', 0x80);
 define('TOURNAMENT_FLAG_TEAM', 0x100);
-define('TOURNAMENT_EDITABLE_MASK', 0x170); // TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_USE_ROUNDS_SCORING | TOURNAMENT_FLAG_TEAM
+define('TOURNAMENT_FLAG_MANUAL_SCORE', 0x200);
+define('TOURNAMENT_EDITABLE_MASK', 0x370); // TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_USE_ROUNDS_SCORING | TOURNAMENT_FLAG_TEAM | TOURNAMENT_FLAG_MANUAL_SCORE
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);

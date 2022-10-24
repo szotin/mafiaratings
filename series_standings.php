@@ -8,92 +8,37 @@ require_once 'include/scoring.php';
 
 define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
 
-/* function score_title($points, $raw_points, $normalization)
+function compare_players($player1, $player2)
 {
-	if ($normalization != 1 && $points != 0)
+	if ($player1->points < $player2->points)
 	{
-		return ' title="' . format_score($raw_points) . ' * ' . format_coeff($normalization) . ' = ' . format_score($points) . '"';
+		return 1;
 	}
-	return '';
-}*/
+	if ($player1->points > $player2->points)
+	{
+		return -1;
+	}
+	if ($player1->tournaments > $player2->tournaments)
+	{
+		return 1;
+	}
+	if ($player1->tournaments < $player2->tournaments)
+	{
+		return -1;
+	}
+	return $player1->id - $player2->id;
+}
 
 class Page extends SeriesPageBase
 {
-/*	private $scoring;
-	
-	private $user_id;
-	private $user_name;
-	private $user_club_id;
-	private $user_city_id;
-	private $user_country_id;*/
-	
 	protected function prepare()
 	{
-//		global $_page;
+		global $_page;
 		
 		parent::prepare();
 		
-/*		$this->tournament_player_params = '&id=' . $this->id;
-		if (isset($_REQUEST['sid']))
-		{
-			$this->scoring_id = (int)$_REQUEST['sid'];
-			$this->tournament_player_params .= '&sid=' . $this->scoring_id;
-			if (isset($_REQUEST['sver']))
-			{
-				$this->scoring_version = (int)$_REQUEST['sver'];
-				$this->tournament_player_params .= '&sver=' . $this->scoring_version;
-				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
-			}
-			else
-			{
-				list($this->scoring, $this->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
-			}
-		}
-		else
-		{
-			list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
-		}
-		$this->scoring = json_decode($this->scoring);
-		
-		$this->normalizer = '{}';
-		if (isset($_REQUEST['nid']))
-		{
-			$this->normalizer_id = (int)$_REQUEST['nid'];
-			$this->tournament_player_params .= '&nid=' . $this->normalizer_id;
-			if ($this->normalizer_id > 0)
-			{
-				if (isset($_REQUEST['nver']))
-				{
-					$this->normalizer_version = (int)$_REQUEST['nver'];
-					$this->tournament_player_params .= '&nver=' . $this->normalizer_version;
-					list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
-				}
-				else
-				{
-					list($this->normalizer, $this->normalizer_version) = Db::record(get_label('normalizer'), 'SELECT normalizer, version FROM normalizer_versions WHERE normalizer_id = ? ORDER BY version DESC LIMIT 1', $this->normalizer_id);
-				}
-			}
-		}
-		else if (!is_null($this->normalizer_id) && $this->normalizer_id > 0)
-		{
-			list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
-		}
-		$this->normalizer = json_decode($this->normalizer);
-		$this->has_normalizer = isset($this->normalizer->policies) && count($this->normalizer->policies) > 0;
-		
-		$this->scoring_options = json_decode($this->scoring_options);
-		if (isset($_REQUEST['sops']))
-		{
-			$this->tournament_player_params .= '&sops=' . rawurlencode($_REQUEST['sops']);
-			$ops = json_decode($_REQUEST['sops']);
-			foreach($ops as $key => $value) 
-			{
-				$this->scoring_options->$key = $value;
-			}
-		}
-		$this->tournament_player_params .= '&bck=1';
-		
 		$this->user_id = 0;
+		$this->user_name = '';
 		if ($_page < 0)
 		{
 			$this->user_id = -$_page;
@@ -108,237 +53,143 @@ class Page extends SeriesPageBase
 			{
 				$this->errorMessage(get_label('Player not found.'));
 			}
-		}*/
+		}
 	}
 	
 	protected function show_body()
 	{
-		echo '<h1>' . get_label('Under construction') . '</h1>';
-		echo '<img src="images/repairs.png">';
-/*		global $_profile, $_page;
+		global $_page;
 		
-		if ($this->flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING)
+		if (isset($_REQUEST['gaining_id']))
 		{
-			$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS;
+			$gaining_id = (int)$_REQUEST['gaining_id'];
+			if (isset($_REQUEST['gaining_version']))
+			{
+				list($gaining) = Db::record(get_label('gaining system'), 'SELECT gaining FROM gaining_versions WHERE gaining_id = ? AND version = ?', $gaining_id, (int)$_REQUEST['gaining_version']);
+			}
+			else
+			{
+				list($gaining) = Db::record(get_label('gaining system'), 'SELECT v.gaining FROM gainings g JOIN gaining_versions v ON v.gaining_id = g.id AND v.version = g.version WHERE g.id = ?', $gaining_id);
+			}
 		}
 		else
 		{
-			$scoring_select_flags = SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION;
+			list($gaining) = Db::record(get_label('gaining system'), 'SELECT v.gaining FROM series s JOIN gaining_versions v ON v.gaining_id = s.gaining_id AND v.version = s.gaining_version WHERE s.id = ?', $this->id);
+		}
+		$gaining = json_decode($gaining);
+		
+		$tournaments = array();
+		$query = new DbQuery('SELECT s.tournament_id, s.stars, count(t.user_id) FROM series_tournaments s JOIN tournament_places t ON t.tournament_id = s.tournament_id WHERE s.series_id = ? GROUP BY s.tournament_id', $this->id);
+		while ($row = $query->next())
+		{
+			list($tournament_id, $stars, $players) = $row;
+			$tournaments[$tournament_id] = get_gaining_points($gaining, $stars, $players);
 		}
 		
-		echo '<table class="transp" width="100%">';
-		echo '<tr><td>';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
+		$players = array();
+		$query = new DbQuery('SELECT t.tournament_id, u.id, u.name, u.flags, p.place, c.id, c.name, c.flags FROM tournament_places p JOIN users u ON u.id = p.user_id JOIN series_tournaments t ON t.tournament_id = p.tournament_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE t.series_id = ?', $this->id);
+		while ($row = $query->next())
+		{
+			list($tournament_id, $player_id, $player_name, $player_flags, $place, $club_id, $club_name, $club_flags) = $row;
+			if (!isset($players[$player_id]))
+			{
+				$player = new stdClass();
+				$player->id = (int)$player_id;
+				$player->name = $player_name;
+				$player->flags = (int)$player_flags;
+				if (!is_null($club_id))
+				{
+					$player->club_id = (int)$club_id;
+					$player->club_name = $club_name;
+					$player->club_flags = (int)$club_flags;
+				}
+				$player->tournaments = 0;
+				$player->points = 0;
+				$players[$player_id] = $player;
+			}
+			else
+			{
+				$player = $players[$player_id];
+			}
+			$player->points += $tournaments[$tournament_id][$place-1];
+			++$player->tournaments;
+		}
+		usort($players, "compare_players");
+		if ($this->user_id > 0)
+		{
+			$_page = get_user_page($players, $this->user_id, PAGE_SIZE);
+			if ($_page < 0)
+			{
+				$_page = 0;
+				$this->no_user_error();
+			}
+		}
+		
+		$players_count = count($players);
+		echo '<p><table class="transp" width="100%"><tr><td>';
+		show_pages_navigation(PAGE_SIZE, $players_count);
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, 'tournament=' . $this->id, get_label('Go to the page where a specific player is located.'));
-		echo '</td></tr></table>';
+		show_user_input('page', $this->user_name, 'series=' . $this->id, get_label('Go to the page where a specific player is located.'));
+		echo '</td></tr></table></p>';
 		
-		$is_teams = ($this->flags & TOURNAMENT_FLAG_TEAM) != 0;
-		$team_view = $is_teams && (!isset($_REQUEST['teams']) || $_REQUEST['teams'] == 1);
-		if ($is_teams)
+		echo '<table class="bordered light" width="100%">';
+		echo '<tr class="th darker" align="center"><td width="40"></td>';
+		echo '<td colspan="3" align="left">'.get_label('Player').'</td>';
+		echo '<td width="80">'.get_label('Points').'</td>';
+		echo '<td width="80">'.get_label('Tournaments played').'</td>';
+		echo '<td width="80">'.get_label('Points per tournament').'</td>';
+		echo '</tr>';
+		
+		$place = $page_start = $_page * PAGE_SIZE;
+		if ($players_count > $place + PAGE_SIZE)
 		{
-			echo '<div class="tab">';
-			echo '<button ' . (!$team_view ? '' : 'class="active" ') . 'onclick="goTo({teams:1})">' . get_label('Team standings') . '</button>';
-			echo '<button ' . ($team_view ? '' : 'class="active" ') . 'onclick="goTo({teams:0})">' . get_label('Player standings') . '</button>';
-			echo '</div>';
-			echo '<div class="tabcontent">';
+			$players_count = $place + PAGE_SIZE;
 		}
-		
-		if ($team_view)
+		$player_pic = new Picture(USER_PICTURE);
+		$club_pic = new Picture(CLUB_PICTURE);
+		$ids = array_keys($players);
+		for ($number = $place; $number < $players_count; ++$number)
 		{
-			$teams = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_TEAMS, $this->scoring, $this->normalizer, $this->scoring_options);
-	//		print_json($teams);
-			$teams_count = count($teams);
+			$player_id = $ids[$number];
+			$player = $players[$player_id];
+			if ($player->id == $this->user_id)
+			{
+				echo '<tr align="center" class="darker">';
+				$highlight = 'darker';
+			}
+			else
+			{
+				echo '<tr align="center">';
+				$highlight = 'dark';
+			}
+			echo '<td class="' . $highlight . '">' . ++$place . '</td>';
 			
-			show_pages_navigation(PAGE_SIZE, $teams_count);
+			echo '<td width="50"><a href="series_player_tournaments.php?id=' . $this->id . '&user_id=' . $player->id . '&bck=1">';
+			$player_pic->set($player->id, $player->name, $player->flags);
+			$player_pic->show(ICONS_DIR, false, 50);
+			echo '</a></td><td align="left"><a href="series_player_tournaments.php?id=' . $this->id . '&user_id=' . $player->id . '&bck=1">' . $player->name . '</a></td>';
+			echo '<td width="50" align="center">';
+			if (isset($player->club_id))
+			{
+				$club_pic->set($player->club_id, $player->club_name, $player->club_flags);
+				$club_pic->show(ICONS_DIR, true, 40);
+			}
+			echo '</td>';
 			
-			$tournament_user_pic =
-				new Picture(USER_TOURNAMENT_PICTURE,
-				new Picture(USER_CLUB_PICTURE,
-				$this->user_pic));
-			
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
-			echo '<td colspan="2" rowspan="2">'.get_label('Team').'</td>';
-			echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Rounds played').'</td>';
+			echo '<td class="' . $highlight . '">' . format_score($player->points) . '</td>';
+			echo '<td>' . $player->tournaments . '</td>';
+			echo '<td>' . format_score($player->points / $player->tournaments) . '</td>';
+				
 			echo '</tr>';
-			echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
-			
-			$page_start = $_page * PAGE_SIZE;
-			if ($teams_count > $page_start + PAGE_SIZE)
-			{
-				$teams_count = $page_start + PAGE_SIZE;
-			}
-			for ($number = $page_start; $number < $teams_count; ++$number)
-			{
-				$team = $teams[$number];
-				echo '<tr>';
-				echo '<td align="center" class="dark">' . ($number + 1) . '</td>';
-				echo '<td width="' . (count($team->players) * 50) . '">';
-				foreach ($team->players as $player)
-				{
-					echo '<a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">';
-					$tournament_user_pic->
-						set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
-						set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
-						set($player->id, $player->name, $player->flags);
-					$tournament_user_pic->show(ICONS_DIR, false, 50);
-					echo '</a>';
-				}
-				echo '</td><td><b>' . $team->name . '</b></td>';
-				echo '<td align="center" class="dark"' . score_title($team->points, $team->raw_points, 1) . '>' . format_score($team->points) . '</td>';
-				echo '<td align="center"' . score_title($team->main_points, $team->raw_main_points, 1) . '>' . format_score($team->main_points) . '</td>';
-				echo '<td align="center"' . score_title($team->legacy_points, $team->raw_legacy_points, 1) . '>' . format_score($team->legacy_points) . '</td>';
-				echo '<td align="center"' . score_title($team->extra_points, $team->raw_extra_points, 1) . '>' . format_score($team->extra_points) . '</td>';
-				echo '<td align="center"' . score_title($team->penalty_points, $team->raw_penalty_points, 1) . '>' . format_score($team->penalty_points) . '</td>';
-				echo '<td align="center"' . score_title($team->night1_points, $team->raw_night1_points, 1) . '>' . format_score($team->night1_points) . '</td>';
-				echo '<td align="center">' . $team->games_count . '</td>';
-				echo '<td align="center">' . $team->wins . '</td>';
-				if ($team->games_count != 0)
-				{
-					echo '<td align="center">' . number_format(($team->wins * 100.0) / $team->games_count, 1) . '%</td>';
-					echo '<td align="center">';
-					echo format_score($team->raw_points / $team->games_count);
-					echo '</td>';
-				}
-				else
-				{
-					echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
-				}
-				echo '<td align="center">' . $team->events_count . '</td>';
-				echo '</tr>';
-			}
-			echo '</table>';
 		}
-		else
-		{
-			$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->normalizer, $this->scoring_options);
-	//		print_json($players);
-			$players_count = count($players);
-			if ($this->user_id > 0)
-			{
-				$_page = get_user_page($players, $this->user_id, PAGE_SIZE);
-				if ($_page < 0)
-				{
-					$_page = 0;
-					$this->no_user_error();
-				}
-			}
-			
-			show_pages_navigation(PAGE_SIZE, $players_count);
-			
-			$tournament_user_pic =
-				new Picture(USER_TOURNAMENT_PICTURE,
-				new Picture(USER_CLUB_PICTURE,
-				$this->user_pic));
-			
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
-			echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
-			echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
-			echo '<td width="36" align="center" rowspan="2">'.get_label('Rounds played').'</td>';
-			if ($this->has_normalizer)
-			{
-				echo '<td width="36" align="center" rowspan="2">'.get_label('Normalization rate').'</td>';
-			}
-			echo '</tr>';
-			echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Extra') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
-			
-			$page_start = $_page * PAGE_SIZE;
-			if ($players_count > $page_start + PAGE_SIZE)
-			{
-				$players_count = $page_start + PAGE_SIZE;
-			}
-			for ($number = $page_start; $number < $players_count; ++$number)
-			{
-				$player = $players[$number];
-				if ($player->id == $this->user_id)
-				{
-					echo '<tr class="darker">';
-					$highlight = 'darkest';
-				}
-				else
-				{
-					echo '<tr>';
-					$highlight = 'dark';
-				}
-				echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
-				echo '<td width="50"><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">';
-				$tournament_user_pic->
-					set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
-					set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
-					set($player->id, $player->name, $player->flags);
-				$tournament_user_pic->show(ICONS_DIR, false, 50);
-				echo '</a></td><td><a href="tournament_player_games.php?user_id=' . $player->id . $this->tournament_player_params . '">' . $player->name . '</a></td>';
-				echo '<td width="50" align="center">';
-				if (!is_null($player->club_id) && $player->club_id > 0)
-				{
-					$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
-					$this->club_pic->show(ICONS_DIR, true, 40);
-				}
-				echo '</td>';
-				echo '<td align="center" class="' . $highlight . '"' . score_title($player->points, $player->raw_points, $player->normalization) . '>' . format_score($player->points) . '</td>';
-				echo '<td align="center"' . score_title($player->main_points, $player->raw_main_points, $player->normalization) . '>' . format_score($player->main_points) . '</td>';
-				echo '<td align="center"' . score_title($player->legacy_points, $player->raw_legacy_points, $player->normalization) . '>' . format_score($player->legacy_points) . '</td>';
-				echo '<td align="center"' . score_title($player->extra_points, $player->raw_extra_points, $player->normalization) . '>' . format_score($player->extra_points) . '</td>';
-				echo '<td align="center"' . score_title($player->penalty_points, $player->raw_penalty_points, $player->normalization) . '>' . format_score($player->penalty_points) . '</td>';
-				echo '<td align="center"' . score_title($player->night1_points, $player->raw_night1_points, $player->normalization) . '>' . format_score($player->night1_points) . '</td>';
-				echo '<td align="center">' . $player->games_count . '</td>';
-				echo '<td align="center">' . $player->wins . '</td>';
-				if ($player->games_count != 0)
-				{
-					echo '<td align="center">' . number_format(($player->wins * 100.0) / $player->games_count, 1) . '%</td>';
-					echo '<td align="center">';
-					echo format_score($player->raw_points / $player->games_count);
-					echo '</td>';
-				}
-				else
-				{
-					echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
-				}
-				echo '<td align="center">' . $player->events_count . '</td>';
-				if ($this->has_normalizer)
-				{
-					echo '<td align="center">' . format_coeff($player->normalization) . '</td>';
-				}
-				echo '</tr>';
-			}
-			echo '</table>';
-		}
-		
-		if ($is_teams)
-		{
-			echo '</div>';
-		}
-		echo '<table width="100%"><tr valign="top"><td>';
-		echo '</td><td id="comments"></td></tr></table>';*/
-?>
-		<script type="text/javascript">
-			// mr.showComments("series", <?php echo $this->id; ?>, 5);
-			
-			//function submitScoring(s)
-			//{
-			//	goTo({ sid: s.sId, sver: s.sVer, nid: s.nId, nver: s.nVer, sops: s.ops, page: 0 });
-			//}
-		</script>
-<?php
+		echo '</table>';
 	}
 	
-	
-/*	private function no_user_error()
+	private function no_user_error()
 	{
 		$this->errorMessage(get_label('[0] did not play in [1].', $this->user_name, $this->name));
-	}*/
+	}
 }
 
 $page = new Page();

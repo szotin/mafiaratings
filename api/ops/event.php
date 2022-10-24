@@ -421,6 +421,14 @@ class ApiPage extends OpsApiPageBase
 			$logo_uploaded = true;
 		}
 		
+		// reset EVENT_FLAG_FINISHED flag if needed
+		if (
+			$old_scoring_id != $scoring_id ||
+			$old_scoring_options != $scoring_options ||
+			$old_scoring_version != $scoring_version)
+		{
+			$flags |= EVENT_FLAG_FINISHED;
+		}
 		
 		Db::exec(
 			get_label('event'), 
@@ -731,7 +739,7 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
 		
-		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags | ' . EVENT_FLAG_CANCELED . ') WHERE id = ?', $event_id);
+		Db::exec(get_label('event'), 'UPDATE events SET flags = ((flags | ' . EVENT_FLAG_CANCELED . ') & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $event_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_EVENT, 'canceled', NULL, $event_id, $club_id);
@@ -768,7 +776,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $event->club_id, $event->id, $event->tournament_id);
 		
 		Db::begin();
-		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_CANCELED . ') WHERE id = ?', $event_id);
+		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . (EVENT_FLAG_CANCELED | EVENT_FLAG_FINISHED) . ') WHERE id = ?', $event_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
@@ -951,6 +959,10 @@ class ApiPage extends OpsApiPageBase
 			$log_details->details = $details;
 		}
 		db_log(LOG_OBJECT_EXTRA_POINTS, 'created', $log_details, $points_id, $club_id);
+		
+		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $event_id);
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
+		
 		Db::commit();
 		
 		$this->response['points_id'] = $points_id;
@@ -1010,6 +1022,9 @@ class ApiPage extends OpsApiPageBase
 				$log_details->points = $points;
 			}
 			db_log(LOG_OBJECT_EXTRA_POINTS, 'changed', $log_details, $points_id, $club_id);
+			
+			Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $event_id);
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
 		}
 		Db::commit();
 	}
@@ -1042,6 +1057,9 @@ class ApiPage extends OpsApiPageBase
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_EXTRA_POINTS, 'deleted', NULL, $points_id, $club_id);
+			
+			Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $event_id);
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
 		}
 		Db::commit();
 	}

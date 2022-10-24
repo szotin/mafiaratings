@@ -891,6 +891,8 @@ class ApiPage extends OpsApiPageBase
 						$json_str, $gs->end_time, $gs->club_id, $gs->event_id, $tournament_id, $moder_id,
 						$gs->user_id, $gs->lang, $gs->start_time, $gs->end_time, $result_code,
 						$gs->rules_code, $gs->id);
+					Db::exec(get_label('tournament'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $gs->event_id);
+					Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
 				}
 				else
 				{
