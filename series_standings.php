@@ -128,7 +128,9 @@ class Page extends SeriesPageBase
 		$players_count = count($players);
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		show_pages_navigation(PAGE_SIZE, $players_count);
-		echo '</td><td align="right">';
+		echo '</td>';
+		echo '<td align="right"><a href="javascript:showGaining()">' . get_label('Scoring system') . '</a></td>';
+		echo '<td align="right" width="200">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'series=' . $this->id, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></p>';
@@ -189,6 +191,16 @@ class Page extends SeriesPageBase
 	private function no_user_error()
 	{
 		$this->errorMessage(get_label('[0] did not play in [1].', $this->user_name, $this->name));
+	}
+	
+	protected function js()
+	{
+?>		
+		function showGaining()
+		{
+			dlg.infoForm('form/gaining_show.php?id=<?php echo $this->gaining_id; ?>&version=<?php echo $this->gaining_version; ?>');
+		}
+<?php
 	}
 }
 
