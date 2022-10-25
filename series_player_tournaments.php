@@ -98,7 +98,20 @@ class Page extends SeriesPageBase
 			echo '</tr></table></td>';
 			
 			$score = get_gaining_points($this->gaining, $stars, $players_count, $place);
-			echo '<td><a href="javascript:showGaining(' . $players_count . ', ' . $stars . ', ' . $place . ')">' . $place . '</a></td>';
+			echo '<td><a href="javascript:showGaining(' . $players_count . ', ' . $stars . ', ' . $place . ')">';
+			if ($place > 0 && $place < 4)
+			{
+				echo '<img src="images/' . $place . '-place.png" width="48" title="' . get_label('[0] place', $place) . '">';
+			}
+			else if ($place < 11)
+			{
+				echo '<b>' . $place . '</b>';
+			}
+			else
+			{
+				echo $place;
+			}
+			echo '</a></td>';
 			echo '<td class="dark">' . format_score($score) . '</td>';
 			echo '<td>' . $players_count . '</td>';
 			echo '</tr>';

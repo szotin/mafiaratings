@@ -36,14 +36,14 @@ class Page extends UserPageBase
 		echo '</td></tr></table>';
 		
 		$condition = new SQL(
-			' FROM tournaments t' .
-			' JOIN games g ON g.tournament_id = t.id' .
-			' JOIN players p ON p.game_id = g.id' .
-			' LEFT OUTER JOIN tournament_places tp ON tp.tournament_id = t.id AND tp.user_id = p.user_id' .
+			' FROM tournament_places tp' .
+			' JOIN tournaments t ON tp.tournament_id = t.id' .
+			' LEFT OUTER JOIN games g ON g.tournament_id = t.id AND g.is_canceled = FALSE AND g.result > 0' .
+			' LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = tp.user_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = a.city_id' . 
-			' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0', $this->id);
+			' WHERE tp.user_id = ? AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0', $this->id);
 		$ccc_id = $ccc_filter->get_id();
 		switch($ccc_filter->get_type())
 		{
@@ -186,7 +186,7 @@ class Page extends UserPageBase
 			{
 				if ($tournament->place > 0 && $tournament->place < 4)
 				{
-					echo '<img src="images/' . $tournament->place . '-place.png" width="60" title="' . get_label('[0] place', $tournament->place) . '">';
+					echo '<img src="images/' . $tournament->place . '-place.png" width="48" title="' . get_label('[0] place', $tournament->place) . '">';
 				}
 				else if ($tournament->place < 11)
 				{
