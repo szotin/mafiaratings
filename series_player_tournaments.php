@@ -98,7 +98,7 @@ class Page extends SeriesPageBase
 			echo '</tr></table></td>';
 			
 			$score = get_gaining_points($this->gaining, $stars, $players_count, $place);
-			echo '<td>' . $place . '</td>';
+			echo '<td><a href="javascript:showGaining(' . $players_count . ', ' . $stars . ', ' . $place . ')">' . $place . '</a></td>';
 			echo '<td class="dark">' . format_score($score) . '</td>';
 			echo '<td>' . $players_count . '</td>';
 			echo '</tr>';
@@ -113,6 +113,12 @@ class Page extends SeriesPageBase
 	{
 		parent::js();
 ?>
+	
+		function showGaining(players, stars, place)
+		{
+			dlg.infoForm('form/gaining_show.php?id=<?php echo $this->gaining_id; ?>&version=<?php echo $this->gaining_version; ?>&players=' + players + '&stars=' + stars + '&place=' + place);
+		}
+		
 		function selectPlayer(data)
 		{
 			goTo({ 'user_id': data.id });

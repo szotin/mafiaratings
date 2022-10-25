@@ -38,6 +38,12 @@ try
 		$stars = (double)$_REQUEST['stars'];
 	}
 	
+	$place = 0;
+	if (isset($_REQUEST['place']))
+	{
+		$place = (int)$_REQUEST['place'];
+	}
+	
 	dialog_title(get_label('Gaining system [0]. Version [1].', $name, $gaining_version));
 	
 	echo '<table class="transp" width="100%">';
@@ -49,9 +55,11 @@ try
 	echo '<p><div id="form-gaining">';
 	echo '<table class="bordered light" width="100%">';
 	echo '<tr class="darker"><td width="100"><b>' . get_label('Place') . '</b></td><td><b>' . get_label('Points') . '</b></td></tr>';
-	for ($place = 0; $place < count($points); ++$place)
+	for ($p = 0; $p < count($points); ++$p)
 	{
-		echo '<tr><td>' .($place + 1) . '</td><td>' . $points[$place] . '</td></tr>';
+		echo '<tr';
+		echo ($p == $place - 1 ? ' class="darker"' : '');
+		echo '><td>' .($p + 1) . '</td><td>' . $points[$p] . '</td></tr>';
 	}
 	echo '</table>';
 	echo '</div></p>';
@@ -72,7 +80,9 @@ try
 			var html = '<table class="bordered light" width="100%"><tr class="darker"><td width="100"><b><?php echo get_label('Place'); ?></b></td><td><b><?php echo get_label('Points'); ?></b></td></tr>';
 			for (var i = 0; i < obj.points.length; ++i)
 			{
-				html += '<tr><td>' + (i + 1) + '</td><td>' + obj.points[i] + '</td></tr>';
+				html += '<tr';
+				html += (i == <?php echo ($place - 1); ?> ? ' class="darker"' : '');
+				html += '><td>' + (i + 1) + '</td><td>' + obj.points[i] + '</td></tr>';
 			}
 			html += '</table>';
 			$("#form-gaining").html(html);
