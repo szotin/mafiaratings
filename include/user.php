@@ -19,7 +19,8 @@ function send_activation_email($user_id, $name, $email)
 	$tags = array(
 		'root' => new Tag(get_server_url()),
 		'user_name' => new Tag($name),
-		'url' => new Tag(get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $email_code . '&email=' . urlencode($email)));
+		'url' => new Tag(get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $email_code . '&email=' . urlencode($email)),
+		'unsub' => new Tag('<a href="' . $base_url . '&unsub=1" target="_blank">', '</a>'));
 	
 	list($subj, $body, $text_body) = include __DIR__ .  '/languages/' . $_lang_code . '/email/user_activation.php';
 	$body = parse_tags($body, $tags);
