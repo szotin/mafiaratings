@@ -614,11 +614,21 @@ var mr = new function()
 		}
 	}
 
-	this.finishTournament = function(id, confirmMessage)
+	this.finishTournament = function(id, confirmMessage, doneMessage)
 	{
 		function _finish()
 		{
-			json.post("api/ops/tournament.php", { op: "finish", tournament_id: id }, refr);
+			json.post("api/ops/tournament.php", { op: "finish", tournament_id: id }, function()
+			{
+				if (typeof doneMessage == "string")
+				{
+					dlg.info(doneMessage, null, null, refr);
+				}
+				else
+				{
+					refr();
+				}
+			});
 		}
 		
 		if (typeof confirmMessage == "string")

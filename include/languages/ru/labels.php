@@ -1526,6 +1526,8 @@ $labelMenu = array (
 'scoring is entered manually instead of calculating it from games results.' => 'результаты вводятся вручную, а не вычисляются из результатов игр.', // form/tournament_create.php, form/tournament_edit.php
 'Add tournament score' => 'Добавить результат', // form/tournament_score_add.php
 'Points for being shot first night' => 'Баллы за отстрел первой ночью', // form/tournament_score_add.php
+'Are you sure you want to finish the tournament?' => 'Вы уверены, что хотите закончить турнир?', // include/tournament.php
+'Finish the tournament' => 'Закончить турнир', // include/tournament.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1539,8 +1541,7 @@ $labelMenu = array (
 'during [0]\'s last speech' => 'во время последней речи [0]', // include/game.php, include/game.php
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
-'Are you sure you want to finish the tournament?' => 'Вы уверены, что хотите закончить турнир?', // include/tournament.php
-'Finish the tournament' => 'Закончить турнир', // include/tournament.php
+'The tournament is finished. Results will be applyed to series within one hour' => 'Турнир закончен. Результаты будут посчитаны для серий в течении одного часа.', // include/tournament.php
 );
 
 return $labelMenu;
