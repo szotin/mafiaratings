@@ -48,6 +48,10 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 				echo '<button class="icon" onclick="mr.cancelTournament(' . $id . ', \'' . get_label('Are you sure you want to cancel the tournament?') . '\')" title="' . get_label('Cancel the tournament') . '"><img src="images/delete.png" border="0"></button>';
 			}
 		}
+		if (($flags & TOURNAMENT_FLAG_FINISHED) == 0 && $now < $start_time + $duration)
+		{
+			echo '<button class="icon" onclick="mr.finishTournament(' . $id . ', \'' . get_label('Are you sure you want to finish the tournament?') . '\')" title="' . get_label('Finish the tournament') . '"><img src="images/time.png" border="0"></button>';
+		}
 	}
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
 }

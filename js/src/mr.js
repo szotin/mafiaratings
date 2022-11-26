@@ -614,6 +614,23 @@ var mr = new function()
 		}
 	}
 
+	this.finishTournament = function(id, confirmMessage)
+	{
+		function _finish()
+		{
+			json.post("api/ops/tournament.php", { op: "finish", tournament_id: id }, refr);
+		}
+		
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _finish);
+		}
+		else
+		{
+			_finish();
+		}
+	}
+
 	this.editTournament = function(id)
 	{
 		dlg.form("form/tournament_edit.php?id=" + id, refr);

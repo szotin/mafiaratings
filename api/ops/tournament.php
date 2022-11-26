@@ -715,6 +715,59 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// finish
+	//-------------------------------------------------------------------------------------------------------
+	function finish_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$now = time();
+		
+		Db::begin();
+		list($club_id, $start_time, $duration, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, start_time, duration, flags FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		if (($flags & TOURNAMENT_FLAG_FINISHED) == 0)
+		{
+			if ($now < $start_time)
+			{
+				$start_time = $now;
+			}
+			if ($start_time + $duration > $now)
+			{
+				$duration = $now - $start_time;
+			}
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET start_time = ?, duration = ? WHERE id = ?', $start_time, $duration, $tournament_id);
+			$query = new DbQuery('SELECT id, start_time, duration FROM events WHERE tournament_id = ?', $tournament_id);
+			while ($row = $query->next())
+			{
+				list($round_id, $round_start, $round_duration) = $row;
+				if ($now < $round_start)
+				{
+					$round_start = $now;
+				}
+				if ($round_start + $round_duration > $now)
+				{
+					$round_duration = $now - $round_start;
+				}
+				Db::exec(get_label('round'), 'UPDATE events SET start_time = ?, duration = ? WHERE id = ?', $round_start, $round_duration, $round_id);
+			}
+			
+			
+			
+			
+			
+			db_log(LOG_OBJECT_TOURNAMENT, 'finished', NULL, $tournament_id, $club_id);
+		}
+		Db::commit();
+	}
+	
+	function finish_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Finish the tournament. After finishing the tournament within one hour players will get all series points for this tournament. Finish tournament functionality lets not to wait until the time expires and get the results quicker.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// change_player
 	//-------------------------------------------------------------------------------------------------------
 	function change_player_op()
