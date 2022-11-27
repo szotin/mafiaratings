@@ -107,9 +107,18 @@ class Page extends UserPageBase
 				echo '<tr class="dark" style="height: 40px;">';
 				echo '<td colspan="3"';
 				echo ' align="center"><b><big>';
-				if ($place == 1)
+				if ($place < 4)
 				{
-					echo get_label('Winner');
+					echo '<table class="transp" width="100%"><tr><td width="32"><img src="images/' . $place . '-place.png" height="32"></td><td align="center">';
+					if ($place == 1)
+					{
+						echo get_label('Winner');
+					}
+					else
+					{
+						echo get_label('[0] place', $place);
+					}
+					echo '</td></tr></table>';
 				}
 				else
 				{
