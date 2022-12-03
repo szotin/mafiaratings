@@ -79,7 +79,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('club'), 'UPDATE club_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM event_users WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('event'), 'UPDATE event_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('event'), 'UPDATE event_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('log'), 'UPDATE log SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('event'), 'UPDATE tournament_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('club'), 'UPDATE club_requests SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('league'), 'UPDATE league_requests SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('comment'), 'UPDATE event_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
