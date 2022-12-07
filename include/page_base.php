@@ -196,6 +196,14 @@ class PageBase
 
 		echo '<body>';
 		
+		echo '<ul id="header-lang-menu" style="display:none;position:absolute;width:42px;text-align:left;z-index:2147483647;">';
+		$lang = LANG_NO;
+		while (($lang = get_next_lang($lang)) != LANG_NO)
+		{
+			echo '<li><a href="javascript:mr.browserLangChange(\'' . get_lang_code($lang) . '\')" title="' . get_lang_str($lang) . '"><img src="images/' . get_lang_code($lang) . '.png" width="32"></a></li>';
+		}
+		echo '</ul>';
+		
 		echo '<table border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
 		echo '<tr class="header">';
 		if ($this->_locked && $this->_admin)
@@ -264,7 +272,7 @@ class PageBase
 			}
 			echo '<li><a href="javascript:logout()" title="' . get_label('Logout from [0]', PRODUCT_NAME) . '"><img src="images/logout.png" class="menu_image"> ' . get_label('Log out') . '</a></li>';
 			echo '</ul>';
-
+			
 			if (count($_profile->clubs) > 1)
 			{
 				echo '<ul id="header-club-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';
@@ -281,16 +289,12 @@ class PageBase
 				echo '</ul>';
 			}
 		}
-		echo '</td><td width="32"><a id="header-lang" onMouseEnter="setCurrentMenu(null)" href="javascript:mr.browserLangChange(\'';
-		if ($_lang == LANG_RUSSIAN)
+		$next_lang = get_next_lang($_lang); 
+		if ($next_lang == LANG_NO)
 		{
-			echo 'en';
+			$next_lang = LANG_ENGLISH;
 		}
-		else
-		{
-			echo 'ru';
-		}
-		echo '\')" title="' . get_label('Change language') . '"><img src="images/' . get_lang_code($_lang) . '.png" width="32"></a>';
+		echo '</td><td width="32"><a id="header-lang" onMouseEnter="showLangMenu()" title="' . get_label('Change language') . '" href="javascript:mr.browserLangChange(\'' . get_lang_code($next_lang) . '\')"><img src="images/' . get_lang_code($_lang) . '.png" width="32"></a>';
 		
 		echo '</td></tr></table>';
 		echo '<table class="main" border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
@@ -456,6 +460,23 @@ class PageBase
 			currentMenu = menu;
 		}
 		
+		var showLangMenu = function()
+		{
+			console.log(1);
+			setCurrentMenu('#header-lang-menu');
+			var langMenu = $('#header-lang-menu').menu();
+			langMenu.show(0, function()
+			{
+				langMenu.position(
+				{
+					my: "right top",
+					at: "right bottom",
+					of: $('#header-lang')
+				});
+				$(document).one("click", function() { setCurrentMenu(null); });
+			});
+		}
+			
 <?php		
 		if ($_profile != NULL)
 		{

@@ -14,6 +14,10 @@ function get_label($labelitem)
 	if (isset($labelMenu[$labelitem]))
 	{
 		$label = $labelMenu[$labelitem];
+		if ($label == '[EMPTY]')
+		{
+			$label = $labelitem;
+		}
 	}
 	
 	$num_args = func_num_args() - 1;

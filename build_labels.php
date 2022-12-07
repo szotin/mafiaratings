@@ -210,5 +210,6 @@ function build_labels($lang)
 
 date_default_timezone_set('America/Vancouver');
 build_labels('ru');
+build_labels('ua');
 
 ?>
