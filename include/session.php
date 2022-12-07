@@ -59,7 +59,6 @@ class Profile
 	public $user_id;
 	public $user_name;
 	public $user_langs;
-	public $user_def_lang;
 	public $user_email;
 	public $user_phone;
 	public $user_flags;
@@ -74,9 +73,9 @@ class Profile
 	
 	function __construct($user_id)
 	{
-		global $_lang_code;
+		global $_lang;
 		list(
-			$this->user_id, $this->user_name, $this->user_langs, $this->user_def_lang,
+			$this->user_id, $this->user_name, $this->user_langs, $_lang,
 			$this->user_email, $this->user_phone, $this->user_flags, $this->user_club_id,
 			$this->city_id, $this->region_id, $this->country_id, $this->timezone) = 
 				Db::record(
@@ -99,9 +98,9 @@ class Profile
 	
 	function update()
 	{
-		global $_lang_code;
+		global $_lang;
 		list(
-			$this->user_id, $this->user_name, $this->user_langs, $this->user_def_lang,
+			$this->user_id, $this->user_name, $this->user_langs, $_lang,
 			$this->user_email, $this->user_phone, $this->user_flags, $this->user_club_id,
 			$this->city_id, $this->country_id, $this->timezone) = 
 				Db::record(
@@ -118,29 +117,32 @@ class Profile
 	
 	function update_clubs()
 	{
-		global $_lang_code;
+		global $_lang;
 	
 		$this->clubs = array();
 		$sep = '';
 		if ($this->is_admin())
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, ' . (USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ', c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.price, c.parent_id FROM clubs c' .
+				'SELECT c.id, c.name, ' . (USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ', c.flags, c.langs, i.id, ni.name, i.country_id, no.name, i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.price, c.parent_id FROM clubs c' .
 					' JOIN cities i ON c.city_id = i.id ' .
+					' JOIN names ni ON i.name_id = ni.id AND (ni.langs & ?) <> 0' .
 					' JOIN countries o ON i.country_id = o.id ' .
-					' ORDER BY c.name');
+					' JOIN names no ON o.name_id = no.id AND (no.langs & ?) <> 0' .
+					' ORDER BY c.name', $_lang, $_lang);
 		}
 		else
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, uc.flags, c.flags, c.langs, i.id, i.name_' . $_lang_code . ', i.country_id, o.name_' . $_lang_code . ', i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.price, c.parent_id FROM club_users uc' .
+				'SELECT c.id, c.name, uc.flags, c.flags, c.langs, i.id, ni.name, i.country_id, no.name, i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.price, c.parent_id FROM club_users uc' .
 					' JOIN clubs c ON c.id = uc.club_id' .
 					' JOIN cities i ON i.id = c.city_id' .
+					' JOIN names ni ON i.name_id = ni.id AND (ni.langs & ?) <> 0' .
 					' JOIN countries o ON i.country_id = o.id ' .
+					' JOIN names no ON o.name_id = no.id AND (no.langs & ?) <> 0' .
 					' WHERE uc.user_id = ?' .
 					' AND (uc.flags & ' . USER_CLUB_FLAG_BANNED . ') = 0' .
-					' ORDER BY c.name',
-				$this->user_id, $this->user_club_id);
+					' ORDER BY c.name', $_lang, $_lang, $this->user_id);
 		}
 		if ($query)
 		{
@@ -378,7 +380,7 @@ function remember_user($remember = 1)
 // $remember: 0 - do not remember; >0 - remember; <0 - leave as is
 function login($user_id, $remember = 1)
 {
-	global $_profile;
+	global $_profile, $_lang;
 
 	$_profile = new Profile($user_id);
 	remember_user($remember);
@@ -388,7 +390,7 @@ function login($user_id, $remember = 1)
 	session_regenerate_id(true);
 	
 	$_SESSION['profile'] = $_profile;
-	$_SESSION['lang_code'] = get_lang_code($_profile->user_def_lang);
+	$_SESSION['lang_code'] = get_lang_code($_lang);
 	
 	if (defined('REDIRECT_ON_LOGIN'))
 	{
@@ -470,22 +472,25 @@ function get_session_state()
 
 function initiate_session($lang_code = NULL)
 {
-	global $_session_state, $_profile, $_agent, $_lang_code;
+	global $_session_state, $_profile, $_agent, $_lang;
 	global $_default_date_translations, $_http_agent, $labelMenu;
 
     session_start();
 	// localization
 	if ($lang_code != NULL)
 	{
-		$_lang_code = correct_lang($lang_code);
+		$lang_code = correct_lang($lang_code);
+		$_lang = get_lang_by_code($lang_code);
 	}
 	else if (isset($_SESSION['lang_code']))
 	{
-		$_lang_code = $_SESSION['lang_code'];
+		$lang_code = $_SESSION['lang_code'];
+		$_lang = get_lang_by_code($lang_code);
 	}
 	else
 	{
-		$_lang_code = $_SESSION['lang_code'] = get_lang_code(get_browser_lang());
+		$_lang = get_browser_lang();
+		$lang_code = $_SESSION['lang_code'] = get_lang_code($_lang);
 	}
 
 	$_session_state = get_session_state();
@@ -532,8 +537,8 @@ function initiate_session($lang_code = NULL)
 		header('location: ' . $uri);
 	}
 
-	require_once __DIR__ . '/languages/' . $_lang_code . '/labels.php';
-	$_default_date_translations = include(__DIR__ . '/languages/' . $_lang_code . '/date.php');
+	require_once __DIR__ . '/languages/' . $lang_code . '/labels.php';
+	$_default_date_translations = include(__DIR__ . '/languages/' . $lang_code . '/date.php');
 
 	if (stripos($_http_agent,"iPod"))
 	{

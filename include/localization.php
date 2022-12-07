@@ -58,20 +58,12 @@ $_date_translations = array();
 // same format as DateTime.format
 function format_date($format, $timestamp, $timezone, $lang = LANG_NO)
 {
-	global $_date_translations, $_default_date_translations, $_lang_code;
+	global $_date_translations, $_default_date_translations, $_lang;
 	
 	$translations = $_default_date_translations;
-	if (!is_valid_lang($lang))
-	{
-		$lang_code = $_lang_code;
-	}
-	else
+	if (is_valid_lang($lang) && $lang != $_lang)
 	{
 		$lang_code = get_lang_code($lang);
-	}
-	
-	if ($lang_code != $_lang_code)
-	{
 		if (!isset($_date_translations[$lang_code]))
 		{
 			$_date_translations[$lang_code] = include(__DIR__ . '/languages/' . $lang_code . '/date.php');

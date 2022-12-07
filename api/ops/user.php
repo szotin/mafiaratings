@@ -805,7 +805,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function edit_op()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		if ($_profile == NULL)
 		{
 			throw new Exc(get_label('No permissions'));
@@ -1013,7 +1013,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('city', 'City name. An alternative to <q>city_id</q>. It is used only if <q>city_id</q> is not set.', 'remains the same unless <q>city_id</q> is not set');
 		$help->request_param('club_id', 'User main club. If set to 0 or negative, user main club is set to none.', 'remains the same');
 		$help->request_param('phone', 'User phone.', 'remains the same');
-		$help->request_param('langs', 'User languages. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same');
+		$help->request_param('langs', 'User languages. A bit combination language ids.' . valid_langs_help(), 'remains the same');
 		$help->request_param('male', '1 for male, 0 for female.', 'remains the same');
 		$help->request_param('pwd1', 'User password.', 'remains the same');
 		$help->request_param('pwd2', 'Password confirmation. Must be the same as <q>pwd1</q>. Must be set when <q>pwd1</q> is set. Ignored when <q>pwd1</q> is not set.', '-');
@@ -1030,7 +1030,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function custom_photo_op()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		$user_id = get_required_param('user_id');
 		$event_id = get_optional_param('event_id', 0);
 		$club_id = get_optional_param('club_id', 0);

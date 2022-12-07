@@ -7,7 +7,7 @@ class ApiPage extends ControlApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code;
+		global $_lang;
 		
 		$term = '';
 		if (isset($_REQUEST['term']))
@@ -33,7 +33,12 @@ class ApiPage extends ControlApiPageBase
 		$cities = array();
 
 		$delim = ' WHERE ';
-		$query = new DbQuery('SELECT DISTINCT i.id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM city_names n JOIN cities i ON i.id = n.city_id JOIN countries o ON o.id = i.country_id');
+		$query = new DbQuery(
+			'SELECT DISTINCT i.id, ni.name, no.name FROM city_names n' .
+			' JOIN cities i ON i.id = n.city_id' .
+			' JOIN countries o ON o.id = i.country_id' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0', $_lang, $_lang);
 		if ($country_id > 0)
 		{
 			$query->add($delim . 'i.country_id = ?', $country_id);
@@ -44,8 +49,7 @@ class ApiPage extends ControlApiPageBase
 			$term = '%' . $term . '%';
 			$query->add($delim . 'n.name LIKE(?)', $term);
 		}
-		$query->add(' ORDER BY i.name_' . $_lang_code . ' LIMIT 10');
-		
+		$query->add(' ORDER BY ni.name LIMIT 10');
 		while ($row = $query->next())
 		{
 			$city = new stdClass();

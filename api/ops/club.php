@@ -42,7 +42,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
 		$name = trim(get_required_param('name'));
@@ -70,7 +70,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$city_id = retrieve_city_id(get_required_param('city'), retrieve_country_id(get_required_param('country')), get_timezone());
 		}
-		list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
+		list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 		
 		$is_admin = is_permitted(PERMISSION_ADMIN);
 		if ($is_admin || is_permitted(PERMISSION_CLUB_MANAGER, $parent_id))
@@ -91,7 +91,7 @@ class ApiPage extends OpsApiPageBase
 				get_label('club'),
 				'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, parent_id, scoring_id, normalizer_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ?, ?)',
 				$name, $langs, $rules_code, $url, $email, $phone, $city_id, $parent_id, $scoring_id, $normalizer_id);
-			list ($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+			list($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
 			$log_details->name = $name;
@@ -130,7 +130,7 @@ class ApiPage extends OpsApiPageBase
 				get_label('club'), 
 				'INSERT INTO club_requests (user_id, name, parent_id, langs, web_site, email, phone, city_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
 				$_profile->user_id, $name, $parent_id, $langs, $url, $email, $phone, $city_id);
-			list ($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+			list($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
 			$log_details->name = $name;
@@ -142,7 +142,7 @@ class ApiPage extends OpsApiPageBase
 			$log_details->city_id = $city_id;
 			db_log(LOG_OBJECT_CLUB_REQUEST, 'created', $log_details, $request_id, $parent_id);
 			
-			list ($parent_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $parent_id);
+			list($parent_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $parent_id);
 			
 			// send request to parent club managers
 			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM club_users c JOIN users u ON c.user_id = u.id WHERE (c.flags & ' . USER_PERM_MANAGER . ') <> 0 AND u.email <> \'\' AND c.club_id = ?', $parent_id);
@@ -179,8 +179,8 @@ class ApiPage extends OpsApiPageBase
 				'INSERT INTO club_requests (user_id, name, langs, web_site, email, phone, city_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
 				$_profile->user_id, $name, $langs, $url, $email, $phone, $city_id);
 				
-			list ($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
-			list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
+			list($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+			list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 			
 			$log_details = new stdClass();
 			$log_details->name = $name;
@@ -227,7 +227,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('parent_id', 'Id of the parent club. 0 or negative for creating top level club.', 'top level club is created');
 		$help->request_param('name', 'Club name.');
 		$help->request_param('url', 'Club web site URL.');
-		$help->request_param('langs', 'Languages used in the club. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'user profile languages are used.');
+		$help->request_param('langs', 'Languages used in the club. A bit combination of language ids.' . valid_langs_help(), 'user profile languages are used.');
 		$help->request_param('email', 'Club email.', 'user email is used.');
 		$help->request_param('phone', 'Club phone. Just a text.', 'empty.');
 		$help->request_param('city_id', 'City id.', '<q>city</q> and <q>country</q> must be set.');
@@ -312,7 +312,7 @@ class ApiPage extends OpsApiPageBase
 			$name, $url, $langs, $email, $phone, $price, $city_id, $scoring_id, $normalizer_id, $flags, $club_id);
 		if (Db::affected_rows() > 0)
 		{
-			list($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
+			list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 			$log_details = new stdClass();
 			if ($old_name != $name)
 			{
@@ -371,7 +371,7 @@ class ApiPage extends OpsApiPageBase
 				else
 				{
 					Db::exec(get_label('club'), 'INSERT INTO club_requests (user_id, club_id, parent_id) VALUES (?, ?, ?)', $_profile->user_id, $club_id, $parent_id);
-					list ($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+					list($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 					
 					list($parent_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $parent_id);
 					$log_details = new stdClass();
@@ -420,7 +420,7 @@ class ApiPage extends OpsApiPageBase
 				else
 				{
 					Db::exec(get_label('club'), 'INSERT INTO club_requests (user_id, club_id) VALUES (?, ?)', $_profile->user_id, $club_id);
-					list ($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+					list($request_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 					db_log(LOG_OBJECT_CLUB_REQUEST, 'root club request created', NULL, $request_id, $club_id);
 					
 					// send request to admin
@@ -465,7 +465,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('name', 'Club name.', 'remains the same.');
 		$help->request_param('parent_id', 'Id of the parent club. 0 or negative for changing to top level club.', 'remains the same');
 		$help->request_param('url', 'Club web site URL.', 'remains the same.');
-		$help->request_param('langs', 'Languages used in the club. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
+		$help->request_param('langs', 'Languages used in the club. A bit combination of language ids.' . valid_langs_help(), 'remains the same.');
 		$help->request_param('email', 'Club email.', 'remains the same.');
 		$help->request_param('phone', 'Club phone. Just a text.', 'remains the same.');
 		$help->request_param('city_id', 'City id.', 'remains the same unless <q>city</q> and <q>country</q> are set.');
@@ -482,16 +482,17 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function accept_op()
 	{
-		global $_profile, $_lang_code;
+		global $_profile, $_lang;
 		
 		$request_id = (int)get_required_param('request_id');
 		
 		Db::begin();
 		list($name, $url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone, $city_id, $city_name, $club_id, $club_name, $parent_id, $parent_name) = Db::record(
 			get_label('club'),
-			'SELECT c.name, c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang, u.flags, c.email, c.phone, c.city_id, i.name_en, c.club_id, cl.name, c.parent_id, p.name FROM club_requests c' .
+			'SELECT c.name, c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang, u.flags, c.email, c.phone, c.city_id, ni.name, c.club_id, cl.name, c.parent_id, p.name FROM club_requests c' .
 				' JOIN users u ON c.user_id = u.id' .
 				' LEFT OUTER JOIN cities i ON c.city_id = i.id' .
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . LANG_ENGLISH . ') <> 0 ' .
 				' LEFT OUTER JOIN clubs cl ON c.club_id = cl.id' .
 				' LEFT OUTER JOIN clubs p ON c.parent_id = p.id' .
 				' WHERE c.id = ?',
@@ -523,14 +524,14 @@ class ApiPage extends OpsApiPageBase
 				$normalizer_id = NORMALIZER_DEFAULT_ID;
 			}
 			
-			list ($city_name) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $city_id);
+			list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 			
 			Db::exec(
 				get_label('club'),
 				'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, scoring_id, normalizer_id, parent_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ?, ?)',
 				$name, $langs, $rules_code, $url, $email, $phone, $city_id, $scoring_id, $normalizer_id, $parent_id);
 				
-			list ($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+			list($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
 			$log_details->name = $name;

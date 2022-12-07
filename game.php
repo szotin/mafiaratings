@@ -10,11 +10,11 @@ class Page extends PageBase
 	
 	protected function add_headers()
 	{
-		global $_lang_code;
+		global $_lang;
 		echo '<link rel="stylesheet" href="game.css" type="text/css" media="screen" />';
 		echo '<script src="js/game.js"></script>';
 		echo '<script src="js/game-ui.js"></script>';
-		echo '<script src="js/game-' . $_lang_code . '.js"></script>';
+		echo '<script src="js/game-' . get_lang_code($_lang) . '.js"></script>';
 	}
 	
 	// no title to save space for the game

@@ -27,7 +27,7 @@ class Page extends ClubPageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))

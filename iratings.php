@@ -14,13 +14,13 @@ try
 		$css = $_REQUEST['css'];
 	}
 	
-	$_lang_code = 'ru';
+	$lang_code = 'ru';
 	if (isset($_REQUEST['lang']))
 	{
-		$_lang_code = $_REQUEST['lang'];
+		$lang_code = $_REQUEST['lang'];
 	}
-	require_once 'include/languages/' . $_lang_code . '/labels.php';
-	$_default_date_translations = include('include/languages/' . $_lang_code . '/date.php');
+	require_once 'include/languages/' . $lang_code . '/labels.php';
+	$_default_date_translations = include('include/languages/' . $lang_code . '/date.php');
 
 	$page_size = 15;
 	if (isset($_REQUEST['psize']))

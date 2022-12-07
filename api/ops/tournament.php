@@ -92,7 +92,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		global $_profile, $_lang_code;
+		global $_profile, $_lang;
 		$club_id = (int)get_required_param('club_id');
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
@@ -228,9 +228,9 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			$lang_code = $_lang_code;
+			$lang_code = get_lang_code($_lang);
 		}
-		$round_names = include '../../include/languages/' . $lang_code . '/rounds.php';
+		$round_names = include '../../include/languages/' . get_lang_code($langs) . '/rounds.php';
 		switch ($type)
 		{
 			case TOURNAMENT_TYPE_FIIM_ONE_ROUND:
@@ -364,7 +364,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('normalizer_version', 'Normalizer version for this tournament.', 'the latest version of the system identified by normalizer_id is used.');
 		api_scoring_help($help->request_param('scoring_options', 'Scoring options for this tournament.', 'null is used. All values are assumed to be default.'));
 		$help->request_param('notes', 'Tournament notes. Just a text.', 'empty.');
-		$help->request_param('langs', 'Languages on this tournament. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all club languages are used.');
+		$help->request_param('langs', 'Languages on this tournament. A bit combination language ids.' . valid_langs_help(), 'all club languages are used.');
 		$help->request_param('flags', 'Tournament flags. A bit cobination of:<ol>' .
 									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
 									'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .
@@ -652,7 +652,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('normalizer_version', 'Normalizer version for this tournament.', 'remain the same, or set to the latest for current normalizer if normalizer_id is changed.');
 		api_scoring_help($help->request_param('scoring_options', 'Scoring options for this tournament.', 'remain the same.'));
 		$help->request_param('notes', 'Tournament notes. Just a text.', 'remains the same.');
-		$help->request_param('langs', 'Languages on this tournament. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
+		$help->request_param('langs', 'Languages on this tournament. A bit combination of language ids.' . valid_langs_help(), 'remains the same.');
 		$help->request_param('flags', 'Tournament flags. A bit cobination of:<ol>' .
 									'<li value="16">This is a long term tournament when set. Long term tournament is something like a season championship. Short-term tournament is a one day to one week competition.</li>' .
 									'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .
@@ -975,7 +975,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
 		$tournament_id = (int)get_required_param('id');
@@ -983,7 +983,7 @@ class ApiPage extends OpsApiPageBase
 		$lang = detect_lang($comment);
 		if ($lang == LANG_NO)
 		{
-			$lang = $_profile->user_def_lang;
+			$lang = $_lang;
 		}
 		
 		Db::exec(get_label('comment'), 'INSERT INTO tournament_comments (time, user_id, comment, tournament_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $tournament_id, $lang);

@@ -7,7 +7,7 @@ class Page extends GeneralPageBase
 {
 	protected function show_body()
 	{
-		global $_lang_code, $_profile;
+		global $_profile;
 		echo '<table class="transp" width="100%"><tr>';
 		echo '<td width="110"><button onclick="loadGame()">' . get_label('Existing game') . '</button></td>';
 		echo '<td width="110"><button onclick="editJson()">' . get_label('Custom game') . '</button></td>';

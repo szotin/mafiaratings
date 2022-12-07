@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/user_location.php';
+require_once '../../include/languages.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -9,82 +10,38 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code;
+		global $_lang;
 		
-		$contains = '';
-		if (isset($_REQUEST['contains']))
-		{
-			$contains = $_REQUEST['contains'];
-		}
-		
-		$starts = '';
-		if (isset($_REQUEST['starts']))
-		{
-			$starts = $_REQUEST['starts'];
-		}
-		
-		$country = 0;
-		if (isset($_REQUEST['country']))
-		{
-			$country = (int)$_REQUEST['country'];
-			if ($country <= 0)
-			{
-				$query = new DbQuery('SELECT id FROM countries WHERE name_en = ? OR name_ru = ? ORDER BY id LIMIT 1', $_REQUEST['country'], $_REQUEST['country']);
-				if ($row = $query->next())
-				{
-					list($country) = $row;
-				}
-			}
-		}
-		
-		$city = 0;
-		if (isset($_REQUEST['city']))
-		{
-			$city = (int)$_REQUEST['city'];
-			if ($city <= 0)
-			{
-				$query = new DbQuery('SELECT id FROM cities WHERE name_en = ? OR name_ru = ? ORDER BY id LIMIT 1', $_REQUEST['city'], $_REQUEST['city']);
-				if ($row = $query->next())
-				{
-					list($city) = $row;
-				}
-			}
-		}
-		
-		$area = 0;
-		if (isset($_REQUEST['area']))
-		{
-			$area = (int)$_REQUEST['area'];
-			if ($area <= 0)
-			{
-				$query = new DbQuery('SELECT id FROM cities WHERE name_en = ? OR name_ru = ? ORDER BY id LIMIT 1', $_REQUEST['area'], $_REQUEST['area']);
-				if ($row = $query->next())
-				{
-					list($area) = $row;
-				}
-			}
-		}
-		
-		$page_size = API_DEFAULT_PAGE_SIZE;
-		if (isset($_REQUEST['page_size']))
-		{
-			$page_size = (int)$_REQUEST['page_size'];
-		}
-		
-		$page = 0;
-		if (isset($_REQUEST['page']))
-		{
-			$page = (int)$_REQUEST['page'];
-		}
-		
+		$contains = get_optional_param('contains');
+		$starts = get_optional_param('starts');
+		$city = get_optional_param('city', 0);
+		$page_size = get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
+		$page = get_optional_param('page', 0);
 		$count_only = isset($_REQUEST['count']);
+		$lang = (int)get_optional_param('lang', $_lang);
+		if (!is_valid_lang($lang))
+		{
+			$lang = $_lang;
+		}
+		
+		$country = get_optional_param('country', 0);
+		if (!is_numeric($country))
+		{
+			list($country) = Db::record(get_label('country'), 'SELECT c.id FROM countries c JOIN names n ON n.id = c.name_id WHERE n.name = ? ORDER BY c.id LIMIT 1', $country);
+		}
+		
+		$area = get_optional_param('area', 0);
+		if (!is_numeric($area))
+		{
+			list($area) = Db::record(get_label('city'), 'SELECT c.id FROM cities c JOIN names n ON n.id = c.name_id WHERE n.name = ? ORDER BY c.id LIMIT 1', $area);
+		}
 		
 		$condition = new SQL();
 		$delim = ' WHERE ';
 		if ($contains != '')
 		{
 			$contains = '%' . $contains . '%';
-			$condition->add($delim . '(i.name_en LIKE(?) OR i.name_ru LIKE(?))', $contains, $contains);
+			$condition->add($delim . 'n.name LIKE(?)', $contains);
 			$delim = ' AND ';
 		}
 		
@@ -92,15 +49,19 @@ class ApiPage extends GetApiPageBase
 		{
 			$starts1 = '% ' . $starts . '%';
 			$starts2 = $starts . '%';
-			$condition->add($delim . '(i.name_en LIKE(?) OR i.name_ru LIKE(?) OR i.name_en LIKE(?) OR i.name_ru LIKE(?))', $starts1, $starts1, $starts2, $starts2);
+			$condition->add($delim . '(n.name LIKE(?) OR n.name LIKE(?))', $starts1, $starts2);
 			$delim = ' AND ';
 		}
 		
-		if ($city > 0)
+		if (!is_numeric($city))
+		{
+			$condition->add($delim . 'n.name = ?', $city);
+		}
+		else if ($city > 0)
 		{
 			$condition->add($delim . 'i.id = ?', $city);
 		}
-		else if ($area)
+		else if ($area > 0)
 		{
 			$query1 = new DbQuery('SELECT area_id FROM cities WHERE id = ?', $area);
 			list($parent_city) = $query1->record('city');
@@ -115,12 +76,22 @@ class ApiPage extends GetApiPageBase
 			$condition->add($delim . 'i.country_id = ?', $country);
 		}
 		
-		list($count) = Db::record('city', 'SELECT count(*) FROM cities i JOIN countries o ON o.id = i.country_id', $condition);
+		list($count) = Db::record('city', 
+			'SELECT count(DISTINCT i.id) FROM cities i' .
+			' JOIN countries o ON o.id = i.country_id' .
+			' JOIN names n ON n.id = i.name_id' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0', $lang, $lang, $condition);
 		$this->response['count'] = (int)$count;
 		if (!$count_only)
 		{
-			$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', o.id, o.name_' . $_lang_code . ', i.area_id FROM cities i JOIN countries o ON o.id = i.country_id', $condition);
-			$query->add(' ORDER BY i.name_' . $_lang_code);
+			$query = new DbQuery(
+				'SELECT DISTINCT i.id, ni.name, o.id, no.name, i.area_id FROM cities i' .
+				' JOIN countries o ON o.id = i.country_id' .
+				' JOIN names n ON n.id = i.name_id' .
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+				' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0', $lang, $lang, $condition);
+			$query->add(' ORDER BY ni.name');
 			if ($page_size > 0)
 			{
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
@@ -150,15 +121,15 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('contains', 'Search pattern. For example: <a href="cities.php?contains=va"><?php echo PRODUCT_URL; ?>/api/get/cities.php?contains=va</a> returns cities containing "va" in their name.', '-');
-		$help->request_param('starts', 'Search pattern. For example: <a href="cities.php?starts=va"><?php echo PRODUCT_URL; ?>/api/get/cities.php?starts=va</a> returns cities with names starting with "va".', '-');
-		$help->request_param('city', 'City id or city name. For example: <a href="cities.php?city=1"><?php echo PRODUCT_URL; ?>/api/get/cities.php?city=1</a> returns information about Vancouver; <a href="cities.php?city=moscow"><?php echo PRODUCT_URL; ?>/api/get/cities.php?city=moscow</a> returns information about Moscow.', '-');
-		$help->request_param('area', 'City id or city name. For example: <a href="cities.php?area=1"><?php echo PRODUCT_URL; ?>/api/get/cities.php?area=1</a> returns cities near Vancouver; <a href="cities.php?area=moscow"><?php echo PRODUCT_URL; ?>/api/get/cities.php?area=moscow</a> returns cities near Moscow.', '-');
-		$help->request_param('country', 'Country id or country name. For example: <a href="cities.php?country=2"><?php echo PRODUCT_URL; ?>/api/get/cities.php?country=2</a> returns Russian cities; <a href="cities.php?country=canada"><?php echo PRODUCT_URL; ?>/api/get/cities.php?country=canada</a> returns Canadian cities.', '-');
-		$help->request_param('lang', 'Language for city and country names. 1 is English; 2 is Russian. For example: <a href="cities.php?lang=2"><?php echo PRODUCT_URL; ?>/api/get/cities.php?lang=2</a> returns cities names in Russian. If not specified, default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.', '-');
-		$help->request_param('count', 'Returns cities count instead of the cities themselves. For example: <a href="cities.php?contains=mo&count"><?php echo PRODUCT_URL; ?>/api/get/cities.php?contains=mo&count</a> returns how many cities contain "mo" in their name.', '-');
-		$help->request_param('page', 'Page number. For example: <a href="cities.php?page=1"><?php echo PRODUCT_URL; ?>/api/get/cities.php?page=1</a> returns the second page of cities by alphabet.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="cities.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/cities.php?page_size=32</a> returns first 32 cities; <a href="cities.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/cities.php?page_size=0</a> returns cities in one page; <a href="cities.php"><?php echo PRODUCT_URL; ?>/api/get/cities.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' cities by alphabet.', '-');
+		$help->request_param('contains', 'Search pattern. For example: <a href="cities.php?contains=va">/api/get/cities.php?contains=va</a> returns cities containing "va" in their name.', '-');
+		$help->request_param('starts', 'Search pattern. For example: <a href="cities.php?starts=va">/api/get/cities.php?starts=va</a> returns cities with names starting with "va".', '-');
+		$help->request_param('city', 'City id or city name. For example: <a href="cities.php?city=1">/api/get/cities.php?city=1</a> returns information about Vancouver; <a href="cities.php?city=moscow">/api/get/cities.php?city=moscow</a> returns information about Moscow.', '-');
+		$help->request_param('area', 'City id or city name. For example: <a href="cities.php?area=1">/api/get/cities.php?area=1</a> returns cities near Vancouver; <a href="cities.php?area=moscow">/api/get/cities.php?area=moscow</a> returns cities near Moscow.', '-');
+		$help->request_param('country', 'Country id or country name. For example: <a href="cities.php?country=2">/api/get/cities.php?country=2</a> returns Russian cities; <a href="cities.php?country=canada">/api/get/cities.php?country=canada</a> returns Canadian cities.', '-');
+		$help->request_param('lang', 'Language for city and country names. For example: <a href="cities.php?lang=2">/api/get/cities.php?lang=2</a> returns cities names in Russian.' . valid_langs_help(), 'default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.');
+		$help->request_param('count', 'Returns cities count instead of the cities themselves. For example: <a href="cities.php?contains=mo&count">/api/get/cities.php?contains=mo&count</a> returns how many cities contain "mo" in their name.', '-');
+		$help->request_param('page', 'Page number. For example: <a href="cities.php?page=1">/api/get/cities.php?page=1</a> returns the second page of cities by alphabet.', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="cities.php?page_size=32">/api/get/cities.php?page_size=32</a> returns first 32 cities; <a href="cities.php?page_size=0">/api/get/cities.php?page_size=0</a> returns cities in one page; <a href="cities.php">/api/get/cities.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' cities by alphabet.', '-');
 
 		$param = $help->response_param('cities', 'The array of cities. Cities are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'City id.');

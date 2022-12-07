@@ -13,7 +13,7 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code, $_profile;
+		global $_profile;
 		
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
@@ -272,14 +272,14 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('event_id', 'Event id. For example: <a href="events.php?event_id=1">' . PRODUCT_URL . '/api/get/events.php?event_id=1</a> returns information Vancouver Mafia Club.', '-');
 		$help->request_param('tournament_id', 'Tournament id. For example: <a href="events.php?tournament_id=1">' . PRODUCT_URL . '/api/get/events.php?tournament_id=1</a> returns all rounds of VaWaCa-2017. <a href="events.php?tournament_id=0">' . PRODUCT_URL . '/api/get/events.php?tournament_id=0</a> returns all stand alone events that are not tournament rounds.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="events.php?club_id=1">' . PRODUCT_URL . '/api/get/events.php?club_id=1</a> returns all events in Vancouver Mafia Club. List of the cities and their ids can be obtained using <a href="clubs.php?help">' . PRODUCT_URL . '/api/get/clubs.php</a>.', '-');
-		$help->request_param('league_id', 'League id. For example: <a href="events.php?league_id=2"><?php echo PRODUCT_URL; ?>/api/get/events.php?league_id=2</a> returns all American Mafia League tournament rounds. <a href="events.php?league_id=0"><?php echo PRODUCT_URL; ?>/api/get/events.php?league_id=0</a> returns all events that were played outside of any league.', '-');
+		$help->request_param('league_id', 'League id. For example: <a href="events.php?league_id=2">/api/get/events.php?league_id=2</a> returns all American Mafia League tournament rounds. <a href="events.php?league_id=0">/api/get/events.php?league_id=0</a> returns all events that were played outside of any league.', '-');
 		$help->request_param('address_id', 'Address id. For example: <a href="events.php?address_id=10">' . PRODUCT_URL . '/api/get/events.php?address_id=10</a> returns all events played in Tafs Cafe by Vancouver Mafia Club.', '-');
 		$help->request_param('city_id', 'City id. For example: <a href="events.php?city_id=2">' . PRODUCT_URL . '/api/get/events.php?city_id=2</a> returns all events in Moscow. List of the cities and their ids can be obtained using <a href="cities.php?help">' . PRODUCT_URL . '/api/get/cities.php</a>.', '-');
 		$help->request_param('area_id', 'City id. The difference with city is that when area is set, the events from all nearby cities are also returned. For example: <a href="events.php?area_id=2">' . PRODUCT_URL . '/api/get/events.php?area_id=2</a> returns all events in Moscow and nearby cities like Podolsk, Himki, etc. Though <a href="events.php?city_id=2">' . PRODUCT_URL . '/api/get/events.php?city_id=2</a> returns only the events in Moscow itself.', '-');
 		$help->request_param('country_id', 'Country id. For example: <a href="events.php?country_id=2">' . PRODUCT_URL . '/api/get/events.php?country_id=2</a> returns all events in Russia. List of the countries and their ids can be obtained using <a href="countries.php?help">' . PRODUCT_URL . '/api/get/countries.php</a>.', '-');
 		$help->request_param('rules_code', 'Rules code. For example: <a href="events.php?rules_code=00000000100101010200000000000">' . PRODUCT_URL . '/api/get/events.php?rules_code=00000000100101010200000000000</a> returns all events where the rules with the code 00000000100101010200000000000 was used. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('user_id', 'User id. For example: <a href="events.php?user_id=25">' . PRODUCT_URL . '/api/get/events.php?user_id=25</a> returns all events where Fantomas was playing.', '-');
-		$help->request_param('langs', 'Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="events.php?langs=1">' . PRODUCT_URL . '/api/get/events.php?langs=1</a> returns all events that support English as their language.', '-');
+		$help->request_param('langs', 'Languages filter. A bit combination of language ids. For example: <a href="events.php?langs=1">' . PRODUCT_URL . '/api/get/events.php?langs=1</a> returns all events that support English as their language.' . valid_langs_help(), '-');
 		$help->request_param('canceled', '0 - exclude canceled events (default); 1 - incude canceled events; 2 - canceled events only. For example: <a href="events.php?canceled=2">' . PRODUCT_URL . '/api/get/events.php?canceled=2</a> returns all canceled events.', '-');
 		$help->request_param('lod', 'Level of details. 0 - basic (default); 1 - extended. Include club name/icon, city/country name, etc. For example: <a href="events.php?club=1&lod=1">' . PRODUCT_URL . '/api/get/events.php?club=1&lod=1</a> returns events with all the fields that have lod >= 1.', '-');
 		$help->request_param('count', 'Returns events count instead of the events themselves. For example: <a href="events.php?name_contains=an&count">' . PRODUCT_URL . '/api/get/events.php?name_contains=an&count</a> returns how many events contain "an" in their name.', '-');
@@ -291,7 +291,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('name', 'Event name.');
 			$param->sub_param('icon', 'Event icon URL.', 1);
 			$param->sub_param('picture', 'Event picture URL.', 1);
-			$param->sub_param('langs', 'Languages used in the event. A bit combination of: 1 - English; 2 - Russian.');
+			$param->sub_param('langs', 'A bit combination of languages used in the event.' . valid_langs_help());
 			$param->sub_param('address_id', 'Event address id.');
 			$param->sub_param('address_name', 'Event address name.', 1);
 			$param->sub_param('address_icon', 'Event address icon URL.', 1);

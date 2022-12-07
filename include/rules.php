@@ -561,9 +561,9 @@ define('RULES_VIEW_SHORTEST', 2);
 
 function show_rules($rules_code, $view)
 {
-	global $_lang_code, $_rules_options;
+	global $_lang, $_rules_options;
 	
-	$rules = include 'include/languages/' . $_lang_code . '/rules.php';
+	$rules = include 'include/languages/' . get_lang_code($_lang) . '/rules.php';
 	echo '<big><table class="bordered light" width="100%">';
 	if ($view <= RULES_VIEW_FULL)
 	{

@@ -12,7 +12,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		if (isset($_REQUEST['event_id']))
 		{
@@ -72,7 +72,7 @@ class ApiPage extends OpsApiPageBase
 		
 		get_youtube_id(get_required_param('video'), $video, $vtime);
 		
-		$lang = $_profile->user_def_lang;
+		$lang = $_lang;
 		if (isset($_REQUEST['lang']))
 		{
 			$lang = (int)$_REQUEST['lang'];
@@ -150,7 +150,7 @@ class ApiPage extends OpsApiPageBase
 				'0 (learning video) is used.');
 		$help->request_param(
 			'lang', 
-			'Language of the video. 1 (English) or 2 (Russian). Other languages/values are not supported yet.', 
+			'Language of the video.' . valid_langs_help(), 
 			PRODUCT_NAME . ' tries to guess the language using languages supported by the club, and default account language.');
 		
 		$help->response_param(
@@ -239,7 +239,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Change an existing youtube video reference on ' . PRODUCT_NAME . '.');
 		
 		$help->request_param('video_id', 'Id of the video.');
-		$help->request_param('lang', 'Language of the video. 1 for English; 2 for Russian. Other languages/values are not supported.', 'remains the same');
+		$help->request_param('lang', 'Language of the video.' . valid_langs_help(), 'remains the same');
 		$help->request_param('time', 'Unix timestamp of the time when this video was recorded.', 'remains the same');
 		$help->request_param('vtype', 'Type of the video.  Currently two values are supported: 
 				<ul>
@@ -410,7 +410,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
 		$id = (int)get_required_param('id');
@@ -418,7 +418,7 @@ class ApiPage extends OpsApiPageBase
 		$lang = detect_lang($comment);
 		if ($lang == LANG_NO)
 		{
-			$lang = $_profile->user_def_lang;
+			$lang = $_lang;
 		}
 		
 		Db::exec(get_label('comment'), 'INSERT INTO video_comments (time, user_id, comment, video_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $id, $lang);

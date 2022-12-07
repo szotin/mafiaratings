@@ -36,8 +36,8 @@ class Page extends GeneralPageBase
 		echo '</select>';
 		echo '</td></tr></table></p>';
 		
-		global $_lang_code;
-		if ($_lang_code == 'ru')
+		global $_lang;
+		if ($_lang == LANG_RUSSIAN)
 		{
 			if ($this->video < 0)
 			{
@@ -64,7 +64,7 @@ class Page extends GeneralPageBase
 		}
 		else
 		{
-			include_once("include/languages/".$_lang_code."/welcome.php");
+			include_once("include/languages/".get_lang_code($_lang)."/welcome.php");
 		}
 	}
 

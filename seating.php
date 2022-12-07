@@ -6,11 +6,11 @@ class Page extends PageBase
 {
 	protected function show_body()
 	{
-		global $_lang_code;
+		global $_lang;
 		
 ?>
 		<script type="text/javascript" src="js/seating.js"></script>
-		<script type="text/javascript" src="js/seating-<?php echo $_lang_code; ?>.js"></script>
+		<script type="text/javascript" src="js/seating-<?php echo get_lang_code($_lang); ?>.js"></script>
 		<script type="text/javascript" src="js/seating-ui.js"></script>
 		<div id="seating"></div>
 <?php

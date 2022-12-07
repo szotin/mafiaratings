@@ -277,7 +277,7 @@ class ApiPage extends OpsApiPageBase
 		if (isset($_REQUEST['city']))
 		{
 			$city_name = $_REQUEST['city'];
-			$query = new DbQuery('SELECT id, country_id, area_id FROM cities WHERE name_en = ? OR name_ru = ?', $city_name, $city_name);
+			$query = new DbQuery('SELECT c.id, c.country_id, c.area_id FROM cities c JOIN names n ON n.id = c.name_id WHERE n.name', $city_name);
 			// $this->response['sql-01'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{
@@ -288,7 +288,7 @@ class ApiPage extends OpsApiPageBase
 		if ($country_id < 0 && isset($_REQUEST['country']))
 		{
 			$country_name = $_REQUEST['country'];
-			$query = new DbQuery('SELECT id FROM countries WHERE name_en = ? OR name_ru = ?', $country_name, $country_name);
+			$query = new DbQuery('SELECT DISTINCT c.id FROM countries c JOIN names n ON n.id = c.name_id WHERE n.name = ?', $country_name);
 			// $this->response['sql-02'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{
@@ -425,7 +425,7 @@ class ApiPage extends OpsApiPageBase
 	function suggest_club_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_USER, 'Suggest a club for the current user account, considering user city/country and the languages he/she knows.');
-		$help->request_param('langs', 'User languages. A bit mask where 1 is English; 2 is Russian. Their combination (3 = 1 | 2) means both. Other languages are not supported yet.', 'profile languages are used.');
+		$help->request_param('langs', 'User languages. A bit mask of language ids.' . valid_langs_help(), 'profile languages are used.');
 		$help->request_param('city', 'User city name.', 'profile city is used.');
 		$help->request_param('country', 'User country name.', 'profile country is used.');
 		$help->response_param('club_id', 'The most sutable club for the current user account.');
@@ -437,19 +437,19 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function browser_lang_op()
 	{
-		global $_profile, $_lang_code;
+		global $_profile, $_lang;
 		
-		$browser_lang = get_required_param('lang');
-		$_lang_code = $_SESSION['lang_code'] = $browser_lang;
+		$lang_code = get_required_param('lang');
+		$_SESSION['lang_code'] = $lang_code;
+		$_lang = get_lang_by_code($lang_code);
 		if (isset($_profile) && $_profile != NULL)
 		{
-			$_profile->user_def_lang = get_lang_by_code($browser_lang);
 			Db::begin();
-			Db::exec(get_label('user'), 'UPDATE users SET def_lang = ? WHERE id = ?', $_profile->user_def_lang, $_profile->user_id);
+			Db::exec(get_label('user'), 'UPDATE users SET def_lang = ? WHERE id = ?', $_lang, $_profile->user_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = new stdClass();
-				$log_details->def_lang = $_profile->user_def_lang;
+				$log_details->def_lang = $_lang;
 				db_log(LOG_OBJECT_USER, 'changed', $log_details, $_profile->user_id);
 			}
 			Db::commit();
@@ -460,7 +460,7 @@ class ApiPage extends OpsApiPageBase
 	function browser_lang_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE, 'Set preferable language for viewing ' . PRODUCT_NAME . '.');
-		$help->request_param('lang', 'Language code: <q>ru</q> for Russian; <q>en</q> for English; other languages are not supported yet.');
+		$help->request_param('lang', 'Language id.' . valid_langs_help());
 		return $help;
 	}
 }

@@ -9,54 +9,26 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code;
+		global $_lang;
 		
-		$contains = '';
-		if (isset($_REQUEST['contains']))
-		{
-			$contains = $_REQUEST['contains'];
-		}
-		
-		$starts = '';
-		if (isset($_REQUEST['starts']))
-		{
-			$starts = $_REQUEST['starts'];
-		}
-		
-		$country = 0;
-		if (isset($_REQUEST['country']))
-		{
-			$country = (int)$_REQUEST['country'];
-			if ($country <= 0)
-			{
-				$query = new DbQuery('SELECT id FROM countries WHERE name_en = ? OR name_ru = ? ORDER BY id LIMIT 1', $_REQUEST['country'], $_REQUEST['country']);
-				if ($row = $query->next())
-				{
-					list($country) = $row;
-				}
-			}
-		}
-		
-		$page_size = API_DEFAULT_PAGE_SIZE;
-		if (isset($_REQUEST['page_size']))
-		{
-			$page_size = (int)$_REQUEST['page_size'];
-		}
-		
-		$page = 0;
-		if (isset($_REQUEST['page']))
-		{
-			$page = (int)$_REQUEST['page'];
-		}
-		
+		$contains = get_optional_param('contains');
+		$starts = get_optional_param('starts');
+		$page_size = get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
+		$page = get_optional_param('page', 0);
 		$count_only = isset($_REQUEST['count']);
+		$country = get_optional_param('country', 0);
+		$lang = (int)get_optional_param('lang', $_lang);
+		if (!is_valid_lang($lang))
+		{
+			$lang = $_lang;
+		}
 		
 		$condition = new SQL();
 		$delim = ' WHERE ';
 		if ($contains != '')
 		{
 			$contains = '%' . $contains . '%';
-			$condition->add($delim . '(name_en LIKE(?) OR name_ru LIKE(?))', $contains, $contains);
+			$condition->add($delim . 'n.name LIKE(?)', $contains);
 			$delim = ' AND ';
 		}
 		
@@ -64,21 +36,25 @@ class ApiPage extends GetApiPageBase
 		{
 			$starts1 = '% ' . $starts . '%';
 			$starts2 = $starts . '%';
-			$condition->add($delim . '(name_en LIKE(?) OR name_ru LIKE(?) OR name_en LIKE(?) OR name_ru LIKE(?))', $starts1, $starts1, $starts2, $starts2);
+			$condition->add($delim . '(n.name LIKE(?) OR n.name LIKE(?))', $starts1, $starts2);
 			$delim = ' AND ';
 		}
 		
-		if ($country > 0)
+		if (!is_numeric($country))
 		{
-			$condition->add($delim . 'id = ?', $country);
+			$condition->add($delim . 'n.name = ?', $country);
+		}
+		else if ($country > 0)
+		{
+			$condition->add($delim . 'c.id = ?', $country);
 		}
 		
-		list($count) = Db::record('country', 'SELECT count(*) FROM countries', $condition);
+		list($count) = Db::record('country', 'SELECT count(DISTINCT c.id) FROM countries c JOIN names n ON n.id = c.name_id', $condition);
 		$this->response['count'] = (int)$count;
 		if (!$count_only)
 		{
-			$query = new DbQuery('SELECT id, name_' . $_lang_code . ', code FROM countries', $condition);
-			$query->add(' ORDER BY name_' . $_lang_code);
+			$query = new DbQuery('SELECT DISTINCT c.id, nc.name, c.code FROM countries c JOIN names n ON n.id = c.name_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & ?) <> 0', $lang, $condition);
+			$query->add(' ORDER BY nc.name');
 			if ($page_size > 0)
 			{
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
@@ -99,12 +75,13 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('contains', 'Search pattern. For example: <a href="countries.php?contains=us"><?php echo PRODUCT_URL; ?>/api/get/countries.php?contains=us</a> returns countries containing "us" in their name.', '-');
-		$help->request_param('starts', 'Search pattern. For example: <a href="countries.php?starts=us"><?php echo PRODUCT_URL; ?>/api/get/countries.php?starts=us</a> returns countries with names starting with "us".', '-');
-		$help->request_param('country', 'Country id or country name. For example: <a href="countries.php?country=1"><?php echo PRODUCT_URL; ?>/api/get/countries.php?country=1</a> returns information about Canada; <a href="countries.php?country=russia"><?php echo PRODUCT_URL; ?>/api/get/countries.php?country=russia</a> returns information about Russia.', '-');
-		$help->request_param('count', 'Returns countries count instead of the countries themselves. For example: <a href="countries.php?contains=an&count"><?php echo PRODUCT_URL; ?>/api/get/countries.php?contains=an&count</a> returns how many countries contain "an" in their name.', '-');
-		$help->request_param('page', 'Page number. For example: <a href="countries.php?page=1"><?php echo PRODUCT_URL; ?>/api/get/countries.php?page=1</a> returns the second page of countries by alphabet.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="countries.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/countries.php?page_size=32</a> returns first 32 countries; <a href="countries.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/countries.php?page_size=0</a> returns countries in one page; <a href="countries.php"><?php echo PRODUCT_URL; ?>/api/get/countries.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' countries by alphabet.', '-');
+		$help->request_param('contains', 'Search pattern. For example: <a href="countries.php?contains=us">/api/get/countries.php?contains=us</a> returns countries containing "us" in their name.', '-');
+		$help->request_param('starts', 'Search pattern. For example: <a href="countries.php?starts=us">/api/get/countries.php?starts=us</a> returns countries with names starting with "us".', '-');
+		$help->request_param('country', 'Country id or country name. For example: <a href="countries.php?country=1">/api/get/countries.php?country=1</a> returns information about Canada; <a href="countries.php?country=russia">/api/get/countries.php?country=russia</a> returns information about Russia.', '-');
+		$help->request_param('lang', 'Language id for returned names. For example: <a href="countries.php?lang=2">/api/get/countries.php?lang=2</a> returns country names in Russian.' . valid_langs_help(), 'default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.');
+		$help->request_param('count', 'Returns countries count instead of the countries themselves. For example: <a href="countries.php?contains=an&count">/api/get/countries.php?contains=an&count</a> returns how many countries contain "an" in their name.', '-');
+		$help->request_param('page', 'Page number. For example: <a href="countries.php?page=1">/api/get/countries.php?page=1</a> returns the second page of countries by alphabet.', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="countries.php?page_size=32">/api/get/countries.php?page_size=32</a> returns first 32 countries; <a href="countries.php?page_size=0">/api/get/countries.php?page_size=0</a> returns countries in one page; <a href="countries.php">/api/get/countries.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' countries by alphabet.', '-');
 		
 		$param = $help->response_param('countries', 'The array of countries. Countries are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'Country id.');

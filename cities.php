@@ -11,7 +11,7 @@ class Page extends GeneralPageBase
 {
 	protected function show_body()
 	{
-		global $_lang_code, $_page;
+		global $_lang, $_page;
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
@@ -21,10 +21,12 @@ class Page extends GeneralPageBase
 		
 		check_permissions(PERMISSION_ADMIN);
 		$query = new DbQuery(
-			'SELECT i.id, i.name_' . $_lang_code . ', i.flags, o.name_' . $_lang_code . ', i.timezone FROM cities i' . 
+			'SELECT i.id, ni.name, i.flags, no.name, i.timezone FROM cities i' . 
 			' JOIN countries o ON i.country_id = o.id' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
 			' WHERE (i.flags & ' . CITY_FLAG_NOT_CONFIRMED . ') <> 0' .
-			' ORDER BY i.name_' . $_lang_code);
+			' ORDER BY ni.name', $_lang, $_lang);
 		if ($row = $query->next())
 		{
 			echo '<p><table class="bordered light" width="100%">';
@@ -63,11 +65,14 @@ class Page extends GeneralPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT i.id, i.name_' . $_lang_code . ', i.flags, o.name_' . $_lang_code . ', i.timezone, i.area_id, a.name_' . $_lang_code . ' FROM cities i' . 
+			'SELECT i.id, ni.name, i.flags, no.name, i.timezone, i.area_id, na.name FROM cities i' . 
 				' JOIN countries o ON i.country_id = o.id' .
-				' LEFT OUTER JOIN cities a ON i.area_id = a.id',
-			$condition);
-		$query->add(' ORDER BY i.name_' . $_lang_code . ' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+				' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+				' LEFT OUTER JOIN cities a ON i.area_id = a.id' .
+				' LEFT OUTER JOIN names na ON na.id = a.name_id AND (na.langs & ?) <> 0',
+			$_lang, $_lang, $_lang, $condition);
+		$query->add(' ORDER BY ni.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';
 		echo '<td width="56">';

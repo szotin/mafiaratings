@@ -8,7 +8,7 @@ define('ALL_COUNTRIES', 0);
 
 function retrieve_country_id($country)
 {
-	global $_profile, $_lang_code;
+	global $_profile;
 
 	$country = trim($country);
 	if (empty($country))
@@ -16,27 +16,26 @@ function retrieve_country_id($country)
 		throw new Exc(get_label('Please enter [0].', get_label('country')));
 	}
 
-	$query = new DbQuery('SELECT id FROM countries WHERE name_en = ? OR name_ru = ?', $country, $country);
+	Db::begin();
+	$query = new DbQuery('SELECT country_id FROM country_names WHERE name = ?', $country);
 	if ($row = $query->next())
 	{
 		list($country_id) = $row;
 	}
 	else
 	{
-		Db::begin();
-		Db::exec(get_label('country'), 'INSERT INTO countries (name_en, name_ru, flags, code) VALUES (?, ?, ' . COUNTRY_FLAG_NOT_CONFIRMED . ', \'\')', $country, $country);
+		Db::exec(get_label('name'), 'INSERT INTO names (langs, name) VALUES (?, ?)', DB_ALL_LANGS, $country);
+		list ($name_id) = Db::record(get_label('name'), 'SELECT LAST_INSERT_ID()');
+		Db::exec(get_label('country'), 'INSERT INTO countries (name_id, flags, code) VALUES (?, ' . COUNTRY_FLAG_NOT_CONFIRMED . ', \'\')', $name_id);
 		list ($country_id) = Db::record(get_label('country'), 'SELECT LAST_INSERT_ID()');
 		
 		Db::exec(get_label('country'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $country);
 		
 		$log_details = new stdClass();
-		$log_details->name_en = $country;
-		$log_details->name_ru = $country;
+		$log_details->name = $country;
 		$log_details->code = '';
 		$log_details->flags = COUNTRY_FLAG_NOT_CONFIRMED;
 		db_log(LOG_OBJECT_COUNTRY, 'created', $log_details, $country_id);
-		
-		Db::commit();
 		
 		$query = new DbQuery('SELECT id, name, email FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
 		while ($row = $query->next())
@@ -56,15 +55,16 @@ function retrieve_country_id($country)
 			send_email($admin_email, $body, $text_body, 'New country');
 		}
 	}
+	Db::commit();
 	return $country_id;
 }
 
 function detect_country()
 {
-	global $_profile, $_lang_code;
+	global $_profile, $_lang;
 	
 	$loc = Location::get();
-	$query = new DbQuery('SELECT name_' . $_lang_code . ' FROM countries WHERE code = ?', $loc->country_code);
+	$query = new DbQuery('SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.code = ?', $_lang, $loc->country_code);
 	if ($row = $query->next())
 	{
 		list ($country) = $row;
@@ -80,13 +80,13 @@ define('COUNTRY_FROM_PROFILE', 0);
 define('COUNTRY_DETECT', 1);
 function show_country_input($name, $value, $city_input = NULL, $on_select = NULL)
 {
-	global $_profile, $_lang_code;
+	global $_profile, $_lang;
 
 	if ($value === COUNTRY_FROM_PROFILE)
 	{
 		if ($_profile != NULL)
 		{
-			list ($value) = Db::record(get_label('country'), 'SELECT name_' . $_lang_code . ' FROM countries WHERE id = ?', $_profile->country_id);
+			list ($value) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $_profile->country_id);
 		}
 		else
 		{
@@ -98,7 +98,7 @@ function show_country_input($name, $value, $city_input = NULL, $on_select = NULL
 		$value = detect_country();
 		if (($value == '' || $value == '-') && $_profile != NULL)
 		{
-			list ($value) = Db::record(get_label('country'), 'SELECT name_' . $_lang_code . ' FROM countries WHERE id = ?', $_profile->country_id);
+			list ($value) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $_profile->country_id);
 		}
 	}
 

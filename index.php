@@ -454,7 +454,7 @@ class Page extends GeneralPageBase
 
 	protected function show_body()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		
 		$this->league_pic = new Picture(LEAGUE_PICTURE);
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
@@ -532,7 +532,7 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, l.id, l.name, l.flags FROM series s' .
 			' JOIN leagues l ON l.id = s.league_id' .
-			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP()', $condition);
+			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP()');
 		$query->add(' ORDER BY s.start_time + s.duration, s.name, s.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT));
 		while ($row = $query->next())
 		{

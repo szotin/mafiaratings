@@ -173,7 +173,7 @@ class Page extends LeaguePageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$this->series_pic = new Picture(SERIES_PICTURE);

@@ -25,7 +25,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$club_id = (int)get_required_param('club_id');
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
@@ -51,7 +51,7 @@ class ApiPage extends OpsApiPageBase
 			$lang = detect_lang($raw_message);
 			if (!is_valid_lang($lang))
 			{
-				$lang = $_profile->user_def_lang;
+				$lang = $_lang;
 			}
 		}
 		
@@ -75,7 +75,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('message', 'Advertizement message text.');
 		$help->request_param('start', 'Time when the message will start apearing in the club main page. It is either unix timestamp or time string in format (php datetime format) "Y-m-d H:i" ("2018-06-23 17:33").', 'the message starts being showed immediatly.');
 		$help->request_param('end', 'Expiration time.  It is either unix timestamp or time string in format (php datetime format) "Y-m-d H:i" ("2018-06-23 17:33").', 'the end is in two weeks from now');
-		$help->request_param('lang', 'Advertisement language. 1 (English) or 2 (Russian). Other languages are not supported yet.', 'auto-detected by analyzing message character codes.');
+		$help->request_param('lang', 'Advertisement language.' . valid_langs_help(), 'auto-detected by analyzing message character codes.');
 
 		$help->response_param('advert_id', 'Newly created advertisement id.');
 		return $help;
@@ -86,7 +86,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$advert_id = (int)get_required_param('advert_id');
 		list ($club_id, $raw_message, $message, $start, $end, $lang) = Db::record(get_label('advert'), 'SELECT club_id, raw_message, message, timestamp, expires, lang FROM news WHERE id = ?', $advert_id);
@@ -118,7 +118,7 @@ class ApiPage extends OpsApiPageBase
 			$lang = detect_lang($message);
 			if (!is_valid_lang($lang))
 			{
-				$lang = $_profile->user_def_lang;
+				$lang = $_lang;
 			}
 		}
 		
@@ -140,7 +140,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('message', 'Advertizement message text.', 'remains the same.');
 		$help->request_param('start', 'Time when the message will start apearing in the club main page. It is either unix timestamp or time string in format (php style) "Y-m-d H:i" ("2018-06-23 17:33").', 'the message starts being showed immediatly.', 'remains the same.');
 		$help->request_param('end', 'Expiration time.  It is either unix timestamp or time string in format (php style) "Y-m-d H:i" ("2018-06-23 17:33").', 'remains the same.');
-		$help->request_param('lang', 'Advertisement language. 1 (English) or 2 (Russian). Other languages are not supported yet.<br><dfn>When 0:</dfn> auto-detected by analyzing message character codes.', 'remains the same.');
+		$help->request_param('lang', 'Advertisement language.<br><dfn>When 0:</dfn> auto-detected by analyzing message character codes.' . valid_langs_help(), 'remains the same.');
 		return $help;
 	}
 

@@ -49,7 +49,7 @@ class LeaguePageBase extends PageBase
 	
 	protected function prepare()
 	{
-		global $_lang_code, $_profile;
+		global $_profile;
 	
 		if (!isset($_REQUEST['id']))
 		{

@@ -27,7 +27,7 @@ class CCCFilter
 	
 	function __construct($name, $filter_str, $flags = 0)
 	{
-		global $_profile, $_lang_code;
+		global $_profile, $_lang;
 	
 		if (isset($_REQUEST[$name]))
 		{
@@ -77,7 +77,7 @@ class CCCFilter
 				}
 				else
 				{
-					list ($this->value) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $this->id);
+					list ($this->value) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $this->id);
 				}
 				break;
 			case CCCF_COUNTRY:
@@ -87,7 +87,7 @@ class CCCFilter
 				}
 				else
 				{
-					list ($this->value) = Db::record(get_label('country'), 'SELECT name_' . $_lang_code . ' FROM countries WHERE id = ?', $this->id);
+					list ($this->value) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $this->id);
 				}
 				break;
 		}
@@ -95,8 +95,6 @@ class CCCFilter
 	
 	function show($title, $on_select = NULL)
 	{
-		global $_lang_code;
-	
 		echo '<input type="text" class="dropdown" id="' . $this->name . '" value="' . $this->value . '" title="' . $title . '"/>';
 		echo '<input type="image" class="dropdown-btn" src="images/dropdown.png" onclick="cccDrop()"/>';
 //		echo '<button class="dropdown-btn" onclick="cccDrop()"><img src="images/down.png" width="16" height="16"></button>';

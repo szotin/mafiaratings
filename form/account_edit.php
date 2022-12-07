@@ -50,7 +50,12 @@ try
 		$club_id = 0;
 	}
 	
-	list ($city_name, $country_name) = Db::record(get_label('city'), 'SELECT ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ' FROM cities ct JOIN countries cr ON cr.id = ct.country_id WHERE ct.id = ?', $user_city_id);
+	list ($city_name, $country_name) = Db::record(get_label('city'), 
+		'SELECT nct.name, ncr.name FROM cities ct' .
+		' JOIN countries cr ON cr.id = ct.country_id' .
+		' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
+		' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
+		' WHERE ct.id = ?', $_lang, $_lang, $user_city_id);
 	
 	echo '<tr><td class="dark">' . get_label('Email') . ':</td><td class="light"><input id="form-email" value="' . $user_email . '"></td></tr>';
 	

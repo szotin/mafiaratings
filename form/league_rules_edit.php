@@ -36,7 +36,7 @@ try
 	
 	echo '</table><script>';
 	
-	$rules = include '../include/languages/' . $_lang_code . '/rules.php';
+	$rules = include '../include/languages/' . get_lang_code($_lang) . '/rules.php';
 	$rules_array = array();
 	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
 	{

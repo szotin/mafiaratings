@@ -1332,3 +1332,150 @@ var mr = new function()
 }
 
 var swfu = null;
+
+//--------------------------------------------------------------------------------------
+// name control with languages support
+//--------------------------------------------------------------------------------------
+class NameControl
+{
+	constructor(values, controlId, varName)
+	{
+		this.controlId = controlId;
+		this.varName = varName;
+		this.langs = [];
+		if (values)
+		{
+			for (const code in values)
+			{
+				if (code != 'name')
+				{
+					this.langs.push(code);
+				}
+			}
+		}
+		this.draw(values);
+	}
+	
+	getValues()
+	{
+		var values = { name: $('#' + this.controlId).val() };
+		for (const i in this.langs)
+		{
+			var code = this.langs[i];
+			var control = $('#' + this.controlId + '-' + code);
+			if (control.length)
+			{
+				values[code] = control.val();
+			}
+		}
+		return values;
+	}
+	
+	setValues(values)
+	{
+		$('#' + this.controlId).val(values.name);
+		for (const i in this.langs)
+		{
+			var code = this.langs[i];
+			var control = $('#' + this.controlId + '-' + code);
+			if (control.length && values[code])
+			{
+				control.val(values[code]);
+			}
+		}
+	}
+	
+	draw(values)
+	{
+		var oldValues = values;
+		if (!oldValues)
+		{
+			oldValues = this.getValues();
+		}
+		var html = 
+			'<table class="transp"><tr><td width="24"><img src="images/sync.png" width="20"></td><td><input id="' + this.controlId + 
+			'"></td><td><button id="' + this.controlId + 
+			'-lang" class="icon" onMouseEnter="' + this.varName + 
+			'.showLangMenu()"><img src="images/create.png"></button></td></tr>';
+		for (const i in this.langs)
+		{
+			var code = this.langs[i];
+			html += 
+				'<tr><td><img src="images/' + code + 
+				'.png" width="20"></td><td><input id="' + this.controlId + 
+				'-' + code + 
+				'"></td><td><button class="icon" onClick="' + this.varName + 
+				'.removeLang(\'' + code + '\')"><img src="images/delete.png"></button></td></tr>';
+		}
+		html += '</table>';
+		$('#' + this.controlId + '-div').html(html);
+		this.setValues(oldValues);
+	}
+	
+	addLang(code)
+	{
+		var exists = false;
+		for (const i in this.langs)
+		{
+			if (this.langs[i] == code)
+			{
+				exists = true;
+				break;
+			}
+		}
+		if (!exists)
+		{
+			this.langs.push(code);
+			this.draw();
+		}
+		$(this.controlId + '-' + code).focus();
+	}
+
+	removeLang(code)
+	{
+		for (const i in this.langs)
+		{
+			if (this.langs[i] == code)
+			{
+				this.langs.splice(i, 1);
+				this.draw();
+				break;
+			}
+		}
+	}
+
+	showLangMenu()
+	{
+		setCurrentMenu('#' + this.controlId + '-menu');
+		var langMenu = $('#' + this.controlId + '-menu').menu();
+		var b = $('#' + this.controlId + '-lang');
+		langMenu.show(0, function()
+		{
+			langMenu.position(
+			{
+				my: "left top",
+				at: "left bottom",
+				of: b
+			});
+			$(document).one("click", function() { setCurrentMenu(null); });
+		});
+	}
+	
+	fillRequest(request)
+	{
+		var str = $('#' + this.controlId).val();
+		if (str.trim().length > 0)
+		{
+			request.name = str;
+		}
+		for (const i in this.langs)
+		{
+			var code = this.langs[i];
+			str = $('#' + this.controlId + '-' + code).val();
+			if (str.trim().length > 0)
+			{
+				request['name_' + code] = str;
+			}
+		}
+	}
+}

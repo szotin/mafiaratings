@@ -19,11 +19,13 @@ try
 	
 	check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER, $club_id);
 	list($city_name, $country_name) = Db::record(get_label('club'),
-		'SELECT i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM clubs c' .
+		'SELECT ni.name, no.name FROM clubs c' .
 			' JOIN cities i ON c.city_id = i.id' .
 			' JOIN countries o ON i.country_id = o.id' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
 			' WHERE c.id = ?', 
-		$club_id);
+		$_lang, $_lang, $club_id);
 
 	echo '<table class="dialog_form" width="100%">';
 	

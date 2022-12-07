@@ -22,11 +22,13 @@ try
 	list ($name, $address, $map_url, $flags, $city, $country, $club_id) = 
 		Db::record(
 			get_label('address'), 
-			'SELECT a.name, a.address, a.map_url, a.flags, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', a.club_id FROM addresses a' .
+			'SELECT a.name, a.address, a.map_url, a.flags, ni.name, no.name, a.club_id FROM addresses a' .
 				' JOIN cities i ON i.id = a.city_id' .
 				' JOIN countries o ON o.id = i.country_id' .
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+				' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
 				' WHERE a.id = ?',
-			$id);
+			$_lang, $_lang, $id);
 	check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER, $club_id);
 			
 	echo '<table class="dialog_form" width="100%">';

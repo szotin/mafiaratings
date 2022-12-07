@@ -298,7 +298,7 @@ class ApiPage extends OpsApiPageBase
 					<li value="2">the event should not be shown in the list of past events on the site.</li>
 					<li value="4">all registered users can moderate games.</li>
 				</ol>', '4.');
-		$help->request_param('langs', 'Languages on this event. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all club languages are used.');
+		$help->request_param('langs', 'Languages on this event. A bit combination of language ids.' . valid_langs_help(), 'all club languages are used.');
 		$help->request_param('address_id', 'Address id of the event.', '<q>address</q>, <q>city</q>, and <q>country</q> are used to create new address.');
 		$help->request_param('address', 'When address_id is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the address line to create.', '<q>address_id</q> must be set');
 		$help->request_param('country', 'When address_id is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the country name for the new address. If <?php echo PRODUCT_NAME; ?> can not find a country with this name, new country is created.', '<q>address_id</q> must be set');
@@ -325,7 +325,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
-		global $_profile, $_lang_code;
+		global $_profile, $_lang;
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
@@ -346,10 +346,12 @@ class ApiPage extends OpsApiPageBase
 			$club = new stdClass();
 			list($club->id, $club->timezone, $club->country_id, $club->city_id) = 
 				Db::record(get_label('club'), 
-					'SELECT c.id, ct.timezone, cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', c.rules, c.name, c.langs FROM clubs c ' .
+					'SELECT c.id, ct.timezone, crn.name, ctn.name, c.rules, c.name, c.langs FROM clubs c ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
-					'WHERE c.id = ?', $club_id);
+					'JOIN names ctn ON ctn.id = ct.name_id AND (ctn.langs & ?) <> 0 ' .
+					'JOIN names crn ON crn.id = cr.name_id AND (crn.langs & ?) <> 0 ' .
+					'WHERE c.id = ?', $_lang, $_lang, $club_id);
 		}
 
 		$name = get_optional_param('name', $old_name);
@@ -527,7 +529,7 @@ class ApiPage extends OpsApiPageBase
 					<li value="2">the event should not be shown in the list of past events on the site.</li>
 					<li value="4">all registered users can moderate games.</li>
 				</0l>', 'remain the same.');
-		$help->request_param('langs', 'Languages on this event. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remain the same.');
+		$help->request_param('langs', 'Languages on this event. A bit combination of language ids.' . valid_langs_help(), 'remain the same.');
 		$help->request_param('address_id', 'Address id of the event.', '<q>address</q> is used to create new address.');
 		$help->request_param('address', 'When <q>address_id</q> is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the address line to create.', 'address remains the same');
 		$help->request_param('country_id', 'When <q>address_id<q> is not set, and <q>address</q> is set - this is the country id for the new address.', '<q>country</q> parameter is used to create new country for the address.');
@@ -682,7 +684,7 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('city', 'Event city name using default language.');
 		$help->response_param('country', 'Event country name using default language.');
 		$help->response_param('notes', 'Event notes.');
-		$help->response_param('langs', 'Event languages. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.');
+		$help->response_param('langs', 'Event languages. A bit combination of language ids.' . valid_langs_help());
 		$help->response_param('rules_code', 'Game rules code.');
 		$help->response_param('scoring_id', 'Scoring system id.');
 		return $help;
@@ -1356,7 +1358,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
 		$event_id = (int)get_required_param('id');
@@ -1364,7 +1366,7 @@ class ApiPage extends OpsApiPageBase
 		$lang = detect_lang($comment);
 		if ($lang == LANG_NO)
 		{
-			$lang = $_profile->user_def_lang;
+			$lang = $_lang;
 		}
 		
 		Db::exec(get_label('comment'), 'INSERT INTO event_comments (time, user_id, comment, event_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $event_id, $lang);

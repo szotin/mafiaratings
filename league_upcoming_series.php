@@ -13,7 +13,7 @@ class Page extends LeaguePageBase
 {
 	protected function show_body()
 	{
-		global $_page, $_lang_code, $_profile;
+		global $_page, $_profile;
 		
 		$is_manager = is_permitted(PERMISSION_LEAGUE_MANAGER, $this->id);
 		$page_size = ROW_COUNT * COLUMN_COUNT;

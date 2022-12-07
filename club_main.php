@@ -236,7 +236,7 @@ class Page extends ClubPageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$this->club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);

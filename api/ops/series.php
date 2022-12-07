@@ -17,7 +17,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		$league_id = (int)get_required_param('league_id');
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		list($league_name, $league_rules, $league_langs, $gaining_id) = Db::record(get_label('league'), 'SELECT name, rules, langs, gaining_id FROM leagues WHERE id = ?', $league_id);
@@ -80,7 +80,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'empty.');
-		$help->request_param('langs', 'Languages on this series. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'all league languages are used.');
+		$help->request_param('langs', 'Languages on this series. A bit combination of language ids.', 'all league languages are used.');
 		$help->request_param('flags', 'Series flags. Currently not used');
 		$help->request_param('gaining_id', 'Gaining system id.', 'Default gaining of the league is used.');
 		$help->request_param('gaining_version', 'Gaining system version.', 'Latest gaining system version is used.');
@@ -207,7 +207,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'remains the same.');
-		$help->request_param('langs', 'Languages on this series. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
+		$help->request_param('langs', 'Languages on this series. A bit combination of language ids.' . valid_langs_help(), 'remains the same.');
 		$help->request_param('flags', 'Series flags. Not used yet');
 		$help->request_param('gaining_id', 'Gaining system id.', 'remains the same.');
 		$help->request_param('gaining_version', 'Gaining system version.', 'remains the same, or latest version of the gaining system is used if gaining system was changed.');
@@ -304,7 +304,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
 		$series_id = (int)get_required_param('id');
@@ -312,7 +312,7 @@ class ApiPage extends OpsApiPageBase
 		$lang = detect_lang($comment);
 		if ($lang == LANG_NO)
 		{
-			$lang = $_profile->user_def_lang;
+			$lang = $_lang;
 		}
 		
 		Db::exec(get_label('comment'), 'INSERT INTO series_comments (time, user_id, comment, series_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $series_id, $lang);

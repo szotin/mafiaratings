@@ -19,7 +19,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_body()
 	{
-		global $_lang_code;
+		global $_lang;
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		echo '<form name="roleForm" method="get"><select name="role" onchange="document.roleForm.submit()">';
@@ -33,17 +33,17 @@ class Page extends GeneralPageBase
 		switch ($this->role)
 		{
 			case 1:
-				include_once("include/languages/".$_lang_code."/tactics-1.php");
+				include_once("include/languages/".get_lang_code($_lang)."/tactics-1.php");
 				break;
 			case 2:
-				include_once("include/languages/".$_lang_code."/tactics-2.php");
+				include_once("include/languages/".get_lang_code($_lang)."/tactics-2.php");
 				break;
 			case 3:
-				include_once("include/languages/".$_lang_code."/tactics-3.php");
+				include_once("include/languages/".get_lang_code($_lang)."/tactics-3.php");
 				break;
 			case 3:
 			default:
-				include_once("include/languages/".$_lang_code."/tactics-0.php");
+				include_once("include/languages/".get_lang_code($_lang)."/tactics-0.php");
 				break;
 		}
 		echo '<hr>';

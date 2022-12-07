@@ -16,7 +16,7 @@ class Page extends TournamentPageBase
 {
 	private function show_details()
 	{
-		global $_page, $_lang_code, $_profile;
+		global $_page, $_lang, $_profile;
 		
 		$row_count = 0;
 		$column_count = 0;
@@ -119,13 +119,15 @@ class Page extends TournamentPageBase
 		$row_count = 0;
 		$column_count = 0;
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.start_time, e.duration, e.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', ct.timezone, a.id, a.flags, a.address, a.map_url, a.name FROM events e' .
+			'SELECT e.id, e.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, a.name FROM events e' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
+			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
 			' WHERE e.tournament_id = ? AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0' .
 			' ORDER BY e.start_time DESC, e.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size,
-			$this->id);
+			$_lang, $_lang, $this->id);
 
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
 		while ($row = $query->next())

@@ -139,7 +139,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';

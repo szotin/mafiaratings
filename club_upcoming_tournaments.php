@@ -14,7 +14,7 @@ class Page extends ClubPageBase
 {
 	protected function show_body()
 	{
-		global $_page, $_lang_code, $_profile;
+		global $_page, $_lang, $_profile;
 		
 		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
 		$page_size = ROW_COUNT * COLUMN_COUNT;
@@ -45,12 +45,14 @@ class Page extends ClubPageBase
 			echo '</td>';
 		}
 		
-		$query = new DbQuery('SELECT t.id, t.name, t.start_time, t.duration, t.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', ct.timezone, a.id, a.flags, a.address, a.map_url, a.name FROM tournaments t');
+		$query = new DbQuery('SELECT t.id, t.name, t.start_time, t.duration, t.flags, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, a.name FROM tournaments t');
 		$query->add(
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
-			' JOIN countries cr ON ct.country_id = cr.id WHERE ', 
-			$condition);
+			' JOIN countries cr ON ct.country_id = cr.id' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
+			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0 WHERE ',
+			$_lang,  $_lang, $condition);
 		$query->add(' ORDER BY t.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE));

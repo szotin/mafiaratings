@@ -11,8 +11,6 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code;
-		
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
 		$league_id = (int)get_optional_param('league_id', -1);
@@ -183,22 +181,22 @@ class ApiPage extends GetApiPageBase
 		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('name_contains', 'Search pattern. For example: <a href="leagues.php?name_contains=am">' . PRODUCT_URL . '/api/get/leagues.php?name_contains=am</a> returns leagues containing "co" in their name.', '-');
 		$help->request_param('name_starts', 'Search pattern. For example: <a href="leagues.php?name_starts=am">' . PRODUCT_URL . '/api/get/leagues.php?name_starts=am</a> returns leagues with names starting with "co".', '-');
-		$help->request_param('league_id', 'League id. For example: <a href="leagues.php?league_id=2"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?league_id=2</a> returns information about American Mafia League.', '-');
-		$help->request_param('club_id', 'Club id. For example: <a href="leagues.php?club_id=1"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?club_id=1</a> returns all leagues that Vancouver Mafia Club belongs to.', '-');
-		$help->request_param('langs', 'Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="leagues.php?langs=1"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?langs=1</a> returns all leagues that support English as their language.', '-');
+		$help->request_param('league_id', 'League id. For example: <a href="leagues.php?league_id=2">/api/get/leagues.php?league_id=2</a> returns information about American Mafia League.', '-');
+		$help->request_param('club_id', 'Club id. For example: <a href="leagues.php?club_id=1">/api/get/leagues.php?club_id=1</a> returns all leagues that Vancouver Mafia Club belongs to.', '-');
+		$help->request_param('langs', 'Languages filter. A bit combination of language ids. For example: <a href="leagues.php?langs=1">/api/get/leagues.php?langs=1</a> returns all leagues that support English as their language.' . valid_langs_help(), '-');
 		$help->request_param('scoring_id', 'Scoring id. For example: <a href="leagues.php?scoring_id=10">' . PRODUCT_URL . '/api/get/leagues.php?scoring_id=10</a> returns all leagues using VaWaCa scoring.', '-');
 		$help->request_param('scoring_id', 'Scoring id. For example: <a href="leagues.php?scoring_id=10">' . PRODUCT_URL . '/api/get/leagues.php?scoring_id=10</a> returns all leagues using VaWaCa scoring.', '-');
 		$help->request_param('rules_code', 'Rules code. For example: <a href="leagues.php?rules_code=00100000000100200300000120000">' . PRODUCT_URL . '/api/get/leagues.php?rules_code=00100000000100200300000120000</a> returns all leagues where the rules with the code 00100000000100200300000120000 are allowed. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
-		$help->request_param('count', 'Returns leagues count instead of the leagues themselves. For example: <a href="leagues.php?contains=an&count"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?contains=an&count</a> returns how many leagues contain "an" in their name.', '-');
-		$help->request_param('page', 'Page number. For example: <a href="leagues.php?page=1"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?page=1</a> returns the second page of leagues by alphabet.', '-');
-		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="leagues.php?page_size=32"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?page_size=32</a> returns first 32 leagues; <a href="leagues.php?page_size=0"><?php echo PRODUCT_URL; ?>/api/get/leagues.php?page_size=0</a> returns leagues in one page; <a href="leagues.php"><?php echo PRODUCT_URL; ?>/api/get/leagues.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' leagues by alphabet.', '-');
+		$help->request_param('count', 'Returns leagues count instead of the leagues themselves. For example: <a href="leagues.php?contains=an&count">/api/get/leagues.php?contains=an&count</a> returns how many leagues contain "an" in their name.', '-');
+		$help->request_param('page', 'Page number. For example: <a href="leagues.php?page=1">/api/get/leagues.php?page=1</a> returns the second page of leagues by alphabet.', '-');
+		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="leagues.php?page_size=32">/api/get/leagues.php?page_size=32</a> returns first 32 leagues; <a href="leagues.php?page_size=0">/api/get/leagues.php?page_size=0</a> returns leagues in one page; <a href="leagues.php">/api/get/leagues.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' leagues by alphabet.', '-');
 
 		$param = $help->response_param('leagues', 'The array of leagues. Leagues are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'League id.');
 			$param->sub_param('name', 'League name.');
 			$param->sub_param('icon', 'League icon URL.', 1);
 			$param->sub_param('picture', 'League picture URL.', 1);
-			$param->sub_param('langs', 'Languages used in the league. A bit combination of: 1 - English; 2 - Russian.');
+			$param->sub_param('langs', 'A bit combination of languages used in the league.' . valid_langs_help());
 			$param->sub_param('web_site', 'Subj. Not set if unknown.');
 			$param->sub_param('email', 'Subj.', 'unknown');
 			$param->sub_param('phone', 'Subj.', 'unknown');

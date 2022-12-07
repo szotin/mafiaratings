@@ -62,7 +62,7 @@ try
 	}
 	
 	$langs = $club->langs;
-	$lang = $_profile->user_def_lang;
+	$lang = $_lang;
 	if (($langs & $lang) == 0)
 	{
 		$lang = get_next_lang(LANG_NO);

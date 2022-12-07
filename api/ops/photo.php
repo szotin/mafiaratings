@@ -47,7 +47,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
 		$photo_id = (int)get_required_param('id');
@@ -55,7 +55,7 @@ class ApiPage extends OpsApiPageBase
 		$lang = detect_lang($comment);
 		if ($lang == LANG_NO)
 		{
-			$lang = $_profile->user_def_lang;
+			$lang = $_lang;
 		}
 		
 		Db::exec(get_label('comment'), 'INSERT INTO photo_comments (time, user_id, comment, photo_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $photo_id, $lang);

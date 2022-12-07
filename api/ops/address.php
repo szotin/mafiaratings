@@ -54,7 +54,7 @@ class ApiPage extends OpsApiPageBase
 			'INSERT INTO addresses (name, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
 			$name, $club_id, $address, $city_id);
 		list ($addr_id) = Db::record(get_label('address'), 'SELECT LAST_INSERT_ID()');
-		list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
+		list ($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 		
 		$log_details = new stdClass();
 		$log_details->name = $name;
@@ -157,7 +157,7 @@ class ApiPage extends OpsApiPageBase
 			$name, $address, $city_id, $club_id, $flags, $address_id);
 		if (Db::affected_rows() > 0)
 		{
-			list($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
+			list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 			$log_details = new stdClass();
 			if ($name != $old_name)
 			{

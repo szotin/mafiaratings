@@ -12,7 +12,7 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code, $_profile;
+		global $_profile;
 		
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
@@ -273,10 +273,8 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('scoring_id', 'Scoring id. For example: <a href="tournaments.php?scoring_id=21">' . PRODUCT_URL . '/api/get/tournaments.php?scoring_id=21</a> returns all tournaments where VaWaCa scoring was used.', '-');
 		$help->request_param('rules_code', 'Rules code. For example: <a href="tournaments.php?rules_code=00000000100101010200000000000">' . PRODUCT_URL . '/api/get/tournaments.php?rules_code=00000000100101010200000000000</a> returns all tournaments where the rules with the code 00000000100101010200000000000 was used. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('user_id', 'User id. For example: <a href="tournaments.php?user_id=25">' . PRODUCT_URL . '/api/get/tournaments.php?user_id=25</a> returns all tournaments where Fantomas was playing.', '-');
-		$help->request_param('langs', 'Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="tournaments.php?langs=1">' . PRODUCT_URL . '/api/get/tournaments.php?langs=1</a> returns all tournaments that support English as their language.', '-');
+		$help->request_param('langs', 'Languages filter. A bit combination of language ids. For example: <a href="tournaments.php?langs=1">' . PRODUCT_URL . '/api/get/tournaments.php?langs=1</a> returns all tournaments that support English as their language.' . valid_langs_help(), '-');
 		$help->request_param('canceled', '0 - exclude canceled tournaments (default); 1 - incude canceled tournaments; 2 - canceled tournaments only. For example: <a href="tournaments.php?canceled=2">' . PRODUCT_URL . '/api/get/tournaments.php?canceled=2</a> returns all canceled tournaments.', '-');
-		$help->request_param('lod', 'Level of details. 0 - basic (default); 1 - extended. Include club name/icon, city/country name, etc. For example: <a href="tournaments.php?club=1&lod=1">' . PRODUCT_URL . '/api/get/tournaments.php?club=1&lod=1</a> returns tournaments with all the fields that have lod >= 1.', '-');
-		$help->request_param('count', 'Returns tournaments count instead of the tournaments themselves. For example: <a href="tournaments.php?name_contains=an&count">' . PRODUCT_URL . '/api/get/tournaments.php?name_contains=an&count</a> returns how many tournaments contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="tournaments.php?page=1">' . PRODUCT_URL . '/api/get/tournaments.php?page=1</a> returns the second page of tournaments by time from newest to oldest.', '-');
 		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="tournaments.php?page_size=32">' . PRODUCT_URL . '/api/get/tournaments.php?page_size=32</a> returns first 32 tournaments; <a href="tournaments.php?page_size=0">' . PRODUCT_URL . '/api/get/tournaments.php?page_size=0</a> returns tournaments in one page; <a href="tournaments.php">' . PRODUCT_URL . '/api/get/tournaments.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' tournaments by alphabet.', '-');
 
@@ -285,7 +283,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('name', 'Tournament name.');
 			$param->sub_param('icon', 'Tournament icon URL.', 1);
 			$param->sub_param('picture', 'Tournament picture URL.', 1);
-			$param->sub_param('langs', 'Languages used in the tournament. A bit combination of: 1 - English; 2 - Russian.');
+			$param->sub_param('langs', 'A bit combination of languages used in the tournament.' . valid_langs_help());
 			$param->sub_param('address_id', 'Tournament address id.');
 			$param->sub_param('address_name', 'Tournament address name.', 1);
 			$param->sub_param('address_icon', 'Tournament address icon URL.', 1);

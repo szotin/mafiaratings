@@ -8,8 +8,6 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code;
-		
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
 		$normalizer_id = (int)get_optional_param('normalizer_id', -1);
@@ -126,12 +124,12 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('name_contains', 'Search pattern. For example: <a href="normalizers.php?name_contains=wa">' . PRODUCT_URL . '/api/get/normalizers.php?name_contains=wa</a> returns normalizer systems containing "wa" in their names.', '-');
-		$help->request_param('name_starts', 'Search pattern. For example: <a href="normalizers.php?name_starts=фи">' . PRODUCT_URL . '/api/get/normalizers.php?name_starts=фи</a> returns normalizer systems with names starting with "фи".', '-');
-		$help->request_param('normalizer_id', 'normalizer system id. For example: <a href="normalizers.php?normalizer_id=19"><?php echo PRODUCT_URL; ?>/api/get/normalizers.php?normalizer_id=19</a> returns information about FIIM normalizer system.', '-');
-		$help->request_param('normalizer_version', 'Scoring normalizer version. For example: <a href="normalizers.php?normalizer_id=21&normalizer_version=1"><?php echo PRODUCT_URL; ?>/api/get/normalizers.php?normalizer_id=21&normalizer_version=1</a> returns information about VaWaCa scoring normalizer version 1 (current version is 2). When 0, the latest version is returned.', 'all versions are returned');
-		$help->request_param('club_id', 'Club id. Returns all normalizer systems used in this club. For example: <a href="normalizers.php?club_id=1"><?php echo PRODUCT_URL; ?>/api/get/normalizers.php?club_id=1</a> returns all normalizer systems used in Vancouver Mafia Club.', '-');
-		$help->request_param('league_id', 'League id. Returns all normalizer systems used in this league. For example: <a href="normalizers.php?league_id=2"><?php echo PRODUCT_URL; ?>/api/get/normalizers.php?league_id=2</a> returns all normalizer systems used in American Mafia League.', '-');
+		$help->request_param('name_contains', 'Search pattern. For example: <a href="normalizers.php?name_contains=wa">/api/get/normalizers.php?name_contains=wa</a> returns normalizer systems containing "wa" in their names.', '-');
+		$help->request_param('name_starts', 'Search pattern. For example: <a href="normalizers.php?name_starts=фи">/api/get/normalizers.php?name_starts=фи</a> returns normalizer systems with names starting with "фи".', '-');
+		$help->request_param('normalizer_id', 'normalizer system id. For example: <a href="normalizers.php?normalizer_id=19">/api/get/normalizers.php?normalizer_id=19</a> returns information about FIIM normalizer system.', '-');
+		$help->request_param('normalizer_version', 'Scoring normalizer version. For example: <a href="normalizers.php?normalizer_id=21&normalizer_version=1">/api/get/normalizers.php?normalizer_id=21&normalizer_version=1</a> returns information about VaWaCa scoring normalizer version 1 (current version is 2). When 0, the latest version is returned.', 'all versions are returned');
+		$help->request_param('club_id', 'Club id. Returns all normalizer systems used in this club. For example: <a href="normalizers.php?club_id=1">/api/get/normalizers.php?club_id=1</a> returns all normalizer systems used in Vancouver Mafia Club.', '-');
+		$help->request_param('league_id', 'League id. Returns all normalizer systems used in this league. For example: <a href="normalizers.php?league_id=2">/api/get/normalizers.php?league_id=2</a> returns all normalizer systems used in American Mafia League.', '-');
 		
 		$param = $help->response_param('normalizers', 'The array of normalizer systems.');
 			$param->sub_param('id', 'Scoring normalizer id.');

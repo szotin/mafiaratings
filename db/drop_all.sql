@@ -73,3 +73,4 @@ DROP TABLE IF EXISTS `countries`;
 DROP TABLE IF EXISTS `snapshots`;
 DROP TABLE IF EXISTS `gaining_versions`;
 DROP TABLE IF EXISTS `gainings`;
+DROP TABLE IF EXISTS `names`;

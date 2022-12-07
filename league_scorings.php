@@ -12,7 +12,7 @@ class Page extends LeaguePageBase
 {
 	protected function show_body()
 	{
-		global $_lang_code, $_page;
+		global $_page;
 		
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $this->id);
 		

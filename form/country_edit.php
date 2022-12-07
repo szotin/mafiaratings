@@ -18,8 +18,8 @@ try
 	}
 	$id = $_REQUEST['id'];
 	
-	list($name_en, $name_ru, $code, $flags) = 
-		Db::record(get_label('country'), 'SELECT name_en, name_ru, code, flags FROM countries WHERE id = ?', $id);
+	list($name_id, $code, $flags) = 
+		Db::record(get_label('country'), 'SELECT name_id, code, flags FROM countries WHERE id = ?', $id);
 		
 	if (($flags & COUNTRY_FLAG_NOT_CONFIRMED) != 0)
 	{
@@ -31,8 +31,11 @@ try
 	}
 		
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="200">'.get_label('Country name in English').':</td><td><input id="form-name_en" value="' . htmlspecialchars($name_en, ENT_QUOTES) . '"></td></tr>';
-	echo '<tr><td>'.get_label('Country name in Russian').':</td><td><input id="form-name_ru" value="' . htmlspecialchars($name_ru, ENT_QUOTES) . '"></td></tr>';
+	
+	echo '<tr><td width="200">'.get_label('Country name').':</td><td>';
+	Names::show_control(new Names($name_id, get_label('country name')));
+	echo '</td></tr>';
+	
 	echo '<tr><td>'.get_label('Country code').':</td><td><input id="form-code" value="' . htmlspecialchars($code, ENT_QUOTES) . '"></td></tr>';
 	
 	if (($flags & COUNTRY_FLAG_NOT_CONFIRMED) != 0)
@@ -45,16 +48,15 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("api/ops/country.php",
+		var request =
 		{
 			op: 'change'
 			, country_id: <?php echo $id; ?>
-			, name_en: $("#form-name_en").val()
-			, name_ru: $("#form-name_ru").val()
 			, code: $("#form-code").val()
 			, confirm: ($('#form-confirm').attr('checked') ? 1 : 0)
-		},
-		onSuccess);
+		};
+		nameControl.fillRequest(request);
+		json.post("api/ops/country.php", request, onSuccess);
 	}
 	</script>
 <?php

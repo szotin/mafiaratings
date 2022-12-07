@@ -63,7 +63,7 @@ try
 		echo '<html>';
 		echo '<head>';
 		echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
-		echo '<script src="js/labels_' . $_lang_code . '.js"></script>';
+		echo '<script src="js/labels_' . get_lang_code($_lang) . '.js"></script>';
 		echo '<link rel="stylesheet" href="desktop.css" type="text/css" media="screen" />';
 		echo '<link rel="stylesheet" href="common.css" type="text/css" media="screen" />';
 		

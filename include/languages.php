@@ -3,6 +3,7 @@
 define('LANG_NO', 0);
 define('LANG_ENGLISH', 1);
 define('LANG_RUSSIAN', 2);
+// define('LANG_UKRANIAN', 4);
 define('LANG_ALL', 3);
 define('LANG_DEFAULT', 1); // English
 
@@ -31,6 +32,10 @@ function get_lang($langs, $default_lang = -1)
 	{
 		return LANG_RUSSIAN;
 	}
+	// if (($lang & LANG_UKRANIAN) != 0)
+	// {
+		// return LANG_UKRANIAN;
+	// }
 	return 0;
 }
 
@@ -62,6 +67,15 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 							return 'АНГЛИЙСКИЙ';
 					}
 					return 'Английский';
+				// case LANG_UKRANIAN:
+					// switch ($case)
+					// {
+						// case LOWERCASE:
+							// return 'англійська';
+						// case UPPERCASE:
+							// return 'АНГЛІЙСЬКА';
+					// }
+					// return 'Англійська';
 			}
 			switch ($case)
 			{
@@ -93,6 +107,15 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 							return 'РУССКИЙ';
 					}
 					return 'Русский';
+				// case LANG_UKRANIAN:
+					// switch ($case)
+					// {
+						// case LOWERCASE:
+							// return 'російська';
+						// case UPPERCASE:
+							// return 'РОСІЙСЬКА';
+					// }
+					// return 'Російська';
 			}
 			switch ($case)
 			{
@@ -102,6 +125,46 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 					return get_label('RUSSIAN');
 			}
 			return get_label('Russian');
+			
+		// case LANG_UKRANIAN:
+			// switch ($browser_lang)
+			// {
+				// case LANG_ENGLISH:
+					// switch ($case)
+					// {
+						// case LOWERCASE:
+							// return 'ukranian';
+						// case UPPERCASE:
+							// return 'UKRANIAN';
+					// }
+					// return 'Ukranian';
+				// case LANG_RUSSIAN:
+					// switch ($case)
+					// {
+						// case LOWERCASE:
+							// return 'украинский';
+						// case UPPERCASE:
+							// return 'УКРАИНСКИЙ';
+					// }
+					// return 'Украинский';
+				// case LANG_UKRANIAN:
+					// switch ($case)
+					// {
+						// case LOWERCASE:
+							// return 'український';
+						// case UPPERCASE:
+							// return 'УКРАЇНСЬКИЙ';
+					// }
+					// return 'Український';
+			// }
+			// switch ($case)
+			// {
+				// case LOWERCASE:
+					// return get_label('ukranian');
+				// case UPPERCASE:
+					// return get_label('UKRANIAN');
+			// }
+			// return get_label('Ukranian');
 	}
 	
 	switch ($browser_lang)
@@ -124,6 +187,15 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 					return 'НЕИЗВЕСТНЫЙ';
 			}
 			return 'Неизвестный';
+		// case LANG_UKRANIAN:
+			// switch ($case)
+			// {
+				// case LOWERCASE:
+					// return 'невідомий';
+				// case UPPERCASE:
+					// return 'НЕВІДОМИЙ';
+			// }
+			// return 'Невідомий';
 	}
 	switch ($case)
 	{
@@ -141,6 +213,8 @@ function get_lang_code($lang)
 	{
 		case LANG_RUSSIAN:
 			return 'ru';
+		// case LANG_UKRANIAN:
+			// return 'uk';
 	}
 	return 'en';
 }
@@ -151,6 +225,8 @@ function get_lang_by_code($code)
 	{
 		case 'ru':
 			return LANG_RUSSIAN;
+		// case 'uk':
+			// return LANG_UKRANIAN;
 	}
 	return LANG_DEFAULT;
 }
@@ -175,6 +251,10 @@ function get_langs($def)
 		{
 			$langs |= LANG_RUSSIAN;
 		}
+		// if (isset($_REQUEST[get_lang_code(LANG_UKRANIAN)]))
+		// {
+			// $langs |= LANG_UKRANIAN;
+		// }
 		return $langs;
 	}
 /*	else if ($_profile != NULL)
@@ -305,6 +385,16 @@ function langs_checkboxes($langs, $filter = LANG_ALL, $form_name = NULL, $separa
 		}
 		echo 'name="' . $prefix . get_lang_code(LANG_RUSSIAN) . '" id="' . $prefix . get_lang_code(LANG_RUSSIAN) . '"> ' . get_lang_str(LANG_RUSSIAN);
 	}
+	
+	// if (($filter & LANG_UKRANIAN) != 0)
+	// {
+		// echo $input_beg;
+		// if (($langs & LANG_UKRANIAN) != 0)
+		// {
+			// echo 'checked ';
+		// }
+		// echo 'name="' . $prefix . get_lang_code(LANG_UKRANIAN) . '" id="' . $prefix . get_lang_code(LANG_UKRANIAN) . '"> ' . get_lang_str(LANG_UKRANIAN);
+	// }
 }
 
 function is_valid_lang($lang, $langs = LANG_ALL)
@@ -447,6 +537,30 @@ function show_lang_select($name, $lang, $lang_mask = LANG_ALL, $on_change = NULL
 		}
 		echo '<input type="hidden" name="' . $name . '" id="' . $name . '" value="' .  $lang. '">';
 	}
+}
+
+function valid_langs_help()
+{
+	$result = '<p>Currently supported language ids are:<ol>';
+	$lang = LANG_NO;
+	while (($lang = get_next_lang($lang)) != LANG_NO)
+	{
+		$result .= '<li value="' . $lang . '">' . get_lang_str($lang) . '</li>';
+	}
+	$result .= '</ol></p>';
+	return $result;
+}
+
+function valid_lang_codes_help()
+{
+	$result = '<p>Currently supported language codes are:<ul>';
+	$lang = LANG_NO;
+	while (($lang = get_next_lang($lang)) != LANG_NO)
+	{
+		$result .= '<li>' . get_lang_code($lang) . ' - ' . get_lang_str($lang, LOWERCASE) . '</li>';
+	}
+	$result .= '</ul>';
+	return $result;
 }
 
 ?>

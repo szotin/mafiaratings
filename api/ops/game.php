@@ -1065,7 +1065,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function ulist_op()
 	{
-		global $_lang_code;
+		global $_lang;
 		
 		$club_id = 0;
 		if (isset($_REQUEST['club_id']))
@@ -1099,14 +1099,16 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		array();
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, c.id, c.name, a.id, a.name_' . $_lang_code . ', ct.id, ct.name_' . $_lang_code . ', (', $games_count_query);
+		$query = new DbQuery('SELECT u.id, u.name, u.flags, c.id, c.name, a.id, na.name, ct.id, nct.name, (', $games_count_query);
 		$query->add(
 				') as games_count' .
 				' FROM users u' .
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' JOIN cities ct ON ct.id = u.city_id' .
+				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0 ' .
 				' LEFT OUTER JOIN cities a ON a.id = ct.area_id' .
-				' WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0');
+				' LEFT OUTER JOIN names na ON na.id = a.name_id AND (na.langs & ?) <> 0 ' .
+				' WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0', $_lang, $_lang);
 		if (!empty($name))
 		{
 			$name_wildcard = '%' . $name . '%';
@@ -1415,7 +1417,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function comment_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
 		$game_id = (int)get_required_param('id');
@@ -1423,7 +1425,7 @@ class ApiPage extends OpsApiPageBase
 		$lang = detect_lang($comment);
 		if ($lang == LANG_NO)
 		{
-			$lang = $_profile->user_def_lang;
+			$lang = $_lang;
 		}
 		
 		Db::exec(get_label('comment'), 'INSERT INTO game_comments (time, user_id, comment, game_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $game_id, $lang);

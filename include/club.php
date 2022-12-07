@@ -104,7 +104,7 @@ class ClubPageBase extends PageBase
 	
 	protected function prepare()
 	{
-		global $_lang_code, $_profile;
+		global $_lang, $_profile;
 	
 		if (!isset($_REQUEST['id']))
 		{
@@ -125,13 +125,15 @@ class ClubPageBase extends PageBase
 		list ($this->name, $this->flags, $this->url, $this->langs, $this->rules_code, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags, $this->scoring_id, $this->timezone, $this->parent_id, $this->parent_name, $this->parent_flags) = 
 			Db::record(
 				get_label('club'),
-				'SELECT c.name, c.flags, c.web_site, c.langs, c.rules, c.email, c.phone, c.price, cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', u.flags, c.scoring_id, ct.timezone, p.id, p.name, p.flags FROM clubs c ' .
+				'SELECT c.name, c.flags, c.web_site, c.langs, c.rules, c.email, c.phone, c.price, ncr.name, nct.name, u.flags, c.scoring_id, ct.timezone, p.id, p.name, p.flags FROM clubs c ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
+					'JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0 ' .
+					'JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0 ' .
 					'LEFT OUTER JOIN club_users u ON u.club_id = c.id AND u.user_id = ? ' .
 					'LEFT OUTER JOIN clubs p ON c.parent_id = p.id ' .
 					'WHERE c.id = ?',
-				$user_id, $this->id);
+				$_lang, $_lang, $user_id, $this->id);
 				
 		$this->event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE)));
 		$this->league_pic = new Picture(LEAGUE_PICTURE);

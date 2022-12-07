@@ -14,23 +14,25 @@ class Page extends SeriesPageBase
 {
 	private function show_details()
 	{
-		global $_page, $_lang_code, $_profile;
+		global $_page, $_lang, $_profile;
 		
 		$now = time();
 		$row_count = 0;
 		$column_count = 0;
 		$page_size = TOURNAMENT_ROW_COUNT * TOURNAMENT_COLUMN_COUNT;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', ct.timezone, a.id, a.flags, a.address, a.map_url, a.name, c.id, c.name, c.flags' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, a.name, c.id, c.name, c.flags' .
 			' FROM series_tournaments st' .
 			' JOIN tournaments t ON t.id = st.tournament_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
+			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
 			' JOIN clubs c ON c.id = t.club_id' .
 			' WHERE st.series_id = ?' .
 			' ORDER BY t.start_time DESC, t.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size,
-			$this->id);
+			$_lang, $_lang, $this->id);
 
 		$club_pic = new Picture(CLUB_PICTURE);
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);

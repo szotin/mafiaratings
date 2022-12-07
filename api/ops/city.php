@@ -18,8 +18,6 @@ class ApiPage extends OpsApiPageBase
 	function create_op()
 	{
 		check_permissions(PERMISSION_ADMIN);
-		$name_en = get_required_param('name_en');
-		$name_ru = get_required_param('name_ru');
 		$timezone = get_required_param('timezone');
 		$confirm = (isset($_REQUEST['confirm']) && $_REQUEST['confirm']);
 		
@@ -45,58 +43,40 @@ class ApiPage extends OpsApiPageBase
 		
 		$flags = $confirm ? 0 : CITY_FLAG_NOT_CONFIRMED;
 		
-		if ($name_en == '')
-		{
-			throw new Exc(get_label('Please enter [0].', get_label('City name in English')));
-		}
-		check_name($name_en, get_label('City name in English'));
-		
-		if ($name_ru == '')
-		{
-			throw new Exc(get_label('Please enter [0].', get_label('City name in Russian')));
-		}
-		check_name($name_ru, get_label('City name in Russian'));
-		
 		Db::begin();
 		if ($country_id <= 0)
 		{
 			$country_id = retrieve_country_id($country);
 		}
 		
-		$query = new DbQuery('SELECT id FROM cities WHERE name_ru = ?', $name_ru);
-		if ($query->next())
-		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('City name in Russian'), $name_ru));
-		}
+		$names = new Names(0, get_label('city name'), 'cities');
 		
-		$query = new DbQuery('SELECT id FROM cities WHERE name_en = ?', $name_en);
-		if ($query->next())
+		$name_id = $names->get_id();
+		if ($name_id <= 0)
 		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('City name in English'), $name_en));
+			throw new Exc(get_label('Please enter [0].', get_label('city name')));
 		}
 		
 		Db::exec(
 			get_label('city'), 
-			'INSERT INTO cities (country_id, name_en, name_ru, timezone, area_id, flags) ' .
-				'VALUES (?, ?, ?, ?, ?, ?)',
-			$country_id, $name_en, $name_ru, $timezone, $area_id, $flags);
+			'INSERT INTO cities (country_id, name_id, timezone, area_id, flags) ' .
+				'VALUES (?, ?, ?, ?, ?)',
+			$country_id, $name_id, $timezone, $area_id, $flags);
 		list ($city_id) = Db::record(get_label('city'), 'SELECT LAST_INSERT_ID()');
 		if ($area_id == NULL)
 		{
 			Db::exec(get_label('city'), 'UPDATE cities SET area_id = id WHERE id = ?', $city_id);
 		}
 		
-		Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_en);
-		if ($name_ru != $name_en)
+		foreach ($names->names as $n)
 		{
-			Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_ru);
+			Db::exec(get_label('city name'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $n->name);
 		}
 		
 		$log_details = new stdClass();
 		$log_details->country = $country;
 		$log_details->country_id = $country_id;
-		$log_details->name_en = $name_en;
-		$log_details->name_ru = $name_ru;
+		$log_details->name = $names->to_string();
 		$log_details->area_id = $area_id;
 		$log_details->timezone = $timezone;
 		$log_details->flags = $flags;
@@ -109,8 +89,7 @@ class ApiPage extends OpsApiPageBase
 	function create_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_ADMIN, 'Create city.');
-		$help->request_param('name_en', 'City name in English.');
-		$help->request_param('name_ru', 'City name in Russian.');
+		Names::help($help, 'City', false);
 		$timezone_text = 'City timezone. One of: <select>';
 		$zones = DateTimeZone::listIdentifiers();
 		foreach ($zones as $zone)
@@ -135,31 +114,18 @@ class ApiPage extends OpsApiPageBase
 	{
 		check_permissions(PERMISSION_ADMIN);
 		$city_id = (int)get_required_param('city_id');
-		list($name_en, $name_ru, $country_id, $country, $timezone, $area_id) = Db::record(get_label('city'), 'SELECT ct.name_en, ct.name_ru, ct.country_id, cr.name_en, ct.timezone, ct.area_id FROM cities ct JOIN countries cr ON cr.id = ct.country_id WHERE ct.id = ?', $city_id);
 		
-		if (isset($_REQUEST['name_en']))
-		{
-			$name_en = $_REQUEST['name_en'];
-			if ($name_en == '')
-			{
-				throw new Exc(get_label('Please enter [0].', get_label('City name in English')));
-			}
-		}
+		Db::begin();
+		list($old_name_id, $old_country_id, $country, $old_timezone, $old_area_id) = 
+			Db::record(get_label('city'), 
+				'SELECT ct.name_id, ct.country_id, n.name, ct.timezone, ct.area_id FROM cities ct' .
+				' JOIN countries cr ON cr.id = ct.country_id' .
+				' JOIN names n ON n.id = cr.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0' .
+				' WHERE ct.id = ?', $city_id);
 		
-		if (isset($_REQUEST['name_ru']))
-		{
-			$name_ru = $_REQUEST['name_ru'];
-			if ($name_ru == '')
-			{
-				throw new Exc(get_label('Please enter [0].', get_label('City name in Russian')));
-			}
-		}
+		$timezone = get_optional_param('timezone', $old_timezone);
 		
-		if (isset($_REQUEST['timezone']))
-		{
-			$timezone = $_REQUEST['timezone'];
-		}
-		
+		$area_id = $old_area_id;
 		if (isset($_REQUEST['area_id']))
 		{
 			$area_id = $_REQUEST['area_id'];
@@ -171,13 +137,27 @@ class ApiPage extends OpsApiPageBase
 		
 		$confirm = (isset($_REQUEST['confirm']) && $_REQUEST['confirm']);
 		
-		Db::begin();
-		check_name($name_en, get_label('City name in English'));
-		check_name($name_ru, get_label('City name in Russian'));
+		$names = new Names(0, get_label('city name'), 'cities', $city_id);
+		$name_id = $names->get_id();
+		if ($name_id <= 0)
+		{
+			$name_id = $old_name_id;
+		}
 		
+		if ($name_id != $old_name_id)
+		{
+			Db::exec(get_label('city name'), 'DELETE FROM city_names WHERE city_id = ? AND name IN (SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id WHERE c.id = ?)', $city_id, $city_id);
+			foreach ($names->names as $n)
+			{
+				Db::exec(get_label('city name'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $n->name);
+			}
+		}
+		
+		$country_id = $old_country_id;
 		if (isset($_REQUEST['country_id']))
 		{
 			$country_id = $_REQUEST['country_id'];
+			list($country) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $country_id);
 		}
 		else if (isset($_REQUEST['country']))
 		{
@@ -185,28 +165,8 @@ class ApiPage extends OpsApiPageBase
 			$country_id = retrieve_country_id($country);
 		}
 		
-		$query = new DbQuery('SELECT id FROM cities WHERE name_ru = ? AND id <> ?', $name_ru, $city_id);
-		if ($query->next())
-		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('City name in Russian'), $name_ru));
-		}
-		
-		$query = new DbQuery('SELECT id FROM cities WHERE name_en = ? AND id <> ?', $name_en, $city_id);
-		if ($query->next())
-		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('City name in English'), $name_en));
-		}
-		
 		$op = 'changed';
-		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ? AND name = (SELECT name_en FROM cities WHERE id = ?)', $city_id, $city_id);
-		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ? AND name = (SELECT name_ru FROM cities WHERE id = ?)', $city_id, $city_id);
-		Db::exec(get_label('city'), 'INSERT IGNORE INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_en);
-		if ($name_en != $name_ru)
-		{
-			Db::exec(get_label('city'), 'INSERT IGNORE INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $name_ru);
-		}
-		
-		$query = new DbQuery('UPDATE cities SET country_id = ?, name_en = ?, name_ru = ?, area_id = ?, timezone = ?', $country_id, $name_en, $name_ru, $area_id, $timezone);
+		$query = new DbQuery('UPDATE cities SET country_id = ?, name_id = ?, area_id = ?, timezone = ?', $country_id, $name_id, $area_id, $timezone);
 		if ($confirm)
 		{
 			$query->add(', flags = (flags & ~' . CITY_FLAG_NOT_CONFIRMED . ')');
@@ -218,11 +178,22 @@ class ApiPage extends OpsApiPageBase
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
-			$log_details->country = $country;
-			$log_details->name_en = $name_en;
-			$log_details->name_ru = $name_ru;
-			$log_details->area_id = $area_id;
-			$log_details->timezone = $timezone;
+			if ($country_id != $old_country_id)
+			{
+				$log_details->country_id = $country_id;
+			}
+			if ($name_id != $old_name_id)
+			{
+				$log_details->name = $names->to_string();
+			}
+			if ($area_id != $old_area_id)
+			{
+				$log_details->area_id = $area_id;
+			}
+			if ($timezone != $old_timezone)
+			{
+				$log_details->timezone = $timezone;
+			}
 			db_log(LOG_OBJECT_CITY, $op, $log_details, $city_id);
 		}
 		Db::commit();
@@ -232,8 +203,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_ADMIN, 'Change city information.');
 		$help->request_param('city_id', 'City id.');
-		$help->request_param('name_en', 'City name in English.', 'remains the same.');
-		$help->request_param('name_ru', 'City name in Russian.', 'remains the same.');
+		Names::help($help, 'City', true);
 		$timezone_text = 'City timezone. One of: <select>';
 		$zones = DateTimeZone::listIdentifiers();
 		foreach ($zones as $zone)
@@ -263,7 +233,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list($new_name, $new_area_id) = Db::record(get_label('city'), 'SELECT name_en, area_id FROM cities WHERE id = ?', $repl_id);
+		list($new_name, $new_area_id) = Db::record(get_label('city'), 'SELECT n.name, c.area_id FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $repl_id);
 		Db::exec(get_label('club'), 'UPDATE clubs SET city_id = ? WHERE city_id = ?', $repl_id, $city_id);
 		Db::exec(get_label('club'), 'UPDATE club_requests SET city_id = ? WHERE city_id = ?', $repl_id, $city_id);
 		Db::exec(get_label('address'), 'UPDATE addresses SET city_id = ? WHERE city_id = ?', $repl_id, $city_id);
@@ -271,9 +241,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('city'), 'UPDATE cities SET area_id = ? WHERE area_id = ?', $new_area_id, $city_id);
 		if ($keep_name)
 		{
-			Db::exec(get_label('city'), 'UPDATE city_names n1 SET n1.city_id = ? WHERE n1.city_id = ? AND n1.name NOT IN (SELECT * FROM (SELECT n2.name FROM city_names n2 WHERE n2.city_id = ?) as t)', $repl_id, $city_id, $repl_id);
+			Db::exec(get_label('city name'), 'UPDATE city_names n1 SET n1.city_id = ? WHERE n1.city_id = ? AND n1.name NOT IN (SELECT * FROM (SELECT n2.name FROM city_names n2 WHERE n2.city_id = ?) as t)', $repl_id, $city_id, $repl_id);
 		}
-		Db::exec(get_label('city'), 'DELETE FROM city_names WHERE city_id = ?', $city_id);
+		Db::exec(get_label('city name'), 'DELETE FROM city_names WHERE city_id = ?', $city_id);
 		Db::exec(get_label('city'), 'DELETE FROM cities WHERE id = ?', $city_id);
 
 		$log_details = new stdClass();
@@ -303,6 +273,6 @@ class ApiPage extends OpsApiPageBase
 }
 
 $page = new ApiPage();
-$page->run('User Operations', CURRENT_VERSION);
+$page->run('City Operations', CURRENT_VERSION);
 
 ?>

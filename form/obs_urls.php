@@ -42,7 +42,7 @@ try
 	}
 	else
 	{
-		$lang = $_profile->user_def_lang;
+		$lang = $_lang;
 	}
 
 	dialog_title(get_label('Generate OBS studio URL'));

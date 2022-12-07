@@ -8,7 +8,7 @@ class Page extends GeneralPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_lang_code, $_page;
+		global $_profile, $_lang, $_page;
 		
 		$club_id = 0;
 		if (isset($_REQUEST['club_id']))
@@ -35,12 +35,14 @@ class Page extends GeneralPageBase
 			$condition->add(' WHERE r.parent_id = ?', $club_id);
 		}
 		$query = new DbQuery(
-			'SELECT r.id, r.name, r.club_id, r.parent_id, o.name_' . $_lang_code . ', i.name_' . $_lang_code . ', u.name, cl.name FROM club_requests r ' . 
+			'SELECT r.id, r.name, r.club_id, r.parent_id, no.name, ni.name, u.name, cl.name FROM club_requests r ' . 
 			'JOIN users u ON r.user_id = u.id ' . 
 			'LEFT OUTER JOIN cities i ON r.city_id = i.id ' . 
 			'LEFT OUTER JOIN countries o ON i.country_id = o.id ' .
+			'JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0 ' .
+			'JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0 ' .
 			'LEFT OUTER JOIN clubs cl ON r.club_id = cl.id ',
-			$condition);
+			$_lang, $_lang, $condition);
 		while ($row = $query->next())
 		{
 			list($id, $name, $request_club_id, $parent_id, $country, $city, $user, $request_club_name) = $row;

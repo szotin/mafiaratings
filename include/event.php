@@ -365,7 +365,7 @@ class Event
 
 	function load($event_id)
 	{
-		global $_profile, $_lang_code;
+		global $_profile, $_lang;
 		if ($event_id <= 0)
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('event')));
@@ -385,15 +385,17 @@ class Event
 			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_options, $this->coming_odds, $this->city, $this->country) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, u.coming_odds, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ' FROM events e' .
+					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, u.coming_odds, ni.name, no.name FROM events e' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .
 						' JOIN countries o ON i.country_id = o.id' .
+						' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+						' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
 						' LEFT OUTER JOIN event_users u ON u.event_id = e.id AND u.user_id = ?' .
 						' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 						' WHERE e.id = ?',
-					$user_id, $event_id);
+					$_lang, $_lang, $user_id, $event_id);
 					
 		$this->set_datetime($timestamp, $timezone);
 	}

@@ -90,7 +90,7 @@ class TournamentPageBase extends PageBase
 	
 	protected function prepare()
 	{
-		global $_lang_code, $_profile;
+		global $_lang, $_profile;
 		
 		if (!isset($_REQUEST['id']))
 		{
@@ -107,15 +107,17 @@ class TournamentPageBase extends PageBase
 			get_label('tournament'),
 			'SELECT t.name, c.id, c.name, c.flags,' . 
 				' a.id, a.name, a.address, a.map_url, a.flags,' . 
-				' ct.id, ct.name_' . $_lang_code . ', cr.id, cr.name_' . $_lang_code . ', ct.timezone,' . 
+				' ct.id, nct.name, cr.id, ncr.name, ct.timezone,' . 
 				' t.start_time, t.duration, t.langs, t.notes, t.price, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.rules, t.flags' .
 				' FROM tournaments t' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN addresses a ON a.id = t.address_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN countries cr ON cr.id = ct.country_id' .
+				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
+				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
 				' WHERE t.id = ?',
-			$this->id);
+			$_lang, $_lang, $this->id);
 			
 		$this->series = array();
 		$query = new DbQuery('SELECT s.id, s.name, s.flags, st.stars, l.id, l.name, l.flags FROM series_tournaments st JOIN series s ON s.id = st.series_id JOIN leagues l ON l.id = s.league_id WHERE st.tournament_id = ?', $this->id);

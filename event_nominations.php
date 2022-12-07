@@ -26,7 +26,7 @@ class Page extends EventPageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		
 		$noms = array(
 			array(get_label('Ratings'), 'SUM(p.rating_earned)', 'count(*)', 0),

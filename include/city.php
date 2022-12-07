@@ -8,7 +8,7 @@ define('ALL_CITIES', 0);
 
 function retrieve_city_id($city, $country_id, $timezone = NULL)
 {
-	global $_profile, $_lang_code;
+	global $_profile, $_lang;
 	
 	if ($timezone == NULL)
 	{
@@ -21,24 +21,24 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 		throw new Exc(get_label('Please enter [0].', get_label('city')));
 	}
 
-	$query = new DbQuery('SELECT id FROM cities WHERE country_id = ? AND (name_en = ? OR name_ru = ?)', $country_id, $city, $city);
+	Db::begin();
+	$query = new DbQuery('SELECT city_id FROM city_names WHERE name = ?', $city);
 	if ($row = $query->next())
 	{
 		list($city_id) = $row;
 	}
 	else
 	{
+		Db::exec(get_label('name'), 'INSERT INTO names (langs, name) VALUES (?, ?)', DB_ALL_LANGS, $city);
+		list ($name_id) = Db::record(get_label('name'), 'SELECT LAST_INSERT_ID()');
 		Db::exec(get_label('city'),
-			'INSERT INTO cities (country_id, name_en, name_ru, flags, timezone) VALUES (?, ?, ?, ' . CITY_FLAG_NOT_CONFIRMED . ', ?)',
-			$country_id, $city, $city, $timezone);
+			'INSERT INTO cities (country_id, name_id, flags, timezone) VALUES (?, ?, ' . CITY_FLAG_NOT_CONFIRMED . ', ?)',
+			$country_id, $name_id, $timezone);
 		list($city_id) = Db::record(get_label('city'), 'SELECT LAST_INSERT_ID()');
 		Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $city);
-		list ($country_name) = Db::record(get_label('country'), 'SELECT id, name_' . $_lang_code . ' FROM countries WHERE id = ?', $country_id);
 		
 		$log_details = new stdClass();
-		$log_details->country = $country_name;
-		$log_details->name_en = $city;
-		$log_details->name_ru = $city;
+		$log_details->name = $city;
 		$log_details->timezone = $timezone;
 		$log_details->flags = CITY_FLAG_NOT_CONFIRMED;
 		db_log(LOG_OBJECT_CITY, 'created', $log_details, $city_id);
@@ -61,15 +61,16 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 			send_email($admin_email, $body, $text_body, 'New city');
 		}
 	}
+	Db::commit();
 	return $city_id;
 }
 
 function detect_city()
 {
-	global $_profile, $_lang_code;
+	global $_profile, $_lang;
 	
 	$city = Location::get()->city;
-	$query = new DbQuery('SELECT name_' . $_lang_code . ' FROM cities WHERE name_en = ? OR name_ru = ?', $city, $city);
+	$query = new DbQuery('SELECT nc.name FROM cities c JOIN names n ON n.id = c.name_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & ?) <> 0 WHERE n.name = ? LIMIT 1', $_lang, $city);
 	if ($row = $query->next())
 	{
 		list ($city) = $row;
@@ -81,13 +82,13 @@ define('CITY_FROM_PROFILE', 0);
 define('CITY_DETECT', 1);
 function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 {
-	global $_profile, $_lang_code;
+	global $_profile, $_lang;
 
 	if ($value === CITY_FROM_PROFILE)
 	{
 		if ($_profile != NULL)
 		{
-			list ($value) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $_profile->city_id);
+			list ($value) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE id = ?', $_lang, $_profile->city_id);
 		}
 		else
 		{
@@ -99,7 +100,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 		$value = detect_city();
 		if (($value == '' || $value == '-') && $_profile != NULL)
 		{
-			list ($value) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $_profile->city_id);
+			list ($value) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $_profile->city_id);
 		}
 	}
 

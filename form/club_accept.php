@@ -20,14 +20,16 @@ try
 	
 	list($club_id, $club_name, $club_flags, $name, $city_id, $city, $country, $url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone, $parent_id, $parent_name, $parent_flags) = Db::record(
 		get_label('club'),
-		'SELECT c.club_id, cl.name, cl.flags, c.name, c.city_id, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang, u.flags, c.email, c.phone, c.parent_id, p.name, p.flags FROM club_requests c' .
+		'SELECT c.club_id, cl.name, cl.flags, c.name, c.city_id, ni.name, no.name, c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang, u.flags, c.email, c.phone, c.parent_id, p.name, p.flags FROM club_requests c' .
 			' JOIN users u ON c.user_id = u.id' .
 			' LEFT OUTER JOIN cities i ON c.city_id = i.id' .
 			' LEFT OUTER JOIN countries o ON i.country_id = o.id' .
+			' LEFT OUTER JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+			' LEFT OUTER JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
 			' LEFT OUTER JOIN clubs p ON c.parent_id = p.id' .
 			' LEFT OUTER JOIN clubs cl ON c.club_id = cl.id' .
 			' WHERE c.id = ?',
-		$id);
+		$_lang, $_lang, $id);
 		
 	if ($parent_id == NULL)
 	{

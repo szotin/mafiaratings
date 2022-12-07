@@ -15,7 +15,7 @@ class UserLocation
 	{
 		$location = Location::get();
 		
-		$query = new DbQuery('SELECT i.id, i.area_id, o.id FROM cities i JOIN countries o ON i.country_id = o.id WHERE i.name_en = ? AND o.code = ?', $location->city, $location->country_code);
+		$query = new DbQuery('SELECT i.id, i.area_id, o.id FROM cities i JOIN countries o ON i.country_id = o.id JOIN names n ON n.id = i.name_id WHERE n.name = ? AND o.code = ?', $location->city, $location->country_code);
 		if ($row = $query->next())
 		{
 			list($this->city_id, $this->region_id, $this->country_id) = $row;

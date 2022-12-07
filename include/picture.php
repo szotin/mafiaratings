@@ -242,7 +242,7 @@ class Picture
 	
 	public function show($dir, $with_link, $width = 0, $height = 0, $attributes = NULL)
 	{
-		global $_lang_code;
+		global $_lang;
 		
 		$w = $width;
 		$h = $height;
@@ -309,7 +309,7 @@ class Picture
 			case CLUB_PICTURE:
 				if ($this->flags & CLUB_FLAG_RETIRED)
 				{
-					echo '<img src="images/' . $dir . $_lang_code . '/closed.png" title="' . $title . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
+					echo '<img src="images/' . $dir . get_lang_code($_lang) . '/closed.png" title="' . $title . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
 					if ($width > 0)
 					{
 						echo ' width="' . $width . '"';
@@ -324,7 +324,7 @@ class Picture
 			case EVENT_PICTURE:
 				if ($this->flags & EVENT_FLAG_CANCELED)
 				{
-					echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
+					echo '<img src="images/' . $dir . get_lang_code($_lang) . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
 					if ($width > 0)
 					{
 						echo ' width="' . $width . '"';
@@ -339,7 +339,7 @@ class Picture
 			case TOURNAMENT_PICTURE:
 				if ($this->flags & TOURNAMENT_FLAG_CANCELED)
 				{
-					echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
+					echo '<img src="images/' . $dir . get_lang_code($_lang) . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
 					if ($width > 0)
 					{
 						echo ' width="' . $width . '"';
@@ -354,7 +354,7 @@ class Picture
 			case SERIES_PICTURE:
 				if ($this->flags & SERIES_FLAG_CANCELED)
 				{
-					echo '<img src="images/' . $dir . $_lang_code . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
+					echo '<img src="images/' . $dir . get_lang_code($_lang) . '/cancelled.png" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;" title="' . $title . '"';
 					if ($width > 0)
 					{
 						echo ' width="' . $width . '"';
@@ -369,7 +369,7 @@ class Picture
 			case ADDRESS_PICTURE:
 				if ($this->flags & ADDRESS_FLAG_NOT_USED)
 				{
-					echo '<img src="images/' . $dir . $_lang_code . '/closed.png" title="' . $title . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
+					echo '<img src="images/' . $dir . get_lang_code($_lang) . '/closed.png" title="' . $title . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
 					if ($width > 0)
 					{
 						echo ' width="' . $width . '"';
@@ -384,7 +384,7 @@ class Picture
 			case LEAGUE_PICTURE:
 				if ($this->flags & LEAGUE_FLAG_RETIRED)
 				{
-					echo '<img src="images/' . $dir . $_lang_code . '/closed.png" title="' . $title . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
+					echo '<img src="images/' . $dir . get_lang_code($_lang) . '/closed.png" title="' . $title . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
 					if ($width > 0)
 					{
 						echo ' width="' . $width . '"';

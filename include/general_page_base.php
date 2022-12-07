@@ -57,7 +57,6 @@ class GeneralPageBase extends PageBase
 				// new MenuItem('tasks.php' . $ccc, get_label('Tasks'), get_label('Learning tasks and puzzles.')),
 				// new MenuItem('articles.php' . $ccc, get_label('Articles'), get_label('Books and articles.')),
 				// new MenuItem('links.php' . $ccc, get_label('Links'), get_label('Links to custom mafia web sites.')),
-				// new MenuItem('rulebook.php' . $ccc, get_label('Rules'), get_label('Mafia rulebook')),
 			)),
 			// new MenuItem('calendar.php' . $ccc, get_label('Calendar'), get_label('Where and when can I play')),
 		);
@@ -84,8 +83,6 @@ class GeneralPageBase extends PageBase
 		// (
 			// new MenuItem('welcome.php' . $ccc, get_label('Welcome'), get_label('Welcome to the [0]!', PRODUCT_NAME)),
 			// new MenuItem('about.php' . $ccc, get_label('About'), get_label('About [0]', PRODUCT_NAME)),
-			// new MenuItem('rulebook.php' . $ccc, get_label('Rules'), get_label('Mafia rulebook')),
-			// new MenuItem('tactics.php' . $ccc, get_label('Tactics'), get_label('Game tactics')),
 			// new MenuItem('downloads.php' . $ccc, get_label('Downloads'), get_label('Download client software for Mafia.')),
 		// ));
 		

@@ -10,7 +10,7 @@ class Page extends GeneralPageBase
 {
 	protected function show_body()
 	{
-		global $_page, $_lang_code;
+		global $_page, $_lang;
 
 		check_permissions(PERMISSION_ADMIN);
 		
@@ -21,9 +21,10 @@ class Page extends GeneralPageBase
 		echo '</td></tr></table></p>';
 		
 		$query = new DbQuery(
-			'SELECT id, name_' . $_lang_code .
-			', flags, code FROM  countries WHERE (flags & ' . COUNTRY_FLAG_NOT_CONFIRMED .
-			') <> 0 ORDER BY name_' . $_lang_code);
+			'SELECT c.id, n.name, c.flags, c.code FROM countries c' . 
+			' JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ' .
+			' WHERE (flags & ' . COUNTRY_FLAG_NOT_CONFIRMED .') <> 0' .
+			' ORDER BY n.name', $_lang);
 		if ($row = $query->next())
 		{
 			echo '<p><table class="bordered light" width="100%">';
@@ -40,29 +41,29 @@ class Page extends GeneralPageBase
 			echo '</table></p>';
 		}
 		
-		$condition = new SQL(' WHERE (flags & ' . COUNTRY_FLAG_NOT_CONFIRMED . ') = 0');
+		$condition = new SQL(' WHERE (c.flags & ' . COUNTRY_FLAG_NOT_CONFIRMED . ') = 0');
 		$ccc_id = $ccc_filter->get_id();
 		switch($ccc_filter->get_type())
 		{
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
 			{
-				$condition->add(' AND id = (SELECT i.country_id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE c.id = ?)', $ccc_id);
+				$condition->add(' AND c.id = (SELECT i.country_id FROM clubs cl JOIN cities i ON i.id = c.city_id WHERE cl.id = ?)', $ccc_id);
 			}
 			break;
 		case CCCF_CITY:
-			$condition->add(' AND id = (SELECT i.country_id FROM cities i WHERE i.id = ?)', $ccc_id);
+			$condition->add(' AND c.id = (SELECT i.country_id FROM cities i WHERE i.id = ?)', $ccc_id);
 			break;
 		case CCCF_COUNTRY:
-			$condition->add(' AND id = ?', $ccc_id);
+			$condition->add(' AND c.id = ?', $ccc_id);
 			break;
 		}
 		
-		list ($count) = Db::record(get_label('country'), 'SELECT count(*) FROM countries', $condition);
+		list ($count) = Db::record(get_label('country'), 'SELECT count(*) FROM countries c', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$query = new DbQuery('SELECT id, name_' . $_lang_code . ', flags, code FROM countries', $condition);
-		$query->add(' ORDER BY name_' . $_lang_code . ' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query = new DbQuery('SELECT c.id, n.name, c.flags, c.code FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0', $_lang, $condition);
+		$query->add(' ORDER BY n.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';
 		echo '<td width="56">';

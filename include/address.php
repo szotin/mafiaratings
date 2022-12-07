@@ -19,7 +19,12 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 {
 	list($address, $club_id, $flags, $city_id, $city_name, $country_name) = Db::record(
 		get_label('address'), 
-		'SELECT a.address, a.club_id, a.flags, a.city_id, i.name_en, o.name_en FROM addresses a JOIN cities i ON i.id = a.city_id JOIN countries o ON o.id = i.country_id WHERE a.id = ?', 
+		'SELECT a.address, a.club_id, a.flags, a.city_id, ni.name, no.name FROM addresses a' . 
+		' JOIN cities i ON i.id = a.city_id' .
+		' JOIN countries o ON o.id = i.country_id' . 
+		' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . LANG_ENGLISH . ') <> 0 ' .
+		' JOIN names no ON no.id = o.name_id AND (no.langs & ' . LANG_ENGLISH . ') <> 0 ' .
+		' WHERE a.id = ?', 
 		$addr_id);
 	$geo_address = str_replace(' ', '+', $address . ',' . $city_name . ',' . $country_name);
 	//echo $geo_address . '<br>';
@@ -204,7 +209,7 @@ class AddressPageBase extends PageBase
 	
 	protected function prepare()
 	{
-		global $_lang_code, $_profile;
+		global $_lang, $_profile;
 	
 		if (!isset($_REQUEST['id']))
 		{
@@ -215,11 +220,13 @@ class AddressPageBase extends PageBase
 		list ($this->name, $this->address, $this->url, $this->flags, $this->club_id, $this->club_name, $this->club_langs, $this->scoring_id, $this->club_flags, $this->city_id, $this->city_name, $this->timezone, $this->country_id, $this->country_name) = 
 			Db::record(
 				get_label('address'),
-				'SELECT a.name, a.address, a.map_url, a.flags, a.club_id, c.name, c.langs, c.scoring_id, c.flags, a.city_id, ct.name_' . $_lang_code . ', ct.timezone, ct.country_id, cr.name_' . $_lang_code . ' FROM addresses a' .
+				'SELECT a.name, a.address, a.map_url, a.flags, a.club_id, c.name, c.langs, c.scoring_id, c.flags, a.city_id, nct.name, ct.timezone, ct.country_id, ncr.name FROM addresses a' .
 				' JOIN clubs c ON c.id = a.club_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN countries cr ON cr.id = ct.country_id' .
-				' WHERE a.id = ?', $this->id);
+				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
+				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
+				' WHERE a.id = ?', $_lang, $_lang, $this->id);
 				
 		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $this->club_id);
 	}

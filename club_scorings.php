@@ -6,7 +6,7 @@ class Page extends ClubPageBase
 {
 	protected function show_body()
 	{
-		global $_lang_code, $_page;
+		global $_page;
 		
 		check_permissions(PERMISSION_CLUB_MANAGER, $this->id);
 		echo '<table class="bordered light" width="100%">';

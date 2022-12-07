@@ -48,12 +48,12 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('rules_code', 'Search pattern. For example: <a href="rules.php?rules_code=00000000000000010200000000000"><?php echo PRODUCT_URL; ?>/api/get/rules.php?rules_code=00000000000000010200000000000</a> returns details about the rules with this id.', '-');
-		$help->request_param('game_id', 'Search pattern. For example: <a href="rules.php?game_id=140"><?php echo PRODUCT_URL; ?>/api/get/rules.php?game_id=140</a> returns the rules of the game #140.', '-');
-		$help->request_param('event_id', 'Search pattern. For example: <a href="rules.php?event_id=8095"><?php echo PRODUCT_URL; ?>/api/get/rules.php?event_id=8095</a> returns the rules of VaWaCa-2018.', '-');
-		$help->request_param('tournament_id', 'Search pattern. For example: <a href="rules.php?tournament_id=1"><?php echo PRODUCT_URL; ?>/api/get/rules.php?tournament_id=1</a> returns the rules of tournament 1.', '-');
-		$help->request_param('club_id', 'Search pattern. For example: <a href="rules.php?club_id=50"><?php echo PRODUCT_URL; ?>/api/get/rules.php?club_id=50</a> returns the rules of New Yourk Mafia Club.', '-');
-		$help->request_param('detailed', 'If set all the default params are shown explicitly. For example: <a href="rules.php?club_id=1&detailed"><?php echo PRODUCT_URL; ?>/api/get/rules.php?club_id=1&detailed</a> shows detailed rules for Russian Mafia of Vancouver. The same can be achieved by setting lod to 1 or greater: <a href="rules.php?rules_code=00000000000000010200000000000&lod=1"><?php echo PRODUCT_URL; ?>/api/get/rules.php?rules_code=00000000000000010200000000000&lod=1</a>,', '-');
+		$help->request_param('rules_code', 'Search pattern. For example: <a href="rules.php?rules_code=00000000000000010200000000000">/api/get/rules.php?rules_code=00000000000000010200000000000</a> returns details about the rules with this id.', '-');
+		$help->request_param('game_id', 'Search pattern. For example: <a href="rules.php?game_id=140">/api/get/rules.php?game_id=140</a> returns the rules of the game #140.', '-');
+		$help->request_param('event_id', 'Search pattern. For example: <a href="rules.php?event_id=8095">/api/get/rules.php?event_id=8095</a> returns the rules of VaWaCa-2018.', '-');
+		$help->request_param('tournament_id', 'Search pattern. For example: <a href="rules.php?tournament_id=1">/api/get/rules.php?tournament_id=1</a> returns the rules of tournament 1.', '-');
+		$help->request_param('club_id', 'Search pattern. For example: <a href="rules.php?club_id=50">/api/get/rules.php?club_id=50</a> returns the rules of New Yourk Mafia Club.', '-');
+		$help->request_param('detailed', 'If set all the default params are shown explicitly. For example: <a href="rules.php?club_id=1&detailed">/api/get/rules.php?club_id=1&detailed</a> shows detailed rules for Russian Mafia of Vancouver. The same can be achieved by setting lod to 1 or greater: <a href="rules.php?rules_code=00000000000000010200000000000&lod=1">/api/get/rules.php?rules_code=00000000000000010200000000000&lod=1</a>,', '-');
 
 		$param = $help->response_param('rules', 'Game rules.');
 		api_rules_help($param, true);

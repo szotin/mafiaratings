@@ -146,7 +146,7 @@ class PageBase
 	
 	final function show_header()
 	{
-		global $_session_state, $_profile, $_lang_code;
+		global $_session_state, $_profile, $_lang;
 		
 		if ($this->_state != PAGE_STATE_EMPTY)
 		{
@@ -161,7 +161,7 @@ class PageBase
 		echo '<script src="js/jquery.min.js"></script>';
 		echo '<script src="js/jquery-ui.min.js"></script>';
 		echo '<script src="js/jquery.ui.menubar.js"></script>';
-		echo '<script src="js/labels_' . $_lang_code . '.js"></script>';
+		echo '<script src="js/labels_' . get_lang_code($_lang) . '.js"></script>';
 		echo '<script src="js/common.js"></script>';
 		echo '<script src="js/md5.js"></script>';
 		echo '<script src="js/mr.js"></script>';
@@ -204,7 +204,7 @@ class PageBase
 		}
 		if (is_ratings_server())
 		{
-			echo '<td class="header"><img src="images/title_r.png" /></td>';
+			echo '<td class="header"><a href="index.php"><img src="images/title_r.png" /></a></td>';
 		}
 		else
 		{
@@ -282,7 +282,7 @@ class PageBase
 			}
 		}
 		echo '</td><td width="32"><a id="header-lang" onMouseEnter="setCurrentMenu(null)" href="javascript:mr.browserLangChange(\'';
-		if ($_lang_code == 'ru')
+		if ($_lang == LANG_RUSSIAN)
 		{
 			echo 'en';
 		}
@@ -290,7 +290,7 @@ class PageBase
 		{
 			echo 'ru';
 		}
-		echo '\')" title="' . get_label('Change language') . '"><img src="images/' . $_lang_code . '.png" width="32"></a>';
+		echo '\')" title="' . get_label('Change language') . '"><img src="images/' . get_lang_code($_lang) . '.png" width="32"></a>';
 		
 		echo '</td></tr></table>';
 		echo '<table class="main" border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
@@ -315,7 +315,7 @@ class PageBase
 
 	final function show_footer()
 	{
-		global $_lang_code, $_agent;
+		global $_agent;
 		
 		if ($this->_state != PAGE_STATE_HEADER)
 		{

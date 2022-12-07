@@ -11,7 +11,7 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code, $_profile;
+		global $_profile;
 		
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
@@ -198,10 +198,8 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('series_id', 'Series id. For example: <a href="series.php?serie_id=1">' . PRODUCT_URL . '/api/get/series.php?serie_id=1</a> returns the serie with id 1.', '-');
 		$help->request_param('league_id', 'League id. For example: <a href="series.php?league_id=2">' . PRODUCT_URL . '/api/get/series.php?league_id=2</a> returns all series of the American Mafia League.', '-');
 		$help->request_param('club_id', 'Club id.  For example: <a href="series.php?club_id=1">' . PRODUCT_URL . '/api/get/series.php?club_id=1</a> returns all series of the leagues that Russian Mafia of Vancouver belongs to.', '-');
-		$help->request_param('langs', 'Languages filter. 1 for English; 2 for Russian. Bit combination - 3 - means both (this is a default value). For example: <a href="series.php?langs=1">' . PRODUCT_URL . '/api/get/series.php?langs=1</a> returns all series that support English as their language.', '-');
+		$help->request_param('langs', 'Languages filter. A bit combination of language ids. For example: <a href="series.php?langs=1">' . PRODUCT_URL . '/api/get/series.php?langs=1</a> returns all series that support English as their language.' . valid_langs_help(), '-');
 		$help->request_param('canceled', '0 - exclude canceled series (default); 1 - incude canceled series; 2 - canceled series only. For example: <a href="series.php?canceled=2">' . PRODUCT_URL . '/api/get/series.php?canceled=2</a> returns all canceled series.', '-');
-		$help->request_param('lod', 'Level of details. 0 - basic (default); 1 - extended. Include club name/icon, city/country name, etc. For example: <a href="series.php?club=1&lod=1">' . PRODUCT_URL . '/api/get/series.php?club=1&lod=1</a> returns series with all the fields that have lod >= 1.', '-');
-		$help->request_param('count', 'Returns series count instead of the series themselves. For example: <a href="series.php?name_contains=an&count">' . PRODUCT_URL . '/api/get/series.php?name_contains=an&count</a> returns how many series contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="series.php?page=1">' . PRODUCT_URL . '/api/get/series.php?page=1</a> returns the second page of series by time from newest to oldest.', '-');
 		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="series.php?page_size=32">' . PRODUCT_URL . '/api/get/series.php?page_size=32</a> returns first 32 series; <a href="series.php?page_size=0">' . PRODUCT_URL . '/api/get/series.php?page_size=0</a> returns series in one page; <a href="series.php">' . PRODUCT_URL . '/api/get/series.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' series by alphabet.', '-');
 
@@ -211,7 +209,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('has_league_picture', 'True if series have unique picture; false if default one is used.');
 			$param->sub_param('icon', 'Series icon URL.');
 			$param->sub_param('picture', 'Series picture URL.');
-			$param->sub_param('langs', 'Languages used in the series. A bit combination of: 1 - English; 2 - Russian.');
+			$param->sub_param('langs', 'A bit combination of languages used in the series.' . valid_langs_help());
 			$param->sub_param('timestamp', 'Unix timestamp for the start of the series.');
 			$param->sub_param('duration', 'Duration of the series in seconds.');
 			$param->sub_param('start', 'Formatted date "yyyy-mm-dd HH:MM" for the start of the series. User timezone is used.', 1);

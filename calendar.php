@@ -25,12 +25,12 @@ class Page extends GeneralPageBase
 	
 	protected function show_body()
 	{
-		global $_lang_code, $_profile;
+		global $_lang, $_profile;
 		
 		$time = time() + 604800 * $this->week;
 		$end_time = $time + 604800;
 
-		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', i.timezone, a.address, a.map_url');
+		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, ni.name, no.name, i.timezone, a.address, a.map_url');
 		if ($_profile != null)
 		{
 			$query->add(', eu.coming_odds, eu.people_with_me, eu.late FROM events e LEFT OUTER JOIN event_users eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
@@ -46,8 +46,10 @@ class Page extends GeneralPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities i ON a.city_id = i.id' .
 			' JOIN countries o ON i.country_id = o.id' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
 			' WHERE e.start_time + e.duration >= ? AND e.start_time < ? AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_BEFORE) . ') = 0',
-			$time, $end_time);
+			$_lang, $_lang, $time, $end_time);
 			
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr>';

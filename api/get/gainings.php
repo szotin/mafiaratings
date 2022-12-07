@@ -8,8 +8,6 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code;
-		
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
 		$gaining_id = (int)get_optional_param('gaining_id', -1);
@@ -43,7 +41,7 @@ class ApiPage extends GetApiPageBase
 			{
 				$condition->add(' AND (s.league_id = ? OR s.league_id IS NULL)', $league_id);
 			}
-			else
+			else if ($league_id == 0)
 			{
 				$condition->add(' AND s.league_id IS NULL');
 			}
@@ -73,6 +71,7 @@ class ApiPage extends GetApiPageBase
 		{
 			$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
 		}
+		//echo $query->get_parsed_sql();
 		
 		$this->show_query($query);
 		$current_gaining = NULL;
@@ -112,11 +111,11 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('name_contains', 'Search pattern. For example: <a href="gainings.php?name_contains=wa">' . PRODUCT_URL . '/api/get/gainings.php?name_contains=wa</a> returns gaining systems containing "wa" in their names.', '-');
-		$help->request_param('name_starts', 'Search pattern. For example: <a href="gainings.php?name_starts=фи">' . PRODUCT_URL . '/api/get/gainings.php?name_starts=фи</a> returns gaining systems with names starting with "фи".', '-');
-		$help->request_param('gaining_id', 'gaining system id. For example: <a href="gainings.php?gaining_id=19"><?php echo PRODUCT_URL; ?>/api/get/gainings.php?gaining_id=19</a> returns information about FIIM gaining system.', '-');
-		$help->request_param('gaining_version', 'gaining system version. For example: <a href="gainings.php?gaining_id=21&gaining_version=1"><?php echo PRODUCT_URL; ?>/api/get/gainings.php?gaining_id=21&gaining_version=1</a> returns information about VaWaCa gaining system version 1 (current version is 2). When 0, the latest version is returned.', 'all versions are returned');
-		$help->request_param('league_id', 'League id. Returns all gaining systems used in this league. For example: <a href="gainings.php?league_id=2"><?php echo PRODUCT_URL; ?>/api/get/gainings.php?league_id=2</a> returns all gaining systems used in American Mafia League.', '-');
+		$help->request_param('name_contains', 'Search pattern. For example: <a href="gainings.php?name_contains=wa">/api/get/gainings.php?name_contains=wa</a> returns gaining systems containing "wa" in their names.', '-');
+		$help->request_param('name_starts', 'Search pattern. For example: <a href="gainings.php?name_starts=фи">/api/get/gainings.php?name_starts=фи</a> returns gaining systems with names starting with "фи".', '-');
+		$help->request_param('gaining_id', 'gaining system id. For example: <a href="gainings.php?gaining_id=19">/api/get/gainings.php?gaining_id=19</a> returns information about FIIM gaining system.', '-');
+		$help->request_param('gaining_version', 'gaining system version. For example: <a href="gainings.php?gaining_id=21&gaining_version=1">/api/get/gainings.php?gaining_id=21&gaining_version=1</a> returns information about VaWaCa gaining system version 1 (current version is 2). When 0, the latest version is returned.', 'all versions are returned');
+		$help->request_param('league_id', 'League id. Returns all gaining systems used in this league. For example: <a href="gainings.php?league_id=2">/api/get/gainings.php?league_id=2</a> returns all gaining systems used in American Mafia League. It can be 0 - then all gaining systems not belonging to any league are reurned.', 'all gaining systems are returned');
 		
 		$param = $help->response_param('gainings', 'The array of gaining systems.');
 			$param->sub_param('id', 'gaining system id.');

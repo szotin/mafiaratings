@@ -7,7 +7,7 @@ class ApiPage extends ControlApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_lang_code;
+		global $_lang;
 		
 		$term = '';
 		if (isset($_REQUEST['term']))
@@ -17,14 +17,13 @@ class ApiPage extends ControlApiPageBase
 		
 		$countries = array();
 		
-		$query = new DbQuery('SELECT DISTINCT c.id, c.name_' . $_lang_code . ' FROM country_names n JOIN countries c ON c.id = n.country_id');
+		$query = new DbQuery('SELECT DISTINCT c.id, nc.name FROM country_names n JOIN countries c ON c.id = n.country_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & ?) <> 0', $_lang);
 		if ($term != '')
 		{
 			$term = '%' . $term . '%';
 			$query->add(' WHERE n.name LIKE ?', $term);
 		}
-		$query->add(' ORDER BY name_' . $_lang_code . ' LIMIT 10');
-		
+		$query->add(' ORDER BY nc.name LIMIT 10');
 		while ($row = $query->next())
 		{
 			$country = new stdClass();

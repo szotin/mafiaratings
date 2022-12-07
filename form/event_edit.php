@@ -39,10 +39,12 @@ try
 		$club = new stdClass();
 		list ($club->country, $club->city, $club->rules_code, $club->name, $club->langs) = 
 			Db::record(get_label('club'), 
-				'SELECT cr.name_' . $_lang_code . ', ct.name_' . $_lang_code . ', c.rules, c.name, c.langs FROM clubs c ' .
+				'SELECT ncr.name, nct.name, c.rules, c.name, c.langs FROM clubs c ' .
 				'JOIN cities ct ON ct.id = c.city_id ' .
 				'JOIN countries cr ON cr.id = ct.country_id ' .
-				'WHERE c.id = ?', $club_id);
+				'JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0 ' .
+				'JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0 ' .
+				'WHERE c.id = ?', $_lang, $_lang, $club_id);
 	}
 	
 	$start = get_datetime($start_time, $timezone);

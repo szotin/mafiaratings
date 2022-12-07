@@ -18,11 +18,11 @@ class Page extends PageBase
 	
 	private function parse_sample_email($email_addr, $type, $langs)
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		$code = generate_email_code();
 		$base_url = get_server_url() . '/email_request.php?user_id=' . $_profile->user_id . '&code=' . $code;
 		
-		$lang = get_event_email_lang($_profile->user_def_lang, $langs);
+		$lang = get_event_email_lang($_lang, $langs);
 		list($subj, $body, $text_body) = get_event_email($type, $lang);
 
 		$tags = get_bbcode_tags();

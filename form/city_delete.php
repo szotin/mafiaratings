@@ -22,11 +22,11 @@ try
 	}
 	$id = $_REQUEST['id'];
 	
-	list($name) = Db::record(get_label('city'), 'SELECT name_' . $_lang_code . ' FROM cities WHERE id = ?', $id);
+	list($name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $id);
 
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="300">'.get_label('Replace [0] with: ', $name).'</td><td>';
-	$query = new DbQuery('SELECT id, name_' . $_lang_code . ' FROM cities WHERE id <> ? ORDER BY name_' . $_lang_code, $id);
+	$query = new DbQuery('SELECT c.id, n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id <> ? ORDER BY n.name', $_lang, $id);
 	echo '<select id="form-repl">';
 	while ($row = $query->next())
 	{

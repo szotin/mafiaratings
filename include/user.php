@@ -8,7 +8,7 @@ require_once __DIR__ . '/club.php';
 
 function send_activation_email($user_id, $name, $email)
 {
-	global $_lang_code;
+	global $_lang;
 
 	if ($email == '')
 	{
@@ -22,7 +22,7 @@ function send_activation_email($user_id, $name, $email)
 		'url' => new Tag(get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $email_code . '&email=' . urlencode($email)),
 		'unsub' => new Tag('<a href="' . $base_url . '&unsub=1" target="_blank">', '</a>'));
 	
-	list($subj, $body, $text_body) = include __DIR__ .  '/languages/' . $_lang_code . '/email/user_activation.php';
+	list($subj, $body, $text_body) = include __DIR__ .  '/languages/' . get_lang_code($_lang) . '/email/user_activation.php';
 	$body = parse_tags($body, $tags);
 	$text_body = parse_tags($text_body, $tags);
 	send_notification($email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_SIGN_IN, 0, $email_code);
@@ -130,7 +130,7 @@ class UserPageBase extends PageBase
 	
 	protected function prepare()
 	{
-		global $_lang_code;
+		global $_lang;
 	
 		if (!isset($_REQUEST['id']))
 		{
@@ -140,12 +140,14 @@ class UserPageBase extends PageBase
 
 		list ($this->name, $this->email, $this->flags, $this->games_moderated, $this->reg_date, $this->langs, $this->city, $this->country, $this->club_id, $this->club, $this->club_flags) = 
 			Db::record(get_label('user'),
-				'SELECT u.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, i.name_' . $_lang_code . ', o.name_' . $_lang_code . ', c.id, c.name, c.flags FROM users u' .
+				'SELECT u.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, ni.name, no.name, c.id, c.name, c.flags FROM users u' .
 					' JOIN cities i ON i.id = u.city_id' .
 					' JOIN countries o ON o.id = i.country_id' .
+					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+					' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 					' WHERE u.id = ?',
-				$this->id);
+				$_lang, $_lang, $this->id);
 		$this->title = $this->name;
 	}
 
@@ -218,7 +220,7 @@ class UserPageBase extends PageBase
 
 function show_user_input($name, $value, $condition, $title, $js_function = 'mr.gotoFind')
 {
-	global $_profile, $_lang_code;
+	global $_profile;
 
 	echo '<input type="text" id="' . $name . '" placeholder="' . get_label('Select player') . '" title="' . $title . '"/>';
 	$url = 'api/control/user.php?';

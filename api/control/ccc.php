@@ -54,7 +54,7 @@ class CCCContext
 			return;
 		}
 		
-		$query = new DbQuery('SELECT c.id, i.id, i.country_id, i.area_id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE name = ?', $term);
+		$query = new DbQuery('SELECT c.id, i.id, i.country_id, i.area_id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE c.name = ?', $term);
 		if ($row = $query->next())
 		{
 			list($this->club_id, $this->city_id, $this->country_id, $this->region_id) = $row;
@@ -62,7 +62,7 @@ class CCCContext
 			return;
 		}
 
-		$query = new DbQuery('SELECT id, country_id, area_id FROM cities WHERE name_en = ? OR name_ru = ?', $term, $term);
+		$query = new DbQuery('SELECT c.id, c.country_id, c.area_id FROM cities c JOIN names n ON n.id = c.name_id WHERE n.name = ? LIMIT 1', $term);
 		if ($row = $query->next())
 		{
 			list($this->city_id, $this->country_id, $this->region_id) = $row;
@@ -78,7 +78,7 @@ class CCCContext
 			return;
 		}
 		
-		$query = new DbQuery('SELECT id FROM countries WHERE name_en = ? OR name_ru = ?', $term, $term);
+		$query = new DbQuery('SELECT c.id FROM countries c JOIN names cn ON cn.id = c.name_id WHERE name = ? LIMIT 1', $term);
 		if ($row = $query->next())
 		{
 			list($this->country_id) = $row;
@@ -91,7 +91,7 @@ class ApiPage extends ControlApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_profile, $_lang_code;
+		global $_profile, $_lang;
 		
 		$flags = 0;
 		if (isset($_REQUEST['flags']))
@@ -142,12 +142,12 @@ class ApiPage extends ControlApiPageBase
 		{
 			$category = get_label('Countries');
 			
-			$query = new DbQuery('SELECT o.id, o.name_' . $_lang_code . ' FROM countries o');
+			$query = new DbQuery('SELECT o.id, n.name FROM countries o JOIN names n ON n.id = o.name_id AND (n.langs & ?) <> 0', $_lang);
 			if ($term != '' && $context->defined == DEFINED_NO)
 			{
-				$query->add(' WHERE o.name_ru LIKE(?) OR o.name_en LIKE(?)', $term, $term);
+				$query->add(' WHERE n.name LIKE(?)', $term, $term);
 			}
-			$query->add(' ORDER BY (SELECT count(*) FROM clubs c JOIN cities t ON t.id = c.city_id WHERE t.country_id = o.id) DESC, o.name_' . $_lang_code . ' LIMIT 8');
+			$query->add(' ORDER BY (SELECT count(*) FROM clubs c JOIN cities t ON t.id = c.city_id WHERE t.country_id = o.id) DESC, n.name LIMIT 8');
 			
 			while ($row = $query->next())
 			{
@@ -161,13 +161,13 @@ class ApiPage extends ControlApiPageBase
 		{
 			$category = get_label('Cities');
 			
-			$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ' FROM cities i');
+			$query = new DbQuery('SELECT i.id, n.name FROM cities i JOIN names n ON n.id = i.name_id AND (n.langs & ?) <> 0', $_lang);
 			switch ($context->defined)
 			{
 			case DEFINED_NO:
 				if ($term != '')
 				{
-					$query->add(' WHERE i.name_ru LIKE(?) OR i.name_en LIKE(?)', $term, $term);
+					$query->add(' WHERE n.name LIKE(?)', $term, $term);
 				}
 				break;
 			case DEFINED_CLUB:
@@ -181,7 +181,7 @@ class ApiPage extends ControlApiPageBase
 				$query->add(' WHERE i.area_id = i.id AND i.country_id = ?', $context->country_id);
 				break;
 			}
-			$query->add(' ORDER BY (SELECT count(*) FROM clubs WHERE city_id = i.id) DESC, i.name_' . $_lang_code . ' LIMIT 8');
+			$query->add(' ORDER BY (SELECT count(*) FROM clubs WHERE city_id = i.id) DESC, n.name LIMIT 8');
 			
 			while ($row = $query->next())
 			{

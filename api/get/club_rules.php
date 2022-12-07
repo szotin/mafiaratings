@@ -65,8 +65,8 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('club_id', 'Club id. For example: <a href="club_rules.php?club_id=1"><?php echo PRODUCT_URL; ?>/api/get/club_rules.php?club_id=1</a> returns the rules of Russian Mafia of Vancouver.');
-		$help->request_param('view', 'How to show the rules. Possible values are: "all" and "code".<br>"All" shows all default fields explicitly. <a href="club_rules.php?club_id=1&view=all"><?php echo PRODUCT_URL; ?>/api/get/club_rules.php?club_id=1&view=all</a> detailed view.<br>"Code" shows rules codes only. <a href="club_rules.php?club_id=1&view=code"><?php echo PRODUCT_URL; ?>/api/get/club_rules.php?club_id=1&view=all</a> code view.', 'shows only the fields with the non-default values');
+		$help->request_param('club_id', 'Club id. For example: <a href="club_rules.php?club_id=1">/api/get/club_rules.php?club_id=1</a> returns the rules of Russian Mafia of Vancouver.');
+		$help->request_param('view', 'How to show the rules. Possible values are: "all" and "code".<br>"All" shows all default fields explicitly. <a href="club_rules.php?club_id=1&view=all">/api/get/club_rules.php?club_id=1&view=all</a> detailed view.<br>"Code" shows rules codes only. <a href="club_rules.php?club_id=1&view=code">/api/get/club_rules.php?club_id=1&view=all</a> code view.', 'shows only the fields with the non-default values');
 		$param = $help->response_param('rules', 'Array of all rules used in the club. The first rules in the array are default rules used in the club.');
 			$param->sub_param('name', 'Rules name');
 			$rules_param = $param->sub_param('rules', 'Game rules.');

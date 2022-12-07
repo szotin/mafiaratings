@@ -20,10 +20,13 @@ try
 	}
 	$id = $_REQUEST['id'];
 	
-	list($country_id, $country_name, $name_en, $name_ru, $timezone, $flags, $area_id) = Db::record(
+	list($country_id, $country_name, $name_id, $timezone, $flags, $area_id) = Db::record(
 		get_label('city'), 
-		'SELECT i.country_id, o.name_' . $_lang_code . ', i.name_en, i.name_ru, i.timezone, i.flags, i.area_id FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.id = ?',
-		$id);
+		'SELECT i.country_id, no.name, i.name_id, i.timezone, i.flags, i.area_id FROM cities i' .
+		' JOIN countries o ON o.id = i.country_id' .
+		' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+		' WHERE i.id = ?',
+		$_lang, $id);
 		
 	if (($flags & CITY_FLAG_NOT_CONFIRMED) != 0)
 	{
@@ -35,8 +38,10 @@ try
 	}
 		
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="200">'.get_label('City name in English').':</td><td><input id="form-name_en" value="' . htmlspecialchars($name_en, ENT_QUOTES) . '"></td></tr>';
-	echo '<tr><td>'.get_label('City name in Russian').':</td><td><input id="form-name_ru" value="' . htmlspecialchars($name_ru, ENT_QUOTES) . '"></td></tr>';
+	
+	echo '<tr><td width="200">'.get_label('City name').':</td><td>';
+	Names::show_control(new Names($name_id, get_label('city name')));
+	echo '</td></tr>';
 	
 	echo '<tr><td>'.get_label('Country').':</td><td>';
 	show_country_input('form-country', $country_name);
@@ -46,7 +51,13 @@ try
 	show_timezone_input($timezone);
 	echo '</td></tr>';
 	
-	$query = new DbQuery('SELECT i.id, i.name_' . $_lang_code . ', i.timezone, o.id, o.name_' . $_lang_code . ' FROM cities i JOIN countries o ON o.id = i.country_id WHERE i.area_id = i.id AND i.id <> ? ORDER BY i.name_' . $_lang_code, $id);
+	$query = new DbQuery(
+		'SELECT i.id, ni.name, i.timezone, o.id, no.name FROM cities i' .
+		' JOIN countries o ON o.id = i.country_id' .
+		' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+		' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+		' WHERE i.area_id = i.id AND i.id <> ? ORDER BY ni.name',
+		$_lang, $_lang, $id);
 	echo '<tr><td>' . get_label('Is near bigger city') . ':</td><td>';
 	echo '<select id="form-area" onChange="areaChange()"><option value="-1"></option>';
 	while ($row = $query->next())
@@ -106,18 +117,18 @@ try
 	function commit(onSuccess)
 	{
 		var data = parseAreaVal($("#form-area").val());
-		json.post("api/ops/city.php",
+		var request =
 		{
 			op: 'change'
 			, city_id: <?php echo $id; ?>
-			, name_en: $("#form-name_en").val()
-			, name_ru: $("#form-name_ru").val()
 			, country: $("#form-country").val()
 			, timezone: getTimezone()
 			, confirm: ($('#form-confirm').attr('checked') ? 1 : 0)
 			, area_id: data.id
-		},
-		onSuccess);
+		};
+		nameControl.fillRequest(request);
+		
+		json.post("api/ops/city.php", request, onSuccess);
 	}
 	</script>
 <?php

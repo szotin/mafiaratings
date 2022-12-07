@@ -140,7 +140,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_USER, 'Create league. If user is admin, league is just created. If not, league request is created and email is sent to admin. Admin has to accept it.');
 		$help->request_param('name', 'League name.');
 		$help->request_param('url', 'League web site URL.');
-		$help->request_param('langs', 'Languages used in the league. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'user profile languages are used.');
+		$help->request_param('langs', 'Languages used in the league. A bit combination of language ids.' . valid_langs_help());
 		$help->request_param('email', 'League email.', 'user email is used.');
 		$help->request_param('phone', 'League phone. Just a text.', 'empty.');
 		return $help;
@@ -296,7 +296,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('league_id', 'League id.');
 		$help->request_param('name', 'League name.', 'remains the same.');
 		$help->request_param('url', 'League web site URL.', 'remains the same.');
-		$help->request_param('langs', 'Languages used in the league. A bit combination of 1 (English) and 2 (Russian). Other languages are not supported yet.', 'remains the same.');
+		$help->request_param('langs', 'Languages used in the league. A bit combination of language ids.' . valid_langs_help(), 'remains the same.');
 		$help->request_param('email', 'League email.', 'remains the same.');
 		$help->request_param('phone', 'League phone. Just a text.', 'remains the same.');
 		api_rules_filter_help($help->request_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Contains json. Example: { "split_on_four": true, "extra_points": ["fiim", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
@@ -312,7 +312,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function accept_op()
 	{
-		global $_profile, $_lang_code;
+		global $_profile;
 		
 		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');

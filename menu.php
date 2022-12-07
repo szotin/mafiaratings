@@ -6,7 +6,7 @@ class Page extends PageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_lang_code, $_agent;
+		global $_profile, $_agent;
 		
 		echo '<table class="bordered" width="100%">';
 		if ($_profile != NULL)

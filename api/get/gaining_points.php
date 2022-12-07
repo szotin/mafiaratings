@@ -62,10 +62,10 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('gaining_id', 'Gaining system id.</i> For example: <a href="gaining_points.php?gaining_id=3"><?php echo PRODUCT_URL; ?>/api/get/gaining_points.php?gaining_id=3</a> returns gaining points for a 1 star tournament with 20 players using AML gaining system.');
-		$help->request_param('gaining_version', 'Gaining system version.  For example: <a href="gaining_points.php?gaining_id=3&gaining_version=1"><?php echo PRODUCT_URL; ?>/api/get/gaining_points.php?gaining_id=3&gaining_version=1</a> returns gaining points for a 1 star tournament with 20 players using AML gaining system version 1.', '-');
-		$help->request_param('stars', 'Number of stars. For example: <a href="gaining_points.php?gaining_id=3&stars=3"><?php echo PRODUCT_URL; ?>/api/get/gaining_points.php?gaining_id=3&stars=3</a> returns gaining points for a 3 star tournament with 20 players using AML gaining system.', '1 star.');
-		$help->request_param('players', 'Number of players. For example: <a href="gaining_points.php?gaining_id=3&stars=2&players=40"><?php echo PRODUCT_URL; ?>/api/get/gaining_points.php?gaining_id=3&&stars=2&players=40</a> returns gaining points for a 2 star tournament with 40 players using AML gaining system.', '20 players.');
+		$help->request_param('gaining_id', 'Gaining system id.</i> For example: <a href="gaining_points.php?gaining_id=3">/api/get/gaining_points.php?gaining_id=3</a> returns gaining points for a 1 star tournament with 20 players using AML gaining system.');
+		$help->request_param('gaining_version', 'Gaining system version.  For example: <a href="gaining_points.php?gaining_id=3&gaining_version=1">/api/get/gaining_points.php?gaining_id=3&gaining_version=1</a> returns gaining points for a 1 star tournament with 20 players using AML gaining system version 1.', '-');
+		$help->request_param('stars', 'Number of stars. For example: <a href="gaining_points.php?gaining_id=3&stars=3">/api/get/gaining_points.php?gaining_id=3&stars=3</a> returns gaining points for a 3 star tournament with 20 players using AML gaining system.', '1 star.');
+		$help->request_param('players', 'Number of players. For example: <a href="gaining_points.php?gaining_id=3&stars=2&players=40">/api/get/gaining_points.php?gaining_id=3&&stars=2&players=40</a> returns gaining points for a 2 star tournament with 40 players using AML gaining system.', '20 players.');
 
 		$help->response_param('points', 'The array of numbers. Size of the array is number of players. Index 0 is num points for the first place; 1 - for the second; 2 - third; etc...');
 		return $help;

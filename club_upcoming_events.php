@@ -14,7 +14,7 @@ class Page extends ClubPageBase
 {
 	protected function show_body()
 	{
-		global $_page, $_lang_code, $_profile;
+		global $_page, $_lang, $_profile;
 		
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$event_count = 0;
@@ -47,7 +47,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 		}
 		
-		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, ct.name_' . $_lang_code . ', cr.name_' . $_lang_code . ', ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name');
+		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name');
 		if ($_profile != null)
 		{
 			$query->add(', eu.coming_odds, eu.people_with_me, eu.late FROM events e LEFT OUTER JOIN event_users eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
@@ -60,8 +60,10 @@ class Page extends ClubPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
-			' JOIN countries cr ON ct.country_id = cr.id WHERE ', 
-			$condition);
+			' JOIN countries cr ON ct.country_id = cr.id' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
+			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0 WHERE ',
+			$_lang,  $_lang, $condition);
 		$query->add(' ORDER BY e.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
 		while ($row = $query->next())
