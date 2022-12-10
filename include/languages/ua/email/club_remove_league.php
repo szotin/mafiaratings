@@ -3,8 +3,8 @@
 return array
 (
 	PRODUCT_NAME,
-	"<p>Здравствуйте [user_name],</p>\r\n<p>Даем вам знать о том, что [sender] исключил ваш клуб [club_name] из [league_name].</p><p>[message]</p>",
-	"Здравствуйте [user_name],\r\n\r\nДаем вам знать о том, что [sender] исключил ваш клуб [club_name] из [league_name].\r\n\r\n[message]\r\n"
+	"<p>Вітаємо, [user_name],</p>\r\n<p>Повідомляємо що [sender] виключив(-ла) ваш клуб [club_name] з ліги [league_name].</p><p>[message]</p>",
+	"Вітаємо, [user_name],\r\n\r\nПовідомляємо що [sender] виключив(-ла) ваш клуб [club_name] з ліги [league_name].\r\n\r\n[message]\r\n"
 );
 
 ?>

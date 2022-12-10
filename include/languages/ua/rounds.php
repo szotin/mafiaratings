@@ -1,7 +1,7 @@
 <?php
 $names = new stdClass();
-$names->main = 'основной раунд';
-$names->semi = 'полуфинал';
-$names->final = 'финал';
+$names->main = 'основний раунд';
+$names->semi = 'напівфінал';
+$names->final = 'фінал';
 return $names;
 ?>

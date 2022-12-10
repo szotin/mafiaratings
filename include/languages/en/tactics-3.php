@@ -1,8 +1,0 @@
-<p>Everything stated above about the Dark Players applies to the Don. However, there are a few additional rules. The Don must assign killings on the very first night, and must do checks to look for the true Sheriff.</p>
-
-<img src="images/19.jpg" align="left" width="250" class="in-text">
-<p>The standard agreement is to show the numbers of the Players who should be killed on the first three nights. All the Mafiosi must remember these numbers and &laquo;shoot&raquo; according to the agreements, unless of course exceptions arise as outlined in &laquo;How the Dark Players should play&raquo;. </p>
-
-<p>If the Mafia is experienced enough, some Dons take the risk of assigning a more complicated agreement. They show who they will check on the first night and what they will do if that Player turns out to be the Sheriff. For example, the Don signals a &laquo;check&raquo;. Then he shows a number, for example, number 3. And then he takes off his glasses, or plays with his glass on the table. This means that he will check Player 3 on the first night. If the Player turns out to be the Sheriff, he will take off his glasses. Or play with the glass on the table. The other Mafia players must notice this and shoot not according to the original agreement, but at Player 3. The Sheriff must be killed as early in the game as possible. If they do not see any such sign during the day, then at least the Mafiosi will all know for sure that Player 3 is not the Sheriff. That's already something.</p>
-
-<p>If there is no such complicated agreement, and the Don finds the Sheriff, he will attempt to give a signal to his team about who the Sheriff is. Then the agreement is temporarily forgotten and everybody &laquo;shoots&raquo; at the Sheriff.</p>

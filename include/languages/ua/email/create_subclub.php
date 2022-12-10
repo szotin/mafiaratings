@@ -3,8 +3,8 @@
 return array
 (
 	PRODUCT_NAME,
-	"<p>Здравствуйте [user_name],</p>\r\n<p>[sender] послал запрос о создании клуба \"[club_name]\" в вашей системе клубов \"[parent_name]\". <a href=\"[root]/club_requests.php?_login_=[user_id]&club_id=[parent_id]\">Пожалуйста подтвердите</a>.</p>",
-	"Здравствуйте [user_name],\r\n\r\n[sender] послал запрос о создании клуба \"[club_name]\" в вашей системе клубов \"[parent_name]\". Пожалуйста подтвердите здесь [root]/club_requests.php?_login_=[user_id]&club_id=[parent_id].\r\n"
+	"<p>Вітаємо, [user_name],</p>\r\n<p>[sender] відправив запит щодо створення клубу \"[club_name]\" в вашій системі клубів \"[parent_name]\". <a href=\"[root]/club_requests.php?_login_=[user_id]&club_id=[parent_id]\">Будь ласка, підтвердіть</a>.</p>",
+	"Вітаємо,[user_name],\r\n\r\n[sender] відправив запит щодо створення клубу \"[club_name]\" в вашій системі клубів \"[parent_name]\". Будь ласка, підтвердіть тут [root]/club_requests.php?_login_=[user_id]&club_id=[parent_id].\r\n"
 );
 
 ?>

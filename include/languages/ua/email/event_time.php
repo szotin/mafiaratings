@@ -3,8 +3,8 @@
 return array
 (
 	'[club_name]',
-	"Здравствуйте [user_name],\r\n<br>\r\n<br>мы изменили время проведения [event_name] на <b>[event_date] [event_time]</b>.\r\n<br>\r\n<br>Пожалуйста дайте нам знать, придете ли вы не смотря на изменение времени:\r\n<br>[accept_btn=Да я приду] [decline_btn=Нет]<hr>[unsub]Нажмите здесь[/unsub] если Вы хотите отписаться от рассылки.",
-	"Здравствуйте [user_name],\r\n\r\nмы изменили время проведения [event_name] на [event_date] [event_time].\r\n\r\nПожалуйста дайте нам знать, придете ли вы не смотря на изменение времени:\r\n[root]/event_info.php?id=[event_id]."
+	"Вітаємо, [user_name],\r\n<br>\r\n<br>було змінено час проведення [event_name] на <b>[event_date] [event_time]</b>.\r\n<br>\r\n<br>Будь ласка, повідомте, чи очікувати на вас незважаючи на зміну часу:\r\n<br>[accept_btn=Так, я прийду] [decline_btn=Ні]<hr>[unsub]Натисніть тут[/unsub] якщо ви бажаєте відписатись від розсилки.",
+	"Вітаємо, [user_name],\r\n\r\nбуло змінено час проведення [event_name] на [event_date] [event_time].\r\n\r\nБудь ласка, повідомте, чи очікувати на вас незважаючи на зміну часу:\r\n[root]/event_info.php?id=[event_id]."
 );
 
 ?>

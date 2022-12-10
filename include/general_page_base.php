@@ -79,13 +79,6 @@ class GeneralPageBase extends PageBase
 			));
 		}
 		
-		// $menu[] = new MenuItem('#about', get_label('About'), NULL, array
-		// (
-			// new MenuItem('welcome.php' . $ccc, get_label('Welcome'), get_label('Welcome to the [0]!', PRODUCT_NAME)),
-			// new MenuItem('about.php' . $ccc, get_label('About'), get_label('About [0]', PRODUCT_NAME)),
-			// new MenuItem('downloads.php' . $ccc, get_label('Downloads'), get_label('Download client software for Mafia.')),
-		// ));
-		
 		echo '<p><table class="head" width="100%">';
 		
 		echo '<tr><td colspan="2">';

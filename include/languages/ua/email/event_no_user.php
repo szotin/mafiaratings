@@ -3,8 +3,8 @@
 return array
 (
 	PRODUCT_NAME,
-	"<p>Здравствуйте [user_name],</p>\r\n<p>" . PRODUCT_NAME . " не может идентифицировать некоторых игроков ([incomers]) игравших в клубе [club_name] ([address]) [event_date] [event_time].</p>\r\n<p>Пожалуйста <a href=\"[url]\">нажмите здесь</a> если вы знаете, кто это был.</p>",
-	"Здравствуйте [user_name],\r\n\r\n" . PRODUCT_NAME . " не может идентифицировать некоторых игроков ([incomers]) игравших в клубе [club_name] ([address]) [event_date] [event_time].\r\n\r\nПожалуйста скажите кто это здесь [url], если вы знаете, кто это был.</p>"
+	"<p>Вітаємо, [user_name],</p>\r\n<p>" . PRODUCT_NAME . " не може ідентифікувати деяких гравців ([incomers]) що грали в клубі [club_name] ([address]) [event_date] [event_time].</p>\r\n<p>Будь ласка <a href=\"[url]\">натисніть тут</a> якщо ви знаєте хто це був.</p>",
+	"Вітаємо, [user_name],\r\n\r\n" . PRODUCT_NAME . " не може ідентифікувати деяких гравців ([incomers]) що грали в клубі [club_name] ([address]) [event_date] [event_time].\r\n\r\nБудь ласка, скажіть нам хто це був тут [url], якщо ви знаєте.</p>"
 );
 
 ?>
