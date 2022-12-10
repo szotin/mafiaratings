@@ -10,7 +10,7 @@ class Page extends PageBase
 		
 ?>
 		<script type="text/javascript" src="js/seating.js"></script>
-		<script type="text/javascript" src="js/seating-<?php echo get_lang_code($_lang); ?>.js"></script>
+		<script type="text/javascript" src="js/seating_<?php echo get_lang_code($_lang); ?>.js"></script>
 		<script type="text/javascript" src="js/seating-ui.js"></script>
 		<div id="seating"></div>
 <?php

@@ -44,3 +44,9 @@ sounds/
 js/normalizer_editor.js
 rebuild_ratings.log
 complete_competitions.log
+js/seating_ua.js
+js/seating_ru.js
+js/seating_en.js
+js/game_ua.js
+js/game_ru.js
+js/game_en.js
