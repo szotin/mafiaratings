@@ -151,11 +151,11 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 					switch ($case)
 					{
 						case LOWERCASE:
-							return 'український';
+							return 'українська';
 						case UPPERCASE:
-							return 'УКРАЇНСЬКИЙ';
+							return 'УКРАЇНСЬКВА';
 					}
-					return 'Український';
+					return 'Українська';
 			}
 			switch ($case)
 			{
@@ -365,35 +365,18 @@ function langs_checkboxes($langs, $filter = LANG_ALL, $form_name = NULL, $separa
 	{
 		$input_beg = '<input type="checkbox" ';
 	}
-
-	if (($filter & LANG_ENGLISH) != 0)
-	{
-		echo $input_beg;
-		if (($langs & LANG_ENGLISH) != 0)
-		{
-			echo 'checked ';
-		}
-		echo 'name="' . $prefix . get_lang_code(LANG_ENGLISH) . '" id="' . $prefix . get_lang_code(LANG_ENGLISH) . '"> ' . get_lang_str(LANG_ENGLISH) . $separator;
-	}
 	
-	if (($filter & LANG_RUSSIAN) != 0)
+	$lang = LANG_NO;
+	$sep = '';
+	while (($lang = get_next_lang($lang, $filter)) != LANG_NO)
 	{
-		echo $input_beg;
-		if (($langs & LANG_RUSSIAN) != 0)
+		echo $sep . $input_beg;
+		if (($langs & $lang) != 0)
 		{
 			echo 'checked ';
 		}
-		echo 'name="' . $prefix . get_lang_code(LANG_RUSSIAN) . '" id="' . $prefix . get_lang_code(LANG_RUSSIAN) . '"> ' . get_lang_str(LANG_RUSSIAN);
-	}
-	
-	if (($filter & LANG_UKRANIAN) != 0)
-	{
-		echo $input_beg;
-		if (($langs & LANG_UKRANIAN) != 0)
-		{
-			echo 'checked ';
-		}
-		echo 'name="' . $prefix . get_lang_code(LANG_UKRANIAN) . '" id="' . $prefix . get_lang_code(LANG_UKRANIAN) . '"> ' . get_lang_str(LANG_UKRANIAN);
+		echo 'name="' . $prefix . get_lang_code($lang) . '" id="' . $prefix . get_lang_code($lang) . '"> ' . get_lang_str($lang);
+		$sep = $separator;
 	}
 }
 

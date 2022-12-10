@@ -19,8 +19,7 @@ function send_activation_email($user_id, $name, $email)
 	$tags = array(
 		'root' => new Tag(get_server_url()),
 		'user_name' => new Tag($name),
-		'url' => new Tag(get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $email_code . '&email=' . urlencode($email)),
-		'unsub' => new Tag('<a href="' . $base_url . '&unsub=1" target="_blank">', '</a>'));
+		'url' => new Tag(get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $email_code . '&email=' . urlencode($email)));
 	
 	list($subj, $body, $text_body) = include __DIR__ .  '/languages/' . get_lang_code($_lang) . '/email/user_activation.php';
 	$body = parse_tags($body, $tags);
@@ -51,29 +50,40 @@ function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $c
 	{
 		if ($club_id != NULL)
 		{
-			list ($city_id, $city_name, $langs, $club_name) = Db::record(get_label('club'), 'SELECT ct.id, ct.name_en, c.langs, c.name FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+			list ($city_id, $city_name, $langs, $club_name) = Db::record(get_label('club'), 'SELECT ct.id, nct.name, c.langs, c.name FROM clubs c JOIN cities ct ON ct.id = c.city_id JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $club_id);
 		}
 		else
 		{
-			if ($lang == LANG_ENGLISH)
+			switch ($lang)
 			{
-				$country_name = 'Canada';
+				case LANG_RUSSIAN:
+					$country_name = 'Russia';
+					break;
+				case LANG_UKRANIAN:
+					$country_name = 'Ukraine';
+					break;
+				case LANG_ENGLISH:
+				default:
+					$country_name = 'USA';
+					break;
 			}
-			else
-			{
-				$country_name = 'Russia';
-			}
-			$query = new DbQuery('SELECT c.id, c.name_en FROM cities c JOIN countries ct ON ct.id = c.country_id WHERE ct.name_en = ? ORDER BY c.id LIMIT 1', $country_name);
+			$query = new DbQuery(
+				'SELECT c.id, nc.name FROM cities c' .
+				' JOIN countries ct ON ct.id = c.country_id' .
+				' JOIN names nc ON nc.name = c.name_id AND (nc.langs & ' . LANG_ENGLISH . ') <> 0' .
+				' JOIN names nct ON nct.name = ct.name_id AND (nct.langs & ' . LANG_ENGLISH . ') <> 0' .
+				' WHERE nct.name = ?' .
+				' ORDER BY c.id LIMIT 1', $country_name);
 			if (!($row = $query->next()))
 			{
-				$row = Db::record(get_label('city'), 'SELECT id, name_en FROM cities ORDER BY c.id LIMIT 1');
+				$row = Db::record(get_label('city'), 'SELECT c.id, n.name FROM cities c JOIN names n ON n.name = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 ORDER BY c.id LIMIT 1');
 			}
 			list ($city_id, $city_name) = $row;
 		}
 	}
 	else
 	{
-		list ($city_name) = Db::record(get_label('city'), 'SELECT name_en FROM cities WHERE id = ?', $city_id);
+		list ($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.name = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 		if ($club_id != NULL)
 		{
 			list ($langs) = Db::record(get_label('club'), 'SELECT langs FROM clubs WHERE id = ?', $club_id);

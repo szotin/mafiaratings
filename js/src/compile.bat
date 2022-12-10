@@ -8,19 +8,16 @@ rem  | Making files smaller is basically the main goal of compiling.            
 rem  +--------------------------------------------------------------------------------------+
 
 java -jar compiler.jar --js common.js --js_output_file ..\common.js
-java -jar compiler.jar --js game-en.js --js_output_file ..\game-en.js
-copy game-ru.js .. 
+copy game-*.js .. 
 java -jar compiler.jar --js game-ui.js --js_output_file ..\game-ui.js
 java -jar compiler.jar --js local.js --js_output_file ..\local.js
 java -jar compiler.jar --js game.js --js_output_file ..\game.js
-java -jar compiler.jar --js labels_en.js --js_output_file ..\labels_en.js
-copy labels_ru.js ..
+copy labels_*.js ..
 java -jar compiler.jar --js md5.js --js_output_file ..\md5.js
 java -jar compiler.jar --js mr.js --js_output_file ..\mr.js
 java -jar compiler.jar --js mr.chart.js --js_output_file ..\mr.chart.js
 java -jar compiler.jar --js seating.js --js_output_file ..\seating.js
-java -jar compiler.jar --js seating-en.js --js_output_file ..\seating-en.js
-copy seating-ru.js ..
+copy seating-*.js ..
 java -jar compiler.jar --js seating-ui.js --js_output_file ..\seating-ui.js
 java -jar compiler.jar --js scoring_editor.js --js_output_file ..\scoring_editor.js
 java -jar compiler.jar --js normalizer_editor.js --js_output_file ..\normalizer_editor.js

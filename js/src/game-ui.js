@@ -1292,6 +1292,10 @@ mafia.ui = new function()
 		{
 			html += _option(/*RUSSIAN*/2, game.lang, l('Rus'));
 		}
+		if (event.langs & /*UKRANIAN*/4)
+		{
+			html += _option(/*UKRANIAN*/4, game.lang, l('Ukr'));
+		}
 		_enable($('#lang').html(html), enableLangs);
 		
 		var tournamentId = game.tournament_id;
@@ -1704,6 +1708,10 @@ mafia.ui = new function()
 		{
 			html += _option(/*RUSSIAN*/2, game.lang, l('Rus'));
 		}
+		if (event.langs & /*UKRANIAN*/4)
+		{
+			html += _option(/*UKRANIAN*/4, game.lang, l('Ukr'));
+		}
 		_enable($('#dlg-lang').html(html), enableLangs);
 		
 		var html = '';
@@ -2021,6 +2029,8 @@ var eventForm = new function()
 				var l = 0;
 				if ($('#form-en').attr('checked')) l |= /*ENGLISH*/1;
 				if ($('#form-ru').attr('checked')) l |= /*RUSSIAN*/2;
+				if ($('#form-ua').attr('checked')) l |= /*UKRANIAN*/4;
+
 				var params =
 				{
 					name: $('#form-name').val(),
@@ -2137,6 +2147,10 @@ var eventForm = new function()
 		if (club.langs & /*RUSSIAN*/2)
 		{
 			str += '<input type="checkbox" id="form-ru" onclick="eventForm.langCheck(2)" checked> ' + l('Rus') + ' ';
+		}
+		if (club.langs & /*UKRANIAN*/4)
+		{
+			str += '<input type="checkbox" id="form-ru" onclick="eventForm.langCheck(4)" checked> ' + l('Ukr') + ' ';
 		}
 		$('#form-langs').html(str);
 		
@@ -2610,6 +2624,10 @@ var gameStartForm = new function()
 			if (langs & /*RUSSIAN*/2)
 			{
 				html += '<option value="' + /*RUSSIAN*/2 + '">' + l('Rus') + '</option>';
+			}
+			if (langs & /*UKRANIAN*/4)
+			{
+				html += '<option value="' + /*UKRANIAN*/4 + '">' + l('Ukr') + '</option>';
 			}
 			html += '</select></td></tr>';
 		}

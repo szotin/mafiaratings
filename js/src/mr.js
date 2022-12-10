@@ -76,6 +76,12 @@ var mr = new function()
 		{
 			langs |= 2;
 		}
+		
+		elem = $('#' + prefix + 'ua');
+		if (elem.length > 0 && elem.attr('checked'))
+		{
+			langs |= 4;
+		}
 		return langs;
 	}
 
@@ -96,6 +102,12 @@ var mr = new function()
 		if (elem.length > 0)
 		{
 			elem.prop('checked', (langs & 2) != 0);
+		}
+		
+		elem = $('#' + prefix + 'ua');
+		if (elem.length > 0)
+		{
+			elem.prop('checked', (langs & 4) != 0);
 		}
 	}
 
