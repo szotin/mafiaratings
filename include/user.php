@@ -76,14 +76,14 @@ function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $c
 				' ORDER BY c.id LIMIT 1', $country_name);
 			if (!($row = $query->next()))
 			{
-				$row = Db::record(get_label('city'), 'SELECT c.id, n.name FROM cities c JOIN names n ON n.name = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 ORDER BY c.id LIMIT 1');
+				$row = Db::record(get_label('city'), 'SELECT c.id, n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 ORDER BY c.id LIMIT 1');
 			}
 			list ($city_id, $city_name) = $row;
 		}
 	}
 	else
 	{
-		list ($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.name = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
+		list ($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 		if ($club_id != NULL)
 		{
 			list ($langs) = Db::record(get_label('club'), 'SELECT langs FROM clubs WHERE id = ?', $club_id);
