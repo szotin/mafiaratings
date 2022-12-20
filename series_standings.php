@@ -167,10 +167,10 @@ class Page extends SeriesPageBase
 			}
 			echo '<td class="' . $highlight . '">' . ++$place . '</td>';
 			
-			echo '<td width="50"><a href="series_player_tournaments.php?id=' . $this->id . '&user_id=' . $player->id . '&bck=1">';
+			echo '<td width="50"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player->id . '&bck=1">';
 			$player_pic->set($player->id, $player->name, $player->flags);
 			$player_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td align="left"><a href="series_player_tournaments.php?id=' . $this->id . '&user_id=' . $player->id . '&bck=1">' . $player->name . '</a></td>';
+			echo '</a></td><td align="left"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player->id . '&bck=1">' . $player->name . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (isset($player->club_id))
 			{

@@ -3,6 +3,9 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/scoring.php';
 
+// Set to any date in the future to lock stats.
+define('LOCK_DATE', '2022-01-01');
+
 define("AVERAGE_PLAYER", -1);
 
 define("SURVIVED", 0);

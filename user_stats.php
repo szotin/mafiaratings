@@ -14,15 +14,10 @@ define('FLAG_FILTER_NO_RATING', 0x0008);
 
 define('FLAG_FILTER_DEFAULT', 0);
 
-define('LOCK_DATE', '2022-01-01');
-
 class Page extends UserPageBase
 {
 	protected function show_body()
 	{
-		global $_profile;
-		
-
 		if (LOCK_DATE != NULL && !is_permitted(PERMISSION_ADMIN))
 		{
 			$dt = new DateTime(LOCK_DATE, new DateTimeZone(get_timezone()));

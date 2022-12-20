@@ -92,7 +92,6 @@ class Page extends ClubPageBase
 		echo '<button ' . ($future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
 		echo '<button ' . (!$future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
 		echo '</div>';
-		echo '<div class="tabcontent">';
 		
 		if (!$future)
 		{
