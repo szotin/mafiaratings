@@ -1,17 +1,56 @@
 $sheriff-bg-color: rgb(66, 128, 58);
+$player-box-shadow-color:rgba(0, 0, 0, 0.315); 
+$player-profile-number-background-color: rgba(0, 0, 0, 0.9);
+$player-3warnings-background-color: rgba(255, 0, 0, 0.603);
 
-.player {
+$red-color: rgb(255,0,0);
+$white-color:rgb(255,255,255);
+$semi-black-color:rgba(0, 0, 0, 0.5);
+$semi-white-color: rgba(255, 255, 255, 0.5);
+
+$player-card-scale: 0.95;
+$player-speaking-card-scale: 1.1;
+
+.player, .player-bg {
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
   width: 170px;
   height: 200px;
-  position: relative;
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.315);
   border-radius: 10px;
-  background-color:darkgray;
+  transform: scale($player-card-scale);
+
+  &.player-status-dead {
+    transform: translate(0, 50px) scale($player-card-scale);
+  }
+
+  &.player-isSpeaking-true {
+    transform: scale($player-speaking-card-scale);
+  }
+}
+
+.player-bg {
+  position: absolute;
+
+  &.don,&.maf {
+    background-image: url('../../../assets/black_player_bg.jpg');
+  }
+  &.sheriff {
+    background-image: url('../../../assets/green_player_bg.jpg');
+  }
+  &.town {
+    background-image: url('../../../assets/red_player_bg.jpg');
+  }
+
+  &.player-status-dead {
+    filter: grayscale(30%) opacity(50%);
+  }
+}
+
+.player {
+  position: relative;
+  box-shadow: 0 0 50px $player-box-shadow-color;
   transition: transform .5s; /* Animation */
-  transform: scale(0.95);
 
   .player-info {
     position: absolute;
@@ -21,11 +60,11 @@ $sheriff-bg-color: rgb(66, 128, 58);
     display: flex;
     align-items: flex-end;
     padding: 2px 2px;
-    color: rgb(255, 0, 0);
+    color: $red-color;
   }
 
   .player-profile {
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: $semi-black-color;
     display: flex;
     align-items: center;
     position: absolute;
@@ -37,18 +76,19 @@ $sheriff-bg-color: rgb(66, 128, 58);
     border-bottom-right-radius: 10px;
 
     .player-profile-number {
-      color: white;
+      color: $white-color;
+      background-color: $player-profile-number-background-color;
       text-align: center;
       font-size: 1rem;
       width: 30px;
       height: 30px;
       vertical-align: middle;
-      padding-top: 3px;
+      padding-top: 0px;
       border-bottom-left-radius: 10px;
 
       h2 {
-        color: white;
-        font-size: 1rem;
+        color: $white-color;
+        font-size: 1.3rem;
         text-overflow: ellipsis;
         text-align: center;
       }
@@ -58,8 +98,8 @@ $sheriff-bg-color: rgb(66, 128, 58);
       width: 100%;
 
       h2 {
-        color: #ffffff;
-        font-size: 1rem;
+        color: $white-color;
+        font-size: 1.3rem;
         text-overflow: ellipsis;
         text-align: center;
         white-space: nowrap;
@@ -69,70 +109,116 @@ $sheriff-bg-color: rgb(66, 128, 58);
 
   &.player-status-dead {
     filter: grayscale(80%) opacity(80%);
-    transform: translate(0, 50px) scale(0.95);
+    &.player-deathType-kickOut {
+      .player-info-top-right { 
+        background-color: $player-3warnings-background-color;
+      }
+    }
   }
 
   &.player-isSpeaking-true {
-    box-shadow: inset 0 0 10px rgb(255, 0, 0);
-    transform: scale(1.1);
+    box-shadow: inset 0 0 20px $white-color;
   }
 
-  .player-role {
-    top: 0;
-    left: 0;
+  .player-info-top-left {
+    position: absolute;
+    top: 5px;
+    left: 5px;
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
+    border-bottom-right-radius: 10px;
+  }
+
+  .player-info-top-right {
     position: absolute;
+    top: 0;
+    right: 0;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    max-width: 50px;
+    min-width:30px;
+    padding-left:5px;
+    padding-right:5px;
+    height: 35px;
+
+    text-align: center;
+    vertical-align: middle;
+
+    &.player-warnings-1, &.player-warnings-2 { 
+      background-color: $semi-black-color;
+    }
+    &.player-warnings-3, &.player-warnings-4 { 
+      background-color: $player-3warnings-background-color;
+    }
+    div {
+      span {
+        color: $white-color;
+        font-weight: 800;
+        font-size: 1.5rem;
+        height: 100%;
+        letter-spacing:0.2rem;
+      }
+    }
+  }
+
+  &.player-deathType-voting, &.player-deathType-shooting {
+    .player-info-top-right{
+      background-color: transparent;
+      height:40px;
+      width:40px;
+      top:5px;
+      right:5px;
+    }
+  }
+
+  &.player-deathType-voting {
+    .player-info-top-right{
+      background-image: url('../../../assets/voted_white.png');
+    }
+  }
+
+  &.player-deathType-shooting {
+    .player-info-top-right{
+      background-image: url('../../../assets/shooting_white.png');
+    }
+  }
+
+  @for $i from 0 through 8 {
+    &.player-deathType-shooting.player-deathRound-#{$i} {
+      .player-info-top-right{
+        background-image: url('../../../assets/killed_#{$i+1}.png');
+      }
+    }
+  }
+
+  &.sheriff, &.don, &.maf {
+    .player-info-top-left {
+      animation: bounceInDown;
+      animation-duration: 2s;
+    }
   }
 
   &.sheriff {
-    .player-profile-number {
-      background-color: $sheriff-bg-color;
-    }
-
-    .player-role {
+    .player-info-top-left {
       background-image: url('../../../assets/sheriff.png');
-      background-color: rgba(255, 255, 255, 0.5);
-      border-top-left-radius: 10px;
-      animation: bounceInDown;
-      animation-duration: 2s;
     }
   }
 
   &.don {
-    .player-profile-number {
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .player-role {
+    .player-info-top-left {
       background-image: url('../../../assets/don.png');
-      background-color: rgba(255, 255, 255, 0.5);
-      border-top-left-radius: 10px;
-      animation: bounceInDown;
-      animation-duration: 2s;
     }
   }
 
   &.maf {
-    .player-profile-number {
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .player-role {
-      background-image: url('../../../assets/maf.png');
-      background-color: rgba(255, 255, 255, 0.5);
-      border-top-left-radius: 10px;
-      animation: bounceInDown;
-      animation-duration: 2s;
-    }
-  }
-
-  &.town {
-    .player-profile-number {
-      background-color: rgba(255, 0, 0, 0.7);
+    .player-info-top-left {
+      background-image: url('../../../assets/pistol.png');
     }
   }
 }

@@ -30,12 +30,15 @@ export interface Player {
   id: number;
   name: string;
   number: number;
+  isSpeaking: boolean;
+  gender: Gender;
   photoUrl: string;
+  hasPhoto: boolean;
   role: PlayerRole;
   warnings: number;
   state: PlayerState;
-  isSpeaking: boolean;
-  hasPhoto: boolean;
+  deathRound?: number;
+  deathType?: DeathType;
   checkedBySheriff?: number;
   checkedByDon?: number;
 }
@@ -46,6 +49,20 @@ export enum PlayerRole {
   don = 'don',
   town = 'town',
   sheriff = 'sheriff',
+}
+
+export enum Gender {
+  none = '',
+  male = 'male',
+  female = 'female',
+}
+
+export enum DeathType {
+  none = '',
+  kickOut = 'kickOut',
+  warnings = 'warnings',
+  shooting = 'shooting',
+  voted = 'voting'
 }
 
 export enum PlayerState {
