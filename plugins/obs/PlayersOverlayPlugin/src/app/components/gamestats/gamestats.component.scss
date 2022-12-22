@@ -26,10 +26,13 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
   .row {
     padding-top: 15px;
     padding-bottom: 15px;
+    margin-right:15px;
 
     .label {
       background-color: $label-bg-color;
       padding: 10px;
+      border-top-left-radius: 10px;
+      border-bottom-left-radius: 10px;
     }
 
     .elements {
