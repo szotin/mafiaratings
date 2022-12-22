@@ -13,6 +13,7 @@ export class PlayerComponent implements OnInit {
 
   hideRolesUrlParameter: boolean = false;
   showRoles: boolean = false;
+  showWarnings: boolean = true;
 
   private isDayOccured: boolean = false;
 

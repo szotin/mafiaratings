@@ -1,17 +1,42 @@
-<div class="player" style="background-image: url({{player.hasPhoto ? player.photoUrl : 'assets/aml_masters.jpg' }});"
+<div class="player-bg"
   [ngClass]="[
     showRoles ? player.role : '',
     'player-number' + player.number,
     'player-status-' + player.state,
     'player-isSpeaking-' + player.isSpeaking
   ]">
-  <div class="player-role" *ngIf="showRoles"></div>
-
-  <div class="player-info">
-    <!-- <span>
-      <i class="fas fa-exclamation"></i>
-    </span> -->
+</div>
+<div class="player" style="background-image: url({{player.hasPhoto ? player.photoUrl : 'assets/aml_masters.jpg' }});"
+  [ngClass]="[
+    showRoles ? player.role : '',
+    'player-number' + player.number,
+    'player-isSpeaking-' + player.isSpeaking,
+    'player-status-' + player.state,
+    player.state == 'dead' ? 'player-deathRound-'+player.deathRound : '',
+    player.state == 'dead' ? 'player-deathType-'+player.deathType : '',
+  ]">
+  <div class="player-info-top-left" *ngIf="showRoles"></div>
+  <div class="player-info-top-right"
+       *ngIf="showWarnings 
+              && ((player?.warnings && player.warnings > 0 && player.state != 'dead')
+                 || (player?.deathType == 'kickOut')
+                 || (player?.deathType == 'warnings')
+                 || (player?.deathType == 'voting')
+                 || (player?.deathType == 'shooting'))" 
+       [ngClass]="[
+          'player-warnings-'+player.warnings
+       ]">
+    <div *ngIf="player.warnings > 0 && (player.state != 'dead' || (player?.deathType == 'warnings'))">
+      <span *ngFor="let item of [].constructor(player.warnings); let i = index">!</span>
+    </div> 
+    <div *ngIf="player?.deathType == 'kickOut'">
+      <span>X</span>
+    </div> 
+    <div *ngIf="player?.deathType == 'voting' || player?.deathType == 'shooting'">
+      <span></span>
+    </div> 
   </div>
+  <div class="player-info"></div>
   <div class="player-profile">
     <div class="player-profile-number">
       <!-- nickname -->
