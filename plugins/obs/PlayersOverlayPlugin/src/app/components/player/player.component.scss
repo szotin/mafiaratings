@@ -1,5 +1,5 @@
 $sheriff-bg-color: rgb(66, 128, 58);
-$player-box-shadow-color:rgba(0, 0, 0, 0.315); 
+$player-box-shadow-color:rgba(0, 0, 0, 0.315);
 $player-profile-number-background-color: rgba(0, 0, 0, 0.9);
 $player-3warnings-background-color: rgba(255, 0, 0, 0.603);
 
@@ -31,6 +31,7 @@ $player-speaking-card-scale: 1.1;
 
 .player-bg {
   position: absolute;
+  background-image: url('../../../assets/black_player_bg.jpg');
 
   &.don,&.maf {
     background-image: url('../../../assets/black_player_bg.jpg');
@@ -52,11 +53,16 @@ $player-speaking-card-scale: 1.1;
   box-shadow: 0 0 50px $player-box-shadow-color;
   transition: transform .5s; /* Animation */
 
+
+  &.player-hasPhoto-false {
+    background-image: url('../../../assets/aml_masters.png');
+  }
+
   .player-info {
     position: absolute;
     right: 0;
     left: 5px;
-    top: 5px; 
+    top: 5px;
     display: flex;
     align-items: flex-end;
     padding: 2px 2px;
@@ -110,7 +116,7 @@ $player-speaking-card-scale: 1.1;
   &.player-status-dead {
     filter: grayscale(80%) opacity(80%);
     &.player-deathType-kickOut {
-      .player-info-top-right { 
+      .player-info-top-right {
         background-color: $player-3warnings-background-color;
       }
     }
@@ -150,10 +156,10 @@ $player-speaking-card-scale: 1.1;
     text-align: center;
     vertical-align: middle;
 
-    &.player-warnings-1, &.player-warnings-2 { 
+    &.player-warnings-1, &.player-warnings-2 {
       background-color: $semi-black-color;
     }
-    &.player-warnings-3, &.player-warnings-4 { 
+    &.player-warnings-3, &.player-warnings-4 {
       background-color: $player-3warnings-background-color;
     }
     div {

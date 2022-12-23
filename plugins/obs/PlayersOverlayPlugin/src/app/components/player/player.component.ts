@@ -27,10 +27,6 @@ export class PlayerComponent implements OnInit {
 
   ngOnChanges(changes: SimpleChanges) {
     // changes.prop contains the old and the new value...
-    let player: Player = changes['player'].currentValue;
-    if (player.id === 0) {
-      player.role = PlayerRole.none;
-    }
 
     let game: Game = changes['game'].currentValue;
 
