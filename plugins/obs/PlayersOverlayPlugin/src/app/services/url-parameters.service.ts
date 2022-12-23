@@ -82,4 +82,13 @@ export class UrlParametersService {
         return (typeof hideRoles !== 'undefined') && hideRoles !== "false";
       }));
   }
+
+  getHideWarnings$(): Observable<boolean> {
+    return this.urlParameters$.pipe(
+      map((it: Params) => {
+        const hideWarnings: string = it['hide_warnings'];
+
+        return (typeof hideWarnings !== 'undefined') && hideWarnings !== "false";
+      }));
+  }
 }
