@@ -12,15 +12,12 @@ import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
 })
 export class PlayersComponent implements OnInit {
   game$?: Observable<Game | undefined>;
-  showPlayers$?: Observable<boolean>;;
 
   constructor(private gameSnapshotService: GamesnapshotService) {
   }
 
   ngOnInit(): void {
     this.game$ = this.gameSnapshotService.getCurrentGame();
-    this.showPlayers$ = this.game$.pipe(
-      map((it?: Game) => (it?.state != GameState.notStarted) ?? false));
   }
 
   trackPlayerById(index:number, player:Player): number {
