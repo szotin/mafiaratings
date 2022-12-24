@@ -206,7 +206,7 @@ class Page extends EventPageBase
 				set($id, $name, $club_user_flags, 'c' . $this->event->club_id)->
 				set($id, $name, $flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
-			echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+			echo '</td><td><a href="event_player.php?id=' . $this->event->id . '&user_id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
 			$this->club_pic->set($club_id, $club_name, $club_flags);
 			$this->club_pic->show(ICONS_DIR, true, 40);

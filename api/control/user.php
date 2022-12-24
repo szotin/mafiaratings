@@ -69,10 +69,13 @@ class ApiPage extends ControlApiPageBase
 			$query->add(' LIMIT ' . $num);
 		}
 		
-		$player = new stdClass();
-		$player->id = 0;
-		$player->label = $player->name = $player->nickname = '-';
-		$this->response[] = $player;
+		if (!isset($_REQUEST['must']))
+		{
+			$player = new stdClass();
+			$player->id = 0;
+			$player->label = $player->name = $player->nickname = '-';
+			$this->response[] = $player;
+		}
 		
 		while ($row = $query->next())
 		{

@@ -233,9 +233,9 @@ class Picture
 			case ALBUM_PICTURE:
 				return 'album_photos.php?bck=1&id=' . $this->id;
 			case USER_EVENT_PICTURE:
-				return 'event_player_games.php?bck=1&user_id=' . $this->id . '&id=' . substr($this->secondary_id, 1);
+				return 'event_player.php?bck=1&user_id=' . $this->id . '&id=' . substr($this->secondary_id, 1);
 			case USER_TOURNAMENT_PICTURE:
-				return 'tournament_player_games.php?bck=1&user_id=' . $this->id . '&id=' . substr($this->secondary_id, 1);
+				return 'tournament_player.php?bck=1&user_id=' . $this->id . '&id=' . substr($this->secondary_id, 1);
 		}
 		return '';
 	}

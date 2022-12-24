@@ -18,6 +18,7 @@ class Page extends TournamentPageBase
 	{
 		parent::prepare();
 		
+		
 		list($timezone) = Db::record(get_label('tournament'), 'SELECT c.timezone FROM tournaments e JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE e.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 		
@@ -201,7 +202,7 @@ class Page extends TournamentPageBase
 				set($id, $name, $club_user_flags, 'c' . $this->club_id)->
 				set($id, $name, $flags);
 			$tournament_user_pic->show(ICONS_DIR, true, 50);
-			echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+			echo '</td><td><a href="tournament_player.php?id=' . $this->id . '&user_id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
 			$this->club_pic->set($club_id, $club_name, $club_flags);
 			$this->club_pic->show(ICONS_DIR, true, 40);

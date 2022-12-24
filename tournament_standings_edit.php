@@ -68,13 +68,13 @@ class Page extends TournamentPageBase
 			
 			echo '<td align="center" class="dark">' . $place . '</td>';
 			
-			echo '<td width="50"><a href="tournament_player_games.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">';
+			echo '<td width="50"><a href="tournament_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">';
 			$tournament_user_pic->
 				set($user_id, $user_name, $tournament_user_flags, 't' . $this->id)->
 				set($user_id, $user_name, $club_user_flags, 'c' . $this->club_id)->
 				set($user_id, $user_name, $user_flags);
 			$tournament_user_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td><a href="tournament_player_games.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">' . $user_name . '</a></td>';
+			echo '</a></td><td><a href="tournament_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">' . $user_name . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($club_id) && $club_id > 0)
 			{

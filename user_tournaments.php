@@ -199,7 +199,7 @@ class Page extends UserPageBase
 			}
 			echo '</td>';
 			echo '<td align="center">' . number_format($tournament->rating, 2) . '</td>';
-			echo '<td align="center"><a href="tournament_player_games.php?bck=1&user_id=' . $this->id . '&id=' . $tournament->id . '">' . $tournament->games_played . '</a></td>';
+			echo '<td align="center"><a href="tournament_player.php?bck=1&user_id=' . $this->id . '&id=' . $tournament->id . '">' . $tournament->games_played . '</a></td>';
 			echo '<td align="center">' . $tournament->games_won . '</td>';
 			if ($tournament->games_played != 0)
 			{

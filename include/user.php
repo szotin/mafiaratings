@@ -233,6 +233,7 @@ function show_user_input($name, $value, $condition, $title, $js_function = 'mr.g
 	global $_profile;
 
 	echo '<input type="text" id="' . $name . '" placeholder="' . get_label('Select player') . '" title="' . $title . '"/>';
+	echo '<button class="small_icon" onclick="$(&quot;#' . $name . '&quot;).val(\'\')"><img src="images/clear.png" width="12"></button>';
 	$url = 'api/control/user.php?';
 	if (!empty($condition))
 	{

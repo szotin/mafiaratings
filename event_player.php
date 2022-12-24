@@ -1,32 +1,16 @@
 <?php
 
-require_once 'include/series.php';
+require_once 'include/event.php';
 require_once 'include/club.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
-require_once 'include/tournament.php';
-require_once 'include/scoring.php';
-require_once 'include/checkbox_filter.php';
-require_once 'include/pages.php';
 require_once 'include/player_stats.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('VIEW_GAMES', 0);
+define('VIEW_STATS', 1);
+define('VIEW_COUNT', 2);
 
-define('VIEW_TOURNAMENTS', 0);
-define('VIEW_GAMES', 1);
-define('VIEW_STATS', 2);
-define('VIEW_COUNT', 3);
-
-define('FLAG_FILTER_VIDEO', 0x0001);
-define('FLAG_FILTER_NO_VIDEO', 0x0002);
-define('FLAG_FILTER_RATING', 0x0004);
-define('FLAG_FILTER_NO_RATING', 0x0008);
-define('FLAG_FILTER_CANCELED', 0x0010);
-define('FLAG_FILTER_NO_CANCELED', 0x0020);
-
-define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
-
-class Page extends SeriesPageBase
+class Page extends EventPageBase
 {
 	protected function prepare()
 	{
@@ -34,66 +18,116 @@ class Page extends SeriesPageBase
 		
 		parent::prepare();
 		
-		$this->view = VIEW_TOURNAMENTS;
+		$this->view = VIEW_GAMES;
 		if (isset($_REQUEST['view']))
 		{
 			$this->view = (int)$_REQUEST['view'];
 			if ($this->view < 0 || $this->view >= VIEW_COUNT)
 			{
-				$this->view = VIEW_TOURNAMENTS;
+				$this->view = VIEW_GAMES;
 			}
 		}
 		
-		if (isset($_REQUEST['gaining_id']))
+		if (isset($_REQUEST['scoring_id']))
 		{
-			$this->gaining_id = (int)$_REQUEST['gaining_id'];
-			if (isset($_REQUEST['gaining_version']))
+			$this->event->scoring_id = (int)$_REQUEST['scoring_id'];
+			if (isset($_REQUEST['scoring_version']))
 			{
-				$this->gaining_version = (int)$_REQUEST['gaining_version'];
-				list($this->gaining) =  Db::record(get_label('gaining system'), 'SELECT gaining FROM gaining_versions WHERE gaining_id = ? AND version = ?', $this->gaining_id, $this->gaining_version);
+				$this->event->scoring_version = (int)$_REQUEST['scoring_version'];
+				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->event->scoring_id, $this->event->scoring_version);
 			}
 			else
 			{
-				list($this->gaining, $this->gaining_version) = Db::record(get_label('gaining'), 'SELECT gaining, version FROM gaining_versions WHERE gaining_id = ? ORDER BY version DESC LIMIT 1', $this->gaining_id);
+				list($this->scoring, $this->event->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->event->scoring_id);
 			}
 		}
 		else
 		{
-			list($this->gaining) =  Db::record(get_label('gaining'), 'SELECT gaining FROM gaining_versions WHERE gaining_id = ? AND version = ?', $this->gaining_id, $this->gaining_version);
+			list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->event->scoring_id, $this->event->scoring_version);
 		}
-		$this->gaining = json_decode($this->gaining);
+		$this->scoring = json_decode($this->scoring);
+		
+		$this->scoring_options = json_decode($this->event->scoring_options);
+		if (isset($_REQUEST['scoring_ops']))
+		{
+			$ops = json_decode($_REQUEST['scoring_ops']);
+			foreach($ops as $key => $value) 
+			{
+				$this->scoring_options->$key = $value;
+			}
+		}
 		
 		$this->user_id = 0;
-		if (!isset($_REQUEST['user_id']))
+		if (isset($_REQUEST['user_id']))
 		{
-			throw new Exc(get_label('Unknown [0]', get_label('user')));
+			$this->user_id = (int)$_REQUEST['user_id'];
 		}
-		$this->user_id = (int)$_REQUEST['user_id'];
-		list($this->user_name, $this->user_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $this->user_id);
 		
-		$this->player_pic = new Picture(USER_PICTURE);
-		$this->player_pic->set($this->user_id, $this->user_name, $this->user_flags);
+		if ($this->user_id > 0)
+		{
+			$data = event_scores($this->event->id, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->scoring_options);
+			if (isset($data[$this->user_id]))
+			{
+				$this->player = $data[$this->user_id];
+			}
+			else
+			{
+				$this->player = new stdClass();
+				$this->player->id = $this->user_id;
+				$this->player->games = array();
+				$this->player->points = 0;
+				list ($this->player->name, $this->player->flags, $this->player->nickname, $this->player->event_user_flags, $this->player->tournament_user_flags, $this->player->club_user_flags) = 
+					Db::record(get_label('user'), 
+						'SELECT u.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM users u' .
+						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
+						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+						' WHERE id = ?', $this->event->id, $this->event->tournament_id, $this->event->club_id, $this->user_id);
+			}
+		}
+		else
+		{
+			$this->player = new stdClass();
+			$this->player->id = $this->user_id;
+			$this->player->games = array();
+			$this->player->points = 0;
+			$this->player->nickname = $this->player->name = '';
+			$this->player->flags = $this->player->event_user_flags = $this->player->tournament_user_flags = $this->player->club_user_flags = 0;
+		}
+		
+		
+		$this->player_pic =
+			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE))));
+		$this->player_pic->
+			set($this->player->id, $this->player->nickname, $this->player->event_user_flags, 'e' . $this->event->id)->
+			set($this->player->id, $this->player->name, $this->player->tournament_user_flags, 't' . $this->event->tournament_id)->
+			set($this->player->id, $this->player->name, $this->player->club_user_flags, 'c' . $this->event->club_id)->
+			set($this->player->id, $this->player->name, $this->player->flags);
 	}
 	
 	protected function show_body()
 	{
-		echo '<p><table class="transp" width="100%">';
+		echo '<table class="transp" width="100%">';
 		echo '<tr><td align="right">';
 		echo get_label('Select a player') . ': ';
-		show_user_input('user_name', '', 'must&series=' . $this->id, get_label('Select a player'), 'selectPlayer');
-		echo '</td></tr></table></p>';
+		show_user_input('user_name', '', 'must&event=' . $this->event->id, get_label('Select a player'), 'selectPlayer');
+		if ($this->player->id > 0 && is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id))
+		{
+			echo '</td><td align="right" width="20"><button class="icon" onclick="changeEventPlayer(' . $this->event->id . ', ' . $this->player->id . ', \'' . $this->player->name . '\')" title="' . get_label('Replace [0] with someone else in [1].', $this->player->name, $this->event->name) . '">';
+			echo '<img src="images/user_change.png" border="0"></button>';
+		}
+		echo '</td></tr></table>';
 		
 		echo '<div class="tab">';
-		echo '<button ' . ($this->view == VIEW_TOURNAMENTS ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_TOURNAMENTS . ',page:undefined})">' . get_label('Tournaments') . '</button>';
 		echo '<button ' . ($this->view == VIEW_GAMES ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_GAMES . ',page:undefined})">' . get_label('Games') . '</button>';
 		echo '<button ' . ($this->view == VIEW_STATS ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_STATS . ',page:undefined})">' . get_label('Stats') . '</button>';
 		echo '</div>';
 
 		switch ($this->view)
 		{
-			case VIEW_TOURNAMENTS:
-				$this->show_tournaments();
-				break;
 			case VIEW_GAMES:
 				$this->show_games();
 				break;
@@ -103,283 +137,179 @@ class Page extends SeriesPageBase
 		}
 	}
 	
-	private function show_tournaments()
-	{
-		echo '<p><table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td>';
-		echo '<table class="transp" width="100%"><tr><td width="72">';
-		echo '<a href="user_info.php?bck=1&id=' . $this->user_id . '">';
-		$this->player_pic->show(ICONS_DIR, false, 64);
-		echo '</a>';
-		echo '</td><td>' . $this->user_name . '</td></tr>';
-		echo '</table>';
-		echo '</td>';
-
-		echo '<td width="80">Place</td>';
-		echo '<td width="80">Points</td>';
-		echo '<td width="80">Players participated</td>';
-		echo '</tr>';
-		
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$club_pic = new Picture(CLUB_PICTURE);
-		
-		$sum = 0;
-		$query = new DbQuery('SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, p.place, (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players FROM tournament_places p JOIN tournaments t ON t.id = p.tournament_id JOIN series_tournaments s ON s.tournament_id = t.id AND s.series_id = ? JOIN clubs c ON c.id = t.club_id WHERE p.user_id = ? ORDER BY t.start_time DESC', $this->id, $this->user_id);
-		while ($row = $query->next())
-		{
-			list($tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $stars, $place, $players_count) = $row;
-			echo '<tr align="center"><td>';
-			echo '<table width="100%" class="transp"><tr><td width="58"><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament_id . '&bck=1">';
-			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
-			$tournament_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament_id . '&bck=1">' . $tournament_name . '</a></td>';
-			echo '<td align="right" width="120"><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($stars) . '</font></td>';
-			echo '<td align="right" width="42">';
-			$club_pic->set($club_id, $club_name, $club_flags);
-			$club_pic->show(ICONS_DIR, false, 40);
-			echo '</a></td>';
-			echo '</tr></table></td>';
-			
-			$score = get_gaining_points($this->gaining, $stars, $players_count, $place);
-			echo '<td><a href="javascript:showGaining(' . $players_count . ', ' . $stars . ', ' . $place . ')">';
-			if ($place > 0 && $place < 4)
-			{
-				echo '<img src="images/' . $place . '-place.png" width="48" title="' . get_label('[0] place', $place) . '">';
-			}
-			else if ($place < 11)
-			{
-				echo '<b>' . $place . '</b>';
-			}
-			else
-			{
-				echo $place;
-			}
-			echo '</a></td>';
-			echo '<td class="dark">' . format_score($score) . '</td>';
-			echo '<td>' . $players_count . '</td>';
-			echo '</tr>';
-			$sum += $score;
-		}
-		echo '<tr class="darker" style="height:50px;"><td colspan="2"><b>' . get_label('Total') . ':</b></td><td align="center"><b>' . format_score($sum) . '</b></td><td></td></tr>';
-		echo '</table></p>';
-	}
-	
 	private function show_games()
 	{
-		global $_page;
+		global $_profile, $_page, $_scoring_groups;
 		
-		$roles = 0;
-		if (isset($_REQUEST['roles']))
-		{
-			$roles = (int)$_REQUEST['roles'];
-		}
-
-		$filter = FLAG_FILTER_DEFAULT;
-		if (isset($_REQUEST['filter']))
-		{
-			$filter = (int)$_REQUEST['filter'];
-		}
+		echo '<p>';
+		echo '<table class="transp" width="100%">';
+		echo '<tr><td>';
+		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
+		echo '</td></tr></table></p>';
 		
-		$result_filter = 0;
-		if (isset($_REQUEST['result']))
-		{
-			$result_filter = (int)$_REQUEST['result'];
-			if ($result_filter < 0 || $result_filter > 5)
-			{
-				$result_filter = 0;
-			}
-		}
-		
-		$club_pic = new Picture(CLUB_PICTURE);
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		
-		echo '<p><select id="result" onChange="filterChanged()">';
-		show_option(0, $result_filter, get_label('All games'));
-		show_option(1, $result_filter, get_label('Town wins'));
-		show_option(2, $result_filter, get_label('Mafia wins'));
-		show_option(3, $result_filter, get_label('[0] wins', $this->user_name));
-		show_option(4, $result_filter, get_label('[0] losses', $this->user_name));
-		echo '</select> ';
-		show_roles_select($roles, 'rolesChanged()', get_label('Games where [0] was in a specific role.', $this->user_name), ROLE_NAME_FLAG_SINGLE);
-		show_checkbox_filter(array(get_label('with video'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
-		echo '</p>';
-		
-		$condition = new SQL();
-		if ($filter & FLAG_FILTER_VIDEO)
-		{
-			$condition->add(' AND g.video_id IS NOT NULL');
-		}
-		if ($filter & FLAG_FILTER_NO_VIDEO)
-		{
-			$condition->add(' AND g.video_id IS NULL');
-		}
-		if ($filter & FLAG_FILTER_RATING)
-		{
-			$condition->add(' AND g.is_rating <> 0');
-		}
-		if ($filter & FLAG_FILTER_NO_RATING)
-		{
-			$condition->add(' AND g.is_rating = 0');
-		}
-		if ($filter & FLAG_FILTER_CANCELED)
-		{
-			$condition->add(' AND g.is_canceled <> 0');
-		}
-		if ($filter & FLAG_FILTER_NO_CANCELED)
-		{
-			$condition->add(' AND g.is_canceled = 0');
-		}
-		
-		$condition->add(get_roles_condition($roles));
-		switch ($result_filter)
-		{
-			case 1:
-				$condition->add(' AND g.result = 1');
-				break;
-			case 2:
-				$condition->add(' AND g.result = 2');
-				break;
-			case 3:
-				$condition->add(' AND p.won > 0');
-				break;
-			case 4:
-				$condition->add(' AND p.won = 0');
-				break;
-			default:
-				$condition->add(' AND g.result <> 0');
-				break;
-		}
-		
-		list ($count) = Db::record(get_label('player'), 'SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id JOIN series_tournaments s ON s.tournament_id = g.tournament_id WHERE p.user_id = ? AND s.series_id = ?', $this->user_id, $this->id, $condition);
-		show_pages_navigation(PAGE_SIZE, $count);
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td>';
-		echo '<table class="transp" width="100%"><tr><td width="72">';
-		echo '<a href="user_info.php?bck=1&id=' . $this->user_id . '">';
-		$this->player_pic->show(ICONS_DIR, false, 64);
-		echo '</a>';
-		echo '</td><td>' . $this->user_name . '</td></tr>';
-		echo '</table>';
-		echo '</td><td width="48">'.get_label('Club').'</td><td width="240">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td></tr>';
-		
-		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.is_rating, g.is_canceled, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM players p' .
-			' JOIN games g ON g.id = p.game_id' .
-			' JOIN clubs c ON c.id = g.club_id' .
-			' JOIN events e ON e.id = g.event_id' .
-			' JOIN tournaments t ON t.id = g.tournament_id' .
-			' JOIN series_tournaments s ON s.tournament_id = g.tournament_id' .
-			' JOIN addresses a ON a.id = e.address_id' .
-			' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
-			' JOIN cities ct ON ct.id = a.city_id' .
-			' WHERE p.user_id = ? AND s.series_id = ?', 
-			$this->user_id, $this->id, $condition);
-		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
-		while ($row = $query->next())
+		echo '<tr class="th darker"><td rowspan="2">';
+		echo '<table class="transp"><tr><td width="72">';
+		if ($this->player->id > 0)
 		{
-			list (
-				$game_id, $club_id, $club_name, $club_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, 
-				$game_result, $is_rating, $is_canceled, $role, $rating_before, $rating_earned, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags) = $row;
-		
-			echo '<tr align="center"';
-			if ($is_canceled || !$is_rating)
-			{
-				echo ' class="dark"';
-			}
-			echo '>';
-		
-			echo '<td align="left" style="padding-left:12px;">';
-			if ($video_id != NULL)
-			{
-				echo '<table class="transp" width="100%"><tr><td>';
-			}
-			echo '<a href="view_game.php?id=' . $game_id . '&user_id=' . $this->user_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
-			echo format_date('F d Y, H:i', $start, $timezone) . '</a>';
-			if ($video_id != NULL)
-			{
-				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
-				echo '</td></tr></table>';
-			}
-			echo '</td>';
+			echo '<a href="user_info.php?bck=1&id=' . $this->player->id . '">';
+			$this->player_pic->show(ICONS_DIR, false, 64);
+			echo '</a>';
+		}
+		else
+		{
+			$this->player_pic->show(ICONS_DIR, false, 64);
+		}
+		echo '</td><td>';
 			
-			echo '<td>';
-			$club_pic->
-				set($club_id, $club_name, $club_flags);
-			$club_pic->show(ICONS_DIR, true, 48);
-			echo '</td>';
-			
-			echo '<td>';
-			$tournament_pic->
-				set($tournament_id, $tournament_name, $tournament_flags);
-			echo '<table class="transp" width="100%"><tr><td width="56">';
-			$tournament_pic->show(ICONS_DIR, true, 48);
-			echo '</td><td>' . $tournament_name . ': ' . $event_name . '</td></tr></table>';
-			echo '</td>';
-
-			$win = 0;
-			echo '<td>';
-			switch ($role)
+		if (empty($this->player->nickname))
+		{
+			echo $this->player->name;
+		}
+		else
+		{
+			echo $this->player->nickname;
+			if (!empty($this->player->name) && $this->player->name != $this->player->nickname)
 			{
-				case 0: // civil;
-					echo '<img src="images/civ.png" title="' . get_label('civil') . '" style="opacity: 0.5;">';
-					$win = $game_result == 1 ? 1 : 2;
-					break;
-				case 1: // sherif;
-					echo '<img src="images/sheriff.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
-					$win = $game_result == 1 ? 1 : 2;
-					break;
-				case 2: // mafia;
-					echo '<img src="images/maf.png" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
-					$win = $game_result == 2 ? 1 : 2;
-					break;
-				case 3: // don
-					echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
-					$win = $game_result == 2 ? 1 : 2;
-					break;
+				echo ' (' . $this->player->name . ')';
 			}
-			echo '</td>';
-			echo '<td>';
-			switch ($win)
+		}
+		echo '</td></tr></table></td>';
+		foreach ($_scoring_groups as $group)
+		{
+			$count = get_scoring_group_policies_count($group, $this->scoring, $this->scoring_options);
+			if ($count > 0)
 			{
-				case 1:
-					echo '<img src="images/won.png" title="' . get_label('win') . '" style="opacity: 0.8;">';
-					break;
-				case 2:
-					echo '<img src="images/lost.png" title="' . get_label('loss') . '" style="opacity: 0.8;">';
-					break;
-			}
-			echo '</td>';
-			if ($is_canceled)
-			{
-				echo '<td class="darker">' . get_label('Canceled');
-				if (!$is_rating)
+				if ($count == 1)
 				{
-					echo '<br>' . get_label('Non-rating');
-				}
-				echo '';
-			}
-			else if (!$is_rating)
-			{
-				echo '<td class="darker">' . get_label('Non-rating') . '';
-			}
-			else
-			{
-				echo '<td>';
-				echo format_rating($rating_before);
-				if ($rating_earned >= 0)
-				{
-					echo ' + ' . format_rating($rating_earned);
+					echo '<td width="36" align="center" rowspan="2">';
 				}
 				else
 				{
-					echo ' - ' . format_rating(-$rating_earned);
+					echo '<td width="36" align="center" colspan="' . $count . '">';
 				}
-				echo ' = ' . format_rating($rating_before + $rating_earned);
+				echo get_scoring_group_label($group) . '</td>';
 			}
-			// echo '<td>' . format_rating($rating_earned);
-			echo '</td></tr>';
 		}
+		echo '<td align="center" rowspan="2" class="darkest" width="36">∑</td>';
+		echo '</tr>';
+		
+		echo '<tr class="th darker">';
+		$letter = 'A';
+		foreach ($_scoring_groups as $group)
+		{
+			$count = get_scoring_group_policies_count($group, $this->scoring, $this->scoring_options);
+			if ($count > 1)
+			{
+				$g = &$this->scoring->$group;
+				for ($i = 0; $i < count($g); ++$i)
+				{
+					$policy = $g[$i];
+					if (is_scoring_policy_on($policy, $this->scoring_options))
+					{
+						echo '<td width="36" align="center" title="' . get_scoring_matter_label($policy, true) . '">' . $letter . '</td>';
+						++$letter;
+					}
+				}
+			}
+		}
+		echo '</tr>';
+		
+		foreach ($this->player->games as $game)
+		{
+			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->event->id . '&id=' . $game->game_id . '&bck=1">' . get_label('Game #[0]', $game->game_id) . '</a></td>';
+			echo '<td align="right" width="50">';
+			switch ($game->role)
+			{
+				case 0: // civil;
+					echo '<img src="images/civ.png" title="' . get_label('civil') . '" style="opacity: 0.5;">';
+					break;
+				case 1: // sherif;
+					echo '<img src="images/sheriff.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
+					break;
+				case 2: // mafia;
+					echo '<img src="images/maf.png" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
+					break;
+				case 3: // don
+					echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
+					break;
+			}
+			if ($game->won)
+			{
+				echo '<img src="images/won.png" title="' . get_label('win') . '" style="opacity: 0.8;">';
+			}
+			else
+			{
+				echo '<img src="images/lost.png" title="' . get_label('loss') . '" style="opacity: 0.8;">';
+			}
+			echo '</td></tr></table></td>';
+			foreach ($_scoring_groups as $group)
+			{
+				$count = get_scoring_group_policies_count($group, $this->scoring, $this->scoring_options);
+				if ($count > 0)
+				{
+					$gr1 = &$this->scoring->$group;
+					$gr2 = &$game->$group;
+					$count = get_scoring_group_policies_count($group, $this->scoring);
+					for ($i = 0; $i < $count; ++$i)
+					{
+						if (is_scoring_policy_on($gr1[$i], $this->scoring_options))
+						{
+							$show_zeroes = ($group == SCORING_GROUP_NIGHT1 && ($game->flags & SCORING_FLAG_KILLED_FIRST_NIGHT) != 0);
+							echo '<td>' . format_score($gr2[$i], $show_zeroes) . '</td>';
+						}
+					}
+				}
+			}
+			echo '<td class="darker"><b>' . format_score($game->points, false) . '</b></td>';
+			echo '</tr>';
+		}
+		
+		echo '<tr align="center" class="th darker"><td align="left">' . get_label('Total:') . '</td>';
+		foreach ($_scoring_groups as $group)
+		{
+			$count = get_scoring_group_policies_count($group, $this->scoring, $this->scoring_options);
+			if ($count > 0)
+			{
+				$gr1 = &$this->scoring->$group;
+				$gr2 = &$this->player->$group;
+				$count = get_scoring_group_policies_count($group, $this->scoring);
+				for ($i = 0; $i < $count; ++$i)
+				{
+					if (is_scoring_policy_on($gr1[$i], $this->scoring_options))
+					{
+						echo '<td>' . format_score($gr2[$i], false) . '</td>';
+					}
+				}
+			}
+		}
+		echo '<td class="darkest">' . format_score($this->player->points, false) . '</td>';
+		echo '</tr>';
+		
 		echo '</table>';
+		
+		$letter = 'A';
+		echo '<p><dl>';
+		foreach ($_scoring_groups as $group)
+		{
+			$count = get_scoring_group_policies_count($group, $this->scoring, $this->scoring_options);
+			if ($count > 1)
+			{
+				$gr = &$this->scoring->$group;
+				$count = get_scoring_group_policies_count($group, $this->scoring);
+				for ($i = 0; $i < $count; ++$i)
+				{
+					$policy = $gr[$i];
+					if (is_scoring_policy_on($policy, $this->scoring_options))
+					{
+						echo '<b>' . $letter . ':</b> ' . get_label('points') . ' ' . get_scoring_matter_label($policy, true) . '<br>';
+						++$letter;
+					}
+				}
+			}
+		}
+		echo '</dl></p>';
+		//print_json($this->player);
 	}
 	
 	private function show_stats()
@@ -403,7 +333,7 @@ class Page extends SeriesPageBase
 		show_roles_select($roles, 'rolesChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' AND g.is_rating <> 0 AND g.is_canceled = FALSE AND g.tournament_id IN (SELECT tournament_id FROM series_tournaments WHERE series_id = ?)', $this->id);
+		$condition = new SQL(' AND g.is_rating <> 0 AND g.is_canceled = FALSE AND g.event_id = ?', $this->event->id);
 		$stats = new PlayerStats($this->user_id, $roles, $condition);
 		$mafs_in_legacy = $stats->guess3maf * 3 + $stats->guess2maf * 2 + $stats->guess1maf;
 		
@@ -414,7 +344,7 @@ class Page extends SeriesPageBase
 		echo '<a href="user_info.php?bck=1&id=' . $this->user_id . '">';
 		$this->player_pic->show(ICONS_DIR, false, 64);
 		echo '</a>';
-		echo '</td><td>' . $this->user_name . '</td></tr>';
+		echo '</td><td>' . $this->player->name . '</td></tr>';
 		echo '</table>';
 		
 		echo '</td></tr>';
@@ -646,12 +576,6 @@ class Page extends SeriesPageBase
 	{
 		parent::js();
 ?>
-	
-		function showGaining(players, stars, place)
-		{
-			dlg.infoForm('form/gaining_show.php?id=<?php echo $this->gaining_id; ?>&version=<?php echo $this->gaining_version; ?>&players=' + players + '&stars=' + stars + '&place=' + place);
-		}
-		
 		function selectPlayer(data)
 		{
 			goTo({ 'user_id': data.id });
@@ -659,20 +583,15 @@ class Page extends SeriesPageBase
 		
 		function submitScoring(s)
 		{
-			goTo({ sid: s.sId, sver: s.sVer, nid: s.nId, nver: s.nVer, sops: s.ops });
+			goTo({ scoring_id: s.sId, scoring_version: s.sVer, scoring_ops: s.ops });
 		}
 		
-		function changeTournamentPlayer(tournamentId, userId, nickname)
+		function changeEventPlayer(eventId, userId, nickname)
 		{
-			dlg.form("form/tournament_change_player.php?tournament_id=" + tournamentId + "&user_id=" + userId + "&nick=" + nickname, function(r)
+			dlg.form("form/event_change_player.php?event_id=" + eventId + "&user_id=" + userId + "&nick=" + nickname, function(r)
 			{
 				goTo({ 'user_id': r.user_id });
 			});
-		}
-		
-		function filterChanged()
-		{
-			goTo({result: $('#result').val(), filter: checkboxFilterFlags(), page: undefined});
 		}
 		
 		function rolesChanged()
