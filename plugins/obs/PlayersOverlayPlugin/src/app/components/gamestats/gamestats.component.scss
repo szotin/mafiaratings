@@ -15,10 +15,6 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
   100% { opacity: 0.5; }
 }
 
-.test {
-  color:#a3de83;
-}
-
 .component-root {
   padding: 20px;
   line-height: normal;
@@ -51,21 +47,21 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
     }
 
     &.legacy {
-      min-width: 300px;
+      min-width: 150px;
       .label {
         background-image: url('../../../assets/killed_1.png');
       }
     }
 
     &.sheriff-check {
-      min-width: 300px;
+      min-width: 200px;
       .label {
         background-image: url('../../../assets/sheriff.png');
       }
     }
 
     &.don-check {
-      min-width: 300px;
+      min-width: 200px;
       .label {
         background-image: url('../../../assets/don.png');
       }
