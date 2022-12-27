@@ -5,6 +5,16 @@ $sheriff-bg-color: rgba(153, 187, 153, $default-text-opacity);
 $town-bg-color: rgba(250, 137, 123, $default-text-opacity);
 $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
 
+@keyframes fadeIn {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
 .test {
   color:#a3de83;
 }
@@ -13,6 +23,7 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
   padding: 20px;
   line-height: normal;
   font-size: 2em;
+  display: flex;
 
   &.is-offline-true {
     opacity: 0.8;
@@ -20,22 +31,88 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
 
   .connection-status {
     font-size:.7em;
-    color:rgba(255,0,0,1);
+    color:rgb(255,0,0);
   }
 
-  .row {
-    padding-top: 15px;
-    padding-bottom: 15px;
+  .section {
+    margin-right: 50px;
+    display: flex;
 
     .label {
-      background-color: $label-bg-color;
-      padding: 10px;
+      min-width: 60px;
+      min-height: 60px;
+      border-top-left-radius: 10px;
+      border-bottom-left-radius: 10px;
+
+      background-size: 50px;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-color:black;
+    }
+
+    &.legacy {
+      min-width: 300px;
+      .label {
+        background-image: url('../../../assets/killed_1.png');
+      }
+    }
+
+    &.sheriff-check {
+      min-width: 300px;
+      .label {
+        background-image: url('../../../assets/sheriff.png');
+      }
+    }
+
+    &.don-check {
+      min-width: 300px;
+      .label {
+        background-image: url('../../../assets/don.png');
+      }
+    }
+
+    &.nominees {
+      .label {
+        background-image: url('../../../assets/voted_white.png');
+      }
+    }
+
+    &.empty {
+      .label {
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+
+        animation: fadeOut;
+        animation-duration: 3s;
+        animation-fill-mode: forwards;
+      }
+    }
+
+    &.data {
+      .label{
+        animation: fadeIn;
+        animation-duration: 1.5s;
+      }
     }
 
     .elements {
+      min-height: 60px;
+      display: flex;
+
+      &.empty {
+        .element-wrapper {
+          background-color: black;
+
+          min-height: 60px;
+          min-width: 1px;
+          padding:10px;
+        }
+      }
+
       .element-wrapper {
-        margin: 0;
-        padding: 10px;
+        min-height: 60px;
+        min-width: 40px;
+        padding:12px;
         color: white;
         animation: flash;
         animation-duration: 1.5s;
@@ -52,23 +129,25 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
 
 .component-root.hide-roles-true {
   // Hide sheriff and don's checks if hiding roles
-  .row.don-check, .row.sheriff-check {
+  .section.don-check, .section.sheriff-check {
     display: none;
   }
 }
 
 .component-root:not(.hide-roles-true) {
-  .row {
+  .section {
     .elements {
       .element-wrapper {
+        background-size: cover;
+        background-repeat: no-repeat;
         &.town {
-          background-color: $town-bg-color;
+          background-image: url('../../../assets/red_player_bg.jpg');
         }
         &.don, &.maf {
-          background-color: $mafia-bg-color;
+          background-image: url('../../../assets/black_player_bg.jpg');
         }
         &.sheriff {
-          background-color: $sheriff-bg-color;
+          background-image: url('../../../assets/green_player_bg.jpg');
         }
       }
     }
