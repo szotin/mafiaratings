@@ -8,6 +8,8 @@ $white-color:rgb(255,255,255);
 $semi-black-color:rgba(0, 0, 0, 0.5);
 $semi-white-color: rgba(255, 255, 255, 0.5);
 
+
+
 $player-card-scale: 0.95;
 $player-speaking-card-scale: 1.1;
 
@@ -49,6 +51,8 @@ $player-speaking-card-scale: 1.1;
 }
 
 .player {
+  font-weight: 300;
+
   position: relative;
   box-shadow: 0 0 50px $player-box-shadow-color;
   transition: transform .5s; /* Animation */
