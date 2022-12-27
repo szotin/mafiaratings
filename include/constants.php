@@ -153,6 +153,7 @@ define('SOUNDS_DIR', 'sounds/');
 
 define('TNAILS_DIR', 'tnails/');
 define('ICONS_DIR', 'icons/');
+define('SOURCE_DIR', '');
 define('PHOTO_ROW_COUNT',6);
 define('PHOTO_COL_COUNT',5);
 

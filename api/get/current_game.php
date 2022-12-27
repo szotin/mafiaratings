@@ -114,7 +114,10 @@ class ApiPage extends GetApiPageBase
 						set($player->id, $player->name, $tournament_user_flags, 't' . $tournament_id)->
 						set($player->id, $player->name, $club_user_flags, 'c' . $club_id)->
 						set($player->id, $player->name, $user_flags);
-					$player->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
+					$server_url = get_server_url();
+					$player->photoUrl = $server_url . '/' . $user_pic->url(SOURCE_DIR);
+					$player->tnailUrl = $server_url . '/' . $user_pic->url(TNAILS_DIR);
+					$player->iconUrl = $server_url . '/' . $user_pic->url(ICONS_DIR);
 					$player->hasPhoto = $user_pic->has_image();
 					
 					switch ($p->role)
@@ -213,7 +216,10 @@ class ApiPage extends GetApiPageBase
 					set($gs->moder_id, $game->moderator->name, $tournament_user_flags, 't' . $tournament_id)->
 					set($gs->moder_id, $game->moderator->name, $club_user_flags, 'c' . $club_id)->
 					set($gs->moder_id, $game->moderator->name, $user_flags);
-				$game->moderator->photoUrl = get_server_url() . '/' . $user_pic->url(TNAILS_DIR);
+				$server_url = get_server_url();
+				$game->moderator->photoUrl = $server_url . '/' . $user_pic->url(SOURCE_DIR);
+				$game->moderator->tnailUrl = $server_url . '/' . $user_pic->url(TNAILS_DIR);
+				$game->moderator->iconUrl = $server_url . '/' . $user_pic->url(ICONS_DIR);
 				$game->moderator->hasPhoto = $user_pic->has_image();
 				
 				switch ($gs->gamestate)
