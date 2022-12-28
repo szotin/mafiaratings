@@ -11,25 +11,6 @@ $semi-white-color: rgba(255, 255, 255, 0.5);
 $player-card-scale: 0.95;
 $player-speaking-card-scale: 1.1;
 
-.player,
-.player-bg {
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
-  width: 170px;
-  height: 200px;
-  border-radius: 10px;
-  transform: scale($player-card-scale);
-
-  &.player-status-dead {
-    transform: translate(0, 50px) scale($player-card-scale);
-  }
-
-  &.player-isSpeaking-true {
-    transform: scale($player-speaking-card-scale);
-  }
-}
-
 .flex-item {
   color: #fff;
   width: 190px;
@@ -39,7 +20,7 @@ $player-speaking-card-scale: 1.1;
 
   position: relative;
 
-  &:hover {
+  &.don,&.town,&.sheriff,&.maf {
     .flex-item-inner {
       .card-front {
         transform: rotateY(-180deg);
@@ -69,8 +50,27 @@ $player-speaking-card-scale: 1.1;
       height: 200px;
       margin: 0;
       backface-visibility: hidden;
-      transition: transform 0.3s;
+      transition: transform 2.3s;
       justify-content: flex-end;
+
+      .player,
+      .player-bg {
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+        width: 170px;
+        height: 200px;
+        border-radius: 10px;
+        transform: scale($player-card-scale);
+
+        &.player-status-dead {
+          transform: translate(0, 50px) scale($player-card-scale);
+        }
+
+        &.player-isSpeaking-true {
+          transform: scale($player-speaking-card-scale);
+        }
+      }
 
       .player-bg {
         position: absolute;
@@ -249,15 +249,6 @@ $player-speaking-card-scale: 1.1;
           }
         }
 
-        &.sheriff,
-        &.don,
-        &.maf {
-          .player-info-top-left {
-            animation: bounceInDown;
-            animation-duration: 2s;
-          }
-        }
-
         &.sheriff {
           .player-info-top-left {
             background-image: url("../../../assets/sheriff.png");
@@ -279,7 +270,6 @@ $player-speaking-card-scale: 1.1;
     }
 
     .card-front {
-
     }
 
     .card-back {
