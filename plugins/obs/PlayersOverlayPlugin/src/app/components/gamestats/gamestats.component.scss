@@ -20,6 +20,7 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
   line-height: normal;
   font-size: 2em;
   display: flex;
+  background-color: rgba(0, 0, 0, 0.7);
 
   &.is-offline-true {
     opacity: 0.8;

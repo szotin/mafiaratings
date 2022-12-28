@@ -1,19 +1,18 @@
 $sheriff-bg-color: rgb(66, 128, 58);
-$player-box-shadow-color:rgba(0, 0, 0, 0.315);
+$player-box-shadow-color: rgba(0, 0, 0, 0.315);
 $player-profile-number-background-color: rgba(0, 0, 0, 0.9);
 $player-3warnings-background-color: rgba(255, 0, 0, 0.603);
 
-$red-color: rgb(255,0,0);
-$white-color:rgb(255,255,255);
-$semi-black-color:rgba(0, 0, 0, 0.5);
+$red-color: rgb(255, 0, 0);
+$white-color: rgb(255, 255, 255);
+$semi-black-color: rgba(0, 0, 0, 0.5);
 $semi-white-color: rgba(255, 255, 255, 0.5);
-
-
 
 $player-card-scale: 0.95;
 $player-speaking-card-scale: 1.1;
 
-.player, .player-bg {
+.player,
+.player-bg {
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
@@ -31,204 +30,260 @@ $player-speaking-card-scale: 1.1;
   }
 }
 
-.player-bg {
-  position: absolute;
-  background-image: url('../../../assets/black_player_bg.jpg');
-
-  &.don,&.maf {
-    background-image: url('../../../assets/black_player_bg.jpg');
-  }
-  &.sheriff {
-    background-image: url('../../../assets/green_player_bg.jpg');
-  }
-  &.town {
-    background-image: url('../../../assets/red_player_bg.jpg');
-  }
-
-  &.player-status-dead {
-    filter: grayscale(30%) opacity(50%);
-  }
-}
-
-.player {
-  font-weight: 300;
+.flex-item {
+  color: #fff;
+  width: 190px;
+  height: 210px;
+  margin: 0;
+  padding: 0;
 
   position: relative;
-  box-shadow: 0 0 50px $player-box-shadow-color;
-  transition: transform .5s; /* Animation */
 
+  &:hover {
+    .flex-item-inner {
+      .card-front {
+        transform: rotateY(-180deg);
+      }
 
-  &.player-hasPhoto-false {
-    background-image: url('../../../assets/aml_masters.png');
+      .card-back {
+        transform: rotateY(0);
+      }
+    }
   }
 
-  .player-info {
-    position: absolute;
-    right: 0;
-    left: 5px;
-    top: 5px;
+  .flex-item-inner {
     display: flex;
-    align-items: flex-end;
-    padding: 2px 2px;
-    color: $red-color;
-  }
+    flex-direction: column;
+    justify-content: flex-start;
 
-  .player-profile {
-    background-color: $semi-black-color;
-    display: flex;
-    align-items: center;
-    position: absolute;
-    right: 0;
-    left: 0;
-    bottom: 0;
-    min-height: 30px;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
+    height: 210px;
+    margin: 0;
+    padding: 0;
 
-    .player-profile-number {
-      color: $white-color;
-      background-color: $player-profile-number-background-color;
-      text-align: center;
-      font-size: 1rem;
-      width: 30px;
-      height: 30px;
-      vertical-align: middle;
-      padding-top: 0px;
-      border-bottom-left-radius: 10px;
+    .card-front,
+    .card-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 180px;
+      height: 200px;
+      margin: 0;
+      backface-visibility: hidden;
+      transition: transform 0.3s;
+      justify-content: flex-end;
 
-      h2 {
-        color: $white-color;
-        font-size: 1.3rem;
-        text-overflow: ellipsis;
-        text-align: center;
+      .player-bg {
+        position: absolute;
+        background-image: url("../../../assets/black_player_bg.jpg");
+
+        &.don,
+        &.maf {
+          background-image: url("../../../assets/black_player_bg.jpg");
+        }
+        &.sheriff {
+          background-image: url("../../../assets/green_player_bg.jpg");
+        }
+        &.town {
+          background-image: url("../../../assets/red_player_bg.jpg");
+        }
+
+        &.player-status-dead {
+          filter: grayscale(30%) opacity(50%);
+        }
+      }
+
+      .player {
+        position: relative;
+        box-shadow: 0 0 50px $player-box-shadow-color;
+        transition: transform 0.5s; /* Animation */
+
+        &.player-hasPhoto-false {
+          background-image: url("../../../assets/aml_masters.png");
+        }
+
+        .player-info {
+          position: absolute;
+          right: 0;
+          left: 5px;
+          top: 5px;
+          display: flex;
+          align-items: flex-end;
+          padding: 2px 2px;
+          color: $red-color;
+        }
+
+        .player-profile {
+          background-color: $semi-black-color;
+          display: flex;
+          align-items: center;
+          position: absolute;
+          right: 0;
+          left: 0;
+          bottom: 0;
+          min-height: 30px;
+          border-bottom-left-radius: 10px;
+          border-bottom-right-radius: 10px;
+
+          .player-profile-number {
+            color: $white-color;
+            background-color: $player-profile-number-background-color;
+            text-align: center;
+            font-size: 1rem;
+            width: 30px;
+            height: 30px;
+            vertical-align: middle;
+            padding-top: 0px;
+            border-bottom-left-radius: 10px;
+
+            h2 {
+              color: $white-color;
+              font-size: 1.3rem;
+              text-overflow: ellipsis;
+              text-align: center;
+            }
+          }
+
+          .player-profile-text {
+            width: 100%;
+
+            h2 {
+              color: $white-color;
+              font-size: 1.3rem;
+              text-overflow: ellipsis;
+              text-align: center;
+              white-space: nowrap;
+            }
+          }
+        }
+
+        &.player-status-dead {
+          filter: grayscale(80%) opacity(80%);
+          &.player-deathType-kickOut {
+            .player-info-top-right {
+              background-color: $player-3warnings-background-color;
+            }
+          }
+        }
+
+        &.player-isSpeaking-true {
+          box-shadow: inset 0 0 20px $white-color;
+        }
+
+        .player-info-top-left {
+          position: absolute;
+          top: 5px;
+          left: 5px;
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: cover;
+          width: 40px;
+          height: 40px;
+          border-bottom-right-radius: 10px;
+        }
+
+        .player-info-top-right {
+          position: absolute;
+          top: 0;
+          right: 0;
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: cover;
+          border-top-right-radius: 10px;
+          border-bottom-left-radius: 10px;
+          max-width: 50px;
+          min-width: 30px;
+          padding-left: 5px;
+          padding-right: 5px;
+          height: 35px;
+
+          text-align: center;
+          vertical-align: middle;
+
+          &.player-warnings-1,
+          &.player-warnings-2 {
+            background-color: $semi-black-color;
+          }
+          &.player-warnings-3,
+          &.player-warnings-4 {
+            background-color: $player-3warnings-background-color;
+          }
+          div {
+            span {
+              color: $white-color;
+              font-weight: 800;
+              font-size: 1.5rem;
+              height: 100%;
+              letter-spacing: 0.2rem;
+            }
+          }
+        }
+
+        &.player-deathType-voting,
+        &.player-deathType-shooting {
+          .player-info-top-right {
+            background-color: transparent;
+            height: 40px;
+            width: 40px;
+            top: 5px;
+            right: 5px;
+          }
+        }
+
+        &.player-deathType-voting {
+          .player-info-top-right {
+            background-image: url("../../../assets/voted_white.png");
+          }
+        }
+
+        &.player-deathType-shooting {
+          .player-info-top-right {
+            background-image: url("../../../assets/shooting_white.png");
+          }
+        }
+
+        @for $i from 0 through 8 {
+          &.player-deathType-shooting.player-deathRound-#{$i} {
+            .player-info-top-right {
+              background-image: url("../../../assets/killed_#{$i+1}.png");
+            }
+          }
+        }
+
+        &.sheriff,
+        &.don,
+        &.maf {
+          .player-info-top-left {
+            animation: bounceInDown;
+            animation-duration: 2s;
+          }
+        }
+
+        &.sheriff {
+          .player-info-top-left {
+            background-image: url("../../../assets/sheriff.png");
+          }
+        }
+
+        &.don {
+          .player-info-top-left {
+            background-image: url("../../../assets/don.png");
+          }
+        }
+
+        &.maf {
+          .player-info-top-left {
+            background-image: url("../../../assets/pistol.png");
+          }
+        }
       }
     }
 
-    .player-profile-text {
-      width: 100%;
+    .card-front {
 
-      h2 {
-        color: $white-color;
-        font-size: 1.3rem;
-        text-overflow: ellipsis;
-        text-align: center;
-        white-space: nowrap;
-      }
     }
-  }
 
-  &.player-status-dead {
-    filter: grayscale(80%) opacity(80%);
-    &.player-deathType-kickOut {
-      .player-info-top-right {
-        background-color: $player-3warnings-background-color;
-      }
-    }
-  }
-
-  &.player-isSpeaking-true {
-    box-shadow: inset 0 0 20px $white-color;
-  }
-
-  .player-info-top-left {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: cover;
-    width: 40px;
-    height: 40px;
-    border-bottom-right-radius: 10px;
-  }
-
-  .player-info-top-right {
-    position: absolute;
-    top: 0;
-    right: 0;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: cover;
-    border-top-right-radius: 10px;
-    border-bottom-left-radius: 10px;
-    max-width: 50px;
-    min-width:30px;
-    padding-left:5px;
-    padding-right:5px;
-    height: 35px;
-
-    text-align: center;
-    vertical-align: middle;
-
-    &.player-warnings-1, &.player-warnings-2 {
-      background-color: $semi-black-color;
-    }
-    &.player-warnings-3, &.player-warnings-4 {
-      background-color: $player-3warnings-background-color;
-    }
-    div {
-      span {
-        color: $white-color;
-        font-weight: 800;
-        font-size: 1.5rem;
-        height: 100%;
-        letter-spacing:0.2rem;
-      }
-    }
-  }
-
-  &.player-deathType-voting, &.player-deathType-shooting {
-    .player-info-top-right{
-      background-color: transparent;
-      height:40px;
-      width:40px;
-      top:5px;
-      right:5px;
-    }
-  }
-
-  &.player-deathType-voting {
-    .player-info-top-right{
-      background-image: url('../../../assets/voted_white.png');
-    }
-  }
-
-  &.player-deathType-shooting {
-    .player-info-top-right{
-      background-image: url('../../../assets/shooting_white.png');
-    }
-  }
-
-  @for $i from 0 through 8 {
-    &.player-deathType-shooting.player-deathRound-#{$i} {
-      .player-info-top-right{
-        background-image: url('../../../assets/killed_#{$i+1}.png');
-      }
-    }
-  }
-
-  &.sheriff, &.don, &.maf {
-    .player-info-top-left {
-      animation: bounceInDown;
-      animation-duration: 2s;
-    }
-  }
-
-  &.sheriff {
-    .player-info-top-left {
-      background-image: url('../../../assets/sheriff.png');
-    }
-  }
-
-  &.don {
-    .player-info-top-left {
-      background-image: url('../../../assets/don.png');
-    }
-  }
-
-  &.maf {
-    .player-info-top-left {
-      background-image: url('../../../assets/pistol.png');
+    .card-back {
+      transform: rotateY(-180deg);
     }
   }
 }
