@@ -19,16 +19,21 @@ $player-speaking-card-scale: 1.1;
   padding: 0;
 
   position: relative;
+  perspective: 600px;
 
-  &.don,&.town,&.sheriff,&.maf {
+  &.don,
+  &.town,
+  &.sheriff,
+  &.maf {
     .flex-item-inner {
-      .card-front {
-        transform: rotateY(-180deg);
-      }
+      transform: rotateY(-180deg);
+      // .card-front {
+      //   transform: rotateY(-180deg);
+      // }
 
-      .card-back {
-        transform: rotateY(0);
-      }
+      // .card-back {
+      //   transform: rotateY(0);
+      // }
     }
   }
 
@@ -40,6 +45,9 @@ $player-speaking-card-scale: 1.1;
     height: 210px;
     margin: 0;
     padding: 0;
+
+    transition: transform 1s;
+    transform-style: preserve-3d;
 
     .card-front,
     .card-back {
@@ -80,22 +88,25 @@ $player-speaking-card-scale: 1.1;
         &.maf {
           background-image: url("../../../assets/black_player_bg.jpg");
         }
+
         &.sheriff {
           background-image: url("../../../assets/green_player_bg.jpg");
         }
+
         &.town {
           background-image: url("../../../assets/red_player_bg.jpg");
         }
 
         &.player-status-dead {
-          filter: grayscale(30%) opacity(50%);
+          filter: grayscale(30%) opacity(85%);
         }
       }
 
       .player {
         position: relative;
         box-shadow: 0 0 50px $player-box-shadow-color;
-        transition: transform 0.5s; /* Animation */
+        transition: transform 0.5s;
+        /* Animation */
 
         &.player-hasPhoto-false {
           background-image: url("../../../assets/aml_masters.png");
@@ -158,6 +169,7 @@ $player-speaking-card-scale: 1.1;
 
         &.player-status-dead {
           filter: grayscale(80%) opacity(80%);
+
           &.player-deathType-kickOut {
             .player-info-top-right {
               background-color: $player-3warnings-background-color;
@@ -203,10 +215,12 @@ $player-speaking-card-scale: 1.1;
           &.player-warnings-2 {
             background-color: $semi-black-color;
           }
+
           &.player-warnings-3,
           &.player-warnings-4 {
             background-color: $player-3warnings-background-color;
           }
+
           div {
             span {
               color: $white-color;
@@ -270,10 +284,13 @@ $player-speaking-card-scale: 1.1;
     }
 
     .card-front {
+      .player {
+        background-image: url("../../../assets/aml_masters.png");
+      }
     }
 
     .card-back {
-      transform: rotateY(-180deg);
+      transform: rotateY(180deg);
     }
   }
 }
