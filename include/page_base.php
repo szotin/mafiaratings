@@ -198,7 +198,7 @@ class PageBase
 		
 		echo '<ul id="header-lang-menu" style="display:none;position:absolute;width:42px;text-align:left;z-index:2147483647;">';
 		$lang = LANG_NO;
-		while (($lang = get_next_lang($lang)) != LANG_NO)
+		while (($lang = get_next_lang($lang, LANG_ALL_VISUAL)) != LANG_NO)
 		{
 			echo '<li><a href="javascript:mr.browserLangChange(\'' . get_lang_code($lang) . '\')" title="' . get_lang_str($lang) . '"><img src="images/' . get_lang_code($lang) . '.png" width="32"></a></li>';
 		}
@@ -289,7 +289,7 @@ class PageBase
 				echo '</ul>';
 			}
 		}
-		$next_lang = get_next_lang($_lang); 
+		$next_lang = get_next_lang($_lang, LANG_ALL_VISUAL); 
 		if ($next_lang == LANG_NO)
 		{
 			$next_lang = LANG_ENGLISH;

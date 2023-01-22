@@ -912,7 +912,7 @@ class EventPageBase extends PageBase
 			$manager_menu = array();
 			
 			$manager_menu[] = new MenuItem('event_users.php?id=' . $this->event->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->event->name));
-			if (!$this->is_referee)
+			if ($this->is_manager)
 			{
 				$manager_menu[] = new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name));
 			}

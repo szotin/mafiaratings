@@ -4,7 +4,8 @@ define('LANG_NO', 0);
 define('LANG_ENGLISH', 1);
 define('LANG_RUSSIAN', 2);
 define('LANG_UKRANIAN', 4);
-define('LANG_ALL', 3);
+define('LANG_ALL', 7);
+define('LANG_ALL_VISUAL', 3);
 define('LANG_DEFAULT', 1); // English
 
 function get_lang($langs, $default_lang = -1)
