@@ -1,9 +1,8 @@
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, timer, BehaviorSubject, of } from 'rxjs';
-import { retry, share, switchMap, pluck, map, catchError, delay, skip, tap, concat, concatWith, concatMap, retryWhen, delayWhen } from 'rxjs/operators';
+import { share, map, delay, skip, tap, concatWith, concatMap, retryWhen, delayWhen } from 'rxjs/operators';
 
-import { ActivatedRoute, Params } from '@angular/router';
 import { environment } from 'src/environments/environment';
 import { GameSnapshot, Game, Player } from './gamesnapshot.model';
 import { UrlParametersService } from './url-parameters.service';

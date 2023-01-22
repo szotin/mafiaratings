@@ -1,5 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 @import 'animate.css/animate.min';
+@import url(https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700);
+
 * {
   margin: 0;
   padding: 0;
@@ -8,7 +10,7 @@
 
 body {
   background-color: transparent;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Roboto Slab', serif;
   display: flex;
   min-height: 100vh;
   line-height: 1.4;

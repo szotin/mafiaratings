@@ -1,13 +1,5 @@
-<div class="player-bg"
-  [ngClass]="[
-    showRoles ? player.role : '',
-    'player-number' + player.number,
-    'player-status-' + player.state,
-    'player-isSpeaking-' + player.isSpeaking
-  ]">
-</div>
-<div class="player"
-  [style.background-image]="player.hasPhoto ? 'url('+ player.photoUrl+')': ''"
+<div
+  class="flex-item"
   [ngClass]="[
     showRoles ? player.role : '',
     'player-number' + player.number,
@@ -16,37 +8,113 @@
     player.state == 'dead' ? 'player-deathRound-' + player.deathRound : '',
     player.state == 'dead' ? 'player-deathType-' + player.deathType : '',
     'player-hasPhoto-' + player.hasPhoto
-  ]">
-  <div class="player-info-top-left" *ngIf="showRoles"></div>
-  <div class="player-info-top-right"
-       *ngIf="showWarnings
-              && ((player?.warnings && player.warnings > 0 && player.state != 'dead')
-                 || (player?.deathType == 'kickOut')
-                 || (player?.deathType == 'warnings')
-                 || (player?.deathType == 'voting')
-                 || (player?.deathType == 'shooting'))"
-       [ngClass]="[
-          'player-warnings-' + player.warnings
-       ]">
-    <div *ngIf="player.warnings > 0 && (player.state != 'dead' || (player?.deathType == 'warnings'))">
-      <span *ngFor="let item of [].constructor(player.warnings); let i = index">!</span>
+  ]"
+>
+  <div class="flex-item-inner">
+    <div class="card-back">
+      <div
+        class="player-bg"
+        [ngClass]="[
+          showRoles ? player.role : '',
+          'player-number' + player.number,
+          'player-isSpeaking-' + player.isSpeaking,
+          'player-status-' + player.state,
+          player.state == 'dead'
+            ? 'player-deathRound-' + player.deathRound
+            : '',
+          player.state == 'dead' ? 'player-deathType-' + player.deathType : '',
+          'player-hasPhoto-' + player.hasPhoto
+        ]"
+      ></div>
+      <div
+        class="player"
+        [style.background-image]="
+          player.hasPhoto ? 'url(' + player.photoUrl + ')' : ''
+        "
+        [ngClass]="[
+          showRoles ? player.role : '',
+          'player-number' + player.number,
+          'player-isSpeaking-' + player.isSpeaking,
+          'player-status-' + player.state,
+          player.state == 'dead'
+            ? 'player-deathRound-' + player.deathRound
+            : '',
+          player.state == 'dead' ? 'player-deathType-' + player.deathType : '',
+          'player-hasPhoto-' + player.hasPhoto
+        ]"
+      >
+        <div class="player-info-top-left" *ngIf="showRoles"></div>
+        <div
+          class="player-info-top-right"
+          *ngIf="
+            showWarnings &&
+            ((player?.warnings &&
+              player.warnings > 0 &&
+              player.state != 'dead') ||
+              player?.deathType == 'kickOut' ||
+              player?.deathType == 'warnings' ||
+              player?.deathType == 'voting' ||
+              player?.deathType == 'shooting')
+          "
+          [ngClass]="['player-warnings-' + player.warnings]"
+        >
+          <div
+            *ngIf="
+              player.warnings > 0 &&
+              (player.state != 'dead' || player?.deathType == 'warnings')
+            "
+          >
+            <span
+              *ngFor="
+                let item of [].constructor(player.warnings);
+                let i = index
+              "
+              >!</span
+            >
+          </div>
+          <div *ngIf="player?.deathType == 'kickOut'">
+            <span>X</span>
+          </div>
+          <div
+            *ngIf="
+              player?.deathType == 'voting' || player?.deathType == 'shooting'
+            "
+          >
+            <span></span>
+          </div>
+        </div>
+        <div class="player-info"></div>
+        <div class="player-profile">
+          <div class="player-profile-number">
+            <!-- nickname -->
+            <h2>{{ player.number }}</h2>
+          </div>
+          <div class="player-profile-text">
+            <!-- nickname -->
+            <h2 class="player-nickname">
+              {{ player?.name || "Player " + player.number }}
+            </h2>
+          </div>
+        </div>
+      </div>
     </div>
-    <div *ngIf="player?.deathType == 'kickOut'">
-      <span>X</span>
-    </div>
-    <div *ngIf="player?.deathType == 'voting' || player?.deathType == 'shooting'">
-      <span></span>
-    </div>
-  </div>
-  <div class="player-info"></div>
-  <div class="player-profile">
-    <div class="player-profile-number">
-      <!-- nickname -->
-      <h2>{{player.number}}</h2>
-    </div>
-    <div class="player-profile-text">
-      <!-- nickname -->
-      <h2 class="player-nickname">{{ player?.name || 'Player ' +  player.number}}</h2>
+    <div class="card-front">
+      <div class="player-bg"></div>
+      <div class="player">
+        <div class="player-info"></div>
+        <div class="player-profile">
+          <div class="player-profile-number">
+            <!-- nickname -->
+            <h2>{{ player.number }}</h2>
+          </div>
+          <div class="player-profile-text">
+            <!-- nickname -->
+            <h2 class="player-nickname">
+              {{ player?.name || "Player " + player.number }}
+            </h2>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
