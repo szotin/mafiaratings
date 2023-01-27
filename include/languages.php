@@ -3,7 +3,7 @@
 define('LANG_NO', 0);
 define('LANG_ENGLISH', 1);
 define('LANG_RUSSIAN', 2);
-define('LANG_UKRANIAN', 4);
+define('LANG_UKRAINIAN', 4);
 define('LANG_ALL', 7);
 define('LANG_ALL_VISUAL', 3);
 define('LANG_DEFAULT', 1); // English
@@ -33,9 +33,9 @@ function get_lang($langs, $default_lang = -1)
 	{
 		return LANG_RUSSIAN;
 	}
-	if (($lang & LANG_UKRANIAN) != 0)
+	if (($lang & LANG_UKRAINIAN) != 0)
 	{
-		return LANG_UKRANIAN;
+		return LANG_UKRAINIAN;
 	}
 	return 0;
 }
@@ -54,7 +54,7 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 					switch ($case)
 					{
 						case LOWERCASE:
-							return 'english';
+							return 'English';
 						case UPPERCASE:
 							return 'ENGLISH';
 					}
@@ -68,7 +68,7 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 							return 'АНГЛИЙСКИЙ';
 					}
 					return 'Английский';
-				case LANG_UKRANIAN:
+				case LANG_UKRAINIAN:
 					switch ($case)
 					{
 						case LOWERCASE:
@@ -94,7 +94,7 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 					switch ($case)
 					{
 						case LOWERCASE:
-							return 'russian';
+							return 'Russian';
 						case UPPERCASE:
 							return 'RUSSIAN';
 					}
@@ -108,7 +108,7 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 							return 'РУССКИЙ';
 					}
 					return 'Русский';
-				case LANG_UKRANIAN:
+				case LANG_UKRAINIAN:
 					switch ($case)
 					{
 						case LOWERCASE:
@@ -127,18 +127,18 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 			}
 			return get_label('Russian');
 			
-		case LANG_UKRANIAN:
+		case LANG_UKRAINIAN:
 			switch ($browser_lang)
 			{
 				case LANG_ENGLISH:
 					switch ($case)
 					{
 						case LOWERCASE:
-							return 'ukranian';
+							return 'Ukrainian';
 						case UPPERCASE:
-							return 'UKRANIAN';
+							return 'UKRAINIAN';
 					}
-					return 'Ukranian';
+					return 'Ukrainian';
 				case LANG_RUSSIAN:
 					switch ($case)
 					{
@@ -148,7 +148,7 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 							return 'УКРАИНСКИЙ';
 					}
 					return 'Украинский';
-				case LANG_UKRANIAN:
+				case LANG_UKRAINIAN:
 					switch ($case)
 					{
 						case LOWERCASE:
@@ -161,11 +161,11 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 			switch ($case)
 			{
 				case LOWERCASE:
-					return get_label('ukranian');
+					return get_label('Ukrainian');
 				case UPPERCASE:
-					return get_label('UKRANIAN');
+					return get_label('UKRAINIAN');
 			}
-			return get_label('Ukranian');
+			return get_label('Ukrainian');
 	}
 	
 	switch ($browser_lang)
@@ -174,7 +174,7 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 			switch ($case)
 			{
 				case LOWERCASE:
-					return 'unknown';
+					return 'Unknown';
 				case UPPERCASE:
 					return 'UNKNOWN';
 			}
@@ -188,7 +188,7 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 					return 'НЕИЗВЕСТНЫЙ';
 			}
 			return 'Неизвестный';
-		case LANG_UKRANIAN:
+		case LANG_UKRAINIAN:
 			switch ($case)
 			{
 				case LOWERCASE:
@@ -214,7 +214,7 @@ function get_lang_code($lang)
 	{
 		case LANG_RUSSIAN:
 			return 'ru';
-		case LANG_UKRANIAN:
+		case LANG_UKRAINIAN:
 			return 'ua';
 	}
 	return 'en';
@@ -227,7 +227,7 @@ function get_lang_by_code($code)
 		case 'ru':
 			return LANG_RUSSIAN;
 		case 'ua':
-			return LANG_UKRANIAN;
+			return LANG_UKRAINIAN;
 	}
 	return LANG_DEFAULT;
 }
@@ -252,9 +252,9 @@ function get_langs($def)
 		{
 			$langs |= LANG_RUSSIAN;
 		}
-		if (isset($_REQUEST[get_lang_code(LANG_UKRANIAN)]))
+		if (isset($_REQUEST[get_lang_code(LANG_UKRAINIAN)]))
 		{
-			$langs |= LANG_UKRANIAN;
+			$langs |= LANG_UKRAINIAN;
 		}
 		return $langs;
 	}

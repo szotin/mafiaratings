@@ -59,7 +59,7 @@ function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $c
 				case LANG_RUSSIAN:
 					$country_name = 'Russia';
 					break;
-				case LANG_UKRANIAN:
+				case LANG_UKRAINIAN:
 					$country_name = 'Ukraine';
 					break;
 				case LANG_ENGLISH:
