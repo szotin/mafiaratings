@@ -62,7 +62,7 @@ class ApiPage extends OpsApiPageBase
 {
 	function merge_users($src_id, $dst_id)
 	{
-		$query = new DbQuery('SELECT g.id, g.json, g.feature_flags FROM games g LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = ? WHERE p.user_id IS NOT NULL OR g.moderator_id = ? OR g.user_id = ?', $src_id, $src_id, $src_id);
+		$query = new DbQuery('SELECT g.id, g.json, g.feature_flags FROM games g LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = ? WHERE p.user_id IS NOT NULL OR g.moderator_id = ?', $src_id, $src_id);
 		while ($row = $query->next())
 		{
 			list ($game_id, $json, $feature_flags) = $row;
@@ -74,14 +74,19 @@ class ApiPage extends OpsApiPageBase
 		list($src_name, $src_games_moderated, $src_games, $src_rating, $src_reg_time, $src_city_id, $src_club_id, $src_flags) = 
 			Db::record(get_label('user'), 'SELECT name, games_moderated, games, rating, reg_time, city_id, club_id, flags FROM users WHERE id = ?', $src_id);
 		
+		Db::exec(get_label('game'), 'UPDATE games SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('email'), 'UPDATE emails SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('club'), 'DELETE FROM club_users WHERE user_id = ? AND club_id IN (SELECT club_id FROM (SELECT club_id FROM club_users WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('club'), 'UPDATE club_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM event_users WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('event'), 'UPDATE event_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('event'), 'DELETE FROM event_places WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM event_places WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('event'), 'UPDATE event_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('log'), 'UPDATE log SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
-		Db::exec(get_label('event'), 'UPDATE tournament_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE user_id = ? AND tournament_id IN (SELECT tournament_id FROM (SELECT tournament_id FROM tournament_places WHERE user_id = ?) x)', $src_id, $dst_id);
+		Db::exec(get_label('tournament'), 'UPDATE tournament_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('tournament'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id IN (SELECT tournament_id FROM (SELECT tournament_id FROM tournament_users WHERE user_id = ?) x)', $src_id, $dst_id);
+		Db::exec(get_label('tournament'), 'UPDATE tournament_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('club'), 'UPDATE club_requests SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('league'), 'UPDATE league_requests SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('comment'), 'UPDATE event_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
@@ -119,6 +124,53 @@ class ApiPage extends OpsApiPageBase
 			$log_details->games_played = (int)$src_games;
 			$log_details->rating = (float)$src_rating;
 		}
+		
+		// rename pictures
+		$pic_base = '../../' . USER_PICS_DIR;
+		$src_pic = $pic_base . $src_id . '.png';
+		$dst_pic = $pic_base . $dst_id . '.png';
+		if (file_exists($src_pic))
+		{
+			if (file_exists($dst_pic))
+			{
+				unlink($src_pic);
+				unlink($pic_base . TNAILS_DIR . $src_id . '.png');
+				unlink($pic_base . ICONS_DIR  . $src_id . '.png');
+			}
+			else
+			{
+				rename($src_pic, $dst_pic);
+				rename($pic_base . TNAILS_DIR . $src_id . '.png', $pic_base . TNAILS_DIR . $dst_id . '.png');
+				rename($pic_base . ICONS_DIR  . $src_id . '.png', $pic_base . ICONS_DIR  . $dst_id . '.png');
+				
+				// set flags
+				list($flags) = Db::record(get_label('user'), 'SELECT flags FROM users WHERE id = ?', $dst_id);
+				$icon_version = (($flags & USER_ICON_MASK) >> USER_ICON_MASK_OFFSET) + 1;
+				if ($icon_version > USER_ICON_MAX_VERSION)
+				{
+					$icon_version = 1;
+				}
+				$flags = ($flags & ~USER_ICON_MASK) + ($icon_version << USER_ICON_MASK_OFFSET);
+				Db::exec(get_label('user'), 'UPDATE users SET flags = ? WHERE id = ?', $flags, $dst_id);
+			}
+		}
+		
+		$wildcard = $pic_base . $src_id;
+		$pos = strlen($wildcard);
+		$wildcard .= '-*.png';
+		$pictures = glob($wildcard);
+		foreach ($pictures as $pic)
+		{
+			$path_rest = substr($pic, $pos);
+			$dst_pic = $pic_base . $dst_id . $path_rest;
+			if (!file_exists($dst_pic))
+			{
+				rename($pic, $dst_pic);
+				rename($pic_base . TNAILS_DIR . $src_id . $path_rest, $pic_base . TNAILS_DIR . $dst_id . $path_rest);
+				rename($pic_base . ICONS_DIR  . $src_id . $path_rest, $pic_base . ICONS_DIR  . $dst_id . $path_rest);
+			}
+		}
+		
 		$log_details->reg_time = (int)$src_reg_time;
 		$log_details->city_id = (int)$src_city_id;
 		$log_details->club_id = (int)$src_club_id;

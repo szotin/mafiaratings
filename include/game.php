@@ -2873,7 +2873,7 @@ class Game
 		
 		for ($i = 0; $i < 10; ++$i)
 		{
-			if ($this->data->players[$i]->id == $user_id)
+			if (isset($this->data->players[$i]->id) && $this->data->players[$i]->id == $user_id)
 			{
 				return true;
 			}
@@ -2900,12 +2900,12 @@ class Game
 			{
 				throw new Exc(get_label('Unable to delete user from the game [0] because they refereed it. Try to merge them with someone instead.', $data->id));
 			}
-			$this->moderator->id = $new_user_id;
+			$data->moderator->id = $new_user_id;
 		}
 		else for ($i = 0; $i < 10; ++$i)
 		{
 			$player = $data->players[$i];
-			if ($player->id == $user_id)
+			if (isset($player->id) && $player->id == $user_id)
 			{
 				if ($new_user_id != 0)
 				{
