@@ -30,7 +30,7 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 	
 	if ($is_manager === NULL)
 	{
-		$is_manager = is_permitted(PERMISSION_TOURNAMENT_MANAGER, $id);
+		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $id);
 	}
 
 	$now = time();
