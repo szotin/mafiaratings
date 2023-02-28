@@ -122,7 +122,7 @@ class Page extends GeneralPageBase
 
 		if ($this->future)
 		{
-			$order_by = ' ORDER BY t.start_time, t.id';
+			$order_by = ' ORDER BY t.start_time + t.duration, t.id';
 		}
 		else
 		{
@@ -143,10 +143,30 @@ class Page extends GeneralPageBase
 		$tournaments = array();
 		$delim = '';
 		$cs_tournaments = '';
+		$first_month_tournament = NULL;
 		while ($row = $query->next())
 		{
 			$tournament = new stdClass();
 			list ($tournament->id, $tournament->name, $tournament->flags, $tournament->time, $tournament->duration, $tournament->timezone, $tournament->club_id, $tournament->club_name, $tournament->club_flags, $tournament->languages, $tournament->addr_id, $tournament->addr, $tournament->addr_flags, $tournament->players_count, $tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
+			if ($this->future)
+			{
+				$m = format_date('F Y', $tournament->time + $tournament->duration, $tournament->timezone);
+			}
+			else
+			{
+				$m = format_date('F Y', $tournament->time, $tournament->timezone);
+			}
+			if ($first_month_tournament == NULL || $first_month_tournament->month != $m)
+			{
+				$tournament->month = $m;
+				$tournament->month_count = 1;
+				$first_month_tournament = $tournament;
+			}
+			else
+			{
+				++$first_month_tournament->month_count;
+			}
+			
 			$tournament->series = array();
 			$tournaments[] = $tournament;
 			$cs_tournaments .= $delim . $tournament->id;
@@ -188,7 +208,7 @@ class Page extends GeneralPageBase
 
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
-		echo '<td colspan="3" align="center">' . get_label('Tournament') . '</td>';
+		echo '<td colspan="4" align="center">' . get_label('Tournament') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Players') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Games') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Rounds') . '</td></tr>';
@@ -207,6 +227,11 @@ class Page extends GeneralPageBase
 			else
 			{
 				echo '<tr>';
+			}
+			
+			if (isset($tournament->month))
+			{
+				echo '<td rowspan="' . $tournament->month_count . '" class="darker" width="30" align="center"><b>' . $tournament->month . '</b></td>';
 			}
 			
 			echo '<td width="60" class="dark" align="center" valign="center">';
