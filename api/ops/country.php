@@ -47,7 +47,7 @@ class ApiPage extends OpsApiPageBase
 		
 		foreach ($names->names as $n)
 		{
-			Db::exec(get_label('country name'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $n->name);
+			Db::exec(get_label('country name'), 'INSERT IGNORE INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $n->name);
 		}
 		
 		$log_details = new stdClass();
@@ -106,7 +106,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('country name'), 'DELETE FROM country_names WHERE country_id = ? AND name IN (SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id WHERE c.id = ?)', $country_id, $country_id);
 			foreach ($names->names as $n)
 			{
-				Db::exec(get_label('country name'), 'INSERT INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $n->name);
+				Db::exec(get_label('country name'), 'INSERT IGNORE INTO country_names (country_id, name) VALUES (?, ?)', $country_id, $n->name);
 			}
 		}
 		

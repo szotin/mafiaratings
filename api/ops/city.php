@@ -70,7 +70,7 @@ class ApiPage extends OpsApiPageBase
 		
 		foreach ($names->names as $n)
 		{
-			Db::exec(get_label('city name'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $n->name);
+			Db::exec(get_label('city name'), 'INSERT IGNORE INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $n->name);
 		}
 		
 		$log_details = new stdClass();
@@ -149,7 +149,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('city name'), 'DELETE FROM city_names WHERE city_id = ? AND name IN (SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id WHERE c.id = ?)', $city_id, $city_id);
 			foreach ($names->names as $n)
 			{
-				Db::exec(get_label('city name'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $n->name);
+				Db::exec(get_label('city name'), 'INSERT IGNORE INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $n->name);
 			}
 		}
 		
