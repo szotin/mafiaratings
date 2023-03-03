@@ -39,7 +39,7 @@ class Page extends LeaguePageBase
 
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
@@ -57,9 +57,10 @@ class Page extends LeaguePageBase
 			' JOIN series s ON s.id = st.series_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
-			' JOIN cities ct ON ct.id = a.city_id' .
+			' JOIN cities i ON i.id = a.city_id' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
 			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
-			' WHERE s.league_id = ?', $this->id);
+			' WHERE s.league_id = ?', $_lang, $this->id);
 		if ($this->future)
 		{
 			$condition->add(' AND t.start_time + t.duration >= UNIX_TIMESTAMP()');
@@ -111,7 +112,7 @@ class Page extends LeaguePageBase
 			$condition->add(' AND a.city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)', $ccc_id, $ccc_id);
 			break;
 		case CCCF_COUNTRY:
-			$condition->add(' AND ct.country_id = ?', $ccc_id);
+			$condition->add(' AND i.country_id = ?', $ccc_id);
 			break;
 		}
 		
@@ -135,7 +136,7 @@ class Page extends LeaguePageBase
 		
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags,' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, i.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, ni.name,' .
 			' (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players,' .
 			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND is_canceled = FALSE AND result > 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
@@ -154,7 +155,7 @@ class Page extends LeaguePageBase
 			list (
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->time, $tournament->duration, $tournament->timezone, 
 				$tournament->club_id, $tournament->club_name, $tournament->club_flags, $tournament->languages,
-				$tournament->addr_id, $tournament->addr, $tournament->addr_flags, 
+				$tournament->addr_id, $tournament->addr, $tournament->addr_flags, $tournament->city,
 				$tournament->players_count, $tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
 			if ($this->future)
 			{
@@ -215,11 +216,17 @@ class Page extends LeaguePageBase
 		}
 
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker">';
-		echo '<td colspan="4" align="center">' . get_label('Tournament') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Players') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Games') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Rounds') . '</td></tr>';
+		if (!$this->future)
+		{
+			echo '<tr class="th-long darker">';
+			echo '<td width="100"></td>';
+			echo '<td colspan="2" align="center">' . get_label('Tournament') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Players') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Games') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Rounds') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Video') . '</td>';
+			echo '</tr>';
+		}
 		
 		$now = time();
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
@@ -239,48 +246,59 @@ class Page extends LeaguePageBase
 			
 			if (isset($tournament->month))
 			{
-				echo '<td rowspan="' . $tournament->month_count . '" class="darker" width="30" align="center"><b>' . $tournament->month . '</b></td>';
+				echo '<td rowspan="' . $tournament->month_count . '" class="darker" width="100"s align="center"><b>' . $tournament->month . '</b></td>';
 			}
 			
-			echo '<td width="60" class="dark" align="center" valign="center">';
+			echo '<td><table width="100%" class="transp"><tr>';
+			echo '<td width="80" align="center" valign="center">';
 			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 			$tournament_pic->show(ICONS_DIR, true, 60);
 			echo '</td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td width="60" align="center" valign="center">';
-			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
-			$club_pic->show(ICONS_DIR, false, 40);
-			echo '</td><td>';
-			echo '<b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
+			echo '<td><b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
 			if ($playing)
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</a></td>';
+			echo '</a></b>';
+			if (isset($tournament->stars))
+			{
+				echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($tournament->stars) . '</font>';
+			}
+			echo '</td>';
 			foreach ($tournament->series as $series)
 			{
-				echo '<td width="50" align="center" valign="center">';
-				echo '<a href="series_standings.php?bck=1&id=' . $series->id . '">';
+				echo '<td width="64" align="center" valign="center">';
+				echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
+				echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
 				$series_pic->set($series->id, $series->name, $series->flags)->set($series->league_id, $series->league_name, $series->league_flags);
-				$series_pic->show(ICONS_DIR, false, 40);
-				echo '</a><br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($series->stars) . '</font>';
-				echo '</td>';
+				$series_pic->show(ICONS_DIR, false, 32);
+				echo '</a></td>';
 			}
 			echo '</tr></table>';
 			echo '</td>';
 			
-			echo '<td align="center" width="60">';
-			if ($tournament->videos_count > 0)
-			{
-				echo '<a href="tournament_videos.php?id=' . $tournament->id . '&bck=1" title="' . get_label('Videos from [0]', $tournament->name) . '"><img src="images/video.png" width="40" height="40"></a>';
-			}
+			echo '<td width="160" valign="center" class="dark">';
+			echo '<table width="100%" class="transp"><tr>';
+			echo '<td width="60" align="center" valign="center">';
+			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
+			$club_pic->show(ICONS_DIR, false, 40);
 			echo '</td>';
+			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</td>';
+			echo '</tr></table></td>';
 			
-			echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
-			echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament->id . '">' . $tournament->games_count . '</a></td>';
-			echo '<td align="center"><a href="tournament_rounds.php?bck=1&id=' . $tournament->id . '">' . $tournament->rounds_count . '</a></td>';
-			
+			if (!$this->future)
+			{
+				echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
+				echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament->id . '">' . $tournament->games_count . '</a></td>';
+				echo '<td align="center"><a href="tournament_rounds.php?bck=1&id=' . $tournament->id . '">' . $tournament->rounds_count . '</a></td>';
+				
+				echo '<td align="center" width="60">';
+				if ($tournament->videos_count > 0)
+				{
+					echo '<a href="tournament_videos.php?id=' . $tournament->id . '&bck=1" title="' . get_label('Videos from [0]', $tournament->name) . '"><img src="images/video.png" width="40" height="40"></a>';
+				}
+				echo '</td>';
+			}	
 			echo '</tr>';
 		}
 		echo '</table>';

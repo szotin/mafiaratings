@@ -86,7 +86,7 @@ class Page extends ClubPageBase
 		if (!$future)
 		{
 			echo '<p><table class="transp" width="100%"><tr><td>';
-			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $filter, 'filterTournaments');
+			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $filter);
 			echo '</td></tr></table></p>';
 		}
 		
@@ -184,11 +184,17 @@ class Page extends ClubPageBase
 
 		$now = time();
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker">';
-		echo '<td colspan="4" align="center">' . get_label('Tournament') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Players') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Games') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Rounds') . '</td></tr>';
+		if (!$future)
+		{
+			echo '<tr class="th-long darker">';
+			echo '<td width="100"></td>';
+			echo '<td align="center">' . get_label('Tournament') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Players') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Games') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Rounds') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Video') . '</td>';
+			echo '</tr>';
+		}
 		foreach ($tournaments as $tournament)
 		{
 			$playing =($now >= $tournament->time && $now < $tournament->time + $tournament->duration);
@@ -203,15 +209,14 @@ class Page extends ClubPageBase
 			
 			if (isset($tournament->month))
 			{
-				echo '<td rowspan="' . $tournament->month_count . '" class="darker" width="30" align="center"><b>' . $tournament->month . '</b></td>';
+				echo '<td rowspan="' . $tournament->month_count . '" class="darker" width="100" align="center"><b>' . $tournament->month . '</b></td>';
 			}
 			
-			echo '<td width="60" class="dark" align="center" valign="center">';
+			echo '<td><table width="100%" class="transp"><tr>';
+			echo '<td width="80" align="center" valign="center">';
 			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 			$tournament_pic->show(ICONS_DIR, true, 60);
 			echo '</td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
 			echo '<td><b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
 			if ($playing)
 			{
@@ -230,30 +235,22 @@ class Page extends ClubPageBase
 			echo '</tr></table>';
 			echo '</td>';
 			
-			echo '<td align="center" width="60">';
-			if ($tournament->videos_count > 0)
+			if (!$future)
 			{
-				echo '<a href="tournament_videos.php?id=' . $tournament->id . '&bck=1" title="' . get_label('Videos from [0]', $tournament->name) . '"><img src="images/video.png" width="40" height="40"></a>';
+				echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
+				echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament->id . '">' . $tournament->games_count . '</a></td>';
+				echo '<td align="center"><a href="tournament_rounds.php?bck=1&id=' . $tournament->id . '">' . $tournament->rounds_count . '</a></td>';
+				
+				echo '<td align="center" width="60">';
+				if ($tournament->videos_count > 0)
+				{
+					echo '<a href="tournament_videos.php?id=' . $tournament->id . '&bck=1" title="' . get_label('Videos from [0]', $tournament->name) . '"><img src="images/video.png" width="40" height="40"></a>';
+				}
+				echo '</td>';
 			}
-			echo '</td>';
-			
-			echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
-			echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament->id . '">' . $tournament->games_count . '</a></td>';
-			echo '<td align="center"><a href="tournament_rounds.php?bck=1&id=' . $tournament->id . '">' . $tournament->rounds_count . '</a></td>';
-			
 			echo '</tr>';
 		}
 		echo '</table>';
-	}
-	
-	protected function js()
-	{
-?>
-		function filterTournaments()
-		{
-			goTo({ filter: checkboxFilterFlags(), page: 0 });
-		}
-<?php
 	}
 }
 
