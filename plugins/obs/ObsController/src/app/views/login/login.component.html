@@ -4,7 +4,9 @@
       <h1>Connect</h1>
     </mat-card-header>
     <mat-card-content>
-      <div class=".two-columns">
+      <span formGroupName="obs">
+        <h2>OBS</h2>
+      <div class="two-columns">
         <!-- <mat-form-field class="example-form-field">
                   <mat-label>Protocolo</mat-label>
                   <input
@@ -42,6 +44,39 @@
           id="password"
           formControlName="password"
       /></mat-form-field>
+      </span>
+    <span formGroupName="mafiaRatings">
+      <h2>MafiaRatings</h2>
+      <div class=".two-columns">
+        <!-- <mat-form-field class="example-form-field">
+                  <mat-label>Protocolo</mat-label>
+                  <input
+                    matInput
+                    type="text"
+                    name="protocol"
+                    placeholder="ws"
+                    formControlName="protocol"
+                /></mat-form-field> -->
+        <mat-form-field id="input-host" class="example-form-field">
+          <mat-label>UserId</mat-label>
+          <input
+            matInput
+            type="text"
+            name="userId"
+            placeholder="MR UserId"
+            formControlName="mrUserId"
+        /></mat-form-field>
+        <mat-form-field id="token" class="example-form-field">
+          <mat-label>Token</mat-label>
+          <input
+            matInput
+            type="text"
+            name="mrToken"
+            placeholder="MR API Access Token"
+            formControlName="mrToken"
+        /></mat-form-field>
+      </div>
+    </span>
       <div class="row">
         <button
           mat-raised-button
