@@ -1,0 +1,23 @@
+<mat-grid-tile-header>
+  <mat-toolbar color="primary"> OBS MafiaRatings Controller </mat-toolbar>
+</mat-grid-tile-header>
+<mat-drawer-container>
+  <mat-drawer mode="side" opened class="left-sidebar">
+    <obs-left-side-bar></obs-left-side-bar>
+  </mat-drawer>
+  <mat-drawer #drawer mode="side" position="end" [opened]="isOpened" class="right-sidebar">
+    <div class="float-center">
+        <button mat-raised-button color="accent" type="button" (click)="closeProperties()">
+            Cerrar
+        </button>
+    </div>
+    <mat-divider></mat-divider>
+    <obs-right-side-bar></obs-right-side-bar>
+  </mat-drawer>
+  <mat-drawer-content class="main-content">
+    <router-outlet></router-outlet>
+  </mat-drawer-content>
+</mat-drawer-container>
+<mat-grid-tile-footer>
+  <mat-toolbar color="primary"> <h5>MafiaRatings OBS Proxy</h5> </mat-toolbar>
+</mat-grid-tile-footer>

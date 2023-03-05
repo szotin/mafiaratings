@@ -1,0 +1,65 @@
+<mat-card>
+  <form [formGroup]="formulario" (ngSubmit)="submitForm()">
+    <mat-card-header>
+      <h1>Connect</h1>
+    </mat-card-header>
+    <mat-card-content>
+      <div class=".two-columns">
+        <!-- <mat-form-field class="example-form-field">
+                  <mat-label>Protocolo</mat-label>
+                  <input
+                    matInput
+                    type="text"
+                    name="protocol"
+                    placeholder="ws"
+                    formControlName="protocol"
+                /></mat-form-field> -->
+        <mat-form-field id="input-host" class="example-form-field">
+          <mat-label>Host</mat-label>
+          <input
+            matInput
+            type="text"
+            name="host"
+            placeholder="ws://192.168.1.x"
+            formControlName="host"
+        /></mat-form-field>
+        <mat-form-field id="input-port" class="example-form-field">
+          <mat-label>Port</mat-label>
+          <input
+            matInput
+            type="text"
+            name="port"
+            placeholder="4455"
+            formControlName="port"
+        /></mat-form-field>
+      </div>
+      <mat-form-field class="example-form-field">
+        <mat-label>Password</mat-label>
+        <input
+          matInput
+          type="password"
+          name="password"
+          id="password"
+          formControlName="password"
+      /></mat-form-field>
+      <div class="row">
+        <button
+          mat-raised-button
+          color="accent"
+          type="submit"
+          (submit)="submitForm()"
+        >
+          Connect
+        </button>
+        <div class="cell">
+          <mat-chip-listbox>
+            <mat-chip-option [color]="connectedColor" selected>
+              Connected
+            </mat-chip-option>
+          </mat-chip-listbox>
+        </div>
+      </div>
+    </mat-card-content>
+    <mat-card-footer> </mat-card-footer>
+  </form>
+</mat-card>

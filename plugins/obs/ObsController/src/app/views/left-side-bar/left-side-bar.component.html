@@ -1,0 +1,10 @@
+<mat-list class="side-nav-menu">
+  <div *ngFor="let link of obsLinks">
+    <mat-list-item class="link" [routerLink]="link.href" routerLinkActive="current-position">
+
+      {{ link.label }}
+      <mat-icon mat-list-icon *ngIf="link.checkmarkWhenLoggedIn && (isLoggedIn | async)">done</mat-icon>
+    </mat-list-item>
+    <mat-divider></mat-divider>
+  </div>
+</mat-list>

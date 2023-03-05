@@ -1,0 +1,11 @@
+<mat-list class="side-nav-menu">
+  <ng-container *ngIf="sideElems !== undefined">
+    <mat-list-item>{{sideElems?.name}}</mat-list-item>
+    <mat-list-item>Altura: {{sideElems?.transform.height.toFixed(2)}}</mat-list-item>
+    <mat-list-item>Anchura: {{sideElems?.transform.width.toFixed(2)}}</mat-list-item>
+    <mat-list-item>PosX: {{sideElems?.transform.positionX.toFixed(2)}}</mat-list-item>
+    <mat-list-item>PosY: {{sideElems?.transform.positionY.toFixed(2)}}</mat-list-item>
+    <mat-list-item>ScaleX: {{sideElems?.transform.scaleX.toFixed(2)}}</mat-list-item>
+    <mat-list-item>ScaleY: {{sideElems?.transform.scaleY.toFixed(2)}}</mat-list-item>
+  </ng-container>
+</mat-list>
