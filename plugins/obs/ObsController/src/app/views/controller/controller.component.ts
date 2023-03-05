@@ -48,9 +48,11 @@ export class ControllerComponent implements OnInit {
       sceneItemEnabled: $event.checked,
     });
   }
+  
   public getIsActive(sceneName: string) {
     return this.currentScene.sceneName === sceneName;
   }
+
   public getActiveColor(sceneName: string) {
     return this.currentScene.sceneName === sceneName ? 'accent' : 'primary';
   }
@@ -66,6 +68,7 @@ export class ControllerComponent implements OnInit {
       });
     console.log('setCurrentScene');
   }
+
   public showProperties(scene: any, sceneItem: Source) {
     console.log()
     let request: OBSRequestTypes["GetSceneItemTransform"] = {
