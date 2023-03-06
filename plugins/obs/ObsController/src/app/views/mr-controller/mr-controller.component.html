@@ -1,1 +1,5 @@
-<p>mr-controller works!</p>
+<p>Id: {{(currentGame | async)?.id}}</p>
+<p>Phase: {{(currentGame | async)?.phase}}</p>
+<p>State: {{(currentGame | async)?.state}}</p>
+<p>Round: {{(currentGame | async)?.round}}</p>
+<p>Speaking Player: {{(this.getSpeakingPlayer()|async)?.number}}</p>

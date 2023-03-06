@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core'
 import { HelpComponent } from '../views/help/help.component'
 import { LoginComponent } from '../views/login/login.component'
-import { ControllerComponent } from '../views/controller/controller.component'
+import { ObsControllerComponent } from '../views/obs-controller/obs-controller.component'
 import { MrControllerComponent } from '../views/mr-controller/mr-controller.component'
 import { ObsLeftSideBarComponent } from '../views/left-side-bar/left-side-bar.component'
 import { ObsRightSideBarComponent } from '../views/right-side-bar/right-side-bar.component'
@@ -14,7 +14,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms'
   declarations: [
     HelpComponent,
     LoginComponent,
-    ControllerComponent,
+    ObsControllerComponent,
     MrControllerComponent,
     ObsLeftSideBarComponent,
     ObsRightSideBarComponent
@@ -31,7 +31,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms'
     ObsMaterialUiModule,
     HelpComponent,
     LoginComponent,
-    ControllerComponent,
+    ObsControllerComponent,
     MrControllerComponent,
     ObsLeftSideBarComponent,
     ObsRightSideBarComponent

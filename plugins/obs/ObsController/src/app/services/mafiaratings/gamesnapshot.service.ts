@@ -4,7 +4,7 @@ import { Observable, timer, BehaviorSubject, of } from 'rxjs';
 import { share, map, delay, skip, tap, concatWith, concatMap, retryWhen, delayWhen } from 'rxjs/operators';
 
 import { environment } from 'src/environments/environment';
-import { GameSnapshot, Game, Player } from './gamesnapshot.model';
+import { GameSnapshot, Game, Player, GamePhase, PlayerRole } from './gamesnapshot.model';
 import { UrlParametersService } from './url-parameters.service';
 
 @Injectable({
@@ -65,6 +65,12 @@ export class GamesnapshotService {
       map((it?: Game) => it?.players ?? []));
   }
 
+  getCurrentPhase(): Observable<GamePhase | undefined> {
+    return this.getCurrentGame().pipe(
+      map((it?:Game) => it?.phase)
+    )
+  }
+
   getNominees(): Observable<Player[]> {
     return this.getCurrentGame().pipe(
       map((it?: Game) => it?.nominatedPlayers ?? []));
@@ -96,11 +102,17 @@ export class GamesnapshotService {
           .sort((left: Player, right: Player) => (left?.checkedByDon ?? 0) - (right?.checkedByDon ?? 0))));
   }
 
+  getSpeakingPlayer(): Observable<Player | undefined> {
+    return this.getPlayers().pipe(
+      map((it: Player[]) => it.filter((player: Player)=> player.isSpeaking)?.[0])
+    )
+  }
+  
   private getGameSnapshotData(): Observable<GameSnapshot> {
     return this.http
       .get<GameSnapshot>(this.configUrl, { observe: 'response', params: this.urlParameterService.gameSnapshotUrlParams })
       .pipe(
-        map((it: HttpResponse<GameSnapshot>) => it.body ?? { version:0 }),
+        map((it: HttpResponse<GameSnapshot>) => it.body ?? { version: 0 }),
         map((it: GameSnapshot) => {
           if (it.game) {
             let players: Player[] = it.game?.players ?? [];

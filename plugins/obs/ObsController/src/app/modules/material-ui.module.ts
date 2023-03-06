@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button'
 import { MatCardModule } from '@angular/material/card'
 import { MatChipsModule } from '@angular/material/chips'
 import { MatCommonModule } from '@angular/material/core'
+import { MatButtonToggleModule } from '@angular/material/button-toggle'
 import { MatDividerModule } from '@angular/material/divider'
 import { MatExpansionModule } from '@angular/material/expansion'
 import { MatFormFieldModule } from '@angular/material/form-field'
@@ -24,6 +25,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms'
     FormsModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatCardModule,
     MatChipsModule,
     MatCommonModule,
@@ -40,6 +42,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms'
   ],
   exports: [
     MatButtonModule,
+    MatButtonToggleModule,
     MatCardModule,
     MatChipsModule,
     MatCommonModule,

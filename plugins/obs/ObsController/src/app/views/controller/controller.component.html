@@ -1,17 +1,11 @@
-<ng-container *ngFor="let scene of scenes">
-  <mat-expansion-panel hideToggle="">
-    <mat-expansion-panel-header>
-      <mat-panel-title title="{{scene.sceneName}}">{{ scene.sceneName }}</mat-panel-title>
-      <mat-panel-description>Scene
-        <button mat-raised-button [color]="getActiveColor(scene.sceneName)" (click)="setCurrentScene($event, scene.sceneName)">
-          <ng-container *ngIf="getIsActive(scene.sceneName)===true">Active</ng-container>
-          <ng-container *ngIf="getIsActive(scene.sceneName)===false">Inactive</ng-container>
-        </button></mat-panel-description
-      >
-    </mat-expansion-panel-header>
-
-    Screenshot
-
-    <div></div>
-  </mat-expansion-panel>
-</ng-container>
+<mat-grid-list cols="2" gutterSize="15px" rowHeight="fit">
+    <mat-grid-tile>
+        <obs-mr-controller></obs-mr-controller>
+    </mat-grid-tile>
+    <mat-grid-tile>
+        <obs-controller></obs-controller>
+    </mat-grid-tile>
+    <mat-grid-tile colspan="2">
+        <sync></sync>
+    </mat-grid-tile>
+</mat-grid-list>

@@ -13,8 +13,7 @@ export class ObsLeftSideBarComponent implements OnInit {
 
   public obsLinks: { label: string; href: string; class?: string; checkmarkWhenLoggedIn?:boolean }[] = [
     { label: 'Connect', href: '/obs/login', checkmarkWhenLoggedIn: true },
-    { label: 'Control', href: '/obs/controller' },
-    { label: 'MR', href: '/obs/mrcontroller' },
+    { label: 'Controller', href: '/obs/controller' },
     { label: 'Help', href: '/obs/help' }
   ]
 
