@@ -20,8 +20,8 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $price, $langs, $notes, $flags) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.price, t.langs, t.notes, t.flags FROM tournaments t' . 
+	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $price, $langs, $notes, $flags, $tournament_type) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.price, t.langs, t.notes, t.flags, t.type FROM tournaments t' . 
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
@@ -60,7 +60,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
 	
-	echo '<td align="center" valign="top" rowspan="12" width="120">';
+	echo '<td align="center" valign="top" rowspan="13" width="120">';
 	start_upload_logo_button($tournament_id);
 	echo get_label('Change logo') . '<br>';
 	$tournament_pic = new Picture(TOURNAMENT_PICTURE);
@@ -68,6 +68,16 @@ try
 	$tournament_pic->show(ICONS_DIR, false);
 	end_upload_logo_button(TOURNAMENT_PIC_CODE, $tournament_id);
 	echo '</td></tr>';
+
+	echo '<tr><td>' . get_label('Tournament type') . '</td><td><select id="form-type" onchange="typeChanged()">';
+	show_option(TOURNAMENT_TYPE_CUSTOM, $tournament_type, get_label('Custom tournament. I will set up everything manually.'));
+	show_option(TOURNAMENT_TYPE_FIIM_ONE_ROUND, $tournament_type, get_label('FIIM style tournament with only one round. (Mini-tournament).'));
+	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3, $tournament_type, get_label('FIIM style tournament with two rounds - main, and final. The final round has less than 4 games.'));
+	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4, $tournament_type, get_label('FIIM style tournament with two rounds - main, and final. The final round has 4 games or more.'));
+	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3, $tournament_type, get_label('FIIM style tournament with three rounds - main, semi-final, and final. The final round has less than 4 games.'));
+	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4, $tournament_type, get_label('FIIM style tournament with three rounds - main, semi-final, and final. The final round has 4 games or more.'));
+	show_option(TOURNAMENT_TYPE_CHAMPIONSHIP, $tournament_type, get_label('Seasonal championship.'));
+	echo '</select></td></tr>';
 	
 	echo '<tr><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
 	
@@ -158,6 +168,13 @@ try
 	
 	echo '</td></tr>';
 	echo '</table>';
+	
+	$fiim_id = 0;
+	$query = new DbQuery('SELECT id FROM scorings where club_id IS NULL AND name="ФИИМ"');
+	if ($row = $query->next())
+	{
+		list($fiim_id) = $row;
+	}
 	
 ?>
 
@@ -306,6 +323,44 @@ try
 		$("#form-use_rounds_scoring").prop('disabled', c);
 	}
 	
+	function typeChanged()
+	{
+		var l = false;
+		var s = false;
+		var r = false;
+		var scoringId = 0;
+		var type = parseInt($('#form-type').val());
+		switch(type)
+		{
+			case <?php echo TOURNAMENT_TYPE_CUSTOM; ?>:
+				break;
+			case <?php echo TOURNAMENT_TYPE_FIIM_ONE_ROUND; ?>:
+				scoringId = <?php echo $fiim_id; ?>;
+				break;
+			case <?php echo TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3; ?>:
+			case <?php echo TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4; ?>:
+			case <?php echo TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3; ?>:
+			case <?php echo TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4; ?>:
+				scoringId = <?php echo $fiim_id; ?>;
+				r = true;
+				break;
+			case <?php echo TOURNAMENT_TYPE_CHAMPIONSHIP; ?>:
+				s = l = true;
+				break;
+		}
+		
+		$("#form-long_term").prop('checked', l).prop('disabled', type != 0);
+		$("#form-single_game").prop('checked', s).prop('disabled', !l || type != 0);
+		$("#form-use_rounds_scoring").prop('checked', r).prop('disabled', (s && l) || type != 0);
+		
+		if (scoringId > 0)
+		{
+			$('#form-scoring-sel').val(scoringId);
+			$('#form-scoring-difficulty').prop('checked', false);
+			mr.onChangeScoring('form-scoring', 0, onScoringChange);
+		}
+	}
+	
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -340,6 +395,7 @@ try
 			tournament_id: <?php echo $tournament_id; ?>,
 			series: series,
 			name: $("#form-name").val(),
+			type: $('#form-type').val(),
 			price: $("#form-price").val(),
 			address_id: $("#form-addr_id").val(),
 			scoring_id: scoringId,

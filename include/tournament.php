@@ -18,11 +18,7 @@ define('TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3', 2);
 define('TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4', 3);
 define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3', 4);
 define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4', 5);
-define('TOURNAMENT_TYPE_AML_ONE_ROUND', 6);
-define('TOURNAMENT_TYPE_AML_TWO_ROUNDS', 7);
-define('TOURNAMENT_TYPE_AML_THREE_ROUNDS', 8);
-define('TOURNAMENT_TYPE_CHAMPIONSHIP', 9);
-define('TOURNAMENT_TYPE_SERIES', 10);
+define('TOURNAMENT_TYPE_CHAMPIONSHIP', 6);
 
 function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $is_manager = NULL)
 {
@@ -55,7 +51,6 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 	}
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
 }
-
 
 class TournamentPageBase extends PageBase
 {
