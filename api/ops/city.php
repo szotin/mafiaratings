@@ -235,7 +235,6 @@ class ApiPage extends OpsApiPageBase
 		
 		list($new_name, $new_area_id) = Db::record(get_label('city'), 'SELECT n.name, c.area_id FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $repl_id);
 		Db::exec(get_label('club'), 'UPDATE clubs SET city_id = ? WHERE city_id = ?', $repl_id, $city_id);
-		Db::exec(get_label('club'), 'UPDATE club_requests SET city_id = ? WHERE city_id = ?', $repl_id, $city_id);
 		Db::exec(get_label('address'), 'UPDATE addresses SET city_id = ? WHERE city_id = ?', $repl_id, $city_id);
 		Db::exec(get_label('user'), 'UPDATE users SET city_id = ? WHERE city_id = ?', $repl_id, $city_id);
 		Db::exec(get_label('city'), 'UPDATE cities SET area_id = ? WHERE area_id = ?', $new_area_id, $city_id);

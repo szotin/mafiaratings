@@ -279,7 +279,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createClub = function()
 	{
-		dlg.form("form/club_create.php", refr, 600);
+		dlg.form("form/club_create.php", function(data) { goTo("club_main.php?bck=1&id=" + data.club_id); }, 600);
 	}
 
 	this.restoreClub = function(id)
@@ -324,16 +324,6 @@ var mr = new function()
 		window.location.replace("game.php?club=" + id);
 	}
 
-	this.acceptClub = function(id)
-	{
-		dlg.form("form/club_accept.php?id=" + id, refr, 600);
-	}
-
-	this.declineClub = function(id)
-	{
-		dlg.form("form/club_decline.php?id=" + id, refr);
-	}
-	
 	this.addClubMember = function(id, onSuccess)
 	{
 		if (typeof onSuccess == "undefined")

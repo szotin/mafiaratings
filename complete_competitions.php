@@ -289,10 +289,28 @@ try
 		++$count;
 	}
 	writeLog('It took ' . $spent_time . ' sec.');
-	if ($_web && $count > 0)
+	
+	// Retire idle clubs
+	if ($spent_time < MAX_EXEC_TIME)
 	{
-		echo '<script>window.location.reload();</script>';
+		$wait_time = 60 * 60 * 24 * 365 / 2; // half a year
+		$retired_clubs = 0;
+		Db::begin();
+		Db::exec(get_label('club'), 'UPDATE clubs c SET c.flags = c.flags | ' . CLUB_FLAG_RETIRED . ' WHERE (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 AND c.activated < UNIX_TIMESTAMP() - ? AND NOT EXISTS (SELECT * FROM games g WHERE g.club_id = c.id AND g.start_time > UNIX_TIMESTAMP() - ?);', $wait_time, $wait_time);
+		$retired_clubs = Db::affected_rows();
+		Db::commit();
+		$spent_time = time() - $exec_start_time;
+		
+		if ($retired_clubs > 0)
+		{
+			writeLog('Retired ' . $retired_clubs . ' clubs.');
+		}
 	}
+	
+	// if ($_web && $count > 0)
+	// {
+		// echo '<script>window.location.reload();</script>';
+	// }
 }
 catch (Exception $e)
 {

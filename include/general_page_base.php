@@ -69,7 +69,6 @@ class GeneralPageBase extends PageBase
 				new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
 				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
 				new MenuItem('scorings.php' . $ccc, get_label('Scoring systems'), get_label('Manage scoring systems')),
-				new MenuItem('club_requests.php' . $ccc, get_label('Club requests'), get_label('Requests for creating a club')),
 				new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things')),
 				new MenuItem('game_issues.php' . $ccc, get_label('Game issues'), get_label('List of the games that have issues.')),
 				new MenuItem('duplicated_games.php' . $ccc, get_label('Duplicated games'), get_label('Search for duplicated games suspects.')),

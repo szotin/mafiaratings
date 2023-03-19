@@ -1,5 +1,4 @@
 DROP TABLE IF EXISTS `club_info`;
-DROP TABLE IF EXISTS `club_requests`;
 DROP TABLE IF EXISTS `club_rules`;
 DROP TABLE IF EXISTS `dons`;
 DROP TABLE IF EXISTS `emails`;
