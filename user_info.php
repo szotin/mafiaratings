@@ -174,10 +174,6 @@ class Page extends UserPageBase
         {
             echo '<tr><td class="dark">'.get_label('Gender').':</td><td>'.get_label('female').'</td></tr>';
         }
-        if (($this->flags & USER_FLAG_BANNED) != 0)
-        {
-            echo '<tr><td class="dark">'.get_label('Banned').':</td><td>'.get_label('yes').'</td></tr>';
-        }
 		
 		$query = new DbQuery('SELECT DISTINCT nickname FROM event_users WHERE user_id = ? ORDER BY nickname', $this->id);
 		if ($row = $query->next())

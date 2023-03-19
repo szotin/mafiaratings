@@ -148,7 +148,7 @@ require_once '../../include/api.php';
 	<td>User Operations</td>
 	<td><a href="user.php?help"><?php echo PRODUCT_URL; ?>/api/ops/user.php</a></td>
 	<td>
-		<p>Banning, and unbanning users and setting user permissions.</p>
+		<p>Setting users properties and permissions.</p>
 	</td>
 </tr>
 

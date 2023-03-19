@@ -206,58 +206,6 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// ban
-	//-------------------------------------------------------------------------------------------------------
-	function ban_op()
-	{
-		$user_id = (int)get_required_param('user_id');
-		$club_id = (int)get_required_param('club_id');
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		
-		Db::begin();
-		Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags | ' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
-		if (Db::affected_rows() > 0)
-		{
-			db_log(LOG_OBJECT_USER, 'banned', NULL, $user_id, $club_id);
-		}
-		Db::commit();
-	}
-	
-	function ban_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Ban user from the club.');
-		$help->request_param('user_id', 'User id.');
-		$help->request_param('club_id', 'Club id.');
-		return $help;
-	}
-	
-	//-------------------------------------------------------------------------------------------------------
-	// unban
-	//-------------------------------------------------------------------------------------------------------
-	function unban_op()
-	{
-		$user_id = (int)get_required_param('user_id');
-		$club_id = (int)get_required_param('club_id');
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		
-		Db::begin();
-		Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags & ~' . USER_CLUB_FLAG_BANNED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
-		if (Db::affected_rows() > 0)
-		{
-			db_log(LOG_OBJECT_USER, 'unbanned', NULL, $user_id, $club_id);
-		}
-		Db::commit();
-	}
-
-	function unban_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Unban user from the club.');
-		$help->request_param('user_id', 'User id.');
-		$help->request_param('club_id', 'Club id.');
-		return $help;
-	}
-	
-	//-------------------------------------------------------------------------------------------------------
 	// access
 	//-------------------------------------------------------------------------------------------------------
 	function access_op()
@@ -352,54 +300,6 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
-	//-------------------------------------------------------------------------------------------------------
-	// site_ban
-	//-------------------------------------------------------------------------------------------------------
-	function site_ban_op()
-	{
-		$user_id = (int)get_required_param('user_id');
-		check_permissions(PERMISSION_ADMIN);
-		
-		Db::begin();
-		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . USER_FLAG_BANNED . ') WHERE id = ?', $user_id);
-		if (Db::affected_rows() > 0)
-		{
-			db_log(LOG_OBJECT_USER, 'banned', NULL, $user_id);
-		}
-		Db::commit();
-	}
-	
-	function site_ban_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_ADMIN, 'Ban user from ' . PRODUCT_NAME . '.');
-		$help->request_param('user_id', 'User id.');
-		return $help;
-	}
-
-	//-------------------------------------------------------------------------------------------------------
-	// site_unban
-	//-------------------------------------------------------------------------------------------------------
-	function site_unban_op()
-	{
-		$user_id = (int)get_required_param('user_id');
-		check_permissions(PERMISSION_ADMIN);
-
-		Db::begin();
-		Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . USER_FLAG_BANNED . ') WHERE id = ?', $user_id);
-		if (Db::affected_rows() > 0)
-		{
-			db_log(LOG_OBJECT_USER, 'unbanned', NULL, $user_id);
-		}
-		Db::commit();
-	}
-
-	function site_unban_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_ADMIN, 'Unban user from ' . PRODUCT_NAME . '.');
-		$help->request_param('user_id', 'User id.');
-		return $help;
-	}
-
 	//-------------------------------------------------------------------------------------------------------
 	// merge
 	//-------------------------------------------------------------------------------------------------------

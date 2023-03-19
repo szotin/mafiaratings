@@ -217,7 +217,7 @@ class Page extends SeriesPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add(' AND g.club_id IN (SELECT club_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
+				$condition->add(' AND g.club_id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $_profile->user_id);
 			}
 			break;
 		case CCCF_CITY:

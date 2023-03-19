@@ -141,7 +141,6 @@ class Profile
 					' JOIN countries o ON i.country_id = o.id ' .
 					' JOIN names no ON o.name_id = no.id AND (no.langs & ?) <> 0' .
 					' WHERE uc.user_id = ?' .
-					' AND (uc.flags & ' . USER_CLUB_FLAG_BANNED . ') = 0' .
 					' ORDER BY c.name', $_lang, $_lang, $this->user_id);
 		}
 		if ($query)

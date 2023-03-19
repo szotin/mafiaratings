@@ -166,7 +166,7 @@ class ApiPage extends GetApiPageBase
 		$this->response['scoring_id'] = (int)$scoring;
 		
 		$condition = new SQL();
-		$scope_condition = new SQL(' AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND u.games > 0');
+		$scope_condition = new SQL(' AND u.games > 0');
 		$this->response['role']	= $role;
 		
 		$scope_condition->add(get_roles_condition($role));

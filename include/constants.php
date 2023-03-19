@@ -36,13 +36,12 @@ define('USER_LEAGUE_PERM_MASK', 0x8000); // USER_LEAGUE_PERM_MANAGER
 // 03 - 0x0004 -      4 - perm manager
 // 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
 // 05 - 0x0010 -     16 - subscribed
-// 06 - 0x0020 -     32 - banned
+// 06 - 0x0020 -     32 - available
 // 07 - 0x0040 -     64 - icon mask
 // 08 - 0x0080 -    128 - icon mask
 // 09 - 0x0100 -    256 - icon mask
 // 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
 define('USER_CLUB_FLAG_SUBSCRIBED', 0x10);
-define('USER_CLUB_FLAG_BANNED', 0x20); 
 define('USER_CLUB_NEW_PLAYER_FLAGS', 0x11); // USER_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED
 
 define('USER_CLUB_ICON_MASK', 0x1c0);
@@ -99,7 +98,7 @@ define('USER_SERIES_ICON_MAX_VERSION', 7);
 // 05 - 0x0010 -     16 - reserved for future use
 // 06 - 0x0020 -     32 - user never logged in so the password is not set. Account is not activated.
 // 07 - 0x0040 -     64 - male
-// 08 - 0x0080 -    128 - banned
+// 08 - 0x0080 -    128 - available
 // 09 - 0x0100 -    256 - notify on comments
 // 10 - 0x0200 -    512 - notify on photo
 // 11 - 0x0400 -   1024 - immunity
@@ -110,7 +109,6 @@ define('USER_SERIES_ICON_MAX_VERSION', 7);
 // 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
 define('USER_FLAG_NO_PASSWORD', 0x20);
 define('USER_FLAG_MALE', 0x40);
-define('USER_FLAG_BANNED', 0x80);
 define('USER_FLAG_MESSAGE_NOTIFY', 0x100);
 define('USER_FLAG_PHOTO_NOTIFY', 0x200);
 define('USER_FLAG_IMMUNITY', 0x400);

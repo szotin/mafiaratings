@@ -73,7 +73,7 @@ class Page extends ClubPageBase
 		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' WHERE u.club_id = ? AND (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND u.games > 0', $this->id);
+		$condition = new SQL(' WHERE u.club_id = ? AND u.games > 0', $this->id);
 		if ($this->role == POINTS_ALL)
 		{
 			$query = new DbQuery(

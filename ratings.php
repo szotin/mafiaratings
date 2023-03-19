@@ -76,7 +76,7 @@ class Page extends GeneralPageBase
 	{
 		global $_profile;
 		
-		$condition = new SQL(' WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND u.games > 0');
+		$condition = new SQL(' WHERE u.games > 0');
 		$ccc_id = $this->ccc_filter->get_id();
 		switch ($this->ccc_filter->get_type())
 		{
@@ -87,7 +87,7 @@ class Page extends GeneralPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add(' AND u.club_id IN (SELECT club_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
+				$condition->add(' AND u.club_id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $_profile->user_id);
 			}
 			break;
 		case CCCF_CITY:

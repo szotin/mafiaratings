@@ -114,10 +114,8 @@ class GClub
 			'SELECT u.id, u.name, c.name, u.flags, uc.flags FROM club_users uc' .
 				' JOIN users u ON u.id = uc.user_id' .
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-				' WHERE (uc.flags & ' . USER_CLUB_FLAG_BANNED .
-					') = 0 AND (uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_REFEREE) .
-					') <> 0 AND (u.flags & ' . USER_FLAG_BANNED .
-					') = 0 AND uc.club_id = ?' .
+				' WHERE (uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_REFEREE) .
+					') <> 0 AND uc.club_id = ?' .
 				' ORDER BY u.rating DESC',
 			$id);
 		while ($row = $query->next())
@@ -1108,7 +1106,7 @@ class ApiPage extends OpsApiPageBase
 				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0 ' .
 				' LEFT OUTER JOIN cities a ON a.id = ct.area_id' .
 				' LEFT OUTER JOIN names na ON na.id = a.name_id AND (na.langs & ?) <> 0 ' .
-				' WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0', $_lang, $_lang);
+				' WHERE TRUE', $_lang, $_lang);
 		if (!empty($name))
 		{
 			$name_wildcard = '%' . $name . '%';
@@ -1122,7 +1120,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else if ($club_id > 0)
 		{
-			$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM club_users WHERE club_id = ? AND (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0)', $club_id);
+			$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM club_users WHERE club_id = ?)', $club_id);
 		}
 		$query->add(' ORDER BY games_count DESC');
 		

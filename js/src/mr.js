@@ -1132,32 +1132,6 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// user
 	//--------------------------------------------------------------------------------------
-	this.banUser = function(userId, clubId)
-	{
-		var params = { op: 'ban', user_id: userId  };
-		if (typeof clubId != "undefined")
-		{
-			json.post("api/ops/user.php", { op: 'ban', user_id: userId, club_id: clubId }, refr);
-		}
-		else
-		{
-			json.post("api/ops/user.php", { op: 'site_ban', user_id: userId }, refr);
-		}
-	}
-	
-	this.unbanUser = function(userId, clubId)
-	{
-		var params = { op: 'ban', user_id: userId  };
-		if (typeof clubId != "undefined")
-		{
-			json.post("api/ops/user.php", { op: 'unban', user_id: userId, club_id: clubId }, refr);
-		}
-		else
-		{
-			json.post("api/ops/user.php", { op: 'site_unban', user_id: userId }, refr);
-		}
-	}
-	
 	this.editUserAccess = function(userId)
 	{
 		dlg.form("form/user_access.php?user_id=" + userId, refr, 400);

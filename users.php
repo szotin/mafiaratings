@@ -37,25 +37,6 @@ class Page extends GeneralPageBase
 				$this->errorMessage(get_label('Player not found.'));
 			}
 		}
-		
-		if (isset($_REQUEST['ban']))
-		{
-			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags | ' . USER_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['ban']);
-			if (Db::affected_rows() > 0)
-			{
-				db_log(LOG_OBJECT_USER, 'banned', NULL, $_REQUEST['ban']);
-			}
-			throw new RedirectExc('?page=' . $_page . '&ccc=' . $this->ccc_filter->get_code());
-		}
-		else if (isset($_REQUEST['unban']))
-		{
-			Db::exec(get_label('user'), 'UPDATE users SET flags = (flags & ~' . USER_FLAG_BANNED . ') WHERE id = ?', $_REQUEST['unban']);
-			if (Db::affected_rows() > 0)
-			{
-				db_log(LOG_OBJECT_USER, 'unbanned', NULL, $_REQUEST['unban']);
-			}
-			throw new RedirectExc('?page=' . $_page . '&ccc=' . $this->ccc_filter->get_code());
-		}
 	}
 	
 	protected function show_body()
@@ -83,7 +64,7 @@ class Page extends GeneralPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM club_users WHERE (flags & ' . USER_CLUB_FLAG_BANNED . ') = 0 AND user_id = ?)', $_profile->user_id);
+				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $_profile->user_id);
 				$sep = ' AND ';
 			}
 			break;
@@ -110,7 +91,7 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="th darker">';
-		echo '<td width="87"></td>';
+		echo '<td width="58"></td>';
 		echo '<td colspan="4">' . get_label('User name') . '</td><td width="40"></td></tr>';
 
 		$query = new DbQuery(
@@ -138,16 +119,8 @@ class Page extends GeneralPageBase
 
 			echo '<td class="dark">';
 			$ref = '<a href ="?page=' . $_page . '&ccc=' . $this->ccc_filter->get_code();
-			if ($flags & USER_FLAG_BANNED)
-			{
-				echo '<button class="icon" onclick="mr.unbanUser(' . $id . ')" title="' . get_label('Unban [0]', $name) . '"><img src="images/undelete.png" border="0"></button>';
-			}
-			else
-			{
-				echo '<button class="icon" onclick="mr.banUser(' . $id . ')" title="' . get_label('Ban [0]', $name) . '"><img src="images/ban.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.editUserAccess(' . $id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.editUser(' . $id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
-			}
+			echo '<button class="icon" onclick="mr.editUserAccess(' . $id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.editUser(' . $id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
 			echo '</td>';
 			
 			echo '<td width="60" align="center">';

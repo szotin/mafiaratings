@@ -217,7 +217,7 @@ class ApiPage extends GetApiPageBase
 		
 		$count_only = isset($_REQUEST['count']);
 		
-		$condition = new SQL(' WHERE (u.flags & ' . USER_FLAG_BANNED . ') = 0 AND u.games > 0');
+		$condition = new SQL(' WHERE u.games > 0');
 		
 		if (isset($contains))
 		{
