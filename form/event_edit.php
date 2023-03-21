@@ -63,7 +63,7 @@ try
 	
 	echo '</tr>';
 	
-	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= ? AND start_time + duration >= ? ORDER BY name', $club_id, $start_time, $start_time);
+	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= ? AND start_time + duration >= ? AND (flags & ' . TOURNAMENT_FLAG_LONG_TERM . ') <> 0 ORDER BY name', $club_id, $start_time, $start_time);
 	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
 	show_option(0, $tour_id, '');
 	$tournament_found = false;

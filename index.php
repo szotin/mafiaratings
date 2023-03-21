@@ -62,6 +62,8 @@ class Page extends GeneralPageBase
 	
 	private function show_tournament($tournament)
 	{
+		$this->tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
+		
 		$future = ($tournament->start_time > time());
 		if ($future)
 		{
@@ -78,13 +80,21 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="transp" width="100%">';
 		
-		echo '<tr' . $dark_class . ' style="height: 40px;">';
-		echo '<td colspan="3"';
-		echo ' align="center"><b>' . $tournament->name . '</b></td></tr>';
+		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="3" align="center">';
+		if ($this->tournament_pic->has_image())
+		{
+			echo '<table class="transp" width="100%"><tr><td width="32"><img src="images/icons/tournament.png" width="30"></td><td align="center">';
+			echo '<b>' . $tournament->name . '</b>';
+			echo '</td></tr></table>';
+		}
+		else
+		{
+			echo '<b>' . $tournament->name . '</b>';
+		}
+		echo '</td></tr>';
 		
 		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
 		echo '<a href="' . $url . '?bck=1&id=' . $tournament->id . '" title="' . get_label('View tournament details.') . '">';
-		$this->tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 		$this->tournament_pic->show(ICONS_DIR, false, $future ? 56 : 70);
 		echo '</a>';
 		if ($future)
@@ -103,6 +113,8 @@ class Page extends GeneralPageBase
 	
 	private function show_event($event)
 	{
+		$this->event_pic->set($event->id, $event->name, $event->flags)->set($event->tournament_id, $event->tournament_name, $event->tournament_flags);
+		
 		$future = ($event->start_time > time());
 		if ($future)
 		{
@@ -119,23 +131,21 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="transp" width="100%">';
 		
-		echo '<tr' . $dark_class . ' style="height: 40px;">';
-		if (!is_null($event->tournament_id))
+		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="3" align="center">';
+		if ($this->event_pic->has_image())
 		{
-			echo '<td width="32">';
-			$this->tournament_pic->set($event->tournament_id, $event->tournament_name, $event->tournament_flags);
-			$this->tournament_pic->show(ICONS_DIR, false, 30);
-			echo '</td><td colspan="2"';
+			echo '<table class="transp" width="100%"><tr><td width="32"><img src="images/icons/event.png" width="30"></td><td align="center">';
+			echo '<b>' . $event->name . '</b>';
+			echo '</td></tr></table>';
 		}
 		else
 		{
-			echo '<td colspan="3"';
+			echo '<b>' . $event->name . '</b>';
 		}
-		echo 'align="center"><b>' . $event->name . '</b></td></tr>';
+		echo '</td></tr>';
 		
 		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
 		echo '<a href="' . $url . '?bck=1&id=' . $event->id . '" title="' . get_label('View event details.') . '">';
-		$this->event_pic->set($event->id, $event->name, $event->flags);
 		$this->event_pic->show(ICONS_DIR, false, $future ? 56 : 70);
 		echo '</a>';
 		if ($future)
@@ -492,7 +502,7 @@ class Page extends GeneralPageBase
 		$this->league_pic = new Picture(LEAGUE_PICTURE);
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$this->series_pic = new Picture(SERIES_PICTURE, $this->league_pic);
-		$this->event_pic = new Picture(EVENT_PICTURE);
+		$this->event_pic = new Picture(EVENT_PICTURE, $this->tournament_pic);
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
