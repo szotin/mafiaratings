@@ -740,19 +740,22 @@ class ApiPage extends OpsApiPageBase
 				}
 				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/club_remove_league.php';
 				
-				$tags = array(
-					'root' => new Tag(get_server_url()),
-					'user_id' => new Tag($user_id),
-					'user_name' => new Tag($user_name),
-					'league_id' => new Tag($league_id),
-					'league_name' => new Tag($league_name),
-					'club_id' => new Tag($club_id),
-					'club_name' => new Tag($club_name),
-					'message' => new Tag($message),
-					'sender' => new Tag($_profile->user_name));
-				$body = parse_tags($body, $tags);
-				$text_body = parse_tags($text_body, $tags);
-				send_email($user_email, $body, $text_body, $subj);
+				if (!empty($message))
+				{
+					$tags = array(
+						'root' => new Tag(get_server_url()),
+						'user_id' => new Tag($user_id),
+						'user_name' => new Tag($user_name),
+						'league_id' => new Tag($league_id),
+						'league_name' => new Tag($league_name),
+						'club_id' => new Tag($club_id),
+						'club_name' => new Tag($club_name),
+						'message' => new Tag($message),
+						'sender' => new Tag($_profile->user_name));
+					$body = parse_tags($body, $tags);
+					$text_body = parse_tags($text_body, $tags);
+					send_email($user_email, $body, $text_body, $subj);
+				}
 			}
 		}
 		Db::commit();

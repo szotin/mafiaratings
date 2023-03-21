@@ -1169,7 +1169,7 @@ var mr = new function()
 	
 	this.editUser = function(userId)
 	{
-		dlg.form("form/account_edit.php?user_id=" + userId, refr, 600);
+		dlg.form("form/account_edit.php?user_id=" + userId, refr, 800);
 	}
 	
 	//--------------------------------------------------------------------------------------

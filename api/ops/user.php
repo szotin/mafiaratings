@@ -301,6 +301,72 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
+	// subscribe
+	//-------------------------------------------------------------------------------------------------------
+	function subscribe_op()
+	{
+		global $_profile;
+		check_permissions(PERMISSION_USER);
+		
+		$user_id = (int)get_optional_param('user_id', $_profile->user_id);
+		$club_id = (int)get_required_param('club_id', 0);
+		if ($user_id != $_profile->user_id)
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		}
+		
+		Db::begin();
+		Db::exec(get_label('user'), 'UPDATE club_users SET flags = flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ' WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			db_log(LOG_OBJECT_USER, 'subscribed', $log_details, $user_id, $club_id);
+		}
+		Db::commit();
+	}
+
+	function subscribe_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Subscribe to club emails.');
+		$help->request_param('user_id', 'User id.', 'the one who is making request is used.');
+		$help->request_param('club_id', 'Club id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// unsubscribe
+	//-------------------------------------------------------------------------------------------------------
+	function unsubscribe_op()
+	{
+		global $_profile;
+		check_permissions(PERMISSION_USER);
+		
+		$user_id = (int)get_optional_param('user_id', $_profile->user_id);
+		$club_id = (int)get_required_param('club_id', 0);
+		if ($user_id != $_profile->user_id)
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		}
+		
+		Db::begin();
+		Db::exec(get_label('user'), 'UPDATE club_users SET flags = flags & ~' . USER_CLUB_FLAG_SUBSCRIBED . ' WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			db_log(LOG_OBJECT_USER, 'unsubscribed', $log_details, $user_id, $club_id);
+		}
+		Db::commit();
+	}
+
+	function unsubscribe_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Unsubscribe from club emails.');
+		$help->request_param('user_id', 'User id.', 'the one who is making request is used.');
+		$help->request_param('club_id', 'Club id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
 	// merge
 	//-------------------------------------------------------------------------------------------------------
 	function merge_op()

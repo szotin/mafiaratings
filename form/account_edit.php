@@ -35,7 +35,7 @@ try
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td class="dark">' . get_label('User name') . ':</td><td class="light"><input id="form-name" value="' . $user_name . '"></td>';
-	echo '</td><td align="center" valign="top" rowspan="8">';
+	echo '</td><td width="140" align="center" valign="top" rowspan="8">';
 	start_upload_logo_button($user_id);
 	echo get_label('Change picture') . '<br>';
 	$user_pic = new Picture(USER_PICTURE);
@@ -57,7 +57,7 @@ try
 		' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
 		' WHERE ct.id = ?', $_lang, $_lang, $user_city_id);
 	
-	echo '<tr><td class="dark">' . get_label('Email') . ':</td><td class="light"><input id="form-email" value="' . $user_email . '"></td></tr>';
+	echo '<tr><td class="dark" width="140">' . get_label('Email') . ':</td><td class="light"><input id="form-email" value="' . $user_email . '"></td></tr>';
 	
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
 	show_country_input('form-country', $country_name, 'form-city');
@@ -67,29 +67,7 @@ try
 	show_city_input('form-city', $city_name, 'form-country');
 	echo '</td></tr>';
 	
-	// echo '<tr><td>' . get_label('Main club') . ':</td><td>';
-	// show_city_input('form-club', $city_name, 'form-country');
-	// echo '</td></tr>';
-	$is_club_found = false;
-	echo '<tr><td class="dark" valign="top">'.get_label('Main club').':</td><td class="light">';
-	echo '<select id="form-club">';
-	$is_club_found = show_option(0, $club_id, '') || $is_club_found;
-	$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_RETIRED . ') = 0 ORDER BY name');
-	while ($row = $query->next())
-	{
-		list ($c_id, $c_name) = $row;
-		$is_club_found = show_option($c_id, $club_id, $c_name) || $is_club_found;
-	}
-	if (!$is_club_found)
-	{
-		$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_RETIRED . ') <> 0 ORDER BY name');
-		while ($row = $query->next())
-		{
-			list ($c_id, $c_name) = $row;
-			show_option($c_id, $club_id, $c_name);
-		}
-	}
-	echo '</select></td></tr>';
+	echo '<tr><td class="dark" valign="top">' . get_label('Clubs') . ':</td><td class="light"><div id="form-clubs"></div></td></tr>';
 	
 	echo '<tr><td class="dark" valign="top">' . get_label('Gender') . ':</td><td class="light">';
 	if ($user_flags & USER_FLAG_MALE)
@@ -122,7 +100,6 @@ try
 	echo '</td></tr>';
 	
 	echo '<tr><td class="dark">' . get_label('Phone') . ':</td><td class="light"><input id="form-phone" value="' . $user_phone . '"></td></tr>';
-	
 	echo '</table>';
 	
 	echo '<p><input type="checkbox" id="form-message_notify"';
@@ -137,10 +114,59 @@ try
 		echo ' checked';
 	}
 	echo '>'.get_label('I would like to receive emails when someone tags me on a photo.').'</p>';
-	echo '</table>';
 	
 ?>
 	<script>
+	
+	function refreshClubMembership()
+	{
+		http.get("form/club_membership.php?user_id=<?php echo $user_id; ?>", function(html) { $("#form-clubs").html(html); });
+	}
+
+	refreshClubMembership();
+	
+	function joinClub()
+	{
+		json.post("api/ops/user.php",
+		{
+			op: "join_club"
+			, user_id: <?php echo $user_id; ?>
+			, club_id: $('#form-join-club').val()
+		},
+		refreshClubMembership);
+	}
+	
+	function quitClub(clubId)
+	{
+		dlg.yesNo("<?php echo get_label("Are you sure you want to quit club?"); ?>", null, null, function()
+		{
+			json.post("api/ops/user.php",
+			{
+				op: "quit_club"
+				, user_id: <?php echo $user_id; ?>
+				, club_id: clubId
+			},
+			refreshClubMembership);
+		});
+	}
+	
+	function subscribe(clubId, subs)
+	{
+		var o = subs ? "subscribe" : "unsubscribe";
+		json.post("api/ops/user.php",
+		{
+			op: o
+			, user_id: <?php echo $user_id; ?>
+			, club_id: clubId
+		},
+		refreshClubMembership);
+	}
+	
+	function mainClub(clubId)
+	{
+		json.post("api/ops/user.php", { op: 'edit', user_id: <?php echo $user_id; ?>, club_id: clubId }, refreshClubMembership);
+	}
+	
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
@@ -150,7 +176,6 @@ try
 			, user_id: <?php echo $user_id; ?>
 			, name: $("#form-name").val()
 			, email: $("#form-email").val()
-			, club_id: $("#form-club").val()
 			, male: ($("#form-male").attr("checked") ? 1 : 0)
 			, country: $("#form-country").val()
 			, city: $("#form-city").val()

@@ -108,8 +108,6 @@ class ApiPage extends OpsApiPageBase
 		}
 		db_log(LOG_OBJECT_CLUB, 'created', $log_details, $club_id, $club_id);
 
-		$this->response['club_id'] = $club_id;
-		
 		if (!$is_admin)
 		{
 			Db::exec(
@@ -117,10 +115,16 @@ class ApiPage extends OpsApiPageBase
 				'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_REFEREE | USER_PERM_MANAGER) . ')',
 				$_profile->user_id, $club_id);
 			db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $_profile->user_id, $club_id);
+			if ($_profile->user_club_id == NULL)
+			{
+				Db::exec(get_label('user'), 'UPDATE users SET club_id = ? WHERE id = ?', $club_id, $_profile->user_id);
+				$_profile->user_club_id = $club_id;
+			}
 		}
-		
 		$_profile->update_clubs();
 		Db::commit();
+		
+		$this->response['club_id'] = $club_id;
 	}
 	
 	function create_op_help()
