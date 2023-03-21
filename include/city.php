@@ -47,9 +47,19 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 		while ($row = $query->next())
 		{
 			list($admin_id, $admin_name, $admin_email) = $row;
+			$club_name = NULL;
+			if ($_profile->user_club_id != NULL && isset($_profile->clubs[$_profile->user_club_id]))
+			{
+				$club_name = $_profile->clubs[$_profile->user_club_id]->name;
+			}
 			$body =
 				'<p>Hi, ' . $admin_name .
-				'!</p><p>' . $_profile->user_name .
+				'!</p><p>' . $_profile->user_name;
+			if (!is_null($club_name))
+			{
+				body .=	' (' . $club_name . ')';
+			}
+			body .=	
 				' created new city <a href="' . get_server_url() . '/cities.php">' . $city .
 				'</a>.</p><p>Please confirm!</p>';
 			$text_body =
