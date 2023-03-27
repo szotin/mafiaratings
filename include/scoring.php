@@ -1277,7 +1277,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 	}
 	
 	$event_scorings = NULL;
-	if ($tournament_flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING)
+	if (($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 	{
 		$event_scorings = array();
 	}

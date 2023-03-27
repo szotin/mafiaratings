@@ -119,7 +119,6 @@ try
 	echo '<input type="checkbox" id="form-team"> ' . get_label('team tournament') . '<br>';
 	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
 	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '<br>';
-	echo '<input type="checkbox" id="form-use_rounds_scoring"> ' . get_label('scoring rules can be custom in tournament rounds.') . '<br>';
 	echo '<input type="checkbox" id="form-manual_scoring"> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
 	echo '</table>';
 	
@@ -262,9 +261,7 @@ try
 		var type = parseInt($('#form-type').val());
 		var c = $("#form-long_term").attr('checked') ? true : false;
 		$("#form-single_game").prop('checked', c);
-		$("#form-use_rounds_scoring").prop('checked', !c);
 		$("#form-single_game").prop('disabled', !c || type != 0);
-		$("#form-use_rounds_scoring").prop('disabled', c || type != 0);
 		mr.onChangeNormalizer('form-scoring', 0);
 	}
 	
@@ -272,8 +269,6 @@ try
 	{
 		var type = parseInt($('#form-type').val());
 		var c = $("#form-single_game").attr('checked') ? true : false;
-		$("#form-use_rounds_scoring").prop('checked', !c || type != 0);
-		$("#form-use_rounds_scoring").prop('disabled', c || type != 0);
 	}
 	longTermClicked();
 	
@@ -337,7 +332,6 @@ try
 		
 		$("#form-long_term").prop('checked', l).prop('disabled', type != 0);
 		$("#form-single_game").prop('checked', s).prop('disabled', !l || type != 0);
-		$("#form-use_rounds_scoring").prop('checked', r).prop('disabled', (s && l) || type != 0);
 		
 		if (scoringId > 0)
 		{
@@ -355,7 +349,6 @@ try
 		var _flags = 0;
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
-		if ($("#form-use_rounds_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_USE_ROUNDS_SCORING; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		if ($("#form-team").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_TEAM; ?>;
 		

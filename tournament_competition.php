@@ -68,7 +68,7 @@ class Page extends TournamentPageBase
 	
 	protected function show_body()
 	{
-		if ($this->flags & TOURNAMENT_FLAG_USE_ROUNDS_SCORING)
+		if (($this->flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 		{
 			$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS;
 		}

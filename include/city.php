@@ -57,9 +57,9 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 				'!</p><p>' . $_profile->user_name;
 			if (!is_null($club_name))
 			{
-				body .=	' (' . $club_name . ')';
+				$body .=	' (' . $club_name . ')';
 			}
-			body .=	
+			$body .=	
 				' created new city <a href="' . get_server_url() . '/cities.php">' . $city .
 				'</a>.</p><p>Please confirm!</p>';
 			$text_body =
