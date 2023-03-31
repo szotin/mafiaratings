@@ -43,10 +43,10 @@ class Page extends PageBase
 		
 		$this->video_id = (int)$_REQUEST['id'];
 		list(
-			$this->video, $this->title, $this->type, $this->post_time, $this->video_time, $this->club_id, $this->club_name, $this->club_flags, 
+			$this->video, $this->title, $this->post_time, $this->video_time, $this->club_id, $this->club_name, $this->club_flags, 
 			$this->event_id, $this->event_name, $this->event_flags, $this->tour_id, $this->tour_name, $this->tour_flags, $this->game_id, $this->lang, $this->user_id, $this->vtime) = 
 			Db::record(get_label('video'), 
-				'SELECT v.video, v.name, type, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, g.id, v.lang, v.user_id, v.vtime FROM videos v ' .
+				'SELECT v.video, v.name, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, g.id, v.lang, v.user_id, v.vtime FROM videos v ' .
 				' JOIN clubs c ON c.id = v.club_id' .
 				' LEFT OUTER JOIN events e ON e.id = v.event_id' .
 				' LEFT OUTER JOIN games g ON g.video_id = v.id' .
