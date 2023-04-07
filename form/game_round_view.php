@@ -25,6 +25,10 @@ function show_bonus($bonus, $comment)
 	{
 		echo '<td align="right" width="24" title="' . $comment . '"><img src="images/best_move.png"></td>';
 	}
+	else if ($bonus == 'worstMove')
+	{
+		echo '<td align="right" width="24" title="' . $comment . '"><img src="images/worst_move.png"></td>';
+	}
 }
 
 function url_prev($game_id, $round, $is_day)

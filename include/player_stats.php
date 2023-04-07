@@ -37,6 +37,7 @@ class PlayerStats
 	public $rating;
 	public $best_player;
 	public $best_move;
+	public $worst_move;
 	public $bonus;
 	public $guess3maf;
 	public $guess2maf;
@@ -129,6 +130,7 @@ class PlayerStats
 				'SUM(IF(p.checked_by_don >= 0, 1, 0)), SUM(IF(p.checked_by_sheriff >= 0, 1, 0)), ' .
 				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)), ' .
 				'SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)), ' .
+				'SUM(IF((p.flags & ' . SCORING_FLAG_WORST_MOVE . ') <> 0, 1, 0)), ' .
 				'SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)), ' .
 				'SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0)), ' .
 				'SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_1 . ') <> 0, 1, 0)), ' .
@@ -163,13 +165,14 @@ class PlayerStats
 			$this->checked_by_sheriff = $row[18] / $count;
 			$this->best_player = $row[19] / $count;
 			$this->best_move = $row[20] / $count;
-			$this->guess3maf = $row[21] / $count;
-			$this->guess2maf = $row[22] / $count;
-			$this->guess1maf = $row[23] / $count;
-			$this->killed_first_night = $row[24] / $count;
-			$this->sheriff_found_first_night = $row[25] / $count;
-			$this->sheriff_killed_first_night = $row[26] / $count;
-			$this->bonus = $row[27] / $count;
+			$this->worst_move = $row[21] / $count;
+			$this->guess3maf = $row[22] / $count;
+			$this->guess2maf = $row[23] / $count;
+			$this->guess1maf = $row[24] / $count;
+			$this->killed_first_night = $row[25] / $count;
+			$this->sheriff_found_first_night = $row[26] / $count;
+			$this->sheriff_killed_first_night = $row[27] / $count;
+			$this->bonus = $row[28] / $count;
 		}
 		
 		$query = new DbQuery('SELECT p.kill_round, p.kill_type, count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE TRUE', $condition);

@@ -774,7 +774,7 @@ class CommandQueue
 	}
 }
 
-define('CURRENT_VERSION', 1); // must match _version in js/src/game.js
+define('CURRENT_VERSION', 2); // must match _version in js/src/game.js
 
 class ApiPage extends OpsApiPageBase
 {
@@ -967,8 +967,6 @@ class ApiPage extends OpsApiPageBase
 				$gs->tournament_id = 0;
 				$gs->start_time = 0;
 				$gs->end_time = 0;
-				$gs->best_player = -1;
-				$gs->best_move = -1;
 				$gs->guess3 = NULL;
 				$gs->error = NULL;
 				$gs->is_canceled = false;

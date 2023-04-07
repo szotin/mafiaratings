@@ -46,6 +46,10 @@ function show_bonus($bonus)
 	{
 		echo '<img src="images/best_move.png" title="' . get_label('Best move') . '">';
 	}
+	else if ($bonus == 'worstMove')
+	{
+		echo '<img src="images/worst_move.png" title="' . get_label('No auto-bonus') . '">';
+	}
 }
 
 

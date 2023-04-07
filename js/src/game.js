@@ -84,7 +84,7 @@
 //------------------------------------------------------------------------------------------
 var mafia = new function()
 {
-	var _version = 1; // must match CURRENT_VERSION in api/ops/game.php
+	var _version = 2; // must match CURRENT_VERSION in api/ops/game.php
 	var _lDirty = 0;
 	var _gDirty = 0;
 	var _data = null;
@@ -152,6 +152,7 @@ var mafia = new function()
 	
 	this.save = function(forse)
 	{
+		console.log('sdfsdfd');
 		if (typeof forse != "boolean") forse = false;
 		if (_data != null && (_lDirty > 0 || forse))
 		{
@@ -355,6 +356,7 @@ var mafia = new function()
 	
 	this.sync = function(clubId, eventId, success)
 	{
+		console.log('1111');
 		++_syncCount;
 		if (_syncCount > 1 && _syncCount < 5)
 		{
@@ -2194,24 +2196,6 @@ var mafia = new function()
 		_callStateChange(0);
 	}
 	
-	this.bestPlayer = function(num)
-	{
-		var game = _data.game;
-		if (num < 0 || num >= 10) num = -1;
-		game.best_player = num;
-		dirty();
-		_callStateChange(0);
-	}
-	
-	this.bestMove = function(num)
-	{
-		var game = _data.game;
-		if (num < 0 || num >= 10) num = -1;
-		game.best_move = num;
-		dirty();
-		_callStateChange(0);
-	}
-	
 	this.vote = function(num, v)
 	{
 		var game = _data.game;
@@ -2606,8 +2590,6 @@ var mafia = new function()
 			shooting: null,
 			log: null,
 			flags: flags,
-			best_player: -1,
-			best_move: -1,
 			guess3: null,
 			rules_code: rules
 		}
@@ -2626,8 +2608,6 @@ var mafia = new function()
 	this.restart = function()
 	{
 		var game = _data.game;
-		game.best_player = -1;
-		game.best_move = -1;
 		game.guess3 = null;
 		if (!_editing)
 		{
@@ -2796,5 +2776,20 @@ var mafia = new function()
 			return _c;
 		}
 		return 0;
+	}
+	
+	this.setBonus = function(num, obj)
+	{
+		if (num >= 0 && num < 10)
+		{
+			var p = _data.game.players[num];
+			if (obj.bonus)
+				p.bonus = obj.bonus;
+			else if (p.bonus)
+				delete p.bonus;
+			p.extra_points = parseFloat(obj.extra_points);
+			p.comment = obj.comment;
+			dirty();
+		}
 	}
 }

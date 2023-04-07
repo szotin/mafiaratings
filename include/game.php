@@ -146,6 +146,21 @@ class Game
 					{
 						$player->bonus = $p->extra_points;
 					}
+					if (isset($p->bonus))
+					{
+						if (!isset($player->bonus))
+						{
+							$player->bonus = $p->bonus;
+						}
+						else if (is_array($player->bonus))
+						{
+							$player->bonus[] = $p->bonus;
+						}
+						else
+						{
+							$player->bonus = array($player->bonus, $p->bonus);
+						}
+					}
 					if (!empty($p->comment))
 					{
 						$player->comment = $p->comment;
@@ -330,40 +345,6 @@ class Game
 						{
 							$this->data->players[$shoter]->shooting[] = NULL;
 						}
-					}
-				}
-				
-				if ($g->best_player >= 0)
-				{
-					$player = $this->data->players[$g->best_player];
-					if (!isset($player->bonus))
-					{
-						$player->bonus = 'bestPlayer';
-					}
-					else if (is_array($player->bonus))
-					{
-						$player->bonus[] = 'bestPlayer';
-					}
-					else
-					{
-						$player->bonus = array($player->bonus, 'bestPlayer');
-					}
-				}
-				
-				if ($g->best_move >= 0)
-				{
-					$player = $this->data->players[$g->best_move];
-					if (!isset($player->bonus))
-					{
-						$player->bonus = 'bestMove';
-					}
-					else if (is_array($player->bonus))
-					{
-						$player->bonus[] = 'bestMove';
-					}
-					else
-					{
-						$player->bonus = array($player->bonus, 'bestMove');
 					}
 				}
 			}
@@ -3341,7 +3322,7 @@ class Game
 			Game::add_time_help($param2, 'the player got warning');
 			$param1->sub_param('don', 'The round (starting from 0) when the don checked this player.', 'either the player was not checked by don, or the game has no don checking information (<b>g</b> is missing from the "features")');
 			$param1->sub_param('sheriff', 'The round (starting from 0) when the sheriff checked this player.', 'either the player was not checked by sheriff, or the game has no sheriff checking information (<b>s</b> is missing from the "features")');
-			$param1->sub_param('bonus', 'either number of bonus points for the game, or "bestPlayer", or "bestMove", or an array with any combination of these three.', 'there is no bonus for the player');
+			$param1->sub_param('bonus', 'either number of bonus points for the game, or "bestPlayer", or "bestMove", or "worstMove", or an array with any combination of these three.', 'there is no bonus for the player');
 			$param1->sub_param('legacy', 'When player dies the first night (or any other night by some rules) they can leave a legacy (aka best move, or prima nota). In this case a player will have a field "legacy" with an array of integers.', 'either the player was not shot the first night, or the player did not leave a legacy, or there is no legacy information in the game (<b>l</b> is missing from the "features").');
 			$param1->sub_param('comment', 'Moderator comment on the player. It is normally set for the players who have bonus. But it can be set for any player.', 'there is no moderator comment');
 			$param1->sub_param('voting', 'How the player was voting. An array per round. For example suppose "voting" is [null, 10, [5,5,true]]. The meaning of it is:<ul><li>In round 0 - null. The player did not vote. Apparently no one, or only one was nominated.</li><li>In round 1 - 10. The player voted for player number 10.</li><li>In round 2 - [5,5,true]. The player voted two times for player number 5 and then voted yes to kill all players in the split.</li></ul>', 'either the player never voted in the game, or the game does not contain voting information (<b>v</b> is missing from the "features")');

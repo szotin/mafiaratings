@@ -104,6 +104,7 @@ class Page extends PageBase
 				<?php echo '"' . SCORING_FLAG_CLEAR_LOSE . '": "' . $for . get_label('clear loosing (all day-kills were from the player\'s team)') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_BEST_PLAYER . '": "' . $for . get_label('being the best player') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_BEST_MOVE . '": "' . $for . get_label('the best move') . '"'; ?>,
+				<?php echo '"' . SCORING_FLAG_WORST_MOVE . '": "' . $for . get_label('removed auto-bonus') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_SURVIVE . '": "' . $for . get_label('surviving the game') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_KILLED_FIRST_NIGHT . '": "' . $for . get_label('being killed the first night') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_KILLED_NIGHT . '": "' . $for . get_label('being killed in the night') . '"'; ?>,

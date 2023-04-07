@@ -48,6 +48,7 @@ define('SCORING_FLAG_BLACK_CHECKS', 0x100000); // 1048576: Matter 20 - Sheriff d
 define('SCORING_FLAG_RED_CHECKS', 0x200000); // 2097152: Matter 21 - All sheriff checks are red
 define('SCORING_FLAG_EXTRA_POINTS', 0x400000); // 4194304: Matter 22 - Player has manually assigned extra points
 define('SCORING_FLAG_FIRST_LEGACY_1', 0x800000); // 8388608: Matter 23 - Guessed 1 mafia after being killed first night
+define('SCORING_FLAG_WORST_MOVE', 0x1000000); // 16777216: Matter 24 - Worst move
 
 define('SCORING_STAT_FLAG_GAME_DIFFICULTY', 0x1);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING', 0x2);
@@ -108,7 +109,17 @@ function format_score($score, $zeroes = true)
 		return '';
 	}
 	
-	$int_score = (int)($score * 100);
+	$int_score = (int)($score * 1000);
+	if ($int_score % 10 >= 5)
+	{
+		$int_score /= 10;
+		$int_score += 1;
+	}
+	else
+	{
+		$int_score /= 10;
+	}
+	
 	if (($int_score % 10) != 0)
 	{
 		return number_format($score, 2);
@@ -1738,6 +1749,9 @@ function get_scoring_matter_label($policy, $include_roles = false)
 				break;
 			case SCORING_FLAG_FIRST_LEGACY_1:
 				$l = get_label('guessing [0] mafia (after being killed the first night)', 1);
+				break;
+			case SCORING_FLAG_WORST_MOVE:
+				$l = get_label('removed auto-bonus');
 				break;
 		}
 		if ($delim == NULL)

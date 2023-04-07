@@ -155,6 +155,7 @@ class ApiPage extends GetApiPageBase
 		$query = new DbQuery(
 			'SELECT COUNT(*), SUM(p.won), SUM(p.rating_earned), SUM(IF((p.flags & ' . SCORING_FLAG_BEST_PLAYER . ') <> 0, 1, 0)),' .
 			' SUM(IF((p.flags & ' . SCORING_FLAG_BEST_MOVE . ') <> 0, 1, 0)),' .
+			' SUM(IF((p.flags & ' . SCORING_FLAG_WORST_MOVE . ') <> 0, 1, 0)),' .
 			' SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0, 1, 0)),' .
 			' SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_2 . ') <> 0, 1, 0)),' .
 			' SUM(IF((p.flags & ' . SCORING_FLAG_FIRST_LEGACY_1 . ') <> 0, 1, 0)),' .
@@ -165,12 +166,13 @@ class ApiPage extends GetApiPageBase
 			' FROM players p JOIN games g ON  p.game_id = g.id WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0', $user_id, $condition);
 		if ($row = $query->next())
 		{
-			list ($games, $won, $rating, $best_player, $best_move, $guess_3_maf, $guess_2_maf, $guess_1_maf, $warinigs, $voted_civ, $voted_maf, $voted_sheriff, $voted_by_civ, $voted_by_maf, $voted_by_sheriff, $nominated_civ, $nominated_maf, $nominated_sheriff, $nominated_by_civ, $nominated_by_maf, $nominated_by_sheriff, $arranged, $arranged_1_night, $checked_by_don, $checked_by_sheriff) = $row;
+			list ($games, $won, $rating, $best_player, $best_move, $worst_move, $guess_3_maf, $guess_2_maf, $guess_1_maf, $warinigs, $voted_civ, $voted_maf, $voted_sheriff, $voted_by_civ, $voted_by_maf, $voted_by_sheriff, $nominated_civ, $nominated_maf, $nominated_sheriff, $nominated_by_civ, $nominated_by_maf, $nominated_by_sheriff, $arranged, $arranged_1_night, $checked_by_don, $checked_by_sheriff) = $row;
 			$this->response['games'] = (int)$games;
 			$this->response['won'] = (int)$won;
 			$this->response['rating'] = (float)$rating;
 			$this->response['best_player'] = (int)$best_player;
 			$this->response['best_move'] = (int)$best_move;
+			$this->response['worst_move'] = (int)$worst_move;
 			$this->response['guess_3_maf'] = (int)$guess_3_maf;
 			$this->response['guess_2_maf'] = (int)$guess_2_maf;
 			$this->response['warinigs'] = (int)$warinigs;
@@ -238,6 +240,7 @@ class ApiPage extends GetApiPageBase
 		$help->response_param('rating', 'Rating earned in the selected games.');
 		$help->response_param('best_player', 'How many times the player was the best player in the selected games.');
 		$help->response_param('best_move', 'How many times the player made the best move in the selected games.');
+		$help->response_param('worst_move', 'How many times the player made the worst move (aka auto-bonus was removed) in the selected games.');
 		$help->response_param('guess_3_maf', 'How many times the player guessed all 3 mafs after being killed the first night.');
 		$help->response_param('guess_2_maf', 'How many times the player guessed 2 out of 3 mafs after being killed the first night.');
 		$help->response_param('warinigs', 'How many warnings the player got in the selected games.');

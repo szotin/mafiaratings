@@ -147,19 +147,30 @@ class GamePlayersStats
 						{
 							$player->scoring_flags |= SCORING_FLAG_BEST_PLAYER;
 						}
-						else if ($bonus == 'bestMove')
+						if ($bonus == 'bestMove')
 						{
 							$player->scoring_flags |= SCORING_FLAG_BEST_MOVE;
 						}
+						if ($bonus == 'worstMove')
+						{
+							$player->scoring_flags |= SCORING_FLAG_WORST_MOVE;
+						}
 					}
 				}
-				else if ($game_player->bonus == 'bestPlayer')
+				else
 				{
-					$player->scoring_flags |= SCORING_FLAG_BEST_PLAYER;
-				}
-				else if ($game_player->bonus == 'bestMove')
-				{
-					$player->scoring_flags |= SCORING_FLAG_BEST_MOVE;
+					if ($game_player->bonus == 'bestPlayer')
+					{
+						$player->scoring_flags |= SCORING_FLAG_BEST_PLAYER;
+					}
+					if ($game_player->bonus == 'bestMove')
+					{
+						$player->scoring_flags |= SCORING_FLAG_BEST_MOVE;
+					}
+					if ($game_player->bonus == 'worstMove')
+					{
+						$player->scoring_flags |= SCORING_FLAG_WORST_MOVE;
+					}
 				}
 			}
 			

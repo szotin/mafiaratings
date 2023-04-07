@@ -659,13 +659,17 @@ mafia.ui = new function()
 					html += ' title="' + player.comment + '"';
 				}
 				html += '><td>';
-				if (i == game.best_player)
+				if (player.bonus == 'bestPlayer')
 				{
 					html += ' <img src="images/best_player.png" width="24">';
 				}
-				if (i == game.best_move)
+				else if (player.bonus == 'bestMove')
 				{
 					html += ' <img src="images/best_move.png" width="24">';
+				}
+				else if (player.bonus == 'worstMove')
+				{
+					html += ' <img src="images/worst_move.png" width="24">';
 				}
 				html += '</td><td align="right">';
 				if (player.extra_points)
@@ -1501,24 +1505,25 @@ mafia.ui = new function()
 	this.back = mafia.back;
 	this.save = mafia.save;
 	
-	this.bestClicked = function(player)
+	this.bestClicked = function(type)
 	{
-		var clicked = '#dlg-bm';
-		var other = '#dlg-bp';
-		if (player)
+		switch (type)
 		{
-			var t = clicked;
-			clicked = other;
-			other = t;
-		}
-		
-		if ($(clicked).attr("checked"))
-			$(clicked).attr("checked", false);
-		else
-		{
-			$(clicked).attr("checked", true);
-			if ($(other).attr("checked"))
-				$(other).attr("checked", false);
+			case 0:
+				$('#dlg-bp').attr("checked", !$('#dlg-bp').attr("checked"));
+				$('#dlg-bm').attr("checked", false);
+				$('#dlg-wm').attr("checked", false);
+				break;
+			case 1:
+				$('#dlg-bp').attr("checked", false);
+				$('#dlg-bm').attr("checked", !$('#dlg-bm').attr("checked"));
+				$('#dlg-wm').attr("checked", false);
+				break;
+			case 2:
+				$('#dlg-bp').attr("checked", false);
+				$('#dlg-bm').attr("checked", false);
+				$('#dlg-wm').attr("checked", !$('#dlg-wm').attr("checked"));
+				break;
 		}
 	}
 	
@@ -1535,8 +1540,7 @@ mafia.ui = new function()
 			obj = function() {};
 			obj.comment = p.comment;
 			obj.extra_points = p.extra_points;
-			obj.bp = (game.best_player == num);
-			obj.bm = (game.best_move == num);
+			obj.bonus = p.bonus;
 		}
 		else
 			ph = l('CommentPh');
@@ -1548,11 +1552,13 @@ mafia.ui = new function()
 		{
 			html += ' value="' + obj.extra_points + '"';
 		}
-		html += '></td><td align="right"><button id="dlg-bp" class="best" onclick="mafia.ui.bestClicked(1)"';
-		if (obj.bp) html += ' checked';
-		html += '><img src="images/best_player.png" width="24" title="' + l('BestPlayer') + '"></button><button id="dlg-bm" class="best" onclick="mafia.ui.bestClicked(0)"';
-		if (obj.bm) html += ' checked';
-		html += '><img src="images/best_move.png" width="24" title="' + l('BestMove') + '"></button></td></tr></table></td></tr>';
+		html += '></td><td align="right"><button id="dlg-bp" class="best" onclick="mafia.ui.bestClicked(0)"';
+		if (obj.bonus == "bestPlayer") html += ' checked';
+		html += '><img src="images/best_player.png" width="24" title="' + l('BestPlayer') + '"></button><button id="dlg-bm" class="best" onclick="mafia.ui.bestClicked(1)"';
+		if (obj.bonus == "bestMove") html += ' checked';
+		html += '><img src="images/best_move.png" width="24" title="' + l('BestMove') + '"></button><button id="dlg-wm" class="best" onclick="mafia.ui.bestClicked(2)"';
+		if (obj.bonus == "worstMove") html += ' checked';
+		html += '><img src="images/worst_move.png" width="24" title="' + l('WorstMove') + '"></button></td></tr></table></td></tr>';
 		html += '<tr><td valign="top">' + l('Comment') + ':</td><td><textarea id="dlg-comment" placeholder="' + ph + '" cols="50" rows="8">';
 		if (obj.comment)
 		{
@@ -1565,33 +1571,22 @@ mafia.ui = new function()
 		{
 			obj.comment = $('#dlg-comment').val();
 			obj.extra_points = $("#dlg-points").val();
-			obj.bp = $("#dlg-bp").attr("checked");
-			obj.bm = $("#dlg-bm").attr("checked");
+			if ($("#dlg-bp").attr("checked"))
+				obj.bonus = "bestPlayer";
+			else if ($("#dlg-bm").attr("checked"))
+				obj.bonus = "bestMove";
+			else if ($("#dlg-wm").attr("checked"))
+				obj.bonus = "worstMove";
+			else if (obj.bonus)
+				delete obj.bonus;
 			
-			if ((obj.bp || obj.bm || obj.extra_points != 0) && !obj.comment)
+			if ((obj.bonus || obj.extra_points != 0) && !obj.comment)
 			{
 				mafia.ui.extraPoints(num, obj);
 			}
-			else
+			else 
 			{
-				if (obj.bp)
-				{
-					mafia.bestPlayer(num);
-				}
-				else if (game.best_player == num)
-				{
-					mafia.bestPlayer(-1);
-				}
-				if ($("#dlg-bm").attr("checked"))
-				{
-					mafia.bestMove(num);
-				}
-				else if (game.best_move == num)
-				{
-					mafia.bestMove(-1);
-				}
-				p.extra_points = parseFloat(obj.extra_points);
-				p.comment = obj.comment;
+				mafia.setBonus(num, obj);
 				mafia.ui.sync(0);
 			}
 		});

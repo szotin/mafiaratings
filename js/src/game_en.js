@@ -82,6 +82,7 @@ _l["ExtraPoints"] = "Extra points";
 _l["ExtraPointsFor"] = "{1}. Extra points.";
 _l["BestPlayer"] = "best player";
 _l["BestMove"] = "best move";
+_l["WorstMove"] = "no auto-bonus";
 _l["MafWin"] = "Mafia Wins! You can give last speech to the killed player.";
 _l["CivWin"] = "Civilians Win! You can give last speech to the killed player.";
 _l["FreeDisc"] = "Free discussion.";
