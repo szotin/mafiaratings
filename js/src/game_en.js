@@ -178,3 +178,4 @@ _l["Instr3"] = "Enter the next URL in the URL field:";
 _l["Instr3a"] = "For players photos";
 _l["Instr3b"] = "For game statistics - nominees/checks";
 _l["Instr4"] = "Configure other parameters and click ok. Don\'t panic if it shows nothing. The information will appear once you start the game in this tournament/event using the specified user account.";
+_l["Leave"] = "Remove player {1}";

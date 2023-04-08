@@ -92,6 +92,9 @@ button.best[checked] { border: 1px solid #909090; padding: 0px; background-color
 button.best[disabled] { border: 1px solid #909090; padding: 0px; color: #808080; background-color: transparent; }
 button.best:active { border: 1px inset #dddddd; padding: 0px;  }
 
+button.leave { border: 1px outset #dddddd; height: 40px; width: 280px; margin: 0px; padding: 1px; color: #303030; background-color: #d0dddd; font-family: inherit; font-size: inherit; }
+button.leave:active { border: 1px inset #dddddd; padding: 0px;  }
+
 #info { font-weight:bold; }
 #clock { text-align:right; padding:0px; margin:0px; }
 #demo { text-align:center; vertical-align: center; top:200px; position: absolute; left:0; width:100%; margin:0; border-style: none; font-size: 15em; font-weight:bold; opacity: 0.3; display:none; pointer-events:none; }

@@ -432,11 +432,10 @@ mafia.ui = new function()
 					'<td id="panel' + i + '" width="114"></td>' +
 					'<td id="control' + i + '" width="160"></td>' +
 					'<td id="warn' + i + '" width="100"></td>' +
-					'<td width="90">' +
+					'<td width="60">' +
 						'<span id="btns-' + i + '">' +
 							'<button class="icon" onclick="mafia.warnPlayer(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
-							'<button class="icon" onclick="mafia.giveUp(' + i + ')"><img src="images/suicide.png" title="' + l('GiveUp') + '"></button>' +
-							'<button class="icon" onclick="mafia.kickOut(' + i + ')"><img src="images/delete.png"" title="' + l('KickOut') + '"></button>' +
+							'<button class="icon" onclick="mafia.ui.leaveGame(' + i + ')"><img src="images/suicide.png" title="' + l('GiveUp') + '"></button>' +
 						'</span>' +
 					'</td>' +
 				'</tr>';
@@ -1869,6 +1868,11 @@ mafia.ui = new function()
 	{
 		obsForm.show();
 	}
+	
+	this.leaveGame = function(num)
+	{
+		leaveGameForm.show(num);
+	}
 } // mafia.ui
 
 var obsForm = new function()
@@ -2657,5 +2661,30 @@ var gameStartForm = new function()
 	}
 } // gameStartForm
 
+var leaveGameForm = new function()
+{
+	this.show = function(num)
+	{
+		var html = 
+			'<p><button class="leave" onclick="leaveGameForm.giveUp(' + num + ')"><table class="transp" width="100%"><tr><td width="30"><img src="images/suicide.png"></td><td>' + l('GiveUp') + '</td></tr></table></button></p>' +
+			'<p><button class="leave" onclick="leaveGameForm.kickOut(' + num + ')"><table class="transp" width="100%"><tr><td width="30"><img src="images/delete.png"></td><td>' + l('KickOut') + '</td></tr></table></button></p>';
+		dlg.custom(html, l('Leave', num + 1), 300, {});
+	}
+	
+	this.giveUp = function(num)
+	{
+		var dlgId = dlg.curId();
+		mafia.giveUp(num);
+		dlg.close(dlgId);
+	}
+	
+	this.kickOut = function(num)
+	{
+		var dlgId = dlg.curId();
+		mafia.kickOut(num);
+		dlg.close(dlgId);
+	}
+	
+} // gameStartForm
 
 setInterval(timer.tick, 1000);

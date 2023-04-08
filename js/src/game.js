@@ -152,7 +152,6 @@ var mafia = new function()
 	
 	this.save = function(forse)
 	{
-		console.log('sdfsdfd');
 		if (typeof forse != "boolean") forse = false;
 		if (_data != null && (_lDirty > 0 || forse))
 		{
@@ -356,7 +355,6 @@ var mafia = new function()
 	
 	this.sync = function(clubId, eventId, success)
 	{
-		console.log('1111');
 		++_syncCount;
 		if (_syncCount > 1 && _syncCount < 5)
 		{
