@@ -622,7 +622,7 @@ mafia.ui = new function()
 		else if (game.gamestate == /*GAME_STATE_END*/25)
 		{
 			mafia.ui.fillUsers();
-			n = (mafia.playersCount(false) > 0);
+			n = (mafia.checkGameEnd() == /*GAME_STATE_MAFIA_WON*/17);
 			var dStyle = n ? 'night-' : 'day-';
 			var eStyle = dStyle + 'empty';
 			$('#r-1').removeClass().addClass(eStyle);
@@ -2667,7 +2667,8 @@ var leaveGameForm = new function()
 	{
 		var html = 
 			'<p><button class="leave" onclick="leaveGameForm.giveUp(' + num + ')"><table class="transp" width="100%"><tr><td width="30"><img src="images/suicide.png"></td><td>' + l('GiveUp') + '</td></tr></table></button></p>' +
-			'<p><button class="leave" onclick="leaveGameForm.kickOut(' + num + ')"><table class="transp" width="100%"><tr><td width="30"><img src="images/delete.png"></td><td>' + l('KickOut') + '</td></tr></table></button></p>';
+			'<p><button class="leave" onclick="leaveGameForm.kickOut(' + num + ')"><table class="transp" width="100%"><tr><td width="30"><img src="images/delete.png"></td><td>' + l('KickOut') + '</td></tr></table></button></p>' +
+			'<p><button class="leave" onclick="leaveGameForm.teamKickOut(' + num + ')"><table class="transp" width="100%"><tr><td width="30"><img src="images/skull.png"></td><td>' + l('TeamKickOut') + '</td></tr></table></button></p>';
 		dlg.custom(html, l('Leave', num + 1), 300, {});
 	}
 	
@@ -2682,6 +2683,13 @@ var leaveGameForm = new function()
 	{
 		var dlgId = dlg.curId();
 		mafia.kickOut(num);
+		dlg.close(dlgId);
+	}
+	
+	this.teamKickOut = function(num)
+	{
+		var dlgId = dlg.curId();
+		mafia.teamKickOut(num);
 		dlg.close(dlgId);
 	}
 	

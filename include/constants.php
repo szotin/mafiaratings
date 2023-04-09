@@ -373,4 +373,12 @@ define('ROLE_SHERIFF', 1);
 define('ROLE_MAFIA', 2);
 define('ROLE_DON', 3);
 
+define('KILL_TYPE_SURVIVED', 0);
+define('KILL_TYPE_DAY', 1);
+define('KILL_TYPE_NIGHT', 2);
+define('KILL_TYPE_WARNINGS', 3);
+define('KILL_TYPE_GIVE_UP', 4);
+define('KILL_TYPE_KICK_OUT', 5);
+define('KILL_TYPE_TEAM_KICK_OUT', 6);
+
 ?>

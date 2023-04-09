@@ -208,9 +208,7 @@ class GamePlayersStats
 				}
 				else if ($death_type == DEATH_TYPE_TEAM_KICK_OUT)
 				{
-					// There is no special flag for this yet.
-					// We set SCORING_FLAG_KICK_OUT, but for the future this flag is needed.
-					$player->scoring_flags |= SCORING_FLAG_KICK_OUT;
+					$player->scoring_flags |= SCORING_FLAG_TEAM_KICK_OUT;
 				}
 			}
 			
@@ -374,25 +372,25 @@ class GamePlayersStats
 			switch ($death_type)
 			{
 				case DEATH_TYPE_GIVE_UP:
-					$player->kill_type = 4;
+					$player->kill_type = KILL_TYPE_GIVE_UP;
 					break;
 				case DEATH_TYPE_WARNINGS:
-					$player->kill_type = 3;
+					$player->kill_type = KILL_TYPE_WARNINGS;
 					break;
 				case DEATH_TYPE_KICK_OUT:
-					$player->kill_type = 5;
+					$player->kill_type = KILL_TYPE_KICK_OUT;
 					break;
 				case DEATH_TYPE_TEAM_KICK_OUT:
-					$player->kill_type = 5; // the code should be 6, but we don't know how it affects the existing code
+					$player->kill_type = KILL_TYPE_TEAM_KICK_OUT;
 					break;
 				case DEATH_TYPE_NIGHT:
-					$player->kill_type = 2;
+					$player->kill_type = KILL_TYPE_NIGHT;
 					break;
 				case DEATH_TYPE_DAY:
-					$player->kill_type = 1;
+					$player->kill_type = KILL_TYPE_DAY;
 					break;
 				default:
-					$player->kill_type = 0;
+					$player->kill_type = KILL_TYPE_SURVIVED;
 					break;
 			}
 			

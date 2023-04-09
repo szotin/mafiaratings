@@ -9,6 +9,7 @@
 // /*LOGREC_TYPE_POSTPONE_MUTE*/5
 // /*LOGREC_TYPE_CANCEL_VOTING*/6
 // /*LOGREC_TYPE_RESUME_VOTING*/7
+// /*LOGREC_TYPE_TEAM_KICK_OUT*/8
 
 // /*EVENT_FLAG_CANCELED*/4
 // /*EVENT_FLAG_ALL_CAN_REFEREE*/8
@@ -28,6 +29,7 @@
 // /*PLAYER_KR_GIVE_UP*/1
 // /*PLAYER_KR_WARNINGS*/2
 // /*PLAYER_KR_KICKOUT*/3
+// /*PLAYER_KR_TEAM_KICKOUT*/4
 
 // /*U_PERM_PLAYER*/1
 // /*U_PERM_MODER*/2
@@ -84,7 +86,7 @@
 //------------------------------------------------------------------------------------------
 var mafia = new function()
 {
-	var _version = 2; // must match CURRENT_VERSION in api/ops/game.php
+	var _version = 3; // must match CURRENT_VERSION in api/ops/game.php
 	var _lDirty = 0;
 	var _gDirty = 0;
 	var _data = null;
@@ -1076,24 +1078,31 @@ var mafia = new function()
 
 		if (player.state != /*PLAYER_STATE_ALIVE*/0)
 		{
-			var maf_count = 0;
-			var civ_count = 0;
-			for (var i = 0; i < 10; ++i)
-			{
-				var p = game.players[i];
-				if (p.state == /*PLAYER_STATE_ALIVE*/0)
-				{
-					if (p.role <= /*ROLE_SHERIFF*/1)
-						++civ_count;
-					else
-						++maf_count;
-				}
-			}
-		
-			// check if the game is over
-			if (maf_count <= 0 || civ_count <= maf_count)
+			if (reason == /*PLAYER_KR_TEAM_KICKOUT*/4)
 			{
 				game.gamestate = /*GAME_STATE_END*/25;
+			}
+			else
+			{
+				var maf_count = 0;
+				var civ_count = 0;
+				for (var i = 0; i < 10; ++i)
+				{
+					var p = game.players[i];
+					if (p.state == /*PLAYER_STATE_ALIVE*/0)
+					{
+						if (p.role <= /*ROLE_SHERIFF*/1)
+							++civ_count;
+						else
+							++maf_count;
+					}
+				}
+			
+				// check if the game is over
+				if (maf_count <= 0 || civ_count <= maf_count)
+				{
+					game.gamestate = /*GAME_STATE_END*/25;
+				}
 			}
 		}
 	}
@@ -1405,6 +1414,46 @@ var mafia = new function()
 			}
 		}
 		return count;
+	}
+	
+	this.checkGameEnd = function()
+	{
+		var game = _data.game;
+		var maf_count = 0;
+		var civ_count = 0;
+		for (var i = 0; i < 10; ++i)
+		{
+			var p = game.players[i];
+			if (p.state == /*PLAYER_STATE_ALIVE*/0)
+			{
+				if (p.role <= /*ROLE_SHERIFF*/1)
+				{
+					++civ_count;
+				}
+				else
+				{
+					++maf_count;
+				}
+			}
+			else if (p.kill_reason == /*PLAYER_KR_TEAM_KICKOUT*/4)
+			{
+				if (p.role <= /*ROLE_SHERIFF*/1)
+				{
+					return /*GAME_STATE_MAFIA_WON*/17;
+				}
+				return /*GAME_STATE_CIVIL_WON*/18;
+			}
+		}
+		
+		if (maf_count <= 0)
+		{
+			return /*GAME_STATE_CIVIL_WON*/18;
+		}
+		else if (maf_count >= civ_count)
+		{
+			return /*GAME_STATE_MAFIA_WON*/17;
+		}
+		return 0;
 	}
 	
 	this.generateRoles = function(forse)
@@ -1744,14 +1793,7 @@ var mafia = new function()
 				break;
 				
 			case /*GAME_STATE_END*/25:
-				if (mafia.playersCount(false) <= 0)
-				{
-					game.gamestate = /*GAME_STATE_CIVIL_WON*/18;
-				}
-				else
-				{
-					game.gamestate = /*GAME_STATE_MAFIA_WON*/17;
-				}
+				game.gamestate = mafia.checkGameEnd();
 				mafia.submit();
 				
 			case /*GAME_STATE_MAFIA_WON*/17:
@@ -1794,7 +1836,7 @@ var mafia = new function()
 					--player.warnings;
 				}
 			}
-			else if (logRec.type == /*LOGREC_TYPE_GIVE_UP*/3 || logRec.type == /*LOGREC_TYPE_KICK_OUT*/4)
+			else if (logRec.type == /*LOGREC_TYPE_GIVE_UP*/3 || logRec.type == /*LOGREC_TYPE_KICK_OUT*/4 || logRec.type == /*LOGREC_TYPE_TEAM_KICK_OUT*/8)
 			{
 				_resurrectPlayer(logRec.player);
 			}
@@ -2414,6 +2456,32 @@ var mafia = new function()
 			player: num
 		};
 		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_KICKOUT*/3, game.round);
+		_gameStep(0, logRec);
+	}
+
+	this.teamKickOut = function(num)
+	{
+		var game = _data.game;
+		switch (game.gamestate)
+		{
+			case /*GAME_STATE_MAFIA_WON*/17:
+			case /*GAME_STATE_CIVIL_WON*/18:
+			case /*GAME_STATE_BEST_PLAYER*/22:
+			case /*GAME_STATE_BEST_MOVE*/23:
+			case /*GAME_STATE_END*/25:
+				return;
+		}
+
+		var logRec = 
+		{
+			type: /*LOGREC_TYPE_TEAM_KICK_OUT*/8,
+			round: game.round,
+			gamestate: game.gamestate,
+			player_speaking: game.player_speaking,
+			current_nominant: game.current_nominant,
+			player: num
+		};
+		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_TEAM_KICKOUT*/4, game.round);
 		_gameStep(0, logRec);
 	}
 

@@ -1508,7 +1508,6 @@ $labelMenu = array (
 'Current game' => 'Текущая игра', // current_game.php
 'Unable to change tournament type because the tournament has already started.' => 'Нельзя менять турнир, потому что он уже начался.', // api/ops/tournament.php
 'Auto-bonus removed' => 'Автодопы сняты', // event_player.php, series_player.php, tournament_player.php, user_stats.php, view_game.php
-'auto-bonus removed' => 'автодопы сняты', // scoring.php
 'Are you sure you want to quit club?' => 'Вы уверены, что хотите выйти из клуба?', // form/account_edit.php
 'Join club' => 'Вступить в клуб', // form/club_membership.php
 'Quit club [0]' => 'Выйти из клуба [0]', // form/club_membership.php
@@ -1517,6 +1516,7 @@ $labelMenu = array (
 'Revoke [0] as a main club of [1]' => 'Отказаться от [0] в качестве основного клуба игрока [1]', // form/club_membership.php
 'Set [0] as a main club of [1]' => 'Назначить [0] основным клубом для [1]', // form/club_membership.php
 'No auto-bonus' => 'Сняты автодопы', // form/game_player_view.php
+'removed auto-bonus' => 'снятые авто-допы', // scoring.php, include/scoring.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1530,7 +1530,9 @@ $labelMenu = array (
 'during [0]\'s last speech' => 'во время последней речи [0]', // include/game.php, include/game.php
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
-'removed auto-bonus' => 'снятые авто-допы', // include/scoring.php
+'Made the opposite team win' => 'Сделал ППК', // event_player.php, series_player.php, tournament_player.php, user_stats.php
+'making the opposite team win' => 'ППК', // scoring.php, include/scoring.php
+'at unknown time' => 'неизвестно когда в игре', // include/game.php
 );
 
 return $labelMenu;

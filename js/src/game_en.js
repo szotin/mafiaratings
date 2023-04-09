@@ -166,6 +166,7 @@ _l["Rating"] = "rating game";
 _l["Warn"] = "Give player a warning";
 _l["GiveUp"] = "The player gives up and quits the game (no penalty)";
 _l["KickOut"] = "Kick out the player from the game.";
+_l["TeamKickOut"] = "Kick out player and defeat their team.";
 _l["Confirm"] = "The game is about to be saved to the server. Please check that everything is right.";
 _l["Comment"] = "Comment";
 _l["CommentPh"] = "You must enter comment if you give a player extra points or best player/move title.";

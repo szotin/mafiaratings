@@ -1508,7 +1508,6 @@ $labelMenu = array (
 'Current game' => '[EMPTY]', // current_game.php, current_game.php
 'Unable to change tournament type because the tournament has already started.' => '[EMPTY]', // api/ops/tournament.php, api/ops/tournament.php
 'Auto-bonus removed' => '[EMPTY]', // event_player.php, series_player.php, tournament_player.php, user_stats.php, view_game.php, event_player.php, series_player.php, tournament_player.php, user_stats.php, view_game.php
-'auto-bonus removed' => '[EMPTY]', // scoring.php, scoring.php
 'Are you sure you want to quit club?' => '[EMPTY]', // form/account_edit.php, form/account_edit.php
 'Join club' => '[EMPTY]', // form/club_membership.php, form/club_membership.php
 'Quit club [0]' => '[EMPTY]', // form/club_membership.php, form/club_membership.php
@@ -1517,6 +1516,7 @@ $labelMenu = array (
 'Revoke [0] as a main club of [1]' => '[EMPTY]', // form/club_membership.php, form/club_membership.php
 'Set [0] as a main club of [1]' => '[EMPTY]', // form/club_membership.php, form/club_membership.php
 'No auto-bonus' => '[EMPTY]', // form/game_player_view.php, form/game_player_view.php
+'removed auto-bonus' => '[EMPTY]', // scoring.php, include/scoring.php, scoring.php, include/scoring.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php, event_screen.php
@@ -1530,7 +1530,9 @@ $labelMenu = array (
 'during [0]\'s last speech' => 'во время последней речи [0]', // include/game.php, include/game.php, include/game.php, include/game.php
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php, include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php, view_game.php
-'removed auto-bonus' => '[EMPTY]', // include/scoring.php
+'Made the opposite team win' => '[EMPTY]', // event_player.php, series_player.php, tournament_player.php, user_stats.php
+'making the opposite team win' => '[EMPTY]', // scoring.php, include/scoring.php
+'at unknown time' => '[EMPTY]', // include/game.php
 );
 
 return $labelMenu;

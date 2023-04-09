@@ -539,23 +539,26 @@ class Page extends SeriesPageBase
 			{
 				switch ($surviving->type)
 				{
-					case SURVIVED:
+					case KILL_TYPE_SURVIVED:
 						echo '<tr><td class="dark" width="300">'.get_label('Survived').':</td><td>';
 						break;
-					case DAY_KILL:
+					case KILL_TYPE_DAY:
 						echo '<tr><td class="dark" width="300">'.get_label('Killed in day').' ' . $surviving->round . ':</td><td>';
 						break;
-					case NIGHT_KILL:
+					case KILL_TYPE_NIGHT:
 						echo '<tr><td class="dark" width="300">'.get_label('Killed in night').' ' . $surviving->round . ':</td><td>';
 						break;
-					case WARNINGS_KILL:
+					case KILL_TYPE_WARNINGS:
 						echo '<tr><td class="dark" width="300">'.get_label('Killed by warnings in round').' ' . $surviving->round . ':</td><td>';
 						break;
-					case GIVE_UP_KILL:
+					case KILL_TYPE_GIVE_UP:
 						echo '<tr><td class="dark" width="300">'.get_label('Left the game in round').' ' . $surviving->round . ':</td><td>';
 						break;
-					case KICK_OUT_KILL:
+					case KILL_TYPE_KICK_OUT:
 						echo '<tr><td class="dark" width="300">'.get_label('Kicked out in round').' ' . $surviving->round . ':</td><td>';
+						break;
+					case KILL_TYPE_TEAM_KICK_OUT:
+						echo '<tr><td class="dark" width="300">'.get_label('Made the opposite team win').' ' . $surviving->round . ':</td><td>';
 						break;
 					default:
 						echo '<tr><td class="dark" width="300">'.get_label('Round').' ' . $surviving->round . ':</td><td>';

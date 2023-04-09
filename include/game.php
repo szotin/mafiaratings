@@ -212,6 +212,9 @@ class Game
 							case 3 /*KILL_REASON_KICK_OUT*/:
 								$player->death->type = DEATH_TYPE_KICK_OUT;
 								break;
+							case 4 /*KILL_REASON_TEAM_KICK_OUT*/:
+								$player->death->type = DEATH_TYPE_TEAM_KICK_OUT;
+								break;
 							case 0 /*KILL_REASON_NORMAL*/:
 							default:
 								if ($p->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/)
@@ -310,9 +313,8 @@ class Game
 							}
 							break;
 						case 3 /*LOGREC_GIVE_UP*/:
-							$this->data->players[$log->player]->death->time = Game::get_gametime_info($g, $log);
-							break;
 						case 4 /*LOGREC_KICK_OUT*/:
+						case 8 /*LOGREC_TEAM_KICK_OUT*/:
 							$this->data->players[$log->player]->death->time = Game::get_gametime_info($g, $log);
 							break;
 						case 0 /*LOGREC_NORMAL*/:
@@ -1617,14 +1619,17 @@ class Game
 	
 	static function is_night($gametime)
 	{
-		switch ($gametime->time)
+		if (isset($gametime->time))
 		{
-			case GAMETIME_START:
-			case GAMETIME_ARRANGEMENT:
-			case GAMETIME_SHOOTING:
-			case GAMETIME_DON:
-			case GAMETIME_SHERIFF:
-				return true;
+			switch ($gametime->time)
+			{
+				case GAMETIME_START:
+				case GAMETIME_ARRANGEMENT:
+				case GAMETIME_SHOOTING:
+				case GAMETIME_DON:
+				case GAMETIME_SHERIFF:
+					return true;
+			}
 		}
 		return false;
 	}
@@ -2063,6 +2068,7 @@ class Game
 					// How to support it in data?
 					if (
 						isset($player->death) && 
+						isset($player->death->time) &&
 						$player->death->type != DEATH_TYPE_NIGHT && 
 						$player->death->type != DEATH_TYPE_DAY &&
 						$this->compare_gametimes($player->death->time, $voting_end_time) < 0 &&
@@ -2649,6 +2655,10 @@ class Game
 			if (isset($player->death))
 			{
 				$action = $this->get_player_death_time($i + 1, true);
+				if ($action == NULL)
+				{
+					$action = new stdClass();
+				}
 				$action->action = GAME_ACTION_LEAVING;
 				$action->player = $i + 1;
 				$actions[] = $action;
@@ -2799,6 +2809,11 @@ class Game
 	
 	function get_gametime_text($gametime, $output_player_function = 'get_player_number_html')
 	{
+		if (!isset($gametime->time))
+		{
+			return get_label('at unknown time');
+		}
+		
 		switch ($gametime->time)
 		{
 			case GAMETIME_START:
@@ -2817,7 +2832,6 @@ class Game
 					}
 				}
 				return get_label('during night kill last speech');
-				break;
 			case GAMETIME_SPEAKING:
 				return get_label('during [0]\'s speech', call_user_func($output_player_function, $this, $gametime->speaker));
 			case GAMETIME_VOTING:

@@ -121,7 +121,8 @@ class Page extends PageBase
 				<?php echo '"' . SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT . '": "' . $for . get_label('sheriff being killed the first night') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_BLACK_CHECKS . '": "' . $for . get_label('the first three checks of the sheriff being black') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_RED_CHECKS . '": "' . $for . get_label('the first three checks of the sheriff being red') . '"'; ?>,
-				<?php echo '"' . SCORING_FLAG_EXTRA_POINTS . '": "' . $for . get_label('actions in the game rated by the referee') . '"'; ?>
+				<?php echo '"' . SCORING_FLAG_EXTRA_POINTS . '": "' . $for . get_label('actions in the game rated by the referee') . '"'; ?>,
+				<?php echo '"' . SCORING_FLAG_TEAM_KICK_OUT . '": "' . $for . get_label('making the opposite team win') . '"'; ?>
 			},
 			sorting:
 			{

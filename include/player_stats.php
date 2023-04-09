@@ -8,13 +8,6 @@ define('LOCK_DATE', '2022-01-01');
 
 define("AVERAGE_PLAYER", -1);
 
-define("SURVIVED", 0);
-define("DAY_KILL", 1);
-define("NIGHT_KILL", 2);
-define("WARNINGS_KILL", 3);
-define("GIVE_UP_KILL", 4);
-define("KICK_OUT_KILL", 5);
-
 class Surviving
 {
 	public $round;

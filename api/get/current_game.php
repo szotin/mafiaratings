@@ -164,6 +164,9 @@ class ApiPage extends GetApiPageBase
 							case 3 /*KILL_REASON_KICK_OUT*/:
 								$player->deathType = 'kickOut';
 								break;
+							case 4 /*KILL_REASON_TEAM_KICK_OUT*/:
+								$player->deathType = 'oppositeTeamWins';
+								break;
 							case 0 /*KILL_REASON_NORMAL*/:
 							default:
 								if ($p->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/)

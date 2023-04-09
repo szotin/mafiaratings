@@ -49,6 +49,7 @@ define('SCORING_FLAG_RED_CHECKS', 0x200000); // 2097152: Matter 21 - All sheriff
 define('SCORING_FLAG_EXTRA_POINTS', 0x400000); // 4194304: Matter 22 - Player has manually assigned extra points
 define('SCORING_FLAG_FIRST_LEGACY_1', 0x800000); // 8388608: Matter 23 - Guessed 1 mafia after being killed first night
 define('SCORING_FLAG_WORST_MOVE', 0x1000000); // 16777216: Matter 24 - Worst move
+define('SCORING_FLAG_TEAM_KICK_OUT', 0x2000000); // 33554432: Matter 25 - Team kicked out (opposite team wins)
 
 define('SCORING_STAT_FLAG_GAME_DIFFICULTY', 0x1);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING', 0x2);
@@ -945,7 +946,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 	// Calculate first night kill rates and games count per player
 	$query = new DbQuery(
 		'SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id)' .
-		', SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0))' .
+		', SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0))' .
 		', SUM(p.won)' .
 		', SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))' .
 		', eu.nickname, eu.flags, tu.flags, cu.flags' .
@@ -1314,7 +1315,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 	$query = new DbQuery(
 		'SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags,' . 
 		' COUNT(g.id), COUNT(DISTINCT g.event_id),' . 
-		' SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0)),' . 
+		' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)),' . 
 		' SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)),' . 
 		' tu.flags, cu.flags' .
 			' FROM players p' . 
@@ -1445,7 +1446,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
             // Calculate first night kill rates and games count per player
 			$group->players = array();
             $query = 
-				new DbQuery('SELECT p.user_id, COUNT(g.id), SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))'.
+				new DbQuery('SELECT p.user_id, COUNT(g.id), SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))'.
 				' FROM players p' .
 				' JOIN games g ON g.id = p.game_id' .
 				' WHERE g.event_id IN(' . $group->events . ') AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $condition);
@@ -1476,7 +1477,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		// Calculate first night kill rates and games count per player for non-tournament event games
 		$no_event_players = array();
 		$query = 
-			new DbQuery('SELECT p.user_id, COUNT(g.id), SUM(IF(p.kill_round = 1 AND p.kill_type = 2 AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))'.
+			new DbQuery('SELECT p.user_id, COUNT(g.id), SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))'.
 			' FROM players p' .
 			' JOIN games g ON g.id = p.game_id' .
 			' JOIN events e ON e.id = g.event_id' .
@@ -1752,6 +1753,9 @@ function get_scoring_matter_label($policy, $include_roles = false)
 				break;
 			case SCORING_FLAG_WORST_MOVE:
 				$l = get_label('removed auto-bonus');
+				break;
+			case SCORING_FLAG_TEAM_KICK_OUT:
+				$l = get_label('making the opposite team win');
 				break;
 		}
 		if ($delim == NULL)

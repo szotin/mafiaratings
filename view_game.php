@@ -506,7 +506,19 @@ class Page extends PageBase
 		foreach ($actions as $action)
 		{
 			$night = Game::is_night($action);
-			if ($action->round != $round || $is_night != $night)
+			if (isset($action->round))
+			{
+				$action_round = $action->round;
+			}
+			else if ($round >= 0)
+			{
+				$action_round = $round;
+			}
+			else
+			{
+				$action_round = 0;
+			}
+			if ($action_round != $round || $is_night != $night)
 			{
 				if ($round >= 0)
 				{
@@ -518,13 +530,13 @@ class Page extends PageBase
 				}
 				if ($night)
 				{
-					echo '<tr class="dark"><td><a href="javascript:viewNight(' . $action->round . ')"><b>' . get_label('Night [0]', $action->round) . '</b></a><ul>';
+					echo '<tr class="dark"><td><a href="javascript:viewNight(' . $action_round . ')"><b>' . get_label('Night [0]', $action_round) . '</b></a><ul>';
 				}
 				else
 				{
-					echo '<tr><td valign="top"><a href="javascript:viewDay(' . $action->round . ')"><b>' . get_label('Day [0]', $action->round) . '</b></a><ul>';
+					echo '<tr><td valign="top"><a href="javascript:viewDay(' . $action_round . ')"><b>' . get_label('Day [0]', $action_round) . '</b></a><ul>';
 				}
-				$round = $action->round;
+				$round = $action_round;
 				$is_night = $night;
 			}
 			echo '<li>';
