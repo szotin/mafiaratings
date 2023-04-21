@@ -80,6 +80,14 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
+	<td>Tournament Places</td>
+	<td><a href="tournament_places.php?help"><?php echo PRODUCT_URL; ?>/api/get/tournament_places.php</a></td>
+	<td>
+		<p>Returns a list of players (or places) for given tournament.</p>
+	</td>
+</tr>
+
+<tr>
 	<td>Series</td>
 	<td><a href="series.php?help"><?php echo PRODUCT_URL; ?>/api/get/series.php</a></td>
 	<td>
