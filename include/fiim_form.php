@@ -215,11 +215,11 @@ class FiimForm
 					}
 					if ($guess_right >= 3)
 					{
-						$extra_points += 0.4;
+						$extra_points += 0.5;
 					}
 					else if ($guess_right >= 2)
 					{
-						$extra_points += 0.25;
+						$extra_points += 0.3;
 					}
 				}
 				
@@ -239,12 +239,19 @@ class FiimForm
 					{
 						$extra_points -= 0.5;
 					}
-					else if ($dt == DEATH_TYPE_GIVE_UP || $dt == DEATH_TYPE_KICK_OUT || $dt == DEATH_TYPE_TEAM_KICK_OUT)
+					else if ($dt == DEATH_TYPE_GIVE_UP || $dt == DEATH_TYPE_KICK_OUT)
 					{
 						$extra_points -= 0.5;
 						$this->pdf->SetXY(112.425, $y);
 						$this->pdf->Cell(7.475, 10.1, '!', 0, 0, 'C'); // √
 					}
+					else if ($dt == DEATH_TYPE_TEAM_KICK_OUT) 
+					{
+						$extra_points -= 0.7;
+						$this->pdf->SetXY(112.425, $y);
+						$this->pdf->Cell(7.475, 10.1, '!', 0, 0, 'C'); // √
+					}
+						
 				}
 				
 				if (isset($player->death))
