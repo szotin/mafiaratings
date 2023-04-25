@@ -169,7 +169,7 @@ class ApiPageBase
 	{
 		if ($this->version >= 0)
 		{
-			$descr = 'Requiered ' . $this->title . ' API version. It is recommended to set it. It guarantees that the format of a data you receive is never changed. 
+			$descr = 'Required ' . $this->title . ' API version. It is recommended to set it. It guarantees that the format of a data you receive is never changed. 
 				Note that <q>version</q> is the only parameter that can be used together with <q>help</q>. Current version is ' . $this->latest_version . '.';
 			if ($this->latest_version != $this->version)
 			{
