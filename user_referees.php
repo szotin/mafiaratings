@@ -5,7 +5,7 @@ require_once 'include/pages.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', USERS_PAGE_SIZE);
 
 define('FLAG_FILTER_TOURNAMENT', 0x0001);
 define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
@@ -120,6 +120,7 @@ class Page extends UserPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	protected function js()

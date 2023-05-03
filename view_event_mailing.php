@@ -5,7 +5,7 @@ require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/event_mailing.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', USERS_PAGE_SIZE);
 
 class Page extends PageBase
 {
@@ -98,7 +98,6 @@ class Page extends PageBase
 		if ($this->status == MAILING_SENDING || $this->status == MAILING_COMPLETE)
 		{
 			list ($count) = Db::record(get_label('email'), 'SELECT count(*) FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT . ' AND obj_id = ?', $this->id);
-			echo '<p></p>';
 			show_pages_navigation(PAGE_SIZE, $count);
 		
 			echo '<table class="bordered light" width="100%">';
@@ -119,6 +118,7 @@ class Page extends PageBase
 			}
 			
 			echo '</table>';
+			show_pages_navigation(PAGE_SIZE, $count);
 		}
 	}
 }

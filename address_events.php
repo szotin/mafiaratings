@@ -8,7 +8,7 @@ require_once 'include/pages.php';
 require_once 'include/event.php';
 require_once 'include/checkbox_filter.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 
 define('FLAG_FILTER_VIDEOS', 0x0001);
 define('FLAG_FILTER_NO_VIDEOS', 0x0002);
@@ -137,6 +137,7 @@ class Page extends AddressPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	protected function js()

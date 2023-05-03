@@ -5,7 +5,7 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/checkbox_filter.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', GAMES_PAGE_SIZE);
 
 define('FLAG_FILTER_VIDEO', 0x0001);
 define('FLAG_FILTER_NO_VIDEO', 0x0002);
@@ -216,6 +216,7 @@ class Page extends EventPageBase
 			echo '</td></tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	protected function js()

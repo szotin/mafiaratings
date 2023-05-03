@@ -7,7 +7,7 @@ require_once 'include/club.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', USERS_PAGE_SIZE);
 define('ROLES_COUNT', 7);
 	
 class Page extends ClubPageBase
@@ -188,6 +188,7 @@ class Page extends ClubPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }
 

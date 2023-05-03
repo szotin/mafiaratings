@@ -3,7 +3,7 @@
 require_once 'include/user.php';
 require_once 'include/pages.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', USERS_PAGE_SIZE);
 
 class Page extends UserPageBase
 {
@@ -48,6 +48,7 @@ class Page extends UserPageBase
 			echo '<td>' . $games . '</td></tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	protected function js()

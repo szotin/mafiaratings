@@ -160,6 +160,7 @@ class Page extends GeneralPageBase
 			}
 			echo '</tr></table>';
 		}
+		show_pages_navigation($page_size, $count);
 	}
 	
 	protected function js()

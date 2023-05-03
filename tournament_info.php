@@ -111,10 +111,7 @@ class Page extends TournamentPageBase
 		
 		$page_size = ROUND_ROW_COUNT * ROUND_COLUMN_COUNT;
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE tournament_id = ? AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0', $this->id);
-		if ($count > 0)
-		{
-			show_pages_navigation($page_size, $count);
-		}
+		show_pages_navigation($page_size, $count);
 		
 		$row_count = 0;
 		$column_count = 0;
@@ -194,6 +191,7 @@ class Page extends TournamentPageBase
 			}
 			echo '</tr></table>';
 		}
+		show_pages_navigation($page_size, $count);
 	}
 	
 	protected function show_body()

@@ -96,6 +96,7 @@ class Page extends LeaguePageBase
 			}
 			echo '</tr></table>';
 		}
+		show_pages_navigation($page_size, $count);
 	}
 }
 

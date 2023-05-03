@@ -5,7 +5,7 @@ require_once 'include/pages.php';
 require_once 'include/languages.php';
 require_once 'include/club.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', ADVERTS_PAGE_SIZE);
 
 class Page extends GeneralPageBase
 {
@@ -78,6 +78,7 @@ class Page extends GeneralPageBase
 			echo '</a></td><td valign="top"><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	protected function js()

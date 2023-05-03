@@ -6,7 +6,7 @@ require_once 'include/club.php';
 require_once 'include/languages.php';
 require_once 'include/club.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', ADVERTS_PAGE_SIZE);
 
 class Page extends ClubPageBase
 {
@@ -52,6 +52,7 @@ class Page extends ClubPageBase
 			echo '<td><b>' . format_date('l, F d, Y', $start, $timezone) . ' - ' . format_date('l, F d, Y', $end, $timezone) . ':</b><p>' . $message . '</p></td></tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }
 

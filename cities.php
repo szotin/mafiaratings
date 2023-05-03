@@ -5,7 +5,7 @@ require_once 'include/country.php';
 require_once 'include/city.php';
 require_once 'include/pages.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', CITIES_PAGE_SIZE);
 
 class Page extends GeneralPageBase
 {
@@ -91,6 +91,7 @@ class Page extends GeneralPageBase
 			echo '</td><td>' . $city_name . '</td><td>' . $area_name . '</td><td>' . $country_name . '</td><td width="180">' . $timezone . '</td></tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }
 

@@ -4,7 +4,7 @@ require_once 'include/page_base.php';
 require_once 'include/image.php';
 require_once 'include/pages.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', USERS_PAGE_SIZE);
 
 class Page extends PageBase
 {
@@ -123,6 +123,7 @@ class Page extends PageBase
 			echo '<td><a href="' . $link_str . $u_id . '">' . cut_long_name($u_name, 80) . '</a></td></tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 		echo '<form method="get" name="form" action="photo.php">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">' . $input_str;
 		echo '<input type="submit" class="btn norm" value="'.get_label('Cancel').'">';

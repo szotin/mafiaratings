@@ -6,7 +6,7 @@ require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', USERS_PAGE_SIZE);
 
 function compare_players($player1, $player2)
 {
@@ -186,6 +186,7 @@ class Page extends SeriesPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $players_count);
 	}
 	
 	private function no_user_error()

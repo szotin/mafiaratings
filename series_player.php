@@ -10,7 +10,7 @@ require_once 'include/checkbox_filter.php';
 require_once 'include/pages.php';
 require_once 'include/player_stats.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', GAMES_PAGE_SIZE);
 
 define('VIEW_TOURNAMENTS', 0);
 define('VIEW_GAMES', 1);
@@ -380,6 +380,7 @@ class Page extends SeriesPageBase
 			echo '</td></tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	private function show_stats()

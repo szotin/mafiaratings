@@ -185,7 +185,15 @@ define('POINTS_SHERIFF', 4);
 define('POINTS_MAFIA', 5);
 define('POINTS_DON', 6);
 
-define('DEFAULT_PAGE_SIZE', 50);
+define('ADVERTS_PAGE_SIZE', 50);
+define('EVENTS_PAGE_SIZE', 50);
+define('TOURNAMENTS_PAGE_SIZE', 50);
+define('SERIES_PAGE_SIZE', 50);
+define('CITIES_PAGE_SIZE', 100);
+define('COUNTRIES_PAGE_SIZE', 100);
+define('USERS_PAGE_SIZE', 100);
+define('GAMES_PAGE_SIZE', 100);
+define('LOG_PAGE_SIZE', 100);
 define('DEFAULT_ROW_COUNT', 20);
 define('DEFAULT_COLUMN_COUNT', 5);
 

@@ -132,6 +132,7 @@ class Page extends ClubPageBase
 			}
 			echo '</tr></table>';
 		}
+		show_pages_navigation($page_size, $count);
 	}
 }
 

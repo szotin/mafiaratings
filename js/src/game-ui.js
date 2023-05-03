@@ -432,12 +432,7 @@ mafia.ui = new function()
 					'<td id="panel' + i + '" width="114"></td>' +
 					'<td id="control' + i + '" width="160"></td>' +
 					'<td id="warn' + i + '" width="100"></td>' +
-					'<td width="60">' +
-						'<span id="btns-' + i + '">' +
-							'<button class="icon" onclick="mafia.warnPlayer(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
-							'<button class="icon" onclick="mafia.ui.leaveGame(' + i + ')"><img src="images/suicide.png" title="' + l('GiveUp') + '"></button>' +
-						'</span>' +
-					'</td>' +
+					'<td id="btns-' + i + '" width="60" align="center"></td>' +
 				'</tr>';
 		}
 		html +=
@@ -605,7 +600,7 @@ mafia.ui = new function()
 			
 			for (var i = 0; i < 10; ++i)
 			{
-				$('#btns-' + i).hide();
+				$('#btns-' + i).html('');
 				$('#name' + i).removeClass();
 				$('#num' + i).removeClass();
 				$('#warn' + i).html('').removeClass();
@@ -632,7 +627,6 @@ mafia.ui = new function()
 			{
 				var player = game.players[i];
 				$('#warn' + i).html('');
-				$('#btns-' + i).hide();
 				
 				$('#r' + i).removeClass().addClass(dStyle + 'alive');
 				$('#num' + i).removeClass();
@@ -652,33 +646,64 @@ mafia.ui = new function()
 				$('#panel' + i).html(html + '</center>').removeClass();
 				$('#control' + i).html('<button class="extra-pts" onclick="mafia.ui.extraPoints(' + i + ')"> ' + l('ExtraPoints', i + 1) + '</button>').removeClass();
 				
+				html = '';
+				if (player.state == /*PLAYER_STATE_KILLED_NIGHT*/1 && player.kill_round == 1 && game.guess3)
+				{
+					var leg = '';
+					var dlm = '';
+					console.log(game.guess3);
+					for (var j = 0; j < game.guess3.length && j < 3; ++j)
+					{
+						leg += dlm + (game.guess3[j] + 1);
+						dlm = ',';
+					}
+					html += l('legacy', leg);
+				}
+				else if (player.kill_reason == /*PLAYER_KR_GIVE_UP*/1)
+				{
+					html += l('gaveUp', leg);;
+				}
+				else if (player.kill_reason == /*PLAYER_KR_WARNINGS*/2)
+				{
+					html += l('fourWarn', leg);;
+				}
+				else if (player.kill_reason == /*PLAYER_KR_KICKOUT*/3)
+				{
+					html += l('kickedOut', leg);;
+				}
+				else if (player.kill_reason == /*PLAYER_KR_TEAM_KICKOUT*/4)
+				{
+					html += l('teamLost', leg);;
+				}
+				$('#warn' + i).html(html);
+				
 				html = '<table width="100%" class="transp"><tr';
 				if (player.comment)
 				{
 					html += ' title="' + player.comment + '"';
 				}
-				html += '><td>';
+				html += '><td align="center">';
+				if (player.extra_points)
+				{
+					if (player.extra_points > 0) html += "+";
+					html += '<big><b>' + player.extra_points + '</b></big></td>';
+					if (player.bonus) html += '<td align="right">';
+				}
+				
 				if (player.bonus == 'bestPlayer')
 				{
-					html += ' <img src="images/best_player.png" width="24">';
+					html += '<img src="images/best_player.png" width="24"></td>';
 				}
 				else if (player.bonus == 'bestMove')
 				{
-					html += ' <img src="images/best_move.png" width="24">';
+					html += '<img src="images/best_move.png" width="24"></td>';
 				}
 				else if (player.bonus == 'worstMove')
 				{
-					html += ' <img src="images/worst_move.png" width="24">';
-				}
-				html += '</td><td align="right">';
-				if (player.extra_points)
-				{
-					html += '<big><b>';
-					if (player.extra_points > 0) html += "+";
-					html += player.extra_points + '</b></big></span>';
+					html += '<img src="images/worst_move.png" width="24"></td>';
 				}
 				html += '</td></tr></table>';
-				$('#warn' + i).html(html);
+				$('#btns-' + i).html(html);
 			}
 			status = '<h3>' + (n ? l('MafWin') : l('CivWin')) + '</h3>' + l('Finish');
 			$('#info').html('');
@@ -719,11 +744,13 @@ mafia.ui = new function()
 				
 				if (player.state != /*PLAYER_STATE_ALIVE*/0)
 				{
-					$('#btns-' + i).hide();
+					$('#btns-' + i).html('');
 				}
 				else
 				{
-					$('#btns-' + i).show();
+					$('#btns-' + i).html(
+							'<button class="icon" onclick="mafia.warnPlayer(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
+							'<button class="icon" onclick="mafia.ui.leaveGame(' + i + ')"><img src="images/suicide.png" title="' + l('GiveUp') + '"></button>');
 				}
 				
 				$('#r' + i).removeClass().addClass(dStyle + ((player.state == /*PLAYER_STATE_ALIVE*/0) ? 'alive' : 'dead'));

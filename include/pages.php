@@ -24,7 +24,7 @@ function show_pages_navigation($page_size, $count, $exclude_param = NULL)
 
 	if ($count <= $page_size)
 	{
-		echo '&nbsp;';
+		echo '<p></p>';
 		return;
 	}
 	
@@ -70,7 +70,7 @@ function show_pages_navigation($page_size, $count, $exclude_param = NULL)
 		}
 	}*/
 
-	echo '<table class="transp" width="0"><tr><td class="nav" width="60">';
+	echo '<p><table class="transp" width="0"><tr><td class="nav" width="60">';
 	$middle = floor(PAGE_THUMBNAILS_COUNT / 2);
 	$last_page = get_last_page($page_size, $count);
 	if ($_page > $middle)
@@ -153,7 +153,7 @@ function show_pages_navigation($page_size, $count, $exclude_param = NULL)
 	{
 		echo '<img src="images/next_d.png" border="0">&nbsp;<img src="images/last_d.png" border="0">';
 	}
-	echo '</td></tr></table>';
+	echo '</td></tr></table></p>';
 }
 
 ?>

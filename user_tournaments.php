@@ -10,7 +10,7 @@ require_once 'include/scoring.php';
 require_once 'include/tournament.php';
 require_once 'include/checkbox_filter.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
 define('FLAG_FILTER_VIDEOS', 0x0001);
 define('FLAG_FILTER_NO_VIDEOS', 0x0002);
@@ -214,6 +214,7 @@ class Page extends UserPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	function js()

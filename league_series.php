@@ -5,7 +5,7 @@ require_once 'include/league.php';
 require_once 'include/pages.php';
 require_once 'include/checkbox_filter.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', SERIES_PAGE_SIZE);
 
 define('FLAG_FILTER_EMPTY', 0x0001);
 define('FLAG_FILTER_NOT_EMPTY', 0x0002);
@@ -137,6 +137,7 @@ class Page extends LeaguePageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	protected function js()

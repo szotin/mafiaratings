@@ -139,6 +139,7 @@ class Page extends EventPageBase
 			}
 			echo '</tr></table>';
 		}
+		show_pages_navigation($page_size, $count);
 	}
 	
 	protected function js()

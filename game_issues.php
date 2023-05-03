@@ -4,7 +4,7 @@ require_once 'include/general_page_base.php';
 require_once 'include/pages.php';
 require_once 'include/game.php';
 
-define('PAGE_SIZE', DEFAULT_PAGE_SIZE);
+define('PAGE_SIZE', GAMES_PAGE_SIZE);
 
 class Page extends GeneralPageBase
 {
@@ -50,6 +50,7 @@ class Page extends GeneralPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	protected function js()
