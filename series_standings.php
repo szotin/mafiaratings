@@ -125,9 +125,9 @@ class Page extends SeriesPageBase
 			}
 		}
 		
-		$players_count = count($players);
+		$total_players_count = $players_count = count($players);
 		echo '<p><table class="transp" width="100%"><tr><td>';
-		show_pages_navigation(PAGE_SIZE, $players_count);
+		show_pages_navigation(PAGE_SIZE, $total_players_count);
 		echo '</td>';
 		echo '<td align="right"><a href="javascript:showGaining()">' . get_label('Scoring system') . '</a></td>';
 		echo '<td align="right" width="200">';
@@ -186,7 +186,7 @@ class Page extends SeriesPageBase
 			echo '</tr>';
 		}
 		echo '</table>';
-		show_pages_navigation(PAGE_SIZE, $players_count);
+		show_pages_navigation(PAGE_SIZE, $total_players_count);
 	}
 	
 	private function no_user_error()

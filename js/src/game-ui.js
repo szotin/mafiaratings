@@ -647,11 +647,10 @@ mafia.ui = new function()
 				$('#control' + i).html('<button class="extra-pts" onclick="mafia.ui.extraPoints(' + i + ')"> ' + l('ExtraPoints', i + 1) + '</button>').removeClass();
 				
 				html = '';
-				if (player.state == /*PLAYER_STATE_KILLED_NIGHT*/1 && player.kill_round == 1 && game.guess3)
+				if (player.state == /*PLAYER_STATE_KILLED_NIGHT*/1 && player.kill_round == 0 && game.guess3)
 				{
 					var leg = '';
 					var dlm = '';
-					console.log(game.guess3);
 					for (var j = 0; j < game.guess3.length && j < 3; ++j)
 					{
 						leg += dlm + (game.guess3[j] + 1);
