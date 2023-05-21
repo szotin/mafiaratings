@@ -177,7 +177,15 @@ class FiimForm
 							{
 								$extra_points += $bonus;
 							}
+							else if ($player->bonus == 'worstMove')
+							{
+								$extra_points -= 0.3;
+							}
 						}
+					}
+					else if ($player->bonus == 'worstMove')
+					{
+						$extra_points -= 0.3;
 					}
 				}
 				
@@ -273,7 +281,7 @@ class FiimForm
 				}
 				$this->pdf->SetX(119.9);
 				$this->pdf->Cell(11.9, 10.1, '' . $points, 0, 0, 'C');
-				if ($extra_points != 0)
+				if ($extra_points != 0) 
 				{
 					$this->pdf->Cell(13.2, 10.1, '' . $extra_points, 0, 0, 'C');
 				}

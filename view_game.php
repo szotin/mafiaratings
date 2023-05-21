@@ -92,7 +92,7 @@ class Page extends PageBase
 			$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
 			$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
 			$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
-			$this->start_time, $this->duration, $this->language_code, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json) =
+			$this->start_time, $this->duration, $this->lang, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json) =
 		Db::record(
 			get_label('game'),
 			'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags,' .
@@ -124,7 +124,7 @@ class Page extends PageBase
 		
 		$this->start_time = format_date('M j Y H:i', $this->start_time, $this->timezone);
 		$this->duration = format_time($this->duration);
-		$this->language = get_lang_str($this->language_code);
+		$this->language = get_lang_str($this->lang);
 		
 		if ($this->is_canceled)
 		{
@@ -361,7 +361,7 @@ class Page extends PageBase
 			set($this->moder_id, $this->moder_name, $this->moder_flags);
 		$this->player_pic->show(ICONS_DIR, true, 48);
 		echo '</td><td>' . $this->start_time . '</td><td>' . $this->duration . '</td><td>';
-		show_language_picture($this->language_code, ICONS_DIR, 48, 48);
+		echo '<span class="lang">' . get_short_lang_str($this->lang) . '</span>';
 		if ($this->civ_odds >= 0 && $this->civ_odds <= 1)
 		{
 			$odds_text = number_format($this->civ_odds * 100, 1) . '%';

@@ -118,7 +118,7 @@ class Page extends TournamentPageBase
 			echo '<a href="video.php?bck=1&id=' . $video_id . '&tournament_id=' . $this->id . '&vtype=' . $this->video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="' . PICTURE_WIDTH . '" title="' . $title . '">';
 			if (!is_valid_lang($this->langs))
 			{
-				echo '<img src="images/' . ICONS_DIR . 'lang' . $lang . '.png" title="' . $title . '" width="24" style="position:absolute; margin-left:-28px;">';
+				echo '<span class="video-lang">' . get_short_lang_str($lang) . '</span>';
 			}
 			echo '</a></span></td></tr>';
 			echo '<tr><td align="center">' . $title . '</td></tr>';

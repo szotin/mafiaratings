@@ -200,7 +200,7 @@ class PageBase
 		$lang = LANG_NO;
 		while (($lang = get_next_lang($lang, LANG_ALL_VISUAL)) != LANG_NO)
 		{
-			echo '<li><a href="javascript:mr.browserLangChange(\'' . get_lang_code($lang) . '\')" title="' . get_lang_str($lang) . '"><img src="images/' . get_lang_code($lang) . '.png" width="32"></a></li>';
+			echo '<li><a href="javascript:mr.browserLangChange(\'' . get_lang_code($lang) . '\')" title="' . get_lang_str($lang) . '">' . get_short_lang_str($lang) . '</a></li>';
 		}
 		echo '</ul>';
 		
@@ -294,7 +294,7 @@ class PageBase
 		{
 			$next_lang = LANG_ENGLISH;
 		}
-		echo '</td><td width="32"><a id="header-lang" onMouseEnter="showLangMenu()" title="' . get_label('Change language') . '" href="javascript:mr.browserLangChange(\'' . get_lang_code($next_lang) . '\')"><img src="images/' . get_lang_code($_lang) . '.png" width="32"></a>';
+		echo '</td><td width="32"><a id="header-lang" onMouseEnter="showLangMenu()" title="' . get_label('Change language') . '" href="javascript:mr.browserLangChange(\'' . get_lang_code($next_lang) . '\')"><span class="menu-lang">' . get_short_lang_str($_lang) . '</span></a>';
 		
 		echo '</td></tr></table>';
 		echo '<table class="main" border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';

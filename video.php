@@ -66,7 +66,7 @@ class Page extends PageBase
 	protected function show_title()
 	{
 		echo '<table class="head" width="100%"><tr><td width="40">';
-		show_language_picture($this->lang, ICONS_DIR, 24, 24);
+		echo '<span class="lang">' . get_short_lang_str($this->lang) . '</span>';
 		echo '</td><td>';
 		echo $this->standard_title() . '</td><td align="right" valign="top">';
 		show_back_button();

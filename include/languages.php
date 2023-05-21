@@ -208,6 +208,101 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 	return get_label('Unknown');
 }
 
+function get_short_lang_str($lang, $case = UPPERCASE, $browser_lang = LANG_NO)
+{
+	if ($browser_lang == LANG_NO)
+	{
+		$browser_lang = $lang;
+	}
+	
+	switch ($lang)
+	{
+		case LANG_ENGLISH:
+			switch ($browser_lang)
+			{
+				case LANG_ENGLISH:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'Eng';
+						case UPPERCASE:
+							return 'ENG';
+					}
+					return 'Eng';
+				case LANG_RUSSIAN:
+				case LANG_UKRAINIAN:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'анг';
+						case UPPERCASE:
+							return 'АНГ';
+					}
+					return 'Анг';
+			}
+			break;
+			
+		case LANG_RUSSIAN:
+			switch ($browser_lang)
+			{
+				case LANG_ENGLISH:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'Rus';
+						case UPPERCASE:
+							return 'RUS';
+					}
+					return 'Rus';
+				case LANG_RUSSIAN:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'рус';
+						case UPPERCASE:
+							return 'РУС';
+					}
+					return 'Рус';
+				case LANG_UKRAINIAN:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'рос';
+						case UPPERCASE:
+							return 'РОС';
+					}
+					return 'Рос';
+			}
+			break;
+			
+		case LANG_UKRAINIAN:
+			switch ($browser_lang)
+			{
+				case LANG_ENGLISH:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'Ukr';
+						case UPPERCASE:
+							return 'UKR';
+					}
+					return 'Ukr';
+				case LANG_RUSSIAN:
+				case LANG_UKRAINIAN:
+					switch ($case)
+					{
+						case LOWERCASE:
+							return 'укр';
+						case UPPERCASE:
+							return 'УКР';
+					}
+					return 'Укр';
+			}
+			break;
+	}
+	return '';
+}
+
 function get_lang_code($lang)
 {
 	switch ($lang)
@@ -461,6 +556,7 @@ function detect_lang($str)
 	return LANG_NO;
 }
 
+// Not used because flags have too much political context now. Currently we are using text only.
 function show_language_picture($lang, $dir, $width = 0, $height = 0)
 {
 	if ($width <= 0 && $height <= 0)

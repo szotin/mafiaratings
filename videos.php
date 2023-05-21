@@ -140,7 +140,7 @@ class Page extends GeneralPageBase
 			
 			echo '<tr><td><span style="position:relative;">';
 			echo '<a href="video.php?bck=1&id=' . $video_id . '&vtype=' . $video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="' . PICTURE_WIDTH . '" title="' . $title . '">';
-			echo '<img src="images/' . ICONS_DIR . 'lang' . $lang . '.png" title="' . $title . '" width="24" style="position:absolute; margin-left:-28px;">';
+			echo '<span class="video-lang">' . get_short_lang_str($lang) . '</span>';
 			echo '</a></span></td></tr>';
 			echo '<tr><td align="center">' . $title . '</td></tr>';
 			echo '</table>';
