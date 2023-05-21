@@ -126,7 +126,7 @@ function check_nickname($nick, $event_id)
 	}
 }
 
-function check_user_name($name)
+function check_user_name($name, $user_id = -1)
 {
 	if ($name == '')
 	{
@@ -135,7 +135,7 @@ function check_user_name($name)
 
 	check_name($name, get_label('user name'));
 	
-	$query = new DbQuery('SELECT name FROM users WHERE name = ?', $name);
+	$query = new DbQuery('SELECT name FROM users WHERE name = ? AND id <> ?', $name, $user_id);
 	if ($query->next())
 	{
         throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('User name'), $name));

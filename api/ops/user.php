@@ -836,7 +836,7 @@ class ApiPage extends OpsApiPageBase
 		$name = get_optional_param('name', $user_name);
 		if ($name != $user_name)
 		{
-			check_user_name($name);
+			check_user_name($name, $user_id);
 		}
 		
 		$email = get_optional_param('email', $user_email);
