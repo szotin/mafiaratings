@@ -549,7 +549,7 @@ class ApiPage extends OpsApiPageBase
 			$old_normalizer_id != $normalizer_id ||
 			$old_normalizer_version != $normalizer_version)
 		{
-			$flags |= TOURNAMENT_FLAG_FINISHED;
+			$flags &= ~TOURNAMENT_FLAG_FINISHED;
 		}
 		
 		if ($type != $old_type)

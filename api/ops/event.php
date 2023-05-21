@@ -429,7 +429,8 @@ class ApiPage extends OpsApiPageBase
 			$old_scoring_options != $scoring_options ||
 			$old_scoring_version != $scoring_version)
 		{
-			$flags |= EVENT_FLAG_FINISHED;
+			$flags &= ~EVENT_FLAG_FINISHED;
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
 		}
 		
 		Db::exec(
