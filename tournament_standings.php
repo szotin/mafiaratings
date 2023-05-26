@@ -197,19 +197,8 @@ class Page extends TournamentPageBase
 	{
 		global $_page;
 		
-		$credited_players = NULL;
-		$query = new DbQuery('SELECT user_id FROM tournament_places WHERE tournament_id = ?', $this->id);
-		while ($row = $query->next())
-		{
-			list($user_id) = $row;
-			if ($credited_players == NULL)
-			{
-				$credited_players = array();
-			}
-			$credited_players[$user_id] = true;
-		}
-		
-		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->normalizer, $this->scoring_options);
+		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $this->scoring, $this->normalizer, $this->scoring_options);
+		add_tournament_nominants($this->id, $players);
 //		print_json($players);
 		$players_count = count($players);
 		if ($this->user_id > 0)
@@ -236,7 +225,7 @@ class Page extends TournamentPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
-		echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
+		echo '<td colspan="2" rowspan="2">'.get_label('Player').'</td>';
 		echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
@@ -259,11 +248,10 @@ class Page extends TournamentPageBase
 		for ($number = $page_start; $number < $players_count; ++$number)
 		{
 			$player = $players[$number];
-			$credited = $credited_players == NULL || isset($credited_players[$player->id]);
 			if ($player->id == $this->user_id)
 			{
 				echo '<tr class="darker">';
-				if ($credited)
+				if ($player->credit)
 				{
 					$highlight = 'darker';
 				}
@@ -272,7 +260,7 @@ class Page extends TournamentPageBase
 					$highlight = 'darker';
 				}
 			}
-			else if ($credited)
+			else if ($player->credit)
 			{
 				echo '<tr>';
 				$highlight = 'dark';
@@ -283,19 +271,46 @@ class Page extends TournamentPageBase
 				$highlight = 'dark';
 			}
 			echo '<td align="center" class="' . $highlight . '">';
-			if ($credited)
+			if ($player->credit)
 			{
 				echo ++$place;
 			}
 			echo '</td>';
 			
-			echo '<td width="50"><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . '">';
+			echo '<td><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . '">';
+			echo '<table class="transp" width="100%"><tr><td width="56">';
 			$tournament_user_pic->
 				set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
 				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
 				set($player->id, $player->name, $player->flags);
 			$tournament_user_pic->show(ICONS_DIR, false, 50);
 			echo '</a></td><td><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . '">' . $player->name . '</a></td>';
+			if (isset($player->nom_flags) && $player->nom_flags)
+			{
+				echo '<td align="right">';
+				if ($player->nom_flags & COMPETITION_BEST_CIVILIAN)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
+				}
+				if ($player->nom_flags & COMPETITION_BEST_MAFIA)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
+				}
+				if ($player->nom_flags & COMPETITION_BEST_DON)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
+				}
+				if ($player->nom_flags & COMPETITION_BEST_SHERIFF)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
+				}
+				if ($player->nom_flags & COMPETITION_MVP)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
+				}
+				echo '</td>';
+			}
+			echo '</tr></table></a>';
 			echo '<td width="50" align="center">';
 			if (!is_null($player->club_id) && $player->club_id > 0)
 			{

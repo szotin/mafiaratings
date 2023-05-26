@@ -175,25 +175,6 @@ function complete_tournament()
 		}
 		else
 		{
-			// find out minimum player games to count tournament for a player
-			$sum_games = 0;
-			$player_games = array();
-			$query1 = new DbQuery('SELECT p.user_id, count(g.id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ? AND (e.flags & ' . EVENT_FLAG_WITH_SELECTION . ') = 0 GROUP BY p.user_id', $tournament_id);
-			while ($row1 = $query1->next())
-			{
-				list($player_id, $games_played) = $row1;
-				$sum_games += $games_played;
-				++$players_count;
-			}
-			if ($players_count > 0)
-			{
-				// The tournament counts for a player only if they played more than TOURNAMENT_CREDIT_GAMES_PERCENT (50%) of average games count. 
-				// We do it in a separate query because we calculate average using only main rounds - excluding finals and semi-finals.
-				$min_games = $sum_games / $players_count; // average
-				$min_games = $min_games * TOURNAMENT_CREDIT_GAMES_PERCENT / 100;
-			}
-			
-			// Write down the tournament places
 			if (is_null($stars))
 			{
 				$stars = 1;
@@ -205,38 +186,23 @@ function complete_tournament()
 				$normalizer = json_decode($normalizer);
 			}
 			
-			Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE tournament_id = ?', $tournament_id);
-			$players = tournament_scores($tournament_id, $tournament_flags, null, SCORING_LOD_PER_GROUP, $scoring, $normalizer, $scoring_options);
+			$players = tournament_scores($tournament_id, $tournament_flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $scoring, $normalizer, $scoring_options);
+			$real_count = add_tournament_nominants($tournament_id, $players);
 			$players_count = count($players);
 			
-			if ($players_count > 0)
+			Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE tournament_id = ?', $tournament_id);
+			$place = 1;
+			for ($number = 0; $number < $players_count; ++$number)
 			{
-				foreach ($players as $player)
+				$player = $players[$number];
+				if ($player->credit)
 				{
-					if ($player->games_count <= $min_games)
-					{
-						$player->credit = false;
-					}
-					else
-					{
-						$player->credit = true;
-						++$real_count;
-					}
-				}
-				
-				$place = 1;
-				for ($number = 0; $number < $players_count; ++$number)
-				{
-					$player = $players[$number];
-					if ($player->credit)
-					{
-						$importance = get_tournament_importance($stars, $place, $real_count);
-						$main_points = $player->main_points;
-						$bonus_points = $player->extra_points + $player->legacy_points + $player->penalty_points;
-						$shot_points = $player->night1_points;
-						Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', $tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count);
-						++$place;
-					}
+					$importance = get_tournament_importance($stars, $place, $real_count);
+					$main_points = $player->main_points;
+					$bonus_points = $player->extra_points + $player->legacy_points + $player->penalty_points;
+					$shot_points = $player->night1_points;
+					Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', $tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags);
+					++$place;
 				}
 			}
 		}

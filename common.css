@@ -207,3 +207,6 @@ button.navigate-btn[disabled]:active {}
 span.lang { padding:4px; background-color: #e8e8d8; font-weight:bold; border: 1px solid #c0cccc; }
 span.video-lang { position:absolute; margin-left:-32px; margin-top:6px; padding:2px; background-color: #e8e8d8; border: 1px solid #c0cccc; font-weight:bold; }
 span.menu-lang { padding:12px; font-weight:bold; text-decoration: none; }
+
+span.best-in-role { position:absolute; margin-left:-30px; margin-top:3px; opacity: 0.5; }
+span.mvp { position:absolute; margin-left:-29px; margin-top:8px; }
