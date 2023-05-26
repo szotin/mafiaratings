@@ -248,6 +248,18 @@ define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);
 define('TOURNAMENT_ICON_MAX_VERSION', 7);
 
+// competition places flags
+//  1 - 0x0001 -      1 - MVP
+//  2 - 0x0002 -      2 - best civ
+//  3 - 0x0004 -      3 - best sheriff
+//  4 - 0x0008 -      4 - best maf
+//  5 - 0x0010 -      5 - best don
+define('COMPETITION_MVP', 0x1);
+define('COMPETITION_BEST_CIVILIAN', 0x2);
+define('COMPETITION_BEST_SHERIFF', 0x4);
+define('COMPETITION_BEST_MAFIA', 0x8);
+define('COMPETITION_BEST_DON', 0x10);
+
 // series flags
 //  1 - 0x0001 -      1 - icon mask
 //  2 - 0x0002 -      2 - icon mask

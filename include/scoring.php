@@ -92,11 +92,56 @@ define('SCORING_LOD_HISTORY', 4); // scoring returns player history in $player->
 define('SCORING_LOD_PER_GAME', 8); // scoring returns scores for every game a player played in $player->games field. It contains an array of games with timestamp, game_id, and scores according to SCORING_LOD_PER_GROUP, and SCORING_LOD_PER_POLICY flags.
 define('SCORING_LOD_NO_SORTING', 16); // When set sorting returns associative array player_id => player. When not set scoring returns array of players sorted by total score.
 define('SCORING_LOD_TEAMS', 32); // Outputs team scores instead of player scores. Works for team tournaments only.
+define('SCORING_LOD_PER_ROLE', 64); // adds scores per role
 
 define('SCORING_OPTION_NO_NIGHT_KILLS', 1); // Do not use policies dependent on the night kills
 define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent on the game difficulty
 
 $_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_EXTRA, SCORING_GROUP_LEGACY, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
+
+function compare_role_scores($role, $player1, $player2)
+{
+	if (is_null($player1))
+	{
+		return -1;
+	}
+	if (is_null($player2))
+	{
+		return 1;
+	}
+	
+	$r1 = $player1->roles[$role];
+	$r2 = $player2->roles[$role];
+	if ($r1->games_count == 0)
+	{
+		if ($r2->games_count == 0)
+		{
+			return 0;
+		}
+		return 1;
+	}
+	if ($r2->games_count == 0)
+	{
+		return -1;
+	}
+	
+	if (abs($r1->bonus - $r2->bonus) > 0.001)
+	{
+		return $r1->bonus - $r2->bonus;
+	}
+	
+	if (abs($r1->points - $r2->points) > 0.001)
+	{
+		return $r1->points - $r2->points;
+	}
+	
+	if ($r1->games_count != $r2->games_count)
+	{
+		return $r2->games_count - $r1->games_count;
+	}
+	
+	return 0;
+}
 
 function format_coeff($coeff, $sign_digits = 3)
 {
@@ -503,6 +548,43 @@ function init_player_score($player, $scoring, $lod_flags)
     {
         $player->games = array();
     }
+	
+	if ($lod_flags & SCORING_LOD_PER_ROLE)
+	{
+		$player->roles = array();
+		for ($i = 0; $i < 4; ++$i)
+		{
+			$role_points = new stdClass();
+			$role_points->points = 0;
+			$role_points->games_count = 0;
+			if ($lod_flags & SCORING_LOD_PER_GROUP)
+			{
+				foreach ($_scoring_groups as $group)
+				{
+					$g = $group . '_points';
+					$role_points->$g = 0;
+				}
+			}
+			
+			if ($lod_flags & SCORING_LOD_PER_POLICY)
+			{
+				foreach ($_scoring_groups as $group)
+				{
+					$a = array();
+					if (isset($scoring->$group))
+					{
+						foreach ($scoring->$group as $policy)
+						{
+							$a[] = 0;
+						}
+					}
+					$role_points->$group = $a;
+				}
+				$role_points->extra[] = 0;
+			}
+			$player->roles[] = $role_points;
+		}
+	}
 }
 
 function add_player_score($player, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $red_win_rate, $games_count, $killed_first_count, $lod_flags, $options, $event_name = NULL)
@@ -682,6 +764,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
             $player->$g += $$g;
         }
     }
+	
     if ($lod_flags & SCORING_LOD_PER_POLICY)
     {
         foreach ($_scoring_groups as $group)
@@ -749,6 +832,33 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
         }
         $player->games[] = $game;
     }
+	
+	if ($lod_flags & SCORING_LOD_PER_ROLE)
+	{
+		$r = $player->roles[$game_role];
+		$r->points += $total_points;
+		++$r->games_count;
+        if ($lod_flags & SCORING_LOD_PER_GROUP)
+        {
+            foreach ($_scoring_groups as $group)
+            {
+                $g = $group . '_points';
+                $r->$g += $$g;
+            }
+        }
+        if ($lod_flags & SCORING_LOD_PER_POLICY)
+        {
+			foreach ($_scoring_groups as $group)
+			{
+				$pg_array = &$r->$group;
+				$ppg_array = &$per_policy->$group;
+				for ($i = 0; $i < count($ppg_array); ++$i)
+				{
+					$pg_array[$i] += $ppg_array[$i];
+				}
+			}
+        }
+	}
 }
 
 function compare_scores($player1, $player2)
@@ -1623,6 +1733,148 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     }
 	usort($scores, 'compare_scores');
     return $scores;
+}
+
+function add_tournament_nominants($tournament_id, $players)
+{
+	$players_count = count($players);
+	if ($players_count <= 0)
+	{
+		return 0;
+	}
+	
+	// find out minimum player games to count tournament for a player
+	// We do it in a separate query because we calculate maximum number of games using only main rounds - excluding finals and semi-finals.
+	$max_games = 0;
+	$main_players_count = 0;
+	$query1 = new DbQuery('SELECT p.user_id, count(g.id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ? AND (e.flags & ' . EVENT_FLAG_WITH_SELECTION . ') = 0 AND g.is_canceled = 0 AND g.is_rating <> 0 GROUP BY p.user_id', $tournament_id);
+	while ($row1 = $query1->next())
+	{
+		list($player_id, $games_played) = $row1;
+		$max_games = max($games_played, $max_games);
+		++$main_players_count;
+	}
+	if ($main_players_count == 0)
+	{
+		return 0;
+	}
+	
+	// Calculate constant points that have to be removed from bonus (remove auto-bonus)
+	$remove_from_bonus = 0;
+	$scoring = $players[0]->scoring;
+	if (isset($scoring->extra))
+	{
+		foreach ($scoring->extra as $scoring_case)
+		{
+			if ($scoring_case->matter == SCORING_FLAG_PLAY)
+			{
+				$remove_from_bonus += $scoring_case->points;
+			}
+		}
+	}
+	if (isset($scoring->legacy))
+	{
+		foreach ($scoring->legacy as $scoring_case)
+		{
+			if ($scoring_case->matter == SCORING_FLAG_PLAY)
+			{
+				$remove_from_bonus += $scoring_case->points;
+			}
+		}
+	}
+	if (isset($scoring->penalty))
+	{
+		foreach ($scoring->penalty as $scoring_case)
+		{
+			if ($scoring_case->matter == SCORING_FLAG_PLAY)
+			{
+				$remove_from_bonus += $scoring_case->points;
+			}
+		}
+	}
+	
+	
+	// The tournament counts for a player only if they played more than 50% of maximum games count. 
+	$min_games = $max_games / 2;
+	$roles = array(NULL, NULL, NULL, NULL);
+	$roles_winners_count = array(0, 0, 0, 0);
+	$mvp = NULL;
+	$mvp_winner_count = 0;
+	$real_count = 0;
+	foreach ($players as $player)
+	{
+		if ($player->games_count <= $min_games)
+		{
+			$player->credit = false;
+		}
+		else
+		{
+			$player->credit = true;
+			$player->bonus = $player->extra_points + $player->legacy_points + $player->penalty_points - $player->games_count * $remove_from_bonus;
+			$player->nom_flags = 0;
+			if ($mvp == NULL)
+			{
+				$mvp = $player;
+				$mvp_winner_count = 1;
+			}
+			else if (abs($player->bonus - $mvp->bonus) < 0.001)
+			{
+				// Hazing :)
+				if ($player->id < $mvp->id)
+				{
+					$roles[$i] = $player;
+				}
+				++$mvp_winner_count;
+			}
+			else if ($player->bonus > $mvp->bonus)
+			{
+				$mvp = $player;
+				$mvp_winner_count = 1;
+			}
+				
+			for ($i = 0; $i < 4; ++$i)
+			{
+				$r = $player->roles[$i];
+				if ($r->games_count <= 0)
+				{
+					continue;
+				}
+				
+				$r->bonus = $r->extra_points + $r->legacy_points + $r->penalty_points;
+				$cmp = compare_role_scores($i, $player, $roles[$i]);
+				if ($cmp > 0)
+				{
+					$roles[$i] = $player;
+					$roles_winners_count[$i] = 1;
+				}
+				else if ($cmp == 0)
+				{
+					// Hazing :)
+					if ($player->id < $roles[$i]->id)
+					{
+						$roles[$i] = $player;
+					}
+					++$roles_winners_count[$i];
+				}
+			}
+			++$real_count;
+		}
+	}
+	
+	$flags = COMPETITION_MVP;
+	if ($mvp && $mvp_winner_count <= 2) // we give a win by hazing only when there are 2 or less pretenders
+	{
+		$mvp->nom_flags |= $flags;
+	}
+	for ($i = 0; $i < 4; ++$i)
+	{
+		$flags <<= 1;
+		if ($roles[$i] != NULL && $roles_winners_count[$i] <= 2) // we give a win by hazing only when there are 2 or less pretenders
+		{
+			$roles[$i]->nom_flags |= $flags;
+		}
+	}
+	return $real_count;
 }
     
 function get_scoring_roles_label($role_flags)
