@@ -199,7 +199,7 @@ class Page extends TournamentPageBase
 		
 		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $this->scoring, $this->normalizer, $this->scoring_options);
 		add_tournament_nominants($this->id, $players);
-//		print_json($players);
+		//print_json($players);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{
@@ -288,23 +288,23 @@ class Page extends TournamentPageBase
 			if (isset($player->nom_flags) && $player->nom_flags)
 			{
 				echo '<td align="right">';
-				if ($player->nom_flags & COMPETITION_BEST_CIVILIAN)
+				if (($player->nom_flags & COMPETITION_BEST_RED) && ($this->flags & TOURNAMENT_FLAG_AWARD_RED))
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
 				}
-				if ($player->nom_flags & COMPETITION_BEST_MAFIA)
+				if (($player->nom_flags & COMPETITION_BEST_BLACK) && ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK))
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
 				}
-				if ($player->nom_flags & COMPETITION_BEST_DON)
+				if (($player->nom_flags & COMPETITION_BEST_DON) && ($this->flags & TOURNAMENT_FLAG_AWARD_DON))
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
 				}
-				if ($player->nom_flags & COMPETITION_BEST_SHERIFF)
+				if (($player->nom_flags & COMPETITION_BEST_SHERIFF) && ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF))
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
 				}
-				if ($player->nom_flags & COMPETITION_MVP)
+				if (($player->nom_flags & COMPETITION_MVP) && ($this->flags & TOURNAMENT_FLAG_AWARD_MVP))
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
 				}

@@ -113,8 +113,18 @@ try
 		echo '</td></tr>';
 	}
 	
-	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
+	echo '<tr><td>'.get_label('Special awards').':</td><td>';
+	echo '<table class="transp" width="100%">';
+	echo '<tr><td colspan="2"><input type="checkbox" id="form-award-mvp" checked> ' . get_label('MVP') . '</td></tr>';
+	echo '<tr><td><input type="checkbox" id="form-award-red" checked> ' . get_label('best red player') . '</td>';
+	echo '<td><input type="checkbox" id="form-award-black" checked> ' . get_label('best black player') . '</td></tr>';
+	echo '<tr><td><input type="checkbox" id="form-award-sheriff"> ' . get_label('best sheriff') . '</td>';
+	echo '<td><input type="checkbox" id="form-award-don"> ' . get_label('best don') . '</td></tr>';
+	echo '</table>';
+	echo '</td></tr>';
 		
+	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
+	
 	echo '<tr><td colspan="2">';
 	echo '<input type="checkbox" id="form-team"> ' . get_label('team tournament') . '<br>';
 	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
@@ -351,6 +361,11 @@ try
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		if ($("#form-team").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_TEAM; ?>;
+		if ($("#form-award-mvp").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_MVP; ?>;
+		if ($("#form-award-red").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_RED; ?>;
+		if ($("#form-award-black").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_BLACK; ?>;
+		if ($("#form-award-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_SHERIFF; ?>;
+		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
 		
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive

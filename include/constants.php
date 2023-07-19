@@ -226,23 +226,33 @@ define('EVENT_ALIVE_TIME', 28800); // event can be extended during this time aft
 define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during this time after being finished (2 weeks)
 
 // tournament flags
-//  1 - 0x0001 -      1 - icon mask
-//  2 - 0x0002 -      2 - icon mask
-//  3 - 0x0004 -      4 - icon mask
-//  4 - 0x0008 -      8 - canceled
-//  5 - 0x0010 -     16 - long term tournament. Like a seasonal club championship.
-//  6 - 0x0020 -     32 - single games from non-tournament events can be assigned to the tournament.
-//  7 - 0x0040 -     64 - available but not always 0 in the existing data
-//  8 - 0x0080 -    128 - tournament is finished - all scoring is complete
-//  9 - 0x0100 -    256 - teams tournament
-// 10 - 0x0200 -    512 - we have no games information about this tournament - scores are entered manually
+//  1 - 0x00001 -      1 - icon mask
+//  2 - 0x00002 -      2 - icon mask
+//  3 - 0x00004 -      4 - icon mask
+//  4 - 0x00008 -      8 - canceled
+//  5 - 0x00010 -     16 - long term tournament. Like a seasonal club championship.
+//  6 - 0x00020 -     32 - single games from non-tournament events can be assigned to the tournament.
+//  7 - 0x00040 -     64 - available but not always 0 in the existing data
+//  8 - 0x00080 -    128 - tournament is finished - all scoring is complete
+//  9 - 0x00100 -    256 - teams tournament
+// 10 - 0x00200 -    512 - we have no games information about this tournament - scores are entered manually
+// 11 - 0x00400 -   1024 - this tournament has MVP as an award
+// 12 - 0x00800 -   2096 - this tournament has best red as an award
+// 13 - 0x01000 -   4096 - this tournament has best sheriff as an award
+// 14 - 0x02000 -   8192 - this tournament has best black as an award
+// 15 - 0x04000 -  16384 - this tournament has best don as an award
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
 define('TOURNAMENT_FLAG_FINISHED', 0x80);
 define('TOURNAMENT_FLAG_TEAM', 0x100);
 define('TOURNAMENT_FLAG_MANUAL_SCORE', 0x200);
-define('TOURNAMENT_EDITABLE_MASK', 0x330); // TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_TEAM | TOURNAMENT_FLAG_MANUAL_SCORE
+define('TOURNAMENT_FLAG_AWARD_MVP', 0x400);
+define('TOURNAMENT_FLAG_AWARD_RED', 0x800);
+define('TOURNAMENT_FLAG_AWARD_SHERIFF', 0x1000);
+define('TOURNAMENT_FLAG_AWARD_BLACK', 0x2000);
+define('TOURNAMENT_FLAG_AWARD_DON', 0x4000);
+define('TOURNAMENT_EDITABLE_MASK', 0x7f30); // TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_TEAM | TOURNAMENT_FLAG_MANUAL_SCORE | TOURNAMENT_FLAG_AWARD_*
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);
@@ -250,14 +260,14 @@ define('TOURNAMENT_ICON_MAX_VERSION', 7);
 
 // competition places flags
 //  1 - 0x0001 -      1 - MVP
-//  2 - 0x0002 -      2 - best civ
+//  2 - 0x0002 -      2 - best red player
 //  3 - 0x0004 -      3 - best sheriff
-//  4 - 0x0008 -      4 - best maf
+//  4 - 0x0008 -      4 - best black player
 //  5 - 0x0010 -      5 - best don
 define('COMPETITION_MVP', 0x1);
-define('COMPETITION_BEST_CIVILIAN', 0x2);
+define('COMPETITION_BEST_RED', 0x2);
 define('COMPETITION_BEST_SHERIFF', 0x4);
-define('COMPETITION_BEST_MAFIA', 0x8);
+define('COMPETITION_BEST_BLACK', 0x8);
 define('COMPETITION_BEST_DON', 0x10);
 
 // series flags

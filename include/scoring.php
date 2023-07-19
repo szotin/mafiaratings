@@ -109,35 +109,62 @@ function compare_role_scores($role, $player1, $player2)
 	{
 		return 1;
 	}
-	
-	$r1 = $player1->roles[$role];
-	$r2 = $player2->roles[$role];
-	if ($r1->games_count == 0)
+
+	switch ($role)
 	{
-		if ($r2->games_count == 0)
+		case ROLE_CIVILIAN:
+			$games_count1 = $player1->roles[ROLE_CIVILIAN]->games_count + $player1->roles[ROLE_SHERIFF]->games_count;
+			$bonus1 = $player1->roles[ROLE_CIVILIAN]->bonus + $player1->roles[ROLE_SHERIFF]->bonus;
+			$points1 = $player1->roles[ROLE_CIVILIAN]->points + $player1->roles[ROLE_SHERIFF]->points;
+			$games_count2 = $player2->roles[ROLE_CIVILIAN]->games_count + $player2->roles[ROLE_SHERIFF]->games_count;
+			$bonus2 = $player2->roles[ROLE_CIVILIAN]->bonus + $player2->roles[ROLE_SHERIFF]->bonus;
+			$points2 = $player2->roles[ROLE_CIVILIAN]->points + $player2->roles[ROLE_SHERIFF]->points;
+			break;
+		case ROLE_MAFIA:
+			$games_count1 = $player1->roles[ROLE_MAFIA]->games_count + $player1->roles[ROLE_DON]->games_count;
+			$bonus1 = $player1->roles[ROLE_MAFIA]->bonus + $player1->roles[ROLE_DON]->bonus;
+			$points1 = $player1->roles[ROLE_MAFIA]->points + $player1->roles[ROLE_DON]->points;
+			$games_count2 = $player2->roles[ROLE_MAFIA]->games_count + $player2->roles[ROLE_DON]->games_count;
+			$bonus2 = $player2->roles[ROLE_MAFIA]->bonus + $player2->roles[ROLE_DON]->bonus;
+			$points2 = $player2->roles[ROLE_MAFIA]->points + $player2->roles[ROLE_DON]->points;
+			//echo $player1->id . '(' . $bonus1 . '):' . $player2->id . '(' . $bonus2 . ')';
+			break;
+		default:
+			$games_count1 = $player1->roles[$role]->games_count;
+			$bonus1 = $player1->roles[$role]->bonus;
+			$points1 = $player1->roles[$role]->points;
+			$games_count2 = $player2->roles[$role]->games_count;
+			$bonus2 = $player2->roles[$role]->bonus;
+			$points2 = $player2->roles[$role]->points;
+			break;
+	}
+	
+	if ($games_count1 <= 0)
+	{
+		if ($games_count2 <= 0)
 		{
 			return 0;
 		}
 		return 1;
 	}
-	if ($r2->games_count == 0)
+	if ($games_count2 <= 0)
 	{
 		return -1;
 	}
 	
-	if (abs($r1->bonus - $r2->bonus) > 0.001)
+	if (abs($bonus1 - $bonus2) > 0.001)
 	{
-		return $r1->bonus - $r2->bonus;
+		return $bonus1 - $bonus2;
 	}
 	
-	if (abs($r1->points - $r2->points) > 0.001)
+	if (abs($points1 - $points2) > 0.001)
 	{
-		return $r1->points - $r2->points;
+		return $points1 - $points2;
 	}
 	
-	if ($r1->games_count != $r2->games_count)
+	if ($games_count1 != $games_count2)
 	{
-		return $r2->games_count - $r1->games_count;
+		return $games_count2 - $games_count1;
 	}
 	
 	return 0;
@@ -1819,11 +1846,7 @@ function add_tournament_nominants($tournament_id, $players)
 			}
 			else if (abs($player->bonus - $mvp->bonus) < 0.001)
 			{
-				// Hazing :)
-				if ($player->id < $mvp->id)
-				{
-					$roles[$i] = $player;
-				}
+				$roles[$i] = $player; // the one with the lower place wins
 				++$mvp_winner_count;
 			}
 			else if ($player->bonus > $mvp->bonus)
@@ -1837,39 +1860,55 @@ function add_tournament_nominants($tournament_id, $players)
 				$r = $player->roles[$i];
 				if ($r->games_count <= 0)
 				{
+					$r->bonus = 0;
 					continue;
 				}
-				
-				$r->bonus = $r->extra_points + $r->legacy_points + $r->penalty_points;
+				$r->bonus = $r->extra_points + $r->legacy_points + $r->penalty_points - $r->games_count * $remove_from_bonus;
+			}
+			
+			for ($i = 0; $i < 4; ++$i)
+			{
+				if ($player->roles[$i]->games_count <= 0)
+				{
+					continue;
+				}
 				$cmp = compare_role_scores($i, $player, $roles[$i]);
 				if ($cmp > 0)
 				{
+					// if ($i == ROLE_MAFIA)
+					// {
+						// echo ' winner - ' . $player->id . '<br>';
+					// }
 					$roles[$i] = $player;
 					$roles_winners_count[$i] = 1;
 				}
 				else if ($cmp == 0)
 				{
-					// Hazing :)
-					if ($player->id < $roles[$i]->id)
-					{
-						$roles[$i] = $player;
-					}
+					// if ($i == ROLE_MAFIA)
+					// {
+						// echo ' tie - ' . $player->id . '<br>';
+					// }
+					$roles[$i] = $player; // the player with a lower place wins
 					++$roles_winners_count[$i];
 				}
+				// else if ($i == ROLE_MAFIA)
+				// {
+					// echo ' winner - ' . $roles[$i]->id . '<br>';
+				// }
 			}
 			++$real_count;
 		}
 	}
 	
 	$flags = COMPETITION_MVP;
-	if ($mvp && $mvp_winner_count <= 2) // we give a win by hazing only when there are 2 or less pretenders
+	if ($mvp && $mvp_winner_count <= 2) // we give a win by lower place only when there are 2 or less pretenders
 	{
 		$mvp->nom_flags |= $flags;
 	}
 	for ($i = 0; $i < 4; ++$i)
 	{
 		$flags <<= 1;
-		if ($roles[$i] != NULL && $roles_winners_count[$i] <= 2) // we give a win by hazing only when there are 2 or less pretenders
+		if ($roles[$i] != NULL && $roles_winners_count[$i] <= 2) // we give a win by lower place only when there are 2 or less pretenders
 		{
 			$roles[$i]->nom_flags |= $flags;
 		}

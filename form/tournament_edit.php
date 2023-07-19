@@ -120,6 +120,16 @@ try
 		echo '</td></tr>';
 	}
 	
+	echo '<tr><td>'.get_label('Special awards').':</td><td>';
+	echo '<table class="transp" width="100%">';
+	echo '<tr><td colspan="2"><input type="checkbox" id="form-award-mvp"' . (($flags & TOURNAMENT_FLAG_AWARD_MVP) ? ' checked' : '')  . '> ' . get_label('MVP') . '</td></tr>';
+	echo '<tr><td><input type="checkbox" id="form-award-red"' . (($flags & TOURNAMENT_FLAG_AWARD_RED) ? ' checked' : '')  . '> ' . get_label('best red player') . '</td>';
+	echo '<td><input type="checkbox" id="form-award-black"' . (($flags & TOURNAMENT_FLAG_AWARD_BLACK) ? ' checked' : '')  . '> ' . get_label('best black player') . '</td></tr>';
+	echo '<tr><td><input type="checkbox" id="form-award-sheriff"' . (($flags & TOURNAMENT_FLAG_AWARD_SHERIFF) ? ' checked' : '')  . '> ' . get_label('best sheriff') . '</td>';
+	echo '<td><input type="checkbox" id="form-award-don"' . (($flags & TOURNAMENT_FLAG_AWARD_DON) ? ' checked' : '')  . '> ' . get_label('best don') . '</td></tr>';
+	echo '</table>';
+	echo '</td></tr>';
+		
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
@@ -353,6 +363,11 @@ try
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-team").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_TEAM; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
+		if ($("#form-award-mvp").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_MVP; ?>;
+		if ($("#form-award-red").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_RED; ?>;
+		if ($("#form-award-black").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_BLACK; ?>;
+		if ($("#form-award-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_SHERIFF; ?>;
+		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
 		
 		var series = [];
 		for (const i in seriesList) 

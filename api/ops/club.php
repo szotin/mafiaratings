@@ -86,7 +86,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		Db::exec(
 			get_label('club'),
-			'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, parent_id, scoring_id, normalizer_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ?, ?)',
+			'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, parent_id, scoring_id, normalizer_id, activated) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
 			$name, $langs, $rules_code, $url, $email, $phone, $city_id, $parent_id, $scoring_id, $normalizer_id);
 		list($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 		
@@ -215,7 +215,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('club'), 
-			'UPDATE clubs SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, city_id = ?, scoring_id = ?, normalizer_id = ?, flags = ? WHERE id = ?',
+			'UPDATE clubs SET activated = UNIX_TIMESTAMP(), name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, city_id = ?, scoring_id = ?, normalizer_id = ?, flags = ? WHERE id = ?',
 			$name, $url, $langs, $email, $phone, $price, $city_id, $scoring_id, $normalizer_id, $flags, $club_id);
 		if (Db::affected_rows() > 0)
 		{
@@ -277,7 +277,7 @@ class ApiPage extends OpsApiPageBase
 				$parent_id = NULL;
 			}
 			
-			Db::exec(get_label('club'), 'UPDATE clubs SET parent_id = ? WHERE id = ?', $parent_id, $club_id);
+			Db::exec(get_label('club'), 'UPDATE clubs SET activated = UNIX_TIMESTAMP(), parent_id = ? WHERE id = ?', $parent_id, $club_id);
 			$log_details = new stdClass();
 			$log_details->parent_id = $parent_id;
 			if (!is_null($parent_id) && $parent_id > 0)
