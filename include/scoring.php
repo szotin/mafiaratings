@@ -8,6 +8,8 @@ define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to
 define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
 define('GAINING_DEFAULT_ID', 1); // Default gaining system is hardcoded here to MWT (Mafia World Tour)
 
+define('SCORING_TRACK_ROLE', -1); //ROLE_CIVILIAN);
+
 define('SCORING_ROLE_FLAGS_CIV', 1);
 define('SCORING_ROLE_FLAGS_SHERIFF', 2);
 define('SCORING_ROLE_FLAGS_RED', 3);
@@ -127,7 +129,6 @@ function compare_role_scores($role, $player1, $player2)
 			$games_count2 = $player2->roles[ROLE_MAFIA]->games_count + $player2->roles[ROLE_DON]->games_count;
 			$bonus2 = $player2->roles[ROLE_MAFIA]->bonus + $player2->roles[ROLE_DON]->bonus;
 			$points2 = $player2->roles[ROLE_MAFIA]->points + $player2->roles[ROLE_DON]->points;
-			//echo $player1->id . '(' . $bonus1 . '):' . $player2->id . '(' . $bonus2 . ')';
 			break;
 		default:
 			$games_count1 = $player1->roles[$role]->games_count;
@@ -137,6 +138,11 @@ function compare_role_scores($role, $player1, $player2)
 			$bonus2 = $player2->roles[$role]->bonus;
 			$points2 = $player2->roles[$role]->points;
 			break;
+	}
+	
+	if ($role == SCORING_TRACK_ROLE)
+	{
+		echo $player1->name . ' (' . $bonus1 . ') : ' . $player2->name . ' (' . $bonus2 . ')';
 	}
 	
 	if ($games_count1 <= 0)
@@ -162,12 +168,7 @@ function compare_role_scores($role, $player1, $player2)
 		return $points1 - $points2;
 	}
 	
-	if ($games_count1 != $games_count2)
-	{
-		return $games_count2 - $games_count1;
-	}
-	
-	return 0;
+	return $games_count2 - $games_count1;
 }
 
 function format_coeff($coeff, $sign_digits = 3)
@@ -539,6 +540,7 @@ function init_player_score($player, $scoring, $lod_flags)
     
 	$player->scoring = $scoring;
     $player->points = 0;
+	$player->weighted_games_count = 0;
 	
     if ($lod_flags & SCORING_LOD_PER_GROUP)
     {
@@ -584,6 +586,7 @@ function init_player_score($player, $scoring, $lod_flags)
 			$role_points = new stdClass();
 			$role_points->points = 0;
 			$role_points->games_count = 0;
+			$role_points->weighted_games_count = 0;
 			if ($lod_flags & SCORING_LOD_PER_GROUP)
 			{
 				foreach ($_scoring_groups as $group)
@@ -628,6 +631,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 	{
 		$weight = $options->weight;
 	}
+	$player->weighted_games_count += $weight;
 	
 	$total_points = 0;
 	if ($lod_flags & SCORING_LOD_PER_GROUP)
@@ -865,6 +869,7 @@ function add_player_score($player, $scoring, $game_id, $game_end_time, $game_fla
 		$r = $player->roles[$game_role];
 		$r->points += $total_points;
 		++$r->games_count;
+		$r->weighted_games_count += $weight;
         if ($lod_flags & SCORING_LOD_PER_GROUP)
         {
             foreach ($_scoring_groups as $group)
@@ -1837,8 +1842,9 @@ function add_tournament_nominants($tournament_id, $players)
 		else
 		{
 			$player->credit = true;
-			$player->bonus = $player->extra_points + $player->legacy_points + $player->penalty_points - $player->games_count * $remove_from_bonus;
+			$player->bonus = $player->extra_points + $player->legacy_points + $player->penalty_points - $player->weighted_games_count * $remove_from_bonus;
 			$player->nom_flags = 0;
+			echo $player->name . ': ' . $player->bonus . '<br>';
 			if ($mvp == NULL)
 			{
 				$mvp = $player;
@@ -1863,7 +1869,7 @@ function add_tournament_nominants($tournament_id, $players)
 					$r->bonus = 0;
 					continue;
 				}
-				$r->bonus = $r->extra_points + $r->legacy_points + $r->penalty_points - $r->games_count * $remove_from_bonus;
+				$r->bonus = $r->extra_points + $r->legacy_points + $r->penalty_points - $r->weighted_games_count * $remove_from_bonus;
 			}
 			
 			for ($i = 0; $i < 4; ++$i)
@@ -1873,28 +1879,32 @@ function add_tournament_nominants($tournament_id, $players)
 					continue;
 				}
 				$cmp = compare_role_scores($i, $player, $roles[$i]);
+				if ($i == SCORING_TRACK_ROLE)
+				{
+					if ($cmp > 0)
+					{
+						echo ' winner - ' . $player->name . '<br>';
+					}
+					else if ($cmp == 0)
+					{
+						echo ' tie - ' . $player->name . '<br>';
+					}
+					else
+					{
+						echo ' winner - ' . $roles[$i]->name . '<br>';
+					}
+				}
+				
 				if ($cmp > 0)
 				{
-					// if ($i == ROLE_MAFIA)
-					// {
-						// echo ' winner - ' . $player->id . '<br>';
-					// }
 					$roles[$i] = $player;
 					$roles_winners_count[$i] = 1;
 				}
 				else if ($cmp == 0)
 				{
-					// if ($i == ROLE_MAFIA)
-					// {
-						// echo ' tie - ' . $player->id . '<br>';
-					// }
 					$roles[$i] = $player; // the player with a lower place wins
 					++$roles_winners_count[$i];
 				}
-				// else if ($i == ROLE_MAFIA)
-				// {
-					// echo ' winner - ' . $roles[$i]->id . '<br>';
-				// }
 			}
 			++$real_count;
 		}
