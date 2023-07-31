@@ -96,22 +96,23 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</td></tr>';
 	
-	echo '<tr><td>' . get_label('Admission rate') . ':</td><td><input id="form-price" value=""></td></tr>';
+	echo '<tr><td>' . get_label('Expected number of players') . ':</td><td><input type="number" style="width: 45px;" step="1" min="10" id="form-players" value="10"></td></tr>';
+	
+	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="" onchange="feeChanged()">';
+	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ORDER BY n.name', $_lang);
+	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()" checked> '.get_label('unknown');
+	echo ' <select id="form-currency" onChange="currencyChanged()">';
+	show_option(0, $club->currency_id, '');
+	while ($row = $query->next())
+	{
+		list($cid, $cname) = $row;
+		show_option($cid, $club->currency_id, $cname);
+	}
+	echo '</select></td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
 	show_scoring_select($club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
 	echo '</td></tr>';
-	
-	if (is_valid_lang($club->langs))
-	{
-		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
-	}
-	else
-	{
-		echo '<tr><td>'.get_label('Languages').':</td><td>';
-		langs_checkboxes(LANG_ALL, $club->langs, NULL, '<br>', 'form-');
-		echo '</td></tr>';
-	}
 	
 	echo '<tr><td>'.get_label('Special awards').':</td><td>';
 	echo '<table class="transp" width="100%">';
@@ -123,6 +124,17 @@ try
 	echo '</table>';
 	echo '</td></tr>';
 		
+	if (is_valid_lang($club->langs))
+	{
+		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
+	}
+	else
+	{
+		echo '<tr><td>'.get_label('Languages').':</td><td>';
+		langs_checkboxes(LANG_ALL, $club->langs, NULL, '<br>', 'form-');
+		echo '</td></tr>';
+	}
+	
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 	
 	echo '<tr><td colspan="2">';
@@ -351,6 +363,19 @@ try
 		}
 	}
 	
+	function feeChanged()
+	{
+		$("#form-fee-unknown").prop('checked', 0);
+	}
+	
+	function feeUnknownClicked()
+	{
+		if ($("#form-fee-unknown").attr('checked'))
+		{
+			$("#form-fee").val('');
+		}
+	}
+	
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -393,7 +418,8 @@ try
 			series: series,
 			name: $("#form-name").val(),
 			type: $('#form-type').val(),
-			price: $("#form-price").val(),
+			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
+			currency_id: $('#form-currency').val(),
 			address_id: _addr,
 			scoring_id: scoringId,
 			scoring_version: scoringVersion,
@@ -405,6 +431,7 @@ try
 			end: dateToStr(_end),
 			langs: _langs,
 			flags: _flags,
+			players: $("#form-players").val(),
 		};
 		
 		if (_addr > 0)
@@ -417,7 +444,7 @@ try
 			params['country'] = $("#form-country").val();
 			params['city'] = $("#form-city").val();
 		}
-		
+	
 		json.post("api/ops/tournament.php", params, onSuccess);
 	}
 	

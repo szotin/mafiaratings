@@ -70,7 +70,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$city_id = retrieve_city_id(get_required_param('city'), retrieve_country_id(get_required_param('country')), get_timezone());
 		}
-		list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
+		list($city_name, $currency_id) = Db::record(get_label('city'), 'SELECT n.name, co.currency_id FROM cities c JOIN countries co ON co.id = c.country_id JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 		
 		$is_admin = is_permitted(PERMISSION_ADMIN);
 		if ($parent_id > 0)
@@ -86,8 +86,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		Db::exec(
 			get_label('club'),
-			'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, parent_id, scoring_id, normalizer_id, activated) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
-			$name, $langs, $rules_code, $url, $email, $phone, $city_id, $parent_id, $scoring_id, $normalizer_id);
+			'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, parent_id, scoring_id, normalizer_id, activated, currency_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?)',
+			$name, $langs, $rules_code, $url, $email, $phone, $city_id, $parent_id, $scoring_id, $normalizer_id, $currency_id);
 		list($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -100,6 +100,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->phone = $phone;
 		$log_details->city = $city_name;
 		$log_details->city_id = $city_id;
+		$log_details->currency_id = $currency_id;
 		$log_details->scoring_id = $scoring_id;
 		$log_details->normalizer_id = $normalizer_id;
 		if (!is_null($parent_id))
@@ -153,8 +154,8 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
-		list($old_name, $old_parent_id, $old_url, $old_email, $old_phone, $old_price, $old_langs, $old_scoring_id, $old_normalizer_id, $old_city_id, $old_flags, $timezone) = Db::record(get_label('club'),
-			'SELECT c.name, c.parent_id, c.web_site, c.email, c.phone, c.price, c.langs, c.scoring_id, c.normalizer_id, ct.id, c.flags, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+		list($old_name, $old_parent_id, $old_url, $old_email, $old_phone, $old_fee, $old_currency_id, $old_langs, $old_scoring_id, $old_normalizer_id, $old_city_id, $old_flags, $timezone) = Db::record(get_label('club'),
+			'SELECT c.name, c.parent_id, c.web_site, c.email, c.phone, c.fee, c.currency_id, c.langs, c.scoring_id, c.normalizer_id, ct.id, c.flags, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 			
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
@@ -166,7 +167,16 @@ class ApiPage extends OpsApiPageBase
 		$parent_id = (int)get_optional_param('parent_id', $old_parent_id);
 		$url = check_url(get_optional_param('url', $old_url));
 		$phone = get_optional_param('phone', $old_phone);
-		$price = get_optional_param('price', $old_price);
+		$fee = (int)get_optional_param('fee', $old_fee);
+		if ($fee < 0)
+		{
+			$fee = NULL;
+		}
+		$currency_id = get_optional_param('currency_id', $old_currency_id);
+		if ($currency_id <= 0)
+		{
+			$currency_id = NULL;
+		}
 		$scoring_id = get_optional_param('scoring_id', $old_scoring_id);
 		$normalizer_id = get_optional_param('normalizer_id', $old_normalizer_id);
 		if ($normalizer_id <= 0)
@@ -215,8 +225,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('club'), 
-			'UPDATE clubs SET activated = UNIX_TIMESTAMP(), name = ?, web_site = ?, langs = ?, email = ?, phone = ?, price = ?, city_id = ?, scoring_id = ?, normalizer_id = ?, flags = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $price, $city_id, $scoring_id, $normalizer_id, $flags, $club_id);
+			'UPDATE clubs SET activated = UNIX_TIMESTAMP(), name = ?, web_site = ?, langs = ?, email = ?, phone = ?, fee = ?, currency_id = ?, city_id = ?, scoring_id = ?, normalizer_id = ?, flags = ? WHERE id = ?',
+			$name, $url, $langs, $email, $phone, $fee, $currency_id, $city_id, $scoring_id, $normalizer_id, $flags, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
@@ -237,9 +247,13 @@ class ApiPage extends OpsApiPageBase
 			{
 			$log_details->email = $email;
 			}
-			if ($old_price != $price)
+			if ($old_fee != $fee)
 			{
-				$log_details->price = $price;
+				$log_details->fee = $fee;
+			}
+			if ($old_currency_id != $currency_id)
+			{
+				$log_details->currency_id = $currency_id;
 			}
 			if ($old_city_id != $city_id)
 			{
@@ -309,6 +323,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		$help->request_param('scoring_id', 'Default scoring system for the club. This scoring system is suggested by default to all new tournaments of the club.', 'remains the same.');
 		$help->request_param('normalizer_id', 'Default scoring normalizer for the club. This scoring normalizer is suggested by default to all new tournaments of the club. Send 0 if no default normalizer needed.', 'remains the same.');
+		$help->request_param('fee', 'Admition rate for a common event.', 'remains the same.');
+		$help->request_param('currency_id', 'Currency used in the club.', 'remains the same.');
 		return $help;
 	}
 	

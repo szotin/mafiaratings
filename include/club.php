@@ -87,7 +87,9 @@ class ClubPageBase extends PageBase
 	protected $url;
 	protected $email;
 	protected $phone;
-	protected $price;
+	protected $fee;
+	protected $currency_id;
+	protected $currency_pattern;
 	protected $country;
 	protected $city;
 	protected $scoring_id;
@@ -122,16 +124,17 @@ class ClubPageBase extends PageBase
 			$this->is_referee = $_profile->is_club_referee($this->id);
 		}
 		
-		list ($this->name, $this->flags, $this->url, $this->langs, $this->rules_code, $this->email, $this->phone, $this->price, $this->country, $this->city, $this->memb_flags, $this->scoring_id, $this->timezone, $this->parent_id, $this->parent_name, $this->parent_flags) = 
+		list ($this->name, $this->flags, $this->url, $this->langs, $this->rules_code, $this->email, $this->phone, $this->fee, $this->currency_id, $this->currency_pattern, $this->country, $this->city, $this->memb_flags, $this->scoring_id, $this->timezone, $this->parent_id, $this->parent_name, $this->parent_flags) = 
 			Db::record(
 				get_label('club'),
-				'SELECT c.name, c.flags, c.web_site, c.langs, c.rules, c.email, c.phone, c.price, ncr.name, nct.name, u.flags, c.scoring_id, ct.timezone, p.id, p.name, p.flags FROM clubs c ' .
+				'SELECT c.name, c.flags, c.web_site, c.langs, c.rules, c.email, c.phone, c.fee, c.currency_id, cu.pattern, ncr.name, nct.name, u.flags, c.scoring_id, ct.timezone, p.id, p.name, p.flags FROM clubs c ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
 					'JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0 ' .
 					'JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0 ' .
 					'LEFT OUTER JOIN club_users u ON u.club_id = c.id AND u.user_id = ? ' .
 					'LEFT OUTER JOIN clubs p ON c.parent_id = p.id ' .
+					'LEFT OUTER JOIN currencies cu ON c.currency_id = cu.id ' .
 					'WHERE c.id = ?',
 				$_lang, $_lang, $user_id, $this->id);
 				

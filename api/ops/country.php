@@ -12,13 +12,43 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	function get_currency_id()
+	{
+		$currency_id = get_optional_param('currency_id', 0);
+		if ($currency_id > 0)
+		{
+			return $currency_id;
+		}
+		
+		$names = new Names(0, get_label('currency name'), 'currencies', 0, NULL, 'currency_name');
+		$name_id = $names->get_id();
+		if ($name_id <= 0)
+		{
+			return NULL;
+		}
+		
+		$pattern = get_required_param('currency_pattern');
+		if (strpos($pattern, '#') === false)
+		{
+			throw new Exc(get_label('Display pattern must contain \'#\' character.'));
+		}
+		
+		Db::exec(get_label('currency'), 'INSERT INTO currencies (name_id, pattern) VALUES (?, ?)', $name_id, $pattern);
+		list ($currency_id) = Db::record(get_label('currency'), 'SELECT LAST_INSERT_ID()');
+		
+		$log_details = new stdClass();
+		$log_details->name = $names->to_string();
+		$log_details->pattern = $pattern;
+		db_log(LOG_OBJECT_CURRENCY, 'created', $log_details, $currency_id);
+		return $currency_id;
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
 		check_permissions(PERMISSION_ADMIN);
-		
 		$code = get_required_param('code');
 		if ($code == '')
 		{
@@ -42,7 +72,8 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Country code'), $code));
 		}
 		
-		Db::exec(get_label('country'), 'INSERT INTO countries (name_id, code, flags) VALUES (?, ?, ?)', $name_id, $code, $flags);
+		$currency_id = $this->get_currency_id();
+		Db::exec(get_label('country'), 'INSERT INTO countries (name_id, code, flags, currency_id) VALUES (?, ?, ?, ?)', $name_id, $code, $flags, $currency_id);
 		list ($country_id) = Db::record(get_label('country'), 'SELECT LAST_INSERT_ID()');
 		
 		foreach ($names->names as $n)
@@ -65,6 +96,9 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_ADMIN, 'Extend the event to a longer time. Event can be extended during 8 hours after it ended.');
 		Names::help($help, 'Country', false);
 		$help->request_param('code', 'Two letter country code.');
+		$help->request_param('currency_id', 'National currency_id.', 'currency_name and currency_pattern params are checked. If they are set, new currency is created. If not, currency is set to null.');
+		Names::help($help, 'Currency', false, 'currency_name');
+		$help->request_param('currency_pattern', 'Display pattern for creating currency where # stands for the sum. For example if the pattern is "$# aaa", the displayed value for 10000 is "$10,000 aaa".', 'currency_id is used. If currency_id is also not set, currency is set to null.');
 		$help->request_param('confirm', 'If it is set and non zero, the country is marked as confirmed by admin.', 'country is not confirmed.');
 
 		$help->response_param('country_id', 'Country id.');
@@ -81,7 +115,7 @@ class ApiPage extends OpsApiPageBase
 		$confirm = (isset($_REQUEST['confirm']) && $_REQUEST['confirm']);
 		
 		Db::begin();
-		list($old_name_id, $old_code) = Db::record(get_label('country'), 'SELECT name_id, code FROM countries WHERE id = ?', $country_id);
+		list($old_name_id, $old_code, $old_currency_id) = Db::record(get_label('country'), 'SELECT name_id, code, currency_id FROM countries WHERE id = ?', $country_id);
 		
 		$code = get_optional_param('code', $old_code);
 		if (strlen($code) != 2)
@@ -110,8 +144,9 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
+		$currency_id = $this->get_currency_id();
 		$op = 'changed';
-		$query = new DbQuery('UPDATE countries SET name_id = ?, code = ?', $name_id, $code);
+		$query = new DbQuery('UPDATE countries SET name_id = ?, code = ?, currency_id = ?', $name_id, $code, $currency_id);
 		if ($confirm)
 		{
 			$query->add(', flags = (flags & ~' . COUNTRY_FLAG_NOT_CONFIRMED . ')');
@@ -131,6 +166,10 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->name = $names->to_string();
 			}
+			if ($currency_id != $old_currency_id)
+			{
+				$log_details->currency_id = $currency_id;
+			}
 			db_log(LOG_OBJECT_COUNTRY, $op, $log_details, $country_id);
 		}	
 		Db::commit();
@@ -143,8 +182,10 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('country_id', 'Country id.');
 		Names::help($help, 'Country', true);
 		$help->request_param('code', 'Two letter country code.', 'remains the same.');
+		$help->request_param('currency_id', 'National currency_id.', 'currency_name and currency_pattern params are checked. If they are set, new currency is created. If not, currency remains the same.');
+		Names::help($help, 'Currency', false, 'currency_name');
+		$help->request_param('currency_pattern', 'Display pattern for creating currency where # stands for the sum. For example if the pattern is "$# aaa", the displayed value for 10000 is "$10,000 aaa".', 'currency_id is used. If currency_id is also not set, currency is set to null.');
 		$help->request_param('confirm', 'If it is set and non zero, the country is marked as confirmed by admin.', 'country confirmation status remains the same.');
-
 		return $help;
 	}
 

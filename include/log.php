@@ -30,6 +30,7 @@ define('LOG_OBJECT_STATS_CALCULATOR', 'stats calculator');
 define('LOG_OBJECT_EXTRA_POINTS', 'extra points');
 define('LOG_OBJECT_OBJECTION', 'objection');
 define('LOG_OBJECT_SOUND', 'sound');
+define('LOG_OBJECT_CURRENCY', 'currency');
 
 function prepare_log_objects()
 {
@@ -39,6 +40,7 @@ function prepare_log_objects()
 		, LOG_OBJECT_USER => 'user_info.php?bck=1&id='
 		, LOG_OBJECT_COUNTRY => NULL
 		, LOG_OBJECT_CITY => NULL
+		, LOG_OBJECT_CURRENCY => NULL
 		, LOG_OBJECT_LEAGUE => 'league_main.php?bck=1&id='
 		, LOG_OBJECT_LEAGUE_REQUEST => NULL
 		, LOG_OBJECT_CLUB => 'club_main.php?bck=1&id='

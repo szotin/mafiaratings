@@ -37,7 +37,7 @@ class Page extends GeneralPageBase
 				list($id, $city_name, $flags, $country_name, $timezone) = $row;
 				echo '<tr><td width="56">';
 				show_city_buttons($id, $city_name, $flags);
-				echo '</td><td>' . $city_name . '</td><td width="180">' . $country_name . '</td><td width="180">' . $timezone . '</td></tr>';
+				echo '</td><td><a href="https://www.google.com/maps/place/'.$city_name.'" target="_blank" rel="external">' . $city_name . '</a></td><td width="180">' . $country_name . '</td><td width="180">' . $timezone . '</td></tr>';
 				
 			
 			} while ($row = $query->next());
@@ -88,7 +88,7 @@ class Page extends GeneralPageBase
 			
 			echo '<tr><td class="dark">';
 			show_city_buttons($id, $city_name, $flags);
-			echo '</td><td>' . $city_name . '</td><td>' . $area_name . '</td><td>' . $country_name . '</td><td width="180">' . $timezone . '</td></tr>';
+			echo '</td><td><a href="https://www.google.com/maps/place/'.$city_name.'" target="_blank" rel="external">' . $city_name . '</a></td><td>' . $area_name . '</td><td>' . $country_name . '</td><td width="180">' . $timezone . '</td></tr>';
 		}
 		echo '</table>';
 		show_pages_navigation(PAGE_SIZE, $count);

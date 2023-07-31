@@ -241,6 +241,14 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
+	<td>Currency Operations</td>
+	<td><a href="currency.php?help"><?php echo PRODUCT_URL; ?>/api/ops/currency.php</a></td>
+	<td>
+		<p>Manipulating currencies like usd, euro, etc.</p>
+	</td>
+</tr>
+
+<tr>
 	<td>Game Sounds Operations</td>
 	<td><a href="sound.php?help"><?php echo PRODUCT_URL; ?>/api/ops/sound.php</a></td>
 	<td>

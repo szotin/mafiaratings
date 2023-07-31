@@ -1437,12 +1437,16 @@ class NameControl
 		});
 	}
 	
-	fillRequest(request)
+	fillRequest(request, name)
 	{
+		if (typeof name == "undefined")
+		{
+			name = 'name';
+		}
 		var str = $('#' + this.controlId).val();
 		if (str.trim().length > 0)
 		{
-			request.name = str;
+			request[name] = str;
 		}
 		for (const i in this.langs)
 		{
@@ -1450,7 +1454,7 @@ class NameControl
 			str = $('#' + this.controlId + '-' + code).val();
 			if (str.trim().length > 0)
 			{
-				request['name_' + code] = str;
+				request[name + '_' + code] = str;
 			}
 		}
 	}

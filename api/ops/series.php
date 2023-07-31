@@ -32,6 +32,16 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please enter [0].', get_label('Series name')));
 		}
 		
+		$fee = (int)get_optional_param('fee', -1);
+		if ($fee < 0)
+		{
+			$fee = NULL;
+		}
+		$currency_id = (int)get_optional_param('currency_id', -1);
+		if ($currency_id <= 0)
+		{
+			$currency_id = NULL;
+		}
 		
 		$notes = get_optional_param('notes', '');
 		$flags = (int)get_optional_param('flags', 0) & SERIES_EDITABLE_MASK;
@@ -51,8 +61,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('sеriеs'), 
-			'INSERT INTO series (name, league_id, start_time, duration, langs, notes, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $start, $end - $start, $langs, $notes, $flags, $league_rules, $gaining_id, $gaining_version);
+			'INSERT INTO series (name, league_id, start_time, duration, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $league_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $flags, $league_rules, $gaining_id, $gaining_version);
 		list ($series_id) = Db::record(get_label('sеriеs'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -62,6 +72,8 @@ class ApiPage extends OpsApiPageBase
 		$log_details->duration = $end - $start;
 		$log_details->langs = $langs;
 		$log_details->notes = $notes;
+		$log_details->fee = $fee;
+		$log_details->currency_id = $currency_id;
 		$log_details->rules_code = $league_rules;
 		$log_details->flags = $flags;
 		$log_details->gaining_id = $gaining_id;
@@ -80,6 +92,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'empty.');
+		$help->request_param('fee', 'Admission rate per player-tournament. Send -1 if unknown.', '-1.');
+		$help->request_param('currency_id', 'Currency id for the admission rate. Send -1 if unknown.', '-1.');
 		$help->request_param('langs', 'Languages on this series. A bit combination of language ids.', 'all league languages are used.');
 		$help->request_param('flags', 'Series flags. Currently not used');
 		$help->request_param('gaining_id', 'Gaining system id.', 'Default gaining of the league is used.');
@@ -105,8 +119,8 @@ class ApiPage extends OpsApiPageBase
 		$timezone = get_timezone();
 		Db::begin();
 		
-		list ($league_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_flags, $old_gaining_id, $old_gaining_version) = 
-			Db::record(get_label('sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
+		list ($league_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) = 
+			Db::record(get_label('sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
 		
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		list($league_name, $league_rules, $league_langs) = Db::record(get_label('league'), 'SELECT name, rules, langs FROM leagues WHERE id = ?', $league_id);
@@ -123,6 +137,17 @@ class ApiPage extends OpsApiPageBase
 		$langs = get_optional_param('langs', $old_langs);
 		$flags = (int)get_optional_param('flags', $old_flags);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + ($old_flags & ~SERIES_EDITABLE_MASK);
+		
+		$fee = get_optional_param('fee', $old_fee);
+		if (!is_null($fee) && $fee < 0)
+		{
+			$fee = NULL;
+		}
+		$currency_id = get_optional_param('currency_id', $old_currency_id);
+		if (!is_null($currency_id) && $currency_id <= 0)
+		{
+			$currency_id = NULL;
+		}
 		
 		$old_start_datetime = get_datetime($old_start, $timezone);
 		$old_end_datetime = get_datetime($old_start + $old_duration, $timezone);
@@ -152,8 +177,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('sеriеs'), 
-			'UPDATE series SET name = ?, start_time = ?, duration = ?, langs = ?, notes = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
-			$name, $start, $duration, $langs, $notes, $flags, $gaining_id, $gaining_version, $series_id);
+			'UPDATE series SET name = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
+			$name, $start, $duration, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -176,6 +201,14 @@ class ApiPage extends OpsApiPageBase
 			if ($notes != $old_notes)
 			{
 				$log_details->notes = $notes;
+			}
+			if ($fee != $old_fee)
+			{
+				$log_details->fee = $fee;
+			}
+			if ($currency_id != $old_currency_id)
+			{
+				$log_details->currency_id = $currency_id;
 			}
 			if ($flags != $old_flags)
 			{
@@ -207,6 +240,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'remains the same.');
+		$help->request_param('fee', 'Admission rate per player-tournament. Send -1 if unknown.', 'remains the same.');
+		$help->request_param('currency_id', 'Currency for admission rate. Send -1 if unknown.', 'remains the same.');
 		$help->request_param('langs', 'Languages on this series. A bit combination of language ids.' . valid_langs_help(), 'remains the same.');
 		$help->request_param('flags', 'Series flags. Not used yet');
 		$help->request_param('gaining_id', 'Gaining system id.', 'remains the same.');

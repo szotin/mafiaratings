@@ -79,7 +79,6 @@ class GClub
 	public $events;
 	public $rules;
 	public $addrs;
-	public $price;
 	public $icon;
 	public $rules_code;
 	
@@ -96,7 +95,6 @@ class GClub
 		
 		$this->city = $club->city;
 		$this->country = $club->country;
-		$this->price = $club->price;
 		$this->langs = (int)$club->langs;
 		if (($club->club_flags & CLUB_ICON_MASK) != 0)
 		{
@@ -483,7 +481,7 @@ class CommandQueue
 		global $_profile;
 
 		if (
-			!isset($rec->name) || !isset($rec->duration) || !isset($rec->start) || !isset($rec->price) ||
+			!isset($rec->name) || !isset($rec->duration) || !isset($rec->start) ||
 			!isset($rec->flags) || !isset($rec->langs) || !isset($rec->id) || !isset($rec->rules_code))
 		{
 			throw new Exc(get_label('Invalid request'));
@@ -508,7 +506,6 @@ class CommandQueue
 			$event->name = $rec->name;
 			$event->duration = $rec->duration;
 			$event->timestamp = $rec->start;
-			$event->price = $rec->price;
 			$event->rules_code = $rec->rules_code;
 			if (isset($rec->addr_id))
 			{

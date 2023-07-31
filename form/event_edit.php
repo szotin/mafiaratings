@@ -21,9 +21,9 @@ try
 	}
 	$event_id = (int)$_REQUEST['event_id'];
 	
-	list($club_id, $name, $start_time, $duration, $address_id, $price, $rules_code, $scoring_id, $scoring_version, $scoring_options, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
+	list($club_id, $name, $start_time, $duration, $address_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
 		Db::record(get_label('event'), 
-			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
+			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
 			'FROM events e ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
@@ -111,7 +111,17 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</span></td></tr>';
 	
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input id="form-price" value="' . $price . '"></td></tr>';
+	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
+	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ORDER BY n.name', $_lang);
+	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"'.(is_null($fee)?' checked':'').'> '.get_label('unknown');
+	echo ' <select id="form-currency" onChange="currencyChanged()">';
+	show_option(0, $currency_id, '');
+	while ($row = $query->next())
+	{
+		list($cid, $cname) = $row;
+		show_option($cid, $currency_id, $cname);
+	}
+	echo '</select></td></tr>';
 		
 	$query = new DbQuery('SELECT rules, name FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
 	if ($row = $query->next())
@@ -268,6 +278,19 @@ try
 		return val;
 	}
 	
+	function feeChanged()
+	{
+		$("#form-fee-unknown").prop('checked', 0);
+	}
+	
+	function feeUnknownClicked()
+	{
+		if ($("#form-fee-unknown").attr('checked'))
+		{
+			$("#form-fee").val('');
+		}
+	}
+	
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -286,7 +309,8 @@ try
 			, name: $("#form-name").val()
 			, start: $('#form-date').val() + 'T' + timeStr($('#form-time').val())
 			, duration: strToTimespan($("#form-duration").val())
-			, price: $("#form-price").val()
+			, fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val())
+			, currency_id: $('#form-currency').val()
 			, address_id: _addr
 			, rules_code: $("#form-rules").val()
 			, scoring_id: scoringId

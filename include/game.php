@@ -2925,18 +2925,7 @@ class Game
 		global $_profile;
 		
 		$data = $this->data;
-		if (isset($_profile->clubs[$data->clubId]))
-		{
-			$club = $_profile->clubs[$data->clubId];
-			$timezone = $club->timezone;
-			$club_rules = $club->rules_code;
-			$club_scoring_id = $club->scoring_id;
-			$club_langs = $club->langs;
-		}
-		else
-		{
-			list($timezone, $club_rules, $club_scoring_id, $club_langs) = Db::record(get_label('club'), 'SELECT ct.timezone, c.rules, c.scoring_id, c.langs FROM clubs c JOIN cities ct ON c.city_id = ct.id WHERE c.id = ?', $data->clubId);
-		}
+		list($timezone, $club_rules, $club_scoring_id, $club_langs, $fee, $currency_id) = Db::record(get_label('club'), 'SELECT ct.timezone, c.rules, c.scoring_id, c.langs, c.fee, c.currency_id FROM clubs c JOIN cities ct ON c.city_id = ct.id WHERE c.id = ?', $data->clubId);
 		
 		if (!isset($data->rules))
 		{
@@ -2992,11 +2981,11 @@ class Game
 					
 					Db::exec(
 						get_label('event'), 
-						'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options) ' .
+						'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, fee, currency_id) ' .
 						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-						$name, '', $address_id, $data->clubId, $event_start, 
-						'', $event_duration, EVENT_FLAG_ALL_CAN_REFEREE, $club_langs, $data->rules, 
-						$club_scoring_id, $scoring_version, $scoring_options);
+						$name, $address_id, $data->clubId, $event_start, $event_duration,
+						EVENT_FLAG_ALL_CAN_REFEREE, $club_langs, $data->rules, 
+						$club_scoring_id, $scoring_version, $scoring_options, $fee, $currency_id);
 					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 				
 					$log_details = new stdClass();

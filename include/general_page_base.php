@@ -68,6 +68,7 @@ class GeneralPageBase extends PageBase
 				new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage [0] users', PRODUCT_NAME)),
 				new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
 				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
+				new MenuItem('currencies.php' . $ccc, get_label('Currencies'), get_label('Manage currencies')),
 				new MenuItem('scorings.php' . $ccc, get_label('Scoring systems'), get_label('Manage scoring systems')),
 				new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things')),
 				new MenuItem('game_issues.php' . $ccc, get_label('Game issues'), get_label('List of the games that have issues.')),

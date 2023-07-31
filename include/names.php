@@ -167,7 +167,7 @@ function check_address_name($name, $club_id, $address_id = -1)
 
 class Names
 {
-	function __construct($name_id, $obj_name, $table_name = NULL, $obj_id = 0, $condition = NULL)
+	function __construct($name_id, $obj_name, $table_name = NULL, $obj_id = 0, $condition = NULL, $param_name = 'name')
 	{
 		$this->obj_name = $obj_name;
 		$this->names = array();
@@ -196,20 +196,20 @@ class Names
 			
 			$lang = LANG_NO;
 			$default_mask = DB_ALL_LANGS;
-			if (isset($_REQUEST['name']))
+			if (isset($_REQUEST[$param_name]))
 			{
 				$name = new stdClass();
-				$name->name = $_REQUEST['name'];
+				$name->name = $_REQUEST[$param_name];
 				$name->langs = 0;
 				$this->names[] = $name;
 			}
 			while (($lang = get_next_lang($lang)) != LANG_NO)
 			{
-				$param_name = 'name_' . get_lang_code($lang);
-				if (isset($_REQUEST[$param_name]))
+				$pname = $param_name . '_' . get_lang_code($lang);
+				if (isset($_REQUEST[$pname]))
 				{
 					$name = new stdClass();
-					$name->name = $_REQUEST[$param_name];
+					$name->name = $_REQUEST[$pname];
 					if (empty($name->name))
 					{
 						continue;
@@ -237,7 +237,7 @@ class Names
 						list ($count) = Db::record(get_label('name'), 'SELECT count(*) FROM ' . $table_name . ' o JOIN names n ON n.id = o.name_id WHERE n.name = ? AND (n.langs & ?) <> 0', $n->name, $n->langs, $condition);
 						if ($count > 0)
 						{
-							throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('City name'), $n->name));
+							throw new Exc(get_label('[1] is already used as a [0]. Please try another one.', $obj_name, $n->name));
 						}
 					}
 				}
@@ -368,19 +368,19 @@ class Names
 		echo '</script>';
 	}
 	
-	static function help($help, $object, $for_update)
+	static function help($help, $object, $for_update, $param_name = 'name')
 	{
 		if ($for_update)
 		{
-			$missing = 'a name with the lowest language id is used (most likely English). When none of name_xx is set - names remain the same.';
+			$missing = 'a name with the lowest language id is used (most likely English). When none of '.$param_name.'_xx is set - names remain the same.';
 		}
 		else
 		{
-			$missing = 'a name with the lowest language id is used (most likely English). At least one parameter with name_xx must be set.';
+			$missing = 'a name with the lowest language id is used (most likely English). At least one parameter with '.$param_name.'_xx must be set.';
 		}
 		$help->request_param(
-			'name', 
-			$object . ' name. This name is used in all languages. If a separate name is needed for any other language it can be set as "name_xx" where xx is a two letter language code. For example: { name: "Jason", name_ru: "Джейсон" }. "Jason" is shown for all languages except Russian (code "ru"). For Russian "Джейсон" is shown.' . valid_lang_codes_help(), 
+			$param_name, 
+			$object . ' name. This name is used in all languages. If a separate name is needed for any other language it can be set as "'.$param_name.'_xx" where xx is a two letter language code. For example: { '.$param_name.': "Jason", '.$param_name.'_ru: "Джейсон" }. "Jason" is shown for all languages except Russian (code "ru"). For Russian "Джейсон" is shown.' . valid_lang_codes_help(), 
 			$missing);
 	}
 }

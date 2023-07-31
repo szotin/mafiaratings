@@ -90,8 +90,18 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</span></td></tr>';
 	
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input id="form-price" value="' . $event->price . '"></td></tr>';
-		
+	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($club->fee)?'':$club->fee).'" onchange="feeChanged()">';
+	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ORDER BY n.name', $_lang);
+	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"'.(is_null($club->fee)?' checked':'').'> '.get_label('unknown');
+	echo ' <select id="form-currency" onChange="currencyChanged()">';
+	show_option(0, $club->currency_id, '');
+	while ($row = $query->next())
+	{
+		list($cid, $cname) = $row;
+		show_option($cid, $club->currency_id, $cname);
+	}
+	echo '</select></td></tr>';
+	
 	$query = new DbQuery('SELECT rules, name FROM club_rules WHERE club_id = ? ORDER BY name', $event->club_id);
 	if ($row = $query->next())
 	{
@@ -300,7 +310,8 @@ try
 			$("#form-tournament").val(e.tournament_id);
 			$("#form-duration").val(timespanToStr(e.duration));
 			$("#form-addr_id").val(e.addr_id);
-			$("#form-price").val(e.price);
+			$("#form-fee").val(e.fee);
+			$("#form-currency").val(e.currency);
 			$("#form-rules").val(e.rules_code);
 			$("#form-scoring-sel").val(e.scoring_id);
 			$("#form-scoring-ver").val(e.scoring_version);
@@ -314,6 +325,19 @@ try
 			tournamentChange();
 		});
 		$("#form-copy").val(0);
+	}
+	
+	function feeChanged()
+	{
+		$("#form-fee-unknown").prop('checked', 0);
+	}
+	
+	function feeUnknownClicked()
+	{
+		if ($("#form-fee-unknown").attr('checked'))
+		{
+			$("#form-fee").val('');
+		}
 	}
 	
 	function commit(onSuccess)
@@ -333,7 +357,8 @@ try
 			tournament_id: $("#form-tournament").val(),
 			name: $("#form-name").val(),
 			duration: strToTimespan($("#form-duration").val()),
-			price: $("#form-price").val(),
+			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
+			currency_id: $('#form-currency').val(),
 			address_id: _addr,
 			rules_code: $("#form-rules").val(),
 			scoring_id: scoringId,

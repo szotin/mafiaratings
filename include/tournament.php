@@ -73,7 +73,9 @@ class TournamentPageBase extends PageBase
 	protected $duration;
 	protected $langs;
 	protected $notes;
-	protected $price;
+	protected $fee;
+	protected $currency_id;
+	protected $currency_pattern;
 	protected $scoring_id;
 	protected $scoring_version;
 	protected $scoring_options;
@@ -96,14 +98,14 @@ class TournamentPageBase extends PageBase
 			$this->name, $this->club_id, $this->club_name, $this->club_flags, 
 			$this->address_id, $this->address_name, $this->address, $this->address_url, $this->address_flags,
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
-			$this->start_time, $this->duration, $this->langs, $this->notes, $this->price, 
+			$this->start_time, $this->duration, $this->langs, $this->notes, $this->fee, $this->currency_id, $this->currency_pattern,
 			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, $this->rules_code, $this->flags) =
 		Db::record(
 			get_label('tournament'),
 			'SELECT t.name, c.id, c.name, c.flags,' . 
 				' a.id, a.name, a.address, a.map_url, a.flags,' . 
 				' ct.id, nct.name, cr.id, ncr.name, ct.timezone,' . 
-				' t.start_time, t.duration, t.langs, t.notes, t.price, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.rules, t.flags' .
+				' t.start_time, t.duration, t.langs, t.notes, t.fee, t.currency_id, cu.pattern, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.rules, t.flags' .
 				' FROM tournaments t' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN addresses a ON a.id = t.address_id' .
@@ -111,6 +113,7 @@ class TournamentPageBase extends PageBase
 				' JOIN countries cr ON cr.id = ct.country_id' .
 				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
 				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
+				' LEFT OUTER JOIN currencies cu ON cu.id = t.currency_id' .
 				' WHERE t.id = ?',
 			$_lang, $_lang, $this->id);
 			
@@ -206,9 +209,9 @@ class TournamentPageBase extends PageBase
 		echo '<td rowspan="2" valign="top"><h2 class="tournament">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->start_time, $this->timezone) . '</p>';
-		if (!empty($this->price))
+		if (!is_null($this->currency_pattern) && !is_null($this->fee))
 		{
-			echo '<p class="subtitle"><b>' . get_label('Participation fee: [0]', $this->price) . '</b></p>';
+			echo '<p class="subtitle"><b>'.get_label('Admission rate').': '.format_currency($this->fee, $this->currency_pattern).'</b></p>';
 		}
 		echo '</td>';
 		

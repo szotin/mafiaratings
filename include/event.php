@@ -12,6 +12,7 @@ require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
 require_once __DIR__ . '/rules.php';
+require_once __DIR__ . '/currency.php';
 
 define('WEEK_FLAG_SUN', 1);
 define('WEEK_FLAG_MON', 2);
@@ -28,7 +29,9 @@ class Event
 {
 	public $id;
 	public $name;
-	public $price;
+	public $fee;
+	public $currency_id;
+	public $currency_pattern;
 	public $timestamp;
 	public $timezone;
 	public $duration;
@@ -69,7 +72,9 @@ class Event
 	
 		$this->id = 0;
 		$this->name = '';
-		$this->price = '';
+		$this->fee = NULL;
+		$this->currency_id = NULL;
+		$this->currency_pattern = NULL;
 		$this->duration = 6 * 3600;
 		$this->addr_id = -1;
 		$this->addr = '';
@@ -135,7 +140,7 @@ class Event
 	
 	function set_default_name()
 	{
-		list ($this->club_name, $this->price) = Db::record(get_label('club'), 'SELECT name, price FROM clubs WHERE id = ?', $this->club_id);
+		list ($this->club_name, $this->fee, $this->currency_id) = Db::record(get_label('club'), 'SELECT name, fee, currency_id FROM clubs WHERE id = ?', $this->club_id);
 		$this->name = $this->club_name;
 	}
 	
@@ -220,7 +225,8 @@ class Event
 		}
 		
 		$this->langs = $club->langs;
-		$this->price = $club->price;
+		$this->fee = $club->fee;
+		$this->currency_id = $club->currency_id;
 		$this->city = $club->city;
 		$this->country = $club->country;
 		$this->scoring_id = $club->scoring_id;
@@ -289,9 +295,9 @@ class Event
 		
 		Db::exec(
 			get_label('event'), 
-			'INSERT INTO events (name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id) ' .
-			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$this->name, $this->price, $this->addr_id, $this->club_id, $this->timestamp, 
+			'INSERT INTO events (name, fee, currency_id, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id) ' .
+			'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$this->name, $this->fee, $this->currency_id, $this->addr_id, $this->club_id, $this->timestamp, 
 			$this->notes, $this->duration, $this->flags, $this->langs, $this->rules_code, 
 			$this->scoring_id, $this->scoring_version, $this->scoring_options, $this->tournament_id);
 		list ($this->id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
@@ -299,7 +305,8 @@ class Event
 		
 		$log_details = new stdClass();
 		$log_details->name = $this->name;
-		$log_details->price = $this->price;
+		$log_details->fee = $this->fee;
+		$log_details->currency_id = $this->currency_id;
 		$log_details->address_name = $addr_name;
 		$log_details->address_id = $this->addr_id;
 		$log_details->start = format_date('d/m/y H:i', $this->timestamp, $timezone);
@@ -337,10 +344,10 @@ class Event
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
-				'name = ?, price = ?, club_id = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_options = ?, ' .
+				'name = ?, fee = ?, currency_id = ?, club_id = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_options = ?, ' .
 				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
 				'languages = ? WHERE id = ?',
-			$this->name, $this->price, $this->club_id, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_options,
+			$this->name, $this->fee, $this->currency_id, $this->club_id, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_options,
 			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags,
 			$this->langs, $this->id);
 		if (Db::affected_rows() > 0)
@@ -348,7 +355,8 @@ class Event
 			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
 			$log_details = new stdClass();
 			$log_details->name = $this->name;
-			$log_details->price = $this->price;
+			$log_details->fee = $this->fee;
+			$log_details->currency_id = $this->currency_id;
 			$log_details->address_name = $addr_name;
 			$log_details->address_id = $this->addr_id;
 			$log_details->start = format_date('d/m/y H:i', $this->timestamp, $timezone);
@@ -379,13 +387,13 @@ class Event
 	
 		$this->id = $event_id;
 		list (
-			$this->name, $this->price, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
+			$this->name, $this->fee, $this->currency_id, $this->currency_pattern, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
 			$this->tournament_id, $this->tournament_name, $this->tournament_flags,
 			$this->addr_id, $this->addr, $this->addr_url, $timezone, $this->addr_flags,
 			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_options, $this->coming_odds, $this->city, $this->country) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.price, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, u.coming_odds, ni.name, no.name FROM events e' .
+					'SELECT e.name, e.fee, e.currency_id, cu.pattern, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, u.coming_odds, ni.name, no.name FROM events e' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .
@@ -394,6 +402,7 @@ class Event
 						' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
 						' LEFT OUTER JOIN event_users u ON u.event_id = e.id AND u.user_id = ?' .
 						' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
+						' LEFT OUTER JOIN currencies cu ON e.currency_id = cu.id' .
 						' WHERE e.id = ?',
 					$_lang, $_lang, $user_id, $event_id);
 					
@@ -424,9 +433,9 @@ class Event
 			{
 				echo '<p>' . get_label('Language') . ': ' . get_langs_str($this->langs, ', ') . '</p>';
 			}
-			if ($this->price != '')
+			if (!is_null($this->currency_pattern) && !is_null($this->fee))
 			{
-				echo '<p>' . get_label('Admission rate') . ': ' . $this->price . '</p>';
+				echo '<p>' . get_label('Admission rate') . ': '.format_currency($this->fee, $this->currency_pattern).'</p>';
 			}
 			echo '</td></tr></table>';
 		}
@@ -972,9 +981,9 @@ class EventPageBase extends PageBase
 		echo '<td rowspan="2" valign="top"><h2 class="event">' . $this->event->get_full_name() . '</h2><br><h3>' . $this->_title;
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p>';
-		if (!empty($this->event->price))
+		if (!is_null($this->event->currency_pattern) && !is_null($this->event->fee))
 		{
-			echo '<p class="subtitle"><b>' . get_label('Participation fee: [0]', $this->event->price) . '</b></p>';
+			echo '<p class="subtitle"><b>'.get_label('Admission rate').': '.format_currency($this->event->fee, $this->event->currency_pattern).'</b></p>';
 		}
 		echo '</td>';
 		

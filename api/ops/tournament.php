@@ -55,7 +55,7 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 	}
 }
 
-function create_event($event_name, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $with_selection)
+function create_event($event_name, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $with_selection)
 {
 	$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
 	if ($with_selection)
@@ -64,8 +64,8 @@ function create_event($event_name, $address_id, $club_id, $start, $end, $notes, 
 	}
 	Db::exec(
 		get_label('round'), 
-		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, price, scoring_id, scoring_version, scoring_options, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-		$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $price, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code);
+		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, fee, currency_id, scoring_id, scoring_version, scoring_options, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+		$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code);
 		
 	$log_details = new stdClass();
 	$log_details->name = $event_name;
@@ -76,7 +76,8 @@ function create_event($event_name, $address_id, $club_id, $start, $end, $notes, 
 	$log_details->duration = $end - $start;
 	$log_details->langs = $langs;
 	$log_details->notes = $notes;
-	$log_details->price = $price;
+	$log_details->fee = $fee;
+	$log_details->currency_id = $currency_id;
 	$log_details->scoring_id = $scoring_id;
 	$log_details->scoring_version = $scoring_version;
 	$log_details->scoring_options = $scoring_options;
@@ -85,7 +86,7 @@ function create_event($event_name, $address_id, $club_id, $start, $end, $notes, 
 	db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id);
 }
 
-function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, $tournament_id, $rules_code)
+function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code)
 {
 	$round_names = include '../../include/languages/' . get_lang_code($langs) . '/rounds.php';
 	switch ($type)
@@ -96,7 +97,7 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags = $scoring_options->flags;
 			}
-			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
+			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
 			break;
 		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3:
 			$ops = new stdClass();
@@ -106,10 +107,10 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
+			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
 			$ops->group = 'final';
 			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
+			create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 			break;
 		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4:
 			$ops = new stdClass();
@@ -119,9 +120,9 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
+			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
 			$ops->group = 'final';
-			create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
+			create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 			break;
 		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3:
 			$ops = new stdClass();
@@ -131,11 +132,11 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
-			create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
+			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
+			create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 			$ops->group = 'final';
 			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
+			create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 			break;
 		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4:
 			$ops = new stdClass();
@@ -145,10 +146,10 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
-			create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
+			create_event($round_names->main, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, false);
+			create_event($round_names->semi, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 			$ops->group = 'final';
-			create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
+			create_event($round_names->final, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, true);
 			break;
 		default:
 			break;
@@ -187,7 +188,21 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$type = (int)get_optional_param('type', TOURNAMENT_TYPE_CUSTOM);
-		$price = get_optional_param('price', '');
+		$fee = (int)get_optional_param('fee', -1);
+		if ($fee < 0)
+		{
+			$fee = NULL;
+		}
+		$currency_id = (int)get_optional_param('currency_id', $club->currency_id);
+		if (!is_null($currency_id) && $currency_id <= 0)
+		{
+			$currency_id = NULL;
+		}
+		$players = (int)get_optional_param('players', 0);
+		if ($players < 10)
+		{
+			$players = 0;
+		}
 		$scoring_id = (int)get_optional_param('scoring_id', -1);
 		$scoring_version = (int)get_optional_param('scoring_version', -1);
 		$normalizer_id = (int)get_optional_param('normalizer_id', -1);
@@ -282,8 +297,8 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, price, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, rules, flags, type) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $club_id, $address_id, $start, $end - $start, $langs, $notes, $price, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options_str, $rules_code, $flags, $type);
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, expected_players_count, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, rules, flags, type) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $club_id, $address_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options_str, $rules_code, $flags, $type);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -294,7 +309,15 @@ class ApiPage extends OpsApiPageBase
 		$log_details->duration = $end - $start;
 		$log_details->langs = $langs;
 		$log_details->notes = $notes;
-		$log_details->price = $price;
+		if (!is_null($fee) && !is_null($currency_id))
+		{
+			$log_details->fee = $fee;
+			$log_details->currency_id = $currency_id;
+		}
+		if ($players > 0)
+		{
+			$log_details->players = $players;
+		}
 		$log_details->scoring_id = $scoring_id;
 		$log_details->scoring_version = $scoring_version;
 		$log_details->normalizer_id = $normalizer_id;
@@ -315,7 +338,7 @@ class ApiPage extends OpsApiPageBase
 			$lang_code = get_lang_code($_lang);
 		}
 		
-		create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, $tournament_id, $rules_code);
+		create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code);
 		
 		// create series records
 		foreach ($series as $s)
@@ -347,7 +370,9 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('type', tournament_type_help_str(), '0');
 		$help->request_param('start', 'Tournament start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
-		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'empty.');
+		$help->request_param('fee', 'Admission rate. When <0 - admission rate is unknown.', '0.');
+		$help->request_param('currency_id', 'Currency id for the admission rate. When <=0 - admission rate is unknown.', '0.');
+		$help->request_param('players', 'Expected number of players. Zero for unknown.', '0.');
 		$help->request_param('rules_code', 'Rules for this tournament.', 'default club rules are used.');
 		$help->request_param('scoring_id', 'Scoring id for this tournament.', 'default club scoring system is used.');
 		$help->request_param('scoring_version', 'Scoring version for this tournament.', 'the latest version of the system identified by scoring_id is used.');
@@ -380,8 +405,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_price, $old_langs, $old_notes, $old_flags, $old_type, $rules_code) = 
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.price, t.langs, t.notes, t.flags, t.type, t.rules FROM tournaments t' . 
+		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_players, $old_langs, $old_notes, $old_flags, $old_type, $rules_code) = 
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type, t.rules FROM tournaments t' . 
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -398,7 +423,21 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$name = get_optional_param('name', $old_name);
-		$price = get_optional_param('price', $old_price);
+		$fee = (int)get_optional_param('fee', $old_fee);
+		if (!is_null($fee) && $fee < 0)
+		{
+			$fee = NULL;
+		}
+		$currency_id = (int)get_optional_param('currency_id', $old_currency_id);
+		if (!is_null($currency_id) && $currency_id <= 0)
+		{
+			$currency_id = NULL;
+		}
+		$players = (int)get_optional_param('players', $old_players);
+		if ($players < 10)
+		{
+			$players = 0;
+		}
 		$scoring_id = get_optional_param('scoring_id', $old_scoring_id);
 		$scoring_version = get_optional_param('scoring_version', -1);
 		$normalizer_id = get_optional_param('normalizer_id', $old_normalizer_id);
@@ -564,14 +603,14 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('round'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
 			Db::exec(get_label('round'), 'DELETE FROM events WHERE tournament_id = ?', $tournament_id);
 			
-			create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $price, $scoring_id, $scoring_version, $tournament_id, $rules_code);
+			create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code);
 		}
 		
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, price = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $price, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $tournament_id);
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, expected_players_count = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $tournament_id);
 		if (Db::affected_rows() > 0 || $series_changed)
 		{
 			if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
@@ -606,9 +645,17 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->notes = $notes;
 			}
-			if ($price != $old_price)
+			if ($fee != $old_fee)
 			{
-				$log_details->price = $price;
+				$log_details->fee = $fee;
+			}
+			if ($currency_id != $old_currency_id)
+			{
+				$log_details->currency_id = $currency_id;
+			}
+			if ($players != $old_players)
+			{
+				$log_details->players = $players;
 			}
 			if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
 			{
@@ -658,7 +705,9 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('type', tournament_type_help_str(), 'remains the same.');
 		$help->request_param('start', 'Tournament start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
-		$help->request_param('price', 'Admission rate. Just a string explaing it.', 'remains the same.');
+		$help->request_param('fee', 'Admission rate. Send -1 if unknown. Zero means free.', 'remains the same.');
+		$help->request_param('currency_id', 'Currency id for the admission rate. Send 0 if unknown.', 'remains the same.');
+		$help->request_param('players', 'Expected number of players. Zero for unknown.', 'remains the same.');
 		$help->request_param('scoring_id', 'Scoring id for this tournament.', 'remains the same.');
 		$help->request_param('scoring_version', 'Scoring version for this tournament.', 'remain the same, or set to the latest for current scoring if scoring_id is changed.');
 		$help->request_param('normalizer_id', 'Normalizer id for this tournament.', 'remains the same.');

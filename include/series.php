@@ -103,15 +103,14 @@ class SeriesPageBase extends PageBase
 				// new MenuItem('series_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
-/*		if ($is_manager)
+		if ($is_manager)
 		{
 			$manager_menu = array
 			(
-				new MenuItem('series_users.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name)),
-				new MenuItem('series_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
+				new MenuItem('series_finance.php?id=' . $this->id, get_label('Financial report'), get_label('Financial report of the [0]', $this->name)),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
-		}*/
+		}
 		
 		echo '<tr><td colspan="4">';
 		PageBase::show_menu($menu);
@@ -145,10 +144,6 @@ class SeriesPageBase extends PageBase
 		echo '<td rowspan="2" valign="top"><h2 class="series">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->start_time, $this->timezone) . '</p>';
-		if (!empty($this->price))
-		{
-			echo '<p class="subtitle"><b>' . get_label('Participation fee: [0]', $this->price) . '</b></p>';
-		}
 		echo '</td>';
 		
 		echo '<td valign="top" align="right">';

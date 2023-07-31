@@ -99,7 +99,6 @@ _l["Duration"] = "Duration";
 _l["Address"] = "Address";
 _l["Country"] = "Country";
 _l["City"] = "City";
-_l["Price"] = "Admission rate";
 _l["Rules"] = "Game rules";
 _l["Langs"] = "Languages";
 _l["AllModer"] = "everyone can moderate games.";

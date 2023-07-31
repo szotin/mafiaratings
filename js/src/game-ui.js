@@ -2034,7 +2034,6 @@ var eventForm = new function()
 			': <input id="form-city"><br>' + l('Country') +
 			': <input id="form-country">' +
 			'</span></td></tr>' +
-			'<tr><td>' + l('Price') + ':</td><td><input id="form-price"></td></tr>' +
 			'<tr><td>' + l('Rules') + ':</td><td><select id="form-rules"></select></td></tr>' +
 			'<tr><td>' + l('Langs') + ':</td><td id="form-langs"></td></tr>' +
 			'<tr><td colspan="2">' +
@@ -2060,7 +2059,6 @@ var eventForm = new function()
 				{
 					name: $('#form-name').val(),
 					duration: $('#form-duration').val(),
-					price: $('#form-price').val(),
 					rules_code: $('#form-rules').val(),
 					tournament_id: 0,
 					langs: l,
@@ -2151,7 +2149,6 @@ var eventForm = new function()
 		}
 		$('#form-addr').html(str);
 		$('#form-duration').val(21600);
-		$('#form-price').val(club.price);
 		$('#form-country').val(club.country);
 		$('#form-city').val(club.city);
 		

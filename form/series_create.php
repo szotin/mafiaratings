@@ -7,6 +7,7 @@ require_once '../include/timespan.php';
 require_once '../include/datetime.php';
 require_once '../include/security.php';
 require_once '../include/picture.php';
+require_once '../include/currency.php';
 
 initiate_session();
 
@@ -37,7 +38,7 @@ try
 	$league_pic->show(ICONS_DIR, false);
 	echo '</td><td align="center"><b>' . $league_name . '</b></td></tr></table></td></tr>';
 	
-	echo '<tr><td width="160">' . get_label('Series name') . ':</td><td><input id="form-name" value=""></td></tr>';
+	echo '<tr><td width="240">' . get_label('Series name') . ':</td><td><input id="form-name" value=""></td></tr>';
 	
 	$timezone = get_timezone();
 	$datetime = get_datetime(time(), $timezone);
@@ -48,6 +49,18 @@ try
 	echo '  ' . get_label('to') . '  ';
 	echo '<input type="date" id="form-end" value="' . $date . '">';
 	echo '</td></tr>';
+	
+	echo '<tr><td>'.get_label('Admission rate per player-tournament').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="" onchange="feeChanged()">';
+	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ORDER BY n.name', $_lang);
+	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()" checked> '.get_label('unknown');
+	echo ' <select id="form-currency" onChange="currencyChanged()">';
+	show_option(0, DEFAULT_CURRENCY, '');
+	while ($row = $query->next())
+	{
+		list($cid, $cname) = $row;
+		show_option($cid, DEFAULT_CURRENCY, $cname);
+	}
+	echo '</select></td></tr>';
 	
 	if (is_valid_lang($league_langs))
 	{
@@ -87,6 +100,19 @@ try
 		}
 	}
 	
+	function feeChanged()
+	{
+		$("#form-fee-unknown").prop('checked', 0);
+	}
+	
+	function feeUnknownClicked()
+	{
+		if ($("#form-fee-unknown").attr('checked'))
+		{
+			$("#form-fee").val('');
+		}
+	}
+	
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -100,6 +126,8 @@ try
 			op: "create",
 			league_id: <?php echo $league_id; ?>,
 			name: $("#form-name").val(),
+			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
+			currency_id: $('#form-currency').val(),
 			notes: $("#form-notes").val(),
 			start: $('#form-start').val(),
 			gaining_id: $('#form-gaining').val(),

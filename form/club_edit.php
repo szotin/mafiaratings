@@ -26,8 +26,12 @@ try
 	
 	$club = $_profile->clubs[$id];
 
-	list ($url, $email, $phone, $price, $flags) =
-		Db::record(get_label('club'), 'SELECT web_site, email, phone, price, flags FROM clubs WHERE id = ?', $id);
+	list ($url, $email, $phone, $fee, $currency_id, $flags) =
+		Db::record(get_label('club'), 'SELECT web_site, email, phone, fee, currency_id, flags FROM clubs WHERE id = ?', $id);
+	if (is_null($currency_id))
+	{
+		list($currency_id) = Db::record(get_label('country'), 'SELECT co.currency_id FROM clubs c JOIN cities ci ON ci.id = c.city_id JOIN countries co ON co.id = ci.country_id WHERE c.id = ?', $id);
+	}
 		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140">' . get_label('Club name') . ':</td><td><input class="longest" id="form-club_name" value="' . htmlspecialchars($club->name, ENT_QUOTES) . '"></td>';
@@ -63,7 +67,18 @@ try
 	
 	echo '<tr><td>'.get_label('Contact email').':</td><td><input class="longest" id="form-email" value="' . htmlspecialchars($email, ENT_QUOTES) . '"></td></tr>';
 	echo '<tr><td>'.get_label('Contact phone(s)').':</td><td><input class="longest" id="form-phone" value="' . htmlspecialchars($phone, ENT_QUOTES) . '"></td></tr>';
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input class="longest" id="form-price" value="' . htmlspecialchars($club->price, ENT_QUOTES) . '"></td></tr>';
+	
+	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
+	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ORDER BY n.name', $_lang);
+	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"' . (is_null($fee)?' checked':'') .'> '.get_label('unknown');
+	echo ' <select id="form-currency" onChange="currencyChanged()">';
+	show_option(0, $currency_id, '');
+	while ($row = $query->next())
+	{
+		list($cid, $cname) = $row;
+		show_option($cid, $currency_id, $cname);
+	}
+	echo '</select></td></tr>';
 	
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
 	show_country_input('form-country', $club->country, 'form-city');
@@ -96,6 +111,19 @@ try
 	
 ?>	
 	<script>
+	function feeChanged()
+	{
+		$("#form-fee-unknown").prop('checked', 0);
+	}
+	
+	function feeUnknownClicked()
+	{
+		if ($("#form-fee-unknown").attr('checked'))
+		{
+			$("#form-fee").val('');
+		}
+	}
+	
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
@@ -108,7 +136,8 @@ try
 			, url: $("#form-url").val()
 			, email: $("#form-email").val()
 			, phone: $("#form-phone").val()
-			, price: $("#form-price").val()
+			, fee: ($("#form-fee-unknown").attr('checked') ? -1 : $("#form-fee").val())
+			, currency_id: $("#form-currency").val()
 			, city: $("#form-city").val()
 			, country: $("#form-country").val()
 			, scoring_id: $("#form-scoring").val()

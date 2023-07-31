@@ -20,8 +20,8 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $price, $langs, $notes, $flags, $tournament_type) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.price, t.langs, t.notes, t.flags, t.type FROM tournaments t' . 
+	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $fee, $currency_id, $players, $langs, $notes, $flags, $tournament_type) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type FROM tournaments t' . 
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
@@ -58,7 +58,7 @@ try
 	$series_list .= '}';
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
+	echo '<tr><td width="240">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="13" width="120">';
 	start_upload_logo_button($tournament_id);
@@ -102,8 +102,24 @@ try
 		show_option($row[0], $address_id, $row[1]);
 	}
 	echo '</select></td></tr>';
+
+	if ($players < 10)
+	{
+		$players = 10;
+	}
+	echo '<tr><td>' . get_label('Expected number of players') . ':</td><td><input type="number" style="width: 45px;" step="1" min="10" id="form-players" value="'.$players.'"></td></tr>';
 	
-	echo '<tr><td>' . get_label('Admission rate') . ':</td><td><input id="form-price" value="' . $price . '"></td></tr>';
+	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
+	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ORDER BY n.name', $_lang);
+	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"' . (is_null($fee)?' checked':'') .'> '.get_label('unknown');
+	echo ' <select id="form-currency" onChange="currencyChanged()">';
+	show_option(0, $currency_id, '');
+	while ($row = $query->next())
+	{
+		list($cid, $cname) = $row;
+		show_option($cid, $currency_id, $cname);
+	}
+	echo '</select></td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
 	show_scoring_select($club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
@@ -355,6 +371,19 @@ try
 		}
 	}
 	
+	function feeChanged()
+	{
+		$("#form-fee-unknown").prop('checked', 0);
+	}
+	
+	function feeUnknownClicked()
+	{
+		if ($("#form-fee-unknown").attr('checked'))
+		{
+			$("#form-fee").val('');
+		}
+	}
+	
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -394,8 +423,9 @@ try
 			series: series,
 			name: $("#form-name").val(),
 			type: $('#form-type').val(),
-			price: $("#form-price").val(),
 			address_id: $("#form-addr_id").val(),
+			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
+			currency_id: $('#form-currency').val(),
 			scoring_id: scoringId,
 			scoring_version: scoringVersion,
 			scoring_options: scoringOptions,
@@ -405,7 +435,8 @@ try
 			start: $('#form-start').val(),
 			end: dateToStr(_end),
 			langs: _langs,
-			flags: _flags
+			flags: _flags,
+			players: $("#form-players").val(),
 		};
 		
 		json.post("api/ops/tournament.php", params, onSuccess);

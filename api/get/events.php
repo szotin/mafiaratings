@@ -158,7 +158,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, c.name, c.flags, e.start_time, e.duration, e.notes, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, t.id, t.name, t.flags, ct.timezone FROM events e' . 
+				'SELECT e.id, e.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, c.name, c.flags, e.start_time, e.duration, e.notes, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, t.id, t.name, t.flags, ct.timezone FROM events e' . 
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN clubs c ON c.id = e.club_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
@@ -173,7 +173,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
-				list ($event->id, $event->name, $event_flags, $event->langs, $event->address_id, $event->address_name, $address_flags, $event->club_id, $event->club_name, $club_flags, $event->timestamp, $event->duration, $event->notes, $event->price, $rules_code, $event->scoring_id, $event->scoring_version, $event->scoring_options, $tournament_id, $tournament_name, $tournament_flags, $event_timezone) = $row;
+				list ($event->id, $event->name, $event_flags, $event->langs, $event->address_id, $event->address_name, $address_flags, $event->club_id, $event->club_name, $club_flags, $event->timestamp, $event->duration, $event->notes, $fee, $currency_id, $rules_code, $event->scoring_id, $event->scoring_version, $event->scoring_options, $tournament_id, $tournament_name, $tournament_flags, $event_timezone) = $row;
 				$event->id = (int)$event->id;
 				$event->langs = (int)$event->langs;
 				$event->address_id = (int)$event->address_id;
@@ -184,6 +184,11 @@ class ApiPage extends GetApiPageBase
 				$event->scoring_id = (int)$event->scoring_id;
 				$event->scoring_version = (int)$event->scoring_version;
 				$event->scoring_options = json_decode($event->scoring_options);
+				if (!is_null($fee) && !is_null($currency_id))
+				{
+					$event->fee = (int)$fee;
+					$event->currency_id = (int)$currency_id;
+				}
 				
 				$event->start = timestamp_to_string($event->timestamp, $event_timezone);
 				$event->end = timestamp_to_string($event->timestamp + $event->duration, $event_timezone);
@@ -227,7 +232,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.price, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.tournament_id FROM events e' . 
+				'SELECT e.id, e.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.tournament_id FROM events e' . 
 				' JOIN addresses a ON a.id = e.address_id', $condition);
 			$query->add(' ORDER BY e.start_time DESC, e.id DESC');
 			if ($page_size > 0)
@@ -239,7 +244,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$event = new stdClass();
-				list ($event->id, $event->name, $flags, $event->langs, $event->address_id, $event->club_id, $event->timestamp, $event->duration, $event->notes, $event->price, $rules_code, $event->scoring_id, $event->scoring_version, $event->scoring_options, $tournament_id) = $row;
+				list ($event->id, $event->name, $flags, $event->langs, $event->address_id, $event->club_id, $event->timestamp, $event->duration, $event->notes, $fee, $currency_id, $rules_code, $event->scoring_id, $event->scoring_version, $event->scoring_options, $tournament_id) = $row;
 				$event->id = (int)$event->id;
 				$event->langs = (int)$event->langs;
 				$event->address_id = (int)$event->address_id;
@@ -253,6 +258,11 @@ class ApiPage extends GetApiPageBase
 				if (!is_null($tournament_id))
 				{
 					$event->tournament_id = (int)$tournament_id;
+				}
+				if (!is_null($fee) && !is_null($currency_id))
+				{
+					$event->fee = (int)$fee;
+					$event->currency_id = (int)$currency_id;
 				}
 				$events[] = $event;
 			}
@@ -305,7 +315,8 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('start', 'Formatted date "yyyy-mm-dd HH:MM" for the start of the event. Event timezone is used.', 1);
 			$param->sub_param('end', 'Formatted date "yyyy-mm-dd HH:MM" for the end of the event. Event timezone is used.', 1);
 			$param->sub_param('notes', 'Event notes.');
-			$param->sub_param('price', 'Event admission rate.');
+			$param->sub_param('fee', 'Event admission rate.','fee is unknown');
+			$param->sub_param('currency_id', 'Currency id for the admission rate.','fee is unknown');
 			$param->sub_param('canceled', 'Trus for canceled events, false for others.');
 			$param->sub_param('scoring_id', 'Scoring system id for this event.');
 			$param->sub_param('scoring_version', 'The version of scoring system id for this event.');

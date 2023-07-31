@@ -1844,7 +1844,6 @@ function add_tournament_nominants($tournament_id, $players)
 			$player->credit = true;
 			$player->bonus = $player->extra_points + $player->legacy_points + $player->penalty_points - $player->weighted_games_count * $remove_from_bonus;
 			$player->nom_flags = 0;
-			echo $player->name . ': ' . $player->bonus . '<br>';
 			if ($mvp == NULL)
 			{
 				$mvp = $player;

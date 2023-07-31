@@ -7,6 +7,7 @@ require_once 'include/address.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/event.php';
+require_once 'include/currency.php';
 
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('ROW_COUNT', 2);
@@ -353,9 +354,9 @@ class Page extends ClubPageBase
 		}
 		
 		echo '<tr><td>'.get_label('Languages').':</td><td>' . get_langs_str($this->langs, ', ') . '</td></tr>';
-		if ($this->price != '')
+		if (!is_null($this->fee) && !is_null($this->currency_pattern))
 		{
-			echo '<tr><td>'.get_label('Admission rate').':</td><td>' . $this->price . '</td></tr>';
+			echo '<tr><td>'.get_label('Admission rate').':</td><td>' . format_currency($this->fee, $this->currency_pattern) . '</td></tr>';
 		}
 		
 		$first_note = true;

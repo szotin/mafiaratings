@@ -21,15 +21,15 @@ try
 	$series_id = (int)$_REQUEST['id'];
 	$timezone = get_timezone();	
 	
-	list ($league_id, $name, $start_time, $duration, $langs, $notes, $flags, $league_langs, $gaining_id, $gaining_version) = 
+	list ($league_id, $name, $start_time, $duration, $langs, $notes, $flags, $league_langs, $gaining_id, $gaining_version, $fee, $currency_id) = 
 		Db::record(get_label('sеriеs'), 
-			'SELECT s.league_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags, l.langs, s.gaining_id, s.gaining_version FROM series s' . 
+			'SELECT s.league_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags, l.langs, s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' . 
 			' JOIN leagues l ON l.id = s.league_id' .
 			' WHERE s.id = ?', $series_id);
 	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">' . get_label('Series name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
+	echo '<tr><td width="240">' . get_label('Series name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
 	
 	echo '<td align="center" valign="top" rowspan="12" width="120">';
 	start_upload_logo_button($series_id);
@@ -52,6 +52,18 @@ try
 	echo '<input type="date" id="form-end" value="' . timestamp_to_string($end_time, $timezone, false) . '">';
 	echo '</td></tr>';
 	echo '</td></tr>';
+	
+	echo '<tr><td>'.get_label('Admission rate per player-tournament').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
+	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ORDER BY n.name', $_lang);
+	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"' . (is_null($fee)?' checked':'') .'> '.get_label('unknown');
+	echo ' <select id="form-currency" onChange="currencyChanged()">';
+	show_option(0, $currency_id, '');
+	while ($row = $query->next())
+	{
+		list($cid, $cname) = $row;
+		show_option($cid, $currency_id, $cname);
+	}
+	echo '</select></td></tr>';
 	
 	if (is_valid_lang($league_langs))
 	{
@@ -93,6 +105,19 @@ try
 		}
 	}
 	
+	function feeChanged()
+	{
+		$("#form-fee-unknown").prop('checked', 0);
+	}
+	
+	function feeUnknownClicked()
+	{
+		if ($("#form-fee-unknown").attr('checked'))
+		{
+			$("#form-fee").val('');
+		}
+	}
+	
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -104,9 +129,11 @@ try
 			series_id: <?php echo $series_id; ?>,
 			name: $("#form-name").val(),
 			notes: $("#form-notes").val(),
+			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
+			currency_id: $('#form-currency').val(),
 			start: $('#form-start').val(),
-			gaining_id: $('#form-gaining').val(),
 			end: dateToStr(_end),
+			gaining_id: $('#form-gaining').val(),
 			langs: _langs,
 		};
 		
