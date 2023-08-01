@@ -69,6 +69,7 @@ DROP TABLE IF EXISTS `city_names`;
 DROP TABLE IF EXISTS `cities`;
 DROP TABLE IF EXISTS `country_names`;
 DROP TABLE IF EXISTS `countries`;
+DROP TABLE IF EXISTS `currencies`;
 DROP TABLE IF EXISTS `snapshots`;
 DROP TABLE IF EXISTS `gaining_versions`;
 DROP TABLE IF EXISTS `gainings`;
