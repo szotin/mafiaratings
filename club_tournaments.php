@@ -104,7 +104,7 @@ class Page extends ClubPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, t.langs, a.id, a.address, a.flags,' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, t.langs, t.expected_players_count, a.id, a.address, a.flags,' .
 			' (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players,' .
 			' (SELECT count(*) FROM games _g JOIN events _e ON _e.id = _g.event_id WHERE _e.tournament_id = t.id AND _g.is_canceled = FALSE AND _g.result > 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
@@ -122,7 +122,7 @@ class Page extends ClubPageBase
 			$tournament = new stdClass();
 			list (
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->time, $tournament->duration, $tournament->timezone, 
-				$tournament->languages, $tournament->addr_id, $tournament->addr, $tournament->addr_flags, 
+				$tournament->languages, $tournament->expected_players_count, $tournament->addr_id, $tournament->addr, $tournament->addr_flags, 
 				$tournament->players_count, $tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
 			if ($future)
 			{
@@ -183,18 +183,22 @@ class Page extends ClubPageBase
 		}
 
 		$now = time();
-		echo '<table class="bordered light" width="100%">';
-		if (!$future)
+		echo '<table class="bordered light" width="100%"><tr class="th-long darker">';
+		echo '<td width="100"></td>';
+		echo '<td align="center" colspan="2">' . get_label('Tournament') . '</td>';
+		if ($future)
 		{
-			echo '<tr class="th-long darker">';
-			echo '<td width="100"></td>';
-			echo '<td align="center">' . get_label('Tournament') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Expected players count') . '</td>';
+		}
+		else
+		{
 			echo '<td width="60" align="center">' . get_label('Players') . '</td>';
 			echo '<td width="60" align="center">' . get_label('Games') . '</td>';
 			echo '<td width="60" align="center">' . get_label('Rounds') . '</td>';
 			echo '<td width="60" align="center">' . get_label('Video') . '</td>';
-			echo '</tr>';
 		}
+		echo '</tr>';
+		$num = $_page * PAGE_SIZE;
 		foreach ($tournaments as $tournament)
 		{
 			$playing =($now >= $tournament->time && $now < $tournament->time + $tournament->duration);
@@ -211,6 +215,8 @@ class Page extends ClubPageBase
 			{
 				echo '<td rowspan="' . $tournament->month_count . '" class="darker" width="100" align="center"><b>' . $tournament->month . '</b></td>';
 			}
+			
+			echo '<td align="center" width="30"><b>' . ++$num . '</b></td>';
 			
 			echo '<td><table width="100%" class="transp"><tr>';
 			echo '<td width="80" align="center" valign="center">';
@@ -235,7 +241,11 @@ class Page extends ClubPageBase
 			echo '</tr></table>';
 			echo '</td>';
 			
-			if (!$future)
+			if ($future)
+			{
+				echo '<td align="center">' . $tournament->expected_players_count . '</td>';
+			}
+			else
 			{
 				echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
 				echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament->id . '">' . $tournament->games_count . '</a></td>';

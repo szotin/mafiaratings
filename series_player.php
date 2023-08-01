@@ -105,8 +105,10 @@ class Page extends SeriesPageBase
 	
 	private function show_tournaments()
 	{
+		global $_lang;
+		
 		echo '<p><table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td>';
+		echo '<tr class="th darker" align="center"><td colspan="3">';
 		echo '<table class="transp" width="100%"><tr><td width="72">';
 		echo '<a href="user_info.php?bck=1&id=' . $this->user_id . '">';
 		$this->player_pic->show(ICONS_DIR, false, 64);
@@ -123,44 +125,122 @@ class Page extends SeriesPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
 		
-		$sum = 0;
-		$query = new DbQuery('SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, p.place, (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players FROM tournament_places p JOIN tournaments t ON t.id = p.tournament_id JOIN series_tournaments s ON s.tournament_id = t.id AND s.series_id = ? JOIN clubs c ON c.id = t.club_id WHERE p.user_id = ? ORDER BY t.start_time DESC', $this->id, $this->user_id);
+		$delim = '';
+		$cs_tournaments = '';
+		$tournaments = array();
+		$query = new DbQuery(
+			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, p.place, n.name, t.start_time, ct.timezone, (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players' .
+			' FROM tournament_places p'.
+			' JOIN tournaments t ON t.id = p.tournament_id'.
+			' JOIN series_tournaments s ON s.tournament_id = t.id AND s.series_id = ?'.
+			' JOIN clubs c ON c.id = t.club_id'.
+			' JOIN addresses a ON a.id = t.address_id'.
+			' JOIN cities ct ON ct.id = a.city_id'.
+			' JOIN names n ON n.id = ct.name_id AND (n.langs & ?) <> 0'.
+			' WHERE p.user_id = ? ORDER BY t.start_time DESC', $this->id, $_lang, $this->user_id);
 		while ($row = $query->next())
 		{
-			list($tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $stars, $place, $players_count) = $row;
-			echo '<tr align="center"><td>';
-			echo '<table width="100%" class="transp"><tr><td width="58"><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament_id . '&bck=1">';
-			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
+			$tournament = new stdClass();
+			list(
+				$tournament->id, $tournament->name, $tournament->flags, $tournament->club_id, $tournament->club_name, $tournament->club_flags, 
+				$tournament->stars, $tournament->place, $tournament->city_name, $tournament->time, $tournament->timezone, $tournament->players_count) = $row;
+			$tournaments[] = $tournament;
+			$cs_tournaments .= $delim . $tournament->id;
+			$delim = ',';
+		}
+		
+		// Get other series
+		if ($cs_tournaments != '')
+		{
+			$query = new DbQuery(
+				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, l.id, l.name, l.flags' .
+				' FROM series_tournaments st' .
+				' JOIN series s ON s.id = st.series_id' .
+				' JOIN tournaments t ON t.id = st.tournament_id' .
+				' JOIN leagues l ON l.id = s.league_id' .
+				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ORDER BY t.start_time DESC, s.id');
+			$current_tournament = 0;
+			while ($row = $query->next())
+			{
+				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags) = $row;
+				while ($current_tournament < count($tournaments) && $tournaments[$current_tournament]->id != $tournament_id)
+				{
+					++$current_tournament;
+				}
+				if ($current_tournament < count($tournaments))
+				{
+					if ($series_id != $this->id)
+					{
+						$series = new stdClass();
+						$series->stars = $stars;
+						$series->id = $series_id;
+						$series->name = $series_name;
+						$series->flags = $series_flags;
+						$series->league_id = $league_id;
+						$series->league_name = $league_name;
+						$series->league_flags = $league_flags;
+						$tournaments[$current_tournament]->series[] = $series;
+					}
+				}
+			}
+		}
+		
+		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+		$sum = 0;
+		$num = 0;
+		foreach ($tournaments as $tournament)
+		{
+			echo '<tr align="center">';
+			echo '<td width="30"><b>'.++$num.'</b></td>';
+			echo '<td><table width="100%" class="transp"><tr><td width="58"><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1">';
+			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 			$tournament_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament_id . '&bck=1">' . $tournament_name . '</a></td>';
-			echo '<td align="right" width="120"><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($stars) . '</font></td>';
-			echo '<td align="right" width="42">';
-			$club_pic->set($club_id, $club_name, $club_flags);
-			$club_pic->show(ICONS_DIR, false, 40);
-			echo '</a></td>';
+			echo '</a></td><td><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1">' . $tournament->name . '</a>';
+			echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($tournament->stars) . '</font></td>';
+			if (isset($tournament->series))
+			{
+				foreach ($tournament->series as $series)
+				{
+					echo '<td width="64" align="center" valign="center">';
+					echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
+					echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
+					$series_pic->set($series->id, $series->name, $series->flags)->set($series->league_id, $series->league_name, $series->league_flags);
+					$series_pic->show(ICONS_DIR, false, 32);
+					echo '</a></td>';
+				}
+			}
 			echo '</tr></table></td>';
 			
-			$score = get_gaining_points($this->gaining, $stars, $players_count, $place);
-			echo '<td><a href="javascript:showGaining(' . $players_count . ', ' . $stars . ', ' . $place . ')">';
-			if ($place > 0 && $place < 4)
+			echo '<td width="160" valign="center" class="dark">';
+			echo '<table width="100%" class="transp"><tr>';
+			echo '<td width="60" align="center" valign="center">';
+			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
+			$club_pic->show(ICONS_DIR, false, 40);
+			echo '</td>';
+			echo '<td><b>' . $tournament->city_name  . '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</td>';
+			echo '</tr></table></td>';
+			
+			$score = get_gaining_points($this->gaining, $tournament->stars, $tournament->players_count, $tournament->place);
+			echo '<td><a href="javascript:showGaining(' . $tournament->players_count . ', ' . $tournament->stars . ', ' . $tournament->place . ')">';
+			if ($tournament->place > 0 && $tournament->place < 4)
 			{
-				echo '<img src="images/' . $place . '-place.png" width="48" title="' . get_label('[0] place', $place) . '">';
+				echo '<img src="images/' . $tournament->place . '-place.png" width="48" title="' . get_label('[0] place', $tournament->place) . '">';
 			}
-			else if ($place < 11)
+			else if ($tournament->place < 11)
 			{
-				echo '<b>' . $place . '</b>';
+				echo '<b>' . $tournament->place . '</b>';
 			}
 			else
 			{
-				echo $place;
+				echo $tournament->place;
 			}
 			echo '</a></td>';
 			echo '<td class="dark">' . format_score($score) . '</td>';
-			echo '<td>' . $players_count . '</td>';
+			echo '<td>' . $tournament->players_count . '</td>';
 			echo '</tr>';
 			$sum += $score;
 		}
-		echo '<tr class="darker" style="height:50px;"><td colspan="2"><b>' . get_label('Total') . ':</b></td><td align="center"><b>' . format_score($sum) . '</b></td><td></td></tr>';
+		echo '<tr class="darker" style="height:50px;"><td colspan="4"><b>' . get_label('Total') . ':</b></td><td align="center"><b>' . format_score($sum) . '</b></td><td></td></tr>';
 		echo '</table></p>';
 	}
 	
@@ -308,7 +388,7 @@ class Page extends SeriesPageBase
 			$club_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
-			echo '<td>';
+			echo '<td class="dark">';
 			$tournament_pic->
 				set($tournament_id, $tournament_name, $tournament_flags);
 			echo '<table class="transp" width="100%"><tr><td width="56">';
