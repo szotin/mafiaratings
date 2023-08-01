@@ -11,6 +11,7 @@ require_once __DIR__ . '/club.php';
 require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
+require_once __DIR__ . '/currency.php';
 
 define('TOURNAMENT_TYPE_CUSTOM', 0);
 define('TOURNAMENT_TYPE_FIIM_ONE_ROUND', 1);
