@@ -692,7 +692,7 @@ class Event
 		return $this->name;
 	}
 	
-	static function show_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, $attending, $is_manager = NULL, $is_referee = NULL)
+	static function show_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, $attending, $is_manager = NULL, $is_referee = NULL, $event_page = false)
 	{
 		global $_profile;
 
@@ -726,18 +726,26 @@ class Event
 			
 			if ($is_manager)
 			{
-				echo '<button class="icon" onclick="mr.editEvent(' . $id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
-				if ($start_time >= $now)
+				if ($event_page)
 				{
-					if (($flags & EVENT_FLAG_CANCELED) != 0)
+					$back_url = get_back_page();
+					if (empty($back_url))
 					{
-						echo '<button class="icon" onclick="mr.restoreEvent(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
-					} 
-					else
-					{
-						echo '<button class="icon" onclick="mr.cancelEvent(' . $id . ', \'' . get_label('Are you sure you want to cancel the event?') . '\')" title="' . get_label('Cancel the event') . '"><img src="images/delete.png" border="0"></button>';
+						$back_url = 'events.php';
 					}
+					$back_url = '\''.$back_url.'\'';
 				}
+				else
+				{
+					$back_url = 'undefined';
+				}
+				
+				echo '<button class="icon" onclick="mr.editEvent(' . $id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
+				if (($flags & EVENT_FLAG_CANCELED) != 0)
+				{
+					echo '<button class="icon" onclick="mr.restoreEvent(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
+				} 
+				echo '<button class="icon" onclick="mr.deleteEvent(' . $id . ', ' . $back_url . ')" title="' . get_label('Delete the event') . '"><img src="images/delete.png" border="0"></button>';
 				$no_buttons = false;
 			}
 			if ($is_referee && $start_time < $now && $start_time + $duration + EVENT_ALIVE_TIME >= $now)
@@ -959,7 +967,7 @@ class EventPageBase extends PageBase
 			$this->event->club_id,
 			$this->event->club_flags,
 			$this->event->coming_odds != NULL && $this->event->coming_odds > 0,
-			$this->is_manager, $this->is_referee);
+			$this->is_manager, $this->is_referee, true);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));

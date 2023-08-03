@@ -1557,6 +1557,25 @@ $labelMenu = array (
 'Currency name' => '[EMPTY]', // form/currency_create.php, form/currency_edit.php
 'Admission rate per player-tournament' => '[EMPTY]', // form/series_create.php, form/series_edit.php
 'Expected number of players' => '[EMPTY]', // form/tournament_create.php, form/tournament_edit.php
+'Expected players count' => '[EMPTY]', // address_tournaments.php, club_tournaments.php, league_tournaments.php, series_tournaments.php, tournaments.php
+'Delete round' => '[EMPTY]', // tournament_rounds.php
+'Delete the event' => '[EMPTY]', // include/event.php
+'Delete the tournament' => '[EMPTY]', // include/tournament.php
+'[0] games were played in this event. Only club managers can delete it.' => '[EMPTY]', // api/ops/event.php
+'place' => '[EMPTY]', // api/ops/event.php, api/ops/tournament.php
+'[0] games were played in this tournament. The operation is dangerous. Only site administrator can delete it. Please contact him at admin@mafiaratings.com.' => '[EMPTY]', // api/ops/tournament.php
+'Delete event' => '[EMPTY]', // form/event_delete.php
+'WARNING!' => '[EMPTY]', // form/event_delete.php, form/tournament_delete.php
+'[0] games were played in this event. They will be deleted if you choose to delete this event. Are you sure you want to do it?' => '[EMPTY]', // form/event_delete.php
+'Are you sure you want to delete the event?' => '[EMPTY]', // form/event_delete.php, form/event_delete.php
+'Do you want to?' => '[EMPTY]', // form/event_delete.php, form/tournament_delete.php
+'cancel the event.' => '[EMPTY]', // form/event_delete.php
+'delete the event completely.' => '[EMPTY]', // form/event_delete.php
+'Delete tournament' => '[EMPTY]', // form/tournament_delete.php
+'[0] games were played in this tournament. They will be deleted if you choose to delete this tournament. Are you sure you want to do it?' => '[EMPTY]', // form/tournament_delete.php
+'Are you sure you want to delete the tournament?' => '[EMPTY]', // form/tournament_delete.php, form/tournament_delete.php
+'cancel the tournament.' => '[EMPTY]', // form/tournament_delete.php
+'delete the tournament completely.' => '[EMPTY]', // form/tournament_delete.php
 );
 
 return $labelMenu;

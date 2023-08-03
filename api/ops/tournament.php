@@ -777,6 +777,148 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// delete
+	//-------------------------------------------------------------------------------------------------------
+	function delete_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$log_details = new stdClass();
+		$prev_game_id = NULL;
+		
+		Db::begin();
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		list($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ?', $tournament_id);
+		if ($games_count > 0)
+		{
+			if (!is_permitted(PERMISSION_ADMIN))
+			{
+				throw new Exc(get_label('[0] games were played in this tournament. The operation is dangerous. Only site administrator can delete it. Please contact him at admin@mafiaratings.com.', $games_count));
+			}
+			
+			$query = new DbQuery('SELECT id, end_time FROM games WHERE tournament_id = ? AND is_rating <> 0 ORDER BY end_time, id LIMIT 1', $tournament_id);
+			if ($row = $query->next())
+			{
+				list($game_id, $end_time) = $row;
+				
+				$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
+				if ($row = $query->next())
+				{
+					list($prev_game_id) = $row;
+				}
+				Game::rebuild_ratings($prev_game_id, $end_time);
+				$log_details->rebuild_ratings = $prev_game_id;
+			}
+		}
+		
+		Db::exec(get_label('user'), 'DELETE FROM tournament_users WHERE tournament_id = ?', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->users = Db::affected_rows();
+		}
+		Db::exec(get_label('user'), 'DELETE FROM tournament_invitations WHERE tournament_id = ?', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->invitations = Db::affected_rows();
+		}
+		Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE tournament_id = ?', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->team = Db::affected_rows();
+		}
+		Db::exec(get_label('comment'), 'DELETE FROM tournament_comments WHERE tournament_id = ?', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->comments = Db::affected_rows();
+		}
+		Db::exec(get_label('user'), 'DELETE FROM tournament_places WHERE tournament_id = ?', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->places = Db::affected_rows();
+		}
+		Db::exec(get_label('album'), 'DELETE FROM photo_albums WHERE tournament_id = ?', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->photo_albums = Db::affected_rows();
+		}
+		Db::exec(get_label('video'), 'DELETE FROM videos WHERE tournament_id = ?', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->videos = Db::affected_rows();
+		}
+		
+		// delete games
+		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $prev_game_id, $tournament_id);
+		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('game'), 'DELETE FROM games WHERE tournament_id = ?', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->games = Db::affected_rows();
+		}
+		
+		// delete rounds
+		$events_with_games = '';
+		$sep = '';
+		$query = new DbQuery('SELECT DISTINCT e.id FROM games g JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ?', $tournament_id);
+		while ($row = $query->next())
+		{
+			list($eid) = $row;
+			$events_with_games .= $sep . $eid;
+			$sep = ', ';
+		}
+		if (empty($events_with_games))
+		{
+			$del_condition1 = '';
+			$del_condition2 = '';
+		}
+		else
+		{
+			$del_condition1 = ' AND event_id NOT IN('.$events_with_games.')';
+			$del_condition2 = ' AND id NOT IN('.$events_with_games.')';
+			Db::exec(get_label('round'), 'UPDATE events SET tournament_id = NULL, flags = flags & ~'.EVENT_MASK_HIDDEN.' WHERE id IN ('.$events_with_games.')');
+			if (Db::affected_rows() > 0)
+			{
+				$log_details->rounds_updated = Db::affected_rows();
+			}
+		}
+			
+		Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('user'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('comment'), 'DELETE FROM event_comments WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('points'), 'DELETE FROM event_extra_points WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('mailing'), 'DELETE FROM event_mailings WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('place'), 'DELETE FROM event_places WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('album'), 'DELETE FROM photo_albums WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('video'), 'DELETE FROM videos WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('round'), 'DELETE FROM events WHERE tournament_id = ?'.$del_condition2, $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->rounds_deleted = Db::affected_rows();
+		}
+		
+		// delete tournament
+		Db::exec(get_label('series'), 'DELETE FROM series_tournaments WHERE tournament_id = ?', $tournament_id);
+		Db::exec(get_label('tournament'), 'DELETE FROM tournaments WHERE id = ?', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			db_log(LOG_OBJECT_TOURNAMENT, 'deleted', $log_details, $tournament_id, $club_id);
+		}
+		Db::commit();
+	}
+	
+	function delete_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Cancel tournament.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// finish
 	//-------------------------------------------------------------------------------------------------------
 	function finish_op()

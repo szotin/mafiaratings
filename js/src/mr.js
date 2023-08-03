@@ -460,24 +460,9 @@ var mr = new function()
 		});
 	}
 
-	this.cancelEvent = function(id, confirmMessage)
+	this.deleteEvent = function(id, backUrl)
 	{
-		function _cancel()
-		{
-			json.post("api/ops/event.php", { op: "cancel", event_id: id }, function()
-			{
-				dlg.form("form/event_mailing_create.php?events=" + id + '&type=1', refr, 500, refr);
-			});
-		}
-		
-		if (typeof confirmMessage == "string")
-		{
-			dlg.yesNo(confirmMessage, null, null, _cancel);
-		}
-		else
-		{
-			_cancel();
-		}
+		dlg.form("form/event_delete.php?event_id=" + id, function() { goTo(backUrl); }, 400);
 	}
 
 	this.editEvent = function(id)
@@ -598,22 +583,10 @@ var mr = new function()
 	{
 		json.post("api/ops/tournament.php", { op: "restore", tournament_id: id }, refr);
 	}
-
-	this.cancelTournament = function(id, confirmMessage)
+	
+	this.deleteTournament = function(id, backUrl)
 	{
-		function _cancel()
-		{
-			json.post("api/ops/tournament.php", { op: "cancel", tournament_id: id }, refr);
-		}
-		
-		if (typeof confirmMessage == "string")
-		{
-			dlg.yesNo(confirmMessage, null, null, _cancel);
-		}
-		else
-		{
-			_cancel();
-		}
+		dlg.form("form/tournament_delete.php?tournament_id=" + id, function() { goTo(backUrl); }, 400);
 	}
 
 	this.finishTournament = function(id, confirmMessage, doneMessage)

@@ -1778,17 +1778,11 @@ function add_tournament_nominants($tournament_id, $players)
 	// find out minimum player games to count tournament for a player
 	// We do it in a separate query because we calculate maximum number of games using only main rounds - excluding finals and semi-finals.
 	$max_games = 0;
-	$main_players_count = 0;
 	$query1 = new DbQuery('SELECT p.user_id, count(g.id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ? AND (e.flags & ' . EVENT_FLAG_WITH_SELECTION . ') = 0 AND g.is_canceled = 0 AND g.is_rating <> 0 GROUP BY p.user_id', $tournament_id);
 	while ($row1 = $query1->next())
 	{
 		list($player_id, $games_played) = $row1;
 		$max_games = max($games_played, $max_games);
-		++$main_players_count;
-	}
-	if ($main_players_count == 0)
-	{
-		return 0;
 	}
 	
 	// Calculate constant points that have to be removed from bonus (remove auto-bonus)
@@ -1824,7 +1818,6 @@ function add_tournament_nominants($tournament_id, $players)
 			}
 		}
 	}
-	
 	
 	// The tournament counts for a player only if they played more than 50% of maximum games count. 
 	$min_games = $max_games / 2;

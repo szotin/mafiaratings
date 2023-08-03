@@ -137,17 +137,11 @@ class Page extends TournamentPageBase
 				if ($user_event_flags & USER_PERM_MANAGER)
 				{
 					echo '<button class="icon" onclick="mr.editEvent(' . $event_id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
-					if ($event_time >= $now)
+					if (($event_flags & EVENT_FLAG_CANCELED) != 0)
 					{
-						if (($event_flags & EVENT_FLAG_CANCELED) != 0)
-						{
-							echo '<button class="icon" onclick="mr.restoreEvent(' . $event_id . ')"><img src="images/undelete.png" border="0"></button>';
-						}
-						else
-						{
-							echo '<button class="icon" onclick="mr.cancelEvent(' . $event_id . ', \'' . get_label('Are you sure you want to cancel the event?') . '\')" title="' . get_label('Cancel the event') . '"><img src="images/delete.png" border="0"></button>';
-						}
+						echo '<button class="icon" onclick="mr.restoreEvent(' . $event_id . ')"><img src="images/undelete.png" border="0"></button>';
 					}
+					echo '<button class="icon" onclick="mr.deleteEvent(' . $event_id . ')" title="' . get_label('Delete round') . '"><img src="images/delete.png" border="0"></button>';
 				}
 				if ($user_event_flags & USER_PERM_REFEREE && $event_time + $event_duration + EVENT_ALIVE_TIME >= $now)
 				{

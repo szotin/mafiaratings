@@ -546,8 +546,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('name', 'Event name.', 'remains the same.');
 		$help->request_param('start', 'Event start time. It is either unix timestamp or datetime in the format "yyyy-mm-dd hh:00". Timezone of the address is used.', 'remains the same.');
 		$help->request_param('duration', 'Event duration in seconds.', 'remains the same.');
-		$help->request_param('fee', 'Admission rate. Send -1 if unknown.', 'remains the same.');
-		$help->request_param('currency_id', 'Currency for admission rate. Send -1 if unknown.', 'remains the same.');
+		$help->request_param('fee', 'Admission rate.', 'remains the same.');
+		$help->request_param('currency_id', 'Currency for admission rate. If fee is unknown send null here.', 'remains the same.');
 		$help->request_param('rules_code', 'Rules for this event.', 'remain the same.');
 		$help->request_param('scoring_id', 'Scoring id for this event.', 'remain the same.');
 		$help->request_param('scoring_version', 'Scoring version for this event.', 'remain the same, or set to the latest for current scoring if scoring_id is changed.');
@@ -833,6 +833,109 @@ class ApiPage extends OpsApiPageBase
 	function restore_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Restore canceled event.');
+		$help->request_param('event_id', 'Event id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// delete
+	//-------------------------------------------------------------------------------------------------------
+	function delete_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		$log_details = new stdClass();
+		$prev_game_id = NULL;
+		
+		Db::begin();
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
+		list($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE event_id = ?', $event_id);
+		if ($games_count > 0)
+		{
+			if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
+			{
+				throw new Exc(get_label('[0] games were played in this event. Only club managers can delete it.', $games_count));
+			}
+			
+			$query = new DbQuery('SELECT id, end_time FROM games WHERE event_id = ? AND is_rating <> 0 ORDER BY end_time, id LIMIT 1', $event_id);
+			if ($row = $query->next())
+			{
+				list($game_id, $end_time) = $row;
+				
+				$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
+				if ($row = $query->next())
+				{
+					list($prev_game_id) = $row;
+				}
+				Game::rebuild_ratings($prev_game_id, $end_time);
+				$log_details->rebuild_ratings = $prev_game_id;
+			}
+		}
+		
+		Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->event_users = Db::affected_rows();
+		}
+		Db::exec(get_label('user'), 'DELETE FROM event_incomers WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->event_incomers = Db::affected_rows();
+		}
+		Db::exec(get_label('comment'), 'DELETE FROM event_comments WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->comments = Db::affected_rows();
+		}
+		Db::exec(get_label('points'), 'DELETE FROM event_extra_points WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->extra_points = Db::affected_rows();
+		}
+		Db::exec(get_label('mailing'), 'DELETE FROM event_mailings WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->mailings = Db::affected_rows();
+		}
+		Db::exec(get_label('place'), 'DELETE FROM event_places WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->places = Db::affected_rows();
+		}
+		Db::exec(get_label('album'), 'DELETE FROM photo_albums WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->photo_albums = Db::affected_rows();
+		}
+		Db::exec(get_label('video'), 'DELETE FROM videos WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->videos = Db::affected_rows();
+		}
+		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $prev_game_id, $event_id);
+		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
+		Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
+		Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
+		Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
+		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
+		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
+		Db::exec(get_label('game'), 'DELETE FROM games WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->games = Db::affected_rows();
+		}
+		
+		Db::exec(get_label('event'), 'DELETE FROM events WHERE id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			db_log(LOG_OBJECT_EVENT, 'deleted', $log_details, $event_id, $club_id);
+		}
+		Db::commit();
+	}
+	
+	function delete_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Cancel event.');
 		$help->request_param('event_id', 'Event id.');
 		return $help;
 	}

@@ -21,7 +21,7 @@ define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3', 4);
 define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4', 5);
 define('TOURNAMENT_TYPE_CHAMPIONSHIP', 6);
 
-function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $is_manager = NULL)
+function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $is_manager = NULL, $tournament_page = false)
 {
 	global $_profile;
 	
@@ -33,18 +33,27 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 	$now = time();
 	if ($is_manager && ($club_flags & CLUB_FLAG_RETIRED) == 0)
 	{
-		echo '<button class="icon" onclick="mr.editTournament(' . $id . ')" title="' . get_label('Edit the tournament') . '"><img src="images/edit.png" border="0"></button>';
-		if ($start_time >= $now)
+		if ($tournament_page)
 		{
-			if (($flags & TOURNAMENT_FLAG_CANCELED) != 0)
+			$back_url = get_back_page();
+			if (empty($back_url))
 			{
-				echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
+				$back_url = 'tournaments.php';
 			}
-			else
-			{
-				echo '<button class="icon" onclick="mr.cancelTournament(' . $id . ', \'' . get_label('Are you sure you want to cancel the tournament?') . '\')" title="' . get_label('Cancel the tournament') . '"><img src="images/delete.png" border="0"></button>';
-			}
+			$back_url = '\''.$back_url.'\'';
 		}
+		else
+		{
+			$back_url = 'undefined';
+		}
+		
+		echo '<button class="icon" onclick="mr.editTournament(' . $id . ')" title="' . get_label('Edit the tournament') . '"><img src="images/edit.png" border="0"></button>';
+		if (($flags & TOURNAMENT_FLAG_CANCELED) != 0)
+		{
+			echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
+		} 
+		echo '<button class="icon" onclick="mr.deleteTournament(' . $id . ', ' . $back_url . ')" title="' . get_label('Delete the tournament') . '"><img src="images/delete.png" border="0"></button>';
+		
 		if (($flags & TOURNAMENT_FLAG_FINISHED) == 0 && $now < $start_time + $duration)
 		{
 			echo '<button class="icon" onclick="mr.finishTournament(' . $id . ', \'' . get_label('Are you sure you want to finish the tournament?') . '\', \'' . get_label('The tournament is finished. Results will be applyed to series within one hour') . '\')" title="' . get_label('Finish the tournament') . '"><img src="images/time.png" border="0"></button>';
@@ -191,7 +200,9 @@ class TournamentPageBase extends PageBase
 			$this->duration,
 			$this->flags,
 			$this->club_id,
-			$this->club_flags);
+			$this->club_flags,
+			NULL,
+			true);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$tournament_pic->set($this->id, $this->name, $this->flags);
