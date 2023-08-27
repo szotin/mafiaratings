@@ -1234,6 +1234,34 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('picture', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', 'the picture is reset to a default value');
 		return $help;
 	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// reset
+	//-------------------------------------------------------------------------------------------------------
+	function reset_op()
+	{
+		$user_id = (int)get_required_param('user_id');
+		
+		list($user_club_id) = Db::record(get_label('user'), 'SELECT club_id FROM users WHERE id = ?', $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $user_club_id);
+		
+		$code = md5(rand_string(8));
+		
+		Db::begin();
+		Db::exec(get_label('user'), 'UPDATE users SET flags = flags | ' . USER_FLAG_NO_PASSWORD . ' WHERE id = ?', $user_id);
+		Db::exec(get_label('email'), 'INSERT INTO emails (user_id, code, send_time, obj, obj_id) VALUES (?, ?, ?, ?, ?)', $user_id, $code, time(), EMAIL_OBJ_SIGN_IN, 0);
+		Db::commit();
+		
+		$this->response['url'] = get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $code;
+	}
+	
+	function reset_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_USER, 'Reset user to initially created state.');
+		$help->request_param('user_id', 'User id to reset. Reset means user has no password. They has to activate their account again using activation URL.');
+		$help->response_param('url', 'Activation URL.');
+		return $help;
+	}
 }
 $page = new ApiPage();
 $page->run('User Operations', CURRENT_VERSION);

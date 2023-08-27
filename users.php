@@ -91,7 +91,7 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="th darker">';
-		echo '<td width="58"></td>';
+		echo '<td width="87"></td>';
 		echo '<td colspan="4">' . get_label('User name') . '</td><td width="40"></td></tr>';
 
 		$query = new DbQuery(
@@ -121,6 +121,7 @@ class Page extends GeneralPageBase
 			$ref = '<a href ="?page=' . $_page . '&ccc=' . $this->ccc_filter->get_code();
 			echo '<button class="icon" onclick="mr.editUserAccess(' . $id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.editUser(' . $id . ')" title="' . get_label('Edit [0] profile.', $name) . '"><img src="images/edit.png" border="0"></button>';
+			echo '<button class="icon" onclick="resetPassword(' . $id . ')" title="' . get_label('Reset [0] password.', $name) . '"><img src="images/password.png" width="24" border="0"></button>';
 			echo '</td>';
 			
 			echo '<td width="60" align="center">';
@@ -226,6 +227,24 @@ class Page extends GeneralPageBase
 		}
 		echo '</table>';
 		show_pages_navigation(PAGE_SIZE, $count);
+	}
+	
+	protected function js()
+	{
+?>		
+		function resetPassword(userId)
+		{
+			json.post("api/ops/user.php",
+			{
+				op: 'reset'
+				, user_id: userId
+			}, function(resp)
+			{
+				navigator.clipboard.writeText(resp.url);
+				dlg.info('Reset URL is copied to the clipboard:<p><a href="' + resp.url + '" target="blank_">' + resp.url + '</a></p>', "'Activation URL", 400);
+			});
+		}
+<?php
 	}
 }
 
