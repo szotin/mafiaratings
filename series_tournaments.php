@@ -137,7 +137,7 @@ class Page extends SeriesPageBase
 		
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, t.expected_players_count, a.id, a.address, a.flags, ni.name,' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, t.expected_players_count, st.flags, a.id, a.address, a.flags, ni.name,' .
 			' (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players,' .
 			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND is_canceled = FALSE AND result > 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
@@ -155,7 +155,7 @@ class Page extends SeriesPageBase
 			$tournament = new stdClass();
 			list (
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->time, $tournament->duration, $tournament->timezone, 
-				$tournament->club_id, $tournament->club_name, $tournament->club_flags, $tournament->languages, $tournament->expected_players_count,
+				$tournament->club_id, $tournament->club_name, $tournament->club_flags, $tournament->languages, $tournament->expected_players_count, $tournament->series_tournament_flags,
 				$tournament->addr_id, $tournament->addr, $tournament->addr_flags, $tournament->city,
 				$tournament->players_count, $tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
 			if ($this->future)
@@ -265,7 +265,7 @@ class Page extends SeriesPageBase
 			echo '<td><table width="100%" class="transp"><tr>';
 			echo '<td width="80" align="center" valign="center">';
 			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
-			$tournament_pic->show(ICONS_DIR, true, 60);
+			$tournament_pic->show(ICONS_DIR, true, 60, 60, NULL, ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
 			echo '</td>';
 			echo '<td><b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
 			if ($playing)

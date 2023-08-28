@@ -12,10 +12,12 @@ define('FLAG_FILTER_FUTURE', 0x0001);
 define('FLAG_FILTER_PAST', 0x0002);
 define('FLAG_FILTER_PAYED', 0x0004);
 define('FLAG_FILTER_NOT_PAYED', 0x0008);
-define('FLAG_FILTER_CANCELED', 0x0010);
-define('FLAG_FILTER_NOT_CANCELED', 0x0020);
+define('FLAG_FILTER_EMPTY', 0x0010);
+define('FLAG_FILTER_NOT_EMPTY', 0x0020);
+define('FLAG_FILTER_CANCELED', 0x0040);
+define('FLAG_FILTER_NOT_CANCELED', 0x0080);
 
-define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED);
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
 class Page extends SeriesPageBase
 {
@@ -35,7 +37,7 @@ class Page extends SeriesPageBase
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_checkbox_filter(array(get_label('future tournaments'), get_label('payed tournaments'), get_label('canceled tournaments')), $this->filter);
+		show_checkbox_filter(array(get_label('future tournaments'), get_label('payed tournaments'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $this->filter);
 		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(
@@ -66,6 +68,14 @@ class Page extends SeriesPageBase
 		if ($this->filter & FLAG_FILTER_NOT_PAYED)
 		{
 			$condition->add(' AND (st.flags & '. SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') <> 0');
+		}
+		if ($this->filter & FLAG_FILTER_EMPTY)
+		{
+			$condition->add(' AND NOT EXISTS (SELECT tp.user_id FROM tournament_places tp WHERE tp.tournament_id = t.id) AND NOT EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0)');
+		}
+		if ($this->filter & FLAG_FILTER_NOT_EMPTY)
+		{
+			$condition->add(' AND (EXISTS (SELECT tp.user_id FROM tournament_places tp WHERE tp.tournament_id = t.id) OR EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0))');
 		}
 		if ($this->filter & FLAG_FILTER_CANCELED)
 		{
@@ -197,7 +207,7 @@ class Page extends SeriesPageBase
 			echo '<td' . $main_class . '><table width="100%" class="transp"><tr>';
 			echo '<td width="80" align="center" valign="center">';
 			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
-			$tournament_pic->show(ICONS_DIR, true, 60);
+			$tournament_pic->show(ICONS_DIR, true, 60, 60, NULL, ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
 			echo '</td>';
 			echo '<td><b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
 			echo '</a></b>';

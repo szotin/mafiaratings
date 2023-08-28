@@ -129,7 +129,7 @@ class Page extends SeriesPageBase
 		$cs_tournaments = '';
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, p.place, n.name, t.start_time, ct.timezone, (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players' .
+			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, s.flags, p.place, n.name, t.start_time, ct.timezone, (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players' .
 			' FROM tournament_places p'.
 			' JOIN tournaments t ON t.id = p.tournament_id'.
 			' JOIN series_tournaments s ON s.tournament_id = t.id AND s.series_id = ?'.
@@ -143,7 +143,7 @@ class Page extends SeriesPageBase
 			$tournament = new stdClass();
 			list(
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->club_id, $tournament->club_name, $tournament->club_flags, 
-				$tournament->stars, $tournament->place, $tournament->city_name, $tournament->time, $tournament->timezone, $tournament->players_count) = $row;
+				$tournament->stars, $tournament->series_tournament_flags, $tournament->place, $tournament->city_name, $tournament->time, $tournament->timezone, $tournament->players_count) = $row;
 			$tournaments[] = $tournament;
 			$cs_tournaments .= $delim . $tournament->id;
 			$delim = ',';
@@ -194,7 +194,7 @@ class Page extends SeriesPageBase
 			echo '<td width="30"><b>'.++$num.'</b></td>';
 			echo '<td><table width="100%" class="transp"><tr><td width="58"><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1">';
 			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
-			$tournament_pic->show(ICONS_DIR, false, 50);
+			$tournament_pic->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
 			echo '</a></td><td><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1">' . $tournament->name . '</a>';
 			echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($tournament->stars) . '</font></td>';
 			if (isset($tournament->series))
@@ -235,10 +235,17 @@ class Page extends SeriesPageBase
 				echo $tournament->place;
 			}
 			echo '</a></td>';
-			echo '<td class="dark">' . format_score($score) . '</td>';
+			if ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED)
+			{
+				echo '<td class="dark"><s>' . format_score($score) . '</s></td>';
+			}
+			else
+			{
+				echo '<td class="dark">' . format_score($score) . '</td>';
+				$sum += $score;
+			}
 			echo '<td>' . $tournament->players_count . '</td>';
 			echo '</tr>';
-			$sum += $score;
 		}
 		echo '<tr class="darker" style="height:50px;"><td colspan="4"><b>' . get_label('Total') . ':</b></td><td align="center"><b>' . format_score($sum) . '</b></td><td></td></tr>';
 		echo '</table></p>';

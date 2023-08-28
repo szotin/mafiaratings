@@ -87,7 +87,7 @@ class Page extends SeriesPageBase
 		}
 		
 		$players = array();
-		$query = new DbQuery('SELECT t.tournament_id, u.id, u.name, u.flags, p.place, c.id, c.name, c.flags FROM tournament_places p JOIN users u ON u.id = p.user_id JOIN series_tournaments t ON t.tournament_id = p.tournament_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE t.series_id = ?', $this->id);
+		$query = new DbQuery('SELECT t.tournament_id, u.id, u.name, u.flags, p.place, c.id, c.name, c.flags FROM tournament_places p JOIN users u ON u.id = p.user_id JOIN series_tournaments t ON t.tournament_id = p.tournament_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE t.series_id = ? AND (t.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0', $this->id);
 		while ($row = $query->next())
 		{
 			list($tournament_id, $player_id, $player_name, $player_flags, $place, $club_id, $club_name, $club_flags) = $row;

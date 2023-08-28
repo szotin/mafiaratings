@@ -1576,6 +1576,16 @@ $labelMenu = array (
 'Are you sure you want to delete the tournament?' => '[EMPTY]', // form/tournament_delete.php, form/tournament_delete.php
 'cancel the tournament.' => '[EMPTY]', // form/tournament_delete.php
 'delete the tournament completely.' => '[EMPTY]', // form/tournament_delete.php
+'future tournaments' => '[EMPTY]', // series_finance.php
+'payed tournaments' => '[EMPTY]', // series_finance.php
+'Payment' => '[EMPTY]', // series_finance.php
+'Expected' => '[EMPTY]', // series_finance.php, series_finance.php
+'Real' => '[EMPTY]', // series_finance.php, series_finance.php
+'Edit tournament payment.' => '[EMPTY]', // series_finance.php
+'Reset [0] password.' => '[EMPTY]', // users.php
+'Tournament payment' => '[EMPTY]', // form/tournament_payment.php
+'Payement' => '[EMPTY]', // form/tournament_payment.php
+'not payed' => '[EMPTY]', // form/tournament_payment.php
 );
 
 return $labelMenu;

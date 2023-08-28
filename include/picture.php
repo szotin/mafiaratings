@@ -240,7 +240,7 @@ class Picture
 		return '';
 	}
 	
-	public function show($dir, $with_link, $width = 0, $height = 0, $attributes = NULL)
+	public function show($dir, $with_link, $width = 0, $height = 0, $attributes = NULL, $overlay = NULL)
 	{
 		global $_lang;
 		
@@ -398,6 +398,19 @@ class Picture
 				break;
 			default:
 				break;
+		}
+		if ($overlay != NULL)
+		{
+			echo '<img src="images/' . $dir . get_lang_code($_lang) . '/' . $overlay . '" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
+			if ($width > 0)
+			{
+				echo ' width="' . $width . '"';
+			}
+			if ($height > 0)
+			{
+				echo ' height="' . $height . '"';
+			}
+			echo '>';
 		}
 		echo '</span>' . $close_link;
 	}
