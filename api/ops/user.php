@@ -1250,6 +1250,7 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		Db::exec(get_label('user'), 'UPDATE users SET flags = flags | ' . USER_FLAG_NO_PASSWORD . ' WHERE id = ?', $user_id);
 		Db::exec(get_label('email'), 'INSERT INTO emails (user_id, code, send_time, obj, obj_id) VALUES (?, ?, ?, ?, ?)', $user_id, $code, time(), EMAIL_OBJ_SIGN_IN, 0);
+		db_log(LOG_OBJECT_USER, 'reset', NULL, $user_id);
 		Db::commit();
 		
 		$this->response['url'] = get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $code;

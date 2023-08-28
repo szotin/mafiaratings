@@ -5,19 +5,17 @@ require_once 'include/club.php';
 require_once 'include/languages.php';
 require_once 'include/pages.php';
 require_once 'include/tournament.php';
-require_once 'include/ccc_filter.php';
+require_once 'include/currency.php';
 require_once 'include/checkbox_filter.php';
 
-define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
-
-define('FLAG_FILTER_VIDEOS', 0x0001);
-define('FLAG_FILTER_NO_VIDEOS', 0x0002);
-define('FLAG_FILTER_EMPTY', 0x0004);
-define('FLAG_FILTER_NOT_EMPTY', 0x0008);
+define('FLAG_FILTER_FUTURE', 0x0001);
+define('FLAG_FILTER_PAST', 0x0002);
+define('FLAG_FILTER_PAYED', 0x0004);
+define('FLAG_FILTER_NOT_PAYED', 0x0008);
 define('FLAG_FILTER_CANCELED', 0x0010);
 define('FLAG_FILTER_NOT_CANCELED', 0x0020);
 
-define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED);
 
 class Page extends SeriesPageBase
 {
@@ -29,12 +27,6 @@ class Page extends SeriesPageBase
 		{
 			$this->filter = (int)$_REQUEST['filter'];
 		}
-		
-		$this->future = false;
-		if (isset($_REQUEST['future']))
-		{
-			$this->future = ((int)$_REQUEST['future'] > 0);
-		}
 	}
 
 	protected function show_body()
@@ -43,12 +35,7 @@ class Page extends SeriesPageBase
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
-		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
-		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
-		if (!$this->future)
-		{
-			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $this->filter);
-		}
+		show_checkbox_filter(array(get_label('future tournaments'), get_label('payed tournaments'), get_label('canceled tournaments')), $this->filter);
 		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(
@@ -61,95 +48,47 @@ class Page extends SeriesPageBase
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' JOIN leagues l ON l.id = s.league_id' .
+			' LEFT OUTER JOIN currencies cu ON cu.id = s.currency_id' .
 			' WHERE st.series_id = ?', $_lang, $this->id);
-		if ($this->future)
+			
+		if ($this->filter & FLAG_FILTER_FUTURE)
 		{
 			$condition->add(' AND t.start_time + t.duration >= UNIX_TIMESTAMP()');
 		}
-		else
+		if ($this->filter & FLAG_FILTER_PAST)
 		{
 			$condition->add(' AND t.start_time < UNIX_TIMESTAMP()');
-			
-			if ($this->filter & FLAG_FILTER_VIDEOS)
-			{
-				$condition->add(' AND EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');
-			}
-			if ($this->filter & FLAG_FILTER_NO_VIDEOS)
-			{
-				$condition->add(' AND NOT EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');
-			}
-			if ($this->filter & FLAG_FILTER_EMPTY)
-			{
-				$condition->add(' AND NOT EXISTS (SELECT tp.user_id FROM tournament_places tp WHERE tp.tournament_id = t.id) AND NOT EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0)');
-			}
-			if ($this->filter & FLAG_FILTER_NOT_EMPTY)
-			{
-				$condition->add(' AND (EXISTS (SELECT tp.user_id FROM tournament_places tp WHERE tp.tournament_id = t.id) OR EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0))');
-			}
-			if ($this->filter & FLAG_FILTER_CANCELED)
-			{
-				$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') <> 0');
-			}
-			if ($this->filter & FLAG_FILTER_NOT_CANCELED)
-			{
-				$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0');
-			}
 		}
-		
-		$ccc_id = $ccc_filter->get_id();
-		switch($ccc_filter->get_type())
+		if ($this->filter & FLAG_FILTER_PAYED)
 		{
-		case CCCF_CLUB:
-			if ($ccc_id > 0)
-			{
-				$condition->add(' AND t.club_id = ?', $ccc_id);
-			}
-			else if ($ccc_id == 0 && $_profile != NULL)
-			{
-				$condition->add(' AND t.club_id IN (' . $_profile->get_comma_sep_clubs() . ')');
-			}
-			break;
-		case CCCF_CITY:
-			$condition->add(' AND a.city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)', $ccc_id, $ccc_id);
-			break;
-		case CCCF_COUNTRY:
-			$condition->add(' AND ct.country_id = ?', $ccc_id);
-			break;
+			$condition->add(' AND (st.flags & '. SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0');
 		}
-		
-		echo '<div class="tab">';
-		echo '<button ' . ($this->future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
-		echo '<button ' . (!$this->future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
-		echo '</div>';
-		echo '<div class="tabcontent">';
-		
-		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*)', $condition);
-		show_pages_navigation(PAGE_SIZE, $count);
-
-		if ($this->future)
+		if ($this->filter & FLAG_FILTER_NOT_PAYED)
 		{
-			$order_by = ' ORDER BY t.start_time + t.duration, t.id';
+			$condition->add(' AND (st.flags & '. SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') <> 0');
 		}
-		else
+		if ($this->filter & FLAG_FILTER_CANCELED)
 		{
-			$order_by = ' ORDER BY t.start_time DESC, t.id DESC';
+			$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') <> 0');
+		}
+		if ($this->filter & FLAG_FILTER_NOT_CANCELED)
+		{
+			$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0');
 		}
 		
+		$order_by = ' ORDER BY t.start_time + t.duration, t.id';
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, ni.name,' .
-			' (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players,' .
-			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND is_canceled = FALSE AND result > 0) as games,' .
-			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
-			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, ni.name, st.flags, st.fee, s.fee, cu.pattern, t.expected_players_count,' .
+			' (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players',
 			$condition);
 		$query->add($order_by);
-		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 
 		$tournaments = array();
 		$delim = '';
 		$cs_tournaments = '';
 		$first_month_tournament = NULL;
+		$currency_pattern = NULL;
 		while ($row = $query->next())
 		{
 			$tournament = new stdClass();
@@ -157,15 +96,9 @@ class Page extends SeriesPageBase
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->time, $tournament->duration, $tournament->timezone, 
 				$tournament->club_id, $tournament->club_name, $tournament->club_flags, $tournament->languages,
 				$tournament->addr_id, $tournament->addr, $tournament->addr_flags, $tournament->city,
-				$tournament->players_count, $tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
-			if ($this->future)
-			{
-				$m = format_date('F Y', $tournament->time + $tournament->duration, $tournament->timezone);
-			}
-			else
-			{
-				$m = format_date('F Y', $tournament->time, $tournament->timezone);
-			}
+				$tournament->series_tournament_flags, $tournament->series_tournament_fee, $tournament->series_fee, $currency_pattern,
+				$tournament->expected_players_count, $tournament->players_count) = $row;
+			$m = format_date('F Y', $tournament->time, $tournament->timezone);
 			if ($first_month_tournament == NULL || $first_month_tournament->month != $m)
 			{
 				$tournament->month = $m;
@@ -181,6 +114,11 @@ class Page extends SeriesPageBase
 			$tournaments[] = $tournament;
 			$cs_tournaments .= $delim . $tournament->id;
 			$delim = ',';
+		}
+		
+		if (is_null($currency_pattern))
+		{
+			$currency_pattern = '$#';
 		}
 		
 		// Get tournaments series
@@ -224,48 +162,44 @@ class Page extends SeriesPageBase
 		}
 
 		echo '<table class="bordered light" width="100%">';
-		if (!$this->future)
-		{
-			echo '<tr class="th-long darker">';
-			echo '<td width="100"></td>';
-			echo '<td colspan="2s" align="center">' . get_label('Tournament') . '</td>';
-			echo '<td width="60" align="center">' . get_label('Players') . '</td>';
-			echo '<td width="60" align="center">' . get_label('Games') . '</td>';
-			echo '<td width="60" align="center">' . get_label('Rounds') . '</td>';
-			echo '<td width="60" align="center">' . get_label('Video') . '</td></tr>';
-		}
+		echo '<tr class="th-long darker">';
+		echo '<td width="100" rowspan="2"></td>';
+		echo '<td colspan="4" rowspan="2" align="center">' . get_label('Tournament') . '</td>';
+		echo '<td colspan="2" align="center">' . get_label('Players') . '</td>';
+		echo '<td colspan="2" align="center">' . get_label('Payment') . '</td>';
+		
+		echo '<tr class="th-long darker">';
+		echo '<td width="60" align="center">' . get_label('Expected') . '</td>';
+		echo '<td width="60" align="center">' . get_label('Real') . '</td>';
+		echo '<td width="60" align="center">' . get_label('Expected') . '</td>';
+		echo '<td width="60" align="center">' . get_label('Real') . '</td>';
+		echo '</tr>';
 		
 		$now = time();
+		$num = 0;
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
 		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+		$total_expected = 0;
+		$total = 0;
 		foreach ($tournaments as $tournament)
 		{
-			$playing =($now >= $tournament->time && $now < $tournament->time + $tournament->duration);
-			if ($playing)
-			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr>';
-			}
+			echo '<tr>';
 			
 			if (isset($tournament->month))
 			{
-				echo '<td rowspan="' . $tournament->month_count . '" class="darker" width="100" align="center"><b>' . $tournament->month . '</b></td>';
+				echo '<td rowspan="' . $tournament->month_count . '" class="dark" width="100" align="center"><b>' . $tournament->month . '</b></td>';
 			}
+			$main_class = $now <= $tournament->time ? ' class="dark"' : '';
 			
-			echo '<td><table width="100%" class="transp"><tr>';
+			echo '<td align="center" width="30"' . $main_class . '><b>' . ++$num . '</b></td>';
+			echo '<td width="20"><button class="icon" onclick="paymentClicked(' . $tournament->id . ')" title="' . get_label('Edit tournament payment.') . '"><img src="images/edit.png"></button></td>';
+			echo '<td' . $main_class . '><table width="100%" class="transp"><tr>';
 			echo '<td width="80" align="center" valign="center">';
 			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 			$tournament_pic->show(ICONS_DIR, true, 60);
 			echo '</td>';
 			echo '<td><b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
-			if ($playing)
-			{
-				echo ' (' . get_label('playing now') . ')';
-			}
 			echo '</a></b>';
 			if (isset($tournament->stars))
 			{
@@ -293,23 +227,52 @@ class Page extends SeriesPageBase
 			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</td>';
 			echo '</tr></table></td>';
 			
-			if (!$this->future)
+			echo '<td align="center">' . $tournament->expected_players_count . '</td>';
+			echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
+
+			$total_expected += $tournament->expected_players_count * $tournament->series_fee;
+			echo '<td align="center">' . format_currency($tournament->expected_players_count * $tournament->series_fee, $currency_pattern, false) . '</td>';
+			if (!is_null($tournament->series_fee) && $now > $tournament->time)
 			{
-				echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
-				echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament->id . '">' . $tournament->games_count . '</a></td>';
-				echo '<td align="center"><a href="tournament_rounds.php?bck=1&id=' . $tournament->id . '">' . $tournament->rounds_count . '</a></td>';
-				
-				echo '<td align="center" width="60">';
-				if ($tournament->videos_count > 0)
+				if (is_null($tournament->series_tournament_fee))
 				{
-					echo '<a href="tournament_videos.php?id=' . $tournament->id . '&bck=1" title="' . get_label('Videos from [0]', $tournament->name) . '"><img src="images/video.png" width="40" height="40"></a>';
+					$payment = $tournament->players_count * $tournament->series_fee;
 				}
-				echo '</td>';
+				else
+				{
+					$payment = $tournament->series_tournament_fee;
+				}
+				if ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED)
+				{
+					echo '<td align="center" class="darker"><s>' . format_currency($payment, $currency_pattern, false) . '</s></td>';
+				}
+				else
+				{
+					echo '<td align="center" class="darker">' . format_currency($payment, $currency_pattern, false) . '</td>';
+					$total += $payment;
+				}
+			}
+			else
+			{
+				echo '<td class="dark"></td>';
 			}
 			echo '</tr>';
 		}
-		echo '</table>';
-		show_pages_navigation(PAGE_SIZE, $count);
+		echo '<tr class="th-long darker"><td colspan="7" align="center">' . get_label('Total') .':</td>';
+		echo '<td align="center">' . format_currency($total_expected, $currency_pattern, false) . '</td>';
+		echo '<td align="center" class="darkest">' . format_currency($total, $currency_pattern, false) . '</td>';
+		echo '</tr></table>';
+	}
+	
+	
+	protected function js()
+	{
+?>		
+		function paymentClicked(id)
+		{
+			dlg.form("form/tournament_payment.php?tournament_id=" + id + "&series_id=<?php echo $this->id; ?>", refr, 400);
+		}
+<?php
 	}
 }
 

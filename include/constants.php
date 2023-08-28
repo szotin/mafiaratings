@@ -285,6 +285,10 @@ define('SERIES_ICON_MASK', 0x7);
 define('SERIES_ICON_MASK_OFFSET', 0);
 define('SERIES_ICON_MAX_VERSION', 7);
 
+// series tournament flags
+//  1 - 0x0001 -      1 - not payed - shown in the series list as not payed, the results don't count in the series.
+define('SERIES_TOURNAMENT_FLAG_NOT_PAYED', 0x1);
+
 // address flags
 // 1 - 0x0001 -      1 - not used
 // 2 - 0x0002 -      2 - generated

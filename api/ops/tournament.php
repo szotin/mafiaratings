@@ -1247,6 +1247,82 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('comment', 'Comment text.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// payment
+	//-------------------------------------------------------------------------------------------------------
+	function payment_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$series_id = (int)get_required_param('series_id');
+		$payment = get_optional_param('payment', NULL);
+		$not_payed = get_optional_param('not_payed', NULL);
+		
+		Db::begin();
+		list($club_id, $league_id, $series_fee, $old_series_flags, $old_payment, $expected_players_count, $players_count) = Db::record(get_label('tournament'), 
+			'SELECT t.club_id, s.league_id, s.fee, st.flags, st.fee, t.expected_players_count, (SELECT count(*) FROM tournament_places tp WHERE tp.tournament_id = t.id) as count'.
+			' FROM series_tournaments st'.
+			' JOIN series s ON s.id = st.series_id'.
+			' JOIN tournaments t ON t.id = st.tournament_id'.
+			' WHERE st.series_id = ? AND st.tournament_id = ?', $series_id, $tournament_id);
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		if (is_null($payment))
+		{
+			$payment = (int)$old_payment;
+		}
+		else if ($payment < 0)
+		{
+			$payment = NULL;
+		}
+		else
+		{
+			$payment = (int)$payment;
+		}
+		if (!is_null($payment) && $payment == $players_count * $series_fee)
+		{
+			$payment = NULL;
+		}
+		
+		$series_flags = $old_series_flags;
+		if (!is_null($not_payed))
+		{
+			if ($not_payed)
+			{
+				$series_flags |= SERIES_TOURNAMENT_FLAG_NOT_PAYED;
+			}
+			else
+			{
+				$series_flags &= ~SERIES_TOURNAMENT_FLAG_NOT_PAYED;
+			}
+		}
+		Db::exec(get_label('tournament'), 'UPDATE series_tournaments SET flags = ?, fee = ? WHERE tournament_id = ? AND series_id = ?', $series_flags, $payment, $tournament_id, $series_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->tournament_id = $tournament_id;
+			$log_details->series_id = $series_id;
+			if ($payment != $old_payment)
+			{
+				$log_details->payment = $payment;
+			}
+			if ($series_flags != $old_series_flags)
+			{
+				$log_details->flags = $series_flags;
+			}
+			db_log(LOG_OBJECT_TOURNAMENT, 'payment changed', $log_details, $tournament_id, $club_id);
+		}
+		Db::commit();
+	}
+	
+	function payment_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Finish the tournament. After finishing the tournament within one hour players will get all series points for this tournament. Finish tournament functionality lets not to wait until the time expires and get the results quicker.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('series_id', 'Series id.');
+		$help->request_param('payment', 'How much the organizers payed to the series league. Currency of the series is used. Send negative value for the default payment = series_fee * number_of_players', 'payment remains the same');
+		$help->request_param('not_payed', '0 if everything is ok with the tournament; 1 if there is no payment. In case of 1 the results won\'t count in the series.', 'remains the same');
+		return $help;
+	}
 }
 
 $page = new ApiPage();
