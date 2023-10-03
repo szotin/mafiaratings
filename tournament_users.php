@@ -7,7 +7,7 @@ class Page extends TournamentPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $this->club_id,$this->id);
 		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id,$this->id);
@@ -44,14 +44,15 @@ class Page extends TournamentPageBase
 		$no_team = NULL;
 		$current_team = NULL;
 		$query = new DbQuery(
-			'SELECT t.name, u.id, u.name, u.email, u.flags, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags' .
+			'SELECT t.name, u.id, nu.name, u.email, u.flags, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags' .
 			' FROM tournament_users tu' .
 			' JOIN users u ON tu.user_id = u.id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' LEFT OUTER JOIN club_users cu ON cu.club_id = tu.tournament_id AND cu.user_id = tu.user_id' .
 			' LEFT OUTER JOIN tournament_teams t ON tu.team_id = t.id' .
 			' WHERE tu.tournament_id = ?' .
-			' ORDER BY t.name, u.name',
+			' ORDER BY t.name, nu.name',
 			$this->id);
 		while ($row = $query->next())
 		{

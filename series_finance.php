@@ -46,12 +46,12 @@ class Page extends SeriesPageBase
 			' JOIN series s ON s.id = st.series_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN cities i ON i.id = a.city_id' .
-			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' JOIN leagues l ON l.id = s.league_id' .
 			' LEFT OUTER JOIN currencies cu ON cu.id = s.currency_id' .
-			' WHERE st.series_id = ?', $_lang, $this->id);
+			' WHERE st.series_id = ?', $this->id);
 			
 		if ($this->filter & FLAG_FILTER_FUTURE)
 		{
@@ -140,7 +140,7 @@ class Page extends SeriesPageBase
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
 				' JOIN leagues l ON l.id = s.league_id' .
-				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id', $_lang);
+				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id');
 			$current_tournament = 0;
 			while ($row = $query->next())
 			{

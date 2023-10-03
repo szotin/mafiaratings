@@ -77,7 +77,7 @@ class CCCFilter
 				}
 				else
 				{
-					list ($this->value) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $this->id);
+					list ($this->value) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $this->id);
 				}
 				break;
 			case CCCF_COUNTRY:
@@ -87,7 +87,7 @@ class CCCFilter
 				}
 				else
 				{
-					list ($this->value) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $this->id);
+					list ($this->value) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $this->id);
 				}
 				break;
 		}

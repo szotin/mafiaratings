@@ -17,10 +17,12 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 	
 	// send emails to league managers notifying about the tournament participating in the series
 	$query = new DbQuery(
-		'SELECT u.id, u.name, u.email, u.def_lang, s.name, l.id, l.name FROM series s' .
+		'SELECT u.id, nu.name, u.email, u.def_lang, s.name, l.id, l.name'.
+		' FROM series s' .
 		' JOIN leagues l ON l.id = s.league_id' .
 		' JOIN league_managers lm ON lm.league_id = s.league_id' .
 		' JOIN users u ON u.id = lm.user_id' .
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 		' WHERE s.id = ?', $series->id);
 	while ($row = $query->next())
 	{
@@ -976,6 +978,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_player_op()
 	{
+		global $_lang;
+		
 		$tournament_id = (int)get_required_param('tournament_id');
 		$user_id = (int)get_required_param('user_id');
 		$new_user_id = (int)get_optional_param('new_user_id', 0);
@@ -995,7 +999,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($nickname == NULL)
 			{
-				list($nickname) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $new_user_id);
+				list($nickname) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $new_user_id);
 			}
 			Db::exec(get_label('registration'), 'UPDATE event_users eu JOIN events e ON eu.event_id = e.id SET eu.user_id = ?, eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $new_user_id, $nickname, $user_id, $tournament_id);
 			$changed = $changed || Db::affected_rows() > 0;
@@ -1200,11 +1204,15 @@ class ApiPage extends OpsApiPageBase
 				' WHERE e.id = ?', $tournament_id);
 		
 		$query = new DbQuery(
-			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .
+			'(SELECT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM users u' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' JOIN tournament_invitations ti ON u.id = ti.user_id' .
 			' WHERE ti.status <> ' . TOURNAMENT_INVITATION_STATUS_DECLINED . ')' .
 			' UNION DISTINCT ' .
-			' (SELECT DISTINCT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .
+			' (SELECT DISTINCT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM users u' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' JOIN tournament_comments c ON c.user_id = u.id' .
 			' WHERE c.tournament_id = ?)', $tournament_id, $tournament_id);
 		//echo $query->get_parsed_sql();

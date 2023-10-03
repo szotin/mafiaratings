@@ -16,6 +16,8 @@ class Page extends ClubPageBase
 	
 	protected function prepare()
 	{
+		global $_lang;
+		
 		parent::prepare();
 		check_permissions(PERMISSION_CLUB_MANAGER, $this->id);
 		
@@ -39,14 +41,14 @@ class Page extends ClubPageBase
 			$this->filter_user_id = (int)$_REQUEST['user_id'];
 			if ($this->filter_user_id > 0)
 			{
-				list($this->filter_user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->filter_user_id);
+				list($this->filter_user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $this->filter_user_id);
 			}
 		}
 	}
 
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$filtered = false;
 		$condition = new SQL(' WHERE l.club_id = ?', $this->id);
@@ -85,8 +87,9 @@ class Page extends ClubPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT l.id, u.id, u.name, l.time, l.obj, l.obj_id, l.message, l.page, (l.details IS NOT NULL) FROM log l' .
+			'SELECT l.id, u.id, nu.name, l.time, l.obj, l.obj_id, l.message, l.page, (l.details IS NOT NULL) FROM log l' .
 				' LEFT OUTER JOIN users u ON u.id = l.user_id' .
+				' LEFT OUTER JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON c.id = l.club_id',
 			$condition);
 		$query->add(' ORDER BY l.time DESC, l.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -171,7 +174,7 @@ class Page extends ClubPageBase
 		{
 			function loaded(text, title)
 			{
-				dlg.info(text, title);
+				dlg.info(text, title, 1000);
 			}
 			html.get("log_details.php?id=" + id, loaded);
 		}

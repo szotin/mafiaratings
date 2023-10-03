@@ -356,17 +356,21 @@ class ApiPage extends OpsApiPageBase
 		list($series_id, $series_name, $series_start_time) = Db::record(get_label('sеriеs'), 'SELECT id, name, start_time FROM series WHERE id = ?', $series_id);
 		
 		$query = new DbQuery(
-			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .
+			'(SELECT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM users u' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' JOIN tournament_invitations ti ON u.id = ti.user_id' .
 			' WHERE ti.status <> ' . TOURNAMENT_INVITATION_STATUS_DECLINED . ')' .
 			' UNION DISTINCT ' .
-			' (SELECT DISTINCT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .
+			' (SELECT DISTINCT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM users u' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' JOIN tournament_comments c ON c.user_id = u.id' .
 			' WHERE c.tournament_id = ?)', $tournament_id, $tournament_id);
 		//echo $query->get_parsed_sql();
 		while ($row = $query->next())
 		{
-			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
+			list($user_id, $user_email, $user_flags, $user_lang) = $row;
 			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
 			{
 				continue;

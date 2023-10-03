@@ -22,11 +22,11 @@ class Page extends GeneralPageBase
 		
 		$query = new DbQuery(
 			'SELECT DISTINCT c.id, n.name, c.flags, c.code, un.name FROM countries c' . 
-			' JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ' .
+			' JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ' .
 			' LEFT OUTER JOIN currencies u ON u.id = c.currency_id ' .
-			' LEFT OUTER JOIN names un ON un.id = u.name_id AND (un.langs & ?) <> 0 ' .
+			' LEFT OUTER JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0 ' .
 			' WHERE (c.flags & ' . COUNTRY_FLAG_NOT_CONFIRMED .') <> 0' .
-			' ORDER BY n.name', $_lang, $_lang);
+			' ORDER BY n.name');
 		if ($row = $query->next())
 		{
 			echo '<p><table class="bordered light" width="100%">';
@@ -50,7 +50,7 @@ class Page extends GeneralPageBase
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
 			{
-				$condition->add(' AND c.id = (SELECT i.country_id FROM clubs cl JOIN cities i ON i.id = c.city_id WHERE cl.id = ?)', $ccc_id);
+				$condition->add(' AND c.id IN (SELECT i.country_id FROM addresses a JOIN cities i ON i.id = a.city_id WHERE a.club_id = ?)', $ccc_id);
 			}
 			break;
 		case CCCF_CITY:
@@ -66,9 +66,9 @@ class Page extends GeneralPageBase
 		
 		$query = new DbQuery(
 			'SELECT c.id, n.name, c.flags, c.code, un.name FROM countries c' .
-			' JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0' .
+			' JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN currencies u ON u.id = c.currency_id ' .
-			' LEFT OUTER JOIN names un ON un.id = u.name_id AND (un.langs & ?) <> 0 ', $_lang, $_lang, $condition);
+			' LEFT OUTER JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0 ', $condition);
 		$query->add(' ORDER BY n.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';

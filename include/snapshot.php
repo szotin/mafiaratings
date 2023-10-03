@@ -108,14 +108,17 @@ class Snapshot
 	
 	public function shot()
 	{
+		global $_lang;
+		
 		$this->top100 = array();
 		$query = new DbQuery('SELECT id FROM games WHERE end_time > ? AND result > 0 AND is_rating <> 0 AND is_canceled = 0 LIMIT 1', $this->time);
 		if ($query->next())
 		{
 			$query = new DbQuery(
-				'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, u.name, u.flags, c.id, c.name, c.flags
+				'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, un.name, u.flags, c.id, c.name, c.flags
 					FROM players p
 					JOIN users u ON u.id = p.user_id
+					JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0
 					LEFT OUTER JOIN clubs c ON c.id = u.club_id 
 					WHERE p.game_id = (
 						SELECT p1.game_id 
@@ -129,9 +132,10 @@ class Snapshot
 		else
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.rating, u.name, u.flags, c.id, c.name, c.flags' . 
+				'SELECT u.id, u.rating, un.name, u.flags, c.id, c.name, c.flags' . 
 				' FROM users u' . 
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
+				' JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0' .
 				' WHERE u.reg_time <= ?' . 
 				' ORDER BY u.rating DESC, u.games_won DESC, u.games DESC, u.id' . 
 				' LIMIT 100', $this->time);
@@ -145,6 +149,7 @@ class Snapshot
 	
 	public function load_user_details()
 	{
+		global $_lang;
 		$count = count($this->top100);
 		if ($count <= 0)
 		{
@@ -157,7 +162,11 @@ class Snapshot
 			$ids .= ', ' . $this->top100[$i]->id;
 		}
 		
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, c.id, c.name, c.flags FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE u.id IN (' . $ids . ')');
+		$query = new DbQuery('SELECT u.id, un.name, u.flags, c.id, c.name, c.flags 
+								FROM users u 
+								JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0
+								LEFT OUTER JOIN clubs c ON c.id = u.club_id 
+								WHERE u.id IN (' . $ids . ')');
 		while ($row = $query->next())
 		{
 			list($id, $user_name, $user_flags, $club_id, $club_name, $club_flags) = $row;

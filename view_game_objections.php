@@ -9,6 +9,8 @@ class Page extends PageBase
 {
 	protected function show_body()
 	{
+		global $_lang;
+		
 		if (!isset($_REQUEST['id']))
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('game')));
@@ -27,7 +29,13 @@ class Page extends PageBase
 		// echo '<td width="80">' . get_label('User') . '</td>';
 		// echo '<td>' . get_label('Reason') . '</td>';
 		
-		$query = new DbQuery('SELECT o.id, o.timestamp, o.objection_id, u.id, u.name, u.flags, o.message FROM objections o JOIN users u ON u.id = o.user_id WHERE o.game_id = ? ORDER BY o.timestamp', $game_id);
+		$query = new DbQuery(
+			'SELECT o.id, o.timestamp, o.objection_id, u.id, nu.name, u.flags, o.message'.
+			' FROM objections o'.
+			' JOIN users u ON u.id = o.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE o.game_id = ?'.
+			' ORDER BY o.timestamp', $game_id);
 		while ($row = $query->next())
 		{
 			list ($objection_id, $timestamp, $parent_id, $user_id, $user_name, $user_flags, $message) = $row;

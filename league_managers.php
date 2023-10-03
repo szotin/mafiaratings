@@ -9,7 +9,7 @@ class Page extends LeaguePageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $this->id);
 		
@@ -25,12 +25,13 @@ class Page extends LeaguePageBase
 
 		$user_pic = new Picture(USER_PICTURE);
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.email, u.flags, c.id, c.name, c.flags' .
+			'SELECT u.id, nu.name, u.email, u.flags, c.id, c.name, c.flags' .
 			' FROM league_managers m' .
 			' JOIN users u ON m.user_id = u.id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' WHERE m.league_id = ?' .
-			' ORDER BY u.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
+			' ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
 			$this->id);
 		while ($row = $query->next())
 		{

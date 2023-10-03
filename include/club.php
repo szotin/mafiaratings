@@ -130,13 +130,13 @@ class ClubPageBase extends PageBase
 				'SELECT c.name, c.flags, c.web_site, c.langs, c.rules, c.email, c.phone, c.fee, c.currency_id, cu.pattern, ncr.name, nct.name, u.flags, c.scoring_id, ct.timezone, p.id, p.name, p.flags FROM clubs c ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
-					'JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0 ' .
-					'JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0 ' .
+					'JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0 ' .
+					'JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0 ' .
 					'LEFT OUTER JOIN club_users u ON u.club_id = c.id AND u.user_id = ? ' .
 					'LEFT OUTER JOIN clubs p ON c.parent_id = p.id ' .
 					'LEFT OUTER JOIN currencies cu ON c.currency_id = cu.id ' .
 					'WHERE c.id = ?',
-				$_lang, $_lang, $user_id, $this->id);
+				$user_id, $this->id);
 				
 		$this->event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE)));
 		$this->league_pic = new Picture(LEAGUE_PICTURE);

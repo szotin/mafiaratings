@@ -24,7 +24,7 @@ class Page extends UserPageBase
 	
 	protected function show_body()
 	{
-		global $_page;
+		global $_page, $_lang;
 	
 		$filter = '';
 		if (isset($_REQUEST['filter']))
@@ -32,7 +32,10 @@ class Page extends UserPageBase
 			$filter = $_REQUEST['filter'];
 		}
 	
-		$condition = new SQL(' FROM users u WHERE u.id <> ? AND u.games > 0', $this->id);
+		$condition = new SQL(
+			' FROM users u'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE u.id <> ? AND u.games > 0', $this->id);
 		if ($filter != '')
 		{
 			$condition->add(' AND u.name LIKE ?', $filter . '%');
@@ -54,7 +57,7 @@ class Page extends UserPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td>'.get_label('Player').'</td><td width="100">Rating</td><td width="100">'.get_label('Games played').'</td></tr>';
 		
-		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games', $condition);
+		$query = new DbQuery('SELECT u.id, nu.name, u.rating, u.games', $condition);
 		$query->add(' ORDER BY u.rating DESC, u.games LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{

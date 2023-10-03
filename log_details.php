@@ -21,8 +21,9 @@ try
 	
 	list($user_id, $user_name, $time, $obj, $obj_id, $ip, $message, $club_id, $club_name, $page, $details) =
 		Db::record(get_label('log record'),
-			'SELECT u.id, u.name, l.time, l.obj, l.obj_id, l.ip, l.message, c.id, c.name, l.page, l.details FROM log l' .
+			'SELECT u.id, nu.name, l.time, l.obj, l.obj_id, l.ip, l.message, c.id, c.name, l.page, l.details FROM log l' .
 				' LEFT OUTER JOIN users u ON u.id = l.user_id' .
+				' LEFT OUTER JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON c.id = l.club_id WHERE l.id = ?',
 			$id);
 

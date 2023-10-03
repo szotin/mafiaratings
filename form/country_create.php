@@ -24,7 +24,7 @@ try
 	echo '<tr><td>'.get_label('Two letter country code').':</td><td><input id="form-code" maxlength="2" size="2"></td></tr>';
 	
 	echo '<tr><td>'.get_label('National currency').':</td><td>';
-	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ORDER BY n.name', $_lang);
+	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
 	echo '<select id="form-currency" onChange="currencyChanged()">';
 	show_option(0, 0, get_label('Create new'));
 	while ($row = $query->next())

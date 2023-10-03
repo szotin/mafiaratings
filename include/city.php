@@ -80,7 +80,7 @@ function detect_city()
 	global $_profile, $_lang;
 	
 	$city = Location::get()->city;
-	$query = new DbQuery('SELECT nc.name FROM cities c JOIN names n ON n.id = c.name_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & ?) <> 0 WHERE n.name = ? LIMIT 1', $_lang, $city);
+	$query = new DbQuery('SELECT nc.name FROM cities c JOIN names n ON n.id = c.name_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE n.name = ? LIMIT 1', $city);
 	if ($row = $query->next())
 	{
 		list ($city) = $row;
@@ -98,7 +98,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 	{
 		if ($_profile != NULL)
 		{
-			list ($value) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE id = ?', $_lang, $_profile->city_id);
+			list ($value) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE id = ?', $_profile->city_id);
 		}
 		else
 		{
@@ -110,7 +110,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 		$value = detect_city();
 		if (($value == '' || $value == '-') && $_profile != NULL)
 		{
-			list ($value) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $_profile->city_id);
+			list ($value) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $_profile->city_id);
 		}
 	}
 

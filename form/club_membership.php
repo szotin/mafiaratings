@@ -17,7 +17,11 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('user')));
 	}
 	$user_id = (int)$_REQUEST['user_id'];
-	list($user_name, $club_id) = Db::record(get_label('user'), 'SELECT name, club_id FROM users WHERE id = ?', $user_id);
+	list($user_name, $club_id) = Db::record(get_label('user'), 
+		'SELECT nu.name, u.club_id'.
+		' FROM users u'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+		' WHERE u.id = ?', $user_id);
 	
 	$club_pic = new Picture(CLUB_PICTURE);
 	echo '<p>' . get_label('Join club') . ': <select id="form-join-club" onChange="joinClub()">';

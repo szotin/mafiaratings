@@ -20,9 +20,10 @@ try
 		$parent_id = (int)$_REQUEST['parent_id'];
 		list ($game_id, $club_id, $event_id, $tournament_id, $owner_id, $parent_user_id, $parent_user_name, $parent_user_flags, $parent_message) = 
 			Db::record(get_label('game'), 
-				'SELECT g.id, g.club_id, g.event_id, g.tournament_id, g.user_id, u.id, u.name, u.flags, o.message FROM objections o' .
+				'SELECT g.id, g.club_id, g.event_id, g.tournament_id, g.user_id, u.id, nu.name, u.flags, o.message FROM objections o' .
 				' JOIN games g ON g.id = o.game_id' .
 				' JOIN users u ON u.id = o.user_id' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' WHERE o.id = ?', $parent_id);
 	}
 	else

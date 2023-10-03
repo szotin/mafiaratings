@@ -111,10 +111,10 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('name_contains', 'Search pattern. For example: <a href="gainings.php?name_contains=wa">/api/get/gainings.php?name_contains=wa</a> returns gaining systems containing "wa" in their names.', '-');
-		$help->request_param('name_starts', 'Search pattern. For example: <a href="gainings.php?name_starts=фи">/api/get/gainings.php?name_starts=фи</a> returns gaining systems with names starting with "фи".', '-');
-		$help->request_param('gaining_id', 'gaining system id. For example: <a href="gainings.php?gaining_id=19">/api/get/gainings.php?gaining_id=19</a> returns information about FIIM gaining system.', '-');
-		$help->request_param('gaining_version', 'gaining system version. For example: <a href="gainings.php?gaining_id=21&gaining_version=1">/api/get/gainings.php?gaining_id=21&gaining_version=1</a> returns information about VaWaCa gaining system version 1 (current version is 2). When 0, the latest version is returned.', 'all versions are returned');
+		$help->request_param('name_contains', 'Search pattern. For example: <a href="gainings.php?name_contains=ml">/api/get/gainings.php?name_contains=ml</a> returns gaining systems containing "ml" in their names.', '-');
+		$help->request_param('name_starts', 'Search pattern. For example: <a href="gainings.php?name_starts=mw">/api/get/gainings.php?name_starts=mw</a> returns gaining systems with names starting with "mw".', '-');
+		$help->request_param('gaining_id', 'gaining system id. For example: <a href="gainings.php?gaining_id=2">/api/get/gainings.php?gaining_id=2</a> returns information about MLM gaining system.', '-');
+		$help->request_param('gaining_version', 'gaining system version. For example: <a href="gainings.php?gaining_id=3&gaining_version=1">/api/get/gainings.php?gaining_id=3&gaining_version=1</a> returns information about AML gaining system version 1 (current version is 2). When 0, the latest version is returned.', 'all versions are returned');
 		$help->request_param('league_id', 'League id. Returns all gaining systems used in this league. For example: <a href="gainings.php?league_id=2">/api/get/gainings.php?league_id=2</a> returns all gaining systems used in American Mafia League. It can be 0 - then all gaining systems not belonging to any league are reurned.', 'all gaining systems are returned');
 		
 		$param = $help->response_param('gainings', 'The array of gaining systems.');

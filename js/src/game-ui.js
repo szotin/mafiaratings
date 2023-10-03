@@ -290,8 +290,6 @@ mafia.ui = new function()
 {
 	var _mobile = false;
 	var _shortSpeech = false;
-	var _lCounter = 0;
-	var _gCounter = 0;
 	var _backPage = null;
 	var _oldState = -1;
 	var _errorDialog = false;
@@ -513,24 +511,18 @@ mafia.ui = new function()
 			$('#settings_img').attr("src", mafia.data().club.icon);
 			setInterval(function()
 			{
-				var s = mafia.data().user.settings;
-				++_lCounter;
-				if (mafia.localDirty() && s.l_autosave > 0 && _lCounter >= s.l_autosave)
+				if (mafia.localDirty())
 				{
-					_lCounter = 0;
 					mafia.save();
 				}
 				
-				++_gCounter;
-				if (mafia.globalDirty() && s.g_autosave > 0 && _gCounter >= s.g_autosave)
+				if (mafia.globalDirty())
 				{
-					_gCounter = 0;
 					var w = http.waiter(statusWaiter);
 					mafia.sync();
 					http.waiter(w);
-					s = false;
 				}
-			}, 1000);
+			}, 1000); // save every second
 		});
 	}
 
@@ -2183,6 +2175,7 @@ var eventForm = new function()
 var regForm = new function()
 {
 	var _num;
+	var _ulistReq = 0;
 
 	this.show = function(num)
 	{
@@ -2228,18 +2221,13 @@ var regForm = new function()
 		regForm.nameChange();
 	}
 
-	this.nameChange = function()
+	this._nameChange = function()
 	{
 		var club = mafia.data().club;
 		var name = $('#form-name').val().toLocaleLowerCase();
 		var num = 0;
 		if (http.connected())
 		{
-			for (; num < /*NUM_USERS*/50; ++num)
-			{
-				$('#form-u' + num).html('&nbsp;');
-			}
-			
 			var w = http.waiter(silentWaiter);
 			json.post('api/ops/game.php', { op: 'ulist', club_id: club.id, name: name, num: /*NUM_USERS*/50 }, function(data)
 			{
@@ -2249,6 +2237,10 @@ var regForm = new function()
 					var p = data.list[i];
 					$('#form-u' + num).html('<a href="#" onclick="regForm.regIncomer(\'' + p.name + '\', \'' + p.name + '\', ' + p.id + ', ' + p.flags  + ')">' + p.full_name + '</a>');
 					++num;
+				}
+				for (; num < /*NUM_USERS*/50; ++num)
+				{
+					$('#form-u' + num).html('&nbsp;');
 				}
 			});
 			http.waiter(w);
@@ -2310,6 +2302,19 @@ var regForm = new function()
 				$('#form-u' + num).html('&nbsp;');
 			}
 		}
+	}
+	
+	this.nameChange = function()
+	{
+		++_ulistReq;
+		setTimeout(function() 
+		{
+			if (--_ulistReq <= 0)
+			{
+				_ulistReq = 0;
+				regForm._nameChange();
+			}
+		}, 500);
 	}
 	
 	function _register(id)
@@ -2463,6 +2468,7 @@ var newUserForm = new function()
 					try
 					{
 						var id = mafia.createUser(name, nick, email, flags);
+						console.log(id);
 						mafia.player(num, id);
 						mafia.ui.eventChange(false);
 					}
@@ -2548,9 +2554,7 @@ var settingsForm = new function()
 		
 		var html = 
 			'<audio id="test-snd" preload></audio><table class="dialog_form" width="100%">' +
-			'<tr><td width="200">' + l('SaveLocal') + ':</td><td><select id="l-autosave"><option value="0">' + l('OnGameEnd') + '</option><option value="600">' + l('10min') + '</option><option value="300">' + l('5min') + '</option><option value="60">' + l('1min') + '</option><option value="30">' + l('30sec') + '</option><option value="10">' + l('10sec') + '</option><option value="1">' + l('1sec') + '</option></select></td></tr>' +
-			'<tr><td>' + l('Sync') + ':</td><td><select id="g-autosave"><option value="0">' + l('OnGameEnd') + '</option><option value="600">' + l('10min') + '</option><option value="300">' + l('5min') + '</option><option value="60">' + l('1min') + '</option><option value="30">' + l('30sec') + '</option><option value="10">' + l('10sec') + '</option><option value="1">' + l('1sec') + '</option></select></td></tr>' +
-			'<tr><td>' + l('TStart') + ':</td><td><select id="t-start"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>' +
+			'<tr><td width="200">' + l('TStart') + ':</td><td><select id="t-start"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>' +
 			'<tr><td>' + l('TPrompt') + ':</td><td><select id="t-prompt" onchange="settingsForm.playSound(0)">' + soundsHtml + '</select></td></tr>' +
 			'<tr><td>' + l('TEnd') + ':</td><td><select id="t-end" onchange="settingsForm.playSound(1)">' + soundsHtml + '</select></td></tr>' +
 			'<tr><td>' + l('TBlinking') + ':</td><td><select id="t-blink"><option value="1">' + l('on') + '</option><option value="0">' + l('off') + '</option></select></td></tr>';
@@ -2566,33 +2570,14 @@ var settingsForm = new function()
 			if ($('#s-client').val() != 0) flags |= /*S_FLAG_SIMPLIFIED_CLIENT*/0x1;
 			document.getElementById('prompt-snd').src = "sounds/" + $('#t-prompt').val() + ".mp3";
 			document.getElementById('end-snd').src = "sounds/" + $('#t-end').val() + ".mp3";
-			mafia.settings($('#l-autosave').val(), $('#g-autosave').val(), $('#t-prompt').val(), $('#t-end').val(), flags);
+			mafia.settings($('#t-prompt').val(), $('#t-end').val(), flags);
 		});
-	}
-	
-	this.normalize = function(autosave)
-	{
-		if (autosave <= 0)
-			return 0;
-		if (autosave < 5)
-			return 1;
-		if (autosave < 20)
-			return 10;
-		if (autosave < 45)
-			return 30;
-		if (autosave < 180)
-			return 60;
-		if (autosave < 450)
-			return 300;
-		return 600;
 	}
 	
 	this.init = function()
 	{
 		var s = mafia.data().user.settings;
 		var f = s.flags;
-		$('#l-autosave').val(settingsForm.normalize(s.l_autosave));
-		$('#g-autosave').val(settingsForm.normalize(s.g_autosave));
 		$('#t-start').val((f & /*S_FLAG_START_TIMER*/0x2) ? 1 : 0);
 		$('#t-blink').val((f & /*S_FLAG_NO_BLINKING*/0x8) ? 0 : 1);
 		$('#s-client').val((f & /*S_FLAG_SIMPLIFIED_CLIENT*/0x1) ? 1 : 0);

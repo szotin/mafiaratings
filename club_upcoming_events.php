@@ -61,9 +61,9 @@ class Page extends ClubPageBase
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
-			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
-			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0 WHERE ',
-			$_lang,  $_lang, $condition);
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0 WHERE ',
+			$condition);
 		$query->add(' ORDER BY e.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
 		while ($row = $query->next())

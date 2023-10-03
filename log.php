@@ -17,6 +17,8 @@ class Page extends GeneralPageBase
 	protected function prepare()
 	{
 		parent::prepare();
+		global $_lang;
+		
 		check_permissions(PERMISSION_ADMIN);
 		$this->objects = prepare_log_objects();
 		
@@ -38,14 +40,18 @@ class Page extends GeneralPageBase
 			$this->filter_user_id = (int)$_REQUEST['user_id'];
 			if ($this->filter_user_id > 0)
 			{
-				list($this->filter_user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $this->filter_user_id);
+				list($this->filter_user_name) = Db::record(get_label('user'), 
+					'SELECT nu.name'.
+					' FROM users u'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+					' WHERE u.id = ?', $this->filter_user_id);
 			}
 		}
 	}
 
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$condition = new SQL();
 		$delim = ' WHERE ';
@@ -112,8 +118,9 @@ class Page extends GeneralPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT l.id, u.id, u.name, l.time, l.obj, l.obj_id, l.ip, l.message, l.page, (l.details IS NOT NULL), c.id, c.name, lg.id, lg.name FROM log l' .
+			'SELECT l.id, u.id, nu.name, l.time, l.obj, l.obj_id, l.ip, l.message, l.page, (l.details IS NOT NULL), c.id, c.name, lg.id, lg.name FROM log l' .
 				' LEFT OUTER JOIN users u ON u.id = l.user_id' .
+				' LEFT OUTER JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON c.id = l.club_id' .
 				' LEFT OUTER JOIN leagues lg ON lg.id = l.league_id',
 			$condition);
@@ -224,7 +231,7 @@ class Page extends GeneralPageBase
 		{
 			function loaded(text, title)
 			{
-				dlg.info(text, title);
+				dlg.info(text, title, 1000);
 			}
 			html.get("log_details.php?id=" + id, loaded);
 		}

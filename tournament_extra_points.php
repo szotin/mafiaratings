@@ -10,11 +10,11 @@ define('PAGE_SIZE', USERS_PAGE_SIZE);
 
 class Page extends TournamentPageBase
 {
-	private $players;
+	private $players, $_lang;
 	
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		check_permissions(
 			PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
@@ -40,9 +40,10 @@ class Page extends TournamentPageBase
 		echo '</tr>';
 		
 		$query = new DbQuery(
-			'SELECT p.id, e.id, e.name, e.flags, u.id, u.name, u.flags, p.reason, p.details, p.points, eu.nickname, eu.flags, tu.flags, cu.flags' . 
+			'SELECT p.id, e.id, e.name, e.flags, u.id, nu.name, u.flags, p.reason, p.details, p.points, eu.nickname, eu.flags, tu.flags, cu.flags' . 
 				' FROM event_extra_points p' . 
 				' JOIN users u ON u.id = p.user_id' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN events e ON e.id = p.event_id' . 
 				' LEFT OUTER JOIN event_users eu ON eu.event_id = e.id AND eu.user_id = u.id' .
 				' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = e.tournament_id AND tu.user_id = u.id' .

@@ -27,88 +27,106 @@ function send_activation_email($user_id, $name, $email)
 	send_notification($email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_SIGN_IN, 0, $email_code);
 }
 
-function create_user($name, $email, $flags = NEW_USER_FLAGS, $club_id = NULL, $city_id = -1, $lang = 0)
+function create_user($names, $email, $club_id, $city_id, $flags = NEW_USER_FLAGS)
 {
-	if ($club_id != NULL && $club_id <= 0)
+	$name_id = $names->get_id();
+	if ($name_id <= 0)
 	{
-		$club_id = NULL;
+		throw new Exc(get_label('Please enter [0].', get_label('user name')));
 	}
-
-	check_user_name($name);
+	
 	if ($email != '' && !is_email($email))
 	{
 		throw new Exc(get_label('[0] is not a valid email address.', $email));
 	}
 	
 	$langs = LANG_ALL;
-	if ($lang <= 0 && isset($_SESSION['lang_code']))
+	if ($club_id <= 0)
+	{
+		if ($city_id < 0)
+		{
+			throw new Exc(get_label('Please enter user city.'));
+		}
+		$query = new DbQuery('SELECT c.id, c.langs, i.country_id FROM clubs c JOIN cities i ON i.id = c.city_id JOIN cities ui ON ui.id = ? WHERE i.area_id = ui.area_id', $city_id);
+		if ($row = $query->next())
+		{
+			list($cid, $clangs, $country_id) = $row;
+			if (!$query->next())
+			{
+				$club_id = (int)$cid;
+				$langs = (int)$clangs;
+			}
+		}
+		else
+		{
+			list ($country_id) = Db::record(get_label('city'), 'SELECT country_id FROM cities WHERE id = ?', $city_id);
+		}
+		
+		if ($club_id <= 0)
+		{
+			$club_id = NULL;
+		}
+	}
+	else if ($city_id < 0)
+	{
+		list ($city_id, $langs, $country_id) = Db::record(get_label('club'), 
+			'SELECT c.city_id, c.langs, i.country_id'.
+			' FROM clubs c'.
+			' JOIN cities i ON i.id = c.city_id'.
+			' WHERE c.id = ?', $club_id);
+	}
+	else
+	{
+		list ($langs, $country_id) = Db::record(get_label('club'), 
+			'SELECT c.langs, i.country_id'.
+			' FROM clubs c'.
+			' JOIN cities i ON i.id = c.city_id'.
+			' WHERE c.id = ?', $club_id);
+	}
+	
+	$lang = LANG_NO;
+	if (isset($_SESSION['lang_code']))
 	{
 		$lang = get_lang_by_code($_SESSION['lang_code']);
 	}
 	
-	if ($city_id < 0)
+	if (!is_valid_lang($lang))
 	{
-		if ($club_id != NULL)
+		// Hardcoded country ids. Please make sure they always match the countries
+		switch ($country_id)
 		{
-			list ($city_id, $city_name, $langs, $club_name) = Db::record(get_label('club'), 'SELECT ct.id, nct.name, c.langs, c.name FROM clubs c JOIN cities ct ON ct.id = c.city_id JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $club_id);
-		}
-		else
-		{
-			switch ($lang)
-			{
-				case LANG_RUSSIAN:
-					$country_name = 'Russia';
-					break;
-				case LANG_UKRAINIAN:
-					$country_name = 'Ukraine';
-					break;
-				case LANG_ENGLISH:
-				default:
-					$country_name = 'USA';
-					break;
-			}
-			$query = new DbQuery(
-				'SELECT c.id, nc.name FROM cities c' .
-				' JOIN countries ct ON ct.id = c.country_id' .
-				' JOIN names nc ON nc.name = c.name_id AND (nc.langs & ' . LANG_ENGLISH . ') <> 0' .
-				' JOIN names nct ON nct.name = ct.name_id AND (nct.langs & ' . LANG_ENGLISH . ') <> 0' .
-				' WHERE nct.name = ?' .
-				' ORDER BY c.id LIMIT 1', $country_name);
-			if (!($row = $query->next()))
-			{
-				$row = Db::record(get_label('city'), 'SELECT c.id, n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 ORDER BY c.id LIMIT 1');
-			}
-			list ($city_id, $city_name) = $row;
+			case 2: // Russia
+			case 3: // Belarus
+				$lang = LANG_RUSSIAN;
+				break;
+			case 8: // Ukraine
+				$lang = LANG_UKRAINIAN;
+				break;
+			default:
+				$lang = LANG_ENGLISH;
+				break;
 		}
 	}
-	else
-	{
-		list ($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
-		if ($club_id != NULL)
-		{
-			list ($langs) = Db::record(get_label('club'), 'SELECT langs FROM clubs WHERE id = ?', $club_id);
-		}
-	}
-	
+
 	if (($langs & $lang) == 0)
 	{
-		$lang = get_next_lang(LANG_NO, $langs);
+		$langs |= $lang;
 	}
 	
 	Db::exec(
 		get_label('user'), 
-		'INSERT INTO users (name, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id, games, games_won, rating) ' .
+		'INSERT INTO users (name_id, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id, games, games_won, rating) ' .
 			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?, 0, 0, ' . USER_INITIAL_RATING . ')',
-		$name, md5(rand_string(8)), '', $email, $flags, $club_id, $langs, $lang, $city_id);
+		$name_id, md5(rand_string(8)), '', $email, $flags, $club_id, $langs, $lang, $city_id);
 	list ($user_id) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
 	
+	$name = $names->to_string();
 	$log_details = new stdClass();
 	$log_details->name = $name;
 	$log_details->email = $email;
 	$log_details->flags = $flags;
 	$log_details->langs = $langs;
 	$log_details->def_lang = $lang;
-	$log_details->city = $city_name;
 	$log_details->city_id = $city_id;
 	db_log(LOG_OBJECT_USER, 'created', $log_details, $user_id);
 	
@@ -150,14 +168,15 @@ class UserPageBase extends PageBase
 
 		list ($this->name, $this->email, $this->flags, $this->games_moderated, $this->reg_date, $this->langs, $this->city, $this->country, $this->club_id, $this->club, $this->club_flags) = 
 			Db::record(get_label('user'),
-				'SELECT u.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, ni.name, no.name, c.id, c.name, c.flags FROM users u' .
+				'SELECT nu.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, ni.name, no.name, c.id, c.name, c.flags FROM users u' .
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' JOIN cities i ON i.id = u.city_id' .
 					' JOIN countries o ON o.id = i.country_id' .
-					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
-					' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+					' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 					' WHERE u.id = ?',
-				$_lang, $_lang, $this->id);
+				$this->id);
 		$this->title = $this->name;
 	}
 

@@ -12,7 +12,7 @@ class ApiPage extends ControlApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_chart_colors;
+		global $_chart_colors, $_lang;
 		
 		if (!isset($_REQUEST['type']))
 		{
@@ -64,7 +64,15 @@ class ApiPage extends ControlApiPageBase
 					{
 						$period = MIN_PERIOD;
 					}
-					$query = new DbQuery('SELECT u.id, CEILING(g.end_time/' . $period . ') * ' . $period . ' as period, u.name, SUM(p.rating_earned) FROM players p JOIN games g ON p.game_id = g.id JOIN users u ON p.user_id = u.id WHERE u.id IN (' . $player_list . ') AND g.is_canceled = FALSE AND g.result > 0 AND g.is_rating <> 0 GROUP BY u.id, period ORDER BY u.id, period');
+					$query = new DbQuery(
+						'SELECT u.id, CEILING(g.end_time/' . $period . ') * ' . $period . ' as period, nu.name, SUM(p.rating_earned)'.
+						' FROM players p'.
+						' JOIN games g ON p.game_id = g.id'.
+						' JOIN users u ON p.user_id = u.id'.
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+						' WHERE u.id IN (' . $player_list . ') AND g.is_canceled = FALSE AND g.result > 0 AND g.is_rating <> 0'.
+						' GROUP BY u.id, period'.
+						' ORDER BY u.id, period');
 					
 					$current_user_id = -1;
 					while ($row = $query->next())

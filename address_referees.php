@@ -21,7 +21,7 @@ class Page extends AddressPageBase
 {
 	protected function show_body()
 	{
-		global $_page;
+		global $_page, $_lang;
 		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
@@ -64,8 +64,9 @@ class Page extends AddressPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, SUM(IF(g.result = 1, 1, 0)) AS civ, SUM(IF(g.result = 2, 1, 0)) AS maf, c.id, c.name, c.flags' .
+			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = 1, 1, 0)) AS civ, SUM(IF(g.result = 2, 1, 0)) AS maf, c.id, c.name, c.flags' .
 				' FROM users u' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
 				' JOIN events e ON g.event_id = e.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .

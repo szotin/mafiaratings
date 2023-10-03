@@ -121,11 +121,11 @@ class TournamentPageBase extends PageBase
 				' JOIN addresses a ON a.id = t.address_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN countries cr ON cr.id = ct.country_id' .
-				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
-				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
+				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN currencies cu ON cu.id = t.currency_id' .
 				' WHERE t.id = ?',
-			$_lang, $_lang, $this->id);
+			$this->id);
 			
 		$this->series = array();
 		$query = new DbQuery('SELECT s.id, s.name, s.flags, st.stars, l.id, l.name, l.flags FROM series_tournaments st JOIN series s ON s.id = st.series_id JOIN leagues l ON l.id = s.league_id WHERE st.tournament_id = ?', $this->id);

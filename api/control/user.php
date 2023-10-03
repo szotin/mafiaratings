@@ -7,6 +7,7 @@ class ApiPage extends ControlApiPageBase
 {
 	protected function prepare_response()
 	{
+		global $_lang;
 		// echo '<pre>';
 		// print_r($_REQUEST);
 		// echo '</pre>';
@@ -25,7 +26,13 @@ class ApiPage extends ControlApiPageBase
 		
 		if ($term == '')
 		{
-			$query = new DbQuery('SELECT u.id, u.name, NULL FROM users u WHERE TRUE');
+			$query = new DbQuery(
+				'SELECT u.id, nu.name, NULL, ni.name'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities i ON i.id = u.city_id'.
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
+				' WHERE TRUE');
 			if (isset($_REQUEST['event']))
 			{
 				$query->add(' AND u.id IN (SELECT DISTINCT p.user_id FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ?)', $_REQUEST['event']);
@@ -44,7 +51,7 @@ class ApiPage extends ControlApiPageBase
 			}
 			else if (isset($_REQUEST['club']))
 			{
-				$query->add(' AND u.id IN (SELECT user_id FROM club_users WHERE club_id = ?)', $_REQUEST['club']);
+				$query->add(' AND u.club_id = ?', $_REQUEST['club']);
 			}
 			else if (isset($_REQUEST['series']))
 			{
@@ -55,12 +62,18 @@ class ApiPage extends ControlApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT id, name, NULL FROM users ' .
-					' WHERE name LIKE ?' .
+				'SELECT u.id, nu.name as user_name, NULL, ni.name FROM users u' .
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0' .
+					' JOIN cities i ON i.id = u.city_id'.
+					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
+					' WHERE nu.name LIKE ?' .
 					' UNION' .
-					' SELECT DISTINCT u.id, u.name, r.nickname FROM users u' . 
+					' SELECT DISTINCT u.id, nu.name as user_name, r.nickname, ni.name FROM users u' . 
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0' .
+					' JOIN cities i ON i.id = u.city_id'.
+					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 					' JOIN event_users r ON r.user_id = u.id' .
-					' WHERE r.nickname <> u.name AND r.nickname LIKE ? ORDER BY name',
+					' WHERE r.nickname <> nu.name AND r.nickname LIKE ? ORDER BY user_name',
 				'%' . $term . '%',
 				'%' . $term . '%');
 		}
@@ -73,23 +86,20 @@ class ApiPage extends ControlApiPageBase
 		{
 			$player = new stdClass();
 			$player->id = 0;
-			$player->label = $player->name = $player->nickname = '-';
+			$player->label = $player->name = $player->nickname = $player->city = '-';
 			$this->response[] = $player;
 		}
 		
 		while ($row = $query->next())
 		{
 			$player = new stdClass();
-			list ($player->id, $player->name, $nickname) = $row;
+			list ($player->id, $player->name, $nickname, $player->city) = $row;
 			$player->id = (int)$player->id;
+			$player->label = $player->name . ', ' . $player->city;
 			if ($nickname != NULL)
 			{
 				$player->nickname = $nickname;
-				$player->label = $player->name . '(' . $nickname . ')';
-			}
-			else
-			{
-				$player->label = $player->name;
+				$player->label .= ' (' . $nickname . ')';
 			}
 			$this->response[] = $player;
 		}

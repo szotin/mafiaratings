@@ -23,6 +23,8 @@ class Page extends TournamentPageBase
 {
 	protected function prepare()
 	{
+		global $_lang;
+		
 		parent::prepare();
 		
 		$this->view = VIEW_GAMES;
@@ -112,7 +114,9 @@ class Page extends TournamentPageBase
 				$this->player->raw_points = 0;
 				list ($this->player->name, $this->player->flags, $this->player->tournament_user_flags, $this->player->club_user_flags) = 
 					Db::record(get_label('user'), 
-						'SELECT u.name, u.flags, tu.flags, cu.flags FROM users u' .
+						'SELECT nu.name, u.flags, tu.flags, cu.flags'.
+						' FROM users u'.
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
 						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
 						' WHERE id = ?', $this->id, $this->club_id, $this->user_id);

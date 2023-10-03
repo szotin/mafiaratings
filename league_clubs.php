@@ -59,9 +59,9 @@ class Page extends LeaguePageBase
 			'SELECT c.id, c.name, c.flags, c.web_site, l.flags, ni.name, (SELECT count(*) FROM games g WHERE g.club_id = c.id) as games FROM league_clubs l' .
 				' JOIN clubs c ON l.club_id = c.id' .
 				' JOIN cities i ON c.city_id = i.id' .
-				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 				' WHERE l.league_id = ?',
-			$_lang, $this->id, $condition);
+			$this->id, $condition);
 		$query->add(' ORDER BY l.flags DESC, games DESC, c.name');
 		while ($row = $query->next())
 		{

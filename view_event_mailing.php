@@ -83,7 +83,7 @@ class Page extends PageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		list($p_body, $p_subj, $this->lang) = $this->parse_sample_email($_profile->user_email, $this->type, $this->langs);
 		
@@ -104,8 +104,13 @@ class Page extends PageBase
 			echo '<tr class="darker" style="height:40px; font-weight:bold;"><td colspan="2">' . get_label('Sent to') . '</td><td width="160" align="center">' . get_label('Send time') . '</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, e.send_time FROM emails e, users u WHERE e.user_id = u.id AND e.obj = ' . EMAIL_OBJ_EVENT .
-					' AND e.obj_id = ? ORDER BY u.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, 
+				'SELECT u.id, nu.name, u.flags, e.send_time'.
+				' FROM emails e'.
+				' JOIN users u ON e.user_id = u.id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE e.obj = ' . EMAIL_OBJ_EVENT . ' AND e.obj_id = ?'.
+				' ORDER BY nu.name'.
+				' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, 
 				$this->id);
 			while ($row = $query->next())
 			{

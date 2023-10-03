@@ -15,7 +15,7 @@ class Page extends TournamentPageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$tournament_user_pic =
 			new Picture(USER_TOURNAMENT_PICTURE,
@@ -42,8 +42,9 @@ class Page extends TournamentPageBase
 		echo '</tr>';
 		
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, c.id, c.name, c.flags, p.place, p.main_points, p.bonus_points, p.shot_points, p.games_count, tu.flags, cu.flags FROM tournament_places p' .
+			'SELECT u.id, nu.name, u.flags, c.id, c.name, c.flags, p.place, p.main_points, p.bonus_points, p.shot_points, p.games_count, tu.flags, cu.flags FROM tournament_places p' .
 			' JOIN users u ON u.id = p.user_id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 			' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = p.tournament_id AND tu.user_id = p.user_id' .
 			' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = p.user_id' .

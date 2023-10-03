@@ -22,10 +22,10 @@ try
 		'SELECT ni.name, no.name FROM clubs c' .
 			' JOIN cities i ON c.city_id = i.id' .
 			' JOIN countries o ON i.country_id = o.id' .
-			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
-			' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 			' WHERE c.id = ?', 
-		$_lang, $_lang, $club_id);
+		$club_id);
 
 	echo '<table class="dialog_form" width="100%">';
 	

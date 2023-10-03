@@ -20,7 +20,7 @@ class Page extends EventPageBase
 	
 	protected function prepare()
 	{
-		global $_page;
+		global $_page, $_lang;
 		
 		parent::prepare();
 		
@@ -64,7 +64,12 @@ class Page extends EventPageBase
 		{
 			$this->user_id = -$_page;
 			$_page = 0;
-			$query = new DbQuery('SELECT u.name, u.club_id, u.city_id, c.country_id FROM users u JOIN cities c ON c.id = u.city_id WHERE u.id = ?', $this->user_id);
+			$query = new DbQuery(
+				'SELECT nu.name, u.club_id, u.city_id, c.country_id'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities c ON c.id = u.city_id',
+				' WHERE u.id = ?', $this->user_id);
 			if ($row = $query->next())
 			{
 				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;

@@ -29,13 +29,18 @@ class Albums
 	
 	function __construct($pos, $len)
 	{
-		global $club_id;
+		global $club_id, $_lang;
 		
 		$where = new SQL('a.viewers = ' . FOR_EVERYONE . ' AND a.club_id = ?', $club_id);
 		
 		list ($this->count) = Db::record(get_label('photo album'), 'SELECT count(*) FROM photo_albums a WHERE ', $where);
 		
-		$query = new DbQuery('SELECT a.id, a.name, a.flags, u.id, u.name FROM photo_albums a JOIN users u ON u.id = a.user_id WHERE ', $where); 
+		$query = new DbQuery(
+			'SELECT a.id, a.name, a.flags, u.id, nu.name'.
+			' FROM photo_albums a'.
+			' JOIN users u ON u.id = a.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE ', $where); 
 		$query->add(' ORDER BY a.id DESC LIMIT ' . $pos . ',' . $len);
 		
 		$this->albums = array();

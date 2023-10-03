@@ -22,10 +22,11 @@ try
 	
 	list($name, $url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone) = Db::record(
 		get_label('league'),
-		'SELECT l.name, l.web_site, l.langs, l.user_id, u.name, u.email, u.def_lang, u.flags, l.email, l.phone FROM league_requests l' .
-			' JOIN users u ON l.user_id = u.id' .
-			' WHERE l.id = ?',
-		$id);
+		'SELECT l.name, l.web_site, l.langs, l.user_id, nu.name, u.email, u.def_lang, u.flags, l.email, l.phone'.
+		' FROM league_requests l' .
+		' JOIN users u ON l.user_id = u.id' .
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+		' WHERE l.id = ?', $id);
 		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="120">' . get_label('User') . ':</td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td></tr>';

@@ -39,11 +39,11 @@ class Page extends ClubPageBase
 				', (SELECT count(*) FROM events e WHERE e.address_id = a.id) cnt FROM addresses a' . 
 				' JOIN cities ct ON a.city_id = ct.id' .
 				' JOIN countries cr ON ct.country_id = cr.id' .
-				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
-				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
+				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0' .
 				' WHERE club_id = ?' .
 				' ORDER BY (a.flags & ' . ADDRESS_FLAG_NOT_USED . '), cnt DESC, a.name',
-			$_lang, $_lang, $this->id);
+			$this->id);
 		while ($row = $query->next())
 		{
 			list ($addr_id, $addr_name, $addr, $addr_url, $addr_flags, $addr_city, $addr_country, $use_count) = $row;

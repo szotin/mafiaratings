@@ -61,9 +61,17 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('comment'), 'INSERT INTO photo_comments (time, user_id, comment, photo_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $photo_id, $lang);
 		
 		$query = new DbQuery(
-			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM user_photos p JOIN users u ON u.id = p.user_id WHERE p.tag > 0 AND p.photo_id = ?)' .
+			'(SELECT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM user_photos p'.
+			' JOIN users u ON u.id = p.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE p.tag > 0 AND p.photo_id = ?)' .
 			' UNION DISTINCT' .
-			' (SELECT DISTINCT u.id, u.name, u.email, u.flags, u.def_lang FROM photo_comments c JOIN users u ON c.user_id = u.id WHERE c.photo_id = ?)',
+			' (SELECT DISTINCT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM photo_comments c'.
+			' JOIN users u ON c.user_id = u.id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE c.photo_id = ?)',
 			$photo_id, $photo_id);
 		while ($row = $query->next())
 		{

@@ -26,7 +26,7 @@ class Page extends SeriesPageBase
 	
 	protected function prepare()
 	{
-		global $_page, $_profile;
+		global $_page, $_profile, $_lang;
 		
 		parent::prepare();
 		
@@ -43,7 +43,12 @@ class Page extends SeriesPageBase
 		{
 			$this->user_id = -$_page;
 			$_page = 0;
-			$query = new DbQuery('SELECT u.name, u.club_id, u.city_id, c.country_id FROM users u JOIN cities c ON c.id = u.city_id WHERE u.id = ?', $this->user_id);
+			$query = new DbQuery(
+				'SELECT nu.name, u.club_id, u.city_id, c.country_id',
+				' FROM users u',
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities c ON c.id = u.city_id',
+				' WHERE u.id = ?', $this->user_id);
 			if ($row = $query->next())
 			{
 				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
@@ -58,7 +63,7 @@ class Page extends SeriesPageBase
 	
 	protected function show_body()
 	{
-		global $_page, $_profile;
+		global $_page, $_profile, $_lang;
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
@@ -136,7 +141,8 @@ class Page extends SeriesPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)), c.id, c.name, c.flags FROM users u' .
+			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)), c.id, c.name, c.flags FROM users u' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
 				' JOIN series_tournaments st ON st.tournament_id = g.tournament_id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .

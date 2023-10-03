@@ -18,11 +18,12 @@ try
 	if ($game_id > 0)
 	{
 		list ($tournament_name, $event_name, $json, $is_canceled, $timezone, $moder_name) = Db::record(get_label('game'), 
-			'SELECT t.name, e.name, g.json, g.is_canceled, c.timezone, u.name FROM games g' .
+			'SELECT t.name, e.name, g.json, g.is_canceled, c.timezone, nu.name FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
 			' JOIN addresses a ON a.id = e.address_id' .
 			' JOIN cities c ON c.id = a.city_id' .
 			' JOIN users u ON u.id = g.moderator_id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 			' WHERE g.id = ?', $game_id);
 		

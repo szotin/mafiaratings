@@ -37,8 +37,8 @@ class ApiPage extends ControlApiPageBase
 			'SELECT DISTINCT i.id, ni.name, no.name FROM city_names n' .
 			' JOIN cities i ON i.id = n.city_id' .
 			' JOIN countries o ON o.id = i.country_id' .
-			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
-			' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0', $_lang, $_lang);
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0');
 		if ($country_id > 0)
 		{
 			$query->add($delim . 'i.country_id = ?', $country_id);

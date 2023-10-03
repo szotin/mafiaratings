@@ -49,7 +49,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
 		$name = trim(get_required_param('name'));
@@ -107,7 +107,11 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_LEAGUE_REQUEST, 'created', $log_details, $request_id);
 			
 			// send request to admin
-			$query = new DbQuery('SELECT id, name, email, def_lang FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
+			$query = new DbQuery(
+				'SELECT u.id, nu.name, u.email, u.def_lang'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+				' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 and u.email <> \'\'');
 			while ($row = $query->next())
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
@@ -312,7 +316,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function accept_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
@@ -320,8 +324,9 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		list($url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone) = Db::record(
 			get_label('league'),
-			'SELECT l.web_site, l.langs, l.user_id, u.name, u.email, u.def_lang, u.flags, l.email, l.phone FROM league_requests l' .
+			'SELECT l.web_site, l.langs, l.user_id, nu.name, u.email, u.def_lang, u.flags, l.email, l.phone FROM league_requests l' .
 				' JOIN users u ON l.user_id = u.id' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 				' WHERE l.id = ?',
 			$request_id);
 			
@@ -390,7 +395,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function decline_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
@@ -399,7 +404,11 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		list($name, $url, $langs, $user_id, $user_name, $user_email, $user_lang) = Db::record(
 			get_label('league'),
-			'SELECT c.name, c.web_site, c.langs, c.user_id, u.name, u.email, u.def_lang FROM league_requests c JOIN users u ON c.user_id = u.id WHERE c.id = ?',
+			'SELECT c.name, c.web_site, c.langs, c.user_id, nu.name, u.email, u.def_lang'.
+			' FROM league_requests c'.
+			' JOIN users u ON c.user_id = u.id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE c.id = ?',
 			$request_id);
 		
 		Db::exec(get_label('league'), 'DELETE FROM league_requests WHERE id = ?', $request_id);
@@ -541,7 +550,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function add_club_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$league_id = (int)get_required_param('league_id');
 		$club_id = (int)get_required_param('club_id');
@@ -586,7 +595,12 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
 				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_managers l JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $league_id);
+				$query = new DbQuery(
+					'SELECT u.id, nu.name, u.email, u.def_lang'.
+					' FROM league_managers l'.
+					' JOIN users u ON u.id = l.user_id'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+					' WHERE l.league_id = ?', $league_id);
 				while ($row = $query->next())
 				{
 					list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -619,7 +633,12 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
 				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-				$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM club_users uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
+				$query = new DbQuery(
+					'SELECT u.id, nu.name, u.email, u.def_lang'.
+					' FROM club_users uc'.
+					' JOIN users u ON uc.user_id = u.id'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+					' WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
 				while ($row = $query->next())
 				{
 					list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -665,7 +684,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function remove_club_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$league_id = (int)get_required_param('league_id');
 		$club_id = (int)get_required_param('club_id');
@@ -692,7 +711,12 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
 			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM league_managers l JOIN users u ON u.id = l.user_id WHERE l.league_id = ?', $league_id);
+			$query = new DbQuery(
+				'SELECT u.id, nu.name, u.email, u.def_lang'.
+				' FROM league_managers l'.
+				' JOIN users u ON u.id = l.user_id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+				' WHERE l.league_id = ?', $league_id);
 			while ($row = $query->next())
 			{
 				list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -726,7 +750,12 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
 			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
-			$query = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang FROM club_users uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
+			$query = new DbQuery(
+				'SELECT u.id, nu.name, u.email, u.def_lang'.
+				' FROM club_users uc'.
+				' JOIN users u ON uc.user_id = u.id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+				' WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
 			while ($row = $query->next())
 			{
 				list($user_id, $user_name, $user_email, $user_lang) = $row;

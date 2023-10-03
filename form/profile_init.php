@@ -83,7 +83,7 @@ try
 		
 ?>	
 	<script>
-	var clubSetManually = false;
+	var clubSetManually = <?php echo $club_id > 0 ? 'true' : 'false'; ?>;
 	function updateClub()
 	{
 		if (!clubSetManually)
@@ -98,7 +98,6 @@ try
 			}, 
 			function(obj)
 			{
-				console.log(obj);
 				$("#form-club").val(obj['club_id']);
 			});
 		}

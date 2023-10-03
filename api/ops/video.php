@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/video.php';
+require_once '../../include/message.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -425,9 +426,17 @@ class ApiPage extends OpsApiPageBase
 		
 		list($video, $video_title) = Db::record(get_label('video'), 'SELECT video, name FROM videos WHERE id = ?' , $id);
 		$query = new DbQuery(
-			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM user_videos uv JOIN users u ON u.id = uv.user_id WHERE uv.video_id = ?)' .
+			'(SELECT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM user_videos uv'.
+			' JOIN users u ON u.id = uv.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE uv.video_id = ?)' .
 			' UNION DISTINCT' .
-			' (SELECT DISTINCT u.id, u.name, u.email, u.flags, u.def_lang FROM video_comments c JOIN users u ON c.user_id = u.id WHERE c.video_id = ?)',
+			' (SELECT DISTINCT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM video_comments c'.
+			' JOIN users u ON c.user_id = u.id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE c.video_id = ?)',
 			$id, $id);
 		while ($row = $query->next())
 		{

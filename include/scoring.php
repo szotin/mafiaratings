@@ -1066,7 +1066,7 @@ function get_players_condition($players_list)
     
 function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 {
-	global $_scoring_groups;
+	global $_scoring_groups, $_lang;
 	
 	$players = array();
 	$stat_flags = get_scoring_stat_flags($scoring, $options);
@@ -1087,7 +1087,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 	
 	// Calculate first night kill rates and games count per player
 	$query = new DbQuery(
-		'SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id)' .
+		'SELECT u.id, nu.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id)' .
 		', SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0))' .
 		', SUM(p.won)' .
 		', SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))' .
@@ -1095,6 +1095,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 			' FROM players p' .
 			' JOIN games g ON g.id = p.game_id' .
 			' JOIN users u ON u.id = p.user_id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN events e ON e.id = g.event_id' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 			' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
@@ -1425,6 +1426,8 @@ function team_add_player($team, $player)
 
 function tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options)
 {
+	global $_lang;
+	
 	if (is_null($normalizer))
 	{
 		$normalizer = new stdClass();
@@ -1455,7 +1458,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 	
     $players = array();
 	$query = new DbQuery(
-		'SELECT u.id, u.name, u.flags, u.languages, c.id, c.name, c.flags,' . 
+		'SELECT u.id, nu.name, u.flags, u.languages, c.id, c.name, c.flags,' . 
 		' COUNT(g.id), COUNT(DISTINCT g.event_id),' . 
 		' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)),' . 
 		' SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)),' . 
@@ -1463,6 +1466,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			' FROM players p' . 
 			' JOIN games g ON g.id = p.game_id' . 
 			' JOIN users u ON u.id = p.user_id' . 
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
 			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
 			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .

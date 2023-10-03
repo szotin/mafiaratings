@@ -17,7 +17,7 @@ class Page extends PageBase
 	
 	protected function prepare()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		parent::prepare();
 		
@@ -46,11 +46,21 @@ class Page extends PageBase
 		
 		if ($this->id > 0)
 		{
-			list($this->name, $this->description, $this->code, $this->owner_id, $this->owner_name, $this->owner_flags) = Db::record(get_label('stats calculator'), 'SELECT s.name, s.description, s.code, s.owner_id, u.name, u.flags FROM stats_calculators s JOIN users u ON u.id = s.owner_id WHERE s.id = ?', $this->id);
+			list($this->name, $this->description, $this->code, $this->owner_id, $this->owner_name, $this->owner_flags) = Db::record(get_label('stats calculator'), 
+				'SELECT s.name, s.description, s.code, s.owner_id, nu.name, u.flags'.
+				' FROM stats_calculators s'.
+				' JOIN users u ON u.id = s.owner_id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE s.id = ?', $this->id);
 		}
 		else
 		{
-			$query = new DbQuery('SELECT s.id, s.name, s.description, s.code, s.owner_id, u.name, u.flags FROM stats_calculators s JOIN users u ON u.id = s.owner_id WHERE s.owner_id = ? OR s.published = TRUE ORDER BY s.name LIMIT 1', $_profile->user_id);
+			$query = new DbQuery(
+				'SELECT s.id, s.name, s.description, s.code, s.owner_id, nu.name, u.flags'.
+				' FROM stats_calculators s'.
+				' JOIN users u ON u.id = s.owner_id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE s.owner_id = ? OR s.published = TRUE ORDER BY s.name LIMIT 1', $_profile->user_id);
 			if ($row = $query->next())
 			{
 				list($this->id, $this->name, $this->description, $this->code, $this->owner_id, $this->owner_name, $this->owner_flags) = $row;

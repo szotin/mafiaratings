@@ -80,7 +80,7 @@ try
 		$cols = $_REQUEST['cols'];
 	}
 
-	$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags FROM users u WHERE u.games > 0');
+	$query = new DbQuery('SELECT u.id, nu.name, u.rating, u.games, u.games_won, u.flags FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & 2) <> 0 WHERE u.games > 0');
 	if ($club_id > 0)
 	{
 		$query->add(' AND u.club_id = ?', $club_id);

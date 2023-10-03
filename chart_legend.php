@@ -53,8 +53,9 @@ try
 		if (isset($_REQUEST['event_id']))
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, e.id, eu.nickname, eu.flags, e.tournament_id, tu.flags, e.club_id, cu.flags' . 
+				'SELECT u.id, nu.name, u.flags, e.id, eu.nickname, eu.flags, e.tournament_id, tu.flags, e.club_id, cu.flags' . 
 				' FROM users u' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN events e ON e.id = ?' .
 				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
@@ -64,8 +65,9 @@ try
 		else if (isset($_REQUEST['tournament_id']))
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, NULL, NULL, NULL, t.id, tu.flags, t.club_id, cu.flags' . 
+				'SELECT u.id, nu.name, u.flags, NULL, NULL, NULL, t.id, tu.flags, t.club_id, cu.flags' . 
 				' FROM users u' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN tournaments t ON t.id = ?' .
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = t.id' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = t.club_id' .
@@ -74,8 +76,9 @@ try
 		else if (isset($_REQUEST['club_id']))
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, NULL, NULL, NULL, NULL, NULL, cu.club_id, cu.flags' . 
+				'SELECT u.id, nu.name, u.flags, NULL, NULL, NULL, NULL, NULL, cu.club_id, cu.flags' . 
 				' FROM users u' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
 				' WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')', $_REQUEST['club_id']);
 			$link = 'club_competition.php?id=' . $_REQUEST['club_id'] . '&user_id=';
@@ -83,8 +86,9 @@ try
 		else
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, NULL, NULL, NULL, NULL, NULL, NULL, NULL' . 
+				'SELECT u.id, nu.name, u.flags, NULL, NULL, NULL, NULL, NULL, NULL, NULL' . 
 				' FROM users u' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')');
 		}
 		

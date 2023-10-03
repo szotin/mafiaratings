@@ -5,7 +5,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.createAccount = function(name, email)
 	{
-		dlg.form("form/account_create.php", function(){}, 400);
+		dlg.form("form/account_create.php", function(){}, 600);
 	}
 
 	this.initProfile = function()

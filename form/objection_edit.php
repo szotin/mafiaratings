@@ -15,8 +15,9 @@ try
 	$objection_id = (int)$_REQUEST['objection_id'];
 	list ($objection_id, $game_id, $message, $user_id, $user_name, $club_id, $event_id, $tournament_id, $owner_id, $parent_id, $accept) = 
 		Db::record(get_label('objection'), 
-			'SELECT o.id, o.game_id, o.message, u.id, u.name, g.club_id, g.event_id, g.tournament_id, g.user_id, o.objection_id, o.accept FROM objections o' .
+			'SELECT o.id, o.game_id, o.message, u.id, nu.name, g.club_id, g.event_id, g.tournament_id, g.user_id, o.objection_id, o.accept FROM objections o' .
 			' JOIN users u ON u.id = o.user_id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN games g ON g.id = o.game_id' .
 			' WHERE o.id = ?', $objection_id);
 	

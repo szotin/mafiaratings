@@ -33,7 +33,7 @@ class Page extends SeriesPageBase
 {
 	protected function prepare()
 	{
-		global $_page;
+		global $_page, $_lang;
 		
 		parent::prepare();
 		
@@ -43,7 +43,12 @@ class Page extends SeriesPageBase
 		{
 			$this->user_id = -$_page;
 			$_page = 0;
-			$query = new DbQuery('SELECT u.name, u.club_id, u.city_id, c.country_id FROM users u JOIN cities c ON c.id = u.city_id WHERE u.id = ?', $this->user_id);
+			$query = new DbQuery(
+				'SELECT nu.name, u.club_id, u.city_id, c.country_id'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities c ON c.id = u.city_id'.
+				' WHERE u.id = ?', $this->user_id);
 			if ($row = $query->next())
 			{
 				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
@@ -58,7 +63,7 @@ class Page extends SeriesPageBase
 	
 	protected function show_body()
 	{
-		global $_page;
+		global $_page, $_lang;
 		
 		if (isset($_REQUEST['gaining_id']))
 		{
@@ -87,7 +92,14 @@ class Page extends SeriesPageBase
 		}
 		
 		$players = array();
-		$query = new DbQuery('SELECT t.tournament_id, u.id, u.name, u.flags, p.place, c.id, c.name, c.flags FROM tournament_places p JOIN users u ON u.id = p.user_id JOIN series_tournaments t ON t.tournament_id = p.tournament_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE t.series_id = ? AND (t.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0', $this->id);
+		$query = new DbQuery(
+			'SELECT t.tournament_id, u.id, nu.name, u.flags, p.place, c.id, c.name, c.flags'.
+			' FROM tournament_places p'.
+			' JOIN users u ON u.id = p.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' JOIN series_tournaments t ON t.tournament_id = p.tournament_id'.
+			' LEFT OUTER JOIN clubs c ON c.id = u.club_id'.
+			' WHERE t.series_id = ? AND (t.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0', $this->id);
 		while ($row = $query->next())
 		{
 			list($tournament_id, $player_id, $player_name, $player_flags, $place, $club_id, $club_name, $club_flags) = $row;

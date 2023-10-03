@@ -122,14 +122,6 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
-	<td>Scores</td>
-	<td><a href="scores.php?help"><?php echo PRODUCT_URL; ?>/api/get/scores.php</a></td>
-	<td>
-		<p>Returns players scores in games/events using configurable scoring systems.</p>
-	</td>
-</tr>
-
-<tr>
 	<td>Rules</td>
 	<td><a href="rules.php?help"><?php echo PRODUCT_URL; ?>/api/get/rules.php</a></td>
 	<td>

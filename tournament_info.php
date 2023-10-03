@@ -27,24 +27,26 @@ class Page extends TournamentPageBase
 		if ($games_count > 0)
 		{
 			$query = new DbQuery(
-				'SELECT DISTINCT u.id, u.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
+				'SELECT DISTINCT u.id, nu.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
 				' FROM players p' . 
 				' JOIN users u ON p.user_id = u.id' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON p.game_id = g.id' . 
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
-				' WHERE g.tournament_id = ? ORDER BY u.name', $this->id);
+				' WHERE g.tournament_id = ? ORDER BY nu.name', $this->id);
 		}
 		else
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
+				'SELECT u.id, nu.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
 				' FROM tournament_users tu' . 
 				' JOIN users u ON tu.user_id = u.id' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
-				' WHERE tu.tournament_id = ? ORDER BY u.name', $this->club_id, $this->id);
+				' WHERE tu.tournament_id = ? ORDER BY nu.name', $this->club_id, $this->id);
 		}
 		
 		$tournament_user_pic =
@@ -120,11 +122,11 @@ class Page extends TournamentPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
-			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
-			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0' .
 			' WHERE e.tournament_id = ? AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0' .
 			' ORDER BY e.start_time DESC, e.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size,
-			$_lang, $_lang, $this->id);
+			$this->id);
 
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
 		while ($row = $query->next())

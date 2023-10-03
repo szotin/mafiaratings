@@ -30,10 +30,16 @@ class Album
 	
 	function __construct($id, $pos, $len)
 	{
+		global $_lang;
+		
 		$this->id = $id;
 		
 		$row = Db::record(get_label('photo album'),
-			'SELECT a.id, a.name, a.flags, u.id, u.name FROM photo_albums a JOIN users u ON u.id = a.user_id WHERE a.viewers = ' . FOR_EVERYONE . ' AND a.id = ' . $id);
+			'SELECT a.id, a.name, a.flags, u.id, nu.name'.
+			' FROM photo_albums a'.
+			' JOIN users u ON u.id = a.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE a.viewers = ' . FOR_EVERYONE . ' AND a.id = ' . $id);
 			
 		list($this->id, $this->name, $flags, $this->user_id, $this->user_name) = $row;
 		$this->icon_url = '';

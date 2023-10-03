@@ -23,10 +23,10 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT i.id, ni.name, i.flags, no.name, i.timezone FROM cities i' . 
 			' JOIN countries o ON i.country_id = o.id' .
-			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
-			' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 			' WHERE (i.flags & ' . CITY_FLAG_NOT_CONFIRMED . ') <> 0' .
-			' ORDER BY ni.name', $_lang, $_lang);
+			' ORDER BY ni.name');
 		if ($row = $query->next())
 		{
 			echo '<p><table class="bordered light" width="100%">';
@@ -67,11 +67,11 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT i.id, ni.name, i.flags, no.name, i.timezone, i.area_id, na.name FROM cities i' . 
 				' JOIN countries o ON i.country_id = o.id' .
-				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
-				' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+				' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN cities a ON i.area_id = a.id' .
-				' LEFT OUTER JOIN names na ON na.id = a.name_id AND (na.langs & ?) <> 0',
-			$_lang, $_lang, $_lang, $condition);
+				' LEFT OUTER JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0',
+			$condition);
 		$query->add(' ORDER BY ni.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';

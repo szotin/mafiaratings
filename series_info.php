@@ -27,12 +27,12 @@ class Page extends SeriesPageBase
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
-			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
-			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON c.id = t.club_id' .
 			' WHERE st.series_id = ?' .
 			' ORDER BY t.start_time DESC, t.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size,
-			$_lang, $_lang, $this->id);
+			$this->id);
 
 		$club_pic = new Picture(CLUB_PICTURE);
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);

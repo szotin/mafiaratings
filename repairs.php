@@ -51,6 +51,8 @@ class Page extends GeneralPageBase
 	{
 		echo '<div id="progr"></div>';
 		
+		list($empty_games_count) = Db::record('games', 'SELECT count(*) FROM games WHERE result = 0 AND start_time = 0');
+		
 		check_permissions(PERMISSION_ADMIN);
 		if ($this->_locked)
 		{
@@ -70,9 +72,13 @@ class Page extends GeneralPageBase
 		echo '<input type="submit" class="btn long" value="Rebuild photo icons" onclick="rebuildPhotoIcons()"> ';
 		echo '</p>';
 	
-		echo '<h3>' . 'Rebuild games statistics' . '</h3>';
+		echo '<h3>' . 'Games' . '</h3>';
 		echo '<p>';
 		echo '<input type="submit" class="btn long" value="Rebuild stats" onclick="rebuildStats()"> ';
+		if ($empty_games_count > 0)
+		{
+			echo '<input type="submit" class="btn long" value="Cleanup cache" onclick="cleanupGamesCache()"> ';
+		}
 		echo '</p>';
 		
 		echo '<h3>' . 'Rebuild ratings' . '</h3>';
@@ -254,6 +260,11 @@ class Page extends GeneralPageBase
 				$("#progr").progressbar("option", "max", data.count);
 				updateProgress(data, statsNext);
 			});
+		}
+		
+		function cleanupGamesCache()
+		{
+			json.post("api/ops/repair.php", { op: 'clean_games_cache' }, refr);
 		}
 		
 		function deleteLog(dir)

@@ -16,7 +16,7 @@ class Page extends GeneralPageBase
 	
 	protected function prepare()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 	
 		parent::prepare();
 		
@@ -27,7 +27,12 @@ class Page extends GeneralPageBase
 		{
 			$this->user_id = -$_page;
 			$_page = 0;
-			$query = new DbQuery('SELECT u.name, u.club_id, u.city_id, c.country_id FROM users u JOIN cities c ON c.id = u.city_id WHERE u.id = ?', $this->user_id);
+			$query = new DbQuery(
+				'SELECT nu.name, u.club_id, u.city_id, c.country_id'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities c ON c.id = u.city_id'.
+				' WHERE u.id = ?', $this->user_id);
 			if ($row = $query->next())
 			{
 				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
@@ -41,7 +46,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
@@ -80,8 +85,8 @@ class Page extends GeneralPageBase
 		
 		if ($this->user_id > 0)
 		{
-			$pos_query = new DbQuery('SELECT count(*) FROM users u', $condition);
-			$pos_query->add($sep . 'u.name < ?', $this->user_name);
+			$pos_query = new DbQuery('SELECT count(*) FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0', $condition);
+			$pos_query->add($sep . 'nu.name < ?', $this->user_name);
 			list($user_pos) = $pos_query->next();
 			$_page = floor($user_pos / PAGE_SIZE);
 		}
@@ -95,15 +100,15 @@ class Page extends GeneralPageBase
 		echo '<td colspan="4">' . get_label('User name') . '</td><td width="40"></td></tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.email, u.flags, c.id,
-			c.name, c.flags' . 
+			'SELECT u.id, nu.name, u.email, u.flags, c.id, c.name, c.flags' . 
 			', SUM(IF((uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ') = ' . USER_PERM_PLAYER . ', 1, 0))' . 
 			', SUM(IF((uc.flags & ' . (USER_PERM_REFEREE | USER_PERM_MANAGER) . ') = ' . USER_PERM_REFEREE . ', 1, 0))' . 
 			', SUM(IF((uc.flags & ' . USER_PERM_MANAGER . ') <> 0, 1, 0))' . 
 			' FROM users u' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN club_users uc ON uc.user_id = u.id' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id', $condition);
-		$query->add(' GROUP BY u.id ORDER BY u.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query->add(' GROUP BY u.id ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
 			list($id, $name, $email, $flags, $club_id, $club_name, $club_flags, $clubs_player, $clubs_moder, $clubs_manager) = $row;

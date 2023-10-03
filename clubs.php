@@ -102,8 +102,8 @@ class Page extends GeneralPageBase
 			'SELECT c.id, c.name, c.flags, c.web_site, ni.name, u.flags, (SELECT count(*) FROM games g WHERE g.club_id = c.id AND g.is_canceled = FALSE AND g.result > 0) as games FROM clubs c' .
 				' LEFT OUTER JOIN club_users u ON u.user_id = ? AND u.club_id = c.id' .
 				' JOIN cities i ON c.city_id = i.id' .
-				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0',
-			$user_id, $_lang, $condition);
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0',
+			$user_id, $condition);
 		$query->add(' ORDER BY ISNULL(u.flags), games DESC, c.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 			
 		if ($_profile != NULL && !$retired)

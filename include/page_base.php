@@ -446,7 +446,7 @@ class PageBase
 	
 	private function _js()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 	
 		echo "\n<script>\n";
 ?>
@@ -529,7 +529,7 @@ class PageBase
 			}
 			else if ($this->_login > 0)
 			{
-				$query = new DbQuery('SELECT name FROM users WHERE id = ?', $this->_login);
+				$query = new DbQuery('SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $this->_login);
 				if ($row = $query->next())
 				{
 					list ($login_name) = $row;

@@ -15,7 +15,7 @@ class Page extends ClubPageBase
 	
 	protected function prepare()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 	
 		parent::prepare();
 		
@@ -28,7 +28,12 @@ class Page extends ClubPageBase
 		{
 			$this->user_id = -$_page;
 			$_page = 0;
-			$query = new DbQuery('SELECT u.name, u.club_id, u.city_id, c.country_id FROM users u JOIN cities c ON c.id = u.city_id WHERE u.id = ?', $this->user_id);
+			$query = new DbQuery(
+				'SELECT nu.name, u.club_id, u.city_id, c.country_id'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities c ON c.id = u.city_id'.
+				' WHERE u.id = ?', $this->user_id);
 			if ($row = $query->next())
 			{
 				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
@@ -49,12 +54,17 @@ class Page extends ClubPageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$condition = new SQL('u.id = uc.user_id AND uc.club_id = ?', $this->id);
 		if ($this->user_id > 0)
 		{
-			$pos_query = new DbQuery('SELECT count(*) FROM club_users uc JOIN users u ON uc.user_id = u.id WHERE uc.club_id = ? AND u.name < ?', $this->id, $this->user_name);
+			$pos_query = new DbQuery(
+				'SELECT count(*)'.
+				' FROM club_users uc'.
+				' JOIN users u ON uc.user_id = u.id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE uc.club_id = ? AND nu.name < ?', $this->id, $this->user_name);
 			list($user_pos) = $pos_query->next();
 			$_page = floor($user_pos / PAGE_SIZE);
 		}
@@ -87,12 +97,13 @@ class Page extends ClubPageBase
 		echo get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.email, u.flags, uc.flags, c.id, c.name, c.flags' .
+			'SELECT u.id, nu.name, u.email, u.flags, uc.flags, c.id, c.name, c.flags' .
 			' FROM club_users uc' .
 			' JOIN users u ON uc.user_id = u.id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' WHERE uc.club_id = ?' .
-			' ORDER BY u.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
+			' ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
 			$this->id);
 		while ($row = $query->next())
 		{

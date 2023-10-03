@@ -53,7 +53,7 @@ class Page extends GeneralPageBase
 
 	protected function show_body()
 	{
-		global $_page, $_profile;
+		global $_page, $_profile, $_lang;
 		
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$event_pic = new Picture(EVENT_PICTURE);
@@ -155,11 +155,12 @@ class Page extends GeneralPageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, m.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, a.id, a.name, a.flags FROM games g' .
+			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, a.id, a.name, a.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
+				' LEFT OUTER JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' JOIN cities ct ON ct.id = c.city_id',
 			$condition);

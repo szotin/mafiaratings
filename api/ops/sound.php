@@ -329,7 +329,7 @@ class ApiPage extends OpsApiPageBase
 					}
 					else
 					{
-						Db::exec(get_label('user'), 'INSERT INTO game_settings (user_id, l_autosave, g_autosave, flags, prompt_sound_id, end_sound_id) VALUES (?, ?, ?, ?, ?, ?)', $user_id, 10, 60, 0, $prompt_sound_id, $end_sound_id);
+						Db::exec(get_label('user'), 'INSERT INTO game_settings (user_id, flags, prompt_sound_id, end_sound_id) VALUES (?, ?, ?, ?)', $user_id, 0, $prompt_sound_id, $end_sound_id);
 					}
 					Db::commit();
 				}
@@ -342,7 +342,7 @@ class ApiPage extends OpsApiPageBase
 					}
 					else
 					{
-						Db::exec(get_label('user'), 'INSERT INTO game_settings (user_id, l_autosave, g_autosave, flags, prompt_sound_id) VALUES (?, ?, ?, ?, ?)', $user_id, 10, 60, 0, $prompt_sound_id);
+						Db::exec(get_label('user'), 'INSERT INTO game_settings (user_id, flags, prompt_sound_id) VALUES (?, ?, ?)', $user_id, 0, $prompt_sound_id);
 					}
 					Db::commit();
 				}
@@ -361,7 +361,7 @@ class ApiPage extends OpsApiPageBase
 				}
 				else
 				{
-					Db::exec(get_label('user'), 'INSERT INTO game_settings (user_id, l_autosave, g_autosave, flags, end_sound_id) VALUES (?, ?, ?, ?, ?)', $user_id, 10, 60, 0, $end_sound_id);
+					Db::exec(get_label('user'), 'INSERT INTO game_settings (user_id, flags, end_sound_id) VALUES (?, ?, ?)', $user_id, 0, $end_sound_id);
 				}
 				Db::commit();
 			}

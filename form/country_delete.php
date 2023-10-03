@@ -22,12 +22,12 @@ try
 	}
 	$id = $_REQUEST['id'];
 	
-	list($name) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $id);
+	list($name) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $id);
 
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="260">'.get_label('Replace [0] with: ', $name).'</td><td>';
 	
-	$query = new DbQuery('SELECT c.id, n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id <> ? ORDER BY n.name', $_lang, $id);
+	$query = new DbQuery('SELECT c.id, n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id <> ? ORDER BY n.name', $id);
 	
 	echo '<select id="form-repl">';
 	while ($row = $query->next())

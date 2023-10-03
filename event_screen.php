@@ -154,9 +154,10 @@ try
 			
 				echo '<center><h2>' . get_label('The event hasn\'t started yet. Current ratings:') . '</h2></center>';
 				$query = new DbQuery(
-					'SELECT u.id, u.name, r.nickname, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, r.flags, tu.flags, cu.flags' . 
+					'SELECT u.id, nu.name, r.nickname, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, r.flags, tu.flags, cu.flags' . 
 						' FROM event_users r' . 
 						' JOIN users u ON r.user_id = u.id' .
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
 						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
@@ -170,7 +171,9 @@ try
 				if (count($players) == 0)
 				{
 					$query = new DbQuery(
-						'SELECT u.id, u.name, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, NULL, NULL, cu.flags FROM users u' . 
+						'SELECT u.id, nu.name, nu.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, NULL, NULL, cu.flags'.
+						' FROM users u' . 
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = c.id' .
 						' WHERE c.id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,

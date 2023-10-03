@@ -454,6 +454,25 @@ class ApiPage extends OpsApiPageBase
 	{
 		return PERMISSION_ADMIN;
 	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// clean_games_cache
+	//-------------------------------------------------------------------------------------------------------
+	function clean_games_cache_op()
+	{
+		Db::exec(get_label('game'), 'DELETE FROM games WHERE result = 0 AND start_time = 0');
+	}
+	
+	// No help. We want to keep this API internal.
+	// function clean_games_cache_op_help()
+	// {
+	// }
+	
+	function clean_games_cache_op_permissions()
+	{
+		return PERMISSION_ADMIN;
+	}
+
 }
 
 // No version support. We want to keep this API internal.

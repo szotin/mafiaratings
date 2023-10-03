@@ -46,10 +46,10 @@ class Page extends GeneralPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities i ON a.city_id = i.id' .
 			' JOIN countries o ON i.country_id = o.id' .
-			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
-			' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 			' WHERE e.start_time + e.duration >= ? AND e.start_time < ? AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_BEFORE) . ') = 0',
-			$_lang, $_lang, $time, $end_time);
+			$time, $end_time);
 			
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr>';

@@ -10,12 +10,13 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
+		global $_lang;
+		
 		if (isset($_REQUEST['contains']))
 		{
 			$contains = $_REQUEST['contains'];
 		}
 		
-		$starts = '';
 		if (isset($_REQUEST['starts']))
 		{
 			$starts = $_REQUEST['starts'];
@@ -221,12 +222,12 @@ class ApiPage extends GetApiPageBase
 		
 		if (isset($contains))
 		{
-			$condition->add(' AND u.name LIKE(?)', '%' . $contains . '%');
+			$condition->add(' AND nu.name LIKE(?)', '%' . $contains . '%');
 		}
 		
 		if (isset($starts))
 		{
-			$condition->add(' AND (u.name LIKE(?) OR u.name LIKE(?))', $starts . '%', '% ' . $starts . '%');
+			$condition->add(' AND (nu.name LIKE(?) OR nu.name LIKE(?))', $starts . '%', '% ' . $starts . '%');
 		}
 		
 		if ($club > 0)
@@ -336,7 +337,11 @@ class ApiPage extends GetApiPageBase
 			}
 			
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, u.languages, (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, c.id, c.name FROM users u' . 
+				'SELECT u.id, nu.name, u.flags, u.languages,' .
+				' (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games,' .
+				' SUM(p.won) as won, c.id, c.name' .
+				' FROM users u' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' JOIN players p ON p.user_id = u.id' .
 				' JOIN games g ON p.game_id = g.id AND g.is_canceled = FALSE AND g.result > 0', $condition); 
@@ -346,10 +351,18 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.flags, u.languages, (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, u.rating as rating, u.games as games, u.games_won as won, c.id, c.name FROM users u' . 
+				'SELECT u.id, nu.name, u.flags, u.languages,'.
+				' (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos,'.
+				' u.rating as rating, u.games as games, u.games_won as won, c.id, c.name'.
+				' FROM users u' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id', $condition);
-			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
+			$count_query = new DbQuery(
+				'SELECT count(*)'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0', $condition);
 		}
+		$this->response['condition'] = $condition->get_parsed_sql();
 		
 		$query->add(' ORDER BY rating DESC, won DESC, games DESC');
 		$num = 0;

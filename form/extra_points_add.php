@@ -10,16 +10,21 @@ try
 	dialog_title(get_label('Add extra points'));
 
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="80">' . get_label('Player').':</td><td><input type="text" id="form-player" title="' . get_label('Select player.') . '"/></td></tr>';
+	echo '<tr><td width="80">' . get_label('Player') . ':</td><td>';
 	
 	if (isset($_REQUEST['event_id']))
 	{
 		$event_id = (int)$_REQUEST['event_id'];
+		show_user_input('form-user', '', 'event=' . $event_id, get_label('Select player.'), 'onSelect');
+		echo '</td></tr>';
 		echo '<input id="form-event" type="hidden" value="' . $event_id . '">';
 	}
 	else if (isset($_REQUEST['tournament_id']))
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
+		show_user_input('form-user', '', 'tournament=' . $tournament_id, get_label('Select player.'), 'onSelect');
+		echo '</td></tr>';
+		
 		$query = new DbQuery('SELECT id, name, flags FROM events WHERE tournament_id = ? ORDER BY start_time, id', $tournament_id);
 		$events = array();
 		while ($row = $query->next())
@@ -56,8 +61,20 @@ try
 
 ?>
 	<script>
-	var userInfo = null;
 	var savedPoints = 0;
+	var userId = 0;
+	function onSelect(_user)
+	{
+		if (typeof _user.id == "number")
+		{
+			userId = _user.id;
+			$("#form-nick").val(_user.name);
+		}
+		else
+		{
+			userId = 0;
+		}
+	}
 	
 	$("#form-reason").autocomplete(
 	{ 
@@ -69,20 +86,9 @@ try
 	})
 	.on("focus", function () { $(this).autocomplete("search", ''); }).width(400);
 	
-	$("#form-player").autocomplete(
-	{ 
-		source: function( request, response )
-		{
-			$.getJSON("api/control/user.php?term=" + $("#form-player").val(), null, response);
-		}
-		, select: function(event, ui) { userInfo = ui.item; }
-		, minLength: 0
-	})
-	.on("focus", function () { $(this).autocomplete("search", ''); });
-	
 	function commit(onSuccess)
 	{
-		if (userInfo == null)
+		if (userId <= 0)
 		{
 			dlg.error("<?php echo get_label('Please enter player.'); ?>");
 		}
@@ -96,7 +102,7 @@ try
 			{
 				op: "add_extra_points"
 				, event_id: $("#form-event").val()
-				, user_id: userInfo.id
+				, user_id: userId
 				, reason: $("#form-reason").val()
 				, details: $("#form-details").val()
 				, points: $("#form-points").val()

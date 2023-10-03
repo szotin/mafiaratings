@@ -21,7 +21,12 @@ try
 	}
 	$user_id = $_REQUEST['user_id'];
 	
-	list($user_name, $extra_points, $extra_points_reason) = Db::record(get_label('player'), 'SELECT u.name, p.extra_points, p.extra_points_reason FROM players p JOIN users u ON u.id = p.user_id WHERE u.id = ? AND p.game_id = ?', $user_id, $game_id);
+	list($user_name, $extra_points, $extra_points_reason) = Db::record(get_label('player'), 
+		'SELECT nu.name, p.extra_points, p.extra_points_reason'.
+		' FROM players p'.
+		' JOIN users u ON u.id = p.user_id'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+		' WHERE u.id = ? AND p.game_id = ?', $user_id, $game_id);
 	if ($extra_points_reason == NULL)
 	{
 		$extra_points_reason = '';

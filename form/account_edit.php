@@ -29,12 +29,20 @@ try
 		$user_id = $owner_id;
 	}
 	
-	list($user_club_id, $user_name, $user_flags, $user_city_id, $user_email, $user_langs, $user_phone) = Db::record(get_label('user'), 'SELECT club_id, name, flags, city_id, email, languages, phone FROM users WHERE id = ?', $user_id);
+	list($user_club_id, $user_name_id, $user_name, $user_flags, $user_city_id, $user_email, $user_langs, $user_phone) = Db::record(get_label('user'), 
+		'SELECT u.club_id, u.name_id, nu.name, u.flags, u.city_id, u.email, u.languages, u.phone'.
+		' FROM users u'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+		' WHERE u.id = ?', $user_id);
 	check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $user_club_id);
 
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td class="dark">' . get_label('User name') . ':</td><td class="light"><input id="form-name" value="' . $user_name . '"></td>';
+	echo '<tr><td class="dark">' . get_label('User name') . ':</td><td class="light">';
+	Names::show_control(new Names($user_name_id, get_label('user name')));
+	echo '</td>';
+	
+	
 	echo '</td><td width="140" align="center" valign="top" rowspan="8">';
 	start_upload_logo_button($user_id);
 	echo get_label('Change picture') . '<br>';
@@ -53,9 +61,9 @@ try
 	list ($city_name, $country_name) = Db::record(get_label('city'), 
 		'SELECT nct.name, ncr.name FROM cities ct' .
 		' JOIN countries cr ON cr.id = ct.country_id' .
-		' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
-		' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
-		' WHERE ct.id = ?', $_lang, $_lang, $user_city_id);
+		' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+		' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0' .
+		' WHERE ct.id = ?', $user_city_id);
 	
 	echo '<tr><td class="dark" width="140">' . get_label('Email') . ':</td><td class="light"><input id="form-email" value="' . $user_email . '"></td></tr>';
 	
@@ -170,11 +178,10 @@ try
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
-		json.post("api/ops/user.php",
+		var request =
 		{
 			op: 'edit'
 			, user_id: <?php echo $user_id; ?>
-			, name: $("#form-name").val()
 			, email: $("#form-email").val()
 			, male: ($("#form-male").attr("checked") ? 1 : 0)
 			, country: $("#form-country").val()
@@ -183,8 +190,9 @@ try
 			, langs: languages
 			, message_notify: ($("#form-message_notify").attr("checked") ? 1 : 0)
 			, photo_notify: ($("#form-photo_notify").attr('checked') ? 1 : 0)
-		},
-		onSuccess);
+		};
+		nameControl.fillRequest(request);
+		json.post("api/ops/user.php", request, onSuccess);
 	}
 	
 	function uploadLogo(userId, onSuccess)

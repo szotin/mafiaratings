@@ -21,7 +21,7 @@ class Page extends ClubPageBase
 
 	protected function prepare()
 	{
-		global $_page, $_profile;
+		global $_page, $_profile, $_lang;
 		
 		parent::prepare();
 		
@@ -36,7 +36,13 @@ class Page extends ClubPageBase
 		{
 			$this->user_id = -$_page;
 			$_page = 0;
-			$query = new DbQuery('SELECT u.name, u.club_id, u.city_id, c.country_id FROM users u JOIN cities c ON c.id = u.city_id WHERE u.id = ? AND u.club_id = ?', $this->user_id, $this->id);
+			$query = new DbQuery(
+				'SELECT nu.name, u.club_id, u.city_id, c.country_id'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities c ON c.id = u.city_id'.
+				' WHERE u.id = ? AND u.club_id = ?', 
+				$this->user_id, $this->id);
 			if ($row = $query->next())
 			{
 				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
@@ -66,7 +72,7 @@ class Page extends ClubPageBase
 	
 	protected function show_body()
 	{
-		global $_page, $_profile;
+		global $_page, $_profile, $_lang;
 		
 		echo '<p><table class="transp" width="100%"><tr><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
@@ -77,15 +83,21 @@ class Page extends ClubPageBase
 		if ($this->role == POINTS_ALL)
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.rating as rating, u.games as games, u.games_won as won, u.flags, c.id, c.name, c.flags, cu.flags' .
+				'SELECT u.id, nu.name, u.rating as rating, u.games as games, u.games_won as won, u.flags, c.id, c.name, c.flags, cu.flags' .
 					' FROM users u' . 
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' JOIN clubs c ON u.club_id = c.id' .
 					' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = u.id',
 					$condition);
 			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
 			if ($this->user_id > 0)
 			{
-				$pos_query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won FROM users u WHERE u.id = ? AND u.club_id = ?', $this->user_id, $this->id);
+				$pos_query = new DbQuery(
+					'SELECT u.id, nu.name, u.rating, u.games, u.games_won'.
+					' FROM users u'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+					' WHERE u.id = ? AND u.club_id = ?', 
+					$this->user_id, $this->id);
 				if ($row = $pos_query->next())
 				{
 					list ($u_id, $u_name, $u_rating, $u_games, $u_won) = $row;
@@ -107,8 +119,9 @@ class Page extends ClubPageBase
 		{
 			$condition->add(get_roles_condition($this->role));
 			$query = new DbQuery(
-				'SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags, cu.flags' .
+				'SELECT u.id, nu.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags, cu.flags' .
 					' FROM users u' . 
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 					' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = u.id' .
 					' JOIN players p ON p.user_id = u.id', $condition);
@@ -116,7 +129,12 @@ class Page extends ClubPageBase
 			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id', $condition);
 			if ($this->user_id > 0)
 			{
-				$pos_query = new DbQuery('SELECT u.id, u.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.club_id, u.city_id, c.country_id FROM players p JOIN users u ON p.user_id = u.id JOIN cities c ON u.city_id = c.id', $condition);
+				$pos_query = new DbQuery(
+					'SELECT u.id, nu.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.club_id, u.city_id, c.country_id'.
+					' FROM players p'.
+					' JOIN users u ON p.user_id = u.id'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+					' JOIN cities c ON u.city_id = c.id', $condition);
 				$pos_query->add(' AND u.id = ? GROUP BY u.id', $this->user_id);
 				
 				if ($row = $pos_query->next())

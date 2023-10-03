@@ -30,7 +30,7 @@ class PhotoAlbum
 	
 	function __construct($id = -1)
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$this->id = -1;
 		$this->event_id = NULL;
@@ -47,11 +47,12 @@ class PhotoAlbum
 		if ($id > 0)
 		{
 			$query = new DbQuery(
-				'SELECT a.name, a.viewers, a.adders, a.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, u.id, u.name FROM photo_albums a' .
+				'SELECT a.name, a.viewers, a.adders, a.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, u.id, nu.name FROM photo_albums a' .
 				' LEFT OUTER JOIN events e ON a.event_id = e.id' .
 				' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 				' JOIN clubs c ON a.club_id = c.id' .
 				' JOIN users u ON a.user_id = u.id' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' WHERE a.id = ? AND ', $id, PhotoAlbum::viewers_condition());
 				
 			if ($row = $query->next())
@@ -299,7 +300,7 @@ class PhotoAlbum
 	
 	public static function show_list($condition, $create_link, $link_params, $flags)
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		if (isset($_REQUEST['del']))
 		{
@@ -346,8 +347,9 @@ class PhotoAlbum
 		}
 		
 		$album_pic = new Picture(ALBUM_PICTURE, new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE))));
-		$query = new DbQuery('SELECT a.id, a.name, a.flags, a.viewers, u.id, u.name, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags FROM photo_albums a' .
+		$query = new DbQuery('SELECT a.id, a.name, a.flags, a.viewers, u.id, nu.name, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags FROM photo_albums a' .
 			' JOIN users u ON u.id = a.user_id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN clubs c ON c.id = a.club_id' .
 			' LEFT OUTER JOIN events e ON e.id = a.event_id' .
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .

@@ -62,6 +62,8 @@ class ApiPage extends OpsApiPageBase
 {
 	function merge_users($src_id, $dst_id)
 	{
+		global $_lang;
+		
 		$query = new DbQuery('SELECT g.id, g.json, g.feature_flags FROM games g LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = ? WHERE p.user_id IS NOT NULL OR g.moderator_id = ?', $src_id, $src_id);
 		while ($row = $query->next())
 		{
@@ -72,7 +74,11 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		list($src_name, $src_games_moderated, $src_games, $src_rating, $src_reg_time, $src_city_id, $src_club_id, $src_flags) = 
-			Db::record(get_label('user'), 'SELECT name, games_moderated, games, rating, reg_time, city_id, club_id, flags FROM users WHERE id = ?', $src_id);
+			Db::record(get_label('user'), 
+				'SELECT nu.name, u.games_moderated, u.games, u.rating, u.reg_time, u.city_id, u.club_id, u.flags'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE u.id = ?', $src_id);
 		
 		Db::exec(get_label('game'), 'UPDATE games SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('email'), 'UPDATE emails SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
@@ -381,7 +387,7 @@ class ApiPage extends OpsApiPageBase
 			return;
 		}
 		
-		list($user_name, $user_email) = Db::record(get_label('user'), 'SELECT name, email FROM users WHERE id = ?', $src_id);
+		list($user_email) = Db::record(get_label('user'), 'SELECT email FROM users WHERE id = ?', $src_id);
 		if ($dst_id != $_profile->user_id || $user_email != $_profile->user_email)
 		{
 			check_permissions(PERMISSION_ADMIN);
@@ -409,7 +415,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_USER);
 		
 		$user_id = (int)get_required_param('user_id');
-		list($user_name, $user_email) = Db::record(get_label('user'), 'SELECT name, email FROM users WHERE id = ?', $user_id);
+		list($user_email) = Db::record(get_label('user'), 'SELECT email FROM users WHERE id = ?', $user_id);
 		
 		if ($user_id == $_profile->user_id)
 		{
@@ -830,37 +836,22 @@ class ApiPage extends OpsApiPageBase
 		
 		$user_id = (int)get_optional_param('user_id', $_profile->user_id);
 		
-		list($user_club_id, $user_name, $user_flags, $user_city_id, $user_country_id, $user_email, $user_langs, $user_phone) = Db::record(get_label('user'), 'SELECT u.club_id, u.name, u.flags, u.city_id, ct.country_id, u.email, u.languages, u.phone FROM users u JOIN cities ct ON ct.id = u.city_id WHERE u.id = ?', $user_id);
-		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $user_club_id);
+		list($old_club_id, $old_name_id, $old_flags, $old_city_id, $old_country_id, $old_email, $old_langs, $old_phone, $def_lang) = Db::record(get_label('user'), 
+			'SELECT u.club_id, u.name_id, u.flags, u.city_id, ct.country_id, u.email, u.languages, u.phone, u.def_lang'.
+			' FROM users u'.
+			' JOIN cities ct'.
+			' ON ct.id = u.city_id'.
+			' WHERE u.id = ?', $user_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $old_club_id);
 		
-		$name = get_optional_param('name', $user_name);
-		if ($name != $user_name)
-		{
-			check_user_name($name, $user_id);
-		}
-		
-		$email = get_optional_param('email', $user_email);
-		if ($email != $user_email)
-		{
-			if (empty($email))
-			{
-				throw new Exc(get_label('Please enter [0].', get_label('email address')));
-			}
-			else if (!is_email($email))
-			{
-				throw new Exc(get_label('[0] is not a valid email address.', $email));
-			}
-			send_activation_email($user_id, $name, $email);
-			echo get_label('You are trying to change your email address. Please check your email and click a link in it to finalize the change.');
-		}
-		
-		$club_id = (int)get_optional_param('club_id', $user_club_id);
+		$email = get_optional_param('email', $old_email);
+		$club_id = (int)get_optional_param('club_id', $old_club_id);
 		if ($club_id <= 0)
 		{
 			$club_id = NULL;
 		}
 		
-		$country_id = (int)$user_country_id;
+		$country_id = (int)$old_country_id;
 		if (isset($_REQUEST['country_id']))
 		{
 			$country_id = (int)$_REQUEST['country_id'];
@@ -870,7 +861,7 @@ class ApiPage extends OpsApiPageBase
 			$country_id = retrieve_country_id($_REQUEST['country']);
 		}
 		
-		$city_id = $user_city_id;
+		$city_id = $old_city_id;
 		if (isset($_REQUEST['city_id']))
 		{
 			$city_id = (int)$_REQUEST['city_id'];
@@ -880,10 +871,10 @@ class ApiPage extends OpsApiPageBase
 			$city_id = retrieve_city_id($_REQUEST['city'], $country_id, get_timezone());
 		}
 		
-		$langs = (int)get_optional_param('langs', $user_langs);
-		$phone = get_optional_param('phone', $user_phone);
+		$langs = (int)get_optional_param('langs', $old_langs);
+		$phone = get_optional_param('phone', $old_phone);
 		
-		$flags = $user_flags;
+		$flags = $old_flags;
 		if (isset($_REQUEST['message_notify']))
 		{
 			if ($_REQUEST['message_notify'])
@@ -935,6 +926,28 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
+		$names = new Names(0, get_label('user name'), 'users', $user_id, new SQL(' AND o.city_id = ?', $city_id));
+		$name_id = $names->get_id();
+		if ($name_id <= 0)
+		{
+			$name_id = $old_name_id;
+		}
+		$name = $names->to_string($def_lang);
+		
+		if ($email != $old_email)
+		{
+			if (empty($email))
+			{
+				throw new Exc(get_label('Please enter [0].', get_label('email address')));
+			}
+			else if (!is_email($email))
+			{
+				throw new Exc(get_label('[0] is not a valid email address.', $email));
+			}
+			send_activation_email($user_id, $name, $email);
+			echo get_label('You are trying to change your email address. Please check your email and click a link in it to finalize the change.');
+		}
+		
 		if (isset($_REQUEST['pwd1']))
 		{
 			$password1 = $_REQUEST['pwd1'];
@@ -954,8 +967,8 @@ class ApiPage extends OpsApiPageBase
 		$update_clubs = false;
 		Db::exec(
 			get_label('user'), 
-			'UPDATE users SET name = ?, flags = ?, city_id = ?, languages = ?, phone = ?, club_id = ? WHERE id = ?',
-			$name, $flags, $city_id, $langs, $phone, $club_id, $user_id);
+			'UPDATE users SET name_id = ?, flags = ?, city_id = ?, languages = ?, phone = ?, club_id = ? WHERE id = ?',
+			$name_id, $flags, $city_id, $langs, $phone, $club_id, $user_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($is_member) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
@@ -967,7 +980,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			$log_details = new stdClass();
-			if ($user_flags != $flags)
+			if ($old_flags != $flags)
 			{
 				$log_details->flags = $flags;
 			}
@@ -977,17 +990,17 @@ class ApiPage extends OpsApiPageBase
 				$log_details->picture_uploaded = true;
 			}
 			
-			if ($user_name != $name)
+			if ($old_name_id != $name_id)
 			{
-				$log_details->flags = $flags;
+				$log_details->name = $names->to_string();
 			}
 			
-			if ($user_city_id != $city_id)
+			if ($old_city_id != $city_id)
 			{
 				$log_details->city_id = $city_id;
 			}
 			
-			if ($user_langs != $langs)
+			if ($old_langs != $langs)
 			{
 				$log_details->langs = $langs;
 			}
@@ -1024,6 +1037,7 @@ class ApiPage extends OpsApiPageBase
 	function edit_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_USER, 'Change account settings.');
+		Names::help($help, 'User', false);
 		$help->request_param('country_id', 'Country id.', 'remains the same unless <q>country</q> is set');
 		$help->request_param('country', 'Country name. An alternative to <q>country_id</q>. It is used only if <q>country_id</q> is not set.', 'remains the same unless <q>country_id</q> is set');
 		$help->request_param('city_id', 'City id.', 'remains the same unless <q>city</q> is set');
@@ -1047,7 +1061,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function custom_photo_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		$user_id = get_required_param('user_id');
 		$event_id = get_optional_param('event_id', 0);
 		$club_id = get_optional_param('club_id', 0);
@@ -1063,7 +1077,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			else
 			{
-				list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+				list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
 				list($event_name) = Db::record(get_label('event'), 'SELECT name FROM events WHERE id = ?', $event_id);
 				throw new Exc(get_label('[0] is not registered for [1]', $user_name, $event_name));
 			}
@@ -1108,7 +1122,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			else
 			{
-				list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+				list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
 				list($tournament_name) = Db::record(get_label('tournament'), 'SELECT name FROM tournaments WHERE id = ?', $tournament_id);
 				throw new Exc(get_label('[0] is not registered for [1]', $user_name, $tournament_name));
 			}
@@ -1154,7 +1168,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			else
 			{
-				list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+				list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
 				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
 				throw new Exc(get_label('[0] is not a member of [1]', $user_name, $club_name));
 			}

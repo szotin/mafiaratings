@@ -50,9 +50,9 @@ class Page extends ClubPageBase
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
-			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
-			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0 WHERE ',
-			$_lang,  $_lang, $condition);
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0 WHERE ',
+			$condition);
 		$query->add(' ORDER BY t.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);

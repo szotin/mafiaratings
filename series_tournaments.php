@@ -57,11 +57,11 @@ class Page extends SeriesPageBase
 			' JOIN series s ON s.id = st.series_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN cities i ON i.id = a.city_id' .
-			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' JOIN leagues l ON l.id = s.league_id' .
-			' WHERE st.series_id = ?', $_lang, $this->id);
+			' WHERE st.series_id = ?', $this->id);
 		if ($this->future)
 		{
 			$condition->add(' AND t.start_time + t.duration >= UNIX_TIMESTAMP()');
@@ -228,7 +228,7 @@ class Page extends SeriesPageBase
 		echo '<td align="center" colspan="3">' . get_label('Tournament') . '</td>';
 		if ($this->future)
 		{
-			echo '<td width="60" align="center">' . get_label('Expected players count') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Expected number of players') . '</td>';
 		}
 		else
 		{

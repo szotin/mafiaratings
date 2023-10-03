@@ -156,9 +156,10 @@ try
 				$page_size = $rows * $cols;
 			
 				$query = new DbQuery(
-					'SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
+					'SELECT u.id, nu.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
 						' FROM tournament_users tu' . 
 						' JOIN users u ON tu.user_id = u.id' .
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
 						' WHERE tu.tournament_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
@@ -171,8 +172,9 @@ try
 				if (count($players) == 0)
 				{
 					$query = new DbQuery(
-						'SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, NULL, cu.flags' . 
+						'SELECT u.id, nu.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, NULL, cu.flags' . 
 						' FROM users u' . 
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = c.id' .
 						' WHERE c.id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,

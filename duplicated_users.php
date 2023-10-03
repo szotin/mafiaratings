@@ -29,7 +29,7 @@ class Page extends GeneralPageBase
 	
 	protected function show_body()
 	{
-		global $_page;
+		global $_page, $_lang;
 	
 		check_permissions(PERMISSION_ADMIN);
 		if ($this->email_title != NULL)
@@ -39,7 +39,12 @@ class Page extends GeneralPageBase
 			
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="th darker"><td width="38"></td><td>'.get_label('Players with the same email').'</td><td width="100">Rating</td><td width="100">'.get_label('Games played').'</td></tr>';
-			$query = new DbQuery('SELECT id, name, rating, games, flags FROM users WHERE email = ? ORDER BY games DESC, rating DESC, name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, $this->email);
+			$query = new DbQuery(
+				'SELECT u.id, nu.name, u.rating, u.games, u.flags'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE u.email = ?'.
+				' ORDER BY u.games DESC, u.rating DESC, nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, $this->email);
 			while ($row = $query->next())
 			{
 				list ($id, $name, $rating, $games, $flags) = $row;

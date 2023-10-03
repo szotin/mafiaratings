@@ -78,6 +78,8 @@ class Page extends PageBase
 	
 	protected function prepare()
 	{
+		global $_lang;
+		
 		$this->id = -1;
 		if (isset($_REQUEST['id']))
 		{
@@ -97,7 +99,7 @@ class Page extends PageBase
 			get_label('game'),
 			'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags,' .
 			' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
-			' m.id, m.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
+			' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
 			' g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json' .
 				' FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
@@ -106,6 +108,7 @@ class Page extends PageBase
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN users m ON m.id = g.moderator_id' .
+				' JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN event_users eu ON eu.user_id = m.id AND eu.event_id = g.event_id' .
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = m.id AND tu.tournament_id = g.tournament_id' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
@@ -138,8 +141,9 @@ class Page extends PageBase
 		// Players
 		$this->players = array();
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM players p' . 
+			'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM players p' . 
 			' JOIN users u ON u.id = p.user_id' . 
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' . 
 			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' . 
 			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' . 

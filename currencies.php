@@ -17,7 +17,7 @@ class Page extends GeneralPageBase
 		list ($count) = Db::record(get_label('currency'), 'SELECT count(*) FROM currencies c');
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$query = new DbQuery('SELECT c.id, n.name, c.pattern FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0', $_lang);
+		$query = new DbQuery('SELECT c.id, n.name, c.pattern FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0');
 		$query->add(' ORDER BY n.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker">';

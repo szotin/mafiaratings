@@ -26,7 +26,11 @@ try
 		Db::record(get_label('event'), 'SELECT e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags FROM events e JOIN clubs c ON c.id = e.club_id LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE e.id = ?', $event_id);
 	if ($user_id > 0)
 	{
-		list ($user_name, $user_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $user_id);
+		list ($user_name, $user_flags) = Db::record(get_label('user'), 
+			'SELECT nu.name, u.flags'.
+			' FROM users u'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE u.id = ?', $user_id);
 	}
 	else
 	{

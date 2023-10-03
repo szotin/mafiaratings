@@ -65,11 +65,26 @@ try
 	echo '<tr><td><table width="100%" class="transp light">';
 	if ($show_all || !$more_than_max)
 	{
-		$query = new DbQuery('SELECT c.user_id, u.name, u.flags, c.comment, c.time, c.lang FROM ' . $object_type . '_comments c JOIN users u ON u.id = c.user_id WHERE c.' . $object_type . '_id = ? ORDER BY c.time', $id);
+		$query = new DbQuery(
+			'SELECT c.user_id, nu.name, u.flags, c.comment, c.time, c.lang'.
+			' FROM ' . $object_type . '_comments c'.
+			' JOIN users u ON u.id = c.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE c.' . $object_type . '_id = ?'.
+			' ORDER BY c.time', $id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT * FROM (SELECT c.user_id, u.name, u.flags, c.comment, c.time as time, c.lang FROM ' . $object_type . '_comments c JOIN users u ON u.id = c.user_id WHERE c.' . $object_type . '_id = ? ORDER BY c.time DESC LIMIT ' . $limit . ') sub ORDER BY time', $id);
+		$query = new DbQuery(
+			'SELECT * FROM ('.
+			'SELECT c.user_id, nu.name, u.flags, c.comment, c.time as time, c.lang'.
+			' FROM ' . $object_type . '_comments c'.
+			' JOIN users u ON u.id = c.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE c.' . $object_type . '_id = ?'.
+			' ORDER BY c.time'.
+			' DESC LIMIT ' . $limit . ') sub'.
+			' ORDER BY time', $id);
 	}
 	
 	if ($more_than_max && !$show_all)

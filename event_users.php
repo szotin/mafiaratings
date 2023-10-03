@@ -7,7 +7,7 @@ class Page extends EventPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id);
@@ -29,15 +29,16 @@ class Page extends EventPageBase
 		echo '<td colspan="4">' . get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
 		
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.email, u.flags, eu.nickname, eu.flags, tu.tournament_id, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags' .
+			'SELECT u.id, nu.name, u.email, u.flags, eu.nickname, eu.flags, tu.tournament_id, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags' .
 			' FROM event_users eu' .
 			' JOIN users u ON eu.user_id = u.id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN events e ON e.id = eu.event_id' .
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = e.tournament_id AND tu.user_id = eu.user_id' .
 			' LEFT OUTER JOIN club_users cu ON cu.club_id = e.club_id AND cu.user_id = eu.user_id' .
 			' WHERE eu.event_id = ?' .
-			' ORDER BY u.name',
+			' ORDER BY nu.name',
 			$this->event->id);
 		while ($row = $query->next())
 		{

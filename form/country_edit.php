@@ -39,7 +39,7 @@ try
 	echo '<tr><td>'.get_label('Country code').':</td><td><input id="form-code" value="' . htmlspecialchars($code, ENT_QUOTES) . '"></td></tr>';
 	
 	echo '<tr><td>'.get_label('National currency').':</td><td>';
-	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 ORDER BY n.name', $_lang);
+	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
 	echo '<select id="form-currency" onChange="currencyChanged()">';
 	show_option(0, $currency_id, get_label('Create new'));
 	while ($row = $query->next())

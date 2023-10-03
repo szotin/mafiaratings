@@ -237,7 +237,7 @@ class Page extends ClubPageBase
 	
 	protected function show_body()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$this->club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
@@ -436,7 +436,12 @@ class Page extends ClubPageBase
 		
 		// managers
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, c.flags FROM club_users c JOIN users u ON u.id = c.user_id WHERE c.club_id = ? AND (c.flags & ' . USER_PERM_MANAGER . ') <> 0', $this->id);
+			'SELECT u.id, nu.name, u.flags, c.flags'.
+			' FROM club_users c'.
+			' JOIN users u ON u.id = c.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE c.club_id = ? AND (c.flags & ' . USER_PERM_MANAGER . ') <> 0', 
+			$this->id);
 		if ($row = $query->next())
 		{
 			$managers_count = 0;
@@ -522,8 +527,9 @@ class Page extends ClubPageBase
 		{
 			echo '</td><td width="280" valign="top">';
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags, cu.flags' .
+				'SELECT u.id, nu.name, u.rating, u.games, u.games_won, u.flags, cu.flags' .
 					' FROM users u' .
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = u.club_id' .
 					' WHERE u.club_id = ?' .
 					' ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id' .

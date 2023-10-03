@@ -107,7 +107,7 @@ var mafia = new function()
 	var _curVoting = null;
 	var _voting = null;
 	
-	var _syncCount = 0;
+	var _syncStart = 0;
 	var _demoEvent = null;
 	
 	this.sPlayers = function() { return _sortedPlayers; }
@@ -357,12 +357,12 @@ var mafia = new function()
 	
 	this.sync = function(clubId, eventId, success)
 	{
-		++_syncCount;
-		if (_syncCount > 1 && _syncCount < 5)
+		var now = (new Date()).getTime();
+		if (_syncStart > 0 && (now - _syncStart) < 600000) // 10 minutes timeout
 		{
 			return;
 		}
-		_syncCount = 1;
+		_syncStart = now;
 		
 		if (typeof clubId != "number")
 			clubId = 0;
@@ -422,7 +422,7 @@ var mafia = new function()
 			}
 				
 			_dirty(_lDirty, _gDirty - oldDirty);
-			_syncCount = 0;
+			_syncStart = 0;
 			if (typeof data.club != 'undefined')
 			{
 				if (typeof data.club.events[eventId] != "undefined")
@@ -443,7 +443,7 @@ var mafia = new function()
 			{
 				success();
 			}
-		}, function () { _syncCount = 0; http.connected(false); });
+		}, function () { _syncStart = 0; http.connected(false); });
 	}
 	
 	this.player = function(num, id)
@@ -2807,19 +2807,15 @@ var mafia = new function()
 		}
 	}
 	
-	this.settings = function(lAutosave, gAutosave, promptSound, endSound, flags)
+	this.settings = function(promptSound, endSound, flags)
 	{
 		var s = _data.user.settings;
 		s.flags = flags;
-		s.l_autosave = lAutosave;
-		s.g_autosave = gAutosave;
 		s.prompt_sound = promptSound;
 		s.end_sound = endSound;
 		var req =
 		{
 			action: 'settings',
-			l_autosave: lAutosave,
-			g_autosave: gAutosave,
 			prompt_sound: promptSound,
 			end_sound: endSound,
 			flags: flags

@@ -25,10 +25,10 @@ try
 			'SELECT a.name, a.address, a.map_url, a.flags, ni.name, no.name, a.club_id FROM addresses a' .
 				' JOIN cities i ON i.id = a.city_id' .
 				' JOIN countries o ON o.id = i.country_id' .
-				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
-				' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+				' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 				' WHERE a.id = ?',
-			$_lang, $_lang, $address_id);
+			$address_id);
 	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 
 	echo '<p><input type="checkbox" id="form-picture" checked> ' . get_label('change address picture to the map image.') . '</p>';

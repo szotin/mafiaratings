@@ -24,9 +24,9 @@ try
 		get_label('city'), 
 		'SELECT i.country_id, no.name, i.name_id, i.timezone, i.flags, i.area_id FROM cities i' .
 		' JOIN countries o ON o.id = i.country_id' .
-		' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+		' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 		' WHERE i.id = ?',
-		$_lang, $id);
+		$id);
 		
 	if (($flags & CITY_FLAG_NOT_CONFIRMED) != 0)
 	{
@@ -54,10 +54,10 @@ try
 	$query = new DbQuery(
 		'SELECT i.id, ni.name, i.timezone, o.id, no.name FROM cities i' .
 		' JOIN countries o ON o.id = i.country_id' .
-		' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
-		' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
+		' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
+		' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 		' WHERE i.area_id = i.id AND i.id <> ? ORDER BY ni.name',
-		$_lang, $_lang, $id);
+		$id);
 	echo '<tr><td>' . get_label('Is near bigger city') . ':</td><td>';
 	echo '<select id="form-area" onChange="areaChange()"><option value="-1"></option>';
 	while ($row = $query->next())

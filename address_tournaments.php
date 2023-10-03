@@ -188,7 +188,7 @@ class Page extends AddressPageBase
 		echo '<td align="center" colspan="2">' . get_label('Tournament') . '</td>';
 		if ($future)
 		{
-			echo '<td width="60" align="center">' . get_label('Expected players count') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Expected number of players') . '</td>';
 		}
 		else
 		{

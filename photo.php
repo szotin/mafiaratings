@@ -31,7 +31,7 @@ class Page extends PageBase
 
 	protected function prepare()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		if (!isset($_REQUEST['id']))
 		{
@@ -66,7 +66,7 @@ class Page extends PageBase
 			$user_id = $_REQUEST['user'];
 			$query_base = new SQL('SELECT p.id FROM photos p JOIN user_photos u ON u.photo_id = p.id JOIN photo_albums a ON p.album_id = a.id WHERE u.tag = TRUE AND u.user_id = ?', $user_id);
 			$this->link_str = '&user=' . $user_id;
-			$row = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+			$row = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
 			$this->_title = get_label('[0]: photo', $row[0]);
 		}
 
@@ -179,17 +179,19 @@ class Page extends PageBase
 			$this->club_id, $this->club_name) = 
 				Db::record(
 					get_label('photo'), 
-					'SELECT u.id, u.name, p.viewers, a.id, a.name, a.event_id, a.user_id, a.viewers, c.id, c.name FROM photos p' . 
-						' JOIN users u ON p.user_id = u.id' .
-						' JOIN photo_albums a ON p.album_id = a.id' .
-						' JOIN clubs c ON c.id = a.club_id' .
-						' WHERE p.id = ? AND ',
+					'SELECT u.id, nu.name, p.viewers, a.id, a.name, a.event_id, a.user_id, a.viewers, c.id, c.name'.
+					' FROM photos p' . 
+					' JOIN users u ON p.user_id = u.id' .
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+					' JOIN photo_albums a ON p.album_id = a.id' .
+					' JOIN clubs c ON c.id = a.club_id' .
+					' WHERE p.id = ? AND ',
 					$this->id, PhotoAlbum::photo_viewers_condition());
 	}
 	
 	protected function show_body()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		if ($this->show_delete_confirm)
 		{
@@ -260,7 +262,12 @@ class Page extends PageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr><td>' . get_label('In this photo') . ':</td><td>';
 		echo '<table class="transp" width="100%"><tr><td valign="center">';
-		$query = new DbQuery('SELECT u.id, u.name FROM user_photos p, users u WHERE p.tag = TRUE AND p.user_id = u.id AND p.photo_id = ?', $this->id);
+		$query = new DbQuery(
+			'SELECT u.id, nu.name'.
+			' FROM user_photos p'.
+			' JOIN users u ON u.id = p.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE p.tag = TRUE AND p.photo_id = ?', $this->id);
 		$delim = '';
 		while ($row = $query->next())
 		{

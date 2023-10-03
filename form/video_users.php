@@ -49,13 +49,29 @@ try
 	$remaining_columns = 0;
 	if ($game_id == NULL)
 	{
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, v.tagged_by_id, 0 FROM user_videos v JOIN users u ON u.id = v.user_id WHERE v.video_id = ? ORDER BY u.name', $video_id);
+		$query = new DbQuery(
+			'SELECT u.id, nu.name, u.flags, v.tagged_by_id, 0'.
+			' FROM user_videos v'.
+			' JOIN users u ON u.id = v.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE v.video_id = ?'.
+			' ORDER BY nu.name', $video_id);
 	}
 	else
 	{
 		$query = new DbQuery(
-			'(SELECT u.id, u.name as name, u.flags, NULL, p.number as number FROM players p JOIN users u ON u.id = p.user_id WHERE p.game_id = ?) UNION ' .
-			'(SELECT u.id, u.name as name, u.flags, NULL, 0 as number FROM games g  JOIN users u ON u.id = g.moderator_id WHERE g.id = ?) ORDER BY number', $game_id, $game_id);
+			'(SELECT u.id, nu.name as name, u.flags, NULL, p.number as number'.
+			' FROM players p'.
+			' JOIN users u ON u.id = p.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE p.game_id = ?)'.
+			' UNION ' .
+			'(SELECT u.id, nu.name as name, u.flags, NULL, 0 as number'.
+			' FROM games g'.
+			' JOIN users u ON u.id = g.moderator_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE g.id = ?)'.
+			' ORDER BY number', $game_id, $game_id);
 	}
 	while ($row = $query->next())
 	{

@@ -50,7 +50,8 @@ try
 
 	$event_emails = array();
 	$query = new DbQuery(
-		'SELECT ee.id, ee.type, ee.langs, ee.flags, e.id, e.name, e.start_time, e.notes, e.languages, a.id, a.address, a.map_url, i.timezone, c.id, c.name FROM event_mailings ee' . 
+		'SELECT ee.id, ee.type, ee.langs, ee.flags, e.id, e.name, e.start_time, e.notes, e.languages, a.id, a.address, a.map_url, i.timezone, c.id, c.name'.
+		' FROM event_mailings ee' . 
 		' JOIN events e ON e.id = ee.event_id' .
 		' JOIN addresses a ON a.id = e.address_id' . 
 		' JOIN clubs c ON c.id = e.club_id' .
@@ -94,7 +95,6 @@ try
 			
 			$condition = new SQL('(u.languages & ?) <> 0' . 
 				' AND u.email <> \'\'' .
-				' AND uc.user_id = u.id' .
 				' AND uc.club_id = ?' .
 				' AND (uc.flags & ' . (USER_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED) . ') = ' . (USER_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED) .
 				' AND u.id NOT IN (SELECT user_id FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT . ' AND obj_id = ?)',
@@ -134,7 +134,12 @@ try
 				}
 			}
 			
-			$query1 = new DbQuery('SELECT u.id, u.name, u.email, u.def_lang, u.languages FROM users u, club_users uc WHERE ', $condition);
+			$query1 = new DbQuery(
+				'SELECT u.id, nu.name, u.email, u.def_lang, u.languages'.
+				' FROM club_users uc'.
+				' JOIN users u ON u.id = uc.user_id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+				' WHERE ', $condition);
 			$query1->add(' ORDER BY u.id LIMIT ' . $emails_remaining);
 			// echo $query1->get_parsed_sql();
 			// echo '</br>';
@@ -213,7 +218,14 @@ try
 	
 	if ($emails_remaining > 0)
 	{
-		$query = new DbQuery('SELECT u.id, u.name, u.email, p.photo_id, u.def_lang FROM users u, user_photos p WHERE u.id = p.user_id AND p.email_sent = FALSE AND p.tag = TRUE ORDER BY u.id LIMIT ' . $emails_remaining);
+		$query = new DbQuery(
+			'SELECT u.id, nu.name, u.email, p.photo_id, u.def_lang'.
+			' FROM user_photos p'.
+			' JOIN users u ON u.id = p.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE p.email_sent = FALSE AND p.tag = TRUE'.
+			' ORDER BY u.id'.
+			' LIMIT ' . $emails_remaining);
 		$photos = array();
 		while ($row = $query->next())
 		{

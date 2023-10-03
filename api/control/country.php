@@ -17,7 +17,7 @@ class ApiPage extends ControlApiPageBase
 		
 		$countries = array();
 		
-		$query = new DbQuery('SELECT DISTINCT c.id, nc.name FROM country_names n JOIN countries c ON c.id = n.country_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & ?) <> 0', $_lang);
+		$query = new DbQuery('SELECT DISTINCT c.id, nc.name FROM country_names n JOIN countries c ON c.id = n.country_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0');
 		if ($term != '')
 		{
 			$term = '%' . $term . '%';

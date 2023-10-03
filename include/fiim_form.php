@@ -25,6 +25,8 @@ class FiimForm
 
 	public function add($game, $event_name, $tournament_name, $moder_name, $timezone)
 	{
+		global $_lang;
+		
 		$round_name = '';
 		if (!is_null($tournament_name))
 		{
@@ -324,7 +326,12 @@ class FiimForm
 			$this->pdf->Cell(66, 10.1, $moder_name, 0, 0, 'C');
 			
 			$objections = '';
-			$query = new DbQuery('SELECT o.message, o.accept, u.id, u.name FROM objections o JOIN users u ON u.id = o.user_id WHERE o.game_id = ? ORDER BY timestamp', $data->id);
+			$query = new DbQuery(
+				'SELECT o.message, o.accept, u.id, nu.name'.
+				' FROM objections o'.
+				' JOIN users u ON u.id = o.user_id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE o.game_id = ? ORDER BY timestamp', $data->id);
 			while ($row = $query->next())
 			{
 				list ($message, $accept, $user_id, $user_name) = $row;

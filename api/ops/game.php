@@ -52,7 +52,7 @@ function def_club()
 
 function compare_players($player1, $player2)
 {
-	return strcasecmp($player1->name , $player2->name);
+	return strcmp($player1->lower_case, $player2->lower_case);
 }
 
 class GPlayer
@@ -84,7 +84,7 @@ class GClub
 	
 	function __construct($id, $gs)
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		$club = $_profile->clubs[$id];
 		$this->id = (int)$club->id;
 		
@@ -109,8 +109,9 @@ class GClub
 		$this->haunters = array();
 		$this->players = array();
 		$query = new DbQuery(
-			'SELECT u.id, u.name, c.name, u.flags, uc.flags FROM club_users uc' .
+			'SELECT u.id, nu.name, c.name, u.flags, uc.flags FROM club_users uc' .
 				' JOIN users u ON u.id = uc.user_id' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' WHERE (uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_REFEREE) .
 					') <> 0 AND uc.club_id = ?' .
@@ -218,7 +219,13 @@ class GClub
 			}
 			$events_str .= ')';
 			
-			$query = new DbQuery('SELECT r.user_id, r.event_id, r.nickname, u.name, c.name, u.flags FROM event_users r JOIN users u ON u.id = r.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE (r.coming_odds > 0 OR r.coming_odds IS NULL) AND r.event_id IN ' . $events_str);
+			$query = new DbQuery(
+				'SELECT r.user_id, r.event_id, r.nickname, nu.name, c.name, u.flags'.
+				' FROM event_users r'.
+				' JOIN users u ON u.id = r.user_id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' LEFT OUTER JOIN clubs c ON c.id = u.club_id'.
+				' WHERE (r.coming_odds > 0 OR r.coming_odds IS NULL) AND r.event_id IN ' . $events_str);
 			while ($row = $query->next())
 			{
 				list ($user_id, $event_id, $nick, $user_name, $club_name, $user_flags) = $row;
@@ -308,21 +315,17 @@ class GUser
 		$this->flags = (int)$_profile->user_flags;
 		$this->manager = ($_profile->clubs[$club_id]->flags & USER_PERM_MANAGER) ? 1 : 0;
 		
-		$query = new DbQuery('SELECT flags, l_autosave, g_autosave, prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $this->id);
+		$query = new DbQuery('SELECT flags, prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $this->id);
 		$this->settings = new stdClass();
 		if ($row = $query->next())
 		{
 			$this->settings->flags = (int)$row[0];
-			$this->settings->l_autosave = (int)$row[1];
-			$this->settings->g_autosave = (int)$row[2];
-			$this->settings->prompt_sound = $row[3];
-			$this->settings->end_sound = $row[4];
+			$this->settings->prompt_sound = $row[1];
+			$this->settings->end_sound = $row[2];
 		}
 		else
 		{
 			$this->settings->flags = 0;
-			$this->settings->l_autosave = 10;
-			$this->settings->g_autosave = 10;
 			$this->settings->prompt_sound = NULL;
 			$this->settings->end_sound = NULL;
 		}
@@ -675,25 +678,32 @@ class CommandQueue
 			$email = '';
 		}
 		
+		check_name($name, get_label('user name'));
 		if ($email != '')
 		{
+			list($city_id) = Db::record(get_label('club'), 'SELECT city_id FROM clubs WHERE id = ?', $this->club_id);
 			$i = 1;
 			$n = $name;
 			while (true)
 			{
-				list($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users WHERE name = ?', $n);
-				if ($count == 0)
+				try
 				{
-					$name = $n;
+					$names = new Names(-1, get_label('user name'), 'users', 0, new SQL(' AND o.city_id = ?', $city_id), $n);
+					$user_id = create_user($names, $email, $this->club_id, $city_id);
 					break;
 				}
-				$n = $name . $i;
-				++$i;
-				$flags |= USER_FLAG_NAME_CHANGED;
-				$message = get_label('User name [0] has been changed to [1] - name already exists.', $rec->name, $n);
+				catch (Exception $e)
+				{
+					$flags |= USER_FLAG_NAME_CHANGED;
+					$message = get_label('User name [0] has been changed to [1] - name already exists.', $rec->name, $n);
+					$n = $name . '_' . $i;
+					if (++$i == 51)
+					{
+						throw $e;
+					}
+				}
 			}
 		
-			$user_id = create_user($name, $email, $flags, $this->club_id);
 			Db::exec(
 				get_label('registration'), 
 				'INSERT INTO event_users (user_id, nickname, event_id) VALUES (?, ?, ?)',
@@ -750,7 +760,7 @@ class CommandQueue
 	{
 		global $_profile;
 	
-		if (!isset($rec->l_autosave) || !isset($rec->g_autosave) || !isset($rec->flags))
+		if (!isset($rec->flags))
 		{
 			throw new Exc(get_label('Invalid request'));
 		}
@@ -759,14 +769,14 @@ class CommandQueue
 		if ($query->next())
 		{
 			Db::exec(get_label('user'),
-				'UPDATE game_settings SET l_autosave = ?, g_autosave = ?, flags = ?, prompt_sound_id = ?, end_sound_id = ? WHERE user_id = ?',
-				$rec->l_autosave, $rec->g_autosave, $rec->flags, $rec->prompt_sound, $rec->end_sound, $_profile->user_id);
+				'UPDATE game_settings SET flags = ?, prompt_sound_id = ?, end_sound_id = ? WHERE user_id = ?',
+				$rec->flags, $rec->prompt_sound, $rec->end_sound, $_profile->user_id);
 		}
 		else
 		{
 			Db::exec(get_label('user'),
-				'INSERT INTO game_settings (user_id, l_autosave, g_autosave, flags, prompt_sound_id, end_sound_id) VALUES (?, ?, ?, ?, ?, ?)',
-				$_profile->user_id, $rec->l_autosave, $rec->g_autosave, $rec->flags, $rec->prompt_sound, $rec->end_sound);
+				'INSERT INTO game_settings (user_id, flags, prompt_sound_id, end_sound_id) VALUES (?, ?, ?, ?, ?, ?)',
+				$_profile->user_id, $rec->flags, $rec->prompt_sound, $rec->end_sound);
 		}
 	}
 }
@@ -780,7 +790,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function sync_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		// to make sure $_profile is not NULL
 		check_permissions(PERMISSION_USER);
@@ -834,6 +844,7 @@ class ApiPage extends OpsApiPageBase
 				{
 					$this->response['fail'] = $fail;
 				}
+				$json_str = json_encode($gs);
 			}
 			
 			$gid = $gs->id;
@@ -901,6 +912,7 @@ class ApiPage extends OpsApiPageBase
 					$json_str = json_encode($gs);
 					Db::exec(get_label('game'), 'UPDATE games SET log = ? WHERE id = ?', $json_str, $gs->id);
 				}
+				
 			}
 			else if ($gs->club_id == $club_id)
 			{
@@ -923,7 +935,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		catch (LoginExc $e)
 		{
-			$query = new DbQuery('SELECT name FROM users WHERE id = ?', $gs->user_id);
+			$query = new DbQuery('SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $gs->user_id);
 			if ($row = $query->next())
 			{
 				$e->user_name = $row[0];
@@ -1079,9 +1091,10 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$area_id = -1;
+		$city_id = -1;
 		if ($club_id > 0)
 		{
-			list($area_id) = Db::record(get_label('area'), 'SELECT ct.area_id FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+			list($city_id, $area_id) = Db::record(get_label('area'), 'SELECT ct.id, ct.area_id FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 		}
 		
 		
@@ -1092,21 +1105,22 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		array();
-		$query = new DbQuery('SELECT u.id, u.name, u.flags, c.id, c.name, a.id, na.name, ct.id, nct.name, (', $games_count_query);
+		$query = new DbQuery('SELECT DISTINCT u.id, nu.name, u.flags, c.id, c.name, a.id, na.name, ct.id, nct.name, (', $games_count_query);
 		$query->add(
 				') as games_count' .
 				' FROM users u' .
+				' JOIN names nu ON nu.id = u.name_id'.
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 				' JOIN cities ct ON ct.id = u.city_id' .
-				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0 ' .
+				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0 ' .
 				' LEFT OUTER JOIN cities a ON a.id = ct.area_id' .
-				' LEFT OUTER JOIN names na ON na.id = a.name_id AND (na.langs & ?) <> 0 ' .
-				' WHERE TRUE', $_lang, $_lang);
+				' LEFT OUTER JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0 ' .
+				' WHERE TRUE');
 		if (!empty($name))
 		{
 			$name_wildcard = '%' . $name . '%';
 			$query->add(
-					' AND (u.name LIKE ? OR' .
+					' AND (nu.name LIKE ? OR' .
 					' u.email LIKE ? OR' .
 					' u.id IN (SELECT DISTINCT user_id FROM event_users WHERE nickname LIKE ?))',
 				$name_wildcard,
@@ -1125,12 +1139,15 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 //		echo $query->get_parsed_sql();
-		
 		$list = array();
 		while ($row = $query->next())
 		{
+			list ($p_id, $p_name, $p_flags, $p_club_id, $p_club_name, $p_area_id, $p_area_name, $p_city_id, $p_city_name) = $row;
 			$p = new stdClass();
-			list ($p->id, $p->name, $p->flags, $p_club_id, $p_club_name, $p_area_id, $p_area_name, $p_city_id, $p_city_name) = $row;
+			$p->id = (int)$p_id;
+			$p->name = $p_name;
+			$p->flags = (int)$p_flags;
+			$p->city = $p_city_name;
 			if (is_null($p_area_id))
 			{
 				$p_area_id = $p_city_id;
@@ -1139,13 +1156,34 @@ class ApiPage extends OpsApiPageBase
 			$p->full_name = $p->name;
 			if ($p_area_id != $area_id)
 			{
-				$p->full_name .= ' (' . $p_area_name . ')';
+				$p->full_name .= ', ' . $p_city_name;
 			}
-			$list[] = $p;
+			$p->lower_case = mb_strtolower($p->name, 'UTF-8');
+			$list[$p_id] = $p;
 		}
 		
 		// sort it by name
 		usort($list, 'compare_players');
+		
+		// check for duplicate names, add city to help viewers choose between them
+		for ($i = 1; $i < count($list); ++$i)
+		{
+			$prev = $list[$i-1];
+			$curr = $list[$i];
+			if ($prev->lower_case == $curr->lower_case)
+			{
+				$prev->full_name = $prev->name . ', ' . $prev->city;
+				$curr->full_name = $curr->name . ', ' . $curr->city;
+			}
+		}
+		
+		// remove unnecessary fields
+		for ($i = 0; $i < count($list); ++$i)
+		{
+			$p = $list[$i];
+			unset($p->city);
+			unset($p->lower_case);
+		}
 		
 		$this->response['list'] = $list;
 		//print_json($this->response);
@@ -1269,7 +1307,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function extra_points_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$game_id = (int)get_required_param('game_id');
 		
@@ -1321,7 +1359,7 @@ class ApiPage extends OpsApiPageBase
             }
         }
 
-        list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+        list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
         throw new Exc(get_label('[0] did not play in the game [1]', $user_name, $game_id));
 	}
 	
@@ -1431,9 +1469,17 @@ class ApiPage extends OpsApiPageBase
 				' WHERE g.id = ?', $game_id);
 		
 		$query = new DbQuery(
-			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM players p JOIN users u ON u.id = p.user_id WHERE p.game_id = ?)' .
+			'(SELECT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM players p'.
+			' JOIN users u ON u.id = p.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE p.game_id = ?)' .
 			' UNION DISTINCT' .
-			' (SELECT DISTINCT u.id, u.name, u.email, u.flags, u.def_lang FROM game_comments c JOIN users u ON c.user_id = u.id WHERE c.game_id = ?)',
+			' (SELECT DISTINCT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			' FROM game_comments c'.
+			' JOIN users u ON c.user_id = u.id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE c.game_id = ?)',
 			$game_id, $game_id);
 		while ($row = $query->next())
 		{

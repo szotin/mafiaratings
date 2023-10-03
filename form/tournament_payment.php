@@ -27,8 +27,8 @@ try
 		' JOIN series s ON s.id = st.series_id'.
 		' JOIN tournaments t ON t.id = st.tournament_id'.
 		' LEFT OUTER JOIN currencies c ON c.id = s.currency_id'.
-		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & ?) <> 0'.
-		' WHERE st.series_id = ? AND st.tournament_id = ?', $_lang, $series_id, $tournament_id);
+		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
+		' WHERE st.series_id = ? AND st.tournament_id = ?', $series_id, $tournament_id);
 	check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 	
 	if (!is_null($tournament_fee))

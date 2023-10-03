@@ -32,7 +32,7 @@ class Page extends PageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$my_id = -1;
 		if ($_profile != NULL)
@@ -88,16 +88,23 @@ class Page extends PageBase
 		
 		if ($event_id != NULL && $event_only)
 		{
-			$from_str = new SQL('FROM users u, event_events r WHERE r.user_id = u.id AND r.event_id = ? AND ', $event_id);
+			$from_str = new SQL(
+				'FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN event_events r ON r.user_id = u.id'.
+				' WHERE r.event_id = ? AND ', $event_id);
 		}
 		else
 		{
-			$from_str = new SQL('FROM users u WHERE ');
+			$from_str = new SQL(
+				'FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE ');
 		}
 		$from_str->add('u.id NOT IN (SELECT user_id FROM user_photos WHERE photo_id = ?)', $this->id);
 		if ($filter != '')
 		{
-			$from_str->add(' AND u.name LIKE ?', $filter . '%');
+			$from_str->add(' AND nu.name LIKE ?', $filter . '%');
 		}
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(*) ', $from_str);
@@ -106,8 +113,8 @@ class Page extends PageBase
 		echo '<table class="bordered" width="100%">';
 		echo '<tr class="darker"><td>'.get_label('Player').'</td></tr>';
 		
-		$query = new DbQuery('SELECT u.id, u.name ', $from_str);
-		$query->add(' ORDER BY u.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query = new DbQuery('SELECT u.id, nu.name ', $from_str);
+		$query->add(' ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
 			list ($u_id, $u_name) = $row;

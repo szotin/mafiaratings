@@ -50,6 +50,6 @@ class Page extends PageBase
 }
 
 $page = new Page();
-$page->run(get_label('Email test'));
+$page->run('Email test');
 
 ?>

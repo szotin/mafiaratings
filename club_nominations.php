@@ -45,7 +45,7 @@ class Page extends ClubPageBase
 	
 	protected function show_body()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$noms = array(
 			array(get_label('Ratings'), 'SUM(p.rating_earned)', 'count(*)', 0),
@@ -150,9 +150,10 @@ class Page extends ClubPageBase
 		}
 		
 		$query = new DbQuery(
-			'SELECT p.user_id, u.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags, cu.flags' .
+			'SELECT p.user_id, nu.name, u.flags, count(*) as cnt, (' . $noms[$nom][1] . ') as abs, (' . $noms[$nom][1] . ') / (' . $noms[$nom][2] . ') as val, c.id, c.name, c.flags, cu.flags' .
 				' FROM players p JOIN games g ON p.game_id = g.id' .
 				' JOIN users u ON u.id = p.user_id' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
 				' WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0',

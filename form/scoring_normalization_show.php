@@ -51,7 +51,11 @@ try
 		throw new FatalExc(get_label('Unknown [0]', get_label('normalizer')));
 	}
 	
-	list($user_name, $user_flags) = Db::record(get_label('player'), 'SELECT name, flags FROM users WHERE id = ?', $user_id);
+	list($user_name, $user_flags) = Db::record(get_label('player'), 
+		'SELECT nu.name, u.flags'.
+		' FROM users u'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+		' WHERE u.id = ?', $user_id);
 	list($tournament_name, $tournament_flags) = Db::record(get_label('player'), 'SELECT name, flags FROM tournaments WHERE id = ?', $tournament_id);
 	
 	dialog_title(get_label('How normalization rate is calculated for [0] in [1].', $user_name, $tournament_name));

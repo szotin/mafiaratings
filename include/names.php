@@ -25,6 +25,11 @@ function correct_name($name)
 
 function check_name($name, $obj_name)
 {
+	if (empty($name))
+	{
+		throw new Exc(get_label('Please enter [0].', $obj_name));
+	}
+	
 	if (!is_valid_name($name))
 	{
 		throw new Exc(get_label('Invalid characters in [0]. Only alphanumeric, spaces, underscores and dashes are allowed.', $obj_name));
@@ -126,22 +131,6 @@ function check_nickname($nick, $event_id)
 	}
 }
 
-function check_user_name($name, $user_id = -1)
-{
-	if ($name == '')
-	{
-		throw new Exc(get_label('Please enter [0].', get_label('user name')));
-	}
-
-	check_name($name, get_label('user name'));
-	
-	$query = new DbQuery('SELECT name FROM users WHERE name = ? AND id <> ?', $name, $user_id);
-	if ($query->next())
-	{
-        throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('User name'), $name));
-	}
-}
-
 function check_address_name($name, $club_id, $address_id = -1)
 {
 	global $_profile;
@@ -167,6 +156,9 @@ function check_address_name($name, $club_id, $address_id = -1)
 
 class Names
 {
+	// if $name_id == 0 - name_id does not exist it has to be created - names are taken from $_REQUEST
+	// if $name_id > 0 - name_id does exist - names are taken from the database
+	// if $name_id < 0 - name_id does not exist it has to be created - $param_name is treated as the only name.
 	function __construct($name_id, $obj_name, $table_name = NULL, $obj_id = 0, $condition = NULL, $param_name = 'name')
 	{
 		$this->obj_name = $obj_name;
@@ -182,20 +174,13 @@ class Names
 				$name->langs = (int)$name->langs;
 				$this->names[] = $name;
 			}
+			return;
 		}
-		else
+		
+		$default_mask = DB_ALL_LANGS;
+		if ($name_id == 0)
 		{
-			if ($condition == NULL)
-			{
-				$condition = new SQL();
-			}
-			if ($obj_id > 0)
-			{
-				$condition->add(' AND o.id <> ?', $obj_id);
-			}
-			
 			$lang = LANG_NO;
-			$default_mask = DB_ALL_LANGS;
 			if (isset($_REQUEST[$param_name]))
 			{
 				$name = new stdClass();
@@ -220,25 +205,47 @@ class Names
 					$this->names[] = $name;
 				}
 			}
-			
-			if (count($this->names) > 0)
+		}
+		else
+		{
+			check_name($param_name, $obj_name);
+			$name = new stdClass();
+			$name->name = $param_name;
+			$name->langs = 0;
+			$this->names[] = $name;
+		}
+		
+		if (count($this->names) > 0)
+		{
+			$this->names[0]->langs |= $default_mask; // the first one is the default one
+			if ($this->names[0]->langs == 0)
 			{
-				$this->names[0]->langs |= $default_mask; // the first one is the default one
-				if ($this->names[0]->langs == 0)
+				$this->names = array_slice($this->names, 0, 1);
+			}
+			
+			// check that names are unique between each other
+			if (!is_null($table_name))
+			{
+				if ($condition == NULL)
 				{
-					$this->names = array_slice($this->names, 0, 1);
+					$condition = new SQL();
+				}
+				else if (is_string($condition))
+				{
+					$condition = new SQL($condition);
 				}
 				
-				// check that names are unique between each other
-				if (!is_null($table_name))
+				if ($obj_id > 0)
 				{
-					foreach ($this->names as $n)
+					$condition->add(' AND o.id <> ?', $obj_id);
+				}
+			
+				foreach ($this->names as $n)
+				{
+					list ($count) = Db::record(get_label('name'), 'SELECT count(*) FROM ' . $table_name . ' o JOIN names n ON n.id = o.name_id WHERE n.name = ? AND (n.langs & ?) <> 0', $n->name, $n->langs, $condition);
+					if ($count > 0)
 					{
-						list ($count) = Db::record(get_label('name'), 'SELECT count(*) FROM ' . $table_name . ' o JOIN names n ON n.id = o.name_id WHERE n.name = ? AND (n.langs & ?) <> 0', $n->name, $n->langs, $condition);
-						if ($count > 0)
-						{
-							throw new Exc(get_label('[1] is already used as a [0]. Please try another one.', $obj_name, $n->name));
-						}
+						throw new Exc(get_label('[1] is already used as a [0]. Please try another one.', $obj_name, $n->name));
 					}
 				}
 			}
@@ -319,16 +326,18 @@ class Names
 		return $this->id;
 	}
 	
-	function to_string()
+	function to_string($langs = LANG_ALL, $delimiter = '; ')
 	{
-		if (count($this->names) == 0)
+		$str = '';
+		$delim = '';
+		for ($i = 0; $i < count($this->names); ++$i)
 		{
-			return '';
-		}
-		$str = $this->names[0]->name;
-		for ($i = 1; $i < count($this->names); ++$i)
-		{
-			$str .= '; ' . $this->names[$i]->name;
+			if ($this->names[$i]->langs & $langs)
+			{
+				$str .= $delim;
+				$str .= $this->names[$i]->name;
+				$delim = $delimiter;
+			}
 		}
 		return $str;
 	}

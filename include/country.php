@@ -64,7 +64,7 @@ function detect_country()
 	global $_profile, $_lang;
 	
 	$loc = Location::get();
-	$query = new DbQuery('SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.code = ?', $_lang, $loc->country_code);
+	$query = new DbQuery('SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.code = ?', $loc->country_code);
 	if ($row = $query->next())
 	{
 		list ($country) = $row;
@@ -86,7 +86,7 @@ function show_country_input($name, $value, $city_input = NULL, $on_select = NULL
 	{
 		if ($_profile != NULL)
 		{
-			list ($value) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $_profile->country_id);
+			list ($value) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $_profile->country_id);
 		}
 		else
 		{
@@ -98,7 +98,7 @@ function show_country_input($name, $value, $city_input = NULL, $on_select = NULL
 		$value = detect_country();
 		if (($value == '' || $value == '-') && $_profile != NULL)
 		{
-			list ($value) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $_lang, $_profile->country_id);
+			list ($value) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $_profile->country_id);
 		}
 	}
 

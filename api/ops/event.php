@@ -364,9 +364,9 @@ class ApiPage extends OpsApiPageBase
 					'SELECT c.id, ct.timezone, crn.name, ctn.name, c.rules, c.name, c.langs FROM clubs c ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
-					'JOIN names ctn ON ctn.id = ct.name_id AND (ctn.langs & ?) <> 0 ' .
-					'JOIN names crn ON crn.id = cr.name_id AND (crn.langs & ?) <> 0 ' .
-					'WHERE c.id = ?', $_lang, $_lang, $club_id);
+					'JOIN names ctn ON ctn.id = ct.name_id AND (ctn.langs & '.$_lang.') <> 0 ' .
+					'JOIN names crn ON crn.id = cr.name_id AND (crn.langs & '.$_lang.') <> 0 ' .
+					'WHERE c.id = ?', $club_id);
 		}
 
 		$name = get_optional_param('name', $old_name);
@@ -945,6 +945,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_player_op()
 	{
+		global $_lang;
+		
 		$event_id = (int)get_required_param('event_id');
 		$user_id = (int)get_required_param('user_id');
 		$new_user_id = (int)get_optional_param('new_user_id', 0);
@@ -967,7 +969,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				if ($nickname == NULL)
 				{
-					list($nickname) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $new_user_id);
+					list($nickname) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $new_user_id);
 				}
 				
 				Db::exec(get_label('registration'), 'INSERT INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $event_id, $new_user_id, $nickname);
@@ -990,7 +992,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($nickname == NULL)
 			{
-				list($nickname, $flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $user_id);
+				list($nickname, $flags) = Db::record(get_label('user'), 'SELECT nu.name, u.flags FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE id = ?', $user_id);
 			}
 			else
 			{
@@ -1008,7 +1010,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($nickname == NULL)
 			{
-				list($nickname) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $new_user_id);
+				list($nickname) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $new_user_id);
 			}
 			Db::exec(get_label('registration'), 'UPDATE event_users SET user_id = ?, nickname = ? WHERE user_id = ? AND event_id = ?', $new_user_id, $nickname, $user_id, $event_id);
 			$changed = $changed || Db::affected_rows() > 0;
@@ -1063,6 +1065,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function add_extra_points_op()
 	{
+		global $_lang;
+		
 		$event_id = (int)get_required_param('event_id');
 		$user_id = (int)get_required_param('user_id');
 		$reason = get_required_param('reason');
@@ -1084,7 +1088,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('points'), 'INSERT INTO event_extra_points (time, event_id, user_id, reason, details, points) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?, ?)', $event_id, $user_id, $reason, $details, $points);
 		list ($points_id) = Db::record(get_label('points'), 'SELECT LAST_INSERT_ID()');
 		
-		list($user_name) = Db::record(get_label('user'), 'SELECT name FROM users WHERE id = ?', $user_id);
+		list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
 		$log_details = new stdClass();
 		$log_details->user = $user_name;
 		$log_details->user_is = $user_id;
@@ -1515,11 +1519,13 @@ class ApiPage extends OpsApiPageBase
 				' WHERE e.id = ?', $event_id);
 		
 		$query = new DbQuery(
-			'(SELECT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .
+			'(SELECT u.id, nu.name, u.email, u.flags, u.def_lang FROM users u' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' JOIN event_users eu ON u.id = eu.user_id' .
 			' WHERE eu.coming_odds > 0 AND eu.event_id = ?)' .
 			' UNION DISTINCT ' .
-			' (SELECT DISTINCT u.id, u.name, u.email, u.flags, u.def_lang FROM users u' .
+			' (SELECT DISTINCT u.id, nu.name, u.email, u.flags, u.def_lang FROM users u' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' JOIN event_comments c ON c.user_id = u.id' .
 			' WHERE c.event_id = ?)', $event_id, $event_id);
 		// echo $query->get_parsed_sql();

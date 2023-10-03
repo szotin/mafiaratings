@@ -54,7 +54,11 @@ class ApiPage extends OpsApiPageBase
 			}
 			$proof = $_REQUEST['proof'];
 			
-			$query = new DbQuery('SELECT id, password FROM users WHERE name = ? OR email = ? ORDER BY games DESC, id', $user_name, $user_name);
+			$query = new DbQuery(
+				'SELECT u.id, u.password'.
+				' FROM users u'.
+				' JOIN names n ON n.id = u.name_id'.
+				' WHERE n.name = ? OR u.email = ? ORDER BY games DESC, id', $user_name, $user_name);
 			while ($row = $query->next())
 			{
 				list ($user_id, $password_hash) = $row;
@@ -80,7 +84,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			$password = $_POST['password'];
 			
-			$query = new DbQuery('SELECT id, password FROM users WHERE name = ? OR email = ? ORDER BY games DESC, id', $user_name, $user_name);
+			$query = new DbQuery(
+				'SELECT u.id, u.password'.
+				' FROM users u'.
+				' JOIN names n ON n.id = u.name_id'.
+				' WHERE n.name = ? OR u.email = ? ORDER BY games DESC, id', $user_name, $user_name);
 			while ($row = $query->next())
 			{
 				list ($user_id, $password_hash) = $row;
@@ -157,12 +165,37 @@ class ApiPage extends OpsApiPageBase
 	{
 		$name = trim(get_required_param('name'));
 		$email = trim(get_required_param('email'));
-		if ($email == '')
+		if (empty($email))
 		{
 			throw new Exc(get_label('Please enter [0].', get_label('email address')));
 		}
 		
-		create_user($name, $email);
+		Db::begin();
+		$city_id = get_optional_param('city_id', 0);
+		if ($city_id <= 0)
+		{
+			$country_id = get_optional_param('country_id', 0);
+			if ($country_id <= 0)
+			{
+				$country = trim(get_required_param('country'));
+				if (empty($country))
+				{
+					throw new Exc(get_label('Please enter country.'));
+				}
+				$country_id = retrieve_country_id($country);
+			}
+			
+			$city = trim(get_required_param('city'));
+			if (empty($country))
+			{
+				throw new Exc(get_label('Please enter city.'));
+			}
+			$city_id = retrieve_city_id($_REQUEST['city'], $country_id, get_timezone());
+		}
+		
+		$names = new Names(0, get_label('user name'), 'users', 0, new SQL(' AND o.city_id = ?', $city_id));
+		create_user($names, $email, 0, $city_id);
+		Db::commit();
 		
 		echo
 			'<p>' . get_label('Thank you for signing up on [0]!', PRODUCT_NAME) .
@@ -173,10 +206,12 @@ class ApiPage extends OpsApiPageBase
 	function create_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE, 'Create new user account.');
-		
-		$help->request_param('address_id', 'Address id.');
-		$help->request_param('name', 'Account login name. This name is also used in the scoring tables. The name should be unique in <?php echo PRODUCT_NAME; ?>');
+		Names::help($help, 'User', false);
 		$help->request_param('email', 'Account email. Currently it does not have to be unique.');
+		$help->request_param('country_id', 'Country id.', 'remains the same unless <q>country</q> is set');
+		$help->request_param('country', 'Country name. An alternative to <q>country_id</q>. It is used only if <q>country_id</q> is not set.', 'remains the same unless <q>country_id</q> is set');
+		$help->request_param('city_id', 'City id.', 'remains the same unless <q>city</q> is set');
+		$help->request_param('city', 'City name. An alternative to <q>city_id</q>. It is used only if <q>city_id</q> is not set.', 'remains the same unless <q>city_id</q> is not set');
 
 		$help->response_param('message', 'Localized user message sayings that the account is created.');
 		return $help;
@@ -190,7 +225,11 @@ class ApiPage extends OpsApiPageBase
 		$name = get_required_param('name');
 		$email = get_required_param('email');
 			
-		$query = new DbQuery('SELECT id FROM users WHERE name = ? AND email = ?', $name, $email);
+		$query = new DbQuery(
+			'SELECT u.id'.
+			' FROM users u'.
+			' JOIN names n ON n.id = u.name_id'.
+			' WHERE n.name = ? AND u.email = ?', $name, $email);
 		if (!($row = $query->next()))
 		{
 			throw new Exc(get_label('Your login name and email do not match. You are using different email for this account.') . $sql);
@@ -277,7 +316,11 @@ class ApiPage extends OpsApiPageBase
 		if (isset($_REQUEST['city']))
 		{
 			$city_name = $_REQUEST['city'];
-			$query = new DbQuery('SELECT c.id, c.country_id, c.area_id FROM cities c JOIN names n ON n.id = c.name_id WHERE n.name', $city_name);
+			$query = new DbQuery(
+				'SELECT c.id, c.country_id, c.area_id'.
+				' FROM cities c'.
+				' JOIN names n ON n.id = c.name_id'.
+				' WHERE n.name', $city_name);
 			// $this->response['sql-01'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{
@@ -288,7 +331,11 @@ class ApiPage extends OpsApiPageBase
 		if ($country_id < 0 && isset($_REQUEST['country']))
 		{
 			$country_name = $_REQUEST['country'];
-			$query = new DbQuery('SELECT DISTINCT c.id FROM countries c JOIN names n ON n.id = c.name_id WHERE n.name = ?', $country_name);
+			$query = new DbQuery(
+				'SELECT DISTINCT c.id'.
+				' FROM countries c'.
+				' JOIN names n ON n.id = c.name_id'.
+				' WHERE n.name = ?', $country_name);
 			// $this->response['sql-02'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{
@@ -442,6 +489,14 @@ class ApiPage extends OpsApiPageBase
 		$lang_code = get_required_param('lang');
 		$_SESSION['lang_code'] = $lang_code;
 		$_lang = get_lang_by_code($lang_code);
+		if ($_lang == 0) 
+		{
+			$_lang = LANG_ENGLISH;
+		}
+		else if (!is_valid_lang($lang_code))
+		{
+			$_lang = get_next_lang(LANG_NO, $_lang);
+		}
 		if (isset($_profile) && $_profile != NULL)
 		{
 			Db::begin();

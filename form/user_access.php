@@ -15,7 +15,11 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('user')));
 	}
 	$user_id = (int)$_REQUEST['user_id'];
-	list($user_name, $user_flags) = Db::record(get_label('user'), 'SELECT u.name, u.flags FROM users u WHERE u.id = ?', $user_id);
+	list($user_name, $user_flags) = Db::record(get_label('user'), 
+		'SELECT nu.name, u.flags'.
+		' FROM users u'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+		' WHERE u.id = ?', $user_id);
 	
 	$club_id = 0;
 	if (isset($_REQUEST['event_id']))

@@ -398,19 +398,21 @@ class Event
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .
 						' JOIN countries o ON i.country_id = o.id' .
-						' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0' .
-						' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
+						' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+						' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 						' LEFT OUTER JOIN event_users u ON u.event_id = e.id AND u.user_id = ?' .
 						' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 						' LEFT OUTER JOIN currencies cu ON e.currency_id = cu.id' .
 						' WHERE e.id = ?',
-					$_lang, $_lang, $user_id, $event_id);
+					$user_id, $event_id);
 					
 		$this->set_datetime($timestamp, $timezone);
 	}
 	
 	function show_details($show_attendance = true, $show_details = true)
 	{
+		global $_lang;
+		
 		if ($show_details)
 		{
 			echo '<table class="bordered" width="100%"><tr>';
@@ -448,13 +450,14 @@ class Event
 			$max_coming = 0;
 			$declined = 0;
 			$query = new DbQuery(
-				'SELECT u.id, u.name, eu.nickname, eu.coming_odds, eu.people_with_me, u.flags, eu.late, eu.flags, e.tournament_id, tu.flags, e.club_id, cu.flags' . 
+				'SELECT u.id, nu.name, eu.nickname, eu.coming_odds, eu.people_with_me, u.flags, eu.late, eu.flags, e.tournament_id, tu.flags, e.club_id, cu.flags' . 
 				' FROM event_users eu' . 
 				' JOIN events e ON e.id = eu.event_id ' .
 				' JOIN users u ON eu.user_id = u.id' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
-				' WHERE e.id = ? ORDER BY eu.coming_odds DESC, eu.late, eu.people_with_me DESC, u.name', $this->id);
+				' WHERE e.id = ? ORDER BY eu.coming_odds DESC, eu.late, eu.people_with_me DESC, nu.name', $this->id);
 			while ($row = $query->next())
 			{
 				$odds = $row[3];

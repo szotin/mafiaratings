@@ -15,7 +15,7 @@ class Page extends UserPageBase
 	
 	protected function show_body()
 	{
-		global $_page;
+		global $_page, $_lang;
 	
 		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users WHERE id <> ? AND email = ?', $this->id, $this->email);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -26,8 +26,12 @@ class Page extends UserPageBase
 		echo '<button class="icon" onclick="deleteAllUsers(' . $this->id . ')" title="' . get_label('Delete all these users with their stats and ratings.') . '"><img src="images/delete.png"></button>';
 		echo '</td><td width="38"></td><td>'.get_label('Players with the same email').'</td><td width="100">Rating</td><td width="100">'.get_label('Games played').'</td></tr>';
 
-		$query = new DbQuery('SELECT id, name, rating, games, flags FROM users WHERE id <> ? AND email = ?', $this->id, $this->email);
-		$query->add(' ORDER BY games DESC, rating DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query = new DbQuery(
+			'SELECT u.id, nu.name, u.rating, u.games, u.flags'.
+			' FROM users u'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE u.id <> ? AND u.email = ?', $this->id, $this->email);
+		$query->add(' ORDER BY u.games DESC, u.rating DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
 			list ($id, $name, $rating, $games, $flags) = $row;

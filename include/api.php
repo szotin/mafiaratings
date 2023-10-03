@@ -29,7 +29,7 @@ class ApiPageBase
 	private function _doLogin($user_name, $password)
 	{
 		$found = false;
-		$query = new DbQuery('SELECT id, password FROM users WHERE name = ? OR email = ? ORDER BY games DESC, id', $user_name, $user_name);
+		$query = new DbQuery('SELECT u.id, u.password FROM users u JOIN names n ON n.id = u.name_id WHERE n.name = ? OR u.email = ? ORDER BY games DESC, id', $user_name, $user_name);
 		while ($row = $query->next())
 		{
 			list ($user_id, $password_hash) = $row;

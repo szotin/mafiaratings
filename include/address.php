@@ -224,9 +224,9 @@ class AddressPageBase extends PageBase
 				' JOIN clubs c ON c.id = a.club_id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN countries cr ON cr.id = ct.country_id' .
-				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & ?) <> 0' .
-				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & ?) <> 0' .
-				' WHERE a.id = ?', $_lang, $_lang, $this->id);
+				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0' .
+				' WHERE a.id = ?', $this->id);
 				
 		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $this->club_id);
 	}

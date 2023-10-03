@@ -497,7 +497,7 @@ class Page extends GeneralPageBase
 
 	protected function show_body()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$this->league_pic = new Picture(LEAGUE_PICTURE);
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
@@ -623,7 +623,13 @@ class Page extends GeneralPageBase
 		$this->show_changes(15, 1);
 		
 		// ratings
-		$query = new DbQuery('SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags FROM users u LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE u.games > 0');
+		$query = new DbQuery('SELECT u.id, nu.name, ni.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags'. 
+								' FROM users u'.
+								' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+								' JOIN cities i ON i.id = u.city_id'.
+								' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
+								' LEFT OUTER JOIN clubs c ON c.id = u.club_id '.
+								' WHERE u.games > 0');
 		switch($ccc_type)
 		{
 		case CCCF_CLUB:
@@ -654,7 +660,8 @@ class Page extends GeneralPageBase
 			
 			do
 			{
-				list ($id, $name, $rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $row;
+				list ($id, $name, $city_name, $rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags) = $row;
+				
 
 				echo '<td width="20" class="dark" align="center">' . $number . '</td>';
 				echo '<td width="50" valign="top">';
@@ -663,7 +670,7 @@ class Page extends GeneralPageBase
 				echo '</td><td width="36">';
 				$this->club_pic->set($club_id, $club_name, $club_flags);
 				$this->club_pic->show(ICONS_DIR, false, 36);
-				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city_name . '</a></td>';
 				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
 				echo '</tr>';
 				

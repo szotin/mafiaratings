@@ -19,7 +19,7 @@ class Page extends EventPageBase
 {
 	protected function show_body()
 	{
-		global $_page;
+		global $_page, $_lang;
 		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
@@ -54,9 +54,10 @@ class Page extends EventPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT u.id, u.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)),' .
+			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)),' .
 			' c.id, c.name, c.flags, eu.nickname, eu.flags, tu.flags, cu.flags' .
 				' FROM users u' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' LEFT OUTER JOIN event_users eu ON eu.event_id = ? AND eu.user_id = u.id' .

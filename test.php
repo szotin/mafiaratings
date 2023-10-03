@@ -30,9 +30,10 @@
 	// echo '</pre>';
 // }
 
-$sql = 'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, u.name, u.flags, c.id, c.name, c.flags
+$sql = 'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, nu.name, u.flags, c.id, c.name, c.flags
 					FROM players p
 					JOIN users u ON u.id = p.user_id
+					JOIN names nu ON nu.id = u.name_id AND (nu.langs & 1) <> 0
 					LEFT OUTER JOIN clubs c ON c.id = u.club_id 
 					WHERE p.game_id = (
 						SELECT p1.game_id 
@@ -42,9 +43,10 @@ $sql = 'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, u.name,
 						LIMIT 1)
 					ORDER BY rating DESC, p.user_id DESC 
 					LIMIT 100';
-$sql1 = 'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, u.name, u.flags, c.id, c.name, c.flags ' .
+$sql1 = 'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, nu.name, u.flags, c.id, c.name, c.flags ' .
 					'FROM players p ' .
 					'JOIN users u ON u.id = p.user_id ' .
+					'JOIN names nu ON nu.id = u.name_id AND (nu.langs & 1) <> 0 ' .
 					'LEFT OUTER JOIN clubs c ON c.id = u.club_id ' .
 					'WHERE p.game_id = ( ' .
 						'SELECT p1.game_id ' .

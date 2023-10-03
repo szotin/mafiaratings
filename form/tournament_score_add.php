@@ -25,7 +25,7 @@ try
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">' . get_label('Player') . ':</td><td>';
-	show_user_input('form-user', '', '', get_label('Select user.'), 'onSelect');
+	show_user_input('form-user', '', 'tournament=' . $tournament_id, get_label('Select user.'), 'onSelect');
 	echo '</td></tr>';
 	echo '<tr><td>' . get_label('Main points') . ':</td><td><input type="number" style="width: 45px;" step="0.5" id="form-main"></td></tr>';
 	echo '<tr><td>' . get_label('Bonus points') . ':</td><td><input type="number" style="width: 45px;" step="0.5" id="form-bonus" onchange="pChange(0)"> <input id="form-bonus-u" onchange="uChange(0)" type="checkbox" checked> ' . get_label('unknown') . '</td></tr>';

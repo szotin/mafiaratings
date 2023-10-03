@@ -59,7 +59,7 @@ class Page extends UserPageBase
 	
 	protected function show_body()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$rating_pos = -1;
 		$query = new DbQuery('SELECT rating, games, games_won FROM users WHERE id = ?', $this->id);
@@ -271,8 +271,10 @@ class Page extends UserPageBase
 				$rating_page = 0;
 			}
 			$query = new DbQuery(
-				'SELECT u.id, u.name, u.rating, u.games, u.games_won, u.flags ' . 
-				'FROM users u WHERE u.games > 0 ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $rating_page . ',' . (RATINGS_BEFORE + RATINGS_AFTER + 1));
+				'SELECT u.id, nu.name, u.rating, u.games, u.games_won, u.flags ' . 
+				'FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE u.games > 0 ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $rating_page . ',' . (RATINGS_BEFORE + RATINGS_AFTER + 1));
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="4"><b>' . get_label('Rating position') . '</a></td></tr>';
 			$number = $rating_page;

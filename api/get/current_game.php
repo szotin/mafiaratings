@@ -10,7 +10,7 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$token = get_required_param('token');
 		$game_id = (int)get_optional_param('game_id', 0);
@@ -189,7 +189,9 @@ class ApiPage extends GetApiPageBase
 				if ($gs->moder_id > 0)
 				{
 					list($game->moderator->name, $event_user_flags, $tournament_user_flags, $club_user_flags, $user_name, $user_flags) = Db::record(get_label('user'), 
-						'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, u.name, u.flags FROM users u' .
+						'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, nu.name, u.flags' .
+						' FROM users u' .
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
 						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
 						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .

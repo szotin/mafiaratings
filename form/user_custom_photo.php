@@ -28,8 +28,9 @@ try
 				$user_club_id, $club_user_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
-				'SELECT e.name, e.club_id, eu.nickname, eu.flags, tu.tournament_id, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
+				'SELECT e.name, e.club_id, eu.nickname, eu.flags, tu.tournament_id, tu.flags, cu.club_id, cu.flags, nu.name, u.flags' .
 				' FROM users u' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN events e ON e.id = ?' .
 				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
@@ -63,8 +64,9 @@ try
 				$user_club_id, $club_user_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
-				'SELECT t.name, t.club_id, tu.flags, cu.club_id, cu.flags, u.name, u.flags' .
+				'SELECT t.name, t.club_id, tu.flags, cu.club_id, cu.flags, nu.name, u.flags' .
 				' FROM users u' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN tournaments t ON t.id = ?' .
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = t.id' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = t.club_id' .
@@ -94,8 +96,9 @@ try
 				$club_user_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
-				'SELECT c.name, cu.flags, u.name, u.flags' .
+				'SELECT c.name, cu.flags, nu.name, u.flags' .
 				' FROM users u' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN clubs c ON c.id = ?' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = c.id' .
 				' WHERE u.id = ?', $club_id, $user_id);
@@ -118,7 +121,11 @@ try
 		check_permissions(PERMISSION_ADMIN);
 		dialog_title(get_label('[0] photo', $user_name));
 		
-		list ($user_name, $user_flags) = Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $user_id);
+		list($user_name, $user_flags) = Db::record(get_label('user'), 
+			'SELECT nu.name, u.flags'.
+			' FROM users u'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' WHERE u.id = ?', $user_id);
 		$reset_pic = new Picture(USER_PICTURE);
 		$user_pic = new Picture(USER_PICTURE);
 		$reset_pic->set(0, '', 0);
