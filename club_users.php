@@ -9,9 +9,6 @@ class Page extends ClubPageBase
 {
 	private $user_id;
 	private $user_name;
-	private $user_club_id;
-	private $user_city_id;
-	private $user_country_id;
 	
 	protected function prepare()
 	{
@@ -29,14 +26,13 @@ class Page extends ClubPageBase
 			$this->user_id = -$_page;
 			$_page = 0;
 			$query = new DbQuery(
-				'SELECT nu.name, u.club_id, u.city_id, c.country_id'.
+				'SELECT nu.name'.
 				' FROM users u'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' JOIN cities c ON c.id = u.city_id'.
 				' WHERE u.id = ?', $this->user_id);
 			if ($row = $query->next())
 			{
-				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
+				list($this->user_name) = $row;
 				list($is_member) = Db::record(get_label('user'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $this->user_id, $this->id);
 				if ($is_member <= 0)
 				{
@@ -97,17 +93,19 @@ class Page extends ClubPageBase
 		echo get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.email, u.flags, uc.flags, c.id, c.name, c.flags' .
+			'SELECT u.id, nu.name, u.email, u.flags, uc.flags, c.id, c.name, c.flags, ni.name' .
 			' FROM club_users uc' .
 			' JOIN users u ON uc.user_id = u.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' JOIN cities i ON u.city_id = i.id'.
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' WHERE uc.club_id = ?' .
 			' ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
 			$this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $email, $flags, $club_user_flags, $club_id, $club_name, $club_flags) = $row;
+			list($id, $name, $email, $flags, $club_user_flags, $club_id, $club_name, $club_flags, $city) = $row;
 		
 			if ($id == $this->user_id)
 			{
@@ -134,7 +132,7 @@ class Page extends ClubPageBase
 			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
 			$club_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
+			echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
 			if ($this->is_manager)
 			{
 				echo '<td width="200">';

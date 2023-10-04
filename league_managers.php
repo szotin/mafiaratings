@@ -25,17 +25,19 @@ class Page extends LeaguePageBase
 
 		$user_pic = new Picture(USER_PICTURE);
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.email, u.flags, c.id, c.name, c.flags' .
+			'SELECT u.id, nu.name, u.email, u.flags, c.id, c.name, c.flags, ni.name' .
 			' FROM league_managers m' .
 			' JOIN users u ON m.user_id = u.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' JOIN cities i ON i.id = u.city_id'.
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' WHERE m.league_id = ?' .
 			' ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
 			$this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $email, $flags, $club_id, $club_name, $club_flags) = $row;
+			list($id, $name, $email, $flags, $club_id, $club_name, $club_flags, $city) = $row;
 		
 			echo '<tr class="light">';
 			echo '<td class="dark">';
@@ -46,7 +48,7 @@ class Page extends LeaguePageBase
 			$user_pic->set($id, $name, $flags);
 			$user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
+			echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
 			echo '<td width="200">';
 			if (is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 			{

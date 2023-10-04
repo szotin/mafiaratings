@@ -29,10 +29,12 @@ class Page extends EventPageBase
 		echo '<td colspan="4">' . get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
 		
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.email, u.flags, eu.nickname, eu.flags, tu.tournament_id, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags' .
+			'SELECT u.id, nu.name, u.email, u.flags, eu.nickname, eu.flags, tu.tournament_id, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags, ni.name' .
 			' FROM event_users eu' .
 			' JOIN users u ON eu.user_id = u.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' JOIN cities i ON i.id = u.city_id'.
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 			' JOIN events e ON e.id = eu.event_id' .
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 			' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = e.tournament_id AND tu.user_id = eu.user_id' .
@@ -42,7 +44,7 @@ class Page extends EventPageBase
 			$this->event->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $email, $user_flags, $user_nickname, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_user_flags) = $row;
+			list($id, $name, $email, $user_flags, $user_nickname, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_user_flags, $city) = $row;
 		
 			echo '<tr class="light"><td class="dark">';
 			if ($can_edit)
@@ -65,7 +67,7 @@ class Page extends EventPageBase
 				set($id, $name, $user_flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 56) . '</a></td>';
+			echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
 			echo '<td width="200">';
 			if ($_profile->is_club_manager($club_id))
 			{
