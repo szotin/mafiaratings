@@ -14,7 +14,7 @@ class Page extends EventPageBase
 {
 	protected function prepare()
 	{
-		global $_page;
+		global $_page, $_lang;
 		
 		parent::prepare();
 		
@@ -78,11 +78,12 @@ class Page extends EventPageBase
 				$this->player->points = 0;
 				list ($this->player->name, $this->player->flags, $this->player->nickname, $this->player->event_user_flags, $this->player->tournament_user_flags, $this->player->club_user_flags) = 
 					Db::record(get_label('user'), 
-						'SELECT u.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM users u' .
+						'SELECT nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM users u' .
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
 						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
 						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
-						' WHERE id = ?', $this->event->id, $this->event->tournament_id, $this->event->club_id, $this->user_id);
+						' WHERE u.id = ?', $this->event->id, $this->event->tournament_id, $this->event->club_id, $this->user_id);
 			}
 		}
 		else

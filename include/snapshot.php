@@ -25,7 +25,7 @@ class SnapshotPlayer
 {
 	public $id;
 	public $rating;
-	public $user_name;
+	public $user_name; // todo replace with name_id
 	public $user_flags;
 	public $club_id;
 	public $club_name;
@@ -110,24 +110,28 @@ class Snapshot
 	{
 		global $_lang;
 		
+		if (!isset($_lang) || !is_valid_lang($_lang))
+		{
+			$_lang = LANG_DEFAULT;
+		}
 		$this->top100 = array();
 		$query = new DbQuery('SELECT id FROM games WHERE end_time > ? AND result > 0 AND is_rating <> 0 AND is_canceled = 0 LIMIT 1', $this->time);
 		if ($query->next())
 		{
 			$query = new DbQuery(
-				'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, un.name, u.flags, c.id, c.name, c.flags
-					FROM players p
-					JOIN users u ON u.id = p.user_id
-					JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0
-					LEFT OUTER JOIN clubs c ON c.id = u.club_id 
-					WHERE p.game_id = (
-						SELECT p1.game_id 
-						FROM players p1 
-						WHERE p1.user_id = p.user_id AND p1.game_end_time <= ?
-						ORDER BY p1.game_end_time DESC, p1.game_id DESC
-						LIMIT 1)
-					ORDER BY rating DESC, p.user_id DESC 
-					LIMIT 100', $this->time);
+				'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, un.name, u.flags, c.id, c.name, c.flags'.
+					' FROM players p'.
+					' JOIN users u ON u.id = p.user_id'.
+					' JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0'.
+					' LEFT OUTER JOIN clubs c ON c.id = u.club_id'.
+					' WHERE p.game_id = ('.
+					' SELECT p1.game_id'.
+					' FROM players p1 '.
+					' WHERE p1.user_id = p.user_id AND p1.game_end_time <= ?'.
+					' ORDER BY p1.game_end_time DESC, p1.game_id DESC'.
+					' LIMIT 1)'.
+					' ORDER BY rating DESC, p.user_id DESC '.
+					' LIMIT 100', $this->time);
 		}
 		else
 		{
