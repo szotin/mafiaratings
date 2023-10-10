@@ -37,7 +37,11 @@ function retrieve_country_id($country)
 		$log_details->flags = COUNTRY_FLAG_NOT_CONFIRMED;
 		db_log(LOG_OBJECT_COUNTRY, 'created', $log_details, $country_id);
 		
-		$query = new DbQuery('SELECT id, name, email FROM users WHERE (flags & ' . USER_PERM_ADMIN . ') <> 0 and email <> \'\'');
+		$query = new DbQuery(
+			'SELECT u.id, nu.name, u.email'.
+			' FROM users u'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 and u.email <> \'\'');
 		while ($row = $query->next())
 		{
 			list($admin_id, $admin_name, $admin_email) = $row;
