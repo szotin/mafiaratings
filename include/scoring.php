@@ -1067,7 +1067,12 @@ function get_players_condition($players_list)
 function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 {
 	global $_scoring_groups, $_lang;
-	
+
+	// todo: replace user name with user id
+	if (!isset($_lang))
+	{
+		$_lang = 1;
+	}
 	$players = array();
 	$stat_flags = get_scoring_stat_flags($scoring, $options);
     
@@ -1428,6 +1433,11 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 {
 	global $_lang;
 	
+	// todo: replace user name with user id
+	if (!isset($_lang))
+	{
+		$_lang = 1;
+	}
 	if (is_null($normalizer))
 	{
 		$normalizer = new stdClass();
