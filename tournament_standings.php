@@ -137,9 +137,6 @@ class Page extends TournamentPageBase
 		echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Rounds played').'</td>';
 		echo '</tr>';
 		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
 		
@@ -173,18 +170,6 @@ class Page extends TournamentPageBase
 			echo '<td align="center"' . score_title($team->night1_points, $team->raw_night1_points, 1) . '>' . format_score($team->night1_points) . '</td>';
 			echo '<td align="center">' . $team->games_count . '</td>';
 			echo '<td align="center">' . $team->wins . '</td>';
-			if ($team->games_count != 0)
-			{
-				echo '<td align="center">' . number_format(($team->wins * 100.0) / $team->games_count, 1) . '%</td>';
-				echo '<td align="center">';
-				echo format_score($team->raw_points / $team->games_count);
-				echo '</td>';
-			}
-			else
-			{
-				echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
-			}
-			echo '<td align="center">' . $team->events_count . '</td>';
 			echo '</tr>';
 		}
 		echo '</table>';
@@ -216,6 +201,24 @@ class Page extends TournamentPageBase
 			}
 		}
 		
+		$series = array();
+		$query = new DbQuery(
+			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, st.stars, g.gaining'.
+			' FROM series_tournaments st'.
+			' JOIN series s ON s.id = st.series_id'.
+			' JOIN leagues l ON l.id = s.league_id'.
+			' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version'.
+			' WHERE st.tournament_id = ?', $this->id);
+		while ($row = $query->next())
+		{
+			$s = new stdClass();
+			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
+			$gaining = json_decode($gaining);
+			$s->points = get_gaining_points($gaining, $s->stars, $players_count);
+			$series[] = $s;
+		}
+		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+		
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		show_pages_navigation(PAGE_SIZE, $players_count);
 		echo '</td><td align="right">';
@@ -234,12 +237,16 @@ class Page extends TournamentPageBase
 		echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Rounds played').'</td>';
 		if ($this->has_normalizer)
 		{
 			echo '<td width="36" align="center" rowspan="2">'.get_label('Normalization rate').'</td>';
+		}
+		foreach ($series as $s)
+		{
+			echo '<td width="36" align="center" rowspan="2">';
+			$series_pic->set($s->id, $s->name, $s->flags)->set($s->league_id, $s->league_name, $s->league_flags);
+			$series_pic->show(ICONS_DIR, true, 32);
+			echo '</td>';
 		}
 		echo '</tr>';
 		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
@@ -331,21 +338,20 @@ class Page extends TournamentPageBase
 			echo '<td align="center"' . score_title($player->night1_points, $player->raw_night1_points, $player->normalization) . '>' . format_score($player->night1_points) . '</td>';
 			echo '<td align="center">' . $player->games_count . '</td>';
 			echo '<td align="center">' . $player->wins . '</td>';
-			if ($player->games_count != 0)
-			{
-				echo '<td align="center">' . number_format(($player->wins * 100.0) / $player->games_count, 1) . '%</td>';
-				echo '<td align="center">';
-				echo format_score($player->raw_points / $player->games_count);
-				echo '</td>';
-			}
-			else
-			{
-				echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
-			}
-			echo '<td align="center">' . $player->events_count . '</td>';
 			if ($this->has_normalizer)
 			{
 				echo '<td align="center">' . format_coeff($player->normalization) . '</td>';
+			}
+			foreach ($series as $s)
+			{
+				if ($player->credit && $s->stars > 0)
+				{
+					echo '<td align="center">' . $s->points[$number] . '</td>';
+				}
+				else
+				{
+					echo '<td align="center"></td>';
+				}
 			}
 			echo '</tr>';
 		}

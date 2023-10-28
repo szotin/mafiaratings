@@ -5,6 +5,7 @@ require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/user.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/scoring.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -32,7 +33,7 @@ class Page extends TournamentPageBase
 		show_checkbox_filter(array(get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL();
+		$condition = new SQL(' WHERE g.tournament_id = ? AND g.result > 0', $this->id);
 		if ($filter & FLAG_FILTER_RATING)
 		{
 			$condition->add(' AND g.is_rating <> 0');
@@ -50,9 +51,10 @@ class Page extends TournamentPageBase
 			$condition->add(' AND g.is_canceled = 0');
 		}
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
+		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
+		$moders = array();
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)), c.id, c.name, c.flags, tu.flags, cu.flags' . 
 				' FROM users u' .
@@ -60,10 +62,29 @@ class Page extends TournamentPageBase
 				' JOIN games g ON g.moderator_id = u.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = g.tournament_id AND tu.user_id = u.id' .
-				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
-				' WHERE g.tournament_id = ? AND is_canceled = FALSE AND result > 0',
-			$this->id, $condition);
- 		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id',
+				$condition);
+ 		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC, u.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		while ($row = $query->next())
+		{
+			$moder = new stdClass();
+			list($moder->id, $moder->name, $moder->flags, $moder->red_wins, $moder->black_wins, $moder->club_id, $moder->club_name, $moder->club_flags, $moder->tournament_user_flags, $moder->club_user_flags) = $row;
+			$moders[] = $moder;
+		}
+		
+		$query = new DbQuery(
+			'SELECT u.id, SUM(p.extra_points), SUM(IF((p.flags & ' . SCORING_FLAG_WORST_MOVE . ') = 0, 0, 1))' . 
+				' FROM users u' .
+				' JOIN games g ON g.moderator_id = u.id' .
+				' JOIN players p ON p.game_id = g.id',
+				$condition);
+ 		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC, u.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$i = 0;
+		while ($row = $query->next())
+		{
+			$moder = $moders[$i++];
+			list($id, $moder->bonus, $moder->worst_moves) = $row;
+		}
 		
 		$tournament_user_pic =
 			new Picture(USER_TOURNAMENT_PICTURE,
@@ -76,45 +97,62 @@ class Page extends TournamentPageBase
 		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
 		echo '<td width="100" align="center">'.get_label('Civil wins').'</td>';
 		echo '<td width="100" align="center">'.get_label('Mafia wins').'</td>';
+		echo '<td width="100" align="center">'.get_label('Bonus points').'</td>';
+		echo '<td width="100" align="center">'.get_label('Removed auto-bonus').'</td>';
 		echo '</tr>';
 
 		$number = $_page * PAGE_SIZE;
-		while ($row = $query->next())
+		foreach ($moders as $moder)
 		{
 			++$number;
-			list ($id, $name, $flags, $civil_wins, $mafia_wins, $club_id, $club_name, $club_flags, $tournament_user_flags, $club_user_flags) = $row;
 
 			echo '<tr><td align="center" width="40" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
 			$tournament_user_pic->
-				set($id, $name, $tournament_user_flags, 't' . $this->id)->
-				set($id, $name, $club_user_flags, 'c' . $this->club_id)->
-				set($id, $name, $flags);
+				set($moder->id, $moder->name, $moder->tournament_user_flags, 't' . $this->id)->
+				set($moder->id, $moder->name, $moder->club_user_flags, 'c' . $this->club_id)->
+				set($moder->id, $moder->name, $moder->flags);
 			$tournament_user_pic->show(ICONS_DIR, true, 50);
-			echo '<td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
+			echo '<td><a href="user_games.php?id=' . $moder->id . '&moder=1&bck=1">' . $moder->name . '</a></td>';
 			echo '<td width="50" align="center">';
-			$this->club_pic->set($club_id, $club_name, $club_flags);
+			$this->club_pic->set($moder->club_id, $moder->club_name, $moder->club_flags);
 			$this->club_pic->show(ICONS_DIR, true, 40);
 			echo '</td>';
 			
-			$games = $civil_wins + $mafia_wins;
+			$games = $moder->red_wins + $moder->black_wins;
 			
 			echo '<td align="center" class="dark">' . $games . '</td>';
-			if ($civil_wins > 0)
+			if ($moder->red_wins > 0)
 			{
-				echo '<td align="center">' . $civil_wins . ' (' . number_format(($civil_wins*100.0)/$games, 1) . '%)</td>';
+				echo '<td align="center">' . $moder->red_wins . ' (' . number_format(($moder->red_wins*100.0)/$games, 1) . '%)</td>';
 			}
 			else
 			{
 				echo '<td align="center">&nbsp;</td>';
 			}
-			if ($mafia_wins > 0)
+			if ($moder->black_wins > 0)
 			{
-				echo '<td align="center">' . $mafia_wins . ' (' . number_format(($mafia_wins*100.0)/$games, 1) . '%)</td>';
+				echo '<td align="center">' . $moder->black_wins . ' (' . number_format(($moder->black_wins*100.0)/$games, 1) . '%)</td>';
 			}
 			else
 			{
 				echo '<td align="center">&nbsp;</td>';
+			}
+			if ($moder->bonus > 0)
+			{
+				echo '<td align="center">' . number_format($moder->bonus, 1) . ' (' . number_format($moder->bonus/$games, 2) . ' per game)</td>';
+			}
+			else
+			{
+				echo '<td align="center">0</td>';
+			}
+			if ($moder->worst_moves > 0)
+			{
+				echo '<td align="center">' . $moder->worst_moves . ' (' . number_format($moder->worst_moves/$games, 2) . ' per game)</td>';
+			}
+			else
+			{
+				echo '<td align="center">0</td>';
 			}
 			echo '</tr>';
 		}
