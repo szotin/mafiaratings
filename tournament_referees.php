@@ -73,7 +73,10 @@ class Page extends TournamentPageBase
 		}
 		
 		$query = new DbQuery(
-			'SELECT u.id, SUM(p.extra_points), SUM(IF((p.flags & ' . SCORING_FLAG_WORST_MOVE . ') = 0, 0, 1))' . 
+			'SELECT u.id, SUM(p.extra_points), SUM(p.warns),'.
+			' SUM(IF((p.flags & ' . SCORING_FLAG_WORST_MOVE . ') = 0, 0, 1)),'.
+			' SUM(IF((p.flags & ' . (SCORING_FLAG_WARNINGS_4 | SCORING_FLAG_KICK_OUT | SCORING_FLAG_SURRENDERED | SCORING_FLAG_TEAM_KICK_OUT) . ') = 0, 0, 1)),' . 
+			' SUM(IF((p.flags & ' . SCORING_FLAG_TEAM_KICK_OUT . ') = 0, 0, 1))' . 
 				' FROM users u' .
 				' JOIN games g ON g.moderator_id = u.id' .
 				' JOIN players p ON p.game_id = g.id',
@@ -83,7 +86,7 @@ class Page extends TournamentPageBase
 		while ($row = $query->next())
 		{
 			$moder = $moders[$i++];
-			list($id, $moder->bonus, $moder->worst_moves) = $row;
+			list($id, $moder->bonus, $moder->warnings, $moder->worst_moves, $moder->kick_offs, $moder->team_kick_offs) = $row;
 		}
 		
 		$tournament_user_pic =
@@ -95,10 +98,13 @@ class Page extends TournamentPageBase
 		echo '<tr class="th darker"><td width="20">&nbsp;</td>';
 		echo '<td colspan="3">'.get_label('User name') . '</td>';
 		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
-		echo '<td width="100" align="center">'.get_label('Civil wins').'</td>';
-		echo '<td width="100" align="center">'.get_label('Mafia wins').'</td>';
-		echo '<td width="100" align="center">'.get_label('Bonus points').'</td>';
-		echo '<td width="100" align="center">'.get_label('Removed auto-bonus').'</td>';
+		echo '<td width="60" align="center">'.get_label('Civil wins').'</td>';
+		echo '<td width="60" align="center">'.get_label('Mafia wins').'</td>';
+		echo '<td width="80" align="center">'.get_label('Warnings').'</td>';
+		echo '<td width="80" align="center">'.get_label('Mod kills').'</td>';
+		echo '<td width="80" align="center">'.get_label('Mod team kills').'</td>';
+		echo '<td width="80" align="center">'.get_label('Removed auto-bonus').'</td>';
+		echo '<td width="80" align="center">'.get_label('Bonus points').'</td>';
 		echo '</tr>';
 
 		$number = $_page * PAGE_SIZE;
@@ -124,7 +130,7 @@ class Page extends TournamentPageBase
 			echo '<td align="center" class="dark">' . $games . '</td>';
 			if ($moder->red_wins > 0)
 			{
-				echo '<td align="center">' . $moder->red_wins . ' (' . number_format(($moder->red_wins*100.0)/$games, 1) . '%)</td>';
+				echo '<td align="center">' . $moder->red_wins . '<br><i>' . number_format(($moder->red_wins*100.0)/$games, 1) . '%</i></td>';
 			}
 			else
 			{
@@ -132,27 +138,51 @@ class Page extends TournamentPageBase
 			}
 			if ($moder->black_wins > 0)
 			{
-				echo '<td align="center">' . $moder->black_wins . ' (' . number_format(($moder->black_wins*100.0)/$games, 1) . '%)</td>';
+				echo '<td align="center">' . $moder->black_wins . '<br><i>' . number_format(($moder->black_wins*100.0)/$games, 1) . '%</i></td>';
 			}
 			else
 			{
 				echo '<td align="center">&nbsp;</td>';
 			}
-			if ($moder->bonus > 0)
+			if ($moder->warnings > 0)
 			{
-				echo '<td align="center">' . number_format($moder->bonus, 1) . ' (' . number_format($moder->bonus/$games, 2) . ' per game)</td>';
+				echo '<td align="center">' . $moder->warnings . '<br><i>' . number_format($moder->warnings/$games, 2) . ' ' . get_label('per game') . '</i></td>';
 			}
 			else
 			{
-				echo '<td align="center">0</td>';
+				echo '<td align="center"></td>';
+			}
+			if ($moder->kick_offs > 0)
+			{
+				echo '<td align="center">' . $moder->kick_offs . '<br><i>' . number_format($moder->kick_offs/$games, 2) . ' ' . get_label('per game') . '</i></td>';
+			}
+			else
+			{
+				echo '<td align="center"></td>';
+			}
+			if ($moder->team_kick_offs > 0)
+			{
+				echo '<td align="center">' . $moder->team_kick_offs . '<br><i>' . number_format($moder->team_kick_offs/$games, 2) . ' ' . get_label('per game') . '</i></td>';
+			}
+			else
+			{
+				echo '<td align="center"></td>';
 			}
 			if ($moder->worst_moves > 0)
 			{
-				echo '<td align="center">' . $moder->worst_moves . ' (' . number_format($moder->worst_moves/$games, 2) . ' per game)</td>';
+				echo '<td align="center">' . $moder->worst_moves . '<br><i>' . number_format($moder->worst_moves/$games, 2) . ' ' . get_label('per game') . '</i></td>';
 			}
 			else
 			{
-				echo '<td align="center">0</td>';
+				echo '<td align="center"></td>';
+			}
+			if ($moder->bonus > 0)
+			{
+				echo '<td align="center">' . number_format($moder->bonus, 1) . '<br><i>' . number_format($moder->bonus/$games, 2) . ' ' . get_label('per game') . '</i></td>';
+			}
+			else
+			{
+				echo '<td align="center"></td>';
 			}
 			echo '</tr>';
 		}
