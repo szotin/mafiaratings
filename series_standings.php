@@ -91,6 +91,8 @@ class Page extends SeriesPageBase
 			$tournaments[$tournament_id] = get_gaining_points($gaining, $stars, $players);
 		}
 		
+//		print_json($gaining);
+		$max_tournaments = isset($gaining->maxTournaments) ? $gaining->maxTournaments : 0;
 		$players = array();
 		$query = new DbQuery(
 			'SELECT t.tournament_id, u.id, nu.name, u.flags, p.place, c.id, c.name, c.flags'.
@@ -116,16 +118,61 @@ class Page extends SeriesPageBase
 					$player->club_flags = (int)$club_flags;
 				}
 				$player->tournaments = 0;
-				$player->points = 0;
+				if ($max_tournaments > 0)
+				{
+					$player->p = array();
+				}
+				else
+				{
+					$player->points = 0;
+				}
 				$players[$player_id] = $player;
 			}
 			else
 			{
 				$player = $players[$player_id];
 			}
-			$player->points += $tournaments[$tournament_id][$place-1];
+			
+			$points = $tournaments[$tournament_id][$place-1];
+			if ($max_tournaments > 0)
+			{
+				if (count($player->p) >= $max_tournaments)
+				{
+					for ($i = 0; $i < $max_tournaments; ++$i)
+					{
+						if ($player->p[$i] <= $points)
+						{
+							$player->p[$i] = $points;
+							break;
+						}
+					}
+				}
+				else
+				{
+					$player->p[] = $points;
+				}
+			}
+			else
+			{
+				$player->points += $tournaments[$tournament_id][$place-1];;
+			}
 			++$player->tournaments;
 		}
+		
+		if ($max_tournaments > 0)
+		{
+			foreach ($players as $player)
+			{
+				$player->points = 0;
+				foreach ($player->p as $p)
+				{
+					$player->points += $p;
+				}
+				unset($player->p);
+			}
+		}
+		
+		
 		usort($players, "compare_players");
 		if ($this->user_id > 0)
 		{

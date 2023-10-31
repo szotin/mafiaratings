@@ -144,9 +144,66 @@ class Page extends SeriesPageBase
 			list(
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->club_id, $tournament->club_name, $tournament->club_flags, 
 				$tournament->stars, $tournament->series_tournament_flags, $tournament->place, $tournament->city_name, $tournament->time, $tournament->timezone, $tournament->players_count) = $row;
+			$tournament->exclude = (($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) != 0);
+			$tournament->score = get_gaining_points($this->gaining, $tournament->stars, $tournament->players_count, $tournament->place);
 			$tournaments[] = $tournament;
 			$cs_tournaments .= $delim . $tournament->id;
 			$delim = ',';
+		}
+
+		if (isset($this->gaining->maxTournaments) && count($tournaments) > $this->gaining->maxTournaments)
+		{
+			$excludeCount = count($tournaments) - $this->gaining->maxTournaments;
+			foreach ($tournaments as $tournament)
+			{
+				if ($tournament->exclude)
+				{
+					if (--$excludeCount == 0)
+					{
+						break;
+					}
+				}
+			}
+			
+			if ($excludeCount > 0)
+			{
+				$exclude = array();
+				for ($i = 0; $i < count($tournaments); ++$i)
+				{
+					$tournament = $tournaments[$i];
+					if ($tournament->exclude)
+					{
+						continue;
+					}
+					$exclude[] = $tournament;
+					if (count($exclude) == $excludeCount)
+					{
+						++$i;
+						break;
+					}
+				}
+				
+				for (; $i < count($tournaments); ++$i)
+				{
+					if ($tournaments[$i]->exclude)
+					{
+						continue;
+					}
+					for ($j = 0; $j < $excludeCount; ++$j)
+					{
+						if ($tournaments[$i]->score <= $exclude[$j]->score)
+						{
+							$exclude[$j] = $tournaments[$i];
+							break;
+						}
+					}
+				}
+				
+				foreach ($exclude as $tournament)
+				{
+					$tournament->exclude = true;
+				}
+			}
 		}
 		
 		// Get other series
@@ -220,7 +277,6 @@ class Page extends SeriesPageBase
 			echo '<td><b>' . $tournament->city_name  . '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</td>';
 			echo '</tr></table></td>';
 			
-			$score = get_gaining_points($this->gaining, $tournament->stars, $tournament->players_count, $tournament->place);
 			echo '<td><a href="javascript:showGaining(' . $tournament->players_count . ', ' . $tournament->stars . ', ' . $tournament->place . ')">';
 			if ($tournament->place > 0 && $tournament->place < 4)
 			{
@@ -228,23 +284,35 @@ class Page extends SeriesPageBase
 			}
 			else if ($tournament->place < 11)
 			{
-				echo '<b>' . $tournament->place . '</b>';
+				if ($tournament->exclude)
+				{
+					echo '<b><font color="#808080">' . $tournament->place . '</font></b>';
+				}
+				else
+				{
+					echo '<b>' . $tournament->place . '</b>';
+				}
+			}
+			else if ($tournament->exclude)
+			{
+				echo '<font color="#808080">' . $tournament->place . '</font>';
 			}
 			else
 			{
 				echo $tournament->place;
 			}
 			echo '</a></td>';
-			if ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED)
+			if ($tournament->exclude)
 			{
-				echo '<td class="dark"><s>' . format_score($score) . '</s></td>';
+				echo '<td class="dark"><font color="#808080">' . format_score($tournament->score) . '</font></td>';
+				echo '<td><font color="#808080">' . $tournament->players_count . '</font></td>';
 			}
 			else
 			{
-				echo '<td class="dark">' . format_score($score) . '</td>';
-				$sum += $score;
+				echo '<td class="dark"><b>' . format_score($tournament->score) . '<b></td>';
+				echo '<td>' . $tournament->players_count . '</td>';
+				$sum += $tournament->score;
 			}
-			echo '<td>' . $tournament->players_count . '</td>';
 			echo '</tr>';
 		}
 		echo '<tr class="darker" style="height:50px;"><td colspan="4"><b>' . get_label('Total') . ':</b></td><td align="center"><b>' . format_score($sum) . '</b></td><td></td></tr>';
