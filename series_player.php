@@ -151,58 +151,90 @@ class Page extends SeriesPageBase
 			$delim = ',';
 		}
 
-		if (isset($this->gaining->maxTournaments) && count($tournaments) > $this->gaining->maxTournaments)
+		if (isset($this->gaining->maxTournaments))
 		{
-			$excludeCount = count($tournaments) - $this->gaining->maxTournaments;
-			foreach ($tournaments as $tournament)
+			if ($this->gaining->maxTournaments <= 0)
 			{
-				if ($tournament->exclude)
+				foreach ($tournaments as $tournament)
 				{
-					if (--$excludeCount == 0)
-					{
-						break;
-					}
+					$tournament->exclude = true;
 				}
 			}
-			
-			if ($excludeCount > 0)
+			else if (count($tournaments) > $this->gaining->maxTournaments)
 			{
-				$exclude = array();
-				for ($i = 0; $i < count($tournaments); ++$i)
+				$counted = array();
+				$min_score = $tournaments[0]->score;
+				$min_index = 0;
+				$counted[] = $tournaments[0];
+				for ($i = 1; $i < count($tournaments); ++$i)
 				{
 					$tournament = $tournaments[$i];
 					if ($tournament->exclude)
 					{
 						continue;
 					}
-					$exclude[] = $tournament;
-					if (count($exclude) == $excludeCount)
+					else if (count($counted) >= $this->gaining->maxTournaments)
 					{
-						++$i;
 						break;
 					}
+					
+					if ($tournament->score < $counted[$min_index]->score)
+					{
+						$min_score = $tournament->score;
+						$min_index = $i;
+					}
+					$counted[] = $tournament;
 				}
 				
 				for (; $i < count($tournaments); ++$i)
 				{
-					if ($tournaments[$i]->exclude)
+					$tournament = $tournaments[$i];
+					if ($tournament->exclude)
 					{
 						continue;
 					}
-					for ($j = 0; $j < $excludeCount; ++$j)
+					
+					// $sep = '';
+					// foreach ($counted as $c)
+					// {
+						// echo $sep . $c->score;
+						// $sep = ', ';
+					// }
+					// echo '<br>';
+					
+					if ($min_index < 0)
 					{
-						if ($tournaments[$i]->score <= $exclude[$j]->score)
+						$min_score = $counted[0]->score;
+						$min_index = 0;
+						for ($j = 1; $j < count($counted); ++$j)
 						{
-							$exclude[$j] = $tournaments[$i];
-							break;
+							if ($counted[$j]->score < $min_score)
+							{
+								$min_score = $counted[$j]->score;
+								$min_index = $j;
+							}
 						}
 					}
+					
+					if ($tournament->score > $min_score)
+					{
+						$counted[$min_index]->exclude = true;
+						$counted[$min_index] = $tournament;
+						$min_index = -1;
+						$min_score = 0;
+					}
+					else
+					{
+						$tournament->exclude = true;
+					}
 				}
-				
-				foreach ($exclude as $tournament)
-				{
-					$tournament->exclude = true;
-				}
+				// $sep = '';
+				// foreach ($counted as $c)
+				// {
+					// echo $sep . $c->score;
+					// $sep = ', ';
+				// }
+				// echo '<br>';
 			}
 		}
 		

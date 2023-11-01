@@ -138,13 +138,17 @@ class Page extends SeriesPageBase
 			{
 				if (count($player->p) >= $max_tournaments)
 				{
-					for ($i = 0; $i < $max_tournaments; ++$i)
+					$min_index = 0;
+					for ($i = 1; $i < $max_tournaments; ++$i)
 					{
-						if ($player->p[$i] <= $points)
+						if ($player->p[$i] < $player->p[$min_index])
 						{
-							$player->p[$i] = $points;
-							break;
+							$min_index = $i;
 						}
+					}
+					if ($player->p[$min_index] <= $points)
+					{
+						$player->p[$min_index] = $points;
 					}
 				}
 				else
