@@ -142,7 +142,7 @@ function compare_role_scores($role, $player1, $player2)
 	
 	if ($role == SCORING_TRACK_ROLE)
 	{
-		echo $player1->name . ' (' . $bonus1 . ') : ' . $player2->name . ' (' . $bonus2 . ')';
+		echo $player1->name . ' - ' . $bonus1 . '(' . $games_count1 . ') : ' . $player2->name . ' - ' . $bonus2 . '(' . $games_count2 . ')';
 	}
 	
 	if ($games_count1 <= 0)
@@ -151,11 +151,11 @@ function compare_role_scores($role, $player1, $player2)
 		{
 			return 0;
 		}
-		return 1;
+		return -1;
 	}
 	if ($games_count2 <= 0)
 	{
-		return -1;
+		return 1;
 	}
 	
 	if (abs($bonus1 - $bonus2) > 0.001)
@@ -1858,7 +1858,7 @@ function add_tournament_nominants($tournament_id, $players)
 			}
 			else if (abs($player->bonus - $mvp->bonus) < 0.001)
 			{
-				$roles[$i] = $player; // the one with the lower place wins
+				$mvp = $player; // the one with the lower place wins
 				++$mvp_winner_count;
 			}
 			else if ($player->bonus > $mvp->bonus)
@@ -1880,10 +1880,6 @@ function add_tournament_nominants($tournament_id, $players)
 			
 			for ($i = 0; $i < 4; ++$i)
 			{
-				if ($player->roles[$i]->games_count <= 0)
-				{
-					continue;
-				}
 				$cmp = compare_role_scores($i, $player, $roles[$i]);
 				if ($i == SCORING_TRACK_ROLE)
 				{
@@ -1915,6 +1911,8 @@ function add_tournament_nominants($tournament_id, $players)
 			++$real_count;
 		}
 	}
+	
+//	print_json($players);
 	
 	$flags = COMPETITION_MVP;
 	if ($mvp && $mvp_winner_count <= 2) // we give a win by lower place only when there are 2 or less pretenders

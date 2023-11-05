@@ -1001,10 +1001,26 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($nickname) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $new_user_id);
 			}
-			Db::exec(get_label('registration'), 'UPDATE event_users eu JOIN events e ON eu.event_id = e.id SET eu.user_id = ?, eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $new_user_id, $nickname, $user_id, $tournament_id);
+			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users eu JOIN events e ON eu.event_id = e.id WHERE eu.user_id = ? AND e.tournament_id = ?', $new_user_id, $tournament_id);
+			if ($count > 0)
+			{
+				Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE user_id = ? AND event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $user_id, $tournament_id);
+			}
+			else
+			{
+				Db::exec(get_label('registration'), 'UPDATE event_users eu JOIN events e ON eu.event_id = e.id SET eu.user_id = ?, eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $new_user_id, $nickname, $user_id, $tournament_id);
+			}
 			$changed = $changed || Db::affected_rows() > 0;
 			
-			Db::exec(get_label('registration'), 'UPDATE tournament_users SET user_id = ? WHERE user_id = ? AND tournament_id = ?', $new_user_id, $user_id, $tournament_id);
+			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $new_user_id, $tournament_id);
+			if ($count > 0)
+			{
+				Db::exec(get_label('registration'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+			}
+			else
+			{
+				Db::exec(get_label('registration'), 'UPDATE tournament_users SET user_id = ? WHERE user_id = ? AND tournament_id = ?', $new_user_id, $user_id, $tournament_id);
+			}
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		else if ($nickname != NULL)

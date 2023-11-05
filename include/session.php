@@ -476,6 +476,11 @@ function initiate_session($lang_code = NULL)
 	global $_session_state, $_profile, $_agent, $_lang;
 	global $_default_date_translations, $_http_agent, $labelMenu;
 
+	$session_timeout = 60 * 60 * 24 * 90; // 90 days
+	ini_set('session.gc_maxlifetime', $session_timeout);
+	ini_set('session.cookie_lifetime', $session_timeout);
+	ini_set('session.gc_probability', 0);
+	
     session_start();
 	// localization
 	if (isset($_SESSION['lang_code']))
