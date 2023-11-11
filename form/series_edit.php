@@ -28,10 +28,26 @@ try
 			' WHERE s.id = ?', $series_id);
 	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
 	
+	$series_list = '{';
+	$delimiter = '';
+	$query = new DbQuery('SELECT parent_id, stars FROM series_series WHERE child_id = ?', $series_id);
+	while ($row = $query->next())
+	{
+		list ($s_id, $s_stars) = $row;
+		$series_list .= 
+			$delimiter . '"' . $s_id . '":{' . 
+				'id:' . $s_id . ',' .
+				'selected:true,' .
+				'stars:' . $s_stars .
+			'}';
+		$delimiter = ',';
+	}
+	$series_list .= '}';
+	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="240">' . get_label('Series name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
 	
-	echo '<td align="center" valign="top" rowspan="12" width="120">';
+	echo '<td align="center" valign="top" rowspan="13" width="120">';
 	start_upload_logo_button($series_id);
 	echo get_label('Change logo') . '<br>';
 	$series_pic = new Picture(SERIES_PICTURE);
@@ -39,6 +55,8 @@ try
 	$series_pic->show(ICONS_DIR, false);
 	end_upload_logo_button(SERIES_PIC_CODE, $series_id);
 	echo '</td></tr>';
+	
+	echo '<tr><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
 	
 	$end_time = $start_time + $duration - 24*60*60;
 	if ($end_time < $start_time)
@@ -49,7 +67,7 @@ try
 	echo '<tr><td>'.get_label('Dates').':</td><td>';
 	echo '<input type="date" id="form-start" value="' . timestamp_to_string($start_time, $timezone, false) . '" onchange="onMinDateChange()">';
 	echo '  ' . get_label('to') . '  ';
-	echo '<input type="date" id="form-end" value="' . timestamp_to_string($end_time, $timezone, false) . '">';
+	echo '<input type="date" id="form-end" value="' . timestamp_to_string($end_time, $timezone, false) . '" onchange="setSeries()"">';
 	echo '</td></tr>';
 	echo '</td></tr>';
 	
@@ -94,6 +112,93 @@ try
 	<script type="text/javascript" src="js/rater.min.js"></script>
 	<script>
 	
+	var seriesList = <?php echo $series_list; ?>;
+	function setSeries()
+	{
+		var _end = strToDate($('#form-end').val());
+		_end.setDate(_end.getDate() + 1); // inclusive
+		json.post("api/get/series.php",
+		{
+			ended_after: _end
+			, started_before: '+' + strToDate($('#form-start').val())
+		},
+		function(series)
+		{
+			var html = '<table class="dialog_form" width="100%"><tr>';
+			var sl = new Object();
+			for (i = 0; i < series.series.length; ++i)
+			{
+				var s = series.series[i];
+				if (s.id == <?php echo $series_id; ?>)
+				{
+					continue;
+				}
+				if (seriesList[s.id])
+				{
+					sl[s.id] = seriesList[s.id];
+				}
+				else
+				{
+					sl[s.id] =
+					{
+						id: s.id,
+						selected: false,
+						stars: 0
+					};
+				}
+				
+				html += '<tr><td width="80" align="center"><img src="' + s.icon + '" width="48"><br><b>' + s.name + '</td>';
+				
+				html += '<td><input type="checkbox" id="form-p-' + s.id + '" onclick="seriesParticipantClick(' + s.id + ')"'
+				if (sl[s.id].selected)
+				{
+					html += ' checked';
+				}
+				html += '> <?php echo get_label('participate'); ?></td>';
+				html += '<td align="center"><div id="form-stars-' + s.id + '" class="stars"></div></td></tr>';
+			}
+			html += '</table>';
+			$('#form-series').html(html);
+			
+			seriesList = sl;
+			for (i = 0; i < series.series.length; ++i)
+			{
+				var s = series.series[i];
+				$("#form-stars-" + s.id).rate(
+				{
+					max_value: 5,
+					step_size: 1,
+					initial_value: seriesList[s.id].stars,
+				}).on("change", function(ev, data) { starsChanged(this, data.to); });
+			}
+		});
+	}
+	setSeries();
+	
+	function starsChanged(control, stars)
+	{
+		
+		var seriesId = control.id.substr(control.id.lastIndexOf('-')+1);
+		$("#form-p-" + seriesId).prop('checked', true);
+		$("#form-f-" + seriesId).prop('disabled', false);
+		seriesList[seriesId].stars = stars;
+		seriesList[seriesId].selected = true;
+	}
+	
+	function seriesParticipantClick(seriesId)
+	{
+		var d = false;
+		if (!$("#form-p-" + seriesId).attr('checked'))
+		{
+			d = true;
+			$("#form-stars-" + seriesId).rate("setValue", 0);
+			$("#form-p-" + seriesId).prop('checked', false);
+			$("#form-f-" + seriesId).prop('checked', false);
+		}
+		$("#form-f-" + seriesId).prop('disabled', d);
+		seriesList[seriesId].selected = !d;
+	}
+	
 	function onMinDateChange()
 	{
 		$('#form-end').attr("min", $('#form-start').val());
@@ -103,6 +208,7 @@ try
 		{
 			$('#form-end').val($('#form-start').val());
 		}
+		setSeries();
 	}
 	
 	function feeChanged()
@@ -123,10 +229,23 @@ try
 		var _langs = mr.getLangs('form-');
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
+		
+		var series = [];
+		for (const i in seriesList) 
+		{
+			var s = seriesList[i];
+			if (s.selected)
+			{
+				series.push({ id: s.id, stars: s.stars });
+			}
+		}
+		series = JSON.stringify(series);
+		
 		var params =
 		{
 			op: "change",
 			series_id: <?php echo $series_id; ?>,
+			parent_series: series,
 			name: $("#form-name").val(),
 			notes: $("#form-notes").val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),

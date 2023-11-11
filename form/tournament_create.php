@@ -159,10 +159,12 @@ try
 	var seriesList = new Object();
 	function setSeries()
 	{
+		var _end = strToDate($('#form-end').val());
+		_end.setDate(_end.getDate() + 1); // inclusive
 		json.post("api/get/series.php",
 		{
-			started_before: new Date($('#form-end').val())
-			, ended_after: new Date($('#form-start').val())
+			ended_after: _end
+			, started_before: '+' + strToDate($('#form-start').val())
 			, club_id: <?php echo $club_id; ?>
 		},
 		function(series)
@@ -415,7 +417,7 @@ try
 		{
 			op: "create",
 			club_id: <?php echo $club_id; ?>,
-			series: series,
+			parent_series: series,
 			name: $("#form-name").val(),
 			type: $('#form-type').val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),

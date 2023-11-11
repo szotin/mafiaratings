@@ -46,22 +46,50 @@ class ApiPage extends GetApiPageBase
 
 		if (!empty($started_before))
 		{
-			$condition->add(' AND s.start_time < ?', get_datetime($started_before)->getTimestamp());
+			if (strpos($started_before, '+') === 0)
+			{
+				$condition->add(' AND s.start_time <= ?', get_datetime(trim(substr($started_before, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND s.start_time < ?', get_datetime($started_before)->getTimestamp());
+			}
 		}
 
 		if (!empty($ended_before))
 		{
-			$condition->add(' AND s.start_time + s.duration < ?', get_datetime($ended_before)->getTimestamp());
+			if (strpos($ended_before, '+') === 0)
+			{
+				$condition->add(' AND s.start_time + s.duration <= ?', get_datetime(trim(substr($ended_before, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND s.start_time + s.duration < ?', get_datetime($ended_before)->getTimestamp());
+			}
 		}
 
 		if (!empty($started_after))
 		{
-			$condition->add(' AND s.start_time >= ?', get_datetime($started_after)->getTimestamp());
+			if (strpos($started_after, '+') === 0)
+			{
+				$condition->add(' AND s.start_time >= ?', get_datetime(trim(substr($started_after, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND s.start_time > ?', get_datetime($started_after)->getTimestamp());
+			}
 		}
 
 		if (!empty($ended_after))
 		{
-			$condition->add(' AND s.start_time + s.duration >= ?', get_datetime($ended_after)->getTimestamp());
+			if (strpos($ended_after, '+') === 0)
+			{
+				$condition->add(' AND s.start_time + s.duration >= ?', get_datetime(trim(substr($ended_after, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND s.start_time + s.duration > ?', get_datetime($ended_after)->getTimestamp());
+			}
 		}
 
 		if ($tournament_id > 0)
@@ -190,10 +218,10 @@ class ApiPage extends GetApiPageBase
 		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('name_contains', 'Search pattern. For example: <a href="series.php?name_contains=so">' . PRODUCT_URL . '/api/get/series.php?name_contains=so</a> returns series containing "so" in their name.', '-');
 		$help->request_param('name_starts', 'Search pattern. For example: <a href="series.php?name_starts=so">' . PRODUCT_URL . '/api/get/series.php?name_starts=so</a> returns series with names starting with "so".', '-');
-		$help->request_param('started_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns series that are started before a certain time. For example: <a href="series.php?started_before=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/series.php?started_before=2017-01-01%2000:00</a> returns all series started before January 1, 2017. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('ended_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns series that are ended before a certain time. For example: <a href="series.php?ended_before=1483228800">' . PRODUCT_URL . '/api/get/series.php?ended_before=1483228800</a> returns all series ended before January 1, 2017; <a href="series.php?ended_before=now">' . PRODUCT_URL . '/api/get/series.php?ended_before=now</a> returns all series that are already ended. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('started_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns series that are started after a certain time. For example: <a href="series.php?started_after=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/series.php?started_after=2017-01-01%2000:00</a> returns all series started after January 1, 2017. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns series that are ended after a certain time. For example: <a href="series.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/series.php?ended_after=1483228800</a> returns all series ended after January 1, 2017; <a href="series.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/series.php?started_before=now&ended_after=now</a> returns all series that happening now. Logged user timezone is used for converting dates.', '-');
+		$help->request_param('started_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns series that are started before a certain time. For example: <a href="series.php?started_before=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/series.php?started_before=2017-01-01%2000:00</a> returns all series started before January 1, 2017. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('ended_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns series that are ended before a certain time. For example: <a href="series.php?ended_before=1483228800">' . PRODUCT_URL . '/api/get/series.php?ended_before=1483228800</a> returns all series ended before January 1, 2017; <a href="series.php?ended_before=now">' . PRODUCT_URL . '/api/get/series.php?ended_before=now</a> returns all series that are already ended. Logged user timezone is used for converting dates.  If starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('started_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns series that are started after a certain time. For example: <a href="series.php?started_after=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/series.php?started_after=2017-01-01%2000:00</a> returns all series started after January 1, 2017. Logged user timezone is used for converting dates. If starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns series that are ended after a certain time. For example: <a href="series.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/series.php?ended_after=1483228800</a> returns all series ended after January 1, 2017; <a href="series.php?ended_after=now&ended_after=now">' . PRODUCT_URL . '/api/get/series.php?ended_after=now&ended_after=now</a> returns all series that happening now. Logged user timezone is used for converting dates. If starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
 		$help->request_param('tournament_id', 'Tournament id. For example: <a href="series.php?tournament_id=1">' . PRODUCT_URL . '/api/get/series.php?tournament_id=1</a> returns the series of the tournament with id 1.', '-');
 		$help->request_param('series_id', 'Series id. For example: <a href="series.php?serie_id=1">' . PRODUCT_URL . '/api/get/series.php?serie_id=1</a> returns the serie with id 1.', '-');
 		$help->request_param('league_id', 'League id. For example: <a href="series.php?league_id=2">' . PRODUCT_URL . '/api/get/series.php?league_id=2</a> returns all series of the American Mafia League.', '-');

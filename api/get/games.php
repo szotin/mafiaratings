@@ -49,22 +49,50 @@ class ApiPage extends GetApiPageBase
 		$condition = new SQL('');
 		if (!empty($started_before))
 		{
-			$condition->add(' AND g.start_time < ?', get_datetime($started_before)->getTimestamp());
+			if (strpos($started_before, '+') === 0)
+			{
+				$condition->add(' AND g.start_time <= ?', get_datetime(trim(substr($started_before, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND g.start_time < ?', get_datetime($started_before)->getTimestamp());
+			}
 		}
 
 		if (!empty($ended_before))
 		{
-			$condition->add(' AND g.end_time < ?', get_datetime($ended_before)->getTimestamp());
+			if (strpos($ended_before, '+') === 0)
+			{
+				$condition->add(' AND g.end_time <= ?', get_datetime(trim(substr($ended_before, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND g.end_time < ?', get_datetime($ended_before)->getTimestamp());
+			}
 		}
 
 		if (!empty($started_after))
 		{
-			$condition->add(' AND g.start_time >= ?', get_datetime($started_after)->getTimestamp());
+			if (strpos($started_after, '+') === 0)
+			{
+				$condition->add(' AND g.start_time >= ?', get_datetime(trim(substr($started_after, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND g.start_time > ?', get_datetime($started_after)->getTimestamp());
+			}
 		}
 
 		if (!empty($ended_after))
 		{
-			$condition->add(' AND g.end_time >= ?', get_datetime($ended_after)->getTimestamp());
+			if (strpos($ended_after, '+') === 0)
+			{
+				$condition->add(' AND g.end_time >= ?', get_datetime(trim(substr($ended_after, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND g.end_time > ?', get_datetime($ended_after)->getTimestamp());
+			}
 		}
 
 		if ($game_id > 0)
@@ -213,10 +241,10 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('started_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are started before a certain time. For example: <a href="games.php?started_before=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/games.php?started_before=2017-01-01%2000:00</a> returns all games started before January 1, 2017. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('ended_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are ended before a certain time. For example: <a href="games.php?ended_before=1483228800">' . PRODUCT_URL . '/api/get/games.php?ended_before=1483228800</a> returns all games ended before January 1, 2017; <a href="games.php?ended_before=now">' . PRODUCT_URL . '/api/get/games.php?ended_before=now</a> returns all games that are already ended. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('started_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are started after a certain time. For example: <a href="games.php?started_after=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/games.php?started_after=2017-01-01%2000:00</a> returns all games started after January 1, 2017. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are ended after a certain time. For example: <a href="games.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/games.php?ended_after=1483228800</a> returns all games ended after January 1, 2017; <a href="games.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/games.php?started_before=now&ended_after=now</a> returns all games that happening now. Logged user timezone is used for converting dates.', '-');
+		$help->request_param('started_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are started before a certain time. For example: <a href="games.php?started_before=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/games.php?started_before=2017-01-01%2000:00</a> returns all games started before January 1, 2017. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('ended_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are ended before a certain time. For example: <a href="games.php?ended_before=1483228800">' . PRODUCT_URL . '/api/get/games.php?ended_before=1483228800</a> returns all games ended before January 1, 2017; <a href="games.php?ended_before=now">' . PRODUCT_URL . '/api/get/games.php?ended_before=now</a> returns all games that are already ended. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('started_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are started after a certain time. For example: <a href="games.php?started_after=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/games.php?started_after=2017-01-01%2000:00</a> returns all games started after January 1, 2017. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns games that are ended after a certain time. For example: <a href="games.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/games.php?ended_after=1483228800</a> returns all games ended after January 1, 2017; <a href="games.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/games.php?started_before=now&ended_after=now</a> returns all games that happening now. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
 		$help->request_param('game_id', 'Game id. For example: <a href="games.php?game_id=1299">/api/get/games.php?game_id=1299</a> returns only one game played in VaWaCa-2017 tournament.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="games.php?club_id=1">/api/get/games.php?club_id=1</a> returns all games for Vancouver Mafia Club.', '-');
 		$help->request_param('league_id', 'League id. For example: <a href="games.php?league_id=2">/api/get/games.php?league_id=2</a> returns all games played in American Mafia League.', '-');

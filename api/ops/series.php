@@ -26,6 +26,8 @@ class ApiPage extends OpsApiPageBase
 		list($gaining_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $gaining_id);
 		$gaining_version = (int)get_optional_param('gaining_version', $gaining_version);
 		
+		$parent_series = json_decode(get_optional_param('parent_series', '[]'));
+		
 		$name = get_required_param('name');
 		if (empty($name))
 		{
@@ -78,7 +80,19 @@ class ApiPage extends OpsApiPageBase
 		$log_details->flags = $flags;
 		$log_details->gaining_id = $gaining_id;
 		$log_details->gaining_version = $gaining_version;
+		$log_details->parent_series = json_encode($parent_series);
 		db_log(LOG_OBJECT_SERIES, 'created', $log_details, $series_id, NULL, $league_id);
+		
+		// create parent series records
+		foreach ($parent_series as $s)
+		{
+			Db::exec(
+				get_label('sеriеs'), 
+				'INSERT INTO series_series (child_id, parent_id, stars) values (?, ?, ?)',
+				$series_id, $s->id, $s->stars);
+			// todo send notification for series too:
+			// send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
+		}
 		
 		Db::commit();
 		$this->response['series_id'] = $series_id;
@@ -89,6 +103,9 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Create series.');
 		$help->request_param('name', 'Series name.');
 		$help->request_param('league_id', 'League id.');
+		$series_help = $help->request_param('parent_series', 'Json array of series that this series belongs to. For example "[{id:2,stars:3},{id:4,stars:1}]".', 'series does not belong to any series - same as "[]".');
+			$series_help->sub_param('id', 'Series id');
+			$series_help->sub_param('stars', 'Number of stars for this series.');
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'empty.');
@@ -175,11 +192,64 @@ class ApiPage extends OpsApiPageBase
 			$logo_uploaded = true;
 		}
 		
+		// update parent series records
+		$parent_series = json_decode(get_optional_param('parent_series', NULL));
+		$parent_series_changed = false;
+		if (!is_null($parent_series))
+		{
+			$old_parent_series = array();
+			$query = new DbQuery('SELECT parent_id, stars FROM series_series WHERE child_id = ?', $series_id);
+			while ($row = $query->next())
+			{
+				$s = new stdClass();
+				list($s->id, $s->stars) = $row;
+				$old_parent_series[$s->id] = $s;
+			}
+			
+			foreach ($parent_series as $s)
+			{
+				if (isset($old_parent_series[$s->id]))
+				{
+					$os = $old_parent_series[$s->id];
+					$finals = isset($s->finals) ? $s->finals : false;
+					if ($os->stars != $s->stars)
+					{
+						Db::exec(
+							get_label('sеriеs'), 
+							'UPDATE series_series SET stars = ? WHERE parent_id = ? AND child_id = ?', $s->stars, $s->id, $series_id);
+						// todo send notification for series too:
+						// send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
+						$parent_series_changed = true;
+					}
+					unset($old_parent_series[$s->id]);
+				}
+				else
+				{
+					Db::exec(
+						get_label('sеriеs'), 
+						'INSERT INTO series_series (child_id, parent_id, stars) values (?, ?, ?)',
+						$series_id, $s->id, $s->stars);
+					// todo send notification for series too:
+					// send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
+					$parent_series_changed = true;
+				}
+			}
+			
+			foreach ($old_parent_series as $parent_id => $s)
+			{
+				Db::exec(
+					get_label('sеriеs'), 
+					'DELETE FROM series_series WHERE child_id = ? AND parent_id = ?', $series_id, $parent_id);
+				// todo send notification for series too:
+				// send_series_notification('tournament_series_remove', $tournament_id, $name, $club_id, $club->name, $s);
+			}
+		}
+			
 		Db::exec(
 			get_label('sеriеs'), 
 			'UPDATE series SET name = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
 			$name, $start, $duration, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
-		if (Db::affected_rows() > 0)
+		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			$log_details = new stdClass();
 			if ($name != $old_name)
@@ -226,6 +296,10 @@ class ApiPage extends OpsApiPageBase
 			if ($logo_uploaded)
 			{
 				$log_details->logo_uploaded = true;
+			}
+			if ($parent_series_changed)
+			{
+				$log_details->parent_series = json_encode($parent_series);
 			}
 			db_log(LOG_OBJECT_SERIES, 'changed', $log_details, $series_id, NULL, $league_id);
 		}

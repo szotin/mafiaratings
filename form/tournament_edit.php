@@ -199,10 +199,12 @@ try
 	var seriesList = <?php echo $series_list; ?>;
 	function setSeries()
 	{
+		var _end = strToDate($('#form-end').val());
+		_end.setDate(_end.getDate() + 1); // inclusive
 		json.post("api/get/series.php",
 		{
-			started_before: new Date($('#form-end').val())
-			, ended_after: new Date($('#form-start').val())
+			ended_after: _end
+			, started_before: '+' + strToDate($('#form-start').val())
 			, club_id: <?php echo $club_id; ?>
 		},
 		function(series)
@@ -255,7 +257,6 @@ try
 			seriesList = sl;
 			for (i = 0; i < series.series.length; ++i)
 			{
-				console.log(s.id);
 				var s = series.series[i];
 				$("#form-stars-" + s.id).rate(
 				{
@@ -315,7 +316,6 @@ try
 	var scoringOptions = '<?php echo $scoring_options; ?>';
 	function onScoringChange(s)
 	{
-		console.log(s);
 		scoringId = s.sId;
 		scoringVersion = s.sVer;
 		scoringOptions = JSON.stringify(s.ops);
@@ -420,7 +420,7 @@ try
 		{
 			op: "change",
 			tournament_id: <?php echo $tournament_id; ?>,
-			series: series,
+			parent_series: series,
 			name: $("#form-name").val(),
 			type: $('#form-type').val(),
 			address_id: $("#form-addr_id").val(),

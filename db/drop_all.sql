@@ -47,6 +47,7 @@ DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `events`;
 DROP TABLE IF EXISTS `tournament_teams`;
 DROP TABLE IF EXISTS series_tournaments;
+DROP TABLE IF EXISTS series_series;
 DROP TABLE IF EXISTS series;
 DROP TABLE IF EXISTS `tournaments`;
 DROP TABLE IF EXISTS `league_seasons`;

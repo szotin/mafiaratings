@@ -54,22 +54,50 @@ class ApiPage extends GetApiPageBase
 
 		if (!empty($started_before))
 		{
-			$condition->add(' AND e.start_time < ?', get_datetime($started_before)->getTimestamp());
+			if (strpos($started_before, '+') === 0)
+			{
+				$condition->add(' AND e.start_time <= ?', get_datetime(trim(substr($started_before, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND e.start_time < ?', get_datetime($started_before)->getTimestamp());
+			}
 		}
 
 		if (!empty($ended_before))
 		{
-			$condition->add(' AND e.start_time + e.duration < ?', get_datetime($ended_before)->getTimestamp());
+			if (strpos($ended_before, '+') === 0)
+			{
+				$condition->add(' AND e.start_time + e.duration <= ?', get_datetime(trim(substr($ended_before, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND e.start_time + e.duration < ?', get_datetime($ended_before)->getTimestamp());
+			}
 		}
 
 		if (!empty($started_after))
 		{
-			$condition->add(' AND e.start_time >= ?', get_datetime($started_after)->getTimestamp());
+			if (strpos($started_after, '+') === 0)
+			{
+				$condition->add(' AND e.start_time >= ?', get_datetime(trim(substr($started_after, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND e.start_time > ?', get_datetime($started_after)->getTimestamp());
+			}
 		}
 
 		if (!empty($ended_after))
 		{
-			$condition->add(' AND e.start_time + e.duration >= ?', get_datetime($ended_after)->getTimestamp());
+			if (strpos($ended_after, '+') === 0)
+			{
+				$condition->add(' AND e.start_time + e.duration >= ?', get_datetime(trim(substr($ended_after, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND e.start_time + e.duration > ?', get_datetime($ended_after)->getTimestamp());
+			}
 		}
 
 		if ($event_id > 0)
@@ -275,10 +303,10 @@ class ApiPage extends GetApiPageBase
 		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('name_contains', 'Search pattern. For example: <a href="events.php?name_contains=co">' . PRODUCT_URL . '/api/get/events.php?name_contains=co</a> returns events containing "co" in their name.', '-');
 		$help->request_param('name_starts', 'Search pattern. For example: <a href="events.php?name_starts=co">' . PRODUCT_URL . '/api/get/events.php?name_starts=co</a> returns events with names starting with "co".', '-');
-		$help->request_param('started_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are started before a certain time. For example: <a href="events.php?started_before=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/events.php?started_before=2017-01-01%2000:00</a> returns all events started before January 1, 2017. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('ended_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are ended before a certain time. For example: <a href="events.php?ended_before=1483228800">' . PRODUCT_URL . '/api/get/events.php?ended_before=1483228800</a> returns all events ended before January 1, 2017; <a href="events.php?ended_before=now">' . PRODUCT_URL . '/api/get/events.php?ended_before=now</a> returns all events that are already ended. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('started_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are started after a certain time. For example: <a href="events.php?started_after=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/events.php?started_after=2017-01-01%2000:00</a> returns all events started after January 1, 2017. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are ended after a certain time. For example: <a href="events.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/events.php?ended_after=1483228800</a> returns all events ended after January 1, 2017; <a href="events.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/events.php?started_before=now&ended_after=now</a> returns all events that happening now. Logged user timezone is used for converting dates.', '-');
+		$help->request_param('started_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are started before a certain time. For example: <a href="events.php?started_before=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/events.php?started_before=2017-01-01%2000:00</a> returns all events started before January 1, 2017. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('ended_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are ended before a certain time. For example: <a href="events.php?ended_before=1483228800">' . PRODUCT_URL . '/api/get/events.php?ended_before=1483228800</a> returns all events ended before January 1, 2017; <a href="events.php?ended_before=now">' . PRODUCT_URL . '/api/get/events.php?ended_before=now</a> returns all events that are already ended. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('started_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are started after a certain time. For example: <a href="events.php?started_after=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/events.php?started_after=2017-01-01%2000:00</a> returns all events started after January 1, 2017. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns events that are ended after a certain time. For example: <a href="events.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/events.php?ended_after=1483228800</a> returns all events ended after January 1, 2017; <a href="events.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/events.php?started_before=now&ended_after=now</a> returns all events that happening now. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
 		$help->request_param('event_id', 'Event id. For example: <a href="events.php?event_id=1">' . PRODUCT_URL . '/api/get/events.php?event_id=1</a> returns information Vancouver Mafia Club.', '-');
 		$help->request_param('tournament_id', 'Tournament id. For example: <a href="events.php?tournament_id=1">' . PRODUCT_URL . '/api/get/events.php?tournament_id=1</a> returns all rounds of VaWaCa-2017. <a href="events.php?tournament_id=0">' . PRODUCT_URL . '/api/get/events.php?tournament_id=0</a> returns all stand alone events that are not tournament rounds.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="events.php?club_id=1">' . PRODUCT_URL . '/api/get/events.php?club_id=1</a> returns all events in Vancouver Mafia Club. List of the cities and their ids can be obtained using <a href="clubs.php?help">' . PRODUCT_URL . '/api/get/clubs.php</a>.', '-');

@@ -211,7 +211,7 @@ class ApiPage extends OpsApiPageBase
 		$normalizer_version = (int)get_optional_param('normalizer_version', -1);
 		$scoring_options = json_decode(get_optional_param('scoring_options', NULL));
 		$scoring_options_str = json_encode($scoring_options);
-		$series = json_decode(get_optional_param('series', '[]'));
+		$parent_series = json_decode(get_optional_param('parent_series', '[]'));
 		
 		if ($normalizer_id <= 0)
 		{
@@ -328,7 +328,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->rules_code = $rules_code;
 		$log_details->flags = $flags;
 		$log_details->type = $type;
-		$log_details->series = json_encode($series);
+		$log_details->parent_series = json_encode($parent_series);
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
 		if (is_valid_lang($langs))
@@ -342,8 +342,8 @@ class ApiPage extends OpsApiPageBase
 		
 		create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code);
 		
-		// create series records
-		foreach ($series as $s)
+		// create parent series records
+		foreach ($parent_series as $s)
 		{
 			Db::exec(
 				get_label('sеriеs'), 
@@ -365,7 +365,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create tournament.');
 		$help->request_param('name', 'Tournament name.');
 		$help->request_param('club_id', 'Club id.');
-		$series_help = $help->request_param('series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'tournament does not belong to any series - same as "[]".');
+		$series_help = $help->request_param('parent_series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'tournament does not belong to any series - same as "[]".');
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
 			$series_help->sub_param('finals', 'true/false - if this tournament is a series finals.', 'false');
@@ -517,26 +517,26 @@ class ApiPage extends OpsApiPageBase
 			$logo_uploaded = true;
 		}
 		
-		// update series records
-		$series = json_decode(get_optional_param('series', NULL));
-		$series_changed = false;
-		if (!is_null($series))
+		// update parent series records
+		$parent_series = json_decode(get_optional_param('parent_series', NULL));
+		$parent_series_changed = false;
+		if (!is_null($parent_series))
 		{
-			$old_series = array();
+			$old_parent_series = array();
 			$query = new DbQuery('SELECT s.id, st.stars, s.finals_id FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?', $tournament_id);
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
 				list($s->id, $s->stars, $finals_id) = $row;
 				$s->finals = ($finals_id == $tournament_id);
-				$old_series[$s->id] = $s;
+				$old_parent_series[$s->id] = $s;
 			}
 			
-			foreach ($series as $s)
+			foreach ($parent_series as $s)
 			{
-				if (isset($old_series[$s->id]))
+				if (isset($old_parent_series[$s->id]))
 				{
-					$os = $old_series[$s->id];
+					$os = $old_parent_series[$s->id];
 					$finals = isset($s->finals) ? $s->finals : false;
 					if ($os->stars != $s->stars)
 					{
@@ -544,7 +544,7 @@ class ApiPage extends OpsApiPageBase
 							get_label('sеriеs'), 
 							'UPDATE series_tournaments SET stars = ? WHERE series_id = ? AND tournament_id = ?', $s->stars, $s->id, $tournament_id);
 						send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
-						$series_changed = true;
+						$parent_series_changed = true;
 					}
 					if ($os->finals != $finals)
 					{
@@ -553,9 +553,9 @@ class ApiPage extends OpsApiPageBase
 							get_label('sеriеs'), 
 							'UPDATE series SET finals_id = ? WHERE id = ?', $finals_id, $s->id);
 						send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
-						$series_changed = true;
+						$parent_series_changed = true;
 					}
-					unset($old_series[$s->id]);
+					unset($old_parent_series[$s->id]);
 				}
 				else
 				{
@@ -568,15 +568,15 @@ class ApiPage extends OpsApiPageBase
 						Db::exec(get_label('sеriеs'), 'UPDATE series SET finals_id = ? WHERE id = ?', $tournament_id, $s->id);
 					}
 					send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
-					$series_changed = true;
+					$parent_series_changed = true;
 				}
 			}
 			
-			foreach ($old_series as $series_id => $s)
+			foreach ($old_parent_series as $parent_series_id => $s)
 			{
 				Db::exec(
 					get_label('sеriеs'), 
-					'DELETE FROM series_tournaments WHERE tournament_id = ? AND series_id = ?', $tournament_id, $series_id);
+					'DELETE FROM series_tournaments WHERE tournament_id = ? AND series_id = ?', $tournament_id, $parent_series_id);
 				send_series_notification('tournament_series_remove', $tournament_id, $name, $club_id, $club->name, $s);
 			}
 		}
@@ -613,7 +613,7 @@ class ApiPage extends OpsApiPageBase
 			get_label('tournament'), 
 			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, expected_players_count = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ? WHERE id = ?',
 			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $tournament_id);
-		if (Db::affected_rows() > 0 || $series_changed)
+		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
 			{
@@ -681,9 +681,9 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->logo_uploaded = true;
 			}
-			if ($series_changed)
+			if ($parent_series_changed)
 			{
-				$log_details->series = json_encode($series);
+				$log_details->parent_series = json_encode($parent_series);
 			}
 			if ($type != $old_type)
 			{
@@ -700,7 +700,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change tournament.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->request_param('name', 'Tournament name.', 'remains the same.');
-		$series_help = $help->request_param('series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'remains the same.');
+		$series_help = $help->request_param('parent_series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'remains the same.');
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
 			$series_help->sub_param('finals', 'true/false - if this tournament is a series finals.', 'false');

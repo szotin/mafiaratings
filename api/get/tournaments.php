@@ -55,22 +55,50 @@ class ApiPage extends GetApiPageBase
 
 		if (!empty($started_before))
 		{
-			$condition->add(' AND t.start_time < ?', get_datetime($started_before)->getTimestamp());
+			if (strpos($started_before, '+') === 0)
+			{
+				$condition->add(' AND t.start_time <= ?', get_datetime(trim(substr($started_before, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND t.start_time < ?', get_datetime($started_before)->getTimestamp());
+			}
 		}
 
 		if (!empty($ended_before))
 		{
-			$condition->add(' AND t.start_time + t.duration < ?', get_datetime($ended_before)->getTimestamp());
+			if (strpos($ended_before, '+') === 0)
+			{
+				$condition->add(' AND t.start_time + t.duration <= ?', get_datetime(trim(substr($ended_before, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND t.start_time + t.duration < ?', get_datetime($ended_before)->getTimestamp());
+			}
 		}
 
 		if (!empty($started_after))
 		{
-			$condition->add(' AND t.start_time >= ?', get_datetime($started_after)->getTimestamp());
+			if (strpos($started_after, '+') === 0)
+			{
+				$condition->add(' AND t.start_time >= ?', get_datetime(trim(substr($started_after, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND t.start_time > ?', get_datetime($started_after)->getTimestamp());
+			}
 		}
 
 		if (!empty($ended_after))
 		{
-			$condition->add(' AND t.start_time + t.duration >= ?', get_datetime($ended_after)->getTimestamp());
+			if (strpos($ended_after, '+') === 0)
+			{
+				$condition->add(' AND t.start_time + t.duration >= ?', get_datetime(trim(substr($ended_after, 1)))->getTimestamp());
+			}
+			else
+			{
+				$condition->add(' AND t.start_time + t.duration > ?', get_datetime($ended_after)->getTimestamp());
+			}
 		}
 
 		if ($tournament_id > 0)
@@ -268,10 +296,10 @@ class ApiPage extends GetApiPageBase
 		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('name_contains', 'Search pattern. For example: <a href="tournaments.php?name_contains=co">' . PRODUCT_URL . '/api/get/tournaments.php?name_contains=co</a> returns tournaments containing "co" in their name.', '-');
 		$help->request_param('name_starts', 'Search pattern. For example: <a href="tournaments.php?name_starts=co">' . PRODUCT_URL . '/api/get/tournaments.php?name_starts=co</a> returns tournaments with names starting with "co".', '-');
-		$help->request_param('started_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns tournaments that are started before a certain time. For example: <a href="tournaments.php?started_before=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/tournaments.php?started_before=2017-01-01%2000:00</a> returns all tournaments started before January 1, 2017. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('ended_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns tournaments that are ended before a certain time. For example: <a href="tournaments.php?ended_before=1483228800">' . PRODUCT_URL . '/api/get/tournaments.php?ended_before=1483228800</a> returns all tournaments ended before January 1, 2017; <a href="tournaments.php?ended_before=now">' . PRODUCT_URL . '/api/get/tournaments.php?ended_before=now</a> returns all tournaments that are already ended. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('started_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns tournaments that are started after a certain time. For example: <a href="tournaments.php?started_after=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/tournaments.php?started_after=2017-01-01%2000:00</a> returns all tournaments started after January 1, 2017. Logged user timezone is used for converting dates.', '-');
-		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns tournaments that are ended after a certain time. For example: <a href="tournaments.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/tournaments.php?ended_after=1483228800</a> returns all tournaments ended after January 1, 2017; <a href="tournaments.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/tournaments.php?started_before=now&ended_after=now</a> returns all tournaments that happening now. Logged user timezone is used for converting dates.', '-');
+		$help->request_param('started_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns tournaments that are started before a certain time. For example: <a href="tournaments.php?started_before=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/tournaments.php?started_before=2017-01-01%2000:00</a> returns all tournaments started before January 1, 2017. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('ended_before', 'Unix timestamp, or datetime, or <q>now</q>. Returns tournaments that are ended before a certain time. For example: <a href="tournaments.php?ended_before=1483228800">' . PRODUCT_URL . '/api/get/tournaments.php?ended_before=1483228800</a> returns all tournaments ended before January 1, 2017; <a href="tournaments.php?ended_before=now">' . PRODUCT_URL . '/api/get/tournaments.php?ended_before=now</a> returns all tournaments that are already ended. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('started_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns tournaments that are started after a certain time. For example: <a href="tournaments.php?started_after=2017-01-01%2000:00">' . PRODUCT_URL . '/api/get/tournaments.php?started_after=2017-01-01%2000:00</a> returns all tournaments started after January 1, 2017. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
+		$help->request_param('ended_after', 'Unix timestamp, or datetime, or <q>now</q>. Returns tournaments that are ended after a certain time. For example: <a href="tournaments.php?ended_after=1483228800">' . PRODUCT_URL . '/api/get/tournaments.php?ended_after=1483228800</a> returns all tournaments ended after January 1, 2017; <a href="tournaments.php?started_before=now&ended_after=now">' . PRODUCT_URL . '/api/get/tournaments.php?started_before=now&ended_after=now</a> returns all tournaments that happening now. Logged user timezone is used for converting dates. If it starts from "+" (for example "+2017-01-01%2000:00"), the search is inclusive.', '-');
 		$help->request_param('tournament_id', 'Tournament id. For example: <a href="tournaments.php?tournament_id=1">' . PRODUCT_URL . '/api/get/tournaments.php?tournament_id=1</a> returns the tournament with id 1.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="tournaments.php?club_id=1">' . PRODUCT_URL . '/api/get/tournaments.php?club_id=1</a> returns all tournaments in Vancouver Mafia Club. List of the cities and their ids can be obtained using <a href="clubs.php?help">' . PRODUCT_URL . '/api/get/clubs.php</a>.', '-');
 		$help->request_param('league_id', 'League id. For example: <a href="tournaments.php?league_id=2">' . PRODUCT_URL . '/api/get/tournaments.php?league_id=2</a> returns all tournaments of the American Mafia League.', '-');
