@@ -26,6 +26,37 @@ define('FLAG_FILTER_NO_CANCELED', 0x0020);
 
 define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
 
+function compare_tournaments($tournament1, $tournament2)
+{
+	$ends1 = $tournament1->time + $tournament1->duration;
+	$ends2 = $tournament2->time + $tournament2->duration;
+	if ($ends1 < $ends2)
+	{
+		return 1;
+	}
+	if ($ends1 > $ends2)
+	{
+		return -1;
+	}
+	if ($tournament1->time < $tournament2->time)
+	{
+		return 1;
+	}
+	if ($tournament1->time > $tournament2->time)
+	{
+		return -1;
+	}
+	if ($tournament1->is_series && !$tournament2->is_series)
+	{
+		return 1;
+	}
+	if (!$tournament1->is_series && $tournament2->is_series)
+	{
+		return -1;
+	}
+	return $tournament2->id - $tournament1->id;
+}
+
 class Page extends SeriesPageBase
 {
 	protected function prepare()
@@ -107,6 +138,7 @@ class Page extends SeriesPageBase
 	{
 		global $_lang;
 		
+		$default_timezone = get_timezone();
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td colspan="3">';
 		echo '<table class="transp" width="100%"><tr><td width="72">';
@@ -129,7 +161,7 @@ class Page extends SeriesPageBase
 		$cs_tournaments = '';
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, s.flags, p.place, n.name, t.start_time, ct.timezone, (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players' .
+			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, s.flags, p.place, n.name, t.start_time, t.duration, ct.timezone, (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players' .
 			' FROM tournament_places p'.
 			' JOIN tournaments t ON t.id = p.tournament_id'.
 			' JOIN series_tournaments s ON s.tournament_id = t.id AND s.series_id = ?'.
@@ -137,19 +169,46 @@ class Page extends SeriesPageBase
 			' JOIN addresses a ON a.id = t.address_id'.
 			' JOIN cities ct ON ct.id = a.city_id'.
 			' JOIN names n ON n.id = ct.name_id AND (n.langs & '.$_lang.') <> 0'.
-			' WHERE p.user_id = ? ORDER BY t.start_time DESC', $this->id, $this->user_id);
+			' WHERE p.user_id = ?', $this->id, $this->user_id);
 		while ($row = $query->next())
 		{
 			$tournament = new stdClass();
 			list(
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->club_id, $tournament->club_name, $tournament->club_flags, 
-				$tournament->stars, $tournament->series_tournament_flags, $tournament->place, $tournament->city_name, $tournament->time, $tournament->timezone, $tournament->players_count) = $row;
+				$tournament->stars, $tournament->series_tournament_flags, $tournament->place, $tournament->city_name, $tournament->time, $tournament->duration, $tournament->timezone, $tournament->players_count) = $row;
 			$tournament->exclude = (($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) != 0);
 			$tournament->score = get_gaining_points($this->gaining, $tournament->stars, $tournament->players_count, $tournament->place);
+			$tournament->is_series = false;
 			$tournaments[] = $tournament;
 			$cs_tournaments .= $delim . $tournament->id;
 			$delim = ',';
 		}
+
+		$delim = '';
+		$cs_child_series = '';
+		$query = new DbQuery(
+			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, ss.stars, ss.flags, p.place, s.start_time, s.duration, (SELECT count(user_id) FROM series_places WHERE series_id = s.id) as players' .
+			' FROM series_places p'.
+			' JOIN series s ON s.id = p.series_id'.
+			' JOIN series_series ss ON ss.child_id = s.id AND ss.parent_id = ?'.
+			' JOIN leagues l ON l.id = s.league_id'.
+			' WHERE p.user_id = ?', $this->id, $this->user_id);
+		while ($row = $query->next())
+		{
+			$c_series = new stdClass();
+			list(
+				$c_series->id, $c_series->name, $c_series->flags, $c_series->league_id, $c_series->league_name, $c_series->league_flags, 
+				$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration, $c_series->players_count) = $row;
+			$c_series->exclude = (($c_series->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) != 0);
+			$c_series->score = get_gaining_points($this->gaining, $c_series->stars, $c_series->players_count, $c_series->place);
+			$c_series->is_series = true;
+			$c_series->timezone = $default_timezone;
+			$tournaments[] = $c_series;
+			$cs_child_series .= $delim . $c_series->id;
+			$delim = ',';
+		}
+		
+		usort($tournaments, 'compare_tournaments');
 
 		if (isset($this->gaining->maxTournaments))
 		{
@@ -158,6 +217,10 @@ class Page extends SeriesPageBase
 				foreach ($tournaments as $tournament)
 				{
 					$tournament->exclude = true;
+				}
+				foreach ($child_series as $c_series)
+				{
+					$c_series->exclude = true;
 				}
 			}
 			else if (count($tournaments) > $this->gaining->maxTournaments)
@@ -247,14 +310,18 @@ class Page extends SeriesPageBase
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
 				' JOIN leagues l ON l.id = s.league_id' .
-				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ORDER BY t.start_time DESC, s.id');
+				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ORDER BY t.start_time + t.duration DESC, t.start_time DESC, t.id DESC');
 			$current_tournament = 0;
 			while ($row = $query->next())
 			{
 				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags) = $row;
-				while ($current_tournament < count($tournaments) && $tournaments[$current_tournament]->id != $tournament_id)
+				for (; $current_tournament < count($tournaments); ++$current_tournament)
 				{
-					++$current_tournament;
+					$t = $tournaments[$current_tournament];
+					if ($t->id == $tournament_id && !$t->is_series)
+					{
+						break;
+					}
 				}
 				if ($current_tournament < count($tournaments))
 				{
@@ -274,17 +341,69 @@ class Page extends SeriesPageBase
 			}
 		}
 		
-		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+		if ($cs_child_series != '')
+		{
+			$query = new DbQuery(
+				'SELECT ss.child_id, ss.stars, s.id, s.name, s.flags, l.id, l.name, l.flags' .
+				' FROM series_series ss' .
+				' JOIN series s ON s.id = ss.parent_id' .
+				' JOIN series c ON c.id = ss.child_id' .
+				' JOIN leagues l ON l.id = s.league_id' .
+				' WHERE ss.child_id IN (' . $cs_child_series . ') ORDER BY c.start_time + c.duration DESC, c.start_time DESC, c.id DESC');
+			$current_tournament = 0;
+			while ($row = $query->next())
+			{
+				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags) = $row;
+				for (; $current_tournament < count($tournaments); ++$current_tournament)
+				{
+					$t = $tournaments[$current_tournament];
+					if ($t->id == $tournament_id && $t->is_series)
+					{
+						break;
+					}
+				}
+				if ($current_tournament < count($tournaments))
+				{
+					if ($series_id != $this->id)
+					{
+						$series = new stdClass();
+						$series->stars = $stars;
+						$series->id = $series_id;
+						$series->name = $series_name;
+						$series->flags = $series_flags;
+						$series->league_id = $league_id;
+						$series->league_name = $league_name;
+						$series->league_flags = $league_flags;
+						$tournaments[$current_tournament]->series[] = $series;
+					}
+				}
+			}
+		}
+		
+		$league_pic = new Picture(LEAGUE_PICTURE);
+		$series_pic = new Picture(SERIES_PICTURE, $league_pic);
 		$sum = 0;
 		$num = 0;
 		foreach ($tournaments as $tournament)
 		{
 			echo '<tr align="center">';
 			echo '<td width="30"><b>'.++$num.'</b></td>';
-			echo '<td><table width="100%" class="transp"><tr><td width="58"><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1">';
-			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
-			$tournament_pic->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
-			echo '</a></td><td><a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1">' . $tournament->name . '</a>';
+			echo '<td><table width="100%" class="transp"><tr><td width="58">';
+			if ($tournament->is_series)
+			{
+				$link = 'series_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1';
+				echo '<a href="' . $link . '">';
+				$series_pic->set($tournament->id, $tournament->name, $tournament->flags)->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
+				$series_pic->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
+			}
+			else
+			{
+				$link = 'tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1';
+				echo '<a href="' . $link . '">';
+				$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
+				$tournament_pic->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
+			}
+			echo '</a></td><td><a href="' . $link . '">' . $tournament->name . '</a>';
 			echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($tournament->stars) . '</font></td>';
 			if (isset($tournament->series))
 			{
@@ -303,10 +422,23 @@ class Page extends SeriesPageBase
 			echo '<td width="160" valign="center" class="dark">';
 			echo '<table width="100%" class="transp"><tr>';
 			echo '<td width="60" align="center" valign="center">';
-			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
-			$club_pic->show(ICONS_DIR, false, 40);
+			if ($tournament->is_series)
+			{
+				$league_pic->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
+				$league_pic->show(ICONS_DIR, false, 40);
+			}
+			else
+			{
+				$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
+				$club_pic->show(ICONS_DIR, false, 40);
+			}
 			echo '</td>';
-			echo '<td><b>' . $tournament->city_name  . '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</td>';
+			echo '<td>';
+			if (!$tournament->is_series)
+			{
+				echo '<b>' . $tournament->city_name  . '</b><br>';
+			}
+			echo format_date('F d, Y', $tournament->time + $tournament->duration, $tournament->timezone) . '</td>';
 			echo '</tr></table></td>';
 			
 			echo '<td><a href="javascript:showGaining(' . $tournament->players_count . ', ' . $tournament->stars . ', ' . $tournament->place . ')">';

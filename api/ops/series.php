@@ -391,11 +391,14 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($series_id > 0)
 		{
-			Db::exec(get_label('series'), 'UPDATE series SET flags = flags & ' . (~SERIES_FLAG_FINISHED) . ' WHERE id = ?', $series_id);
+			list ($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
+			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $series_id);
 		}
 		else
 		{
-			Db::exec(get_label('series'), 'UPDATE series SET flags = flags & ' . (~SERIES_FLAG_FINISHED));
+			check_permissions(PERMISSION_ADMIN);
+			Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY);
 		}
 		db_log(LOG_OBJECT_SERIES, 'rebuild_places', NULL, $series_id);
 		Db::commit();
@@ -403,7 +406,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function rebuild_places_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Schedules series places for rebuild. It is needed when in user series view the place taken is wrong.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Schedules series places for rebuild. It is needed when in user series view the place taken is wrong.');
 		$help->request_param('series_id', 'Series id to rebuild places.', 'places are rebuilt for all series.');
 		return $help;
 	}

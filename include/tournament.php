@@ -220,7 +220,7 @@ class TournamentPageBase extends PageBase
 		
 		echo '<td rowspan="2" valign="top"><h2 class="tournament">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
-		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->start_time, $this->timezone) . '</p>';
+		echo '</h3><p class="subtitle">' . format_date('l, F d, Y', $this->start_time, $this->timezone) . '</p>';
 		if (!is_null($this->currency_pattern) && !is_null($this->fee))
 		{
 			echo '<p class="subtitle"><b>'.get_label('Admission rate').': '.format_currency($this->fee, $this->currency_pattern).'</b></p>';

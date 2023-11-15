@@ -276,9 +276,9 @@ define('COMPETITION_BEST_DON', 0x10);
 //  2 - 0x0002 -      2 - icon mask
 //  3 - 0x0004 -      4 - icon mask
 //  4 - 0x0008 -      8 - canceled
-//  8 - 0x0010 -     16 - series is finished - all scoring is complete
+//  5 - 0x0010 -     16 - dirty flag - something is changed in series scoring. Tables must be rebuilt.
 define('SERIES_FLAG_CANCELED', 0x8);
-define('SERIES_FLAG_FINISHED', 0x10);
+define('SERIES_FLAG_DIRTY',    0x10);
 define('SERIES_EDITABLE_MASK', 0x0); // 
 
 define('SERIES_ICON_MASK', 0x7);
@@ -288,6 +288,10 @@ define('SERIES_ICON_MAX_VERSION', 7);
 // series tournament flags
 //  1 - 0x0001 -      1 - not payed - shown in the series list as not payed, the results don't count in the series.
 define('SERIES_TOURNAMENT_FLAG_NOT_PAYED', 0x1);
+
+// series series flags
+//  1 - 0x0001 -      1 - not payed - shown in the parent series list as not payed, the results don't count in the parent series.
+define('SERIES_SERIES_FLAG_NOT_PAYED', 0x1);
 
 // address flags
 // 1 - 0x0001 -      1 - not used

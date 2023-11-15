@@ -8,27 +8,6 @@ require_once 'include/scoring.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
-function compare_players($player1, $player2)
-{
-	if ($player1->points < $player2->points)
-	{
-		return 1;
-	}
-	if ($player1->points > $player2->points)
-	{
-		return -1;
-	}
-	if ($player1->tournaments > $player2->tournaments)
-	{
-		return 1;
-	}
-	if ($player1->tournaments < $player2->tournaments)
-	{
-		return -1;
-	}
-	return $player1->id - $player2->id;
-}
-
 class Page extends SeriesPageBase
 {
 	protected function prepare()
@@ -65,132 +44,28 @@ class Page extends SeriesPageBase
 	{
 		global $_page, $_lang;
 		
-		if (isset($_REQUEST['gaining_id']))
-		{
-			$gaining_id = (int)$_REQUEST['gaining_id'];
-			if (isset($_REQUEST['gaining_version']))
-			{
-				list($gaining) = Db::record(get_label('gaining system'), 'SELECT gaining FROM gaining_versions WHERE gaining_id = ? AND version = ?', $gaining_id, (int)$_REQUEST['gaining_version']);
-			}
-			else
-			{
-				list($gaining) = Db::record(get_label('gaining system'), 'SELECT v.gaining FROM gainings g JOIN gaining_versions v ON v.gaining_id = g.id AND v.version = g.version WHERE g.id = ?', $gaining_id);
-			}
-		}
-		else
-		{
-			list($gaining) = Db::record(get_label('gaining system'), 'SELECT v.gaining FROM series s JOIN gaining_versions v ON v.gaining_id = s.gaining_id AND v.version = s.gaining_version WHERE s.id = ?', $this->id);
-		}
-		$gaining = json_decode($gaining);
+		list ($count) = Db::record(get_label('series'), 'SELECT count(*) FROM series_places WHERE series_id = ?', $this->id);
 		
-		$tournaments = array();
-		$query = new DbQuery('SELECT s.tournament_id, s.stars, count(t.user_id) FROM series_tournaments s JOIN tournament_places t ON t.tournament_id = s.tournament_id WHERE s.series_id = ? GROUP BY s.tournament_id', $this->id);
-		while ($row = $query->next())
-		{
-			list($tournament_id, $stars, $players) = $row;
-			$tournaments[$tournament_id] = get_gaining_points($gaining, $stars, $players);
-		}
-		
-//		print_json($gaining);
-		$max_tournaments = isset($gaining->maxTournaments) ? $gaining->maxTournaments : 0;
-		$players = array();
+		$parent_series = array();
 		$query = new DbQuery(
-			'SELECT t.tournament_id, u.id, nu.name, u.flags, p.place, c.id, c.name, c.flags'.
-			' FROM tournament_places p'.
-			' JOIN users u ON u.id = p.user_id'.
-			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-			' JOIN series_tournaments t ON t.tournament_id = p.tournament_id'.
-			' LEFT OUTER JOIN clubs c ON c.id = u.club_id'.
-			' WHERE t.series_id = ? AND (t.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0', $this->id);
+			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, ss.stars, g.gaining'.
+			' FROM series_series ss'.
+			' JOIN series s ON s.id = ss.parent_id'.
+			' JOIN leagues l ON l.id = s.league_id'.
+			' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version'.
+			' WHERE ss.child_id = ?', $this->id);
 		while ($row = $query->next())
 		{
-			list($tournament_id, $player_id, $player_name, $player_flags, $place, $club_id, $club_name, $club_flags) = $row;
-			if (!isset($players[$player_id]))
-			{
-				$player = new stdClass();
-				$player->id = (int)$player_id;
-				$player->name = $player_name;
-				$player->flags = (int)$player_flags;
-				if (!is_null($club_id))
-				{
-					$player->club_id = (int)$club_id;
-					$player->club_name = $club_name;
-					$player->club_flags = (int)$club_flags;
-				}
-				$player->tournaments = 0;
-				if ($max_tournaments > 0)
-				{
-					$player->p = array();
-				}
-				else
-				{
-					$player->points = 0;
-				}
-				$players[$player_id] = $player;
-			}
-			else
-			{
-				$player = $players[$player_id];
-			}
-			
-			$points = $tournaments[$tournament_id][$place-1];
-			if ($max_tournaments > 0)
-			{
-				if (count($player->p) >= $max_tournaments)
-				{
-					$min_index = 0;
-					for ($i = 1; $i < $max_tournaments; ++$i)
-					{
-						if ($player->p[$i] < $player->p[$min_index])
-						{
-							$min_index = $i;
-						}
-					}
-					if ($player->p[$min_index] <= $points)
-					{
-						$player->p[$min_index] = $points;
-					}
-				}
-				else
-				{
-					$player->p[] = $points;
-				}
-			}
-			else
-			{
-				$player->points += $tournaments[$tournament_id][$place-1];;
-			}
-			++$player->tournaments;
+			$s = new stdClass();
+			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
+			$gaining = json_decode($gaining);
+			$s->points = get_gaining_points($gaining, $s->stars, $count);
+			$parent_series[] = $s;
 		}
+		$parent_series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
 		
-		if ($max_tournaments > 0)
-		{
-			foreach ($players as $player)
-			{
-				$player->points = 0;
-				foreach ($player->p as $p)
-				{
-					$player->points += $p;
-				}
-				unset($player->p);
-			}
-		}
-		
-		
-		usort($players, "compare_players");
-		if ($this->user_id > 0)
-		{
-			$_page = get_user_page($players, $this->user_id, PAGE_SIZE);
-			if ($_page < 0)
-			{
-				$_page = 0;
-				$this->no_user_error();
-			}
-		}
-		
-		$total_players_count = $players_count = count($players);
 		echo '<p><table class="transp" width="100%"><tr><td>';
-		show_pages_navigation(PAGE_SIZE, $total_players_count);
+		show_pages_navigation(PAGE_SIZE, $count);
 		echo '</td>';
 		echo '<td align="right"><a href="javascript:showGaining()">' . get_label('Scoring system') . '</a></td>';
 		echo '<td align="right" width="200">';
@@ -204,21 +79,33 @@ class Page extends SeriesPageBase
 		echo '<td width="80">'.get_label('Points').'</td>';
 		echo '<td width="80">'.get_label('Tournaments played').'</td>';
 		echo '<td width="80">'.get_label('Points per tournament').'</td>';
-		echo '</tr>';
-		
-		$place = $page_start = $_page * PAGE_SIZE;
-		if ($players_count > $place + PAGE_SIZE)
+		echo '<td width="80">'.get_label('Games played (won)').'</td>';
+		echo '<td width="80">'.get_label('Win rate').'</td>';
+		foreach ($parent_series as $s)
 		{
-			$players_count = $place + PAGE_SIZE;
+			echo '<td width="36" align="center">';
+			$parent_series_pic->set($s->id, $s->name, $s->flags)->set($s->league_id, $s->league_name, $s->league_flags);
+			$parent_series_pic->show(ICONS_DIR, true, 32);
+			echo '</td>';
 		}
+		echo '</tr>';
+
+		$query = new DbQuery(
+			'SELECT u.id, nu.name, u.flags, p.place, p.score, p.tournaments, p.games, p.wins, c.id, c.name, c.flags'.
+			' FROM series_places p'.
+			' JOIN users u ON u.id = p.user_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' LEFT OUTER JOIN clubs c ON c.id = u.club_id'.
+			' WHERE p.series_id = ?'.
+			' ORDER BY p.place'.
+			' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
+			$this->id);
 		$player_pic = new Picture(USER_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
-		$ids = array_keys($players);
-		for ($number = $place; $number < $players_count; ++$number)
+		while ($row = $query->next())
 		{
-			$player_id = $ids[$number];
-			$player = $players[$player_id];
-			if ($player->id == $this->user_id)
+			list ($player_id, $player_name, $player_flags, $place, $points, $tournaments, $games, $wins, $club_id, $club_name, $club_flags) = $row;
+			if ($player_id == $this->user_id)
 			{
 				echo '<tr align="center" class="darker">';
 				$highlight = 'darker';
@@ -228,28 +115,40 @@ class Page extends SeriesPageBase
 				echo '<tr align="center">';
 				$highlight = 'dark';
 			}
-			echo '<td class="' . $highlight . '">' . ++$place . '</td>';
+			echo '<td class="' . $highlight . '">' . $place . '</td>';
 			
-			echo '<td width="50"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player->id . '&bck=1">';
-			$player_pic->set($player->id, $player->name, $player->flags);
+			echo '<td width="50"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player_id . '&bck=1">';
+			$player_pic->set($player_id, $player_name, $player_flags);
 			$player_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td align="left"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player->id . '&bck=1">' . $player->name . '</a></td>';
+			echo '</a></td><td align="left"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player_id . '&bck=1">' . $player_name . '</a></td>';
 			echo '<td width="50" align="center">';
-			if (isset($player->club_id))
+			if (isset($club_id))
 			{
-				$club_pic->set($player->club_id, $player->club_name, $player->club_flags);
+				$club_pic->set($club_id, $club_name, $club_flags);
 				$club_pic->show(ICONS_DIR, true, 40);
 			}
 			echo '</td>';
 			
-			echo '<td class="' . $highlight . '">' . format_score($player->points) . '</td>';
-			echo '<td>' . $player->tournaments . '</td>';
-			echo '<td>' . format_score($player->points / $player->tournaments) . '</td>';
-				
+			echo '<td class="' . $highlight . '">' . format_score($points) . '</td>';
+			echo '<td>' . $tournaments . '</td>';
+			echo '<td>' . ($tournaments > 0 ? format_score($points / $tournaments) : '') . '</td>';
+			echo '<td>' . $games . ' (' . $wins . ')</td>';
+			echo '<td>' . ($games > 0 ? format_score($wins / $games) : '') . '</td>';
+			foreach ($parent_series as $s)
+			{
+				if ($s->stars > 0)
+				{
+					echo '<td align="center">' . $s->points[$place-1] . '</td>';
+				}
+				else
+				{
+					echo '<td align="center"></td>';
+				}
+			}
 			echo '</tr>';
 		}
 		echo '</table>';
-		show_pages_navigation(PAGE_SIZE, $total_players_count);
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
 	private function no_user_error()

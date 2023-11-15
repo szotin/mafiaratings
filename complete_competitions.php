@@ -59,6 +59,40 @@ function setDir()
 	chdir($dir);
 }
 
+function compare_series_players($player1, $player2)
+{
+	if ($player1->points < $player2->points)
+	{
+		return 1;
+	}
+	if ($player1->points > $player2->points)
+	{
+		return -1;
+	}
+	if ($player1->tournaments > $player2->tournaments)
+	{
+		return 1;
+	}
+	if ($player1->tournaments < $player2->tournaments)
+	{
+		return -1;
+	}
+	if ($player1->games > 0 && $player1->games > 0)
+	{
+		$win_rate1 = $player1->wins / $player1->games;
+		$win_rate2 = $player2->wins / $player2->games;
+		if ($win_rate1 + 0.00001 < $win_rate2)
+		{
+			return 1;
+		}
+		else if ($win_rate2 + 0.00001 < $win_rate1)
+		{
+			return -1;
+		}
+	}
+	return $player1->id - $player2->id;
+}
+
 function complete_event()
 {
 	$result = false;
@@ -201,13 +235,14 @@ function complete_tournament()
 					$main_points = $player->main_points;
 					$bonus_points = $player->extra_points + $player->legacy_points + $player->penalty_points;
 					$shot_points = $player->night1_points;
-					Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', $tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags);
+					Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags, $player->wins);
 					++$place;
 				}
 			}
 		}
 			
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ' WHERE id = ?', $tournament_id);
+		Db::exec(get_label('series'), 'UPDATE series s JOIN series_tournaments st ON st.series_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .  ' WHERE st.tournament_id = ?', $tournament_id);
 		
 		$log_str = 'Wrote ' . $real_count;
 		if ($real_count != $players_count)
@@ -228,8 +263,220 @@ function complete_tournament()
 	return $result;
 }
 
+function get_series_importance($place, $players_count)
+{
+	if ($players_count <= 0)
+	{
+		return 0;
+	}
+	$coeff = log10($players_count) * 4 / $players_count;
+	$importance = ($players_count - $place + 1) * $coeff;
+	if ($place == 1)
+	{
+		$importance *= 10;
+	}
+	else if ($place <= 3)
+	{
+		$importance *= 5;
+	}
+	else if ($place <= 10)
+	{
+		$importance *= 2;
+	}
+	return $importance;
+}
+	
 function complete_series()
 {
+	$result = false;
+	$query = new DbQuery(
+		'SELECT s.id, s.flags, g.gaining FROM series s' . 
+		' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version' .
+		' WHERE (s.flags & ' . SERIES_FLAG_DIRTY . ') <> 0 LIMIT 1');
+	if ($row = $query->next())
+	{
+		list($series_id, $series_flags, $gaining) = $row;
+		$gaining = json_decode($gaining);
+//		print_json($gaining);
+
+		$tournaments = array();
+		$query = new DbQuery('SELECT s.tournament_id, s.stars, count(t.user_id) FROM series_tournaments s JOIN tournament_places t ON t.tournament_id = s.tournament_id WHERE s.series_id = ? GROUP BY s.tournament_id', $series_id);
+		while ($row = $query->next())
+		{
+			list($tournament_id, $stars, $players) = $row;
+			$tournaments[$tournament_id] = get_gaining_points($gaining, $stars, $players);
+		}
+		
+		$child_series = array();
+		$query = new DbQuery('SELECT ss.child_id, ss.stars, count(s.user_id) FROM series_series ss JOIN series_places s ON s.series_id = ss.child_id WHERE ss.parent_id = ? GROUP BY ss.child_id', $series_id);
+		while ($row = $query->next())
+		{
+			list($child_series_id, $stars, $players) = $row;
+			$child_series[$child_series_id] = get_gaining_points($gaining, $stars, $players);
+		}
+
+		$max_tournaments = isset($gaining->maxTournaments) ? $gaining->maxTournaments : 0;
+		$players = array();
+		
+		$query = new DbQuery(
+			'SELECT t.tournament_id, p.user_id, p.place, p.games_count, p.wins'.
+			' FROM tournament_places p'.
+			' JOIN series_tournaments t ON t.tournament_id = p.tournament_id'.
+			' WHERE t.series_id = ? AND (t.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0', $series_id);
+		while ($row = $query->next())
+		{
+			list($tournament_id, $player_id, $place, $games, $wins) = $row;
+			if (!isset($players[$player_id]))
+			{
+				$player = new stdClass();
+				$player->id = (int)$player_id;
+				$player->tournaments = 0;
+				$player->games = 0;
+				$player->wins = 0;
+				if ($max_tournaments > 0)
+				{
+					$player->p = array();
+				}
+				else
+				{
+					$player->points = 0;
+				}
+				$players[$player_id] = $player;
+			}
+			else
+			{
+				$player = $players[$player_id];
+			}
+			
+			$points = $tournaments[$tournament_id][$place-1];
+			if ($max_tournaments > 0)
+			{
+				if (count($player->p) >= $max_tournaments)
+				{
+					$min_index = 0;
+					for ($i = 1; $i < $max_tournaments; ++$i)
+					{
+						if ($player->p[$i] < $player->p[$min_index])
+						{
+							$min_index = $i;
+						}
+					}
+					if ($player->p[$min_index] <= $points)
+					{
+						$player->p[$min_index] = $points;
+					}
+				}
+				else
+				{
+					$player->p[] = $points;
+				}
+			}
+			else
+			{
+				$player->points += $tournaments[$tournament_id][$place-1];;
+			}
+			++$player->tournaments;
+			$player->games += $games;
+			$player->wins += $wins;
+		}
+		
+		$query = new DbQuery(
+			'SELECT p.series_id, p.user_id, p.place, p.games, p.wins'.
+			' FROM series_places p'.
+			' JOIN series_series s ON s.child_id = p.series_id'.
+			' WHERE s.parent_id = ? AND (s.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0', $series_id);
+		while ($row = $query->next())
+		{
+			list($child_series_id, $player_id, $place, $games, $wins) = $row;
+			if (!isset($players[$player_id]))
+			{
+				$player = new stdClass();
+				$player->id = (int)$player_id;
+				$player->tournaments = 0;
+				$player->games = 0;
+				$player->wins = 0;
+				if ($max_tournaments > 0)
+				{
+					$player->p = array();
+				}
+				else
+				{
+					$player->points = 0;
+				}
+				$players[$player_id] = $player;
+			}
+			else
+			{
+				$player = $players[$player_id];
+			}
+			
+			$points = $child_series[$child_series_id][$place-1];
+			if ($max_tournaments > 0)
+			{
+				if (count($player->p) >= $max_tournaments)
+				{
+					$min_index = 0;
+					for ($i = 1; $i < $max_tournaments; ++$i)
+					{
+						if ($player->p[$i] < $player->p[$min_index])
+						{
+							$min_index = $i;
+						}
+					}
+					if ($player->p[$min_index] <= $points)
+					{
+						$player->p[$min_index] = $points;
+					}
+				}
+				else
+				{
+					$player->p[] = $points;
+				}
+			}
+			else
+			{
+				$player->points += $child_series[$child_series_id][$place-1];;
+			}
+			++$player->tournaments;
+			$player->games += $games;
+			$player->wins += $wins;
+		}
+		
+		if ($max_tournaments > 0)
+		{
+			foreach ($players as $player)
+			{
+				$player->points = 0;
+				foreach ($player->p as $p)
+				{
+					$player->points += $p;
+				}
+				unset($player->p);
+			}
+		}
+		
+		usort($players, "compare_series_players");
+		
+		Db::exec(get_label('series'), 'DELETE FROM series_places WHERE series_id = ?', $series_id);
+		$place = 1;
+		$players_count = count($players);
+		foreach ($players as $player)
+		{
+			$importance = get_series_importance($place, $players_count);
+			Db::exec(get_label('series'), 'INSERT INTO series_places (series_id, user_id, place, importance, score, tournaments, games, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
+				$series_id, $player->id, $place, $importance, $player->points, $player->tournaments, $player->games, $player->wins);
+			++$place;
+		}
+		
+		Db::exec(get_label('series'), 'UPDATE series SET flags = flags & ' . ~SERIES_FLAG_DIRTY .  ' WHERE id = ?', $series_id);
+		Db::exec(get_label('series'), 'UPDATE series s JOIN series_series ss ON ss.parent_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .  ' WHERE ss.child_id = ?', $series_id);
+		
+		$log_str = 'Wrote ' . $players_count;
+		$log_str .= ' players to series ' . $series_id . '.';
+		$log_str .= ' Series is up to date.';
+		writeLog($log_str);
+		return true;
+	}
 	return false;
 }
 
@@ -247,7 +494,7 @@ try
 	$count = 0;
 	while ($spent_time < MAX_EXEC_TIME)
 	{
-		if (!complete_series() && !complete_tournament() && !complete_event())
+		if (!complete_event() && !complete_tournament() && !complete_series())
 		{
 			break;
 		}

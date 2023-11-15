@@ -141,7 +141,8 @@ class ApiPage extends OpsApiPageBase
 		list ($old_gaining, $version) = Db::record(get_label('gaining system'), 'SELECT v.gaining, s.version FROM gainings s JOIN gaining_versions v ON v.gaining_id = s.id AND v.version = s.version WHERE s.id = ?', $gaining_id);
 		if ($old_gaining != $gaining)
 		{
-			list ($usageCount) = Db::record(get_label('tournament series'), 'SELECT count(*) FROM series WHERE gaining_id = ? AND gaining_version = ? AND (flags & ' . SERIES_FLAG_FINISHED . ') <> 0', $gaining_id, $version);
+			// count only complete series
+			list ($usageCount) = Db::record(get_label('tournament series'), 'SELECT count(*) FROM series WHERE gaining_id = ? AND gaining_version = ? AND start_time + duration < UNIX_TIMESTAMP()', $gaining_id, $version);
 			$overwrite = ($usageCount <= 0);
 		}
 		else
