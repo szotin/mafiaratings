@@ -214,7 +214,7 @@ class Page extends TournamentPageBase
 			$s = new stdClass();
 			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
 			$gaining = json_decode($gaining);
-			$s->points = get_gaining_points($gaining, $s->stars, $players_count);
+			$s->points = get_gaining_points($gaining, $s->stars, $players_count, false);
 			$series[] = $s;
 		}
 		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));

@@ -79,7 +79,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			check_json($normalizer);
+			$normalizer = check_json($normalizer);
 		}
 		
 		Db::begin();
@@ -158,7 +158,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			check_json($normalizer);
+			$normalizer = check_json($normalizer);
 		}
 		
 		$overwrite = false;

@@ -177,7 +177,7 @@ class Page extends SeriesPageBase
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->club_id, $tournament->club_name, $tournament->club_flags, 
 				$tournament->stars, $tournament->series_tournament_flags, $tournament->place, $tournament->city_name, $tournament->time, $tournament->duration, $tournament->timezone, $tournament->players_count) = $row;
 			$tournament->exclude = (($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) != 0);
-			$tournament->score = get_gaining_points($this->gaining, $tournament->stars, $tournament->players_count, $tournament->place);
+			$tournament->score = get_gaining_points($this->gaining, $tournament->stars, $tournament->players_count, false, $tournament->place);
 			$tournament->is_series = false;
 			$tournaments[] = $tournament;
 			$cs_tournaments .= $delim . $tournament->id;
@@ -200,7 +200,7 @@ class Page extends SeriesPageBase
 				$c_series->id, $c_series->name, $c_series->flags, $c_series->league_id, $c_series->league_name, $c_series->league_flags, 
 				$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration, $c_series->players_count) = $row;
 			$c_series->exclude = (($c_series->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) != 0);
-			$c_series->score = get_gaining_points($this->gaining, $c_series->stars, $c_series->players_count, $c_series->place);
+			$c_series->score = get_gaining_points($this->gaining, $c_series->stars, $c_series->players_count, true, $c_series->place);
 			$c_series->is_series = true;
 			$c_series->timezone = $default_timezone;
 			$tournaments[] = $c_series;

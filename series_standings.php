@@ -59,7 +59,7 @@ class Page extends SeriesPageBase
 			$s = new stdClass();
 			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
 			$gaining = json_decode($gaining);
-			$s->points = get_gaining_points($gaining, $s->stars, $count);
+			$s->points = get_gaining_points($gaining, $s->stars, $count, true);
 			$parent_series[] = $s;
 		}
 		$parent_series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));

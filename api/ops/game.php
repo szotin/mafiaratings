@@ -1270,7 +1270,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('Invalid json format.'));
 		}
-		check_json($json);
+		$gaining = check_json($json);
 		
 		Db::begin();
 		list($club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);

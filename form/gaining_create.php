@@ -1,7 +1,6 @@
 <?php
 
 require_once '../include/session.php';
-require_once '../include/gaining.php';
 require_once '../include/security.php';
 
 initiate_session();

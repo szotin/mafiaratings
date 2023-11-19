@@ -2313,7 +2313,7 @@ function _get_gaining_points_for_stars($gaining, $stars_obj, $players, $place)
 				}
 				else
 				{
-					throw new Exc('Invalid lessPlayers value "' . $gaining->lessStars . '". Valid values are: "no", "closest", and "extrapolate".');
+					throw new Exc('Invalid lessPlayers value "' . $gaining->lessPlayers . '". Valid values are: "no", "closest", and "extrapolate".');
 				}
 			}
 			else if ($players < $players2)
@@ -2409,11 +2409,16 @@ function _get_gaining_points_for_stars($gaining, $stars_obj, $players, $place)
 	return _get_zero_gaining_points($players, $place);
 }
 
-function get_gaining_points($gaining, $stars, $players, $place = 0)
+function get_gaining_points($gaining, $stars, $players, $is_series, $place = 0)
 {
 	if (!isset($gaining->points))
 	{
 		return _get_zero_gaining_points($players, $place);
+	}
+	
+	if ($is_series && isset($gaining->series))
+	{
+		$gaining = $gaining->series;
 	}
 	
 	$stars_array = $gaining->points;

@@ -79,7 +79,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			check_json($scoring);
+			$scoring = check_json($scoring);
 		}
 		
 		Db::begin();
@@ -158,7 +158,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			check_json($scoring);
+			$scoring = check_json($scoring);
 		}
 		
 		$overwrite = false;

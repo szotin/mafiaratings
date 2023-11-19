@@ -1,7 +1,7 @@
 <?php
 
 require_once '../../include/api.php';
-require_once '../../include/gaining.php';
+require_once '../../include/scoring.php';
 require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
@@ -64,7 +64,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			check_json($gaining);
+			$gaining = check_json($gaining);
 		}
 		
 		Db::begin();
@@ -134,7 +134,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			check_json($gaining);
+			$gaining = check_json($gaining);
 		}
 		
 		$overwrite = false;

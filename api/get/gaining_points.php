@@ -56,7 +56,13 @@ class ApiPage extends GetApiPageBase
 			$players = (int)$_REQUEST['players'];
 		}
 		
-		$this->response['points'] = get_gaining_points($gaining, $stars, $players);
+		$series = false;
+		if (isset($_REQUEST['series']))
+		{
+			$series = (bool)$_REQUEST['series'];
+		}
+		
+		$this->response['points'] = get_gaining_points($gaining, $stars, $players, $series);
 	}
 	
 	protected function get_help()
@@ -66,6 +72,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('gaining_version', 'Gaining system version.  For example: <a href="gaining_points.php?gaining_id=3&gaining_version=1">/api/get/gaining_points.php?gaining_id=3&gaining_version=1</a> returns gaining points for a 1 star tournament with 20 players using AML gaining system version 1.', '-');
 		$help->request_param('stars', 'Number of stars. For example: <a href="gaining_points.php?gaining_id=3&stars=3">/api/get/gaining_points.php?gaining_id=3&stars=3</a> returns gaining points for a 3 star tournament with 20 players using AML gaining system.', '1 star.');
 		$help->request_param('players', 'Number of players. For example: <a href="gaining_points.php?gaining_id=3&stars=2&players=40">/api/get/gaining_points.php?gaining_id=3&&stars=2&players=40</a> returns gaining points for a 2 star tournament with 40 players using AML gaining system.', '20 players.');
+		$help->request_param('series', 'When 1, gaining points are returned for sub-series. For example: <a href="gaining_points.php?gaining_id=1&stars=2&players=40&series">/api/get/gaining_points.php?gaining_id=1&stars=2&players=40&series</a> returns gaining points for a 2 star sub-series with 40 players using MWT gaining system.', 'results for common tournament are returned.');
 
 		$help->response_param('points', 'The array of numbers. Size of the array is number of players. Index 0 is num points for the first place; 1 - for the second; 2 - third; etc...');
 		return $help;
