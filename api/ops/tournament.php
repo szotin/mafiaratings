@@ -1127,7 +1127,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
-		list($place) = Db::record(get_label('score'), 'SELECT count(*) FROM tournament_places WHERE tournament_id = ? AND (main_points + bonus_points + shot_points > ? OR (main_points + bonus_points + shot_points = ? AND user_id < ?))', $tournament_id, $points, $points, $user_id);
+		list($place) = Db::record(get_label('score'), 'SELECT count(*) FROM tournament_places WHERE tournament_id = ? AND (main_points + bonus_points + shot_points - ? > 0.001 OR (main_points + bonus_points + shot_points - ? > -0.001 AND (bonus_points - ? > 0.001 OR (bonus_points - ? > -0.001 AND user_id < ?))))', $tournament_id, $points, $points, $bonus_points, $bonus_points, $user_id);
 		++$place;
 		Db::exec(get_label('score'), 'UPDATE tournament_places SET place = place + 1 WHERE tournament_id = ? AND place >= ?', $tournament_id, $place);
 		Db::exec(get_label('score'), 'INSERT INTO tournament_places (tournament_id, user_id, place, main_points, bonus_points, shot_points, games_count) VALUES (?, ?, ?, ?, ?, ?, ?)', $tournament_id, $user_id, $place, $main_points, $bonus_points, $shot_points, $games_count);

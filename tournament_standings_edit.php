@@ -47,8 +47,8 @@ class Page extends TournamentPageBase
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 			' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = p.tournament_id AND tu.user_id = p.user_id' .
-			' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = p.user_id' .
-			' WHERE p.tournament_id = ? ORDER BY p.place', $this->id);
+			' LEFT OUTER JOIN club_users cu ON cu.club_id = ? AND cu.user_id = p.user_id' .
+			' WHERE p.tournament_id = ? ORDER BY p.place', $this->club_id, $this->id);
 		while ($row = $query->next())
 		{
 			list($user_id, $user_name, $user_flags, $club_id, $club_name, $club_flags, $place, $main_points, $bonus_points, $shot_points, $games_count, $tournament_user_flags, $club_user_flags) = $row;

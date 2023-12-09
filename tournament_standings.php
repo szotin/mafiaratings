@@ -391,6 +391,24 @@ class Page extends TournamentPageBase
 			}
 		}
 		
+		$series = array();
+		$query = new DbQuery(
+			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, st.stars, g.gaining'.
+			' FROM series_tournaments st'.
+			' JOIN series s ON s.id = st.series_id'.
+			' JOIN leagues l ON l.id = s.league_id'.
+			' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version'.
+			' WHERE st.tournament_id = ?', $this->id);
+		while ($row = $query->next())
+		{
+			$s = new stdClass();
+			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
+			$gaining = json_decode($gaining);
+			$s->points = get_gaining_points($gaining, $s->stars, $count, false);
+			$series[] = $s;
+		}
+		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center">';
 		echo '<td width="40"></td>';
@@ -400,6 +418,13 @@ class Page extends TournamentPageBase
 		echo '<td width="72">' . get_label('Bonus') . '</td>';
 		echo '<td width="72">' . get_label('FK') . '</td>';
 		echo '<td width="72">' . get_label('Games played') . '</td>';
+		foreach ($series as $s)
+		{
+			echo '<td width="72" align="center">';
+			$series_pic->set($s->id, $s->name, $s->flags)->set($s->league_id, $s->league_name, $s->league_flags);
+			$series_pic->show(ICONS_DIR, true, 32);
+			echo '</td>';
+		}
 		echo '</tr>';
 		
 		$query = new DbQuery(
@@ -408,9 +433,9 @@ class Page extends TournamentPageBase
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 			' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = p.tournament_id AND tu.user_id = p.user_id' .
-			' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = p.user_id' .
+			' LEFT OUTER JOIN club_users cu ON cu.club_id = ? AND cu.user_id = p.user_id' .
 			' WHERE p.tournament_id = ? ORDER BY p.place' .
-			' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, $this->id);
+			' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, $this->club_id, $this->id);
 		while ($row = $query->next())
 		{
 			list($user_id, $user_name, $user_flags, $club_id, $club_name, $club_flags, $place, $main_points, $bonus_points, $shot_points, $games_count, $tournament_user_flags, $club_user_flags) = $row;
@@ -456,6 +481,17 @@ class Page extends TournamentPageBase
 			echo '<td align="center">' . (is_null($bonus_points) ? '' : format_score($bonus_points)) . '</td>';
 			echo '<td align="center">' . (is_null($shot_points) ? '' : format_score($shot_points)) . '</td>';
 			echo '<td align="center">' . (is_null($games_count) ? '' : $games_count) . '</td>';
+			foreach ($series as $s)
+			{
+				if ($s->stars > 0)
+				{
+					echo '<td align="center">' . $s->points[$place - 1] . '</td>';
+				}
+				else
+				{
+					echo '<td align="center"></td>';
+				}
+			}
 			echo '</tr>';
 		}
 		echo '</table>';
