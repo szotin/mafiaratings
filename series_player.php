@@ -26,33 +26,25 @@ define('FLAG_FILTER_NO_CANCELED', 0x0020);
 
 define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
 
+define('TYPE_TOURNAMENT', 0);
+define('TYPE_SERIES', 1);
+define('TYPE_EXTRA_POINTS', 2);
+
 function compare_tournaments($tournament1, $tournament2)
 {
 	$ends1 = $tournament1->time + $tournament1->duration;
 	$ends2 = $tournament2->time + $tournament2->duration;
-	if ($ends1 < $ends2)
+	if ($ends1 != $ends2)
 	{
-		return 1;
+		return $ends2 - $ends1;
 	}
-	if ($ends1 > $ends2)
+	if ($tournament1->time != $tournament2->time)
 	{
-		return -1;
+		return $tournament2->time - $tournament1->time;
 	}
-	if ($tournament1->time < $tournament2->time)
+	if ($tournament1->type != $tournament2->type)
 	{
-		return 1;
-	}
-	if ($tournament1->time > $tournament2->time)
-	{
-		return -1;
-	}
-	if ($tournament1->is_series && !$tournament2->is_series)
-	{
-		return 1;
-	}
-	if (!$tournament1->is_series && $tournament2->is_series)
-	{
-		return -1;
+		return $tournament2->type - $tournament1->type;
 	}
 	return $tournament2->id - $tournament1->id;
 }
@@ -178,7 +170,7 @@ class Page extends SeriesPageBase
 				$tournament->stars, $tournament->series_tournament_flags, $tournament->place, $tournament->city_name, $tournament->time, $tournament->duration, $tournament->timezone, $tournament->players_count) = $row;
 			$tournament->exclude = (($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) != 0);
 			$tournament->score = get_gaining_points($this->gaining, $tournament->stars, $tournament->players_count, false, $tournament->place);
-			$tournament->is_series = false;
+			$tournament->type = TYPE_TOURNAMENT;
 			$tournaments[] = $tournament;
 			$cs_tournaments .= $delim . $tournament->id;
 			$delim = ',';
@@ -201,11 +193,27 @@ class Page extends SeriesPageBase
 				$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration, $c_series->players_count) = $row;
 			$c_series->exclude = (($c_series->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) != 0);
 			$c_series->score = get_gaining_points($this->gaining, $c_series->stars, $c_series->players_count, true, $c_series->place);
-			$c_series->is_series = true;
+			$c_series->type = TYPE_SERIES;
 			$c_series->timezone = $default_timezone;
 			$tournaments[] = $c_series;
 			$cs_child_series .= $delim . $c_series->id;
 			$delim = ',';
+		}
+		
+		$query = new DbQuery(
+			'SELECT time, reason, points FROM series_extra_points WHERE series_id = ? AND user_id = ?', $this->id, $this->user_id);
+		while ($row = $query->next())
+		{
+			$c_points = new stdClass();
+			list($c_points->time, $c_points->name, $c_points->score) = $row;
+			$c_points->duration = '';
+			$c_points->players_count = '';
+			$c_points->stars = 0;
+			$c_points->place = '';
+			$c_points->exclude = false;
+			$c_points->type = TYPE_EXTRA_POINTS;
+			$c_points->timezone = $default_timezone;
+			$tournaments[] = $c_points;
 		}
 		
 		usort($tournaments, 'compare_tournaments');
@@ -318,7 +326,7 @@ class Page extends SeriesPageBase
 				for (; $current_tournament < count($tournaments); ++$current_tournament)
 				{
 					$t = $tournaments[$current_tournament];
-					if ($t->id == $tournament_id && !$t->is_series)
+					if ($t->type == TYPE_TOURNAMENT && $t->id == $tournament_id)
 					{
 						break;
 					}
@@ -357,7 +365,7 @@ class Page extends SeriesPageBase
 				for (; $current_tournament < count($tournaments); ++$current_tournament)
 				{
 					$t = $tournaments[$current_tournament];
-					if ($t->id == $tournament_id && $t->is_series)
+					if ($t->type == TYPE_SERIES && $t->id == $tournament_id)
 					{
 						break;
 					}
@@ -389,21 +397,31 @@ class Page extends SeriesPageBase
 			echo '<tr align="center">';
 			echo '<td width="30"><b>'.++$num.'</b></td>';
 			echo '<td><table width="100%" class="transp"><tr><td width="58">';
-			if ($tournament->is_series)
+			switch ($tournament->type)
 			{
-				$link = 'series_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1';
-				echo '<a href="' . $link . '">';
-				$series_pic->set($tournament->id, $tournament->name, $tournament->flags)->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
-				$series_pic->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
+				case TYPE_TOURNAMENT:
+					$link_beg = '<a href="tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1">';
+					$link_end = '</a>';
+					echo $link_beg;
+					$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
+					$tournament_pic->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
+					echo $link_end;
+					break;
+				case TYPE_SERIES:
+					$link_beg = '<a href="series_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1">';
+					$link_end = '</a>';
+					echo $link_beg;
+					$series_pic->set($tournament->id, $tournament->name, $tournament->flags)->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
+					$series_pic->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
+					echo $link_end;
+					break;
+				case TYPE_EXTRA_POINTS:
+					$link_beg = '';
+					$link_end = '';
+					echo '<img src="images/transp.png" width="50">';
+					break;
 			}
-			else
-			{
-				$link = 'tournament_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1';
-				echo '<a href="' . $link . '">';
-				$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
-				$tournament_pic->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
-			}
-			echo '</a></td><td><a href="' . $link . '">' . $tournament->name . '</a>';
+			echo '</td><td>' . $link_beg . $tournament->name . $link_end;
 			echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($tournament->stars) . '</font></td>';
 			if (isset($tournament->series))
 			{
@@ -422,19 +440,22 @@ class Page extends SeriesPageBase
 			echo '<td width="160" valign="center" class="dark">';
 			echo '<table width="100%" class="transp"><tr>';
 			echo '<td width="60" align="center" valign="center">';
-			if ($tournament->is_series)
+			switch ($tournament->type)
 			{
-				$league_pic->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
-				$league_pic->show(ICONS_DIR, false, 40);
-			}
-			else
-			{
-				$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
-				$club_pic->show(ICONS_DIR, false, 40);
+				case TYPE_TOURNAMENT:
+					$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
+					$club_pic->show(ICONS_DIR, false, 40);
+					break;
+				case TYPE_SERIES:
+					$league_pic->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
+					$league_pic->show(ICONS_DIR, false, 40);
+					break;
+				case TYPE_EXTRA_POINTS:
+					break;
 			}
 			echo '</td>';
 			echo '<td>';
-			if (!$tournament->is_series)
+			if ($tournament->type == TYPE_TOURNAMENT)
 			{
 				echo '<b>' . $tournament->city_name  . '</b><br>';
 			}

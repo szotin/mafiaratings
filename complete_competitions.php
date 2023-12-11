@@ -314,7 +314,7 @@ function complete_series()
 			list($child_series_id, $stars, $players) = $row;
 			$child_series[$child_series_id] = get_gaining_points($gaining, $stars, $players, true);
 		}
-
+		
 		$max_tournaments = isset($gaining->maxTournaments) ? $gaining->maxTournaments : 0;
 		$players = array();
 		
@@ -440,6 +440,61 @@ function complete_series()
 			++$player->tournaments;
 			$player->games += $games;
 			$player->wins += $wins;
+		}
+		
+		$query = new DbQuery('SELECT user_id, points FROM series_extra_points WHERE series_id = ?', $series_id);
+		while ($row = $query->next())
+		{
+			list($player_id, $points) = $row;
+			if (!isset($players[$player_id]))
+			{
+				$player = new stdClass();
+				$player->id = (int)$player_id;
+				$player->tournaments = 0;
+				$player->games = 0;
+				$player->wins = 0;
+				if ($max_tournaments > 0)
+				{
+					$player->p = array();
+				}
+				else
+				{
+					$player->points = 0;
+				}
+				$players[$player_id] = $player;
+			}
+			else
+			{
+				$player = $players[$player_id];
+			}
+			
+			if ($max_tournaments > 0)
+			{
+				if (count($player->p) >= $max_tournaments)
+				{
+					$min_index = 0;
+					for ($i = 1; $i < $max_tournaments; ++$i)
+					{
+						if ($player->p[$i] < $player->p[$min_index])
+						{
+							$min_index = $i;
+						}
+					}
+					if ($player->p[$min_index] <= $points)
+					{
+						$player->p[$min_index] = $points;
+					}
+				}
+				else
+				{
+					$player->p[] = $points;
+				}
+			}
+			else
+			{
+				$player->points += $points;
+			}
+			++$player->tournaments;
 		}
 		
 		if ($max_tournaments > 0)

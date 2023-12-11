@@ -108,6 +108,7 @@ class SeriesPageBase extends PageBase
 			$manager_menu = array
 			(
 				new MenuItem('series_finance.php?id=' . $this->id, get_label('Financial report'), get_label('Financial report of the [0]', $this->name)),
+				new MenuItem('series_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}
