@@ -556,7 +556,7 @@ class CommandQueue
 		{
 			Db::exec(
 				get_label('registration'), 
-				'INSERT INTO event_users (event_id, user_id, nickname) values (?, ?, ?)',
+				'INSERT INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)',
 				$event_id, $rec->id, $rec->nick);
 			return true;
 		}
@@ -1216,8 +1216,6 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function delete_op()
 	{
-		global $_profile;
-		
 		$game_id = (int)get_required_param('game_id');
 		
 		Db::begin();
@@ -1262,15 +1260,13 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
-		global $_profile;
-		
 		$game_id = (int)get_required_param('game_id');
 		$json = get_required_param('json');
 		if ($json == NULL)
 		{
 			throw new Exc(get_label('Invalid json format.'));
 		}
-		$gaining = check_json($json);
+		$json = check_json($json);
 		
 		Db::begin();
 		list($club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
@@ -1297,6 +1293,8 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change the game.');
 		$help->request_param('game_id', 'Game id.');
+		$param = $help->request_param('json', 'Game description in json format.');
+		Game::api_help($param, true);
 		$param = $help->response_param('json', 'Game description in json format.');
 		Game::api_help($param, true);
 		return $help;
@@ -1307,7 +1305,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function extra_points_op()
 	{
-		global $_profile, $_lang;
+		global $_lang;
 		
 		$game_id = (int)get_required_param('game_id');
 		
@@ -1378,8 +1376,6 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_ex_op()
 	{
-		global $_profile;
-		
 		$game_id = (int)get_required_param('game_id');
 		list ($club_id, $old_table, $old_number, $old_objection_user_id, $old_objection, $game_user_id) =
 			Db::record(get_label('game'), 'SELECT club_id, table_name, game_number, objection_user_id, objection, user_id FROM games WHERE id = ?', $game_id);
@@ -1440,6 +1436,34 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_USER, 'Comment game.');
 		$help->request_param('game_id', 'Game id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// mwt_create
+	//-------------------------------------------------------------------------------------------------------
+	function mwt_create_op()
+	{
+		global $_profile;
+		
+		check_permissions(PERMISSION_USER);
+		
+		$json = get_required_param('json');
+		if ($json == NULL)
+		{
+			throw new Exc(get_label('Invalid json format.'));
+		}
+//		$json = check_json($json);
+		
+		Db::begin();
+		Db::exec(get_label('game'), 'INSERT INTO mwt_games (user_id, time, json) VALUES (?, UNIX_TIMESTAMP(), ?)', $_profile->user_id, $json);
+		Db::commit();
+	}
+	
+	function mwt_create_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Add the game from MWT site.');
+		$help->request_param('json', 'Game description in json format specific for mwt site.');
 		return $help;
 	}
 	
@@ -1528,8 +1552,6 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function delete_issue_op()
 	{
-		global $_profile;
-		
 		$game_id = (int)get_required_param('game_id');
 		$feature_flags = (int)get_optional_param('features', -1);
 		check_permissions(PERMISSION_ADMIN);
