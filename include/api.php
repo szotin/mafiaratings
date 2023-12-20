@@ -89,6 +89,13 @@ class ApiPageBase
 		}
 		else
 		{
+			header('Access-Control-Allow-Origin: *');
+			header('Access-Control-Allow-Credentials: true');
+			header('Access-Control-Allow-Headers: *');
+			header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+			header('Content-Type: application/json');
+			header('Access-Control-Max-Age: 10000');
+			
 			ob_start();
 			try
 			{
