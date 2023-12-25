@@ -62,15 +62,15 @@ class Page extends GeneralPageBase
 		echo '<td align="right"><input type="checkbox" id="form-series" onClick="onChangeParams()"> ' . get_label('for series of tournaments') . '</td></tr>';
 		echo '</table>';
 		
-		$points = get_gaining_points($this->gaining, $this->stars, $this->players, $this->series);
+		$table = create_gaining_table($this->gaining, $this->stars, $this->players, $this->series);
 		echo '<p><div id="form-gaining">';
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="100"><b>' . get_label('Place') . '</b></td><td><b>' . get_label('Points') . '</b></td></tr>';
-		for ($p = 0; $p < count($points); ++$p)
+		for ($p = 1; $p <= $table->players; ++$p)
 		{
 			echo '<tr';
-			echo ($p == $this->place - 1 ? ' class="darker"' : '');
-			echo '><td>' .($p + 1) . '</td><td>' . $points[$p] . '</td></tr>';
+			echo ($p == $this->place ? ' class="darker"' : '');
+			echo '><td>' . $p . '</td><td>' . format_score(get_gaining_points($table, $p)) . '</td></tr>';
 		}
 		echo '</table>';
 		echo '</div></p>';
@@ -84,8 +84,8 @@ class Page extends GeneralPageBase
 		{
 			var params = 
 			{
-				gaining_id: <?php echo $gaining_id; ?>
-				, gaining_version: <?php echo $gaining_version; ?>
+				gaining_id: <?php echo $this->gaining_id; ?>
+				, gaining_version: <?php echo $this->gaining_version; ?>
 				, stars: $("#form-stars").val()
 				, players: $("#form-players").val()
 			};
@@ -93,16 +93,8 @@ class Page extends GeneralPageBase
 			{
 				params['series'] = true;
 			}
-			json.post("api/get/gaining_points.php", params, function(obj)
+			http.post("form/gaining_table.php", params, function(html)
 			{
-				var html = '<table class="bordered light" width="100%"><tr class="darker"><td width="100"><b><?php echo get_label('Place'); ?></b></td><td><b><?php echo get_label('Points'); ?></b></td></tr>';
-				for (var i = 0; i < obj.points.length; ++i)
-				{
-					html += '<tr';
-					html += (i == <?php echo ($this->place - 1); ?> ? ' class="darker"' : '');
-					html += '><td>' + (i + 1) + '</td><td>' + obj.points[i] + '</td></tr>';
-				}
-				html += '</table>';
 				$("#form-gaining").html(html);
 			});
 		}

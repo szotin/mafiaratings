@@ -143,7 +143,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			// count only complete series
 			list ($usageCount) = Db::record(get_label('tournament series'), 'SELECT count(*) FROM series WHERE gaining_id = ? AND gaining_version = ? AND start_time + duration < UNIX_TIMESTAMP()', $gaining_id, $version);
-			$overwrite = ($usageCount <= 0);
+			if ($usageCount <= 0)
+			{
+				$overwrite = true;
+				Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE gaining_id = ? AND gaining_version = ?', $gaining_id, $version);
+			}
 		}
 		else
 		{

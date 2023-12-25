@@ -304,7 +304,7 @@ function complete_series()
 		while ($row = $query->next())
 		{
 			list($tournament_id, $stars, $players) = $row;
-			$tournaments[$tournament_id] = get_gaining_points($gaining, $stars, $players, false);
+			$tournaments[$tournament_id] = create_gaining_table($gaining, $stars, $players, false);
 		}
 		
 		$child_series = array();
@@ -312,7 +312,7 @@ function complete_series()
 		while ($row = $query->next())
 		{
 			list($child_series_id, $stars, $players) = $row;
-			$child_series[$child_series_id] = get_gaining_points($gaining, $stars, $players, true);
+			$child_series[$child_series_id] = create_gaining_table($gaining, $stars, $players, true);
 		}
 		
 		$max_tournaments = isset($gaining->maxTournaments) ? $gaining->maxTournaments : 0;
@@ -348,7 +348,7 @@ function complete_series()
 				$player = $players[$player_id];
 			}
 			
-			$points = $tournaments[$tournament_id][$place-1];
+			$points = get_gaining_points($tournaments[$tournament_id], $place);
 			if ($max_tournaments > 0)
 			{
 				if (count($player->p) >= $max_tournaments)
@@ -373,7 +373,7 @@ function complete_series()
 			}
 			else
 			{
-				$player->points += $tournaments[$tournament_id][$place-1];;
+				$player->points += get_gaining_points($tournaments[$tournament_id], $place);
 			}
 			++$player->tournaments;
 			$player->games += $games;
@@ -410,7 +410,7 @@ function complete_series()
 				$player = $players[$player_id];
 			}
 			
-			$points = $child_series[$child_series_id][$place-1];
+			$points = get_gaining_points($child_series[$child_series_id], $place);
 			if ($max_tournaments > 0)
 			{
 				if (count($player->p) >= $max_tournaments)
@@ -435,7 +435,7 @@ function complete_series()
 			}
 			else
 			{
-				$player->points += $child_series[$child_series_id][$place-1];;
+				$player->points += get_gaining_points($child_series[$child_series_id], $place);
 			}
 			++$player->tournaments;
 			$player->games += $games;

@@ -534,6 +534,7 @@ class ApiPage extends OpsApiPageBase
 			
 			foreach ($parent_series as $s)
 			{
+				$changed = false;
 				if (isset($old_parent_series[$s->id]))
 				{
 					$os = $old_parent_series[$s->id];
@@ -543,8 +544,12 @@ class ApiPage extends OpsApiPageBase
 						Db::exec(
 							get_label('sеriеs'), 
 							'UPDATE series_tournaments SET stars = ? WHERE series_id = ? AND tournament_id = ?', $s->stars, $s->id, $tournament_id);
+						if ($flags & TOURNAMENT_FLAG_FINISHED)
+						{
+							Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $s->id);
+						}
 						send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
-						$parent_series_changed = true;
+						$changed = true;
 					}
 					if ($os->finals != $finals)
 					{
@@ -552,8 +557,12 @@ class ApiPage extends OpsApiPageBase
 						Db::exec(
 							get_label('sеriеs'), 
 							'UPDATE series SET finals_id = ? WHERE id = ?', $finals_id, $s->id);
+						if ($flags & TOURNAMENT_FLAG_FINISHED)
+						{
+							Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $s->id);
+						}
 						send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
-						$parent_series_changed = true;
+						$changed = true;
 					}
 					unset($old_parent_series[$s->id]);
 				}
@@ -568,6 +577,15 @@ class ApiPage extends OpsApiPageBase
 						Db::exec(get_label('sеriеs'), 'UPDATE series SET finals_id = ? WHERE id = ?', $tournament_id, $s->id);
 					}
 					send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
+					$changed = true;
+				}
+				
+				if ($changed)
+				{
+					if ($flags & TOURNAMENT_FLAG_FINISHED)
+					{
+						Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $s->id);
+					}
 					$parent_series_changed = true;
 				}
 			}

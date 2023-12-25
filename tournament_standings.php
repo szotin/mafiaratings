@@ -201,6 +201,14 @@ class Page extends TournamentPageBase
 			}
 		}
 		
+		$real_players_count = 0;
+		foreach ($players as $p)
+		{
+			if ($p->credit)
+			{
+				++$real_players_count;
+			}
+		}
 		$series = array();
 		$query = new DbQuery(
 			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, st.stars, g.gaining'.
@@ -214,7 +222,7 @@ class Page extends TournamentPageBase
 			$s = new stdClass();
 			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
 			$gaining = json_decode($gaining);
-			$s->points = get_gaining_points($gaining, $s->stars, $players_count, false);
+			$s->points = create_gaining_table($gaining, $s->stars, $real_players_count, false);
 			$series[] = $s;
 		}
 		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
@@ -346,7 +354,7 @@ class Page extends TournamentPageBase
 			{
 				if ($player->credit && $s->stars > 0)
 				{
-					echo '<td align="center">' . $s->points[$number] . '</td>';
+					echo '<td align="center">' . get_gaining_points($s->points, $place) . '</td>';
 				}
 				else
 				{
@@ -404,7 +412,7 @@ class Page extends TournamentPageBase
 			$s = new stdClass();
 			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
 			$gaining = json_decode($gaining);
-			$s->points = get_gaining_points($gaining, $s->stars, $count, false);
+			$s->points = create_gaining_table($gaining, $s->stars, $count, false);
 			$series[] = $s;
 		}
 		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
@@ -485,7 +493,7 @@ class Page extends TournamentPageBase
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . $s->points[$place - 1] . '</td>';
+					echo '<td align="center">' . get_gaining_points($s->points, $place) . '</td>';
 				}
 				else
 				{
