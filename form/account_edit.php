@@ -29,8 +29,8 @@ try
 		$user_id = $owner_id;
 	}
 	
-	list($user_club_id, $user_name_id, $user_name, $user_flags, $user_city_id, $user_email, $user_langs, $user_phone) = Db::record(get_label('user'), 
-		'SELECT u.club_id, u.name_id, nu.name, u.flags, u.city_id, u.email, u.languages, u.phone'.
+	list($user_club_id, $user_name_id, $user_name, $user_flags, $user_city_id, $user_email, $user_langs, $user_phone, $mwt_id) = Db::record(get_label('user'), 
+		'SELECT u.club_id, u.name_id, nu.name, u.flags, u.city_id, u.email, u.languages, u.phone, u.mwt_id'.
 		' FROM users u'.
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 		' WHERE u.id = ?', $user_id);
@@ -43,7 +43,7 @@ try
 	echo '</td>';
 	
 	
-	echo '</td><td width="140" align="center" valign="top" rowspan="8">';
+	echo '</td><td width="140" align="center" valign="top" rowspan="9">';
 	start_upload_logo_button($user_id);
 	echo get_label('Change picture') . '<br>';
 	$user_pic = new Picture(USER_PICTURE);
@@ -108,6 +108,7 @@ try
 	echo '</td></tr>';
 	
 	echo '<tr><td class="dark">' . get_label('Phone') . ':</td><td class="light"><input id="form-phone" value="' . $user_phone . '"></td></tr>';
+	echo '<tr><td class="dark">' . get_label('MWT account id') . ':</td><td class="light"><input id="form-mwt" value="' . $mwt_id . '"></td></tr>';
 	echo '</table>';
 	
 	echo '<p><input type="checkbox" id="form-message_notify"';
@@ -187,6 +188,7 @@ try
 			, country: $("#form-country").val()
 			, city: $("#form-city").val()
 			, phone: $("#form-phone").val()
+			, mwt_id: $("#form-mwt").val()
 			, langs: languages
 			, message_notify: ($("#form-message_notify").attr("checked") ? 1 : 0)
 			, photo_notify: ($("#form-photo_notify").attr('checked') ? 1 : 0)

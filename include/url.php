@@ -186,4 +186,28 @@ function check_url($url)
 	return $url;
 }
 
+function parse_number_from_url($url, $str_before_number)
+{
+	$pos = strpos($url, $str_before_number);
+	if ($pos === false)
+	{
+		return false;
+	}
+	$pos += strlen($str_before_number);
+	
+	$num = 0;
+	while ($pos < strlen($url))
+	{
+		$code = ord($url[$pos]);
+		if ($code < 48 || $code > 57)
+		{
+			break;
+		}
+		$num *= 10;
+		$num += $code - 48;
+		++$pos;
+	}
+	return $num;
+}
+
 ?>

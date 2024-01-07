@@ -828,7 +828,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function edit_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		if ($_profile == NULL)
 		{
 			throw new Exc(get_label('No permissions'));
@@ -836,8 +836,8 @@ class ApiPage extends OpsApiPageBase
 		
 		$user_id = (int)get_optional_param('user_id', $_profile->user_id);
 		
-		list($old_club_id, $old_name_id, $old_flags, $old_city_id, $old_country_id, $old_email, $old_langs, $old_phone, $def_lang) = Db::record(get_label('user'), 
-			'SELECT u.club_id, u.name_id, u.flags, u.city_id, ct.country_id, u.email, u.languages, u.phone, u.def_lang'.
+		list($old_club_id, $old_name_id, $old_flags, $old_city_id, $old_country_id, $old_email, $old_langs, $old_phone, $old_mwt_id, $def_lang) = Db::record(get_label('user'), 
+			'SELECT u.club_id, u.name_id, u.flags, u.city_id, ct.country_id, u.email, u.languages, u.phone, u.mwt_id, u.def_lang'.
 			' FROM users u'.
 			' JOIN cities ct'.
 			' ON ct.id = u.city_id'.
@@ -873,6 +873,19 @@ class ApiPage extends OpsApiPageBase
 		
 		$langs = (int)get_optional_param('langs', $old_langs);
 		$phone = get_optional_param('phone', $old_phone);
+		$mwt_id = get_optional_param('mwt_id', $old_mwt_id);
+		if (empty($mwt_id))
+		{
+			$mwt_id = NULL;
+		}
+		if (!is_null($mwt_id) && !is_numeric($mwt_id))
+		{
+			$mwt_id = parse_number_from_url($mwt_id, '/user/');
+			if ($mwt_id <= 0)
+			{
+				throw new Exc(get_label('Invalid MWT id. Id has to be an integer, or a URL of the user profile in the MWT site.'));
+			}
+		}
 		
 		$flags = $old_flags;
 		if (isset($_REQUEST['message_notify']))
@@ -926,6 +939,25 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
+		if (!is_null($mwt_id) && $mwt_id != $old_mwt_id)
+		{
+			$query = new DbQuery(
+				'SELECT u.id, u.flags, nu.name'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE u.id <> ? AND u.mwt_id = ?', $user_id, $mwt_id);
+			if ($row = $query->next())
+			{
+				list($mwt_user_id, $mwt_user_flags, $mwt_user_name) = $row;
+				if (($mwt_user_flags & USER_FLAG_IMPORTED) == 0)
+				{
+					throw new Exc(get_label('MWT id [0] is already used by <a href="user_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_user_id, $mwt_user_name));
+				}
+				$this->merge_users($mwt_user_id, $user_id);
+				echo get_label('User [0] is now merged to your account because they were auto-created for MWT id [1].', $mwt_user_name, $mwt_id);
+			}
+		}
+		
 		$names = new Names(0, get_label('user name'), 'users', $user_id, new SQL(' AND o.city_id = ?', $city_id));
 		$name_id = $names->get_id();
 		if ($name_id <= 0)
@@ -967,8 +999,8 @@ class ApiPage extends OpsApiPageBase
 		$update_clubs = false;
 		Db::exec(
 			get_label('user'), 
-			'UPDATE users SET name_id = ?, flags = ?, city_id = ?, languages = ?, phone = ?, club_id = ? WHERE id = ?',
-			$name_id, $flags, $city_id, $langs, $phone, $club_id, $user_id);
+			'UPDATE users SET name_id = ?, flags = ?, city_id = ?, languages = ?, phone = ?, club_id = ?, mwt_id = ? WHERE id = ?',
+			$name_id, $flags, $city_id, $langs, $phone, $club_id, $mwt_id, $user_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($is_member) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
@@ -1003,6 +1035,11 @@ class ApiPage extends OpsApiPageBase
 			if ($old_langs != $langs)
 			{
 				$log_details->langs = $langs;
+			}
+				
+			if ($old_mwt_id != $mwt_id)
+			{
+				$log_details->mwt_id = $mwt_id;
 			}
 				
 			if (!is_null($club_id))
@@ -1051,6 +1088,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('message_notify', '1 to notify user when someone replies to his/her message, 0 to turn notificetions off.', 'remains the same');
 		$help->request_param('photo_notify', '1 to notify user when someone comments on his/her photo, 0 to turn notificetions off.', 'remains the same');
 		$help->request_param('picture', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
+		$help->request_param('mwt_id', 'Id of this user on the MWT site. It can be either integer or MWT site URL for user profile (for example: <a href="https://mafiaworldtour.com/user/9715/show">https://mafiaworldtour.com/user/9715/show</a>).', "remains the same");
 
 		$help->response_param('message', 'Localized user message when there is something to tell user.');
 		return $help;

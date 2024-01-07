@@ -20,8 +20,8 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $fee, $currency_id, $players, $langs, $notes, $flags, $tournament_type) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type FROM tournaments t' . 
+	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $fee, $currency_id, $players, $langs, $notes, $flags, $tournament_type, $mwt_id) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type, t.mwt_id FROM tournaments t' . 
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
@@ -145,6 +145,8 @@ try
 	echo '<td><input type="checkbox" id="form-award-don"' . (($flags & TOURNAMENT_FLAG_AWARD_DON) ? ' checked' : '')  . '> ' . get_label('best don') . '</td></tr>';
 	echo '</table>';
 	echo '</td></tr>';
+	
+	echo '<tr><td>' . get_label('MWT tournament id') . ':</td><td><input id="form-mwt" value="' . $mwt_id . '"></td></tr>';
 		
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
@@ -426,6 +428,7 @@ try
 			address_id: $("#form-addr_id").val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
+			mwt_id: $("#form-mwt").val(),
 			scoring_id: scoringId,
 			scoring_version: scoringVersion,
 			scoring_options: scoringOptions,

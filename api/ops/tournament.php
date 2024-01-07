@@ -407,8 +407,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_players, $old_langs, $old_notes, $old_flags, $old_type, $rules_code) = 
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type, t.rules FROM tournaments t' . 
+		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_players, $old_langs, $old_notes, $old_flags, $old_type, $rules_code, $old_mwt_id) = 
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id FROM tournaments t' . 
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -501,6 +501,42 @@ class ApiPage extends OpsApiPageBase
 		if ($duration <= 0)
 		{
 			throw new Exc(get_label('Tournament ends before or right after the start.'));
+		}
+		
+		// Set MWT id
+		$mwt_id = get_optional_param('mwt_id', $old_mwt_id);
+		if (empty($mwt_id))
+		{
+			$mwt_id = NULL;
+		}
+		if (!is_null($mwt_id))
+		{
+			if (!is_numeric($mwt_id))
+			{
+				$mwt_id = parse_number_from_url($mwt_id, '/tournaments/');
+				if ($mwt_id <= 0)
+				{
+					throw new Exc(get_label('Invalid MWT id. Id has to be an integer, or a URL of the tournament in the MWT site.'));
+				}
+			}
+			if ($mwt_id != $old_mwt_id)
+			{
+				$query = new DbQuery(
+					'SELECT t.id, t.flags, t.name'.
+					' FROM tournaments t'.
+					' WHERE t.id <> ? AND t.mwt_id = ?', $tournament_id, $mwt_id);
+				if ($row = $query->next())
+				{
+					list($mwt_tournament_id, $mwt_tournament_flags, $mwt_tournament_name) = $row;
+					// TODO: implement tournament merging
+					// if (($mwt_tournament_flags & TOURNAMENT_FLAG_IMPORTED) == 0)
+					// {
+						throw new Exc(get_label('MWT id [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_tournament_id, $mwt_tournament_name));
+					// }
+					// $this->merge_tournaments($mwt_tournament_id, $tournament_id);
+					// echo get_label('Tournament [0] is now merged to your account because they were auto-created for MWT id [1].', $mwt_tournament_name, $mwt_id);
+				}
+			}
 		}
 		
 		$logo_uploaded = false;
@@ -629,8 +665,8 @@ class ApiPage extends OpsApiPageBase
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, expected_players_count = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $tournament_id);
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, expected_players_count = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $tournament_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
@@ -695,6 +731,10 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->flags = $flags;
 			}
+			if ($old_mwt_id != $mwt_id)
+			{
+				$log_details->mwt_id = $mwt_id;
+			}
 			if ($logo_uploaded)
 			{
 				$log_details->logo_uploaded = true;
@@ -741,6 +781,7 @@ class ApiPage extends OpsApiPageBase
 									'<li value="64">When a custom event is created, it can be assigned to this tournament as a round.</li>' .
 									'</ol>', 'remain the same.');
 		$help->request_param('address_id', 'Address id of the tournament.', 'remains the same.');
+		$help->request_param('mwt_id', 'Id of this tournament on the MWT site. It can be either integer or MWT site URL for the tournament (for example: <a href="https://mafiaworldtour.com/tournaments/2898">https://mafiaworldtour.com/tournaments/2898</a>).', "remains the same");
 		return $help;
 	}
 	

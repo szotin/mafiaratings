@@ -91,28 +91,30 @@ define('USER_SERIES_ICON_MASK_OFFSET', 4);
 define('USER_SERIES_ICON_MAX_VERSION', 7);
 
 // user flags
-// 01 - 0x0001 -      1 - reserved (not to interfere with user-club perm flag player)
-// 02 - 0x0002 -      2 - reserved (not to interfere with user-club perm flag referee)
-// 03 - 0x0004 -      4 - reserved (not to interfere with user-club perm flag manager)
-// 04 - 0x0008 -      8 - perm admin
-// 05 - 0x0010 -     16 - reserved for future use
-// 06 - 0x0020 -     32 - user never logged in so the password is not set. Account is not activated.
-// 07 - 0x0040 -     64 - male
-// 08 - 0x0080 -    128 - available
-// 09 - 0x0100 -    256 - notify on comments
-// 10 - 0x0200 -    512 - notify on photo
-// 11 - 0x0400 -   1024 - immunity
-// 12 - 0x0800 -   2048 - icon mask
-// 13 - 0x1000 -   4096 - icon mask
-// 14 - 0x2000 -   8192 - icon mask
-// 15 - 0x4000 -  16384 - name was changed during registration
-// 16 - 0x8000 -  32768 - reserved (not to interfere with user-league perm flag manager)
+// 01 - 0x00001 -      1 - reserved (not to interfere with user-club perm flag player)
+// 02 - 0x00002 -      2 - reserved (not to interfere with user-club perm flag referee)
+// 03 - 0x00004 -      4 - reserved (not to interfere with user-club perm flag manager)
+// 04 - 0x00008 -      8 - perm admin
+// 05 - 0x00010 -     16 - reserved for future use
+// 06 - 0x00020 -     32 - user never logged in so the password is not set. Account is not activated.
+// 07 - 0x00040 -     64 - male
+// 08 - 0x00080 -    128 - available
+// 09 - 0x00100 -    256 - notify on comments
+// 10 - 0x00200 -    512 - notify on photo
+// 11 - 0x00400 -   1024 - immunity
+// 12 - 0x00800 -   2048 - icon mask
+// 13 - 0x01000 -   4096 - icon mask
+// 14 - 0x02000 -   8192 - icon mask
+// 15 - 0x04000 -  16384 - name was changed during registration
+// 16 - 0x08000 -  32768 - reserved (not to interfere with user-league perm flag manager)
+// 17 - 0x10000 -  65536 - user was imported from another system (for example MWT)
 define('USER_FLAG_NO_PASSWORD', 0x20);
 define('USER_FLAG_MALE', 0x40);
 define('USER_FLAG_MESSAGE_NOTIFY', 0x100);
 define('USER_FLAG_PHOTO_NOTIFY', 0x200);
 define('USER_FLAG_IMMUNITY', 0x400);
 define('USER_FLAG_NAME_CHANGED', 0x4000);
+define('USER_FLAG_IMPORTED', 0x10000);
 
 define('USER_INITIAL_RATING', 0);
 
@@ -242,6 +244,7 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 // 13 - 0x01000 -   4096 - this tournament has best sheriff as an award
 // 14 - 0x02000 -   8192 - this tournament has best black as an award
 // 15 - 0x04000 -  16384 - this tournament has best don as an award
+// 16 - 0x08000 -  32768 - this tournament was imported from another system (MWT)
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
@@ -253,6 +256,7 @@ define('TOURNAMENT_FLAG_AWARD_RED', 0x800);
 define('TOURNAMENT_FLAG_AWARD_SHERIFF', 0x1000);
 define('TOURNAMENT_FLAG_AWARD_BLACK', 0x2000);
 define('TOURNAMENT_FLAG_AWARD_DON', 0x4000);
+define('TOURNAMENT_FLAG_IMPORTED', 0x8000);
 define('TOURNAMENT_EDITABLE_MASK', 0x7f30); // TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_TEAM | TOURNAMENT_FLAG_MANUAL_SCORE | TOURNAMENT_FLAG_AWARD_*
 
 define('TOURNAMENT_ICON_MASK', 0x7);
