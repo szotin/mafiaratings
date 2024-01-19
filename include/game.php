@@ -86,6 +86,14 @@ class Game
 			{
 				$this->data = clone $g->data;
 			}
+			else if (isset($g->clubId)) // gamestate does not have clubId field - it has club_id. Thus we detect that this is the game, not the gamestate
+			{
+				$this->data = $g;
+				if (isset($this->data->features))
+				{
+					$feature_flags = Game::leters_to_feature_flags($this->data->features);
+				}
+			}
 			else
 			{
 				$this->data = new stdClass();
@@ -483,6 +491,7 @@ class Game
 				}
 			}
 		}
+		
 		$this->flags |= ($this->expected_flags & (GAME_FEATURE_FLAG_VOTING_KILL_ALL | GAME_FEATURE_FLAG_LEGACY | GAME_FEATURE_FLAG_DEATH_TIME));
 		$this->data->features = Game::feature_flags_to_leters($this->flags);
 	}
@@ -2635,6 +2644,7 @@ class Game
 		for($i = 0; $i < 10; ++$i)
 		{
 			$player = $this->data->players[$i];
+			$no_shooting_info = !isset($this->data->features) || strpos($this->data->features, 'h') === false;
 			if (isset($player->arranged))
 			{
 				if ($arrangement == NULL)
@@ -2662,6 +2672,17 @@ class Game
 				$action->action = GAME_ACTION_LEAVING;
 				$action->player = $i + 1;
 				$actions[] = $action;
+				
+				if ($no_shooting_info && isset($player->death->type) && isset($player->death->round) && $player->death->type == DEATH_TYPE_NIGHT)
+				{
+					// add shooting when shooting is missing
+					$action = new stdClass();
+					$action->round = $player->death->round;
+					$action->time = GAMETIME_SHOOTING;
+					$action->action = GAME_ACTION_SHOOTING;
+					$action->shooting = $i + 1;
+					$actions[] = $action;
+				}
 			}
 			if (isset($player->warnings) && is_array($player->warnings))
 			{

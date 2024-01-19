@@ -5,6 +5,9 @@ require_once '../../include/event.php';
 require_once '../../include/email.php';
 require_once '../../include/video.php';
 require_once '../../include/game.php';
+require_once '../../include/tournament.php';
+require_once '../../include/user.php';
+require_once '../../include/mwt_game.php';
 
 define('EVENTS_FUTURE_LIMIT', 1209600); // 2 weeks
 
@@ -1448,22 +1451,61 @@ class ApiPage extends OpsApiPageBase
 		
 		check_permissions(PERMISSION_USER);
 		
-		$json = get_required_param('json');
+		$json_str = get_required_param('json');
+		$json = json_decode($json_str);
 		if ($json == NULL)
 		{
 			throw new Exc(get_label('Invalid json format.'));
 		}
-//		$json = check_json($json);
+		$game_id = NULL;
+		$throw_error = get_optional_param('throw_error', false);
 		
 		Db::begin();
-		Db::exec(get_label('game'), 'INSERT INTO mwt_games (user_id, time, json) VALUES (?, UNIX_TIMESTAMP(), ?)', $_profile->user_id, $json);
-		Db::commit();
+		try
+		{
+			$game = convert_mwt_game($json);
+			
+			if ($game->winner == 'maf')
+			{
+				$result_code = 2; // GAME_RESULT_MAFIA;
+			}
+			else
+			{
+				$result_code = 1; // GAME_RESULT_TOWN;
+			}
+			Db::exec(get_label('game'),
+				'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, start_time, end_time, result, rules) ' .
+					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				$game->clubId, $game->eventId, $game->tournamentId, $game->moderator->id, $_profile->user_id, LANG_RUSSIAN,
+				$game->startTime, $game->endTime, $result_code, $game->rules);
+			list ($game->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');
+			$game->id = (int)$game->id;
+			
+			$game = new Game($game, GAME_FEATURE_MASK_MWT);
+			$game->update();
+			
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $game->data->tournamentId);
+			Db::exec(get_label('round'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $game->data->eventId);
+			Db::exec(get_label('game'), 'INSERT INTO mwt_games (user_id, time, json, game_id) VALUES (?, UNIX_TIMESTAMP(), ?, ?)', $_profile->user_id, $json_str, $game->data->id);
+			Db::commit();
+		}
+		catch (Exception $e)
+		{
+			Db::rollback();
+			Db::exec(get_label('game'), 'INSERT INTO mwt_games (user_id, time, json) VALUES (?, UNIX_TIMESTAMP(), ?)', $_profile->user_id, $json_str);
+			Exc::log($e);
+			if ($throw_error)
+			{
+				throw $e;
+			}
+		}
 	}
 	
 	function mwt_create_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Add the game from MWT site.');
 		$help->request_param('json', 'Game description in json format specific for mwt site.');
+		$help->request_param('throw_error', '0 for not throwing errors; 1 for throwing.', '0');
 		return $help;
 	}
 	

@@ -426,7 +426,14 @@ try
 				}
 				break;
 			case GAME_ACTION_SHOOTING:
-				if (count($action->shooting) == 1)
+				if (!is_array($action->shooting))
+				{
+					if ($action->shooting == $player_num)
+					{
+						$action_text = get_label('Mafia shoots [0].', $player_name);
+					}
+				}
+				else if (count($action->shooting) == 1)
 				{
 					$shooting = key($action->shooting);
 					if (!empty($shooting))

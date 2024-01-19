@@ -90,7 +90,16 @@ function create_event($event_name, $address_id, $club_id, $start, $end, $notes, 
 
 function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code)
 {
-	$round_names = include '../../include/languages/' . get_lang_code($langs) . '/rounds.php';
+	global $_lang;
+	if (is_valid_lang($langs))
+	{
+		$lang_code = get_lang_code($langs);
+	}
+	else
+	{
+		$lang_code = get_lang_code($_lang);
+	}
+	$round_names = include '../../include/languages/' . $lang_code . '/rounds.php';
 	switch ($type)
 	{
 		case TOURNAMENT_TYPE_FIIM_ONE_ROUND:
@@ -330,15 +339,6 @@ class ApiPage extends OpsApiPageBase
 		$log_details->type = $type;
 		$log_details->parent_series = json_encode($parent_series);
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
-		
-		if (is_valid_lang($langs))
-		{
-			$lang_code = get_lang_code($langs);
-		}
-		else
-		{
-			$lang_code = get_lang_code($_lang);
-		}
 		
 		create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code);
 		

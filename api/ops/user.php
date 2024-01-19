@@ -60,7 +60,7 @@ function delete_file($path)
 
 class ApiPage extends OpsApiPageBase
 {
-	function merge_users($src_id, $dst_id)
+	function merge_users($src_id, $dst_id, $nickname = NULL)
 	{
 		global $_lang;
 		
@@ -69,7 +69,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list ($game_id, $json, $feature_flags) = $row;
 			$game = new Game($json, $feature_flags);
-			$game->change_user($src_id, $dst_id);
+			$game->change_user($src_id, $dst_id, $nickname);
 			$game->update();
 		}
 		
@@ -939,6 +939,14 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
+		$names = new Names(0, get_label('user name'), 'users', $user_id, new SQL(' AND o.city_id = ?', $city_id));
+		$name_id = $names->get_id();
+		if ($name_id <= 0)
+		{
+			$name_id = $old_name_id;
+		}
+		$name = $names->to_string($def_lang);
+		
 		if (!is_null($mwt_id) && $mwt_id != $old_mwt_id)
 		{
 			$query = new DbQuery(
@@ -953,18 +961,10 @@ class ApiPage extends OpsApiPageBase
 				{
 					throw new Exc(get_label('MWT id [0] is already used by <a href="user_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_user_id, $mwt_user_name));
 				}
-				$this->merge_users($mwt_user_id, $user_id);
+				$this->merge_users($mwt_user_id, $user_id, $name);
 				echo get_label('User [0] is now merged to your account because they were auto-created for MWT id [1].', $mwt_user_name, $mwt_id);
 			}
 		}
-		
-		$names = new Names(0, get_label('user name'), 'users', $user_id, new SQL(' AND o.city_id = ?', $city_id));
-		$name_id = $names->get_id();
-		if ($name_id <= 0)
-		{
-			$name_id = $old_name_id;
-		}
-		$name = $names->to_string($def_lang);
 		
 		if ($email != $old_email)
 		{

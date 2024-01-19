@@ -244,6 +244,11 @@ class ApiPage extends OpsApiPageBase
 				// send_series_notification('tournament_series_remove', $tournament_id, $name, $club_id, $club->name, $s);
 			}
 		}
+		
+		if ($gaining_id != $old_gaining_id || $gaining_version != $old_gaining_version)
+		{
+			$flags |= SERIES_FLAG_DIRTY;
+		}
 			
 		Db::exec(
 			get_label('sеriеs'), 

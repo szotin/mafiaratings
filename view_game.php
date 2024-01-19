@@ -412,7 +412,31 @@ class Page extends PageBase
 		}
 		echo '</tr></table>';
 		
-		echo '<table class="bordered" width="100%"><tr height="1"><td width="600" valign="top">';
+		echo '<table class="bordered" width="100%">';
+		$comment = '';
+		if (isset($this->game->data->comment))
+		{
+			$comment = str_replace("\n", '<br>', $this->game->data->comment);
+		}
+		for ($i = 1; $i <= 10; ++$i)
+		{
+			$player = $this->game->data->players[$i-1];
+			if (!isset($player->comment) || empty($player->comment))
+			{
+				continue;
+			}
+			if (!empty($comment))
+			{
+				$comment .= '<br>';
+			}
+			$comment .= $i . ': ' . $player->comment;
+		}
+		if (!empty($comment))
+		{
+			echo '<tr><td colspan="2"><table class="bordered light" width="100%"><tr><td>' . $comment . '</td></tr></table></td></tr>';
+		}
+		
+		echo '<tr height="1"><td width="600" valign="top">';
 		// Players
 		echo '<table class="bordered light" width="100%">';
 		for ($i = 1; $i <= 10; ++$i)
@@ -506,6 +530,7 @@ class Page extends PageBase
 		$round = -1;
 		$is_night = true;
 		$actions = $this->game->get_actions();
+		//print_json($actions);
 		$players = $this->game->data->players;
 		foreach ($actions as $action)
 		{
@@ -683,7 +708,11 @@ class Page extends PageBase
 					}
 					break;
 				case GAME_ACTION_SHOOTING:
-					if (count($action->shooting) == 1)
+					if (!is_array($action->shooting))
+					{
+						echo get_label('Mafia shoots [0].', $action->shooting);
+					}
+					else if (count($action->shooting) == 1)
 					{
 						$shooting = key($action->shooting);
 						if (empty($shooting))

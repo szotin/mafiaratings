@@ -119,7 +119,7 @@ class Page extends TournamentPageBase
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
 						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
-						' WHERE id = ?', $this->id, $this->club_id, $this->user_id);
+						' WHERE u.id = ?', $this->id, $this->club_id, $this->user_id);
 			}
 		}
 		else
