@@ -71,7 +71,9 @@ class Page extends GeneralPageBase
 					echo '<tr><td class="dark" align="center">';
 					echo '<a onclick="mr.deleteNormalizer(' . $id . ', \'' . get_label('Are you sure you want to delete [0]?', $name) . '\')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
 					echo '<a onclick="mr.editNormalizer(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
-					echo '</td><td><a href="javascript:showNormalizer(' . $id . ', ' . $version . ')">' . $name . '</a></td></tr>';
+					// todo: implement form/normalizer_show.php
+//					echo '</td><td><a href="javascript:showNormalizer(' . $id . ', ' . $version . ')">' . $name . '</a></td></tr>';
+					echo '</td><td>' . $name . '</td></tr>';
 				}
 				echo '</table>';
 				echo '</div>';
