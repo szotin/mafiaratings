@@ -164,12 +164,15 @@ try
 			for (i = 0; i < series.series.length; ++i)
 			{
 				var s = series.series[i];
-				$("#form-stars-" + s.id).rate(
+				if (seriesList[s.id])
 				{
-					max_value: 5,
-					step_size: 1,
-					initial_value: seriesList[s.id].stars,
-				}).on("change", function(ev, data) { starsChanged(this, data.to); });
+					$("#form-stars-" + s.id).rate(
+					{
+						max_value: 5,
+						step_size: 1,
+						initial_value: seriesList[s.id].stars,
+					}).on("change", function(ev, data) { starsChanged(this, data.to); });
+				}
 			}
 		});
 	}
