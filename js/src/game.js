@@ -76,6 +76,8 @@
 // /*RULES_LEGACY_FIRST*/0
 // /*RULES_LEGACY_NO*/1
 // /*RULES_LEGACY_ANY*/2
+// /*RULES_ROTATION*/3
+
 
 // /*STATE_CHANGE_FLAG_RESET_TIMER*/1
 // /*STATE_CHANGE_FLAG_CLUB_CHANGED*/2
@@ -1542,6 +1544,7 @@ var mafia = new function()
 				game.player_speaking = -1;
 				game.current_nominant = -1;
 				game.table_opener = 0;
+				game.table_closer = 9;
 				
 				game.votings = [];
 				_newVoting(0);
@@ -1784,7 +1787,17 @@ var mafia = new function()
 				game.gamestate = /*GAME_STATE_DAY_START*/3;
 				++game.round;
 				game.current_nominant = -1;
-				game.table_opener = mafia.nextPlayer(game.table_opener);
+				if (mafia.getRule(/*RULES_ROTATION*/3) == /*RULES_ROTATION_LAST*/1)
+				{
+					game.table_opener = -1;
+					game.table_closer = mafia.nextPlayer(game.table_closer);
+					game.table_opener = mafia.nextPlayer(game.table_closer);
+				}
+				else
+				{
+					game.table_opener = mafia.nextPlayer(game.table_opener);
+					game.table_closer = mafia.prevPlayer(game.table_opener);
+				}
 				break;
 
 			case /*GAME_STATE_BEST_PLAYER*/22: // deprecated
@@ -2075,7 +2088,17 @@ var mafia = new function()
 						switch (game.gamestate)
 						{
 							case /*GAME_STATE_DAY_START*/3:
-								game.table_opener = mafia.prevPlayer(game.table_opener);
+								if (mafia.getRule(/*RULES_ROTATION*/3) == /*RULES_ROTATION_LAST*/1)
+								{
+									game.table_closer = mafia.prevPlayer(game.table_closer);
+									game.table_opener = -1;
+									game.table_opener = mafia.nextPlayer(game.table_closer);
+								}
+								else
+								{
+									game.table_opener = mafia.prevPlayer(game.table_opener);
+									game.table_closer = mafia.prevPlayer(game.table_opener);
+								}
 								break;
 							/*case /GAME_STATE_NIGHT_SHERIFF_CHECK/16:
 								break;
@@ -2651,6 +2674,7 @@ var mafia = new function()
 			round: null,
 			player_speaking: null,
 			table_opener: null,
+			table_closer: null,
 			current_nominant: null,
 			votings: null,
 			shooting: null,
@@ -2680,7 +2704,7 @@ var mafia = new function()
 			game.start_time = game.end_time = 0;
 		}
 		game.gamestate = /*GAME_STATE_NOT_STARTED*/0;
-		game.round = game.player_speaking = game.table_opener = game.current_nominant = game.votings = game.shooting = game.log = null;
+		game.round = game.player_speaking = game.table_opener = game.table_closer = game.current_nominant = game.votings = game.shooting = game.log = null;
 		game.flags = 0;
 		for (var i = 0; i < 10; ++i)
 		{
