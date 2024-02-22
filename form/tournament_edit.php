@@ -20,8 +20,8 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $fee, $currency_id, $players, $langs, $notes, $flags, $tournament_type, $mwt_id) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type, t.mwt_id FROM tournaments t' . 
+	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $fee, $currency_id, $players, $langs, $notes, $flags, $tournament_type, $mwt_id, $rules_code) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type, t.mwt_id, t.rules FROM tournaments t' . 
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
@@ -118,6 +118,32 @@ try
 	{
 		list($cid, $cname) = $row;
 		show_option($cid, $currency_id, $cname);
+	}
+	echo '</select></td></tr>';
+	
+	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
+	echo '<select id="form-rules">';
+	if (show_option($club->rules_code, $rules_code, get_label('[default]')))
+	{
+		$rules_code = '';
+	}
+	$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $club_id);
+	while ($row = $query->next())
+	{
+		list ($league_name, $rules) = $row;
+		if (show_option($rules, $rules_code, $league_name))
+		{
+			$rules_code = '';
+		}
+	}
+	$query = new DbQuery('SELECT name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
+	while ($row = $query->next())
+	{
+		list ($rules_name, $rules) = $row;
+		if (show_option($rules, $rules_code, $rules_name))
+		{
+			$rules_code = '';
+		}
 	}
 	echo '</select></td></tr>';
 	
@@ -440,6 +466,7 @@ try
 			langs: _langs,
 			flags: _flags,
 			players: $("#form-players").val(),
+			rules_code: $("#form-rules").val(),
 		};
 		
 		json.post("api/ops/tournament.php", params, onSuccess);

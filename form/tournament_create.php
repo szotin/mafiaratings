@@ -110,6 +110,33 @@ try
 	}
 	echo '</select></td></tr>';
 	
+	$rules_code = $club->rules_code;
+	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
+	echo '<select id="form-rules">';
+	if (show_option($club->rules_code, $rules_code, get_label('[default]')))
+	{
+		$rules_code = '';
+	}
+	$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $club_id);
+	while ($row = $query->next())
+	{
+		list ($league_name, $rules) = $row;
+		if (show_option($rules, $rules_code, $league_name))
+		{
+			$rules_code = '';
+		}
+	}
+	$query = new DbQuery('SELECT name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
+	while ($row = $query->next())
+	{
+		list ($rules_name, $rules) = $row;
+		if (show_option($rules, $rules_code, $rules_name))
+		{
+			$rules_code = '';
+		}
+	}
+	echo '</select></td></tr>';
+	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
 	show_scoring_select($club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
 	echo '</td></tr>';
@@ -434,6 +461,7 @@ try
 			langs: _langs,
 			flags: _flags,
 			players: $("#form-players").val(),
+			rules_code: $("#form-rules").val(),
 		};
 		
 		if (_addr > 0)

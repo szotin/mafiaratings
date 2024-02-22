@@ -407,7 +407,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_players, $old_langs, $old_notes, $old_flags, $old_type, $rules_code, $old_mwt_id) = 
+		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id) = 
 			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id FROM tournaments t' . 
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
@@ -451,6 +451,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		$scoring_options = get_optional_param('scoring_options', $old_scoring_options);
 		$type = (int)get_optional_param('type', $old_type);
+		$rules_code = get_optional_param('rules_code', $old_rules_code);
 		
 		if ($scoring_version < 0)
 		{
@@ -661,12 +662,16 @@ class ApiPage extends OpsApiPageBase
 			
 			create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code);
 		}
+		else if ($rules_code != $old_rules_code)
+		{
+			Db::exec(get_label('round'), 'UPDATE events SET rules = ? WHERE tournament_id = ?', $rules_code, $tournament_id);
+		}
 		
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, expected_players_count = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $tournament_id);
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, expected_players_count = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, rules = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $rules_code, $tournament_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
@@ -747,6 +752,10 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->type = $type;
 			}
+			if ($rules_code != $old_rules_code)
+			{
+				$log_details->rules_code = $rules_code;
+			}
 			db_log(LOG_OBJECT_TOURNAMENT, 'changed', $log_details, $tournament_id, $club_id);
 		}
 		
@@ -768,6 +777,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('fee', 'Admission rate. Send -1 if unknown. Zero means free.', 'remains the same.');
 		$help->request_param('currency_id', 'Currency id for the admission rate. Send 0 if unknown.', 'remains the same.');
 		$help->request_param('players', 'Expected number of players. Zero for unknown.', 'remains the same.');
+		$help->request_param('rules_code', 'Rules for this tournament.', 'remains the same.');
 		$help->request_param('scoring_id', 'Scoring id for this tournament.', 'remains the same.');
 		$help->request_param('scoring_version', 'Scoring version for this tournament.', 'remain the same, or set to the latest for current scoring if scoring_id is changed.');
 		$help->request_param('normalizer_id', 'Normalizer id for this tournament.', 'remains the same.');

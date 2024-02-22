@@ -123,34 +123,31 @@ try
 	}
 	echo '</select></td></tr>';
 		
-	$query = new DbQuery('SELECT rules, name FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
-	if ($row = $query->next())
+	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
+	echo '<select id="form-rules">';
+	if (show_option($club->rules_code, $rules_code, $club->name))
 	{
-		$custom_rules = true;
-		echo '<tr><td>' . get_label('Game rules') . ':</td><td><select id="form-rules"><option value="' . $club->rules_code . '"';
-		if ($club->rules_code == $rules_code)
+		$rules_code = '';
+	}
+	$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $club_id);
+	while ($row = $query->next())
+	{
+		list ($league_name, $rules) = $row;
+		if (show_option($rules, $rules_code, $league_name))
 		{
-			echo ' selected';
-			$custom_rules = false;
+			$rules_code = '';
 		}
-		echo '>' . $club->name . '</option>';
-		do
-		{
-			list ($rules_code, $rules_name) = $row;
-			echo '<option value="' . $rules_code . '"';
-			if ($custom_rules && $rules_code == $rules_code)
-			{
-				echo ' selected';
-			}
-			echo '>' . $rules_name . '</option>';
-		} while ($row = $query->next());
-		echo '</select>';
-		echo '</td></tr>';
 	}
-	else
+	$query = new DbQuery('SELECT name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
+	while ($row = $query->next())
 	{
-		echo '<input type="hidden" id="form-rules" value="' . $club->rules_code . '">';
+		list ($rules_name, $rules) = $row;
+		if (show_option($rules, $rules_code, $rules_name))
+		{
+			$rules_code = '';
+		}
 	}
+	echo '</select></td></tr>';
 	
 	echo '<tr><td valign="top">' . get_label('Scoring system').':</td><td>';
 	show_scoring_select($club_id, $scoring_id, $scoring_version, 0, 0, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');
