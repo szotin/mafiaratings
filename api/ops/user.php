@@ -93,6 +93,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('tournament'), 'UPDATE tournament_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('tournament'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id IN (SELECT tournament_id FROM (SELECT tournament_id FROM tournament_users WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('tournament'), 'UPDATE tournament_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('series'), 'DELETE FROM series_places WHERE user_id = ? AND series_id IN (SELECT series_id FROM (SELECT series_id FROM series_places WHERE user_id = ?) x)', $src_id, $dst_id);
+		Db::exec(get_label('series'), 'UPDATE series_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('league'), 'UPDATE league_requests SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('comment'), 'UPDATE event_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('comment'), 'UPDATE game_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
@@ -976,8 +978,12 @@ class ApiPage extends OpsApiPageBase
 			{
 				throw new Exc(get_label('[0] is not a valid email address.', $email));
 			}
-			send_activation_email($user_id, $name, $email);
-			echo get_label('You are trying to change your email address. Please check your email and click a link in it to finalize the change.');
+			if ($user_id == $_profile->user_id)
+			{
+				send_activation_email($user_id, $name, $email);
+				echo get_label('You are trying to change your email address. Please check your email and click a link in it to finalize the change.');
+				$email = $old_email;
+			}
 		}
 		
 		if (isset($_REQUEST['pwd1']))
@@ -999,8 +1005,8 @@ class ApiPage extends OpsApiPageBase
 		$update_clubs = false;
 		Db::exec(
 			get_label('user'), 
-			'UPDATE users SET name_id = ?, flags = ?, city_id = ?, languages = ?, phone = ?, club_id = ?, mwt_id = ? WHERE id = ?',
-			$name_id, $flags, $city_id, $langs, $phone, $club_id, $mwt_id, $user_id);
+			'UPDATE users SET name_id = ?, flags = ?, city_id = ?, languages = ?, phone = ?, club_id = ?, mwt_id = ?, email = ? WHERE id = ?',
+			$name_id, $flags, $city_id, $langs, $phone, $club_id, $mwt_id, $email, $user_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($is_member) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
