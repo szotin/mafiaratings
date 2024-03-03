@@ -144,7 +144,7 @@ try
 			list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $event->scoring_id, $event->scoring_version);
 			$scoring = json_decode($scoring);
 			$scoring_options = json_decode($event->scoring_options);
-			$players = event_scores($event->id, NULL, SCORING_LOD_PER_GROUP, $scoring, $scoring_options);
+			$players = event_scores($event->id, NULL, SCORING_LOD_PER_GROUP, $scoring, $scoring_options, $event->tournament_flags, $event->round_num);
 			$players_count = count($players);
 				
 			if ($players_count == 0)

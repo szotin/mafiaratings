@@ -68,6 +68,11 @@ class Page extends TournamentPageBase
 	
 	protected function show_body()
 	{
+		if (!$this->show_hidden_table_message())
+		{
+			return;
+		}
+		
 		if (($this->flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 		{
 			$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS;
@@ -129,6 +134,7 @@ class Page extends TournamentPageBase
 		chartParams.players = "<?php echo $this->players_list; ?>";
 		chartParams.charts = <?php echo NUM_PLAYERS; ?>;
 		chartParams.tournament_id = <?php echo $this->id; ?>;
+		chartParams.show_all = <?php echo $this->show_all ? 'null' : 'undefined'; ?>;
 		initChart("<?php echo get_label('Points'); ?>");
 <?php 
 	}

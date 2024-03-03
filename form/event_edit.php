@@ -21,9 +21,9 @@ try
 	}
 	$event_id = (int)$_REQUEST['event_id'];
 	
-	list($club_id, $name, $start_time, $duration, $address_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags) = 
+	list($club_id, $name, $start_time, $duration, $address_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags, $round_num) = 
 		Db::record(get_label('event'), 
-			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags ' .
+			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags, e.round ' .
 			'FROM events e ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
@@ -80,7 +80,7 @@ try
 	{
 		show_option($tour_id, $tour_id, $tour_name);
 	}
-	echo '</select></td></tr>';
+	echo '</select> <span id="form-round-span"></span></td></tr>';
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
 	echo '<input type="date" id="form-date" value="' . datetime_to_string($start, false) . '">';
@@ -182,12 +182,6 @@ try
 	}
 	echo '> '.get_label('non-rating event.');
 	
-	echo '<br><input type="checkbox" id="form-selection"';
-	if (($flags & EVENT_FLAG_WITH_SELECTION) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> ' . get_label('with players selection e.g. tournament finals, semi-finals, etc');
 	echo '</td></tr>';	
 	echo '</table>';
 	
@@ -214,13 +208,21 @@ try
 		old_address_value = text;
 	}
 	
+	var roundVal = <?php echo $round_num; ?>;
 	function tournamentChange()
 	{
 		var tid = $("#form-tournament").val();
+		var roundHtml = "";
 		if (tid > 0)
 		{
+			roundHtml = '<select id="form-round" onchange="roundChange()">';
+			roundHtml += '<option value="0"' + (roundVal == 0 ? ' selected' : '') + '><?php echo get_label('main round'); ?></option>';
+			roundHtml += '<option value="1"' + (roundVal == 1 ? ' selected' : '') + '><?php echo get_label('final'); ?></option>';
+			roundHtml += '<option value="2"' + (roundVal == 2 ? ' selected' : '') + '><?php echo get_label('semi-final'); ?></option>';
+			roundHtml += '<option value="3"' + (roundVal == 3 ? ' selected' : '') + '><?php echo get_label('quoter-final'); ?></option>';
+			roundHtml += '</select>';
+			
 			$("#form-scoring-group-div").show();
-			$("#form-selection").prop('disabled', false);
 			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
 			{
 				var t = obj.tournaments[0];
@@ -234,16 +236,41 @@ try
 		}
 		else
 		{
+			roundHtml = '<input type="hidden" id="form-round">';
+			roundVal = 0;
+			
 			$("#form-scoring-group").val('');
 			mr.onChangeScoring('form-scoring', 0, onScoringChange);
 			$("#form-scoring-group-div").hide();
 			$("#form-rules").prop('disabled', false);
 			$("#form-scoring-sel").prop('disabled', false);
 			$("#form-scoring-ver").prop('disabled', false);
-			$("#form-selection").prop('disabled', true);
 		}
+		$("#form-round-span").html(roundHtml);
 	}
 	tournamentChange();
+	
+	function roundName()
+	{
+		if (roundVal == 0)
+			return "<?php echo get_label('main round'); ?>";
+		else if (roundVal == 1)
+			return "<?php echo get_label('final'); ?>";
+		else if (roundVal == 2)
+			return "<?php echo get_label('semi-final'); ?>";
+		else if (roundVal == 3)
+			return "<?php echo get_label('quoter-final'); ?>";
+		return "";
+	}
+	
+	function roundChange()
+	{
+		var n = roundName();
+		var n1 = $("#form-name").val();
+		roundVal = $("#form-round").val();
+		if (n == n1 || n1 == "")
+			$("#form-name").val(roundName());
+	}
 	
 	function addressClick()
 	{
@@ -296,13 +323,13 @@ try
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
-		if ($("#form-selection").attr('checked')) _flags |= <?php echo EVENT_FLAG_WITH_SELECTION; ?>;
 		
 		var params =
 		{
 			op: "change"
 			, event_id: <?php echo $event_id; ?>
 			, tournament_id: $("#form-tournament").val()
+			, round_num: $("#form-round").val()
 			, name: $("#form-name").val()
 			, start: $('#form-date').val() + 'T' + timeStr($('#form-time').val())
 			, duration: strToTimespan($("#form-duration").val())

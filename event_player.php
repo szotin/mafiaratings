@@ -14,7 +14,7 @@ class Page extends EventPageBase
 {
 	protected function prepare()
 	{
-		global $_page, $_lang;
+		global $_lang, $_profile;
 		
 		parent::prepare();
 		
@@ -62,10 +62,15 @@ class Page extends EventPageBase
 		{
 			$this->user_id = (int)$_REQUEST['user_id'];
 		}
+		$this->is_me = ($_profile != NULL && $_profile->user_id == $this->user_id);
 		
 		if ($this->user_id > 0)
 		{
-			$data = event_scores($this->event->id, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->scoring_options);
+			if ($this->is_me)
+			{
+				$this->event->tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
+			}
+			$data = event_scores($this->event->id, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->scoring_options, $this->event->tournament_flags, $this->event->round_num);
 			if (isset($data[$this->user_id]))
 			{
 				$this->player = $data[$this->user_id];
@@ -111,6 +116,11 @@ class Page extends EventPageBase
 	
 	protected function show_body()
 	{
+		if (!$this->is_me && !$this->show_hidden_table_message())
+		{
+			return;
+		}
+		
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td align="right">';
 		echo get_label('Select a player') . ': ';
@@ -140,7 +150,7 @@ class Page extends EventPageBase
 	
 	private function show_games()
 	{
-		global $_profile, $_page, $_scoring_groups;
+		global $_profile, $_scoring_groups;
 		
 		echo '<p>';
 		echo '<table class="transp" width="100%">';
@@ -218,7 +228,7 @@ class Page extends EventPageBase
 		
 		foreach ($this->player->games as $game)
 		{
-			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->event->id . '&id=' . $game->game_id . '&bck=1">' . get_label('Game #[0]', $game->game_id) . '</a></td>';
+			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->event->id . '&id=' . $game->game_id . $this->show_all . '&bck=1">' . get_label('Game #[0]', $game->game_id) . '</a></td>';
 			echo '<td align="right" width="50">';
 			switch ($game->role)
 			{

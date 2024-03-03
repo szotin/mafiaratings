@@ -49,6 +49,7 @@ class Event
 	public $flags;
 	public $langs;
 	public $rules_code;
+	public $round_num;
 	
 	public $tournament_id;
 	public $tournament_name;
@@ -90,6 +91,7 @@ class Event
 		$this->flags = EVENT_FLAG_ALL_CAN_REFEREE;
 		$this->langs = LANG_ALL;
 		$this->rules_code = default_rules_code();
+		$this->round_num = 0;
 		$this->scoring_id = -1;
 		$this->scoring_version = 0;
 		$this->scoring_options = '{}';
@@ -323,54 +325,6 @@ class Event
 		return $this->id;
 	}
 	
-	function update()
-	{
-		global $_profile;
-	
-		if ($this->name == '')
-		{
-			throw new Exc(get_label('Please enter [0].', get_label('event name')));
-		}
-		
-		if ($this->addr_id <= 0)
-		{
-			throw new Exc(get_label('Please enter event address.'));
-		}
-		
-		Db::begin();
-		
-		list ($old_timestamp, $old_duration) = Db::record(get_label('event'), 'SELECT start_time, duration FROM events WHERE id = ?', $this->id);
-		
-		Db::exec(
-			get_label('event'), 
-			'UPDATE events SET ' .
-				'name = ?, fee = ?, currency_id = ?, club_id = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_options = ?, ' .
-				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
-				'languages = ? WHERE id = ?',
-			$this->name, $this->fee, $this->currency_id, $this->club_id, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_options,
-			$this->addr_id, $this->timestamp, $this->notes, $this->duration, $this->flags,
-			$this->langs, $this->id);
-		if (Db::affected_rows() > 0)
-		{
-			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $this->addr_id);
-			$log_details = new stdClass();
-			$log_details->name = $this->name;
-			$log_details->fee = $this->fee;
-			$log_details->currency_id = $this->currency_id;
-			$log_details->address_name = $addr_name;
-			$log_details->address_id = $this->addr_id;
-			$log_details->start = format_date('d/m/y H:i', $this->timestamp, $timezone);
-			$log_details->duration = $this->duration;
-			$log_details->flags = $this->flags;
-			$log_details->langs = $this->langs;
-			$log_details->rules_code = $this->rules_code;
-			$log_details->scoring_id = $this->scoring_id;
-			$log_details->scoring_version = $this->scoring_version;
-			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $this->id, $this->club_id);
-		}
-		Db::commit();
-	}
-
 	function load($event_id)
 	{
 		global $_profile, $_lang;
@@ -390,10 +344,11 @@ class Event
 			$this->name, $this->fee, $this->currency_id, $this->currency_pattern, $this->club_id, $this->club_name, $this->club_flags, $this->club_url, $timestamp, $this->duration,
 			$this->tournament_id, $this->tournament_name, $this->tournament_flags,
 			$this->addr_id, $this->addr, $this->addr_url, $timezone, $this->addr_flags,
-			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_version, $this->scoring_options, $this->coming_odds, $this->city, $this->country) =
+			$this->notes, $this->langs, $this->flags, $this->rules_code, $this->scoring_id, $this->scoring_version, 
+			$this->scoring_options, $this->coming_odds, $this->city, $this->country, $this->round_num) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.fee, e.currency_id, cu.pattern, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, u.coming_odds, ni.name, no.name FROM events e' .
+					'SELECT e.name, e.fee, e.currency_id, cu.pattern, c.id, c.name, c.flags, c.web_site, e.start_time, e.duration, t.id, t.name, t.flags, a.id, a.address, a.map_url, i.timezone, a.flags, e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, u.coming_odds, ni.name, no.name, e.round FROM events e' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN cities i ON a.city_id = i.id' .
@@ -898,6 +853,16 @@ class EventPageBase extends PageBase
 		$this->event->load($_REQUEST['id']);
 		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id);
 		$this->is_referee = is_permitted(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id);
+		
+		if (($this->is_manager || $this->is_referee) && isset($_REQUEST['show_all']))
+		{
+			$this->show_all = '&show_all';
+			$this->event->tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
+		}
+		else
+		{
+			$this->show_all = '';
+		}
 	}
 	
 	protected function show_title()
@@ -1012,6 +977,74 @@ class EventPageBase extends PageBase
 		echo '</td></tr></table></td></tr>';
 		
 		echo '</table>';
+	}
+	
+	protected function should_hide_table()
+	{
+		if ($this->event->tournament_flags & TOURNAMENT_FLAG_FINISHED)
+		{
+			return false;
+		}
+
+		switch (($this->event->tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
+		{
+			case 1:
+				return true;
+			case 2:
+				return $this->event->round_num == 1;
+			case 3:
+				return $this->event->round_num == 1 || $this->event->round_num == 2;
+		}
+		return false;
+	}
+	
+	protected function should_hide_bonus()
+	{
+		if ($this->event->tournament_flags & TOURNAMENT_FLAG_FINISHED)
+		{
+			return false;
+		}
+
+		switch (($this->event->tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
+		{
+			case 1:
+				return true;
+			case 2:
+				return $this->event->round_num == 1;
+			case 3:
+				return $this->event->round_num == 1 || $this->event->round_num == 2;
+		}
+		return false;
+	}
+	
+	protected function show_hidden_table_message()
+	{
+		$result = true;
+		$text = NULL;
+		if ($this->should_hide_table())
+		{
+			$result = false;
+			$text = get_label('Tournament tables are hidden for this round until the tournament ends.');
+		}
+		else if ($this->should_hide_bonus())
+		{
+			$text = get_label('Bonus points are hidden for this round until the tournament ends.');
+		}
+		
+		if (!is_null($text))
+		{
+			echo '<p><table class="transp" width="100%"><tr><td width="32">';
+			if ($this->is_manager || $this->is_referee)
+			{
+				echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show the actual scoring tables.') . '"><img src="images/аttention.png"></button>';
+			}
+			else
+			{
+				echo '<img src="images/аttention.png">';
+			}
+			echo '</td><td><h3>' . $text . '</h3></td></tr></table></p>';
+		}
+		return $result;
 	}
 }
 	

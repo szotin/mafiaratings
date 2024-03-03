@@ -97,10 +97,15 @@ function complete_event()
 {
 	$result = false;
 	Db::begin();
-	$query = new DbQuery('SELECT e.id, sv.scoring, e.scoring_options, e.flags FROM events e JOIN scoring_versions sv ON sv.scoring_id = e.scoring_id AND sv.version = e.scoring_version WHERE e.start_time + e.duration < UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_FINISHED . ') = 0 LIMIT 1');
+	$query = new DbQuery(
+		'SELECT e.id, sv.scoring, e.scoring_options, e.flags, t.flags, e.round FROM events e'.
+		' JOIN scoring_versions sv ON sv.scoring_id = e.scoring_id AND sv.version = e.scoring_version'.
+		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+		' WHERE e.start_time + e.duration < UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_FINISHED . ') = 0 LIMIT 1');
 	if ($row = $query->next())
 	{
-		list($event_id, $scoring, $scoring_options, $flags) = $row;
+		list($event_id, $scoring, $scoring_options, $flags, $tournament_flags, $round_num) = $row;
+		$tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK); // no hiding tables/bonuses any more - event is complete
 		
 		$players_count = 0;
 		Db::exec(get_label('event'), 'DELETE FROM event_places WHERE event_id = ?', $event_id);
@@ -109,7 +114,8 @@ function complete_event()
 			$scoring = json_decode($scoring);
 			$scoring_options = json_decode($scoring_options);
 			
-			$players = event_scores($event_id, null, SCORING_LOD_PER_GROUP, $scoring, $scoring_options);
+			
+			$players = event_scores($event_id, null, SCORING_LOD_PER_GROUP, $scoring, $scoring_options, $tournament_flags, $round_num);
 			$players_count = count($players);
 			if ($players_count > 0)
 			{
@@ -181,6 +187,7 @@ function complete_tournament()
 	if ($row = $query->next())
 	{
 		list($tournament_id, $tournament_flags, $scoring, $scoring_options, $normalizer, $stars) = $row;
+		$tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK); // no hiding tables/bonuses any more - tournament is complete
 		$real_count = $players_count = 0;
 		$min_games = 0;
 		if (($tournament_flags & TOURNAMENT_FLAG_CANCELED))

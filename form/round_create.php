@@ -34,6 +34,13 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">'.get_label('Round name').':</td><td><input id="form-name" value="' . get_label('main round') . '"></td></tr>';
 	
+	echo '<tr><td width="160">'.get_label('Round type').':</td><td><select id="form-round" onchange="roundChange()">';
+	show_option(0, 0, get_label('main round'));
+	show_option(1, 0, get_label('final'));
+	show_option(2, 0, get_label('semi-final'));
+	show_option(3, 0, get_label('quoter-final'));
+	echo '</select></td></tr>';
+	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
 	echo '<input type="date" id="form-date" value="' . datetime_to_string($start, false) . '">';
 	echo '</td></tr>';
@@ -84,7 +91,6 @@ try
 	echo '<tr><td colspan="2">';
 		
 	echo '<input type="checkbox" id="form-all_mod" checked> '.get_label('everyone can referee games.');
-	echo '<br><input type="checkbox" id="form-selection"> '.get_label('with players selection e.g. tournament finals, semi-finals, etc');
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -139,6 +145,29 @@ try
 		return val;
 	}
 	
+	var roundVal = 0;
+	function roundName()
+	{
+		if (roundVal == 0)
+			return "<?php echo get_label('main round'); ?>";
+		else if (roundVal == 1)
+			return "<?php echo get_label('final'); ?>";
+		else if (roundVal == 2)
+			return "<?php echo get_label('semi-final'); ?>";
+		else if (roundVal == 3)
+			return "<?php echo get_label('quoter-final'); ?>";
+		return "";
+	}
+	
+	function roundChange()
+	{
+		var n = roundName();
+		var n1 = $("#form-name").val();
+		roundVal = $("#form-round").val();
+		if (n == n1 || n1 == "")
+			$("#form-name").val(roundName());
+	}
+	
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -146,13 +175,13 @@ try
 		
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
-		if ($("#form-selection").attr('checked')) _flags |= <?php echo EVENT_FLAG_WITH_SELECTION; ?>;
 		
 		var params =
 		{
 			op: "create"
 			, club_id: <?php echo $club_id; ?>
 			, tournament_id: <?php echo $tournament_id; ?>
+			, round_num: $("#form-round").val()
 			, name: $("#form-name").val()
 			, duration: strToTimespan($("#form-duration").val())
 			, address_id: _addr

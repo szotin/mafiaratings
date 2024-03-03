@@ -78,7 +78,7 @@ class Page extends PageBase
 	
 	protected function prepare()
 	{
-		global $_lang;
+		global $_lang, $_profile;
 		
 		$this->id = -1;
 		if (isset($_REQUEST['id']))
@@ -94,13 +94,13 @@ class Page extends PageBase
 			$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
 			$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
 			$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
-			$this->start_time, $this->duration, $this->lang, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json) =
+			$this->start_time, $this->duration, $this->lang, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json, $this->round_num) =
 		Db::record(
 			get_label('game'),
 			'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags,' .
 			' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
 			' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
-			' g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json' .
+			' g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json, e.round' .
 				' FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
@@ -114,6 +114,35 @@ class Page extends PageBase
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
 				' WHERE g.id = ?',
 			$this->id);
+			
+		$this->is_editor = is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->user_id, $this->club_id, $this->event_id, $this->tournament_id);
+		$this->show_all = $this->is_editor && isset($_REQUEST['show_all']);
+		if ($this->show_all)
+		{
+			$this->show_all = '&show_all';
+			$this->tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
+		}
+		else
+		{
+			$this->show_all = '';
+		}
+		
+		$this->hide_bonus = false;
+		if (($this->tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
+		{
+			switch (($this->tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
+			{
+			case 1:
+				$this->hide_bonus = true;
+				break;
+			case 2:
+				$this->hide_bonus = ($this->round_num == 1);
+				break;
+			case 3:
+				$this->hide_bonus = ($this->round_num == 1 || $this->round_num == 2);
+				break;
+			}
+		}
 		
 		$this->player_pic =
 			new Picture(USER_EVENT_PICTURE, 
@@ -139,6 +168,7 @@ class Page extends PageBase
 		}
 		
 		// Players
+		$this->my_user_id = 0;
 		$this->players = array();
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM players p' . 
@@ -150,7 +180,12 @@ class Page extends PageBase
 			' WHERE p.game_id = ?', $this->event_id, $this->tournament_id, $this->club_id, $this->id);
 		while ($row = $query->next())
 		{
-			$this->players[$row[0]] = $row;
+			$uid = (int)$row[0];
+			$this->players[$uid] = $row;
+			if (!is_null($_profile) && $_profile->user_id == $uid)
+			{
+				$this->my_user_id = $uid;
+			}
 		}
 		
 		// Find next and prev games
@@ -297,7 +332,7 @@ class Page extends PageBase
 		echo '</a></td><td><a href="javascript:viewPlayer(' . $num . ')">' . $player_name . '</a></td><td align="right"';
 
 		$comment = isset($player->comment) ? str_replace('"', '&quot;', $player->comment) : '';
-		if (isset($player->bonus))
+		if (isset($player->bonus) && (!$this->hide_bonus || $this->my_user_id == $player->id))
 		{
 			if (is_array($player->bonus))
 			{
@@ -323,7 +358,7 @@ class Page extends PageBase
 		// Prev game button
 		if ($this->prev_game_id > 0)
 		{
-			echo '<td width="24"><a href="' . $this->url_base . $this->prev_game_id . '" title="' . get_label('Previous game #[0]', $this->prev_game_id) . '"><img src="images/prev.png"></a></td>';
+			echo '<td width="24"><a href="' . $this->url_base . $this->prev_game_id . $this->show_all . '" title="' . get_label('Previous game #[0]', $this->prev_game_id) . '"><img src="images/prev.png"></a></td>';
 		}
 		echo '<td>'; 
 		
@@ -387,7 +422,7 @@ class Page extends PageBase
 		{
 			echo '<button class="icon" onclick="mr.gotoObjections(' . $this->id . ')" title="' . get_label('File an objection to the game [0] results.', $this->id) . '">';
 			echo '<img src="images/objection.png" border="0"></button>';
-			if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->user_id, $this->club_id, $this->event_id, $this->tournament_id))
+			if ($this->is_editor)
 			{
 				echo '<button class="icon" onclick="deleteGame(' . $this->id . ')" title="' . get_label('Delete game [0]', $this->id) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editGame(' . $this->id . ')" title="' . get_label('Edit game [0]', $this->id) . '"><img src="images/edit.png" border="0"></button>';
@@ -408,34 +443,98 @@ class Page extends PageBase
 		echo '</td><td align="right" valign="top">';
 		if ($this->next_game_id > 0)
 		{
-			echo '<td width="24"><a href="' . $this->url_base . $this->next_game_id . '" title="' . get_label('Next game #[0]', $this->next_game_id) . '"><img src="images/next.png"></a></td>';
+			echo '<td width="24"><a href="' . $this->url_base . $this->next_game_id . $this->show_all . '" title="' . get_label('Next game #[0]', $this->next_game_id) . '"><img src="images/next.png"></a></td>';
 		}
 		echo '</tr></table>';
 		
+		$hidden = false;
+		if (($this->tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
+		{
+			switch (($this->tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
+			{
+			case 1:
+				$hidden = true;
+				break;
+			case 2:
+				$hidden = ($this->round_num == 1);
+				break;
+			case 3:
+				$hidden = ($this->round_num == 1 || $this->round_num == 2);
+				break;
+			}
+			if ($hidden)
+			{
+				if ($this->my_user_id <= 0)
+				{
+					echo '<p><table class="transp" width="100%"><tr><td width="32">';
+					if ($this->is_editor)
+					{
+						echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show all about this game.') . '"><img src="images/аttention.png"></button>';
+					}
+					else
+					{
+						echo '<img src="images/аttention.png">';
+					}
+					echo '</td><td><h3>' . get_label('This game is hidden until the tournament ends.') . '</h3></td></tr></table></p>';
+					return;
+				}
+				$this->hide_bonus = true;
+			}
+			
+			if ($this->hide_bonus)
+			{
+				echo '<p><table class="transp" width="100%"><tr><td width="32">';
+				if ($this->is_editor)
+				{
+					echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show all about this game.') . '"><img src="images/аttention.png"></button>';
+				}
+				else
+				{
+					echo '<img src="images/аttention.png">';
+				}
+				echo '</td><td><h3>' . get_label('Bonus points are hidden for this game until the tournament ends.') . '</h3></td></tr></table></p>';
+			}
+		}
+		
 		echo '<table class="bordered" width="100%">';
 		$comment = '';
-		if (isset($this->game->data->comment))
+		if (!$this->hide_bonus)
 		{
-			$comment = str_replace("\n", '<br>', $this->game->data->comment);
+			if (isset($this->game->data->comment))
+			{
+				$comment = str_replace("\n", '<br>', $this->game->data->comment);
+			}
+			for ($i = 1; $i <= 10; ++$i)
+			{
+				$player = $this->game->data->players[$i-1];
+				if (!isset($player->comment) || empty($player->comment))
+				{
+					continue;
+				}
+				if (!empty($comment))
+				{
+					$comment .= '<br>';
+				}
+				$comment .= $i . ': ' . $player->comment;
+			}
 		}
-		for ($i = 1; $i <= 10; ++$i)
+		else if ($this->my_user_id > 0)
 		{
-			$player = $this->game->data->players[$i-1];
-			if (!isset($player->comment) || empty($player->comment))
+			for ($i = 1; $i <= 10; ++$i)
 			{
-				continue;
+				$player = $this->game->data->players[$i-1];
+				if ($player->id == $this->my_user_id && isset($player->comment) && !empty($player->comment))
+				{
+					$comment = $i . ': ' . $player->comment;
+					break;
+				}
 			}
-			if (!empty($comment))
-			{
-				$comment .= '<br>';
-			}
-			$comment .= $i . ': ' . $player->comment;
 		}
 		if (!empty($comment))
 		{
 			echo '<tr><td colspan="2"><table class="bordered light" width="100%"><tr><td>' . $comment . '</td></tr></table></td></tr>';
 		}
-		
+			
 		echo '<tr height="1"><td width="600" valign="top">';
 		// Players
 		echo '<table class="bordered light" width="100%">';
@@ -784,7 +883,7 @@ class Page extends PageBase
 ?>
 			function viewPlayer(num)
 			{
-				html.get("form/game_player_view.php?game_id=<?php echo $this->id; ?>&player_num=" + num, function(html)
+				html.get("form/game_player_view.php?game_id=<?php echo $this->id . $this->show_all; ?>&player_num=" + num, function(html)
 				{
 					dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 600);
 				});

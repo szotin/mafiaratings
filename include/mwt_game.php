@@ -86,7 +86,7 @@ function convert_mwt_game($mwt_game)
 		$tournament_duration = $tournament_end - $tournament_start;
 		
 		// TODO: get the right round from the game and put the game to the right round
-		$query = new DbQuery('SELECT id FROM events WHERE tournament_id = ? AND (flags | ' . EVENT_FLAG_WITH_SELECTION . ') = 0 ORDER BY id LIMIT 1', $tournament_id);
+		$query = new DbQuery('SELECT id FROM events WHERE tournament_id = ? AND round = 0 ORDER BY id LIMIT 1', $tournament_id);
 		if ($row = $query->next())
 		{
 			list($round_id) = $row;
@@ -132,16 +132,16 @@ function convert_mwt_game($mwt_game)
 		$log_details->type = TOURNAMENT_TYPE_FIIM_ONE_ROUND;
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
-		$round_names = include '../../include/languages/ru/rounds.php';
+		$round_name = get_label('main round');
 		
 		$event_flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
 		Db::exec(
 			get_label('round'), 
 			'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$round_names->main, $address_id, $club_id, $start, $end - $start, $event_flags, LANG_ALL, $scoring_id, $scoring_version, '{}', $tournament_id, $rules_code);
+			$round_name, $address_id, $club_id, $start, $end - $start, $event_flags, LANG_ALL, $scoring_id, $scoring_version, '{}', $tournament_id, $rules_code);
 		list ($round_id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');
 		$log_details = new stdClass();
-		$log_details->name = $round_names->main;
+		$log_details->name = $round_name;
 		$log_details->tournament_id = $tournament_id;
 		$log_details->club_id = $club_id;
 		$log_details->address_id = $address_id;

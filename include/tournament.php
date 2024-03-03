@@ -136,13 +136,23 @@ class TournamentPageBase extends PageBase
 			list($s->series_id, $s->series_name, $s->series_flags, $s->stars, $s->league_id, $s->league_name, $s->league_flags) = $row;
 			$this->series[] = $s;
 		}
+		
+		$this->is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id);
+		if ($this->is_manager && isset($_REQUEST['show_all']))
+		{
+			$this->show_all = '&show_all';
+			$this->flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
+		}
+		else
+		{
+			$this->show_all = '';
+		}
 	}
 	
 	protected function show_title()
 	{
 		echo '<table class="head" width="100%">';
 
-		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id);
 		$menu = array
 		(
 			new MenuItem('tournament_info.php?id=' . $this->id, get_label('Tournament'), get_label('General tournament information')),
@@ -168,7 +178,7 @@ class TournamentPageBase extends PageBase
 				// new MenuItem('tournament_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
-		if ($is_manager)
+		if ($this->is_manager)
 		{
 			$manager_menu = array
 			(
@@ -266,6 +276,77 @@ class TournamentPageBase extends PageBase
 		echo '</td></tr></table></td></tr>';
 		
 		echo '</table>';
+	}
+	
+	protected function show_hidden_table_message($condition = NULL)
+	{
+		$result = true;
+		$text = NULL;
+		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0 && ($this->flags & (TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK)) != 0)
+		{
+			$hide_table = ($this->flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET;
+			$hide_bonus = ($this->flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET;
+			$delimiter = '';
+			switch ($hide_table)
+			{
+			case 1:
+				$text = get_label('Tournament tables are hidden for this tournament until it ends.');
+				$hide_bonus = 0;
+				$result = false;
+				break;
+			case 2:
+				list ($hidden_games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND e.round = 1', $this->id, $condition);
+				if ($hidden_games_count > 0)
+				{
+					$text = get_label('Tournament tables of the finals are hidden for this tournament until it ends.');
+					$delimiter = '<br>';
+				}
+				break;
+			case 3:
+				list ($hidden_games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND e.round IN (1, 2)', $this->id, $condition);
+				if ($hidden_games_count > 0)
+				{
+					$text = get_label('Tournament tables of the finals and semi-finals are hidden for this tournament until it ends.');
+					$delimiter = '<br>';
+				}
+				break;
+			}
+			switch ($hide_bonus)
+			{
+			case 1:
+				$text .= $delimiter . get_label('Bonus points are hidden for this tournament until it ends.');
+				break;
+			case 2:
+				list ($hidden_games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND e.round = 1', $this->id, $condition);
+				if ($hidden_games_count > 0)
+				{
+					$text .= $delimiter . get_label('Bonus points of the finals are hidden for this tournament until it ends.');
+				}
+				break;
+			case 3:
+				list ($hidden_games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND e.round IN (1, 2)', $this->id, $condition);
+				if ($hidden_games_count > 0)
+				{
+					$text .= $delimiter . get_label('Bonus points of the finals and semi-finals are hidden for this tournament until it ends.');
+				}
+				break;
+			}
+		}
+		
+		if (!is_null($text))
+		{
+			echo '<p><table class="transp" width="100%"><tr><td width="32">';
+			if ($this->is_manager)
+			{
+				echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show the actual scoring tables.') . '"><img src="images/аttention.png"></button>';
+			}
+			else
+			{
+				echo '<img src="images/аttention.png">';
+			}
+			echo '</td><td><h3>' . $text . '</h3></td></tr></table></p>';
+		}
+		return $result;
 	}
 }
 

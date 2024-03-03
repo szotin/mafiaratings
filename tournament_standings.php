@@ -153,7 +153,7 @@ class Page extends TournamentPageBase
 			echo '<td width="' . (count($team->players) * 50) . '">';
 			foreach ($team->players as $player)
 			{
-				echo '<a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . '">';
+				echo '<a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . $this->show_all . '">';
 				$tournament_user_pic->
 					set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
 					set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
@@ -297,14 +297,14 @@ class Page extends TournamentPageBase
 			}
 			echo '</td>';
 			
-			echo '<td><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . '">';
+			echo '<td><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . $this->show_all . '">';
 			echo '<table class="transp" width="100%"><tr><td width="56">';
 			$tournament_user_pic->
 				set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
 				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
 				set($player->id, $player->name, $player->flags);
 			$tournament_user_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . '">' . $player->name . '</a></td>';
+			echo '</a></td><td><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . $this->show_all . '">' . $player->name . '</a></td>';
 			if (isset($player->nom_flags) && $player->nom_flags)
 			{
 				echo '<td align="right">';
@@ -508,6 +508,11 @@ class Page extends TournamentPageBase
 	
 	protected function show_body()
 	{
+		if (!$this->show_hidden_table_message())
+		{
+			return;
+		}
+		
 		$is_teams = ($this->flags & TOURNAMENT_FLAG_TEAM) != 0;
 		$team_view = $is_teams && (!isset($_REQUEST['teams']) || $_REQUEST['teams'] == 1);
 		

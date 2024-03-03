@@ -283,6 +283,10 @@ class ApiPage extends GetApiPageBase
 				$event->scoring_id = (int)$event->scoring_id;
 				$event->scoring_version = (int)$event->scoring_version;
 				$event->scoring_options = json_decode($event->scoring_options);
+				if ($flags & EVENT_FLAG_CANCELED)
+				{
+					$event->canceled = true;
+				}
 				if (!is_null($tournament_id))
 				{
 					$event->tournament_id = (int)$tournament_id;
@@ -318,7 +322,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('rules_code', 'Rules code. For example: <a href="events.php?rules_code=00000000100101010200000000000">' . PRODUCT_URL . '/api/get/events.php?rules_code=00000000100101010200000000000</a> returns all events where the rules with the code 00000000100101010200000000000 was used. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('user_id', 'User id. For example: <a href="events.php?user_id=25">' . PRODUCT_URL . '/api/get/events.php?user_id=25</a> returns all events where Fantomas was playing.', '-');
 		$help->request_param('langs', 'Languages filter. A bit combination of language ids. For example: <a href="events.php?langs=1">' . PRODUCT_URL . '/api/get/events.php?langs=1</a> returns all events that support English as their language.' . valid_langs_help(), '-');
-		$help->request_param('canceled', '0 - exclude canceled events (default); 1 - incude canceled events; 2 - canceled events only. For example: <a href="events.php?canceled=2">' . PRODUCT_URL . '/api/get/events.php?canceled=2</a> returns all canceled events.', '-');
+		$help->request_param('canceled', '0 - exclude canceled events (default); 1 - incude canceled events; 2 - canceled events only. For example: <a href="events.php?canceled=2">' . PRODUCT_URL . '/api/get/events.php?canceled=2</a> returns all canceled events.', '0');
 		$help->request_param('lod', 'Level of details. 0 - basic (default); 1 - extended. Include club name/icon, city/country name, etc. For example: <a href="events.php?club=1&lod=1">' . PRODUCT_URL . '/api/get/events.php?club=1&lod=1</a> returns events with all the fields that have lod >= 1.', '-');
 		$help->request_param('count', 'Returns events count instead of the events themselves. For example: <a href="events.php?name_contains=an&count">' . PRODUCT_URL . '/api/get/events.php?name_contains=an&count</a> returns how many events contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="events.php?page=1">' . PRODUCT_URL . '/api/get/events.php?page=1</a> returns the second page of events by time from newest to oldest.', '-');
@@ -345,7 +349,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('notes', 'Event notes.');
 			$param->sub_param('fee', 'Event admission rate.','fee is unknown');
 			$param->sub_param('currency_id', 'Currency id for the admission rate.','fee is unknown');
-			$param->sub_param('canceled', 'Trus for canceled events, false for others.');
+			$param->sub_param('canceled', 'True for canceled events, false for others.', 'false');
 			$param->sub_param('scoring_id', 'Scoring system id for this event.');
 			$param->sub_param('scoring_version', 'The version of scoring system id for this event.');
 			api_scoring_help($param->sub_param('scoring_options', 'Scoring options for this event.'));

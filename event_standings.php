@@ -86,6 +86,11 @@ class Page extends EventPageBase
 	{
 		global $_profile, $_page;
 		
+		if (!$this->show_hidden_table_message())
+		{
+			return;
+		}
+		
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
 		echo '<table class="transp" width="100%">';
@@ -98,7 +103,7 @@ class Page extends EventPageBase
 		
 		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
 		
-		$players = event_scores($this->event->id, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->scoring_options);
+		$players = event_scores($this->event->id, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->scoring_options, $this->event->tournament_flags, $this->event->round_num);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{
@@ -155,7 +160,7 @@ class Page extends EventPageBase
 				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->event->club_id)->
 				set($player->id, $player->name, $player->flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
-			echo '</td><td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . '">' . $player->name . '</a></td>';
+			echo '</td><td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">' . $player->name . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($player->club_id) && $player->club_id > 0)
 			{

@@ -101,6 +101,25 @@ define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent
 
 $_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_EXTRA, SCORING_GROUP_LEGACY, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
+function is_hiding_bonus_needed($tournament_flags, $round_num)
+{
+	if ($tournament_flags & TOURNAMENT_FLAG_FINISHED)
+	{
+		return false;
+	}
+	
+	switch (($tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
+	{
+		case 1:
+			return true;
+		case 2:
+			return $round_num == 1;
+		case 3:
+			return $round_num == 1 || $round_num == 2;
+	}
+	return false;
+}
+
 function compare_role_scores($role, $player1, $player2)
 {
 	if (is_null($player1))
@@ -1064,11 +1083,32 @@ function get_players_condition($players_list)
     return new SQL($players_condition_str);
 }
     
-function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
+function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num)
 {
 	global $_scoring_groups, $_lang;
 
-	// todo: replace user name with user id
+	if (($tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
+	{
+		switch (($tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
+		{
+			case 1:
+				return array();
+			case 2:
+				if ($round_num == 1)
+				{
+					return array();
+				}
+				break;
+			case 3:
+				if ($round_num == 1 || $round_num == 2)
+				{
+					return array();
+				}
+				break;
+		}
+	}
+
+	// todo: replace user name with name id
 	if (!isset($_lang))
 	{
 		$_lang = 1;
@@ -1141,6 +1181,11 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options)
 	while ($row = $query->next())
 	{
 		list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
+		if (is_hiding_bonus_needed($tournament_flags, $round_num))
+		{
+			$extra_points = 0;
+			$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
+		}
 		$player = $players[$player_id];
 		add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options);
 	}
@@ -1433,7 +1478,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 {
 	global $_lang;
 	
-	// todo: replace user name with user id
+	// todo: replace user name with user name id
 	if (!isset($_lang))
 	{
 		$_lang = 1;
@@ -1441,6 +1486,22 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 	if (is_null($normalizer))
 	{
 		$normalizer = new stdClass();
+	}
+	
+	$hide_table_condition = new SQL();
+	if (($tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
+	{
+		switch (($tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
+		{
+			case 1:
+				return array();
+			case 2:
+				$hide_table_condition = new SQL(' AND e.round <> 1');
+				break;
+			case 3:
+				$hide_table_condition = new SQL(' AND e.round NOT IN (1,2)');
+				break;
+		}
 	}
 	
 	$event_scorings = NULL;
@@ -1451,13 +1512,15 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 	$stat_flags = get_scoring_stat_flags($scoring, $options);
     
     $condition = get_players_condition($players_list);
+	$condition->add($hide_table_condition);
 
 	// Calculate first night kill rates and games count per player
 	$max_games_played = 0;
 	$max_rounds_played = 0;
 	if (!$condition->is_empty())
 	{
-		$query = new DbQuery('SELECT p.user_id, COUNT(DISTINCT g.id), COUNT(DISTINCT g.event_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 GROUP BY p.user_id', $tournament_id);
+		$query = new DbQuery('SELECT p.user_id, COUNT(DISTINCT g.id), COUNT(DISTINCT g.event_id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $hide_table_condition);
+		$query->add(' GROUP BY p.user_id');
 		while ($row = $query->next())
 		{
 			list($uid, $games_played, $rounds_played) = $row;
@@ -1475,6 +1538,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		' tu.flags, cu.flags' .
 			' FROM players p' . 
 			' JOIN games g ON g.id = p.game_id' . 
+			' JOIN events e ON e.id = g.event_id' . 
 			' JOIN users u ON u.id = p.user_id' . 
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
@@ -1513,7 +1577,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$red_win_rate = 0;
 		if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
 		{
-            list ($count, $red_wins) = Db::record(get_label('tournament'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id);
+            list ($count, $red_wins) = Db::record(get_label('tournament'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $hide_table_condition);
             if ($count > 0)
             {
                 $red_win_rate = max(min((float)($red_wins / $count), 1), 0);
@@ -1525,11 +1589,16 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
         // echo '</pre><br>';
         
         // Calculate scores
-        $query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, e.name FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $condition);
+        $query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, e.name, e.round FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $condition);
         $query->add(' ORDER BY g.end_time');
         while ($row = $query->next())
         {
-            list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_name) = $row;
+            list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_name, $round_num) = $row;
+			if (is_hiding_bonus_needed($tournament_flags, $round_num))
+			{
+				$extra_points = 0;
+				$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
+			}
 			$player = $players[$player_id];
             add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options, $event_name);
         }
@@ -1537,7 +1606,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     else
     {
 		// prepare scorings per event
-		$query = new DbQuery('SELECT id, name, scoring_options FROM events WHERE tournament_id = ?', $tournament_id);
+		$query = new DbQuery('SELECT e.id, e.name, e.scoring_options FROM events e WHERE e.tournament_id = ?', $tournament_id, $hide_table_condition);
         while ($row = $query->next())
         {
             list($event_id, $event_name, $event_scoring_options) = $row;
@@ -1605,6 +1674,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				new DbQuery('SELECT p.user_id, COUNT(g.id), SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)), SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))'.
 				' FROM players p' .
 				' JOIN games g ON g.id = p.game_id' .
+				' JOIN events e ON e.id = g.event_id' .
 				' WHERE g.event_id IN(' . $group->events . ') AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $condition);
             $query->add(' GROUP BY p.user_id');
             while ($row = $query->next())
@@ -1623,7 +1693,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$no_event_red_win_rate = 0;
 		if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
 		{
-			list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 AND e.tournament_id <> g.tournament_id', $tournament_id);
+			list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 AND e.tournament_id <> g.tournament_id', $tournament_id, $hide_table_condition);
 			if ($count > 0)
 			{
 				$no_event_red_win_rate = max(min((float)($red_wins / $count), 1), 0);
@@ -1652,14 +1722,18 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			$no_event_players[$player->id] = $player;
 		}
 		
-		//print_json($event_scorings);
-		
 		// Calculate scores
-		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, g.event_id FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $condition);
+		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, g.event_id, e.round FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $condition);
 		$query->add(' ORDER BY g.end_time');
 		while ($row = $query->next())
 		{
-			list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_id) = $row;
+			list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_id, $round_num) = $row;
+			if (is_hiding_bonus_needed($tournament_flags, $round_num))
+			{
+				$extra_points = 0;
+				$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
+			}
+			
 			if (isset($event_scorings[$event_id]))
 			{
 				$s = $event_scorings[$event_id];
@@ -1688,7 +1762,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     }
 	
 	// Add event extra points
-	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id);
+	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id, $hide_table_condition);
 	while ($row = $query->next())
 	{
 		list ($event_id, $player_id, $points) = $row;
@@ -1792,7 +1866,7 @@ function add_tournament_nominants($tournament_id, $players)
 	// find out minimum player games to count tournament for a player
 	// We do it in a separate query because we calculate maximum number of games using only main rounds - excluding finals and semi-finals.
 	$max_games = 0;
-	$query1 = new DbQuery('SELECT p.user_id, count(g.id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ? AND (e.flags & ' . EVENT_FLAG_WITH_SELECTION . ') = 0 AND g.is_canceled = 0 AND g.is_rating <> 0 GROUP BY p.user_id', $tournament_id);
+	$query1 = new DbQuery('SELECT p.user_id, count(g.id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ? AND e.round = 0 AND g.is_canceled = 0 AND g.is_rating <> 0 GROUP BY p.user_id', $tournament_id);
 	while ($row1 = $query1->next())
 	{
 		list($player_id, $games_played) = $row1;

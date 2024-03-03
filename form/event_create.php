@@ -43,7 +43,7 @@ try
 		list($tid, $tname) = $row;
 		show_option($tid, $event->tournament_id, $tname);
 	}
-	echo '</select></td></tr>';
+	echo '</select> <span id="form-round-span"></span></td></tr>';
 	
 	echo '<tr><td>'.get_label('Date').':</td><td>';
 	echo '<input type="checkbox" id="form-multiple" onclick="multipleChange()"> ' . get_label('multiple events');
@@ -162,14 +162,6 @@ try
 	}
 	echo '> '.get_label('non-rating event.');
 	
-	echo '<br><input type="checkbox" id="form-selection"';
-	if (($event->flags & EVENT_FLAG_WITH_SELECTION) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> ' . get_label('with players selection e.g. tournament finals, semi-finals, etc');
-	echo '</td></tr>';
-	
 	echo '</table>';
 	
 	echo '<table class="transp" width="100%"><tr>';
@@ -227,13 +219,21 @@ try
 		}
 	}
 	
+	var roundVal = 0;
 	function tournamentChange()
 	{
 		var tid = $("#form-tournament").val();
+		var roundHtml = "";
 		if (tid > 0)
 		{
+			roundHtml = '<select id="form-round" onchange="roundChange()">';
+			roundHtml += '<option value="0"' + (roundVal == 0 ? ' selected' : '') + '><?php echo get_label('main round'); ?></option>';
+			roundHtml += '<option value="1"' + (roundVal == 1 ? ' selected' : '') + '><?php echo get_label('final'); ?></option>';
+			roundHtml += '<option value="2"' + (roundVal == 2 ? ' selected' : '') + '><?php echo get_label('semi-final'); ?></option>';
+			roundHtml += '<option value="3"' + (roundVal == 3 ? ' selected' : '') + '><?php echo get_label('quoter-final'); ?></option>';
+			roundHtml += '</select>';
+			
 			$("#form-scoring-group-div").show();
-			$("#form-selection").prop('disabled', false);
 			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
 			{
 				var t = obj.tournaments[0];
@@ -247,16 +247,41 @@ try
 		}
 		else
 		{
+			roundHtml = '<input type="hidden" id="form-round">';
+			roundVal = 0;
+			
 			$("#form-scoring-group").val('');
 			mr.onChangeScoring('form-scoring', 0, onScoringChange);
 			$("#form-scoring-group-div").hide();
 			$("#form-rules").prop('disabled', false);
 			$("#form-scoring-sel").prop('disabled', false);
 			$("#form-scoring-ver").prop('disabled', false);
-			$("#form-selection").prop('disabled', true);
 		}
+		$("#form-round-span").html(roundHtml);
 	}
 	tournamentChange();
+	
+	function roundName()
+	{
+		if (roundVal == 0)
+			return "<?php echo get_label('main round'); ?>";
+		else if (roundVal == 1)
+			return "<?php echo get_label('final'); ?>";
+		else if (roundVal == 2)
+			return "<?php echo get_label('semi-final'); ?>";
+		else if (roundVal == 3)
+			return "<?php echo get_label('quoter-final'); ?>";
+		return "";
+	}
+	
+	function roundChange()
+	{
+		var n = roundName();
+		var n1 = $("#form-name").val();
+		roundVal = $("#form-round").val();
+		if (n == n1 || n1 == "")
+			$("#form-name").val(roundName());
+	}
 	
 	var old_address_value = "<?php echo $selected_address; ?>";
 	function newAddressChange()
@@ -317,7 +342,6 @@ try
 			$("#form-notes").val(e.notes);
 			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>) != 0);
 			$("#form-fun").prop('checked', (e.flags & <?php echo EVENT_FLAG_FUN; ?>) != 0);
-			$("#form-selection").prop('checked', (e.flags & <?php echo EVENT_FLAG_WITH_SELECTION; ?>) != 0);
 			mr.setLangs(e.langs, "form-");
 			addressClick();
 			tournamentChange();
@@ -346,13 +370,13 @@ try
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
-		if ($("#form-selection").attr('checked')) _flags |= <?php echo EVENT_FLAG_WITH_SELECTION; ?>;
 		
 		var params =
 		{
 			op: "create",
 			club_id: <?php echo $club_id; ?>,
 			tournament_id: $("#form-tournament").val(),
+			round_num: $("#form-round").val(),
 			name: $("#form-name").val(),
 			duration: strToTimespan($("#form-duration").val()),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),

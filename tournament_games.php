@@ -88,7 +88,7 @@ class Page extends TournamentPageBase
 			$condition->add(' AND g.is_canceled = 0');
 		}
 		
-		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
+		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$moder_pic =

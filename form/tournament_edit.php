@@ -10,6 +10,14 @@ require_once '../include/datetime.php';
 
 initiate_session();
 
+function show_hide_bonus_array()
+{
+	echo '[[0,"' . get_label('Show bonus points') . '"],';
+	echo '[' . (1 << TOURNAMENT_HIDE_BONUS_MASK_OFFSET) . ',"' . get_label('Hide bonus points') . '"],';
+	echo '[' . (3 << TOURNAMENT_HIDE_BONUS_MASK_OFFSET) . ',"' . get_label('Hide bonus points starting from the semi-finals') . '"],';
+	echo '[' . (2 << TOURNAMENT_HIDE_BONUS_MASK_OFFSET) . ',"' . get_label('Hide bonus points in the finals') . '"]]';
+}
+
 try
 {
 	dialog_title(get_label('Edit [0]', get_label('tournament')));
@@ -60,7 +68,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="240">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
 	
-	echo '<td align="center" valign="top" rowspan="13" width="120">';
+	echo '<td align="center" valign="top" rowspan="14" width="120">';
 	start_upload_logo_button($tournament_id);
 	echo get_label('Change logo') . '<br>';
 	$tournament_pic = new Picture(TOURNAMENT_PICTURE);
@@ -161,6 +169,15 @@ try
 		langs_checkboxes($langs, $club->langs, NULL, '<br>', 'form-');
 		echo '</td></tr>';
 	}
+	
+	$hide_table = $flags & TOURNAMENT_HIDE_TABLE_MASK;
+	echo '<tr><td>'.get_label('Scoring table').':</td><td><p>' . get_label('Before the tournament is finished') . ': ';
+	echo '</p><p><select id="form-hide-table" onchange="onChangeHidenTable()">';
+	show_option(0, $hide_table, get_label('Show the scoring table'));
+	show_option(1 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET, $hide_table, get_label('Hide the scoring table'));
+	show_option(2 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET, $hide_table, get_label('Hide the scoring table in the finals'));
+	show_option(3 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET, $hide_table, get_label('Hide the scoring table starting from the semi-finals'));
+	echo '</select></p><p><div id="form-hide-bonus-span"></div></p></td></tr>';
 	
 	echo '<tr><td>'.get_label('Special awards').':</td><td>';
 	echo '<table class="transp" width="100%">';
@@ -297,6 +314,46 @@ try
 	}
 	setSeries();
 	
+	var hideBonusVal = <?php echo $flags & TOURNAMENT_HIDE_BONUS_MASK; ?>;
+	function onChangeHidenTable()
+	{
+		var v = $("#form-hide-table").val();
+		var count = 0;
+		var html = "";
+		if (v == 0)
+			count = 4;
+		else if (v == <?php echo 2 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET; ?>)
+			count = 3;
+		else if (v == <?php echo 3 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET; ?>)
+			count = 2;
+		if (count > 0)
+		{
+			var l = <?php show_hide_bonus_array(); ?>;
+			html += '<select id="form-hide-bonus" onchange="onChangeHiddenBonus()">';
+			for (var i = 0; i < count; ++i)
+			{
+				html += '<option value="' + l[i][0] + '"';
+				if (l[i][0] == hideBonusVal)
+				{
+					html += ' selected';
+				}
+				html += '>' +  l[i][1] + '</option>';
+			}
+			html += '</select>';
+		}
+		else
+		{
+			html = '<input type="hidden" id="form-hide-bonus" value="0">';
+		}
+		$('#form-hide-bonus-span').html(html);
+	}
+	onChangeHidenTable();
+	
+	function onChangeHiddenBonus()
+	{
+		hideBonusVal = $("#form-hide-bonus").val();
+	}
+	
 	function starsChanged(control, stars)
 	{
 		
@@ -425,6 +482,8 @@ try
 		if ($("#form-award-black").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_BLACK; ?>;
 		if ($("#form-award-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_SHERIFF; ?>;
 		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
+		_flags |= $("#form-hide-table").val();
+		_flags |= $("#form-hide-bonus").val();
 		
 		var series = [];
 		for (const i in seriesList) 

@@ -89,7 +89,12 @@ try
 	}
 	echo '</tr></table>';
 	
-	list($json) = Db::record(get_label('game'), 'SELECT json FROM games WHERE id = ?', $game_id);
+	list($json, $club_id, $tournament_id, $tournament_flags, $round_num) = Db::record(get_label('game'), 
+		'SELECT g.json, g.club_id, t.id, t.flags, e.round'.
+		' FROM games g'.
+		' JOIN events e ON e.id = g.event_id'.
+		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+		' WHERE g.id = ?', $game_id);
 	$game = new Game($json);
 	$player = $game->data->players[$player_num-1];
 	$player_id = 0;
@@ -119,6 +124,46 @@ try
 	if (empty($player_name))
 	{
 		$full_player_name = $player_name = $player_num;
+	}
+	
+	if (isset($_REQUEST['show_all']) && 
+		is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id))
+	{
+		$tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
+	}
+	
+	$show_bonus = true;
+	if (($tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0 && ($_profile == NULL || $_profile->user_id != $player_id))
+	{
+		switch (($tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
+		{
+			case 1:
+				return;
+			case 2:
+				if ($round_num == 1)
+				{
+					return;
+				}
+				break;
+			case 3:
+				if ($round_num == 1 || $round_num == 2)
+				{
+					return;
+				}
+				break;
+		}
+		switch (($tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
+		{
+			case 1:
+				$show_bonus = false;
+				break;
+			case 2:
+				$show_bonus = ($round_num != 1);
+				break;
+			case 3:
+				$show_bonus = ($round_num != 1 && $round_num != 2);
+				break;
+		}
 	}
 	
 	echo '<table class="bordered" width="100%"><tr><td width="1">';
@@ -160,36 +205,39 @@ try
 		echo get_label('Don') . '</p><p><img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;"> ';
 	}
 	echo '</p></h3></td></tr>';
-	
-	if (isset($player->bonus))
+
+	if ($show_bonus)
 	{
-		echo '<tr><td align="center">';
-		if (is_array($player->bonus))
+		if (isset($player->bonus))
 		{
-			echo '<table class="transp"><tr>';
-			foreach ($player->bonus as $bonus)
+			echo '<tr><td align="center">';
+			if (is_array($player->bonus))
 			{
-				echo '<td width="24">';
-				show_bonus($bonus);
-				echo '</td>';
+				echo '<table class="transp"><tr>';
+				foreach ($player->bonus as $bonus)
+				{
+					echo '<td width="24">';
+					show_bonus($bonus);
+					echo '</td>';
+				}
+				echo '</tr></table>';
 			}
-			echo '</tr></table>';
+			else
+			{
+				show_bonus($player->bonus);
+			}
+			
+			echo '</td><td>';
+			if (isset($player->comment))
+			{
+				echo '<i>' . $player->comment . '</i></td></tr>';
+			}	
+			echo '</td></tr>';
 		}
-		else
+		else if (isset($player->comment))
 		{
-			show_bonus($player->bonus);
+			echo '<tr><td colspan="2"><i>' . $player->comment . '</i></td></tr>';
 		}
-		
-		echo '</td><td>';
-		if (isset($player->comment))
-		{
-			echo '<i>' . $player->comment . '</i></td></tr>';
-		}	
-		echo '</td></tr>';
-	}
-	else if (isset($player->comment))
-	{
-		echo '<tr><td colspan="2"><i>' . $player->comment . '</i></td></tr>';
 	}
 
 	$alive = array(true, true, true, true, true, true, true, true, true, true);

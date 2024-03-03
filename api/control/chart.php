@@ -116,7 +116,15 @@ class ApiPage extends ControlApiPageBase
 				}
 				$event_id = (int)$_REQUEST['id'];
 				
-				list($scoring_id, $scoring_version, $scoring, $scoring_options, $timezone) = Db::record(get_label('event'), 'SELECT e.scoring_id, e.scoring_version, s.scoring, e.scoring_options, c.timezone FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
+				list($scoring_id, $scoring_version, $scoring, $scoring_options, $timezone, $tournament_id, $tournament_flags, $round_num, $club_id) = 
+					Db::record(get_label('event'), 
+						'SELECT e.scoring_id, e.scoring_version, s.scoring, e.scoring_options, c.timezone, t.id, t.flags, e.round, e.club_id'.
+						' FROM events e'.
+						' JOIN addresses a ON a.id = e.address_id'.
+						' JOIN cities c ON c.id = a.city_id'.
+						' JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version'.
+						' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+						' WHERE e.id = ?', $event_id);
 				if (isset($_REQUEST['scoring_id']) && $_REQUEST['scoring_id'] > 0)
 				{
 					$scoring_id = (int)$_REQUEST['scoring_id'];
@@ -146,13 +154,19 @@ class ApiPage extends ControlApiPageBase
 					}
 				}
 
+				if (isset($_REQUEST['show_all']) &&
+					is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id))
+				{
+					$tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
+				}	
+				
 				$players = NULL;
 				if (isset($_REQUEST['players']))
 				{
 					$players = explode(',', $_REQUEST['players']);
 				}
 				
-				$players = event_scores($event_id, $players, SCORING_LOD_HISTORY | SCORING_LOD_NO_SORTING, $scoring, $scoring_options);
+				$players = event_scores($event_id, $players, SCORING_LOD_HISTORY | SCORING_LOD_NO_SORTING, $scoring, $scoring_options, $tournament_flags, $round_num);
 				$players_count = count($players);
 				foreach ($user_ids as $user_id)
 				{
@@ -180,7 +194,7 @@ class ApiPage extends ControlApiPageBase
 				}
 				$tournament_id = (int)$_REQUEST['id'];
 				
-				list($scoring_id, $scoring, $normalizer_id, $normalizer, $scoring_options, $timezone, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.scoring_id, s.scoring, t.normalizer_id, n.normalizer, t.scoring_options, c.timezone, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version LEFT OUTER JOIN normalizer_versions n ON n.normalizer_id = t.normalizer_id AND n.version = t.normalizer_version WHERE t.id = ?', $tournament_id);
+				list($scoring_id, $scoring, $normalizer_id, $normalizer, $scoring_options, $timezone, $tournament_flags, $club_id) = Db::record(get_label('tournament'), 'SELECT t.scoring_id, s.scoring, t.normalizer_id, n.normalizer, t.scoring_options, c.timezone, t.flags, t.club_id FROM tournaments t JOIN addresses a ON a.id = t.address_id JOIN cities c ON c.id = a.city_id JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version LEFT OUTER JOIN normalizer_versions n ON n.normalizer_id = t.normalizer_id AND n.version = t.normalizer_version WHERE t.id = ?', $tournament_id);
 				if (isset($_REQUEST['scoring_id']) && $_REQUEST['scoring_id'] > 0)
 				{
 					$scoring_id = (int)$_REQUEST['scoring_id'];
@@ -233,6 +247,12 @@ class ApiPage extends ControlApiPageBase
 					}
 				}
 
+				if (isset($_REQUEST['show_all']) &&
+					is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id))
+				{
+					$tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
+				}	
+				
 				$players = NULL;
 				if (isset($_REQUEST['players']))
 				{
