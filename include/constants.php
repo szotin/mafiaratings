@@ -201,23 +201,25 @@ define('DEFAULT_ROW_COUNT', 20);
 define('DEFAULT_COLUMN_COUNT', 5);
 
 // event flags
-//  1 - 0x0001 -      1 - event should not be shown in the event list before the end of the event
-//  2 - 0x0002 -      2 - event should not be shown in the event list after the end of the event
-//  3 - 0x0004 -      4 - canceled
-//  4 - 0x0008 -      8 - everyone can referee
-//  5 - 0x0010 -     16 - event is finished - all scoring is complete
-//  6 - 0x0020 -     32 - event is for fun, most of the games are non-rating
-//  7 - 0x0040 -     64 - icon mask
-//  8 - 0x0080 -    128 - icon mask
-//  9 - 0x0100 -    256 - icon mask
+//  1  - 0x0001 -      1 - event should not be shown in the event list before the end of the event
+//  2  - 0x0002 -      2 - event should not be shown in the event list after the end of the event
+//  3  - 0x0004 -      4 - canceled
+//  4  - 0x0008 -      8 - everyone can referee
+//  5  - 0x0010 -     16 - event is finished - all scoring is complete
+//  6  - 0x0020 -     32 - event is for fun, most of the games are non-rating
+//  7  - 0x0040 -     64 - icon mask
+//  8  - 0x0080 -    128 - icon mask
+//  9  - 0x0100 -    256 - icon mask
+//  10 - 0x0200 -    512 - event is pinned to the front page of the site (only site admins can do it)
 define('EVENT_FLAG_HIDDEN_BEFORE', 0x1);
 define('EVENT_FLAG_HIDDEN_AFTER', 0x2);
 define('EVENT_FLAG_CANCELED', 0x4);
 define('EVENT_FLAG_ALL_CAN_REFEREE', 0x8);
 define('EVENT_FLAG_FINISHED', 0x10);
 define('EVENT_FLAG_FUN', 0x20);
+define('EVENT_FLAG_PINNED', 0x200);
 define('EVENT_MASK_HIDDEN', 0x3); // EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_HIDDEN_AFTER
-define('EVENT_EDITABLE_MASK', 0x228); // EVENT_FLAG_ALL_CAN_REFEREE | EVENT_FLAG_FUN
+define('EVENT_EDITABLE_MASK', 0x228); // EVENT_FLAG_ALL_CAN_REFEREE | EVENT_FLAG_FUN | EVENT_FLAG_PINNED
 
 define('EVENT_ICON_MASK', 0x1c0);
 define('EVENT_ICON_MASK_OFFSET', 6);
@@ -233,7 +235,7 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 //  4 - 0x000008 -       8 - canceled
 //  5 - 0x000010 -      16 - long term tournament. Like a seasonal club championship.
 //  6 - 0x000020 -      32 - single games from non-tournament events can be assigned to the tournament.
-//  7 - 0x000040 -      64 - available but not always 0 in the existing data
+//  7 - 0x000040 -      64 - tournament is pinned to the front page of the site (only site admins can do it)
 //  8 - 0x000080 -     128 - tournament is finished - all scoring is complete
 //  9 - 0x000100 -     256 - teams tournament
 // 10 - 0x000200 -     512 - we have no games information about this tournament - scores are entered manually
@@ -252,6 +254,7 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
+define('TOURNAMENT_FLAG_PINNED', 0x40);
 define('TOURNAMENT_FLAG_FINISHED', 0x80);
 define('TOURNAMENT_FLAG_TEAM', 0x100);
 define('TOURNAMENT_FLAG_MANUAL_SCORE', 0x200);
@@ -261,7 +264,7 @@ define('TOURNAMENT_FLAG_AWARD_SHERIFF', 0x1000);
 define('TOURNAMENT_FLAG_AWARD_BLACK', 0x2000);
 define('TOURNAMENT_FLAG_AWARD_DON', 0x4000);
 define('TOURNAMENT_FLAG_IMPORTED', 0x8000);
-define('TOURNAMENT_EDITABLE_MASK', 0x3f7f30); // LONG_TERM | SINGLE_GAME | TEAM | MANUAL_SCORE | AWARD_* | HIDE_MASK_*
+define('TOURNAMENT_EDITABLE_MASK', 0x3f7f70); // LONG_TERM | SINGLE_GAME | TOURNAMENT_FLAG_PINNED | TEAM | MANUAL_SCORE | AWARD_* | HIDE_MASK_*
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);
@@ -291,10 +294,12 @@ define('COMPETITION_BEST_DON', 0x10);
 //  4 - 0x0008 -      8 - canceled
 //  5 - 0x0010 -     16 - dirty flag - something is changed in series scoring. Tables must be rebuilt.
 //  6 - 0x0020 -     32 - series is finished - all scoring is complete
+//  7 - 0x0040 -     64 - series is pinned to the front page of the site (only site admins can do it)
 define('SERIES_FLAG_CANCELED', 0x8);
 define('SERIES_FLAG_DIRTY',    0x10);
 define('SERIES_FLAG_FINISHED', 0x20);
-define('SERIES_EDITABLE_MASK', 0x0); // 
+define('SERIES_FLAG_PINNED', 0x40);
+define('SERIES_EDITABLE_MASK', 0x40); // SERIES_FLAG_PINNED
 
 define('SERIES_ICON_MASK', 0x7);
 define('SERIES_ICON_MASK_OFFSET', 0);

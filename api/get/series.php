@@ -176,7 +176,7 @@ class ApiPage extends GetApiPageBase
 				$s->icon = $server_url . $series_pic->url(ICONS_DIR);
 				$s->picture = $server_url . $series_pic->url(TNAILS_DIR);
 				
-				$s->flags = (int)$s->flags | SERIES_EDITABLE_MASK;
+				$s->flags = (int)$s->flags & SERIES_EDITABLE_MASK;
 				$series[] = $s;
 			}
 		}
@@ -200,7 +200,7 @@ class ApiPage extends GetApiPageBase
 				$s->league_id = (int)$s->league_id;
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
-				$s->flags = (int)$s->flags | SERIES_EDITABLE_MASK;
+				$s->flags = (int)$s->flags & SERIES_EDITABLE_MASK;
 				
 				$series_pic->set($s->id, $s->name, $s->flags)->set($s->league_id, $league_name, $league_flags);
 				$s->has_picture = $series_pic->has_image(true);

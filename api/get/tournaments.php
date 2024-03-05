@@ -242,7 +242,7 @@ class ApiPage extends GetApiPageBase
 				$tournament->icon = $server_url . $tournament_pic->url(ICONS_DIR);
 				$tournament->picture = $server_url . $tournament_pic->url(TNAILS_DIR);
 				
-				$tournament->flags = (int)$tournament->flags | TOURNAMENT_EDITABLE_MASK;
+				$tournament->flags = (int)$tournament->flags & TOURNAMENT_EDITABLE_MASK;
 				if (!is_null($fee) && !is_null($currency_id))
 				{
 					$tournament->fee = (int)$fee;
@@ -279,7 +279,7 @@ class ApiPage extends GetApiPageBase
 					$tournament->scoring_version = (int)$tournament_scoring_version;
 				}
 				$tournament->rules = rules_code_to_object($rules_code);
-				$tournament->flags = (int)$tournament->flags | TOURNAMENT_EDITABLE_MASK;
+				$tournament->flags = (int)$tournament->flags & TOURNAMENT_EDITABLE_MASK;
 				if (!is_null($fee) && !is_null($currency_id))
 				{
 					$tournament->fee = (int)$fee;

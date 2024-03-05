@@ -215,6 +215,6 @@ class Page extends GeneralPageBase
 }
 
 $page = new Page();
-$page->run(get_label('Events history'));
+$page->run(get_label('Events'));
 
 ?>
