@@ -1599,8 +1599,11 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				$extra_points = 0;
 				$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
 			}
-			$player = $players[$player_id];
-            add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options, $event_name);
+			if (isset($players[$player_id])) // It happens that it is not set but I have no idea why. To be investigated.
+			{
+				$player = $players[$player_id];
+				add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $player->games_count, $player->killed_first_count, $lod_flags, $options, $event_name);
+			}
         }
     }
     else

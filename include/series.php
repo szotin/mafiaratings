@@ -30,6 +30,10 @@ function show_series_buttons($id, $start_time, $duration, $flags, $league_id, $l
 				echo '<button class="icon" onclick="mr.cancelSeries(' . $id . ', \'' . get_label('Are you sure you want to cancel the series?') . '\')" title="' . get_label('Cancel the series') . '"><img src="images/delete.png" border="0"></button>';
 			}
 		}
+		if (($flags & SERIES_FLAG_FINISHED) == 0 && $now < $start_time + $duration)
+		{
+			echo '<button class="icon" onclick="mr.finishSeries(' . $id . ', \'' . get_label('Are you sure you want to finish the series?') . '\', \'' . get_label('The series is finished. Results will be applyed to series within one hour') . '\')" title="' . get_label('Finish the series') . '"><img src="images/time.png" border="0"></button>';
+		}
 	}
 }
 
@@ -145,6 +149,19 @@ class SeriesPageBase extends PageBase
 		echo '<td rowspan="2" valign="top"><h2 class="series">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->start_time, $this->timezone) . '</p>';
+		if (($this->flags & SERIES_FLAG_FINISHED) == 0)
+		{
+			echo '<p class="subtitle"><i>(';
+			if ($this->start_time < $time)
+			{
+				echo get_label('playing now');
+			}
+			else
+			{
+				echo get_label('not started yet');
+			}
+			echo ')</i></p>';
+		}
 		echo '</td>';
 		
 		echo '<td valign="top" align="right">';

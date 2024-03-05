@@ -293,13 +293,13 @@ function get_series_importance($place, $players_count)
 	return $importance;
 }
 	
-function complete_series()
+function calculate_series()
 {
 	$result = false;
 	$query = new DbQuery(
 		'SELECT s.id, s.flags, g.gaining FROM series s' . 
 		' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version' .
-		' WHERE (s.flags & ' . SERIES_FLAG_DIRTY . ') <> 0 LIMIT 1');
+		' WHERE (s.flags & ' . SERIES_FLAG_DIRTY  . ') <> 0 LIMIT 1');
 	if ($row = $query->next())
 	{
 		list($series_id, $series_flags, $gaining) = $row;
@@ -315,7 +315,7 @@ function complete_series()
 		}
 		
 		$child_series = array();
-		$query = new DbQuery('SELECT ss.child_id, ss.stars, count(s.user_id) FROM series_series ss JOIN series_places s ON s.series_id = ss.child_id WHERE ss.parent_id = ? GROUP BY ss.child_id', $series_id);
+		$query = new DbQuery('SELECT ss.child_id, ss.stars, count(sp.user_id) FROM series_series ss JOIN series_places sp ON sp.series_id = ss.child_id JOIN series s ON s.id = ss.child_id WHERE ss.parent_id = ? AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0 GROUP BY ss.child_id', $series_id);
 		while ($row = $query->next())
 		{
 			list($child_series_id, $stars, $players) = $row;
@@ -531,7 +531,10 @@ function complete_series()
 		}
 		
 		Db::exec(get_label('series'), 'UPDATE series SET flags = flags & ' . ~SERIES_FLAG_DIRTY .  ' WHERE id = ?', $series_id);
-		Db::exec(get_label('series'), 'UPDATE series s JOIN series_series ss ON ss.parent_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .  ' WHERE ss.child_id = ?', $series_id);
+		if ($series_flags & SERIES_FLAG_FINISHED)
+		{
+			Db::exec(get_label('series'), 'UPDATE series s JOIN series_series ss ON ss.parent_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .  ' WHERE ss.child_id = ?', $series_id);
+		}
 		
 		$log_str = 'Wrote ' . $players_count;
 		$log_str .= ' players to series ' . $series_id . '.';
@@ -540,6 +543,24 @@ function complete_series()
 		return true;
 	}
 	return false;
+}
+
+function complete_series()
+{
+	$result = false;
+	Db::begin();
+	$query = new DbQuery(
+		'SELECT s.id FROM series s WHERE s.start_time + s.duration < UNIX_TIMESTAMP() AND (s.flags & ' . SERIES_FLAG_FINISHED . ') = 0 LIMIT 1');
+	if ($row = $query->next())
+	{
+		list($series_id) = $row;
+		Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_FINISHED .  ' WHERE id = ?', $series_id);
+		Db::exec(get_label('series'), 'UPDATE series s JOIN series_series ss ON ss.parent_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .  ' WHERE ss.child_id = ?', $series_id);
+		writeLog('Series ' . $series_id . ' is finished.');
+		$result = true;
+	}
+	Db::commit();
+	return $result;
 }
 
 try
@@ -556,7 +577,7 @@ try
 	$count = 0;
 	while ($spent_time < MAX_EXEC_TIME)
 	{
-		if (!complete_event() && !complete_tournament() && !complete_series())
+		if (!complete_event() && !complete_tournament() && !calculate_series() && !complete_series())
 		{
 			break;
 		}

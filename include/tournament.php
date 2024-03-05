@@ -240,6 +240,19 @@ class TournamentPageBase extends PageBase
 		{
 			echo '<p class="subtitle"><a href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank"><img src="images/fiim.png" title="' . get_label('MWT link') . '"></a></p>';
 		}
+		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)
+		{
+			echo '<p class="subtitle"><i>(';
+			if ($this->start_time < $time)
+			{
+				echo get_label('playing now');
+			}
+			else
+			{
+				echo get_label('not started yet');
+			}
+			echo ')</i></p>';
+		}
 		echo '</td>';
 		
 		echo '<td valign="top" align="right">';

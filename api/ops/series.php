@@ -1,3 +1,4 @@
+
 <?php
 
 require_once '../../include/api.php';
@@ -416,6 +417,40 @@ class ApiPage extends OpsApiPageBase
 		return $help;
 	}
 	
+	//-------------------------------------------------------------------------------------------------------
+	// finish
+	//-------------------------------------------------------------------------------------------------------
+	function finish_op()
+	{
+		$series_id = (int)get_required_param('series_id');
+		$now = time();
+		
+		Db::begin();
+		list($league_id, $start_time, $duration, $flags) = Db::record(get_label('series'), 'SELECT league_id, start_time, duration, flags FROM series WHERE id = ?', $series_id);
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+		if (($flags & SERIES_FLAG_FINISHED) == 0)
+		{
+			if ($now < $start_time)
+			{
+				$start_time = $now;
+			}
+			if ($start_time + $duration > $now)
+			{
+				$duration = $now - $start_time;
+			}
+			Db::exec(get_label('series'), 'UPDATE series SET start_time = ?, duration = ? WHERE id = ?', $start_time, $duration, $series_id);
+			db_log(LOG_OBJECT_SERIES, 'finished', NULL, $series_id, NULL, $league_id);
+		}
+		Db::commit();
+	}
+	
+	function finish_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Finish the series. After finishing the series within one hour players will get all parent series points for this series. Finish series functionality lets not to wait until the time expires and get the results quicker.');
+		$help->request_param('series_id', 'Series id.');
+		return $help;
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------

@@ -290,8 +290,10 @@ define('COMPETITION_BEST_DON', 0x10);
 //  3 - 0x0004 -      4 - icon mask
 //  4 - 0x0008 -      8 - canceled
 //  5 - 0x0010 -     16 - dirty flag - something is changed in series scoring. Tables must be rebuilt.
+//  6 - 0x0020 -     32 - series is finished - all scoring is complete
 define('SERIES_FLAG_CANCELED', 0x8);
 define('SERIES_FLAG_DIRTY',    0x10);
+define('SERIES_FLAG_FINISHED', 0x20);
 define('SERIES_EDITABLE_MASK', 0x0); // 
 
 define('SERIES_ICON_MASK', 0x7);

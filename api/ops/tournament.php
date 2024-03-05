@@ -1021,11 +1021,6 @@ class ApiPage extends OpsApiPageBase
 				}
 				Db::exec(get_label('round'), 'UPDATE events SET start_time = ?, duration = ? WHERE id = ?', $round_start, $round_duration, $round_id);
 			}
-			
-			
-			
-			
-			
 			db_log(LOG_OBJECT_TOURNAMENT, 'finished', NULL, $tournament_id, $club_id);
 		}
 		Db::commit();
