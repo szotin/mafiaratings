@@ -226,6 +226,13 @@ try
 	}
 	echo  '> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
 	
+	echo '<input type="checkbox" id="form-pin"';
+	if ($flags & SERIES_FLAG_PINNED)
+	{
+		echo ' checked';
+	}
+	echo  '> ' . get_label('pin to the main page.') . '<br>';
+	
 	echo '</td></tr>';
 	echo '</table>';
 	
@@ -482,6 +489,7 @@ try
 		if ($("#form-award-black").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_BLACK; ?>;
 		if ($("#form-award-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_SHERIFF; ?>;
 		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
+		if ($("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		_flags |= $("#form-hide-table").val();
 		_flags |= $("#form-hide-bonus").val();
 		

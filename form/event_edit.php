@@ -182,6 +182,13 @@ try
 	}
 	echo '> '.get_label('non-rating event.');
 	
+	echo '<br><input type="checkbox" id="form-pin"';
+	if (($flags & EVENT_FLAG_PINNED) != 0)
+	{
+		echo ' checked';
+	}
+	echo '> '.get_label('pin to the main page.');
+	
 	echo '</td></tr>';	
 	echo '</table>';
 	
@@ -323,6 +330,7 @@ try
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
+		if ($("#form-pin").attr('checked')) _flags |= <?php echo EVENT_FLAG_PINNED; ?>;
 		
 		var params =
 		{

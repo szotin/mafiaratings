@@ -86,6 +86,12 @@ try
 	echo '</select></td></tr>';
 	
 	echo '<tr><td>' . get_label('Notes') . ':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
+	
+	echo '<tr><td colspan="2">';
+	echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.');
+	echo '</td></tr>';
+	
+	echo '</table>';
 		
 ?>	
 
@@ -207,6 +213,8 @@ try
 		var _langs = mr.getLangs('form-');
 		
 		var _flags = 0;
+		if ($("#form-pin").attr('checked')) _flags |= <?php echo SERIES_FLAG_PINNED; ?>;
+		
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
 		

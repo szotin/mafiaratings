@@ -105,7 +105,16 @@ try
 	
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
-	echo '</table>';
+	echo '<tr><td colspan="2">';
+	echo '<input type="checkbox" id="form-pin"';
+	if ($flags & SERIES_FLAG_PINNED)
+	{
+		echo ' checked';
+	}
+	echo  '> ' . get_label('pin to the main page.');
+	echo '</td></tr>';
+	
+	echo'</table>';
 	
 ?>	
 
@@ -233,6 +242,9 @@ try
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
 		
+		var _flags = 0;
+		if ($("#form-pin").attr('checked')) _flags |= <?php echo SERIES_FLAG_PINNED; ?>;
+		
 		var series = [];
 		for (const i in seriesList) 
 		{
@@ -257,6 +269,7 @@ try
 			end: dateToStr(_end),
 			gaining_id: $('#form-gaining').val(),
 			langs: _langs,
+			flags: _flags,
 		};
 		
 		json.post("api/ops/series.php", params, onSuccess);
