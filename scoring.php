@@ -40,12 +40,21 @@ class Page extends PageBase
 				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 			}
 		}
+		list($tournaments_count) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $this->scoring_id, $this->scoring_version);
+		list($events_count) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . EVENT_FLAG_FINISHED . ') <> 0', $this->scoring_id, $this->scoring_version);
+		$this->dependants = $tournaments_count + $events_count;
+		
 		$this->_title = get_label('Scoring system') . ': ' . $this->scoring_name;
 	}
 	
 	protected function show_body()
 	{
-		echo '<p><button id="save" onclick="saveData()" disabled>' . get_label('Save') . '</button></p>';
+		echo '<p><button id="save" onclick="saveData(0)" disabled>' . get_label('Save') . '</button>';
+		if ($this->dependants > 0)
+		{
+			echo ' <button id="overwrite" onclick="overwriteData()" disabled>' . get_label('Overwrite current version') . '</button>';
+		}
+		echo '</p>';
 		echo '<script src="js/scoring_editor.js"></script>';
 		echo '<div id="scoring-editor"></div>';
 	}
@@ -75,17 +84,21 @@ class Page extends PageBase
 				shotPoints: "<?php echo get_label('Depending on number of times player was killed first night'); ?>",
 				shotPointsFiim: "<?php echo get_label('Depending on number of times player was killed first night by FIIM rules'); ?>",
 				points: "<?php echo get_label('points'); ?>",
-				minDif: "<?php echo get_label('min difficulty'); ?>",
-				maxDif: "<?php echo get_label('max difficulty'); ?>",
-				minNight1: "<?php echo get_label('min kill rate'); ?>",
-				maxNight1: "<?php echo get_label('max kill rate'); ?>",
+				minDif: "<?php echo get_label('min difficulty percent'); ?>",
+				maxDif: "<?php echo get_label('max difficulty percent'); ?>",
+				minNight1: "<?php echo get_label('min first night kill percentage/count'); ?>",
+				maxNight1: "<?php echo get_label('max first night kill percentage/count'); ?>",
 				sorting: "<?php echo get_label('When the scores are the same'); ?>",
 				higher: "<?php echo get_label('higher'); ?>",
 				lower: "<?php echo get_label('lower'); ?>",
 				theOne: "<?php echo get_label('The winner is the one who has'); ?>",
 				sumOf: "<?php echo get_label('sum of'); ?>",
 				name: "<?php echo get_label('Scoring system name'); ?>",
-				version: "<?php echo get_label('Version'); ?>"
+				percent: "<?php echo get_label('First night killing %'); ?>",
+				dependingOnPercent: "<?php echo get_label('depending on the perentage of the kills rather than the absolute value'); ?>",
+				lostOnly: "<?php echo get_label('taking only the lost games'); ?>",
+				version: "<?php echo get_label('Version'); ?>",
+				version: "<?php echo get_label('Version'); ?>",
 			},
 			sections:
 			{
@@ -139,26 +152,35 @@ class Page extends PageBase
 		
 		function onDataChange(d, isDirty)
 		{
-			console.log(isDirty);
 			data = d;
-			$('#save').prop('disabled', !isDirty || !isScoringDataCorrect());
+			var dsb = !isDirty || !isScoringDataCorrect();
+			$('#save').prop('disabled', dsb);
+			$('#overwrite').prop('disabled', dsb);
 		}
 		
-		function saveData()
+		function saveData(ov)
 		{
-			console.log(data.scoring);
 			var params =
 			{
 				op: 'change'
 				, scoring_id: data.id
 				, name: data.name
 				, scoring: JSON.stringify(data.scoring)
+				, overwrite: ov
 			};
 			json.post("api/ops/scoring.php", params, function(response)
 			{
 				setScoringVersion(response.scoring_version);
 			});
 			dirty(false);
+		}
+		
+		function overwriteData()
+		{
+			dlg.yesNo("<?php echo get_label('The results of the existing tournaments will change. Are you sure you want to overwrite the current version?'); ?>", null, null, function()
+			{
+				saveData(1);
+			});
 		}
 		
 		initScoringEditor(data, onDataChange);

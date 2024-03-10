@@ -161,9 +161,15 @@ class ApiPage extends OpsApiPageBase
 			$scoring = check_json($scoring);
 		}
 		
-		$overwrite = false;
 		list ($old_scoring, $version) = Db::record(get_label('scoring system'), 'SELECT v.scoring, s.version FROM scorings s JOIN scoring_versions v ON v.scoring_id = s.id AND v.version = s.version WHERE s.id = ?', $scoring_id);
-		if ($old_scoring != $scoring)
+		
+		$overwrite = (int)get_optional_param('overwrite', 0);
+		$unfinish_dependents = true;
+		if ($old_scoring == $scoring)
+		{
+			$scoring = NULL;
+		}
+		else if (!$overwrite)
 		{
 			list ($usageCount) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . EVENT_FLAG_FINISHED . ') <> 0', $scoring_id, $version);
 			if ($usageCount <= 0)
@@ -171,10 +177,7 @@ class ApiPage extends OpsApiPageBase
 				list ($usageCount) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $scoring_id, $version);
 			}
 			$overwrite = ($usageCount <= 0);
-		}
-		else
-		{
-			$scoring = NULL;
+			$unfinish_dependents = false;
 		}
 		
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
@@ -195,6 +198,11 @@ class ApiPage extends OpsApiPageBase
 					$log_details = new stdClass();
 					$log_details->scoring = $scoring;
 					db_log(LOG_OBJECT_SCORING_SYSTEM, 'changed', $log_details, $scoring_id, $club_id, $league_id);
+				}
+				if ($unfinish_dependents)
+				{
+					Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE scoring_id = ? AND scoring_version = ?', $scoring_id, $version);
+					Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ~' . EVENT_FLAG_FINISHED . ' WHERE scoring_id = ? AND scoring_version = ?', $scoring_id, $version);
 				}
 			}
 			else
@@ -218,9 +226,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change scoring system. If some of the past events or tournaments are already using this scoring system, the scoring rules are not overwritten. We create a new version of scoring rules. Old events contunie using old version. All newly created events use the new version. Events that already exist but not finished yet will use the new version.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change scoring system. If some of the past events or tournaments are already using this scoring system, the scoring rules are not overwritten. We create a new version of scoring rules. Old events contunie using old version. All newly created events use the new version. Events that already exist but not finished yet will use the new version unless overwite parameter is set.');
 		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) updating requires <em>admin</em> permissions.');
 		$help->request_param('name', 'Scoring system name.', 'remains the same.');
+		$help->request_param('overwrite', '0 - create a new version if scoring system is already used, stay with the same version if not. 1 - overwrite the existing version even if it is used.', 'is 0.');
 		api_scoring_help($help->request_param('scoring', 'Scoring rules:', 'remain the same.'));
 		$help->response_param('version', 'Current scoring system version.');
 		return $help;
