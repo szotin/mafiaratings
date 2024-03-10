@@ -71,6 +71,9 @@ function spinnerChange(controlId)
 		case 'percent':
             policy.percent = value / 100;
             break;
+		case 'weight':
+            policy.extra_points_weight = value;
+            break;
     }
     dirty(true);
 }
@@ -135,6 +138,7 @@ function pointsPolicyChange(sectionName, policyNum)
             delete policy.max_night1;
 			delete policy.lost_only;
 			delete policy.percent;
+			delete policy.extra_points_weight;
             break;
         case 2:
             if (typeof policy.points != "undefined")
@@ -159,6 +163,7 @@ function pointsPolicyChange(sectionName, policyNum)
             delete policy.points;
             delete policy.min_difficulty;
             delete policy.max_difficulty;
+			delete policy.extra_points_weight;
             break;
         case 3:
 			if (typeof policy.fiim_first_night_score == "undefined")
@@ -174,6 +179,23 @@ function pointsPolicyChange(sectionName, policyNum)
             delete policy.min_night1;
             delete policy.max_night1;
 			delete policy.lost_only;
+			delete policy.extra_points_weight;
+            break;
+		case 4:
+			if (typeof policy.extra_points_weight == "undefined")
+			{
+				policy.extra_points_weight = 1;
+			}
+            delete policy.points;
+			delete policy.fiim_first_night_score;
+            delete policy.min_points;
+            delete policy.max_points;
+            delete policy.min_night1;
+            delete policy.max_night1;
+            delete policy.min_difficulty;
+            delete policy.max_difficulty;
+			delete policy.lost_only;
+			delete policy.percent;
             break;
         default:
             if (typeof policy.points == "undefined")
@@ -195,6 +217,7 @@ function pointsPolicyChange(sectionName, policyNum)
             delete policy.max_difficulty;
 			delete policy.lost_only;
 			delete policy.percent;
+			delete policy.extra_points_weight;
             break;
     }
     refreshScoringEditor(true);
@@ -207,6 +230,7 @@ function pointsPolicySelect(sectionName, policyNum, option)
     html += '<option value="1"' + (option == 1 ? ' selected' : '') + '>' + _data.strings.difPoints + '</option>';
     html += '<option value="2"' + (option == 2 ? ' selected' : '') + '>' + _data.strings.shotPoints + '</option>';
     html += '<option value="3"' + (option == 3 ? ' selected' : '') + '>' + _data.strings.shotPointsFiim + '</option>';
+    html += '<option value="4"' + (option == 4 ? ' selected' : '') + '>' + _data.strings.bonusPoints + '</option>';
     html += '</select><p>';
     return html;
 }
@@ -240,6 +264,11 @@ function pointsHtml(sectionName, policyNum)
         html += _data.strings.percent + ': <input type="number" style="width: 45px;" id="' + base + '-percent" step="1" min="0" max="100" onChange="spinnerChange(\'' + base + '-percent\')"><br>';
         html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-fiim_night" step="0.1" onChange="spinnerChange(\'' + base + '-fiim_night\')">';
     }
+	else if (typeof policy.extra_points_weight != "undefined")
+	{
+        html += pointsPolicySelect(sectionName, policyNum, 4);
+        html += _data.strings.extraPointsWeight + ': <input type="number" style="width: 45px;" id="' + base + '-weight" step="0.1" onChange="spinnerChange(\'' + base + '-weight\')">';
+	}
     else
     {
         html += pointsPolicySelect(sectionName, policyNum, 0);
@@ -586,6 +615,10 @@ function refreshScoringEditor(isDirty)
 				{
 					$(base + '-percent').val(policy.percent * 100);
 					$(base + '-fiim_night').val(policy.fiim_first_night_score);
+				}
+				else if (typeof policy.extra_points_weight != "undefined")
+				{
+					$(base + '-weight').val(policy.extra_points_weight);
 				}
 				else
 				{

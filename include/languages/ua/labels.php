@@ -511,7 +511,7 @@ $labelMenu = array (
 'scoring normalizer' => '[EMPTY]', // normalizer.php, normalizer.php, tournament_competition.php, tournament_player.php, tournament_player.php, tournament_standings.php, tournament_standings.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/tournament.php, api/ops/tournament.php, api/control/chart.php, api/control/chart.php, form/scoring_normalization_show.php, form/scoring_normalization_show.php, form/scoring_show.php, form/scoring_show.php, normalizer.php, normalizer.php, tournament_competition.php, tournament_player.php, tournament_player.php, tournament_standings.php, tournament_standings.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/tournament.php, api/ops/tournament.php, api/control/chart.php, api/control/chart.php, form/scoring_normalization_show.php, form/scoring_normalization_show.php, form/scoring_show.php, form/scoring_show.php
 'Scoring normalizer' => '[EMPTY]', // normalizer.php, include/scoring.php, include/scoring.php, api/ops/normalizer.php, form/club_edit.php, form/league_edit.php, form/normalizer_create.php, normalizer.php, include/scoring.php, include/scoring.php, api/ops/normalizer.php, form/club_edit.php, form/league_edit.php, form/normalizer_create.php
 'For' => '[EMPTY]', // normalizer.php, scoring.php, normalizer.php, scoring.php
-'Version' => '[EMPTY]', // normalizer.php, scoring.php, scoring.php, normalizer.php, scoring.php, scoring.php
+'Version' => '[EMPTY]', // normalizer.php, scoring.php, normalizer.php, scoring.php
 'Add new policy.' => '[EMPTY]', // normalizer.php, scoring.php, normalizer.php, scoring.php
 'Delete policy.' => '[EMPTY]', // normalizer.php, scoring.php, normalizer.php, scoring.php
 'Normalization policies' => '[EMPTY]', // normalizer.php, normalizer.php
@@ -1609,6 +1609,12 @@ $labelMenu = array (
 'First night killing %' => '[EMPTY]', // scoring.php, scoring.php
 'depending on the perentage of the kills rather than the absolute value' => '[EMPTY]', // scoring.php, scoring.php
 'taking only the lost games' => '[EMPTY]', // scoring.php, scoring.php
+'Overwrite current version' => '[EMPTY]', // scoring.php, scoring.php
+'min difficulty percent' => '[EMPTY]', // scoring.php, scoring.php
+'max difficulty percent' => '[EMPTY]', // scoring.php, scoring.php
+'min first night kill percentage/count' => '[EMPTY]', // scoring.php, scoring.php
+'max first night kill percentage/count' => '[EMPTY]', // scoring.php, scoring.php
+'The results of the existing tournaments will change. Are you sure you want to overwrite the current version?' => '[EMPTY]', // scoring.php, scoring.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1623,12 +1629,8 @@ $labelMenu = array (
 'Display pattern must contain \'#\' character.' => '[EMPTY]', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php, api/ops/country.php, api/ops/currency.php, api/ops/currency.php
 'when player\'s first-night-killed rate is 0%' => '[EMPTY]', // form/scoring_show.php, form/scoring_show.php
 'when player\'s first-night-killed rate is lower than [0]%' => '[EMPTY]', // form/scoring_show.php, form/scoring_show.php
-'Overwrite current version' => '[EMPTY]', // scoring.php
-'min difficulty percent' => '[EMPTY]', // scoring.php
-'max difficulty percent' => '[EMPTY]', // scoring.php
-'min first night kill percentage/count' => '[EMPTY]', // scoring.php
-'max first night kill percentage/count' => '[EMPTY]', // scoring.php
-'The results of the existing tournaments will change. Are you sure you want to overwrite the current version?' => '[EMPTY]', // scoring.php
+'Depending on bonus points given by a referee' => '[EMPTY]', // scoring.php
+'Multiply bonus points to' => '[EMPTY]', // scoring.php
 );
 
 return $labelMenu;

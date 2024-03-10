@@ -1129,7 +1129,7 @@ $labelMenu = array (
 'Depending on number of times player was killed first night by FIIM rules' => 'В зависимости от частоты убийств первой ночью по правилам ФИИМ', // scoring.php
 'The winner is the one who has' => 'Побеждает тот у кого', // scoring.php
 'sum of' => 'в сумме', // scoring.php
-'Version' => 'Версия', // normalizer.php, scoring.php, scoring.php
+'Version' => 'Версия', // normalizer.php, scoring.php
 'scoring normalizer' => 'выравнивание баллов', // normalizer.php, normalizer.php, tournament_competition.php, tournament_player.php, tournament_player.php, tournament_standings.php, tournament_standings.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/tournament.php, api/ops/tournament.php, api/control/chart.php, api/control/chart.php, form/scoring_normalization_show.php, form/scoring_normalization_show.php, form/scoring_show.php, form/scoring_show.php
 'Scoring normalizer' => 'Выравнивание баллов', // normalizer.php, include/scoring.php, include/scoring.php, api/ops/normalizer.php, form/club_edit.php, form/league_edit.php, form/normalizer_create.php
 'Scoring normalizer name' => 'Название системы выравнивания баллов', // club_scorings.php, league_scorings.php, normalizer.php, scorings.php, api/ops/normalizer.php, api/ops/normalizer.php, api/ops/normalizer.php, form/normalizer_create.php
@@ -1609,6 +1609,12 @@ $labelMenu = array (
 'First night killing %' => 'Процент убийств первой ночью', // scoring.php
 'depending on the perentage of the kills rather than the absolute value' => 'в зависимости от процента убийств, а не от общего количества', // scoring.php
 'taking only the lost games' => 'учитывать только проигранные игры', // scoring.php
+'Overwrite current version' => 'Перезаписать текущую версию', // scoring.php
+'min difficulty percent' => 'минимальный процент трудности', // scoring.php
+'max difficulty percent' => 'максимальный процент трудности', // scoring.php
+'min first night kill percentage/count' => 'минимальный процент/количество убийств в первую ночь', // scoring.php
+'max first night kill percentage/count' => 'максимальный процент/количество убийств в первую ночь', // scoring.php
+'The results of the existing tournaments will change. Are you sure you want to overwrite the current version?' => 'Результаты уже прошедших турниров изменятся. Вы уверены, что хотите перезаписать текущую версию?', // scoring.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1623,12 +1629,8 @@ $labelMenu = array (
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
 'Display pattern must contain \'#\' character.' => 'правило показа валюты обязано содержать символ \'#\'.', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php
-'Overwrite current version' => 'Перезаписать текущую версию', // scoring.php
-'min difficulty percent' => 'минимальный процент трудности', // scoring.php
-'max difficulty percent' => 'максимальный процент трудности', // scoring.php
-'min first night kill percentage/count' => 'минимальный процент/количество убийств в первую ночь', // scoring.php
-'max first night kill percentage/count' => 'максимальный процент/количество убийств в первую ночь', // scoring.php
-'The results of the existing tournaments will change. Are you sure you want to overwrite the current version?' => 'Результаты уже прошедших турниров изменятся. Вы уверены, что хотите перезаписать текущую версию?', // scoring.php
+'Depending on bonus points given by a referee' => 'В зависимости от допов выданных судьей', // scoring.php
+'Multiply bonus points to' => 'Умножить все допы на', // scoring.php
 );
 
 return $labelMenu;

@@ -83,6 +83,7 @@ class Page extends PageBase
 				difPoints: "<?php echo get_label('Depending on the game difficulty'); ?>",
 				shotPoints: "<?php echo get_label('Depending on number of times player was killed first night'); ?>",
 				shotPointsFiim: "<?php echo get_label('Depending on number of times player was killed first night by FIIM rules'); ?>",
+				bonusPoints: "<?php echo get_label('Depending on bonus points given by a referee'); ?>",
 				points: "<?php echo get_label('points'); ?>",
 				minDif: "<?php echo get_label('min difficulty percent'); ?>",
 				maxDif: "<?php echo get_label('max difficulty percent'); ?>",
@@ -98,7 +99,7 @@ class Page extends PageBase
 				dependingOnPercent: "<?php echo get_label('depending on the perentage of the kills rather than the absolute value'); ?>",
 				lostOnly: "<?php echo get_label('taking only the lost games'); ?>",
 				version: "<?php echo get_label('Version'); ?>",
-				version: "<?php echo get_label('Version'); ?>",
+				extraPointsWeight: "<?php echo get_label('Multiply bonus points to'); ?>",
 			},
 			sections:
 			{
@@ -160,6 +161,7 @@ class Page extends PageBase
 		
 		function saveData(ov)
 		{
+			console.log(data.scoring);
 			var params =
 			{
 				op: 'change'
