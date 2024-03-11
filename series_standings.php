@@ -79,8 +79,8 @@ class Page extends SeriesPageBase
 		echo '<td width="80">'.get_label('Points').'</td>';
 		echo '<td width="80">'.get_label('Tournaments played').'</td>';
 		echo '<td width="80">'.get_label('Points per tournament').'</td>';
-		echo '<td width="80">'.get_label('Games played (won)').'</td>';
-		echo '<td width="80">'.get_label('Win rate').'</td>';
+		// echo '<td width="80">'.get_label('Games played (won)').'</td>';
+		// echo '<td width="80">'.get_label('Win rate').'</td>';
 		foreach ($parent_series as $s)
 		{
 			echo '<td width="36" align="center">';
@@ -132,13 +132,13 @@ class Page extends SeriesPageBase
 			echo '<td class="' . $highlight . '">' . format_score($points) . '</td>';
 			echo '<td>' . $tournaments . '</td>';
 			echo '<td>' . ($tournaments > 0 ? format_score($points / $tournaments) : '') . '</td>';
-			echo '<td>' . $games . ' (' . $wins . ')</td>';
-			echo '<td>' . ($games > 0 ? format_score($wins / $games) : '') . '</td>';
+			// echo '<td>' . $games . ' (' . $wins . ')</td>';
+			// echo '<td>' . ($games > 0 ? format_score($wins / $games) : '') . '</td>';
 			foreach ($parent_series as $s)
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . get_gaining_points($s->points, $place) . '</td>';
+					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place)) . '</td>';
 				}
 				else
 				{

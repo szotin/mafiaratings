@@ -184,7 +184,7 @@ class Page extends SeriesPageBase
 			' JOIN series s ON s.id = p.series_id'.
 			' JOIN series_series ss ON ss.child_id = s.id AND ss.parent_id = ?'.
 			' JOIN leagues l ON l.id = s.league_id'.
-			' WHERE p.user_id = ?', $this->id, $this->user_id);
+			' WHERE p.user_id = ? AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0', $this->id, $this->user_id);
 		while ($row = $query->next())
 		{
 			$c_series = new stdClass();
