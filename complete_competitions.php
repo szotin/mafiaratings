@@ -315,7 +315,13 @@ function calculate_series()
 		}
 		
 		$child_series = array();
-		$query = new DbQuery('SELECT ss.child_id, ss.stars, count(sp.user_id) FROM series_series ss JOIN series_places sp ON sp.series_id = ss.child_id JOIN series s ON s.id = ss.child_id WHERE ss.parent_id = ? AND (s.flags & ' . (SERIES_SERIES_FLAG_NOT_PAYED | SERIES_FLAG_FINISHED) . ') = ' . SERIES_FLAG_FINISHED . ' GROUP BY ss.child_id', $series_id);
+		$query = new DbQuery(
+			'SELECT ss.child_id, ss.stars, count(sp.user_id)'.
+			' FROM series_series ss'.
+			' JOIN series_places sp ON sp.series_id = ss.child_id'.
+			' JOIN series s ON s.id = ss.child_id'.
+			' WHERE ss.parent_id = ? AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0'.
+			' GROUP BY ss.child_id', $series_id);
 		while ($row = $query->next())
 		{
 			list($child_series_id, $stars, $players) = $row;
@@ -390,11 +396,13 @@ function calculate_series()
 		$query = new DbQuery(
 			'SELECT p.series_id, p.user_id, p.place, p.games, p.wins'.
 			' FROM series_places p'.
-			' JOIN series_series s ON s.child_id = p.series_id'.
-			' WHERE s.parent_id = ? AND (s.flags & ' . (SERIES_SERIES_FLAG_NOT_PAYED | SERIES_FLAG_FINISHED) . ') = ' . SERIES_FLAG_FINISHED, $series_id);
+			' JOIN series_series ss ON ss.child_id = p.series_id'.
+			' JOIN series s ON s.id = p.series_id'.
+			' WHERE ss.parent_id = ? AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0', $series_id);
 		while ($row = $query->next())
 		{
 			list($child_series_id, $player_id, $place, $games, $wins) = $row;
+			echo $child_series_id . '<br>';
 			if (!isset($players[$player_id]))
 			{
 				$player = new stdClass();
