@@ -402,7 +402,6 @@ function calculate_series()
 		while ($row = $query->next())
 		{
 			list($child_series_id, $player_id, $place, $games, $wins) = $row;
-			echo $child_series_id . '<br>';
 			if (!isset($players[$player_id]))
 			{
 				$player = new stdClass();
