@@ -44,16 +44,67 @@ try
 		$place = (int)$_REQUEST['place'];
 	}
 	
-	$table = create_gaining_table($gaining, $stars, $players, false);
-	echo '<table class="bordered light" width="100%">';
-	echo '<tr class="darker"><td width="100"><b>' . get_label('Place') . '</b></td><td><b>' . get_label('Points') . '</b></td></tr>';
-	for ($p = 1; $p <= $table->players; ++$p)
+	$message = false;
+	$table = create_gaining_table($gaining, $stars, $players, 0, false);
+	$all_the_same = true;
+	$default_points = get_gaining_points($table, 1, 0);
+	for ($p = 2; $p <= $table->players; ++$p)
 	{
-		echo '<tr';
-		echo ($p == $place ? ' class="darker"' : '');
-		echo '><td>' . $p . '</td><td>' . format_score(get_gaining_points($table, $p)) . '</td></tr>';
+		if (abs($default_points - get_gaining_points($table, $p, 0)) > 0.00001)
+		{
+			$all_the_same = false;
+			break;
+		}
 	}
-	echo '</table>';
+	
+	if (isset($table->pointsPool) && $table->players > 0)
+	{
+		echo '<p>';
+		switch ($table->tournamentScorePower)
+		{
+			case 0:
+				break;
+			case 1:
+				echo get_label('Еach player receives points from the pool in accordance with the points scored in the tournament[1]. The pool size is [0] points.', $table->pointsPool, '');
+				$message = true;
+				break;
+			case 2:
+				echo get_label('Еach player receives points from the pool in accordance with the points scored in the tournament[1]. The pool size is [0] points.', $table->pointsPool, get_label(' squared'));
+				$message = true;
+				break;
+			case 3:
+				echo get_label('Еach player receives points from the pool in accordance with the points scored in the tournament[1]. The pool size is [0] points.', $table->pointsPool, get_label(' cubed'));
+				$message = true;
+				break;
+			default:
+				echo get_label('Еach player receives points from the pool in accordance with the points scored in the tournament[1]. The pool size is [0] points.', $table->pointsPool, get_label(' raized to the [0] power', $table->tournamentScorePower));
+				$message = true;
+				break;
+		}
+		echo '</p>';
+	}	
+	if ($all_the_same)
+	{
+		if (abs($default_points) > 0.00001)
+		{
+			echo get_label('Plus everyoune receives [0] points.', format_score($default_points));
+		}
+	}
+	else
+	{
+		echo get_label('In addition to:');
+		echo '<p>';
+		echo '<table class="bordered light" width="100%">';
+		echo '<tr class="darker"><td width="100"><b>' . get_label('Place') . '</b></td><td><b>' . get_label('Points') . '</b></td></tr>';
+		for ($p = 1; $p <= $table->players; ++$p)
+		{
+			echo '<tr';
+			echo ($p == $place ? ' class="darker"' : '');
+			echo '><td>' . $p . '</td><td>' . format_score(get_gaining_points($table, $p, 0)) . '</td></tr>';
+		}
+		echo '</table>';
+		echo '</p>';
+	}
 }
 catch (Exception $e)
 {

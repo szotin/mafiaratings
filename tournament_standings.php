@@ -222,7 +222,16 @@ class Page extends TournamentPageBase
 			$s = new stdClass();
 			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
 			$gaining = json_decode($gaining);
-			$s->points = create_gaining_table($gaining, $s->stars, $real_players_count, false);
+			$s->sum_power = (int)get_gainig_sum_power($gaining, false);
+			$sum = 0;
+			if ($s->sum_power > 0)
+			{
+				foreach ($players as $p)
+				{
+					$sum += pow($p->points, $s->sum_power);
+				}
+			}
+			$s->points = create_gaining_table($gaining, $s->stars, $real_players_count, $sum, false);
 			$series[] = $s;
 		}
 		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
@@ -354,7 +363,7 @@ class Page extends TournamentPageBase
 			{
 				if ($player->credit && $s->stars > 0)
 				{
-					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place)) . '</td>';
+					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place, pow($player->points, $s->sum_power))) . '</td>';
 				}
 				else
 				{
@@ -412,7 +421,13 @@ class Page extends TournamentPageBase
 			$s = new stdClass();
 			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
 			$gaining = json_decode($gaining);
-			$s->points = create_gaining_table($gaining, $s->stars, $count, false);
+			$s->sum_power = (int)get_gainig_sum_power($gaining, false);
+			$sum = 0;
+			if ($s->sum_power > 0)
+			{
+				list($sum) = Db::record(get_label('tournament'), 'SELECT SUM(POW(tp.main_points + tp.bonus_points + tp.shot_points, ' . $s->sum_power . ')) FROM tournament_places tp WHERE tp.tournament_id = ?', $this->id);
+			}
+			$s->points = create_gaining_table($gaining, $s->stars, $count, $sum, false);
 			$series[] = $s;
 		}
 		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
@@ -493,7 +508,7 @@ class Page extends TournamentPageBase
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place)) . '</td>';
+					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place, pow($sum, $s->sum_power))) . '</td>';
 				}
 				else
 				{

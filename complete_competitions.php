@@ -306,17 +306,47 @@ function calculate_series()
 		$gaining = json_decode($gaining);
 //		print_json($gaining);
 
+		$t_sum_power = (int)get_gainig_sum_power($gaining, false);
+		if ($t_sum_power > 0)
+		{
+			$t_score_sum_query = 'SUM(POW(tp.main_points + tp.bonus_points + tp.shot_points, ' . $t_sum_power . '))';
+			$t_score_query = 'POW(p.main_points + p.bonus_points + p.shot_points, ' . $t_sum_power . ')';
+		}
+		else
+		{
+			$t_score_query = $t_score_sum_query = '0';
+		}
+		
+		$s_sum_power = (int)get_gainig_sum_power($gaining, true);
+		if ($s_sum_power > 0)
+		{
+			$s_score_sum_query = 'SUM(POW(sp.score, ' . $s_sum_power . '))';
+			$s_score_query = 'POW(sp.score, ' . $t_sum_power . ')';
+		}
+		else
+		{
+			$s_score_query = $s_score_sum_query = '0';
+		}
+//		echo formatted_json($gaining);
+		
 		$tournaments = array();
-		$query = new DbQuery('SELECT s.tournament_id, s.stars, count(t.user_id) FROM series_tournaments s JOIN tournament_places t ON t.tournament_id = s.tournament_id WHERE s.series_id = ? GROUP BY s.tournament_id', $series_id);
+		$query = new DbQuery(
+			'SELECT st.tournament_id, st.stars, COUNT(tp.user_id), '.$t_score_sum_query.
+			' FROM series_tournaments st'.
+			' JOIN tournament_places tp ON tp.tournament_id = st.tournament_id'.
+			' WHERE st.series_id = ? AND (st.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0'.
+			' GROUP BY st.tournament_id', $series_id);
+//		echo $query->get_parsed_sql() . '<br>';
 		while ($row = $query->next())
 		{
-			list($tournament_id, $stars, $players) = $row;
-			$tournaments[$tournament_id] = create_gaining_table($gaining, $stars, $players, false);
+			list($tournament_id, $stars, $players, $points_sum) = $row;
+//			echo 'tournament: ' . $tournament_id . '; stars: ' . $stars . '; players: ' . $players . '; sum: ' . $points_sum . '<br>';
+			$tournaments[$tournament_id] = create_gaining_table($gaining, $stars, $players, $points_sum, false);
 		}
 		
 		$child_series = array();
 		$query = new DbQuery(
-			'SELECT ss.child_id, ss.stars, count(sp.user_id)'.
+			'SELECT ss.child_id, ss.stars, COUNT(sp.user_id), '.$s_score_sum_query.
 			' FROM series_series ss'.
 			' JOIN series_places sp ON sp.series_id = ss.child_id'.
 			' JOIN series s ON s.id = ss.child_id'.
@@ -324,21 +354,21 @@ function calculate_series()
 			' GROUP BY ss.child_id', $series_id);
 		while ($row = $query->next())
 		{
-			list($child_series_id, $stars, $players) = $row;
-			$child_series[$child_series_id] = create_gaining_table($gaining, $stars, $players, true);
+			list($child_series_id, $stars, $players, $points_sum) = $row;
+			$child_series[$child_series_id] = create_gaining_table($gaining, $stars, $players, $points_sum, true);
 		}
 		
 		$max_tournaments = isset($gaining->maxTournaments) ? $gaining->maxTournaments : 0;
 		$players = array();
 		
 		$query = new DbQuery(
-			'SELECT t.tournament_id, p.user_id, p.place, p.games_count, p.wins'.
+			'SELECT t.tournament_id, p.user_id, p.place, p.games_count, p.wins, '.$t_score_query.
 			' FROM tournament_places p'.
 			' JOIN series_tournaments t ON t.tournament_id = p.tournament_id'.
 			' WHERE t.series_id = ? AND (t.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0', $series_id);
 		while ($row = $query->next())
 		{
-			list($tournament_id, $player_id, $place, $games, $wins) = $row;
+			list($tournament_id, $player_id, $place, $games, $wins, $score) = $row;
 			if (!isset($players[$player_id]))
 			{
 				$player = new stdClass();
@@ -361,7 +391,7 @@ function calculate_series()
 				$player = $players[$player_id];
 			}
 			
-			$points = get_gaining_points($tournaments[$tournament_id], $place);
+			$points = get_gaining_points($tournaments[$tournament_id], $place, $score);
 			if ($max_tournaments > 0)
 			{
 				if (count($player->p) >= $max_tournaments)
@@ -386,7 +416,7 @@ function calculate_series()
 			}
 			else
 			{
-				$player->points += get_gaining_points($tournaments[$tournament_id], $place);
+				$player->points += get_gaining_points($tournaments[$tournament_id], $place, $score);
 			}
 			++$player->tournaments;
 			$player->games += $games;
@@ -394,14 +424,14 @@ function calculate_series()
 		}
 		
 		$query = new DbQuery(
-			'SELECT p.series_id, p.user_id, p.place, p.games, p.wins'.
-			' FROM series_places p'.
-			' JOIN series_series ss ON ss.child_id = p.series_id'.
-			' JOIN series s ON s.id = p.series_id'.
+			'SELECT sp.series_id, sp.user_id, sp.place, sp.games, sp.wins, '.$s_score_query.
+			' FROM series_places sp'.
+			' JOIN series_series ss ON ss.child_id = sp.series_id'.
+			' JOIN series s ON s.id = sp.series_id'.
 			' WHERE ss.parent_id = ? AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0', $series_id);
 		while ($row = $query->next())
 		{
-			list($child_series_id, $player_id, $place, $games, $wins) = $row;
+			list($child_series_id, $player_id, $place, $games, $wins, $score) = $row;
 			if (!isset($players[$player_id]))
 			{
 				$player = new stdClass();
@@ -424,7 +454,7 @@ function calculate_series()
 				$player = $players[$player_id];
 			}
 			
-			$points = get_gaining_points($child_series[$child_series_id], $place);
+			$points = get_gaining_points($child_series[$child_series_id], $place, $score);
 			if ($max_tournaments > 0)
 			{
 				if (count($player->p) >= $max_tournaments)
@@ -449,7 +479,7 @@ function calculate_series()
 			}
 			else
 			{
-				$player->points += get_gaining_points($child_series[$child_series_id], $place);
+				$player->points += get_gaining_points($child_series[$child_series_id], $place, $score);
 			}
 			++$player->tournaments;
 			$player->games += $games;

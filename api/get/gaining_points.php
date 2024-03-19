@@ -63,11 +63,11 @@ class ApiPage extends GetApiPageBase
 		}
 		
 		$points = array();
-		$table = create_gaining_table($gaining, $stars, $players, $series);
+		$table = create_gaining_table($gaining, $stars, $players, 0, $series);
 		$this->response['table'] = $table;
 		for ($p = 1; $p <= $table->players; ++$p)
 		{
-			$points[] = get_gaining_points($table, $p);
+			$points[] = get_gaining_points($table, $p, 0);
 		}
 		$this->response['points'] = $points;
 	}

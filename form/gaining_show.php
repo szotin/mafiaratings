@@ -52,18 +52,7 @@ try
 	echo '<td align="right"><input type="checkbox" id="form-series" onClick="onChangeParams()"> ' . get_label('for series of tournaments') . '</td></tr>';
 	echo '</table>';
 	
-	$table = create_gaining_table($gaining, $stars, $players, false);
-	echo '<p><div id="form-gaining">';
-	echo '<table class="bordered light" width="100%">';
-	echo '<tr class="darker"><td width="100"><b>' . get_label('Place') . '</b></td><td><b>' . get_label('Points') . '</b></td></tr>';
-	for ($p = 1; $p <= $table->players; ++$p)
-	{
-		echo '<tr';
-		echo ($p == $place ? ' class="darker"' : '');
-		echo '><td>' . $p . '</td><td>' . format_score(get_gaining_points($table, $p)) . '</td></tr>';
-	}
-	echo '</table>';
-	echo '</div></p>';
+	echo '<p><div id="form-gaining"></div></p>';
 	
 ?>
 	<script>

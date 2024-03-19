@@ -59,7 +59,13 @@ class Page extends SeriesPageBase
 			$s = new stdClass();
 			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
 			$gaining = json_decode($gaining);
-			$s->points = create_gaining_table($gaining, $s->stars, $count, true);
+			$s->sum_power = (int)get_gainig_sum_power($gaining, false);
+			$sum = 0;
+			if ($s->sum_power > 0)
+			{
+				list($sum) = Db::record(get_label('tournament'), 'SELECT SUM(POW(tp.main_points + tp.bonus_points + tp.shot_points, ' . $s->sum_power . ')) FROM tournament_places tp WHERE tp.tournament_id = ?', $this->id);
+			}
+			$s->points = create_gaining_table($gaining, $s->stars, $count, $sum, true);
 			$parent_series[] = $s;
 		}
 		$parent_series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
@@ -138,7 +144,7 @@ class Page extends SeriesPageBase
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place)) . '</td>';
+					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place, pow($points, $s->sum_power))) . '</td>';
 				}
 				else
 				{

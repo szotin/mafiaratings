@@ -138,7 +138,7 @@ class ApiPage extends GetApiPageBase
 		
 		$server_url = get_server_url() . '/';
 		$league_pic = new Picture(LEAGUE_PICTURE);
-		$series_pic = new Picture(SERIES_PICTURE, $league_pic);
+		$series_pic = new Picture(SERIES_PICTURE);
 		$series = array();
 		if ($lod >= 1)
 		{
@@ -159,6 +159,7 @@ class ApiPage extends GetApiPageBase
 				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->notes, $rules, $s->league_id, $s->league_name, $s->league_flags) = $row;
 				$s->id = (int)$s->id;
 				$s->langs = (int)$s->langs;
+				$s->flags = (int)$s->flags;
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
 				$s->start = timestamp_to_string($s->timestamp, $timezone);
@@ -171,12 +172,12 @@ class ApiPage extends GetApiPageBase
 				$s->league_icon = $server_url . $league_pic->url(ICONS_DIR);
 				$s->league_picture = $server_url . $league_pic->url(TNAILS_DIR);
 					
-				$series_pic->set($s->id, $s->name, $s->flags)->set($s->league_id, $s->league_name, $s->league_flags);
+				$series_pic->set($s->id, $s->name, $s->flags);
 				$s->has_picture = $series_pic->has_image(true);
 				$s->icon = $server_url . $series_pic->url(ICONS_DIR);
 				$s->picture = $server_url . $series_pic->url(TNAILS_DIR);
-				
 				$s->flags = (int)$s->flags & SERIES_EDITABLE_MASK;
+				
 				$series[] = $s;
 			}
 		}
@@ -200,12 +201,12 @@ class ApiPage extends GetApiPageBase
 				$s->league_id = (int)$s->league_id;
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
-				$s->flags = (int)$s->flags & SERIES_EDITABLE_MASK;
 				
-				$series_pic->set($s->id, $s->name, $s->flags)->set($s->league_id, $league_name, $league_flags);
+				$series_pic->set($s->id, $s->name, $s->flags);
 				$s->has_picture = $series_pic->has_image(true);
 				$s->icon = $server_url . $series_pic->url(ICONS_DIR);
 				$s->picture = $server_url . $series_pic->url(TNAILS_DIR);
+				$s->flags = (int)$s->flags & SERIES_EDITABLE_MASK;
 				
 				$series[] = $s;
 			}
