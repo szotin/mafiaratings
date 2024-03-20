@@ -88,6 +88,7 @@ class SeriesPageBase extends PageBase
 			new MenuItem('series_info.php?id=' . $this->id, get_label('Sеriеs '), get_label('General series information')),
 			new MenuItem('series_standings.php?id=' . $this->id, get_label('Standings'), get_label('Series standings')),
 			new MenuItem('series_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this series.')),
+			new MenuItem('series_series.php?id=' . $this->id, get_label('Subseries'), get_label('Subseries of this series')),
 			new MenuItem('series_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('Tournaments of this series')),
 			new MenuItem('series_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the series')),
 			new MenuItem('#stats', get_label('Reports'), NULL, array
