@@ -117,7 +117,7 @@ class Page extends AddressPageBase
 			echo '<td><table width="100%" class="transp"><tr>';
 			if ($tournament_id != NULL)
 			{
-				echo '<td width="40" align="center" valign="center" style="padding-left:12px;>';
+				echo '<td width="40" align="center" valign="center" style="padding-left:12px;">';
 				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 				$tournament_pic->show(ICONS_DIR, false, 40);
 				echo '</td>';

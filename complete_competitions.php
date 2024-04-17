@@ -180,13 +180,13 @@ function complete_tournament()
 	Db::begin();
 	
 	$query = new DbQuery(
-		'SELECT t.id, t.flags, sv.scoring, t.scoring_options, nv.normalizer, (SELECT max(st.stars) FROM series_tournaments st WHERE st.tournament_id = t.id) as stars FROM tournaments t' . 
+		'SELECT t.id, t.flags, sv.scoring, t.scoring_options, t.num_players, nv.normalizer, (SELECT max(st.stars) FROM series_tournaments st WHERE st.tournament_id = t.id) as stars FROM tournaments t' . 
 		' JOIN scoring_versions sv ON sv.scoring_id = t.scoring_id AND sv.version = t.scoring_version' .
 		' LEFT OUTER JOIN normalizer_versions nv ON nv.normalizer_id = t.normalizer_id AND nv.version = t.normalizer_version' .
 		' WHERE t.start_time + t.duration < UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_FINISHED . ') = 0 LIMIT 1');
 	if ($row = $query->next())
 	{
-		list($tournament_id, $tournament_flags, $scoring, $scoring_options, $normalizer, $stars) = $row;
+		list($tournament_id, $tournament_flags, $scoring, $scoring_options, $num_players, $normalizer, $stars) = $row;
 		$tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK); // no hiding tables/bonuses any more - tournament is complete
 		$real_count = $players_count = 0;
 		$min_games = 0;
@@ -228,27 +228,58 @@ function complete_tournament()
 			}
 			
 			$players = tournament_scores($tournament_id, $tournament_flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $scoring, $normalizer, $scoring_options);
-			$real_count = add_tournament_nominants($tournament_id, $players);
+			add_tournament_nominants($tournament_id, $players);
 			$players_count = count($players);
+			if ($tournament_flags & TOURNAMENT_FLAG_FORCE_NUM_PLAYERS)
+			{
+				$real_count = $num_players;
+			}
+			else
+			{
+				list($max_games) = Db::record(get_label('tournament'), 
+					'SELECT MAX(games) FROM (SELECT COUNT(p.game_id) as games FROM players p'.
+					' JOIN games g ON g.id = p.game_id'.
+					' JOIN events e ON e.id = g.event_id'.
+					' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 and e.round = 0 GROUP BY p.user_id) as players', $tournament_id);
+				list($all_games) = Db::record(get_label('tournament'), 
+					'SELECT COUNT(g.id)'.
+					' FROM games g'.
+					' JOIN events e ON e.id = g.event_id'.
+					' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 and e.round = 0', $tournament_id);
+				if ($max_games >= 0)
+				{
+					$real_count = round($all_games * 10 / $max_games);
+				}
+				else
+				{
+					$real_count = 0;
+				}
+				echo '<p>tournament id: ' . $tournament_id . '<br>max_games: ' . $max_games . '<br>all_games: ' . $all_games . '<br>players: ' . $real_count . '<br>players(origin): ' . $players_count . '</p>';
+			}
+			$real_count = min($real_count, $players_count);
 			
 			Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE tournament_id = ?', $tournament_id);
 			$place = 1;
-			for ($number = 0; $number < $players_count; ++$number)
+			for ($number = 0; $number < $real_count; ++$number)
 			{
 				$player = $players[$number];
-				if ($player->credit)
-				{
-					$importance = get_tournament_importance($stars, $place, $real_count);
-					$main_points = $player->main_points;
-					$bonus_points = $player->extra_points + $player->legacy_points + $player->penalty_points;
-					$shot_points = $player->night1_points;
-					Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags, $player->wins);
-					++$place;
-				}
+				$importance = get_tournament_importance($stars, $place, $real_count);
+				$main_points = $player->main_points;
+				$bonus_points = $player->extra_points + $player->legacy_points + $player->penalty_points;
+				$shot_points = $player->night1_points;
+				Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags, $player->wins);
+				++$place;
 			}
 		}
-			
-		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ' WHERE id = ?', $tournament_id);
+		
+		if (($tournament_flags & TOURNAMENT_FLAG_FORCE_NUM_PLAYERS) == 0)
+		{
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET num_players = ?, flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ' WHERE id = ?', $real_count, $tournament_id);
+		}
+		else
+		{
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ' WHERE id = ?', $tournament_id);
+		}
 		Db::exec(get_label('series'), 'UPDATE series s JOIN series_tournaments st ON st.series_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .  ' WHERE st.tournament_id = ?', $tournament_id);
 		
 		$log_str = 'Wrote ' . $real_count;

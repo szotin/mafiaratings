@@ -1605,7 +1605,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		init_player_score($player, $scoring, $lod_flags);
 		$players[$player->id] = $player;
 	}
-        
+	
     if (is_null($event_scorings))
     {
 		$red_win_rate = 0;
@@ -1772,6 +1772,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		// Calculate scores
 		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, g.event_id, e.round FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $condition);
 		$query->add(' ORDER BY g.end_time');
+		//echo $query->get_parsed_sql();
 		while ($row = $query->next())
 		{
 			list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_id, $round_num) = $row;
@@ -1907,17 +1908,7 @@ function add_tournament_nominants($tournament_id, $players)
 	$players_count = count($players);
 	if ($players_count <= 0)
 	{
-		return 0;
-	}
-	
-	// find out minimum player games to count tournament for a player
-	// We do it in a separate query because we calculate maximum number of games using only main rounds - excluding finals and semi-finals.
-	$max_games = 0;
-	$query1 = new DbQuery('SELECT p.user_id, count(g.id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ? AND e.round = 0 AND g.is_canceled = 0 AND g.is_rating <> 0 GROUP BY p.user_id', $tournament_id);
-	while ($row1 = $query1->next())
-	{
-		list($player_id, $games_played) = $row1;
-		$max_games = max($games_played, $max_games);
+		return;
 	}
 	
 	// Calculate constant points that have to be removed from bonus (remove auto-bonus)
@@ -1955,81 +1946,70 @@ function add_tournament_nominants($tournament_id, $players)
 	}
 	
 	// The tournament counts for a player only if they played more than 50% of maximum games count. 
-	$min_games = $max_games / 2;
 	$roles = array(NULL, NULL, NULL, NULL);
 	$roles_winners_count = array(0, 0, 0, 0);
 	$mvp = NULL;
 	$mvp_winner_count = 0;
-	$real_count = 0;
 	foreach ($players as $player)
 	{
-		if ($player->games_count <= $min_games)
+		$player->bonus = $player->extra_points + $player->legacy_points + $player->penalty_points - $player->weighted_games_count * $remove_from_bonus;
+		$player->nom_flags = 0;
+		if ($mvp == NULL)
 		{
-			$player->credit = false;
+			$mvp = $player;
+			$mvp_winner_count = 1;
 		}
-		else
+		else if (abs($player->bonus - $mvp->bonus) < 0.001)
 		{
-			$player->credit = true;
-			$player->bonus = $player->extra_points + $player->legacy_points + $player->penalty_points - $player->weighted_games_count * $remove_from_bonus;
-			$player->nom_flags = 0;
-			if ($mvp == NULL)
-			{
-				$mvp = $player;
-				$mvp_winner_count = 1;
-			}
-			else if (abs($player->bonus - $mvp->bonus) < 0.001)
-			{
-				$mvp = $player; // the one with the lower place wins
-				++$mvp_winner_count;
-			}
-			else if ($player->bonus > $mvp->bonus)
-			{
-				$mvp = $player;
-				$mvp_winner_count = 1;
-			}
-				
-			for ($i = 0; $i < 4; ++$i)
-			{
-				$r = $player->roles[$i];
-				if ($r->games_count <= 0)
-				{
-					$r->bonus = 0;
-					continue;
-				}
-				$r->bonus = $r->extra_points + $r->legacy_points + $r->penalty_points - $r->weighted_games_count * $remove_from_bonus;
-			}
+			$mvp = $player; // the one with the lower place wins
+			++$mvp_winner_count;
+		}
+		else if ($player->bonus > $mvp->bonus)
+		{
+			$mvp = $player;
+			$mvp_winner_count = 1;
+		}
 			
-			for ($i = 0; $i < 4; ++$i)
+		for ($i = 0; $i < 4; ++$i)
+		{
+			$r = $player->roles[$i];
+			if ($r->games_count <= 0)
 			{
-				$cmp = compare_role_scores($i, $player, $roles[$i]);
-				if ($i == SCORING_TRACK_ROLE)
-				{
-					if ($cmp > 0)
-					{
-						echo ' winner - ' . $player->name . '<br>';
-					}
-					else if ($cmp == 0)
-					{
-						echo ' tie - ' . $player->name . '<br>';
-					}
-					else
-					{
-						echo ' winner - ' . $roles[$i]->name . '<br>';
-					}
-				}
-				
+				$r->bonus = 0;
+				continue;
+			}
+			$r->bonus = $r->extra_points + $r->legacy_points + $r->penalty_points - $r->weighted_games_count * $remove_from_bonus;
+		}
+		
+		for ($i = 0; $i < 4; ++$i)
+		{
+			$cmp = compare_role_scores($i, $player, $roles[$i]);
+			if ($i == SCORING_TRACK_ROLE)
+			{
 				if ($cmp > 0)
 				{
-					$roles[$i] = $player;
-					$roles_winners_count[$i] = 1;
+					echo ' winner - ' . $player->name . '<br>';
 				}
 				else if ($cmp == 0)
 				{
-					$roles[$i] = $player; // the player with a lower place wins
-					++$roles_winners_count[$i];
+					echo ' tie - ' . $player->name . '<br>';
+				}
+				else
+				{
+					echo ' winner - ' . $roles[$i]->name . '<br>';
 				}
 			}
-			++$real_count;
+			
+			if ($cmp > 0)
+			{
+				$roles[$i] = $player;
+				$roles_winners_count[$i] = 1;
+			}
+			else if ($cmp == 0)
+			{
+				$roles[$i] = $player; // the player with a lower place wins
+				++$roles_winners_count[$i];
+			}
 		}
 	}
 	
@@ -2048,7 +2028,6 @@ function add_tournament_nominants($tournament_id, $players)
 			$roles[$i]->nom_flags |= $flags;
 		}
 	}
-	return $real_count;
 }
     
 function get_scoring_roles_label($role_flags)
@@ -2765,13 +2744,43 @@ function _create_gaining_table_for_stars($gaining, $stars_obj, $players)
 	return $table;
 }
 
+function copy_gaining($dst, $src)
+{
+	foreach ($src as $key => $value)
+	{
+		if ($key == 'tournaments' || $key == 'series')
+		{
+			continue;
+		}
+		$dst->$key = $value;
+	}
+}
+
+function prepare_gaining($gaining, $is_series)
+{
+	if ($is_series)
+	{
+		if (isset($gaining->series))
+		{
+			$result = new stdClass();
+			copy_gaining($result, $gaining);
+			copy_gaining($result, $gaining->series);
+			$gaining = $result;
+		}
+	}
+	else if (isset($gaining->tournaments))
+	{
+		$result = new stdClass();
+		copy_gaining($result, $gaining);
+		copy_gaining($result, $gaining->tournaments);
+		$gaining = $result;
+	}
+	return $gaining;
+}
+
 function get_gainig_sum_power($gaining, $is_series)
 {
-	if ($is_series && isset($gaining->series))
-	{
-		$gaining = $gaining->series;
-	}
-		
+	$gaining = prepare_gaining($gaining, $is_series);
 	if (isset($gaining->useTournamentScore))
 	{
 		return max((int)$gaining->useTournamentScore, 0);
@@ -2782,13 +2791,9 @@ function get_gainig_sum_power($gaining, $is_series)
 function create_gaining_table($gaining, $stars, $players, $score_sum, $is_series)
 {
 	$table = NULL;
+	$gaining = prepare_gaining($gaining, $is_series);
 	if (isset($gaining->points))
 	{
-		if ($is_series && isset($gaining->series))
-		{
-			$gaining = $gaining->series;
-		}
-		
 		$stars_array = $gaining->points;
 		$stars_obj1 = $stars_obj2 = NULL;
 		$delta1 = $delta2 = 100000000;

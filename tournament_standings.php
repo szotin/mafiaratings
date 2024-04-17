@@ -201,14 +201,6 @@ class Page extends TournamentPageBase
 			}
 		}
 		
-		$real_players_count = 0;
-		foreach ($players as $p)
-		{
-			if ($p->credit)
-			{
-				++$real_players_count;
-			}
-		}
 		$series = array();
 		$query = new DbQuery(
 			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, st.stars, g.gaining'.
@@ -231,7 +223,7 @@ class Page extends TournamentPageBase
 					$sum += pow($p->points, $s->sum_power);
 				}
 			}
-			$s->points = create_gaining_table($gaining, $s->stars, $real_players_count, $sum, false);
+			$s->points = create_gaining_table($gaining, $s->stars, $this->num_players, $sum, false);
 			$series[] = $s;
 		}
 		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
@@ -273,37 +265,21 @@ class Page extends TournamentPageBase
 		{
 			$players_count = $page_start + PAGE_SIZE;
 		}
-		$place = $page_start;
 		for ($number = $page_start; $number < $players_count; ++$number)
 		{
 			$player = $players[$number];
 			if ($player->id == $this->user_id)
 			{
 				echo '<tr class="darker">';
-				if ($player->credit)
-				{
-					$highlight = 'darker';
-				}
-				else
-				{
-					$highlight = 'darker';
-				}
+				$highlight = 'darker';
 			}
-			else if ($player->credit)
+			else
 			{
 				echo '<tr>';
 				$highlight = 'dark';
 			}
-			else
-			{
-				echo '<tr class="dark">';
-				$highlight = 'dark';
-			}
 			echo '<td align="center" class="' . $highlight . '">';
-			if ($player->credit)
-			{
-				echo ++$place;
-			}
+			echo $number + 1;
 			echo '</td>';
 			
 			echo '<td><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . $this->show_all . '">';
@@ -361,9 +337,9 @@ class Page extends TournamentPageBase
 			}
 			foreach ($series as $s)
 			{
-				if ($player->credit && $s->stars > 0)
+				if ($number < $this->num_players && $s->stars > 0)
 				{
-					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place, pow($player->points, $s->sum_power))) . '</td>';
+					echo '<td align="center">' . format_score(get_gaining_points($s->points, $number + 1, pow($player->points, $s->sum_power))) . '</td>';
 				}
 				else
 				{

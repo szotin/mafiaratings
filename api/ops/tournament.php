@@ -304,7 +304,7 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, expected_players_count, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, rules, flags, type) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, num_players, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, rules, flags, type) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			$name, $club_id, $address_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options_str, $rules_code, $flags, $type);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
@@ -403,8 +403,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id) = 
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.expected_players_count, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id FROM tournaments t' . 
+		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id) = 
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id FROM tournaments t' . 
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -431,10 +431,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			$currency_id = NULL;
 		}
-		$players = (int)get_optional_param('players', $old_players);
-		if ($players < 10)
+		$num_players = (int)get_optional_param('players', $old_num_players);
+		if ($num_players < 10)
 		{
-			$players = 0;
+			$num_players = 0;
 		}
 		$scoring_id = get_optional_param('scoring_id', $old_scoring_id);
 		$scoring_version = get_optional_param('scoring_version', -1);
@@ -635,6 +635,8 @@ class ApiPage extends OpsApiPageBase
 		// reset TOURNAMENT_FLAG_FINISHED flag if needed
 		if (
 			(($old_flags & TOURNAMENT_FLAG_MANUAL_SCORE) != 0 && (($flags & TOURNAMENT_FLAG_MANUAL_SCORE) == 0)) ||
+			($old_flags & TOURNAMENT_FLAG_FORCE_NUM_PLAYERS) != ($flags & TOURNAMENT_FLAG_FORCE_NUM_PLAYERS) ||
+			$old_num_players != $num_players ||
 			$old_scoring_id != $scoring_id ||
 			$old_scoring_options != $scoring_options ||
 			$old_scoring_version != $scoring_version ||
@@ -666,8 +668,8 @@ class ApiPage extends OpsApiPageBase
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, expected_players_count = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, rules = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $rules_code, $tournament_id);
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, rules = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $rules_code, $tournament_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
@@ -710,9 +712,9 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->currency_id = $currency_id;
 			}
-			if ($players != $old_players)
+			if ($num_players != $old_num_players)
 			{
-				$log_details->players = $players;
+				$log_details->num_players = $num_players;
 			}
 			if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
 			{
@@ -1343,8 +1345,8 @@ class ApiPage extends OpsApiPageBase
 		$not_payed = get_optional_param('not_payed', NULL);
 		
 		Db::begin();
-		list($club_id, $league_id, $series_fee, $old_series_flags, $old_payment, $expected_players_count, $players_count) = Db::record(get_label('tournament'), 
-			'SELECT t.club_id, s.league_id, s.fee, st.flags, st.fee, t.expected_players_count, (SELECT count(*) FROM tournament_places tp WHERE tp.tournament_id = t.id) as count'.
+		list($club_id, $league_id, $series_fee, $old_series_flags, $old_payment, $num_players) = Db::record(get_label('tournament'), 
+			'SELECT t.club_id, s.league_id, s.fee, st.flags, st.fee, t.num_players'.
 			' FROM series_tournaments st'.
 			' JOIN series s ON s.id = st.series_id'.
 			' JOIN tournaments t ON t.id = st.tournament_id'.
@@ -1362,7 +1364,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$payment = (int)$payment;
 		}
-		if (!is_null($payment) && $payment == $players_count * $series_fee)
+		if (!is_null($payment) && $payment == $num_players * $series_fee)
 		{
 			$payment = NULL;
 		}

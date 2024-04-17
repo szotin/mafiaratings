@@ -89,7 +89,7 @@ class Page extends SeriesPageBase
 		$order_by = ' ORDER BY t.start_time + t.duration, t.id';
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, ni.name, st.flags, st.fee, s.fee, cu.pattern, t.expected_players_count,' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, ni.name, st.flags, st.fee, s.fee, cu.pattern, t.num_players,' .
 			' (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players',
 			$condition);
 		$query->add($order_by);
@@ -107,7 +107,7 @@ class Page extends SeriesPageBase
 				$tournament->club_id, $tournament->club_name, $tournament->club_flags, $tournament->languages,
 				$tournament->addr_id, $tournament->addr, $tournament->addr_flags, $tournament->city,
 				$tournament->series_tournament_flags, $tournament->series_tournament_fee, $tournament->series_fee, $currency_pattern,
-				$tournament->expected_players_count, $tournament->players_count) = $row;
+				$tournament->num_players, $tournament->players_count) = $row;
 			$m = format_date('F Y', $tournament->time, $tournament->timezone);
 			if ($first_month_tournament == NULL || $first_month_tournament->month != $m)
 			{
@@ -237,11 +237,11 @@ class Page extends SeriesPageBase
 			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</td>';
 			echo '</tr></table></td>';
 			
-			echo '<td align="center">' . $tournament->expected_players_count . '</td>';
+			echo '<td align="center">' . $tournament->num_players . '</td>';
 			echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
 
-			$total_expected += $tournament->expected_players_count * $tournament->series_fee;
-			echo '<td align="center">' . format_currency($tournament->expected_players_count * $tournament->series_fee, $currency_pattern, false) . '</td>';
+			$total_expected += $tournament->num_players * $tournament->series_fee;
+			echo '<td align="center">' . format_currency($tournament->num_players * $tournament->series_fee, $currency_pattern, false) . '</td>';
 			if (!is_null($tournament->series_fee) && $now > $tournament->time)
 			{
 				if (is_null($tournament->series_tournament_fee))

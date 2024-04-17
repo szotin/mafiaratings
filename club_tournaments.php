@@ -104,8 +104,7 @@ class Page extends ClubPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, t.langs, t.expected_players_count, a.id, a.address, a.flags,' .
-			' (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players,' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, t.langs, t.num_players, a.id, a.address, a.flags,' .
 			' (SELECT count(*) FROM games _g JOIN events _e ON _e.id = _g.event_id WHERE _e.tournament_id = t.id AND _g.is_canceled = FALSE AND _g.result > 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
@@ -122,8 +121,8 @@ class Page extends ClubPageBase
 			$tournament = new stdClass();
 			list (
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->time, $tournament->duration, $tournament->timezone, 
-				$tournament->languages, $tournament->expected_players_count, $tournament->addr_id, $tournament->addr, $tournament->addr_flags, 
-				$tournament->players_count, $tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
+				$tournament->languages, $tournament->num_players, $tournament->addr_id, $tournament->addr, $tournament->addr_flags, 
+				$tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
 			if ($future)
 			{
 				$m = format_date('F Y', $tournament->time + $tournament->duration, $tournament->timezone);
@@ -243,11 +242,11 @@ class Page extends ClubPageBase
 			
 			if ($future)
 			{
-				echo '<td align="center">' . $tournament->expected_players_count . '</td>';
+				echo '<td align="center">' . $tournament->num_players . '</td>';
 			}
 			else
 			{
-				echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
+				echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->num_players . '</a></td>';
 				echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament->id . '">' . $tournament->games_count . '</a></td>';
 				echo '<td align="center"><a href="tournament_rounds.php?bck=1&id=' . $tournament->id . '">' . $tournament->rounds_count . '</a></td>';
 				

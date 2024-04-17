@@ -95,6 +95,7 @@ class TournamentPageBase extends PageBase
 	protected $flags;
 	protected $mwt_id;
 	protected $series;
+	protected $num_players;
 	
 	protected function prepare()
 	{
@@ -110,13 +111,16 @@ class TournamentPageBase extends PageBase
 			$this->address_id, $this->address_name, $this->address, $this->address_url, $this->address_flags,
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->fee, $this->currency_id, $this->currency_pattern,
-			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, $this->rules_code, $this->flags, $this->mwt_id) =
+			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, 
+			$this->rules_code, $this->flags, $this->mwt_id, $this->num_players) =
 		Db::record(
 			get_label('tournament'),
 			'SELECT t.name, c.id, c.name, c.flags,' . 
 				' a.id, a.name, a.address, a.map_url, a.flags,' . 
 				' ct.id, nct.name, cr.id, ncr.name, ct.timezone,' . 
-				' t.start_time, t.duration, t.langs, t.notes, t.fee, t.currency_id, cu.pattern, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.rules, t.flags, t.mwt_id' .
+				' t.start_time, t.duration, t.langs, t.notes, t.fee, t.currency_id, cu.pattern,'.
+				' t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options,'.
+				' t.rules, t.flags, t.mwt_id, t.num_players' .
 				' FROM tournaments t' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN addresses a ON a.id = t.address_id' .

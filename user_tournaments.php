@@ -78,7 +78,7 @@ class Page extends UserPageBase
 		
 		$order_by = ' ORDER BY t.start_time DESC, t.id DESC';
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won), ' .
+			'SELECT t.id, t.name, t.flags, t.start_time, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(DISTINCT p.game_id), SUM(p.won), ' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
 			$condition);
 		$query->add(' GROUP BY t.id ' . $order_by . ' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -198,17 +198,17 @@ class Page extends UserPageBase
 				}
 			}
 			echo '</td>';
-			echo '<td align="center">' . number_format($tournament->rating, 2) . '</td>';
-			echo '<td align="center"><a href="tournament_player.php?bck=1&user_id=' . $this->id . '&id=' . $tournament->id . '">' . $tournament->games_played . '</a></td>';
-			echo '<td align="center">' . $tournament->games_won . '</td>';
 			if ($tournament->games_played != 0)
 			{
+				echo '<td align="center">' . number_format($tournament->rating, 2) . '</td>';
+				echo '<td align="center"><a href="tournament_player.php?bck=1&user_id=' . $this->id . '&id=' . $tournament->id . '">' . $tournament->games_played . '</a></td>';
+				echo '<td align="center">' . $tournament->games_won . '</td>';
 				echo '<td align="center">' . number_format(($tournament->games_won*100.0)/$tournament->games_played, 1) . '%</td>';
 				echo '<td align="center">' . number_format($tournament->rating/$tournament->games_played, 2) . '</td>';
 			}
 			else
 			{
-				echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
+				echo '<td></td><td></td><td></td><td></td>';
 			}
 			
 			echo '</tr>';
