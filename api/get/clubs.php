@@ -103,6 +103,8 @@ class ApiPage extends GetApiPageBase
 		$clubs = array();
 		if ($lod >= 1)
 		{
+			$server_url = get_server_url() . '/';
+			$club_pic = new Picture(CLUB_PICTURE);
 			$query = new DbQuery(
 				'SELECT c.id, c.name, c.flags, c.langs, c.web_site, c.email, c.phone, c.city_id, ni.name, no.name, c.rules, c.scoring_id FROM clubs c' . 
 				' JOIN cities i ON i.id = c.city_id' .
@@ -138,8 +140,6 @@ class ApiPage extends GetApiPageBase
 					$club->phone = $web;
 				}
 				
-				$server_url = get_server_url() . '/';
-				$club_pic = new Picture(CLUB_PICTURE);
 				$club_pic->set($club->id, $club->name, $flags);
 				$club->icon = $server_url . $club_pic->url(ICONS_DIR);
 				$club->picture = $server_url . $club_pic->url(TNAILS_DIR);

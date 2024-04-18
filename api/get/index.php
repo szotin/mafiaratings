@@ -55,6 +55,14 @@ require_once '../../include/api.php';
 <tr class="darker"><th width="200">Service</th><th>Link</th><th>Description</th></tr>
 
 <tr>
+	<td>Players</td>
+	<td><a href="players.php?help"><?php echo PRODUCT_URL; ?>/api/get/players.php</a></td>
+	<td>
+		<p>Returns player records based on the club/tournament/event/game they were playing in.</p>
+	</td>
+</tr>
+
+<tr>
 	<td>Games</td>
 	<td><a href="games.php?help"><?php echo PRODUCT_URL; ?>/api/get/games.php</a></td>
 	<td>

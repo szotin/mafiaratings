@@ -192,6 +192,8 @@ class ApiPage extends GetApiPageBase
 		$tournaments = array();
 		if ($lod >= 1)
 		{
+			$tournaments_list = '';
+			$delim = '';
 			$query = new DbQuery(
 				'SELECT t.id, t.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, c.name, c.flags, t.start_time, t.duration, t.notes, t.fee, t.currency_id, t.scoring_id, t.scoring_version, t.rules, ct.timezone FROM tournaments t' . 
 				' JOIN addresses a ON a.id = t.address_id' .
@@ -208,6 +210,10 @@ class ApiPage extends GetApiPageBase
 			{
 				$tournament = new stdClass();
 				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->address_name, $address_flags, $tournament->club_id, $tournament->club_name, $club_flags, $tournament->timestamp, $tournament->duration, $tournament->notes, $fee, $currency_id, $tournament_scoring_id, $tournament_scoring_version, $rules_code, $tournament_timezone) = $row;
+				
+				$tournaments_list .= $delim . $tournament->id;
+				$delim = ', ';
+				
 				$tournament->id = (int)$tournament->id;
 				$tournament->langs = (int)$tournament->langs;
 				$tournament->address_id = (int)$tournament->address_id;
@@ -288,6 +294,45 @@ class ApiPage extends GetApiPageBase
 				$tournaments[] = $tournament;
 			}
 		}
+		
+		if ($lod >= 2)
+		{
+			$index = 0;
+			$tournament = $tournaments[0];
+			$query = new DbQuery(
+				'SELECT t.id, tp.user_id, tp.place, tp.main_points, tp.bonus_points, tp.shot_points, tp.games_count, tp.wins'.
+				' FROM tournament_places tp' . 
+				' JOIN tournaments t ON t.id = tp.tournament_id' .
+				' WHERE t.id IN ('.$tournaments_list.') ORDER BY t.start_time DESC, t.id DESC, tp.place');
+			while ($row = $query->next())
+			{
+				$player = new stdClass();
+				list ($tournament_id, $player->user_id, $place, $main_points, $bonus_points, $shot_points, $player->games_count, $player->wins) = $row;
+				$player->user_id = (int)$player->user_id;
+				$player->points = (float)($main_points + $bonus_points + $shot_points);
+				$player->games_count = (int)$player->games_count;
+				$player->wins = (int)$player->wins;
+				while ($tournament_id != $tournament->id)
+				{
+					if (++$index >= count($tournaments))
+					{
+						$tournament = NULL;
+						break;
+					}
+					$tournament = $tournaments[$index];
+				}
+				if (is_null($tournament))
+				{
+					break;
+				}
+				
+				if (!isset($tournament->players))
+				{
+					$tournament->players = array();
+				}
+				$tournament->players[] = $player;
+			}
+		}
 		$this->response['tournaments'] = $tournaments;
 	}
 	
@@ -351,6 +396,11 @@ class ApiPage extends GetApiPageBase
 										'<li value="256">Tournament rounds must use this tournament scoring system.</li>' .
 										'</ol>');
 			api_rules_help($param->sub_param('rules', 'Game rules used in the tournament.'), true);
+			$players_param = $param->sub_param('players', 'List of tournament players in the order of the place taken.', 'the tournament is not finished yet.', 2);
+				$players_param->sub_param('user_id', 'User id of the player.', 2);
+				$players_param->sub_param('points', 'Tournament score.', 2);
+				$players_param->sub_param('games_count', 'Games played.', 2);
+				$players_param->sub_param('games_count', 'Games won.', 2);
 		$help->response_param('count', 'Total number of tournaments satisfying the request parameters.');
 		return $help;
 	}
