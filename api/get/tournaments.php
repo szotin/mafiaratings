@@ -12,7 +12,7 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
@@ -38,6 +38,12 @@ class ApiPage extends GetApiPageBase
 		$count_only = isset($_REQUEST['count']);
 		$page = (int)get_optional_param('page', 0);
 		$page_size = (int)get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
+		
+		$lang = (int)get_optional_param('lang', $_lang);
+		if (!is_valid_lang($lang))
+		{
+			$lang = $_lang;
+		}
 		
 		$condition = new SQL(' WHERE TRUE');
 		if (!empty($name_contains))
@@ -300,14 +306,16 @@ class ApiPage extends GetApiPageBase
 			$index = 0;
 			$tournament = $tournaments[0];
 			$query = new DbQuery(
-				'SELECT t.id, tp.user_id, tp.place, tp.main_points, tp.bonus_points, tp.shot_points, tp.games_count, tp.wins'.
+				'SELECT tp.wins, tp.games_count, tp.shot_points, tp.bonus_points, tp.main_points, tp.place, nu.name, tp.user_id, t.id'.
 				' FROM tournament_places tp' . 
 				' JOIN tournaments t ON t.id = tp.tournament_id' .
-				' WHERE t.id IN ('.$tournaments_list.') ORDER BY t.start_time DESC, t.id DESC, tp.place');
+				' JOIN users u ON u.id = tp.user_id' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ?) <> 0' .
+				' WHERE t.id IN ('.$tournaments_list.') ORDER BY t.start_time DESC, t.id DESC, tp.place', $lang);
 			while ($row = $query->next())
 			{
 				$player = new stdClass();
-				list ($tournament_id, $player->user_id, $place, $main_points, $bonus_points, $shot_points, $player->games_count, $player->wins) = $row;
+				list ($player->wins, $player->games_count, $shot_points, $bonus_points, $main_points, $place, $player->name, $player->user_id, $tournament_id) = $row;
 				$player->user_id = (int)$player->user_id;
 				$player->points = (float)($main_points + $bonus_points + $shot_points);
 				$player->games_count = (int)$player->games_count;
@@ -360,6 +368,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('canceled', '0 - exclude canceled tournaments (default); 1 - incude canceled tournaments; 2 - canceled tournaments only. For example: <a href="tournaments.php?canceled=2">' . PRODUCT_URL . '/api/get/tournaments.php?canceled=2</a> returns all canceled tournaments.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="tournaments.php?page=1">' . PRODUCT_URL . '/api/get/tournaments.php?page=1</a> returns the second page of tournaments by time from newest to oldest.', '-');
 		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="tournaments.php?page_size=32">' . PRODUCT_URL . '/api/get/tournaments.php?page_size=32</a> returns first 32 tournaments; <a href="tournaments.php?page_size=0">' . PRODUCT_URL . '/api/get/tournaments.php?page_size=0</a> returns tournaments in one page; <a href="tournaments.php">' . PRODUCT_URL . '/api/get/tournaments.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' tournaments by alphabet.', '-');
+		$help->request_param('lang', 'Language id for returned names. For example: <a href="tournaments.php?lang=2">/api/get/tournaments.php?lang=2</a> returns player names in Russian.' . valid_langs_help(), 'default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.');
 
 		$param = $help->response_param('tournaments', 'The array of tournaments. Tournaments are always sorted in time order from newest to oldest. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'Tournament id.');
@@ -398,6 +407,7 @@ class ApiPage extends GetApiPageBase
 			api_rules_help($param->sub_param('rules', 'Game rules used in the tournament.'), true);
 			$players_param = $param->sub_param('players', 'List of tournament players in the order of the place taken.', 'the tournament is not finished yet.', 2);
 				$players_param->sub_param('user_id', 'User id of the player.', 2);
+				$players_param->sub_param('name', 'Player name using default language for the profile or "lang" param if set.');
 				$players_param->sub_param('points', 'Tournament score.', 2);
 				$players_param->sub_param('games_count', 'Games played.', 2);
 				$players_param->sub_param('games_count', 'Games won.', 2);
