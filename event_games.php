@@ -97,7 +97,7 @@ class Page extends EventPageBase
 	
 		$is_user = is_permitted(PERMISSION_USER);
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td';
+		echo '<tr class="th darker" align="center"><td width="48"></td><td';
 		if ($is_user)
 		{
 			echo ' colspan="3"';
@@ -122,6 +122,7 @@ class Page extends EventPageBase
 				' JOIN cities ct ON ct.id = c.city_id',
 			$condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$num = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
 			list (
@@ -135,6 +136,7 @@ class Page extends EventPageBase
 				echo ' class="dark"';
 			}
 			echo '>';
+			echo '<td>' . ++$num . '</td>';
 			
 			if ($this->is_manager || is_permitted(PERMISSION_OWNER, $game_user_id))
 			{

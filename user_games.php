@@ -120,7 +120,7 @@ class Page extends UserPageBase
 			show_pages_navigation(PAGE_SIZE, $count);
 			
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker" align="center"><td colspan="2"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Result').'</td></tr>';
+			echo '<tr class="th darker" align="center"><td width="48"></td><td colspan="2"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Result').'</td></tr>';
 			
 			$query = new DbQuery(
 				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, g.is_rating, g.is_canceled, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM games g' .
@@ -132,6 +132,7 @@ class Page extends UserPageBase
 				' WHERE g.moderator_id = ?',
 				$this->id, $condition);
 			$query->add(' ORDER BY g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+			$num = $_page * PAGE_SIZE;
 			while ($row = $query->next())
 			{
 				list ($game_id, $club_id, $club_name, $club_flags, $timezone, $start, $duration, $game_result, $is_rating, $is_canceled, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags) = $row;
@@ -142,6 +143,7 @@ class Page extends UserPageBase
 					echo ' class="dark"';
 				}
 				echo '>';
+				echo '<td>' . ++$num . '</td>';
 
 				if ($is_canceled || !$is_rating)
 				{
@@ -258,7 +260,7 @@ class Page extends UserPageBase
 			list ($count) = Db::record(get_label('player'), 'SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?', $this->id, $condition);
 			show_pages_navigation(PAGE_SIZE, $count);
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker" align="center"><td></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td></tr>';
+			echo '<tr class="th darker" align="center"><td width="48"></td><td></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td></tr>';
 			
 			$query = new DbQuery(
 				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.is_rating, g.is_canceled, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM players p' .
@@ -273,6 +275,7 @@ class Page extends UserPageBase
 				' WHERE p.user_id = ?', 
 				$this->id, $condition);
 			$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+			$num = $_page * PAGE_SIZE;
 			while ($row = $query->next())
 			{
 				list (
@@ -285,6 +288,7 @@ class Page extends UserPageBase
 					echo ' class="dark"';
 				}
 				echo '>';
+				echo '<td>' . ++$num . '</td>';
 			
 				echo '<td align="left" style="padding-left:12px;">';
 				if ($video_id != NULL)

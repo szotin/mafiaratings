@@ -457,6 +457,8 @@ class ApiPage extends OpsApiPageBase
 		
 		// reset EVENT_FLAG_FINISHED flag if needed
 		if (
+			$old_tournament_id != $tournament_id ||
+			$old_round_num != $round_num ||
 			$old_scoring_id != $scoring_id ||
 			$old_scoring_options != $scoring_options ||
 			$old_scoring_version != $scoring_version)

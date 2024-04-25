@@ -107,7 +107,7 @@ class Page extends AddressPageBase
 		$referee_pic = new Picture(USER_PICTURE);
 		$is_user = is_permitted(PERMISSION_USER);
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td';
+		echo '<tr class="th darker" align="center"><td width="48"></td><td';
 		if ($is_user)
 		{
 			echo ' colspan="3"';
@@ -125,6 +125,7 @@ class Page extends AddressPageBase
 			' LEFT OUTER JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0',
 			$condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$num = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
 			list ($game_id, $referee_id, $referee_name, $referee_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags) = $row;
@@ -135,6 +136,7 @@ class Page extends AddressPageBase
 				echo ' class="dark"';
 			}
 			echo '>';
+			echo '<td>' . ++$num . '</td>';
 			
 			if ($this->is_manager)
 			{

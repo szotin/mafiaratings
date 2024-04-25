@@ -254,7 +254,7 @@ function complete_tournament()
 				{
 					$real_count = 0;
 				}
-				echo '<p>tournament id: ' . $tournament_id . '<br>max_games: ' . $max_games . '<br>all_games: ' . $all_games . '<br>players: ' . $real_count . '<br>players(origin): ' . $players_count . '</p>';
+				//echo '<p>tournament id: ' . $tournament_id . '<br>max_games: ' . $max_games . '<br>all_games: ' . $all_games . '<br>players: ' . $real_count . '<br>players(origin): ' . $players_count . '</p>';
 			}
 			$real_count = min($real_count, $players_count);
 			
