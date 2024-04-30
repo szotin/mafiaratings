@@ -9,7 +9,8 @@ class Page extends GeneralPageBase
 {
 	private $players_list;
 	private $first;
-	
+	private $ccc_filter;
+
 	protected function prepare()
 	{
 		global $_profile;

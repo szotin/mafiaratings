@@ -12,6 +12,14 @@ define('VIEW_COUNT', 2);
 
 class Page extends EventPageBase
 {
+    private $view;
+    private $scoring;
+    private $scoring_options;
+    private $user_id;
+    private $is_me;
+    protected $player;
+    private $player_pic;
+
 	protected function prepare()
 	{
 		global $_lang, $_profile;

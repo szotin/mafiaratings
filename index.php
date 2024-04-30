@@ -23,7 +23,9 @@ define('TOURNAMENTS_ROW_COUNT', 1);
 
 define('SERIES_COLUMN_COUNT', COLUMN_COUNT);
 define('SERIES_ROW_COUNT', 1);
-
+//phpinfo();
+//die();
+error_reporting(E_ALL & ~E_NOTICE);
 class Page extends GeneralPageBase
 {
 	private $event_pic;
@@ -33,6 +35,7 @@ class Page extends GeneralPageBase
 	
 	private function show_series($series)
 	{
+        echo '<div'.__FILE__.':'.__LINE__.'</div>';
 		list (
 			$s_id, $s_name, $s_flags, 
 			$s_start_time, $s_duration, 
@@ -194,6 +197,7 @@ class Page extends GeneralPageBase
 	
 	private function show_events($condition)
 	{
+        echo '<div'.__FILE__.':'.__LINE__.'</div>';
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM events e' .
 			' JOIN addresses a ON e.address_id = a.id' .
@@ -245,6 +249,7 @@ class Page extends GeneralPageBase
 	
 	private function show_tournaments($condition)
 	{
+        echo '<div'.__FILE__.':'.__LINE__.'</div>';
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name FROM tournaments t' .
 			' JOIN addresses a ON t.address_id = a.id' .
@@ -295,6 +300,7 @@ class Page extends GeneralPageBase
 	
 	private function show_seriess($condition)
 	{
+        echo '<div'.__FILE__.':'.__LINE__.'</div>';
 		$query = new DbQuery(
 			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, l.id, l.name, l.flags FROM series s' .
 			' JOIN leagues l ON l.id = s.league_id' .
@@ -475,7 +481,7 @@ class Page extends GeneralPageBase
 	protected function show_body()
 	{
 		global $_profile, $_lang;
-		
+        echo '<div'.__FILE__.':'.__LINE__.'</div>';
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$this->series_pic = new Picture(SERIES_PICTURE);
 		$this->event_pic = new Picture(EVENT_PICTURE, $this->tournament_pic);

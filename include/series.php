@@ -11,7 +11,7 @@ require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
 
-function show_series_buttons($id, $start_time, $duration, $flags, $league_id, $league_flags, $league_id)
+function show_series_buttons($id, $start_time, $duration, $flags, $league_id, $league_flags)
 {
 	global $_profile;
 
@@ -54,7 +54,11 @@ class SeriesPageBase extends PageBase
 	protected $timezone;
 	protected $gaining_id;
 	protected $gaining_version;
-	
+
+	protected $rules;
+	protected $user_id;
+	protected $user_name;
+
 	protected function prepare()
 	{
 		global $_profile;

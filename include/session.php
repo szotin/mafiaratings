@@ -71,6 +71,7 @@ class Profile
 	public $clubs;
 	public $user_last_active;
 	public $user_accounts_count;
+    public $new_event;
 	
 	function __construct($user_id)
 	{

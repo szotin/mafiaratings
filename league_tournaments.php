@@ -21,6 +21,8 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
 class Page extends LeaguePageBase
 {
+    private $filter;
+    private $future;
 	protected function prepare()
 	{
 		parent::prepare();

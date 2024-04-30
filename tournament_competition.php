@@ -11,6 +11,8 @@ class Page extends TournamentPageBase
 {
 	private $players_list;
 	private $first;
+
+    private $scoring;
 	
 	protected function prepare()
 	{

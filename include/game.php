@@ -58,7 +58,11 @@ define('GAME_TO_EVENT_MAX_DISTANCE', 10800);
 class Game
 {
 	public $data;
-	
+
+    private $flags;
+    private $expected_flags;
+    private $votings;
+
 	function __construct($g, $feature_flags = GAME_FEATURE_MASK_MAFIARATINGS)
 	{
 		try

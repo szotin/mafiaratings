@@ -6,7 +6,7 @@ define('DB_ALL_LANGS', 0xffffff);
 
 function cut_long_name($name, $length)
 {
-	if (mb_strlen($name, 'UTF-8') > $length)
+	if (mb_strlen($name ?? '', 'UTF-8') > $length)
 	{
 		return mb_substr($name, 0, $length - 3, 'UTF-8') . '...';
 	}

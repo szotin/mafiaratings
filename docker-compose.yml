@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - 8080:443
+    volumes:
+      - .:/var/www/mafiaratings
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - mafiaratings
+
+  php:
+    ## image: php:7.4.3-fpm-alpine
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    environment:
+      - DB_HOST=database
+      - DB_DATABASE=mafiaratings
+      - DB_USER=root
+      - DB_PASS=secret
+      - GOOGLE_API_KEY=AIzaSyAUuFoIXqzN4c08t13tPX_vW2OZ6c8SA2U
+    volumes:
+      - .:/var/www/mafiaratings
+    expose:
+      - 9000
+    networks:
+      - mafiaratings
+  database:
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    command: --init-file /data/application/init.sql
+    volumes:
+      - mafiaratingsDB:/var/lib/mysql
+      - ./docker/mysql/init.sql:/data/application/init.sql
+      - ./tmp:/tmp
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: mafiaratings
+    networks:
+      - mafiaratings
+networks:
+  mafiaratings:
+volumes:
+  mafiaratingsDB:
+  shared:

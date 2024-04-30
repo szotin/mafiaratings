@@ -96,8 +96,18 @@ class TournamentPageBase extends PageBase
 	protected $mwt_id;
 	protected $series;
 	protected $num_players;
-	
-	protected function prepare()
+
+	protected $is_manager;
+	protected $show_all;
+	protected $tournament_player_params;
+	protected $normalizer;
+	protected $has_normalizer;
+
+
+
+
+
+    protected function prepare()
 	{
 		global $_lang, $_profile;
 		
@@ -370,7 +380,7 @@ class TournamentPageBase extends PageBase
 function tournament_stars_str($stars, $max_stars = 5)
 {
 	$stars_str = '';
-	for ($i = 0; $i < floor($stars) && $i < $max_stars; ++$i)
+	for ($i = 0; $i < floor($stars ?? 0) && $i < $max_stars; ++$i)
 	{
 		$stars_str .= '★';
 	}

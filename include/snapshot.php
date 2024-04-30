@@ -30,6 +30,10 @@ class SnapshotPlayer
 	public $club_id;
 	public $club_name;
 	public $club_flags;
+
+    public $dst;
+    public $src;
+
 	
 	function __construct($row, $rating = NULL)
 	{
@@ -51,6 +55,7 @@ class Snapshot
 {
 	public $time;
     public $top100;
+
 	
 	function __construct($time, $json = NULL)
 	{

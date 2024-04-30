@@ -23,6 +23,7 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 class Page extends SeriesPageBase
 {
 	private $result_filter;
+	private $flag_filter;
 	private $is_admin;
 
 	protected function prepare()

@@ -17,6 +17,8 @@ class Page extends EventPageBase
 	private $user_club_id;
 	private $user_city_id;
 	private $user_country_id;
+    public $event_player_params;
+    private $scoring_options;
 	
 	protected function prepare()
 	{
