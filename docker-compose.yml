@@ -21,7 +21,7 @@ services:
       - DB_DATABASE=mafiaratings
       - DB_USER=root
       - DB_PASS=secret
-      - GOOGLE_API_KEY=AIzaSyAUuFoIXqzN4c08t13tPX_vW2OZ6c8SA2U
+      - GOOGLE_API_KEY=
     volumes:
       - .:/var/www/mafiaratings
     expose:
