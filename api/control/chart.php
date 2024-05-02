@@ -71,8 +71,8 @@ class ApiPage extends ControlApiPageBase
 						' JOIN users u ON p.user_id = u.id'.
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' WHERE u.id IN (' . $player_list . ') AND g.is_canceled = FALSE AND g.result > 0 AND g.is_rating <> 0'.
-						' GROUP BY u.id, period'.
-						' ORDER BY u.id, period');
+						' GROUP BY u.id, nu.name, period'.
+						' ORDER BY u.id, nu.name, period');
 					
 					$current_user_id = -1;
 					while ($row = $query->next())

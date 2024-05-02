@@ -41,6 +41,56 @@ function get_player_number_html($game, $num)
 
 class Page extends PageBase
 {
+    private $id;
+    private $user_id;
+    private $event_id;
+    private $event_name;
+    private $event_flags;
+    private $event_time;
+    private $timezone;
+    private $tournament_id;
+    private $tournament_name;
+    private $tournament_flags;
+    private $club_id;
+    private $club_name;
+    private $club_flags;
+    private $address_id;
+    private $address_flags;
+    private $address;
+    private $moder_id;
+    private $moder_name;
+    private $moder_flags;
+    private $event_moder_nickname;
+    private $event_moder_flags;
+    private $tournament_moder_flags;
+    private $club_moder_flags;
+    private $start_time;
+    private $duration;
+    private $lang;
+    private $civ_odds;
+    private $result;
+    private $video_id;
+    private $rules;
+    private $is_canceled;
+    private $is_rating;
+    private $round_num;
+    private $is_editor;
+    private $show_all;
+    private $hide_bonus;
+    private $player_pic;
+    private $event_pic;
+    private $address_pic;
+    private $game;
+    private $language;
+    private $my_user_id;
+    private $players;
+    private $url_base;
+    private $next_game_id;
+    private $prev_game_id;
+    private $on_delete;
+
+
+
 	function generate_title()
 	{
 		$title = '';

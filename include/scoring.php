@@ -192,7 +192,7 @@ function compare_role_scores($role, $player1, $player2)
 
 function format_coeff($coeff, $sign_digits = 3)
 {
-	return round($coeff, $sign_digits - floor(log10($coeff)) - 1);
+	return round($coeff, (int) ($sign_digits - floor(log10($coeff)) - 1));
 }
 
 function format_score($score, $zeroes = true)
@@ -213,11 +213,11 @@ function format_score($score, $zeroes = true)
 		$int_score /= 10;
 	}
 	
-	if (($int_score % 10) != 0)
+	if (((int)$int_score % 10) != 0)
 	{
 		return number_format($score, 2);
 	}
-	else if (($int_score % 100) != 0)
+	else if (((int)$int_score % 100) != 0)
 	{
 		return number_format($score, 1);
 	}

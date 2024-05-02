@@ -161,6 +161,8 @@ class SQL
 class DbQuery extends SQL
 {
 	private $query;
+
+    private $parsed_sql;
 	
 	static function _param($param)
 	{
@@ -169,7 +171,7 @@ class DbQuery extends SQL
 		{
 			return 'NULL';
 		}
-		return '\'' . mysql_real_escape_string($param) . '\'';
+		return '\'' . Db::$conn->real_escape_string($param) . '\'';
 	}
 	
 	protected function _reset()
@@ -192,8 +194,8 @@ class DbQuery extends SQL
 	{
 		Db::connect();
 		$parsed_sql = $this->get_parsed_sql();
-		
-		$this->query = mysql_query($parsed_sql);
+
+		$this->query = Db::$conn->query($parsed_sql);
 		if (!$this->query)
 		{
 			if ($obj_name != NULL)
@@ -217,9 +219,9 @@ class DbQuery extends SQL
 			}
 			else
 			{
-				$message = get_label('Query failed');
+				$message = get_label('Query failed')."$parsed_sql";
 			}
-			throw new FatalExc($message, $parsed_sql . '<br>' . mysql_error(), true);
+			throw new FatalExc($message, $parsed_sql . '<br>' . Db::$conn->error, true);
 		}
 		return $this;
 	}
@@ -230,7 +232,7 @@ class DbQuery extends SQL
 		{
 			$this->exec($obj_name);
 		}
-		return mysql_fetch_row($this->query);
+		return mysqli_fetch_row($this->query);
 	}
 	
 	function record($obj_name)
@@ -238,7 +240,7 @@ class DbQuery extends SQL
 		$row = $this->next($obj_name);
 		if (!$row)
 		{
-			throw new FatalExc(get_label('Unable to find [0].', $obj_name), $this->get_parsed_sql() . '<br>' . mysql_error(), true);
+			throw new FatalExc(get_label('Unable to find [0].', $obj_name), $this->get_parsed_sql() . '<br>' . Db::$conn->error, true);
 		}
 		return $row;
 	}
@@ -250,10 +252,10 @@ class DbQuery extends SQL
 			$this->exec($obj_name);
 		}
 		
-		$row = mysql_num_rows($this->query);
+		$row = mysqli_num_rows($this->query);
 		if ($row === false)
 		{
-			throw new FatalExc(get_label('Unable to get number of records'), $this->get_parsed_sql() . '<br>' . mysql_error(), true);
+			throw new FatalExc(get_label('Unable to get number of records'), $this->get_parsed_sql() . '<br>' . Db::$conn->error, true);
 		}
 		return $row;
 	}
@@ -276,12 +278,16 @@ class Db
 	private static $error = NULL;
 	private static $trans_count = 0;
 	private static $commiters = NULL;
+
+    public static $conn = NULL;
+	private static $host;
 	private static $name;
 	private static $user;
 	private static $password;
 	
-	static function init($name, $user, $password)
+	static function init($name, $user, $password, $host = '127.0.0.1')
 	{
+		Db::$host = $host;
 		Db::$name = $name;
 		Db::$user = $user;
 		Db::$password = $password;
@@ -291,17 +297,14 @@ class Db
 	{
 		if (!Db::$connected)
 		{
-			if (!@mysql_connect('127.0.0.1', Db::$user, Db::$password))
-			{	
-				throw new FatalExc(get_label('Can not connect to the database'), mysql_error(), true);
-			}
-			
-			if (!mysql_select_db(Db::$name))
+            Db::$conn = new mysqli(Db::$host, Db::$user, Db::$password, Db::$name);
+			if (!Db::$conn)
 			{
-				throw new FatalExc(get_label('Can not use mafia database'), mysql_error(), true);
+				throw new FatalExc(get_label('Can not connect to the database'.':'.getenv('DB_HOST').':'.Db::$host.':'.Db::$user.':'.Db::$password), Db::$conn->error, true);
 			}
 
-			mysql_query("set names utf8");
+            Db::$conn->query("set names utf8");
+
 			Db::$connected = true;
 		}
 	}
@@ -312,10 +315,10 @@ class Db
 		{
 			if (Db::$trans_count > 0)
 			{
-				mysql_query('ROLLBACK');
+				Db::$conn->query('ROLLBACK');
 			}
 			Db::$trans_count = 0;
-			mysql_close();
+            Db::$conn->close();
 			Db::$connected = false;
 		}
 	}
@@ -344,9 +347,9 @@ class Db
 		{
 			Db::$trans_count = 0;
 			Db::connect();
-			if (!mysql_query('BEGIN'))
+			if (!Db::$conn->query('BEGIN'))
 			{
-				throw new FatalExc(get_label('Unable to start transaction.'), mysql_error(), true);
+				throw new FatalExc(get_label('Unable to start transaction.'), Db::$conn->error, true);
 			}
 		}
 		++Db::$trans_count;
@@ -365,9 +368,9 @@ class Db
 		else if (Db::$trans_count == 0)
 		{
 			Db::connect();
-			if (!mysql_query('COMMIT'))
+			if (!Db::$conn->query('COMMIT'))
 			{
-				throw new FatalExc(get_label('Failed to commit transaction. Please try again.'), mysql_error(), true);
+				throw new FatalExc(get_label('Failed to commit transaction. Please try again.'), Db::$conn->error, true);
 			}
 			
 			if (Db::$commiters != NULL)
@@ -388,7 +391,7 @@ class Db
 		{
 			Db::$trans_count = 0;
 			Db::connect();
-			mysql_query('ROLLBACK');
+            Db::$conn->query('ROLLBACK');
 			if (Db::$commiters != NULL)
 			{
 				foreach (Db::$commiters as $commiter)
@@ -430,21 +433,26 @@ class Db
 	
 	static function affected_rows()
 	{
-		return mysql_affected_rows();
+		return Db::$conn->affected_rows;
 	}
 }
 
-if (is_testing_server())
-{
-	Db::init('mafia', 'root', '');
-}
-else if (is_demo_server())
-{
-	Db::init('mafiawor_demomafia', 'mafiawor_demo', '4uyF6vHYTn7nOf67L');
-}
-else
-{
-	Db::init('mafiawor_mafia', 'mafiawor_php', 'sasha1203');
+if (getenv('DB_HOST') !== false) {
+    Db::init(getenv('DB_DATABASE'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_HOST'));
+} else {
+    if (is_testing_server())
+    {
+        Db::init('mafia', 'root', '');
+    }
+    else if (is_demo_server())
+    {
+        Db::init('mafiawor_demomafia', 'mafiawor_demo', '4uyF6vHYTn7nOf67L');
+    }
+    else
+    {
+        Db::init('mafiawor_mafia', 'mafiawor_php', 'sasha1203');
+    }
+
 }
 
 ?>

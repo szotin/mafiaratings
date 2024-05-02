@@ -21,6 +21,12 @@ function score_title($points, $raw_points, $normalization)
 
 class Page extends TournamentPageBase
 {
+    private $view;
+    private $user_id;
+    private $scoring;
+    private $is_me;
+    private $player ;
+    private $player_pic ;
 	protected function prepare()
 	{
 		global $_lang, $_profile;

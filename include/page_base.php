@@ -20,7 +20,8 @@ class PageBase
 	
 	protected $user_pic;
 	protected $club_pic;
-	
+	protected $no_selectors;
+
 	function __construct()
 	{
 		initiate_session();
@@ -582,25 +583,5 @@ class MenuItem
 		$this->new_window = $new_window;
 	}
 }
-
-/* template
-
-class Page extends PageBase
-{
-	protected function prepare()
-	{
-		global $_profile;
-	}
-	
-	protected function show_body()
-	{
-		global $_profile;
-	}
-}
-
-$page = new Page();
-$page->run(get_label(''));
-
-*/
 
 ?>

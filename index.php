@@ -24,6 +24,7 @@ define('TOURNAMENTS_ROW_COUNT', 1);
 define('SERIES_COLUMN_COUNT', COLUMN_COUNT);
 define('SERIES_ROW_COUNT', 1);
 
+error_reporting(E_ALL & ~E_NOTICE);
 class Page extends GeneralPageBase
 {
 	private $event_pic;
@@ -475,7 +476,7 @@ class Page extends GeneralPageBase
 	protected function show_body()
 	{
 		global $_profile, $_lang;
-		
+
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$this->series_pic = new Picture(SERIES_PICTURE);
 		$this->event_pic = new Picture(EVENT_PICTURE, $this->tournament_pic);

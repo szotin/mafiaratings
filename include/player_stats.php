@@ -58,7 +58,9 @@ class PlayerStats
 	public $checked_by_sheriff;
 	
 	public $surviving;
-	
+    public $sheriff_found_first_night;
+    public $sheriff_killed_first_night;
+
 	// if $user_id <= 0: gives stats of an average player
 	function __construct($user_id, $roles, $condition = NULL)
 	{

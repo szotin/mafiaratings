@@ -6,6 +6,7 @@ require_once __DIR__ . '/club.php';
 require_once __DIR__ . '/image.php';
 require_once __DIR__ . '/google_geo_key.php';
 
+
 function addr_label($addr, $addr_city, $addr_country)
 {
 	if ($addr == '')

@@ -66,7 +66,7 @@ class Event
 	public $minute;
 	
 	public $coming_odds;
-	
+
 	function __construct()
 	{
 		global $_profile;
@@ -839,7 +839,9 @@ class EventPageBase extends PageBase
 {
 	protected $event;
 	protected $is_manager;
-	
+    private $is_referee;
+    private $show_all;
+
 	protected function prepare()
 	{
 		global $_profile;

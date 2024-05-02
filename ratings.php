@@ -19,6 +19,7 @@ class Page extends GeneralPageBase
 	private $user_city_id;
 	private $user_country_id;
 	private $ccc_value;
+	private $ccc_filter;
 
 	protected function prepare()
 	{

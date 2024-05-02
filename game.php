@@ -7,7 +7,7 @@ class Page extends PageBase
 	private $club_id;
 	private $event_id;
 	private $error;
-	
+	protected $no_selectors;
 	protected function add_headers()
 	{
 		global $_lang;
