@@ -55,6 +55,13 @@ function object_json($object, $newLine)
 	return $result;
 }
 
+function escape_json_string($str)
+{
+	static $f = array("\b", "\f", "\n", "\r", "\t", "\"", "\\");
+	static $r = array('\b', '\f', '\n', '\r', '\t', '\"', '\\');
+	return str_replace($f, $r, $str);
+}
+
 function formatted_json($object, $newLine = "\n")
 {
 	if (is_null($object))
@@ -96,7 +103,7 @@ function formatted_json($object, $newLine = "\n")
 	}
 	else if (is_string($object))
 	{
-		$result = '"' . addslashes($object) . '"';
+		$result = '"' . escape_json_string($object) . '"';
 	}
 	else if (is_bool($object))
 	{
@@ -112,9 +119,38 @@ function formatted_json($object, $newLine = "\n")
 function check_json($string)
 {
 	$obj = json_decode($string);
-	if ($obj == null && json_last_error() != JSON_ERROR_NONE)
+	$error_code = json_last_error();
+	if ($obj == null && $error_code != JSON_ERROR_NONE)
 	{
-		throw new Exc(json_last_error_msg());
+		if (function_exists('json_last_error_msg'))
+		{
+			$msg = json_last_error_msg();
+		}
+		else switch ($error_code)
+		{
+			case JSON_ERROR_NONE: 
+				$msg = 'No error';
+				break;
+			case JSON_ERROR_DEPTH: 
+				$msg = 'Maximum stack depth exceeded';
+				break;
+			case JSON_ERROR_STATE_MISMATCH: 
+				$msg = 'State mismatch (invalid or malformed JSON)';
+				break;
+			case JSON_ERROR_CTRL_CHAR: 
+				$msg = 'Control character error, possibly incorrectly encoded';
+				break;
+			case JSON_ERROR_SYNTAX: 
+				$msg = 'Syntax error';
+				break;
+			case JSON_ERROR_UTF8: 
+				$msg = 'Malformed UTF-8 characters, possibly incorrectly encoded';
+				break;
+			default:
+				$msg = 'Unknown error';
+				break;
+		}
+		throw new Exc($msg);
 	}
 	return json_encode($obj);
 }

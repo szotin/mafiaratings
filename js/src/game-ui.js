@@ -2235,7 +2235,8 @@ var regForm = new function()
 				for (var i in data.list)
 				{
 					var p = data.list[i];
-					$('#form-u' + num).html('<a href="#" onclick="regForm.regIncomer(\'' + p.name + '\', \'' + p.name + '\', ' + p.id + ', ' + p.flags  + ')">' + p.full_name + '</a>');
+					var name = p.name.replaceAll('\'', '\\\'');
+					$('#form-u' + num).html('<a href="#" onclick="regForm.regIncomer(\'' + name + '\', \'' + name + '\', ' + p.id + ', ' + p.flags  + ')">' + p.full_name + '</a>');
 					++num;
 				}
 				for (; num < /*NUM_USERS*/50; ++num)
