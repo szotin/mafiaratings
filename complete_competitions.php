@@ -236,16 +236,46 @@ function complete_tournament()
 			}
 			else
 			{
-				list($max_games) = Db::record(get_label('tournament'), 
-					'SELECT MAX(games) FROM (SELECT COUNT(p.game_id) as games FROM players p'.
-					' JOIN games g ON g.id = p.game_id'.
-					' JOIN events e ON e.id = g.event_id'.
-					' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 and e.round = 0 GROUP BY p.user_id) as players', $tournament_id);
 				list($all_games) = Db::record(get_label('tournament'), 
 					'SELECT COUNT(g.id)'.
 					' FROM games g'.
 					' JOIN events e ON e.id = g.event_id'.
-					' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 and e.round = 0', $tournament_id);
+					' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 AND e.round = 0', $tournament_id);
+				if (empty($all_games))
+				{
+					list($all_games) = Db::record(get_label('tournament'), 
+						'SELECT COUNT(g.id)'.
+						' FROM games g'.
+						' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id);
+					if (empty($all_games))
+					{
+						$all_games = $max_games = 0;
+					}
+					else
+					{
+						list($max_games) = Db::record(get_label('tournament'), 
+							'SELECT MAX(games) FROM (SELECT COUNT(p.game_id) as games FROM players p'.
+							' JOIN games g ON g.id = p.game_id'.
+							' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 GROUP BY p.user_id) as players', $tournament_id);
+						if (empty($max_games))
+						{
+							$max_games = 0;
+						}
+					}
+				}
+				else
+				{
+					list($max_games) = Db::record(get_label('tournament'), 
+						'SELECT MAX(games) FROM (SELECT COUNT(p.game_id) as games FROM players p'.
+						' JOIN games g ON g.id = p.game_id'.
+						' JOIN events e ON e.id = g.event_id'.
+						' WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 AND e.round = 0 GROUP BY p.user_id) as players', $tournament_id);
+					if (empty($max_games))
+					{
+						$max_games = 0;
+					}
+				}
+				
 				if ($max_games >= 0)
 				{
 					$real_count = round($all_games * 10 / $max_games);

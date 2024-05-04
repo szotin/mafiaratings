@@ -248,11 +248,6 @@ class Event
 			throw new Exc(get_label('Please enter [0].', get_label('event name')));
 		}
 		
-		if ($this->timestamp + $this->duration < time())
-		{
-			throw new Exc(get_label('You can not create event in the past. Please check the date.'));
-		}
-		
 		$club = $_profile->clubs[$this->club_id];
 		
 		Db::begin();
@@ -1036,11 +1031,11 @@ class EventPageBase extends PageBase
 			echo '<p><table class="transp" width="100%"><tr><td width="32">';
 			if ($this->is_manager || $this->is_referee)
 			{
-				echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show the actual scoring tables.') . '"><img src="images/аttention.png"></button>';
+				echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show the actual scoring tables.') . '"><img src="images/attention.png"></button>';
 			}
 			else
 			{
-				echo '<img src="images/аttention.png">';
+				echo '<img src="images/attention.png">';
 			}
 			echo '</td><td><h3>' . $text . '</h3></td></tr></table></p>';
 		}

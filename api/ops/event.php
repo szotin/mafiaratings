@@ -97,10 +97,11 @@ class ApiPage extends OpsApiPageBase
 			$club_id = (int)get_required_param('club_id');
 			$tournament_id = NULL;
 			$round_num = 0;
+			$tournament_start_time = $tournament_duration = 0;
 		}
 		else
 		{
-			list($club_id, $tournament_flags) = db::record(get_label('tournament'), 'SELECT club_id, flags FROM tournaments WHERE id = ?', $tournament_id);
+			list($club_id, $tournament_flags, $tournament_start_time, $tournament_duration) = db::record(get_label('tournament'), 'SELECT club_id, flags, start_time, duration FROM tournaments WHERE id = ?', $tournament_id);
 			if (($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 			{
 				$default_flags |= EVENT_MASK_HIDDEN;
@@ -215,7 +216,11 @@ class ApiPage extends OpsApiPageBase
 			$weekday = (1 << $start_datetime->format('w'));
 			while ($start_datetime->getTimestamp() < $end_datetime->getTimestamp())
 			{
-				if (($weekdays & $weekday) != 0)
+				if (
+					($weekdays & $weekday) != 0 && (
+					$tournament_start_time <= 0 || (
+					$start_datetime->getTimestamp() >= $tournament_start_time && 
+					$start_datetime->getTimestamp() + $duration <= $tournament_start_time + $tournament_duration)))
 				{
 					Db::exec(
 						get_label('event'), 
@@ -255,16 +260,19 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			if ($start_datetime->getTimestamp() + $duration < time())
+			$start_time = $start_datetime->getTimestamp();
+			if ($tournament_start_time > 0)
 			{
-				throw new Exc(get_label('You can not create event in the past. Please check the date.'));
+				$start_time = min($start_time, $tournament_start_time + $tournament_duration - $duration);
+				$start_time = max($start_time, $tournament_start_time);
+				$duration = min($duration, $tournament_start_time + $tournament_duration - $start_time);
 			}
 			
 			Db::exec(
 				get_label('event'), 
 				'INSERT INTO events (name, fee, currency_id, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id, round) ' .
 				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-				$name, $fee, $currency_id, $address_id, $club_id, $start_datetime->getTimestamp(), 
+				$name, $fee, $currency_id, $address_id, $club_id, $start_time, 
 				$notes, $duration, $flags, $langs, $rules_code, 
 				$scoring_id, $scoring_version, $scoring_options, $tournament_id, $round_num);
 			list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');

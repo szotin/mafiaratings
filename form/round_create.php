@@ -32,7 +32,6 @@ try
 	$duration = 6 * 3600;
 
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">'.get_label('Round name').':</td><td><input id="form-name" value="' . get_label('main round') . '"></td></tr>';
 	
 	echo '<tr><td width="160">'.get_label('Round type').':</td><td><select id="form-round" onchange="roundChange()">';
 	show_option(0, 0, get_label('main round'));
@@ -50,6 +49,8 @@ try
 	echo '</td></tr>';
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
+	
+	echo '<tr><td>'.get_label('Round name').':</td><td><input id="form-name" value="' . get_label('main round') . '"></td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
 	show_scoring_select($club_id, $scoring_id, $scoring_version, 0, 0, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');

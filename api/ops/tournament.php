@@ -481,7 +481,7 @@ class ApiPage extends OpsApiPageBase
 		$address_id = get_optional_param('address_id', $old_address_id);
 		if ($address_id != $old_address_id)
 		{
-			list ($timzone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $address_id);
+			list ($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $address_id);
 		}
 		else
 		{

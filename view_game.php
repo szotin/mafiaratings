@@ -469,11 +469,11 @@ class Page extends PageBase
 					echo '<p><table class="transp" width="100%"><tr><td width="32">';
 					if ($this->is_editor)
 					{
-						echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show all about this game.') . '"><img src="images/аttention.png"></button>';
+						echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show all about this game.') . '"><img src="images/attention.png"></button>';
 					}
 					else
 					{
-						echo '<img src="images/аttention.png">';
+						echo '<img src="images/attention.png">';
 					}
 					echo '</td><td><h3>' . get_label('This game is hidden until the tournament ends.') . '</h3></td></tr></table></p>';
 					return;
@@ -486,11 +486,11 @@ class Page extends PageBase
 				echo '<p><table class="transp" width="100%"><tr><td width="32">';
 				if ($this->is_editor)
 				{
-					echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show all about this game.') . '"><img src="images/аttention.png"></button>';
+					echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show all about this game.') . '"><img src="images/attention.png"></button>';
 				}
 				else
 				{
-					echo '<img src="images/аttention.png">';
+					echo '<img src="images/attention.png">';
 				}
 				echo '</td><td><h3>' . get_label('Bonus points are hidden for this game until the tournament ends.') . '</h3></td></tr></table></p>';
 			}
