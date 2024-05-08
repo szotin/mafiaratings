@@ -59,7 +59,7 @@ class Page extends SeriesPageBase
 			$s = new stdClass();
 			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
 			$gaining = json_decode($gaining);
-			$s->sum_power = (int)get_gainig_sum_power($gaining, false);
+			$s->sum_power = (int)get_gainig_sum_power($gaining, true);
 			$sum = 0;
 			if ($s->sum_power > 0)
 			{

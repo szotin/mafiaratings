@@ -2300,6 +2300,11 @@ function get_gaining_points($table, $place, $score)
 		return 0;
 	}
 	
+	if (isset($table->asIs))
+	{
+		return $score * $table->asIs;
+	}
+	
 	$min_points = 0;
 	if (isset($table->minPoints))
 	{
@@ -2785,6 +2790,10 @@ function get_gainig_sum_power($gaining, $is_series)
 	{
 		return max((int)$gaining->useTournamentScore, 0);
 	}
+	if (isset($gaining->asIs))
+	{
+		return 1;
+	}
 	return 0;
 }
 
@@ -2948,6 +2957,11 @@ function create_gaining_table($gaining, $stars, $players, $score_sum, $is_series
 		$table->pointsPool = $points_pool;
 		$table->tournamentScorePower = max((int)$gaining->useTournamentScore, 0);
 		$table->scoreSum = $score_sum;
+	}
+	
+	if (isset($gaining->asIs))
+	{
+		$table->asIs = $gaining->asIs;
 	}
 	
 	//echo formatted_json($table);

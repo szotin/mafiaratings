@@ -382,7 +382,7 @@ function calculate_series()
 		if ($s_sum_power > 0)
 		{
 			$s_score_sum_query = 'SUM(POW(sp.score, ' . $s_sum_power . '))';
-			$s_score_query = 'POW(sp.score, ' . $t_sum_power . ')';
+			$s_score_query = 'POW(sp.score, ' . $s_sum_power . ')';
 		}
 		else
 		{

@@ -162,7 +162,7 @@ class Page extends SeriesPageBase
 		$s_sum_power = (int)get_gainig_sum_power($this->gaining, true);
 		if ($s_sum_power > 0)
 		{
-			$s_score_query = 'POW(p.score, ' . $t_sum_power . '), SUM(POW(p1.score, ' . $s_sum_power . '))';
+			$s_score_query = 'POW(p.score, ' . $s_sum_power . '), SUM(POW(p1.score, ' . $s_sum_power . '))';
 		}
 		else
 		{
