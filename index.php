@@ -10,6 +10,7 @@ require_once 'include/event.php';
 require_once 'include/snapshot.php';
 require_once 'include/scoring.php';
 require_once 'include/picture.php';
+require_once 'include/tournament.php';
 
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('ROW_COUNT', 2);
@@ -77,16 +78,11 @@ class Page extends GeneralPageBase
 	
 	private function show_tournament($tournament)
 	{
-		list (
-			$t_id, $t_name, $t_flags, 
-			$t_start_time, $t_duration, $t_timezone, 
-			$t_club_id, $t_club_name, $t_club_flags, 
-			$t_languages, 
-			$t_addr_id, $t_addr_flags, $t_addr, $t_addr_name) = $tournament;
-				
-		$this->tournament_pic->set($t_id, $t_name, $t_flags);
+		$this->tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 		
-		$future = ($t_start_time > time());
+//		echo formatted_json($tournament);
+		
+		$future = ($tournament->start_time > time());
 		if ($future)
 		{
 			$dark_class = ' class = "darker"';
@@ -102,34 +98,44 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="transp" width="100%">';
 		
-		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="3" align="center">';
-		if ($this->tournament_pic->has_image())
-		{
-			echo '<table class="transp" width="100%"><tr><td width="32"><img src="images/icons/tournament.png" width="30"></td><td align="center">';
-			echo '<b>' . $t_name . '</b>';
-			echo '</td></tr></table>';
-		}
-		else
-		{
-			echo '<b>' . $t_name . '</b>';
-		}
+		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="2" align="center">';
+		echo '<b>' . $tournament->name . '</b>';
 		echo '</td></tr>';
 		
-		echo '<tr' . $light_class . ' style="height: 80px;"><td colspan="3" align="center">';
-		echo '<a href="' . $url . '?bck=1&id=' . $t_id . '" title="' . get_label('View tournament details.') . '">';
+		echo '<tr' . $light_class . ' style="height: 90px;"><td colspan="2" align="center">';
+		echo '<a href="' . $url . '?bck=1&id=' . $tournament->id . '" title="' . get_label('View tournament details.') . '">';
 		$this->tournament_pic->show(ICONS_DIR, false, $future ? 56 : 70);
 		echo '</a>';
 		if ($future)
 		{
-			echo '<br>' . format_date('l, F d', $t_start_time, $t_timezone);
+			echo '<br>' . format_date('l, F d', $tournament->start_time, $tournament->timezone);
 		}
 		echo '</td></tr>';
 		
-		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="2" align="center">' . $t_club_name . '</td><td width="34">';
-		$this->club_pic->set($t_club_id, $t_club_name, $t_club_flags);
+		echo '<tr' . $light_class . ' style="height: 40px;"><td align="center">' . $tournament->club_name . '</td><td width="34">';
+		$this->club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
 		$this->club_pic->show(ICONS_DIR, false, 30);
 		echo '</td></tr>';
 		
+		if ($this->max_series > 0)
+		{
+			echo '<tr' . $dark_class . ' style="height: ' . ($this->max_series * 30) . 'px"><td colspan="2" align="center">';
+			if (isset($tournament->series) && count($tournament->series) > 0)
+			{
+				echo '<table>';
+				foreach ($tournament->series as $series)
+				{
+					echo '<tr style="height: 28px;"><td width="30">';
+					$this->series_pic->set($series->id, $series->name, $series->flags);
+					$this->series_pic->show(ICONS_DIR, false, 24);
+					echo '</td><td>';
+					echo '<font style="color:#B8860B; font-size:16px;">' . tournament_stars_str($series->stars) . '</font>';
+					echo '</td></tr>';
+				}
+				echo '</table></td></tr>';
+			}
+			echo '</td></tr>';
+		}
 		echo '</table>';
 	}
 	
@@ -252,10 +258,70 @@ class Page extends GeneralPageBase
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP()', $condition);
 		$query->add(' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id LIMIT ' . (TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT));
+		$tournaments_list = '';
+		$delim = '';
+		$tournaments = array();
+		while ($row = $query->next())
+		{
+			$tournament = new stdClass();
+			list(
+				$tournament->id, $tournament->name, $tournament->flags, $tournament->start_time, $tournament->duration, $tournament->timezone, 
+				$tournament->club_id, $tournament->club_name, $tournament->club_flags, 
+				$tournament->address_id, $tournament->address_flags, $tournament->address, $tournament->address_name) = $row;
+			$tournaments[] = $tournament;
+			$tournaments_list .= $delim . $tournament->id;
+			$delim = ', ';
+		}
+		
+		$this->max_series = 0;
+		$query = new DbQuery(
+			'SELECT t.id, s.id, s.name, s.flags, st.stars'.
+			' FROM series_tournaments st'.
+			' JOIN series s ON s.id = st.series_id'.
+			' JOIN tournaments t ON t.id = st.tournament_id'.
+			' WHERE t.id IN (' . $tournaments_list . ')'.
+			' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id, st.stars, s.id');
+		$tournament_index = 0;
+		while ($row = $query->next())
+		{
+			list($tournament_id, $series_id, $series_name, $series_flags, $stars) = $row;
+			$tournament = $tournaments[$tournament_index];
+			while ($tournament->id != $tournament_id)
+			{
+				++$tournament_index;
+				if ($tournament_index < count($tournaments))
+				{
+					$tournament = $tournaments[$tournament_index];
+				}
+				else
+				{
+					break;
+				}
+			}
+			if ($tournament->id != $tournament_id)
+			{
+				break;
+			}
+			
+			if (!isset($tournament->series))
+			{
+				$tournament->series = array();
+			}
+			$series = new stdClass();
+			$series->id = $series_id;
+			$series->name = $series_name;
+			$series->flags = $series_flags;
+			$series->stars = $stars;
+			$tournament->series[] = $series;
+			if (count($tournament->series) > $this->max_series)
+			{
+				$this->max_series = count($tournament->series);
+			}
+		}
 		
 		$tournament_count = 0;
 		$column_count = 0;
-		while ($row = $query->next())
+		foreach ($tournaments as $tournament)
 		{
 			if ($column_count == 0)
 			{
@@ -271,7 +337,7 @@ class Page extends GeneralPageBase
 				echo '<tr>';
 			}
 			echo '<td width="' . COLUMN_WIDTH . '%" valign="top">';
-			$this->show_tournament($row);
+			$this->show_tournament($tournament);
 			echo '</td>';
 			++$column_count;
 			++$tournament_count;
@@ -547,9 +613,9 @@ class Page extends GeneralPageBase
 		}
 		
 		// tournaments, events and series
-		$have_tables = $this->show_events($condition) || $have_tables;
 		$have_tables = $this->show_tournaments($condition) || $have_tables;
 		$have_tables = $this->show_seriess($condition) || $have_tables;
+		$have_tables = $this->show_events($condition) || $have_tables;
 		
 		if ($had_tables)
 		{

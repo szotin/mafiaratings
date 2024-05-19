@@ -285,7 +285,7 @@ class Names
 		}
 
 		// Find if this set of names already exists
-		$query = new DbQuery('SELECT n1.id, COUNT(n2.id) as c FROM names n1 JOIN names n2 ON n2.id = n1.id WHERE n1.name = ? AND n1.langs = ? GROUP BY n1.id HAVING c = ?', $this->names[0]->name, $this->names[0]->langs, count($this->names));
+		$query = new DbQuery('SELECT n1.id, COUNT(n2.id) as c FROM names n1 JOIN names n2 ON n2.id = n1.id WHERE BINARY n1.name = ? AND n1.langs = ? GROUP BY n1.id HAVING c = ?', $this->names[0]->name, $this->names[0]->langs, count($this->names));
 		while ($row = $query->next())
 		{
 			list($id) = $row;
