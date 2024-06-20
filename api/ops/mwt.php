@@ -384,6 +384,7 @@ class ApiPage extends OpsApiPageBase
 				unset($seating->mwt_players);
 			}
 			Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id = ?', $round_id);
+			Db::exec(get_label('user'), 'DELETE FROM tournament_users WHERE tournament_id = ? AND team_id IS NULL', $tournament_id);
 		}
 		else
 		{
@@ -492,6 +493,13 @@ class ApiPage extends OpsApiPageBase
 								' FROM users u'.
 								' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
 								' WHERE u.id = ?', $round_id, $player_id);
+							Db::exec(
+								get_label('registration'), 
+								'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags)'.
+								' SELECT ?, u.id, '.USER_TOURNAMENT_NEW_PLAYER_FLAGS.
+								' FROM users u'.
+								' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
+								' WHERE u.id = ?', $tournament_id, $player_id);
 						}
 					}
 					$players[] = $player_id;
@@ -598,6 +606,7 @@ class ApiPage extends OpsApiPageBase
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
 						' WHERE u.id = ?', $user_id);
 					Db::exec(get_label('registration'), 'UPDATE IGNORE event_users SET user_id = ?, nickname = ? WHERE event_id = ? AND user_id = ?', $user_id, $user_name, $event_id, $player_id);
+					Db::exec(get_label('registration'), 'UPDATE IGNORE tournament_users SET user_id = ? WHERE tournament_id = ? AND user_id = ?', $user_id, $tournament_id, $player_id);
 				}
 			}
 		}
