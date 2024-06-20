@@ -544,8 +544,8 @@ function loginDialog(message, userName, onError, actionAfterLogin)
 	
 	var html = '<p>' + message + '</p>' +
 		'<table class="dialog_form" width="100%">' +
-		'<tr><td width="140">' + l('UserName') + ':</td><td><input id="lf-name" value="' + userName + '"></td>' +
-		'<tr><td>' + l('Password') + ':</td><td><input type="password" id="lf-pwd"></td>' +
+		'<tr><td width="140">' + l('UserName') + ':</td><td><input id="lf-name" value="' + userName + '"></td></tr>' +
+		'<tr><td>' + l('Password') + ':</td><td><input type="password" id="lf-pwd"></td></tr>' +
 		'<tr><td colspan="2"><input type="checkbox" id="lf-rem" checked> ' + l('remember') +
 		'</td></tr></table>';
 /*	if (userName != '')

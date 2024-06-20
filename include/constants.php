@@ -244,7 +244,7 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 // 13 - 0x001000 -    4096 - this tournament has best sheriff as an award
 // 14 - 0x002000 -    8192 - this tournament has best black as an award
 // 15 - 0x004000 -   16384 - this tournament has best don as an award
-// 16 - 0x008000 -   32768 - this tournament was imported from another system (MWT)
+// 16 - 0x008000 -   32768 - reserved
 // 17 - 0x010000 -   65536 - hide scoring table mask
 // 18 - 0x020000 -  131072 - hide scoring table mask
 // 19 - 0x040000 -  262144 - hide scoring table mask
@@ -264,7 +264,6 @@ define('TOURNAMENT_FLAG_AWARD_RED', 0x800);
 define('TOURNAMENT_FLAG_AWARD_SHERIFF', 0x1000);
 define('TOURNAMENT_FLAG_AWARD_BLACK', 0x2000);
 define('TOURNAMENT_FLAG_AWARD_DON', 0x4000);
-define('TOURNAMENT_FLAG_IMPORTED', 0x8000);
 define('TOURNAMENT_FLAG_FORCE_NUM_PLAYERS', 0x400000);
 define('TOURNAMENT_EDITABLE_MASK', 0x7f7f70); // LONG_TERM | SINGLE_GAME | TOURNAMENT_FLAG_PINNED | TEAM | MANUAL_SCORE | AWARD_* | HIDE_MASK_* | TOURNAMENT_FLAG_FORCE_NUM_PLAYERS
 

@@ -175,3 +175,5 @@ _l["gaveUp"] = "gave up";
 _l["fourWarn"] = "four warnings";
 _l["kickedOut"] = "kicked out";
 _l["teamLost"] = "opposite team win";
+_l["Table"] = "Table {1}";
+_l["GameNum"] = "Game {1}";

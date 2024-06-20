@@ -183,17 +183,25 @@ class GClub
 			}
 			
 			$events_str = '(0';
-			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, e.security_token, t.id, t.name, t.security_token FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
+			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, e.security_token, t.id, t.name, t.security_token, e.seating FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
 			while ($row = $query->next())
 			{
 				$e = new stdClass();
-				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->token, $e->tournament_id, $tournament_name, $tournament_token) = $row;
+				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->token, $e->tournament_id, $tournament_name, $tournament_token, $seating) = $row;
 				$e->id = (int)$e->id;
 				$e->start_time = (int)$e->start_time;
 				$e->langs = (int)$e->langs;
 				$e->duration = (int)$e->duration;
 				$e->flags = (int)$e->flags;
 				$e->reg = array();
+				if (!is_null($seating))
+				{
+					$seating = json_decode($seating);
+					if (isset($seating->seating))
+					{
+						$e->seating = $seating->seating;
+					}
+				}
 				if (!is_null($e->tournament_id))
 				{
 					$e->tournament_id = (int)$e->tournament_id;
@@ -217,6 +225,7 @@ class GClub
 						Db::exec(get_label('event'), 'UPDATE events SET security_token = ? WHERE id = ?', $e->token, $e->id);
 					}
 				}
+				
 				$this->events[$e->id] = $e;
 				$events_str .= ', ' . $e->id;
 			}
@@ -891,25 +900,45 @@ class ApiPage extends OpsApiPageBase
 					$moder_id = $gs->moder_id;
 				}
 				
+				$table = NULL;
+				if (isset($gs->table))
+				{
+					$table = (int)$gs->table;
+					if ($table < 0)
+					{
+						$table = NULL;
+					}
+				}
+				
+				$number = NULL;
+				if (isset($gs->number))
+				{
+					$number = (int)$gs->number;
+					if ($number < 0)
+					{
+						$number = NULL;
+					}
+				}
+				
 				if ($count > 0)
 				{
 					Db::exec(get_label('game'),
 						'UPDATE games SET log = ?, end_time = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 							'user_id = ?, language = ?, start_time = ?, end_time = ?, result = ?, ' .
-							'rules = ? WHERE id = ?',
+							'rules = ?, game_table = ?, game_number = ? WHERE id = ?',
 						$json_str, $gs->end_time, $gs->club_id, $gs->event_id, $tournament_id, $moder_id,
 						$gs->user_id, $gs->lang, $gs->start_time, $gs->end_time, $result_code,
-						$gs->rules_code, $gs->id);
+						$gs->rules_code, $table, $number, $gs->id);
 					Db::exec(get_label('tournament'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $gs->event_id);
 					Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
 				}
 				else
 				{
 					Db::exec(get_label('game'),
-						'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, log, start_time, end_time, result, rules) ' .
-							'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, log, start_time, end_time, result, rules, game_table, game_number) ' .
+							'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$gs->club_id, $gs->event_id, $tournament_id, $moder_id, $gs->user_id, $gs->lang,
-						$json_str, $gs->start_time, $gs->end_time, $result_code, $gs->rules_code);
+						$json_str, $gs->start_time, $gs->end_time, $result_code, $gs->rules_code, $table, $number);
 					list ($gs->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');
 					$gs->id = (int)$gs->id;
 					$json_str = json_encode($gs);
@@ -1382,16 +1411,16 @@ class ApiPage extends OpsApiPageBase
 	{
 		$game_id = (int)get_required_param('game_id');
 		list ($club_id, $old_table, $old_number, $old_objection_user_id, $old_objection, $game_user_id) =
-			Db::record(get_label('game'), 'SELECT club_id, table_name, game_number, objection_user_id, objection, user_id FROM games WHERE id = ?', $game_id);
+			Db::record(get_label('game'), 'SELECT club_id, game_table, game_number, objection_user_id, objection, user_id FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $game_user_id, $club_id);
 		
-		$table = get_optional_param('table', $old_table);
+		$table = (int)get_optional_param('table', $old_table);
 		if (empty($table))
 		{
 			$table = NULL;
 		}
 		
-		$number = get_optional_param('number', $old_number);
+		$number = (int)get_optional_param('number', $old_number);
 		if (empty($number))
 		{
 			$number = NULL;
@@ -1410,7 +1439,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		Db::exec(get_label('game'), 'UPDATE games SET table_name = ?, game_number = ?, objection_user_id = ?, objection = ? WHERE id = ?', 
+		Db::exec(get_label('game'), 'UPDATE games SET game_table = ?, game_number = ?, objection_user_id = ?, objection = ? WHERE id = ?', 
 			$table, $number, $objection_user_id, $objection, $game_id);
 		if (Db::affected_rows() > 0)
 		{

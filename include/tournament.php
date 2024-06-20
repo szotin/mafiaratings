@@ -190,6 +190,7 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
 				new MenuItem('javascript:mr.tournamentObs(' . $this->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
+				new MenuItem('tournament_mwt.php?id=' . $this->id, get_label('MWT integration'), get_label('Synchronize tournament with MWT site. Receive seating, send games, etc..')),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}
@@ -383,6 +384,23 @@ function tournament_stars_str($stars, $max_stars = 5)
 //		$stars_str .= '☆';
 //	}
 	return $stars_str;
+}
+
+function get_round_name($round_num)
+{
+	switch ($round_num)
+	{
+		case 0:
+			return get_label('main round');
+		case 1:
+			return get_label('final');
+		case 2:
+			return get_label('semi-final');
+		case 3:
+			return get_label('quarter-final');
+		default:
+			return get_label('1/[0] final', pow(2, $round_num - 1));
+	}
 }
 
 ?>

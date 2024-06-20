@@ -8,6 +8,7 @@ require_once '../../include/datetime.php';
 require_once '../../include/scoring.php';
 require_once '../../include/image.php';
 require_once '../../include/game.php';
+require_once '../../include/mwt.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -500,7 +501,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Tournament ends before or right after the start.'));
 		}
 		
-		// Set MWT id
+		// Set MWT ID
 		$mwt_id = get_optional_param('mwt_id', $old_mwt_id);
 		if (empty($mwt_id))
 		{
@@ -513,7 +514,7 @@ class ApiPage extends OpsApiPageBase
 				$mwt_id = parse_number_from_url($mwt_id, '/tournaments/');
 				if ($mwt_id <= 0)
 				{
-					throw new Exc(get_label('Invalid MWT id. Id has to be an integer, or a URL of the tournament in the MWT site.'));
+					throw new Exc(get_label('Invalid MWT ID. Id has to be an integer, or a URL of the tournament in the MWT site.'));
 				}
 			}
 			if ($mwt_id != $old_mwt_id)
@@ -525,13 +526,7 @@ class ApiPage extends OpsApiPageBase
 				if ($row = $query->next())
 				{
 					list($mwt_tournament_id, $mwt_tournament_flags, $mwt_tournament_name) = $row;
-					// TODO: implement tournament merging
-					// if (($mwt_tournament_flags & TOURNAMENT_FLAG_IMPORTED) == 0)
-					// {
-						throw new Exc(get_label('MWT id [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_tournament_id, $mwt_tournament_name));
-					// }
-					// $this->merge_tournaments($mwt_tournament_id, $tournament_id);
-					// echo get_label('Tournament [0] is now merged to your account because they were auto-created for MWT id [1].', $mwt_tournament_name, $mwt_id);
+					throw new Exc(get_label('MWT ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_tournament_id, $mwt_tournament_name));
 				}
 			}
 		}

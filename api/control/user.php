@@ -12,6 +12,12 @@ class ApiPage extends ControlApiPageBase
 		// print_r($_REQUEST);
 		// echo '</pre>';
 	
+		$control = '';
+		if (isset($_REQUEST['control']))
+		{
+			$control = $_REQUEST['control'];
+		}
+		
 		$term = '';
 		if (isset($_REQUEST['term']))
 		{
@@ -87,6 +93,7 @@ class ApiPage extends ControlApiPageBase
 			$player = new stdClass();
 			$player->id = 0;
 			$player->label = $player->name = $player->nickname = $player->city = '-';
+			$player->control = $control;
 			$this->response[] = $player;
 		}
 		
@@ -101,6 +108,7 @@ class ApiPage extends ControlApiPageBase
 				$player->nickname = $nickname;
 				$player->label .= ' (' . $nickname . ')';
 			}
+			$player->control = $control;
 			$this->response[] = $player;
 		}
 	}

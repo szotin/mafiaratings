@@ -112,7 +112,7 @@ function convert_mwt_game($mwt_game)
 		list($address_id) = Db::record(get_label('address'), 'SELECT id FROM addresses WHERE club_id = ? ORDER BY id LIMIT 1', $club_id);
 		list($scoring_id, $rules_code) = Db::record(get_label('club'), 'SELECT scoring_id, rules FROM clubs WHERE id = ?', $club_id);
 		list($scoring_version) = Db::record(get_label('scoring'), 'SELECT MAX(version) FROM scoring_versions WHERE scoring_id = ?', $scoring_id);
-		$tournament_flags = TOURNAMENT_FLAG_AWARD_MVP | TOURNAMENT_FLAG_AWARD_RED | TOURNAMENT_FLAG_AWARD_BLACK | TOURNAMENT_FLAG_IMPORTED;
+		$tournament_flags = TOURNAMENT_FLAG_AWARD_MVP | TOURNAMENT_FLAG_AWARD_RED | TOURNAMENT_FLAG_AWARD_BLACK;
 		Db::exec(
 			get_label('tournament'), 
 			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, scoring_id, scoring_version, scoring_options, rules, flags, type, mwt_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',

@@ -407,6 +407,7 @@ var mafia = new function()
 		var oldDirty = _gDirty;
 		json.post('api/ops/game.php', request, function(data)
 		{
+//			console.log(data);
 			if (typeof data.console == "object")
 				for (var i = 0; i < data.console.length; ++i)
 					console.log('Sync log: ' + data.console[i]);
@@ -670,6 +671,76 @@ var mafia = new function()
 			dirty();
 		}
 		return game.tournament_id;
+	}
+	
+	this.gameTable = function(t)
+	{
+		var game = _data.game;
+		if (typeof t != 'undefined')
+		{
+			var event = _data.club.events[game.event_id];
+			if (t >= 0 && event.seating && t < event.seating.length)
+			{
+				if (t != game.table)
+				{
+					game.table = t;
+					var g = event.seating[game.table][game.number];
+					if (g)
+					{
+						for (var i = 0; i < g.length && i < 10; ++i)
+						{
+							mafia.player(i, g[i]);
+						}
+					}
+					dirty();
+				}
+			}
+			else if (typeof game.table != 'undefined')
+			{
+				delete game.table;
+				dirty();
+			}
+		}
+		if (typeof game.table == 'undefined')
+		{
+			return -1;
+		}
+		return game.table;
+	}
+	
+	this.gameNumber = function(n)
+	{
+		var game = _data.game;
+		if (typeof n != 'undefined')
+		{
+			var event = _data.club.events[game.event_id];
+			if (n >= 0 && event.seating && event.seating[game.table] && n < event.seating[game.table].length)
+			{
+				if (n != game.number)
+				{
+					game.number = n;
+					var g = event.seating[game.table][game.number];
+					if (g)
+					{
+						for (var i = 0; i < g.length && i < 10; ++i)
+						{
+							mafia.player(i, g[i]);
+						}
+					}
+					dirty();
+				}
+			}
+			else if (typeof game.number != 'undefined')
+			{
+				delete game.number;
+				dirty();
+			}
+		}
+		if (typeof game.table == 'undefined')
+		{
+			return -1;
+		}
+		return game.number;
 	}
 	
 	this.createEvent = function(event)
@@ -2681,7 +2752,9 @@ var mafia = new function()
 			log: null,
 			flags: flags,
 			guess3: null,
-			rules_code: rules
+			rules_code: rules,
+			table: _data.game.table,
+			number: _data.game.number
 		}
 		
 		for (var i = 0; i < 10; ++i)
@@ -2692,7 +2765,12 @@ var mafia = new function()
 				kill_round: -1, kill_reason: -1, arranged: -1, don_check: -1, sheriff_check: -1, mute: -1
 			});
 		}
-		return game;
+		
+		_data.game = game;
+		if (typeof game.number != 'undefined')
+		{
+			mafia.gameNumber(+game.number+1);
+		}
 	}
 
 	this.restart = function()
@@ -2794,7 +2872,7 @@ var mafia = new function()
 		var game = _data.game;
 		if (game.gamestate >= /*GAME_STATE_MAFIA_WON*/17 && game.gamestate <= /*GAME_STATE_CIVIL_WON*/18)
 		{
-			_data.game = _newGame();
+			_newGame();
 			_curVoting = null;
 			if (game.event_id != 0)
 			{

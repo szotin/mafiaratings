@@ -42,6 +42,11 @@ button.icon:hover { border: 1px outset #ccccc0; padding: 0px;  }
 button.icon[checked] { border: 1px solid #909090; padding: 0px; background-color: #aaccdd; }
 button.icon:active { border: 1px inset #ccccc0; padding: 0px;  }
 
+button.big_icon { height: 36px; width: 36px; margin: 0px; padding: 1px; border: 0px; background-color:transparent; }
+button.big_icon:hover { border: 1px outset #ccccc0; padding: 0px;  }
+button.big_icon[checked] { border: 1px solid #909090; padding: 0px; background-color: #aaccdd; }
+button.big_icon:active { border: 1px inset #ccccc0; padding: 0px;  }
+
 button.small_icon { height: 20px; width: 20px; margin: 0px; padding: 1px; border: 0px; background-color:transparent; }
 button.small_icon:hover { border: 1px outset #ccccc0; padding: 0px;  }
 button.small_icon:active { border: 1px inset #ccccc0; padding: 0px;  }

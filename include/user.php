@@ -259,12 +259,12 @@ function show_user_input($name, $value, $condition, $title, $js_function = 'mr.g
 
 	echo '<input type="text" id="' . $name . '" placeholder="' . get_label('Select player') . '" title="' . $title . '"/>';
 	echo '<button class="small_icon" onclick="$(&quot;#' . $name . '&quot;).val(\'\')"><img src="images/clear.png" width="12"></button>';
-	$url = 'api/control/user.php?';
+	$url = 'api/control/user.php?control=' . $name;
 	if (!empty($condition))
 	{
-		$url .= $condition . '&';
+		$url .= '&' . $condition;
 	}
-	$url .= 'term=';
+	$url .= '&term=';
 ?>
 		<script>
 		$("#<?php echo $name; ?>").autocomplete(

@@ -1280,6 +1280,65 @@ mafia.ui = new function()
 		mafia.rating($('#rating').attr('checked') ? 1 : 0);
 	}
 	
+	this.gameNumberChange = function()
+	{
+		var n = mafia.gameNumber($('#game-number').val());
+		mafia.ui.fillUsers();
+	}
+	
+	this.gameTableChange = function()
+	{
+		var data = mafia.data();
+		var game = data.game;
+		var event = data.club.events[game.event_id];
+		var table = mafia.gameTable($('#game-table').val());
+		
+		var tournamentId = game.tournament_id;
+		html = l('Tournament') + ': <select id="tournaments" onchange="mafia.ui.tournamentChange()"><option value="0"></option>';
+		for (var tournament of mafia.data().club.tournaments)
+		{
+			if (event.tournament_id != tournament.id)
+			{
+				html += _option(tournament.id, tournamentId, tournament.name);
+			}
+		}
+		if (event.tournament_id > 0)
+		{
+			html += _option(event.tournament_id, tournamentId, event.tournament_name);
+		}
+		html += '</select>';
+		if (event.seating)
+		{
+			html += ' <select id="game-table" onchange="mafia.ui.gameTableChange()">';
+			html += _option(-1, table, '');
+			for (var i = 0; i < event.seating.length; ++i)
+			{
+				html += _option(i, table, l('Table', String.fromCharCode(65 + i)));
+			}
+			html += '</select>';
+			if (table >= 0)
+			{
+				var number = mafia.gameNumber();
+				html += ' <select id="game-number" onchange="mafia.ui.gameNumberChange()">';
+				html += _option(-1, number, '');
+				for (var i = 0; i < event.seating[game.table].length; ++i)
+				{
+					html += _option(i, number, l('GameNum', i + 1));
+				}
+				html += '</select>';
+			}
+		}
+		html += ' <input type="checkbox" id="rating" onclick="mafia.ui.ratingChange()"';
+		if (mafia.rating())
+		{
+			html += ' checked';
+		}
+		html += '> ' + l('Rating');
+		$('#tournaments_div').html(html);
+		
+		mafia.ui.fillUsers();
+	}
+	
 	this.eventChange = function(init)
 	{
 		var data = mafia.data();
@@ -1319,26 +1378,7 @@ mafia.ui = new function()
 		}
 		_enable($('#lang').html(html), enableLangs);
 		
-		var tournamentId = game.tournament_id;
-		html = l('Tournament') + ': <select id="tournaments" onchange="mafia.ui.tournamentChange()"><option value="0"></option>';
-		for (var tournament of mafia.data().club.tournaments)
-		{
-			if (event.tournament_id != tournament.id)
-			{
-				html += _option(tournament.id, tournamentId, tournament.name);
-			}
-		}
-		if (event.tournament_id > 0)
-		{
-			html += _option(event.tournament_id, tournamentId, event.tournament_name);
-		}
-		html += '</select> <input type="checkbox" id="rating" onclick="mafia.ui.ratingChange()"';
-		if (mafia.rating())
-		{
-			html += ' checked';
-		}
-		html += '> ' + l('Rating');
-		$('#tournaments_div').html(html);
+		mafia.ui.gameTableChange();
 		
 		var sReg = mafia.sReg(event.id);
 		var allCanModer = (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8);
@@ -1360,8 +1400,7 @@ mafia.ui = new function()
 		_enable($('#player10').html(html), allCanModer);
 		
 		mafia.ui.fillUsers();
-	}
-	
+	}	
 	this.fillUsers = function()
 	{
 		var data = mafia.data();
@@ -2469,7 +2508,6 @@ var newUserForm = new function()
 					try
 					{
 						var id = mafia.createUser(name, nick, email, flags);
-						console.log(id);
 						mafia.player(num, id);
 						mafia.ui.eventChange(false);
 					}
