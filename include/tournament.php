@@ -163,6 +163,7 @@ class TournamentPageBase extends PageBase
 			new MenuItem('tournament_rounds.php?id=' . $this->id, get_label('Rounds'), get_label('Tournament rounds')),
 			new MenuItem('tournament_standings.php?id=' . $this->id, get_label('Standings'), get_label('Tournament standings')),
 			new MenuItem('tournament_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this tournament.')),
+			new MenuItem('tournament_seating.php?id=' . $this->id, get_label('Seating'), get_label('Tournament seating.')),
 			new MenuItem('tournament_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the tournament')),
 			new MenuItem('#stats', get_label('Reports'), NULL, array
 			(
