@@ -681,6 +681,33 @@ var mr = new function()
 		dlg.form("form/series_edit.php?id=" + id, refr);
 	}
 	
+	this.finishSeries = function(id, confirmMessage, doneMessage)
+	{
+		function _finish()
+		{
+			json.post("api/ops/series.php", { op: "finish", series_id: id }, function()
+			{
+				if (typeof doneMessage == "string")
+				{
+					dlg.info(doneMessage, null, null, refr);
+				}
+				else
+				{
+					refr();
+				}
+			});
+		}
+		
+		if (typeof confirmMessage == "string")
+		{
+			dlg.yesNo(confirmMessage, null, null, _finish);
+		}
+		else
+		{
+			_finish();
+		}
+	}
+
 	//--------------------------------------------------------------------------------------
 	// scoring system
 	//--------------------------------------------------------------------------------------

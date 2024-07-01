@@ -13,6 +13,11 @@ define('VIEW_BY_GAME', 0);
 define('VIEW_BY_TABLE', 1);
 define('VIEW_COUNT', 2);
 
+define('HIDE_PLAYED', 1);
+define('SHOW_ICONS', 2);
+define('ONLY_MY', 4);
+define('ONLY_HIGHLIGHTED', 8);
+
 class Page extends TournamentPageBase
 {
 	protected function prepare()
@@ -27,19 +32,26 @@ class Page extends TournamentPageBase
 			$this->user_id = $_profile->user_id;
 		}
 		
+		$this->highlight_id = $this->user_id;
+		if (isset($_REQUEST['hlt']))
+		{
+			$this->highlight_id = (int)$_REQUEST['hlt'];
+		}
+		
 		$now = time();
-		$this->hide_played_games = ($this->start_time <= $now && $this->start_time + $this->duration >= $now);
-		if (isset($_REQUEST['hide_played']))
+		if (isset($_REQUEST['ops']))
 		{
-			$this->hide_played_games = $_REQUEST['hide_played'] ? true : false;
+			$this->options = (int)$_REQUEST['ops'];
 		}
-		
-		$this->my_games_only = false;
-		if (isset($_REQUEST['my']))
+		else if ($this->start_time <= $now && $this->start_time + $this->duration >= $now)
 		{
-			$this->my_games_only = $_REQUEST['my'] ? true : false;
+			$this->options = HIDE_PLAYED | SHOW_ICONS;
 		}
-		
+		else
+		{
+			$this->options = SHOW_ICONS;
+		}
+
 		$this->round_id = 0;
 		if (isset($_REQUEST['round_id']))
 		{
@@ -116,15 +128,27 @@ class Page extends TournamentPageBase
 		}
 		if (!is_null($this->seating) && isset($this->seating->seating))
 		{
-			echo '<p><input type="checkbox" id="hide_played"'.($this->hide_played_games ? ' checked' : '').' onclick="hidePlayed()"> '.get_label('show only non-played games');
-			echo ' <input type="checkbox" id="my_only"'.($this->my_games_only ? ' checked' : '').' onclick="hideNotMine()"> '.get_label('show only my games').'</p>';
+			echo '<p><input type="checkbox" id="hide_played"'.(($this->options & HIDE_PLAYED) ? ' checked' : '').' onclick="hidePlayed()"> '.get_label('show only non-played games');
+			echo ' <input type="checkbox" id="show_icons"'.(($this->options & SHOW_ICONS) ? ' checked' : '').' onclick="showIcons()"> '.get_label('show user pictures');
+			if ($this->user_id > 0)
+			{
+				echo ' <input type="checkbox" id="my_only"'.(($this->options & ONLY_MY) ? ' checked' : '').' onclick="onlyMy()"> '.get_label('show only my games');
+			}
+			if ($this->highlight_id > 0 && $this->highlight_id != $this->user_id)
+			{
+				echo ' <input type="checkbox" id="my_only"'.(($this->options & ONLY_HIGHLIGHTED) ? ' checked' : '').' onclick="onlyHighlighted()"> '.get_label('show only the games with the higlighted player');
+			}
+			echo '</p>';
 			
 			echo '<p><div class="tab">';
 			echo '<button' . ($view == VIEW_BY_GAME ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_GAME.'})">' . get_label('By game') . '</button>';
 			echo '<button' . ($view == VIEW_BY_TABLE ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_TABLE.'})">' . get_label('By table') . '</button>';
 			echo '</div></p>';
-			
-			$this->user_pic = new Picture(USER_PICTURE);
+
+			if ($this->options & SHOW_ICONS)
+			{
+				$this->user_pic = new Picture(USER_PICTURE);
+			}
 			$players_list = '';
 			$this->users = array();
 			$delim = '';
@@ -186,7 +210,38 @@ class Page extends TournamentPageBase
 	{
 		$normalize = false;
 		
-		if ($this->my_games_only)
+		if ($this->options & ONLY_HIGHLIGHTED)
+		{
+			for ($i = 0; $i < count($this->seating->seating); ++$i)
+			{
+				$table = $this->seating->seating[$i];
+				for ($j = 0; $j < count($table); ++$j)
+				{
+					$game = $table[$j];
+					if (is_null($game))
+					{
+						continue;
+					}
+					
+					$found = false;
+					for ($k = 0; $k < count($game); ++$k)
+					{
+						if ($game[$k] == $this->highlight_id)
+						{
+							$found = true;
+							break;
+						}
+					}
+					if (!$found)
+					{
+						$this->seating->seating[$i][$j] = NULL;
+						$normalize = true;
+					}
+				}
+			}
+		}
+		
+		if ($this->options & ONLY_MY)
 		{
 			for ($i = 0; $i < count($this->seating->seating); ++$i)
 			{
@@ -217,9 +272,9 @@ class Page extends TournamentPageBase
 			}
 		}
 		
-		if ($this->hide_played_games)
+		if ($this->options & HIDE_PLAYED)
 		{
-			$query = new DbQuery('SELECT game_table, game_number FROM games WHERE tournament_id = ?', $this->id);
+			$query = new DbQuery('SELECT game_table, game_number FROM games WHERE result <> 0 AND tournament_id = ?', $this->id);
 			while ($row = $query->next())
 			{
 				list($t, $g) = $row;
@@ -257,15 +312,40 @@ class Page extends TournamentPageBase
 	
 	private function showPlayer($user_id)
 	{
-		echo '<td align="center" ' . ($this->user_id == $user_id ? ' class="darker"' : '') . '>';
+		$class = '';
+		if ($this->highlight_id == $user_id)
+		{
+			$class = ' class="darker"';
+			if ($this->user_id == $user_id)
+			{
+				$ref_beg = '';
+				$ref_end = '';
+			}
+			else
+			{
+				$ref_beg = '<a href="javascript:highlight()">';
+				$ref_end = '</a>';
+			}
+		}
+		else
+		{
+			$ref_beg = '<a href="javascript:highlight('.$user_id.')">';
+			$ref_end = '</a>';
+		}
+		echo '<td align="center" ' . ($this->highlight_id == $user_id ? ' class="darker"' : '') . '>';
 		if ($user_id > 0)
 		{
 			$user = $this->users[$user_id];
-			echo '<table class="transp" width="100%"><tr><td align="center">';
-			$this->user_pic->set($user->id, $user->name, $user->flags);
-			$this->user_pic->show(ICONS_DIR, false, 48);
-			echo '</td><tr><tr><td align="center">' . $user->name;
-			echo '</td></tr></table>';
+			echo '<table class="transp" width="100%">';
+			if ($this->options & SHOW_ICONS)
+			{
+				echo '<tr><td align="center">' . $ref_beg;
+				$this->user_pic->set($user->id, $user->name, $user->flags);
+				$this->user_pic->show(ICONS_DIR, false, 48);
+				echo $ref_end.'</td></tr>';
+			}
+			echo '<tr><td align="center" style="height:30px">' . $ref_beg . $user->name;
+			echo $ref_end . '</td></tr></table>';
 		}
 		else if (isset($this->seating->mwt_players))
 		{
@@ -273,7 +353,7 @@ class Page extends TournamentPageBase
 			{
 				if ($p->id == $user_id)
 				{
-					echo $p->name;
+					echo $ref_beg . $p->name . $ref_end;
 					break;
 				}
 			}
@@ -383,17 +463,41 @@ class Page extends TournamentPageBase
 		}
 	}
 	
+	function changeOp($op)
+	{
+		if ($this->options & $op)
+		{
+			return $this->options & ~$op;
+		}
+		return $this->options | $op;
+	}
+	
 	protected function js()
 	{
 ?>
 		function hidePlayed()
 		{
-			goTo({hide_played: ($("#hide_played").attr("checked") ? 1 : 0)});
+			goTo({ops: <?php echo $this->changeOp(HIDE_PLAYED); ?>});
 		}
 		
-		function hideNotMine()
+		function showIcons()
 		{
-			goTo({my: ($("#my_only").attr("checked") ? 1 : 0)});
+			goTo({ops: <?php echo $this->changeOp(SHOW_ICONS); ?>});
+		}
+		
+		function onlyMy()
+		{
+			goTo({ops: <?php echo $this->changeOp(ONLY_MY); ?>});
+		}
+		
+		function onlyHighlighted()
+		{
+			goTo({ops: <?php echo $this->changeOp(ONLY_HIGHLIGHTED); ?>});
+		}
+		
+		function highlight(userId)
+		{
+			goTo({hlt: userId});
 		}
 <?php
 	}
