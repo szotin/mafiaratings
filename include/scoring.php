@@ -48,10 +48,11 @@ define('SCORING_FLAG_SHERIFF_FOUND_FIRST_NIGHT', 0x40000); // 262144: Matter 18 
 define('SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT', 0x80000); // 524288: Matter 19 - Sheriff was killed the first night
 define('SCORING_FLAG_BLACK_CHECKS', 0x100000); // 1048576: Matter 20 - Sheriff did three black checks in a row
 define('SCORING_FLAG_RED_CHECKS', 0x200000); // 2097152: Matter 21 - All sheriff checks are red
-define('SCORING_FLAG_EXTRA_POINTS', 0x400000); // 4194304: Matter 22 - Player has manually assigned extra points
+define('SCORING_FLAG_EXTRA_POINTS', 0x400000); // 4194304: Matter 22 - Extra points are assigned manually
 define('SCORING_FLAG_FIRST_LEGACY_1', 0x800000); // 8388608: Matter 23 - Guessed 1 mafia after being killed first night
 define('SCORING_FLAG_WORST_MOVE', 0x1000000); // 16777216: Matter 24 - Worst move
 define('SCORING_FLAG_TEAM_KICK_OUT', 0x2000000); // 33554432: Matter 25 - Team kicked out (opposite team wins)
+define('SCORING_FLAG_END', 0x4000000); // 67108864: Just marks the end of flags for loops
 
 define('SCORING_STAT_FLAG_GAME_DIFFICULTY', 0x1);
 define('SCORING_STAT_FLAG_FIRST_NIGHT_KILLING', 0x2);
@@ -1223,10 +1224,10 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	}
 	
 	// Add event extra points
-	$query = new DbQuery('SELECT user_id, points FROM event_extra_points WHERE event_id = ?', $event_id);
+	$query = new DbQuery('SELECT user_id, points, scoring_group, scoring_matter FROM event_extra_points WHERE event_id = ?', $event_id);
 	while ($row = $query->next())
 	{
-		list ($player_id, $points) = $row;
+		list ($player_id, $points, $group, $matter) = $row;
 		if (isset($players[$player_id]))
 		{
 			if (isset($options->weight))
@@ -1235,13 +1236,23 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 			}
 			
 			$player = $players[$player_id];
-			if (isset($player->extra_points))
+			$g = $group . '_points';
+			if (isset($player->$g))
 			{
-				$player->extra_points += $points;
+				$player->$g += $points;
 			}
-			if (isset($player->extra) && is_array($player->extra) && isset($player->extra[0]))
+			if (isset($player->$group) && is_array($player->$group))
 			{
-				$player->extra[0] += $points;
+				$a = &$player->scoring->$group;
+				for ($i = 0; $i < count($a); ++$i)
+				{
+					if ($a[$i]->matter & $matter)
+					{
+						$sg = &$player->$group;
+						$sg[$i] += $points;
+						break;
+					}
+				}
 			}
 			$player->points += $points;
 		}
@@ -1810,10 +1821,10 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     }
 	
 	// Add event extra points
-	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id, $hide_table_condition);
+	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points, p.scoring_group, p.scoring_matter FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id, $hide_table_condition);
 	while ($row = $query->next())
 	{
-		list ($event_id, $player_id, $points) = $row;
+		list ($event_id, $player_id, $points, $group, $matter) = $row;
 		if (isset($players[$player_id]))
 		{
 			if (isset($event_scorings[$event_id]))
@@ -1825,13 +1836,25 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				}
 			}
 			$player = $players[$player_id];
-			if (isset($player->extra_points))
+			
+			
+			$g = $group . '_points';
+			if (isset($player->$g))
 			{
-				$player->extra_points += $points;
+				$player->$g += $points;
 			}
-			if (isset($player->extra) && is_array($player->extra) && isset($player->extra[0]))
+			if (isset($player->$group) && is_array($player->$group))
 			{
-				$player->extra[0] += $points;
+				$a = &$player->scoring->$group;
+				for ($i = 0; $i < count($a); ++$i)
+				{
+					if ($a[$i]->matter & $matter)
+					{
+						$sg = &$player->$group;
+						$sg[$i] += $points;
+						break;
+					}
+				}
 			}
 			$player->points += $points;
 		}
@@ -2071,7 +2094,11 @@ function get_scoring_roles_label($role_flags)
 function get_scoring_matter_label($policy, $include_roles = false)
 {
 	$matter = 0;
-	if (isset($policy->matter))
+	if (is_int($policy))
+	{
+		$matter = $policy;
+	}
+	else if (isset($policy->matter))
 	{
 		$matter = $policy->matter;
 	}
@@ -2232,15 +2259,15 @@ function get_scoring_group_label($group)
 {
 	switch ($group)
 	{
-		case 'main':
+		case SCORING_GROUP_MAIN:
 			return get_label('Main points');
-		case 'legacy':
+		case SCORING_GROUP_LEGACY:
 			return get_label('Legacy points');
-		case 'extra':
+		case SCORING_GROUP_EXTRA:
 			return get_label('Extra points');
-		case 'penalty':
+		case SCORING_GROUP_PENALTY:
 			return get_label('Penalty points');
-		case 'night1':
+		case SCORING_GROUP_NIGHT1:
 			return get_label('Points for being killed first night');
 	}
 	return get_label('Unknown');

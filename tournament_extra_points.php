@@ -67,7 +67,7 @@ class Page extends TournamentPageBase
 				set($user_id, $user_name, $user_flags);
 			$tournament_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td>';
-			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td>';
+			echo '<a href="tournament_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">' . $user_name . '</a></td>';
 			echo '<td align="center">' . $event_name . '</td>';
 			echo '<td>' . $reason . '</td>';
 			echo '<td align="center">';

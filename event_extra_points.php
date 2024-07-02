@@ -67,7 +67,7 @@ class Page extends EventPageBase
 				set($user_id, $user_name, $user_flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td>';
-			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td>';
+			echo '<a href="event_player.php?user_id=' . $user_id . '&id=' . $this->event->id . '&bck=1">' . $user_name . '</a></td>';
 			echo '<td>' . $reason . '</td>';
 			echo '<td align="center">';
 			if ($points == 0)
