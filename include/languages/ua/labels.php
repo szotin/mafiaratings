@@ -1631,7 +1631,6 @@ $labelMenu = array (
 'Export games' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
 'Please ented MWT ID of this tournament' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
 'Done' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
-'Import schema' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
 'Players mapping' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
 'Table [0]' => '[EMPTY]', // tournament_mwt.php, tournament_seating.php, tournament_seating.php, tournament_mwt.php, tournament_seating.php, tournament_seating.php
 'Round [0]' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
@@ -1641,8 +1640,7 @@ $labelMenu = array (
 '1/[0] final' => '[EMPTY]', // include/tournament.php, include/tournament.php
 'Unable to connect to [0].' => '[EMPTY]', // api/ops/mwt.php, api/ops/mwt.php
 'Invalid response from [0]: [1]' => '[EMPTY]', // api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php
-'MWT ID is not set for the tournament.' => '[EMPTY]', // api/ops/mwt.php, api/ops/mwt.php
-'Schema is not imported from MWT.' => '[EMPTY]', // api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php
+'MWT ID is not set for the tournament.' => '[EMPTY]', // api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php
 'Map mafiaratings player to MWT player [0]' => '[EMPTY]', // form/mwt_map_player.php, form/mwt_map_player.php
 'show only non-played games' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
 'show only my games' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
@@ -1650,6 +1648,7 @@ $labelMenu = array (
 'By table' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
 'Tournament seating.' => '[EMPTY]', // include/tournament.php, include/tournament.php
 'show user pictures' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
+'show only the games with the higlighted player' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1664,7 +1663,8 @@ $labelMenu = array (
 'Display pattern must contain \'#\' character.' => '[EMPTY]', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php, api/ops/country.php, api/ops/currency.php, api/ops/currency.php
 'when player\'s first-night-killed rate is 0%' => '[EMPTY]', // form/scoring_show.php, form/scoring_show.php
 'when player\'s first-night-killed rate is lower than [0]%' => '[EMPTY]', // form/scoring_show.php, form/scoring_show.php
-'show only the games with the higlighted player' => '[EMPTY]', // tournament_seating.php
+'Continue importing' => '[EMPTY]', // tournament_mwt.php
+'Scoring group' => '[EMPTY]', // form/extra_points_add.php, form/extra_points_edit.php
 );
 
 return $labelMenu;

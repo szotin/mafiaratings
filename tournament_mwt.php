@@ -85,11 +85,53 @@ class Page extends TournamentPageBase
 		echo '<button onclick="mwtId()">'.get_label('Done').'</button>';
 	}
 	
+	private function has_unfinished_import()
+	{
+		$query = new DbQuery('SELECT id, seating, languages FROM events WHERE tournament_id = ?', $this->id);
+		while ($row = $query->next())
+		{
+			list($event_id, $event_seating, $event_langs) = $row;
+			if (is_null($event_seating))
+			{
+				continue;
+			}
+			
+			$event_seating = json_decode($event_seating);
+			if (!isset($event_seating->mwt_schema) || !isset($event_seating->seating))
+			{
+				continue;
+			}
+			
+			foreach ($event_seating->seating as $table)
+			{
+				if (is_null($table))
+				{
+					return true;
+				}
+				foreach ($table as $game)
+				{
+					if (is_null($game))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
 	private function show_seating()
 	{
 		global $_lang,$_mwt_site;
 		
-		echo '<p><button onclick="mwt(importSchema)">'.get_label('Import schema').'</button></p>';
+		
+		echo '<p><button onclick="mwt(importSchema)">'.get_label('Import seating').'</button>';
+		if ($this->has_unfinished_import())
+		{
+			echo ' <button onclick="mwt(importSeating)">'.get_label('Continue importing').'</button>';
+		}
+		echo '</p>';
+		echo '<div id="progress"></div>';
 		
 		echo '<div class="tab">';
 		$query = new DbQuery('SELECT id, round, seating FROM events WHERE tournament_id = ? ORDER BY round', $this->id);
@@ -143,8 +185,6 @@ class Page extends TournamentPageBase
 		}
 		echo '</div>';
 		
-		echo '<p><button onclick="mwt(importSeating)">'.get_label('Import seating').'</button></p>';
-		echo '<div id="progress"></div>';
 		if (!is_null($this->seating))
 		{
 			$round_view = 0;
@@ -163,10 +203,10 @@ class Page extends TournamentPageBase
 					}
 				}
 			}
-			echo '<div class="tab">';
+			echo '<p><div class="tab">';
 			echo '<button ' . ($round_view == 0 ? 'class="active" ' : '') . 'onclick="goTo({rview:0,page:undefined})"' . (isset($this->seating->seating) ? '' : ' disabled') . '>' . get_label('Seating') . '</button>';
 			echo '<button ' . ($round_view == 1 ? 'class="active" ' : '') . 'onclick="goTo({rview:1,page:undefined})"' . (isset($this->seating->mwt_players) ? '' : ' disabled') . '>' . get_label('Players mapping') . '</button>';
-			echo '</div>';
+			echo '</div></p>';
 			
 			$players_list = '';
 			$delim = '';
@@ -354,20 +394,18 @@ class Page extends TournamentPageBase
 				}
 				else
 				{
-					refr();
+					importSeating();
 				}
 			});
 			
 		}
 		
-		var isImporting = false;
 		function importSeating()
 		{
 			var params =
 			{
 				op: 'import_seating',
-				reset: isImporting ? 0 : 1,
-				round_id: <?php echo $this->round_id; ?>
+				tournament_id: <?php echo $this->id; ?>
 			};
 			
 			json.post("api/ops/mwt.php", params, function(data)
@@ -384,8 +422,7 @@ class Page extends TournamentPageBase
 							'<img src="images/black_dot.png" width="' + (<?php echo CONTENT_WIDTH; ?>-redWidth) + '" height="20">';
 					}
 					$('#progress').html(phtml);
-					isImporting = (data.progress < data.total);
-					if (isImporting)
+					if (data.progress < data.total)
 					{
 						importSeating();
 					}

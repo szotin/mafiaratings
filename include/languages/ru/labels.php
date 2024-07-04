@@ -1631,7 +1631,6 @@ $labelMenu = array (
 'Export games' => 'Экспорт игр', // tournament_mwt.php
 'Please ented MWT ID of this tournament' => 'Пожалуйста введите ID этого турнира на сайте MWT', // tournament_mwt.php
 'Done' => 'Сделано', // tournament_mwt.php
-'Import schema' => 'Импортировать схему', // tournament_mwt.php
 'Players mapping' => 'Соответствие игроков', // tournament_mwt.php
 'Table [0]' => 'Стол [0]', // tournament_mwt.php, tournament_seating.php, tournament_seating.php
 'Round [0]' => 'Игра [0]', // tournament_mwt.php
@@ -1641,8 +1640,7 @@ $labelMenu = array (
 '1/[0] final' => '1/[0] финала', // include/tournament.php
 'Unable to connect to [0].' => 'Не получается соединиться с [0].', // api/ops/mwt.php
 'Invalid response from [0]: [1]' => 'Неправильный ответ от [0]: [1]', // api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php, api/ops/mwt.php
-'MWT ID is not set for the tournament.' => 'Турниру не назначен ID с сайта MWT.', // api/ops/mwt.php
-'Schema is not imported from MWT.' => 'Схема не ипортирована с сайта MWT', // api/ops/mwt.php, api/ops/mwt.php
+'MWT ID is not set for the tournament.' => 'Турниру не назначен ID с сайта MWT.', // api/ops/mwt.php, api/ops/mwt.php
 'Map mafiaratings player to MWT player [0]' => 'Сопоставить игрока c mafiaratings игроку с MWT [0]', // form/mwt_map_player.php
 'show only non-played games' => 'показывать только не сыгранные игры', // tournament_seating.php
 'show only my games' => 'показывать только мои игры', // tournament_seating.php
@@ -1650,6 +1648,7 @@ $labelMenu = array (
 'By table' => 'По столам', // tournament_seating.php
 'Tournament seating.' => 'Турнирная рассадка.', // include/tournament.php
 'show user pictures' => 'показывать картинки игроков', // tournament_seating.php
+'show only the games with the higlighted player' => 'показывать только игры с выделенным игроком', // tournament_seating.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1664,7 +1663,8 @@ $labelMenu = array (
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
 'Display pattern must contain \'#\' character.' => 'правило показа валюты обязано содержать символ \'#\'.', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php
-'show only the games with the higlighted player' => 'показывать только игры с выделенным игроком', // tournament_seating.php
+'Continue importing' => 'Продолжить импорт', // tournament_mwt.php
+'Scoring group' => 'Группа', // form/extra_points_add.php, form/extra_points_edit.php
 );
 
 return $labelMenu;

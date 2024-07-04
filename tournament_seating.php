@@ -158,6 +158,10 @@ class Page extends TournamentPageBase
 				{
 					foreach ($table as $game)
 					{
+						if (is_null($game))
+						{
+							continue;
+						}
 						foreach ($game as $user_id)
 						{
 							if ($user_id > 0 && !isset($this->users[$user_id]))
