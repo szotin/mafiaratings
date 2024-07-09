@@ -3247,7 +3247,7 @@ class Game
 		Db::exec(get_label('game'),
 			'UPDATE games SET json = ?, feature_flags = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
-				'rules = ?, is_rating = ? WHERE id = ?',
+				'rules = ?, is_rating = ?, is_fiim_exported = 0 WHERE id = ?',
 			$json, $feature_flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
 			$language, $data->startTime, $data->endTime, $game_result,
 			$data->rules, $is_data_rating, $data->id);

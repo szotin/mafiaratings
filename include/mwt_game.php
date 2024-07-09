@@ -349,5 +349,81 @@ function convert_mwt_game($mwt_game)
 	return $game;
 }
 
+function convert_game_to_mwt($game_id)
+{
+	global $_lang;
+	
+	list ($game_json, $feature_flags, $table, $number, $seating, $event_name, $mwt_tournament_id, $mwt_moderator_id, $moderator_name) = Db::record(get_label('game'), 
+		'SELECT g.json, g.feature_flags, g.game_table, g.game_number, e.seating, e.name, t.mwt_id, u.mwt_id, nu.name'.
+		' FROM games g'.
+		' JOIN events e ON e.id = g.event_id'.
+		' JOIN tournaments t ON t.id = g.tournament_id'.
+		' JOIN users u ON u.id = g.moderator_id'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+		' WHERE g.id = ?', $game_id);
+	if (is_null($table))
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('table')));
+	}
+	if (is_null($number))
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('game')));
+	}
+	if (is_null($seating))
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('seating')));
+	}
+	if (is_null($mwt_tournament_id))
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('tournament')));
+	}
+	if (is_null($mwt_moderator_id))
+	{
+		throw new Exc(get_label('MWT user id is not set for the moderator [0]', $moderator_name));
+	}
+	$seating = json_decode($seating);
+	if (!isset($seating->mwt_schema))
+	{
+		throw new Exc(get_label('MWT schema is not set for the [0]', $event_name));
+	}
+	if ($table >= count($seating->mwt_schema))
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('table')));
+	}
+	if ($number >= count($seating->mwt_schema[$table]))
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('game')));
+	}
+	
+	$mwt_game = new stdClass();
+	$mwt_game->tournament_id = $mwt_tournament_id;
+	$mwt_game->part_number = $seating->mwt_schema[$table][$number];
+	$mwt_game->table_number = $table + 1;
+	if ($number > 0 && $mwt_game->part_number != $seating->mwt_schema[$table][$number-1])
+	{
+		$mwt_game->session_number = 1;
+	}
+	else
+	{
+		$mwt_game->session_number = $number + 1;
+	}
+	$mwt_game->referee_user_id = $mwt_moderator_id;
+	
+	$game = new Game($game_json, $feature_flags);
+	$game = $game->data;
+	$result = new stdClass();
+	for ($i = 0; $i < 10; ++$i)
+	{
+		$player = $game->players[$i];
+		if (isset($player->legacy))
+		{
+			$result->best_move_value = $player->legacy;
+		}
+	}
+	
+	$mwt_game->result = $result;
+	throw new Exc('<pre>'.formatted_json($mwt_game).'</pre>');
+//	throw new Exc('<pre>'.formatted_json($game).'</pre>');
+}
 
 ?>

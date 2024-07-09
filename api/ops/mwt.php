@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/mwt.php';
+require_once '../../include/mwt_game.php';
 require_once '../../include/tournament.php';
 
 define('CURRENT_VERSION', 0);
@@ -461,25 +462,39 @@ class ApiPage extends OpsApiPageBase
 			foreach ($data->protocol as $player)
 			{
 				$player_id = 0;
-				for ($i = 0; $i < count($seating->mwt_players); ++$i)
+				if (is_null($player->user_id))
 				{
-					if ($seating->mwt_players[$i]->mwt_id == $player->user_id)
+					foreach ($seating->mwt_players as $mwt_player)
 					{
-						$player_id = $seating->mwt_players[$i]->id;
-						break;
+						if ($mwt_player->id < 0 && $mwt_player->name == $player->nickname)
+						{
+							$player_id = $mwt_player->id;
+							break;
+						}
+					}
+				}
+				else
+				{
+					foreach ($seating->mwt_players as $mwt_player)
+					{
+						if ($mwt_player->mwt_id == $player->user_id)
+						{
+							$player_id = $mwt_player->id;
+							break;
+						}
 					}
 				}
 				
 				if ($player_id == 0)
 				{
-					$query = new DbQuery('SELECT id FROM users WHERE mwt_id = ?', $player->user_id);
-					if ($row = $query->next())
+					$player_id = - 1 - count($seating->mwt_players);
+					if (!is_null($player->user_id))
 					{
-						$player_id = (int)$row[0];
-					}
-					else
-					{
-						$player_id = - 1 - count($seating->mwt_players);
+						$query = new DbQuery('SELECT id FROM users WHERE mwt_id = ?', $player->user_id);
+						if ($row = $query->next())
+						{
+							$player_id = (int)$row[0];
+						}
 					}
 					
 					$new_player = new stdClass();
@@ -632,6 +647,66 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	// function map_player_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Finish the tournament. After finishing the tournament within one hour players will get all series points for this tournament. Finish tournament functionality lets not to wait until the time expires and get the results quicker.');
+		// return $help;
+	// }
+	
+	//-------------------------------------------------------------------------------------------------------
+	// export_game
+	//-------------------------------------------------------------------------------------------------------
+	private function export_game($game_id)
+	{
+		// if (is_null($table))
+		// {
+			// throw new Exc(get_label('Unknown [0]', get_label('table')));
+		// }
+		// if (is_null($number))
+		// {
+			// throw new Exc(get_label('Unknown [0]', get_label('game')));
+		// }
+		// if (is_null($seating))
+		// {
+			// throw new Exc(get_label('Unknown [0]', get_label('seating')));
+		// }
+		$mwt_game = convert_game_to_mwt($game_id);
+		throw new Exc(formatted_json($mwt_game));
+		Db::exec(get_label('game'), 'UPDATE games SET is_fiim_exported = 1 WHERE id = ?', $game_id);
+	}
+	
+	function export_game_op()
+	{
+		$game_id = (int)get_optional_param('game_id', 0);
+		
+		$total = 1;
+		$progress = 1;
+		if ($game_id > 0)
+		{
+			$this->export_game($game_id);
+		}
+		else
+		{
+			$tournament_id = (int)get_required_param('tournament_id');
+			
+			list ($total) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND game_table IS NOT NULL AND game_number IS NOT NULL', $tournament_id);
+			$total = (int)$total;
+			
+			list ($progress) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND game_table IS NOT NULL AND game_number IS NOT NULL AND is_fiim_exported <> 0', $tournament_id);
+			$progress = (int)$progress;
+			
+			if ($progress < $total)
+			{
+				list ($game_id) = Db::record(get_label('game'), 'SELECT id FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND is_fiim_exported = 0 LIMIT 1', $tournament_id);
+				$this->export_game($game_id);
+				++$progress;
+			}
+		}
+		
+		$this->response['total'] = $total;
+		$this->response['progress'] = $progress;
+	}
+	
+	// function export_game_op_help()
 	// {
 		// $help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Finish the tournament. After finishing the tournament within one hour players will get all series points for this tournament. Finish tournament functionality lets not to wait until the time expires and get the results quicker.');
 		// return $help;

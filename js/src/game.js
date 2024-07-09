@@ -481,10 +481,13 @@ var mafia = new function()
 			var has_immunity = 0;
 			if (id != 0)
 			{
-				var u = club.players[id];
 				nick = event.reg[id];
-				is_male = (u.flags & /*U_FLAG_MALE*/64) ? 1 : 0;
-				has_immunity = (u.flags & /*U_FLAG_IMMUNITY*/1024) ? 1 : 0;
+				var u = club.players[id];
+				if (u)
+				{
+					is_male = (u.flags & /*U_FLAG_MALE*/64) ? 1 : 0;
+					has_immunity = (u.flags & /*U_FLAG_IMMUNITY*/1024) ? 1 : 0;
+				}
 				
 				if (id == game.moder_id)
 				{
