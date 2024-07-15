@@ -349,14 +349,38 @@ function convert_mwt_game($mwt_game)
 	return $game;
 }
 
+function _compare_leaves($leave1, $leave2)
+{
+	if ($leave1->nights_before_count > $leave2->nights_before_count)
+	{
+		return 1;
+	}
+	else if ($leave1->nights_before_count < $leave2->nights_before_count)
+	{
+		return -1;
+	}
+
+	if ($leave1->days_before_count > $leave2->days_before_count)
+	{
+		return 1;
+	}
+	else if ($leave1->days_before_count < $leave2->days_before_count)
+	{
+		return -1;
+	}
+	return $leave1->leave_type - $leave2->leave_type;
+}
+
 function convert_game_to_mwt($game_id)
 {
 	global $_lang;
 	
-	list ($game_json, $feature_flags, $table, $number, $seating, $event_name, $mwt_tournament_id, $mwt_moderator_id, $moderator_name) = Db::record(get_label('game'), 
-		'SELECT g.json, g.feature_flags, g.game_table, g.game_number, e.seating, e.name, t.mwt_id, u.mwt_id, nu.name'.
+	list ($game_json, $feature_flags, $table, $number, $seating, $event_name, $mwt_tournament_id, $mwt_moderator_id, $moderator_name, $timezone) = Db::record(get_label('game'), 
+		'SELECT g.json, g.feature_flags, g.game_table, g.game_number, e.seating, e.name, t.mwt_id, u.mwt_id, nu.name, c.timezone'.
 		' FROM games g'.
 		' JOIN events e ON e.id = g.event_id'.
+		' JOIN addresses a ON a.id = e.address_id'.
+		' JOIN cities c ON c.id = a.city_id'.
 		' JOIN tournaments t ON t.id = g.tournament_id'.
 		' JOIN users u ON u.id = g.moderator_id'.
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
@@ -412,12 +436,301 @@ function convert_game_to_mwt($game_id)
 	$game = new Game($game_json, $feature_flags);
 	$game = $game->data;
 	$result = new stdClass();
+	date_default_timezone_set($timezone);
+	$result->start_time = date('Y-m-d G:i:s', $game->startTime);
+	$result->end_time = date('Y-m-d G:i:s', $game->endTime);
+	if ($game->winner == 'maf')
+	{
+		$result->result = 'black';
+	}
+	else
+	{
+		$result->result = 'red';
+	}
+	$result->black_count = 0;
+	$result->red_count = 0;
+	
+	$players_list = '';
+	$delim = '';
+	foreach ($game->players as $player)
+	{
+		$players_list .= $delim . $player->id;
+		$delim = ', ';
+	}
+	$player_map = array();
+	$query = new DbQuery('SELECT id, mwt_id FROM users WHERE id IN('.$players_list.')');
+	while ($row = $query->next())
+	{
+		list ($uid, $umwtid) = $row;
+		$player_map[$uid] = $umwtid; 
+	}
+	
+	$result->players = array();
+	$result->is_replacement = array();
+	$result->player_roles = array();
+    $result->game_autobonus = array();
+    $result->game_bonus = array();
+    $result->penalty = array();
+    $result->penalty_disciplinary = array();
+	$result->reveal_don = array();
+	$result->reveal_sheriff = array();
+	$result->player_fouls = array();
+	$result->leaves = array();
+	$result->comment = '';
+	$comment_delim = '';
 	for ($i = 0; $i < 10; ++$i)
 	{
 		$player = $game->players[$i];
-		if (isset($player->legacy))
+		$result->players[] = isset($player_map[$player->id]) ? $player_map[$player->id] : NULL;
+		
+		$game_autobonus = 1;
+		$game_bonus = 0;
+		$penalty = 0;
+		$penalty_disciplinary = 0;
+
+		if (isset($player->death) && isset($player->death->type))
 		{
-			$result->best_move_value = $player->legacy;
+			// leave_type
+			// 1 - заголосован днем
+			// 2 - убит ночью
+			// 3 - дисквалифицирован
+			// 4 - дисквалифицирован на ппк	
+			$leave = NULL;
+			switch ($player->death->type)
+			{
+			case DEATH_TYPE_GIVE_UP:
+			case DEATH_TYPE_KICK_OUT:
+			case DEATH_TYPE_WARNINGS:
+				$penalty_disciplinary = -0.5;
+				$leave = new stdClass();
+				$leave->leave_type = 3;
+				$leave->votes_count = 0;
+				$leave->nights_before_count = $player->death->round;
+				$leave->days_before_count = $player->death->round;
+				if (!Game::is_night($player->death->time))
+				{
+					++$leave->days_before_count;
+				}
+				break;
+			case DEATH_TYPE_TEAM_KICK_OUT:
+				$penalty_disciplinary = -0.7;
+				$leave = new stdClass();
+				$leave->leave_type = 4;
+				$leave->votes_count = 0;
+				$leave->nights_before_count = $player->death->round;
+				$leave->days_before_count = $player->death->round;
+				if (!Game::is_night($player->death->time))
+				{
+					++$leave->days_before_count;
+				}
+				break;
+			case DEATH_TYPE_NIGHT:
+				$leave = new stdClass();
+				$leave->leave_type = 2;
+				$leave->votes_count = 0;
+				$leave->nights_before_count = $player->death->round;
+				$leave->days_before_count = $player->death->round;
+				if ($player->death->round == 1)
+				{
+					$result->killed_first = $i + 1;
+					if (isset($player->legacy))
+					{
+						$result->best_move_value = $player->legacy;
+						$result->best_move = 0;
+						foreach ($player->legacy as $l)
+						{
+							$p = $game->players[$l-1]; 
+							if (isset($p->role) && ($p->role == 'maf' || $p->role == 'don'))
+							{
+								++$result->best_move;
+							}
+						}
+					}
+				}
+				break;
+			case DEATH_TYPE_DAY:
+				$leave = new stdClass();
+				$leave->leave_type = 1;
+				$leave->votes_count = 0;
+				foreach ($game->players as $p)
+				{
+					if (isset($p->voting) && $player->death->round < count($p->voting) && $p->voting[$player->death->round] == $i + 1)
+					{
+						++$leave->votes_count;
+					}
+				}
+				$leave->nights_before_count = $player->death->round;
+				$leave->days_before_count = $player->death->round + 1;
+				break;
+			}
+			
+			if ($leave)
+			{
+				$leave->p_num = $i + 1;
+				$result->leaves[] = $leave;
+			}
+		}
+		
+		if (!isset($player->role) || $player->role == 'civ')
+		{
+			$result->player_roles[] = "red";
+		}
+		else if ($player->role == 'maf')
+		{
+			$result->player_roles[] = "black";
+		}
+		else if ($player->role == 'don')
+		{
+			$result->player_roles[] = "don";
+		}
+		else if ($player->role == 'sheriff')
+		{
+			$result->player_roles[] = "sheriff";
+		}
+		else
+		{
+			// ???
+			$result->player_roles[] = "red";
+		}
+		if (!isset($player->death))
+		{
+			if (!isset($player->role) || $player->role == 'civ')
+			{
+				++$result->red_count;
+			}
+			else if ($player->role == 'maf')
+			{
+				++$result->black_count;
+			}
+			else if ($player->role == 'don')
+			{
+				++$result->black_count;
+			}
+			else if ($player->role == 'sheriff')
+			{
+				++$result->red_count;
+			}
+			else
+			{
+				// ???
+				++$result->red_count;
+			}
+		}
+		
+		if (isset($player->bonus))
+		{
+			if (is_array($player->bonus))
+			{
+				foreach ($player->bonus as $bonus)
+				{
+					if (is_numeric($bonus))
+					{
+						if ($bonus > 0)
+						{
+							$game_bonus += $bonus;
+						}
+						else
+						{
+							$penalty += $bonus;
+						}
+					}
+					else if ($bonus == 'worstMove')
+					{
+						$game_autobonus = 0;
+					}
+				}
+			}
+			else if (is_numeric($player->bonus))
+			{
+				if ($player->bonus > 0)
+				{
+					$game_bonus += $player->bonus;
+				}
+				else
+				{
+					$penalty += $player->bonus;
+				}
+			}
+			else if ($player->bonus == 'worstMove')
+			{
+				$game_autobonus = 0;
+			}
+
+		}
+		
+		$result->game_autobonus[] = $game_autobonus;
+		$result->game_bonus[] = $game_bonus;
+		$result->penalty[] = $penalty;
+		$result->penalty_disciplinary[] = $penalty_disciplinary;
+		$result->is_replacement[] = (!isset($seating->seating) || $seating->seating[$table][$number][$i] == $player->id) ? 0 : 1;
+		
+		if (isset($player->don))
+		{
+			for ($n = count($result->reveal_don); $n < $player->don; ++$n)
+			{
+				$result->reveal_don[] = NULL;
+			}
+			$result->reveal_don[$player->don - 1] = $i + 1;
+		}
+		
+		if (isset($player->sheriff))
+		{
+			for ($n = count($result->reveal_sheriff); $n < $player->sheriff; ++$n)
+			{
+				$result->reveal_sheriff[] = NULL;
+			}
+			$result->reveal_sheriff[$player->sheriff - 1] = $i + 1;
+		}
+		
+		$warnings = 0;
+		if (isset($player->warnings))
+		{
+			if (is_array($player->warnings))
+			{
+				$warnings = count($player->warnings);
+			}
+			else
+			{
+				$warnings = (int)$player->warnings;
+			}
+		}
+		$result->player_fouls[] = $warnings;
+		
+		if (isset($player->comment))
+		{
+			$result->comment .= $comment_delim . ($i + 1) . '. ' . $player->comment;
+			$comment_delim = "\n";
+		}
+	}
+
+	usort($result->leaves, '_compare_leaves');
+	$num_players = 10;
+	$beg = 0;
+	for ($i = 0; $i < count($result->leaves); ++$i)
+	{
+		$leave = $result->leaves[$i];
+		$leave->players_before_count = $num_players--;
+		$leave->game_ended = 0;
+		if ($i > 0)
+		{
+			$prev = $result->leaves[$beg];
+			if ($leave->leave_type != 1 || $prev->leave_type != 1 || $leave->nights_before_count != $prev->nights_before_count || $leave->days_before_count != $prev->days_before_count)
+			{
+				for ($j = $beg; $j < $i; ++$j)
+				{
+					$result->leaves[$j]->leave_along_count = $i - $beg;
+				}
+				$beg = $i;
+			}
+		}
+	}
+	if ($i > 0)
+	{
+		$leave = $result->leaves[$i-1];
+		$leave->game_ended = 1;
+		for ($j = $beg; $j < $i; ++$j)
+		{
+			$result->leaves[$j]->leave_along_count = $i - $beg;
 		}
 	}
 	

@@ -320,7 +320,7 @@ class ApiPage extends OpsApiPageBase
 				$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
 				Db::exec(
 					get_label('round'), 
-					'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, seating) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+					'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, seating) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 					$event_name, $address_id, $club_id, $start, $duration, $flags, $langs, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $event_seating);
 					
 				$log_details = new stdClass();
@@ -621,19 +621,26 @@ class ApiPage extends OpsApiPageBase
 				}
 				
 				Db::exec(get_label('round'), 'UPDATE events SET seating = ? WHERE id = ?', json_encode($seating), $event_id);
+				
+				if (!is_valid_lang($lang))
+				{
+					$lang = $_lang;
+				}
+				list ($user_name) = Db::record(get_label('user'), 
+					'SELECT nu.name'.
+					' FROM users u'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
+					' WHERE u.id = ?', $user_id);
+					
 				if ($player_id > 0)
 				{
-					if (!is_valid_lang($lang))
-					{
-						$lang = $_lang;
-					}
-					list ($user_name) = Db::record(get_label('user'), 
-						'SELECT nu.name'.
-						' FROM users u'.
-						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
-						' WHERE u.id = ?', $user_id);
 					Db::exec(get_label('registration'), 'UPDATE IGNORE event_users SET user_id = ?, nickname = ? WHERE event_id = ? AND user_id = ?', $user_id, $user_name, $event_id, $player_id);
 					Db::exec(get_label('registration'), 'UPDATE IGNORE tournament_users SET user_id = ? WHERE tournament_id = ? AND user_id = ?', $user_id, $tournament_id, $player_id);
+				}
+				else
+				{
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $event_id, $user_id, $user_name);
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) VALUES (?, ?, ?)', $tournament_id, $user_id, USER_TOURNAMENT_NEW_PLAYER_FLAGS);
 				}
 			}
 		}
