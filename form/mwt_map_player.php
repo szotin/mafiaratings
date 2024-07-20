@@ -20,35 +20,24 @@ try
 	}
 	$player_id = (int)$_REQUEST['player_id'];
 	
-	list($club_id, $name, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, name, flags FROM tournaments WHERE id = ?', $tournament_id);
+	list($club_id, $name, $flags, $tournament_misc) = Db::record(get_label('tournament'), 'SELECT club_id, name, flags, misc FROM tournaments WHERE id = ?', $tournament_id);
 	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
-	
-	$query = new DbQuery('SELECT seating FROM events WHERE tournament_id = ?', $tournament_id);
-	$player = NULL;
-	while ($row = $query->next())
+	if (is_null($tournament_misc))
 	{
-		list($seating) = $row;
-		if (is_null($seating))
+		throw new Exc(get_label('Players mapping is not set for the tournament.'));
+	}
+	$tournament_misc = json_decode($tournament_misc);
+	if (!isset($tournament_misc->mwt_players))
+	{
+		throw new Exc(get_label('Players mapping is not set for the tournament.'));
+	}
+	
+	$player = NULL;
+	foreach ($tournament_misc->mwt_players as $p)
+	{
+		if ($p->id == $player_id)
 		{
-			continue;
-		}
-		
-		$seating = json_decode($seating);
-		if (!isset($seating->mwt_players))
-		{
-			continue;
-		}
-		
-		foreach ($seating->mwt_players as $p)
-		{
-			if ($p->id == $player_id)
-			{
-				$player = $p;
-				break;
-			}
-		}
-		if (!is_null($player))
-		{
+			$player = $p;
 			break;
 		}
 	}
@@ -56,7 +45,6 @@ try
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('player')));
 	}
-	
 	
 	dialog_title(get_label('Map mafiaratings player to MWT player [0]', $player->name));
 	

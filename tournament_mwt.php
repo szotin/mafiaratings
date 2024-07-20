@@ -8,8 +8,9 @@ require_once 'include/mwt.php';
 
 define('VIEW_MWT_ID', 0);
 define('VIEW_SEATING', 1);
-define('VIEW_GAMES', 2);
-define('VIEW_COUNT', 3);
+define('VIEW_MAPPING', 2);
+define('VIEW_GAMES', 3);
+define('VIEW_COUNT', 4);
 
 function compare_mwt_players($player1, $player2)
 {
@@ -34,31 +35,56 @@ class Page extends TournamentPageBase
 	protected function prepare()
 	{
 		parent::prepare();
-		$this->available_view = VIEW_MWT_ID;
-		if (!is_null($this->mwt_id) && $this->mwt_id > 0)
+		
+		$this->has_mwt = !is_null($this->mwt_id) && $this->mwt_id > 0;
+		
+		$this->mwt_players = NULL;
+		list ($tournament_misc) = Db::record(get_label('tournament'), 'SELECT misc FROM tournaments WHERE id = ?', $this->id);
+		if (!is_null($tournament_misc))
 		{
-			list($games_count) = Db::record(get_label('game'), 'SELECT COUNT(*) FROM games WHERE tournament_id = ? AND result > 0 AND is_canceled = FALSE AND is_rating <> 0', $this->id);
-			if ($games_count > 0)
+			$tournament_misc = json_decode($tournament_misc);
+			if (isset($tournament_misc->mwt_players))
 			{
-				$this->available_view = VIEW_GAMES;
-			}
-			else
-			{
-				$this->available_view = VIEW_SEATING;
+				$this->mwt_players = $tournament_misc->mwt_players;
 			}
 		}
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT COUNT(*) FROM games WHERE tournament_id = ? AND result > 0 AND is_canceled = FALSE AND is_rating <> 0', $this->id);
 		
-		$this->view = $this->available_view;
+		$this->view = -1;
 		if (isset($_REQUEST['view']))
 		{
 			$this->view = (int)$_REQUEST['view'];
-			if ($this->view < 0 || $this->view >= VIEW_COUNT)
-			{
-				$this->view = $this->available_view;
-			}
 		}
 		
-		$this->seating = NULL;
+		if ($this->view < 0 || $this->view >= VIEW_COUNT)
+		{
+			$this->view = VIEW_MWT_ID;
+			if ($this->has_mwt)
+			{
+				if ($this->games_count > 0)
+				{
+					$this->view = VIEW_GAMES;
+				}
+				else
+				{
+					$this->view = VIEW_SEATING;
+				}
+				
+				if (!is_null($this->mwt_players))
+				{
+					foreach ($this->mwt_players as $player)
+					{
+						if ($player->id < 0)
+						{
+							$this->view = VIEW_MAPPING;
+							break;
+						}
+					}
+				}
+			}
+		}
+				
+		$this->misc = NULL;
 		$this->round_num = 0;
 		$this->round_id = 0;
 		if (isset($_REQUEST['round_id']))
@@ -87,22 +113,22 @@ class Page extends TournamentPageBase
 	
 	private function has_unfinished_import()
 	{
-		$query = new DbQuery('SELECT id, seating, languages FROM events WHERE tournament_id = ?', $this->id);
+		$query = new DbQuery('SELECT id, misc, languages FROM events WHERE tournament_id = ?', $this->id);
 		while ($row = $query->next())
 		{
-			list($event_id, $event_seating, $event_langs) = $row;
-			if (is_null($event_seating))
+			list($event_id, $event_misc, $event_langs) = $row;
+			if (is_null($event_misc))
 			{
 				continue;
 			}
 			
-			$event_seating = json_decode($event_seating);
-			if (!isset($event_seating->mwt_schema) || !isset($event_seating->seating))
+			$event_misc = json_decode($event_misc);
+			if (!isset($event_misc->mwt_schema) || !isset($event_misc->seating))
 			{
 				continue;
 			}
 			
-			foreach ($event_seating->seating as $table)
+			foreach ($event_misc->seating as $table)
 			{
 				if (is_null($table))
 				{
@@ -120,11 +146,45 @@ class Page extends TournamentPageBase
 		return false;
 	}
 	
-	private function show_seating()
+	private function get_users()
 	{
-		global $_lang,$_mwt_site;
+		global $_lang;
 		
-		
+		$players_list = '';
+		$delim = '';
+		if (!is_null($this->mwt_players))
+		{
+			foreach ($this->mwt_players as $player)
+			{
+				if ($player->id > 0)
+				{
+					$players_list .= $delim . $player->id;
+					$delim = ',';
+				}
+			}
+		}
+			
+		$users = array();
+		if (!empty($players_list))
+		{
+			$query = new DbQuery(
+				'SELECT u.id, nu.name, u.flags, ni.name'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities i ON i.id = u.city_id'.
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
+				' WHERE u.id IN ('.$players_list.')');
+			while ($row = $query->next())
+			{
+				$users[$row[0]] = $row;
+			}
+		}
+		return $users;
+	}
+	
+	
+	private function show_seating()
+	{		
 		echo '<p><button onclick="mwt(importSchema)">'.get_label('Import seating').'</button>';
 		if ($this->has_unfinished_import())
 		{
@@ -134,7 +194,7 @@ class Page extends TournamentPageBase
 		echo '<div id="progress"></div>';
 		
 		echo '<div class="tab">';
-		$query = new DbQuery('SELECT id, round, seating FROM events WHERE tournament_id = ? ORDER BY round', $this->id);
+		$query = new DbQuery('SELECT id, round, misc FROM events WHERE tournament_id = ? ORDER BY round', $this->id);
 		$tmp_rounds = array();
 		$rounds = array();
 		while ($row = $query->next())
@@ -155,17 +215,17 @@ class Page extends TournamentPageBase
 		
 		foreach ($rounds as $row)
 		{
-			list($event_id, $round_num, $seating) = $row;
+			list($event_id, $round_num, $misc) = $row;
 			if ($this->round_id <= 0)
 			{
 				$this->round_id = $event_id;
 			}
 			
 			$disabled = ' disabled';
-			if (!is_null($seating))
+			if (!is_null($misc))
 			{
-				$seating = json_decode($seating);
-				if (isset($seating->mwt_schema))
+				$misc = json_decode($misc);
+				if (isset($misc->mwt_schema))
 				{
 					$disabled = '';
 				}
@@ -174,7 +234,7 @@ class Page extends TournamentPageBase
 			$active = '';
 			if ($event_id == $this->round_id)
 			{
-				$this->seating = $seating;
+				$this->misc = $misc;
 				$this->round_num = $round_num;
 				$active = ' class="active"';
 			}
@@ -185,98 +245,16 @@ class Page extends TournamentPageBase
 		}
 		echo '</div>';
 		
-		if (!is_null($this->seating))
+		if (!is_null($this->misc))
 		{
-			$round_view = 0;
-			if (isset($_REQUEST['rview']))
-			{
-				$round_view = (int)$_REQUEST['rview'];
-			}
-			else if (isset($this->seating->mwt_players))
-			{
-				foreach ($this->seating->mwt_players as $player)
-				{
-					if ($player->id < 0 && !is_null($player->mwt_id))
-					{
-						$round_view = 1;
-						break;
-					}
-				}
-			}
-			echo '<p><div class="tab">';
-			echo '<button ' . ($round_view == 0 ? 'class="active" ' : '') . 'onclick="goTo({rview:0,page:undefined})"' . (isset($this->seating->seating) ? '' : ' disabled') . '>' . get_label('Seating') . '</button>';
-			echo '<button ' . ($round_view == 1 ? 'class="active" ' : '') . 'onclick="goTo({rview:1,page:undefined})"' . (isset($this->seating->mwt_players) ? '' : ' disabled') . '>' . get_label('Players mapping') . '</button>';
-			echo '</div></p>';
-			
-			$players_list = '';
-			$delim = '';
-			if (isset($this->seating->mwt_players))
-			{
-				foreach ($this->seating->mwt_players as $player)
-				{
-					if ($player->id > 0)
-					{
-						$players_list .= $delim . $player->id;
-						$delim = ',';
-					}
-				}
-			}
-				
-			$users = array();
-			if (!empty($players_list))
-			{
-				$query = new DbQuery(
-					'SELECT u.id, nu.name, u.flags, ni.name'.
-					' FROM users u'.
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' JOIN cities i ON i.id = u.city_id'.
-					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
-					' WHERE u.id IN ('.$players_list.')');
-				while ($row = $query->next())
-				{
-					$users[$row[0]] = $row;
-				}
-			}
+			$users = $this->get_users();
 			$user_pic = new Picture(USER_PICTURE);
 				
-			if ($round_view == 1)
+			if (isset($this->misc->seating))
 			{
-				if (isset($this->seating->mwt_players))
+				for ($i = 0; $i < count($this->misc->seating); ++$i)
 				{
-					usort($this->seating->mwt_players, "compare_mwt_players");
-					echo '<p><table class="bordered light" width="100%">';
-					foreach ($this->seating->mwt_players as $player)
-					{
-						if (is_null($player->mwt_id))
-						{
-							continue;
-						}
-						echo '<tr><td width="420"><a href="'.$_mwt_site.'/user/'.$player->mwt_id.'/show" target="_blank">'.$player->name.'</a></td>';
-						echo '<td width="40" align="center"><button class="big_icon" onclick="mapMwtPlayer('.$player->id.')"><img src="images/right.png" width="32"></button>';
-						if ($player->id > 0)
-						{
-							list($user_id, $user_name, $user_flags, $user_city) = $users[$player->id];
-							
-							echo '<td><table class="transp" width="100%"><tr>';
-							echo '<td width="52">';
-							$user_pic->set($user_id, $user_name, $user_flags);
-							$user_pic->show(ICONS_DIR, true, 48);
-							echo '</td><td><a href="user_info.php?id='.$player->id.'&bck=1">' . $user_name . ', ' . $user_city . '</a></td></tr></table></td>';
-						}
-						else
-						{
-							echo '<td></td>';
-						}
-						echo '</td></tr>';
-					}
-					echo '</table></p>';
-				}
-			}
-			else if (isset($this->seating->seating))
-			{
-				for ($i = 0; $i < count($this->seating->seating); ++$i)
-				{
-					$table = $this->seating->seating[$i];
+					$table = $this->misc->seating[$i];
 					echo '<p><center><h2>' . get_label('Table [0]', chr(65 + $i)) . '</h2></center></p>';
 					echo '<table class="bordered light" width="100%">';
 					echo '<tr class="darker"><td width="8%"></td>';
@@ -303,7 +281,7 @@ class Page extends TournamentPageBase
 							else
 							{
 								$player = NULL;
-								foreach ($this->seating->mwt_players as $p)
+								foreach ($this->mwt_players as $p)
 								{
 									if ($p->id == $game[$k])
 									{
@@ -321,7 +299,7 @@ class Page extends TournamentPageBase
 					echo '</table>';
 				}
 			}
-			//echo '<pre>' . formatted_json($this->seating) . '</pre>';
+			//echo '<pre>' . formatted_json($this->misc) . '</pre>';
 		}
 	}
 
@@ -348,13 +326,56 @@ class Page extends TournamentPageBase
 		}
 		echo '</table></p>';
 	}
+
+	private function show_mapping()
+	{
+		global $_mwt_site;
+		
+		$users = $this->get_users();
+		$user_pic = new Picture(USER_PICTURE);
+		
+		usort($this->mwt_players, "compare_mwt_players");
+		echo '<p><table class="bordered light" width="100%">';
+		foreach ($this->mwt_players as $player)
+		{
+			echo '<tr><td width="420">';
+			if (is_null($player->mwt_id))
+			{
+				echo $player->name;
+			}
+			else
+			{
+				echo '<a href="'.$_mwt_site.'/user/'.$player->mwt_id.'/show" target="_blank">'.$player->name.'</a>';
+			}
+			echo '</td>';
+			
+			echo '<td width="40" align="center"><button class="big_icon" onclick="mapMwtPlayer('.$player->id.')"><img src="images/right.png" width="32"></button>';
+			if ($player->id > 0)
+			{
+				list($user_id, $user_name, $user_flags, $user_city) = $users[$player->id];
+				
+				echo '<td><table class="transp" width="100%"><tr>';
+				echo '<td width="52">';
+				$user_pic->set($user_id, $user_name, $user_flags);
+				$user_pic->show(ICONS_DIR, true, 48);
+				echo '</td><td><a href="user_info.php?id='.$player->id.'&bck=1">' . $user_name . ', ' . $user_city . '</a></td></tr></table></td>';
+			}
+			else
+			{
+				echo '<td></td>';
+			}
+			echo '</td></tr>';
+		}
+		echo '</table></p>';
+	}
 	
 	protected function show_body()
 	{
 		echo '<div class="tab">';
 		echo '<button ' . ($this->view == VIEW_MWT_ID ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MWT_ID . ',page:undefined})">' . get_label('MWT ID') . '</button>';
-		echo '<button ' . ($this->view == VIEW_SEATING ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_SEATING . ',page:undefined})"' . ($this->available_view >= VIEW_SEATING ? '' : ' disabled') . '>' . get_label('Import seating') . '</button>';
-		echo '<button ' . ($this->view == VIEW_GAMES ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_GAMES . ',page:undefined})"' . ($this->available_view >= VIEW_GAMES ? '' : ' disabled') . '>' . get_label('Export games') . '</button>';
+		echo '<button ' . ($this->view == VIEW_SEATING ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_SEATING . ',page:undefined})"' . ($this->has_mwt ? '' : ' disabled') . '>' . get_label('Import seating') . '</button>';
+		echo '<button ' . ($this->view == VIEW_MAPPING ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MAPPING . ',page:undefined})"' . ($this->has_mwt && !is_null($this->mwt_players) ? '' : ' disabled') . '>' . get_label('Players mapping') . '</button>';
+		echo '<button ' . ($this->view == VIEW_GAMES ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_GAMES . ',page:undefined})"' . ($this->has_mwt && $this->games_count >= 0 ? '' : ' disabled') . '>' . get_label('Export games') . '</button>';
 		echo '</div>';
 		
 		switch ($this->view)
@@ -364,6 +385,9 @@ class Page extends TournamentPageBase
 				break;
 			case VIEW_SEATING:
 				$this->show_seating();
+				break;
+			case VIEW_MAPPING:
+				$this->show_mapping();
 				break;
 			case VIEW_GAMES:
 				$this->show_games();
@@ -393,11 +417,6 @@ class Page extends TournamentPageBase
 	private function seating_js()
 	{
 ?>
-		function mapMwtPlayer(playerId)
-		{
-			dlg.form("form/mwt_map_player.php?player_id=" + playerId + "&tournament_id=<?php echo $this->id; ?>", refr, 480);
-		}
-
 		function importSchema()
 		{
 			var params =
@@ -449,6 +468,16 @@ class Page extends TournamentPageBase
 			});
 		}
 		
+<?php
+	}
+
+	private function mapping_js()
+	{
+?>
+		function mapMwtPlayer(playerId)
+		{
+			dlg.form("form/mwt_map_player.php?player_id=" + playerId + "&tournament_id=<?php echo $this->id; ?>", refr, 480);
+		}
 <?php
 	}
 
@@ -538,6 +567,9 @@ class Page extends TournamentPageBase
 				break;
 			case VIEW_SEATING:
 				$this->seating_js();
+				break;
+			case VIEW_MAPPING:
+				$this->mapping_js();
 				break;
 			case VIEW_GAMES:
 				$this->games_js();

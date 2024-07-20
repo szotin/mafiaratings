@@ -1,0 +1,3 @@
+ALTER TABLE tournaments ADD COLUMN misc TEXT NULL;
+ALTER TABLE events CHANGE COLUMN seating misc TEXT NULL;
+

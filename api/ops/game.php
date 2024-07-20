@@ -183,23 +183,23 @@ class GClub
 			}
 			
 			$events_str = '(0';
-			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, e.security_token, t.id, t.name, t.security_token, e.seating FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
+			$query = new DbQuery('SELECT e.id, e.rules, e.name, e.start_time, e.languages, e.duration, e.flags, e.security_token, t.id, t.name, t.security_token, e.misc FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE (e.start_time + e.duration + ' . EVENT_ALIVE_TIME . ' > UNIX_TIMESTAMP() AND e.start_time < UNIX_TIMESTAMP() + ' . EVENTS_FUTURE_LIMIT . ' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND e.club_id = ?) OR e.id = ?', $id, $gs->event_id);
 			while ($row = $query->next())
 			{
 				$e = new stdClass();
-				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->token, $e->tournament_id, $tournament_name, $tournament_token, $seating) = $row;
+				list ($e->id, $e->rules_code, $e->name, $e->start_time, $e->langs, $e->duration, $e->flags, $e->token, $e->tournament_id, $tournament_name, $tournament_token, $misc) = $row;
 				$e->id = (int)$e->id;
 				$e->start_time = (int)$e->start_time;
 				$e->langs = (int)$e->langs;
 				$e->duration = (int)$e->duration;
 				$e->flags = (int)$e->flags;
 				$e->reg = array();
-				if (!is_null($seating))
+				if (!is_null($misc))
 				{
-					$seating = json_decode($seating);
-					if (isset($seating->seating))
+					$misc = json_decode($misc);
+					if (isset($misc->seating))
 					{
-						$e->seating = $seating->seating;
+						$e->seating = $misc->seating;
 					}
 				}
 				if (!is_null($e->tournament_id))

@@ -375,8 +375,8 @@ function convert_game_to_mwt($game_id)
 {
 	global $_lang;
 	
-	list ($game_json, $feature_flags, $table, $number, $seating, $event_name, $event_round, $tournament_id, $mwt_tournament_id, $mwt_moderator_id, $moderator_name, $timezone) = Db::record(get_label('game'), 
-		'SELECT g.json, g.feature_flags, g.game_table, g.game_number, e.seating, e.name, e.round, t.id, t.mwt_id, u.mwt_id, nu.name, c.timezone'.
+	list ($game_json, $feature_flags, $table, $number, $misc, $event_name, $event_round, $tournament_id, $mwt_tournament_id, $mwt_moderator_id, $moderator_name, $timezone) = Db::record(get_label('game'), 
+		'SELECT g.json, g.feature_flags, g.game_table, g.game_number, e.misc, e.name, e.round, t.id, t.mwt_id, u.mwt_id, nu.name, c.timezone'.
 		' FROM games g'.
 		' JOIN events e ON e.id = g.event_id'.
 		' JOIN addresses a ON a.id = e.address_id'.
@@ -393,7 +393,7 @@ function convert_game_to_mwt($game_id)
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('game')));
 	}
-	if (is_null($seating))
+	if (is_null($misc))
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('seating')));
 	}
@@ -405,23 +405,23 @@ function convert_game_to_mwt($game_id)
 	{
 		throw new Exc(get_label('MWT user id is not set for the moderator [0]', $moderator_name));
 	}
-	$seating = json_decode($seating);
+	$misc = json_decode($misc);
 	
 	$mwt_game = new stdClass();
 	$mwt_game->tournament_id = $mwt_tournament_id;
 	$mwt_game->table_number = $table + 1;
-	if (isset($seating->mwt_schema))
+	if (isset($misc->mwt_schema))
 	{
-		if ($table >= count($seating->mwt_schema))
+		if ($table >= count($misc->mwt_schema))
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('table')));
 		}
-		if ($number >= count($seating->mwt_schema[$table]))
+		if ($number >= count($misc->mwt_schema[$table]))
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('game')));
 		}
-		$mwt_game->part_number = $seating->mwt_schema[$table][$number];
-		if ($number > 0 && $mwt_game->part_number != $seating->mwt_schema[$table][$number-1])
+		$mwt_game->part_number = $misc->mwt_schema[$table][$number];
+		if ($number > 0 && $mwt_game->part_number != $misc->mwt_schema[$table][$number-1])
 		{
 			$mwt_game->session_number = 1;
 		}
@@ -675,7 +675,7 @@ function convert_game_to_mwt($game_id)
 		$result->game_bonus[] = $game_bonus;
 		$result->penalty[] = $penalty;
 		$result->penalty_disciplinary[] = $penalty_disciplinary;
-		$result->is_replacement[] = (!isset($seating->seating) || $seating->seating[$table][$number][$i] == $player->id) ? 0 : 1;
+		$result->is_replacement[] = (!isset($misc->seating) || $misc->seating[$table][$number][$i] == $player->id) ? 0 : 1;
 		
 		if (isset($player->don))
 		{

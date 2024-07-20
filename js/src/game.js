@@ -307,7 +307,18 @@ var mafia = new function()
 				{
 					a.push(i);
 				}
-				a.sort(function(a, b) { return reg[a].toLocaleLowerCase().localeCompare(reg[b].toLocaleLowerCase()); });
+				a.sort(function(a, b)
+				{
+					if (reg[a])
+					{
+						if (reg[b])
+							return reg[a].toLocaleLowerCase().localeCompare(reg[b].toLocaleLowerCase());
+						else
+							return -1;
+					}
+					else
+						return 1;
+				});
 				_sortedRegs[id] = a;
 			}
 			_sortedEvents.sort(function(a, b) { return events[a].start_time - events[b].start_time; });
@@ -519,13 +530,13 @@ var mafia = new function()
 	
 	this.userTitle = function(pid)
 	{
-		if (pid == 0) return '';
+		if (pid == 0 || !_data.club.players[pid]) return '';
 		var t =  _data.club.players[pid].name;
 		var event = _data.club.events[_data.game.event_id];
 		if (typeof event != "undefined")
 		{
 			var nick = event.reg[pid];
-			if (typeof nick != "undefined" && nick.toLocaleLowerCase() != t.toLocaleLowerCase())
+			if (nick && nick.toLocaleLowerCase() != t.toLocaleLowerCase())
 			{
 				t = nick + ' (' + t + ')';
 			}

@@ -58,7 +58,18 @@ class Page extends TournamentPageBase
 			$this->round_id = (int)$_REQUEST['round_id'];
 		}
 		
-		$query = new DbQuery('SELECT id, round, seating FROM events WHERE tournament_id = ? ORDER BY round', $this->id);
+		$this->mwt_players = NULL;
+		list ($tournament_misc) = Db::record(get_label('tournament'), 'SELECT misc FROM tournaments WHERE id = ?', $this->id);
+		if (!is_null($tournament_misc))
+		{
+			$tournament_misc = json_decode($tournament_misc);
+			if (isset($tournament_misc->mwt_players))
+			{
+				$this->mwt_players = $tournament_misc->mwt_players;
+			}
+		}
+		
+		$query = new DbQuery('SELECT id, round, misc FROM events WHERE tournament_id = ? ORDER BY round', $this->id);
 		$tmp_rounds = array();
 		$this->rounds = array();
 		while ($row = $query->next())
@@ -82,22 +93,22 @@ class Page extends TournamentPageBase
 	{
 		global $_lang;
 		
-		$this->seating = NULL;
+		$this->misc = NULL;
 		$this->round_num = 0;
 		echo '<div class="tab">';
 		foreach ($this->rounds as $row)
 		{
-			list($event_id, $round_num, $seating) = $row;
+			list($event_id, $round_num, $misc) = $row;
 			if ($this->round_id <= 0)
 			{
 				$this->round_id = $event_id;
 			}
 			
 			$disabled = ' disabled';
-			if (!is_null($seating))
+			if (!is_null($misc))
 			{
-				$seating = json_decode($seating);
-				if (isset($seating->mwt_schema))
+				$misc = json_decode($misc);
+				if (isset($misc->mwt_schema))
 				{
 					$disabled = '';
 				}
@@ -106,7 +117,7 @@ class Page extends TournamentPageBase
 			$active = '';
 			if ($event_id == $this->round_id)
 			{
-				$this->seating = $seating;
+				$this->misc = $misc;
 				$this->round_num = $round_num;
 				$active = ' class="active"';
 			}
@@ -126,7 +137,7 @@ class Page extends TournamentPageBase
 				$view = 0;
 			}
 		}
-		if (!is_null($this->seating) && isset($this->seating->seating))
+		if (!is_null($this->misc) && isset($this->misc->seating))
 		{
 			echo '<p><input type="checkbox" id="hide_played"'.(($this->options & HIDE_PLAYED) ? ' checked' : '').' onclick="hidePlayed()"> '.get_label('show only non-played games');
 			echo ' <input type="checkbox" id="show_icons"'.(($this->options & SHOW_ICONS) ? ' checked' : '').' onclick="showIcons()"> '.get_label('show user pictures');
@@ -152,9 +163,9 @@ class Page extends TournamentPageBase
 			$players_list = '';
 			$this->users = array();
 			$delim = '';
-			if (isset($this->seating->seating))
+			if (isset($this->misc->seating))
 			{
-				foreach ($this->seating->seating as $table)
+				foreach ($this->misc->seating as $table)
 				{
 					foreach ($table as $game)
 					{
@@ -216,9 +227,9 @@ class Page extends TournamentPageBase
 		
 		if ($this->options & ONLY_HIGHLIGHTED)
 		{
-			for ($i = 0; $i < count($this->seating->seating); ++$i)
+			for ($i = 0; $i < count($this->misc->seating); ++$i)
 			{
-				$table = $this->seating->seating[$i];
+				$table = $this->misc->seating[$i];
 				for ($j = 0; $j < count($table); ++$j)
 				{
 					$game = $table[$j];
@@ -238,7 +249,7 @@ class Page extends TournamentPageBase
 					}
 					if (!$found)
 					{
-						$this->seating->seating[$i][$j] = NULL;
+						$this->misc->seating[$i][$j] = NULL;
 						$normalize = true;
 					}
 				}
@@ -247,9 +258,9 @@ class Page extends TournamentPageBase
 		
 		if ($this->options & ONLY_MY)
 		{
-			for ($i = 0; $i < count($this->seating->seating); ++$i)
+			for ($i = 0; $i < count($this->misc->seating); ++$i)
 			{
-				$table = $this->seating->seating[$i];
+				$table = $this->misc->seating[$i];
 				for ($j = 0; $j < count($table); ++$j)
 				{
 					$game = $table[$j];
@@ -269,7 +280,7 @@ class Page extends TournamentPageBase
 					}
 					if (!$found)
 					{
-						$this->seating->seating[$i][$j] = NULL;
+						$this->misc->seating[$i][$j] = NULL;
 						$normalize = true;
 					}
 				}
@@ -283,11 +294,11 @@ class Page extends TournamentPageBase
 			{
 				list($t, $g) = $row;
 				if (
-					!is_null($t) && $t >= 0 && $t < count($this->seating->seating) && 
-					$this->seating->seating[$t] != NULL &&
-					!is_null($g) && $g >= 0 && $g < count($this->seating->seating[$t]))
+					!is_null($t) && $t >= 0 && $t < count($this->misc->seating) && 
+					$this->misc->seating[$t] != NULL &&
+					!is_null($g) && $g >= 0 && $g < count($this->misc->seating[$t]))
 				{
-					$this->seating->seating[$t][$g] = NULL;
+					$this->misc->seating[$t][$g] = NULL;
 					$normalize = true;
 				}
 			}
@@ -295,9 +306,9 @@ class Page extends TournamentPageBase
 		
 		if ($normalize)
 		{
-			for ($i = 0; $i < count($this->seating->seating); ++$i)
+			for ($i = 0; $i < count($this->misc->seating); ++$i)
 			{
-				$table = $this->seating->seating[$i];
+				$table = $this->misc->seating[$i];
 				$found = false;
 				for ($j = 0; $j < count($table); ++$j)
 				{
@@ -308,7 +319,7 @@ class Page extends TournamentPageBase
 				}
 				if (!$found)
 				{
-					$this->seating->seating[$i] = NULL;
+					$this->misc->seating[$i] = NULL;
 				}
 			}
 		}
@@ -351,9 +362,9 @@ class Page extends TournamentPageBase
 			echo '<tr><td align="center" style="height:30px">' . $ref_beg . $user->name;
 			echo $ref_end . '</td></tr></table>';
 		}
-		else if (isset($this->seating->mwt_players))
+		else if (!is_null($this->mwt_players))
 		{
-			foreach ($this->seating->mwt_players as $p)
+			foreach ($this->mwt_players as $p)
 			{
 				if ($p->id == $user_id)
 				{
@@ -367,9 +378,9 @@ class Page extends TournamentPageBase
 	
 	private function showByTable()
 	{
-		for ($i = 0; $i < count($this->seating->seating); ++$i)
+		for ($i = 0; $i < count($this->misc->seating); ++$i)
 		{
-			$table = $this->seating->seating[$i];
+			$table = $this->misc->seating[$i];
 			if (is_null($table))
 			{
 				continue;
@@ -403,9 +414,9 @@ class Page extends TournamentPageBase
 	private function showByGame()
 	{
 		$by_game = array();
-		for ($i = 0; $i < count($this->seating->seating); ++$i)
+		for ($i = 0; $i < count($this->misc->seating); ++$i)
 		{
-			$table = $this->seating->seating[$i];
+			$table = $this->misc->seating[$i];
 			if (is_null($table))
 			{
 				continue;

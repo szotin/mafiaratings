@@ -272,33 +272,33 @@ class ApiPage extends OpsApiPageBase
 		$round_num = 0;
 		list($address_id, $club_id, $start, $duration, $langs, $scoring_id, $scoring_version, $tournament_scoring_options, $rules_code) = Db::record(get_label('tournament'), 'SELECT address_id, club_id, start_time, duration, langs, scoring_id, scoring_version, scoring_options, rules FROM tournaments WHERE id = ?', $tournament_id);
 		$tournament_scoring_options = json_decode($tournament_scoring_options);
-		Db::exec(get_label('round'), 'UPDATE events SET seating = NULL WHERE tournament_id = ?', $tournament_id);
+		Db::exec(get_label('round'), 'UPDATE events SET misc = NULL WHERE tournament_id = ?', $tournament_id);
 		for ($i = 0; $i < count($rounds); ++$i)
 		{
-			$event_seating = new stdClass();
-			$event_seating->mwt_schema = $rounds[$i];
-			$event_seating->seating = array();
-			foreach ($event_seating->mwt_schema as $table)
+			$event_misc = new stdClass();
+			$event_misc->mwt_schema = $rounds[$i];
+			$event_misc->seating = array();
+			foreach ($event_misc->mwt_schema as $table)
 			{
 				$t = array();
 				foreach ($table as $game)
 				{
 					$t[] = NULL;
 				}
-				$event_seating->seating[] = $t;
+				$event_misc->seating[] = $t;
 			}
-			$event_seating = json_encode($event_seating);
+			$event_misc = json_encode($event_misc);
 			
 			$query = new DbQuery('SELECT id FROM events WHERE tournament_id = ? AND round = ? ORDER BY id LIMIT 1', $tournament_id, $round_num);
 			if ($row = $query->next())
 			{
 				list($event_id) = $row;
 				Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id = ?', $event_id);
-				Db::exec(get_label('round'), 'UPDATE events SET seating = ? WHERE id = ?', $event_seating, $event_id);
+				Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', $event_misc, $event_id);
 				if (Db::affected_rows() > 0)
 				{
 					$log_details = new stdClass();
-					$log_details->seating = $event_seating;
+					$log_details->misc = $event_misc;
 					db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
 				}
 			}
@@ -320,8 +320,8 @@ class ApiPage extends OpsApiPageBase
 				$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
 				Db::exec(
 					get_label('round'), 
-					'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, seating) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-					$event_name, $address_id, $club_id, $start, $duration, $flags, $langs, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $event_seating);
+					'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, misc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+					$event_name, $address_id, $club_id, $start, $duration, $flags, $langs, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $event_misc);
 					
 				$log_details = new stdClass();
 				$log_details->name = $event_name;
@@ -363,39 +363,52 @@ class ApiPage extends OpsApiPageBase
 		$tournament_id = (int)get_required_param('tournament_id');
 		
 		Db::begin();
-		list ($tournament_id, $club_id, $mwt_id) = Db::record(get_label('tournament'), 'SELECT id, club_id, mwt_id FROM tournaments WHERE id = ?', $tournament_id);
+		list ($tournament_id, $club_id, $mwt_id, $tournament_misc) = Db::record(get_label('tournament'), 'SELECT id, club_id, mwt_id, misc FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		if (is_null($mwt_id))
 		{
 			throw new Exc(get_label('MWT ID is not set for the tournament.'));
 		}
+		if (is_null($tournament_misc))
+		{
+			$tournament_misc = new stdClass();
+		}
+		else
+		{
+			$tournament_misc = json_decode($tournament_misc);
+		}
+		if (!isset($tournament_misc->mwt_players))
+		{
+			$tournament_misc->mwt_players = array();
+		}
 		
 		$round_id = 0;
-		$seating = NULL;
+		$misc = NULL;
 		$langs = 0;
 		$progress = 0;
 		$total = 0;
 		$table_num = -1;
 		$game_num = -1;
+		$mwt_players_changed = false;
 		
-		$query = new DbQuery('SELECT id, seating, languages FROM events WHERE tournament_id = ?', $tournament_id);
+		$query = new DbQuery('SELECT id, misc, languages FROM events WHERE tournament_id = ?', $tournament_id);
 		while ($row = $query->next())
 		{
-			list($event_id, $event_seating, $event_langs) = $row;
-			if (is_null($event_seating))
+			list($event_id, $event_misc, $event_langs) = $row;
+			if (is_null($event_misc))
 			{
 				continue;
 			}
 			
-			$event_seating = json_decode($event_seating);
-			if (!isset($event_seating->mwt_schema) || !isset($event_seating->seating))
+			$event_misc = json_decode($event_misc);
+			if (!isset($event_misc->mwt_schema) || !isset($event_misc->seating))
 			{
 				continue;
 			}
 			
-			for ($t = 0; $t < count($event_seating->seating); ++$t)
+			for ($t = 0; $t < count($event_misc->seating); ++$t)
 			{
-				$table = $event_seating->seating[$t];
+				$table = $event_misc->seating[$t];
 				if (is_null($table))
 				{
 					continue;
@@ -408,10 +421,10 @@ class ApiPage extends OpsApiPageBase
 					{
 						++$progress;
 					}
-					else if (is_null($seating))
+					else if (is_null($misc))
 					{
 						$round_id = $event_id;
-						$seating = $event_seating;
+						$misc = $event_misc;
 						$langs = $event_langs;
 						$table_num = $t;
 						$game_num = $g;
@@ -420,10 +433,10 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		if (!is_null($seating) && $table_num >= 0 && $progress < $total)
+		if (!is_null($misc) && $table_num >= 0 && $progress < $total)
 		{
-			$part_num = $seating->mwt_schema[$table_num][$game_num];
-			if ($game_num > 0 && $part_num != $seating->mwt_schema[$table_num][$game_num-1])
+			$part_num = $misc->mwt_schema[$table_num][$game_num];
+			if ($game_num > 0 && $part_num != $misc->mwt_schema[$table_num][$game_num-1])
 			{
 				$session_num = 1;
 			}
@@ -454,17 +467,13 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('Invalid response from [0]: [1]', $url, formatted_json($data)));
 			}
 			
-			if (!isset($seating->mwt_players))
-			{
-				$seating->mwt_players = array();
-			}
 			$players = array();
 			foreach ($data->protocol as $player)
 			{
 				$player_id = 0;
 				if (is_null($player->user_id))
 				{
-					foreach ($seating->mwt_players as $mwt_player)
+					foreach ($tournament_misc->mwt_players as $mwt_player)
 					{
 						if ($mwt_player->id < 0 && $mwt_player->name == $player->nickname)
 						{
@@ -475,7 +484,7 @@ class ApiPage extends OpsApiPageBase
 				}
 				else
 				{
-					foreach ($seating->mwt_players as $mwt_player)
+					foreach ($tournament_misc->mwt_players as $mwt_player)
 					{
 						if ($mwt_player->mwt_id == $player->user_id)
 						{
@@ -487,7 +496,7 @@ class ApiPage extends OpsApiPageBase
 				
 				if ($player_id == 0)
 				{
-					$player_id = - 1 - count($seating->mwt_players);
+					$player_id = - 1 - count($tournament_misc->mwt_players);
 					if (!is_null($player->user_id))
 					{
 						$query = new DbQuery('SELECT id FROM users WHERE mwt_id = ?', $player->user_id);
@@ -501,39 +510,45 @@ class ApiPage extends OpsApiPageBase
 					$new_player->mwt_id = $player->user_id;
 					$new_player->name = $player->nickname;
 					$new_player->id = $player_id;
-					$seating->mwt_players[] = $new_player;
-					
-					if ($player_id > 0)
+					$tournament_misc->mwt_players[] = $new_player;
+					$mwt_players_changed = true;
+				}
+				
+				if ($player_id > 0)
+				{
+					if (is_valid_lang($langs))
 					{
-						if (is_valid_lang($langs))
-						{
-							$lang = $langs;
-						}
-						else
-						{
-							$lang = $_lang;
-						}
-						Db::exec(
-							get_label('registration'), 
-							'INSERT IGNORE INTO event_users (event_id, user_id, nickname)'.
-							' SELECT ?, u.id, nu.name'.
-							' FROM users u'.
-							' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
-							' WHERE u.id = ?', $round_id, $player_id);
-						Db::exec(
-							get_label('registration'), 
-							'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags)'.
-							' SELECT ?, u.id, '.USER_TOURNAMENT_NEW_PLAYER_FLAGS.
-							' FROM users u'.
-							' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
-							' WHERE u.id = ?', $tournament_id, $player_id);
+						$lang = $langs;
 					}
+					else
+					{
+						$lang = $_lang;
+					}
+					Db::exec(
+						get_label('registration'), 
+						'INSERT IGNORE INTO event_users (event_id, user_id, nickname)'.
+						' SELECT ?, u.id, nu.name'.
+						' FROM users u'.
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
+						' WHERE u.id = ?', $round_id, $player_id);
+					Db::exec(
+						get_label('registration'), 
+						'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags)'.
+						' SELECT ?, u.id, '.USER_TOURNAMENT_NEW_PLAYER_FLAGS.
+						' FROM users u'.
+						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
+						' WHERE u.id = ?', $tournament_id, $player_id);
 				}
 				$players[] = $player_id;
 			}
-			$seating->seating[$table_num][$game_num] = $players;
-			Db::exec(get_label('round'), 'UPDATE events SET seating = ? WHERE id = ?', json_encode($seating), $round_id);
+			$misc->seating[$table_num][$game_num] = $players;
+			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $round_id);
 			++$progress;
+		}
+		
+		if ($mwt_players_changed)
+		{
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET misc = ? WHERE id = ?', json_encode($tournament_misc), $tournament_id);
 		}
 		Db::commit();
 		
@@ -558,98 +573,108 @@ class ApiPage extends OpsApiPageBase
 		$player_id = (int)get_required_param('player_id');
 		$tournament_id = (int)get_required_param('tournament_id');
 		
-		list ($club_id, $mwt_id) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.mwt_id FROM tournaments t WHERE t.id = ?', $tournament_id);
+		list ($club_id, $mwt_id, $tournament_misc, $lang) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.mwt_id, t.misc, t.langs FROM tournaments t WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		
+		if (!is_valid_lang($lang))
+		{
+			$lang = $_lang;
+		}
+		list ($user_name) = Db::record(get_label('user'), 
+			'SELECT nu.name'.
+			' FROM users u'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
+			' WHERE u.id = ?', $user_id);
+				
+		if (is_null($tournament_misc))
+		{
+			throw new Exc(get_label('Players mapping is not set for the tournament.'));
+		}
+		$tournament_misc = json_decode($tournament_misc);
+		if (!isset($tournament_misc->mwt_players))
+		{
+			throw new Exc(get_label('Players mapping is not set for the tournament.'));
+		}
+		
 		Db::begin();
-		$query = new DbQuery('SELECT id, seating, languages FROM events WHERE tournament_id = ?', $tournament_id);
-		$mwt_id = -1;
+		$events = array();
+		$query = new DbQuery('SELECT id, misc FROM events WHERE tournament_id = ?', $tournament_id);
 		while ($row = $query->next())
 		{
-			list($event_id, $seating, $lang) = $row;
-			if (is_null($seating))
+			list($event_id, $misc) = $row;
+			if (is_null($misc))
 			{
 				continue;
 			}
 			
-			$seating = json_decode($seating);
-			if (!isset($seating->mwt_players))
-			{
-				continue;
-			}
+			$misc = json_decode($misc);
 			
-			$found = false;
-			foreach ($seating->mwt_players as $player)
+			$event = new stdClass();
+			$event->id = $event_id;
+			$event->misc = $misc;
+			$events[] = $event;
+		}
+		
+		$mwt_id = -1;
+		$found = false;
+		foreach ($tournament_misc->mwt_players as $player)
+		{
+			if ($player->id == $player_id)
 			{
-				if ($player->id == $player_id)
-				{
-					$found = true;
-					$mwt_id = $player->mwt_id;
-					$player->id = $user_id;
-					break;
-				}
+				$found = true;
+				$mwt_id = $player->mwt_id;
+				$player->id = $user_id;
+				break;
 			}
-			if ($found)
+		}
+		if (!$found)
+		{
+			throw new Exc(get_label('Player [0] not found in this tournament', $player_id));
+		}
+		
+		foreach ($events as $event)
+		{
+			for ($i = 0; $i < count($event->misc->seating); ++$i)
 			{
-				for ($i = 0; $i < count($seating->seating); ++$i)
+				$table = $event->misc->seating[$i];
+				for ($j = 0; $j < count($table); ++$j)
 				{
-					$table = $seating->seating[$i];
-					for ($j = 0; $j < count($table); ++$j)
+					$game = $table[$j];
+					for ($k = 0; $k < count($game); ++$k)
 					{
-						$game = $table[$j];
-						for ($k = 0; $k < count($game); ++$k)
+						if ($game[$k] == $player_id)
 						{
-							if ($game[$k] == $player_id)
+							$new_game = array();
+							for ($l = 0; $l < count($game); ++$l)
 							{
-								$new_game = array();
-								for ($l = 0; $l < count($game); ++$l)
+								if ($game[$l] == $player_id)
 								{
-									if ($game[$l] == $player_id)
-									{
-										$new_game[] = $user_id;
-									}
-									else
-									{
-										$new_game[] = $game[$l];
-									}
+									$new_game[] = $user_id;
 								}
-								$seating->seating[$i][$j] = $new_game;
-								break;
+								else
+								{
+									$new_game[] = $game[$l];
+								}
 							}
+							$event->misc->seating[$i][$j] = $new_game;
+							break;
 						}
 					}
 				}
-				
-				Db::exec(get_label('round'), 'UPDATE events SET seating = ? WHERE id = ?', json_encode($seating), $event_id);
-				
-				if (!is_valid_lang($lang))
-				{
-					$lang = $_lang;
-				}
-				list ($user_name) = Db::record(get_label('user'), 
-					'SELECT nu.name'.
-					' FROM users u'.
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
-					' WHERE u.id = ?', $user_id);
-					
-				if ($player_id > 0)
-				{
-					Db::exec(get_label('registration'), 'UPDATE IGNORE event_users SET user_id = ?, nickname = ? WHERE event_id = ? AND user_id = ?', $user_id, $user_name, $event_id, $player_id);
-					Db::exec(get_label('registration'), 'UPDATE IGNORE tournament_users SET user_id = ? WHERE tournament_id = ? AND user_id = ?', $user_id, $tournament_id, $player_id);
-				}
-				else
-				{
-					Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $event_id, $user_id, $user_name);
-					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) VALUES (?, ?, ?)', $tournament_id, $user_id, USER_TOURNAMENT_NEW_PLAYER_FLAGS);
-				}
 			}
+			
+			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($event->misc), $event->id);
+			Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $event->id, $user_id, $user_name);
 		}
-		if ($mwt_id < 0)
+
+		Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) VALUES (?, ?, ?)', $tournament_id, $user_id, USER_TOURNAMENT_NEW_PLAYER_FLAGS);
+		Db::exec(get_label('round'), 'UPDATE tournaments SET misc = ? WHERE id = ?', json_encode($tournament_misc), $tournament_id);
+
+		if (!is_null($mwt_id) && $mwt_id > 0)
 		{
-			throw new Exc(get_label('Unknown [0]', get_label('player')));
+			Db::exec(get_label('user'), 'UPDATE users SET mwt_id = NULL WHERE mwt_id = ?', $mwt_id);
+			Db::exec(get_label('user'), 'UPDATE users SET mwt_id = ? WHERE id = ?', $mwt_id, $user_id);
 		}
-		Db::exec(get_label('user'), 'UPDATE users SET mwt_id = NULL WHERE mwt_id = ?', $mwt_id);
-		Db::exec(get_label('user'), 'UPDATE users SET mwt_id = ? WHERE id = ?', $mwt_id, $user_id);
 		Db::commit();
 	}
 	
@@ -664,18 +689,6 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	private function export_game($game_id)
 	{
-		// if (is_null($table))
-		// {
-			// throw new Exc(get_label('Unknown [0]', get_label('table')));
-		// }
-		// if (is_null($number))
-		// {
-			// throw new Exc(get_label('Unknown [0]', get_label('game')));
-		// }
-		// if (is_null($seating))
-		// {
-			// throw new Exc(get_label('Unknown [0]', get_label('seating')));
-		// }
 		$mwt_game = convert_game_to_mwt($game_id);
 		throw new Exc(formatted_json($mwt_game));
 		Db::exec(get_label('game'), 'UPDATE games SET is_fiim_exported = 1 WHERE id = ?', $game_id);
