@@ -524,20 +524,20 @@ class ApiPage extends OpsApiPageBase
 					{
 						$lang = $_lang;
 					}
-					Db::exec(
-						get_label('registration'), 
-						'INSERT IGNORE INTO event_users (event_id, user_id, nickname)'.
-						' SELECT ?, u.id, nu.name'.
+					
+					list ($user_name, $user_mwt_name) = Db::record(get_label('user'), 
+						'SELECT nu.name, u.mwt_name'.
 						' FROM users u'.
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
-						' WHERE u.id = ?', $round_id, $player_id);
-					Db::exec(
-						get_label('registration'), 
-						'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags)'.
-						' SELECT ?, u.id, '.USER_TOURNAMENT_NEW_PLAYER_FLAGS.
-						' FROM users u'.
-						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
-						' WHERE u.id = ?', $tournament_id, $player_id);
+						' WHERE u.id = ?', $player_id);
+					
+					if ($user_mwt_name != $player->nickname)
+					{
+						Db::exec(get_label('user'), 'UPDATE users SET mwt_name = ? WHERE id = ?', $player->nickname, $player_id);
+					}
+					
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $round_id, $player_id, $user_name);
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) VALUES (?, ?, '.USER_TOURNAMENT_NEW_PLAYER_FLAGS.')', $tournament_id, $player_id);
 				}
 				$players[] = $player_id;
 			}
@@ -572,6 +572,7 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		$player_id = (int)get_required_param('player_id');
 		$tournament_id = (int)get_required_param('tournament_id');
+		$mwt_user_name = get_optional_param('mwt_name', NULL); 
 		
 		list ($club_id, $mwt_id, $tournament_misc, $lang) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.mwt_id, t.misc, t.langs FROM tournaments t WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
@@ -580,8 +581,8 @@ class ApiPage extends OpsApiPageBase
 		{
 			$lang = $_lang;
 		}
-		list ($user_name) = Db::record(get_label('user'), 
-			'SELECT nu.name'.
+		list ($user_name, $old_mwt_user_name) = Db::record(get_label('user'), 
+			'SELECT nu.name, u.mwt_name'.
 			' FROM users u'.
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
 			' WHERE u.id = ?', $user_id);
@@ -673,7 +674,14 @@ class ApiPage extends OpsApiPageBase
 		if (!is_null($mwt_id) && $mwt_id > 0)
 		{
 			Db::exec(get_label('user'), 'UPDATE users SET mwt_id = NULL WHERE mwt_id = ?', $mwt_id);
-			Db::exec(get_label('user'), 'UPDATE users SET mwt_id = ? WHERE id = ?', $mwt_id, $user_id);
+			if (!is_null($mwt_user_name) && $mwt_user_name != $old_mwt_user_name)
+			{
+				Db::exec(get_label('user'), 'UPDATE users SET mwt_id = ?, mwt_name = ? WHERE id = ?', $mwt_id, $mwt_user_name, $user_id);
+			}
+			else
+			{
+				Db::exec(get_label('user'), 'UPDATE users SET mwt_id = ? WHERE id = ?', $mwt_id, $user_id);
+			}
 		}
 		Db::commit();
 	}

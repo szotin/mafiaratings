@@ -73,6 +73,7 @@ try
 				, user_id: user.id
 				, player_id: <?php echo $player_id; ?>
 				, tournament_id: <?php echo $tournament_id; ?>
+				, mwt_name: "<?php echo $player->name; ?>"
 			},
 			onSuccess);
 		}
