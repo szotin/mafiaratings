@@ -396,7 +396,7 @@ class Page extends TournamentPageBase
 			for ($j = 0; $j < count($table); ++$j)
 			{
 				$game = $table[$j];
-				if (is_null($game))
+				if (is_null($game) || count($game) < 10)
 				{
 					continue;
 				}
@@ -431,7 +431,11 @@ class Page extends TournamentPageBase
 				{
 					$by_game[$j][] = NULL;
 				}
-				$by_game[$j][$i] = $table[$j];
+				$game = $table[$j];
+				if (!is_null($game) && count($game) >= 10)
+				{
+					$by_game[$j][$i] = $table[$j];
+				}
 			}
 		}
 		

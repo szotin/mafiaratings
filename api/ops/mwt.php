@@ -462,7 +462,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			$data = $data->success;
 			
-			if (!isset($data->protocol) || !isset($data->referee) || count($data->protocol) <= 0)
+			if (!isset($data->protocol) || !isset($data->referee))
 			{
 				throw new Exc(get_label('Invalid response from [0]: [1]', $url, formatted_json($data)));
 			}

@@ -266,6 +266,10 @@ class Page extends TournamentPageBase
 					for ($j = 0; $j < count($table); ++$j)
 					{
 						$game = $table[$j];
+						if (count($game) < 10)
+						{
+							continue;
+						}
 						echo '<tr><td align="center" class="darker"><b>' . get_label('Round [0]', $j+1) . '</b></td>';
 						for ($k = 0; $k < count($game) && $k < 10; ++$k)
 						{
