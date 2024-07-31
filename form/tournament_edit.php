@@ -197,6 +197,13 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
+	echo '<input type="checkbox" id="form-reg"';
+	if ($flags & TOURNAMENT_FLAG_REGISTRATION_CLOSED)
+	{
+		echo ' checked';
+	}
+	echo  '> ' . get_label('registration is closed') . '<br>';
+	
 	echo '<input type="checkbox" id="form-team"';
 	if ($flags & TOURNAMENT_FLAG_TEAM)
 	{
@@ -485,6 +492,7 @@ try
 		var _flags = 0;
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
+		if ($("#form-reg").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_REGISTRATION_CLOSED; ?>;
 		if ($("#form-team").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_TEAM; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		if ($("#form-award-mvp").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_MVP; ?>;

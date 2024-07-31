@@ -155,6 +155,8 @@ class TournamentPageBase extends PageBase
 	
 	protected function show_title()
 	{
+		global $_profile;
+		
 		echo '<table class="head" width="100%">';
 
 		$menu = array
@@ -248,16 +250,47 @@ class TournamentPageBase extends PageBase
 		}
 		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)
 		{
-			echo '<p class="subtitle"><i>(';
+			echo '<p class="subtitle">';
+			$done = false;
 			if ($this->start_time < $time)
 			{
-				echo get_label('playing now');
+				echo '<i>('.get_label('playing now').')</i>';
+				$done = true;
 			}
-			else
+			else if ($this->flags & TOURNAMENT_FLAG_REGISTRATION_CLOSED)
 			{
-				echo get_label('not started yet');
+				echo '<i>('.get_label('registration is closed').')</i>';
+				$done = true;
 			}
-			echo ')</i></p>';
+			else if ($_profile != NULL)
+			{
+				$query = new DbQuery('SELECT flags FROM tournament_users WHERE tournament_id = ? AND user_id = ?', $this->id, $_profile->user_id);
+				if ($row = $query->next())
+				{
+					list($tu_flags) = $row;
+					if ($tu_flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
+					{
+						echo '<button onclick="mr.unattendTournament(' . $this->id . ')">'.get_label('Cancel my application').'</button>';
+					}
+					else
+					{
+						echo '<button onclick="mr.unattendTournament(' . $this->id . ')">'.get_label('Cancel my participation').'</button>';
+					}
+					$done = true;
+				}
+			}
+			if (!$done)
+			{
+				if (is_null($_profile) || ($this->flags & TOURNAMENT_FLAG_TEAM) == 0)
+				{
+					echo '<button onclick="mr.attendTournament('.$this->id.')">'.get_label('Apply for participation').'</button>';
+				}
+				else
+				{
+					echo '<button onclick="mr.addTournamentUser('.$this->id.','.$_profile->user_id.')">'.get_label('Apply for participation').'</button>';
+				}
+			}
+			echo '</p>';
 		}
 		echo '</td>';
 		

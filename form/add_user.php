@@ -8,6 +8,18 @@ initiate_session();
 
 try
 {
+	$user_id = 0;
+	if (!is_null($_profile) && isset($_REQUEST['self']) && $_REQUEST['self'])
+	{
+		$user_id = $_profile->user_id;
+	}
+	else if (isset($_REQUEST['user_id']))
+	{
+		$user_id = (int)$_REQUEST['user_id'];
+	}
+	
+	// Note that PERMISSION_OWNER is allowed for tournaments only
+	// If we need to implement is for events and clubs in the future - we need to implement manager acceptance, as it is done for the tournaments. 
 	$club_id = 0;
 	if (isset($_REQUEST['event_id']))
 	{
@@ -19,7 +31,7 @@ try
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
 		list($club_id, $name, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, name, flags FROM tournaments WHERE id = ?', $tournament_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
 	}
 	else if (isset($_REQUEST['club_id']))
 	{
@@ -46,12 +58,15 @@ try
 	}
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="120">' . get_label('Player') . ':</td><td>';
-	show_user_input('form-user', '', '', get_label('Select player.'), 'onSelect');
-	echo '</td></tr>';
+	if ($user_id <= 0)
+	{
+		echo '<tr><td width="120">' . get_label('Player') . ':</td><td>';
+		show_user_input('form-user', '', '', get_label('Select player.'), 'onSelect');
+		echo '</td></tr>';
+	}
 	if (isset($tournament_id) && ($flags & TOURNAMENT_FLAG_TEAM) != 0)
 	{
-		echo '<tr><td>' . get_label('Team') . ':</td><td>';
+		echo '<tr><td width="120">' . get_label('Team') . ':</td><td>';
 		
 		echo '<input type="text" id="form-team" placeholder="' . get_label('Select team') . '" title="Select player\'s team in the tournament."/>';
 		$url = 'api/control/team.php?tournament_id=' . $tournament_id . '&term=';
@@ -75,15 +90,15 @@ try
 
 ?>
 	<script>
-	var user = null;
+	var userId = <?php echo $user_id; ?>;
 	function onSelect(_user)
 	{
-		user = _user;
+		userId = _user.id;
 	}
 	
 	function commit(onSuccess)
 	{
-		if (user != null)
+		if (userId > 0)
 		{
 			json.post("api/ops/user.php",
 			{
@@ -93,7 +108,7 @@ try
 	{
 ?>
 				op: "join_event"
-				, user_id: user.id
+				, user_id: userId
 				, event_id: <?php echo $event_id; ?>
 <?php
 	}
@@ -101,7 +116,7 @@ try
 	{
 ?>
 				op: "join_tournament"
-				, user_id: user.id
+				, user_id: userId
 				, tournament_id: <?php echo $tournament_id; ?>
 <?php
 		if ($flags & TOURNAMENT_FLAG_TEAM)
@@ -115,7 +130,7 @@ try
 	{
 ?>
 				op: "join_club"
-				, user_id: user.id
+				, user_id: userId
 				, club_id: <?php echo $club_id; ?>
 <?php
 	}

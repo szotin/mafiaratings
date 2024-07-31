@@ -221,7 +221,7 @@ class PageBase
 		if ($_session_state == SESSION_NO_USER || $_session_state == SESSION_LOGIN_FAILED)
 		{
 			echo '<td class="header" align="right"><form action="javascript:login()">';
-			echo get_label('User name') . ':&nbsp;<input id="header-username" class="in-header short">&nbsp;';
+			echo get_label('Login') . ':&nbsp;<input id="header-username" class="in-header short">&nbsp;';
 			echo get_label('Password') . ':&nbsp;<input type="password" id="header-password" class="in-header short">&nbsp;';
 			echo '<input value="Login" class="in-header" type="submit"><br>';
 			echo '<input class="in-header" type="checkbox" id="header-remember" checked>'.get_label('remember me').'</form></td>';

@@ -18,12 +18,12 @@ class Page extends TournamentPageBase
 	{
 		global $_page, $_lang, $_profile;
 		
-		$row_count = 0;
-		$column_count = 0;
 		$now = time();
 		
 		list($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0', $this->id);
 		
+		$players = array();
+		$applications = array();
 		if ($games_count > 0)
 		{
 			$query = new DbQuery(
@@ -36,6 +36,10 @@ class Page extends TournamentPageBase
 				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
 				' WHERE g.tournament_id = ? ORDER BY nu.name', $this->id);
+			while ($row = $query->next())
+			{
+				$players[] = $row;
+			}
 		}
 		else
 		{
@@ -46,7 +50,26 @@ class Page extends TournamentPageBase
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
 				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
-				' WHERE tu.tournament_id = ? ORDER BY nu.name', $this->club_id, $this->id);
+				' WHERE tu.tournament_id = ? AND (tu.flags & '.USER_TOURNAMENT_FLAG_NOT_ACCEPTED.') = 0 ORDER BY nu.name', $this->club_id, $this->id);
+			while ($row = $query->next())
+			{
+				$players[] = $row;
+			}
+			if (($this->flags & TOURNAMENT_FLAG_REGISTRATION_CLOSED) == 0)
+			{
+				$query = new DbQuery(
+					'SELECT u.id, nu.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
+					' FROM tournament_users tu' . 
+					' JOIN users u ON tu.user_id = u.id' . 
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+					' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
+					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+					' WHERE tu.tournament_id = ? AND (tu.flags & '.USER_TOURNAMENT_FLAG_NOT_ACCEPTED.') <> 0 ORDER BY nu.name', $this->club_id, $this->id);
+				while ($row = $query->next())
+				{
+					$applications[] = $row;
+				}
+			}
 		}
 		
 		$tournament_user_pic =
@@ -54,7 +77,10 @@ class Page extends TournamentPageBase
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic));
 		$club_pic = new Picture(CLUB_PICTURE);
-		while ($row = $query->next())
+		
+		$row_count = 0;
+		$column_count = 0;
+		foreach ($players as $row)
 		{
 			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_user_flags, $club_user_flags) = $row;
 			if ($column_count == 0)
@@ -62,6 +88,65 @@ class Page extends TournamentPageBase
 				if ($row_count == 0)
 				{
 					echo '<table class="bordered light" width="100%"><tr class="darker"><td colspan="' . USER_COLUMN_COUNT . '"><b>' . get_label('Participants') . '</b></td></tr>';
+				}
+				else
+				{
+					echo '</tr>';
+				}
+				echo '<tr>';
+				
+			}
+			
+			echo '<td width="' . USER_COLUMN_WIDTH . '%" align="center" valign="top">';
+			echo '<table class="transp" width="100%"><tr class="dark"><td width="36">';
+			$club_pic->set($user_club_id, $user_club_name, $user_club_flags);
+			$club_pic->show(ICONS_DIR, false, 24);
+			echo '</td><td><b>' . $user_name . '</b></td></tr>';
+			echo '<tr><td colspan="2" align="center">';
+			$tournament_user_pic->
+				set($user_id, $user_name, $tournament_user_flags, 't' . $this->id)->
+				set($user_id, $user_name, $club_user_flags, 'c' . $this->club_id)->
+				set($user_id, $user_name, $user_flags);
+			if ($games_count > 0)
+			{
+				$tournament_user_pic->show(ICONS_DIR, true, 64);
+			}
+			else
+			{
+				echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
+				$tournament_user_pic->show(ICONS_DIR, false, 64);
+				echo '</a>';
+			}
+			echo '</td></tr></table>';
+			echo '</td>';
+			
+			++$row_count;
+			++$column_count;
+			if ($column_count >= USER_COLUMN_COUNT)
+			{
+				$column_count = 0;
+			}
+		}
+		
+		if ($row_count > 0)
+		{
+			if ($column_count > 0)
+			{
+				echo '<td colspan="' . (USER_COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
+			}
+			echo '</tr></table>';
+		}
+		
+		$row_count = 0;
+		$column_count = 0;
+		foreach ($applications as $row)
+		{
+			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_user_flags, $club_user_flags) = $row;
+			if ($column_count == 0)
+			{
+				if ($row_count == 0)
+				{
+					echo '<table class="bordered light" width="100%"><tr class="darker"><td colspan="' . USER_COLUMN_COUNT . '"><b>' . get_label('Applicants') . '</b></td></tr>';
 				}
 				else
 				{

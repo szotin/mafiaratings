@@ -67,9 +67,11 @@ define('USER_EVENT_ICON_MAX_VERSION', 7);
 // 02 - 0x0002 -      2 - perm mod
 // 03 - 0x0004 -      4 - perm manager
 // 04 - 0x0008 -      8 - reserved (not to interfere with user perm flag admin)
-// 05 - 0x0800 -     16 - icon mask
-// 06 - 0x1000 -     32 - icon mask
-// 07 - 0x2000 -     64 - icon mask
+// 05 - 0x0010 -     16 - icon mask
+// 06 - 0x0020 -     32 - icon mask
+// 07 - 0x0040 -     64 - icon mask
+// 08 - 0x0080 -    128 - user applied by themself. They is not accepted for the tournament yet. 
+define('USER_TOURNAMENT_FLAG_NOT_ACCEPTED', 0x80);
 define('USER_TOURNAMENT_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
 
 define('USER_TOURNAMENT_ICON_MASK', 0x70);
@@ -251,7 +253,8 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 // 20 - 0x080000 -  524288 - hide bonus mask
 // 21 - 0x100000 - 1048576 - hide bonus mask
 // 22 - 0x200000 - 2097152 - hide bonus mask
-// 23 - 0x400000 - 4194304 - hide bonus mask
+// 23 - 0x400000 - 4194304 - do not try to calculate number of players - just use what is specified in the db record
+// 24 - 0x800000 - 8388608 - user registration for the tournament is closed. Only a manager can register users.
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
@@ -265,7 +268,8 @@ define('TOURNAMENT_FLAG_AWARD_SHERIFF', 0x1000);
 define('TOURNAMENT_FLAG_AWARD_BLACK', 0x2000);
 define('TOURNAMENT_FLAG_AWARD_DON', 0x4000);
 define('TOURNAMENT_FLAG_FORCE_NUM_PLAYERS', 0x400000);
-define('TOURNAMENT_EDITABLE_MASK', 0x7f7f70); // LONG_TERM | SINGLE_GAME | TOURNAMENT_FLAG_PINNED | TEAM | MANUAL_SCORE | AWARD_* | HIDE_MASK_* | TOURNAMENT_FLAG_FORCE_NUM_PLAYERS
+define('TOURNAMENT_FLAG_REGISTRATION_CLOSED', 0x800000);
+define('TOURNAMENT_EDITABLE_MASK', 0xff7f70); // LONG_TERM | SINGLE_GAME | TOURNAMENT_FLAG_PINNED | TEAM | MANUAL_SCORE | AWARD_* | HIDE_MASK_* | TOURNAMENT_FLAG_FORCE_NUM_PLAYERS | TOURNAMENT_FLAG_REGISTRATION_CLOSED
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);

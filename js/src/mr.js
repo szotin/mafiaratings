@@ -629,16 +629,32 @@ var mr = new function()
 		}, 600);
 	}
 	
-	this.addTournamentUser = function(id, onSuccess)
+	this.addTournamentUser = function(tournamentId)
 	{
-		if (typeof onSuccess == "undefined")
-			onSuccess = refr;
-		dlg.form("form/add_user.php?tournament_id=" + id, onSuccess, 400);
+		dlg.form("form/add_user.php?tournament_id=" + tournamentId, refr, 400);
 	}
 
-	this.removeTournamentUser = function(userId, tournamentId)
+	this.removeTournamentUser = function(tournamentId, userId)
 	{
 		json.post("api/ops/user.php", { op: "quit_tournament", tournament_id: tournamentId, user_id: userId }, refr);
+	}
+	
+	this.acceptTournamentUser = function(tournamentId, userId)
+	{
+		json.post("api/ops/user.php", { op: "accept_tournament", tournament_id: tournamentId, user_id: userId }, refr);
+	}
+	
+	this.attendTournament = function(tournamentId, isTeam)
+	{
+		if (isTeam)
+			dlg.form("form/add_user.php?self=1&tournament_id=" + tournamentId, refr, 400);
+		else
+			json.post("api/ops/user.php", { op: "join_tournament", tournament_id: tournamentId }, refr);
+	}
+	
+	this.unattendTournament = function(tournamentId)
+	{
+		json.post("api/ops/user.php", { op: "quit_tournament", tournament_id: tournamentId }, refr);
 	}
 	
 	this.tournamentObs = function(tournamentId)

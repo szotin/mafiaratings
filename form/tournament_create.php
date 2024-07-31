@@ -184,6 +184,7 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 	
 	echo '<tr><td colspan="2">';
+	echo '<input type="checkbox" id="form-reg"> ' . get_label('registration is closed') . '<br>';
 	echo '<input type="checkbox" id="form-team"> ' . get_label('team tournament') . '<br>';
 	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
 	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '<br>';
@@ -471,6 +472,7 @@ try
 		var _addr = $("#form-addr_id").val();
 		
 		var _flags = 0;
+		if ($("#form-reg").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_REGISTRATION_CLOSED; ?>;
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;

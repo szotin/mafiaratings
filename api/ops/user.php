@@ -692,13 +692,24 @@ class ApiPage extends OpsApiPageBase
 			$owner_id = $_profile->user_id;
 		}
 		
+		$flags = USER_TOURNAMENT_NEW_PLAYER_FLAGS;
 		$user_id = (int)get_optional_param('user_id', $owner_id);
 		$tournament_id = (int)get_required_param('tournament_id');
 		$team = get_optional_param('team', NULL);
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
-		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
+		if (!is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id))
+		{
+			if ($user_id == $owner_id)
+			{
+				$flags |= USER_TOURNAMENT_FLAG_NOT_ACCEPTED; 
+			}
+			else
+			{
+				no_permission();
+			}
+		}
 		
 		$query = new DbQuery('SELECT t.id, t.name FROM tournament_users u LEFT OUTER JOIN tournament_teams t ON u.team_id = t.id WHERE u.user_id = ? AND u.tournament_id = ?', $user_id, $tournament_id);
 		if ($row = $query->next())
@@ -748,7 +759,7 @@ class ApiPage extends OpsApiPageBase
 					list ($team_id) = Db::record(get_label('team'), 'SELECT LAST_INSERT_ID()');
 				}
 			}
-			Db::exec(get_label('registration'), 'INSERT INTO tournament_users (user_id, tournament_id, flags, team_id) values (?, ?, ' . USER_TOURNAMENT_NEW_PLAYER_FLAGS . ', ?)', $user_id, $tournament_id, $team_id);
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_users (user_id, tournament_id, flags, team_id) values (?, ?, ?, ?)', $user_id, $tournament_id, $flags, $team_id);
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
 			if ($team_id != NULL)
@@ -761,6 +772,11 @@ class ApiPage extends OpsApiPageBase
 		
 		$this->response['tournament_id'] = $tournament_id;
 		$this->response['user_id'] = $user_id;
+		
+		if ($flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
+		{
+			echo get_label('You application is submitted. The tournament organizers will review your application and contact you if necessary.');
+		}
 	}
 	
 	function join_tournament_op_help()
@@ -819,6 +835,48 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Remove user from the registrations to the tournament.');
 		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// accept_tournament
+	//-------------------------------------------------------------------------------------------------------
+	function accept_tournament_op()
+	{
+		global $_profile, $_lang;
+		
+		$user_id = (int)get_required_param('user_id');
+		$tournament_id = (int)get_required_param('tournament_id');
+		
+		Db::begin();
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		
+		Db::exec(get_label('registration'), 'UPDATE tournament_users SET flags = flags & '.~USER_TOURNAMENT_FLAG_NOT_ACCEPTED.' WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->tournament_id = $tournament_id;
+			db_log(LOG_OBJECT_USER, 'accepted for tournament', $log_details, $user_id, $club_id);
+		}
+		else
+		{
+			list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
+			throw new Exc(get_label('User [0] did not apply for the tournament.', $user_name));
+		}
+		Db::commit();
+		
+		$this->response['tournament_id'] = $tournament_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function accept_tournament_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Accept user application for the tournament participation.');
+		$help->request_param('user_id', 'User id. If the user is accepted already success is returned anyway.', 'the one who is making request is used.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->response_param('user_id', 'User id.');
 		$help->response_param('tournament_id', 'Tournament id.');
