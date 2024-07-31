@@ -395,6 +395,95 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('club_id', 'Club id.');
 		return $help;
 	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// add_user
+	//-------------------------------------------------------------------------------------------------------
+	function add_user_op()
+	{
+		global $_profile;
+		
+		$owner_id = 0;
+		if ($_profile != NULL)
+		{
+			$owner_id = $_profile->user_id;
+		}
+		
+		$user_id = (int)get_optional_param('user_id', $owner_id);
+		$club_id = (int)get_required_param('club_id');
+		
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
+		
+		Db::begin();
+		list ($count) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		if ($count == 0)
+		{
+			Db::exec(get_label('membership'), 'INSERT INTO club_users (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
+			db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
+			if ($user_id == $owner_id)
+			{
+				$_profile->update_clubs();
+			}
+		}
+		Db::commit();
+		
+		$this->response['club_id'] = $club_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function add_user_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Make user a club member.');
+		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('club_id', 'Club id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('club_id', 'Club id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// remove_user
+	//-------------------------------------------------------------------------------------------------------
+	function remove_user_op()
+	{
+		global $_profile;
+		
+		$owner_id = 0;
+		if ($_profile != NULL)
+		{
+			$owner_id = $_profile->user_id;
+		}
+		
+		$user_id = (int)get_optional_param('user_id', $owner_id);
+		$club_id = (int)get_required_param('club_id');
+		
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
+		
+		Db::begin();
+		Db::exec(get_label('membership'), 'DELETE FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		if (Db::affected_rows() > 0)
+		{
+			db_log(LOG_OBJECT_USER, 'left club', NULL, $user_id, $club_id);
+		}
+		Db::commit();
+		if ($user_id == $owner_id)
+		{
+			$_profile->update_clubs();
+		}
+		
+		$this->response['club_id'] = $club_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function remove_user_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Remove user from the members of the club.');
+		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('club_id', 'Club id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('club_id', 'Club id.');
+		return $help;
+	}
 }
 
 $page = new ApiPage();

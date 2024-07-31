@@ -136,9 +136,9 @@ try
 	
 	function joinClub()
 	{
-		json.post("api/ops/user.php",
+		json.post("api/ops/club.php",
 		{
-			op: "join_club"
+			op: "add_user"
 			, user_id: <?php echo $user_id; ?>
 			, club_id: $('#form-join-club').val()
 		},
@@ -149,9 +149,9 @@ try
 	{
 		dlg.yesNo("<?php echo get_label("Are you sure you want to quit club?"); ?>", null, null, function()
 		{
-			json.post("api/ops/user.php",
+			json.post("api/ops/club.php",
 			{
-				op: "quit_club"
+				op: "remove_user"
 				, user_id: <?php echo $user_id; ?>
 				, club_id: clubId
 			},

@@ -98,46 +98,62 @@ try
 	
 	function commit(onSuccess)
 	{
-		if (userId > 0)
+		if (userId <= 0)
 		{
-			json.post("api/ops/user.php",
-			{
-<?php	
+			dlg.error("<?php echo get_label('Unknown [0]', get_label('player')); ?>");
+			return;
+		}
+<?php
 		
 	if (isset($event_id))
 	{
 ?>
-				op: "join_event"
-				, user_id: userId
-				, event_id: <?php echo $event_id; ?>
+		json.post("api/ops/event.php",
+		{
+			op: "add_user"
+			, user_id: userId
+			, event_id: <?php echo $event_id; ?>
+		}, onSuccess);
 <?php
 	}
 	else if (isset($tournament_id))
 	{
-?>
-				op: "join_tournament"
-				, user_id: userId
-				, tournament_id: <?php echo $tournament_id; ?>
-<?php
 		if ($flags & TOURNAMENT_FLAG_TEAM)
 		{
 ?>
+			json.post("api/ops/tournament.php",
+			{
+				op: "add_user"
+				, user_id: userId
+				, tournament_id: <?php echo $tournament_id; ?>
 				, team: $('#form-team').val()
+			}, onSuccess);
+<?php
+		}
+		else
+		{
+?>
+			json.post("api/ops/tournament.php",
+			{
+				op: "add_user"
+				, user_id: userId
+				, tournament_id: <?php echo $tournament_id; ?>
+			}, onSuccess);
 <?php
 		}
 	}
 	else
 	{
 ?>
-				op: "join_club"
-				, user_id: userId
-				, club_id: <?php echo $club_id; ?>
+		json.post("api/ops/club.php",
+		{
+			op: "add_user"
+			, user_id: userId
+			, club_id: <?php echo $club_id; ?>
+		}, onSuccess);
 <?php
 	}
 ?>
-			},
-			onSuccess);
-		}
 	}
 	</script>
 <?php

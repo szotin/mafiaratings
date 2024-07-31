@@ -281,14 +281,12 @@ class TournamentPageBase extends PageBase
 			}
 			if (!$done)
 			{
-				if (is_null($_profile) || ($this->flags & TOURNAMENT_FLAG_TEAM) == 0)
+				echo '<button onclick="mr.attendTournament('.$this->id;
+				if ($this->flags & TOURNAMENT_FLAG_TEAM)
 				{
-					echo '<button onclick="mr.attendTournament('.$this->id.')">'.get_label('Apply for participation').'</button>';
+					echo ', true';
 				}
-				else
-				{
-					echo '<button onclick="mr.addTournamentUser('.$this->id.','.$_profile->user_id.')">'.get_label('Apply for participation').'</button>';
-				}
+				echo ')">'.get_label('Apply for participation').'</button>';
 			}
 			echo '</p>';
 		}

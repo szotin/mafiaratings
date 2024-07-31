@@ -299,14 +299,14 @@ var mr = new function()
 
 	this.joinClub = function(id)
 	{
-		json.post("api/ops/user.php", { op: 'join_club', club_id: id }, refr);
+		json.post("api/ops/club.php", { op: 'add_user', club_id: id }, refr);
 	}
 
 	this.quitClub = function(id, confirmMessage)
 	{
 		function proceed()
 		{
-			json.post("api/ops/user.php", { op: 'quit_club', club_id: id }, refr);
+			json.post("api/ops/club.php", { op: 'remove_user', club_id: id }, refr);
 		}
 		
 		if (typeof confirmMessage == "string")
@@ -333,7 +333,7 @@ var mr = new function()
 
 	this.removeClubMember = function(userId, clubId)
 	{
-		json.post("api/ops/user.php", { op: "quit_club", club_id: clubId, user_id: userId }, refr);
+		json.post("api/ops/club.php", { op: "remove_user", club_id: clubId, user_id: userId }, refr);
 	}
 	
 	//--------------------------------------------------------------------------------------
@@ -558,7 +558,7 @@ var mr = new function()
 
 	this.removeEventUser = function(userId, eventId)
 	{
-		json.post("api/ops/user.php", { op: "quit_event", event_id: eventId, user_id: userId }, refr);
+		json.post("api/ops/event.php", { op: "remove_user", event_id: eventId, user_id: userId }, refr);
 	}
 	
 	this.eventObs = function(eventId)
@@ -636,12 +636,12 @@ var mr = new function()
 
 	this.removeTournamentUser = function(tournamentId, userId)
 	{
-		json.post("api/ops/user.php", { op: "quit_tournament", tournament_id: tournamentId, user_id: userId }, refr);
+		json.post("api/ops/tournament.php", { op: "remove_user", tournament_id: tournamentId, user_id: userId }, refr);
 	}
 	
 	this.acceptTournamentUser = function(tournamentId, userId)
 	{
-		json.post("api/ops/user.php", { op: "accept_tournament", tournament_id: tournamentId, user_id: userId }, refr);
+		json.post("api/ops/tournament.php", { op: "accept_user", tournament_id: tournamentId, user_id: userId }, refr);
 	}
 	
 	this.attendTournament = function(tournamentId, isTeam)
@@ -649,12 +649,12 @@ var mr = new function()
 		if (isTeam)
 			dlg.form("form/add_user.php?self=1&tournament_id=" + tournamentId, refr, 400);
 		else
-			json.post("api/ops/user.php", { op: "join_tournament", tournament_id: tournamentId }, refr);
+			json.post("api/ops/tournament.php", { op: "add_user", tournament_id: tournamentId }, refr);
 	}
 	
 	this.unattendTournament = function(tournamentId)
 	{
-		json.post("api/ops/user.php", { op: "quit_tournament", tournament_id: tournamentId }, refr);
+		json.post("api/ops/tournament.php", { op: "remove_user", tournament_id: tournamentId }, refr);
 	}
 	
 	this.tournamentObs = function(tournamentId)

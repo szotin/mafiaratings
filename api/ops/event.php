@@ -1609,6 +1609,93 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('comment', 'Comment text.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// add_user
+	//-------------------------------------------------------------------------------------------------------
+	function add_user_op()
+	{
+		global $_profile;
+		
+		$owner_id = 0;
+		if ($_profile != NULL)
+		{
+			$owner_id = $_profile->user_id;
+		}
+		
+		$user_id = (int)get_optional_param('user_id', $owner_id);
+		$event_id = (int)get_required_param('event_id');
+		
+		Db::begin();
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
+		
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
+		if ($count == 0)
+		{
+			Db::exec(get_label('registration'), 'INSERT INTO event_users (user_id, event_id, flags) values (?, ?, ' . USER_EVENT_NEW_PLAYER_FLAGS . ')', $user_id, $event_id);
+			$log_details = new stdClass();
+			$log_details->event_id = $event_id;
+			db_log(LOG_OBJECT_USER, 'joined event', $log_details, $user_id, $club_id);
+		}
+		Db::commit();
+		
+		$this->response['event_id'] = $event_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function add_user_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Register user to an event.');
+		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('event_id', 'Event id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('event_id', 'Event id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// remove_user
+	//-------------------------------------------------------------------------------------------------------
+	function remove_user_op()
+	{
+		global $_profile;
+		
+		$owner_id = 0;
+		if ($_profile != NULL)
+		{
+			$owner_id = $_profile->user_id;
+		}
+		
+		$user_id = (int)get_optional_param('user_id', $owner_id);
+		$event_id = (int)get_required_param('event_id');
+		
+		Db::begin();
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
+		
+		Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->event_id = $event_id;
+			db_log(LOG_OBJECT_USER, 'left event', $log_details, $user_id, $club_id);
+		}
+		Db::commit();
+		
+		$this->response['event_id'] = $event_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function remove_user_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Remove user from the registrations to the event.');
+		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('event_id', 'Event id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('event_id', 'Event id.');
+		return $help;
+	}
 }
 
 $page = new ApiPage();
