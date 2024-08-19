@@ -1682,6 +1682,10 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			{
 				$group = new stdClass();
 				$group->options = new stdClass();
+				if (isset($event_scoring_options->group))
+				{
+					$group->options->group = $event_scoring_options->group;
+				}
 				if (isset($event_scoring_options->flags))
 				{
 					$group->options->flags = ~$event_scoring_options->flags;
