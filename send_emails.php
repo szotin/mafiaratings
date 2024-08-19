@@ -37,16 +37,82 @@ function setDir()
 	chdir($dir);
 }
 
+function sendTournamentRegNotification($tournament_id, $tournament_name, $manager_id, $manager_name, $manager_email, $manager_lang, $new_regs)
+{
+	//echo $tournament_name . ' - ' . $new_regs . ': ' . $manager_name . EOL;
+	
+	$lang = get_lang_code($manager_lang);
+	$tags = array(
+		'root' => new Tag(get_server_url()),
+		'new_regs' => new Tag($new_regs),
+		'user_id' => new Tag($manager_id),
+		'user_name' => new Tag($manager_name),
+		'tournament_id' => new Tag($tournament_id),
+		'tournament_name' => new Tag($tournament_name));
+	list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email/tournament_new_reg.php';
+	$body = parse_tags($body, $tags);
+	$text_body = parse_tags($text_body, $tags);
+	send_email($manager_email, $body, $text_body, $subj);
+}
+
 define('NO_TEXT', 'Please enable http in your email client in order to read this message');
 define('MAX_EMAILS', 25);
 try
 {
-	$time = time();
 	$server_name = get_server_url();
 	$emails_remaining = MAX_EMAILS;
 	$mailing_status = array();
 	
+	$time = time();
+	date_default_timezone_set('America/Vancouver');
+	$hour = date('G', $time);
+	
 	Db::begin();
+	if ($hour == 23)
+	{
+		$query = new DbQuery(
+			'SELECT t.id, t.name, t.club_id, count(tu.user_id)'.
+			' FROM tournament_users tu'.
+			' JOIN tournaments t ON t.id = tu.tournament_id'.
+			' WHERE (tu.flags & '.(USER_TOURNAMENT_FLAG_NOT_ACCEPTED | USER_TOURNAMENT_MANAGER_NOTIFIED).') = '.USER_TOURNAMENT_FLAG_NOT_ACCEPTED.
+			' GROUP BY t.id'.
+			' ORDER BY t.id');
+		while ($row = $query->next())
+		{
+			list ($tournament_id, $tournament_name, $club_id, $new_regs) = $row;
+			$send_to_club_managers = true;
+			$query1 = new DbQuery(
+				'SELECT u.id, nu.name, u.email, u.def_lang'.
+				' FROM tournament_users tu'.
+				' JOIN users u ON u.id = tu.user_id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+				' WHERE (tu.flags & '.USER_PERM_MANAGER.') <> 0 AND tu.tournament_id = ?', $tournament_id);
+			while ($row1 = $query1->next())
+			{
+				list ($manager_id, $manager_name, $manager_email, $manager_lang) = $row1;
+				sendTournamentRegNotification($tournament_id, $tournament_name, $manager_id, $manager_name, $manager_email, $manager_lang, $new_regs);
+				--$emails_remaining;
+				$send_to_club_managers = false;
+			}
+			
+			if ($send_to_club_managers)
+			{
+				$query1 = new DbQuery(
+					'SELECT u.id, nu.name, u.email, u.def_lang'.
+					' FROM club_users cu'.
+					' JOIN users u ON u.id = cu.user_id'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+					' WHERE (cu.flags & '.USER_PERM_MANAGER.') <> 0 AND cu.club_id = ?', $club_id);
+				while ($row1 = $query1->next())
+				{
+					list ($manager_id, $manager_name, $manager_email, $manager_lang) = $row1;
+					sendTournamentRegNotification($tournament_id, $tournament_name, $manager_id, $manager_name, $manager_email, $manager_lang, $new_regs);
+					--$emails_remaining;
+				}
+			}
+		}
+		Db::exec(get_label('user'), 'UPDATE tournament_users SET flags = flags | ' . USER_TOURNAMENT_MANAGER_NOTIFIED);
+	}
 
 	$event_emails = array();
 	$query = new DbQuery(

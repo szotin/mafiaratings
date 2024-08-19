@@ -1578,6 +1578,68 @@ class ApiPage extends OpsApiPageBase
 		$tournament_id = (int)get_required_param('tournament_id');
 		
 		Db::begin();
+		list($club_id, $tournament_name) = Db::record(get_label('tournament'), 'SELECT club_id, name FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		
+		list ($user_id, $user_name, $user_email, $user_lang) = db::record(get_label('user'), 
+			'SELECT u.id, nu.name, u.email, u.def_lang'.
+			' FROM users u'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			' WHERE u.id = ?', $user_id);
+		
+		Db::exec(get_label('registration'), 'UPDATE tournament_users SET flags = flags & '.~USER_TOURNAMENT_FLAG_NOT_ACCEPTED.' WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->tournament_id = $tournament_id;
+			db_log(LOG_OBJECT_USER, 'accepted for tournament', $log_details, $user_id, $club_id);
+		}
+		else
+		{
+			list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
+			throw new Exc(get_label('User [0] did not apply for the tournament.', $user_name));
+		}
+		Db::commit();
+		
+		$lang = get_lang_code($user_lang);
+		$tags = array(
+			'root' => new Tag(get_server_url()),
+			'user_id' => new Tag($user_id),
+			'user_name' => new Tag($user_name),
+			'tournament_id' => new Tag($tournament_id),
+			'tournament_name' => new Tag($tournament_name));
+		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/tournament_user_accept.php';
+		$body = parse_tags($body, $tags);
+		$text_body = parse_tags($text_body, $tags);
+		send_email($user_email, $body, $text_body, $subj);
+		
+		
+		$this->response['tournament_id'] = $tournament_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function accept_user_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Accept user application for the tournament participation.');
+		$help->request_param('user_id', 'User id. If the user is accepted already success is returned anyway.', 'the one who is making request is used.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// edit_team
+	//-------------------------------------------------------------------------------------------------------
+	function edit_team_op()
+	{
+		global $_profile, $_lang;
+		
+		$team_id = (int)get_required_param('team_id');
+		$tournament_id = (int)get_required_param('tournament_id');
+		$team_name = get_required_param('name');
+		
+		Db::begin();
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		
@@ -1599,7 +1661,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['user_id'] = $user_id;
 	}
 	
-	function accept_user_op_help()
+	function edit_team_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Accept user application for the tournament participation.');
 		$help->request_param('user_id', 'User id. If the user is accepted already success is returned anyway.', 'the one who is making request is used.');
