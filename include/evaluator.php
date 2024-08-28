@@ -1,0 +1,1113 @@
+<?php
+
+require_once __DIR__ . '/error.php';
+require_once __DIR__ . '/localization.php';
+
+define('EV_LEXEM_VALUE', 0);
+define('EV_LEXEM_UNARY_MINUS', 1);
+define('EV_LEXEM_PLUS', 2);
+define('EV_LEXEM_MINUS', 3);
+define('EV_LEXEM_MULTIPLY', 4);
+define('EV_LEXEM_DIVIDE', 5);
+define('EV_LEXEM_POWER', 6);
+define('EV_LEXEM_OPEN_BRACKET', 7);
+define('EV_LEXEM_CLOSE_BRACKET', 8);
+define('EV_LEXEM_COMMA', 9);
+define('EV_LEXEM_QUESTION', 10);
+define('EV_LEXEM_COLUMN', 11);
+define('EV_LEXEM_FUNC', 12);
+define('EV_LEXEM_INVALID', 13);
+
+//------------------------------------------------------------------------------------------------
+// Functions
+//------------------------------------------------------------------------------------------------
+abstract class EvFunction
+{
+	public abstract function evaluate($evaluator, $params);
+	public abstract function name();
+}
+
+class EvFuncRound extends EvFunction
+{
+	public function evaluate($evaluator, $params)
+	{
+		switch (count($params))
+		{
+		case 0:
+			return 0;
+		case 1:
+			return round($params[0]->evaluate());
+		default:
+			return round($params[0]->evaluate(), $params[1]->evaluate());
+		}
+	}
+	
+	public function name()
+	{
+		return 'round';
+	}
+}
+
+class EvFuncFloor extends EvFunction
+{
+	public function evaluate($evaluator, $params)
+	{
+		if (isset($params[0]))
+		{
+			return floor($params[0]->evaluate());
+		}
+		return 0;
+	}
+	
+	public function name()
+	{
+		return 'floor';
+	}
+}
+
+class EvFuncCeil extends EvFunction
+{
+	public function evaluate($evaluator, $params)
+	{
+		if (isset($params[0]))
+		{
+			return ceil($params[0]->evaluate());
+		}
+		return 0;
+	}
+	
+	public function name()
+	{
+		return 'ceil';
+	}
+}
+
+class EvFuncLog extends EvFunction
+{
+	public function evaluate($evaluator, $params)
+	{
+		switch (count($params))
+		{
+		case 0:
+			return 0;
+		case 1:
+			return log($params[0]->evaluate());
+		default:
+			return log($params[0]->evaluate(), $params[1]->evaluate());
+		}
+	}
+	
+	public function name()
+	{
+		return 'log';
+	}
+}
+
+class EvFuncVar extends EvFunction
+{
+	public function evaluate($evaluator, $params)
+	{
+		if (!isset($evaluator->vars) || !isset($evaluator->vars_deepth))
+		{
+			return 0;
+		}
+		
+		$var = $evaluator->vars;
+		for ($i = $evaluator->vars_deepth - 1; $i >= count($params); --$i)
+		{
+			if (count($var) == 0)
+			{
+				throw new Exc('Array of vars cannot be empty.');
+			}
+			$var = $var[0];
+		}
+		
+		for (; $i >= 0; --$i)
+		{
+			$param = floor($params[$i]->evaluate());
+			if (count($var) <= $param)
+			{
+				throw new Exc(get_label('Var param [0] is out of bounds.', $param));
+			}
+			$var = $var[$param];
+		}
+		return $var;
+	}
+	
+	
+	public function name()
+	{
+		return 'var';
+	}
+}
+
+//------------------------------------------------------------------------------------------------
+// Nodes
+//------------------------------------------------------------------------------------------------
+class EvNode
+{
+	public function __construct($evaluator, $type, $position, $prev)
+	{
+		$this->type = $type;
+		$this->position = $position;
+		$this->prev = $prev;
+		$this->next = NULL;
+		if ($prev)
+		{
+			$prev->next = $this;
+		}
+		$this->evaluator = $evaluator;
+	}
+	
+	public function complete()
+	{
+	}
+	
+	public function is_complete()
+	{
+		return
+			$this->type == EV_LEXEM_VALUE ||
+			$this->type == EV_LEXEM_CLOSE_BRACKET ||
+			$this->type == EV_LEXEM_FUNC;
+	}
+	
+	public function optimize()
+	{
+		return $this;
+	}
+	
+	public function to_lexem()
+	{
+		switch ($this->type)
+		{
+		case EV_LEXEM_VALUE:
+			return $this->value;
+		case EV_LEXEM_PLUS:
+			return '+';
+		case EV_LEXEM_UNARY_MINUS:
+		case EV_LEXEM_MINUS:
+			return '-';
+		case EV_LEXEM_MULTIPLY:
+			return '*';
+		case EV_LEXEM_DIVIDE:
+			return '/';
+		case EV_LEXEM_POWER:
+			return '^';
+		case EV_LEXEM_OPEN_BRACKET:
+			return '(';
+		case EV_LEXEM_CLOSE_BRACKET:
+			return ')';
+		case EV_LEXEM_COMMA:
+			return ',';
+		case EV_LEXEM_QUESTION:
+			return '?';
+		case EV_LEXEM_COLUMN:
+			return ':';
+		case EV_LEXEM_FUNC:
+			if (isset($this->index))
+			{
+				return $this->evaluator->functions[$this->index]->name();
+			}
+			return  'unknown function';
+		}
+		return  'unknown lexem';
+	}
+	
+	public function to_string($indent = 0)
+	{
+		$result = str_pad('', $indent, "\t") . $this->position . ': ';
+		switch ($this->type)
+		{
+		case EV_LEXEM_VALUE:
+			$result .= $this->value;
+			break;
+		case EV_LEXEM_PLUS:
+			$result .= '+';
+			break;
+		case EV_LEXEM_UNARY_MINUS:
+		case EV_LEXEM_MINUS:
+			$result .= '-';
+			break;
+		case EV_LEXEM_MULTIPLY:
+			$result .= '*';
+			break;
+		case EV_LEXEM_DIVIDE:
+			$result .= '/';
+			break;
+		case EV_LEXEM_POWER:
+			$result .= '^';
+			break;
+		case EV_LEXEM_OPEN_BRACKET:
+			$result .= '(';
+			break;
+		case EV_LEXEM_CLOSE_BRACKET:
+			$result .= ')';
+			break;
+		case EV_LEXEM_COMMA:
+			$result .= ',';
+			break;
+		case EV_LEXEM_QUESTION:
+			$result .= '?';
+			break;
+		case EV_LEXEM_COLUMN:
+			$result .= ':';
+			break;
+		case EV_LEXEM_FUNC:
+			if (isset($this->index))
+			{
+				$result .= $this->evaluator->functions[$this->index]->name();
+			}
+			else
+			{
+				$result .= 'unknown function';
+			}
+			break;
+		}
+		return $result;
+	}
+	
+	public function evaluate()
+	{
+		throw new Exc('Evaluating non evaluatable node: ' . $this->evaluator->highlight_node($this));
+	}
+	
+	protected function find_close_bracket($open_bracket, $alt_type = EV_LEXEM_CLOSE_BRACKET)
+	{
+		$inner_bracket = 0;
+		for ($node = $open_bracket->next; $node; $node = $node->next)
+		{
+			if ($inner_bracket > 0)
+			{
+				if ($node->type == EV_LEXEM_CLOSE_BRACKET)
+				{
+					--$inner_bracket;
+				}
+			}
+			else if ($node->type == EV_LEXEM_OPEN_BRACKET)
+			{
+				++$inner_bracket;
+			}
+			else if ($node->type == EV_LEXEM_CLOSE_BRACKET || $node->type == $alt_type)
+			{
+				return $node;
+			}
+		}
+		throw new Exc(get_label('Bracket is not closed: [0]', $this->evaluator->highlight_node($open_bracket)));
+	}
+	
+}
+
+class EvValueNode extends EvNode
+{
+	public function __construct($evaluator, $value, $position, $prev)
+	{
+		parent::__construct($evaluator, EV_LEXEM_VALUE, $position, $prev);
+		
+		$this->value = $value;
+	}
+	
+	public function evaluate()
+	{
+		if ($this->type != EV_LEXEM_VALUE)
+		{
+			throw new Exc('Lexem is not a unary operation: '.$this->evaluator->highlight_node($this));
+		}
+		return $this->value;
+	}
+}
+
+class EvUnaryOpNode extends EvNode
+{
+	public function __construct($evaluator, $type, $position, $prev)
+	{
+		parent::__construct($evaluator, $type, $position, $prev);
+	}
+	
+	public function complete()
+	{
+		if (!isset($this->child))
+		{
+			if (!$this->next)
+			{
+				$this->evaluator->unexpectedLexem($this);
+			}
+			$this->child = $this->next;
+			if ($this->child->next)
+			{
+				$this->child->next->prev = $this;
+			}
+			$this->next = $this->child->next;
+			$this->child->prev = $this->child->next = NULL;
+		}
+	}
+	
+	public function is_complete()
+	{
+		return isset($this->child);
+	}
+	
+	public function evaluate()
+	{
+		if ($this->type != EV_LEXEM_UNARY_MINUS)
+		{
+			throw new Exc('Lexem is not a unary operation: '.$this->evaluator->highlight_node($this));
+		}
+		return -$this->child->evaluate();
+	}
+	
+	public function to_string($indent = 0)
+	{
+		$result = parent::to_string($indent);
+		if (isset($this->child))
+		{
+			$result .= "\n" . $this->child->to_string($indent + 1);
+		}
+		return $result;
+	}
+	
+	public function optimize()
+	{
+		if (isset($this->child))
+		{
+			$child = $this->child->optimize();
+			if ($child)
+			{
+				$this->child = $child;
+				$child->value = $this->evaluate();
+				return $child;
+			}
+		}
+		return NULL;
+	}
+}
+
+class EvBinaryOpNode extends EvNode
+{
+	public function __construct($evaluator, $type, $position, $prev)
+	{
+		parent::__construct($evaluator, $type, $position, $prev);
+	}
+	
+	public function complete()
+	{
+		if (!isset($this->left))
+		{
+			if (!$this->prev)
+			{
+				$this->evaluator->unexpectedLexem($this);
+			}
+			$this->left = $this->prev;
+			if ($this->left->prev)
+			{
+				$this->left->prev->next = $this;
+			}
+			else
+			{
+				$this->evaluator->node = $this;
+			}
+			$this->prev = $this->left->prev;
+			$this->left->prev = $this->left->next = NULL;
+		}
+		
+		if (!isset($this->right))
+		{
+			if (!$this->next)
+			{
+				$this->evaluator->unexpectedLexem($this);
+			}
+			$this->right = $this->next;
+			if ($this->right->next)
+			{
+				$this->right->next->prev = $this;
+			}
+			$this->next = $this->right->next;
+			$this->right->prev = $this->right->next = NULL;
+		}
+	}
+	
+	public function is_complete()
+	{
+		return isset($this->left) && isset($this->right);
+	}
+	
+	public function evaluate()
+	{
+		$result = 0;
+		switch ($this->type)
+		{
+		case EV_LEXEM_PLUS:
+			$result = $this->left->evaluate() + $this->right->evaluate();
+			break;
+		case EV_LEXEM_MINUS:
+			$result = $this->left->evaluate() - $this->right->evaluate();
+			break;
+		case EV_LEXEM_MULTIPLY:
+			$result = $this->left->evaluate() * $this->right->evaluate();
+			break;
+		case EV_LEXEM_DIVIDE:
+			$right = $this->right->evaluate();
+			if ($right == 0)
+			{
+				throw new Exc(get_label('Division by zero: [0]', $this->evaluator->highlight_node($this)));
+			}
+			$result = $this->left->evaluate() / $right;
+			break;
+		case EV_LEXEM_POWER:
+			$result = pow($this->left->evaluate(), $this->right->evaluate());
+			break;
+		default:
+			throw new Exc('Lexem is not a binary operation: '.$this->evaluator->highlight_node($this));
+		}
+		//echo $this->position.': '.$this->left->evaluate().$this->to_lexem().$this->right->evaluate().'='.$result.'<br>';
+		return $result;
+	}
+	
+	public function to_string($indent = 0)
+	{
+		$result = parent::to_string($indent);
+		if (isset($this->left))
+		{
+			$result .= "\n" . $this->left->to_string($indent + 1);
+		}
+		if (isset($this->right))
+		{
+			$result .= "\n" . $this->right->to_string($indent + 1);
+		}
+		return $result;
+	}
+	
+	public function optimize()
+	{
+		if (isset($this->left))
+		{
+			$left = $this->left->optimize();
+			if ($left)
+			{
+				$this->left = $left;
+			}
+		}
+		
+		if (isset($this->right))
+		{
+			$right = $this->right->optimize();
+			if ($right)
+			{
+				$this->right = $right;
+			}
+		}
+		
+		if ($left && $right)
+		{
+			$left->value = $this->evaluate();
+			return $left;
+		}
+		return NULL;
+	}
+}
+
+class EvTernaryOpNode extends EvNode
+{
+	public function __construct($evaluator, $type, $position, $prev)
+	{
+		parent::__construct($evaluator, $type, $position, $prev);
+	}
+	
+	public function complete()
+	{
+		if (!isset($this->first))
+		{
+			if (!$this->prev)
+			{
+				$this->evaluator->unexpectedLexem($this);
+			}
+			$this->first = $this->prev;
+			if ($this->first->prev)
+			{
+				$this->first->prev->next = $this;
+			}
+			else
+			{
+				$this->evaluator->node = $this;
+			}
+			$this->prev = $this->first->prev;
+			$this->first->prev = $this->first->next = NULL;
+		}
+		
+		if (!isset($this->second))
+		{
+			if (!$this->next)
+			{
+				$this->evaluator->unexpectedLexem($this);
+			}
+			$this->second = $this->next;
+			if ($this->second->next)
+			{
+				$this->second->next->prev = $this;
+			}
+			$this->next = $this->second->next;
+			$this->second->prev = $this->second->next = NULL;
+		}
+		
+		if (!isset($this->third))
+		{
+			if (!$this->next)
+			{
+				$this->evaluator->unexpectedLexem($this);
+			}
+			if ($this->next->type != EV_LEXEM_COLUMN)
+			{
+				$this->evaluator->unexpectedLexem($this->next);
+			}
+			if (!$this->next->next)
+			{
+				$this->evaluator->unexpectedLexem($this->next);
+			}
+			
+			$this->third = $this->next->next;
+			if ($this->third->next)
+			{
+				$this->third->next->prev = $this;
+			}
+			$this->next->next = $this->next->prev = NULL;
+			$this->next = $this->third->next;
+			$this->third->prev = $this->third->next = NULL;
+		}		
+	}
+	
+	public function is_complete()
+	{
+		return isset($this->first) && isset($this->second) && isset($this->third);
+	}
+	
+	public function evaluate()
+	{
+		if ($this->type != EV_LEXEM_QUESTION)
+		{
+			throw new Exc('Lexem is not a ternary operation: '.$this->evaluator->highlight_node($this));
+		}
+		return $this->first->evaluate() ? $this->second->evaluate() : $this->third->evaluate();
+	}
+	
+	public function to_string($indent = 0)
+	{
+		$result = parent::to_string($indent);
+		if (isset($this->first))
+		{
+			$result .= "\n" . $this->first->to_string($indent + 1);
+		}
+		if (isset($this->second))
+		{
+			$result .= "\n" . $this->second->to_string($indent + 1);
+		}
+		if (isset($this->third))
+		{
+			$result .= "\n" . $this->third->to_string($indent + 1);
+		}
+		return $result;
+	}
+	
+	public function optimize()
+	{
+		if (isset($this->first))
+		{
+			$first = $this->first->optimize();
+			if ($first)
+			{
+				$this->first = $first;
+			}
+		}
+		
+		if (isset($this->second))
+		{
+			$second = $this->second->optimize();
+			if ($second)
+			{
+				$this->second = $second;
+			}
+		}
+		
+		if (isset($this->thrird))
+		{
+			$thrird = $this->thrird->optimize();
+			if ($thrird)
+			{
+				$this->thrird = $thrird;
+			}
+		}
+		
+		if ($first && $second && $thrird)
+		{
+			$first->value = $this->evaluate();
+			return $first;
+		}
+		return NULL;
+	}
+}
+
+class EvFuncNode extends EvNode
+{
+	public function __construct($evaluator, $index, $position, $prev)
+	{
+		parent::__construct($evaluator, EV_LEXEM_FUNC, $position, $prev);
+		$this->index = $index;
+	}
+	
+	public function complete()
+	{
+		if (!$this->next)
+		{
+			$this->evaluator->unexpectedLexem($this);
+		}
+		
+		if ($this->next->type != EV_LEXEM_OPEN_BRACKET)
+		{
+			$this->evaluator->unexpectedLexem($this->next);
+		}
+		
+		$this->params = array();
+		$open_bracket = $this->next;
+		while ($open_bracket->type != EV_LEXEM_CLOSE_BRACKET)
+		{
+			$close_bracket = $this->find_close_bracket($open_bracket, EV_LEXEM_COMMA);
+			$next = $open_bracket->next;
+			if ($open_bracket->prev)
+			{
+				$open_bracket->prev->next = $close_bracket;
+			}
+			else
+			{
+				$this->evaluator->node = $close_bracket;
+			}
+			if ($close_bracket->prev)
+			{
+				$close_bracket->prev->next = NULL;
+			}
+			$close_bracket->prev = $open_bracket->prev;
+			
+			$open_bracket->prev = NULL;
+			if ($open_bracket->next)
+			{
+				$open_bracket->next->prev = NULL;
+			}
+				
+			if ($next != $close_bracket)
+			{
+				$this->params[] = $open_bracket->next;
+			}
+			
+			$open_bracket = $close_bracket;
+		}
+		
+		if ($open_bracket->prev)
+		{
+			$open_bracket->prev->next = $open_bracket->next;
+		}
+		else
+		{
+			$this->evaluator->node = $open_bracket->next;
+		}
+		if ($open_bracket->next)
+		{
+			$open_bracket->next->prev = $open_bracket->prev;
+		}
+		$open_bracket->prev = $open_bracket->next = NULL;
+		
+		$original_node = $this->evaluator->node;
+		for ($i = 0; $i < count($this->params); ++$i)
+		{
+			$this->evaluator->node = $this->params[$i];
+			$this->evaluator->convert_to_tree();
+			$this->params[$i] = $this->evaluator->node;
+		}
+		$this->evaluator->node = $original_node;
+	}
+	
+	public function is_complete()
+	{
+		return isset($this->params);
+	}
+	
+	public function evaluate()
+	{
+		$result = $this->evaluator->functions[$this->index]->evaluate($this->evaluator, $this->params);
+		// echo $this->position.': '.$this->evaluator->functions[$this->index]->name();
+		// $delim ='(';
+		// foreach($this->params as $param)
+		// {
+			// echo $delim.$param->evaluate();
+			// $delim = ',';
+		// }
+		// echo ')='.$result.'<br>';
+		return $result;
+	}
+	
+	public function to_string($indent = 0)
+	{
+		$result = parent::to_string($indent);
+		if (isset($this->params))
+		{
+			foreach ($this->params as $param)
+			{
+				$result .= "\n" . $param->to_string($indent + 1);
+			}
+		}
+		return $result;
+	}
+	
+	public function optimize()
+	{
+		return NULL;
+	}
+}
+
+class EvBracketNode extends EvNode
+{
+	public function __construct($evaluator, $position, $prev)
+	{
+		parent::__construct($evaluator, EV_LEXEM_OPEN_BRACKET, $position, $prev);
+	}
+	
+	public function complete()
+	{
+		if ($this->type != EV_LEXEM_OPEN_BRACKET)
+		{
+			$this->evaluator->unexpectedLexem($this->next);
+		}
+		
+		$close_bracket = $this->find_close_bracket($this);
+		
+		$prev = $this->prev;
+		if ($prev)
+		{
+			$prev->next = $close_bracket->next;
+		}
+		else
+		{
+			$this->evaluator->node = $close_bracket->next;
+		}
+		if ($close_bracket->next)
+		{
+			$close_bracket->next->prev = $prev;
+		}
+		
+		$this->next->prev = NULL;
+		if ($close_bracket->prev)
+		{
+			$close_bracket->prev->next = NULL;
+		}
+		
+		$original_node = $this->evaluator->node;
+		$this->evaluator->node = $this->next;
+		$this->evaluator->convert_to_tree();
+		
+		$this->evaluator->node->prev = $prev;
+		if ($prev)
+		{
+			$this->evaluator->node->next = $prev->next;
+			$this->evaluator->node->prev = $prev;
+			if ($prev->next)
+			{
+				$prev->next->prev = $this->evaluator->node;
+			}
+			$prev->next = $this->evaluator->node;
+		}
+		else if ($original_node)
+		{
+			$this->evaluator->node->next = $original_node;
+			$this->evaluator->node->prev = NULL;
+			$original_node->prev = $this->evaluator->node;
+			$original_node = $this->evaluator->node;
+		}
+		else
+		{
+			$original_node = $this->evaluator->node;
+			$original_node->next = $original_node->prev = NULL;
+		}
+		$this->evaluator->node = $original_node;
+	}
+}
+
+//------------------------------------------------------------------------------------------------
+// Evaluator
+//------------------------------------------------------------------------------------------------
+$_ev_default_functions = array(new EvFuncRound(), new EvFuncFloor(), new EvFuncCeil(), new EvFuncLog(), new EvFuncVar());
+
+class Evaluator
+{
+	public function __construct($expr, $functions = NULL)
+	{
+		global $_ev_default_functions;
+		if (is_null($functions))
+		{
+			$this->functions = &$_ev_default_functions;
+		}
+		else
+		{
+			$this->functions = &$functions;
+		}
+		$this->vars = array();
+		$this->parse($expr);
+	}
+	
+	public function parse($expr)
+	{
+		$this->expr = $expr;
+		
+		$index = 0;
+		$node = $this->node = $this->parse_next_lexem($expr, $index, NULL);
+		while ($node)
+		{
+			$node = $this->parse_next_lexem($expr, $index, $node);
+		}
+		//$this->print_nodes();
+		$this->convert_to_tree();
+		//$this->print_nodes();
+		$this->optimize();
+	}
+	
+	public function evaluate($vars = NULL)
+	{
+		if (!isset($this->node))
+		{
+			return 0;
+		}
+		if ($vars)
+		{
+			$this->set_vars($vars);
+		}
+		return $this->node->evaluate();
+	}
+	
+	public function set_vars(&$vars)
+	{
+		$v = $this->vars = $vars;
+		$this->vars_deepth = 0;
+		while (is_array($v))
+		{
+			++$this->vars_deepth;
+			if (count($v) == 0)
+			{
+				throw new Exc('Array of vars cannot be empty.');
+			}
+			$v = $v[0];
+		}
+	}
+	
+	public function optimize()
+	{
+		for ($node = $this->node; $node; $node = $node->next)
+		{
+			$n = $node->optimize();
+			if ($n)
+			{
+				$n->prev = $node->prev;
+				$n->next = $node->next;
+				if ($n->prev)
+				{
+					$n->prev->next = $n;
+				}
+				else
+				{
+					$this->node = $n;
+				}
+				if ($n->next)
+				{
+					$n->next->prev = $n;
+				}
+				$node = $n;
+			}
+		}
+	}
+	
+	public function highlight_node($node)
+	{
+		$len = strlen($node->to_lexem());
+		return 
+			substr($this->expr, 0, $node->position).
+			'<b><u><big>'.
+			substr($this->expr, $node->position, $len).
+			'</big></u></b>'.
+			substr($this->expr, $node->position + $len);
+	}
+	
+	public function unexpectedLexem($node)
+	{
+		throw new Exc(get_label('Unexpected lexem: [0]', $this->highlight_node($node)));
+	}
+	
+	private function find_node($type1, $type2)
+	{
+		for ($node = $this->node; $node; $node = $node->next)
+		{
+			if (!$node->is_complete() && ($node->type == $type1 || $node->type == $type2))
+			{
+				return $node;
+			}
+		}
+		return NULL;
+	}
+	
+	private function complete_lexems($type1, $type2 = EV_LEXEM_INVALID)
+	{
+		while (!is_null($node = $this->find_node($type1, $type2)))
+		{
+			$node->complete();
+		}
+		return is_null($this->node->next) && $this->node->is_complete();
+	}
+	
+	public function convert_to_tree()
+	{
+		if ($this->complete_lexems(EV_LEXEM_FUNC)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_OPEN_BRACKET)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_UNARY_MINUS)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_POWER)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_MULTIPLY, EV_LEXEM_DIVIDE)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_PLUS, EV_LEXEM_MINUS)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_QUESTION)) { return; }
+		Evaluator::unexpectedLexem($this->node);
+	}
+	
+	private function parse_next_lexem($expr, &$index, $prevNode)
+	{
+		while ($index < strlen($expr))
+		{
+			$c = $expr[$index];
+			if ($c != ' ' && $c != "\t")
+			{
+				break;
+			}
+			++$index;
+		}
+		
+		if ($index >= strlen($expr))
+		{
+			return NULL;
+		}
+		
+		$node = NULL;
+		if (is_numeric($c))
+		{
+			$position = $index;
+			$value = (int)$c;
+			while (++$index < strlen($expr))
+			{
+				$c = $expr[$index];
+				if (!is_numeric($c))
+				{
+					break;
+				}
+				$value = $value * 10 + (int)$c;
+			}
+			if ($c == '.')
+			{
+				$fraction = 10;
+				while (++$index < strlen($expr))
+				{
+					$c = $expr[$index];
+					if (!is_numeric($c))
+					{
+						break;
+					}
+					$value += (float)$c / $fraction;
+					$fraction *= 10;
+				}
+			}
+			$node = new EvValueNode($this, $value, $position, $prevNode);
+		}
+		else if ($c == '+')
+		{
+			$node = new EvBinaryOpNode($this, EV_LEXEM_PLUS, $index, $prevNode);
+			++$index;
+		}
+		else if ($c == '-')
+		{
+			if ($prevNode && $prevNode->is_complete())
+			{
+				$node = new EvBinaryOpNode($this, EV_LEXEM_MINUS, $index, $prevNode);
+			}
+			else
+			{
+				$node = new EvUnaryOpNode($this, EV_LEXEM_UNARY_MINUS, $index, $prevNode);
+			}
+			++$index;
+		}
+		else if ($c == '*')
+		{
+			$node = new EvBinaryOpNode($this, EV_LEXEM_MULTIPLY, $index, $prevNode);
+			++$index;
+		}
+		else if ($c == '/')
+		{
+			$node = new EvBinaryOpNode($this, EV_LEXEM_DIVIDE, $index, $prevNode);
+			++$index;
+		}
+		else if ($c == '^')
+		{
+			$node = new EvBinaryOpNode($this, EV_LEXEM_POWER, $index, $prevNode);
+			++$index;
+		}
+		else if ($c == '(')
+		{
+			$node = new EvBracketNode($this, $index, $prevNode);
+			++$index;
+		}
+		else if ($c == ')')
+		{
+			$node = new EvNode($this, EV_LEXEM_CLOSE_BRACKET, $index, $prevNode);
+			++$index;
+		}
+		else if ($c == ',')
+		{
+			$node = new EvNode($this, EV_LEXEM_COMMA, $index, $prevNode);
+			++$index;
+		}
+		else if ($c == '?')
+		{
+			$node = new EvTernaryOpNode($this, EV_LEXEM_QUESTION, $index, $prevNode);
+			++$index;
+		}
+		else if ($c == ':')
+		{
+			$node = new EvNode($this, EV_LEXEM_COLUMN, $index, $prevNode);
+			++$index;
+		}
+		else
+		{
+			for ($i = 0; $i < count($this->functions); ++$i)
+			{
+				$func_name = $this->functions[$i]->name();
+				if (stripos($expr, $func_name, $index) === $index)
+				{
+					$index += strlen($func_name);
+					$node = new EvFuncNode($this, $i, $index, $prevNode);
+				}
+			}
+			if (is_null($node))
+			{
+				throw new Exc(get_label('Unexpected lexem at position [0]', $index));
+			}
+		}
+		return $node;
+	}
+	
+	public function print_nodes()
+	{
+		echo '-----------------------------------------<br>';
+		if (!isset($this->node))
+		{
+			return;
+		}
+		
+		$node = $this->node;
+		echo '<pre>';
+		while ($node)
+		{
+			echo $node->to_string() . "\n";
+			$node = $node->next;
+		}
+		echo '</pre>';
+	}
+}
+
+?>

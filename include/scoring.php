@@ -805,6 +805,10 @@ function add_player_score($player, $player_stats, $scoring, $game_id, $game_end_
 					{
 						$points = max(min($player_stats->killed_first_count * $policy->fiim_first_night_score / $points, $policy->fiim_first_night_score), 0);
 					}
+					else
+					{
+						$points = $policy->fiim_first_night_score;
+					}
 				}
 			}
 			else if (isset($policy->extra_points_weight))

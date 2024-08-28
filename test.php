@@ -1,4 +1,7 @@
 <?php
+
+require_once 'include/evaluator.php';
+
 // if(isset($GLOBALS))
 // {
 	// echo '<pre>';
@@ -30,35 +33,49 @@
 	// echo '</pre>';
 // }
 
-$sql = 'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, nu.name, u.flags, c.id, c.name, c.flags
-					FROM players p
-					JOIN users u ON u.id = p.user_id
-					JOIN names nu ON nu.id = u.name_id AND (nu.langs & 1) <> 0
-					LEFT OUTER JOIN clubs c ON c.id = u.club_id 
-					WHERE p.game_id = (
-						SELECT p1.game_id 
-						FROM players p1 
-						WHERE p1.user_id = p.user_id AND p1.game_end_time <= ?
-						ORDER BY p1.game_end_time DESC, p1.game_id DESC
-						LIMIT 1)
-					ORDER BY rating DESC, p.user_id DESC 
-					LIMIT 100';
-$sql1 = 'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, nu.name, u.flags, c.id, c.name, c.flags ' .
-					'FROM players p ' .
-					'JOIN users u ON u.id = p.user_id ' .
-					'JOIN names nu ON nu.id = u.name_id AND (nu.langs & 1) <> 0 ' .
-					'LEFT OUTER JOIN clubs c ON c.id = u.club_id ' .
-					'WHERE p.game_id = ( ' .
-						'SELECT p1.game_id ' .
-						'FROM players p1 ' .
-						'WHERE p1.user_id = p.user_id AND p1.game_end_time <= ? ' .
-						'ORDER BY p1.game_end_time DESC, p1.game_id DESC ' .
-						'LIMIT 1) ' .
-					'ORDER BY rating DESC, p.user_id DESC ' .
-					'LIMIT 100';
-echo '<pre>' . $sql . '</pre>';
-echo strlen($sql);
-echo '<pre>' . $sql1 . '</pre>';
-echo strlen($sql1);
+// $sql = 'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, nu.name, u.flags, c.id, c.name, c.flags
+					// FROM players p
+					// JOIN users u ON u.id = p.user_id
+					// JOIN names nu ON nu.id = u.name_id AND (nu.langs & 1) <> 0
+					// LEFT OUTER JOIN clubs c ON c.id = u.club_id 
+					// WHERE p.game_id = (
+						// SELECT p1.game_id 
+						// FROM players p1 
+						// WHERE p1.user_id = p.user_id AND p1.game_end_time <= ?
+						// ORDER BY p1.game_end_time DESC, p1.game_id DESC
+						// LIMIT 1)
+					// ORDER BY rating DESC, p.user_id DESC 
+					// LIMIT 100';
+// $sql1 = 'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, nu.name, u.flags, c.id, c.name, c.flags ' .
+					// 'FROM players p ' .
+					// 'JOIN users u ON u.id = p.user_id ' .
+					// 'JOIN names nu ON nu.id = u.name_id AND (nu.langs & 1) <> 0 ' .
+					// 'LEFT OUTER JOIN clubs c ON c.id = u.club_id ' .
+					// 'WHERE p.game_id = ( ' .
+						// 'SELECT p1.game_id ' .
+						// 'FROM players p1 ' .
+						// 'WHERE p1.user_id = p.user_id AND p1.game_end_time <= ? ' .
+						// 'ORDER BY p1.game_end_time DESC, p1.game_id DESC ' .
+						// 'LIMIT 1) ' .
+					// 'ORDER BY rating DESC, p.user_id DESC ' .
+					// 'LIMIT 100';
+// echo '<pre>' . $sql . '</pre>';
+// echo strlen($sql);
+// echo '<pre>' . $sql1 . '</pre>';
+// echo strlen($sql1);
 
+// phpinfo();
+
+try
+{
+	$e = new Evaluator('-var(2) / 12.5 * var(1, 1) + 14 * 2^floor (var(1) / 7)');
+	//$e = new Evaluator('3^3+4*(2/1)');
+	$e->print_nodes();
+	echo '<p>.....................................<br>'.$e->evaluate(array(array(2,4,6),array(8,10,12)));
+	// -6 / 12.5 * 10 + 14 * 2^round (4 / 7) = -4.8+14*2=9.2
+}
+catch (Exception $e)
+{
+	echo 'Error: ' . $e->getMessage();
+}
 ?>
