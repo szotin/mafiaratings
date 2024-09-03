@@ -655,9 +655,32 @@ class ApiPage extends OpsApiPageBase
 			
 			create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code);
 		}
-		else if ($rules_code != $old_rules_code)
+		else 
 		{
-			Db::exec(get_label('round'), 'UPDATE events SET rules = ? WHERE tournament_id = ?', $rules_code, $tournament_id);
+			if (
+				$rules_code != $old_rules_code ||
+				$scoring_id != $old_scoring_id || 
+				$scoring_version != $old_scoring_version)
+			{
+				Db::exec(get_label('round'), 'UPDATE events SET rules = ?, scoring_id = ?, scoring_version = ?, scoring_option = ? WHERE tournament_id = ?', $rules_code, scoring_id, $scoring_version, $tournament_id);
+			}
+			
+			if ($scoring_options != $old_scoring_options)
+			{
+				$ops = json_decode($scoring_options);
+				$old_ops = json_decode($old_scoring_options);
+				if (isset($ops->flags) && (!isset($old_ops->flags) || $ops->flags != $old_ops->flags))
+				{
+					$query = new DbQuery('SELECT id, scoring_options FROM events WHERE tournament_id = ?', $tournament_id);
+					while ($row = $query->next())
+					{
+						list ($round_id, $round_ops) = $row;
+						$round_ops = json_decode($round_ops);
+						$round_ops->flags = $ops->flags;
+						Db::exec(get_label('round'), 'UPDATE events SET scoring_options = ? WHERE id = ?', json_encode($round_ops), $round_id);
+					}
+				}
+			}
 		}
 		
 		// update tournament
@@ -667,13 +690,6 @@ class ApiPage extends OpsApiPageBase
 			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $rules_code, $tournament_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
-			if ($scoring_id != $old_scoring_id || $scoring_version != $old_scoring_version)
-			{
-				Db::exec(
-					get_label('round'),
-					'UPDATE events SET scoring_id = ?, scoring_version = ? WHERE tournament_id = ?', $scoring_id, $scoring_version, $tournament_id);
-			}
-			
 			$log_details = new stdClass();
 			if ($name != $old_name)
 			{

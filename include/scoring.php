@@ -196,10 +196,14 @@ function format_coeff($coeff, $sign_digits = 3)
 	return round($coeff, $sign_digits - floor(log10($coeff)) - 1);
 }
 
-function format_score($score, $zeroes = true)
+function format_score($score, $zeroes = false)
 {
-	if ($score == 0 && !$zeroes)
+	if ($score == 0)
 	{
+		if ($zeroes)
+		{
+			return 0;
+		}
 		return '';
 	}
 	
@@ -214,15 +218,35 @@ function format_score($score, $zeroes = true)
 		$int_score /= 10;
 	}
 	
-	if (($int_score % 10) != 0)
+	$result = number_format($score, 3);
+	$pos = -1;
+	for ($i = strlen($result) - 1; $i >= 0 && $result[$i] == '0'; --$i)
 	{
-		return number_format($score, 2);
+		$pos = $i;
 	}
-	else if (($int_score % 100) != 0)
+	if ($pos >= 0)
 	{
-		return number_format($score, 1);
+		if ($result[$i] == '.')
+		{
+			--$pos;
+		}
+		$result = substr($result, 0, $pos);
 	}
-	return number_format($score);
+	return $result;
+	
+	// if (($int_score % 10) != 0)
+	// {
+		// return number_format($score, 3);
+	// }
+	// else if (($int_score % 100) != 0)
+	// {
+		// return number_format($score, 2);
+	// }
+	// else if (($int_score % 1000) != 0)
+	// {
+		// return number_format($score, 1);
+	// }
+	// return number_format($score);
 }
 
 function format_rating($rating)
