@@ -164,10 +164,10 @@ class Page extends TournamentPageBase
 			echo '</td><td><b>' . $team->name . '</b></td>';
 			echo '<td align="center" class="dark"' . score_title($team->points, $team->raw_points, 1) . '>' . format_score($team->points) . '</td>';
 			echo '<td align="center"' . score_title($team->main_points, $team->raw_main_points, 1) . '>' . format_score($team->main_points) . '</td>';
-			echo '<td align="center"' . score_title($team->legacy_points, $team->raw_legacy_points, 1) . '>' . format_score($team->legacy_points) . '</td>';
-			echo '<td align="center"' . score_title($team->extra_points, $team->raw_extra_points, 1) . '>' . format_score($team->extra_points) . '</td>';
-			echo '<td align="center"' . score_title($team->penalty_points, $team->raw_penalty_points, 1) . '>' . format_score($team->penalty_points) . '</td>';
-			echo '<td align="center"' . score_title($team->night1_points, $team->raw_night1_points, 1) . '>' . format_score($team->night1_points) . '</td>';
+			echo '<td align="center"' . score_title($team->legacy_points, $team->raw_legacy_points, 1) . '>' . format_score($team->legacy_points, false) . '</td>';
+			echo '<td align="center"' . score_title($team->extra_points, $team->raw_extra_points, 1) . '>' . format_score($team->extra_points, false) . '</td>';
+			echo '<td align="center"' . score_title($team->penalty_points, $team->raw_penalty_points, 1) . '>' . format_score($team->penalty_points, false) . '</td>';
+			echo '<td align="center"' . score_title($team->night1_points, $team->raw_night1_points, 1) . '>' . format_score($team->night1_points, false) . '</td>';
 			echo '<td align="center">' . $team->games_count . '</td>';
 			echo '<td align="center">' . $team->wins . '</td>';
 			echo '</tr>';
@@ -325,10 +325,10 @@ class Page extends TournamentPageBase
 			echo '</td>';
 			echo '<td align="center" class="' . $highlight . '"' . score_title($player->points, $player->raw_points, $player->normalization) . '>' . format_score($player->points) . '</td>';
 			echo '<td align="center"' . score_title($player->main_points, $player->raw_main_points, $player->normalization) . '>' . format_score($player->main_points) . '</td>';
-			echo '<td align="center"' . score_title($player->legacy_points, $player->raw_legacy_points, $player->normalization) . '>' . format_score($player->legacy_points) . '</td>';
-			echo '<td align="center"' . score_title($player->extra_points, $player->raw_extra_points, $player->normalization) . '>' . format_score($player->extra_points) . '</td>';
-			echo '<td align="center"' . score_title($player->penalty_points, $player->raw_penalty_points, $player->normalization) . '>' . format_score($player->penalty_points) . '</td>';
-			echo '<td align="center"' . score_title($player->night1_points, $player->raw_night1_points, $player->normalization) . '>' . format_score($player->night1_points) . '</td>';
+			echo '<td align="center"' . score_title($player->legacy_points, $player->raw_legacy_points, $player->normalization) . '>' . format_score($player->legacy_points, false) . '</td>';
+			echo '<td align="center"' . score_title($player->extra_points, $player->raw_extra_points, $player->normalization) . '>' . format_score($player->extra_points, false) . '</td>';
+			echo '<td align="center"' . score_title($player->penalty_points, $player->raw_penalty_points, $player->normalization) . '>' . format_score($player->penalty_points, false) . '</td>';
+			echo '<td align="center"' . score_title($player->night1_points, $player->raw_night1_points, $player->normalization) . '>' . format_score($player->night1_points, false) . '</td>';
 			echo '<td align="center">' . $player->games_count . '</td>';
 			echo '<td align="center">' . $player->wins . '</td>';
 			if ($this->has_normalizer)
@@ -477,8 +477,8 @@ class Page extends TournamentPageBase
 			echo '</td>';
 			echo '<td align="center" class="' . $highlight . '">' . format_score($sum) . '</td>';
 			echo '<td align="center">' . format_score($main_points) . '</td>';
-			echo '<td align="center">' . (is_null($bonus_points) ? '' : format_score($bonus_points)) . '</td>';
-			echo '<td align="center">' . (is_null($shot_points) ? '' : format_score($shot_points)) . '</td>';
+			echo '<td align="center">' . (is_null($bonus_points) ? '' : format_score($bonus_points, false)) . '</td>';
+			echo '<td align="center">' . (is_null($shot_points) ? '' : format_score($shot_points, false)) . '</td>';
 			echo '<td align="center">' . (is_null($games_count) ? '' : $games_count) . '</td>';
 			foreach ($series as $s)
 			{

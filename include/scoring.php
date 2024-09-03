@@ -196,7 +196,7 @@ function format_coeff($coeff, $sign_digits = 3)
 	return round($coeff, $sign_digits - floor(log10($coeff)) - 1);
 }
 
-function format_score($score, $zeroes = false)
+function format_score($score, $zeroes = true)
 {
 	if ($score == 0)
 	{
