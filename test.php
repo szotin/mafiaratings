@@ -68,10 +68,21 @@ require_once 'include/evaluator.php';
 
 try
 {
-	$e = new Evaluator('-var(2) / 12.5 * var(1, 1) + 14 * 2^floor (var(1) / 7)');
-	//$e = new Evaluator('3^3+4*(2/1)');
+	$functions = array(
+		new EvFuncRound(), 
+		new EvFuncFloor(), 
+		new EvFuncCeil(), 
+		new EvFuncLog(), 
+		new EvFuncMin(), 
+		new EvFuncMax(), 
+		new EvFuncParam('var'));
+
+	//$e = new Evaluator('-var(2) / 12.5 * var(1, 1) + 14 * 2^floor (var(1) / 7)');
+	$e = new Evaluator('var(0) != var(1) ? var(2)/var(3) : var(3)/var(2)', $functions);
 	$e->print_nodes();
-	echo '<p>.....................................<br>'.$e->evaluate(array(array(2,4,6),array(8,10,12)));
+	
+	$e->var = array(0, 1, 2, 3, 4);
+	echo '<p>.....................................<br>'.$e->evaluate();
 	// -6 / 12.5 * 10 + 14 * 2^round (4 / 7) = -4.8+14*2=9.2
 }
 catch (Exception $e)

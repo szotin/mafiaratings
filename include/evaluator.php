@@ -5,40 +5,47 @@ require_once __DIR__ . '/localization.php';
 
 define('EV_LEXEM_VALUE', 0);
 define('EV_LEXEM_UNARY_MINUS', 1);
-define('EV_LEXEM_PLUS', 2);
-define('EV_LEXEM_MINUS', 3);
-define('EV_LEXEM_MULTIPLY', 4);
-define('EV_LEXEM_DIVIDE', 5);
-define('EV_LEXEM_POWER', 6);
-define('EV_LEXEM_OPEN_BRACKET', 7);
-define('EV_LEXEM_CLOSE_BRACKET', 8);
-define('EV_LEXEM_COMMA', 9);
-define('EV_LEXEM_QUESTION', 10);
-define('EV_LEXEM_COLUMN', 11);
-define('EV_LEXEM_FUNC', 12);
-define('EV_LEXEM_INVALID', 13);
+define('EV_LEXEM_NOT', 2);
+define('EV_LEXEM_PLUS', 3);
+define('EV_LEXEM_MINUS', 4);
+define('EV_LEXEM_MULTIPLY', 5);
+define('EV_LEXEM_DIVIDE', 6);
+define('EV_LEXEM_POWER', 7);
+define('EV_LEXEM_OPEN_BRACKET', 8);
+define('EV_LEXEM_CLOSE_BRACKET', 9);
+define('EV_LEXEM_COMMA', 10);
+define('EV_LEXEM_QUESTION', 11);
+define('EV_LEXEM_COLUMN', 12);
+define('EV_LEXEM_FUNC', 13);
+define('EV_LEXEM_GREATER', 14);
+define('EV_LEXEM_LESS', 15);
+define('EV_LEXEM_GREATER_EQUAL', 16);
+define('EV_LEXEM_LESS_EQUAL', 17);
+define('EV_LEXEM_EQUAL', 18); // -
+define('EV_LEXEM_NOT_EQUAL', 19); // -
+define('EV_LEXEM_INVALID', 20);
 
 //------------------------------------------------------------------------------------------------
 // Functions
 //------------------------------------------------------------------------------------------------
 abstract class EvFunction
 {
-	public abstract function evaluate($evaluator, $params);
+	public abstract function evaluate($evaluator, $args);
 	public abstract function name();
 }
 
 class EvFuncRound extends EvFunction
 {
-	public function evaluate($evaluator, $params)
+	public function evaluate($evaluator, $args)
 	{
-		switch (count($params))
+		switch (count($args))
 		{
 		case 0:
 			return 0;
 		case 1:
-			return round($params[0]->evaluate());
+			return round($args[0]->evaluate());
 		default:
-			return round($params[0]->evaluate(), $params[1]->evaluate());
+			return round($args[0]->evaluate(), $args[1]->evaluate());
 		}
 	}
 	
@@ -50,11 +57,11 @@ class EvFuncRound extends EvFunction
 
 class EvFuncFloor extends EvFunction
 {
-	public function evaluate($evaluator, $params)
+	public function evaluate($evaluator, $args)
 	{
-		if (isset($params[0]))
+		if (isset($args[0]))
 		{
-			return floor($params[0]->evaluate());
+			return floor($args[0]->evaluate());
 		}
 		return 0;
 	}
@@ -67,11 +74,11 @@ class EvFuncFloor extends EvFunction
 
 class EvFuncCeil extends EvFunction
 {
-	public function evaluate($evaluator, $params)
+	public function evaluate($evaluator, $args)
 	{
-		if (isset($params[0]))
+		if (isset($args[0]))
 		{
-			return ceil($params[0]->evaluate());
+			return ceil($args[0]->evaluate());
 		}
 		return 0;
 	}
@@ -84,16 +91,16 @@ class EvFuncCeil extends EvFunction
 
 class EvFuncLog extends EvFunction
 {
-	public function evaluate($evaluator, $params)
+	public function evaluate($evaluator, $args)
 	{
-		switch (count($params))
+		switch (count($args))
 		{
 		case 0:
 			return 0;
 		case 1:
-			return log($params[0]->evaluate());
+			return log($args[0]->evaluate());
 		default:
-			return log($params[0]->evaluate(), $params[1]->evaluate());
+			return log($args[0]->evaluate(), $args[1]->evaluate());
 		}
 	}
 	
@@ -103,41 +110,100 @@ class EvFuncLog extends EvFunction
 	}
 }
 
-class EvFuncVar extends EvFunction
+class EvFuncMin extends EvFunction
 {
-	public function evaluate($evaluator, $params)
+	public function evaluate($evaluator, $args)
 	{
-		if (!isset($evaluator->vars) || !isset($evaluator->vars_deepth))
+		$result = 2000000000;
+		foreach ($args as $arg)
+		{
+			$result = min($result, $arg->evaluate());
+		}
+		return $result;
+	}
+	
+	public function name()
+	{
+		return 'min';
+	}
+}
+
+class EvFuncMax extends EvFunction
+{
+	public function evaluate($evaluator, $args)
+	{
+		$result = -2000000000;
+		foreach ($args as $arg)
+		{
+			$result = max($result, $arg->evaluate());
+		}
+		return $result;
+	}
+	
+	public function name()
+	{
+		return 'max';
+	}
+}
+
+class EvFuncParam extends EvFunction
+{
+	public function __construct($name)
+	{
+		$this->name = $name;
+	}
+	
+	public function evaluate($evaluator, $args)
+	{
+		$param_name = $this->name;
+		if (!isset($evaluator->$param_name))
 		{
 			return 0;
 		}
 		
-		$var = $evaluator->vars;
-		for ($i = $evaluator->vars_deepth - 1; $i >= count($params); --$i)
+		$param = $evaluator->$param_name;
+		for ($i = 0; $i < count($args); ++$i)
 		{
-			if (count($var) == 0)
+			if (is_array($param))
 			{
-				throw new Exc('Array of vars cannot be empty.');
+				$param_count = count($param); 
+				if ($param_count == 0)
+				{
+					return 0;
+				}
+				
+				$arg = floor($args[$i]->evaluate());
+				if ($arg < 0)
+				{
+					$arg = 0;
+				}
+				else if ($arg >= $param_count)
+				{
+					$arg = $param_count - 1;
+				}
+				$param = $param[$arg];
 			}
-			$var = $var[0];
+			else
+			{
+				return $param;
+			}
 		}
 		
-		for (; $i >= 0; --$i)
+		while (is_array($param))
 		{
-			$param = floor($params[$i]->evaluate());
-			if (count($var) <= $param)
+			if (count($param) == 0)
 			{
-				throw new Exc(get_label('Var param [0] is out of bounds.', $param));
+				return 0;
 			}
-			$var = $var[$param];
+			$param = $param[0];
 		}
-		return $var;
+		return $param;
 	}
 	
 	
 	public function name()
 	{
-		return 'var';
+		return $this->name;
 	}
 }
 
@@ -182,11 +248,25 @@ class EvNode
 		{
 		case EV_LEXEM_VALUE:
 			return $this->value;
+		case EV_LEXEM_EQUAL:
+			return '=';
+		case EV_LEXEM_NOT_EQUAL:
+			return '!=';
+		case EV_LEXEM_GREATER:
+			return '>';
+		case EV_LEXEM_LESS:
+			return '<';
+		case EV_LEXEM_GREATER_EQUAL:
+			return '>=';
+		case EV_LEXEM_LESS_EQUAL:
+			return '<=';
 		case EV_LEXEM_PLUS:
 			return '+';
 		case EV_LEXEM_UNARY_MINUS:
 		case EV_LEXEM_MINUS:
 			return '-';
+		case EV_LEXEM_NOT:
+			return '!';
 		case EV_LEXEM_MULTIPLY:
 			return '*';
 		case EV_LEXEM_DIVIDE:
@@ -221,12 +301,33 @@ class EvNode
 		case EV_LEXEM_VALUE:
 			$result .= $this->value;
 			break;
+		case EV_LEXEM_EQUAL:
+			$result .= '=';
+			break;
+		case EV_LEXEM_NOT_EQUAL:
+			$result .= '!=';
+			break;
+		case EV_LEXEM_GREATER:
+			$result .= '>';
+			break;
+		case EV_LEXEM_LESS:
+			$result .= '<';
+			break;
+		case EV_LEXEM_GREATER_EQUAL:
+			$result .= '>=';
+			break;
+		case EV_LEXEM_LESS_EQUAL:
+			$result .= '<=';
+			break;
 		case EV_LEXEM_PLUS:
 			$result .= '+';
 			break;
 		case EV_LEXEM_UNARY_MINUS:
 		case EV_LEXEM_MINUS:
 			$result .= '-';
+			break;
+		case EV_LEXEM_NOT:
+			$result .= '!';
 			break;
 		case EV_LEXEM_MULTIPLY:
 			$result .= '*';
@@ -276,16 +377,16 @@ class EvNode
 		$inner_bracket = 0;
 		for ($node = $open_bracket->next; $node; $node = $node->next)
 		{
-			if ($inner_bracket > 0)
+			if ($node->type == EV_LEXEM_OPEN_BRACKET)
+			{
+				++$inner_bracket;
+			}
+			else if ($inner_bracket > 0)
 			{
 				if ($node->type == EV_LEXEM_CLOSE_BRACKET)
 				{
 					--$inner_bracket;
 				}
-			}
-			else if ($node->type == EV_LEXEM_OPEN_BRACKET)
-			{
-				++$inner_bracket;
 			}
 			else if ($node->type == EV_LEXEM_CLOSE_BRACKET || $node->type == $alt_type)
 			{
@@ -331,6 +432,10 @@ class EvUnaryOpNode extends EvNode
 			{
 				$this->evaluator->unexpectedLexem($this);
 			}
+			if (!$this->next->is_complete())
+			{
+				$this->next->complete();
+			}
 			$this->child = $this->next;
 			if ($this->child->next)
 			{
@@ -348,11 +453,14 @@ class EvUnaryOpNode extends EvNode
 	
 	public function evaluate()
 	{
-		if ($this->type != EV_LEXEM_UNARY_MINUS)
+		switch ($this->type)
 		{
-			throw new Exc('Lexem is not a unary operation: '.$this->evaluator->highlight_node($this));
+		case EV_LEXEM_UNARY_MINUS:
+			return -$this->child->evaluate();
+		case EV_LEXEM_NOT:
+			return $this->child->evaluate() ? 0 : 1;
 		}
-		return -$this->child->evaluate();
+		throw new Exc('Lexem is not a unary operation: '.$this->evaluator->highlight_node($this));
 	}
 	
 	public function to_string($indent = 0)
@@ -435,6 +543,24 @@ class EvBinaryOpNode extends EvNode
 		$result = 0;
 		switch ($this->type)
 		{
+		case EV_LEXEM_EQUAL:
+			$result = $this->left->evaluate() == $this->right->evaluate() ? 1 : 0;
+			break;
+		case EV_LEXEM_NOT_EQUAL:
+			$result = $this->left->evaluate() != $this->right->evaluate() ? 1 : 0;
+			break;
+		case EV_LEXEM_GREATER:
+			$result = $this->left->evaluate() > $this->right->evaluate() ? 1 : 0;
+			break;
+		case EV_LEXEM_LESS:
+			$result = $this->left->evaluate() < $this->right->evaluate() ? 1 : 0;
+			break;
+		case EV_LEXEM_GREATER_EQUAL:
+			$result = $this->left->evaluate() >= $this->right->evaluate() ? 1 : 0;
+			break;
+		case EV_LEXEM_LESS_EQUAL:
+			$result = $this->left->evaluate() <= $this->right->evaluate() ? 1 : 0;
+			break;
 		case EV_LEXEM_PLUS:
 			$result = $this->left->evaluate() + $this->right->evaluate();
 			break;
@@ -664,7 +790,7 @@ class EvFuncNode extends EvNode
 			$this->evaluator->unexpectedLexem($this->next);
 		}
 		
-		$this->params = array();
+		$this->args = array();
 		$open_bracket = $this->next;
 		while ($open_bracket->type != EV_LEXEM_CLOSE_BRACKET)
 		{
@@ -692,7 +818,7 @@ class EvFuncNode extends EvNode
 				
 			if ($next != $close_bracket)
 			{
-				$this->params[] = $open_bracket->next;
+				$this->args[] = $open_bracket->next;
 			}
 			
 			$open_bracket = $close_bracket;
@@ -713,28 +839,28 @@ class EvFuncNode extends EvNode
 		$open_bracket->prev = $open_bracket->next = NULL;
 		
 		$original_node = $this->evaluator->node;
-		for ($i = 0; $i < count($this->params); ++$i)
+		for ($i = 0; $i < count($this->args); ++$i)
 		{
-			$this->evaluator->node = $this->params[$i];
+			$this->evaluator->node = $this->args[$i];
 			$this->evaluator->convert_to_tree();
-			$this->params[$i] = $this->evaluator->node;
+			$this->args[$i] = $this->evaluator->node;
 		}
 		$this->evaluator->node = $original_node;
 	}
 	
 	public function is_complete()
 	{
-		return isset($this->params);
+		return isset($this->args);
 	}
 	
 	public function evaluate()
 	{
-		$result = $this->evaluator->functions[$this->index]->evaluate($this->evaluator, $this->params);
+		$result = $this->evaluator->functions[$this->index]->evaluate($this->evaluator, $this->args);
 		// echo $this->position.': '.$this->evaluator->functions[$this->index]->name();
 		// $delim ='(';
-		// foreach($this->params as $param)
+		// foreach($this->args as $arg)
 		// {
-			// echo $delim.$param->evaluate();
+			// echo $delim.$arg->evaluate();
 			// $delim = ',';
 		// }
 		// echo ')='.$result.'<br>';
@@ -744,11 +870,11 @@ class EvFuncNode extends EvNode
 	public function to_string($indent = 0)
 	{
 		$result = parent::to_string($indent);
-		if (isset($this->params))
+		if (isset($this->args))
 		{
-			foreach ($this->params as $param)
+			foreach ($this->args as $arg)
 			{
-				$result .= "\n" . $param->to_string($indent + 1);
+				$result .= "\n" . $arg->to_string($indent + 1);
 			}
 		}
 		return $result;
@@ -830,22 +956,11 @@ class EvBracketNode extends EvNode
 //------------------------------------------------------------------------------------------------
 // Evaluator
 //------------------------------------------------------------------------------------------------
-$_ev_default_functions = array(new EvFuncRound(), new EvFuncFloor(), new EvFuncCeil(), new EvFuncLog(), new EvFuncVar());
-
 class Evaluator
 {
-	public function __construct($expr, $functions = NULL)
+	public function __construct($expr, &$functions)
 	{
-		global $_ev_default_functions;
-		if (is_null($functions))
-		{
-			$this->functions = &$_ev_default_functions;
-		}
-		else
-		{
-			$this->functions = &$functions;
-		}
-		$this->vars = array();
+		$this->functions = &$functions;
 		$this->parse($expr);
 	}
 	
@@ -859,38 +974,15 @@ class Evaluator
 		{
 			$node = $this->parse_next_lexem($expr, $index, $node);
 		}
-		//$this->print_nodes();
+		$this->print_nodes();
 		$this->convert_to_tree();
 		//$this->print_nodes();
 		$this->optimize();
 	}
 	
-	public function evaluate($vars = NULL)
+	public function evaluate()
 	{
-		if (!isset($this->node))
-		{
-			return 0;
-		}
-		if ($vars)
-		{
-			$this->set_vars($vars);
-		}
-		return $this->node->evaluate();
-	}
-	
-	public function set_vars(&$vars)
-	{
-		$v = $this->vars = $vars;
-		$this->vars_deepth = 0;
-		while (is_array($v))
-		{
-			++$this->vars_deepth;
-			if (count($v) == 0)
-			{
-				throw new Exc('Array of vars cannot be empty.');
-			}
-			$v = $v[0];
-		}
+		return isset($this->node) ? $this->node->evaluate() : 0;
 	}
 	
 	public function optimize()
@@ -924,9 +1016,9 @@ class Evaluator
 		$len = strlen($node->to_lexem());
 		return 
 			substr($this->expr, 0, $node->position).
-			'<b><u><big>'.
+			'<b><big> '.
 			substr($this->expr, $node->position, $len).
-			'</big></u></b>'.
+			' </big></b>'.
 			substr($this->expr, $node->position + $len);
 	}
 	
@@ -935,11 +1027,11 @@ class Evaluator
 		throw new Exc(get_label('Unexpected lexem: [0]', $this->highlight_node($node)));
 	}
 	
-	private function find_node($type1, $type2)
+	private function find_node($type1, $type2, $type3, $type4)
 	{
 		for ($node = $this->node; $node; $node = $node->next)
 		{
-			if (!$node->is_complete() && ($node->type == $type1 || $node->type == $type2))
+			if (!$node->is_complete() && ($node->type == $type1 || $node->type == $type2 || $node->type == $type3 || $node->type == $type4))
 			{
 				return $node;
 			}
@@ -947,9 +1039,9 @@ class Evaluator
 		return NULL;
 	}
 	
-	private function complete_lexems($type1, $type2 = EV_LEXEM_INVALID)
+	private function complete_lexems($type1, $type2 = EV_LEXEM_INVALID, $type3 = EV_LEXEM_INVALID, $type4 = EV_LEXEM_INVALID)
 	{
-		while (!is_null($node = $this->find_node($type1, $type2)))
+		while (!is_null($node = $this->find_node($type1, $type2, $type3, $type4)))
 		{
 			$node->complete();
 		}
@@ -960,10 +1052,12 @@ class Evaluator
 	{
 		if ($this->complete_lexems(EV_LEXEM_FUNC)) { return; }
 		if ($this->complete_lexems(EV_LEXEM_OPEN_BRACKET)) { return; }
-		if ($this->complete_lexems(EV_LEXEM_UNARY_MINUS)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_UNARY_MINUS, EV_LEXEM_NOT)) { return; }
 		if ($this->complete_lexems(EV_LEXEM_POWER)) { return; }
 		if ($this->complete_lexems(EV_LEXEM_MULTIPLY, EV_LEXEM_DIVIDE)) { return; }
 		if ($this->complete_lexems(EV_LEXEM_PLUS, EV_LEXEM_MINUS)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_GREATER, EV_LEXEM_LESS, EV_LEXEM_GREATER_EQUAL, EV_LEXEM_LESS_EQUAL)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_EQUAL, EV_LEXEM_NOT_EQUAL)) { return; }
 		if ($this->complete_lexems(EV_LEXEM_QUESTION)) { return; }
 		Evaluator::unexpectedLexem($this->node);
 	}
@@ -1014,6 +1108,54 @@ class Evaluator
 				}
 			}
 			$node = new EvValueNode($this, $value, $position, $prevNode);
+		}
+		else if ($c == '!')
+		{
+			if ($index + 1 < strlen($expr) && $expr[$index + 1] == '=')
+			{
+				$node = new EvBinaryOpNode($this, EV_LEXEM_NOT_EQUAL, $index, $prevNode);
+				$index += 2;
+			}
+			else
+			{
+				$node = new EvUnaryOpNode($this, EV_LEXEM_NOT, $index, $prevNode);
+				++$index;
+			}
+		}
+		else if ($c == '=')
+		{
+			$node = new EvBinaryOpNode($this, EV_LEXEM_EQUAL, $index, $prevNode);
+			++$index;
+			if ($index < strlen($expr) && $expr[$index] == '=')
+			{
+				++$index;
+			}
+		}
+		else if ($c == '>')
+		{
+			if ($index + 1 < strlen($expr) && $expr[$index + 1] == '=')
+			{
+				$node = new EvBinaryOpNode($this, EV_LEXEM_GREATER_EQUAL, $index, $prevNode);
+				$index += 2;
+			}
+			else
+			{
+				$node = new EvBinaryOpNode($this, EV_LEXEM_GREATER, $index, $prevNode);
+				++$index;
+			}
+		}
+		else if ($c == '<')
+		{
+			if ($index + 1 < strlen($expr) && $expr[$index + 1] == '=')
+			{
+				$node = new EvBinaryOpNode($this, EV_LEXEM_LESS_EQUAL, $index, $prevNode);
+				$index += 2;
+			}
+			else
+			{
+				$node = new EvBinaryOpNode($this, EV_LEXEM_LESS, $index, $prevNode);
+				++$index;
+			}
 		}
 		else if ($c == '+')
 		{
