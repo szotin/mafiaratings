@@ -87,7 +87,7 @@ try
 	{
 		if (abs($default_points) > 0.00001)
 		{
-			echo get_label('Plus everyoune receives [0] points.', format_score($default_points));
+			echo get_label('Plus everyoune receives [0] points.', format_gain($default_points));
 		}
 	}
 	else
@@ -100,7 +100,7 @@ try
 		{
 			echo '<tr';
 			echo ($p == $place ? ' class="darker"' : '');
-			echo '><td>' . $p . '</td><td>' . format_score(get_gaining_points($table, $p, 0)) . '</td></tr>';
+			echo '><td>' . $p . '</td><td>' . format_gain(get_gaining_points($table, $p, 0)) . '</td></tr>';
 		}
 		echo '</table>';
 		echo '</p>';

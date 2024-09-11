@@ -135,16 +135,16 @@ class Page extends SeriesPageBase
 			}
 			echo '</td>';
 			
-			echo '<td class="' . $highlight . '">' . format_score($points) . '</td>';
+			echo '<td class="' . $highlight . '">' . format_gain($points) . '</td>';
 			echo '<td>' . $tournaments . '</td>';
-			echo '<td>' . ($tournaments > 0 ? format_score($points / $tournaments) : '') . '</td>';
+			echo '<td>' . ($tournaments > 0 ? format_gain($points / $tournaments) : '') . '</td>';
 			// echo '<td>' . $games . ' (' . $wins . ')</td>';
-			// echo '<td>' . ($games > 0 ? format_score($wins / $games) : '') . '</td>';
+			// echo '<td>' . ($games > 0 ? format_gain($wins / $games) : '') . '</td>';
 			foreach ($parent_series as $s)
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place, pow($points, $s->sum_power))) . '</td>';
+					echo '<td align="center">' . format_gain(get_gaining_points($s->points, $place, pow($points, $s->sum_power))) . '</td>';
 				}
 				else
 				{

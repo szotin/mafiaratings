@@ -196,9 +196,9 @@ function format_coeff($coeff, $sign_digits = 3)
 	return round($coeff, $sign_digits - floor(log10($coeff)) - 1);
 }
 
-function format_score($score, $zeroes = true)
+function format_float($number, $digits, $zeroes = true)
 {
-	if ($score == 0)
+	if ($number == 0)
 	{
 		if ($zeroes)
 		{
@@ -207,18 +207,18 @@ function format_score($score, $zeroes = true)
 		return '';
 	}
 	
-	$int_score = (int)($score * 1000);
-	if ($int_score % 10 >= 5)
+	$int_number = (int)($number * pow(10, $digits + 1));
+	if ($int_number % 10 >= 5)
 	{
-		$int_score /= 10;
-		$int_score += 1;
+		$int_number /= 10;
+		$int_number += 1;
 	}
 	else
 	{
-		$int_score /= 10;
+		$int_number /= 10;
 	}
 	
-	$result = number_format($score, 3);
+	$result = number_format($number, $digits);
 	$pos = -1;
 	for ($i = strlen($result) - 1; $i >= 0 && $result[$i] == '0'; --$i)
 	{
@@ -233,20 +233,16 @@ function format_score($score, $zeroes = true)
 		$result = substr($result, 0, $pos);
 	}
 	return $result;
-	
-	// if (($int_score % 10) != 0)
-	// {
-		// return number_format($score, 3);
-	// }
-	// else if (($int_score % 100) != 0)
-	// {
-		// return number_format($score, 2);
-	// }
-	// else if (($int_score % 1000) != 0)
-	// {
-		// return number_format($score, 1);
-	// }
-	// return number_format($score);
+}
+
+function format_score($score, $zeroes = true)
+{
+	return format_float($score, 3, $zeroes);
+}
+
+function format_gain($gain, $zeroes = true)
+{
+	return format_float($gain, 2, $zeroes);
 }
 
 function format_rating($rating)

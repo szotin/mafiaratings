@@ -339,7 +339,7 @@ class Page extends TournamentPageBase
 			{
 				if ($number < $this->num_players && $s->stars > 0)
 				{
-					echo '<td align="center">' . format_score(get_gaining_points($s->points, $number + 1, pow($player->points, $s->sum_power))) . '</td>';
+					echo '<td align="center">' . format_gain(get_gaining_points($s->points, $number + 1, pow($player->points, $s->sum_power))) . '</td>';
 				}
 				else
 				{
@@ -484,7 +484,7 @@ class Page extends TournamentPageBase
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . format_score(get_gaining_points($s->points, $place, pow($sum, $s->sum_power))) . '</td>';
+					echo '<td align="center">' . format_gain(get_gaining_points($s->points, $place, pow($sum, $s->sum_power))) . '</td>';
 				}
 				else
 				{

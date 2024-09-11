@@ -55,7 +55,7 @@ class Page extends SeriesPageBase
 			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td>';
 			echo '<td><i>' . format_date('F d, Y', $time, $timezone) . '</i>: <b>' . $reason . '</b></td>';
 			echo '<td align="center">';
-			echo format_score($points);
+			echo format_gain($points);
 			echo '</td>';
 			echo '</tr>';
 		}
