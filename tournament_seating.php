@@ -524,13 +524,14 @@ class Page extends TournamentPageBase
 							continue;
 						}
 						
-						if ($col_count++ == 10)
+						if ($col_count == 10)
 						{
 							$col_count = 0;
 							echo '</tr><tr class="dark">';
 						}
 						
 						$this->showPlayer($user_id);
+						++$col_count;
 					}
 					echo '</tr>';
 				}
