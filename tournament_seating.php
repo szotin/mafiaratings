@@ -464,11 +464,13 @@ class Page extends TournamentPageBase
 				echo '<td width="9.2%" align="center"><b>'.($k+1).'</b></td>';
 			}
 			echo '</tr>';
+			$all_games = true;
 			for ($j = 0; $j < count($game); ++$j)
 			{
 				$table = $game[$j];
 				if (is_null($table))
 				{
+					$all_games = false;
 					continue;
 				}
 				echo '<tr><td align="center" class="dark"><b>' . get_label('Table [0]', chr(65 + $j)) . '</b></td>';
@@ -477,6 +479,61 @@ class Page extends TournamentPageBase
 					$this->showPlayer($table[$k]);
 				}
 				echo '</tr>';
+			}
+			if ($all_games)
+			{
+				foreach ($this->users as $user_id => $user)
+				{
+					$user->skipping = true;
+				}
+				foreach ($game as $table)
+				{
+					foreach ($table as $user_id)
+					{
+						if ($user_id > 0)
+						{
+							$user = $this->users[$user_id];
+							$user->skipping = false;
+						}
+					}
+				}
+				
+				$skipping_count = 0;
+				foreach ($this->users as $user_id => $user)
+				{
+					if ($user->skipping)
+					{
+						++$skipping_count;
+					}
+				}
+				
+				if ($skipping_count > 0)
+				{
+					$rows = 1 + ($skipping_count - 1) / 10;
+					echo '<tr class="dark"><td align="center" class="dark"';
+					if ($rows > 1)
+					{
+						echo ' rowspan="' . $rows . '"';
+					}
+					echo '><b>' . get_label('Skipping') . '</b></td>';
+					$col_count = 0;
+					foreach ($this->users as $user_id => $user)
+					{
+						if (!$user->skipping)
+						{
+							continue;
+						}
+						
+						if ($col_count++ == 10)
+						{
+							$col_count = 0;
+							echo '</tr><tr class="dark">';
+						}
+						
+						$this->showPlayer($user_id);
+					}
+					echo '</tr>';
+				}
 			}
 			echo '</table>';
 		}

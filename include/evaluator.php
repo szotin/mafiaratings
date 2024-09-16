@@ -3,6 +3,9 @@
 require_once __DIR__ . '/error.php';
 require_once __DIR__ . '/localization.php';
 
+define('EV_MAX_VALUE', 2000000000);
+define('EV_MIN_VALUE', -2000000000);
+
 define('EV_LEXEM_VALUE', 0);
 define('EV_LEXEM_UNARY_MINUS', 1);
 define('EV_LEXEM_NOT', 2);
@@ -114,7 +117,7 @@ class EvFuncMin extends EvFunction
 {
 	public function evaluate($evaluator, $args)
 	{
-		$result = 2000000000;
+		$result = EV_MAX_VALUE;
 		foreach ($args as $arg)
 		{
 			$result = min($result, $arg->evaluate());
@@ -132,7 +135,7 @@ class EvFuncMax extends EvFunction
 {
 	public function evaluate($evaluator, $args)
 	{
-		$result = -2000000000;
+		$result = EV_MIN_VALUE;
 		foreach ($args as $arg)
 		{
 			$result = max($result, $arg->evaluate());
@@ -572,11 +575,23 @@ class EvBinaryOpNode extends EvNode
 			break;
 		case EV_LEXEM_DIVIDE:
 			$right = $this->right->evaluate();
-			if ($right == 0)
+			$left = $this->left->evaluate();
+			if ($right != 0)
 			{
-				throw new Exc(get_label('Division by zero: [0]', $this->evaluator->highlight_node($this)));
+				$result = $left / $right;
 			}
-			$result = $this->left->evaluate() / $right;
+			else if ($left > 0)
+			{
+				$result = EV_MAX_VALUE;
+			}
+			else if ($left < 0)
+			{
+				$result = EV_MIN_VALUE;
+			}
+			else
+			{
+				$result = 0;
+			}
 			break;
 		case EV_LEXEM_POWER:
 			$result = pow($this->left->evaluate(), $this->right->evaluate());
@@ -982,7 +997,11 @@ class Evaluator
 	
 	public function evaluate()
 	{
-		return isset($this->node) ? $this->node->evaluate() : 0;
+		if (!isset($this->node))
+		{
+			return 0;
+		}
+		return max(min($this->node->evaluate(), EV_MAX_VALUE), EV_MIN_VALUE));
 	}
 	
 	public function optimize()
@@ -1227,7 +1246,7 @@ class Evaluator
 			}
 			if (is_null($node))
 			{
-				throw new Exc(get_label('Unexpected lexem at position [0]', $index));
+				throw new Exc(get_label('Unexpected lexem: [0]', $index));
 			}
 		}
 		return $node;
