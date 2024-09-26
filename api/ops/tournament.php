@@ -662,7 +662,7 @@ class ApiPage extends OpsApiPageBase
 				$scoring_id != $old_scoring_id || 
 				$scoring_version != $old_scoring_version)
 			{
-				Db::exec(get_label('round'), 'UPDATE events SET rules = ?, scoring_id = ?, scoring_version = ?, scoring_option = ? WHERE tournament_id = ?', $rules_code, scoring_id, $scoring_version, $tournament_id);
+				Db::exec(get_label('round'), 'UPDATE events SET rules = ?, scoring_id = ?, scoring_version = ? WHERE tournament_id = ?', $rules_code, $scoring_id, $scoring_version, $tournament_id);
 			}
 			
 			if ($scoring_options != $old_scoring_options)
