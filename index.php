@@ -293,7 +293,7 @@ class Page extends GeneralPageBase
 			' JOIN series s ON s.id = st.series_id'.
 			' JOIN tournaments t ON t.id = st.tournament_id'.
 			' WHERE t.id IN (' . $this->tournaments_list . ')'.
-			' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id, st.stars, s.id');
+			' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id, s.id');
 		$tournament_index = 0;
 		while ($row = $query->next())
 		{
