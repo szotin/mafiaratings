@@ -49,7 +49,7 @@ class Page extends PageBase
 	
 	protected function show_body()
 	{
-		echo '<p><button id="save" onclick="saveData(0)" disabled>' . get_label('Save') . '</button>';
+		echo '<p><button id="save" onclick="saveData(0)" disabled>' . get_label('Save') . '</button> <button id="save" onclick="viewJson()">' . get_label('View json') . '</button>';
 		if ($this->dependants > 0)
 		{
 			echo ' <button id="overwrite" onclick="overwriteData()" disabled>' . get_label('Overwrite current version') . '</button>';
@@ -100,6 +100,9 @@ class Page extends PageBase
 				lostOnly: "<?php echo get_label('taking only the lost games'); ?>",
 				version: "<?php echo get_label('Version'); ?>",
 				extraPointsWeight: "<?php echo get_label('Multiply bonus points to'); ?>",
+				counters: "<?php echo get_label('Counters'); ?>",
+				counterAdd: "<?php echo get_label('Add counter.'); ?>",
+				counterDel: "<?php echo get_label('Delete counter.'); ?>",
 			},
 			sections:
 			{
@@ -173,8 +176,13 @@ class Page extends PageBase
 			json.post("api/ops/scoring.php", params, function(response)
 			{
 				setScoringVersion(response.scoring_version);
+				dirty(false);
 			});
-			dirty(false);
+		}
+		
+		function viewJson()
+		{
+			dlg.info(JSON.stringify(data.scoring), 'Json');
 		}
 		
 		function overwriteData()

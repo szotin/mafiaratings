@@ -6,6 +6,55 @@ require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
 
+function check_scoring($scoring)
+{
+	global $_scoring_groups, $_scoring_functions;
+	foreach ($_scoring_groups as $group_name)
+	{
+		if (!isset($scoring->$group_name))
+		{
+			continue;
+		}
+		
+		$group = $scoring->$group_name;
+		for ($i = 0; $i < count($group); ++$i)
+		{
+			$policy = $group[$i];
+			if (!isset($policy->points) || is_numeric($policy->points))
+			{
+				continue;
+			}
+			try
+			{
+				$e = new Evaluator($policy->points, $_scoring_functions);
+			}
+			catch (Exception $e)
+			{
+				$group_title = $group_name;
+				switch ($group_name)
+				{
+				case 'main': 
+					$group_title = get_label('Main points');
+					break;
+				case 'legacy': 
+					$group_title = get_label('Legacy points');
+					break;
+				case 'extra': 
+					$group_title = get_label('Extra points');
+					break;
+				case 'penalty': 
+					$group_title = get_label('Penalty points');
+					break;
+				case 'night1':
+					$group_title = get_label('Points for being killed first night');
+					break;
+				}
+				throw new Exc(get_label('Invalid expression in "[0]" ([1]): [2]', $group_title, ($i+1), $e->getMessage()));
+			}
+		}
+	}
+}
+
 class ApiPage extends OpsApiPageBase
 {
 	private function check_name($name, $club_id, $id = -1)
@@ -73,14 +122,12 @@ class ApiPage extends OpsApiPageBase
 		$copy_id = (int)get_optional_param('copy_id', -1);
 		$name = trim(get_required_param('name'));
 		$scoring = get_optional_param('scoring', '{}');
-		if (!is_string($scoring))
+		if (is_string($scoring))
 		{
-			$scoring = json_encode($scoring);
+			$scoring = json_decode($scoring);
 		}
-		else
-		{
-			$scoring = check_json($scoring);
-		}
+		check_scoring($scoring);
+		$scoring = json_encode($scoring);
 		
 		Db::begin();
 		$this->check_name($name, $club_id);
@@ -152,13 +199,14 @@ class ApiPage extends OpsApiPageBase
 		$this->check_name($name, $club_id, $scoring_id);
 		
 		$scoring = get_optional_param('scoring', NULL);
-		if (!is_string($scoring))
+		if (!is_null($scoring))
 		{
+			if (is_string($scoring))
+			{
+				$scoring = json_decode($scoring);
+			}
+			check_scoring($scoring);
 			$scoring = json_encode($scoring);
-		}
-		else
-		{
-			$scoring = check_json($scoring);
 		}
 		
 		list ($old_scoring, $version) = Db::record(get_label('scoring system'), 'SELECT v.scoring, s.version FROM scorings s JOIN scoring_versions v ON v.scoring_id = s.id AND v.version = s.version WHERE s.id = ?', $scoring_id);

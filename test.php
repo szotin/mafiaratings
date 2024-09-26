@@ -78,10 +78,11 @@ try
 		new EvFuncParam('var'));
 
 	//$e = new Evaluator('-var(2) / 12.5 * var(1, 1) + 14 * 2^floor (var(1) / 7)');
-	$e = new Evaluator('var(0) != var(1) ? var(2)/var(3) : var(3)/var(2)', $functions);
+	//$e = new Evaluator('var(0) == var(1) && var(2) == var(3) ? var(4) : 1/2', $functions);
+	$e = new Evaluator('var(log(2.7182818284591))', $functions);
 	$e->print_nodes();
 	
-	$e->var = array(0, 1, 2, 3, 4);
+	$e->var = array(0, 10, 20, 30, 40);
 	echo '<p>.....................................<br>'.$e->evaluate();
 	// -6 / 12.5 * 10 + 14 * 2^round (4 / 7) = -4.8+14*2=9.2
 }

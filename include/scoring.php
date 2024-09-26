@@ -3,6 +3,7 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/constants.php';
+require_once __DIR__ . '/evaluator.php';
 
 define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIIM)
 define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
@@ -101,6 +102,44 @@ define('SCORING_OPTION_NO_NIGHT_KILLS', 1); // Do not use policies dependent on 
 define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent on the game difficulty
 
 $_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_EXTRA, SCORING_GROUP_LEGACY, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
+
+class EvFuncMatter extends EvFunction
+{
+	public function evaluate($evaluator, $args)
+	{
+		if (!isset($evaluator->scoring_flags))
+		{
+			return 0;
+		}
+		if (count($args) <= 0)
+		{
+			$matter = 0;
+		}
+		else
+		{
+			$matter = round($args[0]->evaluate());
+		}
+		$flag = 1 << $matter;
+		return ($evaluator->scoring_flags & $flag) ? 1 : 0;
+	}
+	
+	public function name()
+	{
+		return 'matter';
+	}
+}
+
+$_scoring_functions = array(
+		new EvFuncRound(), 
+		new EvFuncFloor(), 
+		new EvFuncCeil(), 
+		new EvFuncLog(), 
+		new EvFuncMin(), 
+		new EvFuncMax(), 
+		new EvFuncParam('counter'),
+		new EvFuncParam('bonus'),
+		new EvFuncParam('role'),
+		new EvFuncMatter());
 
 function is_hiding_bonus_needed($tournament_flags, $round_num)
 {
@@ -581,6 +620,12 @@ function init_player_score($player, $scoring, $lod_flags)
 	$player->scoring = $scoring;
     $player->points = 0;
 	$player->weighted_games_count = 0;
+	if (isset($scoring->counters) && count($scoring->counters) > 0)
+	{
+		$player->counters = array(
+			array_fill(0, count($scoring->counters), 0),
+			array_fill(0, count($scoring->counters), 0));
+	}
 	
     if ($lod_flags & SCORING_LOD_PER_GROUP)
     {
@@ -657,7 +702,49 @@ function init_player_score($player, $scoring, $lod_flags)
 	}
 }
 
-function add_player_score($player, $player_stats, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $red_win_rate, $lod_flags, $options, $event_name = NULL)
+function create_evaluators($scoring)
+{
+	global $_scoring_groups, $_scoring_functions;
+	
+	foreach ($_scoring_groups as $group_name)
+	{
+		if (!isset($scoring->$group_name))
+		{
+			continue;
+		}
+		 
+		$group = &$scoring->$group_name;
+		for ($i = 0; $i < count($group); ++$i)
+		{
+			$policy = $group[$i];
+			if (isset($policy->evaluator))
+			{
+				return; // they are already created
+			}
+			$policy->evaluator = new Evaluator($policy->points, $_scoring_functions);
+		}
+	}
+}
+
+function add_player_counters($counter_index, $player, $scoring, $game_flags, $game_role)
+{
+	if (isset($player->counters))
+	{
+		$counters = &$player->counters[$counter_index];
+		for ($i = 0; $i < count($counters); ++$i)
+		{
+			$policy = $scoring->counters[$i];
+			if (
+				($policy->matter & $game_flags) == $policy->matter &&
+				(!isset($policy->roles) || ($policy->roles & $role) != 0))
+			{
+				++$counters[$i];
+			}
+		}
+	}
+}
+
+function add_player_score($player, $player_stats, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $lod_flags, $options, $event_name = NULL)
 {
 	global $_scoring_groups;
 	$options_flags = 0;
@@ -731,29 +818,6 @@ function add_player_score($player, $player_stats, $scoring, $game_id, $game_end_
 				if ($options_flags & SCORING_OPTION_NO_GAME_DIFFICULTY)
 				{
 					$points = $policy->min_points;
-				}
-				else
-				{
-					$difficulty = $red_win_rate;
-					if ($role & SCORING_ROLE_FLAGS_RED)
-					{
-						$difficulty = max(min(1 - $difficulty, 1), 0);
-					}
-					
-					if ($difficulty <= $policy->min_difficulty)
-					{
-						$points = $policy->min_points;
-					}
-					else if ($difficulty >= $policy->max_difficulty)
-					{
-						$points = $policy->max_points;
-					}
-					else
-					{
-						$points = ($policy->max_points - $policy->min_points) * $difficulty;
-						$points += $policy->min_points * $policy->max_difficulty - $policy->max_points * $policy->min_difficulty;
-						$points /= $policy->max_difficulty - $policy->min_difficulty;
-					}
 				}
 			}
 			else if (isset($policy->min_night1) || isset($policy->max_night1))
@@ -1168,28 +1232,15 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	{
 		$_lang = 1;
 	}
-	$players = array();
 	$stat_flags = get_scoring_stat_flags($scoring, $options);
     
     // prepare additional filter
     $condition = get_players_condition($players_list);
 	
-	// Calculate game difficulty rates
-	$red_win_rate = 0;
-	if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
-	{
-		list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(id), SUM(IF(result = 1, 1, 0)) FROM games WHERE event_id = ? AND result > 0 AND is_canceled = 0 AND is_rating <> 0', $event_id);
-		if ($count > 0)
-		{
-			$red_win_rate = max(min((float)($red_wins / $count), 1), 0);
-		}
-	}
-	
-	// Calculate first night kill rates and games count per player
+	// Create players array
+	$players = array();
 	$query = new DbQuery(
 		'SELECT u.id, nu.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id)' .
-		', SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0))' .
-		', SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2 AND p.won = 0, 1, 0))' .
 		', SUM(p.won)' .
 		', SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))' .
 		', eu.nickname, eu.flags, tu.flags, cu.flags' .
@@ -1215,8 +1266,6 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 		$player->club_name = $row[5];
 		$player->club_flags = (int)$row[6];
 		$player->games_count = (int)$row[7];
-		$player->killed_first_count = (int)$row[8];
-		$player->killed_first_lost_count = (int)$row[9];
 		$player->wins = (int)$row[10];
 		$player->special_role_wins = (int)$row[11];
 		$player->nickname = $row[12];
@@ -1228,9 +1277,24 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
         $players[$player->id] = $player;
 	}
 	
+	// Create evaluators
+	create_evaluators($scoring);
+	
 	// echo '<pre>';
 	// print_r($scoring);
 	// echo '</pre><br>';
+	
+	// Calculate final values for counters
+	$games = array();
+	$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $event_id, $condition);
+    $query->add(' ORDER BY g.end_time');
+	while ($row = $query->next())
+	{
+		$games[] = $row;
+		list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
+		$player = $players[$player_id];
+		add_player_counters(0, $player, $scoring, $flags, $role);
+	}
 	
 	// Calculate scores
 	$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $event_id, $condition);
@@ -1244,7 +1308,8 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 			$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
 		}
 		$player = $players[$player_id];
-		add_player_score($player, $player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $options);
+		add_player_counters(1, $player, $scoring, $flags, $role);
+		add_player_score($player, $player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $lod_flags, $options);
 	}
 	
 	// Add event extra points
@@ -1643,16 +1708,6 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 	
     if (is_null($event_scorings))
     {
-		$red_win_rate = 0;
-		if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
-		{
-            list ($count, $red_wins) = Db::record(get_label('tournament'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $hide_table_condition);
-            if ($count > 0)
-            {
-                $red_win_rate = max(min((float)($red_wins / $count), 1), 0);
-            }
-        }
-        
         // echo '<pre>';
         // print_r($scoring);
         // echo '</pre><br>';
@@ -1671,7 +1726,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			if (isset($players[$player_id])) // It happens that it is not set but I have no idea why. To be investigated.
 			{
 				$player = $players[$player_id];
-				add_player_score($player, $player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $options, $event_name);
+				add_player_score($player, $player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $lod_flags, $options, $event_name);
 			}
         }
     }
@@ -1734,16 +1789,6 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				$group->stat_flags = get_scoring_stat_flags($scoring, $group->options);
 			}
 			
-            if ($group->stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
-            {
-                list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g WHERE g.event_id IN(' . $group->events . ') AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0');
-				$group->red_win_rate = 0;
-                if ($count > 0)
-                {
-                    $group->red_win_rate = max(min((float)($red_wins / $count), 1), 0);
-                }
-            }
-
             // Calculate first night kill rates and games count per player
 			$group->players = array();
             $query = 
@@ -1769,17 +1814,6 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
                 $group->players[$player->id] = $player;
             }
         }
-		
-		// Calculate red win rate for non-tournament event games
-		$no_event_red_win_rate = 0;
-		if ($stat_flags & SCORING_STAT_FLAG_GAME_DIFFICULTY)
-		{
-			list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0 AND e.tournament_id <> g.tournament_id', $tournament_id, $hide_table_condition);
-			if ($count > 0)
-			{
-				$no_event_red_win_rate = max(min((float)($red_wins / $count), 1), 0);
-			}
-		}
 		
 		// Calculate first night kill rates and games count per player for non-tournament event games
 		$no_event_players = array();
@@ -1827,24 +1861,15 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				$g = $s->group;
 				$player = $g->players[$player_id];
 				$op = $s->options;
-				if (isset($g->red_win_rate))
-				{
-					$red_win_rate = $g->red_win_rate;
-				}
-				else
-				{
-					$red_win_rate = 0;
-				}
 				$event_name = $s->event_name;
 			}
 			else
 			{
 				$player = $no_event_players[$player_id];
 				$op = $options;
-				$red_win_rate = $no_event_red_win_rate;
 				$event_name = NULL;
 			}
-			add_player_score($players[$player_id], $player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $op, $event_name);
+			add_player_score($players[$player_id], $player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $lod_flags, $op, $event_name);
 		}
     }
 	

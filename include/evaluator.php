@@ -24,9 +24,11 @@ define('EV_LEXEM_GREATER', 14);
 define('EV_LEXEM_LESS', 15);
 define('EV_LEXEM_GREATER_EQUAL', 16);
 define('EV_LEXEM_LESS_EQUAL', 17);
-define('EV_LEXEM_EQUAL', 18); // -
-define('EV_LEXEM_NOT_EQUAL', 19); // -
-define('EV_LEXEM_INVALID', 20);
+define('EV_LEXEM_EQUAL', 18);
+define('EV_LEXEM_NOT_EQUAL', 19);
+define('EV_LEXEM_AND', 20);
+define('EV_LEXEM_OR', 21);
+define('EV_LEXEM_INVALID', 22);
 
 //------------------------------------------------------------------------------------------------
 // Functions
@@ -35,6 +37,7 @@ abstract class EvFunction
 {
 	public abstract function evaluate($evaluator, $args);
 	public abstract function name();
+	public function is_deterministic() { return true; }
 }
 
 class EvFuncRound extends EvFunction
@@ -203,6 +206,10 @@ class EvFuncParam extends EvFunction
 		return $param;
 	}
 	
+	public function is_deterministic() 
+	{
+		return false;
+	}
 	
 	public function name()
 	{
@@ -255,6 +262,10 @@ class EvNode
 			return '=';
 		case EV_LEXEM_NOT_EQUAL:
 			return '!=';
+		case EV_LEXEM_AND:
+			return '&&';
+		case EV_LEXEM_OR:
+			return '||';
 		case EV_LEXEM_GREATER:
 			return '>';
 		case EV_LEXEM_LESS:
@@ -309,6 +320,12 @@ class EvNode
 			break;
 		case EV_LEXEM_NOT_EQUAL:
 			$result .= '!=';
+			break;
+		case EV_LEXEM_AND:
+			$result .= '&&';
+			break;
+		case EV_LEXEM_OR:
+			$result .= '||';
 			break;
 		case EV_LEXEM_GREATER:
 			$result .= '>';
@@ -551,6 +568,12 @@ class EvBinaryOpNode extends EvNode
 			break;
 		case EV_LEXEM_NOT_EQUAL:
 			$result = $this->left->evaluate() != $this->right->evaluate() ? 1 : 0;
+			break;
+		case EV_LEXEM_AND:
+			$result = $this->left->evaluate() && $this->right->evaluate() ? 1 : 0;
+			break;
+		case EV_LEXEM_OR:
+			$result = $this->left->evaluate() || $this->right->evaluate() ? 1 : 0;
 			break;
 		case EV_LEXEM_GREATER:
 			$result = $this->left->evaluate() > $this->right->evaluate() ? 1 : 0;
@@ -897,6 +920,26 @@ class EvFuncNode extends EvNode
 	
 	public function optimize()
 	{
+		$can_optimize = $this->evaluator->functions[$this->index]->is_deterministic();
+		if (isset($this->args))
+		{
+			for ($i = 0; $i < count($this->args); ++$i)
+			{
+				$arg = $this->args[$i]->optimize();
+				if ($arg)
+				{
+					$this->args[$i] = $arg;
+				}
+				else
+				{
+					$can_optimize = false;
+				}
+			}
+		}
+		if ($can_optimize)
+		{
+			return new EvValueNode($this->evaluator, $this->evaluate(), $this->position, NULL);
+		}
 		return NULL;
 	}
 }
@@ -989,7 +1032,7 @@ class Evaluator
 		{
 			$node = $this->parse_next_lexem($expr, $index, $node);
 		}
-		$this->print_nodes();
+		//$this->print_nodes();
 		$this->convert_to_tree();
 		//$this->print_nodes();
 		$this->optimize();
@@ -1001,7 +1044,7 @@ class Evaluator
 		{
 			return 0;
 		}
-		return max(min($this->node->evaluate(), EV_MAX_VALUE), EV_MIN_VALUE));
+		return max(min($this->node->evaluate(), EV_MAX_VALUE), EV_MIN_VALUE);
 	}
 	
 	public function optimize()
@@ -1077,6 +1120,9 @@ class Evaluator
 		if ($this->complete_lexems(EV_LEXEM_PLUS, EV_LEXEM_MINUS)) { return; }
 		if ($this->complete_lexems(EV_LEXEM_GREATER, EV_LEXEM_LESS, EV_LEXEM_GREATER_EQUAL, EV_LEXEM_LESS_EQUAL)) { return; }
 		if ($this->complete_lexems(EV_LEXEM_EQUAL, EV_LEXEM_NOT_EQUAL)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_EQUAL, EV_LEXEM_NOT_EQUAL)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_AND)) { return; }
+		if ($this->complete_lexems(EV_LEXEM_OR)) { return; }
 		if ($this->complete_lexems(EV_LEXEM_QUESTION)) { return; }
 		Evaluator::unexpectedLexem($this->node);
 	}
@@ -1139,6 +1185,30 @@ class Evaluator
 			{
 				$node = new EvUnaryOpNode($this, EV_LEXEM_NOT, $index, $prevNode);
 				++$index;
+			}
+		}
+		else if ($c == '&')
+		{
+			if ($index + 1 < strlen($expr) && $expr[$index + 1] == '&')
+			{
+				$node = new EvBinaryOpNode($this, EV_LEXEM_AND, $index, $prevNode);
+				$index += 2;
+			}
+			else
+			{
+				throw new Exc(get_label('Unexpected lexem: [0]', $index));
+			}
+		}
+		else if ($c == '|')
+		{
+			if ($index + 1 < strlen($expr) && $expr[$index + 1] == '|')
+			{
+				$node = new EvBinaryOpNode($this, EV_LEXEM_OR, $index, $prevNode);
+				$index += 2;
+			}
+			else
+			{
+				throw new Exc(get_label('Unexpected lexem: [0]', $index));
 			}
 		}
 		else if ($c == '=')
