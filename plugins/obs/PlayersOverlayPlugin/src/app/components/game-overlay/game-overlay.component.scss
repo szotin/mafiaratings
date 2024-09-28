@@ -1,0 +1,15 @@
+.game-overlay {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+
+  gamestats {
+  flex: 0 1 auto;
+  }
+
+  players {
+    flex: 0 1 auto; /* Allow players to take its natural height */
+    margin-top: auto; /* Push players to the bottom */
+    margin-bottom: 50px; /* Leave 50px space at the bottom */
+  }
+}

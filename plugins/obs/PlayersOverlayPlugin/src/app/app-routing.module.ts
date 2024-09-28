@@ -1,13 +1,15 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { GamestatsComponent } from './components/gamestats/gamestats.component';
-import { ObsControlComponent } from './components/obs-control/obs-control.component';
 import { PlayersComponent } from './components/players/players.component';
+import { GameOverlayComponent } from './components/game-overlay/game-overlay.component';
+import { ObsControlComponent } from './components/obs-control/obs-control.component';
 
 const routes: Routes = [
-  { path: '', component: GamestatsComponent },
+  { path: '', component: GameOverlayComponent },
   { path: 'players', component: PlayersComponent },
   { path: 'gamestats', component: GamestatsComponent },
+  { path: 'game', component: GameOverlayComponent },
   { path: 'obs-control', component: ObsControlComponent }
 ];
 

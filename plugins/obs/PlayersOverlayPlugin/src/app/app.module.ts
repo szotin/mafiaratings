@@ -7,9 +7,10 @@ import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { PlayersComponent } from './components/players/players.component';
 import { PlayerComponent } from './components/player/player.component';
+import { PlayersComponent } from './components/players/players.component';
 import { GamestatsComponent } from './components/gamestats/gamestats.component';
+import { GameOverlayComponent } from './components/game-overlay/game-overlay.component';
 import { ObsControlComponent } from './components/obs-control/obs-control.component';
 
 import { GamesnapshotService } from './services/gamesnapshot.service';
@@ -21,7 +22,8 @@ import { ObsControlWebsocketService } from './components/obs-control/obs-control
     PlayersComponent,
     PlayerComponent,
     GamestatsComponent,
-    ObsControlComponent
+    ObsControlComponent,
+    GameOverlayComponent
   ],
   imports: [
     BrowserModule,
