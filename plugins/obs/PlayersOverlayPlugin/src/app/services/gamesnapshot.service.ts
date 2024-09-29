@@ -4,7 +4,7 @@ import { Observable, timer, BehaviorSubject, of } from 'rxjs';
 import { share, map, delay, skip, tap, concatWith, concatMap, retryWhen, delayWhen } from 'rxjs/operators';
 
 import { environment } from 'src/environments/environment';
-import { GameSnapshot, Game, Player } from './gamesnapshot.model';
+import { GameSnapshot, Game, Player, Referee } from './gamesnapshot.model';
 import { UrlParametersService } from './url-parameters.service';
 
 @Injectable({
@@ -58,6 +58,11 @@ export class GamesnapshotService {
   getCurrentGame(): Observable<Game | undefined> {
     return this.gameSnapshot$.pipe(
       map((it?: GameSnapshot) => it?.game));
+  }
+
+  getReferee(): Observable<Referee | undefined> {
+    return this.getCurrentGame().pipe(
+      map((it?: Game) => it?.moderator));
   }
 
   getPlayers(): Observable<Player[]> {

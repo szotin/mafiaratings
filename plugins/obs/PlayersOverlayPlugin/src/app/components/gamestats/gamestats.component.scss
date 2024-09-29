@@ -6,13 +6,13 @@ $town-bg-color: rgba(250, 137, 123, $default-text-opacity);
 $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
 
 @keyframes fadeIn {
-  0% { opacity: 0.5; }
-  100% { opacity: 1; }
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
 }
 
 @keyframes fadeOut {
-  0% { opacity: 1; }
-  100% { opacity: 0.5; }
+    0% { opacity: 1; }
+    100% { opacity: 0.5; }
 }
 
 .component-root {
@@ -20,7 +20,7 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
   line-height: normal;
   font-size: 2em;
   display: flex;
-  background-color: rgba(0, 0, 0, 0.7);
+  // background-color: rgba(0, 0, 0, 0.7);
 
   &.is-offline-true {
     opacity: 0.8;

@@ -1,0 +1,11 @@
+.top-bar {
+    display: flex;
+    height: 80px;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.7);
+
+    .referee {
+        margin-right: 50px;
+    }
+}

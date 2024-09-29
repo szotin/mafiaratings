@@ -1,0 +1,45 @@
+.referee {
+  position: relative; /* Ensure the pseudo-element is positioned relative to this container */
+  display: flex;
+  align-items: center;
+  min-width: 200px; /* Minimum width to accommodate photo and text */
+  height: 80px;
+  border-radius: 15px; /* Rounded corners */
+  color: white;
+  overflow: hidden; /* Ensure content fits within the square */
+}
+
+.referee::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 15px; /* Match the rounded corners of the container */
+  z-index: -1; /* Place the pseudo-element behind the content */
+}
+
+.photo-container {
+  height: 100%;
+  background-color: rgba(0, 0, 0);
+  border-radius: 15px; /* Match the rounded corners of the container */
+  overflow: hidden; /* Ensure the photo fits within the container */
+}
+
+.referee-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Scale the photo to fit within the container while maintaining aspect ratio */
+}
+
+.referee-name {
+  font-size: 32px;
+  color: white;
+  flex-grow: 1; /* Allow the text to take up the remaining space */
+  font-family: 'Gagalin', sans-serif;
+  letter-spacing: 3px;
+  margin-left: 20px;
+  margin-right: 20px;  
+}

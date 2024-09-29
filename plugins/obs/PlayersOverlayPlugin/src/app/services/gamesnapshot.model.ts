@@ -9,6 +9,7 @@ export interface Game {
   phase: GamePhase;
   state: GameState;
   round: number;
+  moderator: Referee;
   players: Player[];
   nominees: number[];
   nominatedPlayers: Player[];
@@ -24,6 +25,14 @@ export enum GameState {
   starting = 'starting',
   notStarted = 'notStarted',
   arranging = 'arranging'
+}
+
+export interface Referee {
+  id: number;
+  name: string;
+  gender: Gender;
+  photoUrl: string;
+  hasPhoto: boolean;
 }
 
 export interface Player {
