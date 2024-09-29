@@ -1,0 +1,46 @@
+.round {
+    position: relative; /* Ensure the pseudo-element is positioned relative to this container */
+    display: flex;
+    align-items: center;
+    min-width: 100px;
+    font-size: 2em;
+    border-radius: 15px; /* Rounded corners */
+    color: white;
+    overflow: hidden;
+    margin-left: 16.5px;
+    margin-right: 16.5px;
+  }
+  
+  .round::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 15px; /* Match the rounded corners of the container */
+    z-index: -1; /* Place the pseudo-element behind the content */
+  }
+  
+  .photo-container {
+    height: 67px;
+    background-color: rgba(0, 0, 0);
+    border-radius: 15px; /* Match the rounded corners of the container */
+    overflow: hidden; /* Ensure the photo fits within the container */
+  }
+  
+  .event-icon {
+    width: 67px;
+    height: 67px;
+    object-fit: contain;
+  }
+  
+  .round-number {
+    color: white;
+    font-family: 'Gagalin', sans-serif;
+    letter-spacing: 3px;
+    white-space: nowrap;
+    margin-left: 20px;
+    margin-right: 20px;
+  }

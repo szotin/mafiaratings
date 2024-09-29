@@ -5,8 +5,9 @@
     font-size: 1em;
     align-items: center;
     background-color: rgba(0, 0, 0, 0.7);
+}
 
-    .referee {
-        margin-right: 50px;
-    }
+.top-right-corner {
+    display: flex;
+    margin-left: auto;
 }
