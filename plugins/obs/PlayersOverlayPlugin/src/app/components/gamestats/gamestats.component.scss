@@ -136,6 +136,7 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
     .elements {
       .element-wrapper {
         background-size: cover;
+        background-position: center;
         background-repeat: no-repeat;
         &.town {
           background-image: url('../../../assets/red_player_bg.jpg');
