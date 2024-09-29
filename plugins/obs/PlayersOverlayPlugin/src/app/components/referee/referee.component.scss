@@ -2,11 +2,12 @@
   position: relative; /* Ensure the pseudo-element is positioned relative to this container */
   display: flex;
   align-items: center;
-  min-width: 200px; /* Minimum width to accommodate photo and text */
-  height: 80px;
+  min-width: 200px;
+  font-size: 2em;
   border-radius: 15px; /* Rounded corners */
   color: white;
-  overflow: hidden; /* Ensure content fits within the square */
+  overflow: hidden;
+  margin-right: 16.5px;
 }
 
 .referee::before {
@@ -22,24 +23,22 @@
 }
 
 .photo-container {
-  height: 100%;
+  height: 67px;
   background-color: rgba(0, 0, 0);
   border-radius: 15px; /* Match the rounded corners of the container */
   overflow: hidden; /* Ensure the photo fits within the container */
 }
 
 .referee-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* Scale the photo to fit within the container while maintaining aspect ratio */
+  width: 67px;
+  height: 67px;
+  object-fit: contain;
 }
 
 .referee-name {
-  font-size: 32px;
   color: white;
-  flex-grow: 1; /* Allow the text to take up the remaining space */
   font-family: 'Gagalin', sans-serif;
   letter-spacing: 3px;
   margin-left: 20px;
-  margin-right: 20px;  
+  margin-right: 20px;
 }
