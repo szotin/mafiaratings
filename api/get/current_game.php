@@ -54,10 +54,30 @@ class ApiPage extends GetApiPageBase
 		if ($gs != NULL)
 		{
 			$game = new stdClass();
+			if ($tournament_id > 0)
+			{
+				$game->tournamentId = $tournament_id;
+			}
 			if (isset($gs->id))
 			{
 				$game->id = $gs->id;
-				$game->name = get_label('Game #[0]', $gs->id);
+				if (isset($gs->number))
+				{
+					$game->number = $gs->number + 1;
+					if (isset($gs->table))
+					{
+						$game->table = $gs->table + 1;
+						$game->name = get_label('Table [0] / Game [1]', $game->table, $game->number);
+					}
+					else
+					{
+						$game->name = get_label('Game [0]', $game->table, $game->number);
+					}
+				}
+				else
+				{
+					$game->name = get_label('Game #[0]', $gs->id);
+				}
 			}
 			switch ($gs->gamestate)
 			{
