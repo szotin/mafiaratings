@@ -52,3 +52,5 @@ js/game_ru.js
 js/game_en.js
 /plugins/obs/PlayersOverlayPlugin/builds/*
 api/ops/MWT.txt
+# System Files
+**/.DS_Store
