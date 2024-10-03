@@ -12,6 +12,15 @@ class ApiPage extends GetApiPageBase
 	{
 		global $_profile, $_lang;
 		
+		$user_pic =
+			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE))));
+		$club_pic = new Picture(CLUB_PICTURE);
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE, $club_pic);
+		$server_url = get_server_url();
+		
 		$token = get_required_param('token');
 		$game_id = (int)get_optional_param('game_id', 0);
 		$user_id = (int)get_optional_param('user_id', 0);
@@ -21,7 +30,18 @@ class ApiPage extends GetApiPageBase
 			throw new Exc('Either game_id, user_id, or moderator_id must be set');
 		}
 		
-		$query = new DbQuery('SELECT g.id, g.log, e.security_token, t.security_token FROM games g JOIN events e ON e.id = g.event_id LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id WHERE g.result = 0');
+		$query = new DbQuery(
+			'SELECT g.id, g.log, e.security_token, t.security_token, t.id, t.name, t.flags, e.round, c.id, c.name, c.flags, ni.name, no.name'.
+			' FROM games g'.
+			' JOIN events e ON e.id = g.event_id'.
+			' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id'.
+			' JOIN clubs c ON c.id = e.club_id'.
+			' JOIN addresses a ON a.id = e.address_id'.
+			' JOIN cities i ON i.id = a.city_id' .
+			' JOIN countries o ON o.id = i.country_id' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+			' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
+			' WHERE g.result = 0');
 		if ($game_id > 0)
 		{
 			$query->add(' AND g.id = ?', $game_id);
@@ -34,12 +54,12 @@ class ApiPage extends GetApiPageBase
 		{
 			$query->add(' AND g.user_id = ?', $user_id);
 		}
-		$query->add(' ORDER BY id');
+		$query->add(' ORDER BY g.id');
 		
 		$gs = NULL;
 		while ($row = $query->next())
 		{
-			list($game_id, $log, $event_token, $tournament_token) = $row;
+			list($game_id, $log, $event_token, $tournament_token, $tournament_id, $tournament_name, $tournament_flags, $stage, $club_id, $club_name, $club_flags, $city, $country) = $row;
 			if ((!is_null($event_token) && $event_token === $token) || (!is_null($tournament_token) && $tournament_token === $token))
 			{
 				$gs = json_decode($log);
@@ -54,24 +74,43 @@ class ApiPage extends GetApiPageBase
 		if ($gs != NULL)
 		{
 			$game = new stdClass();
-			if ($tournament_id > 0)
+			
+			$club_pic->set($club_id, $club_name, $club_flags);
+			$game->club = new stdClass();
+			$game->club->name = $club_name;
+			$game->club->photoUrl = $server_url . '/' . $club_pic->url(SOURCE_DIR);
+			$game->club->tnailUrl = $server_url . '/' . $club_pic->url(TNAILS_DIR);
+			$game->club->iconUrl = $server_url . '/' . $club_pic->url(ICONS_DIR);
+			
+			$game->city = $city;
+			$game->country = $country;
+			
+			if (!is_null($tournament_id))
 			{
-				$game->tournamentId = $tournament_id;
+				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags)->set($club_id, $club_name, $club_flags);
+				$game->tournament = new stdClass();
+				$game->tournament->name = $tournament_name;
+				$game->tournament->photoUrl = $server_url . '/' . $club_pic->url(SOURCE_DIR);
+				$game->tournament->tnailUrl = $server_url . '/' . $club_pic->url(TNAILS_DIR);
+				$game->tournament->iconUrl = $server_url . '/' . $club_pic->url(ICONS_DIR);
+				
+				$game->stage = (int)$stage;
 			}
+			
 			if (isset($gs->id))
 			{
 				$game->id = $gs->id;
 				if (isset($gs->number))
 				{
-					$game->number = $gs->number + 1;
+					$game->tour = $gs->number + 1;
 					if (isset($gs->table))
 					{
 						$game->table = $gs->table + 1;
-						$game->name = get_label('Table [0] / Game [1]', $game->table, $game->number);
+						$game->name = get_label('Table [0] / Game [1]', $game->table, $game->tour);
 					}
 					else
 					{
-						$game->name = get_label('Game [0]', $game->table, $game->number);
+						$game->name = get_label('Game [0]', $game->tour);
 					}
 				}
 				else
@@ -92,12 +131,6 @@ class ApiPage extends GetApiPageBase
 			}
 			if (isset($gs->players))
 			{
-				$user_pic =
-					new Picture(USER_EVENT_PICTURE, 
-					new Picture(USER_TOURNAMENT_PICTURE,
-					new Picture(USER_CLUB_PICTURE,
-					new Picture(USER_PICTURE))));
-				
 				$game->players = array();
 				foreach ($gs->players as $p)
 				{
@@ -109,8 +142,13 @@ class ApiPage extends GetApiPageBase
 					
 					if ($player->id > 0)
 					{
-						list($event_user_flags, $tournament_user_flags, $club_user_flags, $user_flags) = Db::record(get_label('user'), 
-							'SELECT eu.flags, tu.flags, cu.flags, u.flags FROM users u' .
+						list($event_user_flags, $tournament_user_flags, $club_user_flags, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $player->city, $player->country) = Db::record(get_label('user'), 
+							'SELECT eu.flags, tu.flags, cu.flags, u.flags, c.id, c.name, c.flags, ni.name, no.name FROM users u' .
+							' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+							' JOIN cities i ON i.id = u.city_id' .
+							' JOIN countries o ON o.id = i.country_id' .
+							' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+							' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 							' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
 							' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
 							' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
@@ -134,11 +172,20 @@ class ApiPage extends GetApiPageBase
 						set($player->id, $player->name, $tournament_user_flags, 't' . $tournament_id)->
 						set($player->id, $player->name, $club_user_flags, 'c' . $club_id)->
 						set($player->id, $player->name, $user_flags);
-					$server_url = get_server_url();
 					$player->photoUrl = $server_url . '/' . $user_pic->url(SOURCE_DIR);
 					$player->tnailUrl = $server_url . '/' . $user_pic->url(TNAILS_DIR);
 					$player->iconUrl = $server_url . '/' . $user_pic->url(ICONS_DIR);
 					$player->hasPhoto = $user_pic->has_image();
+					
+					if (!is_null($user_club_id))
+					{
+						$club_pic->set($user_club_id, $user_club_name, $user_club_flags);
+						$player->club = new stdClass();
+						$player->club->name = $user_club_name;
+						$player->club->photoUrl = $server_url . '/' . $club_pic->url(SOURCE_DIR);
+						$player->club->tnailUrl = $server_url . '/' . $club_pic->url(TNAILS_DIR);
+						$player->club->iconUrl = $server_url . '/' . $club_pic->url(ICONS_DIR);
+					}
 					
 					switch ($p->role)
 					{
@@ -379,12 +426,31 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('moderator_id', 'Return incomplete game of the specified moderator.', 'user_id or game_id must be set');
 		$param = $help->response_param('game', 'Game state.');
 			$param->sub_param('id', 'Game id.');
+			$tournament = $param->sub_param('tournament', 'Tournament information.', 'this is not a tournament game.');
+				$tournament->sub_param('name', 'Tournament name.');
+				$tournament->sub_param('name', 'Tournament name.');
+				$tournament->sub_param('photoUrl', 'URL of the tournament logo as it was uploaded.');
+				$tournament->sub_param('tnailUrl', 'URL of the tournament logo thumbnail (280x160 px).');
+				$tournament->sub_param('tnailUrl', 'URL of the tournament logo icon (70x70 px).');
+			$club = $param->sub_param('club', 'club information.');
+				$club->sub_param('name', 'Club name.');
+				$club->sub_param('name', 'Club name.');
+				$club->sub_param('photoUrl', 'URL of the club logo as it was uploaded.');
+				$club->sub_param('tnailUrl', 'URL of the club logo thumbnail (280x160 px).');
+				$club->sub_param('tnailUrl', 'URL of the club logo icon (70x70 px).');
+			$param->sub_param('city', 'City name where the game is played.');
+			$param->sub_param('country', 'Country name where the game is played.');
 			$param->sub_param('name', 'Game name.');
+			$param->sub_param('table', 'Table number staring from 1.', 'the table number is unknown.');
+			$param->sub_param('tour', 'Game number (we call it a tour number) in the tournament staring from 1.', 'the tour is unknown.');
+			$param->sub_param('stage', 'Tournament stage. 0 for the main stage; 1 - for the finals; 2 - for the semi-finals; 3 - quater-finals; etc');
 			$players = $param->sub_param('players', 'Players.');
 				$players->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
 				$players->sub_param('name', 'Player nickname.');
 				$players->sub_param('number', 'Number in the game.');
-				$players->sub_param('photoUrl', 'A link to the user photo. If user is missing - a link to a transparent image.');
+				$players->sub_param('photoUrl', 'A link to the user photo as it was uploaded. If user is missing - a link to a transparent image.');
+				$players->sub_param('tnailUrl', 'URL of the user logo thumbnail. If user is missing - a link to a transparent image. (280x160 px).');
+				$players->sub_param('tnailUrl', 'URL of the user logo icon. If user is missing - a link to a transparent image. (70x70 px).');
 				$players->sub_param('hasPhoto', 'True - if a player has custom photo. False - when player did not upload photo, or when id<=0, which means there is no player.');
 				$players->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
 				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don".');
@@ -398,7 +464,9 @@ class ApiPage extends GetApiPageBase
 			$moderator = $param->sub_param('moderator', 'Moderator.');
 				$moderator->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
 				$moderator->sub_param('name', 'Moderator nickname.');
-				$moderator->sub_param('photoUrl', 'A link to the moderator photo.');
+				$moderator->sub_param('photoUrl', 'A link to the moderator photo as it was uploaded. If user is missing - a link to a transparent image.');
+				$moderator->sub_param('tnailUrl', 'URL of the moderator logo thumbnail. If user is missing - a link to a transparent image. (280x160 px).');
+				$moderator->sub_param('tnailUrl', 'URL of the moderator logo icon. If user is missing - a link to a transparent image. (70x70 px).');
 				$moderator->sub_param('hasPhoto', 'True - if a moderator has custom photo. False - when moderator did not upload photo, or when id<=0, which means there is no moderator yet.');
 				$moderator->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
