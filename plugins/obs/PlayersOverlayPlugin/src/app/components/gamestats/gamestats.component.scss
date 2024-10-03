@@ -15,11 +15,12 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
     100% { opacity: 0.5; }
 }
 
-.component-root {
-  padding: 20px;
+.gamestats {
+  padding: 17px;
   line-height: normal;
   font-size: 2em;
   display: flex;
+  align-items: center;
 
   &.is-offline-true {
     opacity: 0.8;
@@ -123,14 +124,14 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
   }
 }
 
-.component-root.hide-roles-true {
+.gamestats.hide-roles-true {
   // Hide sheriff and don's checks if hiding roles
   .section.don-check, .section.sheriff-check {
     display: none;
   }
 }
 
-.component-root:not(.hide-roles-true) {
+.gamestats:not(.hide-roles-true) {
   .section {
     .elements {
       .element-wrapper {
