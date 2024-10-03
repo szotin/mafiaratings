@@ -65,6 +65,11 @@ export class GamesnapshotService {
       map((it?: Game) => it?.moderator));
   }
 
+  getRound(): Observable<number | undefined> {
+    return this.getCurrentGame().pipe(
+      map((it?: Game) => it?.number));
+  }
+
   getPlayers(): Observable<Player[]> {
     return this.getCurrentGame().pipe(
       map((it?: Game) => it?.players ?? []));

@@ -6,6 +6,7 @@ export interface GameSnapshot {
 export interface Game {
   id: number;
   name: string;
+  number: number;
   phase: GamePhase;
   state: GameState;
   round: number;

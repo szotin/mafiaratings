@@ -1,4 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
+import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
+
 
 @Component({
   selector: 'round',
@@ -6,10 +9,12 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./round.component.scss']
 })
 export class RoundComponent implements OnInit {
+  @Input() round!: Observable<number | undefined>;
 
-  constructor() { }
-
-  ngOnInit(): void {
+  constructor(private gameSnapshotService: GamesnapshotService) {
   }
 
+  ngOnInit(): void {
+    this.round = this.gameSnapshotService.getRound();
+  }
 }
