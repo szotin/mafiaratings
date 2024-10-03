@@ -2,24 +2,22 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  position: relative; /* Ensure the container is positioned relatively */
+}
 
-  gamestats {
-    flex: 0 1 auto;
-  }
+.top-bar {
+  display: flex;
+  flex: 0 1 auto;
+  height: 100px;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.7);
+}
 
-  referee {
-    position: absolute; /* Position the referee absolutely */
-    top: 0; /* Align to the top */
-    right: 0; /* Align to the right */
-    background-color: rgba(50, 50, 50, 0.8); /* Slightly lighter grey background for referee */
-    padding: 10px;
-    color: white;
-  }
+.top-right-corner {
+  display: flex;
+  margin-left: auto;      
+}
 
-  players {
-    flex: 0 1 auto; /* Allow players to take its natural height */
-    margin-top: auto; /* Push players to the bottom */
-    margin-bottom: 50px; /* Leave 50px space at the bottom */
-  }
+players {
+  flex: 0 1 auto; /* Allow players to take its natural height */
+  margin-top: auto; /* Push players to the bottom */
 }
