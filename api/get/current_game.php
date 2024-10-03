@@ -255,9 +255,14 @@ class ApiPage extends GetApiPageBase
 				$game->moderator->id = (int)$gs->moder_id;
 				if ($gs->moder_id > 0)
 				{
-					list($game->moderator->name, $event_user_flags, $tournament_user_flags, $club_user_flags, $user_name, $user_flags) = Db::record(get_label('user'), 
-						'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, nu.name, u.flags' .
+					list($game->moderator->name, $event_user_flags, $tournament_user_flags, $club_user_flags, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $game->moderator->city, $game->moderator->country) = Db::record(get_label('user'), 
+						'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, nu.name, u.flags, c.id, c.name, c.flags, ni.name, no.name' .
 						' FROM users u' .
+						' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+						' JOIN cities i ON i.id = u.city_id' .
+						' JOIN countries o ON o.id = i.country_id' .
+						' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+						' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
 						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
@@ -293,6 +298,16 @@ class ApiPage extends GetApiPageBase
 				$game->moderator->tnailUrl = $server_url . '/' . $user_pic->url(TNAILS_DIR);
 				$game->moderator->iconUrl = $server_url . '/' . $user_pic->url(ICONS_DIR);
 				$game->moderator->hasPhoto = $user_pic->has_image();
+				
+				if (!is_null($user_club_id))
+				{
+					$club_pic->set($user_club_id, $user_club_name, $user_club_flags);
+					$game->moderator->club = new stdClass();
+					$game->moderator->club->name = $user_club_name;
+					$game->moderator->club->photoUrl = $server_url . '/' . $club_pic->url(SOURCE_DIR);
+					$game->moderator->club->tnailUrl = $server_url . '/' . $club_pic->url(TNAILS_DIR);
+					$game->moderator->club->iconUrl = $server_url . '/' . $club_pic->url(ICONS_DIR);
+				}
 				
 				switch ($gs->gamestate)
 				{
@@ -447,6 +462,14 @@ class ApiPage extends GetApiPageBase
 			$players = $param->sub_param('players', 'Players.');
 				$players->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
 				$players->sub_param('name', 'Player nickname.');
+				$club = $players->sub_param('club', 'Player\'s club.', 'player has no club.');				
+					$club->sub_param('name', 'Club name.');
+					$club->sub_param('name', 'Club name.');
+					$club->sub_param('photoUrl', 'URL of the club logo as it was uploaded.');
+					$club->sub_param('tnailUrl', 'URL of the club logo thumbnail (280x160 px).');
+					$club->sub_param('tnailUrl', 'URL of the club logo icon (70x70 px).');
+				$players->sub_param('city', 'Player\'s city.');
+				$players->sub_param('country', 'Player\'s country.');
 				$players->sub_param('number', 'Number in the game.');
 				$players->sub_param('photoUrl', 'A link to the user photo as it was uploaded. If user is missing - a link to a transparent image.');
 				$players->sub_param('tnailUrl', 'URL of the user logo thumbnail. If user is missing - a link to a transparent image. (280x160 px).');
@@ -464,6 +487,14 @@ class ApiPage extends GetApiPageBase
 			$moderator = $param->sub_param('moderator', 'Moderator.');
 				$moderator->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
 				$moderator->sub_param('name', 'Moderator nickname.');
+				$club = $players->sub_param('club', 'Moderator\'s club.', 'player has no club.');				
+					$club->sub_param('name', 'Club name.');
+					$club->sub_param('name', 'Club name.');
+					$club->sub_param('photoUrl', 'URL of the club logo as it was uploaded.');
+					$club->sub_param('tnailUrl', 'URL of the club logo thumbnail (280x160 px).');
+					$club->sub_param('tnailUrl', 'URL of the club logo icon (70x70 px).');
+				$players->sub_param('city', 'Moderator\'s city.');
+				$players->sub_param('country', 'Moderator\'s country.');
 				$moderator->sub_param('photoUrl', 'A link to the moderator photo as it was uploaded. If user is missing - a link to a transparent image.');
 				$moderator->sub_param('tnailUrl', 'URL of the moderator logo thumbnail. If user is missing - a link to a transparent image. (280x160 px).');
 				$moderator->sub_param('tnailUrl', 'URL of the moderator logo icon. If user is missing - a link to a transparent image. (70x70 px).');
