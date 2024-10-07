@@ -2,6 +2,6 @@
     <div class="photo-container">
       <img [src]="(logo | async) || '../../../assets/aml_logo.png'" class="event-icon">
     </div>
-    <span class="round-number">Round {{ (round | async) }}</span>
+    <span class="round-number">{{ (stage | async) }} {{ (round | async) }}</span>
   </div>
   

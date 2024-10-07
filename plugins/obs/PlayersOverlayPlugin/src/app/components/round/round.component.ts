@@ -10,6 +10,7 @@ import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
 })
 export class RoundComponent implements OnInit {
   @Input() logo!: Observable<string | undefined>;
+  @Input() stage!: Observable<string | undefined>;
   @Input() round!: Observable<number | undefined>;
 
   constructor(private gameSnapshotService: GamesnapshotService) {
@@ -17,6 +18,7 @@ export class RoundComponent implements OnInit {
 
   ngOnInit(): void {
     this.logo = this.gameSnapshotService.getLogo();
+    this.stage = this.gameSnapshotService.getStage();
     this.round = this.gameSnapshotService.getRound();
   }
 }

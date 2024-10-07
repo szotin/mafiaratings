@@ -8,7 +8,8 @@ export interface Game {
   club: Club;
   tournament: Tournament;
   name: string;
-  number: number;
+  stage: number;
+  tour: number;
   phase: GamePhase;
   state: GameState;
   round: number;
@@ -28,6 +29,14 @@ export interface Club {
 export interface Tournament {
   name : string;
   iconUrl: string;
+}
+
+export enum Stage {
+  default = 'round',
+  quals = 'round',
+  finals = 'finals',
+  semis = 'semis',
+  quarters = 'quarters'
 }
 
 export enum GamePhase {
