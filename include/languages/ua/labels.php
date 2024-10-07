@@ -1452,6 +1452,7 @@ $labelMenu = array (
 'Enter the next URL in the URL field:' => '[EMPTY]', // form/obs_urls.php, form/obs_urls.php
 'For players photos' => '[EMPTY]', // form/obs_urls.php, form/obs_urls.php
 'For game statistics - nominees/checks' => '[EMPTY]', // form/obs_urls.php, form/obs_urls.php
+'(NEW) For the whole overlay' => '[EMPTY]', // form/obs_urls.php, form/obs_urls.php
 'Configure other parameters and click ok. Do not panic if it shows nothing. The information will appear once you start the game in this tournament/event using the specified user account.' => '[EMPTY]', // form/obs_urls.php, form/obs_urls.php
 'Enter old password' => '[EMPTY]', // form/password_change.php, form/password_change.php
 'Enter new password' => '[EMPTY]', // form/password_change.php, form/password_change.php
