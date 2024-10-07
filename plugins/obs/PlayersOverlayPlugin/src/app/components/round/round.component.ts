@@ -9,12 +9,14 @@ import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
   styleUrls: ['./round.component.scss']
 })
 export class RoundComponent implements OnInit {
+  @Input() logo!: Observable<string | undefined>;
   @Input() round!: Observable<number | undefined>;
 
   constructor(private gameSnapshotService: GamesnapshotService) {
   }
 
   ngOnInit(): void {
+    this.logo = this.gameSnapshotService.getLogo();
     this.round = this.gameSnapshotService.getRound();
   }
 }

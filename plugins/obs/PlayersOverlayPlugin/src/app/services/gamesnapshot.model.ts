@@ -5,6 +5,8 @@ export interface GameSnapshot {
 
 export interface Game {
   id: number;
+  club: Club;
+  tournament: Tournament;
   name: string;
   number: number;
   phase: GamePhase;
@@ -16,6 +18,16 @@ export interface Game {
   nominatedPlayers: Player[];
   legacy: number[];
   legacyPlayers: Player[];
+}
+
+export interface Club {
+  name : string;
+  iconUrl: string;
+}
+
+export interface Tournament {
+  name : string;
+  iconUrl: string;
 }
 
 export enum GamePhase {

@@ -55,6 +55,12 @@ export class GamesnapshotService {
      return this.gameSnapshot$;
   }
 
+  getLogo(): Observable<string | undefined> {
+    return this.getCurrentGame().pipe(
+      map((game?: Game) => game?.tournament?.iconUrl ?? game?.club?.iconUrl)
+    );
+  }
+
   getCurrentGame(): Observable<Game | undefined> {
     return this.gameSnapshot$.pipe(
       map((it?: GameSnapshot) => it?.game));

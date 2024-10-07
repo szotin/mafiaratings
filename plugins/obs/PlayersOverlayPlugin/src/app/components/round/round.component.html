@@ -1,6 +1,6 @@
 <div class="round">
     <div class="photo-container">
-      <img src="../../../assets/aml_logo.png" alt="Event Icon" class="event-icon">
+      <img [src]="(logo | async) || '../../../assets/aml_logo.png'" class="event-icon">
     </div>
     <span class="round-number">Round {{ (round | async) }}</span>
   </div>
