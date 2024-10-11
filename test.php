@@ -79,7 +79,8 @@ try
 
 	//$e = new Evaluator('-var(2) / 12.5 * var(1, 1) + 14 * 2^floor (var(1) / 7)');
 	//$e = new Evaluator('var(0) == var(1) && var(2) == var(3) ? var(4) : 1/2', $functions);
-	$e = new Evaluator('var(log(2.7182818284591))', $functions);
+	// $e = new Evaluator('var(log(2.7182818284591))', $functions);
+	$e = new Evaluator('0', $functions);
 	$e->print_nodes();
 	
 	$e->var = array(0, 10, 20, 30, 40);

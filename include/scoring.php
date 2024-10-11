@@ -717,11 +717,17 @@ function create_evaluators($scoring)
 		for ($i = 0; $i < count($group); ++$i)
 		{
 			$policy = $group[$i];
-			if (isset($policy->evaluator))
+			if (isset($policy->points))
 			{
-				return; // they are already created
+				if (is_string($policy->points) && !isset($policy->evaluator))
+				{
+					$policy->evaluator = new Evaluator($policy->points, $_scoring_functions);
+				}
 			}
-			$policy->evaluator = new Evaluator($policy->points, $_scoring_functions);
+			else
+			{
+				$policy->points = 0;
+			}
 		}
 	}
 }
@@ -730,23 +736,35 @@ function add_player_counters($counter_index, $player, $scoring, $game_flags, $ga
 {
 	if (isset($player->counters))
 	{
+		$role = 1 << $game_role;
 		$counters = &$player->counters[$counter_index];
 		for ($i = 0; $i < count($counters); ++$i)
 		{
 			$policy = $scoring->counters[$i];
+			// if ($player->id == 3266)
+			// {
+				// echo 'Counter ' . $i . ': matter=' . $policy->matter . '; flags=' . $game_flags . '; roles=' . (isset($policy->roles) ? $policy->roles : 'all') . '; role=' . $role . '.';
+			// }
 			if (
 				($policy->matter & $game_flags) == $policy->matter &&
 				(!isset($policy->roles) || ($policy->roles & $role) != 0))
 			{
 				++$counters[$i];
 			}
+			// if ($player->id == 3266)
+			// {
+				// echo '; value=' . $counters[$i] . '<br>';
+			// }
 		}
-	}
+ 	}
 }
 
-function add_player_score($player, $player_stats, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $lod_flags, $options, $event_name = NULL)
+function add_player_score($player, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $lod_flags, $options, $event_name = NULL)
 {
 	global $_scoring_groups;
+	
+	add_player_counters(1, $player, $scoring, $game_flags, $game_role);
+	
 	$options_flags = 0;
 	if (isset($options->flags))
 	{
@@ -808,96 +826,17 @@ function add_player_score($player, $player_stats, $scoring, $game_id, $game_end_
 				continue;
 			}
 			
-			$points = 0;
-			if (isset($policy->points))
+			if (isset($policy->evaluator))
+			{
+				$policy->evaluator->counter = $player->counters;
+				$policy->evaluator->bonus = $extra_pts;
+				$policy->evaluator->role = $game_role;
+				$policy->evaluator->matter = $game_flags;
+				$points = $policy->evaluator->evaluate();
+			}
+			else
 			{
 				$points = $policy->points;
-			}
-			else if (isset($policy->min_difficulty))
-			{
-				if ($options_flags & SCORING_OPTION_NO_GAME_DIFFICULTY)
-				{
-					$points = $policy->min_points;
-				}
-			}
-			else if (isset($policy->min_night1) || isset($policy->max_night1))
-			{
-				if ($options_flags & SCORING_OPTION_NO_NIGHT_KILLS)
-				{
-					$points = isset($policy->min_points) ? $policy->min_points : 0;
-				}
-				else
-				{
-					$min_night1 = isset($policy->min_night1) ? $policy->min_night1 : 0;
-					$max_night1 = isset($policy->max_night1) ? $policy->max_night1 : 1;
-					$min_points = isset($policy->min_points) ? $policy->min_points : 0;
-					$max_points = isset($policy->max_points) ? $policy->max_points : 0;
-					$lost_only = isset($policy->lost_only) ? $policy->lost_only : false;
-					$percent = isset($policy->percent) ? $policy->percent : true;
-					$rate = 0;
-					
-					// if ($player->id == 4055)
-					// {
-						// echo 'Games count: ' . $player_stats->games_count . '<br>';
-						// echo 'Killed first: ' . $player_stats->killed_first_count . '<br>';
-						// echo 'Killed first and lost: ' . $player_stats->killed_first_lost_count . '<br>';
-						// echo 'Min night 1: ' . $min_night1 . '<br>';
-						// echo 'Max night 1: ' . $max_night1 . '<br>';
-						// echo 'Min points: ' . $min_points . '<br>';
-						// echo 'Max points: ' . $max_points . '<br>';
-						// echo 'Lost only: ' . $lost_only . '<br>';
-						// echo 'Percent: ' . $percent . '<br>';
-						// echo '---------------------<br>';
-					// }
-					
-					if ($player_stats->games_count > 0)
-					{
-						$killed_first_count = $lost_only ? $player_stats->killed_first_lost_count : $player_stats->killed_first_count;
-						if ($percent)
-						{
-							$rate = max(min($killed_first_count / $player_stats->games_count, 1), 0);
-						}
-						else
-						{
-							$rate = $killed_first_count;
-						}
-					}
-					
-					if ($rate <= $min_night1)
-					{
-						$points = $min_points;
-					}
-					else if ($rate >= $policy->max_night1)
-					{
-						$points = $max_points;
-					}
-					else
-					{
-						$points = ($max_points - $min_points) * $rate;
-						$points += $min_points * $max_night1 - $max_points * $min_night1;
-						$points /= $max_night1 - $min_night1;
-					}
-				}
-			}
-			else if (isset($policy->fiim_first_night_score))
-			{
-				if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
-				{
-					$game_percentage = isset($policy->percent) ? $policy->percent : 0.4;
-					$points = round($player_stats->games_count * $game_percentage);
-					if ($points != 0)
-					{
-						$points = max(min($player_stats->killed_first_count * $policy->fiim_first_night_score / $points, $policy->fiim_first_night_score), 0);
-					}
-					else
-					{
-						$points = $policy->fiim_first_night_score;
-					}
-				}
-			}
-			else if (isset($policy->extra_points_weight))
-			{
-				$points = $policy->extra_points_weight * $extra_pts;
 			}
 			
 			// if ($player->id == 25)
@@ -1232,7 +1171,6 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	{
 		$_lang = 1;
 	}
-	$stat_flags = get_scoring_stat_flags($scoring, $options);
     
     // prepare additional filter
     $condition = get_players_condition($players_list);
@@ -1241,6 +1179,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	$players = array();
 	$query = new DbQuery(
 		'SELECT u.id, nu.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id)' .
+		', SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0))' . 
 		', SUM(p.won)' .
 		', SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))' .
 		', eu.nickname, eu.flags, tu.flags, cu.flags' .
@@ -1266,12 +1205,13 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 		$player->club_name = $row[5];
 		$player->club_flags = (int)$row[6];
 		$player->games_count = (int)$row[7];
-		$player->wins = (int)$row[10];
-		$player->special_role_wins = (int)$row[11];
-		$player->nickname = $row[12];
-		$player->event_user_flags = (int)$row[13];
-		$player->tournament_user_flags = (int)$row[14];
-		$player->club_user_flags = (int)$row[15];
+		$player->killed_first_count = (int)$row[8];
+		$player->wins = (int)$row[9];
+		$player->special_role_wins = (int)$row[10];
+		$player->nickname = $row[11];
+		$player->event_user_flags = (int)$row[12];
+		$player->tournament_user_flags = (int)$row[13];
+		$player->club_user_flags = (int)$row[14];
 
         init_player_score($player, $scoring, $lod_flags);
         $players[$player->id] = $player;
@@ -1308,8 +1248,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 			$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
 		}
 		$player = $players[$player_id];
-		add_player_counters(1, $player, $scoring, $flags, $role);
-		add_player_score($player, $player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $lod_flags, $options);
+		add_player_score($player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $lod_flags, $options);
 	}
 	
 	// Add event extra points
@@ -1347,12 +1286,11 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 		}
 	}
 	
-	
 	// Prepare and sort scores
-    if ($lod_flags & SCORING_LOD_NO_SORTING)
-    {
-        return $players;
-    }
+	if ($lod_flags & SCORING_LOD_NO_SORTING)
+	{
+		return $players;
+	}
 
 	$scores = array();
 	foreach ($players as $user_id => $player)
@@ -1666,7 +1604,6 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		'SELECT u.id, nu.name, u.flags, u.languages, c.id, c.name, c.flags,' . 
 		' COUNT(g.id), COUNT(DISTINCT g.event_id),' . 
 		' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)),' . 
-		' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2 AND p.won = 0, 1, 0)),' .
 		' SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)),' . 
 		' tu.flags, cu.flags' .
 			' FROM players p' . 
@@ -1692,12 +1629,11 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$player->games_count = (int)$row[7];
 		$player->events_count = (int)$row[8];
 		$player->killed_first_count = (int)$row[9];
-		$player->killed_first_lost_count = (int)$row[10];
-		$player->wins = (int)$row[11];
-		$player->special_role_wins = (int)$row[12];
+		$player->wins = (int)$row[10];
+		$player->special_role_wins = (int)$row[11];
 		$player->normalizer = $normalizer;
-		$player->tournament_user_flags = (int)$row[13];
-		$player->club_user_flags = (int)$row[14];
+		$player->tournament_user_flags = (int)$row[12];
+		$player->club_user_flags = (int)$row[13];
 		
 		$max_games_played = max($max_games_played, $player->games_count);
 		$max_rounds_played = max($max_rounds_played, $player->events_count);
@@ -1725,8 +1661,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			}
 			if (isset($players[$player_id])) // It happens that it is not set but I have no idea why. To be investigated.
 			{
-				$player = $players[$player_id];
-				add_player_score($player, $player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $lod_flags, $options, $event_name);
+				add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $lod_flags, $options, $event_name);
 			}
         }
     }
@@ -1794,7 +1729,6 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
             $query = 
 				new DbQuery('SELECT p.user_id, COUNT(g.id),'.
 				' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)),'.
-				' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2 AND p.won = 0, 1, 0)),' .
 				' SUM(p.won),'.
 				' SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))'.
 				' FROM players p' .
@@ -1808,9 +1742,8 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				$player->id = (int)$row[0];
 				$player->games_count = (int)$row[1];
 				$player->killed_first_count = (int)$row[2];
-				$player->killed_first_lost_count = (int)$row[3];
-				$player->wins = (int)$row[4];
-				$player->special_role_wins = (int)$row[5];
+				$player->wins = (int)$row[3];
+				$player->special_role_wins = (int)$row[4];
                 $group->players[$player->id] = $player;
             }
         }
@@ -1821,7 +1754,6 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			new DbQuery(
 				'SELECT p.user_id, COUNT(g.id),'.
 				' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)),'.
-				' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2 AND p.won = 0, 1, 0)),' .
 				' SUM(p.won),'.
 				' SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))'.
 				' FROM players p' .
@@ -1835,9 +1767,8 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			$player->id = (int)$row[0];
 			$player->games_count = (int)$row[1];
 			$player->killed_first_count = (int)$row[2];
-			$player->killed_first_lost_count = (int)$row[3];
-			$player->wins = (int)$row[4];
-			$player->special_role_wins = (int)$row[5];
+			$player->wins = (int)$row[3];
+			$player->special_role_wins = (int)$row[4];
 			init_player_score($player, $scoring, $lod_flags);
 			$no_event_players[$player->id] = $player;
 		}
@@ -1859,17 +1790,15 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			{
 				$s = $event_scorings[$event_id];
 				$g = $s->group;
-				$player = $g->players[$player_id];
 				$op = $s->options;
 				$event_name = $s->event_name;
 			}
 			else
 			{
-				$player = $no_event_players[$player_id];
 				$op = $options;
 				$event_name = NULL;
 			}
-			add_player_score($players[$player_id], $player, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $lod_flags, $op, $event_name);
+			add_player_score($players[$player_id], $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $lod_flags, $op, $event_name);
 		}
     }
 	
