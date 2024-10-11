@@ -112,6 +112,14 @@ class ApiHelpResponseParam
 			echo ' <small>(optional)</small>';
 		}
 		echo '</dt><dd>' . $this->description;
+		if ($this->lod != 0)
+		{
+			echo '<p><dfn>Returned only when level of details (lod param) is or greater than ' . $this->lod . '.</dfn></p>';
+		}
+		if ($this->default_value != NULL)
+		{
+			echo '<p><dfn>When missing: ' . $this->default_value . ' </dfn></p>';
+		}
 		if (isset($this->params))
 		{
 			echo '<h3>Structure:</h3><dl>';
@@ -120,14 +128,6 @@ class ApiHelpResponseParam
 				$param->show();
 			}
 			echo '</dl>';
-		}
-		if ($this->lod != 0)
-		{
-			echo '<p><dfn>Returned only when level of details (lod param) is or greater than ' . $this->lod . '.</dfn></p>';
-		}
-		if ($this->default_value != NULL)
-		{
-			echo '<p><dfn>When missing: ' . $this->default_value . ' </dfn></p>';
 		}
 		echo '</dd>';
 	}

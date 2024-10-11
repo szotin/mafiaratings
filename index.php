@@ -249,7 +249,7 @@ class Page extends GeneralPageBase
 		return false;
 	}
 	
-	private function show_tournaments($condition)
+	private function select_tournaments($condition, $in_series_only)
 	{
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name FROM tournaments t' .
@@ -257,10 +257,14 @@ class Page extends GeneralPageBase
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP()', $condition);
+		if ($in_series_only)
+		{
+			$query->add(' AND EXISTS (SELECT st.series_id FROM series_tournaments st WHERE st.tournament_id = t.id)');
+		}
 		$query->add(' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id LIMIT ' . (TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT));
-		$tournaments_list = '';
+		$this->tournaments_list = '';
 		$delim = '';
-		$tournaments = array();
+		$this->tournaments = array();
 		while ($row = $query->next())
 		{
 			$tournament = new stdClass();
@@ -268,9 +272,18 @@ class Page extends GeneralPageBase
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->start_time, $tournament->duration, $tournament->timezone, 
 				$tournament->club_id, $tournament->club_name, $tournament->club_flags, 
 				$tournament->address_id, $tournament->address_flags, $tournament->address, $tournament->address_name) = $row;
-			$tournaments[] = $tournament;
-			$tournaments_list .= $delim . $tournament->id;
+			$this->tournaments[] = $tournament;
+			$this->tournaments_list .= $delim . $tournament->id;
 			$delim = ', ';
+		}
+	}
+	
+	private function show_tournaments($condition)
+	{
+		$this->select_tournaments($condition, true);
+		if (count($this->tournaments) < TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT)
+		{
+			$this->select_tournaments($condition, false);
 		}
 		
 		$this->max_series = 0;
@@ -279,19 +292,19 @@ class Page extends GeneralPageBase
 			' FROM series_tournaments st'.
 			' JOIN series s ON s.id = st.series_id'.
 			' JOIN tournaments t ON t.id = st.tournament_id'.
-			' WHERE t.id IN (' . $tournaments_list . ')'.
-			' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id, st.stars, s.id');
+			' WHERE t.id IN (' . $this->tournaments_list . ')'.
+			' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id, s.id');
 		$tournament_index = 0;
 		while ($row = $query->next())
 		{
 			list($tournament_id, $series_id, $series_name, $series_flags, $stars) = $row;
-			$tournament = $tournaments[$tournament_index];
+			$tournament = $this->tournaments[$tournament_index];
 			while ($tournament->id != $tournament_id)
 			{
 				++$tournament_index;
-				if ($tournament_index < count($tournaments))
+				if ($tournament_index < count($this->tournaments))
 				{
-					$tournament = $tournaments[$tournament_index];
+					$tournament = $this->tournaments[$tournament_index];
 				}
 				else
 				{
@@ -321,7 +334,7 @@ class Page extends GeneralPageBase
 		
 		$tournament_count = 0;
 		$column_count = 0;
-		foreach ($tournaments as $tournament)
+		foreach ($this->tournaments as $tournament)
 		{
 			if ($column_count == 0)
 			{
