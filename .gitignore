@@ -50,7 +50,10 @@ js/seating_en.js
 js/game_ua.js
 js/game_ru.js
 js/game_en.js
-/plugins/obs/PlayersOverlayPlugin/builds/*
+**/builds/*
 api/ops/MWT.txt
 # System Files
 **/.DS_Store
+/plugins/obs/ObsController/.angular/*
+/plugins/obs/ObsController/dist/*
+**/node_modules/*
