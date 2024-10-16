@@ -15,7 +15,7 @@ export class LoginComponent implements OnInit {
 
   public formulario: any = new FormGroup({});
 
-  constructor(private authService: ObsAuthService, private urlParameterService: UrlParametersService, private router: Router) {}
+  constructor(private obsAuthService: ObsAuthService, private urlParameterService: UrlParametersService, private router: Router) {}
 
   ngOnInit() {
     const mrToken = this.urlParameterService.gameSnapshotUrlParams.get('token') ?? '';
@@ -35,7 +35,7 @@ export class LoginComponent implements OnInit {
       })
     })
 
-    this.authService.isLoggedIn$.subscribe({
+    this.obsAuthService.isLoggedIn$.subscribe({
       next: (data: any) => {
         this.connectedColor = data ? 'accent' : 'primary'
       }
@@ -46,14 +46,15 @@ export class LoginComponent implements OnInit {
     if (this.formulario.invalid) {
       return
     }
+    
     let obsUrl: ObsUrl = {
       protocol: this.formulario.get(['obs','protocol'])?.value || '',
       host: this.formulario.get(['obs','host'])?.value || '',
       port: this.formulario.get(['obs','port'])?.value || ''
     }
     let password = this.formulario.get(['obs','password'])?.value
-    this.authService.login(obsUrl, password || '').subscribe((data) => {
-
+    this.obsAuthService.login(obsUrl, password || '')
+    .subscribe((data) => {
       this.router.navigate(['obs','controller'], {
          queryParams: {
           token: this.formulario.get(['mafiaRatings','mrToken'])?.value,

@@ -37,7 +37,7 @@ const obsRoutes: Routes = [
 
 const routes: Routes = [...obsRoutes]
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes, { useHash: true })],
   exports: [RouterModule]
 })
 export class ObsRoutingModule {}

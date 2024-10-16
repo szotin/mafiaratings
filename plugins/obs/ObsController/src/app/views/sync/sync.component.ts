@@ -22,7 +22,7 @@ export class SyncComponent {
 
   currentGamePhase: GamePhase | undefined;
   currentGameState: GameState | undefined;
-  currentRound: number | undefined;
+  maxSeenRound: number = 0;
 
 
   phaseSceneMap: {[key in GamePhase]: string} = {
@@ -49,12 +49,20 @@ export class SyncComponent {
         (gameSnapshot: GameSnapshot) => {
           const gamePhase = gameSnapshot.game?.phase;
           const gameState = gameSnapshot.game?.state;
-          const gameRound = gameSnapshot.game?.round;
+          const gameRound = gameSnapshot.game?.round ?? 0;
 
           if (this.currentGamePhase !== gamePhase) {
-            console.log(`Switching from ${this.currentGamePhase} to ${gamePhase}` )
-            this.currentGamePhase = gamePhase;
-            this.switchSceneForGamePhase(gamePhase)
+            if (this.maxSeenRound > gameRound) {
+              console.log(`Game rollback detected from round ${this.maxSeenRound} to round ${gameRound}, skipping scene switch`)
+            } else if (this.maxSeenRound === gameRound && this.currentGamePhase == GamePhase.night && gamePhase == GamePhase.day) {
+              console.log(`Game rollback detected from ${this.currentGamePhase} round ${this.maxSeenRound} to ${gamePhase} round ${gameRound}, skipping scene switch`)
+            } else {
+              console.log(`Switching from ${this.currentGamePhase} round ${this.maxSeenRound} to ${gamePhase} round ${gameRound}`)
+
+              this.currentGamePhase = gamePhase
+              this.maxSeenRound = gameRound
+              this.switchSceneForGamePhase(gamePhase)
+            }
           }
         }
       )

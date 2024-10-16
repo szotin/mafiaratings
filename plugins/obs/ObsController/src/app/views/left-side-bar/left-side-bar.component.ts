@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core'
 import { Observable } from 'rxjs';
+import { ObsAuthService } from '../../services/obs/obs-auth.service';
 import { LoggedInGuardService } from '../../services/obs/logged-in-guard.service'
 
 @Component({
@@ -17,9 +18,9 @@ export class ObsLeftSideBarComponent implements OnInit {
     { label: 'Help', href: '/obs/help' }
   ]
 
-  constructor(private loggedInGuardService: LoggedInGuardService) {}
+  constructor(private obsAuth: ObsAuthService) {}
 
   ngOnInit() {
-    this.isLoggedIn = this.loggedInGuardService.canActivate().asObservable()
+    this.isLoggedIn = this.obsAuth.isLoggedIn$
   }
 }
