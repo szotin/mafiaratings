@@ -54,6 +54,9 @@ js/game_en.js
 api/ops/MWT.txt
 # System Files
 **/.DS_Store
+# Packages and compiled code
 /plugins/obs/ObsController/.angular/*
 /plugins/obs/ObsController/dist/*
 **/node_modules/*
+# FTP config
+.vscode/sftp.json
