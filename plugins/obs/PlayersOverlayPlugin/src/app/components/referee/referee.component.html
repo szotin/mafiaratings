@@ -1,0 +1,6 @@
+<div class="referee">
+  <div class="photo-container">
+    <img [src]="(referee | async)?.photoUrl || '../../../assets/aml_logo.png'" class="referee-photo">
+  </div>
+  <span class="referee-name">{{ (referee | async)?.name || "Referee"}}</span>
+</div>

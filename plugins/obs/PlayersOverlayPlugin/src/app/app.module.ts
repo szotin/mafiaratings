@@ -5,14 +5,19 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
-import { PlayersComponent } from './components/players/players.component';
-import { PlayerComponent } from './components/player/player.component';
-import { GamestatsComponent } from './components/gamestats/gamestats.component';
-import { ObsControlComponent } from './components/obs-control/obs-control.component';
-
 import { GamesnapshotService } from './services/gamesnapshot.service';
+
+import { AppRoutingModule } from './app-routing.module';
+
+import { AppComponent } from './app.component';
+import { GamestatsComponent } from './components/gamestats/gamestats.component';
+import { RefereeComponent } from './components/referee/referee.component';
+import { RoundComponent } from './components/round/round.component';
+import { PlayerComponent } from './components/player/player.component';
+import { PlayersComponent } from './components/players/players.component';
+import { GameOverlayComponent } from './components/game-overlay/game-overlay.component';
+
+import { ObsControlComponent } from './components/obs-control/obs-control.component';
 import { ObsControlWebsocketService } from './components/obs-control/obs-control-websocket.service';
 
 @NgModule({
@@ -21,7 +26,10 @@ import { ObsControlWebsocketService } from './components/obs-control/obs-control
     PlayersComponent,
     PlayerComponent,
     GamestatsComponent,
-    ObsControlComponent
+    ObsControlComponent,
+    GameOverlayComponent,
+    RefereeComponent,
+    RoundComponent
   ],
   imports: [
     BrowserModule,
