@@ -83,6 +83,7 @@ try
 				params += '&hide_roles';
 			var url1 = site + '/obs_plugins/players-overlay-plugin/#/players' + params;
 			var url2 = site + '/obs_plugins/players-overlay-plugin/#/gamestats' + params;
+			var url3 = site + '/obs_plugins/players-overlay-plugin/#/overlay' + params;
 			var html =
 				'<ol>' +
 				'<li><?php echo get_label('Open OBS Studio and your scene in it.'); ?></li>' +
@@ -91,6 +92,7 @@ try
 				'<ol>' +
 				'<li><?php echo get_label('For players photos'); ?>:<br><a href="' + url1 + '" target="_blank">' + url1 + '</a></li>' +
 				'<li><?php echo get_label('For game statistics - nominees/checks'); ?>:<br><a href="' + url2 + '" target="_blank">' + url2 + '</a></li>' +
+				'<li><?php echo get_label('(NEW) For the whole overlay'); ?>:<br><a href="' + url3 + '" target="_blank">' + url3 + '</a></li>' +
 				'</ol>' +
 				'<li><?php echo get_label('Configure other parameters and click ok. Do not panic if it shows nothing. The information will appear once you start the game in this tournament/event using the specified user account.'); ?></li>' +
 				'</ol>';

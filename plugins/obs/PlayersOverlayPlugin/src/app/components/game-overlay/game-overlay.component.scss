@@ -1,0 +1,23 @@
+.game-overlay {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.top-bar {
+  display: flex;
+  flex: 0 1 auto;
+  height: 100px;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.top-right-corner {
+  display: flex;
+  margin-left: auto;
+}
+
+players {
+  flex: 0 1 auto; /* Allow players to take its natural height */
+  margin-top: auto; /* Push players to the bottom */
+}
