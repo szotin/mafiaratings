@@ -415,7 +415,11 @@ class EvNode
 		}
 		throw new Exc(get_label('Bracket is not closed: [0]', $this->evaluator->highlight_node($open_bracket)));
 	}
-	
+
+	function has_function($name)
+	{
+		return false;
+	}
 }
 
 class EvValueNode extends EvNode
@@ -506,6 +510,11 @@ class EvUnaryOpNode extends EvNode
 			}
 		}
 		return NULL;
+	}
+	
+	function has_function($name)
+	{
+		return isset($this->child) ? $this->child->has_function($name) : false;
 	}
 }
 
@@ -667,6 +676,19 @@ class EvBinaryOpNode extends EvNode
 		}
 		return NULL;
 	}
+	
+	function has_function($name)
+	{
+		if (isset($this->left) && $this->left->has_function($name))
+		{
+			return true;
+		}
+		if (isset($this->right) && $this->right->has_function($name))
+		{
+			return true;
+		}
+		return false;
+	}
 }
 
 class EvTernaryOpNode extends EvNode
@@ -790,21 +812,38 @@ class EvTernaryOpNode extends EvNode
 			}
 		}
 		
-		if (isset($this->thrird))
+		if (isset($this->third))
 		{
-			$thrird = $this->thrird->optimize();
-			if ($thrird)
+			$third = $this->third->optimize();
+			if ($third)
 			{
-				$this->thrird = $thrird;
+				$this->third = $third;
 			}
 		}
 		
-		if ($first && $second && $thrird)
+		if ($first && $second && $third)
 		{
 			$first->value = $this->evaluate();
 			return $first;
 		}
 		return NULL;
+	}
+	
+	function has_function($name)
+	{
+		if (isset($this->first) && $this->first->has_function($name))
+		{
+			return true;
+		}
+		if (isset($this->second) && $this->second->has_function($name))
+		{
+			return true;
+		}
+		if (isset($this->third) && $this->third->has_function($name))
+		{
+			return true;
+		}
+		return false;
 	}
 }
 
@@ -941,6 +980,26 @@ class EvFuncNode extends EvNode
 			return new EvValueNode($this->evaluator, $this->evaluate(), $this->position, NULL);
 		}
 		return NULL;
+	}
+	
+	
+	function has_function($name)
+	{
+		if (strcasecmp($this->evaluator->functions[$this->index]->name(), $name) == 0)
+		{
+			return true;
+		}
+		if (isset($this->args))
+		{
+			foreach ($this->args as $arg)
+			{
+				if ($arg->has_function($name))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }
 
@@ -1125,6 +1184,11 @@ class Evaluator
 		if ($this->complete_lexems(EV_LEXEM_OR)) { return; }
 		if ($this->complete_lexems(EV_LEXEM_QUESTION)) { return; }
 		Evaluator::unexpectedLexem($this->node);
+	}
+	
+	public function has_function($name)
+	{
+		return $this->node->has_function($name);
 	}
 	
 	private function parse_next_lexem($expr, &$index, $prevNode)
