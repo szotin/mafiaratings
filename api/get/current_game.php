@@ -18,7 +18,7 @@ class ApiPage extends GetApiPageBase
 			new Picture(USER_CLUB_PICTURE,
 			new Picture(USER_PICTURE))));
 		$club_pic = new Picture(CLUB_PICTURE);
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE, $club_pic);
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$server_url = get_server_url();
 		
 		$token = get_required_param('token');
@@ -81,18 +81,20 @@ class ApiPage extends GetApiPageBase
 			$game->club->photoUrl = $server_url . '/' . $club_pic->url(SOURCE_DIR);
 			$game->club->tnailUrl = $server_url . '/' . $club_pic->url(TNAILS_DIR);
 			$game->club->iconUrl = $server_url . '/' . $club_pic->url(ICONS_DIR);
+			$game->club->hasPhoto = $club_pic->has_image();
 			
 			$game->city = $city;
 			$game->country = $country;
 			
 			if (!is_null($tournament_id))
 			{
-				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags)->set($club_id, $club_name, $club_flags);
+				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 				$game->tournament = new stdClass();
 				$game->tournament->name = $tournament_name;
-				$game->tournament->photoUrl = $server_url . '/' . $club_pic->url(SOURCE_DIR);
-				$game->tournament->tnailUrl = $server_url . '/' . $club_pic->url(TNAILS_DIR);
-				$game->tournament->iconUrl = $server_url . '/' . $club_pic->url(ICONS_DIR);
+				$game->tournament->photoUrl = $server_url . '/' . $tournament_pic->url(SOURCE_DIR);
+				$game->tournament->tnailUrl = $server_url . '/' . $tournament_pic->url(TNAILS_DIR);
+				$game->tournament->iconUrl = $server_url . '/' . $tournament_pic->url(ICONS_DIR);
+				$game->tournament->hasPhoto = $tournament_pic->has_image();
 				
 				$game->stage = (int)$stage;
 			}
@@ -185,6 +187,7 @@ class ApiPage extends GetApiPageBase
 						$player->club->photoUrl = $server_url . '/' . $club_pic->url(SOURCE_DIR);
 						$player->club->tnailUrl = $server_url . '/' . $club_pic->url(TNAILS_DIR);
 						$player->club->iconUrl = $server_url . '/' . $club_pic->url(ICONS_DIR);
+						$player->club->hasPhoto = $club_pic->has_image();
 					}
 					
 					switch ($p->role)
@@ -307,6 +310,7 @@ class ApiPage extends GetApiPageBase
 					$game->moderator->club->photoUrl = $server_url . '/' . $club_pic->url(SOURCE_DIR);
 					$game->moderator->club->tnailUrl = $server_url . '/' . $club_pic->url(TNAILS_DIR);
 					$game->moderator->club->iconUrl = $server_url . '/' . $club_pic->url(ICONS_DIR);
+					$game->moderator->club->hasPhoto = $club_pic->has_image();
 				}
 				
 				switch ($gs->gamestate)
@@ -446,13 +450,15 @@ class ApiPage extends GetApiPageBase
 				$tournament->sub_param('name', 'Tournament name.');
 				$tournament->sub_param('photoUrl', 'URL of the tournament logo as it was uploaded.');
 				$tournament->sub_param('tnailUrl', 'URL of the tournament logo thumbnail (280x160 px).');
-				$tournament->sub_param('tnailUrl', 'URL of the tournament logo icon (70x70 px).');
+				$tournament->sub_param('iconUrl', 'URL of the tournament logo icon (70x70 px).');
+				$tournament->sub_param('hasPhoto', 'True - if the tournament has custom photo.');
 			$club = $param->sub_param('club', 'club information.');
 				$club->sub_param('name', 'Club name.');
 				$club->sub_param('name', 'Club name.');
 				$club->sub_param('photoUrl', 'URL of the club logo as it was uploaded.');
 				$club->sub_param('tnailUrl', 'URL of the club logo thumbnail (280x160 px).');
-				$club->sub_param('tnailUrl', 'URL of the club logo icon (70x70 px).');
+				$club->sub_param('iconUrl', 'URL of the club logo icon (70x70 px).');
+				$club->sub_param('hasPhoto', 'True - if the club has custom photo.');
 			$param->sub_param('city', 'City name where the game is played.');
 			$param->sub_param('country', 'Country name where the game is played.');
 			$param->sub_param('name', 'Game name.');
@@ -467,13 +473,14 @@ class ApiPage extends GetApiPageBase
 					$club->sub_param('name', 'Club name.');
 					$club->sub_param('photoUrl', 'URL of the club logo as it was uploaded.');
 					$club->sub_param('tnailUrl', 'URL of the club logo thumbnail (280x160 px).');
-					$club->sub_param('tnailUrl', 'URL of the club logo icon (70x70 px).');
+					$club->sub_param('iconUrl', 'URL of the club logo icon (70x70 px).');
+					$club->sub_param('hasPhoto', 'True - if the club has custom photo.');
 				$players->sub_param('city', 'Player\'s city.');
 				$players->sub_param('country', 'Player\'s country.');
 				$players->sub_param('number', 'Number in the game.');
 				$players->sub_param('photoUrl', 'A link to the user photo as it was uploaded. If user is missing - a link to a transparent image.');
 				$players->sub_param('tnailUrl', 'URL of the user logo thumbnail. If user is missing - a link to a transparent image. (280x160 px).');
-				$players->sub_param('tnailUrl', 'URL of the user logo icon. If user is missing - a link to a transparent image. (70x70 px).');
+				$players->sub_param('iconUrl', 'URL of the user logo icon. If user is missing - a link to a transparent image. (70x70 px).');
 				$players->sub_param('hasPhoto', 'True - if a player has custom photo. False - when player did not upload photo, or when id<=0, which means there is no player.');
 				$players->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
 				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don".');
@@ -492,12 +499,13 @@ class ApiPage extends GetApiPageBase
 					$club->sub_param('name', 'Club name.');
 					$club->sub_param('photoUrl', 'URL of the club logo as it was uploaded.');
 					$club->sub_param('tnailUrl', 'URL of the club logo thumbnail (280x160 px).');
-					$club->sub_param('tnailUrl', 'URL of the club logo icon (70x70 px).');
+					$club->sub_param('iconUrl', 'URL of the club logo icon (70x70 px).');
+					$club->sub_param('hasPhoto', 'True - if the club has custom photo.');
 				$players->sub_param('city', 'Moderator\'s city.');
 				$players->sub_param('country', 'Moderator\'s country.');
 				$moderator->sub_param('photoUrl', 'A link to the moderator photo as it was uploaded. If user is missing - a link to a transparent image.');
 				$moderator->sub_param('tnailUrl', 'URL of the moderator logo thumbnail. If user is missing - a link to a transparent image. (280x160 px).');
-				$moderator->sub_param('tnailUrl', 'URL of the moderator logo icon. If user is missing - a link to a transparent image. (70x70 px).');
+				$moderator->sub_param('iconUrl', 'URL of the moderator logo icon. If user is missing - a link to a transparent image. (70x70 px).');
 				$moderator->sub_param('hasPhoto', 'True - if a moderator has custom photo. False - when moderator did not upload photo, or when id<=0, which means there is no moderator yet.');
 				$moderator->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
