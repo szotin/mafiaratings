@@ -139,7 +139,7 @@ $_scoring_functions = array(
 		new EvFuncMax(), 
 		new EvFuncParam('counter'),
 		new EvFuncParam('bonus'),
-		new EvFuncParam('role'),
+		new EvFuncParam('role'), // 0-civ,1-sheriff;2-maf;3-don
 		new EvFuncParam('difficulty'),
 		new EvFuncMatter());
 
@@ -1090,6 +1090,10 @@ function get_players_condition($players_list)
 function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num)
 {
 	global $_scoring_groups, $_lang;
+	if (is_null($scoring))
+	{
+		$scoring = new stdClass();
+	}
 
 	if (($tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
 	{
@@ -1503,6 +1507,11 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 {
 	global $_lang;
 	
+	if (is_null($scoring))
+	{
+		$scoring = new stdClass();
+	}
+	
 	// todo: replace user name with user name id
 	if (!isset($_lang))
 	{
@@ -1738,7 +1747,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			$group->red_win_rate = 0;
 			if ($scoring->is_game_difficulty_used)
 			{
-				list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0' . $group.cond);
+				list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0' . $group->cond, $tournament_id);
 				if ($count > 0)
 				{
 					$group->red_win_rate = max(min((float)($red_wins / $count), 1), 0);
@@ -1761,9 +1770,13 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
             {
 				$games[] = $row;
 				list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_id, $round_num, $event_name) = $row;
+				
 				if (!isset($counters[$player_id]))
 				{
-					$counters[$player_id] = $players[$player_id]->counters;
+					if (isset($players[$player_id]->counters))
+					{
+						$counters[$player_id] = $players[$player_id]->counters;
+					}
 				}
 				add_player_counters($counters[$player_id][0], $scoring, $flags, $role);
 			}
