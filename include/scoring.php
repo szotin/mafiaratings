@@ -741,6 +741,10 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 		{
 			continue;
 		}
+		if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) != 0 && $group_name == SCORING_GROUP_NIGHT1)
+		{
+			continue;
+		}
 		 
 		$group = $scoring->$group_name;
 		for ($i = 0; $i < count($group); ++$i)
@@ -2261,32 +2265,26 @@ function get_scoring_group_label($group)
 
 function is_scoring_policy_on($policy, $options)
 {
-	if (isset($options->flags) && $options->flags != 0)
-	{
-		if (isset($policy->min_night1) || isset($policy->max_night1))
-		{
-			if (!isset($policy->min_points) || $policy->min_points == 0)
-			{
-				return ($options->flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0;
-			}
-		}
-		if (isset($policy->min_difficulty) || isset($policy->max_difficulty))
-		{
-			if (!isset($policy->min_points) || $policy->min_points == 0)
-			{
-				return ($options->flags & SCORING_OPTION_NO_GAME_DIFFICULTY) == 0;
-			}
-		}
-	}
+	// In the past some of them could be off. May be it will be needed in the future, so I don't remove the function
 	return true;
 }
 
 function get_scoring_group_policies_count($group, $scoring, $options = NULL)
 {
+	$flags = 0;
+	if ($options != NULL && isset($options->flags))
+	{
+		$flags = $options->flags;
+	}
+	if (($flags & SCORING_OPTION_NO_NIGHT_KILLS) != 0 && $group == SCORING_GROUP_NIGHT1)
+	{
+		return 0;
+	}
+	
 	$count = 0;
 	if (isset($scoring->$group))
 	{
-		if ($options != NULL && isset($options->flags) && $options->flags != 0)
+		if ($flags != 0)
 		{
 			for ($i = 0; $i < count($scoring->$group); ++$i)
 			{
