@@ -56,7 +56,7 @@ class Page extends EventPageBase
 				$this->scoring_options->$key = $value;
 			}
 		}
-		
+		$this->show_fk = !isset($this->scoring_options->flags) || ($this->scoring_options->flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0;
 		$this->event_player_params .= '&bck=1';
 		
 		$this->user_id = 0;
@@ -126,13 +126,18 @@ class Page extends EventPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
 		echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
-		echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
+		echo '<td width="36" align="center" colspan="' . ($this->show_fk ? 6 : 5) . '">'.get_label('Points').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
 		echo '</tr>';
-		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
+		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td>';
+		if ($this->show_fk)
+		{
+			echo '<td width="36">' . get_label('FK') . '</td>';
+		}
+		echo '</tr>';
 		
 		$page_start = $_page * PAGE_SIZE;
 		if ($players_count > $page_start + PAGE_SIZE)
@@ -170,10 +175,13 @@ class Page extends EventPageBase
 			echo '</td>';
 			echo '<td align="center" class="' . $highlight . '">' . format_score($player->points) . '</td>';
 			echo '<td align="center">' . format_score($player->main_points) . '</td>';
-			echo '<td align="center">' . format_score($player->legacy_points) . '</td>';
-			echo '<td align="center">' . format_score($player->extra_points) . '</td>';
-			echo '<td align="center">' . format_score($player->penalty_points) . '</td>';
-			echo '<td align="center">' . format_score($player->night1_points) . '</td>';
+			echo '<td align="center">' . format_score($player->legacy_points, false) . '</td>';
+			echo '<td align="center">' . format_score($player->extra_points, false) . '</td>';
+			echo '<td align="center">' . format_score($player->penalty_points, false) . '</td>';
+			if ($this->show_fk)
+			{
+				echo '<td align="center">' . format_score($player->night1_points, false) . '</td>';
+			}
 			echo '<td align="center">' . $player->games_count . '</td>';
 			echo '<td align="center">' . $player->wins . '</td>';
 			if ($player->games_count != 0)

@@ -32,249 +32,45 @@ function dirty(isDirty)
     return _isDirty;
 }
 
-function spinnerChange(controlId)
+function isNumeric(str)
 {
-    var ids = controlId.split('-');
-    var policy = _data.scoring[ids[0]][parseInt(ids[1])];
-    var spinnerId = ids[2];
-    var value = parseFloat($('#' + controlId).val());
-    switch (spinnerId)
-    {
-        case 'points':
-            policy.points = value;
-            break;
-        case 'minpoints':
-            policy.min_points = value;
-            break;
-        case 'maxpoints':
-            policy.max_points = value;
-            break;
-        case 'mindif':
-            policy.min_difficulty = value / 100;
-            break;
-        case 'maxdif':
-            policy.max_difficulty = value / 100;
-            break;
-        case 'minnight1':
-			policy.min_night1 = value;
-			if (policy.percent)
-				policy.min_night1 /= 100;
-            break;
-        case 'maxnight1':
-			policy.max_night1 = value;
-			if (policy.percent)
-				policy.max_night1 /= 100;
-            break;
-		case 'fiim_night':
-            policy.fiim_first_night_score = value;
-            break;
-		case 'percent':
-            policy.percent = value / 100;
-            break;
-		case 'weight':
-            policy.extra_points_weight = value;
-            break;
-    }
-    dirty(true);
-}
-
-function checkboxChange(controlId)
-{
-    var ids = controlId.split('-');
-    var policy = _data.scoring[ids[0]][parseInt(ids[1])];
-    var checkboxId = ids[2];
-    var value = $('#' + controlId).attr('checked') ? true : false;
-    switch (checkboxId)
-    {
-        case 'percent':
-			if (policy.percent != value)
-			{
-				if (value)
-				{
-					policy.min_night1 /= 100;
-					policy.max_night1 /= 100;
-				}
-				else
-				{
-					policy.min_night1 *= 100;
-					policy.max_night1 *= 100;
-				}
-				policy.percent = value;
-			}
-            break;
-        case 'lostonly':
-            policy.lost_only = value;
-            break;
-    }
-    dirty(true);
-}
-
-function pointsPolicyChange(sectionName, policyNum)
-{
-    var policy = _data.scoring[sectionName][policyNum];
-    var value = parseInt($('#' + sectionName + '-' + policyNum + '-pp').val());
-    switch (value)
-    {
-        case 1:
-            if (typeof policy.points != "undefined")
-                policy.min_points = policy.max_points = policy.points;
-			else if (typeof policy.fiim_first_night_score != "undefined")
-                policy.min_points = policy.max_points = policy.fiim_first_night_score;
-            if (typeof policy.min_difficulty == "undefined")
-            {
-                policy.min_difficulty = 0;
-                if (typeof policy.min_night1 != "undefined")
-                    policy.min_difficulty = policy.min_night1;
-            }
-            if (typeof policy.max_difficulty == "undefined")
-            {
-                policy.max_difficulty = 1;
-                if (typeof policy.max_night1 != "undefined")
-                    policy.max_difficulty = policy.max_night1;
-            }
-			delete policy.fiim_first_night_score;
-            delete policy.points;
-            delete policy.min_night1;
-            delete policy.max_night1;
-			delete policy.lost_only;
-			delete policy.percent;
-			delete policy.extra_points_weight;
-            break;
-        case 2:
-            if (typeof policy.points != "undefined")
-                policy.min_points = policy.max_points = policy.points;
-			else if (typeof policy.fiim_first_night_score != "undefined")
-                policy.min_points = policy.max_points = policy.fiim_first_night_score;
-            if (typeof policy.min_night1 == "undefined")
-            {
-                policy.min_night1 = 0;
-                if (typeof policy.min_difficulty != "undefined")
-                    policy.min_night1 = policy.min_difficulty;
-            }
-            if (typeof policy.max_night1 == "undefined")
-            {
-                policy.max_night1 = 1;
-                if (typeof policy.max_difficulty != "undefined")
-                    policy.max_night1 = policy.max_difficulty;
-            }
-			policy.lost_only = false;
-			policy.percent = true;
-			delete policy.fiim_first_night_score;
-            delete policy.points;
-            delete policy.min_difficulty;
-            delete policy.max_difficulty;
-			delete policy.extra_points_weight;
-            break;
-        case 3:
-			if (typeof policy.fiim_first_night_score == "undefined")
-			{
-				policy.fiim_first_night_score = 0.5;
-			}
-			policy.percent = 0.4;
-            delete policy.points;
-            delete policy.min_points;
-            delete policy.max_points;
-            delete policy.min_difficulty;
-            delete policy.max_difficulty;
-            delete policy.min_night1;
-            delete policy.max_night1;
-			delete policy.lost_only;
-			delete policy.extra_points_weight;
-            break;
-		case 4:
-			if (typeof policy.extra_points_weight == "undefined")
-			{
-				policy.extra_points_weight = 1;
-			}
-            delete policy.points;
-			delete policy.fiim_first_night_score;
-            delete policy.min_points;
-            delete policy.max_points;
-            delete policy.min_night1;
-            delete policy.max_night1;
-            delete policy.min_difficulty;
-            delete policy.max_difficulty;
-			delete policy.lost_only;
-			delete policy.percent;
-            break;
-        default:
-            if (typeof policy.points == "undefined")
-            {
-                policy.points = 1;
-                if (typeof policy.max_points != "undefined")
-                    policy.points = policy.max_points;
-                else if (typeof policy.max_points != "undefined")
-                    policy.points = policy.min_points;
-				else if (typeof policy.fiim_first_night_score != "undefined")
-					policy.points = policy.fiim_first_night_score;
-            }
-			delete policy.fiim_first_night_score;
-            delete policy.min_points;
-            delete policy.max_points;
-            delete policy.min_night1;
-            delete policy.max_night1;
-            delete policy.min_difficulty;
-            delete policy.max_difficulty;
-			delete policy.lost_only;
-			delete policy.percent;
-			delete policy.extra_points_weight;
-            break;
-    }
-    refreshScoringEditor(true);
-}
-
-function pointsPolicySelect(sectionName, policyNum, option)
-{
-    var html = '<select id="' + sectionName + '-' + policyNum + '-pp" onchange="pointsPolicyChange(\'' + sectionName + '\', ' + policyNum + ')">';
-    html += '<option value="0"' + (option == 0 ? ' selected' : '') + '>' + _data.strings.statPoints + '</option>';
-    html += '<option value="1"' + (option == 1 ? ' selected' : '') + '>' + _data.strings.difPoints + '</option>';
-    html += '<option value="2"' + (option == 2 ? ' selected' : '') + '>' + _data.strings.shotPoints + '</option>';
-    html += '<option value="3"' + (option == 3 ? ' selected' : '') + '>' + _data.strings.shotPointsFiim + '</option>';
-    html += '<option value="4"' + (option == 4 ? ' selected' : '') + '>' + _data.strings.bonusPoints + '</option>';
-    html += '</select><p>';
-    return html;
-}
-
-function pointsHtml(sectionName, policyNum)
-{
-    var policy = _data.scoring[sectionName][policyNum];
-    html = '';
-    var base = sectionName + '-' + policyNum;
-    if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
-    {
-        html += pointsPolicySelect(sectionName, policyNum, 1);
-        html += _data.strings.minDif + ': <input type="number" style="width: 45px;" id="' + base + '-mindif" step="1" min"0" max"100" onChange="spinnerChange(\'' + base + '-mindif\')"> ';
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-minpoints" step="0.1" onChange="spinnerChange(\'' + base + '-minpoints\')"><br>';
-        html += _data.strings.maxDif + ': <input type="number" style="width: 45px;" id="' + base + '-maxdif" step="1" min="0" max="100" onChange="spinnerChange(\'' + base + '-maxdif\')"> ';
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-maxpoints" step="0.1" onChange="spinnerChange(\'' + base + '-maxpoints\')">';
-    }
-    else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
-    {
-        html += pointsPolicySelect(sectionName, policyNum, 2);
-        html += '<p><input type="checkbox" id="' + base + '-lostonly" onChange="checkboxChange(\'' + base + '-lostonly\')"> ' + _data.strings.lostOnly + '<br>';
-        html += '<input type="checkbox" id="' + base + '-percent" onChange="checkboxChange(\'' + base + '-percent\')"> ' + _data.strings.dependingOnPercent + '</p>';
-        html += _data.strings.minNight1 + ': <input type="number" style="width: 45px;" id="' + base + '-minnight1" step="1" min="0" max="100" onChange="spinnerChange(\'' + base + '-minnight1\')"> ';
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-minpoints" step="0.1" onChange="spinnerChange(\'' + base + '-minpoints\')"><br>';
-        html += _data.strings.maxNight1 + ': <input type="number" style="width: 45px;" id="' + base + '-maxnight1" step="1" min="0" max="100" onChange="spinnerChange(\'' + base + '-maxnight1\')"> ';
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-maxpoints" step="0.1" onChange="spinnerChange(\'' + base + '-maxpoints\')">';
-    }
-    else if (typeof policy.fiim_first_night_score != "undefined")
-    {
-        html += pointsPolicySelect(sectionName, policyNum, 3);
-        html += _data.strings.percent + ': <input type="number" style="width: 45px;" id="' + base + '-percent" step="1" min="0" max="100" onChange="spinnerChange(\'' + base + '-percent\')"><br>';
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-fiim_night" step="0.1" onChange="spinnerChange(\'' + base + '-fiim_night\')">';
-    }
-	else if (typeof policy.extra_points_weight != "undefined")
+	if (str.length <= 0)
 	{
-        html += pointsPolicySelect(sectionName, policyNum, 4);
-        html += _data.strings.extraPointsWeight + ': <input type="number" style="width: 45px;" id="' + base + '-weight" step="0.1" onChange="spinnerChange(\'' + base + '-weight\')">';
+		return false;
 	}
-    else
-    {
-        html += pointsPolicySelect(sectionName, policyNum, 0);
-        html += _data.strings.points + ': <input type="number" style="width: 45px;" id="' + base + '-points" step="0.1" onChange="spinnerChange(\'' + base + '-points\')">';
-    }
-    return html;
+	
+	var i = 0;
+	var dotCount = 0;
+	var c = str.charCodeAt(i);
+	if (c == 43 || c == 45) // '+' and '-'
+	{
+		++i;
+	}
+	for (; i < str.length; ++i)
+	{
+		c = str.charCodeAt(i);
+		if ((c < 48 || c > 57) && (c != 46 || ++dotCount > 1)) // '0', '9' and '.'
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+function pointsChange(controlId)
+{
+    var ids = controlId.split('-');
+    var policy = _data.scoring[ids[0]][parseInt(ids[1])];
+	var value = $('#' + controlId).val();
+	if (isNumeric(value))
+	{
+        policy.points = parseFloat(value);
+	}
+	else
+	{
+        policy.points = value;
+	}
+    dirty(true);
 }
 
 function deletePolicy(sectionName, policyNum)
@@ -295,7 +91,12 @@ function createPolicy(sectionName)
 	{
 		section = _data.scoring[sectionName] = [];
 	}
-    section.push({ matter: 0, points: 1 });
+	var p = { matter: 0 };
+	if (sectionName != 'counters')
+	{
+		p.points = 0;
+	}
+    section.push(p);
     refreshScoringEditor(true);
 }
 
@@ -410,9 +211,41 @@ function sectionHtml(sectionName)
 			}
 			else
 			{
-				html += '<td>';
-				html += pointsHtml(sectionName, i);
+				var controlId = sectionName + '-' + i + '-points';
+				html += '<td valign="middle" align="center">' + _data.strings.points + ': <input id="' + controlId + '" style="width: 300px;" onChange="pointsChange(\'' + controlId + '\')">';
 			}
+			html += '</td></tr>';
+		}
+	}
+    html += '<tr class="light"><td colspan="5"></td></tr>';
+    return html;
+}
+
+function countersHtml()
+{
+    var counters = _data.scoring.counters;
+    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.counterAdd + '" onclick="createPolicy(\'counters\')"><img src="images/create.png"></button></td><td colspan="3">' + _data.strings.counters + '</td></tr>';
+	if (counters)
+	{
+		for (var i = 0; i < counters.length; ++i)
+		{
+			var counter = counters[i];
+			html += '<tr valign="top"><td align="center"><button class="icon" title="' + _data.strings.counterDel + '" onclick="deletePolicy(\'counters\',' + i + ')"><img src="images/delete.png"></button></td>';
+			html += '<td width="100">';
+			html += rolesHtml('counters', i);
+			html += '</td><td width="140" colspan="2">';
+			var matter = counter.matter;
+			if (matter <= 0)
+			{
+				html += _data.strings.actionErr + '<br><br>';
+			}
+			else while (matter > 0)
+			{
+				var oldMatter = matter;
+				matter &= matter - 1;
+				html += matterSelectHtml('counters', i, matter ^ oldMatter);
+			}
+			html += matterSelectHtml('counters', i, 0);
 			html += '</td></tr>';
 		}
 	}
@@ -581,6 +414,7 @@ function refreshScoringEditor(isDirty)
     {
         html += sectionHtml(sectionName);
     }
+    html += countersHtml();
     html += sortingHtml();
     html += '</table>';
     
@@ -593,37 +427,7 @@ function refreshScoringEditor(isDirty)
 		{
 			for (var i = 0; i < section.length; ++i)
 			{
-				var policy = section[i];
-				var base = '#' + sectionName + '-' + i;
-				if (typeof policy.min_difficulty != "undefined" || typeof policy.max_difficulty != "undefined")
-				{
-					$(base + '-mindif').val(policy.min_difficulty * 100);
-					$(base + '-minpoints').val(policy.min_points);
-					$(base + '-maxdif').val(policy.max_difficulty * 100);
-					$(base + '-maxpoints').val(policy.max_points);
-				}
-				else if (typeof policy.min_night1 != "undefined" || typeof policy.max_night1 != "undefined")
-				{
-					$(base + '-lostonly').prop('checked', policy.lost_only);
-					$(base + '-percent').prop('checked', policy.percent);
-					$(base + '-minnight1').val(policy.percent ? policy.min_night1 * 100 : policy.min_night1);
-					$(base + '-minpoints').val(policy.min_points);
-					$(base + '-maxnight1').val(policy.percent ? policy.max_night1 * 100 : policy.max_night1);
-					$(base + '-maxpoints').val(policy.max_points);
-				}
-				else if (typeof policy.fiim_first_night_score != "undefined")
-				{
-					$(base + '-percent').val(policy.percent * 100);
-					$(base + '-fiim_night').val(policy.fiim_first_night_score);
-				}
-				else if (typeof policy.extra_points_weight != "undefined")
-				{
-					$(base + '-weight').val(policy.extra_points_weight);
-				}
-				else
-				{
-					$(base + '-points').val(policy.points);
-				}
+				$('#' + sectionName + '-' + i + '-points').val(section[i].points ? section[i].points : 0);
 			}
 		}
     }

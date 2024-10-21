@@ -68,117 +68,18 @@ try
 		{
 			$text = NULL;
 			$roles = isset($policy->roles) ? $policy->roles : SCORING_ROLE_FLAGS_ALL;
-			if (isset($policy->min_difficulty) || isset($policy->max_difficulty))
+			$points = isset($policy->points) ? $policy->points : 0;
+			if (is_string($points))
 			{
-				$min_difficulty = isset($policy->min_difficulty) ? $policy->min_difficulty : 0;
-				$max_difficulty = isset($policy->max_difficulty) ? $policy->max_difficulty : 1;
-				$min_points = isset($policy->min_points) ? $policy->min_points : 0;
-				$max_points = isset($policy->max_points) ? $policy->max_points : 0;
-				
-				if ($opt_flags & SCORING_OPTION_NO_GAME_DIFFICULTY)
-				{
-					if ($min_points == 1)
-					{
-						$text = get_label('[0] get 1 point.', get_scoring_roles_label($roles));
-					}
-					else if ($min_points != 0)
-					{
-						$text = get_label('[0] get [1] points.', get_scoring_roles_label($roles), $min_points);
-					}
-				}
-				else
-				{
-					if ($min_difficulty <= 0)
-					{
-						$lower_text = get_label('when the game difficulty is 0%');
-					}
-					else
-					{
-						$lower_text = get_label('when the game difficulty is lower than [0]%', $min_difficulty * 100);
-					}
-					
-					if ($max_difficulty >= 1)
-					{
-						$higher_text = get_label('when the game difficulty is 100%');
-					}
-					else
-					{
-						$higher_text = get_label('when the game difficulty is higher than [0]%', $max_difficulty * 100);
-					}
-					
-					$text = get_label('[0] get from [1] ([3]) to [2] ([4]) points.', 
-						get_scoring_roles_label($roles),
-						$min_points,
-						$max_points,
-						$lower_text,
-						$higher_text);
-				}
+				$text = get_label('[0] get points according to the formula: [1]', get_scoring_roles_label($roles), '<br><i>' . $points . '</i>');
 			}
-			else if (isset($policy->min_night1) || isset($policy->max_night1))
+			else if ($points == 1)
 			{
-				$min_night1 = isset($policy->min_night1) ? $policy->min_night1 : 0;
-				$max_night1 = isset($policy->max_night1) ? $policy->max_night1 : 1;
-				$min_points = isset($policy->min_points) ? $policy->min_points : 0;
-				$max_points = isset($policy->max_points) ? $policy->max_points : 0;
-				
-				
-				if ($opt_flags & SCORING_OPTION_NO_NIGHT_KILLS)
-				{
-					if ($min_points == 1)
-					{
-						$text = get_label('[0] get 1 point.', get_scoring_roles_label($roles));
-					}
-					else if ($min_points != 0)
-					{
-						$text = get_label('[0] get [1] points.', get_scoring_roles_label($roles), $min_points);
-					}
-				}
-				else
-				{
-					if ($min_night1 <= 0)
-					{
-						$lower_text = get_label('when player\'s first-night-killed rate is 0%');
-					}
-					else
-					{
-						$lower_text = get_label('when player\'s first-night-killed rate is lower than [0]%', $min_night1);
-					}
-					
-					if ($max_night1 >= 1)
-					{
-						$higher_text = get_label('when first-night-killed rate is 100%');
-					}
-					else
-					{
-						$higher_text = get_label('when first-night-killed rate is higher than [0]%', $max_night1);
-					}
-					
-					$text = get_label('[0] get from [1] ([3]) to [2] ([4]) points.', 
-						get_scoring_roles_label($roles),
-						$min_points,
-						$max_points,
-						$lower_text,
-						$higher_text);
-				}
+				$text = get_label('[0] get 1 point.', get_scoring_roles_label($roles));
 			}
-			else if (isset($policy->fiim_first_night_score))
+			else if ($points != 0)
 			{
-				if (($opt_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
-				{
-					$text = get_label('[0] get points depending on kill rate using FIIM rules.', get_scoring_roles_label($roles));
-				}
-			}
-			else
-			{
-				$points = isset($policy->points) ? $policy->points : 0;
-				if ($points == 1)
-				{
-					$text = get_label('[0] get 1 point.', get_scoring_roles_label($roles));
-				}
-				else if ($points != 0)
-				{
-					$text = get_label('[0] get [1] points.', get_scoring_roles_label($roles), $points);
-				}
+				$text = get_label('[0] get [1] points.', get_scoring_roles_label($roles), $points);
 			}
 			
 			if (!is_null($text))
@@ -190,6 +91,16 @@ try
 				}
 				echo '<tr><td width="300">' . get_scoring_matter_label($policy) . '</td><td>' . $text . '</td></tr>';
 			}
+		}
+	}
+	
+	if (isset($scoring->counters) && count($scoring->counters) > 0)
+	{
+		echo '<tr class="darker"><td colspan="2"><h4>' . get_label('Counters') . '</h4></td></tr>';
+		foreach ($scoring->counters as $counter)
+		{
+			$roles = isset($counter->roles) ? $counter->roles : SCORING_ROLE_FLAGS_ALL;
+			echo '<tr><td width="300">' . get_scoring_matter_label($counter) . '</td><td>' . get_scoring_roles_label($roles) . '</td></tr>';
 		}
 	}
 	

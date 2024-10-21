@@ -91,6 +91,8 @@ class Page extends TournamentPageBase
 				$this->scoring_options->$key = $value;
 			}
 		}
+		$this->show_fk = !isset($this->scoring_options->flags) || ($this->scoring_options->flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0;
+		
 		$this->tournament_player_params .= '&bck=1';
 		
 		$this->user_id = 0;
@@ -134,11 +136,16 @@ class Page extends TournamentPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
 		echo '<td colspan="2" rowspan="2">'.get_label('Team').'</td>';
-		echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
+		echo '<td width="36" align="center" colspan="' . ($this->show_fk ? 6 : 5) . '">'.get_label('Points').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 		echo '</tr>';
-		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
+		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td>';
+		if ($this->show_fk)
+		{
+			echo '<td width="36">' . get_label('FK') . '</td>';
+		}
+		echo '</tr>';
 		
 		$page_start = $_page * PAGE_SIZE;
 		if ($teams_count > $page_start + PAGE_SIZE)
@@ -167,7 +174,10 @@ class Page extends TournamentPageBase
 			echo '<td align="center"' . score_title($team->legacy_points, $team->raw_legacy_points, 1) . '>' . format_score($team->legacy_points, false) . '</td>';
 			echo '<td align="center"' . score_title($team->extra_points, $team->raw_extra_points, 1) . '>' . format_score($team->extra_points, false) . '</td>';
 			echo '<td align="center"' . score_title($team->penalty_points, $team->raw_penalty_points, 1) . '>' . format_score($team->penalty_points, false) . '</td>';
-			echo '<td align="center"' . score_title($team->night1_points, $team->raw_night1_points, 1) . '>' . format_score($team->night1_points, false) . '</td>';
+			if ($this->show_fk)
+			{
+				echo '<td align="center"' . score_title($team->night1_points, $team->raw_night1_points, 1) . '>' . format_score($team->night1_points, false) . '</td>';
+			}
 			echo '<td align="center">' . $team->games_count . '</td>';
 			echo '<td align="center">' . $team->wins . '</td>';
 			echo '</tr>';
@@ -243,7 +253,7 @@ class Page extends TournamentPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
 		echo '<td colspan="2" rowspan="2">'.get_label('Player').'</td>';
-		echo '<td width="36" align="center" colspan="6">'.get_label('Points').'</td>';
+		echo '<td width="36" align="center" colspan="' . ($this->show_fk ? 6 : 5) . '">'.get_label('Points').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 		if ($this->has_normalizer)
@@ -258,7 +268,12 @@ class Page extends TournamentPageBase
 			echo '</td>';
 		}
 		echo '</tr>';
-		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
+		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td>';
+		if ($this->show_fk)
+		{
+			echo '<td width="36">' . get_label('FK') . '</td>';
+		}
+		echo '</tr>';
 		
 		$page_start = $_page * PAGE_SIZE;
 		if ($players_count > $page_start + PAGE_SIZE)
@@ -328,7 +343,10 @@ class Page extends TournamentPageBase
 			echo '<td align="center"' . score_title($player->legacy_points, $player->raw_legacy_points, $player->normalization) . '>' . format_score($player->legacy_points, false) . '</td>';
 			echo '<td align="center"' . score_title($player->extra_points, $player->raw_extra_points, $player->normalization) . '>' . format_score($player->extra_points, false) . '</td>';
 			echo '<td align="center"' . score_title($player->penalty_points, $player->raw_penalty_points, $player->normalization) . '>' . format_score($player->penalty_points, false) . '</td>';
-			echo '<td align="center"' . score_title($player->night1_points, $player->raw_night1_points, $player->normalization) . '>' . format_score($player->night1_points, false) . '</td>';
+			if ($this->show_fk)
+			{
+				echo '<td align="center"' . score_title($player->night1_points, $player->raw_night1_points, $player->normalization) . '>' . format_score($player->night1_points, false) . '</td>';
+			}
 			echo '<td align="center">' . $player->games_count . '</td>';
 			echo '<td align="center">' . $player->wins . '</td>';
 			if ($this->has_normalizer)

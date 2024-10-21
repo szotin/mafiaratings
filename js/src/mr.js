@@ -819,37 +819,29 @@ var mr = new function()
 	{
 		if (scoring)
 		{
-			var night1Disabled = true;
+			var night1Disabled = typeof(scoring.rules.night1) == 'undefined' || !Array.isArray(scoring.rules.night1) || scoring.rules.night1.length == 0;
 			var difDisabled = true;
 			for (var s in scoring.rules)
 			{
 				for (var p of scoring.rules[s])
 				{
-					if (p.min_difficulty || p.max_difficulty)
+					if (typeof(p.points) == 'string' && p.points.toLowerCase().includes('difficulty'))
 					{
 						difDisabled = false;
-					}
-					else if (p.min_night1 || p.max_night1 || p.fiim_first_night_score)
-					{
-						night1Disabled = false;
+						break;
 					}
 				}
 			}
+			
+			var d = $('#' + name + '-night1').prop("disabled", night1Disabled);
 			if (night1Disabled) 
 			{
-				$('#' + name + '-night1').prop("disabled", true).prop("checked", false);
+				d.prop("checked", false);
 			}
-			else
-			{
-				$('#' + name + '-night1').prop("disabled", false);
-			}
+			d = $('#' + name + '-difficulty').prop("disabled", difDisabled);
 			if (difDisabled) 
 			{
-				$('#' + name + '-difficulty').prop("checked", false).prop("disabled", true);
-			}
-			else
-			{
-				$('#' + name + '-difficulty').prop("disabled", false);
+				d.prop("checked", false);
 			}
 			mr.onChangeScoringOptions(name, changed);
 		}

@@ -77,18 +77,26 @@ function compare_series_players($player1, $player2)
 	{
 		return -1;
 	}
-	if ($player1->games > 0 && $player1->games > 0)
+	if ($player1->games != 0)
 	{
-		$win_rate1 = $player1->wins / $player1->games;
-		$win_rate2 = $player2->wins / $player2->games;
-		if ($win_rate1 + 0.00001 < $win_rate2)
+		if ($player2->games != 0)
 		{
-			return 1;
+			$win_rate1 = $player1->wins / $player1->games;
+			$win_rate2 = $player2->wins / $player2->games;
+			if ($win_rate1 + 0.00001 < $win_rate2)
+			{
+				return 1;
+			}
+			else if ($win_rate2 + 0.00001 < $win_rate1)
+			{
+				return -1;
+			}
 		}
-		else if ($win_rate2 + 0.00001 < $win_rate1)
-		{
-			return -1;
-		}
+		return -1;
+	}
+	if ($player2->games != 0)
+	{
+		return 1;
 	}
 	return $player1->id - $player2->id;
 }
@@ -276,7 +284,7 @@ function complete_tournament()
 					}
 				}
 				
-				if ($max_games >= 0)
+				if ($max_games > 0)
 				{
 					$real_count = round($all_games * 10 / $max_games);
 				}
