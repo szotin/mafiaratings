@@ -103,7 +103,7 @@ class Page extends EventPageBase
 		
 		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
 		
-		$players = event_scores($this->event->id, null, SCORING_LOD_PER_GROUP, $this->scoring, $this->scoring_options, $this->event->tournament_flags, $this->event->round_num);
+		$players = event_scores($this->event->id, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $this->scoring, $this->scoring_options, $this->event->tournament_flags, $this->event->round_num);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{
@@ -125,7 +125,7 @@ class Page extends EventPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
-		echo '<td colspan="3" rowspan="2">'.get_label('Player').'</td>';
+		echo '<td colspan="2" rowspan="2">'.get_label('Player').'</td>';
 		echo '<td width="36" align="center" colspan="' . ($this->show_fk ? 6 : 5) . '">'.get_label('Points').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
@@ -158,14 +158,47 @@ class Page extends EventPageBase
 				$highlight = 'dark';
 			}
 			echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
-			echo '<td width="50">';
+			
+			
+			
+			echo '<td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">';
+			echo '<table class="transp" width="100%"><tr><td width="56">';
 			$event_user_pic->
 				set($player->id, $player->nickname, $player->event_user_flags, 'e' . $this->event->id)->
 				set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->event->tournament_id)->
 				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->event->club_id)->
 				set($player->id, $player->name, $player->flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
-			echo '</td><td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">' . $player->name . '</a></td>';
+			echo '</a></td><td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">' . $player->name . '</a></td>';
+			if (isset($player->nom_flags) && $player->nom_flags)
+			{
+				echo '<td align="right">';
+				if ($player->nom_flags & COMPETITION_BEST_RED)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
+				}
+				if ($player->nom_flags & COMPETITION_BEST_BLACK)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
+				}
+				if ($player->nom_flags & COMPETITION_BEST_DON)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
+				}
+				if ($player->nom_flags & COMPETITION_BEST_SHERIFF)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
+				}
+				if ($player->nom_flags & COMPETITION_MVP)
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
+				}
+				echo '</td>';
+			}
+			echo '</tr></table></a></td>';
+			
+			
+			
 			echo '<td width="50" align="center">';
 			if (!is_null($player->club_id) && $player->club_id > 0)
 			{

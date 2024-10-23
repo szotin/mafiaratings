@@ -236,7 +236,6 @@ function complete_tournament()
 			}
 			
 			$players = tournament_scores($tournament_id, $tournament_flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $scoring, $normalizer, $scoring_options);
-			add_tournament_nominants($tournament_id, $players);
 			$players_count = count($players);
 			if ($tournament_flags & TOURNAMENT_FLAG_FORCE_NUM_PLAYERS)
 			{

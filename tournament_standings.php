@@ -8,6 +8,16 @@ require_once 'include/scoring.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
+define('VIEW_NORMAL', 0);
+define('VIEW_TEAM', 1);
+define('VIEW_MVP', 2);
+
+define('SORT_BY_MVP', 0);
+define('SORT_BY_RED', 1);
+define('SORT_BY_BLACK', 2);
+define('SORT_BY_SHERIFF', 3);
+define('SORT_BY_DON', 4);
+
 function score_title($points, $raw_points, $normalization)
 {
 	if ($normalization != 1 && $points != 0)
@@ -15,6 +25,63 @@ function score_title($points, $raw_points, $normalization)
 		return ' title="' . format_score($raw_points) . ' * ' . format_coeff($normalization) . ' = ' . format_score($points) . '"';
 	}
 	return '';
+}
+
+$_mvp_sorting = SORT_BY_MVP;
+function compare_mvp($player1, $player2)
+{
+	global $_mvp_sorting;
+	
+	switch ($_mvp_sorting)
+	{
+	case SORT_BY_RED:
+		$mvp_points1 = $player1->roles[ROLE_CIVILIAN]->mvp_points + $player1->roles[ROLE_SHERIFF]->mvp_points;
+		$mvp_points2 = $player2->roles[ROLE_CIVILIAN]->mvp_points + $player2->roles[ROLE_SHERIFF]->mvp_points;
+		break;
+	case SORT_BY_BLACK:
+		$mvp_points1 = $player1->roles[ROLE_MAFIA]->mvp_points + $player1->roles[ROLE_DON]->mvp_points;
+		$mvp_points2 = $player2->roles[ROLE_MAFIA]->mvp_points + $player2->roles[ROLE_DON]->mvp_points;
+		break;
+	case SORT_BY_SHERIFF:
+		$mvp_points1 = $player1->roles[ROLE_SHERIFF]->mvp_points;
+		$mvp_points2 = $player2->roles[ROLE_SHERIFF]->mvp_points;
+		break;
+	case SORT_BY_DON:
+		$mvp_points1 = $player1->roles[ROLE_DON]->mvp_points;
+		$mvp_points2 = $player2->roles[ROLE_DON]->mvp_points;
+		break;
+	case SORT_BY_MVP:
+	default:
+		$mvp_points1 = $player1->mvp_points;
+		$mvp_points2 = $player2->mvp_points;
+		break;
+	}
+	
+	if ($mvp_points2 > $mvp_points1 + 0.00001)
+	{
+		return 1;
+	}
+	if ($mvp_points2 < $mvp_points1 - 0.00001)
+	{
+		return -1;
+	}
+	if ($player2->points < $player1->points - 0.00001)
+	{
+		return 1;
+	}
+	if ($player2->points > $player1->points + 0.00001)
+	{
+		return -1;
+	}
+	if ($player1->id > $player2->id)
+	{
+		return 1;
+	}
+	else if ($player1->id < $player2->id)
+	{
+		return -1;
+	}
+	return 0;
 }
 
 class Page extends TournamentPageBase
@@ -123,7 +190,7 @@ class Page extends TournamentPageBase
 		global $_page;
 		
 		$teams = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_TEAMS, $this->scoring, $this->normalizer, $this->scoring_options);
-//		print_json($teams);
+		//print_json($teams, $this->scoring);
 		$teams_count = count($teams);
 		
 		show_pages_navigation(PAGE_SIZE, $teams_count);
@@ -135,7 +202,7 @@ class Page extends TournamentPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
-		echo '<td colspan="2" rowspan="2">'.get_label('Team').'</td>';
+		echo '<td rowspan="2">'.get_label('Team').'</td>';
 		echo '<td width="36" align="center" colspan="' . ($this->show_fk ? 6 : 5) . '">'.get_label('Points').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
@@ -157,7 +224,8 @@ class Page extends TournamentPageBase
 			$team = $teams[$number];
 			echo '<tr>';
 			echo '<td align="center" class="dark">' . ($number + 1) . '</td>';
-			echo '<td width="' . (count($team->players) * 50) . '">';
+			
+			echo '<td><table class="transp" width="100%"><tr><td width="' . (count($team->players) * 50) . '">';
 			foreach ($team->players as $player)
 			{
 				echo '<a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . $this->show_all . '">';
@@ -168,7 +236,34 @@ class Page extends TournamentPageBase
 				$tournament_user_pic->show(ICONS_DIR, false, 50);
 				echo '</a>';
 			}
-			echo '</td><td><b>' . $team->name . '</b></td>';
+			echo '</a></td><td><b>' . $team->name . '</b></td>';
+			// if (isset($team->nom_flags) && $team->nom_flags)
+			// {
+				// echo '<td align="right">';
+				// if (($team->nom_flags & COMPETITION_BEST_RED) && ($this->flags & TOURNAMENT_FLAG_AWARD_RED))
+				// {
+					// echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
+				// }
+				// if (($team->nom_flags & COMPETITION_BEST_BLACK) && ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK))
+				// {
+					// echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
+				// }
+				// if (($team->nom_flags & COMPETITION_BEST_DON) && ($this->flags & TOURNAMENT_FLAG_AWARD_DON))
+				// {
+					// echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
+				// }
+				// if (($team->nom_flags & COMPETITION_BEST_SHERIFF) && ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF))
+				// {
+					// echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
+				// }
+				// if (($team->nom_flags & COMPETITION_MVP) && ($this->flags & TOURNAMENT_FLAG_AWARD_MVP))
+				// {
+					// echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
+				// }
+				// echo '</td>';
+			// }
+			echo '</tr></table></td>';
+			
 			echo '<td align="center" class="dark"' . score_title($team->points, $team->raw_points, 1) . '>' . format_score($team->points) . '</td>';
 			echo '<td align="center"' . score_title($team->main_points, $team->raw_main_points, 1) . '>' . format_score($team->main_points) . '</td>';
 			echo '<td align="center"' . score_title($team->legacy_points, $team->raw_legacy_points, 1) . '>' . format_score($team->legacy_points, false) . '</td>';
@@ -198,8 +293,7 @@ class Page extends TournamentPageBase
 		global $_page;
 		
 		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $this->scoring, $this->normalizer, $this->scoring_options);
-		add_tournament_nominants($this->id, $players);
-		//print_json($players);
+		//print_json($players, $this->scoring);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{
@@ -330,7 +424,7 @@ class Page extends TournamentPageBase
 				}
 				echo '</td>';
 			}
-			echo '</tr></table></a>';
+			echo '</tr></table></a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($player->club_id) && $player->club_id > 0)
 			{
@@ -515,6 +609,225 @@ class Page extends TournamentPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
+	private function mvp_view()
+	{
+		global $_page, $_mvp_sorting;
+		
+		$_mvp_sorting = SORT_BY_MVP;
+		if (isset($_REQUEST['sort']))
+		{
+			$_mvp_sorting = (int)$_REQUEST['sort'];
+		}
+		
+		$players = tournament_scores($this->id, $this->flags, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $this->scoring, $this->normalizer, $this->scoring_options);
+		usort($players, 'compare_mvp');
+		// print_json($players, $this->scoring);
+		$players_count = count($players);
+		if ($this->user_id > 0)
+		{
+			$_page = get_user_page($players, $this->user_id, PAGE_SIZE);
+			if ($_page < 0)
+			{
+				$_page = 0;
+				$this->no_user_error();
+			}
+		}
+		
+		$num_noms = 0;
+		$flags = $this->flags & TOURNAMENT_AWARD_MASK;
+		while ($flags)
+		{
+			++$num_noms;
+			$flags &= $flags - 1;
+		}
+		
+		echo '<p><table class="transp" width="100%"><tr><td>';
+		show_pages_navigation(PAGE_SIZE, $players_count);
+		echo '</td><td align="right">';
+		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, 'tournament=' . $this->id, get_label('Go to the page where a specific player is located.'));
+		echo '</td></tr></table></p>';
+		
+		$tournament_user_pic =
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			$this->user_pic));
+		
+		echo '<table class="bordered light" width="100%">';
+		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
+		echo '<td colspan="2" rowspan="2">'.get_label('Player').'</td>';
+		echo '<td colspan="' . $num_noms . '" align="center">'.get_label('Points').'</td>';
+		echo '<td width="36" rowspan="2" align="center">'.get_label('Games played').'</td>';
+		echo '<td width="36" rowspan="2" align="center">'.get_label('Wins').'</td>';
+		if ($this->has_normalizer)
+		{
+			echo '<td width="36" align="center">'.get_label('Normalization rate').'</td>';
+		}
+		echo '</tr>';
+		
+		echo '<tr class="th darker">';
+		if ($this->flags & TOURNAMENT_FLAG_AWARD_MVP)
+		{
+			echo '<td width="50" align="center">';
+			if ($_mvp_sorting != SORT_BY_MVP)
+			{
+				echo '<a href="#" onclick="goTo({sort:' . SORT_BY_MVP . ', page:undefined})">' . get_label('MVP') . '</a>';
+			}
+			else
+			{
+				echo get_label('MVP');
+			}
+			echo '</td>';
+		}
+		if ($this->flags & TOURNAMENT_FLAG_AWARD_RED)
+		{
+			echo '<td width="50" align="center">';
+			if ($_mvp_sorting != SORT_BY_RED)
+			{
+				echo '<a href="#" onclick="goTo({sort:' . SORT_BY_RED . ', page:undefined})"><img src="images/civ.png" style="opacity: 0.5;"></a>';
+			}
+			else
+			{
+				echo '<img src="images/civ.png">';
+			}
+			echo '</td>';
+		}
+		if ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK)
+		{
+			echo '<td width="50" align="center">';
+			if ($_mvp_sorting != SORT_BY_BLACK)
+			{
+				echo '<a href="#" onclick="goTo({sort:' . SORT_BY_BLACK . ', page:undefined})"><img src="images/maf.png" style="opacity: 0.5;"></a>';
+			}
+			else
+			{
+				echo '<img src="images/maf.png">';
+			}
+			echo '</td>';
+		}
+		if ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF)
+		{
+			echo '<td width="50" align="center">';
+			if ($_mvp_sorting != SORT_BY_SHERIFF)
+			{
+				echo '<a href="#" onclick="goTo({sort:' . SORT_BY_SHERIFF . ', page:undefined})"><img src="images/sheriff.png" style="opacity: 0.5;"></a>';
+			}
+			else
+			{
+				echo '<img src="images/sheriff.png">';
+			}
+			echo '</td>';
+		}
+		if ($this->flags & TOURNAMENT_FLAG_AWARD_DON)
+		{
+			echo '<td width="50" align="center">';
+			if ($_mvp_sorting != SORT_BY_DON)
+			{
+				echo '<a href="#" onclick="goTo({sort:' . SORT_BY_DON . ', page:undefined})"><img src="images/don.png" style="opacity: 0.5;"></a>';
+			}
+			else
+			{
+				echo '<img src="images/don.png">';
+			}
+			echo '</td>';
+		}
+		echo '</tr>';
+		
+		$page_start = $_page * PAGE_SIZE;
+		if ($players_count > $page_start + PAGE_SIZE)
+		{
+			$players_count = $page_start + PAGE_SIZE;
+		}
+		for ($number = $page_start; $number < $players_count; ++$number)
+		{
+			$player = $players[$number];
+			if ($player->id == $this->user_id)
+			{
+				echo '<tr class="darker">';
+				$highlight = 'darker';
+			}
+			else
+			{
+				echo '<tr>';
+				$highlight = 'dark';
+			}
+			echo '<td align="center" class="' . $highlight . '">';
+			echo $number + 1;
+			echo '</td>';
+			
+			echo '<td><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . $this->show_all . '">';
+			echo '<table class="transp" width="100%"><tr><td width="56">';
+			$tournament_user_pic->
+				set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->id)->
+				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
+				set($player->id, $player->name, $player->flags);
+			$tournament_user_pic->show(ICONS_DIR, false, 50);
+			echo '</a></td><td><a href="tournament_player.php?user_id=' . $player->id . $this->tournament_player_params . $this->show_all . '">' . $player->name . '</a></td>';
+			if (isset($player->nom_flags) && $player->nom_flags)
+			{
+				echo '<td align="right">';
+				if (($player->nom_flags & COMPETITION_BEST_RED) && ($this->flags & TOURNAMENT_FLAG_AWARD_RED))
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
+				}
+				if (($player->nom_flags & COMPETITION_BEST_BLACK) && ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK))
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
+				}
+				if (($player->nom_flags & COMPETITION_BEST_DON) && ($this->flags & TOURNAMENT_FLAG_AWARD_DON))
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
+				}
+				if (($player->nom_flags & COMPETITION_BEST_SHERIFF) && ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF))
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
+				}
+				if (($player->nom_flags & COMPETITION_MVP) && ($this->flags & TOURNAMENT_FLAG_AWARD_MVP))
+				{
+					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
+				}
+				echo '</td>';
+			}
+			echo '</tr></table></a></td>';
+			echo '<td width="50" align="center">';
+			if (!is_null($player->club_id) && $player->club_id > 0)
+			{
+				$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
+				$this->club_pic->show(ICONS_DIR, true, 40);
+			}
+			echo '</td>';
+			if ($this->flags & TOURNAMENT_FLAG_AWARD_MVP)
+			{
+				echo '<td align="center"' . ($_mvp_sorting == SORT_BY_MVP ? ' class="dark"' : '') . '>' . format_score($player->mvp_points) . '</td>';
+			}
+			if ($this->flags & TOURNAMENT_FLAG_AWARD_RED)
+			{
+				echo '<td align="center"' . ($_mvp_sorting == SORT_BY_RED ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_CIVILIAN]->mvp_points + $player->roles[ROLE_SHERIFF]->mvp_points) . '</td>';
+			}
+			if ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK)
+			{
+				echo '<td align="center"' . ($_mvp_sorting == SORT_BY_BLACK ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_MAFIA]->mvp_points + $player->roles[ROLE_DON]->mvp_points) . '</td>';
+			}
+			if ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF)
+			{
+				echo '<td align="center"' . ($_mvp_sorting == SORT_BY_SHERIFF ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_SHERIFF]->mvp_points) . '</td>';
+			}
+			if ($this->flags & TOURNAMENT_FLAG_AWARD_DON)
+			{
+				echo '<td align="center"' . ($_mvp_sorting == SORT_BY_DON ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_DON]->mvp_points) . '</td>';
+			}
+			echo '<td align="center">' . $player->games_count . '</td>';
+			echo '<td align="center">' . $player->wins . '</td>';
+			if ($this->has_normalizer)
+			{
+				echo '<td align="center">' . format_coeff($player->normalization) . '</td>';
+			}
+			echo '</tr>';
+		}
+		echo '</table>';
+		show_pages_navigation(PAGE_SIZE, $players_count);
+	}
+	
 	protected function show_body()
 	{
 		if (!$this->show_hidden_table_message())
@@ -522,9 +835,15 @@ class Page extends TournamentPageBase
 			return;
 		}
 		
-		$is_teams = ($this->flags & TOURNAMENT_FLAG_TEAM) != 0;
-		$team_view = $is_teams && (!isset($_REQUEST['teams']) || $_REQUEST['teams'] == 1);
-		
+		$has_teams = ($this->flags & TOURNAMENT_FLAG_TEAM) != 0;
+		$has_mvp = ($this->flags & TOURNAMENT_FLAG_MANUAL_SCORE) == 0 && ($this->flags & TOURNAMENT_AWARD_MASK) != 0;
+		$has_tabs = $has_teams || $has_mvp;
+		$view = $has_teams ? VIEW_TEAM : VIEW_NORMAL;
+		if (isset($_REQUEST['view']))
+		{
+			$view = (int)$_REQUEST['view'];
+		}
+
 		if (($this->flags & TOURNAMENT_FLAG_MANUAL_SCORE) == 0)
 		{
 			if (($this->flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
@@ -538,18 +857,25 @@ class Page extends TournamentPageBase
 			show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
 		}
 		
-		if ($is_teams)
+		if ($has_tabs)
 		{
 			echo '<div class="tab">';
-			echo '<button ' . (!$team_view ? '' : 'class="active" ') . 'onclick="goTo({teams:1, page:undefined})">' . get_label('Team standings') . '</button>';
-			echo '<button ' . ($team_view ? '' : 'class="active" ') . 'onclick="goTo({teams:0, page:undefined})">' . get_label('Player standings') . '</button>';
+			if ($has_teams)
+			{
+				echo '<button ' . ($view == VIEW_TEAM ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_TEAM . ', page:undefined})">' . get_label('Team standings') . '</button>';
+			}
+			echo '<button ' . ($view == VIEW_NORMAL ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_NORMAL . ', page:undefined})">' . get_label('Player standings') . '</button>';
+			if ($has_mvp)
+			{
+				echo '<button ' . ($view == VIEW_MVP ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MVP . ', page:undefined})">' . get_label('MVP') . '</button>';
+			}
 			echo '</div>';
 			echo '<div class="tabcontent">';
 		}
 		
 		if ($this->flags & TOURNAMENT_FLAG_MANUAL_SCORE)
 		{
-			if ($team_view)
+			if ($view == VIEW_TEAM)
 			{
 				$this->team_view_manual_scoring();
 			}
@@ -558,16 +884,21 @@ class Page extends TournamentPageBase
 				$this->individual_view_manual_scoring();
 			}
 		}
-		else if ($team_view)
+		else switch ($view)
 		{
+		case VIEW_TEAM:
 			$this->team_view();
-		}
-		else
-		{
+			break;
+		case VIEW_MVP:
+			$this->mvp_view();
+			break;
+		case VIEW_NORMAL:
+		default:
 			$this->individual_view();
+			break;
 		}
 		
-		if ($is_teams)
+		if ($has_tabs)
 		{
 			echo '</div>';
 		}

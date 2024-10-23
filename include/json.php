@@ -12,8 +12,13 @@ function is_assoc_array($array)
 	return false;
 }
 
-function object_json($object, $newLine)
+function object_json($object, $newLine, $exclude_object)
 {
+	if ($object === $exclude_object)
+	{
+		return '{..}';
+	}
+	
 	$nl = $newLine . '   ';
 	
 	switch (count((array)$object))
@@ -24,7 +29,7 @@ function object_json($object, $newLine)
 		case 1:
 			foreach ($object as $key => $value)
 			{
-				$result = '{ "' . $key . '": ' . formatted_json($value, $nl) . ' }';
+				$result = '{ "' . $key . '": ' . formatted_json($value, $nl, $exclude_object) . ' }';
 			}
 			break;
 		default:
@@ -47,7 +52,7 @@ function object_json($object, $newLine)
 				{
 					$result .= ',';
 				}
-				$result .= $nl . '"' . $key . '": ' . formatted_json($value, $nl);
+				$result .= $nl . '"' . $key . '": ' . formatted_json($value, $nl, $exclude_object);
 			}
 			$result .= $newLine . '}';
 			break;
@@ -62,17 +67,21 @@ function escape_json_string($str)
 	return str_replace($f, $r, $str);
 }
 
-function formatted_json($object, $newLine = "\n")
+function formatted_json($object, $newLine = "\n", $exclude_object = NULL)
 {
 	if (is_null($object))
 	{
 		$result = 'null';
 	}
+	else if ($object === $exclude_object)
+	{
+		$result = '{..}';
+	}
 	else if (is_array($object))
 	{
 		if (is_assoc_array($object))
 		{
-			$result = object_json($object, $newLine);
+			$result = object_json($object, $newLine, $exclude_object);
 		}
 		else switch (count($object))
 		{
@@ -80,7 +89,7 @@ function formatted_json($object, $newLine = "\n")
 				$result = '[]';
 				break;
 			case 1:
-				$result = '[ ' . formatted_json($object[0], $newLine . '   ') . ' ]';
+				$result = '[ ' . formatted_json($object[0], $newLine . '   ', $exclude_object) . ' ]';
 				break;
 			default:
 				$nl = $newLine . '   ';
@@ -91,7 +100,7 @@ function formatted_json($object, $newLine = "\n")
 					{
 						$result .= ', ';
 					}
-					$result .= formatted_json($object[$i], $nl);
+					$result .= formatted_json($object[$i], $nl, $exclude_object);
 				}
 				$result .= ']';
 				break;
@@ -99,7 +108,7 @@ function formatted_json($object, $newLine = "\n")
 	}
 	else if (is_object($object))
 	{
-		$result = object_json($object, $newLine);
+		$result = object_json($object, $newLine, $exclude_object);
 	}
 	else if (is_string($object))
 	{
@@ -155,10 +164,10 @@ function check_json($string)
 	return json_encode($obj);
 }
 
-function print_json($object)
+function print_json($object, $exclude_object = NULL)
 {
 	echo '<pre>';
-	echo formatted_json($object);
+	echo formatted_json($object, "\n", $exclude_object);
     //echo json_encode($object, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 	echo '</pre>';
 }
