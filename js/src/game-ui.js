@@ -1959,6 +1959,7 @@ var obsForm = new function()
 			params += '&hide_roles';
 		var url1 = data.site + '/obs_plugins/players-overlay-plugin/#/players' + params;
 		var url2 = data.site + '/obs_plugins/players-overlay-plugin/#/gamestats' + params;
+		var url3 = data.site + '/obs_plugins/players-overlay-plugin/#/overlay' + params;
 		
 		var html =
 			'<p><h4>' + l('Instr') + '</h4></p>' +
@@ -1969,6 +1970,7 @@ var obsForm = new function()
 			'<ol>' +
 			'<li>' + l('Instr3a') + ':<br><a href="' + url1 + '" target="_blank">' + url1 + '</a></li>' +
 			'<li>' + l('Instr3b') + ':<br><a href="' + url2 + '" target="_blank">' + url2 + '</a></li>' +
+			'<li>' + l('Instr3c') + ':<br><a href="' + url3 + '" target="_blank">' + url3 + '</a></li>' +
 			'</ol>' +
 			'<li>' + l('Instr4') + '</li>' +
 			'</ol></p>';

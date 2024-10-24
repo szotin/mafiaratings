@@ -1372,6 +1372,7 @@ $labelMenu = array (
 'Enter the next URL in the URL field:' => 'Введите один из следующих адресов в поле URL:', // form/obs_urls.php
 'For players photos' => 'Для фотографий игроков', // form/obs_urls.php
 'For game statistics - nominees/checks' => 'Для статистики игры - выставления/проверки', // form/obs_urls.php
+'(NEW) For the whole overlay' => '(НОВОЕ) Для оверлея целиком', // form/obs_urls.php
 'Configure other parameters and click ok. Do not panic if it shows nothing. The information will appear once you start the game in this tournament/event using the specified user account.' => 'Если нужно выставьте другие параметры и нажмите ok. Не беспокойтесь, если ничего не увидите. Все появится как только вы начнете игру.', // form/obs_urls.php
 'Team standings' => 'Командный зачет', // tournament_standings.php
 'Player standings' => 'Личный зачет', // tournament_standings.php

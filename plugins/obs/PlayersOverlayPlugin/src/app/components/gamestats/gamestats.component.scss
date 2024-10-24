@@ -6,21 +6,21 @@ $town-bg-color: rgba(250, 137, 123, $default-text-opacity);
 $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
 
 @keyframes fadeIn {
-  0% { opacity: 0.5; }
-  100% { opacity: 1; }
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
 }
 
 @keyframes fadeOut {
-  0% { opacity: 1; }
-  100% { opacity: 0.5; }
+    0% { opacity: 1; }
+    100% { opacity: 0.5; }
 }
 
-.component-root {
-  padding: 20px;
+.gamestats {
+  padding: 17px;
   line-height: normal;
   font-size: 2em;
   display: flex;
-  background-color: rgba(0, 0, 0, 0.7);
+  align-items: center;
 
   &.is-offline-true {
     opacity: 0.8;
@@ -38,8 +38,8 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
     .label {
       min-width: 60px;
       min-height: 60px;
-      border-top-left-radius: 10px;
-      border-bottom-left-radius: 10px;
+      border-top-left-radius: 15px;
+      border-bottom-left-radius: 15px;
 
       background-size: 50px;
       background-position: center;
@@ -76,8 +76,8 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
 
     &.empty {
       .label {
-        border-top-right-radius: 10px;
-        border-bottom-right-radius: 10px;
+        border-top-right-radius: 15px;
+        border-bottom-right-radius: 15px;
 
         animation: fadeOut;
         animation-duration: 3s;
@@ -116,26 +116,27 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
         background-color: $element-bg-color;
 
         &:last-child {
-          border-top-right-radius: 10px;
-          border-bottom-right-radius: 10px;
+          border-top-right-radius: 15px;
+          border-bottom-right-radius: 15px;
         }
       }
     }
   }
 }
 
-.component-root.hide-roles-true {
+.gamestats.hide-roles-true {
   // Hide sheriff and don's checks if hiding roles
   .section.don-check, .section.sheriff-check {
     display: none;
   }
 }
 
-.component-root:not(.hide-roles-true) {
+.gamestats:not(.hide-roles-true) {
   .section {
     .elements {
       .element-wrapper {
         background-size: cover;
+        background-position: center;
         background-repeat: no-repeat;
         &.town {
           background-image: url('../../../assets/red_player_bg.jpg');

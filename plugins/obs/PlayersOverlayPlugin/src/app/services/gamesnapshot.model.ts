@@ -5,15 +5,38 @@ export interface GameSnapshot {
 
 export interface Game {
   id: number;
+  club: Club;
+  tournament: Tournament;
   name: string;
+  stage: number;
+  tour: number;
   phase: GamePhase;
   state: GameState;
   round: number;
+  moderator: Referee;
   players: Player[];
   nominees: number[];
   nominatedPlayers: Player[];
   legacy: number[];
   legacyPlayers: Player[];
+}
+
+export interface Club {
+  name : string;
+  iconUrl: string;
+}
+
+export interface Tournament {
+  name : string;
+  iconUrl: string;
+}
+
+export enum Stage {
+  default = 'round',
+  quals = 'round',
+  finals = 'finals',
+  semis = 'semis',
+  quarters = 'quarters'
 }
 
 export enum GamePhase {
@@ -24,6 +47,14 @@ export enum GameState {
   starting = 'starting',
   notStarted = 'notStarted',
   arranging = 'arranging'
+}
+
+export interface Referee {
+  id: number;
+  name: string;
+  gender: Gender;
+  photoUrl: string;
+  hasPhoto: boolean;
 }
 
 export interface Player {
