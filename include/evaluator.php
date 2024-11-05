@@ -104,9 +104,19 @@ class EvFuncLog extends EvFunction
 		case 0:
 			return 0;
 		case 1:
-			return log($args[0]->evaluate());
+			$value = $args[0]->evaluate();
+			if ($value <= 0)
+			{
+				return EV_MIN_VALUE;
+			}
+			return log($value);
 		default:
-			return log($args[0]->evaluate(), $args[1]->evaluate());
+			$value = $args[0]->evaluate();
+			if ($value <= 0)
+			{
+				return EV_MIN_VALUE;
+			}
+			return log($value, $args[1]->evaluate());
 		}
 	}
 	

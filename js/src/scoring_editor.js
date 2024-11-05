@@ -212,7 +212,7 @@ function sectionHtml(sectionName)
 			else
 			{
 				var controlId = sectionName + '-' + i + '-points';
-				html += '<td valign="middle" align="center">' + _data.strings.points + ': <input id="' + controlId + '" style="width: 300px;" onChange="pointsChange(\'' + controlId + '\')">';
+				html += '<td valign="middle" align="center">' + _data.strings.points + ': <input id="' + controlId + '" style="width: 300px;" onChange="pointsChange(\'' + controlId + '\')"><button class="small_icon" onclick="mr.functionHelp()"><img src="images/function.png" width="12"></button>';
 			}
 			html += '</td></tr>';
 		}
