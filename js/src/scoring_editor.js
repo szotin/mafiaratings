@@ -272,7 +272,7 @@ function sectionHtml(sectionName)
 				var controlId = base + '-points';
 				var mvpId = base + '-mvp';
 				html += '<td rowspan="2" align="center"><table class="transp" width="100%">';
-				html += '<tr><td><p>' + _data.strings.points + ':</p></td><td><p><input id="' + controlId + '" style="width: 350px;" oninput="pointsChange(\'' + controlId + '\')"></p></td></tr>';
+				html += '<tr><td><p>' + _data.strings.points + ':</p></td><td><p><input id="' + controlId + '" style="width: 350px;" oninput="pointsChange(\'' + controlId + '\')"><button class="small_icon" onclick="mr.functionHelp()"><img src="images/function.png" width="12"></button></p></td></tr>';
 				html += '<tr><td colspan="2">';
 				html += '<p><input type="radio" name="' + mvpId + '"' + (mvp == 0 ? ' checked' : '') + ' onclick="mvpRadioChange(\'' + mvpId + '\', 0)""> ' + _data.strings.noMvp;
 				html += '<br><input type="radio" name="' + mvpId + '"' + (mvp == 1 ? ' checked' : '') + ' onclick="mvpRadioChange(\'' + mvpId + '\', 1)"> ' + _data.strings.yesMvp;
@@ -280,7 +280,7 @@ function sectionHtml(sectionName)
 				html += '</p></td></tr>';
 				if (mvp == 2)
 				{
-					html += '<tr><td><p>' + _data.strings.mvpPoints + ':</p></td><td><p><input id="' + mvpId + '" style="width: 350px;" oninput="mvpPointsChange(\'' + mvpId + '\')"></p></td></tr>';
+					html += '<tr><td><p>' + _data.strings.mvpPoints + ':</p></td><td><p><input id="' + mvpId + '" style="width: 350px;" oninput="mvpPointsChange(\'' + mvpId + '\')"><button class="small_icon" onclick="mr.functionHelp()"><img src="images/function.png" width="12"></button></p></td></tr>';
 				}
 				html += '</table>';
 			}

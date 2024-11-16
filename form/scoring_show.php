@@ -71,7 +71,10 @@ try
 			$points = isset($policy->points) ? $policy->points : 0;
 			if (is_string($points))
 			{
-				$text = get_label('[0] get points according to the formula: [1]', get_scoring_roles_label($roles), '<br><i>' . $points . '</i>');
+				$text = 
+					get_label('[0] get points according to the formula:', get_scoring_roles_label($roles)).
+				 	'<p><button class="small_icon" onclick="mr.functionHelp()"><img src="images/function.png" width="12"></button> '.
+					'<code>' . $points . ' </code></p>';
 			}
 			else if ($points == 1)
 			{
