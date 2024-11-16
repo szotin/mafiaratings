@@ -84,7 +84,7 @@ $labelMenu = array (
 'Date' => 'Дата', // event_mailings.php, form/event_create.php, form/event_edit.php, form/round_create.php, form/series_extra_points_add.php, form/series_extra_points_edit.php, form/video_create.php, form/video_edit.php
 'Time' => 'Время', // club_log.php, log.php, log_details.php, view_game.php, form/event_create.php, form/event_edit.php, form/round_create.php
 'Language' => 'Язык', // view_game.php, include/event.php, form/obs_urls.php, form/video_create.php, form/video_edit.php
-'Points' => 'Баллы', // event_competition.php, event_extra_points.php, event_screen.php, event_standings.php, iratings.php, series_extra_points.php, series_standings.php, tournament_competition.php, tournament_extra_points.php, tournament_screen.php, tournament_standings.php, tournament_standings.php, tournament_standings.php, form/extra_points_add.php, form/extra_points_edit.php, form/gaining_table.php, form/game_extra_points.php, form/series_extra_points_add.php, form/series_extra_points_edit.php
+'Points' => 'Баллы', // event_competition.php, event_extra_points.php, event_screen.php, event_standings.php, iratings.php, scoring.php, series_extra_points.php, series_standings.php, tournament_competition.php, tournament_extra_points.php, tournament_screen.php, tournament_standings.php, tournament_standings.php, tournament_standings.php, form/extra_points_add.php, form/extra_points_edit.php, form/gaining_table.php, form/game_extra_points.php, form/series_extra_points_add.php, form/series_extra_points_edit.php
 'Killed' => 'Убит', // form/game_round_view.php
 'Warnings' => 'Замечания', // address_nominations.php, club_nominations.php, event_nominations.php, event_player.php, nominations.php, series_nominations.php, series_player.php, series_referees.php, tournament_nominations.php, tournament_player.php, tournament_referees.php, user_stats.php, form/game_round_view.php
 'Role' => 'Роль', // series_player.php, user_games.php, form/game_round_view.php
@@ -590,7 +590,7 @@ $labelMenu = array (
 'Statistics for [0]' => '[0]. Статистика и игры.', // include/page_base.php
 'My statistics' => 'Моя статистика', // include/page_base.php
 'My account' => 'Мой аккаунт', // include/page_base.php
-'points' => 'баллы', // event_player.php, scoring.php, tournament_player.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/tournament.php, form/extra_points_edit.php, form/extra_points_edit.php, form/series_extra_points_edit.php, form/series_extra_points_edit.php
+'points' => 'баллы', // event_player.php, tournament_player.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/tournament.php, form/extra_points_edit.php, form/extra_points_edit.php, form/series_extra_points_edit.php, form/series_extra_points_edit.php
 'Points per game' => 'Баллов за игру', // event_standings.php, iratings.php
 'Scoring system' => 'Система подсчета баллов', // scoring.php, series_standings.php, include/scoring.php, include/scoring.php, form/club_edit.php, form/event_create.php, form/event_edit.php, form/league_edit.php, form/round_create.php, form/scoring_create.php, form/tournament_create.php, form/tournament_edit.php
 'User points' => 'Баллы', // email_tags.php
@@ -1669,6 +1669,10 @@ $labelMenu = array (
 'Invalid expression in "[0]" ([1]): [2]' => 'Неправильное выражение в "[0]" ([1]): [2]', // api/ops/scoring.php
 'Table [0] / Game [1]' => 'Стол [0] / Игра [1]', // api/get/current_game.php
 '[0] get points according to the formula: [1]' => '[0] получают баллы согласно формуле: [1]', // form/scoring_show.php
+'not taken into account in the definition of MVP' => 'не учитываются в определении MVP', // scoring.php
+'taken into account in the definition of MVP' => 'учитываются в определении MVP', // scoring.php
+'taken into account in the definition of MVP but calculated differently' => 'учитываются в определении MVP, но считаются по другому', // scoring.php
+'MVP points' => 'Баллы MVP', // scoring.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1681,6 +1685,7 @@ $labelMenu = array (
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
 'Display pattern must contain \'#\' character.' => 'правило показа валюты обязано содержать символ \'#\'.', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php
+'Policy name' => 'Название', // scoring.php
 );
 
 return $labelMenu;

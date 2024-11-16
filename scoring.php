@@ -84,7 +84,7 @@ class Page extends PageBase
 				shotPoints: "<?php echo get_label('Depending on number of times player was killed first night'); ?>",
 				shotPointsFiim: "<?php echo get_label('Depending on number of times player was killed first night by FIIM rules'); ?>",
 				bonusPoints: "<?php echo get_label('Depending on bonus points given by a referee'); ?>",
-				points: "<?php echo get_label('points'); ?>",
+				points: "<?php echo get_label('Points'); ?>",
 				minDif: "<?php echo get_label('min difficulty percent'); ?>",
 				maxDif: "<?php echo get_label('max difficulty percent'); ?>",
 				minNight1: "<?php echo get_label('min first night kill percentage/count'); ?>",
@@ -103,6 +103,11 @@ class Page extends PageBase
 				counters: "<?php echo get_label('Counters'); ?>",
 				counterAdd: "<?php echo get_label('Add counter.'); ?>",
 				counterDel: "<?php echo get_label('Delete counter.'); ?>",
+				noMvp: "<?php echo get_label('not taken into account in the definition of MVP'); ?>",
+				yesMvp: "<?php echo get_label('taken into account in the definition of MVP'); ?>",
+				customMvp: "<?php echo get_label('taken into account in the definition of MVP but calculated differently'); ?>",
+				mvpPoints: "<?php echo get_label('MVP points'); ?>",
+				policyName: "<?php echo get_label('Policy name'); ?>",
 			},
 			sections:
 			{

@@ -34,6 +34,14 @@ function dirty(isDirty)
 
 function isNumeric(str)
 {
+	if (typeof str == "number")
+	{
+		return true;
+	}
+	if (typeof str != "string")
+	{
+		return false;
+	}
 	if (str.length <= 0)
 	{
 		return false;
@@ -55,6 +63,41 @@ function isNumeric(str)
 		}
 	}
 	return true;
+}
+
+function mvpRadioChange(controlId, value)
+{
+    var ids = controlId.split('-');
+    var policy = _data.scoring[ids[0]][parseInt(ids[1])];
+	switch (value)
+	{
+	case 0:
+		delete policy.mvp;
+		break;
+	case 1:
+		policy.mvp = true;
+		break;
+	case 2:
+		policy.mvp = policy.points;
+		break;
+	}
+    refreshScoringEditor(true);
+}
+
+function mvpPointsChange(controlId)
+{
+	var ids = controlId.split('-');
+	var policy = _data.scoring[ids[0]][parseInt(ids[1])];
+	var value = $('#' + controlId).val();
+	if (isNumeric(value))
+	{
+        policy.mvp = parseFloat(value);
+	}
+	else
+	{
+        policy.mvp = value;
+	}
+    dirty(true);
 }
 
 function pointsChange(controlId)
@@ -91,10 +134,17 @@ function createPolicy(sectionName)
 	{
 		section = _data.scoring[sectionName] = [];
 	}
-	var p = { matter: 0 };
-	if (sectionName != 'counters')
+	var p = { matter: 0, points: 0 };
+	switch (sectionName)
 	{
-		p.points = 0;
+	case 'legacy':
+	case 'extra':
+	case 'penalty':
+		p.mvp = true;
+		break;
+	case 'counters':
+		delete p.points;
+		break;
 	}
     section.push(p);
     refreshScoringEditor(true);
@@ -183,38 +233,69 @@ function matterSelectHtml(sectionName, policyNum, matterFlag)
 function sectionHtml(sectionName)
 {
     var section = _data.scoring[sectionName];
-    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.policyAdd + '" onclick="createPolicy(\'' + sectionName + '\')"><img src="images/create.png"></button></td><td colspan="3">' + _data.sections[sectionName] + '</td></tr>';
+    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.policyAdd + '" onclick="createPolicy(\'' + sectionName + '\')"><img src="images/create.png"></button></td><td colspan="4">' + _data.sections[sectionName] + '</td></tr>';
 	if (section)
 	{
 		for (var i = 0; i < section.length; ++i)
 		{
 			var policy = section[i];
-			delete policy.message;
-			html += '<tr valign="top"><td align="center"><button class="icon" title="' + _data.strings.policyDel + '" onclick="deletePolicy(\'' + sectionName + '\', ' + i + ')"><img src="images/delete.png"></button></td>';
-			html += '<td width="100">'
-			html += rolesHtml(sectionName, i);
-			html += '</td><td width="140">'
 			var matter = policy.matter;
 			if (matter <= 0)
 				policy.message = _data.strings.actionErr;
-			else while (matter > 0)
+			
+			delete policy.message;
+			html += '<tr valign="top"><td align="center" rowspan="2"><button class="icon" title="' + _data.strings.policyDel + '" onclick="deletePolicy(\'' + sectionName + '\', ' + i + ')"><img src="images/delete.png"></button></td>';
+			
+			html += '<td width="300" valign="middle"><p>' + _data.strings.policyName + ':<br><div id="' + sectionName + '-' + i + '-div"></div></p></td>';
+			
+			html += '<td width="120" valign="middle"><p>' + rolesHtml(sectionName, i) + '</p></td>';
+			
+			if (typeof policy.message == "string")
+			{
+				html += '<td class="light" rowspan="2" align="center"><p><font color="red">' + policy.message + '</font></p>';
+			}
+			else
+			{
+				var mvp = 0;
+				switch (typeof policy.mvp)
+				{
+				case 'string':
+				case 'number':
+					mvp = 2;
+					break;
+				case 'boolean':
+					if (policy.mvp)
+						mvp = 1;
+					break;
+				}
+				var base = sectionName + '-' + i;
+				var controlId = base + '-points';
+				var mvpId = base + '-mvp';
+				html += '<td rowspan="2" align="center"><table class="transp" width="100%">';
+				html += '<tr><td><p>' + _data.strings.points + ':</p></td><td><p><input id="' + controlId + '" style="width: 350px;" oninput="pointsChange(\'' + controlId + '\')"></p></td></tr>';
+				html += '<tr><td colspan="2">';
+				html += '<p><input type="radio" name="' + mvpId + '"' + (mvp == 0 ? ' checked' : '') + ' onclick="mvpRadioChange(\'' + mvpId + '\', 0)""> ' + _data.strings.noMvp;
+				html += '<br><input type="radio" name="' + mvpId + '"' + (mvp == 1 ? ' checked' : '') + ' onclick="mvpRadioChange(\'' + mvpId + '\', 1)"> ' + _data.strings.yesMvp;
+				html += '<br><input type="radio" name="' + mvpId + '"' + (mvp == 2 ? ' checked' : '') + ' onclick="mvpRadioChange(\'' + mvpId + '\', 2)"> ' + _data.strings.customMvp;
+				html += '</p></td></tr>';
+				if (mvp == 2)
+				{
+					html += '<tr><td><p>' + _data.strings.mvpPoints + ':</p></td><td><p><input id="' + mvpId + '" style="width: 350px;" oninput="mvpPointsChange(\'' + mvpId + '\')"></p></td></tr>';
+				}
+				html += '</table>';
+			}
+			html += '</td></tr>';
+			
+			html += '<tr><td colspan="2"><p>'
+			var matter = policy.matter;
+			while (matter > 0)
 			{
 				var oldMatter = matter;
 				matter &= matter - 1;
 				html += matterSelectHtml(sectionName, i, matter ^ oldMatter);
 			}
 			html += matterSelectHtml(sectionName, i, 0);
-			html += '</td>'
-			if (typeof policy.message == "string")
-			{
-				html += '<td class="light" align="center"><p><font color="red">' + policy.message + '</font></p>';
-			}
-			else
-			{
-				var controlId = sectionName + '-' + i + '-points';
-				html += '<td valign="middle" align="center">' + _data.strings.points + ': <input id="' + controlId + '" style="width: 300px;" onChange="pointsChange(\'' + controlId + '\')">';
-			}
-			html += '</td></tr>';
+			html += '</p></td></tr>'
 		}
 	}
     html += '<tr class="light"><td colspan="5"></td></tr>';
@@ -224,7 +305,7 @@ function sectionHtml(sectionName)
 function countersHtml()
 {
     var counters = _data.scoring.counters;
-    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.counterAdd + '" onclick="createPolicy(\'counters\')"><img src="images/create.png"></button></td><td colspan="3">' + _data.strings.counters + '</td></tr>';
+    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.counterAdd + '" onclick="createPolicy(\'counters\')"><img src="images/create.png"></button></td><td colspan="4">' + _data.strings.counters + '</td></tr>';
 	if (counters)
 	{
 		for (var i = 0; i < counters.length; ++i)
@@ -337,7 +418,7 @@ function sortingSectionEnd(layer, index)
 
 function sortingHtml()
 {
-    var html = '<tr class="darker"><td colspan="5">' + _data.strings.sorting + '</td></tr>';
+    var html = '<tr class="darker"><td colspan="6">' + _data.strings.sorting + '</td></tr>';
     var sorting = '(epg)wsk';
     if (typeof _data.scoring.sorting == "string")
     {
@@ -408,15 +489,15 @@ function refreshScoringEditor(isDirty)
     var html = '<table width="100%" class="bordered dark">';
 	if (_data.name)
 	{
-		html += '<tr><td colspan="4">' + _data.strings.name + ': <input id="scoring-name" value="' + _data.name + '" onChange="onScoringNameChange()"> ' + _data.strings.version + ': ' + _data.version + '</td></tr>';
+		html += '<tr><td colspan="5">' + _data.strings.name + ': <input id="scoring-name" value="' + _data.name + '" oninput="onScoringNameChange()"> ' + _data.strings.version + ': ' + _data.version + '</td></tr>';
 	}
     for (var sectionName in _data.sections)
     {
         html += sectionHtml(sectionName);
-    }
-    html += countersHtml();
-    html += sortingHtml();
-    html += '</table>';
+	}
+	html += countersHtml();
+	html += sortingHtml();
+	html += '</table>';
     
     $("#scoring-editor").html(html);
     
@@ -428,6 +509,11 @@ function refreshScoringEditor(isDirty)
 			for (var i = 0; i < section.length; ++i)
 			{
 				$('#' + sectionName + '-' + i + '-points').val(section[i].points ? section[i].points : 0);
+				if (section[i].mvp)
+				{
+					$('#' + sectionName + '-' + i + '-mvp').val(section[i].mvp);
+				}
+				var nameControl = new NameControl(section[i], sectionName + '-' + i, "nameControl");
 			}
 		}
     }
