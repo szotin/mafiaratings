@@ -207,10 +207,14 @@ class Page extends TournamentPageBase
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
 		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
 		echo '</tr>';
-		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td>';
+		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') .
+			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_MAIN, true) . 
+			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_LEGACY, true) . 
+			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_EXTRA, true) . 
+			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_PENALTY, true) . '</td>';
 		if ($this->show_fk)
 		{
-			echo '<td width="36">' . get_label('FK') . '</td>';
+			echo '<td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_NIGHT1, true) . '</td>';
 		}
 		echo '</tr>';
 		
@@ -362,10 +366,14 @@ class Page extends TournamentPageBase
 			echo '</td>';
 		}
 		echo '</tr>';
-		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td>';
+		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . 
+			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_MAIN, true) . 
+			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_LEGACY, true) . 
+			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_EXTRA, true) . 
+			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_PENALTY, true) . '</td>';
 		if ($this->show_fk)
 		{
-			echo '<td width="36">' . get_label('FK') . '</td>';
+			echo '<td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_NIGHT1, true) . '</td>';
 		}
 		echo '</tr>';
 		

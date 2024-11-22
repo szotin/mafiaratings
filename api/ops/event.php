@@ -1095,8 +1095,7 @@ class ApiPage extends OpsApiPageBase
 		$reason = get_required_param('reason');
 		$details = get_optional_param('details');
 		$points = (float)get_required_param('points');
-		$scoring_group = get_optional_param('scoring_group', SCORING_GROUP_EXTRA);
-		$scoring_matter = (int)get_optional_param('scoring_matter', SCORING_FLAG_EXTRA_POINTS);
+		$mvp = (bool)get_optional_param('mvp', 0);
 		
 		if (empty($reason))
 		{
@@ -1110,7 +1109,7 @@ class ApiPage extends OpsApiPageBase
 			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 
 			$club_id, $event_id, $tournament_id);
 		
-		Db::exec(get_label('points'), 'INSERT INTO event_extra_points (time, event_id, user_id, reason, details, points, scoring_group, scoring_matter) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?, ?, ?, ?)', $event_id, $user_id, $reason, $details, $points, $scoring_group, $scoring_matter);
+		Db::exec(get_label('points'), 'INSERT INTO event_extra_points (time, event_id, user_id, reason, details, points, mvp) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?, ?, ?)', $event_id, $user_id, $reason, $details, $points, $mvp);
 		list ($points_id) = Db::record(get_label('points'), 'SELECT LAST_INSERT_ID()');
 		
 		list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
@@ -1120,8 +1119,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->event_id = $event_id;
 		$log_details->points = $points;
 		$log_details->reason = $reason;
-		$log_details->scoring_group = $scoring_group;
-		$log_details->scoring_matter = $scoring_matter;
+		$log_details->mvp = $mvp;
 		if (!empty($details))
 		{
 			$log_details->details = $details;
@@ -1143,8 +1141,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('user_id', 'User id. The user who is receiving or loosing points.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.');
 		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.');
-		$help->request_param('scoring_group', 'Scoring group to add points. See scoring.', 'extra points group is used.');
-		$help->request_param('scoring_matter', 'Scoring matter to add points. See scoring.', 'extra points matter is used (SCORING_FLAG_EXTRA_POINTS).');
+		$help->request_param('mvp', 'Non zero if these points should also count in MVP competition.', 'not used in MVP competition.');
 		$help->request_param('details', 'Detailed explanation why user recieves or loses points.', 'empty.');
 		
 		$help->response_param('points_id', 'Id of the created extra points object.');
@@ -1159,8 +1156,8 @@ class ApiPage extends OpsApiPageBase
 		$points_id = (int)get_required_param('points_id');
 		
 		Db::begin();
-		list($user_id, $event_id, $tournament_id, $club_id, $old_reason, $old_details, $old_points, $old_scoring_group, $old_scoring_matter) = 
-			Db::record(get_label('points'), 'SELECT p.user_id, p.event_id, e.tournament_id, e.club_id, p.reason, p.details, p.points, p.scoring_group, p.scoring_matter FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
+		list($user_id, $event_id, $tournament_id, $club_id, $old_reason, $old_details, $old_points, $old_mvp) = 
+			Db::record(get_label('points'), 'SELECT p.user_id, p.event_id, e.tournament_id, e.club_id, p.reason, p.details, p.points, p.mvp FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE p.id = ?', $points_id);
 		check_permissions(
 			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | 
 			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 
@@ -1174,10 +1171,9 @@ class ApiPage extends OpsApiPageBase
 		
 		$details = get_optional_param('details', $old_details);
 		$points = (float)get_optional_param('points', $old_points);
-		$scoring_group = get_optional_param('scoring_group', $old_scoring_group);
-		$scoring_matter = (int)get_optional_param('scoring_matter', $old_scoring_matter);
+		$mvp = (bool)get_optional_param('mvp', $old_mvp);
 		
-		Db::exec(get_label('points'), 'UPDATE event_extra_points SET reason = ?, details = ?, points = ?, scoring_group = ?, scoring_matter = ? WHERE id = ?', $reason, $details, $points, $scoring_group, $scoring_matter, $points_id);
+		Db::exec(get_label('points'), 'UPDATE event_extra_points SET reason = ?, details = ?, points = ?, mvp = ? WHERE id = ?', $reason, $details, $points, $mvp, $points_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -1193,13 +1189,9 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->points = $points;
 			}
-			if ($scoring_group != $old_scoring_group)
+			if ($mvp != $old_mvp)
 			{
-				$log_details->scoring_group = $scoring_group;
-			}
-			if ($scoring_matter != $old_scoring_matter)
-			{
-				$log_details->scoring_matter = $scoring_group;
+				$log_details->mvp = $mvp;
 			}
 			db_log(LOG_OBJECT_EXTRA_POINTS, 'changed', $log_details, $points_id, $club_id);
 			
@@ -1215,8 +1207,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('points_id', 'Id of extra points object.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract. Zero means: add average points per game for this event.', 'remains the same');
 		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.', 'remains the same');
-		$help->request_param('scoring_group', 'Scoring group to add points. See scoring.', 'remains the same');
-		$help->request_param('scoring_matter', 'Scoring matter to add points. See scoring.', 'remains the same');
+		$help->request_param('mvp', 'Non zero if these points should also count in MVP competition.', 'remains the same');
 		$help->request_param('details', 'Detailed explanation why user recieves or loses points.', 'remains the same');
 		return $help;
 	}

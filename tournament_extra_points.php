@@ -37,10 +37,11 @@ class Page extends TournamentPageBase
 		echo '<td width="100" align="center">' . get_label('Round') . '</td>';
 		echo '<td width="180" align="center">' . get_label('Reason') . '</td>';
 		echo '<td width="80" align="center">' . get_label('Points') . '</td>';
+		echo '<td width="80" align="center">' . get_label('MVP') . '</td>';
 		echo '</tr>';
 		
 		$query = new DbQuery(
-			'SELECT p.id, e.id, e.name, e.flags, u.id, nu.name, u.flags, p.reason, p.details, p.points, eu.nickname, eu.flags, tu.flags, cu.flags' . 
+			'SELECT p.id, e.id, e.name, e.flags, u.id, nu.name, u.flags, p.reason, p.details, p.points, p.mvp, eu.nickname, eu.flags, tu.flags, cu.flags' . 
 				' FROM event_extra_points p' . 
 				' JOIN users u ON u.id = p.user_id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
@@ -52,7 +53,7 @@ class Page extends TournamentPageBase
 				' ORDER BY e.start_time, e.id, p.id', $this->id);
 		while ($row = $query->next())
 		{
-			list($points_id, $event_id, $event_name, $event_flags, $user_id, $user_name, $user_flags, $reason, $details, $points, $user_nickname, $event_user_flags, $tournament_user_flags, $club_user_flags) = $row;
+			list($points_id, $event_id, $event_name, $event_flags, $user_id, $user_name, $user_flags, $reason, $details, $points, $mvp, $user_nickname, $event_user_flags, $tournament_user_flags, $club_user_flags) = $row;
 			
 			echo '<tr>';
 			echo '<td valign="center">';
@@ -80,6 +81,7 @@ class Page extends TournamentPageBase
 				echo format_score($points);
 			}
 			echo '</td>';
+			echo '<td align="center">' . ($mvp ? get_label('yes') : get_label('no')) . '</td>';
 			echo '</tr>';
 		}
 		echo '</table>';

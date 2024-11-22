@@ -45,6 +45,15 @@ class Page extends PageBase
 		$this->dependants = $tournaments_count + $events_count;
 		
 		$this->_title = get_label('Scoring system') . ': ' . $this->scoring_name;
+		
+		$this->langs_array = '[';
+		$delim = '';
+		for ($lang = get_next_lang(LANG_NO); $lang != LANG_NO; $lang = get_next_lang($lang))
+		{
+			$this->langs_array .= $delim . '"' . get_lang_code($lang) . '"';
+			$delim = ',';
+		}
+		$this->langs_array .= ']';
 	}
 	
 	protected function show_body()
@@ -55,6 +64,18 @@ class Page extends PageBase
 			echo ' <button id="overwrite" onclick="overwriteData()" disabled>' . get_label('Overwrite current version') . '</button>';
 		}
 		echo '</p>';
+		
+		echo '<ul id="lang-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';
+		$lang = LANG_NO;
+		while (($lang = get_next_lang($lang)) != LANG_NO)
+		{
+			$lang_code = get_lang_code($lang);
+			echo '<li><a href="javascript:seAddLang(\'' . $lang_code . '\')">';
+			echo '<img src="images/' . $lang_code . '.png" width="20">';
+			echo '</a></li>';
+		}
+		echo '</ul>';
+		
 		echo '<script src="js/scoring_editor.js"></script>';
 		echo '<div id="scoring-editor"></div>';
 	}
@@ -156,7 +177,8 @@ class Page extends PageBase
 				"w": "<?php echo get_label('number of wins'); ?>",
 				"s": "<?php echo get_label('number of special role wins'); ?>",
 				"k": "<?php echo get_label('times being killed first night'); ?>"
-			}
+			},
+			langs: <?php echo $this->langs_array; ?>
 		};
 		
 		function onDataChange(d, isDirty)

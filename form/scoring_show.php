@@ -89,10 +89,10 @@ try
 			{
 				if (!$group_title_shown)
 				{
-					echo '<tr class="darker"><td colspan="2"><h4>' . get_scoring_group_label($group) . '</h4></td></tr>';
+					echo '<tr class="darker"><td colspan="2"><h4>' . get_scoring_group_label($scoring, $group) . '</h4></td></tr>';
 					$group_title_shown = true;
 				}
-				echo '<tr><td width="300">' . get_scoring_matter_label($policy) . '</td><td>' . $text . '</td></tr>';
+				echo '<tr><td width="300">' . get_scoring_policy_label($policy) . '</td><td>' . $text . '</td></tr>';
 			}
 		}
 	}

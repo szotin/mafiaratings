@@ -199,7 +199,7 @@ class Page extends EventPageBase
 				{
 					echo '<td width="36" align="center" colspan="' . $count . '">';
 				}
-				echo get_scoring_group_label($group) . '</td>';
+				echo get_scoring_group_label($this->scoring, $group) . '</td>';
 			}
 		}
 		echo '<td align="center" rowspan="2" class="darkest" width="36">∑</td>';
@@ -218,7 +218,7 @@ class Page extends EventPageBase
 					$policy = $g[$i];
 					if (is_scoring_policy_on($policy, $this->scoring_options))
 					{
-						echo '<td width="36" align="center" title="' . get_scoring_matter_label($policy, true) . '">' . $letter . '</td>';
+						echo '<td width="36" align="center" title="' . get_scoring_policy_label($policy, true) . '">' . $letter . '</td>';
 						++$letter;
 					}
 				}
@@ -276,42 +276,23 @@ class Page extends EventPageBase
 			echo '</tr>';
 		}
 		
-		$query = new DbQuery('SELECT points, reason, scoring_group, scoring_matter FROM event_extra_points WHERE event_id = ? AND user_id = ?', $this->event->id, $this->user_id);
+		$query = new DbQuery('SELECT points, reason, mvp FROM event_extra_points WHERE event_id = ? AND user_id = ?', $this->event->id, $this->user_id);
 		$output_needed = true;
 		while ($row = $query->next())
 		{
-			list($extra_points, $extra_reason, $extra_group, $extra_matter) = $row;
+			list($extra_points, $extra_reason) = $row;
 			if (isset($this->scoring_options->weight))
 			{
 				$extra_points *= $this->scoring_options->weight;
 			}
-			echo '<tr align="center" class="dark" style="height:32px;"><td align="left">' . $extra_reason . '</td>';
 			
+			$count = 1;
 			foreach ($_scoring_groups as $group)
 			{
-				$count = get_scoring_group_policies_count($group, $this->scoring, $this->scoring_options);
-				if ($count > 0)
-				{
-					$gr1 = &$this->scoring->$group;
-					$gr2 = &$this->player->$group;
-					$raw_gname = 'raw_' . $group;
-					$raw_rg2 = &$this->player->$raw_gname;
-					$count = get_scoring_group_policies_count($group, $this->scoring);
-					for ($i = 0; $i < $count; ++$i)
-					{
-						if (is_scoring_policy_on($gr1[$i], $this->scoring_options))
-						{
-							echo '<td>';
-							if ($output_needed && $group == $extra_group && ($gr1[$i]->matter & $extra_matter) != 0)
-							{
-								$output_needed = false;
-								echo format_score($extra_points, false);
-							}
-							echo '</td>';
-						}
-					}
-				}
+				$count += get_scoring_group_policies_count($group, $this->scoring, $this->scoring_options);
 			}
+			
+			echo '<tr align="center" class="dark" style="height:32px;"><td align="left" colspan="' . $count . '">' . $extra_reason . '</td>';
 			echo '<td class="darker"><b>' . format_score($extra_points, false) . '</b></td>';
 		}
 		
@@ -352,7 +333,7 @@ class Page extends EventPageBase
 					$policy = $gr[$i];
 					if (is_scoring_policy_on($policy, $this->scoring_options))
 					{
-						echo '<b>' . $letter . ':</b> ' . get_label('points') . ' ' . get_scoring_matter_label($policy, true) . '<br>';
+						echo '<b>' . $letter . ':</b> ' . get_scoring_policy_label($policy, true) . '<br>';
 						++$letter;
 					}
 				}

@@ -682,11 +682,6 @@ function create_evaluators($scoring)
 	}
 }
 
-function is_mvp_scoring_group($group_name)
-{
-	return $group_name == SCORING_GROUP_LEGACY || $group_name == SCORING_GROUP_EXTRA || $group_name == SCORING_GROUP_PENALTY;
-}
-
 function add_player_counters(&$counters, $scoring, $game_flags, $game_role)
 {
 	$role = 1 << $game_role;
@@ -775,7 +770,6 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 		{
 			continue;
 		}
-		$is_mvp = is_mvp_scoring_group($group_name);
 		 
 		$group = $scoring->$group_name;
 		for ($i = 0; $i < count($group); ++$i)
@@ -805,9 +799,9 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 				$points = $policy->points;
 			}
 			
-			if ($is_mvp)
+			if (isset($policy->mvp))
 			{
-				if (isset($policy->mvpEvaluator))
+				if (is_string($policy->mvp))
 				{
 					$policy->mvpEvaluator->difficulty = $difficulty;
 					$policy->mvpEvaluator->counter = $counters;
@@ -816,13 +810,20 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 					$policy->mvpEvaluator->matter = $game_flags;
 					$mvp_points = $policy->mvpEvaluator->evaluate();
 				}
-				else if (isset($policy->mvp))
+				else if (is_bool($policy->mvp))
+				{
+					if ($policy->mvp)
+					{
+						$mvp_points = $points;
+					}
+					else
+					{
+						$mvp_points = 0;
+					}
+				}
+				else if (is_numeric($policy->mvp))
 				{
 					$mvp_points = $policy->mvp;
-				}
-				else
-				{
-					$mvp_points = $points;
 				}
 				$total_mvp_points += $mvp_points * $weight;
 			}
@@ -1257,37 +1258,19 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	}
 	
 	// Add event extra points
-	$query = new DbQuery('SELECT user_id, points, scoring_group, scoring_matter FROM event_extra_points WHERE event_id = ?', $event_id);
+	$query = new DbQuery('SELECT user_id, points, mvp FROM event_extra_points WHERE event_id = ?', $event_id);
 	while ($row = $query->next())
 	{
-		list ($player_id, $points, $group, $matter) = $row;
+		list ($player_id, $points, $mvp) = $row;
 		if (isset($players[$player_id]))
 		{
+			$player = $players[$player_id];
+			
 			if (isset($options->weight))
 			{
 				$points *= $options->weight;
 			}
-			
-			$player = $players[$player_id];
-			$g = $group . '_points';
-			if (isset($player->$g))
-			{
-				$player->$g += $points;
-			}
-			if (isset($player->$group) && is_array($player->$group))
-			{
-				$a = &$player->scoring->$group;
-				for ($i = 0; $i < count($a); ++$i)
-				{
-					if ($a[$i]->matter & $matter)
-					{
-						$sg = &$player->$group;
-						$sg[$i] += $points;
-						break;
-					}
-				}
-			}
-			if (is_mvp_scoring_group($group))
+			if ($mvp)
 			{
 				$player->mvp_points += $points;
 			}
@@ -1871,36 +1854,21 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
     }
 	
 	// Add event extra points
-	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points, p.scoring_group, p.scoring_matter FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id, $hide_table_condition);
+	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points, p.mvp FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id, $hide_table_condition);
 	while ($row = $query->next())
 	{
-		list ($event_id, $player_id, $points, $group, $matter) = $row;
+		list ($event_id, $player_id, $points, $mvp) = $row;
 		if (isset($players[$player_id]))
 		{
+			$player = $players[$player_id];
 			if (isset($event_options[$event_id]->weight))
 			{
 				$points *= $event_options[$event_id]->weight;
 			}
-			$player = $players[$player_id];
 			
-			
-			$g = $group . '_points';
-			if (isset($player->$g))
+			if ($mvp)
 			{
-				$player->$g += $points;
-			}
-			if (isset($player->$group) && is_array($player->$group))
-			{
-				$a = &$player->scoring->$group;
-				for ($i = 0; $i < count($a); ++$i)
-				{
-					if ($a[$i]->matter & $matter)
-					{
-						$sg = &$player->$group;
-						$sg[$i] += $points;
-						break;
-					}
-				}
+				$player->mvp_points += $points;
 			}
 			$player->points += $points;
 		}
@@ -2262,24 +2230,6 @@ function get_scoring_matter_label($policy, $include_roles = false)
 		}
 	}
 	return $label;
-}
-
-function get_scoring_group_label($group)
-{
-	switch ($group)
-	{
-		case SCORING_GROUP_MAIN:
-			return get_label('Main points');
-		case SCORING_GROUP_LEGACY:
-			return get_label('Legacy points');
-		case SCORING_GROUP_EXTRA:
-			return get_label('Extra points');
-		case SCORING_GROUP_PENALTY:
-			return get_label('Penalty points');
-		case SCORING_GROUP_NIGHT1:
-			return get_label('Points for being killed first night');
-	}
-	return get_label('Unknown');
 }
 
 function is_scoring_policy_on($policy, $options)
@@ -3012,5 +2962,80 @@ function api_gaining_help($param)
 {
 	$param->sub_param('Help on gaining json structure is not implemented yet.', '', '-');
 }
+
+function get_scoring_group_label($scoring, $group_name, $short = false)
+{
+	global $_lang;
+	
+	if (isset($scoring->$group_name))
+	{
+		$group = &$scoring->$group_name;
+		if (count($scoring->$group_name) == 1)
+		{
+			$policy = $group[0];
+			$name = 'name_' . get_lang_code($_lang);
+			if (isset($policy->$name))
+			{
+				return $policy->$name;
+			}
+			else if (isset($policy->name))
+			{
+				return $policy->name;
+			}
+		}
+	}
+	
+	switch ($group_name)
+	{
+		case SCORING_GROUP_MAIN:
+			if ($short)
+			{
+				return get_label('Main');
+			}
+			return get_label('Main points');
+		case SCORING_GROUP_EXTRA:
+			if ($short)
+			{
+				return get_label('Bonus');
+			}
+			return get_label('Bonus points');
+		case SCORING_GROUP_LEGACY:
+			if ($short)
+			{
+				return get_label('Legacy');
+			}
+			return get_label('Legacy points');
+		case SCORING_GROUP_PENALTY:
+			if ($short)
+			{
+				return get_label('Penlt');
+			}
+			return get_label('Penalty points');
+		case SCORING_GROUP_NIGHT1:
+			if ($short)
+			{
+				return get_label('FK');
+			}
+			return get_label('Points for being killed first night');
+	}
+	return '';
+}
+
+function get_scoring_policy_label($policy)
+{
+	global $_lang;
+	
+	$name = 'name_' . get_lang_code($_lang);
+	if (isset($policy->$name))
+	{
+		return $policy->$name;
+	}
+	else if (isset($policy->name))
+	{
+		return $policy->name;
+	}
+	return get_label('points') . ' ' . get_scoring_matter_label($policy, true);
+}
+
 
 ?>

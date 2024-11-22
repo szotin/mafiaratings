@@ -230,14 +230,66 @@ function matterSelectHtml(sectionName, policyNum, matterFlag)
     return html;
 }
 
+var currentControlId = '';
+function seShowLangMenu(controlId)
+{
+	currentControlId = controlId;
+	setCurrentMenu('#lang-menu');
+	var langMenu = $('#lang-menu').menu();
+	var b = $('#' + controlId + '-lang');
+	langMenu.show(0, function()
+	{
+		langMenu.position(
+		{
+			my: "left top",
+			at: "left bottom",
+			of: b
+		});
+		$(document).one("click", function() { setCurrentMenu(null); });
+	});
+}
+
+function seAddLang(langCode)
+{
+	if (currentControlId)
+	{
+		var ids = currentControlId.split('-');
+		var policy = _data.scoring[ids[0]][parseInt(ids[1])];
+		policy['name_' + langCode] = '';
+		refreshScoringEditor(true);
+	}
+}
+
+function seRemoveLang(controlId)
+{
+	var ids = controlId.split('-');
+	var policy = _data.scoring[ids[0]][parseInt(ids[1])];
+	delete policy[ids[2]];
+	refreshScoringEditor(true);
+}
+
+function seNameChange(controlId)
+{
+	var ids = controlId.split('-');
+	var policy = _data.scoring[ids[0]][parseInt(ids[1])];
+	var name = ids[2];
+	policy[name] = $('#' + controlId).val();
+	if (name == 'name' && policy[name] == '')
+	{
+		delete policy[name];
+	}
+	dirty(true);
+}
+
 function sectionHtml(sectionName)
 {
     var section = _data.scoring[sectionName];
-    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.policyAdd + '" onclick="createPolicy(\'' + sectionName + '\')"><img src="images/create.png"></button></td><td colspan="4">' + _data.sections[sectionName] + '</td></tr>';
+    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.policyAdd + '" onclick="createPolicy(\'' + sectionName + '\')"><img src="images/create.png"></button></td><td colspan="4"><b>' + _data.sections[sectionName] + '</b></td></tr>';
 	if (section)
 	{
 		for (var i = 0; i < section.length; ++i)
 		{
+			var controlId = sectionName + '-' + i;
 			var policy = section[i];
 			var matter = policy.matter;
 			if (matter <= 0)
@@ -246,9 +298,30 @@ function sectionHtml(sectionName)
 			delete policy.message;
 			html += '<tr valign="top"><td align="center" rowspan="2"><button class="icon" title="' + _data.strings.policyDel + '" onclick="deletePolicy(\'' + sectionName + '\', ' + i + ')"><img src="images/delete.png"></button></td>';
 			
-			html += '<td width="300" valign="middle"><p>' + _data.strings.policyName + ':<br><div id="' + sectionName + '-' + i + '-div"></div></p></td>';
+			html += '<td width="300" valign="top"><p>' + _data.strings.policyName + ':<br>';
 			
-			html += '<td width="120" valign="middle"><p>' + rolesHtml(sectionName, i) + '</p></td>';
+			html += '<table class="transp"><tr><td width="24"><img src="images/sync.png" width="20"></td><td><input id="' + controlId + '-name" oninput="seNameChange(\'' + controlId + '-name' + '\')" value="';
+			if (policy.name)
+			{
+				html += policy.name;
+			}
+			html += '"></td><td><button id="' + controlId + '-lang" class="icon" onMouseEnter="seShowLangMenu(\'' +  controlId + '\')"><img src="images/create.png"></button></td></tr>';
+			for (const l in _data.langs)
+			{
+				var code = _data.langs[l];
+				var n = 'name_' + code;
+				if (typeof policy[n] == 'string')
+				{
+					var cn = controlId + '-' + n;
+					html += 
+						'<tr><td><img src="images/' + code + '.png" width="20"></td>' +
+						'<td><input id="' + cn + '" value="' + policy[n] + '" oninput="seNameChange(\'' + cn + '\')"></td>' +
+						'<td><button class="icon" onClick="seRemoveLang(\'' + cn + '\')"><img src="images/delete.png"></button></td></tr>';
+				}
+			}
+			html += '</table></p></td>';
+			
+			html += '<td width="120" valign="top"><p>' + rolesHtml(sectionName, i) + '</p></td>';
 			
 			if (typeof policy.message == "string")
 			{
@@ -305,7 +378,7 @@ function sectionHtml(sectionName)
 function countersHtml()
 {
     var counters = _data.scoring.counters;
-    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.counterAdd + '" onclick="createPolicy(\'counters\')"><img src="images/create.png"></button></td><td colspan="4">' + _data.strings.counters + '</td></tr>';
+    var html = '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + _data.strings.counterAdd + '" onclick="createPolicy(\'counters\')"><img src="images/create.png"></button></td><td colspan="4"><b>' + _data.strings.counters + '</b></td></tr>';
 	if (counters)
 	{
 		for (var i = 0; i < counters.length; ++i)
@@ -418,7 +491,7 @@ function sortingSectionEnd(layer, index)
 
 function sortingHtml()
 {
-    var html = '<tr class="darker"><td colspan="6">' + _data.strings.sorting + '</td></tr>';
+    var html = '<tr class="darker"><td colspan="6"><b>' + _data.strings.sorting + '</b></td></tr>';
     var sorting = '(epg)wsk';
     if (typeof _data.scoring.sorting == "string")
     {
@@ -513,7 +586,6 @@ function refreshScoringEditor(isDirty)
 				{
 					$('#' + sectionName + '-' + i + '-mvp').val(section[i].mvp);
 				}
-				var nameControl = new NameControl(section[i], sectionName + '-' + i, "nameControl");
 			}
 		}
     }
