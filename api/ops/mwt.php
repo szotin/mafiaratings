@@ -176,6 +176,7 @@ class ApiPage extends OpsApiPageBase
 			$part = $parts[$p];
 			if ($part == NULL)
 			{
+				$rounds[] = array();
 				continue;
 			}
 			
@@ -266,6 +267,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$rounds = array_slice($rounds, 0, $i);
 		}
+		//throw new Exc(formatted_json($rounds));
 		
 		// Save them to db rounds
 		Db::begin();
