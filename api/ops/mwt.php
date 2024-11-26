@@ -176,7 +176,7 @@ class ApiPage extends OpsApiPageBase
 			$part = $parts[$p];
 			if ($part == NULL)
 			{
-				$rounds[] = array();
+				$rounds[] = NULL;
 				continue;
 			}
 			
@@ -226,7 +226,7 @@ class ApiPage extends OpsApiPageBase
 			$round = $rounds[$i];
 			if ($round == NULL)
 			{
-				break;
+				continue;
 			}
 			
 			$one_game = true;
@@ -274,72 +274,75 @@ class ApiPage extends OpsApiPageBase
 		$round_num = 0;
 		list($address_id, $club_id, $start, $duration, $langs, $scoring_id, $scoring_version, $tournament_scoring_options, $rules_code) = Db::record(get_label('tournament'), 'SELECT address_id, club_id, start_time, duration, langs, scoring_id, scoring_version, scoring_options, rules FROM tournaments WHERE id = ?', $tournament_id);
 		$tournament_scoring_options = json_decode($tournament_scoring_options);
-		Db::exec(get_label('round'), 'UPDATE events SET misc = NULL WHERE tournament_id = ?', $tournament_id);
 		for ($i = 0; $i < count($rounds); ++$i)
 		{
-			$event_misc = new stdClass();
-			$event_misc->mwt_schema = $rounds[$i];
-			$event_misc->seating = array();
-			foreach ($event_misc->mwt_schema as $table)
+			$round = $rounds[$i];
+			if (!is_null($round))
 			{
-				$t = array();
-				foreach ($table as $game)
+				$event_misc = new stdClass();
+				$event_misc->mwt_schema = $round;
+				$event_misc->seating = array();
+				foreach ($event_misc->mwt_schema as $table)
 				{
-					$t[] = NULL;
+					$t = array();
+					foreach ($table as $game)
+					{
+						$t[] = NULL;
+					}
+					$event_misc->seating[] = $t;
 				}
-				$event_misc->seating[] = $t;
-			}
-			$event_misc = json_encode($event_misc);
-			
-			$query = new DbQuery('SELECT id FROM events WHERE tournament_id = ? AND round = ? ORDER BY id LIMIT 1', $tournament_id, $round_num);
-			if ($row = $query->next())
-			{
-				list($event_id) = $row;
-				Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id = ?', $event_id);
-				Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', $event_misc, $event_id);
-				if (Db::affected_rows() > 0)
+				$event_misc = json_encode($event_misc);
+				
+				$query = new DbQuery('SELECT id FROM events WHERE tournament_id = ? AND round = ? ORDER BY id LIMIT 1', $tournament_id, $round_num);
+				if ($row = $query->next())
 				{
-					$log_details = new stdClass();
-					$log_details->misc = $event_misc;
-					db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
-				}
-			}
-			else
-			{
-				$event_name = get_round_name($round_num);
-				$scoring_options = clone $tournament_scoring_options;
-				if ($round_num == 1)
-				{
-					$scoring_options->weight = 1.3;
-					$scoring_options->group = 'final';
+					list($event_id) = $row;
+					Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id = ?', $event_id);
+					Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', $event_misc, $event_id);
+					if (Db::affected_rows() > 0)
+					{
+						$log_details = new stdClass();
+						$log_details->misc = $event_misc;
+						db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
+					}
 				}
 				else
 				{
-					$scoring_options->group = 'main';
-				}
-				$scoring_options = json_encode($scoring_options);
-				
-				$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
-				Db::exec(
-					get_label('round'), 
-					'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, misc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-					$event_name, $address_id, $club_id, $start, $duration, $flags, $langs, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $event_misc);
+					$event_name = get_round_name($round_num);
+					$scoring_options = clone $tournament_scoring_options;
+					if ($round_num == 1)
+					{
+						$scoring_options->weight = 1.3;
+						$scoring_options->group = 'final';
+					}
+					else
+					{
+						$scoring_options->group = 'main';
+					}
+					$scoring_options = json_encode($scoring_options);
 					
-				$log_details = new stdClass();
-				$log_details->name = $event_name;
-				$log_details->tournament_id = $tournament_id;
-				$log_details->club_id = $club_id; 
-				$log_details->address_id = $address_id; 
-				$log_details->start = $start;
-				$log_details->duration = $duration;
-				$log_details->langs = $langs;
-				$log_details->scoring_id = $scoring_id;
-				$log_details->scoring_version = $scoring_version;
-				$log_details->scoring_options = $scoring_options;
-				$log_details->rules_code = $rules_code;
-				$log_details->flags = $flags;
-				$log_details->round_num = $round_num;
-				db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id);
+					$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
+					Db::exec(
+						get_label('round'), 
+						'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, misc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						$event_name, $address_id, $club_id, $start, $duration, $flags, $langs, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $event_misc);
+						
+					$log_details = new stdClass();
+					$log_details->name = $event_name;
+					$log_details->tournament_id = $tournament_id;
+					$log_details->club_id = $club_id; 
+					$log_details->address_id = $address_id; 
+					$log_details->start = $start;
+					$log_details->duration = $duration;
+					$log_details->langs = $langs;
+					$log_details->scoring_id = $scoring_id;
+					$log_details->scoring_version = $scoring_version;
+					$log_details->scoring_options = $scoring_options;
+					$log_details->rules_code = $rules_code;
+					$log_details->flags = $flags;
+					$log_details->round_num = $round_num;
+					db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id);
+				}
 			}
 			$round_num = count($rounds) - $i - 1;
 		}
