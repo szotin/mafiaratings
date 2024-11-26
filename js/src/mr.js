@@ -529,14 +529,16 @@ var mr = new function()
 		dlg.form("form/event_extend.php?id=" + id, refr, 400);
 	}
 	
-	this.convertEventToTournament = function(id, confirmMessage)
+	this.convertEventToTournament = function(id)
+	{
+		dlg.form("form/event_to_tournament.php?event_id=" + id, refr, 600);
+	}
+	
+	this.convertEventFromTournament = function(id, confirmMessage)
 	{
 		function _convert()
 		{
-			json.post("api/ops/event.php", { op: "convert_to_tournament", event_id: id }, function(data)
-			{
-				goTo("tournament_info.php?id=" + data.tournament_id);
-			});
+			json.post("api/ops/event.php", { op: "from_tournament", event_id: id }, refr);
 		}
 		
 		if (typeof confirmMessage == "string")
@@ -545,7 +547,7 @@ var mr = new function()
 		}
 		else
 		{
-			_cancel();
+			_convert();
 		}
 	}
 	
