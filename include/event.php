@@ -899,16 +899,9 @@ class EventPageBase extends PageBase
 			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name));
 			$manager_menu[] = new MenuItem('javascript:mr.eventObs(' . $this->event->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.'));
 			
-			if ($this->is_manager)
+			if ($this->is_manager && is_null($this->event->tournament_id))
 			{
-				if (is_null($this->event->tournament_id))
-				{
-					$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->event->id . ')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->event->name));
-				}
-				else
-				{
-					$manager_menu[] = new MenuItem('javascript:mr.convertEventFromTournament(' . $this->event->id . ', \'' . get_label('Are you sure you want to convert [0] to a stand alone event?', $this->event->name) . '\')', get_label('Convert to event'), get_label('Convert [0] to a stand alone event.', $this->event->name));
-				}
+				$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->event->id . ', \'' . get_label('Are you sure you want to convert [0] to a tournament?', $this->event->name) . '\')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->event->name));				
 			}
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}

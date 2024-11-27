@@ -426,16 +426,97 @@ class ApiPage extends OpsApiPageBase
 		$start_datetime = get_datetime($start, $timezone);
 		$start_timestamp = $start_datetime->getTimestamp();
 		
-		if ($tournament_id != $old_tournament_id && !is_null($tournament_id))
+		if ($tournament_id != $old_tournament_id)
 		{
-			list ($new_club_id, $scoring_id, $scoring_version, $rules_code) = Db::record(get_label('tournament'), 'SELECT club_id, scoring_id, scoring_version, rules FROM tournaments WHERE id = ?', $tournament_id);
-			if ($new_club_id != $club_id)
+			if (is_null($tournament_id))
 			{
-				// Currently there is no API for changing event club. However in the future such an API might exist.
-				// This is one of the cases how club can be changed. This is moving event to a tournament of another club.
-				throw new Exc(get_label('Event can not be moved to the tournament of another club.'));
+				// Make event visible if it was not
+				$flags &= ~EVENT_MASK_HIDDEN;
+				
+				// move event games out of the tournament
+				$query = new DbQuery('SELECT id, json FROM games WHERE event_id = ? AND tournament_id = ?', $event_id, $old_tournament_id);
+				while ($row = $query->next())
+				{
+					list ($game_id, $game) = $row;
+					if (is_null($game))
+					{
+						continue;
+					}
+					$game = json_decode($game);
+					if (isset($game->tournament_id))
+					{
+						unset($game->tournament_id);
+					}
+					Db::exec(get_label('game'), 'UPDATE games SET tournament_id = NULL, json = ? WHERE event_id = ?', json_encode($game), $event_id);
+				}
 			}
-			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $new_club_id, $tournament_id);
+			else
+			{
+				list ($new_club_id, $scoring_id, $scoring_version, $rules_code, $tournament_flags, $tournament_start, $tournament_duration) = Db::record(get_label('tournament'), 'SELECT club_id, scoring_id, scoring_version, rules, flags, start_time, duration FROM tournaments WHERE id = ?', $tournament_id);
+				if ($new_club_id != $club_id)
+				{
+					// Currently there is no API for changing event club. However in the future such an API might exist.
+					// Potentially moving event to a tournament of another club is a valid operation but there is no need for it now.
+					throw new Exc(get_label('Event can not be moved to the tournament of another club.'));
+				}
+				check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $new_club_id, $tournament_id);
+				
+				// Update tournament start time and duration to contain the event
+				$new_tournament_start = min($start_timestamp, $tournament_start);
+				$new_tournament_duration = max($start_timestamp + $duration, $tournament_start + $tournament_duration) - $new_tournament_start;
+				Db::exec(
+					get_label('tournament'), 
+					'UPDATE tournaments SET start_time = ?, duration = ? WHERE id = ?',
+					$new_tournament_start, $new_tournament_duration, $tournament_id);
+				if (Db::affected_rows() > 0)
+				{
+					$log_details = new stdClass();
+					$log_details->start = $new_tournament_start;
+					$log_details->duration = $new_tournament_duration;
+					db_log(LOG_OBJECT_TOURNAMENT, 'changed', $log_details, $tournament_id, $club_id);
+				}
+				
+				// Add event registrations to tournament registrations
+				$query = new DbQuery('SELECT user_id, flags FROM event_users WHERE event_id = ?', $event_id);
+				while ($row = $query->next())
+				{
+					list($user_id, $user_flags) = $row;
+					$user_flags &= USER_PERM_MASK;
+					// Note that we are loosing user custom picture here if exists. We can fix it in the future if it is a problem.
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) values (?, ?, ?)', $tournament_id, $user_id, $user_flags);
+				}
+				
+				// if tournament is not a long term tournament, make the event hidden
+				if (($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
+				{
+					$flags |= EVENT_MASK_HIDDEN;
+				}
+				else
+				{
+					$flags &= ~EVENT_MASK_HIDDEN;
+				}
+				
+				// move event games that belonged to the old tournament to the new tournament
+				if (is_null($old_tournament_id))
+				{
+					$query = new DbQuery('SELECT id, json FROM games WHERE event_id = ? AND tournament_id IS NULL', $event_id);
+				}
+				else
+				{
+					$query = new DbQuery('SELECT id, json FROM games WHERE event_id = ? AND tournament_id = ?', $event_id, $old_tournament_id);
+				}
+				while ($row = $query->next())
+				{
+					list ($game_id, $game) = $row;
+					if (is_null($game))
+					{
+						continue;
+					}
+					$game = json_decode($game);
+					$game->tournament_id = (int)$tournament_id;
+					Db::exec(get_label('game'), 'UPDATE games SET tournament_id = ?, json = ? WHERE event_id = ?', $tournament_id, json_encode($game), $event_id);
+				}
+			}
 		}
 		else if ($scoring_version <= 0)
 		{
@@ -1424,56 +1505,35 @@ class ApiPage extends OpsApiPageBase
 	function to_tournament_op()
 	{
 		$event_id = (int)get_required_param('event_id');
-		$tournament_id = (int)get_optional_param('tournament_id', 0);
 		
 		Db::begin();
 		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, $flags) = 
 			Db::record(get_label('event'), 'SELECT club_id, name, address_id, start_time, duration, languages, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
-		if ($tournament_id <= 0)
-		{
-			$tournament_flags = 0;
-			Db::exec(
-				get_label('tournament'), 
-				'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-				$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, 0);
-			list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
-			
-			$log_details = new stdClass();
-			$log_details->name = $name;
-			$log_details->club_id = $club_id; 
-			$log_details->address_id = $address_id; 
-			$log_details->start = $start_time;
-			$log_details->duration = $duration;
-			$log_details->langs = $langs;
-			$log_details->notes = $notes;
-			$log_details->fee = $fee;
-			$log_details->currency_id = $currency_id;
-			$log_details->scoring_id = $scoring_id;
-			$log_details->scoring_version = $scoring_version;
-			$log_details->scoring_options = $scoring_options;
-			$log_details->rules_code = $rules;
-			$log_details->flags = 0;
-			db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
-		}
-		else
-		{
-			list ($tournament_flags, $tournament_start, $tournament_duration) = Db::record(get_label('tournament'), 'SELECT flags, start_time, duration FROM tournaments WHERE id = ?', $tournament_id);
-			$new_tournament_start = min($start_time, $tournament_start);
-			$new_tournament_duration = max($start_time + $duration, $tournament_start + $tournament_duration) - $new_tournament_start;
-			Db::exec(
-				get_label('tournament'), 
-				'UPDATE tournaments SET start_time = ?, duration = ? WHERE id = ?',
-				$new_tournament_start, $new_tournament_duration, $tournament_id);
-			if (Db::affected_rows() > 0)
-			{
-				$log_details = new stdClass();
-				$log_details->start = $new_tournament_start;
-				$log_details->duration = $new_tournament_duration;
-				db_log(LOG_OBJECT_TOURNAMENT, 'changed', $log_details, $tournament_id, $club_id);
-			}
-		}
+		$tournament_flags = 0;
+		Db::exec(
+			get_label('tournament'), 
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, 0);
+		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
+		
+		$log_details = new stdClass();
+		$log_details->name = $name;
+		$log_details->club_id = $club_id; 
+		$log_details->address_id = $address_id; 
+		$log_details->start = $start_time;
+		$log_details->duration = $duration;
+		$log_details->langs = $langs;
+		$log_details->notes = $notes;
+		$log_details->fee = $fee;
+		$log_details->currency_id = $currency_id;
+		$log_details->scoring_id = $scoring_id;
+		$log_details->scoring_version = $scoring_version;
+		$log_details->scoring_options = $scoring_options;
+		$log_details->rules_code = $rules;
+		$log_details->flags = 0;
+		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
 		$query = new DbQuery('SELECT user_id, flags FROM event_users WHERE event_id = ?', $event_id);
 		while ($row = $query->next())
@@ -1484,11 +1544,8 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) values (?, ?, ?)', $tournament_id, $user_id, $user_flags);
 		}
 			
-		if (($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
-		{
-			$name = get_label('main round');
-			$flags |= EVENT_MASK_HIDDEN;
-		}
+		$name = get_label('main round');
+		$flags |= EVENT_MASK_HIDDEN;
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET tournament_id = ?, flags = ?, name = ? WHERE id = ?', $tournament_id, $flags, $name, $event_id);
@@ -1520,51 +1577,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Creates a tournament with one round. Where the event is the round.');
 		$help->request_param('event_id', 'Event id to convert to a tournament.');
-		$help->request_param('tournament_id', 'Tournament id where this event will become a round. If 0 or negative a new tournament will be created.', '0 is used');
 		$help->response_param('tournament_id', 'Id of the tournament.');
-		return $help;
-	}
-	
-	//-------------------------------------------------------------------------------------------------------
-	// from_tournament
-	//-------------------------------------------------------------------------------------------------------
-	function from_tournament_op()
-	{
-		$event_id = (int)get_required_param('event_id');
-		
-		Db::begin();
-		list($club_id, $flags) = 
-			Db::record(get_label('event'), 'SELECT club_id, flags FROM events WHERE id = ?', $event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		
-		$flags &= ~EVENT_MASK_HIDDEN;
-		Db::exec(
-			get_label('event'), 
-			'UPDATE events SET tournament_id = NULL, flags = ? WHERE id = ?', $flags, $event_id);
-		$log_details = new stdClass();
-		$log_details->tournament_id = NULL;
-		$log_details->flags = $flags;
-		db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
-		
-		$query = new DbQuery('SELECT id, json FROM games WHERE event_id = ?', $event_id);
-		while ($row = $query->next())
-		{
-			list ($game_id, $game) = $row;
-			$game = json_decode($game);
-			if (isset($game->tournament_id))
-			{
-				unset($game->tournament_id);
-			}
-			Db::exec(get_label('game'), 'UPDATE games SET tournament_id = NULL, json = ? WHERE event_id = ?', json_encode($game), $event_id);
-		}
-		
-		Db::commit();
-	}
-	
-	function from_tournament_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Removes event from the tournament. Converts the tournament round to a standalone event.');
-		$help->request_param('event_id', 'Event id to convert to a stand alone event from the tournament round.');
 		return $help;
 	}
 	

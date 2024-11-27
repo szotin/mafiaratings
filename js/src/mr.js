@@ -529,25 +529,23 @@ var mr = new function()
 		dlg.form("form/event_extend.php?id=" + id, refr, 400);
 	}
 	
-	this.convertEventToTournament = function(id)
-	{
-		dlg.form("form/event_to_tournament.php?event_id=" + id, refr, 600);
-	}
-	
-	this.convertEventFromTournament = function(id, confirmMessage)
+    this.convertEventToTournament = function(id, confirmMessage)
 	{
 		function _convert()
 		{
-			json.post("api/ops/event.php", { op: "from_tournament", event_id: id }, refr);
+			json.post("api/ops/event.php", { op: "to_tournament", event_id: id }, function(data)
+			{
+				goTo("tournament_info.php?id=" + data.tournament_id);
+			});
 		}
 		
 		if (typeof confirmMessage == "string")
 		{
 			dlg.yesNo(confirmMessage, null, null, _convert);
 		}
-		else
+		elses
 		{
-			_convert();
+			_cancel();
 		}
 	}
 	
