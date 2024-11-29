@@ -1771,6 +1771,151 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('event_id', 'Event id.');
 		return $help;
 	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// add_broadcast
+	//-------------------------------------------------------------------------------------------------------
+	function add_broadcast_op()
+	{
+		global $_profile;
+		
+		$event_id = (int)get_required_param('event_id');
+		$table = (int)get_required_param('table');
+		$day = (int)get_required_param('day');
+		$url = get_required_param('url');
+		
+		Db::begin();
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
+			$club_id, $event_id, $tournament_id);
+		
+		list ($part) = Db::record(get_label('broadcast'), 'SELECT max(part_num) FROM event_broadcasts WHERE event_id = ? AND day_num = ? AND table_num = ?', $event_id, $day, $table);
+		if (is_null($part))
+		{
+			$part = 1;
+		}
+		else
+		{
+			++$part;
+		}
+		
+		Db::exec(get_label('broadcast'), 'INSERT INTO event_broadcasts (event_id, day_num, table_num, part_num, url, status) VALUES (?, ?, ?, ?, ?, 0)', $event_id, $day, $table, $part, $url);
+		
+		$log_details = new stdClass();
+		$log_details->event_id = $event_id;
+		$log_details->day = $day;
+		$log_details->table = $table;
+		$log_details->part = $part;
+		$log_details->url = $url;
+		db_log(LOG_OBJECT_EVENT_BROADCAST, 'created', $log_details, $_profile->user_id, $club_id);
+		
+		Db::commit();
+		
+		$this->response['part'] = $part;
+	}
+	
+	function add_broadcast_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Add video broadcast to the event.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('table', 'Table number starting from 0.'); 
+		$help->request_param('day', 'Day number of the broadcast.'); 
+		$help->request_param('url', 'Broadcast URL.'); 
+		$help->response_param('part', 'Broadcast number in the day for a table.'); 
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// change_broadcast
+	//-------------------------------------------------------------------------------------------------------
+	function change_broadcast_op()
+	{
+		global $_profile;
+		
+		$event_id = (int)get_required_param('event_id');
+		$table = (int)get_required_param('table');
+		$day = (int)get_required_param('day');
+		$part = (int)get_required_param('part');
+		$url = get_required_param('url');
+		
+		Db::begin();
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
+			$club_id, $event_id, $tournament_id);
+		
+		Db::exec(get_label('broadcast'), 'UPDATE event_broadcasts SET url = ? WHERE event_id = ? AND day_num = ? AND table_num = ? AND part_num = ?', $url, $event_id, $day, $table, $part);
+		
+		$log_details = new stdClass();
+		$log_details->event_id = $event_id;
+		$log_details->day = $day;
+		$log_details->table = $table;
+		$log_details->part = $part;
+		$log_details->url = $url;
+		db_log(LOG_OBJECT_EVENT_BROADCAST, 'changed', $log_details, $_profile->user_id, $club_id);
+		
+		Db::commit();
+		
+		$this->response['part'] = $part;
+	}
+	
+	function change_broadcast_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change video broadcast for the event.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('table', 'Table number starting from 0.'); 
+		$help->request_param('day', 'Day number of the broadcast.'); 
+		$help->request_param('part', 'Broadcast number in the day for a table.'); 
+		$help->request_param('url', 'Broadcast URL.'); 
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// remove_broadcast
+	//-------------------------------------------------------------------------------------------------------
+	function remove_broadcast_op()
+	{
+		global $_profile;
+		
+		$event_id = (int)get_required_param('event_id');
+		$table = (int)get_required_param('table');
+		$day = (int)get_required_param('day');
+		$part = (int)get_required_param('part');
+		
+		Db::begin();
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
+			$club_id, $event_id, $tournament_id);
+		
+		Db::exec(get_label('broadcast'), 'DELETE FROM event_broadcasts WHERE event_id = ? AND day_num = ? AND table_num = ? AND part_num = ?', $event_id, $day, $table, $part);
+		Db::exec(get_label('broadcast'), 'UPDATE event_broadcasts SET part_num = part_num - 1 WHERE event_id = ? AND day_num = ? AND table_num = ? AND part_num > ?', $event_id, $day, $table, $part);
+		
+		$log_details = new stdClass();
+		$log_details->event_id = $event_id;
+		$log_details->day = $day;
+		$log_details->table = $table;
+		$log_details->part = $part;
+		db_log(LOG_OBJECT_EVENT_BROADCAST, 'removed', $log_details, $_profile->user_id, $club_id);
+		
+		Db::commit();
+		
+		$this->response['part'] = $part;
+	}
+	
+	function remove_broadcast_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Remove video broadcast from the event.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('table', 'Table number starting from 0.'); 
+		$help->request_param('day', 'Day number of the broadcast.'); 
+		$help->request_param('part', 'Broadcast number in the day for a table.'); 
+		return $help;
+	}
 }
 
 $page = new ApiPage();

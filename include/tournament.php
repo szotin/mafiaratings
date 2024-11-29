@@ -132,6 +132,8 @@ class TournamentPageBase extends PageBase
 				' WHERE t.id = ?',
 			$this->id);
 			
+		list ($this->broadcasts) = Db::record(get_label('tournament'), 'SELECT count(*) FROM event_broadcasts es JOIN events e ON e.id = es.event_id WHERE e.tournament_id = ?', $this->id);
+			
 		$this->series = array();
 		$query = new DbQuery('SELECT s.id, s.name, s.flags, st.stars, l.id, l.name, l.flags FROM series_tournaments st JOIN series s ON s.id = st.series_id JOIN leagues l ON l.id = s.league_id WHERE st.tournament_id = ?', $this->id);
 		while ($row = $query->next())
@@ -185,6 +187,10 @@ class TournamentPageBase extends PageBase
 				// new MenuItem('tournament_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
+		if ($this->broadcasts > 0)
+		{
+			$menu[7]->submenu[] = new MenuItem('tournament_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('Tournament broadcasts.'));
+		}
 		if ($this->is_manager)
 		{
 			$manager_menu = array
@@ -194,6 +200,7 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
 				new MenuItem('javascript:mr.tournamentObs(' . $this->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
 				new MenuItem('tournament_mwt.php?id=' . $this->id, get_label('MWT integration'), get_label('Synchronize tournament with MWT site. Receive seating, send games, etc..')),
+				new MenuItem('tournament_broadcasts_edit.php?id=' . $this->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts')),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}
@@ -237,21 +244,18 @@ class TournamentPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		echo '<td rowspan="2" valign="top"><h2 class="tournament">' . $this->name . '</h2><br><h3>' . $this->_title;
+		echo '<td valign="top"><h2 class="tournament">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
-		echo '</h3><p class="subtitle">' . format_date('l, F d, Y', $this->start_time, $this->timezone) . '</p>';
-		if (!is_null($this->currency_pattern) && !is_null($this->fee))
-		{
-			echo '<p class="subtitle"><b>'.get_label('Admission rate').': '.format_currency($this->fee, $this->currency_pattern).'</b></p>';
-		}
+		echo '</h3><p class="subtitle">' . format_date('l, F d, Y', $this->start_time, $this->timezone);
 		if (!is_null($this->mwt_id))
 		{
-			echo '<p class="subtitle"><a href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank"><img src="images/fiim.png" title="' . get_label('MWT link') . '"></a></p>';
+			echo ' (<a href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank">' . get_label('MWT link') . '</a>)';
 		}
+		
 		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)
 		{
-			echo '<p class="subtitle">';
 			$done = false;
+			echo '<p class="subtitle">';
 			if ($this->start_time < $time)
 			{
 				echo '<i>('.get_label('playing now').')</i>';
@@ -290,11 +294,17 @@ class TournamentPageBase extends PageBase
 			}
 			echo '</p>';
 		}
-		echo '</td>';
 		
-		echo '<td valign="top" align="right">';
+		echo '</td><td valign="top" align="right">';
 		show_back_button();
-		echo '</td></tr><tr><td align="right" valign="bottom"><table><tr><td align="center">';
+		echo '</td></tr>';
+		
+		echo '<tr><td style="padding: 0px 0px 0px 20px;">';
+		if ($this->broadcasts > 0)
+		{
+			echo '<a href="tournament_broadcasts.php?id=' . $this->id . '&bck=1" title="' . get_label('[0] broadcasts', $this->name) . '"><img src="images/broadcast.png" width="48"></a>';
+		}
+		echo '</td><td align="right" valign="bottom"><table><tr><td align="center">';
 		
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
 		$this->club_pic->show(ICONS_DIR, true, 54);

@@ -97,6 +97,7 @@ class Event
 		$this->scoring_options = '{}';
 		$this->coming_odds = NULL;
 		$this->tournament_id = NULL;
+		$this->broadcasts = 0;
 		
 		if ($_profile != NULL)
 		{
@@ -355,6 +356,8 @@ class Event
 						' LEFT OUTER JOIN currencies cu ON e.currency_id = cu.id' .
 						' WHERE e.id = ?',
 					$user_id, $event_id);
+					
+		list ($this->broadcasts) = Db::record(get_label('event'), 'SELECT count(*) FROM event_broadcasts WHERE event_id = ?', $event_id);
 					
 		$this->set_datetime($timestamp, $timezone);
 	}
@@ -887,6 +890,10 @@ class EventPageBase extends PageBase
 				// new MenuItem('event_links.php?id=' . $this->event->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
+		if ($this->event->broadcasts > 0)
+		{
+			$menu[5]->submenu[] = new MenuItem('event_broadcasts.php?id=' . $this->event->id, get_label('Broadcasts'), get_label('Event broadcasts.'));
+		}
 		if ($this->is_manager || $this->is_referee)
 		{
 			$manager_menu = array();
@@ -898,6 +905,7 @@ class EventPageBase extends PageBase
 			}
 			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name));
 			$manager_menu[] = new MenuItem('javascript:mr.eventObs(' . $this->event->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.'));
+			$manager_menu[] = new MenuItem('event_broadcasts_edit.php?id=' . $this->event->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts'));
 			
 			if ($this->is_manager && is_null($this->event->tournament_id))
 			{
@@ -949,7 +957,7 @@ class EventPageBase extends PageBase
 		}
 		echo '</td></tr></table></td>';
 		
-		echo '<td rowspan="2" valign="top"><h2 class="event">' . $this->event->get_full_name() . '</h2><br><h3>' . $this->_title;
+		echo '<td valign="top"><h2 class="event">' . $this->event->get_full_name() . '</h2><br><h3>' . $this->_title;
 		$time = time();
 		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p>';
 		if (!is_null($this->event->currency_pattern) && !is_null($this->event->fee))
@@ -960,7 +968,12 @@ class EventPageBase extends PageBase
 		
 		echo '<td valign="top" align="right">';
 		show_back_button();
-		echo '</td></tr><tr><td align="right" valign="bottom"><table><tr><td align="center">';
+		echo '</td></tr><tr><td style="padding: 0px 0px 0px 20px;">';
+		if ($this->event->broadcasts > 0)
+		{
+			echo '<a href="event_broadcasts.php?id=' . $this->event->id . '&bck=1" title="' . get_label('[0] broadcasts', $this->event->name) . '"><img src="images/broadcast.png" width="48"></a>';
+		}
+		echo '</td><td align="right" valign="bottom"><table><tr><td align="center">';
 		$this->club_pic->set($this->event->club_id, $this->event->club_name, $this->event->club_flags);
 		$this->club_pic->show(ICONS_DIR, true, 48);
 		if (!is_null($this->event->tournament_id))

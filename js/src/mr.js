@@ -543,7 +543,7 @@ var mr = new function()
 		{
 			dlg.yesNo(confirmMessage, null, null, _convert);
 		}
-		elses
+		else
 		{
 			_cancel();
 		}
@@ -564,6 +564,33 @@ var mr = new function()
 	this.eventObs = function(eventId)
 	{
 		dlg.infoForm("form/obs_urls.php?event_id=" + eventId, 600);
+	}
+	
+	this.eventCreateBroadcast = function(eventId)
+	{
+		dlg.form("form/event_add_broadcast.php?event_id=" + eventId, refr, 400);
+	}
+	
+	this.eventEditBroadcast = function(eventId, day, table, part)
+	{
+		dlg.form("form/event_edit_broadcast.php?event_id=" + eventId + '&day=' + day + '&table=' + table + '&part=' + part, refr, 400);
+	}
+	
+	this.eventDeleteBroadcast = function(eventId, day, table, part, confirmMessage)
+	{
+		function _finish()
+		{
+			json.post("api/ops/event.php", { op: "remove_broadcast", event_id: eventId, day: day, table: table, part: part }, refr);
+		}
+		
+		if (confirmMessage)
+		{
+			dlg.yesNo(confirmMessage, null, null, _finish);
+		}
+		else
+		{
+			_finish();
+		}
 	}
 	
 	//--------------------------------------------------------------------------------------
