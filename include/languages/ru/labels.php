@@ -1696,6 +1696,10 @@ $labelMenu = array (
 'broadcast' => 'трансляция', // api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, form/event_edit_broadcast.php, form/event_edit_broadcast.php
 'Add broadcast' => 'Добавить трансляцию', // form/event_add_broadcast.php
 'Change broadcast' => 'Поменять трансляцию', // form/event_edit_broadcast.php
+'Event broadcasts.' => 'Трансляции игрового дня.', // include/event.php
+'Add/remove youtube/twitch broadcasts' => 'Добавить/удалить youtube/twitch трансляции', // include/event.php, include/tournament.php
+'[0] broadcasts' => '[0] трансляции', // include/event.php, include/tournament.php
+'Tournament broadcasts.' => 'Трансляции турнира', // include/tournament.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1708,10 +1712,7 @@ $labelMenu = array (
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
 'Display pattern must contain \'#\' character.' => 'правило показа валюты обязано содержать символ \'#\'.', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php
-'Event broadcasts.' => 'Трансляции игрового дня.', // include/event.php
-'Add/remove youtube/twitch broadcasts' => 'Добавить/удалить youtube/twitch трансляции', // include/event.php, include/tournament.php
-'[0] broadcasts' => '[0] трансляции', // include/event.php, include/tournament.php
-'Tournament broadcasts.' => 'Трансляции турнира', // include/tournament.php
+'Are you sure you want to revoke player permission from [0]? They will not be able to play if you do it.' => 'Вы уверены, что хотите снять права игрока с [0]? [0] не сможет играть, если вы это сделаете.', // form/user_access.php
 );
 
 return $labelMenu;

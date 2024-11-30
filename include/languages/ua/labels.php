@@ -1696,6 +1696,10 @@ $labelMenu = array (
 'broadcast' => '[EMPTY]', // api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, form/event_edit_broadcast.php, form/event_edit_broadcast.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, api/ops/event.php, form/event_edit_broadcast.php, form/event_edit_broadcast.php
 'Add broadcast' => '[EMPTY]', // form/event_add_broadcast.php, form/event_add_broadcast.php
 'Change broadcast' => '[EMPTY]', // form/event_edit_broadcast.php, form/event_edit_broadcast.php
+'Event broadcasts.' => '[EMPTY]', // include/event.php, include/event.php
+'Add/remove youtube/twitch broadcasts' => '[EMPTY]', // include/event.php, include/tournament.php, include/event.php, include/tournament.php
+'[0] broadcasts' => '[EMPTY]', // include/event.php, include/tournament.php, include/event.php, include/tournament.php
+'Tournament broadcasts.' => '[EMPTY]', // include/tournament.php, include/tournament.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1708,10 +1712,7 @@ $labelMenu = array (
 'during [0]\'s speech' => '[EMPTY]', // include/game.php, include/game.php
 'Tournament rounds can be grouped to calculate stats required for scoring seperately. For example, compensation for being shot first night (Ci) can be calculated in the finals separately. In this case main round and semi-finals can belong to \'main\' group, and finals to \'final\' group.' => '[EMPTY]', // include/scoring.php, include/scoring.php
 'Display pattern must contain \'#\' character.' => '[EMPTY]', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php, api/ops/country.php, api/ops/currency.php, api/ops/currency.php
-'Event broadcasts.' => '[EMPTY]', // include/event.php
-'Add/remove youtube/twitch broadcasts' => '[EMPTY]', // include/event.php, include/tournament.php
-'[0] broadcasts' => '[EMPTY]', // include/event.php, include/tournament.php
-'Tournament broadcasts.' => '[EMPTY]', // include/tournament.php
+'Are you sure you want to revoke player permission from [0]? They will not be able to play if you do it.' => '[EMPTY]', // form/user_access.php
 );
 
 return $labelMenu;

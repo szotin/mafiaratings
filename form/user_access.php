@@ -49,7 +49,6 @@ try
 		dialog_title(get_label('[0] permissions', $user_name));
 	}
 	
-
 	if ($club_id > 0)
 	{
 		echo '<input type="checkbox" id="form-manager" value="1"' . ((($user_flags & USER_PERM_MANAGER) != 0) ? ' checked' : '') . '> '.get_label('Manager');
@@ -59,7 +58,7 @@ try
 		{
 ?>	
 			<script>
-			function commit(onSuccess)
+			function doCommit(onSuccess)
 			{
 				json.post("api/ops/user.php",
 				{
@@ -79,7 +78,7 @@ try
 		{
 ?>	
 			<script>
-			function commit(onSuccess)
+			function doCommit(onSuccess)
 			{
 				json.post("api/ops/user.php",
 				{
@@ -99,7 +98,7 @@ try
 		{
 ?>	
 			<script>
-			function commit(onSuccess)
+			function doCommit(onSuccess)
 			{
 				json.post("api/ops/user.php",
 				{
@@ -121,7 +120,7 @@ try
 		echo '<input type="checkbox" id="form-admin" value="1"' . ((($user_flags & USER_PERM_ADMIN) != 0) ? ' checked' : '') . '> '.get_label('Admin');
 ?>	
 		<script>
-		function commit(onSuccess)
+		function doCommit(onSuccess)
 		{
 			json.post("api/ops/user.php",
 			{
@@ -134,6 +133,24 @@ try
 		</script>
 <?php
 	}
+?>	
+	<script>
+	function commit(onSuccess)
+	{
+		if (!$("#form-player").attr("checked"))
+		{
+			dlg.yesNo("<?php echo get_label('Are you sure you want to revoke player permission from [0]? They will not be able to play if you do it.', $user_name); ?>", null, null, function()
+			{
+				doCommit(onSuccess);
+			});
+		}
+		else
+		{
+			doCommit(onSuccess);
+		}
+	}
+	</script>
+<?php
 	echo '<ok>';
 }
 catch (Exception $e)
