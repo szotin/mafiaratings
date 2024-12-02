@@ -250,6 +250,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			$flags |= SERIES_FLAG_DIRTY;
 		}
+		
+		if ($start + $duration > time())
+		{
+			$flags &= ~SERIES_FLAG_FINISHED;
+		}
 			
 		Db::exec(
 			get_label('sеriеs'), 
