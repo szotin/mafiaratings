@@ -1,9 +1,4 @@
-$default-text-opacity: 0.8;
-$element-bg-color: rgba(90, 90, 90, $default-text-opacity);
-$label-bg-color: rgba(128, 128, 128, $default-text-opacity);
-$sheriff-bg-color: rgba(153, 187, 153, $default-text-opacity);
-$town-bg-color: rgba(250, 137, 123, $default-text-opacity);
-$mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
+@import 'default';
 
 @keyframes fadeIn {
     0% { opacity: 0.5; }
@@ -113,7 +108,7 @@ $mafia-bg-color: rgba(0, 0, 0, $default-text-opacity);
         color: white;
         animation: flash;
         animation-duration: 1.5s;
-        background-color: $element-bg-color;
+        background-color: $default-bg-color;
 
         &:last-child {
           border-top-right-radius: 15px;
