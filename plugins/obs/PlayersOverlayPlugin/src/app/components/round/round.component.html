@@ -1,6 +1,6 @@
 <div class="round" *ngIf="(round | async)">
     <div class="photo-container">
-      <img [src]="(logo | async) || '../../../assets/aml_logo.png'" class="event-icon">
+      <img [attr.src]="(logo | async) || null" class="event-logo">
     </div>
     <span class="round-number">{{ (stage | async) }} {{ (round | async) }}</span>
 </div>

@@ -30,10 +30,24 @@
   overflow: hidden; /* Ensure the photo fits within the container */
 }
 
-.referee-photo {
-  width: 66px;
+.photo-container {
   height: 66px;
-  object-fit: contain;
+  background-color: rgba(0, 0, 0);
+  border-radius: 15px; /* Match the rounded corners of the container */
+  overflow: hidden; /* Ensure the photo fits within the container */
+
+  .referee-photo {
+    background-image: url('../../../assets/aml_logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 66px;
+    height: 66px;
+    object-fit: contain;
+    &[src] {
+      background-image: none;
+    }
+  }
 }
 
 .referee-name {

@@ -27,12 +27,19 @@
   background-color: rgba(0, 0, 0);
   border-radius: 15px; /* Match the rounded corners of the container */
   overflow: hidden; /* Ensure the photo fits within the container */
-}
 
-.event-icon {
-  width: 66px;
-  height: 66px;
-  object-fit: cover;
+  .event-logo {
+    background-image: url('../../../assets/aml_logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 66px;
+    height: 66px;
+    object-fit: contain;
+    &[src] {
+      background-image: none;
+    }
+  }
 }
 
 .round-number {
