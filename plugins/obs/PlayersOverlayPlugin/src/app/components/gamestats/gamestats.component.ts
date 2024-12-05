@@ -3,7 +3,6 @@ import { Player } from 'src/app/services/gamesnapshot.model';
 import { GamesnapshotService } from 'src/app/services/gamesnapshot.service';
 import { UrlParametersService } from 'src/app/services/url-parameters.service';
 import { map } from 'rxjs/operators';
-
 import { Observable } from 'rxjs';
 
 @Component({
@@ -22,15 +21,15 @@ export class GamestatsComponent implements OnInit {
   showSheriffCheck$?: Observable<boolean>;
   showNominees$?: Observable<boolean>;
 
-  hideRoles$?: Observable<boolean>;
+  showRoles$?: Observable<boolean>;
 
   isOffline$: Observable<boolean>;
 
   constructor(
     private gameSnapshotService: GamesnapshotService,
     private urlParameterService: UrlParametersService) {
-
-    this.isOffline$ = this.gameSnapshotService.isOffline$;
+      this.showRoles$ = urlParameterService.getHideRoles$().pipe(map(hideRoles => !hideRoles));
+      this.isOffline$ = this.gameSnapshotService.isOffline$;
   }
 
   ngOnInit(): void {
@@ -50,8 +49,6 @@ export class GamestatsComponent implements OnInit {
 
     this.showNominees$ = this.nominees$.pipe(
       map((it:Player[]) => it.length > 0));
-
-    this.hideRoles$ = this.urlParameterService.getHideRoles$();
   }
 
   trackPlayerById(index: number, player: Player): number {

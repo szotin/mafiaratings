@@ -1,12 +1,62 @@
+<ng-container *ngIf="{
+    isOffline: isOffline$ | async,
+    showRoles: showRoles$ | async
+  } as vm">
+<div class="gamestats" [ngClass]="[
+  vm.isOffline ? 'is-offline' : '',
+  vm.showRoles ? '' : 'hide-roles']">
+  <div class="section legacy" [ngClass]="[(showLegacy$ | async) ? 'data' : 'empty']">
+    <div class="label"></div>
+    <div class="elements">
+      <div *ngFor="let element of (legacyPlayers$ | async); trackBy: trackPlayerById"
+            class="element-wrapper" [ngClass]="[vm.showRoles ? element.role : '']">
+        <div class="element">{{element.number}}</div>
+      </div>
+    </div>
+  </div>
+  <div class="section sheriff-check" [ngClass]="[(showSheriffCheck$ | async) ? 'data' : 'empty']">
+    <div class="label"></div>
+    <div class="elements">
+      <div *ngFor="let element of (checkedBySheriff$ | async); trackBy: trackPlayerById" 
+            class="element-wrapper" [ngClass]="[vm.showRoles ? element.role : '']">
+          <div class="element">{{element.number}}</div>
+      </div>
+    </div>
+  </div>
+  <div class="section don-check" [ngClass]="[(showDonCheck$ | async) ? 'data' : 'empty']">
+    <div class="label"></div>
+    <div class="elements">
+      <div *ngFor="let element of (checkedByDon$ | async); trackBy: trackPlayerById" 
+            class="element-wrapper" [ngClass]="[vm.showRoles ? element.role : '']">
+          <div class="element">{{element.number}}</div>
+      </div>
+    </div>
+  </div>
+  <div class="section nominees" [ngClass]="[(showNominees$ | async) ? 'data' : 'empty']">
+    <div class="label"></div>
+    <div class="elements">
+      <div *ngFor="let element of (nominees$ | async); trackBy: trackPlayerById" 
+            class="element-wrapper" [ngClass]="[vm.showRoles ? element.role : '']">
+          <div class="element">{{element.number}}</div>
+      </div>
+    </div>
+  </div>     
+  <div class="connection-status" *ngIf="vm.isOffline">
+      OFFLINE
+  </div>
+</div>
+</ng-container>
+
+<!-- 
 <div class="gamestats" [ngClass]="[
   'is-offline-' + (isOffline$ | async),
-  'hide-roles-' + (hideRoles$ | async)]">
+  (hideRoles$ | async) ? 'hide-roles' : '']">
     <div class="section legacy"
          [ngClass]="[!(showLegacy$ | async) ? 'empty':'data']">
       <div class="label"></div>
       <div class="elements"
            *ngIf="(showLegacy$ | async)">
-        <div *ngFor="let element of (legacyPlayers$ | async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[element.role]">
+        <div *ngFor="let element of (legacyPlayers$ | async); trackBy: trackPlayerById" class="element-wrapper" [ngClass]="[(hideRoles$ | async) ? '' : element.role]">
             <div class="element">{{element.number}}</div>
         </div>
       </div>
@@ -41,4 +91,4 @@
     <div class="connection-status" *ngIf="(isOffline$ | async)">
         OFFLINE
     </div>
-</div>
+</div> -->

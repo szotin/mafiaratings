@@ -1,7 +1,11 @@
+<ng-container *ngIf="{
+  showRoles: showRoles$ | async
+} as vm">
 <div
   class="flex-item"
   [ngClass]="[
-    showRoles ? player.role : '',
+    flipCards ? 'card-back' : 'card-front',
+    vm.showRoles ? player.role : '',
     'player-number' + player.number,
     'player-isSpeaking-' + player.isSpeaking,
     'player-status-' + player.state,
@@ -15,7 +19,7 @@
       <div
         class="player-bg"
         [ngClass]="[
-          showRoles ? player.role : '',
+          vm.showRoles ? player.role : '',
           'player-number' + player.number,
           'player-isSpeaking-' + player.isSpeaking,
           'player-status-' + player.state,
@@ -32,7 +36,7 @@
           player.hasPhoto ? 'url(' + player.photoUrl + ')' : ''
         "
         [ngClass]="[
-          showRoles ? player.role : '',
+          vm.showRoles ? player.role : '',
           'player-number' + player.number,
           'player-isSpeaking-' + player.isSpeaking,
           'player-status-' + player.state,
@@ -43,18 +47,17 @@
           'player-hasPhoto-' + player.hasPhoto
         ]"
       >
-        <div class="player-info-top-left" *ngIf="showRoles"></div>
+        <div class="player-info-top-left" *ngIf="vm.showRoles"></div>
         <div
           class="player-info-top-right"
           *ngIf="
-            showWarnings &&
-            ((player?.warnings &&
+            (player?.warnings &&
               player.warnings > 0 &&
               player.state != 'dead') ||
-              player?.deathType == 'kickOut' ||
-              player?.deathType == 'warnings' ||
-              player?.deathType == 'voting' ||
-              player?.deathType == 'shooting')
+            player?.deathType == 'kickOut' ||
+            player?.deathType == 'warnings' ||
+            player?.deathType == 'voting' ||
+            player?.deathType == 'shooting'
           "
           [ngClass]="['player-warnings-' + player.warnings]"
         >
@@ -118,3 +121,4 @@
     </div>
   </div>
 </div>
+</ng-container>

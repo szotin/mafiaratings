@@ -1,6 +1,8 @@
 import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { Game, GamePhase, GameState, Player, PlayerRole } from 'src/app/services/gamesnapshot.model';
 import { UrlParametersService } from 'src/app/services/url-parameters.service';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'player',
@@ -11,15 +13,13 @@ export class PlayerComponent implements OnInit {
   @Input() player!: Player;
   @Input() game!: Game | null | undefined;
 
-  hideRolesUrlParameter: boolean = false;
-  showRoles: boolean = false;
-  showWarnings: boolean = true;
+  flipCards: boolean = false;
+  showRoles$?: Observable<boolean>;
 
   private isDayOccured: boolean = false;
 
   constructor(urlParameterService: UrlParametersService) {
-    urlParameterService.getHideRoles$()
-      .subscribe((it: boolean)=> this.hideRolesUrlParameter = it);
+    this.showRoles$ = urlParameterService.getHideRoles$().pipe(map(hideRoles => !hideRoles));
    }
 
   ngOnInit(): void {
@@ -37,12 +37,8 @@ export class PlayerComponent implements OnInit {
       this.isDayOccured = this.isDayOccured || game.phase === GamePhase.day;
     }
 
-    this.showRoles = !this.hideRolesUrlParameter && ((
-      game
-      && game.state != GameState.notStarted
-      && (game.state !== GameState.starting
-         || (game.phase === GamePhase.night && (game.round > 0 || this.isDayOccured)) // "starting"
-         || (game.phase === GamePhase.day && game.round >= 0)
-      )) ?? false);
+    this.flipCards = game && game.state !== GameState.notStarted && !(
+      game.state == GameState.starting && game.round == 0 && !this.isDayOccured
+    );
   }
 }

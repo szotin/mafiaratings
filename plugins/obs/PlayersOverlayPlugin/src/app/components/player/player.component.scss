@@ -21,19 +21,13 @@ $player-speaking-card-scale: 1.1;
   position: relative;
   perspective: 600px;
 
-  &.don,
-  &.town,
-  &.sheriff,
-  &.maf {
+  &.card-back {
+    transition: 0.7s ease-in-out;
     .flex-item-inner {
       transform: rotateY(-180deg);
-      // .card-front {
-      //   transform: rotateY(-180deg);
-      // }
-
-      // .card-back {
-      //   transform: rotateY(0);
-      // }
+    }
+    &.player-isSpeaking-true {
+      transform: scale($player-speaking-card-scale);
     }
   }
 
@@ -46,7 +40,7 @@ $player-speaking-card-scale: 1.1;
     margin: 0;
     padding: 0;
 
-    transition: transform 1s;
+    transition: transform 2s;
     transform-style: preserve-3d;
 
     .card-front,
@@ -74,15 +68,11 @@ $player-speaking-card-scale: 1.1;
         &.player-status-dead {
           transform: translate(0, 50px) scale($player-card-scale);
         }
-
-        &.player-isSpeaking-true {
-          transform: scale($player-speaking-card-scale);
-        }
       }
 
       .player-bg {
         position: absolute;
-        background-image: url("../../../assets/black_player_bg.jpg");
+        background-image: url("../../../assets/red_player_bg.jpg");
 
         &.don,
         &.maf {

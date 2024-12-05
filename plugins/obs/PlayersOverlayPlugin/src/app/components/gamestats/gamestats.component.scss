@@ -17,7 +17,7 @@
   display: flex;
   align-items: center;
 
-  &.is-offline-true {
+  &.is-offline {
     opacity: 0.8;
   }
 
@@ -108,7 +108,20 @@
         color: white;
         animation: flash;
         animation-duration: 1.5s;
-        background-color: $default-bg-color;
+
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-image: url('../../../assets/red_player_bg.jpg');
+        &.town {
+          background-image: url('../../../assets/red_player_bg.jpg');
+        }
+        &.don, &.maf {
+          background-image: url('../../../assets/black_player_bg.jpg');
+        }
+        &.sheriff {
+          background-image: url('../../../assets/green_player_bg.jpg');
+        }
 
         &:last-child {
           border-top-right-radius: 15px;
@@ -119,30 +132,9 @@
   }
 }
 
-.gamestats.hide-roles-true {
+.gamestats.hide-roles {
   // Hide sheriff and don's checks if hiding roles
   .section.don-check, .section.sheriff-check {
     display: none;
-  }
-}
-
-.gamestats:not(.hide-roles-true) {
-  .section {
-    .elements {
-      .element-wrapper {
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        &.town {
-          background-image: url('../../../assets/red_player_bg.jpg');
-        }
-        &.don, &.maf {
-          background-image: url('../../../assets/black_player_bg.jpg');
-        }
-        &.sheriff {
-          background-image: url('../../../assets/green_player_bg.jpg');
-        }
-      }
-    }
   }
 }
