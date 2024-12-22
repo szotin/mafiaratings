@@ -616,7 +616,13 @@ class Page extends SeriesPageBase
 				break;
 		}
 		
-		list ($count) = Db::record(get_label('player'), 'SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id JOIN series_tournaments s ON s.tournament_id = g.tournament_id WHERE p.user_id = ? AND s.series_id = ?', $this->user_id, $this->id, $condition);
+		$subseries_csv = get_subseries_csv($this->id);
+		
+		list ($count) = Db::record(get_label('player'), 
+			'SELECT count(*) FROM players p'.
+			' JOIN games g ON g.id = p.game_id'.
+			' JOIN series_tournaments s ON s.tournament_id = g.tournament_id'.
+			' WHERE p.user_id = ? AND s.series_id IN (' . $subseries_csv . ')', $this->user_id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td>';
@@ -639,8 +645,8 @@ class Page extends SeriesPageBase
 			' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 			' LEFT OUTER JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
 			' JOIN cities ct ON ct.id = a.city_id' .
-			' WHERE p.user_id = ? AND s.series_id = ?', 
-			$this->user_id, $this->id, $condition);
+			' WHERE p.user_id = ? AND s.series_id IN (' . $subseries_csv . ')', 
+			$this->user_id, $condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{

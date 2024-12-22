@@ -37,6 +37,32 @@ function show_series_buttons($id, $start_time, $duration, $flags, $league_id, $l
 	}
 }
 
+function get_subseries_csv($series_id)
+{
+	$series = array();
+	while (true)
+	{
+		$continue = false;
+		$csv = $series_id;
+		foreach ($series as $sid => $v)
+		{
+			$csv .= ',' . $sid;
+		}
+		
+		$old_count = count($series);
+		$query = new DbQuery('SELECT child_id FROM series_series WHERE parent_id IN (' . $csv . ')');
+		while ($row = $query->next())
+		{
+			list($sid) = $row;
+			$series[$sid] = 0;
+		}
+		
+		if ($old_count == count($series))
+		{
+			return $csv;
+		}
+	}
+}
 
 class SeriesPageBase extends PageBase
 {
