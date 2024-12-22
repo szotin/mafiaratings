@@ -125,7 +125,7 @@ class Page extends SeriesPageBase
 		echo '</div>';
 		echo '<div class="tabcontent">';
 		
-		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*)', $condition);
+		list ($count) = Db::record(get_label('tournament'), 'SELECT COUNT(DISTINCT t.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
 		if ($this->future)
@@ -139,7 +139,7 @@ class Page extends SeriesPageBase
 		
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, t.num_players, st.flags, a.id, a.address, a.flags, ni.name,' .
+			'SELECT DISTINCT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, t.num_players, st.flags, a.id, a.address, a.flags, ni.name,' .
 			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND is_canceled = FALSE AND result > 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',

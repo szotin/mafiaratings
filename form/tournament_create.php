@@ -211,8 +211,8 @@ try
 		_end.setDate(_end.getDate() + 1); // inclusive
 		json.post("api/get/series.php",
 		{
-			ended_after: _end
-			, started_before: '+' + strToDate($('#form-start').val())
+			ended_after: '+' + strToDate($('#form-start').val())
+			, started_before: _end
 			, club_id: <?php echo $club_id; ?>
 		},
 		function(series)

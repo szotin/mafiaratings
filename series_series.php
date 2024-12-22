@@ -46,11 +46,12 @@ class Page extends SeriesPageBase
 		}
 		echo '</td></tr></table></p>';
 		
+		$subseries_csv = get_subseries_csv($this->id);
 		$condition = new SQL(
 			' FROM series_series ss'.
 			' JOIN series s ON s.id = ss.child_id' .
 			' JOIN leagues l ON l.id = s.league_id'.
-			' WHERE ss.parent_id = ?', $this->id);
+			' WHERE ss.parent_id IN ('.$subseries_csv.')', $this->id);
 		if ($this->future)
 		{
 			$condition->add(' AND s.start_time + s.duration >= UNIX_TIMESTAMP()');
@@ -83,12 +84,12 @@ class Page extends SeriesPageBase
 		echo '</div>';
 		echo '<div class="tabcontent">';
 		
-		list ($count) = Db::record(get_label('sеriеs'), 'SELECT count(*)', $condition);
+		list ($count) = Db::record(get_label('sеriеs'), 'SELECT COUNT(DISTINCT s.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, l.id, l.name, l.flags,' .
+			'SELECT DISTINCT s.id, s.name, s.flags, s.start_time, s.duration, l.id, l.name, l.flags,' .
 			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments',
 			$condition);
 		if ($this->future)
