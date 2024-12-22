@@ -186,7 +186,8 @@ class Page extends SeriesPageBase
 			$sort_type = (int)$_REQUEST['sort'];
 		}
 		
-		$condition = new SQL(' WHERE st.series_id = ?  AND g.is_canceled = FALSE AND g.result > 0', $this->id);
+		$subseries_csv = get_subseries_csv($this->id);
+		$condition = new SQL(' WHERE st.series_id IN ('.$subseries_csv.') AND g.is_canceled = FALSE AND g.result > 0');
 		$condition->add(get_roles_condition($this->roles));
 		if ($this->filter & FLAG_FILTER_RATING)
 		{

@@ -56,7 +56,9 @@ class Page extends SeriesPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
 		
-		$condition = new SQL(' WHERE st.series_id = ?', $this->id);
+		$subseries_csv = get_subseries_csv($this->id);
+		
+		$condition = new SQL(' WHERE st.series_id IN ('.$subseries_csv.')');
 		if ($this->result_filter < 0)
 		{
 			$condition->add(' AND g.result <> 0');

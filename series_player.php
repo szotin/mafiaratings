@@ -777,7 +777,9 @@ class Page extends SeriesPageBase
 		show_roles_select($roles, 'rolesChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' AND g.is_rating <> 0 AND g.is_canceled = FALSE AND g.tournament_id IN (SELECT tournament_id FROM series_tournaments WHERE series_id = ?)', $this->id);
+		$subseries_csv = get_subseries_csv($this->id);
+		
+		$condition = new SQL(' AND g.is_rating <> 0 AND g.is_canceled = FALSE AND g.tournament_id IN (SELECT tournament_id FROM series_tournaments WHERE series_id IN ('.$subseries_csv.'))');
 		$stats = new PlayerStats($this->user_id, $roles, $condition);
 		$mafs_in_legacy = $stats->guess3maf * 3 + $stats->guess2maf * 2 + $stats->guess1maf;
 		

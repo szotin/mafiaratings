@@ -95,7 +95,7 @@ class Page extends TournamentPageBase
 			list ($a_game, $s_game, $l_game) = Db::record(
 				get_label('game'),
 				'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) ' .
-					'FROM games g WHERE g.is_canceled = FALSE AND g.result > 0 AND g.tournament_id = ?', 
+					'FROM games g WHERE g.is_canceled = FALSE AND g.result > 0 AND g.tournament_id = ? AND g.end_time > g.start_time + 900 AND g.end_time < g.start_time + 20000', 
 				$this->id);
 			echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';

@@ -49,7 +49,8 @@ class Page extends SeriesPageBase
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter);
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' AND st.series_id = ?', $this->id);
+		$subseries_csv = get_subseries_csv($this->id);
+		$condition = new SQL(' AND st.series_id IN ('.$subseries_csv.')');
 		if ($this->filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NOT NULL');
@@ -138,7 +139,7 @@ class Page extends SeriesPageBase
 				'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) ' .
 				'FROM games g ' .
 				'JOIN series_tournaments st ON st.tournament_id = g.tournament_id ' .
-				'WHERE g.is_canceled = FALSE AND g.result > 0', 
+				'WHERE g.is_canceled = FALSE AND g.result > 0 AND g.end_time > g.start_time + 900 AND g.end_time < g.start_time + 20000', 
 				$condition);
 			echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';

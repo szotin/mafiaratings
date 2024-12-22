@@ -51,6 +51,8 @@ class Page extends SeriesPageBase
 		}
 		echo '</td></tr></table></p>';
 		
+		$subseries_csv = get_subseries_csv($this->id);
+		
 		$condition = new SQL(
 			' FROM series_tournaments st' .
 			' JOIN tournaments t ON t.id = st.tournament_id' .
@@ -61,7 +63,7 @@ class Page extends SeriesPageBase
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' JOIN leagues l ON l.id = s.league_id' .
-			' WHERE st.series_id = ?', $this->id);
+			' WHERE st.series_id IN ('.$subseries_csv.')');
 		if ($this->future)
 		{
 			$condition->add(' AND t.start_time + t.duration >= UNIX_TIMESTAMP()');

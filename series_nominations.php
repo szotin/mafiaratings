@@ -66,7 +66,8 @@ class Page extends SeriesPageBase
 		}
 		
 		date_default_timezone_set(get_timezone());
-		$this->condition = new SQL(' WHERE g.is_canceled = FALSE AND g.result > 0 AND st.series_id = ?', $this->id);
+		$subseries_csv = get_subseries_csv($this->id);
+		$this->condition = new SQL(' WHERE g.is_canceled = FALSE AND g.result > 0 AND st.series_id IN ('.$subseries_csv.')');
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
 			$this->condition->add(' AND g.is_rating <> 0');

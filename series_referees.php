@@ -53,7 +53,8 @@ class Page extends SeriesPageBase
 		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' WHERE g.result > 0 AND st.series_id = ?', $this->id);
+		$subseries_csv = get_subseries_csv($this->id);
+		$condition = new SQL(' WHERE g.result > 0 AND st.series_id IN ('.$subseries_csv.')');
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
 		{
