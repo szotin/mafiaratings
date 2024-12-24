@@ -82,7 +82,7 @@ class Page extends ClubPageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr><td class="dark" style="padding:2px;">';
-				show_tournament_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags, $is_manager);
+				show_tournament_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags);
 				echo '</td></tr>';	
 			}
 			

@@ -112,6 +112,7 @@ define('USER_SERIES_ICON_MAX_VERSION', 7);
 // 15 - 0x04000 -  16384 - name was changed during registration
 // 16 - 0x08000 -  32768 - reserved (not to interfere with user-league perm flag manager)
 // 17 - 0x10000 -  65536 - user was imported from another system (for example MWT)
+// 18 - 0x20000 - 131072 - use new game client instead of the original one
 define('USER_FLAG_NO_PASSWORD', 0x20);
 define('USER_FLAG_MALE', 0x40);
 define('USER_FLAG_MESSAGE_NOTIFY', 0x100);
@@ -119,6 +120,7 @@ define('USER_FLAG_PHOTO_NOTIFY', 0x200);
 define('USER_FLAG_IMMUNITY', 0x400);
 define('USER_FLAG_NAME_CHANGED', 0x4000);
 define('USER_FLAG_IMPORTED', 0x10000);
+define('USER_FLAG_TEST_NEW_GAME', 0x20000);
 
 define('USER_INITIAL_RATING', 0);
 

@@ -709,7 +709,7 @@ class Event
 				echo '<button class="icon" onclick="mr.extendEvent(' . $id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
 				if ($start_time + $duration >= $now)
 				{
-					echo '<button class="icon" onclick="mr.playEvent(' . $id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
+					echo '<button class="icon" onclick="goTo(\'game' . (($_profile->user_flags & USER_FLAG_TEST_NEW_GAME) ? '1' : '') . '.php\', {event_id: ' . $id . ',bck:0})" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
 				}
 				$no_buttons = false;
 			}

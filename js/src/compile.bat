@@ -29,6 +29,10 @@ echo 10 scoring_editor.js
 java -jar compiler.jar --js scoring_editor.js --js_output_file ..\scoring_editor.js
 echo 11 normalizer_editor.js
 java -jar compiler.jar --js normalizer_editor.js --js_output_file ..\normalizer_editor.js
+echo 12 game1-ui.js
+java -jar compiler.jar --js game1-ui.js --js_output_file ..\game1-ui.js
+echo 13 game1.js
+java -jar compiler.jar --js game1.js --js_output_file ..\game1.js
 copy labels_*.js ..
 copy game_*.js .. 
 copy seating_*.js ..

@@ -74,12 +74,12 @@ class Page extends EventPageBase
 					{
 						foreach ($table->parts as $part)
 						{
-							echo '<tr><td><a href="' . $part->url . '" target="_blank">' . get_label('Table [0] - part [1]', chr(65 + $table->table), $part->part) . '</a></td><td width="80">' . broadcast_status_str($part->status) . '</td></tr>';
+							echo '<tr><td><a href="' . $part->url . '" target="_blank">' . get_label('Table [0] - part [1]', $table->table + 1, $part->part) . '</a></td><td width="80">' . broadcast_status_str($part->status) . '</td></tr>';
 						}
 					}
 					else
 					{
-						echo '<tr><td><a href="' . $table->parts[0]->url . '" target="_blank">' . get_label('Table [0]', chr(65 + $table->table)) . '</a></td><td width="80">' . broadcast_status_str($table->parts[0]->status) . '</td></tr>';
+						echo '<tr><td><a href="' . $table->parts[0]->url . '" target="_blank">' . get_label('Table [0]', $table->table + 1) . '</a></td><td width="80">' . broadcast_status_str($table->parts[0]->status) . '</td></tr>';
 					}
 				}
 			}
@@ -92,12 +92,12 @@ class Page extends EventPageBase
 				{
 					foreach ($table->parts as $part)
 					{
-						echo '<tr><td><a href="' . $part->url . '" target="_blank">' . get_label('Table [0] - part [1]', chr(65 + $table->table), $part->part) . '</a></td><td width="80">' . broadcast_status_str($part->status) . '</td></tr>';
+						echo '<tr><td><a href="' . $part->url . '" target="_blank">' . get_label('Table [0] - part [1]', $table->table + 1, $part->part) . '</a></td><td width="80">' . broadcast_status_str($part->status) . '</td></tr>';
 					}
 				}
 				else
 				{
-					echo '<tr><td><a href="' . $table->parts[0]->url . '" target="_blank">' . get_label('Table [0]', chr(65 + $table->table)) . '</a></td><td width="80">' . broadcast_status_str($table->parts[0]->status) . '</td></tr>';
+					echo '<tr><td><a href="' . $table->parts[0]->url . '" target="_blank">' . get_label('Table [0]', $table->table + 1) . '</a></td><td width="80">' . broadcast_status_str($table->parts[0]->status) . '</td></tr>';
 				}
 			}
 		}

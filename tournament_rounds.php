@@ -148,7 +148,7 @@ class Page extends TournamentPageBase
 					echo '<button class="icon" onclick="mr.extendEvent(' . $event_id . ')" title="' . get_label('Event flow. Finish event, or extend event.') . '"><img src="images/time.png" border="0"></button>';
 					if ($event_time + $event_duration >= $now)
 					{
-						echo '<button class="icon" onclick="mr.playEvent(' . $event_id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
+						echo '<button class="icon" onclick="goTo(\'game' . (($_profile->user_flags & USER_FLAG_TEST_NEW_GAME) ? '1' : '') . '.php\', {event_id: ' . $event_id . '})" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
 					}
 					$no_buttons = false;
 				}

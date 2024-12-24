@@ -41,11 +41,11 @@ try
 	echo '<tr><td colspan="2" align="center"><b>';
 	if ($parts > 1)
 	{
-		echo get_label('[0]: Day [1], table [2] - part [3]', $event_name, $day, chr(65 + $table), $part);
+		echo get_label('[0]: Day [1], table [2] - part [3]', $event_name, $day, $table + 1, $part);
 	}
 	else
 	{
-		echo get_label('[0]: Day [1], table [2]', $event_name, $day, chr(65 + $table), $part);
+		echo get_label('[0]: Day [1], table [2]', $event_name, $day, $table + 1, $part);
 	}
 	echo '</b></td></tr>';
 	

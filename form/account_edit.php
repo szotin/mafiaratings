@@ -124,6 +124,13 @@ try
 	}
 	echo '>'.get_label('I would like to receive emails when someone tags me on a photo.').'</p>';
 	
+	echo '<p><input type="checkbox" id="form-test_new_game"';
+	if (($user_flags & USER_FLAG_TEST_NEW_GAME) != 0)
+	{
+		echo ' checked';
+	}
+	echo '>'.get_label('Participate in testing the new game client. Don\'t check it please. Betta testing has not started yet.').'</p>';
+	
 ?>
 	<script>
 	
@@ -192,6 +199,7 @@ try
 			, langs: languages
 			, message_notify: ($("#form-message_notify").attr("checked") ? 1 : 0)
 			, photo_notify: ($("#form-photo_notify").attr('checked') ? 1 : 0)
+			, test_new_game: ($("#form-test_new_game").attr('checked') ? 1 : 0)
 		};
 		nameControl.fillRequest(request);
 		json.post("api/ops/user.php", request, onSuccess);

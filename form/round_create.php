@@ -17,6 +17,8 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('tournament')));
 	}
 	
+	$now = isset($_REQUEST['now']) && $_REQUEST['now'];
+	
 	dialog_title(get_label('Create [0]', get_label('tournament round')));
 	$tournament_id = (int)$_REQUEST['tournament_id'];
 	list($club_id, $addr_id, $rules_code, $langs, $scoring_id, $scoring_version, $scoring_options, $country, $city) = 
@@ -40,13 +42,16 @@ try
 	show_option(3, 0, get_label('quoter-final'));
 	echo '</select></td></tr>';
 	
-	echo '<tr><td>'.get_label('Date').':</td><td>';
-	echo '<input type="date" id="form-date" value="' . datetime_to_string($start, false) . '">';
-	echo '</td></tr>';
-		
-	echo '<tr><td>'.get_label('Time').':</td><td>';
-	echo '<input type="time" id="form-time" value="18:00">';
-	echo '</td></tr>';
+	if (!$now)
+	{
+		echo '<tr><td>'.get_label('Date').':</td><td>';
+		echo '<input type="date" id="form-date" value="' . datetime_to_string($start, false) . '">';
+		echo '</td></tr>';
+			
+		echo '<tr><td>'.get_label('Time').':</td><td>';
+		echo '<input type="time" id="form-time" value="18:00">';
+		echo '</td></tr>';
+	}
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 	
@@ -199,7 +204,8 @@ try
 			params['city'] = $("#form-city").val();
 		}
 		
-		params['start'] = $('#form-date').val() + 'T' + timeStr($('#form-time').val());
+		if ($('#form-date').length)
+			params['start'] = $('#form-date').val() + 'T' + timeStr($('#form-time').val());
 		json.post("api/ops/event.php", params, onSuccess);
 	}
 	

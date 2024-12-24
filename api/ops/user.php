@@ -592,6 +592,18 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
+		if (isset($_REQUEST['test_new_game']))
+		{
+			if ($_REQUEST['test_new_game'])
+			{
+				$flags |= USER_FLAG_TEST_NEW_GAME;
+			}
+			else
+			{
+				$flags &= ~USER_FLAG_TEST_NEW_GAME;
+			}
+		}
+		
 		if (isset($_REQUEST['male']))
 		{
 			if ($_REQUEST['male'])

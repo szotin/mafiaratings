@@ -319,11 +319,6 @@ var mr = new function()
 		}
 	}
 
-	this.playClub = function(id)
-	{
-		window.location.replace("game.php?club=" + id);
-	}
-
 	this.addClubMember = function(id, onSuccess)
 	{
 		if (typeof onSuccess == "undefined")
@@ -432,24 +427,29 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// event
 	//--------------------------------------------------------------------------------------
-	this.createEvent = function(clubId)
+	this.createEvent = function(clubId, now)
 	{
-		dlg.form("form/event_create.php?club_id=" + clubId, function(obj)
+		if (clubId)
 		{
-			if (typeof obj.mailing != "undefined")
+			var url = "form/event_create.php?club_id=" + clubId;
+			if (now)
+				url += '&now=1';
+			
+			dlg.form(url, function(obj)
 			{
-				dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=' + obj.mailing, refr, 500, refr);
-			}
-			else
-			{
-				refr();
-			}
-		});
+				if (!now && typeof obj.mailing != "undefined")
+					dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=' + obj.mailing, refr, 500, refr);
+				else
+					refr();
+			});
+		}
+		else
+			dlg.infoForm("form/event_create_select_club.php?now=" + (now ? 1 : 0));
 	}
 	
-	this.createRound = function(tournamentId)
+	this.createRound = function(tournamentId, now)
 	{
-		dlg.form("form/round_create.php?tournament_id=" + tournamentId, refr);
+		dlg.form("form/round_create.php?tournament_id=" + tournamentId + "&now=" + (now ? 1 : 0), refr);
 	}
 	
 	this.restoreEvent = function(id)
@@ -517,11 +517,6 @@ var mr = new function()
 			else
 				dlg.info(message, null, null, function() { goTo(url); });
 		});
-	}
-
-	this.playEvent = function(id)
-	{
-		window.location.replace("game.php?event=" + id);
 	}
 
 	this.extendEvent = function(id)

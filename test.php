@@ -1,6 +1,7 @@
 <?php
 
 require_once 'include/evaluator.php';
+require_once 'include/video.php';
 
 // if(isset($GLOBALS))
 // {
@@ -66,29 +67,34 @@ require_once 'include/evaluator.php';
 
 // phpinfo();
 
-try
-{
-	$functions = array(
-		new EvFuncRound(), 
-		new EvFuncFloor(), 
-		new EvFuncCeil(), 
-		new EvFuncLog(), 
-		new EvFuncMin(), 
-		new EvFuncMax(), 
-		new EvFuncParam('var'));
+// try
+// {
+	// $functions = array(
+		// new EvFuncRound(), 
+		// new EvFuncFloor(), 
+		// new EvFuncCeil(), 
+		// new EvFuncLog(), 
+		// new EvFuncMin(), 
+		// new EvFuncMax(), 
+		// new EvFuncParam('var'));
 
-	//$e = new Evaluator('-var(2) / 12.5 * var(1, 1) + 14 * 2^floor (var(1) / 7)');
-	//$e = new Evaluator('var(0) == var(1) && var(2) == var(3) ? var(4) : 1/2', $functions);
-	// $e = new Evaluator('var(log(2.7182818284591))', $functions);
-	// $e = new Evaluator('var(0) ? 0.7 : (var(1) ? 0.5 : 0)', $functions);
-	$e = new Evaluator('var(0) || var(1) || var(2) ? -0.5 : (var(3) ? -0.7 : 0)', $functions);
+	// //$e = new Evaluator('-var(2) / 12.5 * var(1, 1) + 14 * 2^floor (var(1) / 7)');
+	// //$e = new Evaluator('var(0) == var(1) && var(2) == var(3) ? var(4) : 1/2', $functions);
+	// // $e = new Evaluator('var(log(2.7182818284591))', $functions);
+	// // $e = new Evaluator('var(0) ? 0.7 : (var(1) ? 0.5 : 0)', $functions);
+	// $e = new Evaluator('var(0) || var(1) || var(2) ? -0.5 : (var(3) ? -0.7 : 0)', $functions);
 	
-	$e->var = array(1, 10, 20, 30, 40);
-	echo '<p>.....................................<br>'.$e->evaluate();
-	// -6 / 12.5 * 10 + 14 * 2^round (4 / 7) = -4.8+14*2=9.2
-}
-catch (Exception $e)
-{
-	echo 'Error: ' . $e->getMessage();
-}
+	// $e->var = array(1, 10, 20, 30, 40);
+	// echo '<p>.....................................<br>'.$e->evaluate();
+	// // -6 / 12.5 * 10 + 14 * 2^round (4 / 7) = -4.8+14*2=9.2
+// }
+// catch (Exception $e)
+// {
+	// echo 'Error: ' . $e->getMessage();
+// }
+
+// See: https://developers.google.com/youtube/v3/getting-started
+// https://www.googleapis.com/youtube/v3/videos?id=eMjNfVBYI6Y&part=contentDetails&key=AIzaSyAUuFoIXqzN4c08t13tPX_vW2OZ6c8SA2U
+
+	print_json(get_youtube_info('eMjNfVBYI6Y'));
 ?>

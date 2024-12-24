@@ -65,7 +65,7 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 			
 			if ($_profile->is_admin() || ($memb_flags & USER_PERM_REFEREE) != 0)
 			{
-				echo '<button class="icon" onclick="mr.playClub(' . $id . ')" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
+				echo '<button class="icon" onclick="goTo(\'game' . (($_profile->user_flags & USER_FLAG_TEST_NEW_GAME) ? '1' : '') . '.php\', {club_id: ' . $id . ',bck:0})" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
 				$no_buttons = false;
 			}
 		}

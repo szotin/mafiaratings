@@ -28,7 +28,7 @@ class Page extends TournamentPageBase
 				echo '<button class="icon" onclick="mr.eventEditBroadcast(' . $event_id . ',' . $day . ',' . $table . ',' . $part . ')"><img src="images/edit.png"></button></td>';
 				
 				echo '<td align="center">' . $day . '</td>';
-				echo '<td align="center">' . chr(65 + $table) . '</td>';
+				echo '<td align="center">' . ($table + 1) . '</td>';
 				echo '<td align="center">' . $part . '</td>';
 				echo '<td><a href="' . $url . '" target="_blank">' . $url . '</a></td></tr>';
 			}

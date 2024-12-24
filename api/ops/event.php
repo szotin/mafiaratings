@@ -136,7 +136,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please enter [0].', get_label('event name')));
 		}
 
-		$start = get_required_param('start');
+		$start = get_optional_param('start', time());
 		$duration = (int)get_required_param('duration');
 		$fee = (int)get_optional_param('fee', $club->fee);
 		if (!is_null($fee) && $fee < 0)

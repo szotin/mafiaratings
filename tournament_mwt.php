@@ -255,7 +255,7 @@ class Page extends TournamentPageBase
 				for ($i = 0; $i < count($this->misc->seating); ++$i)
 				{
 					$table = $this->misc->seating[$i];
-					echo '<p><center><h2>' . get_label('Table [0]', chr(65 + $i)) . '</h2></center></p>';
+					echo '<p><center><h2>' . get_label('Table [0]', $i + 1) . '</h2></center></p>';
 					echo '<table class="bordered light" width="100%">';
 					echo '<tr class="darker"><td width="8%"></td>';
 					for ($k = 0; $k < 10; ++$k)
@@ -318,7 +318,7 @@ class Page extends TournamentPageBase
 		{
 			list ($id, $table, $number, $is_exported) = $row;
 			echo '<tr align="center"><td><a href="view_game.php?id='.$id.'&bck=1">'.$id.'</td>';
-			echo '<td>'.chr(65 + $table).'</td>';
+			echo '<td>'.($table + 1).'</td>';
 			echo '<td>'.($number + 1).'</td>';
 			echo '<td><button class="big_icon" onclick="exportGame('.$id.')"><img src="images/right.png" width="32"></button></td>';
 			echo '<td>';

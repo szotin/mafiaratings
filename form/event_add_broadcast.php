@@ -23,7 +23,7 @@ try
 	echo '<tr><td>' . get_label('Table') . ':</td><td><select id="form-table">';
 	for ($i = 0; $i < 26; ++$i)
 	{
-		show_option($i, 0, chr(65 + $i));
+		show_option($i, 0, $i + 1);
 	}
 	echo '</td></tr>';
 	

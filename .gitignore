@@ -60,3 +60,5 @@ api/ops/MWT.txt
 **/node_modules/*
 # FTP config
 .vscode/sftp.json
+js/game1.js
+js/game1-ui.js

@@ -21,42 +21,46 @@ define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3', 4);
 define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4', 5);
 define('TOURNAMENT_TYPE_CHAMPIONSHIP', 6);
 
-function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $is_manager = NULL, $tournament_page = false)
+function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $tournament_page = false)
 {
 	global $_profile;
 	
-	if ($is_manager === NULL)
-	{
-		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $id);
-	}
-
 	$now = time();
-	if ($is_manager && ($club_flags & CLUB_FLAG_RETIRED) == 0)
+	if (($club_flags & CLUB_FLAG_RETIRED) == 0)
 	{
-		if ($tournament_page)
+		if (is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $id))
 		{
-			$back_url = get_back_page();
-			if (empty($back_url))
+			if ($tournament_page)
 			{
-				$back_url = 'tournaments.php';
+				$back_url = get_back_page();
+				if (empty($back_url))
+				{
+					$back_url = 'tournaments.php';
+				}
+				$back_url = '\''.$back_url.'\'';
 			}
-			$back_url = '\''.$back_url.'\'';
+			else
+			{
+				$back_url = 'undefined';
+			}
+			
+			echo '<button class="icon" onclick="mr.editTournament(' . $id . ')" title="' . get_label('Edit the tournament') . '"><img src="images/edit.png" border="0"></button>';
+			if (($flags & TOURNAMENT_FLAG_CANCELED) != 0)
+			{
+				echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
+			} 
+			echo '<button class="icon" onclick="mr.deleteTournament(' . $id . ', ' . $back_url . ')" title="' . get_label('Delete the tournament') . '"><img src="images/delete.png" border="0"></button>';
+			
+			if (($flags & TOURNAMENT_FLAG_FINISHED) == 0 && $now < $start_time + $duration)
+			{
+				echo '<button class="icon" onclick="mr.finishTournament(' . $id . ', \'' . get_label('Are you sure you want to finish the tournament?') . '\', \'' . get_label('The tournament is finished. Results will be applyed to series within one hour') . '\')" title="' . get_label('Finish the tournament') . '"><img src="images/time.png" border="0"></button>';
+			}
 		}
-		else
+		if (($flags & TOURNAMENT_FLAG_FINISHED) == 0 && 
+			$now < $start_time + $duration && $now >= $start_time && 
+			is_permitted(PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $id))
 		{
-			$back_url = 'undefined';
-		}
-		
-		echo '<button class="icon" onclick="mr.editTournament(' . $id . ')" title="' . get_label('Edit the tournament') . '"><img src="images/edit.png" border="0"></button>';
-		if (($flags & TOURNAMENT_FLAG_CANCELED) != 0)
-		{
-			echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
-		} 
-		echo '<button class="icon" onclick="mr.deleteTournament(' . $id . ', ' . $back_url . ')" title="' . get_label('Delete the tournament') . '"><img src="images/delete.png" border="0"></button>';
-		
-		if (($flags & TOURNAMENT_FLAG_FINISHED) == 0 && $now < $start_time + $duration)
-		{
-			echo '<button class="icon" onclick="mr.finishTournament(' . $id . ', \'' . get_label('Are you sure you want to finish the tournament?') . '\', \'' . get_label('The tournament is finished. Results will be applyed to series within one hour') . '\')" title="' . get_label('Finish the tournament') . '"><img src="images/time.png" border="0"></button>';
+			echo '<button class="icon" onclick="goTo(\'game' . (($_profile->user_flags & USER_FLAG_TEST_NEW_GAME) ? '1' : '') . '.php\', {tournament_id: ' . $id . ',bck:0})" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
 		}
 	}
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
@@ -227,7 +231,6 @@ class TournamentPageBase extends PageBase
 			$this->flags,
 			$this->club_id,
 			$this->club_flags,
-			NULL,
 			true);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);

@@ -393,7 +393,7 @@ class Page extends TournamentPageBase
 			{
 				continue;
 			}
-			echo '<p><center><h2>' . get_label('Table [0]', chr(65 + $i)) . '</h2></center></p>';
+			echo '<p><center><h2>' . get_label('Table [0]', $i + 1) . '</h2></center></p>';
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="dark"><td width="8%"></td>';
 			for ($k = 0; $k < 10; ++$k)
@@ -481,7 +481,7 @@ class Page extends TournamentPageBase
 					$all_games = false;
 					continue;
 				}
-				echo '<tr><td align="center" class="dark"><b>' . get_label('Table [0]', chr(65 + $j)) . '</b></td>';
+				echo '<tr><td align="center" class="dark"><b>' . get_label('Table [0]', $j + 1) . '</b></td>';
 				for ($k = 0; $k < count($table) && $k < 10; ++$k)
 				{
 					$this->showPlayer($table[$k]);

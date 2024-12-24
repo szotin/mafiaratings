@@ -22,6 +22,8 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('club')));
 	}
 	
+	$now = isset($_REQUEST['now']) && $_REQUEST['now'];
+	
 	check_permissions(PERMISSION_CLUB_MEMBER, $club_id);
 	$club = $_profile->clubs[$club_id];
 	
@@ -33,40 +35,56 @@ try
 	$end->add(new DateInterval('P2M'));
 
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($event->name, ENT_QUOTES) . '"></td></tr>';
+	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name"></td></tr>';
 	
-	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
-	show_option(0, $event->tournament_id, '');
+	$tournaments = array();
 	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= UNIX_TIMESTAMP() AND start_time + duration > UNIX_TIMESTAMP() AND (flags & ' . TOURNAMENT_FLAG_LONG_TERM . ') <> 0 ORDER BY name', $club_id);
-	if ($row = $query->next())
+	while ($row = $query->next())
 	{
-		list($tid, $tname) = $row;
-		show_option($tid, $event->tournament_id, $tname);
+		$tournaments[] = $row;
 	}
-	echo '</select> <span id="form-round-span"></span></td></tr>';
 	
-	echo '<tr><td>'.get_label('Date').':</td><td>';
-	echo '<input type="checkbox" id="form-multiple" onclick="multipleChange()"> ' . get_label('multiple events');
-	echo '<div id="form-single_date">';
-	echo '<input type="date" id="form-date" value="' . datetime_to_string($start, false) . '">';
-	echo '</div><div id="form-multiple_date" style="display:none;">';
-	echo '<p>' . get_label('Every') . ': ';
-	$weekday_names = array(get_label('sun'), get_label('mon'), get_label('tue'), get_label('wed'), get_label('thu'), get_label('fri'), get_label('sat'));
-	for ($i = 0; $i < 7; ++$i)
+	if (count($tournaments) > 0)
 	{
-		echo '<input type="checkbox" id="form-wd' . $i . '"> ' . $weekday_names[$i] . ' ';
+		echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
+		show_option(0, $event->tournament_id, '');
+		foreach ($tournaments as $row)
+		{
+			list($tid, $tname) = $row;
+			show_option($tid, $event->tournament_id, $tname);
+		}
+		echo '</select> <span id="form-round-span"></span></td></tr>';
 	}
-	echo '</p>';
-	echo '<p>' . get_label('From') . ' ';
-	echo '<input type="date" id="form-date-from" value="' . datetime_to_string($start, false) . '" onchange="onMinDateChange()">';
-	echo ' ' . get_label('to') . ' ';
-	echo '<input type="date" id="form-date-to" value="' . datetime_to_string($end, false) . '">';
-	echo '</td></tr>';
-	echo '</div></td></tr>';
+	else
+	{
+		echo '<input type="hidden" id="form-tournament" value="0"><input type="hidden" id="form-round" value="">';
+	}
+	
+	if (!$now)
+	{
+		echo '<tr><td>'.get_label('Date').':</td><td>';
+		echo '<input type="checkbox" id="form-multiple" onclick="multipleChange()"> ' . get_label('multiple events');
+		echo '<div id="form-single_date">';
+		echo '<input type="date" id="form-date" value="' . datetime_to_string($start, false) . '">';
+		echo '</div><div id="form-multiple_date" style="display:none;">';
+		echo '<p>' . get_label('Every') . ': ';
+		$weekday_names = array(get_label('sun'), get_label('mon'), get_label('tue'), get_label('wed'), get_label('thu'), get_label('fri'), get_label('sat'));
+		for ($i = 0; $i < 7; ++$i)
+		{
+			echo '<input type="checkbox" id="form-wd' . $i . '"> ' . $weekday_names[$i] . ' ';
+		}
+		echo '</p>';
+		echo '<p>' . get_label('From') . ' ';
+		echo '<input type="date" id="form-date-from" value="' . datetime_to_string($start, false) . '" onchange="onMinDateChange()">';
+		echo ' ' . get_label('to') . ' ';
+		echo '<input type="date" id="form-date-to" value="' . datetime_to_string($end, false) . '">';
+		echo '</td></tr>';
+		echo '</div></td></tr>';
 		
-	echo '<tr><td>'.get_label('Time').':</td><td>';
-	echo '<input type="time" id="form-time" value="18:00">';
-	echo '</td></tr>';
+		echo '<tr><td>'.get_label('Time').':</td><td>';
+		echo '<input type="time" id="form-time" value="18:00">';
+		echo '</td></tr>';
+	}
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($event->duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 		
@@ -421,7 +439,7 @@ try
 			params['start'] = $('#form-date-from').val() + 'T' + $('#form-time').val();
 			params['end'] = $('#form-date-to').val() + 'T' + $('#form-time').val();
 		}
-		else
+		else if ($('#form-date').length)
 		{
 			params['start'] = $('#form-date').val() + 'T' + $('#form-time').val();;
 		}
