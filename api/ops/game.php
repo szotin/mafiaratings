@@ -1252,7 +1252,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id, $user_id, $event_id, $tournament_id, $end_time, $is_rating) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id, end_time, is_rating FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$prev_game_id = NULL;
 		$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
@@ -1283,7 +1283,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Delete game.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Delete game.');
 		$help->request_param('game_id', 'Game id.');
 		return $help;
 	}
@@ -1303,7 +1303,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
 		$game = new Game($json, $feature_flags);
@@ -1324,151 +1324,12 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change the game.');
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Change the game.');
 		$help->request_param('game_id', 'Game id.');
 		$param = $help->request_param('json', 'Game description in json format.');
 		Game::api_help($param, true);
 		$param = $help->response_param('json', 'Game description in json format.');
 		Game::api_help($param, true);
-		return $help;
-	}
-	
-	//-------------------------------------------------------------------------------------------------------
-	// extra_points
-	//-------------------------------------------------------------------------------------------------------
-	function extra_points_op()
-	{
-		global $_lang;
-		
-		$game_id = (int)get_required_param('game_id');
-		
-        $user_id = (int)get_required_param('user_id');
-        $points = (float)get_required_param('points');
-		$reason = get_optional_param('reason');
-		if ($points != 0 && empty($reason))
-		{
-			throw new Exc(get_label('Please enter the reason.'));
-		}
-		$reason = str_replace(":", "&#58;", $reason);
-		
-        list($json, $feature_flags, $club_id, $game_user_id, $is_canceled) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, user_id, is_canceled FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $game_user_id, $club_id);
-
-		$game = new Game($json, $feature_flags);
-        foreach ($game->data->players as $player)
-        {
-            if ($user_id == $player->id)
-            {
-				Db::begin();
-				if (!isset($player->bonus) || is_numeric($player->bonus))
-				{
-					$player->bonus = $points;
-				}
-				else if (is_array($player->bonus))
-				{
-					for ($i = 0; $i < count($player->bonus); ++$i)
-					{
-						if (is_numeric($player->bonus[$i]))
-						{
-							$player->bonus[$i] = $points;
-							break;
-						}
-					}
-					if ($i >= count($player->bonus))
-					{
-						$player->bonus[] = $points;
-					}
-				}
-				else
-				{
-					$player->bonus = array($player->bonus, $points);
-				}
-				$player->comment = $reason;
-				$game->update();
-                Db::commit();
-				return;
-            }
-        }
-
-        list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
-        throw new Exc(get_label('[0] did not play in the game [1]', $user_name, $game_id));
-	}
-	
-	function extra_points_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Add extra points for a player.');
-		$help->request_param('game_id', 'Game id.');
-		$help->request_param('user_id', 'User id. User must be a player in this game.');
-		$help->request_param('points', 'Extra points. Floating point number from -0.4 to 0.7');
-		$help->request_param('reason', 'Reason why the points are added/subtracted. Must be non empty if points are non zero.', 'points must be 0.');
-		return $help;
-    }
-	
-	//-------------------------------------------------------------------------------------------------------
-	// change_ex
-	//-------------------------------------------------------------------------------------------------------
-	function change_ex_op()
-	{
-		$game_id = (int)get_required_param('game_id');
-		list ($club_id, $old_table, $old_number, $old_objection_user_id, $old_objection, $game_user_id) =
-			Db::record(get_label('game'), 'SELECT club_id, game_table, game_number, objection_user_id, objection, user_id FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $game_user_id, $club_id);
-		
-		$table = (int)get_optional_param('table', $old_table);
-		if (empty($table))
-		{
-			$table = NULL;
-		}
-		
-		$number = (int)get_optional_param('number', $old_number);
-		if (empty($number))
-		{
-			$number = NULL;
-		}
-		
-		$objection_user_id = (int)get_optional_param('objection_user_id', $old_objection_user_id);
-		if ($objection_user_id <= 0)
-		{
-			$objection_user_id = NULL;
-		}
-		
-		$objection = get_optional_param('objection', $old_objection);
-		if (empty($objection))
-		{
-			$objection = NULL;
-		}
-		
-		Db::begin();
-		Db::exec(get_label('game'), 'UPDATE games SET game_table = ?, game_number = ?, objection_user_id = ?, objection = ? WHERE id = ?', 
-			$table, $number, $objection_user_id, $objection, $game_id);
-		if (Db::affected_rows() > 0)
-		{
-			$log_details = new stdClass();
-			if ($table != $old_table)
-			{
-				$log_details->table = $table;
-			}
-			if ($number != $old_number)
-			{
-				$log_details->number = $number;
-			}
-			if ($objection_user_id != $old_objection_user_id)
-			{
-				$log_details->objection_user_id = $objection_user_id;
-			}
-			if ($objection != $old_objection)
-			{
-				$log_details->objection = $objection;
-			}
-			db_log(LOG_OBJECT_GAME, 'changed', $log_details, $game_id, $club_id);
-		}
-		Db::commit();
-	}
-	
-	function change_ex_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_USER, 'Comment game.');
-		$help->request_param('game_id', 'Game id.');
 		return $help;
 	}
 	
@@ -1646,6 +1507,160 @@ class ApiPage extends OpsApiPageBase
 		// $help->request_param('game_id', 'Game id.');
 		// return $help;
 	// }
+	
+	//-------------------------------------------------------------------------------------------------------
+	// set_bonus
+	//-------------------------------------------------------------------------------------------------------
+	function set_bonus_op()
+	{
+		global $_profile, $_lang;
+		
+		$game_id = (int)get_required_param('game_id');
+		$player_num = (int)get_required_param('player_num');
+		if ($player_num < 1 || $player_num > 10)
+		{
+			throw new Exc(get_label('Invalid [0]', get_label('player number')));
+		}
+		$points = (float)get_optional_param('points', 0);
+		$best_player = (int)get_optional_param('best_player', 0);
+		$best_move = (int)get_optional_param('best_move', 0);
+		$worst_move = (int)get_optional_param('worst_move', 0);
+		
+		Db::begin();
+		list($game, $club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT json, club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
+		
+		$game = json_decode($game);
+		
+		$bonus = 0;
+		if ($points > 0)
+		{
+			$bonus = $points;
+		}
+		if ($best_player)
+		{
+			if (is_array($bonus))
+			{
+				$bonus[] = 'bestPlayer';
+			}
+			else if ($bonus != 0)
+			{
+				$bonus = array($bonus, 'bestPlayer');
+			}
+			else
+			{
+				$bonus = 'bestPlayer';
+			}
+		}
+		if ($best_move)
+		{
+			if (is_array($bonus))
+			{
+				$bonus[] = 'bestMove';
+			}
+			else if ($bonus != 0)
+			{
+				$bonus = array($bonus, 'bestMove');
+			}
+			else
+			{
+				$bonus = 'bestMove';
+			}
+		}
+		if ($worst_move)
+		{
+			if (is_array($bonus))
+			{
+				$bonus[] = 'worstMove';
+			}
+			else if ($bonus != 0)
+			{
+				$bonus = array($bonus, 'worstMove');
+			}
+			else
+			{
+				$bonus = 'worstMove';
+			}
+		}
+		
+		$player = $game->players[$player_num - 1];
+		if ($bonus === 0)
+		{
+			unset($player->comment);
+			unset($player->bonus);
+		}
+		else
+		{
+			$player->comment = get_required_param('comment');
+			if (empty($player->comment))
+			{
+				throw new Exc('Please enter comment.');
+			}
+			$player->bonus = $bonus;
+		}
+		Db::exec(get_label('game'), 'UPDATE games SET json = ? WHERE id = ?', json_encode($game), $game_id);
+		Db::commit();
+	}
+	
+	function set_bonus_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Get currently playing game.');
+		$help->request_param('game_id', 'Game id.');
+		$help->request_param('player_num', 'Number of the player in the game from 1 to 10.');
+		$help->request_param('points', 'Bonus points.', '0 is used');
+		$help->request_param('best_player', 'Any non-zero value to award "best player" title to the player.', '0 is used');
+		$help->request_param('best_move', 'Any non-zero value to award "best move" title to the player.', '0 is used');
+		$help->request_param('worst_move', 'Any non-zero value to set "worst move" title to the player.', '0 is used');
+		$help->request_param('comment', 'Comments about the bonus.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// get_current
+	//-------------------------------------------------------------------------------------------------------
+	function get_current_op()
+	{
+		global $_profile, $_lang;
+		
+		$event_id = (int)get_required_param('event_id');
+		$table = (int)get_required_param('table');
+		$round = (int)get_required_param('round');
+		
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+	
+		$query = new DbQuery('SELECT game, user_id FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
+		if ($row = $query->next())
+		{
+			list ($game, $user_id) = $row;
+			if ($user_id != $_profile->user_id)
+			{
+				list($user_name) = Db::record('SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
+				throw new Exc(get_label('The game is already moderated by [0].', $user_name));
+			}
+			$game = json_decode($game);
+		}
+		else
+		{
+			$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $event_id, $table, $round);
+			if ($query->next())
+			{
+				throw new Exc(get_label('Game [0] table [1] has already been played. Remove the existing game if you want to replay it.'));
+			}
+			
+			$game = new stdClass();
+		}
+		$this->response['game'] = $game;
+	}
+	
+	function get_current_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Get currently playing game.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('table', 'Table number in the event. Table 1 is numbered as 0, 2 - 1, etc..');
+		$help->request_param('round', 'Game number. Round 1 is numbered as 0, 2 - 1, etc..');
+		return $help;
+	}
 }
 
 $page = new ApiPage();

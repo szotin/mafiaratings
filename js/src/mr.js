@@ -1103,9 +1103,9 @@ var mr = new function()
 		window.open('game_fiim_form.php?game_id=' + gameId, '_blank').focus();
 	}
 	
-	this.gameExtraPoints = function(gameId, userId)
+	this.gameBonus = function(gameId, playerNum)
 	{
-		dlg.form("form/game_extra_points.php?game_id=" + gameId + '&user_id=' + userId, refr, 600);
+		dlg.form("form/game_bonus.php?game_id=" + gameId + '&player_num=' + playerNum, refr, 500);
 	}
 	
 	//--------------------------------------------------------------------------------------

@@ -115,7 +115,7 @@ class Page extends PageBase
 				' WHERE g.id = ?',
 			$this->id);
 			
-		$this->is_editor = is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->user_id, $this->club_id, $this->event_id, $this->tournament_id);
+		$this->is_editor = is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->user_id, $this->club_id, $this->event_id, $this->tournament_id);
 		$this->show_all = $this->is_editor && isset($_REQUEST['show_all']);
 		if ($this->show_all)
 		{
@@ -321,8 +321,6 @@ class Page extends PageBase
 				set($player_id, $player_name, $player_flags);
 			$this->player_pic->show(ICONS_DIR, false, 48);
 			echo '</a>';
-			
-			$player_name = '' . $player_name . '</a>';
 		}
 		else
 		{
@@ -346,7 +344,12 @@ class Page extends PageBase
 				$this->show_bonus($player->bonus, $comment);
 			}
 		}
-		echo '</td></tr></table>';
+		echo '</td>';
+		if ($this->is_editor)
+		{
+			echo '<td width="40" align="center"><button class="icon" onclick="mr.gameBonus(' . $this->id . ', ' . $num . ')" title="' . get_label('Set bonus for [0]', $player_name) . '"><img src="images/award.png" width="24"></button></td>';
+		}
+		echo '</tr></table>';
 	}
 	
 	protected function show_body()

@@ -5,10 +5,6 @@ require_once 'include/page_base.php';
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
-define('ROUND_NOT_STARTED', 0);
-define('ROUND_PLAYING', 1);
-define('ROUND_DONE', 2);
-
 class Page extends PageBase
 {
 	protected function add_headers()
@@ -191,7 +187,24 @@ class Page extends PageBase
 	
 	private function select_table()
 	{
-		list ($misc) = Db::record(get_label('event'), 'SELECT misc FROM events WHERE id = ?', $this->event_id);
+		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
+			Db::record(get_label('event'), 
+			'SELECT e.misc, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags'.
+			' FROM events e'.
+			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+			' JOIN clubs c ON c.id = e.club_id'.
+			' WHERE e.id = ?', $this->event_id);
+		if (!is_null($tournament_name))
+		{
+			$event_name = $tournament_name . ': ' . $event_name;
+		}
+		
+		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+		$pic->
+			set($event_id, $event_name, $event_flags)->
+			set($tournament_id, $tournament_name, $tournament_flags)->
+			set($club_id, $club_name, $club_flags);
+		
 		$num_tables = -1;
 		if (!is_null($misc))
 		{
@@ -213,7 +226,9 @@ class Page extends PageBase
 		
 		$column_count = 0;
 		
-		echo '<p><table class="transp" width="100%"><tr><td>';
+		echo '<p><table class="transp" width="100%"><tr><td width="60">';
+		$pic->show(ICONS_DIR, false, 56);
+		echo '</td><td><h2>' . $event_name . '</h2></td><td>';
 		show_back_button();
 		echo '</td><tr></table></p>';
 
@@ -261,7 +276,24 @@ class Page extends PageBase
 	
 	private function select_round()
 	{
-		list ($misc) = Db::record(get_label('event'), 'SELECT misc FROM events WHERE id = ?', $this->event_id);
+		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
+			Db::record(get_label('event'), 
+			'SELECT e.misc, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags'.
+			' FROM events e'.
+			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+			' JOIN clubs c ON c.id = e.club_id'.
+			' WHERE e.id = ?', $this->event_id);
+		if (!is_null($tournament_name))
+		{
+			$event_name = $tournament_name . ': ' . $event_name;
+		}
+		
+		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+		$pic->
+			set($event_id, $event_name, $event_flags)->
+			set($tournament_id, $tournament_name, $tournament_flags)->
+			set($club_id, $club_name, $club_flags);
+		
 		$num_rounds = -1;
 		if (!is_null($misc))
 		{
@@ -274,41 +306,45 @@ class Page extends PageBase
 		
 		if ($num_rounds > 0)
 		{
-			$rounds = array_fill(0, $num_rounds, ROUND_NOT_STARTED);
+			$rounds = array_fill(0, $num_rounds, NULL);
 		}
 		else
 		{
 			$rounds = array();
 		}
 		
-		$query = new DbQuery('SELECT round_num FROM current_games WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table);
+		$query = new DbQuery('SELECT round_num, user_id FROM current_games WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table);
 		while ($row = $query->next())
 		{
-			list ($round) = $row;
+			list ($round, $user_id) = $row;
 			while ($round >= count($rounds))
 			{
-				$rounds[] = ROUND_NOT_STARTED;
+				$rounds[] = NULL;
 			}
-			$rounds[$round] = ROUND_PLAYING;
+			$rounds[$round] = new stdClass();
+			$rounds[$round]->user_id = (int)$user_id;
 		}
 		
-		$query = new DbQuery('SELECT game_number FROM games WHERE event_id = ? AND game_table = ?  AND is_canceled = FALSE AND result > 0', $this->event_id, $this->table);
+		$query = new DbQuery('SELECT id, game_number FROM games WHERE event_id = ? AND game_table = ?  AND is_canceled = FALSE AND result > 0', $this->event_id, $this->table);
 		while ($row = $query->next())
 		{
-			list ($round) = $row;
+			list ($game_id, $round) = $row;
 			while ($round >= count($rounds))
 			{
-				$rounds[] = ROUND_NOT_STARTED;
+				$rounds[] = NULL;
 			}
-			$rounds[$round] = ROUND_DONE;
+			$rounds[$round] = new stdClass();
+			$rounds[$round]->game_id = (int)$game_id;
 		}
 		
 		if ($num_rounds <= 0)
 		{
-			$rounds[] = ROUND_NOT_STARTED;
+			$rounds[] = NULL;
 		}
 		
-		echo '<p><table class="transp" width="100%"><tr><td>';
+		echo '<p><table class="transp" width="100%"><tr><td width="60">';
+		$pic->show(ICONS_DIR, false, 56);
+		echo '</td><td><h2>' . $event_name . '</h2></td><td>';
 		show_back_button();
 		echo '</td><tr></table></p>';
 		
@@ -332,27 +368,30 @@ class Page extends PageBase
 			
 			echo '<table class="transp" width="100%">';
 			
-			switch ($rounds[$i])
+			if (is_null($rounds[$i]))
 			{
-			case ROUND_PLAYING:
-				$darker_class = ' class="darker"';
-				$normal_class = ' class="dark"';
-				$text = get_label('Playing now');
-				break;
-			case ROUND_DONE:
-				$darker_class = ' class="darkest"';
-				$normal_class = ' class="darker"';
-				$text = get_label('Complete');
-				break;
-			default:
 				$darker_class = ' class="darker"';
 				$normal_class = '';
 				$text = '';
-				break;
+				$url = 'game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
+			}
+			else if (isset($rounds[$i]->game_id))
+			{
+				$darker_class = ' class="darkest"';
+				$normal_class = ' class="darker"';
+				$text = get_label('Complete');
+				$url = 'view_game.php?bck=1&id=' . $rounds[$i]->game_id;
+			}
+			else
+			{
+				$darker_class = ' class="darker"';
+				$normal_class = ' class="dark"';
+				$text = get_label('Playing now');
+				$url = 'game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
 			}
 			
 			echo '<tr' . $darker_class . '><td align="center"><p><b>' . get_label('Game [0]', $i + 1) . '</b></p></td></tr>';
-			echo '<tr' . $normal_class . '><td align="center" colspan="2"><p><a href="game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i .'">';
+			echo '<tr' . $normal_class . '><td align="center" colspan="2"><p><a href="' . $url .'">';
 			echo '<img src="images/thegame.png"><br>' . $text;
 			echo '</a></p></td></tr></table>';
 			

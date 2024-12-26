@@ -217,3 +217,8 @@ span.best-in-role { position:absolute; margin-left:-30px; margin-top:3px; opacit
 span.mvp { position:absolute; margin-left:-29px; margin-top:8px; }
 
 code { background-color: #e8f8f8; padding-left: 5px; padding-right: 5px; }
+
+button.best { border: 1px outset #dddddd; height: 28px; width: 60px; margin: 0px; padding: 1px; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.best[checked] { border: 1px solid #909090; padding: 0px; background-color: #aaccdd; }
+button.best[disabled] { border: 1px solid #909090; padding: 0px; color: #808080; background-color: transparent; }
+button.best:active { border: 1px inset #dddddd; padding: 0px;  }
