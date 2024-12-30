@@ -29,8 +29,8 @@ class Page extends PageBase
 		$tags['root'] = new Tag(get_server_url());
 		$tags['event_name'] = new Tag($this->event->name);
 		$tags['event_id'] = new Tag($this->event->id);
-		$tags['event_date'] = new Tag(format_date('l, F d, Y', $this->event->timestamp, $this->event->timezone, $lang));
-		$tags['event_time'] = new Tag(format_date('H:i', $this->event->timestamp, $this->event->timezone, $lang));
+		$tags['event_date'] = new Tag(format_date($this->event->timestamp, $this->event->timezone, false, $lang));
+		$tags['event_time'] = new Tag(date('H:i', $this->event->timestamp));
 		$tags['notes'] = new Tag($this->event->notes);
 		$tags['langs'] = new Tag(get_langs_str($this->event->langs, ', ', LOWERCASE, $lang));
 		$tags['address'] = new Tag($this->event->addr);
@@ -91,7 +91,7 @@ class Page extends PageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td>' . $p_subj . '</td>';
 		echo '<td width="100">' . get_lang_str($this->lang) . '</td>';
-		echo '<td width="160">' . format_date('F d, Y, H:i', $this->send_time, $timezone) . '</td></tr>';
+		echo '<td width="160">' . format_date($this->send_time, $timezone, true) . '</td></tr>';
 		echo '<tr><td colspan="3">' . $p_body . '</td></tr>';
 		echo '</table>';
 
@@ -119,7 +119,7 @@ class Page extends PageBase
 				$this->user_pic->set($user_id, $user_name, $user_flags);
 				$this->user_pic->show(ICONS_DIR, true, 48);
 				echo '</td><td>' . $user_name . '</td>';
-				echo '<td class="dark" align="center">' . format_date('F d, Y, H:i', $send_time, $timezone) . '</td></tr>';
+				echo '<td class="dark" align="center">' . format_date($send_time, $timezone, true) . '</td></tr>';
 			}
 			
 			echo '</table>';

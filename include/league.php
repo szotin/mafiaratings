@@ -76,14 +76,14 @@ class LeaguePageBase extends PageBase
 			new MenuItem('league_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('Member clubs of [0].', $this->name)),
 			new MenuItem('league_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series history', $this->name)),
 			new MenuItem('league_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->name)),
-			// new MenuItem('league_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)),
-			// new MenuItem('#stats', get_label('Stats'), NULL, array
-			// (
-				// new MenuItem('league_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
-				// new MenuItem('league_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
-				// new MenuItem('league_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
-				// new MenuItem('league_referees.php?id=' . $this->id, get_label('Referees'), get_label('Referees statistics of [0]', $this->name)),
-			// )),
+			new MenuItem('league_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)),
+			new MenuItem('#stats', get_label('Stats'), NULL, array
+			(
+				new MenuItem('league_stats.php?id=' . $this->id, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
+				new MenuItem('league_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+				new MenuItem('league_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
+				new MenuItem('league_referees.php?id=' . $this->id, get_label('Referees'), get_label('Referees statistics of [0]', $this->name)),
+			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(
 				new MenuItem('league_rules.php?id=' . $this->id, get_label('Rulebook'), get_label('Rules of the game in [0]', $this->name)),

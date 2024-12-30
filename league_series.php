@@ -4,6 +4,7 @@ require_once 'include/player_stats.php';
 require_once 'include/league.php';
 require_once 'include/pages.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', SERIES_PAGE_SIZE);
 
@@ -59,7 +60,16 @@ class Page extends LeaguePageBase
 				$condition->add(' AND (s.flags & ' . SERIES_FLAG_CANCELED . ') = 0');
 			}
 		}
-			
+		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND s.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND s.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
+		
 		echo '<div class="tab">';
 		echo '<button ' . ($future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
 		echo '<button ' . (!$future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
@@ -69,6 +79,8 @@ class Page extends LeaguePageBase
 		if (!$future)
 		{
 			echo '<p><table class="transp" width="100%"><tr><td>';
+			show_date_filter();
+			echo '&emsp;&emsp;';
 			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $filter, 'filterSeries');
 			echo '</td></tr></table></p>';
 		}
@@ -95,7 +107,7 @@ class Page extends LeaguePageBase
 		$now = time();
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
-		echo '<td colspan="2" align="center">' . get_label('Sеriеs') . '</td>';
+		echo '<td colspan="2" align="center">' . get_label('Series') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Tournaments') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Finals') . '</td>';
 		while ($row = $query->next())
@@ -123,7 +135,7 @@ class Page extends LeaguePageBase
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . format_date('F d, Y', $series_time, $timezone) . '</a></td>';
+			echo '</b><br>' . format_date_period($series_time, $series_duration, $timezone) . '</a></td>';
 			echo '</tr></table>';
 			echo '</td>';
 			

@@ -485,7 +485,7 @@ class Page extends SeriesPageBase
 			{
 				echo '<b>' . $tournament->city_name  . '</b><br>';
 			}
-			echo format_date('F d, Y', $tournament->time + $tournament->duration, $tournament->timezone) . '</td>';
+			echo format_date_period($tournament->time, $tournament->duration, $tournament->timezone) . '</td>';
 			echo '</tr></table></td>';
 			
 			echo '<td><a href="javascript:showGaining(' . $tournament->players_count . ', ' . $tournament->stars . ', ' . $tournament->place . ')">';
@@ -667,7 +667,7 @@ class Page extends SeriesPageBase
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
 			echo '<a href="view_game.php?id=' . $game_id . '&user_id=' . $this->user_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
-			echo format_date('F d Y, H:i', $start, $timezone) . '</a>';
+			echo format_date($start, $timezone, true) . '</a>';
 			if ($video_id != NULL)
 			{
 				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';

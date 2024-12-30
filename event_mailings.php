@@ -60,7 +60,7 @@ class Page extends EventPageBase
 					echo '<button class="icon" onclick="mr.editEventMailing(' . $mail_id . ')" title="' . get_label('Edit mailing') . '"><img src="images/edit.png" border="0"></button>';
 					echo '<button class="icon" onclick="deleteMailing(' . $mail_id . ')" title="' . get_label('Delete mailing') . '"><img src="images/delete.png" border="0"></button>';
 					echo '</td>';
-					echo '<td>' . format_date('F d, Y, H:i', $this->event->timestamp - $send_time, get_timezone()) . '</td>';
+					echo '<td>' . format_date($this->event->timestamp - $send_time, get_timezone(), true) . '</td>';
 					echo '<td>' . get_email_recipients($flags, $langs) . '</td>';
 					echo '<td>' . type_to_str($type) . '</td>';
 					echo '<td>' . get_label('waiting') . '</td><td></td>';
@@ -68,7 +68,7 @@ class Page extends EventPageBase
 					
 				case MAILING_SENDING:
 					echo '<td class="dark"></td>';
-					echo '<td><a href="view_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('View') . '">' . format_date('F d, Y, H:i', $this->event->timestamp - $send_time, get_timezone()) . '</a></td>';
+					echo '<td><a href="view_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('View') . '">' . format_date($this->event->timestamp - $send_time, get_timezone(), true) . '</a></td>';
 					echo '<td>' . get_email_recipients($flags, $langs) . '</td>';
 					echo '<td>' . type_to_str($type) . '</td>';
 					echo '<td>' . get_label('sending') . '</td><td>' . $send_count . '</td>';
@@ -76,7 +76,7 @@ class Page extends EventPageBase
 					
 				case MAILING_COMPLETE:
 					echo '<td class="dark"></td>';
-					echo '<td><a href="view_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('View') . '">' . format_date('F d, Y, H:i', $this->event->timestamp - $send_time, get_timezone()) . '</a></td>';
+					echo '<td><a href="view_event_mailing.php?id=' . $mail_id . '&bck=1" title="' . get_label('View') . '">' . format_date($this->event->timestamp - $send_time, get_timezone(), true) . '</a></td>';
 					echo '<td>' . get_email_recipients($flags, $langs) . '</td>';
 					echo '<td>' . type_to_str($type) . '</td>';
 					echo '<td>' . get_label('complete') . '</td><td>' . $send_count . '</td>';

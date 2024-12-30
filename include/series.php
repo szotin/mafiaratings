@@ -175,7 +175,7 @@ class SeriesPageBase extends PageBase
 		
 		echo '<td rowspan="2" valign="top"><h2 class="series">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
-		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->start_time, $this->timezone) . '</p>';
+		echo '</h3><p class="subtitle">' . format_date_period($this->start_time, $this->duration, $this->timezone) . '</p>';
 		if (($this->flags & SERIES_FLAG_FINISHED) == 0)
 		{
 			echo '<p class="subtitle"><i>(';

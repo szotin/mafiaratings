@@ -259,7 +259,7 @@ class Page extends TournamentPageBase
 				set($id, $name, $flags)->
 				set($addr_id, $addr, $addr_flags);
 			$event_pic->show(ICONS_DIR, false);
-			echo '</a><br>' . format_date('l, F d, Y', $start_time, $event_timezone) . '</td></tr></table>';
+			echo '</a><br>' . format_date($start_time, $event_timezone) . '</td></tr></table>';
 			
 			echo '</td>';
 			

@@ -162,7 +162,7 @@ class Page extends TournamentPageBase
 			
 			echo '<td><table width="100%" class="transp"><tr>';
 			echo '<td style="padding-left:12px;"><b><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
-			echo '<br>' . format_date('F d, Y', $event_time, $timezone) . '</a></td>';
+			echo '<br>' . format_date_period($event_time, $event_duration, $timezone) . '</a></td>';
 			if ($videos_count > 0)
 			{
 				echo '<td align="right"><a href="event_videos.php?id=' . $event_id . '&bck=1" title="' . get_label('[0] videos from [1]', $videos_count, $event_name) . '"><img src="images/video.png" width="40" height="40"></a></td>';

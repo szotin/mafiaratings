@@ -33,7 +33,7 @@ try
 	}
 	echo '<table class="dialog_form" width="100%">';
 	
-	echo '<tr><td width="140">' . get_label('Time') . ':</td><td>' . format_date('d/m/y H:i', $time, get_timezone()) . '</td></tr>';
+	echo '<tr><td width="140">' . get_label('Time') . ':</td><td>' . format_date($time, get_timezone(), true) . '</td></tr>';
 	if ($page != '')
 	{
 		echo '<tr><td>' . get_label('Page') . ':</td><td>' . $page . '</td></tr>';

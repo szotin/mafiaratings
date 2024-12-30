@@ -6,6 +6,8 @@ require_once 'include/pages.php';
 require_once 'include/scoring.php';
 require_once 'include/event.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
+require_once 'include/ccc_filter.php';
 
 define('PAGE_SIZE', GAMES_PAGE_SIZE);
 
@@ -44,7 +46,46 @@ class Page extends UserPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
+		echo '<p>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
+		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
+		echo '</p>';
+		
+		echo '<div class="tab">';
+		echo '<button' . ($moder ? '' : ' class="active"') . ' onclick="goTo({moder:0})">' . get_label('As a player') . '</button>';
+		echo '<button' . ($moder ? ' class="active"' : '') . ' onclick="goTo({moder:1})">' . get_label('As a referee') . '</button>';
+		echo '</div>';
+		
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$event_pic = new Picture(EVENT_PICTURE);
+		$club_pic = new Picture(CLUB_PICTURE);
+		
 		$condition = new SQL();
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
+		{
+		case CCCF_CLUB:
+			if ($ccc_id > 0)
+			{
+				$condition->add(' AND g.club_id = ?', $ccc_id);
+			}
+			else if ($ccc_id == 0 && $_profile != NULL)
+			{
+				$condition->add(' AND g.club_id IN (' . $_profile->get_comma_sep_clubs() . ')');
+			}
+			break;
+		case CCCF_CITY:
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities i ON i.id = a.city_id WHERE i.id = ? OR i.area_id = ?)', $ccc_id, $ccc_id);
+			break;
+		case CCCF_COUNTRY:
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities i ON i.id = a.city_id WHERE i.country_id = ?)', $ccc_id);
+			break;
+		}
+		
 		if ($filter & FLAG_FILTER_VIDEO)
 		{
 			$condition->add(' AND g.video_id IS NOT NULL');
@@ -78,15 +119,14 @@ class Page extends UserPageBase
 			$condition->add(' AND g.is_canceled = 0');
 		}
 		
-		echo '<p>';
-		echo '<select id="moder" onChange = "filterChanged()">';
-		show_option(0, $moder, get_label('As a player'));
-		show_option(1, $moder, get_label('As a referee'));
-		echo '</select>';
-		
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$event_pic = new Picture(EVENT_PICTURE);
-		$club_pic = new Picture(CLUB_PICTURE);
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
 		
 		if ($moder != 0)
 		{
@@ -95,12 +135,11 @@ class Page extends UserPageBase
 				$result_filter = 0;
 			}
 			
-			echo ' <select id="result" onChange="filterChanged()">';
+			echo '<p><select id="result" onChange="filterChanged()">';
 			show_option(0, $result_filter, get_label('All games'));
 			show_option(1, $result_filter, get_label('Town wins'));
 			show_option(2, $result_filter, get_label('Mafia wins'));
 			echo '</select>';
-			show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 			echo '</p>';
 			
 			switch ($result_filter)
@@ -163,7 +202,7 @@ class Page extends UserPageBase
 				{
 					echo $tournament_name . ': ';
 				}
-				echo $event_name . '<br>' . format_date('F d Y, H:i', $start, $timezone) . '</a>';
+				echo $event_name . '<br>' . format_date($start, $timezone, true) . '</a>';
 				if ($video_id != NULL)
 				{
 					echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
@@ -226,15 +265,15 @@ class Page extends UserPageBase
 				$roles = (int)$_REQUEST['roles'];
 			}
 
-			echo ' <select id="result" onChange="filterChanged()">';
+			echo '<p><select id="result" onChange="filterChanged()">';
 			show_option(0, $result_filter, get_label('All games'));
 			show_option(1, $result_filter, get_label('Town wins'));
 			show_option(2, $result_filter, get_label('Mafia wins'));
 			show_option(3, $result_filter, get_label('[0] wins', $this->name));
 			show_option(4, $result_filter, get_label('[0] losses', $this->name));
 			echo '</select> ';
+			echo '&emsp;&emsp;';
 			show_roles_select($roles, 'filterChanged()', get_label('Games where [0] was in a specific role.', $this->name), ROLE_NAME_FLAG_SINGLE);
-			show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 			echo '</p>';
 			
 			$condition->add(get_roles_condition($roles));
@@ -300,7 +339,7 @@ class Page extends UserPageBase
 				{
 					echo $tournament_name . ': ';
 				}
-				echo $event_name . '<br>' . format_date('F d Y, H:i', $start, $timezone) . '</a>';
+				echo $event_name . '<br>' . format_date($start, $timezone, true) . '</a>';
 				if ($video_id != NULL)
 				{
 					echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
@@ -398,7 +437,7 @@ class Page extends UserPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({roles: $('#roles').val(), result: $('#result').val(), moder: $('#moder').val(), filter: checkboxFilterFlags(), page: 0 });
+			goTo({roles: $('#roles').val(), result: $('#result').val(), filter: checkboxFilterFlags(), page: 0 });
 		}
 <?php
 	}

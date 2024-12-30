@@ -217,8 +217,8 @@ try
 				if (!isset($event_emails[$email_id]))
 				{
 					$event_emails[$email_id] = get_event_email($mailing_type, $user_lang);
-					$common_tags['event_date'] = new Tag(format_date('l, F d, Y', $event_start_time, $timezone, $user_lang));
-					$common_tags['event_time'] = new Tag(format_date('H:i', $event_start_time, $timezone, $user_lang));
+					$common_tags['event_date'] = new Tag(format_date($event_start_time, $timezone, false, $user_lang));
+					$common_tags['event_time'] = new Tag(date('H:i', $event_start_time));
 					$common_tags['langs'] = new Tag(get_langs_str($event_langs, ', ', LOWERCASE, $user_lang));
 					for ($i = 0; $i < count($event_emails[$email_id]); ++$i)
 					{

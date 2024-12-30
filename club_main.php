@@ -53,7 +53,7 @@ class Page extends ClubPageBase
 		echo '</a>';
 		if ($future)
 		{
-			echo '<br>' . format_date('l, F d', $tournament->start_time, $tournament->timezone);
+			echo '<br>' . format_date_period($tournament->start_time, $tournament->duration, $tournament->timezone);
 		}
 		echo '</td></tr>';
 		
@@ -100,7 +100,7 @@ class Page extends ClubPageBase
 		echo '</a>';
 		if ($future)
 		{
-			echo '<br>' . format_date('l, F d', $event->start_time, $event->timezone);
+			echo '<br>' . format_date($event->start_time, $event->timezone, true);
 		}
 		echo '</td></tr>';
 		
@@ -288,7 +288,7 @@ class Page extends ClubPageBase
 			{
 				list ($timezone, $id, $timestamp, $message) = $row;
 				echo '<tr>';
-				echo '<td><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
+				echo '<td><b>' . format_date($timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
 			} while ($row = $query->next());
 			echo '</table>';
 			$have_tables = true;

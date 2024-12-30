@@ -459,76 +459,75 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------
-	function comment_op()
-	{
-		global $_profile, $_lang;
+	// function comment_op()
+	// {
+		// global $_profile, $_lang;
 		
-		check_permissions(PERMISSION_USER);
-		$series_id = (int)get_required_param('id');
-		$comment = prepare_message(get_required_param('comment'));
-		$lang = detect_lang($comment);
-		if ($lang == LANG_NO)
-		{
-			$lang = $_lang;
-		}
+		// check_permissions(PERMISSION_USER);
+		// $series_id = (int)get_required_param('id');
+		// $comment = prepare_message(get_required_param('comment'));
+		// $lang = detect_lang($comment);
+		// if ($lang == LANG_NO)
+		// {
+			// $lang = $_lang;
+		// }
 		
-		Db::exec(get_label('comment'), 'INSERT INTO series_comments (time, user_id, comment, series_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $series_id, $lang);
+		// Db::exec(get_label('comment'), 'INSERT INTO series_comments (time, user_id, comment, series_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $series_id, $lang);
 		
-		$timezone = get_timezone();
-		list($series_id, $series_name, $series_start_time) = Db::record(get_label('sеriеs'), 'SELECT id, name, start_time FROM series WHERE id = ?', $series_id);
+		// $timezone = get_timezone();
+		// list($series_id, $series_name, $series_start_time, $series_duration) = Db::record(get_label('sеriеs'), 'SELECT id, name, start_time, duration FROM series WHERE id = ?', $series_id);
 		
-		$query = new DbQuery(
-			'(SELECT u.id, nu.name, u.email, u.flags, u.def_lang'.
-			' FROM users u' .
-			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-			' JOIN tournament_invitations ti ON u.id = ti.user_id' .
-			' WHERE ti.status <> ' . TOURNAMENT_INVITATION_STATUS_DECLINED . ')' .
-			' UNION DISTINCT ' .
-			' (SELECT DISTINCT u.id, nu.name, u.email, u.flags, u.def_lang'.
-			' FROM users u' .
-			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-			' JOIN tournament_comments c ON c.user_id = u.id' .
-			' WHERE c.tournament_id = ?)', $tournament_id, $tournament_id);
-		//echo $query->get_parsed_sql();
-		while ($row = $query->next())
-		{
-			list($user_id, $user_email, $user_flags, $user_lang) = $row;
-			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
-			{
-				continue;
-			}
+		// $query = new DbQuery(
+			// '(SELECT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			// ' FROM users u' .
+			// ' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			// ' JOIN tournament_invitations ti ON u.id = ti.user_id' .
+			// ' WHERE ti.status <> ' . TOURNAMENT_INVITATION_STATUS_DECLINED . ')' .
+			// ' UNION DISTINCT ' .
+			// ' (SELECT DISTINCT u.id, nu.name, u.email, u.flags, u.def_lang'.
+			// ' FROM users u' .
+			// ' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+			// ' JOIN tournament_comments c ON c.user_id = u.id' .
+			// ' WHERE c.tournament_id = ?)', $tournament_id, $tournament_id);
+		// //echo $query->get_parsed_sql();
+		// while ($row = $query->next())
+		// {
+			// list($user_id, $user_email, $user_flags, $user_lang) = $row;
+			// if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			// {
+				// continue;
+			// }
 		
-			$code = generate_email_code();
-			$request_base = get_server_url() . '/email_request.php?code=' . $code . '&user_id=' . $user_id;
-			$tags = array(
-				'root' => new Tag(get_server_url()),
-				'user_id' => new Tag($user_id),
-				'user_name' => new Tag($user_name),
-				'tournament_id' => new Tag($tournament_id),
-				'tournament_name' => new Tag($tournament_name),
-				'tournament_date' => new Tag(format_date('l, F d, Y', $tournament_start_time, $tournament_timezone, $user_lang)),
-				'tournament_time' => new Tag(format_date('H:i', $tournament_start_time, $tournament_timezone, $user_lang)),
-				'addr' => new Tag($tournament_addr),
-				'code' => new Tag($code),
-				'sender' => new Tag($_profile->user_name),
-				'message' => new Tag($comment),
-				'url' => new Tag($request_base),
-				'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
+			// $code = generate_email_code();
+			// $request_base = get_server_url() . '/email_request.php?code=' . $code . '&user_id=' . $user_id;
+			// $tags = array(
+				// 'root' => new Tag(get_server_url()),
+				// 'user_id' => new Tag($user_id),
+				// 'user_name' => new Tag($user_name),
+				// 'tournament_id' => new Tag($tournament_id),
+				// 'tournament_name' => new Tag($tournament_name),
+				// 'series_date' => new Tag(format_date_period($series_start_time, $series_duration, $series_timezone, false, $user_lang)),
+				// 'addr' => new Tag($tournament_addr),
+				// 'code' => new Tag($code),
+				// 'sender' => new Tag($_profile->user_name),
+				// 'message' => new Tag($comment),
+				// 'url' => new Tag($request_base),
+				// 'unsub' => new Tag('<a href="' . $request_base . '&unsub=1" target="_blank">', '</a>'));
 			
-			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/comment_tournament.php';
-			$body = parse_tags($body, $tags);
-			$text_body = parse_tags($text_body, $tags);
-			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_TOURNAMENT, $tournament_id, $code);
-		}
-	}
+			// list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/comment_tournament.php';
+			// $body = parse_tags($body, $tags);
+			// $text_body = parse_tags($text_body, $tags);
+			// send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_TOURNAMENT, $tournament_id, $code);
+		// }
+	// }
 	
-	function comment_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_USER, 'Leave a comment on the tournament.');
-		$help->request_param('id', 'Tournament id.');
-		$help->request_param('comment', 'Comment text.');
-		return $help;
-	}
+	// function comment_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_USER, 'Leave a comment on the tournament.');
+		// $help->request_param('id', 'Tournament id.');
+		// $help->request_param('comment', 'Comment text.');
+		// return $help;
+	// }
 	
 	//-------------------------------------------------------------------------------------------------------
 	// add_extra_points

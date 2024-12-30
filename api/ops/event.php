@@ -783,10 +783,9 @@ class ApiPage extends OpsApiPageBase
 			$this->response['addr_image'] = $base . ADDRESS_PICS_DIR . TNAILS_DIR . $event->addr_id . '.jpg';
 		}
 		
-		$this->response['date_str'] = format_date($date_format, $event->timestamp, $event->timezone);
-		$this->response['time_str'] = format_date($time_format, $event->timestamp, $event->timezone);
-		
 		date_default_timezone_set($event->timezone);
+		$this->response['date_str'] = date($date_format, $event->timestamp);
+		$this->response['time_str'] = date($time_format, $event->timestamp);
 		$this->response['hour'] = date('G', $event->timestamp);
 		$this->response['minute'] = round(date('i', $event->timestamp) / 10) * 10;
 	}
@@ -1653,6 +1652,7 @@ class ApiPage extends OpsApiPageBase
 				continue;
 			}
 		
+			date_default_timezone_set($event_timezone);
 			$code = generate_email_code();
 			$request_base = get_server_url() . '/email_request.php?code=' . $code . '&user_id=' . $user_id;
 			$tags = array(
@@ -1660,8 +1660,8 @@ class ApiPage extends OpsApiPageBase
 				'user_id' => new Tag($user_id),
 				'event_id' => new Tag($event_id),
 				'event_name' => new Tag($event_name),
-				'event_date' => new Tag(format_date('l, F d, Y', $event_start_time, $event_timezone, $user_lang)),
-				'event_time' => new Tag(format_date('H:i', $event_start_time, $event_timezone, $user_lang)),
+				'event_date' => new Tag(format_date($event_start_time, $event_timezone, false, $user_lang)),
+				'event_time' => new Tag(date('H:i', $event_start_time)),
 				'addr' => new Tag($event_addr),
 				'code' => new Tag($code),
 				'user_name' => new Tag($user_name),

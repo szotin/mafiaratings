@@ -130,7 +130,7 @@ class Page extends UserPageBase
 				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 				$tournament_pic->show(ICONS_DIR, true, 64);
 				echo '<p><font style="color:#B8860B; font-size:18px;">' . tournament_stars_str($stars) . '</font>';
-				echo '<br>' . format_date('F, Y', $tournament_start_time + $tournament_duration, $timezone) . '</p>';
+				echo '<br>' . format_month($tournament_start_time + $tournament_duration, $timezone) . '</p>';
 				echo '</td></tr>';
 				
 				echo '<tr class="dark" style="height: 40px;"><td colspan="2" align="center"><b>' . $tournament_name . '</b></td><td width="34">';
@@ -164,7 +164,7 @@ class Page extends UserPageBase
 		// General info
         echo '<table class="bordered light" width="100%">';
 		echo '<tr><td width="150" class="dark">'.get_label('Languages').':</td><td>' . get_langs_str($this->langs, ', ') . '</td><tr>';
-		echo '<tr><td class="dark">'.get_label('Registered since').':</td><td>' . format_date('F d, Y', $this->reg_date, $timezone) . '</td></tr>';
+		echo '<tr><td class="dark">'.get_label('Registered since').':</td><td>' . format_date($this->reg_date, $timezone) . '</td></tr>';
 		
         if (($this->flags & USER_FLAG_MALE) != 0)
         {

@@ -1,6 +1,7 @@
 <?php
 
-require_once 'include/tournament.php';
+require_once 'include/league.php';
+require_once 'include/ccc_filter.php';
 require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/user.php';
@@ -15,41 +16,80 @@ define('FLAG_FILTER_NO_RATING', 0x0002);
 define('FLAG_FILTER_CANCELED', 0x0004);
 define('FLAG_FILTER_NO_CANCELED', 0x0008);
 
-define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
+define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 
-class Page extends TournamentPageBase
+class Page extends LeaguePageBase
 {
-	protected function show_body()
+	private $user_id;
+	private $user_name;
+	private $user_club_id;
+	private $user_city_id;
+	private $user_country_id;
+	
+	protected function prepare()
 	{
-		global $_page, $_lang;
+		global $_page, $_profile, $_lang;
 		
-		$filter = FLAG_FILTER_DEFAULT;
+		parent::prepare();
+		
+		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		
+		$this->filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
-			$filter = (int)$_REQUEST['filter'];
+			$this->filter = (int)$_REQUEST['filter'];
 		}
+	}
+	
+	protected function show_body()
+	{
+		global $_page, $_profile, $_lang;
 		
-		echo '<p>';
-		echo '<table class="transp" width="100%"><tr><td>';
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('referees')));
+		echo '&emsp;&emsp;';
 		show_date_filter();
 		echo '&emsp;&emsp;';
-		show_checkbox_filter(array(get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
+		show_checkbox_filter(array(get_label('rating games'), get_label('canceled games')), $this->filter);
+		echo '</td><td align="right"><img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' WHERE g.tournament_id = ? AND g.result > 0', $this->id);
-		if ($filter & FLAG_FILTER_RATING)
+		$condition = new SQL(' WHERE g.result > 0 AND s.league_id = ?', $this->id);
+		$ccc_id = $this->ccc_filter->get_id();
+		switch($this->ccc_filter->get_type())
+		{
+		case CCCF_CLUB:
+			if ($ccc_id > 0)
+			{
+				$condition->add(' AND u.club_id = ?', $ccc_id);
+			}
+			else if ($ccc_id == 0 && $_profile != NULL)
+			{
+				$condition->add(' AND u.club_id IN (' . $_profile->get_comma_sep_clubs() . ')');
+			}
+			break;
+		case CCCF_CITY:
+			$condition->add(' AND u.city_id IN (SELECT id FROM cities WHERE id = ? OR area_id = ?)', $ccc_id, $ccc_id);
+			break;
+		case CCCF_COUNTRY:
+			$condition->add(' AND u.city_id IN (SELECT id FROM cities WHERE country_id = ?)', $ccc_id);
+			break;
+		}
+		if ($this->filter & FLAG_FILTER_RATING)
 		{
 			$condition->add(' AND g.is_rating <> 0');
 		}
-		if ($filter & FLAG_FILTER_NO_RATING)
+		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
 			$condition->add(' AND g.is_rating = 0');
 		}
-		if ($filter & FLAG_FILTER_CANCELED)
+		if ($this->filter & FLAG_FILTER_CANCELED)
 		{
 			$condition->add(' AND g.is_canceled <> 0');
 		}
-		if ($filter & FLAG_FILTER_NO_CANCELED)
+		if ($this->filter & FLAG_FILTER_NO_CANCELED)
 		{
 			$condition->add(' AND g.is_canceled = 0');
 		}
@@ -63,24 +103,24 @@ class Page extends TournamentPageBase
 			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g', $condition);
+		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g JOIN users u ON u.id = g.moderator_id JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$moders = array();
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)), c.id, c.name, c.flags, tu.flags, cu.flags' . 
+			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)), c.id, c.name, c.flags' . 
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
-				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = g.tournament_id AND tu.user_id = u.id' .
-				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id',
+				' JOIN series_tournaments st ON st.tournament_id = g.tournament_id'.
+				' JOIN series s ON s.id = st.series_id' .
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id',
 				$condition);
  		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC, u.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
 			$moder = new stdClass();
-			list($moder->id, $moder->name, $moder->flags, $moder->red_wins, $moder->black_wins, $moder->club_id, $moder->club_name, $moder->club_flags, $moder->tournament_user_flags, $moder->club_user_flags) = $row;
+			list($moder->id, $moder->name, $moder->flags, $moder->red_wins, $moder->black_wins, $moder->club_id, $moder->club_name, $moder->club_flags) = $row;
 			$moders[] = $moder;
 		}
 		
@@ -91,6 +131,8 @@ class Page extends TournamentPageBase
 			' SUM(IF((p.flags & ' . SCORING_FLAG_TEAM_KICK_OUT . ') = 0, 0, 1))' . 
 				' FROM users u' .
 				' JOIN games g ON g.moderator_id = u.id' .
+				' JOIN series_tournaments st ON st.tournament_id = g.tournament_id'.
+				' JOIN series s ON s.id = st.series_id'.
 				' JOIN players p ON p.game_id = g.id',
 				$condition);
  		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC, u.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -101,11 +143,6 @@ class Page extends TournamentPageBase
 			list($id, $moder->bonus, $moder->warnings, $moder->worst_moves, $moder->kick_offs, $moder->team_kick_offs) = $row;
 		}
 		
-		$tournament_user_pic =
-			new Picture(USER_TOURNAMENT_PICTURE,
-			new Picture(USER_CLUB_PICTURE,
-			$this->user_pic));
-			
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="20">&nbsp;</td>';
 		echo '<td colspan="3">'.get_label('User name') . '</td>';
@@ -126,11 +163,8 @@ class Page extends TournamentPageBase
 
 			echo '<tr><td align="center" width="40" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
-			$tournament_user_pic->
-				set($moder->id, $moder->name, $moder->tournament_user_flags, 't' . $this->id)->
-				set($moder->id, $moder->name, $moder->club_user_flags, 'c' . $this->club_id)->
-				set($moder->id, $moder->name, $moder->flags);
-			$tournament_user_pic->show(ICONS_DIR, true, 50);
+			$this->user_pic->set($moder->id, $moder->name, $moder->flags);
+			$this->user_pic->show(ICONS_DIR, true, 50);
 			echo '<td><a href="user_games.php?id=' . $moder->id . '&moder=1&bck=1">' . $moder->name . '</a></td>';
 			echo '<td width="50" align="center">';
 			$this->club_pic->set($moder->club_id, $moder->club_name, $moder->club_flags);
@@ -202,14 +236,45 @@ class Page extends TournamentPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
-	protected function js()
+	private function no_user_error()
 	{
-?>
-		function filterChanged()
+		global $_profile;
+		
+		$member = true;
+		$ccc_value = $this->ccc_filter->get_value();
+		if ($ccc_value != NULL)
 		{
-			goTo({filter: checkboxFilterFlags(), page: 0});
+			$id = $this->ccc_filter->get_id();
+			switch ($this->ccc_filter->get_type())
+			{
+			case CCCF_CLUB:
+				if ($id == 0)
+				{
+					$member = ($_profile != NULL && isset($_profile->clubs[$this->user_club_id]));
+				}
+				else
+				{
+					$member = ($id == $this->user_club_id);
+				}
+				break;
+			case CCCF_CITY:
+				$member = ($id == $this->user_city_id);
+				break;
+			case CCCF_COUNTRY:
+				$member = ($id == $this->user_country_id);
+				break;
+			}
 		}
-<?php
+		
+		if (!$member)
+		{
+			$message = get_label('[0] is not from [1].', $this->user_name, $ccc_value);
+		}
+		else
+		{
+			$message = get_label('[0] refereed no games.', $this->user_name);
+		}
+		$this->errorMessage($message);
 	}
 }
 

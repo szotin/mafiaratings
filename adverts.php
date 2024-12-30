@@ -75,7 +75,7 @@ class Page extends GeneralPageBase
 			echo '<td width="100" align="center" valign="top" class="dark"><a href="club_main.php?id=' . $club_id . '&bck=1"><p>' . $club_name . '</p>';
 			$this->club_pic->set($club_id, $club_name, $club_flags);
 			$this->club_pic->show(ICONS_DIR, false);
-			echo '</a></td><td valign="top"><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
+			echo '</a></td><td valign="top"><b>' . format_date($timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
 		}
 		echo '</table>';
 		show_pages_navigation(PAGE_SIZE, $count);

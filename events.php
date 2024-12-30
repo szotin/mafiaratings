@@ -7,6 +7,7 @@ require_once 'include/pages.php';
 require_once 'include/event.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 
@@ -90,9 +91,11 @@ class Page extends GeneralPageBase
 		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('events')));
+		echo '&emsp;&emsp;';
+		show_date_filter();
 		if (!$this->future)
 		{
-			echo ' ';
+			echo '&emsp;&emsp;';
 			show_checkbox_filter(array(get_label('with video'), get_label('tournament events'), get_label('unplayed events'), get_label('canceled events')), $this->filter);
 		}
 		echo '</td></tr></table></p>';
@@ -116,6 +119,15 @@ class Page extends GeneralPageBase
 		case CCCF_COUNTRY:
 			$condition->add(' AND ct.country_id = ?', $ccc_id);
 			break;
+		}
+		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND e.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND e.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
 		echo '<div class="tab">';
@@ -195,7 +207,7 @@ class Page extends GeneralPageBase
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . format_date('F d, Y', $event_time, $timezone) . '</a></td>';
+			echo '</b><br>' . format_date($event_time, $timezone, true) . '</a></td>';
 			
 			if ($videos_count > 0)
 			{

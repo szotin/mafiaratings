@@ -9,7 +9,7 @@ class Page extends PageBase
 		global $_profile;
 
 		$timezone = get_timezone();
-		echo "<center><h1>" . format_date('l, F d, Y H:i', time(), $timezone) . '</h1><p>' . $timezone . '</p></center>';
+		echo "<center><h1>" . format_date(time(), $timezone, true) . '</h1><p>' . $timezone . '</p></center>';
 	}
 }
 

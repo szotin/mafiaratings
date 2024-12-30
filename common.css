@@ -54,7 +54,7 @@ button.small_icon:active { border: 1px inset #ccccc0; padding: 0px;  }
 img.icon { border: 0; }
 img.control-icon { height: 18px; width: 18px; position: relative; margin: 0px; padding: 1px; top: 6px; border: 0px; -moz-focus-inner {border:0;} }
 
-input.dropdown { height: 12px; margin: 0px; padding: 3px; border: 0px; }
+input.dropdown { height: 12px; width: 180px; margin: 0px; padding: 3px; border: 0px; }
 .dropdown-btn { height: 18px; width: 18px; position: relative; margin: 0px; padding: 1px; top: 6px; border: 0px; -moz-focus-inner {border:0;} }
 .dropdown-btn::-moz-focus-inner { border: 0; padding: 0; } 
 .dropdown-btn:hover { border: 1px solid #748080; padding: 0px; }

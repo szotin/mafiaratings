@@ -1,8 +1,8 @@
 <?php
 
-require_once 'include/tournament.php';
+require_once 'include/league.php';
 require_once 'include/player_stats.php';
-require_once 'include/club.php';
+require_once 'include/ccc_filter.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
@@ -20,10 +20,9 @@ define('SORT_TYPE_BY_KILLED_FIRST_NIGHT', 8);
 define('FLAG_FILTER_RATING', 0x0001);
 define('FLAG_FILTER_NO_RATING', 0x0002);
 
-define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
+define('FLAG_FILTER_DEFAULT', 0);
 
 $sort_type = SORT_TYPE_BY_WIN * 2 + 1;
-
 function compare_numbers($row1, $row2)
 {
 	global $sort_type;
@@ -159,8 +158,27 @@ function sorting_link($ref, $sort, $text)
 	return $result;
 }
 
-class Page extends TournamentPageBase
+class Page extends LeaguePageBase
 {
+	private $roles;
+	
+	protected function prepare()
+	{
+		parent::prepare();
+		
+		$this->roles = POINTS_ALL;
+		if (isset($_REQUEST['roles']))
+		{
+			$this->roles = (int)$_REQUEST['roles'];
+		}
+		
+		$this->filter = FLAG_FILTER_DEFAULT;
+		if (isset($_REQUEST['filter']))
+		{
+			$this->filter = (int)$_REQUEST['filter'];
+		}
+	}
+	
 	protected function show_body()
 	{
 		global $sort_type;
@@ -169,47 +187,63 @@ class Page extends TournamentPageBase
 			$sort_type = (int)$_REQUEST['sort'];
 		}
 		
-		$roles = POINTS_ALL;
-		if (isset($_REQUEST['roles']))
+		$condition = new SQL(' WHERE s.league_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
+		$condition->add(get_roles_condition($this->roles));
+		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$roles = (int)$_REQUEST['roles'];
+			$condition->add(' AND g.is_rating <> 0');
+		}
+		if ($this->filter & FLAG_FILTER_NO_RATING)
+		{
+			$condition->add(' AND g.is_rating = 0');
 		}
 		
-		$filter = FLAG_FILTER_DEFAULT;
-		if (isset($_REQUEST['filter']))
-		{
-			$filter = (int)$_REQUEST['filter'];
-		}
-		
-		echo '<table class="transp" width="100%"><tr><td>';
-		show_roles_select($roles, 'filterChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
-		echo '&emsp;&emsp;';
-		show_date_filter();
-		echo '&emsp;&emsp;';
-		show_checkbox_filter(array(get_label('rating games')), $filter, 'filterChanged');
-		echo '</td></tr></table>';
-
-		$numbers = array();
-		$query = new DbQuery(
-			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ', 1, 0)) as killed_first, SUM(IF(p.kill_type = ' . KILL_TYPE_NIGHT . ', 1, 0)) as killed_night' .
-			' FROM players p JOIN games g ON p.game_id = g.id WHERE g.tournament_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
-		$query->add(get_roles_condition($roles));
-		if ($filter & FLAG_FILTER_RATING)
-		{
-			$query->add(' AND g.is_rating <> 0');
-		}
-		if ($filter & FLAG_FILTER_NO_RATING)
-		{
-			$query->add(' AND g.is_rating = 0');
-		}
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
-			$query->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+			$condition->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
 		}
 		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
 		{
-			$query->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
+		
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
+		echo '&emsp;&emsp;';
+		show_roles_select($this->roles, 'filterRoles()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
+		show_checkbox_filter(array(get_label('rating games')), $this->filter);
+		echo '</td></tr></table></p>';
+		
+		$ccc_id = $ccc_filter->get_id();
+		switch ($ccc_filter->get_type())
+		{
+		case CCCF_CLUB:
+			if ($ccc_id > 0)
+			{
+				$condition->add(' AND g.club_id = ?', $ccc_id);
+			}
+			else if ($ccc_id == 0 && $_profile != NULL)
+			{
+				$condition->add(' AND g.club_id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $_profile->user_id);
+			}
+			break;
+		case CCCF_CITY:
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE c.id = ? OR c.area_id = ?)', $ccc_id, $ccc_id);
+			break;
+		case CCCF_COUNTRY:
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE c.country_id = ?)', $ccc_id);
+			break;
+		}
+		
+		$numbers = array();
+		$query = new DbQuery(
+			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ', 1, 0)) as killed_first, SUM(IF(p.kill_type = ' . KILL_TYPE_NIGHT . ', 1, 0)) as killed_night' .
+			' FROM players p JOIN games g ON p.game_id = g.id JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id', $condition);
 		$query->add(' GROUP BY p.number');
 		while ($row = $query->next())
 		{
@@ -217,10 +251,10 @@ class Page extends TournamentPageBase
 		}
 		usort($numbers, "compare_numbers");
 			
-		$ref = 'tournament_by_numbers.php?id=' . $this->id;
-		if ($roles != POINTS_ALL)
+		$ref = 'by_numbers.php?ccc=' . $ccc_filter->get_code();
+		if ($this->roles != POINTS_ALL)
 		{
-			$ref .= '&roles=' . $roles;
+			$ref .= '&roles=' . $this->roles;
 		}
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td>' . sorting_link($ref, SORT_TYPE_BY_NUMBERS, get_label('Number')) . '</td>';
@@ -279,16 +313,17 @@ class Page extends TournamentPageBase
 	
 	protected function js()
 	{
-?>		
-		function filterChanged()
+		parent::js();
+?>
+		function filterRoles()
 		{
-			goTo({ roles: $('#roles').val(), filter: checkboxFilterFlags() });
+			goTo({roles: $("#roles").val()});
 		}
 <?php
 	}
 }
 
 $page = new Page();
-$page->run(get_label('Stats by Numbers'));
+$page->run(get_label('Statistics by numbers'));
 
 ?>

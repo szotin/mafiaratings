@@ -45,7 +45,7 @@ class CCCFilter
 			case CCCF_CLUB:
 				if ($this->id < 0)
 				{
-					$this->value = get_label('All');
+					$this->value = '';
 				}
 				else if ($this->id == 0)
 				{
@@ -73,7 +73,7 @@ class CCCFilter
 			case CCCF_CITY:
 				if ($this->id <= 0)
 				{
-					$this->value = get_label('All');
+					$this->value = '';
 				}
 				else
 				{
@@ -83,7 +83,7 @@ class CCCFilter
 			case CCCF_COUNTRY:
 				if ($this->id <= 0)
 				{
-					$this->value = get_label('All');
+					$this->value = '';
 				}
 				else
 				{
@@ -95,8 +95,9 @@ class CCCFilter
 	
 	function show($title, $on_select = NULL)
 	{
-		echo '<input type="text" class="dropdown" id="' . $this->name . '" value="' . $this->value . '" title="' . $title . '"/>';
+		echo '<input type="text" class="dropdown" id="' . $this->name . '" value="' . $this->value . '" title="' . $title . '" placeholder="' . get_label('Select country/city/club') . '"/>';
 		echo '<input type="image" class="dropdown-btn" src="images/dropdown.png" onclick="cccDrop()"/>';
+//		echo '<button class="small_icon" onclick="goTo({ccc:undefined,page:undefined})"><img src="images/clear.png" width="12"></button>';
 //		echo '<button class="dropdown-btn" onclick="cccDrop()"><img src="images/down.png" width="16" height="16"></button>';
 ?>
 		<script>

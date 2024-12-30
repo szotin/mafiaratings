@@ -6,6 +6,7 @@ require_once 'include/club.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/ccc_filter.php';
 
 define('FLAG_FILTER_TOURNAMENT', 0x0001);
 define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
@@ -27,23 +28,10 @@ class Page extends UserPageBase
 			}
 		}
 			
-		
-		$club_id = 0;
-		if (isset($_REQUEST['club']))
-		{
-			$club_id = $_REQUEST['club'];
-		}
-	
 		$roles = POINTS_ALL;
 		if (isset($_REQUEST['roles']))
 		{
 			$roles = (int)$_REQUEST['roles'];
-		}
-		
-		$year = 0;
-		if (isset($_REQUEST['year']))
-		{
-			$year = (int)$_REQUEST['year'];
 		}
 		
 		$filter = FLAG_FILTER_DEFAULT;
@@ -60,22 +48,38 @@ class Page extends UserPageBase
 		}
 		
 		echo '<table class="transp" width="100%"><tr><td>';
-		show_year_select($year, $min_time, $max_time, 'filterChanged()');
-		$query = new DbQuery('SELECT DISTINCT c.id, c.name FROM players p, games g, clubs c WHERE p.game_id = g.id AND g.club_id = c.id AND p.user_id = ? ORDER BY c.name', $this->id);
-		echo ' <select id="club" onChange="filterChanged()">';
-		show_option(ALL_CLUBS, $club_id, get_label('All clubs'));
-		while ($row = $query->next())
-		{
-			list($c_id, $c_name) = $row;
-			show_option($c_id, $club_id, $c_name);
-		}
-		echo '</select> ';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
+		echo '&emsp;&emsp;';
 		show_roles_select($roles, 'filterChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
-		echo ' ';
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table>';
 		
-		$condition = get_year_condition($year);
+		$condition = new SQL();
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
+		{
+		case CCCF_CLUB:
+			if ($ccc_id > 0)
+			{
+				$condition->add(' AND g.club_id = ?', $ccc_id);
+			}
+			else if ($ccc_id == 0 && $_profile != NULL)
+			{
+				$condition->add(' AND g.club_id IN (' . $_profile->get_comma_sep_clubs() . ')');
+			}
+			break;
+		case CCCF_CITY:
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities i ON i.id = a.city_id WHERE i.id = ? OR i.area_id = ?)', $ccc_id, $ccc_id);
+			break;
+		case CCCF_COUNTRY:
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities i ON i.id = a.city_id WHERE i.country_id = ?)', $ccc_id);
+			break;
+		}
+		
 		if ($filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NOT NULL');
@@ -92,10 +96,16 @@ class Page extends UserPageBase
 		{
 			$condition->add(' AND g.is_rating <> 0');
 		}
-		if ($club_id > 0)
+		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
-			$condition->add(' AND g.club_id = ?', $club_id);
+			$condition->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
 		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
+		
 		$stats = new PlayerStats($this->id, $roles, $condition);
 		$mafs_in_legacy = $stats->guess3maf * 3 + $stats->guess2maf * 2 + $stats->guess1maf;
 		
@@ -335,14 +345,7 @@ class Page extends UserPageBase
 			$playing_count = 0;
 			$civils_win_count = 0;
 			$mafia_win_count = 0;
-			if ($club_id > 0)
-			{
-				$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND moderator_id = ? AND is_canceled = FALSE GROUP BY result', $club_id, $this->id);
-			}
-			else
-			{
-				$query = new DbQuery('SELECT result, count(*) FROM games WHERE moderator_id = ? AND is_canceled = FALSE GROUP BY result', $this->id);
-			}
+			$query = new DbQuery('SELECT result, count(*) FROM games WHERE moderator_id = ? AND is_canceled = FALSE GROUP BY result', $this->id);
 			while ($row = $query->next())
 			{
 				switch ($row[0])
@@ -373,10 +376,6 @@ class Page extends UserPageBase
 			if ($civils_win_count + $mafia_win_count > 0)
 			{
 				$query = new DbQuery('SELECT COUNT(DISTINCT p.user_id), SUM(p.warns) FROM players p, games g WHERE p.game_id = g.id AND g.moderator_id = ?', $this->id);
-				if ($club_id > 0)
-				{
-					$query->add(' AND g.club_id = ?', $club_id);
-				}
 				
 				list ($players_moderated, $gave_warnings) = $query->record(get_label('player'));
 				echo '<tr><td class="dark">'.get_label('Refereed players').':</td><td>' . $players_moderated . '</td></tr>';
@@ -391,7 +390,7 @@ class Page extends UserPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({filter: checkboxFilterFlags(), club: $('#club').val(), roles: $('#roles').val(), year: $('#year').val()});
+			goTo({filter: checkboxFilterFlags(), roles: $('#roles').val()});
 		}
 <?php
 	}

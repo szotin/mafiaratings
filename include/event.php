@@ -307,7 +307,7 @@ class Event
 		$log_details->currency_id = $this->currency_id;
 		$log_details->address_name = $addr_name;
 		$log_details->address_id = $this->addr_id;
-		$log_details->start = format_date('d/m/y H:i', $this->timestamp, $timezone);
+		$log_details->start = format_date($this->timestamp, $timezone, true);
 		$log_details->duration = $this->duration;
 		$log_details->flags = $this->flags;
 		$log_details->langs = $this->langs;
@@ -369,7 +369,7 @@ class Event
 		if ($show_details)
 		{
 			echo '<table class="bordered" width="100%"><tr>';
-			echo '<td align="center" class="dark"><p>' . format_date('l, F d, Y, H:i', $this->timestamp, $this->timezone) . '<br>';
+			echo '<td align="center" class="dark"><p>' . format_date($this->timestamp, $this->timezone, true) . '<br>';
 			if ($this->addr_url == '')
 			{
 				echo get_label('At [0]', addr_label($this->addr, $this->city, $this->country));
@@ -823,11 +823,11 @@ function show_event_selector($event_id, $form_name, $select_name, $perm_flags, $
 		}
 		if ($clubs_count > 1)
 		{
-			echo '>' . get_label('[0]: [1] at [2]', $event_name, format_date('D F d H:i', $event_start_time, $event_timezone), $club_name) . '</option>';
+			echo '>' . get_label('[0]: [1] at [2]', $event_name, format_date($event_start_time, $event_timezone, true), $club_name) . '</option>';
 		}
 		else
 		{
-			echo '>' . get_label('[0]: [1]', $event_name, format_date('D F d H:i', $event_start_time, $event_timezone)) . '</option>';
+			echo '>' . get_label('[0]: [1]', $event_name, format_date($event_start_time, $event_timezone, true)) . '</option>';
 		}
 	}
 	echo '</select>';
@@ -959,7 +959,7 @@ class EventPageBase extends PageBase
 		
 		echo '<td valign="top"><h2 class="event">' . $this->event->get_full_name() . '</h2><br><h3>' . $this->_title;
 		$time = time();
-		echo '</h3><p class="subtitle">' . format_date('l, F d, Y, H:i', $this->event->timestamp, $this->event->timezone) . '</p>';
+		echo '</h3><p class="subtitle">' . format_date($this->event->timestamp, $this->event->timezone, true) . '</p>';
 		if (!is_null($this->event->currency_pattern) && !is_null($this->event->fee))
 		{
 			echo '<p class="subtitle"><b>'.get_label('Admission rate').': '.format_currency($this->event->fee, $this->event->currency_pattern).'</b></p>';

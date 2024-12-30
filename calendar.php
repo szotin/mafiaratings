@@ -93,7 +93,7 @@ class Page extends GeneralPageBase
 		{
 			list ($id, $name, $start_time, $duration, $flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $city_name, $country_name, $event_timezone, $addr, $addr_url, $come_odds, $bringing, $late) = $row;
 			
-			$_date_str = format_date('l, F d, Y', $start_time, $event_timezone);
+			$_date_str = format_date($start_time, $event_timezone);
 			if ($date_str != $_date_str)
 			{
 				$date_str = $_date_str;
@@ -106,7 +106,6 @@ class Page extends GeneralPageBase
 					echo '</table><br>';
 				}
 				$day_counter = 0;
-//				$weekday = format_date('N', $start_time, $event_timezone);
 				echo '<table class="bordered" width="100%">';
 				echo '<tr><th colspan="' . COLUMN_COUNT . '" align="center" class="darkest">' . $date_str . '</th></tr>';
 			}
@@ -130,7 +129,7 @@ class Page extends GeneralPageBase
 				set($tournament_id, $tournament_name, $tournament_flags)->
 				set($club_id, $club_name, $club_flags);
 			$event_pic->show(ICONS_DIR, false);
-			echo '</a><br><b>' . format_date('H:i', $start_time, $event_timezone) . ' - ' . format_date('H:i', $start_time + $duration, $event_timezone) . '</b><br>';
+			echo '</a><br><b>' . format_date($start_time + $duration, $event_timezone, true) . '</b><br>';
 			
 //			echo '<a href="event_info.php?attend&bck=1&id=' . $id . '" title="' . get_label('I am coming') . '"><img src="images/accept.png" border="0"></a>&nbsp;';
 //			echo '<a href="?decline=' . $id . '" title="' . get_label('I am not coming') . '"><img src="images/delete.png" border="0"></a>';
@@ -170,8 +169,8 @@ class Page extends GeneralPageBase
 		else 
 		{
 			$timezone = get_timezone();
-			$date = format_date('j M', $time, $timezone);
-			$end_date = format_date('j M Y', $end_time, $timezone);
+			$date = format_date($time, $timezone);
+			$end_date = format_date($end_time, $timezone);
 		
 			echo '<b>' . get_label('There is no games from [0] to [1]', $date, $end_date) . '</b>';
 		}

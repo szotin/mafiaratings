@@ -83,7 +83,7 @@ class Page extends SeriesPageBase
 			echo '<tr' . $light_class . ' style="height: 120px;"><td align="center" colspan="2"><a href="' . $url . '?bck=1&id=' . $tournament_id . '">';
 			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
 			$tournament_pic->show(ICONS_DIR, false);
-			echo '</a><p>' . format_date('l, F d, Y', $tournament_start_time, $tournament_timezone) . '</p></td></tr>';
+			echo '</a><p>' . format_date_period($tournament_start_time, $tournament_duration, $tournament_timezone) . '</p></td></tr>';
 			
 			echo '<tr' . $dark_class . ' style="height: 40px;"><td align="center">' . $tournament_club_name . '</td><td width="34">';
 			$club_pic->set($tournament_club_id, $tournament_club_name, $tournament_club_flags);

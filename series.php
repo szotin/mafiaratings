@@ -6,6 +6,7 @@ require_once 'include/pages.php';
 require_once 'include/series.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', SERIES_PAGE_SIZE);
 
@@ -40,6 +41,8 @@ class Page extends GeneralPageBase
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		if (!$this->future)
 		{
 			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $this->filter);
@@ -75,13 +78,22 @@ class Page extends GeneralPageBase
 			}
 		}
 		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND s.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND s.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
+		
 		echo '<div class="tab">';
 		echo '<button ' . ($this->future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
 		echo '<button ' . (!$this->future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
 		echo '</div>';
 		echo '<div class="tabcontent">';
 		
-		list ($count) = Db::record(get_label('sеriеs'), 'SELECT count(*)', $condition);
+		list ($count) = Db::record(get_label('series'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
 		$colunm_counter = 0;
@@ -101,7 +113,7 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker">';
-		echo '<td colspan="2" align="center">' . get_label('Sеriеs') . '</td>';
+		echo '<td colspan="2" align="center">' . get_label('Series') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Tournaments') . '</td></tr>';
 		
 		$timezone = get_timezone();
@@ -136,7 +148,7 @@ class Page extends GeneralPageBase
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . format_date('F d, Y', $series_time, $timezone) . '</a></td>';
+			echo '</b><br>' . format_date_period($series_time, $series_duration, $timezone) . '</a></td>';
 			echo '</tr></table>';
 			echo '</td>';
 			

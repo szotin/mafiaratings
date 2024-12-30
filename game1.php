@@ -276,6 +276,8 @@ class Page extends PageBase
 	
 	private function select_round()
 	{
+		global $_lang;
+		
 		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 			Db::record(get_label('event'), 
 			'SELECT e.misc, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags'.
@@ -313,16 +315,22 @@ class Page extends PageBase
 			$rounds = array();
 		}
 		
-		$query = new DbQuery('SELECT round_num, user_id FROM current_games WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table);
+		$query = new DbQuery(
+			'SELECT g.round_num, g.user_id, n.name'.
+			' FROM current_games g'.
+			' JOIN users u ON u.id = g.user_id'.
+			' JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0'.
+			' WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table);
 		while ($row = $query->next())
 		{
-			list ($round, $user_id) = $row;
+			list ($round, $user_id, $user_name) = $row;
 			while ($round >= count($rounds))
 			{
 				$rounds[] = NULL;
 			}
 			$rounds[$round] = new stdClass();
 			$rounds[$round]->user_id = (int)$user_id;
+			$rounds[$round]->user_name = $user_name;
 		}
 		
 		$query = new DbQuery('SELECT id, game_number FROM games WHERE event_id = ? AND game_table = ?  AND is_canceled = FALSE AND result > 0', $this->event_id, $this->table);
@@ -374,6 +382,7 @@ class Page extends PageBase
 				$normal_class = '';
 				$text = '';
 				$url = 'game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
+				$onclick = '';
 			}
 			else if (isset($rounds[$i]->game_id))
 			{
@@ -381,13 +390,23 @@ class Page extends PageBase
 				$normal_class = ' class="darker"';
 				$text = get_label('Complete');
 				$url = 'view_game.php?bck=1&id=' . $rounds[$i]->game_id;
+				$onclick = '';
 			}
 			else
 			{
 				$darker_class = ' class="darker"';
 				$normal_class = ' class="dark"';
 				$text = get_label('Playing now');
-				$url = 'game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
+				if ($rounds[$i]->game_id == $_profile->user_id)
+				{
+					$url = 'game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
+					$onclick = '';
+				}
+				else
+				{
+					$url = 'game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
+					$onclick = ' onclick="mr.ownGame('.$this->event_id.','.$this->table.','.$this->round.','.$rounds[$i]->user_id.',\''.get_label('[0] is already moderating this game. Do you want to take is over from them?', $rounds[$i]->user_name).'\')"';
+				}
 			}
 			
 			echo '<tr' . $darker_class . '><td align="center"><p><b>' . get_label('Game [0]', $i + 1) . '</b></p></td></tr>';

@@ -9,6 +9,7 @@ require_once 'include/ccc_filter.php';
 require_once 'include/scoring.php';
 require_once 'include/tournament.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
@@ -32,6 +33,9 @@ class Page extends UserPageBase
 		
 		echo '<table class="transp" width="100%"><tr><td>';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('with video')), $filter, 'filterTournaments');
 		echo '</td></tr></table>';
 		
@@ -73,12 +77,21 @@ class Page extends UserPageBase
 			$condition->add(' AND NOT EXISTS (SELECT v.id FROM videos v WHERE v.tournament_id = t.id)');
 		}
 		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND t.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND t.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
+		
 		list ($count) = Db::record(get_label('tournament'), 'SELECT count(DISTINCT t.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$order_by = ' ORDER BY t.start_time DESC, t.id DESC';
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(DISTINCT p.game_id), SUM(p.won), ' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(DISTINCT p.game_id), SUM(p.won), ' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
 			$condition);
 		$query->add(' GROUP BY t.id ' . $order_by . ' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -90,7 +103,7 @@ class Page extends UserPageBase
 		{
 			$tournament = new stdClass();
 			list (
-				$tournament->id, $tournament->name, $tournament->flags, $tournament->time, $tournament->timezone, 
+				$tournament->id, $tournament->name, $tournament->flags, $tournament->time, $tournament->duration, $tournament->timezone, 
 				$tournament->club_id, $tournament->club_name, $tournament->club_flags, $tournament->languages, 
 				$tournament->addr_id, $tournament->addr, $tournament->addr_flags, $tournament->place,
 				$tournament->rating, $tournament->games_played, $tournament->games_won, $tournament->videos_count) = $row;
@@ -161,7 +174,7 @@ class Page extends UserPageBase
 			$club_pic->show(ICONS_DIR, false, 40);
 			echo '</td><td>';
 			echo '<b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name . '</b>';
-			echo '<br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</a></td>';
+			echo '<br>' . format_date_period($tournament->time, $tournament->duration, $tournament->timezone) . '</a></td>';
 			foreach ($tournament->series as $series)
 			{
 				echo '<td width="50" align="center" valign="center">';

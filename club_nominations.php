@@ -5,6 +5,7 @@ require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/club.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('FLAG_FILTER_TOURNAMENT', 0x0001);
 define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
@@ -107,6 +108,9 @@ class Page extends ClubPageBase
 	
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		show_roles_select($roles, 'filterChanged()', get_label('Use only the stats of a specific role.'));
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		echo ' <select id="min" onchange="filterChanged()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
 		$max_option = round($this->games_count / 20) * 10;
 		for ($i = 0; $i <= $max_option; $i += 10)
@@ -120,7 +124,8 @@ class Page extends ClubPageBase
 				show_option($i, $this->min_games, get_label('[0] or more games', $i));
 			}
 		}
-		echo '</select> ';
+		echo '</select>';
+		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter, 'filterChanged');
 		echo '</td><td align="right">';
 		echo '<select id="nom" onchange="filterChanged()">';
@@ -147,6 +152,15 @@ class Page extends ClubPageBase
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
 			$condition->add(' AND g.is_rating = 0');
+		}
+		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
 		$query = new DbQuery(

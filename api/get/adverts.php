@@ -33,13 +33,13 @@ class ApiPage extends GetApiPageBase
 		}
 		
 		$from = 0;
-		if (isset($_REQUEST['from']))
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
 			$from = (int)$_REQUEST['from'];
 		}
 		
 		$to = 0;
-		if (isset($_REQUEST['to']))
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
 		{
 			$to = (int)$_REQUEST['to'];
 		}

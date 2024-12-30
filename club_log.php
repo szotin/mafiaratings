@@ -97,7 +97,7 @@ class Page extends ClubPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker">';
 		echo '<td width="52"></td>';
-		echo '<td width="90">' . get_label('Time') . '</td>';
+		echo '<td width="150">' . get_label('Time') . '</td>';
 		echo '<td>' . get_label('Page') . '</td>';
 		echo '<td width="100">' . get_label('User') . '</td>';
 		echo '<td width="120">' . get_label('Object') . '</td>';
@@ -124,7 +124,7 @@ class Page extends ClubPageBase
 			}
 			echo '</td>';
 			
-			echo '<td class="dark">' . format_date('d/m/y H:i', $time, get_timezone()) . '</td>';
+			echo '<td class="dark" align="center">' . format_date($time, get_timezone(), true) . '</td>';
 			
 			echo '<td>' . $link . '</td>';
 			

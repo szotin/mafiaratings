@@ -1108,6 +1108,28 @@ var mr = new function()
 		dlg.form("form/game_bonus.php?game_id=" + gameId + '&player_num=' + playerNum, refr, 500);
 	}
 	
+	this.gameBonus = function(gameId, playerNum)
+	{
+		dlg.form("form/game_bonus.php?game_id=" + gameId + '&player_num=' + playerNum, refr, 500);
+	}
+	
+	this.ownGame = function(eventId, table, round, userId, promptStr)
+	{
+		function _own()
+		{
+			json.post("api/ops/game.php", { op: 'own_current', game_id: gameId }, goTo('game1.php?event_id='+eventId+'&table='+table+'&round='+round));
+		}
+
+		if (typeof promptStr == "string")
+		{
+			dlg.yesNo(promptStr, null, null, _own);
+		}
+		else
+		{
+			_own();
+		}
+	}
+	
 	//--------------------------------------------------------------------------------------
 	// game objections
 	//--------------------------------------------------------------------------------------

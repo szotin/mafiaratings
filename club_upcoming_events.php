@@ -101,7 +101,7 @@ class Page extends ClubPageBase
 				echo '</td></tr>';	
 			}
 			
-			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '"><b>' . format_date('l, F d, Y <br> H:i', $start_time, $event_timezone) . '</b><br>';
+			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '"><b>' . format_date($start_time, $event_timezone, true) . '</b><br>';
 			$this->event_pic->
 				set($id, $name, $flags)->
 				set($tour_id, $tour_name, $tour_flags)->

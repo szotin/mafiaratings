@@ -84,7 +84,7 @@ class Page extends PageBase
 			{
 				echo get_label('Responce to the objection #[0]', $parent_id);
 			}
-			echo '</b><br><i>' . format_date('l, F d, Y, H:i', $timestamp, $timezone) . '</i></p><p>' . $message . '</p></td></tr>';
+			echo '</b><br><i>' . format_date($timestamp, $timezone, true) . '</i></p><p>' . $message . '</p></td></tr>';
 			$is_empty = false;
 		}
 		echo '</table>';

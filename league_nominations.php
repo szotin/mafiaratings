@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/series.php';
+require_once 'include/league.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
@@ -12,7 +12,7 @@ define('FLAG_FILTER_NO_RATING', 0x0002);
 
 define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING);
 
-class Page extends SeriesPageBase
+class Page extends LeaguePageBase
 {
 	private $roles;
 	private $min_games;
@@ -67,8 +67,7 @@ class Page extends SeriesPageBase
 		}
 		
 		date_default_timezone_set(get_timezone());
-		$subseries_csv = get_subseries_csv($this->id);
-		$this->condition = new SQL(' WHERE g.is_canceled = FALSE AND g.result > 0 AND st.series_id IN ('.$subseries_csv.')');
+		$this->condition = new SQL(' WHERE g.is_canceled = FALSE AND g.result > 0 AND s.league_id = ?', $this->id);
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
 			$this->condition->add(' AND g.is_rating <> 0');
@@ -109,7 +108,7 @@ class Page extends SeriesPageBase
 			$this->condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities ct ON ct.id = a.city_id JOIN series_tournaments st ON st.tournament_id = g.tournament_id', $this->condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities ct ON ct.id = a.city_id JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id', $this->condition);
 		$this->condition->add(get_roles_condition($this->roles));
 		
 		if (isset($_REQUEST['min']))
@@ -179,6 +178,7 @@ class Page extends SeriesPageBase
 			'SELECT p.user_id, nu.name, u.flags, count(*) as cnt, (' . $this->noms[$this->nom][1] . ') as abs, (' . $this->noms[$this->nom][1] . ') / (' . $this->noms[$this->nom][2] . ') as val, c.id, c.name, c.flags' .
 				' FROM players p JOIN games g ON p.game_id = g.id' .
 				' JOIN series_tournaments st ON st.tournament_id = g.tournament_id' .
+				' JOIN series s ON s.id = st.series_id' .
 				' JOIN users u ON u.id = p.user_id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 

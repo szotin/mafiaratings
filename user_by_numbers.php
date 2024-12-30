@@ -6,6 +6,7 @@ require_once 'include/club.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/ccc_filter.php';
 
 define('SORT_TYPE_BY_NUMBERS', 0);
 define('SORT_TYPE_BY_GAMES', 1);
@@ -170,22 +171,10 @@ class Page extends UserPageBase
 			$sort_type = (int)$_REQUEST['sort'];
 		}
 		
-		$club_id = 0;
-		if (isset($_REQUEST['club']))
-		{
-			$club_id = $_REQUEST['club'];
-		}
-	
 		$roles = POINTS_ALL;
 		if (isset($_REQUEST['roles']))
 		{
 			$roles = (int)$_REQUEST['roles'];
-		}
-		
-		$year = 0;
-		if (isset($_REQUEST['year']))
-		{
-			$year = (int)$_REQUEST['year'];
 		}
 		
 		$filter = FLAG_FILTER_DEFAULT;
@@ -202,18 +191,13 @@ class Page extends UserPageBase
 		}
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
-		show_year_select($year, $min_time, $max_time, 'filterChanged()');
-		$query = new DbQuery('SELECT DISTINCT c.id, c.name FROM players p, games g, clubs c WHERE p.game_id = g.id AND g.club_id = c.id AND p.user_id = ? ORDER BY c.name', $this->id);
-		echo ' <select id="club" onChange="filterChanged()">';
-		show_option(0, $club_id, get_label('All clubs'));
-		while ($row = $query->next())
-		{
-			list($c_id, $c_name) = $row;
-			show_option($c_id, $club_id, $c_name);
-		}
-		echo '</select> ';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
+		echo '&emsp;&emsp;';
 		show_roles_select($roles, 'filterChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
-		echo ' ';
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 
@@ -222,7 +206,28 @@ class Page extends UserPageBase
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ', 1, 0)) as killed_first, SUM(IF(p.kill_type = ' . KILL_TYPE_NIGHT . ', 1, 0)) as killed_night' .
 			' FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
 		$query->add(get_roles_condition($roles));
-		$query->add(get_year_condition($year));
+		
+		$ccc_id = $ccc_filter->get_id();
+		switch($ccc_filter->get_type())
+		{
+		case CCCF_CLUB:
+			if ($ccc_id > 0)
+			{
+				$query->add(' AND g.club_id = ?', $ccc_id);
+			}
+			else if ($ccc_id == 0 && $_profile != NULL)
+			{
+				$query->add(' AND g.club_id IN (' . $_profile->get_comma_sep_clubs() . ')');
+			}
+			break;
+		case CCCF_CITY:
+			$query->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities i ON i.id = a.city_id WHERE i.id = ? OR i.area_id = ?)', $ccc_id, $ccc_id);
+			break;
+		case CCCF_COUNTRY:
+			$query->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities i ON i.id = a.city_id WHERE i.country_id = ?)', $ccc_id);
+			break;
+		}
+		
 		if ($filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$query->add(' AND g.tournament_id IS NOT NULL');
@@ -239,9 +244,13 @@ class Page extends UserPageBase
 		{
 			$query->add(' AND g.is_rating = 0');
 		}
-		if ($club_id > 0)
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
-			$query->add(' AND g.club_id = ?', $club_id);
+			$query->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$query->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		$query->add(' GROUP BY p.number');
 		while ($row = $query->next())
@@ -310,7 +319,7 @@ class Page extends UserPageBase
 ?>		
 		function filterChanged()
 		{
-			goTo({ roles: $('#roles').val(), filter: checkboxFilterFlags(), club: $('#club').val(), year: $('#year').val() });
+			goTo({ roles: $('#roles').val(), filter: checkboxFilterFlags()});
 		}
 <?php
 	}

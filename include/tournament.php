@@ -249,7 +249,7 @@ class TournamentPageBase extends PageBase
 		
 		echo '<td valign="top"><h2 class="tournament">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
-		echo '</h3><p class="subtitle">' . format_date('l, F d, Y', $this->start_time, $this->timezone);
+		echo '</h3><p class="subtitle">' . format_date_period($this->start_time, $this->duration, $this->timezone);
 		if (!is_null($this->mwt_id))
 		{
 			echo ' (<a href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank">' . get_label('MWT link') . '</a>)';

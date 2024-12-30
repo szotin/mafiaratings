@@ -87,4 +87,25 @@ function get_year_condition($year, $timezone = NULL)
 	return $year_condition;
 }
 
+function show_date_filter()
+{
+	$timezone = get_timezone();
+	$from = '';
+	$to = '';
+	if (isset($_REQUEST['from']))
+	{
+		$from = $_REQUEST['from'];
+	}
+	if (isset($_REQUEST['to']))
+	{
+		$to = $_REQUEST['to'];
+	}
+	
+	echo get_label('Dates') . ': ';
+	echo '<input type="date" id="datefilter-from" value="' . $from . '" max="' . $to . '" onchange="goTo({page:undefined,from:$(\'#datefilter-from\').val()})">';
+	echo ' - ';
+	echo '<input type="date" id="datefilter-to" value="' . $to . '" min="' . $from . '" onchange="goTo({page:undefined,to:$(\'#datefilter-to\').val()})">';
+	echo '<button class="small_icon" onclick="goTo({from:undefined,to:undefined,page:undefined})"><img src="images/clear.png" width="12"></button>';
+}
+
 ?>

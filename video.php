@@ -55,11 +55,11 @@ class Page extends PageBase
 		
 		if ($this->game_id != NULL)
 		{
-			$this->_title = get_label('Game [0]: [1] ([2])', $this->game_id, $this->title, format_date('j M Y', $this->video_time, get_timezone()));
+			$this->_title = get_label('Game [0]: [1] ([2])', $this->game_id, $this->title, format_date($this->video_time, get_timezone()));
 		}
 		else
 		{
-			$this->_title = get_label('[0] ([1])', $this->title, format_date('j M Y', $this->video_time, get_timezone()));
+			$this->_title = get_label('[0] ([1])', $this->title, format_date($this->video_time, get_timezone()));
 		}
 	}
 	

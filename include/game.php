@@ -3013,7 +3013,7 @@ class Game
 					$log_details->name = $event_name;
 					$log_details->address_name = $address_name;
 					$log_details->address_id = $address_id;
-					$log_details->start = format_date('d/m/y H:i', $event_start, $timezone);
+					$log_details->start = format_date($event_start, $timezone, true);
 					$log_details->duration = $event_duration;
 					$log_details->flags = EVENT_FLAG_ALL_CAN_REFEREE;
 					$log_details->langs = $club_langs;

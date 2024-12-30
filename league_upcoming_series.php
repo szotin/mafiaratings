@@ -73,7 +73,7 @@ class Page extends LeaguePageBase
 				echo '</td></tr>';	
 			}
 			
-			echo '<tr><td align="center"><a href="series_info.php?bck=1&id=' . $id . '">' . format_date('F d, Y', $start_time, $timezone) . ' - ' . format_date('F d, Y', $start_time + $duration, $timezone) . '<br>';
+			echo '<tr><td align="center"><a href="series_info.php?bck=1&id=' . $id . '">' . format_date_period($start_time, $duration, $timezone) . '<br>';
 			$series_pic->set($id, $name, $flags);
 			$series_pic->show(ICONS_DIR, false);
 			echo '</a><br><b>' . $name;

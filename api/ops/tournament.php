@@ -1285,9 +1285,9 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(get_label('comment'), 'INSERT INTO tournament_comments (time, user_id, comment, tournament_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $tournament_id, $lang);
 		
-		list($tournament_id, $tournament_name, $tournament_start_time, $tournament_timezone, $tournament_addr) = 
+		list($tournament_id, $tournament_name, $tournament_start_time, $tournament_duration, $tournament_timezone, $tournament_addr) = 
 			Db::record(get_label('tournament'), 
-				'SELECT e.id, e.name, e.start_time, c.timezone, a.address FROM tournaments e' .
+				'SELECT e.id, e.name, e.start_time, e.duration, c.timezone, a.address FROM tournaments e' .
 				' JOIN addresses a ON a.id = e.address_id' . 
 				' JOIN cities c ON c.id = a.city_id' . 
 				' WHERE e.id = ?', $tournament_id);
@@ -1321,8 +1321,7 @@ class ApiPage extends OpsApiPageBase
 				'user_name' => new Tag($user_name),
 				'tournament_id' => new Tag($tournament_id),
 				'tournament_name' => new Tag($tournament_name),
-				'tournament_date' => new Tag(format_date('l, F d, Y', $tournament_start_time, $tournament_timezone, $user_lang)),
-				'tournament_time' => new Tag(format_date('H:i', $tournament_start_time, $tournament_timezone, $user_lang)),
+				'tournament_date' => new Tag(format_date_period($tournament_start_time, $tournament_timezone, false, $user_lang)),
 				'addr' => new Tag($tournament_addr),
 				'code' => new Tag($code),
 				'sender' => new Tag($_profile->user_name),

@@ -7,6 +7,7 @@ require_once 'include/pages.php';
 require_once 'include/tournament.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
@@ -41,10 +42,28 @@ class Page extends SeriesPageBase
 	{
 		global $_profile, $_page, $_lang;
 		
+		$stars = 0;
+		if (isset($_REQUEST['stars']))
+		{
+			$stars = (int)$_REQUEST['stars'];
+		}
+		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
+		echo '&emsp;&emsp;';
+		echo get_label('Stars') . ': <select id="starsfilter" onchange="goTo({page:undefined,stars:$(\'#starsfilter\').val()})">';
+		show_option(0, $stars, '');
+		show_option(1, $stars, '★');
+		show_option(2, $stars, '★★');
+		show_option(3, $stars, '★★★');
+		show_option(4, $stars, '★★★★');
+		show_option(5, $stars, '★★★★★');
+		echo '</select>';
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		if (!$this->future)
 		{
 			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $this->filter);
@@ -119,6 +138,20 @@ class Page extends SeriesPageBase
 			break;
 		}
 		
+		if ($stars > 0)
+		{
+			$condition->add(' AND st.stars = ?', $stars);
+		}
+		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND t.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND t.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
+		
 		echo '<div class="tab">';
 		echo '<button ' . ($this->future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
 		echo '<button ' . (!$this->future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
@@ -161,11 +194,11 @@ class Page extends SeriesPageBase
 				$tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
 			if ($this->future)
 			{
-				$m = format_date('F Y', $tournament->time + $tournament->duration, $tournament->timezone);
+				$m = format_month($tournament->time + $tournament->duration, $tournament->timezone);
 			}
 			else
 			{
-				$m = format_date('F Y', $tournament->time, $tournament->timezone);
+				$m = format_month($tournament->time, $tournament->timezone);
 			}
 			if ($first_month_tournament == NULL || $first_month_tournament->month != $m)
 			{
@@ -297,7 +330,7 @@ class Page extends SeriesPageBase
 			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
 			$club_pic->show(ICONS_DIR, false, 40);
 			echo '</td>';
-			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</td>';
+			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date_period($tournament->time, $tournament->duration, $tournament->timezone) . '</td>';
 			echo '</tr></table></td>';
 			
 			if ($this->future)

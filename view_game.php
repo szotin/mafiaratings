@@ -154,7 +154,7 @@ class Page extends PageBase
 		
 		$this->game = new Game($json);
 		
-		$this->start_time = format_date('M j Y H:i', $this->start_time, $this->timezone);
+		$this->start_time = format_date($this->start_time, $this->timezone, true);
 		$this->duration = format_time($this->duration);
 		$this->language = get_lang_str($this->lang);
 		

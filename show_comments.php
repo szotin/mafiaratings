@@ -107,7 +107,7 @@ try
 		echo '</td>';
 		
 		echo '<td width="100%" valign="top" style="padding:8px;">';
-		echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' .  $user_name . '</a>: '; // . ', ' . format_date('H:i, d M y', $time, $timezone);
+		echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' .  $user_name . '</a>: '; // . ', ' . format_date($time, $timezone, true);
 		echo $comment;
 		echo '</td></tr>';
 		$no_content = false;

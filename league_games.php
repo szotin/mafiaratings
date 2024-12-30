@@ -1,6 +1,6 @@
 <?php
 
-require_once 'include/series.php';
+require_once 'include/league.php';
 require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/event.php';
@@ -21,7 +21,7 @@ define('FLAG_FILTER_NO_CANCELED', 0x0020);
 
 define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 
-class Page extends SeriesPageBase
+class Page extends LeaguePageBase
 {
 	private $result_filter;
 	private $is_admin;
@@ -57,9 +57,7 @@ class Page extends SeriesPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
 		
-		$subseries_csv = get_subseries_csv($this->id);
-		
-		$condition = new SQL(' WHERE st.series_id IN ('.$subseries_csv.')');
+		$condition = new SQL(' WHERE s.league_id = ?', $this->id);
 		if ($this->result_filter < 0)
 		{
 			$condition->add(' AND g.result <> 0');
@@ -144,7 +142,7 @@ class Page extends SeriesPageBase
 			break;
 		}
 		
-		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id', $condition);
+		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$is_user = is_permitted(PERMISSION_USER);
@@ -162,6 +160,7 @@ class Page extends SeriesPageBase
 		$query = new DbQuery(
 			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, a.id, a.name, a.flags FROM games g' .
 				' JOIN series_tournaments st ON st.tournament_id = g.tournament_id' .
+				' JOIN series s ON s.id = st.series_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN addresses a ON a.id = e.address_id' .

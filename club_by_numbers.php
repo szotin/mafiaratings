@@ -5,6 +5,7 @@ require_once 'include/player_stats.php';
 require_once 'include/club.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('SORT_TYPE_BY_NUMBERS', 0);
 define('SORT_TYPE_BY_GAMES', 1);
@@ -183,7 +184,9 @@ class Page extends ClubPageBase
 		
 		echo '<table class="transp" width="100%"><tr><td>';
 		show_roles_select($roles, 'filterChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
-		echo ' ';
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
 		echo '</td></tr></table>';
 
@@ -207,6 +210,14 @@ class Page extends ClubPageBase
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
 			$query->add(' AND g.is_rating = 0');
+		}
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$query->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$query->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		$query->add(' GROUP BY p.number');
 		while ($row = $query->next())

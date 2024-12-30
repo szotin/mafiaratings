@@ -8,6 +8,7 @@ require_once 'include/pages.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/user.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', GAMES_PAGE_SIZE);
 
@@ -106,6 +107,7 @@ class Page extends GeneralPageBase
 		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
+		echo '&emsp;&emsp;';
 		echo ' <select id="results" onChange="filterResults()" title="' . get_label('Filter games by result.') . '">';
 		show_option(-1, $this->result_filter, get_label('All games'));
 		show_option(1, $this->result_filter, get_label('Town wins'));
@@ -115,6 +117,9 @@ class Page extends GeneralPageBase
 			show_option(0, $this->result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '<p>';
 		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->flag_filter);
 		echo '</td></tr></table></p>';
 		
@@ -137,6 +142,15 @@ class Page extends GeneralPageBase
 		case CCCF_COUNTRY:
 			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities i ON i.id = a.city_id WHERE i.country_id = ?)', $ccc_id);
 			break;
+		}
+		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
@@ -217,7 +231,7 @@ class Page extends GeneralPageBase
 			{
 				echo $tournament_name . ': ';
 			}
-			echo $event_name . '<br>' . format_date('F d Y, H:i', $start, $timezone) . '</a>';
+			echo $event_name . '<br>' . format_date($start, $timezone, true) . '</a>';
 			if ($video_id != NULL)
 			{
 				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';

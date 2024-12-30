@@ -7,6 +7,7 @@ require_once 'include/pages.php';
 require_once 'include/tournament.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
@@ -45,6 +46,9 @@ class Page extends GeneralPageBase
 		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		if (!$this->future)
 		{
 			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $this->filter);
@@ -90,6 +94,15 @@ class Page extends GeneralPageBase
 			{
 				$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0');
 			}
+		}
+		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND t.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND t.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
 		$ccc_id = $ccc_filter->get_id();
@@ -155,11 +168,11 @@ class Page extends GeneralPageBase
 				$tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
 			if ($this->future)
 			{
-				$m = format_date('F Y', $tournament->time + $tournament->duration, $tournament->timezone);
+				$m = format_month($tournament->time + $tournament->duration, $tournament->timezone);
 			}
 			else
 			{
-				$m = format_date('F Y', $tournament->time, $tournament->timezone);
+				$m = format_month($tournament->time, $tournament->timezone);
 			}
 			if ($first_month_tournament == NULL || $first_month_tournament->month != $m)
 			{
@@ -284,7 +297,7 @@ class Page extends GeneralPageBase
 			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
 			$club_pic->show(ICONS_DIR, false, 40);
 			echo '</td>';
-			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</td>';
+			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date_period($tournament->time, $tournament->duration, $tournament->timezone) . '</td>';
 			echo '</tr></table></td>';
 			
 			if ($this->future)

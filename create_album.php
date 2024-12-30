@@ -35,7 +35,7 @@ class Page extends PageBase
 			$result = true;
 			echo ' selected';
 		}
-		echo '>' . $name . ': ' . format_date('D, M d, y', $timestamp, $timezone) . '</option>';
+		echo '>' . $name . ': ' . format_date($timestamp, $timezone) . '</option>';
 		return $result;
 	}
 	

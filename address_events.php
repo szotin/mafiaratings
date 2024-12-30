@@ -7,6 +7,7 @@ require_once 'include/address.php';
 require_once 'include/pages.php';
 require_once 'include/event.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 
@@ -34,6 +35,8 @@ class Page extends AddressPageBase
 		}
 		
 		echo '<table class="transp" width="100%"><tr><td>';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('with video'), get_label('tournament events'), get_label('unplayed events'), get_label('canceled events')), $filter, 'filterEvents');
 		echo '</td></tr></table>';
 		
@@ -43,7 +46,7 @@ class Page extends AddressPageBase
 			' JOIN addresses a ON a.id = e.address_id' . 
 			' JOIN cities ct ON ct.id = a.city_id' . 
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' . 
-			' WHERE e.address_id = ? AND e.start_time < UNIX_TIMESTAMP()', $this->id);
+			' WHERE e.address_id = ? AND e.start_time < UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0', $this->id);
 		if ($filter & FLAG_FILTER_VIDEOS)
 		{
 			$condition->add(' AND EXISTS (SELECT v.id FROM videos v WHERE v.event_id = e.id)');
@@ -77,11 +80,20 @@ class Page extends AddressPageBase
 			$condition->add(' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0');
 		}
 		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND e.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND e.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
+		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, ' .
+			'SELECT c.id, c.name, c.flags, e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, ' .
 				' (SELECT count(*) FROM games WHERE event_id = e.id AND result IN (1, 2)) as games,' .
 				' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 				' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
@@ -98,7 +110,7 @@ class Page extends AddressPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $games_count, $users_count, $videos_count) = $row;
+			list ($club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $event_time, $event_duration, $timezone, $tournament_id, $tournament_name, $tournament_flags, $games_count, $users_count, $videos_count) = $row;
 			
 			if ($event_flags & EVENT_FLAG_CANCELED)
 			{
@@ -123,7 +135,7 @@ class Page extends AddressPageBase
 				echo '</td>';
 			}
 			echo '<td style="padding-left:12px;"><b><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
-			echo '<br>' . format_date('F d, Y', $event_time, $timezone) . '</a></td>';
+			echo '<br>' . format_date($event_time, $timezone, true) . '</a></td>';
 			if ($videos_count > 0)
 			{
 				echo '<td align="right"><a href="event_videos.php?id=' . $event_id . '&bck=1" title="' . get_label('[0] videos from [1]', $videos_count, $event_name) . '"><img src="images/video.png" width="40" height="40"></a></td>';

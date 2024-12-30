@@ -4,6 +4,7 @@ require_once 'include/club.php';
 require_once 'include/user.php';
 require_once 'include/pages.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -29,6 +30,8 @@ class Page extends ClubPageBase
 		}
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 
@@ -56,6 +59,15 @@ class Page extends ClubPageBase
 		if ($filter & FLAG_FILTER_NO_CANCELED)
 		{
 			$condition->add(' AND g.is_canceled = 0');
+		}
+		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g WHERE g.club_id = ? AND is_canceled = FALSE AND result > 0', $this->id, $condition);

@@ -4,6 +4,7 @@ require_once 'include/general_page_base.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('FLAG_FILTER_TOURNAMENT', 0x0001);
 define('FLAG_FILTER_NO_TOURNAMENT', 0x0002);
@@ -85,6 +86,15 @@ class Page extends GeneralPageBase
 			$this->condition->add(' AND g.is_rating = 0');
 		}
 		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$this->condition->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$this->condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
+		
 		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
@@ -144,8 +154,11 @@ class Page extends GeneralPageBase
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
 		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('players')));
+		echo '&emsp;&emsp;';
 		show_roles_select($this->roles, 'filterRoles()', get_label('Use only the stats of a specific role.'));
-		
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '<p>';
 		echo ' <select id="min" onchange="filterNumber()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
 		$max_option = round($this->games_count / 20) * 10;
 		for ($i = 0; $i <= $max_option; $i += 10)
@@ -160,6 +173,7 @@ class Page extends GeneralPageBase
 			}
 		}
 		echo '</select> ';
+		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter);
 		
 		echo '</td><td align="right"><select id="nom" onchange="filterNom()" title="' . get_label('Nomination to view.') . '">';

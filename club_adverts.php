@@ -49,7 +49,7 @@ class Page extends ClubPageBase
 			echo '<button class="icon" onclick="mr.editAdvert(' . $id . ')" title="' . get_label('Edit [0]', get_label('advert')) . '"><img src="images/edit.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.deleteAdvert(' . $id . ', \'' . get_label('Are you sure you want to delete the advert?') . '\')" title="' . get_label('Delete [0]', get_label('advert')) . '"><img src="images/delete.png" border="0"></button>';
 			echo '</td>';
-			echo '<td><b>' . format_date('l, F d, Y', $start, $timezone) . ' - ' . format_date('l, F d, Y', $end, $timezone) . ':</b><p>' . $message . '</p></td></tr>';
+			echo '<td><b>' . format_date_period($start, $end - $start + 1, $timezone) . ':</b><p>' . $message . '</p></td></tr>';
 		}
 		echo '</table>';
 		show_pages_navigation(PAGE_SIZE, $count);

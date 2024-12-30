@@ -6,6 +6,7 @@ require_once 'include/pages.php';
 require_once 'include/address.php';
 require_once 'include/event.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define("CUT_NAME",45);
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
@@ -88,6 +89,15 @@ class Page extends ClubPageBase
 			}
 		}
 		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND e.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND e.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
+		
 		echo '<div class="tab">';
 		echo '<button ' . ($future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
 		echo '<button ' . (!$future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
@@ -96,6 +106,8 @@ class Page extends ClubPageBase
 		if (!$future)
 		{
 			echo '<p><table class="transp" width="100%"><tr><td>';
+			show_date_filter();
+			echo '&emsp;&emsp;';
 			show_checkbox_filter(array(get_label('with video'), get_label('tournament events'), get_label('unplayed events'), get_label('canceled events')), $filter, 'filterEvents');
 			echo '</td></tr></table></p>';
 		}
@@ -158,7 +170,7 @@ class Page extends ClubPageBase
 				echo '</td>';
 			}
 			echo '<td style="padding-left:12px;"><b><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
-			echo '<br>' . format_date('F d, Y', $event_time, $timezone) . '</a></td>';
+			echo '<br>' . format_date($event_time, $timezone, true) . '</a></td>';
 			if ($videos_count > 0)
 			{
 				echo '<td align="right"><a href="event_videos.php?id=' . $event_id . '&bck=1" title="' . get_label('[0] videos from [1]', $videos_count, $event_name) . '"><img src="images/video.png" width="40" height="40"></a></td>';

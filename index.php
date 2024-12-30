@@ -67,7 +67,7 @@ class Page extends GeneralPageBase
 		echo '</a>';
 		if ($future)
 		{
-			echo '<br>' . format_date('l, F d', $s_start_time, get_timezone());
+			echo '<br>' . format_date_period($s_start_time, $s_duration, get_timezone());
 		}
 		echo '</td></tr>';
 		
@@ -108,7 +108,7 @@ class Page extends GeneralPageBase
 		echo '</a>';
 		if ($future)
 		{
-			echo '<br>' . format_date('l, F d', $tournament->start_time, $tournament->timezone);
+			echo '<br>' . format_date_period($tournament->start_time, $tournament->duration, $tournament->timezone);
 		}
 		echo '</td></tr>';
 		
@@ -186,7 +186,7 @@ class Page extends GeneralPageBase
 		echo '</a>';
 		if ($future)
 		{
-			echo '<br>' . format_date('l, F d', $e_start_time, $e_timezone);
+			echo '<br>' . format_date($e_start_time, $e_timezone, true);
 		}
 		echo '</td></tr>';
 		
@@ -447,7 +447,7 @@ class Page extends GeneralPageBase
 		$firstDark = false;
 		$dark = false;
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td colspan="' . $columns . '"><b>' . get_label('Latest changes in the rating (since [0])', format_date('j M Y', $prev_time, $timezone)) . '</b></a></td></tr><tr>';
+		echo '<tr class="darker"><td colspan="' . $columns . '"><b>' . get_label('Latest changes in the rating (since [0])', format_date($prev_time, $timezone)) . '</b></a></td></tr><tr>';
 		for ($i = 0; $i < $columns; ++$i)
 		{
 			$dark = $firstDark;
@@ -611,7 +611,7 @@ class Page extends GeneralPageBase
 				echo '<td width="100" class="dark" align="center" valign="top"><a href="club_main.php?id=' . $club_id . '&bck=1">' . $club_name . '<br>';
 				$this->club_pic->set($club_id, $club_name, $club_flags);
 				$this->club_pic->show(ICONS_DIR, false, 60);
-				echo '</a></td><td valign="top"><b>' . format_date('l, F d, Y', $timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
+				echo '</a></td><td valign="top"><b>' . format_date($timestamp, $timezone) . ':</b><br>' . $message . '</td></tr>';
 				
 				
 			} while ($row = $query->next());

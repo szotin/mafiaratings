@@ -202,7 +202,7 @@ try
 	while ($row = $query->next())
 	{
 		echo '<option value="' . $row[0] . '">';
-		echo $row[1] . format_date(' D F d H:i', $row[2], $row[3]);
+		echo $row[1] . ' (' . format_date($row[2], $row[3], true) . ')';
 		echo '</option>';
 	}
 	echo '</select>';

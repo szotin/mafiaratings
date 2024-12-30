@@ -1,6 +1,7 @@
 <?php
 
-require_once 'include/address.php';
+require_once 'include/league.php';
+require_once 'include/ccc_filter.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
@@ -13,53 +14,62 @@ define('FLAG_FILTER_NO_RATING', 0x0008);
 
 define('FLAG_FILTER_DEFAULT', 0);
 
-class Page extends AddressPageBase
+class Page extends LeaguePageBase
 {
 	private $min_games;
 	private $games_count;
 
 	protected function prepare()
 	{
+		global $_profile;
+		
 		parent::prepare();
 		
-		list($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $this->id);
-		date_default_timezone_set($timezone);
+		$timezone = 'America/Vancouver';
+		if (isset($_profile))
+		{
+			date_default_timezone_set(get_timezone());
+		}
+		
+		$this->filter = FLAG_FILTER_DEFAULT;
+		if (isset($_REQUEST['filter']))
+		{
+			$this->filter = (int)$_REQUEST['filter'];
+		}
 	}
 	
 	protected function show_body()
 	{
 		global $_profile;
 		
-		$filter = FLAG_FILTER_DEFAULT;
-		if (isset($_REQUEST['filter']))
-		{
-			$filter = (int)$_REQUEST['filter'];
-		}
-		
-		echo '<p><table class="transp" width="100%"><tr><td>';
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td>';
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
+		echo '&emsp;&emsp;';
 		show_date_filter();
 		echo '&emsp;&emsp;';
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $this->filter);
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL();
-		if ($filter & FLAG_FILTER_TOURNAMENT)
+		$condition = new SQL(' AND s.league_id = ?', $this->id);
+		if ($this->filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NOT NULL');
 		}
-		if ($filter & FLAG_FILTER_NO_TOURNAMENT)
+		if ($this->filter & FLAG_FILTER_NO_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NULL');
 		}
-		if ($filter & FLAG_FILTER_RATING)
+		if ($this->filter & FLAG_FILTER_RATING)
 		{
 			$condition->add(' AND g.is_rating <> 0');
 		}
-		if ($filter & FLAG_FILTER_NO_RATING)
+		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
 			$condition->add(' AND g.is_rating = 0');
 		}
-
+		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
 			$condition->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
@@ -69,12 +79,33 @@ class Page extends AddressPageBase
 			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
+		$ccc_id = $ccc_filter->get_id();
+		switch ($ccc_filter->get_type())
+		{
+		case CCCF_CLUB:
+			if ($ccc_id > 0)
+			{
+				$condition->add(' AND g.club_id = ?', $ccc_id);
+			}
+			else if ($ccc_id == 0 && $_profile != NULL)
+			{
+				$condition->add(' AND g.club_id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $_profile->user_id);
+			}
+			break;
+		case CCCF_CITY:
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE c.id = ? OR c.area_id = ?)', $ccc_id, $ccc_id);
+			break;
+		case CCCF_COUNTRY:
+			$condition->add(' AND g.event_id IN (SELECT e.id FROM events e JOIN addresses a ON a.id = e.address_id JOIN cities c ON c.id = a.city_id WHERE c.country_id = ?)', $ccc_id);
+			break;
+		}
 		
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
+
 		$playing_count = 0;
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
-		$query = new DbQuery('SELECT g.result, count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
+		$query = new DbQuery('SELECT g.result, count(*) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
 		$query->add(' GROUP BY result');
 		while ($row = $query->next())
 		{
@@ -94,7 +125,7 @@ class Page extends AddressPageBase
 		$games_count = $civils_win_count + $mafia_win_count + $playing_count;
 		
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td colspan="2"><a href="address_games.php?bck=1&id=' . $this->id . '"><b>' . get_label('Stats') . '</b></a></td></tr>';
+		echo '<tr class="darker"><td colspan="2"><a href="games.php?bck=1"><b>' . get_label('Stats') . '</b></a></td></tr>';
 		echo '<tr><td width="200">'.get_label('Games played').':</td><td>' . ($civils_win_count + $mafia_win_count) . '</td></tr>';
 		if ($civils_win_count + $mafia_win_count > 0)
 		{
@@ -108,17 +139,20 @@ class Page extends AddressPageBase
 		
 		if ($civils_win_count + $mafia_win_count > 0)
 		{
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
 			echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 			
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
 			echo '<tr><td>'.get_label('Referees').':</td><td>' . $counter . '</td></tr>';
 			
 			list ($a_game, $s_game, $l_game) = Db::record(
 				get_label('game'),
 				'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) ' .
-					'FROM games g JOIN events e ON g.event_id = e.id WHERE g.is_canceled = FALSE AND g.result > 0 AND e.address_id = ?', 
-				$this->id, $condition);
+				'FROM games g ' .
+				'JOIN series_tournaments st ON st.tournament_id = g.tournament_id ' .
+				'JOIN series s ON s.id = st.series_id ' .
+				'WHERE g.is_canceled = FALSE AND g.result > 0 AND g.end_time > g.start_time + 900 AND g.end_time < g.start_time + 20000', 
+				$condition);
 			echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Longest game').':</td><td>' . format_time($l_game) . '</td></tr>';
@@ -127,7 +161,7 @@ class Page extends AddressPageBase
 		
 		if ($games_count > 0)
 		{
-			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
+			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
 			$query->add(' GROUP BY p.kill_type, p.role');
 			$killed = array();
 			while ($row = $query->next())
@@ -189,21 +223,10 @@ class Page extends AddressPageBase
 				echo '</table>';
 			}
 		}
-		echo '</form>';
-	}
-	
-	protected function js()
-	{
-?>
-		function filterChanged()
-		{
-			goTo({filter: checkboxFilterFlags()});
-		}
-<?php
 	}
 }
 
 $page = new Page();
-$page->run(get_label('General Stats'));
+$page->run(get_label('Statistics'));
 
 ?>

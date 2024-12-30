@@ -7,6 +7,7 @@ require_once 'include/address.php';
 require_once 'include/pages.php';
 require_once 'include/tournament.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
@@ -75,6 +76,15 @@ class Page extends AddressPageBase
 			{
 				$condition->add(' AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0');
 			}
+			
+			if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+			{
+				$condition->add(' AND t.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+			}
+			if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+			{
+				$condition->add(' AND t.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+			}
 		}
 			
 		echo '<div class="tab">';
@@ -86,6 +96,8 @@ class Page extends AddressPageBase
 		if (!$future)
 		{
 			echo '<p><table class="transp" width="100%"><tr><td>';
+			show_date_filter();
+			echo '&emsp;&emsp;';
 			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $filter);
 			echo '</td></tr></table></p>';
 		}
@@ -125,11 +137,11 @@ class Page extends AddressPageBase
 				$tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
 			if ($future)
 			{
-				$m = format_date('F Y', $tournament->time + $tournament->duration, $tournament->timezone);
+				$m = format_date_period($tournament->time, $tournament->duration, $tournament->timezone);
 			}
 			else
 			{
-				$m = format_date('F Y', $tournament->time, $tournament->timezone);
+				$m = format_date_period($tournament->time, $tournament->duration, $tournament->timezone);
 			}
 			if ($first_month_tournament == NULL || $first_month_tournament->month != $m)
 			{
@@ -227,7 +239,7 @@ class Page extends AddressPageBase
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</a></td>';
+			echo '</b><br>' . format_date_period($tournament->time, $tournament->duration, $tournament->timezone) . '</a></td>';
 			foreach ($tournament->series as $series)
 			{
 				echo '<td width="50" align="center" valign="center">';

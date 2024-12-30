@@ -46,7 +46,7 @@ class Page extends LeaguePageBase
 		echo '</a>';
 		if ($future)
 		{
-			echo '<br>' . format_date('l, F d', $tournament->start_time, $tournament->timezone);
+			echo '<br>' . format_date_period($tournament->start_time, $tournament->duration, $tournament->timezone);
 		}
 		echo '</td></tr>';
 		
@@ -85,7 +85,7 @@ class Page extends LeaguePageBase
 		echo '</a>';
 		if ($future)
 		{
-			echo '<br>' . format_date('l, F d', $series->start_time, get_timezone());
+			echo '<br>' . format_date_period($series->start_time, $series->duration, $tournament->timezone);
 		}
 		echo '</td></tr>';
 		

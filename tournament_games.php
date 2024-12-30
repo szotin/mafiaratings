@@ -4,6 +4,7 @@ require_once 'include/tournament.php';
 require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/datetime.php';
 
 define('PAGE_SIZE', GAMES_PAGE_SIZE);
 
@@ -50,6 +51,9 @@ class Page extends TournamentPageBase
 			show_option(0, $result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
+		echo '&emsp;&emsp;';
+		show_date_filter();
+		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('with video'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 		
@@ -86,6 +90,15 @@ class Page extends TournamentPageBase
 		if ($filter & FLAG_FILTER_NO_CANCELED)
 		{
 			$condition->add(' AND g.is_canceled = 0');
+		}
+		
+		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
+		{
+			$condition->add(' AND g.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
+		}
+		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
+		{
+			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id', $condition);
@@ -173,7 +186,7 @@ class Page extends TournamentPageBase
 			}
 			echo '<a href="view_game.php?id=' . $game_id . '&tournament_id=' . $this->id . '&bck=1"><b>' . get_label('Game #[0]', $game_id);
 			echo '</b><br>' . $event_name;
-			echo '</b><br>' . format_date('F d Y, H:i', $start, $timezone) . '</a>';
+			echo '</b><br>' . format_date($start, $timezone, true) . '</a>';
 			if ($video_id != NULL)
 			{
 				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';

@@ -53,7 +53,7 @@ class Page extends SeriesPageBase
 			$this->user_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td>';
 			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td>';
-			echo '<td><i>' . format_date('F d, Y', $time, $timezone) . '</i>: <b>' . $reason . '</b></td>';
+			echo '<td><i>' . format_date($time, $timezone) . '</i>: <b>' . $reason . '</b></td>';
 			echo '<td align="center">';
 			echo format_gain($points);
 			echo '</td>';

@@ -108,7 +108,7 @@ class Page extends SeriesPageBase
 				$tournament->addr_id, $tournament->addr, $tournament->addr_flags, $tournament->city,
 				$tournament->series_tournament_flags, $tournament->series_tournament_fee, $tournament->series_fee, $currency_pattern,
 				$tournament->num_players, $tournament->players_count) = $row;
-			$m = format_date('F Y', $tournament->time, $tournament->timezone);
+			$m = format_date_period($tournament->time, $tournament->duration, $tournament->timezone);
 			if ($first_month_tournament == NULL || $first_month_tournament->month != $m)
 			{
 				$tournament->month = $m;
@@ -234,7 +234,7 @@ class Page extends SeriesPageBase
 			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
 			$club_pic->show(ICONS_DIR, false, 40);
 			echo '</td>';
-			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date('F d, Y', $tournament->time, $tournament->timezone) . '</td>';
+			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date_period($tournament->time, $tournament->duration, $tournament->timezone) . '</td>';
 			echo '</tr></table></td>';
 			
 			echo '<td align="center">' . $tournament->num_players . '</td>';

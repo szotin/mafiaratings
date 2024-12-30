@@ -129,7 +129,7 @@ class Page extends GeneralPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker">';
 		echo '<td width="52"></td>';
-		echo '<td width="90">' . get_label('Time') . '</td>';
+		echo '<td width="140">' . get_label('Time') . '</td>';
 		echo '<td width="100">' . get_label('User') . '</td>';
 		echo '<td width="70">' . get_label('IP') . '</td>';
 		echo '<td width="120">' . get_label('Club') . '/' . get_label('League') . '</td>';
@@ -157,8 +157,8 @@ class Page extends GeneralPageBase
 			}
 			echo '</td>';
 			
-			echo '<td class="dark">';
-			echo format_date('d/m/y H:i', $time, get_timezone());
+			echo '<td class="dark" align="center">';
+			echo format_date($time, get_timezone(), true);
 			echo '</td>';
 			
 			echo '<td>';
