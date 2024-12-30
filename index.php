@@ -286,6 +286,11 @@ class Page extends GeneralPageBase
 			$this->select_tournaments($condition, false);
 		}
 		
+		if (empty($this->tournaments_list))
+		{
+			return;
+		}
+		
 		$this->max_series = 0;
 		$query = new DbQuery(
 			'SELECT t.id, s.id, s.name, s.flags, st.stars'.

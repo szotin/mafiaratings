@@ -145,30 +145,15 @@ class ApiPage extends ControlApiPageBase
 			$category = get_label('Countries');
 			
 			$query = new DbQuery('SELECT o.id, n.name FROM countries o JOIN names n ON n.id = o.name_id');
-			switch ($context->defined)
+			if ($context->defined == DEFINED_NO && $term != '')
 			{
-			case DEFINED_CLUB:
-				$query->add(' WHERE o.id = (SELECT i.country_id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE c.id = ?) AND (n.langs & '.$_lang.') <> 0', $context->club_id);
-				break;
-			case DEFINED_CITY:
-			case DEFINED_REGION:
-				$query->add(' WHERE o.id = (SELECT i.country_id FROM cities i WHERE i.id = ?) AND (n.langs & '.$_lang.') <> 0', $context->city_id);
-				break;
-			case DEFINED_COUNTRY:
-				$query->add(' WHERE o.id = ? AND (n.langs & '.$_lang.') <> 0', $context->country_id);
-				break;
-			default:
-				if ($term != '')
-				{
-					$query->add(' WHERE n.name LIKE(?)', $term, $term);
-				}
-				else
-				{
-					$query->add(' WHERE (n.langs & '.$_lang.') <> 0');
-				}
-				break;
+				$query->add(' WHERE n.name LIKE(?)', $term, $term);
 			}
-			$query->add(' ORDER BY (SELECT count(*) FROM clubs c JOIN cities t ON t.id = c.city_id WHERE t.country_id = o.id) DESC, n.name LIMIT ' . COUNT_LIMIT);
+			else
+			{
+				$query->add(' WHERE (n.langs & '.$_lang.') <> 0');
+			}
+			$query->add(' ORDER BY (SELECT count(*) FROM clubs c JOIN cities t ON t.id = c.city_id WHERE t.country_id = o.id AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0) DESC, n.name LIMIT ' . COUNT_LIMIT);
 			
 			while ($row = $query->next())
 			{
@@ -186,10 +171,10 @@ class ApiPage extends ControlApiPageBase
 			switch ($context->defined)
 			{
 			case DEFINED_CLUB:
-				$query->add(' WHERE i.id = (SELECT city_id FROM clubs WHERE id = ?) AND (n.langs & '.$_lang.') <> 0', $context->club_id);
+				$query->add(' WHERE i.country_id = (SELECT ct1.country_id FROM clubs c1 JOIN cities ct1 ON ct1.id = c1.city_id WHERE c1.id = ?) AND (n.langs & '.$_lang.') <> 0', $context->club_id);
 				break;
 			case DEFINED_CITY:
-				$query->add(' WHERE (i.id = ? OR i.id = ?) AND (n.langs & '.$_lang.') <> 0', $context->city_id, $context->region_id);
+				$query->add(' WHERE i.country_id = (SELECT country_id FROM cities WHERE id = ?) AND (n.langs & '.$_lang.') <> 0', $context->city_id);
 				break;
 			case DEFINED_REGION:
 				$query->add(' WHERE (i.id = ? OR i.area_id = ?) AND (n.langs & '.$_lang.') <> 0', $context->city_id, $context->city_id);
