@@ -98,7 +98,7 @@ class ApiPage extends GetApiPageBase
 			{
 				list ($id, $name, $flags, $langs, $web, $email, $phone, $rules, $scoring_id) = $row;
 				$rules_filter = json_decode($rules);
-				if (!are_rules_allowed($rules_code, $rules_filter))
+				if (!empty($rules_code) && !are_rules_allowed($rules_code, $rules_filter))
 				{
 					continue;
 				}
@@ -145,7 +145,7 @@ class ApiPage extends GetApiPageBase
 			{
 				list ($id, $name, $langs, $web, $email, $phone, $rules, $scoring_id) = $row;
 				$rules_filter = json_decode($rules);
-				if (!are_rules_allowed($rules_code, $rules_filter))
+				if (!empty($rules_code) && !are_rules_allowed($rules_code, $rules_filter))
 				{
 					continue;
 				}
