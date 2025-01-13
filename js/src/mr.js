@@ -53,7 +53,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.getLangs = function(prefix)
 	{
-		if (typeof prefix == "undefined")
+		if (!isSet(prefix))
 		{
 			prefix = "";
 		}
@@ -87,7 +87,7 @@ var mr = new function()
 
 	this.setLangs = function(langs, prefix)
 	{
-		if (typeof prefix == "undefined")
+		if (!isSet(prefix))
 		{
 			prefix = "";
 		}
@@ -126,7 +126,7 @@ var mr = new function()
 			json.post("api/ops/note.php", { op: 'delete', note_id: id }, refr);
 		}
 
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _delete);
 		}
@@ -161,7 +161,7 @@ var mr = new function()
 			json.post("api/ops/advert.php", { op: 'delete', advert_id: id }, refr);
 		}
 
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _delete);
 		}
@@ -191,7 +191,7 @@ var mr = new function()
 			json.post("api/ops/sound.php", { op: 'delete', sound_id: id }, refr);
 		}
 
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _delete);
 		}
@@ -244,7 +244,7 @@ var mr = new function()
 	{
 		dlg.form("form/address_edit.php?id=" + addrId, function(obj)
 		{
-			var changed = typeof obj.changed != "undefined" && obj.changed;
+			var changed = isSet(obj.changed) && obj.changed;
 			if (changed)
 			{
 				dlg.form("form/address_geo.php?id=" + addrId, refr, 400, refr);
@@ -309,7 +309,7 @@ var mr = new function()
 			json.post("api/ops/club.php", { op: 'remove_user', club_id: id }, refr);
 		}
 		
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, proceed);
 		}
@@ -321,7 +321,7 @@ var mr = new function()
 
 	this.addClubMember = function(id, onSuccess)
 	{
-		if (typeof onSuccess == "undefined")
+		if (!isSet(onSuccess))
 			onSuccess = refr;
 		dlg.form("form/add_user.php?club_id=" + id, onSuccess, 400);
 	}
@@ -376,7 +376,7 @@ var mr = new function()
 			json.post("api/ops/league.php", { op: "remove_manager", league_id: leagueId, user_id: userId }, refr);
 		}
 		
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _remove);
 		}
@@ -437,7 +437,7 @@ var mr = new function()
 			
 			dlg.form(url, function(obj)
 			{
-				if (!now && typeof obj.mailing != "undefined")
+				if (!now && isSet(obj.mailing))
 					dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=' + obj.mailing, refr, 500, refr);
 				else
 					refr();
@@ -469,7 +469,7 @@ var mr = new function()
 	{
 		dlg.form("form/event_edit.php?event_id=" + id, function(obj)
 		{
-			if (typeof obj.mailing != "undefined")
+			if (isSet(obj.mailing))
 			{
 				dlg.form("form/event_mailing_create.php?events=" + id + '&type=' + obj.mailing, refr, 500, refr);
 			}
@@ -483,7 +483,7 @@ var mr = new function()
 	this.createEventMailing = function(events, mailingType)
 	{
 		var url = "form/event_mailing_create.php?events=" + events;
-		if (typeof mailingType == "number")
+		if (isNumber(mailingType))
 		{
 			url += mailingType;
 		}
@@ -512,10 +512,10 @@ var mr = new function()
 	{
 		json.post("api/ops/event.php", { op: "attend", event_id: id, odds: 0 }, function()
 		{
-			if (typeof message == "undefined")
-				goTo(url);
-			else
+			if (isSet(message))
 				dlg.info(message, null, null, function() { goTo(url); });
+			else
+				goTo(url);
 		});
 	}
 
@@ -534,7 +534,7 @@ var mr = new function()
 			});
 		}
 		
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _convert);
 		}
@@ -546,7 +546,7 @@ var mr = new function()
 	
 	this.addEventUser = function(id, onSuccess)
 	{
-		if (typeof onSuccess == "undefined")
+		if (!isSet(onSuccess))
 			onSuccess = refr;
 		dlg.form("form/add_user.php?event_id=" + id, onSuccess, 400);
 	}
@@ -556,9 +556,12 @@ var mr = new function()
 		json.post("api/ops/event.php", { op: "remove_user", event_id: eventId, user_id: userId }, refr);
 	}
 	
-	this.eventObs = function(eventId)
+	this.eventObs = function(eventId, userId)
 	{
-		dlg.infoForm("form/obs_urls.php?event_id=" + eventId, 600);
+		var url = "form/obs_urls.php?event_id=" + eventId;
+		if (userId)
+			url += '&user_id=' + userId;
+		dlg.infoForm(url, 600);
 	}
 	
 	this.eventCreateBroadcast = function(eventId)
@@ -594,7 +597,7 @@ var mr = new function()
 	this.createTournament = function(clubId, leagueId)
 	{
 		var formLink = "form/tournament_create.php?club_id=" + clubId;
-		if (typeof leagueId == "number")
+		if (isNumber(leagueId))
 		{
 			formLink += "&league_id=" + leagueId;
 		}
@@ -617,7 +620,7 @@ var mr = new function()
 		{
 			json.post("api/ops/tournament.php", { op: "finish", tournament_id: id }, function()
 			{
-				if (typeof doneMessage == "string")
+				if (isString(doneMessage))
 				{
 					dlg.info(doneMessage, null, null, refr);
 				}
@@ -628,7 +631,7 @@ var mr = new function()
 			});
 		}
 		
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _finish);
 		}
@@ -679,9 +682,12 @@ var mr = new function()
 		json.post("api/ops/tournament.php", { op: "remove_user", tournament_id: tournamentId }, refr);
 	}
 	
-	this.tournamentObs = function(tournamentId)
+	this.tournamentObs = function(tournamentId, userId)
 	{
-		dlg.infoForm("form/obs_urls.php?tournament_id=" + tournamentId, 600);
+		var url = "form/obs_urls.php?tournament_id=" + tournamentId;
+		if (userId)
+			url += '&user_id=' + userId;
+		dlg.infoForm(url, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------
@@ -704,7 +710,7 @@ var mr = new function()
 			json.post("api/ops/series.php", { op: "cancel", series_id: id }, refr)
 		}
 		
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _cancel);
 		}
@@ -725,7 +731,7 @@ var mr = new function()
 		{
 			json.post("api/ops/series.php", { op: "finish", series_id: id }, function()
 			{
-				if (typeof doneMessage == "string")
+				if (isString(doneMessage))
 				{
 					dlg.info(doneMessage, null, null, refr);
 				}
@@ -736,7 +742,7 @@ var mr = new function()
 			});
 		}
 		
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _finish);
 		}
@@ -841,13 +847,13 @@ var mr = new function()
 	{
 		if (scoring)
 		{
-			var night1Disabled = typeof(scoring.rules.night1) == 'undefined' || !Array.isArray(scoring.rules.night1) || scoring.rules.night1.length == 0;
+			var night1Disabled = !isSet(scoring.rules.night1) || !Array.isArray(scoring.rules.night1) || scoring.rules.night1.length == 0;
 			var difDisabled = true;
 			for (var s in scoring.rules)
 			{
 				for (var p of scoring.rules[s])
 				{
-					if (typeof(p.points) == 'string' && p.points.toLowerCase().includes('difficulty'))
+					if (isString(p.points) && p.points.toLowerCase().includes('difficulty'))
 					{
 						difDisabled = false;
 						break;
@@ -1038,7 +1044,7 @@ var mr = new function()
 	this.createRules = function(clubId, leagueId)
 	{
 		var u = "form/rules_edit.php?create&club_id=" + clubId;
-		if (typeof leagueId != "undefined")
+		if (isSet(leagueId))
 			u += "&league_id=" + leagueId;
 		dlg.form(u, refr);
 	}
@@ -1046,9 +1052,9 @@ var mr = new function()
 	this.editRules = function(clubId, leagueId, rulesId)
 	{
 		var u = "form/rules_edit.php?club_id=" + clubId;
-		if (typeof leagueId != "undefined")
+		if (isSet(leagueId))
 			u += "&league_id=" + leagueId;
-		if (typeof rulesId != "undefined")
+		if (isSet(rulesId))
 			u += "&rules_id=" + rulesId;
 		dlg.form(u, refr);
 	}
@@ -1060,7 +1066,7 @@ var mr = new function()
 			json.post("api/ops/rules.php", { op: 'delete', rules_id: rulesId }, refr);
 		}
 
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _delete);
 		}
@@ -1075,7 +1081,7 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	this.deleteGame = function(gameId, confirmMessage, onSuccess)
 	{
-		if (typeof onSuccess == "undefined")
+		if (!isSet(onSuccess))
 			onSuccess = refr;
 		dlg.yesNo(confirmMessage, null, null, function()
 		{
@@ -1117,10 +1123,13 @@ var mr = new function()
 	{
 		function _own()
 		{
-			json.post("api/ops/game.php", { op: 'own_current', game_id: gameId }, goTo('game1.php?event_id='+eventId+'&table='+table+'&round='+round));
+			json.post(
+				"api/ops/game.php",
+				{op:'own_current', event_id: eventId, "table": table, "round": round},
+				goTo('game1.php?event_id=' + eventId + '&table=' + table + '&round=' + round));
 		}
 
-		if (typeof promptStr == "string")
+		if (isString(promptStr))
 		{
 			dlg.yesNo(promptStr, null, null, _own);
 		}
@@ -1136,7 +1145,7 @@ var mr = new function()
 	this.gotoObjections = function(gameId, back)
 	{
 		var url = "view_game_objections.php?auto&gametime=-1&id=" + gameId;
-		if (typeof back != "boolean" || back)
+		if (!isBool(back) || back)
 			url += "&bck=1";
 		goTo(url);
 	}
@@ -1163,7 +1172,7 @@ var mr = new function()
 			json.post("api/ops/objection.php", { op: 'delete', objection_id: objectionId }, refr);
 		}
 
-		if (typeof confirmMessage == "string")
+		if (isString(confirmMessage))
 		{
 			dlg.yesNo(confirmMessage, null, null, _delete);
 		}
@@ -1235,17 +1244,17 @@ var mr = new function()
 	this.showComments = function(object_name, object_id, limit, show_all, edit_class)
 	{
 		var url = "show_comments.php?" + object_name + "=" + object_id;
-		if (typeof limit == "number")
+		if (isNumber(limit))
 		{
 			url += "&limit=" + limit;
 		}
 		
-		if (typeof edit_class != "undefined")
+		if (isSet(edit_class))
 		{
 			url += "&class=" + edit_class;
 		}
 		
-		if (typeof show_all != "undefined" && show_all)
+		if (isSet(show_all) && show_all)
 		{
 			url += "&all";
 		}
@@ -1292,15 +1301,15 @@ var mr = new function()
 	this.createVideo = function(vtype, clubId, eventId, tournamentId)
 	{
 		var url = "form/video_create.php?vtype=" + vtype;
-		if (typeof clubId != "undefined" && clubId != null)
+		if (clubId)
 		{
 			url += '&club_id=' + clubId;
 		}
-		if (typeof eventId != "undefined" && eventId != null)
+		if (eventId)
 		{
 			url += '&event_id=' + eventId;
 		}
-		if (typeof tournamentId != "undefined" && tournamentId != null)
+		if (tournamentId)
 		{
 			url += '&tournament_id=' + tournamentId;
 		}
@@ -1327,7 +1336,7 @@ var mr = new function()
 		{
 			$('#tagged').html(text);
 			var tagControl = $("#tag_user");
-			if (typeof tagControl == "object")
+			if (isObject(tagControl))
 			{
 				tagControl.autocomplete(
 				{ 
@@ -1496,7 +1505,7 @@ class NameControl
 	
 	fillRequest(request, name)
 	{
-		if (typeof name == "undefined")
+		if (!isSet(name))
 		{
 			name = 'name';
 		}

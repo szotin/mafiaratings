@@ -833,6 +833,64 @@ function show_event_selector($event_id, $form_name, $select_name, $perm_flags, $
 	echo '</select>';
 }
 
+	
+function get_event_reg_array($event_id)
+{
+	global $_lang;
+	
+	$conflict_exists = false;
+	$by_name = array();
+	$regs = array();
+	$query = new DbQuery(
+		'SELECT u.id, nu.name, nc.name FROM event_users eu'.
+		' JOIN users u ON u.id = eu.user_id'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+		' JOIN cities c ON c.id = u.city_id'.
+		' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
+		' WHERE eu.event_id = ?'.
+		' ORDER BY nu.name', $event_id);
+	while ($row = $query->next())
+	{
+		$reg = new stdClass();
+		list ($reg->id, $reg->name, $reg->city) = $row;
+		$reg->id = (int)$reg->id;
+		$regs[] = $reg;
+		if (isset($by_name[$reg->name]))
+		{
+			$reg->next = $by_name[$reg->name];
+			$conflict_exists = true;
+		}
+		else
+		{
+			$reg->next = NULL;
+		}
+		$by_name[$reg->name] = $reg;
+	}
+	
+	if ($conflict_exists)
+	{
+		foreach ($by_name as $n => $r)
+		{
+			if ($r->next)
+			{
+				do
+				{
+					$r->name .= ', ' . $r->city;
+					$r = $r->next;
+				} 
+				while ($r);
+			}
+		}
+	}
+	
+	foreach ($regs as $reg)
+	{
+		unset($reg->next);
+		unset($reg->city);
+	}
+	return $regs;
+}
+
 class EventPageBase extends PageBase
 {
 	protected $event;

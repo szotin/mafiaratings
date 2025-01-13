@@ -18,11 +18,11 @@ class ApiPageBase
 		initiate_session();
 	}
 	
-	protected function show_query($query)
+	protected function show_query($query, $param_name = 'sql')
 	{
 		if (isset($_REQUEST['sql']) && is_permitted(PERMISSION_ADMIN))
 		{
-			$this->response['sql'] = $query->get_parsed_sql();
+			$this->response[$param_name] = $query->get_parsed_sql();
 		}
 	}
 	

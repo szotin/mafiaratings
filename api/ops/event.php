@@ -679,55 +679,102 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function attend_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
-		check_permissions(PERMISSION_USER);
 		$event_id = (int)get_required_param('event_id');
 		
-		$odds = 100;
-		if (isset($_REQUEST['odds']))
+		check_permissions(PERMISSION_USER);
+		$user_id = get_optional_param('user_id', $_profile->user_id);
+		if ($user_id != $_profile->user_id)
 		{
-			$odds = min(max((int)$_REQUEST['odds'], 0), 100);
+			list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 		}
 		
-		$late = 0;
-		if (isset($_REQUEST['late']))
-		{
-			$late = $_REQUEST['late'];
-		}
-		
-		$friends = 0;
-		if (isset($_REQUEST['friends']))
-		{
-			$friends = $_REQUEST['friends'];
-		}
-		
-		$nickname = '';
-		if (isset($_REQUEST['nickname']))
-		{
-			$nickname = $_REQUEST['nickname'];
-		}
+		$odds = min(max((int)get_optional_param('odds', 100), 0), 100);
+		$late = (int)get_optional_param('odds', 0);
+		$friends = (int)get_optional_param('friends', 0);
+		$nickname = get_optional_param('nickname', '');
 		if (empty($nickname))
 		{
 			$nickname = $_profile->user_name;
 		}
 		
 		Db::begin();
-		Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $_profile->user_id);
+		Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $user_id);
 		Db::exec(get_label('registration'), 
 			'INSERT INTO event_users (event_id, user_id, coming_odds, people_with_me, late, nickname) VALUES (?, ?, ?, ?, ?, ?)',
-			$event_id, $_profile->user_id, $odds, $friends, $late, $nickname);
+			$event_id, $user_id, $odds, $friends, $late, $nickname);
 		Db::commit();
+		
+		$this->response['user_id'] = $user_id;
+		$this->response['regs'] = get_event_reg_array($event_id);
 	}
 	
 	function attend_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_USER, 'Tell the system about the plans to attend the upcoming event.');
 		$help->request_param('event_id', 'Event id.');
+		$help->request_param('user_id', 'User id.');
 		$help->request_param('odds', 'The odds of coming. An integer from 0 to 100. Sending 0 means that current user is not planning to attend the event. If odds are 100, the user gets registered for the event.', '100% is used.');
 		$help->request_param('late', 'I current user can not be in time, this is how much late will he/she be in munutes.', 'user is assumed to be in time.');
 		$help->request_param('friends', 'How many friends are coming with the current user.', '0 is used.');
 		$help->request_param('nickname', 'Nickname for the event. If it is set and not empty, the user is registered for the event even if the odds are not 100%.', 'nickname is the same as user name.');
+		
+		$help->response_param('user_id', 'Id of the newly registered user.');
+		$param = $help->response_param('regs', 'Array containing players registered for the event.');
+		$param->response_param('id', 'User id');
+		$param->response_param('name', 'Player name');
+		$param->response_param('flags', 'Permission bit-flags: 1 - player; 2 - referee; 4 - manager.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// new_player_attend
+	//-------------------------------------------------------------------------------------------------------
+	function new_player_attend_op()
+	{
+		global $_lang;
+		
+		$event_id = (int)get_required_param('event_id');
+		$name = get_required_param('name');
+		$email = get_required_param('email');
+		$gender = get_required_param('gender');
+		
+		list($club_id, $tournament_id, $city_id) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, c.city_id FROM events e JOIN clubs c ON c.id = e.club_id WHERE e.id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
+		
+		$flags = NEW_USER_FLAGS;
+		if ($gender > 0)
+		{
+			$flags |= USER_FLAG_MALE;
+		}
+			
+		Db::begin();
+		$names = new Names(-1, get_label('user name'), 'users', 0, new SQL(' AND o.city_id = ?', $city_id), $name);
+		$user_id = create_user($names, $email, $club_id, $city_id);
+		Db::exec(get_label('registration'), 
+			'INSERT INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)',
+			$event_id, $user_id, $name);
+		Db::commit();
+			
+		$this->response['user_id'] = $user_id;
+		$this->response['regs'] = get_event_reg_array($event_id);
+	}
+	
+	function new_player_attend_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_USER, 'Create player and register them for an event.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('name', 'User name.');
+		$help->request_param('email', 'User email.');
+		$help->request_param('gender', 'User gender - 0 for female, 1 for male.');
+		
+		$help->response_param('user_id', 'Id of the newly created and registered user.');
+		$param = $help->response_param('regs', 'Array containing players registered for the event.');
+		$param->response_param('id', 'User id');
+		$param->response_param('name', 'Player name');
+		$param->response_param('flags', 'Permission bit-flags: 1 - player; 2 - referee; 4 - manager.');
 		return $help;
 	}
 

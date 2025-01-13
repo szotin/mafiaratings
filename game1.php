@@ -199,6 +199,8 @@ class Page extends PageBase
 			$event_name = $tournament_name . ': ' . $event_name;
 		}
 		
+		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+		
 		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
 		$pic->
 			set($event_id, $event_name, $event_flags)->
@@ -276,7 +278,7 @@ class Page extends PageBase
 	
 	private function select_round()
 	{
-		global $_lang;
+		global $_lang, $_profile;
 		
 		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 			Db::record(get_label('event'), 
@@ -289,6 +291,8 @@ class Page extends PageBase
 		{
 			$event_name = $tournament_name . ': ' . $event_name;
 		}
+		
+		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
 		
 		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
 		$pic->
@@ -396,21 +400,22 @@ class Page extends PageBase
 			{
 				$darker_class = ' class="darker"';
 				$normal_class = ' class="dark"';
-				$text = get_label('Playing now');
-				if ($rounds[$i]->game_id == $_profile->user_id)
+				if ($rounds[$i]->user_id == $_profile->user_id)
 				{
+					$text = get_label('Playing now', $rounds[$i]->user_name);
 					$url = 'game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
 					$onclick = '';
 				}
 				else
 				{
-					$url = 'game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
-					$onclick = ' onclick="mr.ownGame('.$this->event_id.','.$this->table.','.$this->round.','.$rounds[$i]->user_id.',\''.get_label('[0] is already moderating this game. Do you want to take is over from them?', $rounds[$i]->user_name).'\')"';
+					$text = get_label('Moderated by [0] now', $rounds[$i]->user_name);
+					$url = '#';
+					$onclick = ' onclick="mr.ownGame('.$this->event_id.','.$this->table.','.$i.','.$rounds[$i]->user_id.',\''.get_label('[0] is already moderating this game. Do you want to take is over from them?', $rounds[$i]->user_name).'\')"';
 				}
 			}
 			
 			echo '<tr' . $darker_class . '><td align="center"><p><b>' . get_label('Game [0]', $i + 1) . '</b></p></td></tr>';
-			echo '<tr' . $normal_class . '><td align="center" colspan="2"><p><a href="' . $url .'">';
+			echo '<tr' . $normal_class . '><td align="center" colspan="2"><p><a href="' . $url .'"' . $onclick . '>';
 			echo '<img src="images/thegame.png"><br>' . $text;
 			echo '</a></p></td></tr></table>';
 			
@@ -434,7 +439,102 @@ class Page extends PageBase
 	
 	private function game()
 	{
-		echo '<div id="game-area" tabindex="0"></div>';
+		global $_profile;
+		
+		list ($event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
+			Db::record(get_label('event'), 
+			'SELECT e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags'.
+			' FROM events e'.
+			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+			' JOIN clubs c ON c.id = e.club_id'.
+			' WHERE e.id = ?', $this->event_id);
+			
+		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+		
+		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+		$pic->
+			set($event_id, $event_name, $event_flags)->
+			set($tournament_id, $tournament_name, $tournament_flags)->
+			set($club_id, $club_name, $club_flags);
+		
+		echo '<div id="demo">'.get_label('Demo').'</div>';
+		
+		echo '<ul id="ops-menu" style="position:absolute;" hidden>';
+		echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({round:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
+		echo '<li id="cancel" class="ops-item"><a href="#" onclick="gameCancel()"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
+		echo '<li type="separator"></li>';
+//		echo '<li id="voting" class="ops-item"><a href="#" onclick="gameToggleVoting()"><img src="images/vote.png" class="text"> <span id="voting-txt">'.get_label('Cancel voting').'</span></a></li>';
+//		echo '<li type="separator"></li>';
+		echo '<li id="obs" class="ops-item"><a href="#" onclick="mr.';
+		if (is_null($tournament_id))
+		{
+			echo 'eventObs(' . $event_id;
+		}
+		else
+		{
+			echo 'tournamentObs(' . $tournament_id;
+		}
+		echo ', ' . $_profile->user_id . ')"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
+		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSettings()"><img src="images/settings.png" class="text"> '.get_label('Settings').'</a></li>';
+		echo '</ul>';
+		
+		echo '<table class="bordered" width="100%" id="players">';
+		echo '<tr class="day-empty header-row" align="center"><td id="head" colspan="6">';
+		
+		echo '<table class="transp" width="100%">';
+		echo '<tr>';
+		echo '<td width="64">';
+		echo '<button id="ops" class="ops">';
+		$pic->show(ICONS_DIR, false, 60);
+		echo '</button>';
+		echo '</td>';
+		echo '<td id="status" align="center"></td>';
+		echo '<td id="clock" width="320"></td>';
+		echo '</tr>';
+		echo '</table>';
+		
+		echo '</td></tr>';
+		
+		for ($i = 0; $i < 10; ++$i)
+		{
+			echo '<tr class="day-alive player-row" id="r'.$i.'">';
+			echo '<td width="20" align="center" id="num'.$i.'">'.($i+1).'</td>';
+			echo '<td id="name'.$i.'">';
+			
+			echo '<table class="invis"><tr>';
+			echo '<td><button id="reg-'.$i.'" class="icon" onclick="uiRegisterPlayer('.$i.')"><img src="images/user.png" class="icon"></button></td>';
+			echo '<td><button id="reg-new-'.$i.'" class="icon" onclick="uiCreatePlayer('.$i.')"><img src="images/create.png" class="icon"></button></td>';
+			echo '<td id="pselect'.$i.'"><select id="player'.$i.'" onchange="uiSetPlayer('.$i.')"></select></td>';
+			echo '</tr></table>';
+			echo '</td>';
+			
+			echo '<td id="panel'.$i.'" width="114"></td>';
+			echo '<td id="control'.$i.'" width="160"></td>';
+			echo '<td id="warn'.$i.'" width="100"></td>';
+			echo '<td id="btns-'.$i.'" width="60" align="center"></td>';
+			echo '</tr>';
+		}
+		echo '<tr class="day-empty footer-row" id="r-1">';
+		echo '<td colspan="3">';
+		echo '<table class="invis" width="100%"><tr>';
+		echo '<td><img id="saving-img" border="0" src="images/connected.png"></td>';
+		echo '<td id="saving"></td>';
+		echo '<td align="right"><button id="game-id" class="config-btn" onclick="uiConfig()"><b>'.get_label('[0]: Table [1]. Game [2].', $event_name, $this->table + 1, $this->round + 1).'</b></button></td>';
+		echo '</tr></table>';
+		echo '</td>';
+		echo '<td id="control-1"></td>';
+		echo '<td id="noms" colspan="2"></td>';
+		echo '</tr>';
+		echo '</table>';
+		
+		echo '<div class="btn-panel"><table class="transp" width="100%"><tr>';
+		echo '<td><button class="game-btn" id="back" onclick="uiBack()"><img src="images/prev.png" class="text"></button></td>';
+		echo '<td id="info" align="center"></td>';
+		echo '<td align="right"><button class="game-btn" id="next" onclick="uiNext()"><img src="images/next.png" class="text"></button></td>';
+		echo '</tr></table></div>';
+		
+		echo '<audio id="end-snd" preload></audio>';
+		echo '<audio id="prompt-snd" preload></audio>';
 	}
 	
 	protected function show_body()
@@ -461,7 +561,7 @@ class Page extends PageBase
 	{
 		if ($this->event_id > 0 && $this->table >= 0 && $this->round >= 0)
 		{
-			echo 'mafia.ui.start(' . $this->event_id . ', ' . $this->table . ', ' . $this->round . ');';
+			echo 'uiStart(' . $this->event_id . ', ' . $this->table . ', ' . $this->round . ');';
 		}
 	}
 }

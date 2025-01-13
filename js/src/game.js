@@ -917,7 +917,7 @@ var mafia = new function()
 		name = name.trim();
 		if (name == '')
 		{
-			return l('ErrNoName');
+			return l('ErrNoUserName');
 		}
 		
 		var lName = name.toLocaleLowerCase();

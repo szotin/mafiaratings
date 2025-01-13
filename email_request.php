@@ -124,7 +124,7 @@ class Page extends PageBase
 				// break;
 				
 			default:
-				throw new FatalExc(get_label('Invalid request.'));
+				throw new FatalExc(get_label('Invalid request'));
 		}
 	}
 	

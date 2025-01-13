@@ -60,7 +60,7 @@ button.config-btn[disabled] { border: 1px solid #303030; padding: 0px; color: #8
 button.config-btn[disabled]:hover {}
 button.config-btn[disabled]:active {}
 
-button.ops { border: 0; height: 58px; width: 58px; margin: 0px; padding: 0px; vertical-align: center; margin: 0px 6px 0px 6px; background-color: transparent; }
+button.ops { border: 0; height: 64px; width: 64px; margin: 0px; padding: 0px; vertical-align: center; margin: 0px 6px 0px 6px; background-color: transparent; }
 button.ops:hover { border: 1px outset #cccccc; padding: 0px;  }
 button.ops:active { border: 1px inset #cccccc; padding: 0px; }
 

@@ -36,6 +36,12 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('tournament')));
 	}
 	
+	$user_id = 0;
+	if (isset($_REQUEST['user_id']))
+	{
+		$user_id = (int)$_REQUEST['user_id'];
+	}
+	
 	if (is_valid_lang($langs))
 	{
 		$lang = $langs;
@@ -55,9 +61,12 @@ try
 	echo '<option value="en">' . get_label('English') . '</option>';
 	echo '</select>';
 	echo '</td></tr>';
-	echo '<tr><td>' . get_label('User account') . '</td><td>';
-	show_user_input('form-user', '', '', get_label('Please select user account that will be used to referee games.'), 'changeUser');
-	echo '</td></tr>';
+	if ($user_id <= 0)
+	{
+		echo '<tr><td>' . get_label('User account') . '</td><td>';
+		show_user_input('form-user', '', '', get_label('Please select user account that will be used to referee games.'), 'changeUser');
+		echo '</td></tr>';
+	}
 	echo '<tr><td>' . get_label('Roles') . '</td><td><input id="form-roles" type="checkbox" checked onclick="showInstr()"> ' . get_label('Show roles') . '</td></tr>';
 	echo '</table><p><table class="dialog_form" width = 100%';
 	echo '<tr><td><h4>' . get_label('Instructions') . '</h4></td></tr>';
@@ -65,7 +74,7 @@ try
 	echo '</table>';
 ?>
 	<script>
-	var userId = 0;
+	var userId = <?php echo $user_id; ?>;
 	function changeUser(data)
 	{
 		userId = data ? data.id : 0;
@@ -103,7 +112,7 @@ try
 		}
 		$('#form-instr').html(html);
 	}
-	changeUser();
+	showInstr();
 	</script>
 <?php
 	

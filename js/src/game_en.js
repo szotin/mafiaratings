@@ -18,7 +18,6 @@ _l["ErrNoAddr"] = "Please enter the address";
 _l["ErrUserNotFound"] = "User {1} not found in your club.";
 _l["ErrNoUserName"] = "Please enter user name.";
 _l["EmptyEmail"] = "A player without email can not participate in ratings. This account will be valid for this event only.<p>Are you sure you do not want to enter email?</p>";
-_l["ErrNoName"] = "Please enter user name.";
 _l["ErrUserExists"] = "User {1} already exists.";
 _l["ErrGameNotReady"] = "The game is not ready to start.";
 _l["ErrGameStarted"] = "Game is already started.";

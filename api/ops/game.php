@@ -6,6 +6,7 @@ require_once '../../include/email.php';
 require_once '../../include/video.php';
 require_once '../../include/game.php';
 require_once '../../include/tournament.php';
+require_once '../../include/event.php';
 require_once '../../include/user.php';
 require_once '../../include/mwt_game.php';
 
@@ -1643,6 +1644,44 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
+	// cancel_current
+	//-------------------------------------------------------------------------------------------------------
+	function cancel_current_op()
+	{
+		global $_profile, $_lang;
+		
+		$event_id = (int)get_required_param('event_id');
+		$table = (int)get_required_param('table');
+		$round = (int)get_required_param('round');
+		
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+	
+		Db::begin();
+		$query = new DbQuery('SELECT user_id FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
+		if ($row = $query->next())
+		{
+			list ($user_id) = $row;
+			if ($user_id != $_profile->user_id)
+			{
+				list($user_name) = Db::record(get_label('user'), 'SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
+				throw new Exc(get_label('The game is moderated by [0].', $user_name));
+			}
+		}
+		Db::exec(get_label('game'), 'DELETE FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
+		Db::commit();
+	}
+	
+	function cancel_current_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Cancel current game and delete it from the database. The game will start over again.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('table', 'Table number in the event. Table 1 is numbered as 0, 2 - 1, etc..');
+		$help->request_param('round', 'Game number. Round 1 is numbered as 0, 2 - 1, etc..');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
 	// get_current
 	//-------------------------------------------------------------------------------------------------------
 	function get_current_op()
@@ -1653,18 +1692,33 @@ class ApiPage extends OpsApiPageBase
 		$table = (int)get_required_param('table');
 		$round = (int)get_required_param('round');
 		
-		list($club_id, $tournament_id, $rules, $misc) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, rules, misc FROM events WHERE id = ?', $event_id);
+		Db::begin();
+		list($club_id, $tournament_id, $rules, $misc, $languages) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, rules, misc, languages FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+		
+		$langs = array();
+		$lang = LANG_NO;
+		while (($lang = get_next_lang($lang, $languages)) != LANG_NO)
+		{
+			$l = new stdClass();
+			$l->code = get_lang_code($lang);
+			$l->name = get_lang_str($lang);
+			$langs[] = $l;
+		}
+		if (count($langs) == 0)
+		{
+			throw new Exc(get_label('Please check the event languages. None of them is specified.'));
+		}
 	
 		$query = new DbQuery('SELECT game, user_id FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
 		if ($row = $query->next())
 		{
 			list ($game, $user_id) = $row;
-			// if ($user_id != $_profile->user_id)
-			// {
-				// list($user_name) = Db::record('SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
-				// throw new Exc(get_label('The game is already moderated by [0].', $user_name));
-			// }
+			if ($user_id != $_profile->user_id)
+			{
+				list($user_name) = Db::record(get_label('user'), 'SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
+				throw new Exc(get_label('The game is moderated by [0].', $user_name));
+			}
 			$game = json_decode($game);
 		}
 		else
@@ -1685,7 +1739,9 @@ class ApiPage extends OpsApiPageBase
 			$game = new stdClass();
 			$game->clubId = (int)$club_id;
 			$game->eventId = $event_id;
-			$game->language = 'en';
+			$game->table = $table + 1;
+			$game->round = $round + 1;
+			$game->language = $langs[0]->code;
 			$game->rules = $rules;
 			$game->features = Game::feature_flags_to_leters(GAME_FEATURE_MASK_MAFIARATINGS);
 			if (!is_null($tournament_id))
@@ -1705,7 +1761,7 @@ class ApiPage extends OpsApiPageBase
 			$game->players = array(
 				new stdClass(), new stdClass(), new stdClass(), new stdClass(), new stdClass(),
 				new stdClass(), new stdClass(), new stdClass(), new stdClass(), new stdClass());
-
+				
 			for ($i = 0; $i < 10; ++$i)
 			{
 				$player = $game->players[$i];
@@ -1721,8 +1777,50 @@ class ApiPage extends OpsApiPageBase
 					}
 				}
 			}
+			
+			$game->time = new stdClass();
+			$game->time->round = 0;
+			$game->time->time = GAMETIME_START;
 		}
+		
+		// // Check if all players in the game are registered for the event
+		// $reg_changed = false;
+		// foreach ($game->players as $player)
+		// {
+			// if (isset($player->id) && $player->id > 0)
+			// {
+				// $register = true;
+				// foreach ($regs as $reg)
+				// {
+					// if ($player->id == $reg->id)
+					// {
+						// $register = false;
+						// break;
+					// }
+				// }
+				// if ($register)
+				// {
+					// Db::exec(get_label('registration'), 'INSERT INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $event_id, $player->id, $player->name);
+					// $reg = new stdClass();
+					// $reg->id = $player->id;
+					// $reg->name = $player->name;
+					// $reg->flags = USER_PERM_PLAYER;
+					// $regs[] = $reg;
+					// $reg_changed = true;
+				// }
+			// }
+		// }
+		// if ($reg_changed)
+		// {
+			// // We need to sort players after the changes
+			// usort($regs, function($reg1, $reg2) { return strcmp($reg1->name, $reg2->name); });
+		// }
+		
+		Db::commit();
+		
 		$this->response['game'] = $game;
+		$this->response['regs'] = get_event_reg_array($event_id);
+		$this->response['langs'] = $langs;
 	}
 	
 	function get_current_op_help()
@@ -1731,6 +1829,55 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('table', 'Table number in the event. Table 1 is numbered as 0, 2 - 1, etc..');
 		$help->request_param('round', 'Game number. Round 1 is numbered as 0, 2 - 1, etc..');
+		$help->response_param('game', 'Game description in json format.');
+		$param = $help->response_param('regs', 'Array containing players registered for the event.');
+		$param->response_param('id', 'User id');
+		$param->response_param('name', 'Player name');
+		$param->response_param('flags', 'Permission bit-flags: 1 - player; 2 - referee; 4 - manager.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// set_current
+	//-------------------------------------------------------------------------------------------------------
+	function set_current_op()
+	{
+		global $_profile, $_lang;
+		
+		$event_id = (int)get_required_param('event_id');
+		$table = (int)get_required_param('table');
+		$round = (int)get_required_param('round');
+		$game = get_required_param('game');
+		
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+		
+		Db::begin();
+		$query = new DbQuery('SELECT user_id FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
+		if ($row = $query->next())
+		{
+			list ($user_id) = $row;
+			if ($user_id != $_profile->user_id)
+			{
+				list($user_name) = Db::record(get_label('user'), 'SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
+				throw new Exc(get_label('The game is moderated by [0].', $user_name));
+			}
+			Db::exec(get_label('game'), 'UPDATE current_games SET game = ? WHERE event_id = ? AND table_num = ? AND round_num = ?', $game, $event_id, $table, $round);
+		}
+		else
+		{
+			Db::exec(get_label('game'), 'INSERT INTO current_games (event_id, table_num, round_num, user_id, game) VALUES (?, ?, ?, ?, ?)', $event_id, $table, $round, $_profile->user_id, $game);
+		}
+		Db::commit();
+	}
+	
+	function set_current_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Save currently played game state.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('table', 'Table number in the event. Table 1 is numbered as 0, 2 - 1, etc..');
+		$help->request_param('round', 'Game number. Round 1 is numbered as 0, 2 - 1, etc..');
+		$help->request_param('game', 'Json string defining current game state.');
 		return $help;
 	}
 }

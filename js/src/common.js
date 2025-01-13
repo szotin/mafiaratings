@@ -1,4 +1,37 @@
 //------------------------------------------------------------------------------------------
+// helpers
+//------------------------------------------------------------------------------------------
+function isSet(v)
+{
+	return typeof v != "undefined"
+}
+
+function isBool(v)
+{
+	return typeof v == "boolean";
+}
+
+function isNumber(v)
+{
+	return typeof v == "number";
+}
+
+function isString(v)
+{
+	return typeof v == "string";
+}
+
+function isObject(v)
+{
+	return typeof v == "object";
+}
+
+function isFunction(v)
+{
+	return typeof v === "function";
+}
+
+//------------------------------------------------------------------------------------------
 // localization
 //------------------------------------------------------------------------------------------
 function l()
@@ -9,7 +42,7 @@ function l()
 	}
 	
 	var result = _l[arguments[0]];
-	if (result === undefined)
+	if (!isSet(result))
 	{
 		return _l["UnknownError"];
 	}
@@ -23,7 +56,7 @@ function l()
 
 function handleError(e)
 {
-	if (typeof e.stack != "undefined")
+	if (isSet(e.stack))
 		console.log(e.stack);
 	dlg.error(e);
 } // handleError(e)
@@ -38,7 +71,7 @@ var dlg = new function()
 		var id = 'dlg' + _lastId;
 		++_lastId;
 		
-		if (typeof width != "number")
+		if (!isNumber(width))
 		{
 			width = parseInt(width);
 			if (isNaN(width) || width <= 0)
@@ -59,7 +92,8 @@ var dlg = new function()
 			'width': width,
 			close: function()
 			{
-				if (typeof onClose != "undefined") onClose();
+				if (isSet(onClose))
+					onClose();
 				elem.remove();
 				--_lastId;
 			},
@@ -79,7 +113,7 @@ var dlg = new function()
 
 	this.close = function(dlgId)
 	{
-		if (typeof dlgId == "undefined")
+		if (!isSet(dlgId))
 		{
 			dlgId = _lastId - 1;
 		}
@@ -91,7 +125,7 @@ var dlg = new function()
 
 	this.error = function(text, title, width, onClose)
 	{
-		if (typeof title != "string")
+		if (!isString(title))
 		{
 			title = l("Error");
 		}
@@ -103,7 +137,7 @@ var dlg = new function()
 
 	this.info = function(text, title, width, onClose)
 	{
-		if (typeof title != "string")
+		if (!isString(title))
 		{
 			title = l("Information");
 		}
@@ -115,27 +149,27 @@ var dlg = new function()
 
 	this.yesNo = function(text, title, width, onYes, onNo)
 	{
-		if (typeof title != "string")
+		if (!isString(title))
 		{
 			title = l("Attention");
 		}
 		return dlg.custom(text, title, width, 
 		{
-			yes: { id:"dlg-yes", text: l("Yes"), click: function() { $(this).dialog("close"); if (typeof onYes != "undefined") onYes(); } },
-			no: { id:"dlg-no", text: l("No"), click: function() { $(this).dialog("close"); if (typeof onNo != "undefined") onNo(); } }
+			yes: { id:"dlg-yes", text: l("Yes"), click: function() { $(this).dialog("close"); if (isSet(onYes)) onYes(); } },
+			no: { id:"dlg-no", text: l("No"), click: function() { $(this).dialog("close"); if (isSet(onNo)) onNo(); } }
 		});
 	}
 
 	this.okCancel = function(text, title, width, onOk, onCancel)
 	{
-		if (typeof title != "string")
+		if (!isString(title))
 		{
 			title = l("Attention");
 		}
 		return dlg.custom(text, title, width, 
 		{
-			ok: { id:"dlg-ok", text: l("Ok"), click: function() { $(this).dialog("close"); if (typeof onOk != "undefined") onOk(); } },
-			cancel: { id:"dlg-cancel", text: l("Cancel"), click: function() { $(this).dialog("close"); if (typeof onCancel != "undefined") onCancel(); } }
+			ok: { id:"dlg-ok", text: l("Ok"), click: function() { $(this).dialog("close"); if (isSet(onOk)) onOk(); } },
+			cancel: { id:"dlg-cancel", text: l("Cancel"), click: function() { $(this).dialog("close"); if (isSet(onCancel)) onCancel(); } }
 		});
 	}
 	
@@ -151,7 +185,7 @@ var dlg = new function()
 			});
 		}
 		
-		if (typeof width != "number")
+		if (!isNumber(width))
 		{
 			width = parseInt(width);
 			if (isNaN(width) || width <= 0)
@@ -171,7 +205,7 @@ var dlg = new function()
 			{
 				$(id).dialog("close");
 			}
-			if (typeof onSuccess != "undefined")
+			if (isSet(onSuccess))
 			{
 				onSuccess(obj);
 			}
@@ -180,7 +214,7 @@ var dlg = new function()
 		function formCanceled()
 		{
 			$(this).dialog("close"); 
-			if (typeof onCancel != "undefined")
+			if (isSet(onCancel))
 			{
 				onCancel(); 
 			}
@@ -196,7 +230,7 @@ var dlg = new function()
 			});
 		}
 		
-		if (typeof width != "number")
+		if (!isNumber(width))
 		{
 			width = parseInt(width);
 			if (isNaN(width) || width <= 0)
@@ -220,7 +254,7 @@ var dlg = new function()
 			});
 		}
 		
-		if (typeof width != "number")
+		if (!isNumber(width))
 		{
 			width = parseInt(width);
 			if (isNaN(width) || width <= 0)
@@ -263,27 +297,26 @@ var dialogWaiter = new function()
 		}
 		
 		var noDialog = false;
-		if (typeof onError === "function")
+		if (isFunction(onError))
 		{
-			if (typeof data != "undefined")
+			if (isSet(data))
 			{
 				try
 				{
-					noDialog = onError(message, jQuery.parseJSON(data));
+					data = jQuery.parseJSON(data);
 				}
 				catch (e)
 				{
-					noDialog = onError(message);
+					console.log('Error parsing response data');
 				}				
 			}
-			else
-			{
-				noDialog = onError(message);
-			}
+			noDialog = onError(message, data);
 		}
 		
 		if (!noDialog)
+		{
 			dlg.error(message);
+		}
 	}
 	
 	this.info = function(message, title, onClose)
@@ -313,10 +346,10 @@ var http = new function()
 	this.connected = function(c, w)
 	{
 		var _c = _connected;
-		if (typeof c == "boolean" && _connected != c)
+		if (isBool(c) && _connected != c)
 		{
 			_connected = c;
-			if (typeof w == "object")
+			if (isObject(w))
 				w.connected(c)
 			else
 				_waiter.connected(c);
@@ -327,7 +360,7 @@ var http = new function()
 	this.waiter = function(w)
 	{
 		var _w = _waiter;
-		if (typeof w == "object")
+		if (isObject(w))
 		{
 			_waiter = w;
 		}
@@ -337,7 +370,7 @@ var http = new function()
 	this.host = function(host)
 	{
 		var h = _host;
-		if (typeof host == "string" && host != _host)
+		if (isString(host) && host != _host)
 		{
 			_host = host;
 			http.connected(false);
@@ -348,11 +381,11 @@ var http = new function()
 	this.errorMsg = function(response, page)
 	{
 		console.log(response);
-		if (typeof response.responseText != "undefined" && response.responseText.length > 0)
+		if (isSet(response.responseText) && response.responseText.length > 0)
 		{
 			return response.responseText;
 		}
-		if (typeof response.statusText != "undefined" && response.statusText.length > 0)
+		if (isSet(response.statusText) && response.statusText.length > 0)
 		{
 			return response.statusText;
 		}
@@ -370,7 +403,7 @@ var http = new function()
 			{
 				http.connected(true, w);
 				var error = onSuccess(response.responseText);
-				if (typeof error == "string" && error.length > 0)
+				if (isString(error) && error.length > 0)
 				{
 					console.log(error);
 					w.error(error, onError, response.responseText);
@@ -428,7 +461,7 @@ var http = new function()
 						if (onSuccess)
 						{
 							var error = onSuccess(request.response);
-							if (typeof error == "string" && error.length > 0)
+							if (isString(error) && error.length > 0)
 							{
 								console.log(error);
 								w.error(error, onError);
@@ -462,7 +495,7 @@ var http = new function()
 			{
 				http.connected(true, w);
 				var error = onSuccess(response.responseText);
-				if (typeof error == "string" && error.length > 0)
+				if (isString(error) && error.length > 0)
 				{
 					console.log(error);
 					w.error(error, onError, response.responseText);
@@ -537,7 +570,7 @@ var html = new function()
 
 function loginDialog(message, userName, onError, actionAfterLogin)
 {
-	if (typeof userName != "string")
+	if (!isString(userName))
 	{
 		userName = "";
 	}
@@ -557,7 +590,7 @@ function loginDialog(message, userName, onError, actionAfterLogin)
 	{
 		login($('#lf-name').val(), $('#lf-pwd').val(), $('#lf-rem').attr('checked') ? 1 : 0, function()
 		{
-			if (typeof actionAfterLogin != "undefined")
+			if (isSet(actionAfterLogin))
 			{
 				actionAfterLogin();
 			}
@@ -576,13 +609,13 @@ var json = new function()
 			var obj = jQuery.parseJSON(text);
 			if (obj != null)
 			{
-				if (typeof obj.login != "undefined")
+				if (isSet(obj.login))
 				{
 					loginDialog('', obj.login, onError, retry);
 				}
-				else if (typeof obj.error == "string")
+				else if (isString(obj.error))
 				{
-					if (obj.error.length <= 0 && typeof obj.message == "string")
+					if (obj.error.length <= 0 && isString(obj.message))
 					{
 						result = obj.message;
 					}
@@ -591,16 +624,16 @@ var json = new function()
 						result = obj.error;
 					}
 				}
-				else if (typeof obj.message == "string")
+				else if (isString(obj.message))
 				{
-					http.waiter().info(obj.message, obj.title, function() { if (typeof onSuccess != "undefined") onSuccess(obj); });
+					http.waiter().info(obj.message, obj.title, function() { if (isSet(onSuccess)) onSuccess(obj); });
 				}
-				else if (typeof onSuccess != "undefined")
+				else if (isSet(onSuccess))
 				{
 					onSuccess(obj);
 				}
 			}
-			else if (typeof onSuccess != "undefined")
+			else if (isSet(onSuccess))
 			{
 				onSuccess(obj);
 			}
@@ -608,7 +641,7 @@ var json = new function()
 		catch (err)
 		{
 			console.log(text);
-			if (typeof err.stack != "undefined")
+			if (isSet(err.stack))
 				console.log(err.stack);
 			result = '' + err;
 		}
@@ -662,13 +695,13 @@ function showMenuBar()
 function setUrlParam(url, key, value)
 {
 	var str = key;
-	if (typeof value == "undefined")
+	if (!isSet(value))
 	{
 		str = null;
 	}
 	else if (value != null)
 	{
-		if (typeof value == "object")
+		if (isObject(value))
 			str += '=' + encodeURI(JSON.stringify(value));
 		else 
 			str += '=' + encodeURI(value);
@@ -722,7 +755,7 @@ function setUrlParam(url, key, value)
 
 function setUrlParams(url, params)
 {
-	if (typeof params == "object")
+	if (isObject(params))
 		for (var key in params)
 			url = setUrlParam(url, key, params[key]);
 	return url;
@@ -730,12 +763,12 @@ function setUrlParams(url, params)
 
 function getUrlWithParams(url, params)
 {
-	if (typeof url == "object")
+	if (isObject(url))
 	{
 		params = url;
 		url = document.URL;
 	}
-	else if (typeof url != "string")
+	else if (!isString(url))
 		url = document.URL;
 	
 	url = setUrlParams(url, params);
@@ -768,10 +801,10 @@ function login(name, pwd, rem, onSuccess, onError)
 	
 	json.post("api/ops/account.php", { op: "get_token" }, function(token_resp)
 	{
-		if (typeof rem == "undefined") rem = $('#header-remember').attr('checked') ? 1 : 0;
-		if (typeof pwd == "undefined") pwd = $("#header-password").val();
-		if (typeof name == "undefined") name = $("#header-username").val();
-		if (typeof onSuccess == "undefined") onSuccess = refr;
+		if (!isSet(rem)) rem = $('#header-remember').attr('checked') ? 1 : 0;
+		if (!isSet(pwd)) pwd = $("#header-password").val();
+		if (!isSet(name)) name = $("#header-username").val();
+		if (!isSet(onSuccess)) onSuccess = refr;
 		
 		var token = token_resp.token;
 		var rawProof = md5(pwd) + token + name;
@@ -908,7 +941,7 @@ function dateToStr(date, withTime)
 		date.getFullYear() + "-" + 
 		tz(date.getMonth() + 1) + "-" + 
 		tz(date.getDate());
-	if (typeof withTime != "undefined" && withTime)
+	if (isSet(withTime) && withTime)
 	{
 		result += " " + tz(date.getHours()) + ":" + tz(date.getMinutes());
 	}
