@@ -10,37 +10,137 @@ function _uiOption(value, current, text)
 	return '<option value="' + value + '">' + text + '</option>';
 }
 
-function _uiInit()
+function _uiRender(flags)
 {
-	var html = '<option value="0"></option>';
-	for (var i in regs)
+	if (flags & 1) // players changed
 	{
-		var r = regs[i];
-		html += '<option value="' + r.id + '">' + r.name + '</option>';;
+		var html = '<option value="0"></option>';
+		for (var i in regs)
+		{
+			var r = regs[i];
+			html += '<option value="' + r.id + '">' + r.name + '</option>';;
+		}
+		
+		for (var i = 0; i < 10; ++i)
+		{
+			var p = game.players[i];
+			$('#player' + i).html(html).val(p.id ? p.id : 0);
+		}
 	}
 	
-	for (var i = 0; i < 10; ++i)
+	if (flags & 6) // game time changed or roles changed
 	{
-		var p = game.players[i];
-		$('#player' + i).html(html).val(p.id ? p.id : 0);
+		var dStyle = gameIsNight() ? 'night-' : 'day-';
+		var eStyle = dStyle + 'empty';
+
+		$('#r-1').removeClass().addClass(eStyle);
+		$('#head').removeClass().addClass(eStyle);
+		for (var i = 0; i < 10; ++i)
+		{
+			$('#r' + i).removeClass().addClass(dStyle + (isSet(game.players[i].death) ? 'dead' : 'alive'));
+			$('#num' + i).removeClass();
+			$('#panel' + i).html('').removeClass();
+			$('#control' + i).html('').removeClass();
+		}
+		
+		var status = '';
+		var control1Html = '';
+		var nextDisabled = false;
+		var backDisabled = false;
+		if (!isSet(game.time))
+		{
+			status = l('StartGame');
+			$('#info').html('');
+			control1Html = '<button class="day-vote" onclick="gameRandomizeSeats()">' + l('RandSeats') + '</button>';
+			backDisabled = true;
+		}
+		else
+		{
+			// for (var i = 0; i < 10; ++i)
+			// {
+				// if (player.state != /*PLAYER_STATE_ALIVE*/0)
+				// {
+					// $('#btns-' + i).html('');
+				// }
+				// else
+				// {
+					// $('#btns-' + i).html(
+							// '<button class="icon" onclick="mafia.warnPlayer(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
+							// '<button class="icon" onclick="mafia.ui.leaveGame(' + i + ')"><img src="images/suicide.png" title="' + l('GiveUp') + '"></button>');
+				// }
+			// }
+			
+			var info = 'Day';
+			switch (game.time.time)
+			{
+			case 'start':
+				status = l('AssignRoles');
+				control1Html = '<button class="day-vote" onclick="gameGenerateRoles()">' + l('GenRoles') + '</button>';
+				for (var i = 0; i < 10; ++i)
+				{
+					var p = game.players[i];
+					var r = isSet(p.role) ? p.role : 'civ';
+					$('#panel' + i).html(
+						'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
+						'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
+						'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
+						'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
+					$('#control' + i).html(
+						'<select id="role-' + i + '" onchange="uiSetRole(' + i + ')"><option value="civ"></option><option value="sheriff">' + l('sheriff') + '</option><option value="maf">' + l('mafia') + '</option><option value="don">' + l('don') + '</option></select>');
+					$('#role-' + i + '-' + r).attr('checked', '');
+					$('#role-' + i).val(r);
+				}
+				nextDisabled = !gameAreRolesSet();
+				break;
+			case 'arrangement':
+				break;
+			case 'day start':
+				break;
+			case 'night kill speaking':
+				break;
+			case 'speaking':
+				break;
+			case 'voting':
+				break;
+			case 'day kill speaking':
+				break;
+			case 'shooting':
+				break;
+			case 'don':
+				break;
+			case 'sheriff':
+				break;
+			case 'end':
+				break;
+			}
+			$('#info').html(l(info, game.time.round));
+		}
+		$('#status').html(status);
+		$('#control-1').html(control1Html);
+		$('#game-next').prop('disabled', nextDisabled);
+		$('#game-back').prop('disabled', backDisabled);
 	}
 }
 
-function _uiError(message, data)
+function _uiErrorListener(type, message, data)
 {
 	if (data)
 	{
 		console.log(data);
 	}
 	
-	// dlg.error(text, title, width, onClose)
-	dlg.error(message, undefined, undefined, function()
+	if (type == 0) // error getting data
 	{
-		goTo({round:undefined});
-	}); 
-	
-	// returning true makes json.post to bypass showing error dialog
-	return true; 
+		// dlg.error(text, title, width, onClose)
+		dlg.error(message, undefined, undefined, function()
+		{
+			goTo({round:undefined});
+		});
+	}
+	else // error setting data
+	{
+		// nothing to do - connection listener takes care
+	}
 }
 
 function _uiConnectionListener(state)
@@ -54,7 +154,7 @@ function _uiConnectionListener(state)
 		url = "images/warn.png";
 	$('#saving-img').attr("src", url);
 }
-	
+
 //-----------------------------------------------------------
 // Public API
 //-----------------------------------------------------------
@@ -76,7 +176,7 @@ function uiStart(eventId, tableNum, roundNum)
 		return false;
 	});
 	
-	gameInit(eventId, tableNum, roundNum, _uiInit, _uiError, _uiConnectionListener);
+	gameInit(eventId, tableNum, roundNum, _uiRender, _uiErrorListener, _uiConnectionListener);
 }
 	
 // Call this to change a player at num. Don't use gameSetPlayer.	
@@ -104,7 +204,6 @@ function uiRegisterPlayer(num, data)
 	if (data)
 	{
 		regs = data.regs;
-		_uiInit();
 		uiSetPlayer(num, data.user_id);
 	}
 	else
@@ -168,4 +267,13 @@ function uiConfig(text, onClose)
 			onClose();
 		}
 	});
+}
+
+function uiSetRole(num, role)
+{
+	if (!role)
+	{
+		role = $('#role-' + num).val();
+	}
+	gameSetRole(num, role);
 }

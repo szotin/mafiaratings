@@ -1,5 +1,7 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["RandSeats"] = "Randomize seating";
+_l["StartGame"] = "Please enter players and click \"Next\" to start the game.";
 _l["UnknownError"] = "Unknown error";
 _l["Event"] = "Event";
 _l["Eng"] = "English";

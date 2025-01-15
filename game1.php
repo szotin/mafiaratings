@@ -528,9 +528,9 @@ class Page extends PageBase
 		echo '</table>';
 		
 		echo '<div class="btn-panel"><table class="transp" width="100%"><tr>';
-		echo '<td><button class="game-btn" id="back" onclick="uiBack()"><img src="images/prev.png" class="text"></button></td>';
+		echo '<td><button class="game-btn" id="game-back" onclick="gameBack()"><img src="images/prev.png" class="text" title="' . get_label('Back') . '"></button></td>';
 		echo '<td id="info" align="center"></td>';
-		echo '<td align="right"><button class="game-btn" id="next" onclick="uiNext()"><img src="images/next.png" class="text"></button></td>';
+		echo '<td align="right"><button class="game-btn" id="game-next" onclick="gameNext()" title="' . get_label('Next') . '"><img src="images/next.png" class="text"></button></td>';
 		echo '</tr></table></div>';
 		
 		echo '<audio id="end-snd" preload></audio>';

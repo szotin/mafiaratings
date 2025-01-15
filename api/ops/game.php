@@ -1777,10 +1777,6 @@ class ApiPage extends OpsApiPageBase
 					}
 				}
 			}
-			
-			$game->time = new stdClass();
-			$game->time->round = 0;
-			$game->time->time = GAMETIME_START;
 		}
 		
 		// // Check if all players in the game are registered for the event
