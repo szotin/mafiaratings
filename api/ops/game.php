@@ -1535,7 +1535,7 @@ class ApiPage extends OpsApiPageBase
 		$game = json_decode($game);
 		
 		$bonus = 0;
-		if ($points > 0)
+		if ($points != 0)
 		{
 			$bonus = $points;
 		}
