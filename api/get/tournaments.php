@@ -195,11 +195,11 @@ class ApiPage extends GetApiPageBase
 			return;
 		}
 		
+		$tournaments_list = '';
+		$delim = '';
 		$tournaments = array();
 		if ($lod >= 1)
 		{
-			$tournaments_list = '';
-			$delim = '';
 			$query = new DbQuery(
 				'SELECT t.id, t.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, c.name, c.flags, t.start_time, t.duration, t.notes, t.fee, t.currency_id, t.scoring_id, t.scoring_version, t.rules, ct.timezone FROM tournaments t' . 
 				' JOIN addresses a ON a.id = t.address_id' .
@@ -216,10 +216,6 @@ class ApiPage extends GetApiPageBase
 			{
 				$tournament = new stdClass();
 				list ($tournament->id, $tournament->name, $tournament->flags, $tournament->langs, $tournament->address_id, $tournament->address_name, $address_flags, $tournament->club_id, $tournament->club_name, $club_flags, $tournament->timestamp, $tournament->duration, $tournament->notes, $fee, $currency_id, $tournament_scoring_id, $tournament_scoring_version, $rules_code, $tournament_timezone) = $row;
-				
-				$tournaments_list .= $delim . $tournament->id;
-				$delim = ', ';
-				
 				$tournament->id = (int)$tournament->id;
 				$tournament->langs = (int)$tournament->langs;
 				$tournament->address_id = (int)$tournament->address_id;
@@ -260,7 +256,10 @@ class ApiPage extends GetApiPageBase
 					$tournament->fee = (int)$fee;
 					$tournament->currency_id = (int)$currency_id;
 				}
+				
 				$tournaments[] = $tournament;
+				$tournaments_list .= $delim . $tournament->id;
+				$delim = ', ';
 			}
 		}
 		else
@@ -297,29 +296,34 @@ class ApiPage extends GetApiPageBase
 					$tournament->fee = (int)$fee;
 					$tournament->currency_id = (int)$currency_id;
 				}
+				
 				$tournaments[] = $tournament;
+				$tournaments_list .= $delim . $tournament->id;
+				$delim = ', ';
 			}
 		}
 		
-		if ($lod >= 2)
+		if (count($tournaments) > 0)
 		{
+			// Add series
 			$index = 0;
 			$tournament = $tournaments[0];
 			$query = new DbQuery(
-				'SELECT tp.wins, tp.games_count, tp.shot_points, tp.bonus_points, tp.main_points, tp.place, nu.name, tp.user_id, t.id'.
-				' FROM tournament_places tp' . 
-				' JOIN tournaments t ON t.id = tp.tournament_id' .
-				' JOIN users u ON u.id = tp.user_id' .
-				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ?) <> 0' .
-				' WHERE t.id IN ('.$tournaments_list.') ORDER BY t.start_time DESC, t.id DESC, tp.place', $lang);
+				'SELECT t.id, s.id, s.name, l.id, l.name, st.stars'.
+				' FROM series_tournaments st'.
+				' JOIN tournaments t ON t.id = st.tournament_id'.
+				' JOIN series s ON s.id = st.series_id'.
+				' JOIN leagues l ON l.id = s.league_id'.
+				' WHERE t.id IN ('.$tournaments_list.') '.
+				' ORDER BY t.start_time DESC, t.id DESC');
 			while ($row = $query->next())
 			{
-				$player = new stdClass();
-				list ($player->wins, $player->games_count, $shot_points, $bonus_points, $main_points, $place, $player->name, $player->user_id, $tournament_id) = $row;
-				$player->user_id = (int)$player->user_id;
-				$player->points = (float)($main_points + $bonus_points + $shot_points);
-				$player->games_count = (int)$player->games_count;
-				$player->wins = (int)$player->wins;
+				$series = new stdClass();
+				list ($tournament_id, $series->id, $series->name, $series->league_id, $series->league_name, $series->stars) = $row;
+				$series->id = (int)$series->id;
+				$series->league_id = (int)$series->league_id;
+				$series->stars = (float)$series->stars;
+				
 				while ($tournament_id != $tournament->id)
 				{
 					if (++$index >= count($tournaments))
@@ -334,11 +338,53 @@ class ApiPage extends GetApiPageBase
 					break;
 				}
 				
-				if (!isset($tournament->players))
+				if (!isset($tournament->series))
 				{
-					$tournament->players = array();
+					$tournament->series = array();
 				}
-				$tournament->players[] = $player;
+				$tournament->series[] = $series;
+			}
+		
+			// Add players
+			if ($lod >= 2)
+			{
+				$index = 0;
+				$tournament = $tournaments[0];
+				$query = new DbQuery(
+					'SELECT tp.wins, tp.games_count, tp.shot_points, tp.bonus_points, tp.main_points, tp.place, nu.name, tp.user_id, t.id'.
+					' FROM tournament_places tp' . 
+					' JOIN tournaments t ON t.id = tp.tournament_id' .
+					' JOIN users u ON u.id = tp.user_id' .
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ?) <> 0' .
+					' WHERE t.id IN ('.$tournaments_list.') ORDER BY t.start_time DESC, t.id DESC, tp.place', $lang);
+				while ($row = $query->next())
+				{
+					$player = new stdClass();
+					list ($player->wins, $player->games_count, $shot_points, $bonus_points, $main_points, $place, $player->name, $player->user_id, $tournament_id) = $row;
+					$player->user_id = (int)$player->user_id;
+					$player->points = (float)($main_points + $bonus_points + $shot_points);
+					$player->games_count = (int)$player->games_count;
+					$player->wins = (int)$player->wins;
+					while ($tournament_id != $tournament->id)
+					{
+						if (++$index >= count($tournaments))
+						{
+							$tournament = NULL;
+							break;
+						}
+						$tournament = $tournaments[$index];
+					}
+					if (is_null($tournament))
+					{
+						break;
+					}
+					
+					if (!isset($tournament->players))
+					{
+						$tournament->players = array();
+					}
+					$tournament->players[] = $player;
+				}
 			}
 		}
 		$this->response['tournaments'] = $tournaments;
@@ -405,7 +451,13 @@ class ApiPage extends GetApiPageBase
 										'<li value="256">Tournament rounds must use this tournament scoring system.</li>' .
 										'</ol>');
 			api_rules_help($param->sub_param('rules', 'Game rules used in the tournament.'), true);
-			$players_param = $param->sub_param('players', 'List of tournament players in the order of the place taken.', 'the tournament is not finished yet.', 2);
+			$series_param = $param->sub_param('series', 'Array of series where this tournament participates in.', 'the tournament is not a part of any series.');
+				$series_param->sub_param('id', 'Series id.');
+				$series_param->sub_param('name', 'Series name.');
+				$series_param->sub_param('league_id', 'League id.');
+				$series_param->sub_param('league_name', 'League name.');
+				$series_param->sub_param('stars', 'Tournament stars in these series.');
+			$players_param = $param->sub_param('players', 'Array of tournament players in the order of the place taken.', 'the tournament is not finished yet.', 2);
 				$players_param->sub_param('user_id', 'User id of the player.', 2);
 				$players_param->sub_param('name', 'Player name using default language for the profile or "lang" param if set.');
 				$players_param->sub_param('points', 'Tournament score.', 2);
