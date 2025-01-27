@@ -5,6 +5,7 @@ var _isDirty = false; // signals if the game needs to be saved
 var _connectionState = 0; // 0 when connected, 1 when connecting, 2 when disconnected, 3 when error
 var _connectionListener; // this function is called when connection status is changed. Parameter is 0 when connected, 1 when connecting, 2 when disconnected, 3 when error
 var _errorListener; // parameter type is: 0 - getting game failed; 1 - saving game failed.
+var _lastDirtyTime = null; // game time at which function dirty was called last time.
 var _gameOnChange; // this function is called every time game changes. Parameter flags is a bit combination of: 
 // 1 - players changed 
 // 2 - roles changed
@@ -12,6 +13,8 @@ var _gameOnChange; // this function is called every time game changes. Parameter
 // 8 - rating/non-rating changed
 // 16 - language changed
 // 32 - moderator changed
+// 64 - warnings to players changed
+// 128 - gametime has changed. It is 1 when there is a real change in gametime. It is used to decide if the timer has to be reset.
 
 var statusWaiter = new function()
 {
@@ -128,7 +131,22 @@ function gameSave()
 // Flags are for _gameOnChange function see the meainin in the beginning of the file where _gameOnChange is described
 function gameDirty(flags)
 {
+	console.log(JSON.stringify(game, undefined, 2));
+//	console.table(game.players);
 	_isDirty = true;
+	if (game.time == null)
+	{
+		if (_lastDirtyTime != null)
+		{
+			_lastDirtyTime = null;
+			flags |= 128; // game time changed
+		}
+	}
+	else if (_lastDirtyTime == null || gameCompareTimes(_lastDirtyTime, game.time, true) != 0)
+	{
+		_lastDirtyTime = structuredClone(game.time);
+		flags |= 128; // game time changed
+	}
 	_gameOnChange(flags);
 }
 
@@ -139,6 +157,239 @@ function gameCancel()
 	{
 		goTo({round:undefined});
 	});
+}
+
+// For players who were shot this is stooting time.
+// For players who were voted out this is voting to them time
+// For players who are not dead - end of the game
+// If unknown - null
+// num - 0 to 9.
+// If includingSpeech is true it returns final speech time instead of voting/shooting time.
+function _gameGetPlayerDeathTime(num, includingSpeech)
+{
+	var deathTime = null;
+	var player = game.players[num];
+	if (!isSet(player.death))
+	{
+		deathTime = { 'time': 'end' }
+		if (isSet(game.time))
+			deathTime.round = game.time.round;
+	}
+	else if (isSet(player.death.time))
+	{
+		deathTime = structuredClone(player.death.time);
+	}
+	else if (isSet(player.death.type))
+	{
+		if (player.death.type == 'day')
+		{
+			deathTime = { 'round': player.death.round };
+			if (includingSpeech)
+			{
+				deathTime.time = 'day kill speaking';
+				deathTime.speaker = num + 1;
+			}
+			else
+			{
+				deathTime.time = 'voting';
+				deathTime.nominant = num + 1;
+				deathTime.votingRound = 0;
+				for (var i = 0; i < 10; ++i)
+				{
+					var p = game.players[i];
+					if (isSet(p.voting) && p.voting.length > deathTime.round && isArray(p.voting[deathTime.round]))
+					{
+						deathTime.votingRound = p.voting[deathTime.round].length;
+						break;
+					}
+				}
+			}
+		}
+		else if (player.death.type == 'night')
+		{
+			deathTime = { 'round': player.death.round, 'time': (includingSpeech ? 'night kill speaking' : 'shooting') };
+		}
+		else if (player.death.type == 'warnings')
+		{
+			deathTime = structuredClone(player.warnings[3]);
+		}
+	}
+	return deathTime;
+}
+
+function _gameWhoSpeaksFirst(round)
+{
+	// todo: support mafclub rules
+	var candidate = 0;
+	if (round > 0)
+	{
+		candidate = _gameWhoSpeaksFirst(round - 1) + 1;
+		if (candidate >= 10)
+		{
+			candidate = 0;
+		}
+	}
+		
+	var dayStart = { "round": round, "time": 'night kill speaking' };
+	for (var i = 0; i < 10; ++i)
+	{
+		if (gameCompareTimes(_gameGetPlayerDeathTime(candidate), dayStart) > 0)
+		{
+			break;
+		}
+		else if (++candidate >= 10)
+		{
+			candidate = 0;
+		}
+	}
+	if (i >= 10)
+	{
+		return -1;
+	}
+	return candidate;
+}
+
+// time is a string specifying rough time of the game.
+function _gameTimeToInt(time)
+{
+	switch (time)
+	{
+	case 'start':
+		return 0;
+	case 'arrangement':
+		return 1;
+	case 'shooting':
+		return 2;
+	case 'don':
+		return 3;
+	case 'sheriff':
+		return 4;
+	case 'day start':
+		return 5;
+	case 'night kill speaking':
+		return 6;
+	case 'speaking':
+		return 7;
+	case 'voting':
+		return 8;
+	case 'day kill speaking':
+		return 9;
+	}
+	return 10;
+}
+
+// returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
+// num1 and num2 are 1 based. The range is 1-10.
+function _whoWasNominatedEarlier(round, num1, num2)
+{
+	if (num1 != num2)
+	{
+		var speaksFirst = _gameWhoSpeaksFirst(round);
+		var i = speaksFirst;
+		do
+		{
+			var p = game.players[i];
+			if (isSet(p.nominating) && round < p.nominating.length)
+			{
+				var n = p.nominating[round];
+				if (n == num1)
+				{
+					return -1;
+				}
+				if (n == num2)
+				{
+					return 1;
+				}
+			}
+			
+			++i;
+			if (i >= 10)
+			{
+				i = 0;
+			}
+		} while (i != speaksFirst);
+	}
+	return 0;
+}
+
+// returns <0 if time1 < time2; >0 if time1 > time2; 0 if time1 == time2
+// When roughly is true it does not consider order fiels. All times with the same game state are considered the same.
+// For example suppose when player 7 speaks in round 2, player 3 gets a warning, then player 4 takes a warning, then player 10 is removed from the game.
+// If roughly is false or missing, all four events will appear in order 1. 7 speaks, then 3 gets an order, etc...
+// If roughly is true, all four events are considered to happen at the same time - when 7 is speaking.
+function gameCompareTimes(time1, time2, roughly)
+{
+	if (!isSet(time2))
+	{
+		return isSet(time1) ? 1 : 0;
+	}
+	if (!isSet(time1))
+	{
+		return -1;
+	}
+	
+	var round1 = isSet(time1.round) ? time1.round : 0;
+	var round2 = isSet(time2.round) ? time1.round : 0;
+	if (round1 != round2)
+	{
+		return round1 - round2;
+	}
+		
+	var t1 = isSet(time1.time) ? time1.time : 'start';
+	var t2 = isSet(time2.time) ? time2.time : 'start';
+	if (t1 != t2)
+	{
+		return _gameTimeToInt(t1) - _gameTimeToInt(t2);
+	}
+		
+	// todo: port the same logic with _gameWhoSpeaksFirst to include/game.php compare_gametimes(..)
+	var result = 0;
+	switch (t1)
+	{
+	case 'speaking':
+		var speaksFirst = _gameWhoSpeaksFirst(round1);
+		var speaker1 = (time1.speaker < speaksFirst ? 9 + time1.speaker : time1.speaker);
+		var speaker2 = (time2.speaker < speaksFirst ? 9 + time2.speaker : time2.speaker);
+		result = speaker1 - speaker2;
+		break;
+
+	case 'voting':
+		if (time1.votingRound != time2.votingRound)
+		{
+			result = time1.votingRound - time2.votingRound;
+		}
+		else if (isSet(time1.nominant))
+		{
+			if (!isSet(time2.nominant))
+			{
+				result = isSet(time2.speaker) ? -1 : 1;
+			}
+			result = _whoWasNominatedEarlier(round1, time1.nominant, time2.nominant);
+		}
+		else if (isSet(time1.speaker))
+		{
+			if (!isSet(time2.speaker))
+			{
+				result = 1;
+			}
+			result = _whoWasNominatedEarlier(round1, time1.speaker, time2.speaker);
+		}
+		else
+		{
+			result = isSet(time2.nominant) || isSet(time2.speaker) ? -1 : 0;
+		}
+		break;
+			
+	case 'day kill speaking':
+		result = _whoWasNominatedEarlier(round1, time1.speaker, time2.speaker);
+		break;
+	}
+	
+	if (result == 0 && !roughly)
+	{
+		result = (isSet(time1.order) ? time1.order : -1) - (isSet(time2.order) ? time2.order : -1);
+	}
+	return result;
 }
 
 // Find user registration object for the event.
@@ -247,6 +498,8 @@ function gameIsNight()
 	case 'don':
 	case 'sheriff':
 		return true;
+	case 'end':
+		return game.winner == 'maf';
 	}
 	return false;
 }
@@ -323,7 +576,10 @@ function gameSetRole(num, role)
 		else
 			player.role = role;
 		
-		gameDirty(2);
+		if (gameAreRolesSet() && _gameCheckEnd())
+			gameDirty(6);
+		else
+			gameDirty(2);
 	}
 }
 
@@ -352,7 +608,232 @@ function gameGenerateRoles()
 				delete game.players[j].role;
 		}
 	}
-	gameDirty(2);
+	if (_gameCheckEnd())
+		gameDirty(6);
+	else
+		gameDirty(2);
+}
+
+function _gameEnd(winner)
+{
+	game.winner = winner;
+	game.time = { 'time': 'end', 'round': game.time.round };
+	game.endTime = Math.round((new Date()).getTime() / 1000);
+}
+
+function _gameCheckEnd()
+{
+	if (isSet(game.time))
+	{
+		if (game.time.time == 'end')
+		{
+			return true;
+		}
+		
+		var redAlive = 0;
+		var blackAlive = 0;
+		for (var i = 0; i < 10; ++i)
+		{
+			var p = game.players[i];
+			if (!isSet(p.death))
+			{
+				if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
+				{
+					++blackAlive;
+				}
+				else
+				{
+					++redAlive;
+				}
+			}
+		}
+		
+		if (blackAlive <= 0)
+		{
+			_gameEnd('civ');
+			return true;
+		}
+		
+		if (blackAlive >= redAlive)
+		{
+			_gameEnd('maf');
+			return true;
+		}
+	}
+	return false;
+}
+
+function _gameIncTimeOrder()
+{
+	if (isSet(game.time.order))
+	{
+		++game.time.order;
+	}
+	else
+	{
+		game.time.order = 1;
+	}
+}
+
+function gamePlayerWarning(num)
+{
+	var player = game.players[num];
+	var dirtyFlags = 64;
+	
+	_gameIncTimeOrder();
+	if (!isSet(player.warnings))
+	{
+		player.warnings = [];
+	}
+	player.warnings.push(structuredClone(game.time));
+	
+	if (player.warnings.length >= 4)
+	{
+		player.death = { round: game.time.round, type: 'warnings' };
+		_gameCheckEnd();
+		dirtyFlags |= 4;
+	}
+	gameDirty(dirtyFlags);
+}
+
+function gamePlayerGiveUp(num)
+{
+	_gameIncTimeOrder();
+	game.players[num].death = { 'round': game.time.round, 'type': 'giveUp', 'time': structuredClone(game.time) };
+	_gameCheckEnd();
+	gameDirty(4);
+}
+
+function gamePlayerKickOut(num)
+{
+	_gameIncTimeOrder();
+	game.players[num].death = { 'round': game.time.round, 'type': 'kickOut', 'time': structuredClone(game.time) };
+	_gameCheckEnd();
+	gameDirty(4);
+}
+
+function gamePlayerTeamKickOut(num)
+{
+	var p = game.players[num];
+	
+	_gameIncTimeOrder();
+	p.death = { 'round': game.time.round, 'type': 'teamKickOut', 'time': structuredClone(game.time) };
+	if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
+	{
+		_gameEnd('civ');
+	}
+	else
+	{
+		_gameEnd('maf');
+	}
+	gameDirty(4);
+}
+
+function gamePlayerRemoveWarning(num)
+{
+	var player = game.players[num];
+	var i = player.warnings.length - 1;
+	if (isSet(player.warnings) && i >= 0)
+	{
+		var w = player.warnings[i];
+		if (gameCompareTimes(w, game.time, true) == 0 && --game.time.order == 0)
+		{
+			delete game.time.order;
+		}
+		for (var i = 0; i < 10; ++i)
+		{
+			if (i == num) continue;
+			
+			var p = game.players[i];
+			if (isSet(p.warnings))
+			{
+				for (j = p.warnings.length - 1; j >= 0; --j)
+				{
+					var w1 = p.warnings[j];
+					if (gameCompareTimes(w, w1, true) == 0 && w1.order > w.order)
+					{
+						--w1.order;
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+			if (isSet(p.death) && isSet(p.death.time) && gameCompareTimes(w, p.death.time, true) == 0 && p.death.time.order > w.order)
+			{
+				--p.death.time.order;
+			}
+		}
+		
+		if (player.warnings.length > 1)
+			player.warnings.splice(player.warnings.length - 1, 1);
+		else if (player.warnings.length == 1)
+		{
+			delete player.warnings;
+		}
+		gameDirty(64);
+	}
+}
+
+function gameArrangePlayer(num, night)
+{
+	if (night > 0)
+	{
+		for (var i = 0; i < 10; ++i)
+		{
+			var p = game.players[i];
+			if (p.arranged == night)
+			{
+				delete p.arranged;
+			}
+		}
+		game.players[num].arranged = night;
+	}
+	else
+	{
+		delete game.players[num].arranged;
+	}
+	gameDirty(4);
+}
+
+function gameSetBonus(num, points, title, comment)
+{
+	if ((points || title) && !comment) // comment must be set if either points or title are set
+	{
+		return false;
+	}
+	
+	var player = game.players[num];
+	if (points)
+	{
+		if (title)
+		{
+			player.bonus = [points, title];
+		}
+		else
+		{
+			player.bonus = points;
+		}
+	}
+	else if (title)
+	{
+		player.bonus = title;
+	}
+	else if (player.bonus)
+	{
+		delete player.bonus;
+	}
+	if (comment)
+	{
+		player.comment = comment;
+	}
+	else if (player.comment)
+	{
+		delete player.comment;
+	}
+	gameDirty(4);
+	return true;
 }
 
 function gameNext()
@@ -360,10 +841,18 @@ function gameNext()
 	if (!isSet(game.time))
 	{
 		game.time = { time: 'start', round: 0 };
+		if (!isSet(game.startTime))
+		{
+			game.startTime = Math.round((new Date()).getTime() / 1000);
+		}
 	}
-	switch (game.time.time)
+	else switch (game.time.time)
 	{
 	case 'start':
+		if (gameAreRolesSet())
+		{
+			game.time.time = 'arrangement';
+		}
 		break;
 	case 'arrangement':
 		break;
@@ -384,6 +873,10 @@ function gameNext()
 	case 'sheriff':
 		break;
 	case 'end':
+		json.post('api/ops/game.php', { op: 'create', json: JSON.stringify(game) }, function()
+		{
+			goTo({round:undefined});
+		});
 		break;
 	}
 	gameDirty(5);
@@ -393,12 +886,46 @@ function gameBack()
 {
 	if (isSet(game.time))
 	{
-		switch (game.time.time)
+		var dirtyFlag = 4;
+		if (isSet(game.time.order))
+		{
+			if (--game.time.order == 0)
+			{
+				delete game.time.order;
+			}
+			
+			for (var i = 0; i < 10; ++i)
+			{
+				var player = game.players[i];
+				if (isSet(player.warnings) && player.warnings.length > 0)
+				{
+					while (player.warnings.length > 0 && gameCompareTimes(player.warnings[player.warnings.length-1], game.time) > 0)
+					{
+						if (player.warnings.length == 4)
+						{
+							delete player.death;
+						}
+						player.warnings.pop();
+						dirtyFlag |= 64;
+					}
+					if (player.warnings.length == 0)
+					{
+						delete player.warnings;
+					}
+				}
+				if (isSet(player.death) && isSet(player.death.time) && gameCompareTimes(player.death.time, game.time) > 0)
+				{
+					delete player.death;
+				}
+			}
+		}
+		else switch (game.time.time)
 		{
 		case 'start':
 			delete game.time;
 			break;
 		case 'arrangement':
+			game.time.time = 'start';
 			break;
 		case 'day start':
 			break;
@@ -417,8 +944,36 @@ function gameBack()
 		case 'sheriff':
 			break;
 		case 'end':
+			var maxDeathTime = null;
+			var num = -1;
+			for (var i = 0; i < 10; ++i)
+			{
+				var t = _gameGetPlayerDeathTime(i, true);
+				if (t != null && t.time != 'end' && (maxDeathTime == null || gameCompareTimes(maxDeathTime, t) < 0))
+				{
+					maxDeathTime = t;
+					num = i;
+				}
+			}
+			if (num >= 0) 
+			{
+				game.time = maxDeathTime;
+				if (game.winner)
+				{
+					delete game.winner;
+				}
+				if (game.endTime)
+				{
+					delete game.endTime;
+				}
+				if (isSet(maxDeathTime.order))
+				{
+					gameBack(); // we need to make one more step back to remove the last warning or mod-kill.
+					return; // gameDirty is already called by gameBack. No need to call it again.
+				}
+			}
 			break;
 		}
-		gameDirty(4);
+		gameDirty(dirtyFlag);
 	}
 }

@@ -1,5 +1,7 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["CancelGame"] = "All the data of this game will be lost. Next time you will need to start from scratch. Are you sure you want to cancel the game?";
+_l["RemoveWarning"] = "Remove the last warning.";
 _l["RandSeats"] = "Randomize seating";
 _l["StartGame"] = "Please enter players and click \"Next\" to start the game.";
 _l["UnknownError"] = "Unknown error";
@@ -171,7 +173,7 @@ _l["Instr3a"] = "For players photos";
 _l["Instr3b"] = "For game statistics - nominees/checks";
 _l["Instr3c"] = "(NEW) For the whole overlay";
 _l["Instr4"] = "Configure other parameters and click ok. Don\'t panic if it shows nothing. The information will appear once you start the game in this tournament/event using the specified user account.";
-_l["Leave"] = "Remove player {1}";
+_l["PlayerActions"] = "Player {1}";
 _l["legacy"] = "legacy: {1}";
 _l["gaveUp"] = "gave up";
 _l["fourWarn"] = "four warnings";

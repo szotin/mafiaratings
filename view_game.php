@@ -242,14 +242,14 @@ class Page extends PageBase
 		
 		$this->url_base .= $separator . 'id=';
 		$this->prev_game_id = $this->next_game_id = 0;
-		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id <> ? AND g.start_time <= ? AND g.result > 0', $this->id, $this->game->data->startTime, $condition);
+		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id < ? AND g.start_time <= ? AND g.result > 0', $this->id, $this->game->data->startTime, $condition);
 		$query->add(' ORDER BY g.start_time DESC, g.id DESC');
 		if ($row = $query->next())
 		{
 			list($this->prev_game_id) = $row;
 		}
 		
-		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id <> ? AND g.start_time >= ? AND g.result > 0', $this->id, $this->game->data->startTime, $condition);
+		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id > ? AND g.start_time >= ? AND g.result > 0', $this->id, $this->game->data->startTime, $condition);
 		$query->add(' ORDER BY g.start_time, g.id');
 		if ($row = $query->next())
 		{

@@ -55,6 +55,9 @@ define('GAME_ACTION_SHOOTING', 'shooting');
 
 define('GAME_TO_EVENT_MAX_DISTANCE', 10800);
 
+define('GAME_DEFAULT_PROMPT_SOUND', 2);
+define('GAME_DEFAULT_END_SOUND', 3);
+
 class Game
 {
 	public $data;
@@ -1724,44 +1727,50 @@ class Game
 		{
 			switch ($player->death->type)
 			{
-				case DEATH_TYPE_NIGHT:
-					$death_time = new stdClass();
-					if (isset($player->death->round))
-					{
-						$death_time->round = $player->death->round;
-					}
-					if ($including_speech)
-					{
-						$death_time->time = GAMETIME_NIGHT_KILL_SPEAKING;
-					}
-					else
-					{
-						$death_time->time = GAMETIME_SHOOTING;
-					}
-					break;
-				case DEATH_TYPE_DAY:
-					$death_time = new stdClass();
+			case DEATH_TYPE_NIGHT:
+				$death_time = new stdClass();
+				if (isset($player->death->round))
+				{
 					$death_time->round = $player->death->round;
-					if ($including_speech)
+				}
+				if ($including_speech)
+				{
+					$death_time->time = GAMETIME_NIGHT_KILL_SPEAKING;
+				}
+				else
+				{
+					$death_time->time = GAMETIME_SHOOTING;
+				}
+				break;
+			case DEATH_TYPE_DAY:
+				$death_time = new stdClass();
+				$death_time->round = $player->death->round;
+				if ($including_speech)
+				{
+					$death_time->time = GAMETIME_DAY_KILL_SPEAKING;
+					$death_time->speaker = $player_num;
+				}
+				else
+				{
+					$death_time->time = GAMETIME_VOTING;
+					$death_time->nominant = $player_num;
+					$death_time->votingRound = 0; // how to find out voting round??
+					foreach ($this->data->players as $p)
 					{
-						$death_time->time = GAMETIME_DAY_KILL_SPEAKING;
-						$death_time->speaker = $player_num;
-					}
-					else
-					{
-						$death_time->time = GAMETIME_VOTING;
-						$death_time->nominant = $player_num;
-						$death_time->votingRound = 0; // how to find out voting round??
-						foreach ($this->data->players as $p)
+						if (isset($p->voting) && count($p->voting) > $death_time->round && is_array($p->voting[$death_time->round]))
 						{
-							if (isset($p->voting) && count($p->voting) > $death_time->round && is_array($p->voting[$death_time->round]))
-							{
-								$death_time->votingRound = count($p->voting[$death_time->round]);
-								break;
-							}
+							$death_time->votingRound = count($p->voting[$death_time->round]);
+							break;
 						}
 					}
-					break;
+				}
+				break;
+			case DEATH_TYPE_WARNINGS:
+				if (isset($player->warnings) && count($player->warnings) > 3)
+				{
+					$death_time = clone $player->warnings[3];
+				}
+				break;
 			}
 		}
 		return $death_time;
@@ -1799,6 +1808,40 @@ class Game
 			return 0;
 		}
 		return $candidate;
+	}
+	
+	// returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
+	// num1 and num2 are 1 based. The range is 1-10.
+	function who_was_nominated_earlier($round, $num1, $num2)
+	{
+		if ($num1 != $num2)
+		{
+			$speaksFirst = $this->who_speaks_first($round);
+			$i = $speaksFirst;
+			do
+			{
+				$p = $this->data->players[$i - 1];
+				if (isset($p->nominating) && $round < $p->nominating.length)
+				{
+					$n = $p->nominating[$round];
+					if ($n == $num1)
+					{
+						return -1;
+					}
+					if ($n == $num2)
+					{
+						return 1;
+					}
+				}
+				
+				++$i;
+				if ($i > 10)
+				{
+					$i = 1;
+				}
+			} while ($i != $speaksFirst);
+		}
+		return 0;
 	}
 	
 	function init_votings($force = false)
@@ -2185,94 +2228,60 @@ class Game
 		{
 			return Game::gametime_to_int($time1) - Game::gametime_to_int($time2);
 		}
+		
+		$result = 0;
 		switch ($time1)
 		{
-			case GAMETIME_SPEAKING:
-				$speaks_first = $this->who_speaks_first($gt1->round);
-				$speaker1 = ($gt1->speaker < $speaks_first ? 10 + $gt1->speaker : $gt1->speaker);
-				$speaker2 = ($gt2->speaker < $speaks_first ? 10 + $gt2->speaker : $gt2->speaker);
-				return $speaker1 - $speaker2;
+		case GAMETIME_SPEAKING:
+			$speaks_first = $this->who_speaks_first($gt1->round);
+			$speaker1 = ($gt1->speaker < $speaks_first ? 10 + $gt1->speaker : $gt1->speaker);
+			$speaker2 = ($gt2->speaker < $speaks_first ? 10 + $gt2->speaker : $gt2->speaker);
+			$result = $speaker1 - $speaker2;
+			break;
 
-			case GAMETIME_VOTING:
-				if ($gt1->votingRound != $gt2->votingRound)
+		case GAMETIME_VOTING:
+			if ($gt1->votingRound != $gt2->votingRound)
+			{
+				$result = $gt1->votingRound - $gt2->votingRound;
+			}
+			else if (isset($gt1->nominant))
+			{
+				if (!isset($gt2->nominant))
 				{
-					return $gt1->votingRound - $gt2->votingRound;
+					$result = isset($gt2->speaker) ? -1 : 1;
 				}
-				
-				if (isset($gt1->nominant))
+				else
 				{
-					if (!isset($gt2->nominant))
-					{
-						return isset($gt2->speaker) ? -1 : 1;
-					}
-					
-					$this->init_votings(); // we probably should not use votings in compare_gametimes, but this is the easiest fix
-					if ($gt1->nominant != $gt2->nominant && $gt1->round < count($this->votings))
-					{
-						$voting = $this->votings[$gt1->round];
-						foreach ($voting->nominants as $nom)
-						{
-							if ($nom->nominant == $gt1->nominant)
-							{
-								return -1;
-							}
-							else if ($nom->nominant == $gt2->nominant)
-							{
-								return 1;
-							}
-						}
-					}
-					return 0;
+					$result = $this->who_was_nominated_earlier($gt1->round, $gt1->nominant, $gt2->nominant);
 				}
-				
-				if (isset($gt1->speaker))
+			}
+			else if (isset($gt1->speaker))
+			{
+				if (!isset($gt2->speaker))
 				{
-					if (!isset($gt2->speaker))
-					{
-						return 1;
-					}
-					
-					$this->init_votings(); // we probably should not use votings in compare_gametimes, but this is the easiest fix
-					if ($gt1->speaker != $gt2->speaker && $gt1->round < count($this->votings))
-					{
-						$voting = $this->votings[$gt1->round];
-						foreach ($voting->nominants as $nom)
-						{
-							if ($nom->nominant == $gt1->speaker)
-							{
-								return -1;
-							}
-							else if ($nom->nominant == $gt2->speaker)
-							{
-								return 1;
-							}
-						}
-					}
-					return 0;
+					$result = 1;
 				}
-				
-				return isset($gt2->nominant) || isset($gt2->speaker) ? -1 : 0;
-				
-			case GAMETIME_DAY_KILL_SPEAKING:
-				$this->init_votings(); // we probably should not use votings in compare_gametimes, but this is the easiest fix
-				if ($gt1->speaker != $gt2->speaker && $gt1->round < count($this->votings))
+				else
 				{
-					$voting = $this->votings[$gt1->round];
-					foreach ($voting->nominants as $nom)
-					{
-						if ($nom->nominant == $gt1->speaker)
-						{
-							return -1;
-						}
-						else if ($nom->nominant == $gt2->speaker)
-						{
-							return 1;
-						}
-					}
+					$result = $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker);
 				}
-				return 0;
+			}
+			else
+			{
+				$result = isset($gt2->nominant) || isset($gt2->speaker) ? -1 : 0;
+			}
+			break;
+			
+		case GAMETIME_DAY_KILL_SPEAKING:
+			$result = $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker);
+			break;
 		}
-		return 0;
+		
+		if ($result == 0)
+		{
+			$result = (isset($gt1->order) ? $gt1->order : -1) - (isset($gt2->order) ? $gt2->order : -1);
+		}
+		return $result;
 	}
 	
 	function remove_flags($flags)
@@ -3233,15 +3242,19 @@ class Game
 		$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
 		if ($data->winner == 'maf')
 		{
-			$game_result = 2;
+			$game_result = GAME_RESULT_MAFIA;
 		}
 		else if ($data->winner == 'civ')
 		{
-			$game_result = 1;
+			$game_result = GAME_RESULT_TOWN;
+		}
+		else if ($data->winner == 'tie')
+		{
+			$game_result = GAME_RESULT_TIE;
 		}
 		else
 		{
-			$game_result = 3;
+			throw new Exc(get_label('Unknown [0]', get_label('result')));
 		}
 		
 		Db::exec(get_label('game'),

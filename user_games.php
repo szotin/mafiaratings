@@ -242,13 +242,16 @@ class Page extends UserPageBase
 				echo '<td>';
 				switch ($game_result)
 				{
-					case 0:
+					case GAME_RESULT_PLAYING:
 						break;
-					case 1: // civils won
+					case GAME_RESULT_TOWN:
 						echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
 						break;
-					case 2: // mafia won
+					case GAME_RESULT_MAFIA:
 						echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
+						break;
+					case GAME_RESULT_TIE:
+						echo '<img src="images/transp.png" width="24" title="' . get_label('tie') . '">';
 						break;
 				}
 				echo '</td></tr>';
@@ -370,19 +373,19 @@ class Page extends UserPageBase
 				{
 					case 0: // civil;
 						echo '<img src="images/civ.png" title="' . get_label('civil') . '" style="opacity: 0.5;">';
-						$win = $game_result == 1 ? 1 : 2;
+						$win = $game_result == GAME_RESULT_TOWN ? 1 : 2;
 						break;
 					case 1: // sherif;
 						echo '<img src="images/sheriff.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
-						$win = $game_result == 1 ? 1 : 2;
+						$win = $game_result == GAME_RESULT_TOWN ? 1 : 2;
 						break;
 					case 2: // mafia;
 						echo '<img src="images/maf.png" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
-						$win = $game_result == 2 ? 1 : 2;
+						$win = $game_result == GAME_RESULT_MAFIA ? 1 : 2;
 						break;
 					case 3: // don
 						echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
-						$win = $game_result == 2 ? 1 : 2;
+						$win = $game_result == GAME_RESULT_MAFIA ? 1 : 2;
 						break;
 				}
 				echo '</td>';

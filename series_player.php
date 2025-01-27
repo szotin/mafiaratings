@@ -695,19 +695,19 @@ class Page extends SeriesPageBase
 			{
 				case 0: // civil;
 					echo '<img src="images/civ.png" title="' . get_label('civil') . '" style="opacity: 0.5;">';
-					$win = $game_result == 1 ? 1 : 2;
+					$win = $game_result == GAME_RESULT_TOWN ? 1 : 2;
 					break;
 				case 1: // sherif;
 					echo '<img src="images/sheriff.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
-					$win = $game_result == 1 ? 1 : 2;
+					$win = $game_result == GAME_RESULT_TOWN ? 1 : 2;
 					break;
 				case 2: // mafia;
 					echo '<img src="images/maf.png" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
-					$win = $game_result == 2 ? 1 : 2;
+					$win = $game_result == GAME_RESULT_MAFIA ? 1 : 2;
 					break;
 				case 3: // don
 					echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
-					$win = $game_result == 2 ? 1 : 2;
+					$win = $game_result == GAME_RESULT_MAFIA ? 1 : 2;
 					break;
 			}
 			echo '</td>';

@@ -874,13 +874,13 @@ class ApiPage extends OpsApiPageBase
 					$tournament_id = $gs->tournament_id;
 				}
 				
-				$result_code = 0; // GAME_RESULT_PLAYING
+				$result_code = GAME_RESULT_PLAYING;
 				switch ($gs->gamestate)
 				{
 					case 17: // GAME_MAFIA_WON
-						$result_code = 2; // GAME_RESULT_MAFIA;
+						$result_code = GAME_RESULT_MAFIA;
 					case 18: // GAME_CIVIL_WON
-						$result_code = 1; // GAME_RESULT_TOWN;
+						$result_code = GAME_RESULT_TOWN;
 				}
 				
 				list($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE id = ?', $gs->id);
@@ -1290,6 +1290,81 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
+	// create
+	//-------------------------------------------------------------------------------------------------------
+	function create_op()
+	{
+		global $_profile;
+		
+		$json = get_required_param('json');
+		if ($json == NULL)
+		{
+			throw new Exc(get_label('Invalid json format.'));
+		}
+		$json = check_json($json);
+		
+		Db::begin();
+		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
+		$game = new Game($json, $feature_flags);
+		$data = $game->data;
+		$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
+		$table_num = isset($data->table) ? $data->table - 1 : NULL;
+		$round_num = isset($data->round) ? $data->round - 1 : NULL;
+		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $data->clubId, $data->eventId, $tournament_id);
+		
+		if ($data->winner == 'maf')
+		{
+			$result_code = GAME_RESULT_MAFIA;
+		}
+		else if ($data->winner == 'civ')
+		{
+			$result_code = GAME_RESULT_TOWN;
+		}
+		else if ($data->winner == 'tie')
+		{
+			$result_code = GAME_RESULT_TIE;
+		}
+		else
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('result')));
+		}
+		
+		Db::exec(get_label('game'),
+			'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, start_time, end_time, result, rules, game_table, game_number) ' .
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$data->clubId, $data->eventId, $tournament_id, $data->moderator->id, $_profile->user_id, get_lang_by_code($data->language),
+			$data->startTime, $data->endTime, $result_code, $data->rules, $table_num, $round_num);
+		list ($data->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');
+		$data->id = (int)$data->id;
+
+		$this->response['rebuild_ratings'] = $game->update();
+		
+		Db::exec(get_label('game'), 'DELETE FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $data->eventId, $table_num, $round_num);
+		Db::commit();
+		
+		if (isset($game->issues))
+		{
+			$text = get_label('The game contains the next issues:') . '<ul>';
+			foreach ($game->issues as $issue)
+			{
+				$text .= '<li>' . $issue . '</li>';
+			}
+			$text .= '</ul>' . get_label('They are all fixed but the original version of the game is also saved. Please check Game Issues in the management menu.');
+			$this->response['message'] = $text;
+		}
+	}
+	
+	function create_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Create the game.');
+		$param = $help->request_param('json', 'Game description in json format.');
+		Game::api_help($param, true);
+		$param = $help->response_param('json', 'Game description in json format.');
+		Game::api_help($param, true);
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
 	// change
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
@@ -1303,11 +1378,20 @@ class ApiPage extends OpsApiPageBase
 		$json = check_json($json);
 		
 		Db::begin();
+		$game = new Game($json, $feature_flags);
+		if (!isset($game->data->id))
+		{
+			$game->data->id = $game_id;
+		}
+		else if ($game->data->id != $game_id)
+		{
+			throw new Exc(get_label('Game id does not match the one in the game'));
+		}	
+		
 		list($club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
-		$game = new Game($json, $feature_flags);
 		$this->response['rebuild_ratings'] = $game->update();
 		Db::commit();
 		
@@ -1359,11 +1443,19 @@ class ApiPage extends OpsApiPageBase
 			
 			if ($game->winner == 'maf')
 			{
-				$result_code = 2; // GAME_RESULT_MAFIA;
+				$result_code = GAME_RESULT_MAFIA;
+			}
+			else if ($game->winner == 'civ')
+			{
+				$result_code = GAME_RESULT_TOWN;
+			}
+			else if ($game->winner == 'tie')
+			{
+				$result_code = GAME_RESULT_TIE;
 			}
 			else
 			{
-				$result_code = 1; // GAME_RESULT_TOWN;
+				throw new Exc(get_label('Unknown [0]', get_label('result')));
 			}
 			Db::exec(get_label('game'),
 				'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, start_time, end_time, result, rules) ' .

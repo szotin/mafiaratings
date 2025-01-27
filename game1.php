@@ -441,9 +441,9 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
-		list ($event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
+		list ($event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $club_prompt_sound_id, $club_end_sound_id) = 
 			Db::record(get_label('event'), 
-			'SELECT e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags'.
+			'SELECT e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, c.prompt_sound_id, c.end_sound_id'.
 			' FROM events e'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 			' JOIN clubs c ON c.id = e.club_id'.
@@ -461,7 +461,7 @@ class Page extends PageBase
 		
 		echo '<ul id="ops-menu" style="position:absolute;" hidden>';
 		echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({round:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
-		echo '<li id="cancel" class="ops-item"><a href="#" onclick="gameCancel()"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
+		echo '<li id="cancel" class="ops-item"><a href="#" onclick="uiCancelGame()"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
 		echo '<li type="separator"></li>';
 //		echo '<li id="voting" class="ops-item"><a href="#" onclick="gameToggleVoting()"><img src="images/vote.png" class="text"> <span id="voting-txt">'.get_label('Cancel voting').'</span></a></li>';
 //		echo '<li type="separator"></li>';
@@ -489,7 +489,16 @@ class Page extends PageBase
 		echo '</button>';
 		echo '</td>';
 		echo '<td id="status" align="center"></td>';
-		echo '<td id="clock" width="320"></td>';
+		
+		echo '<td width="320" id="clock">';
+		// echo '<table id="t-area" class="timer timer-0" width="100%"><tr>';
+		// echo '<td width="1"><button id="timerBtn" class="timer" onclick="uiToggleTimer()"><img id="timerImg" src="images/resume_big.png" class="timer"></button></td>';
+		// echo '<td><div id="timer" class="timer"></div></td>';
+		// echo '<td width="1"><button class="timer" onclick="uiIncTimer(-10)"><img src="images/dec_big.png" class="timer"></button></td>';
+		// echo '<td width="1"><button class="timer" onclick="uiIncTimer(10)"><img src="images/inc_big.png" class="timer"></button></td>';
+		// echo '</tr></table>';
+		echo '</td>';
+		
 		echo '</tr>';
 		echo '</table>';
 		
@@ -501,10 +510,11 @@ class Page extends PageBase
 			echo '<td width="20" align="center" id="num'.$i.'">'.($i+1).'</td>';
 			echo '<td id="name'.$i.'">';
 			
-			echo '<table class="invis"><tr>';
-			echo '<td><button id="reg-'.$i.'" class="icon" onclick="uiRegisterPlayer('.$i.')"><img src="images/user.png" class="icon"></button></td>';
-			echo '<td><button id="reg-new-'.$i.'" class="icon" onclick="uiCreatePlayer('.$i.')"><img src="images/create.png" class="icon"></button></td>';
+			echo '<table class="invis" width="100%"><tr>';
+			echo '<td width="24"><button id="reg-'.$i.'" class="icon" onclick="uiRegisterPlayer('.$i.')"><img src="images/user.png" class="icon"></button></td>';
+			echo '<td width="24"><button id="reg-new-'.$i.'" class="icon" onclick="uiCreatePlayer('.$i.')"><img src="images/create.png" class="icon"></button></td>';
 			echo '<td id="pselect'.$i.'"><select id="player'.$i.'" onchange="uiSetPlayer('.$i.')"></select></td>';
+			echo '<td id="controlx'.$i.'" width="114" align="right"></td>';
 			echo '</tr></table>';
 			echo '</td>';
 			
@@ -528,13 +538,36 @@ class Page extends PageBase
 		echo '</table>';
 		
 		echo '<div class="btn-panel"><table class="transp" width="100%"><tr>';
-		echo '<td><button class="game-btn" id="game-back" onclick="gameBack()"><img src="images/prev.png" class="text" title="' . get_label('Back') . '"></button></td>';
+		echo '<td><button class="game-btn" id="game-back" onclick="uiBack()"><img src="images/prev.png" class="text" title="' . get_label('Back') . '"></button></td>';
 		echo '<td id="info" align="center"></td>';
-		echo '<td align="right"><button class="game-btn" id="game-next" onclick="gameNext()" title="' . get_label('Next') . '"><img src="images/next.png" class="text"></button></td>';
+		echo '<td align="right"><button class="game-btn" id="game-next" onclick="uiNext()" title="' . get_label('Next') . '"><img src="images/next.png" class="text"></button></td>';
 		echo '</tr></table></div>';
 		
-		echo '<audio id="end-snd" preload></audio>';
-		echo '<audio id="prompt-snd" preload></audio>';
+		list ($prompt_sound_id, $end_sound_id) = Db::record(get_label('user'), 'SELECT prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $_profile->user_id);
+		if (is_null($prompt_sound_id))
+		{
+			if (is_null($club_prompt_sound_id))
+			{
+				$prompt_sound_id = GAME_DEFAULT_PROMPT_SOUND;
+			}
+			else
+			{
+				$prompt_sound_id = $club_prompt_sound_id;
+			}
+		}
+		if (is_null($end_sound_id))
+		{
+			if (is_null($club_end_sound_id))
+			{
+				$end_sound_id = GAME_DEFAULT_END_SOUND;
+			}
+			else
+			{
+				$end_sound_id = $club_end_sound_id;
+			}
+		}
+		echo '<audio id="end-snd" src="sounds/' . $end_sound_id . '.mp3" preload></audio>';
+		echo '<audio id="prompt-snd" src="sounds/' . $prompt_sound_id . '.mp3" preload></audio>';
 	}
 	
 	protected function show_body()

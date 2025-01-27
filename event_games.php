@@ -220,13 +220,16 @@ class Page extends EventPageBase
 			echo '<td>';
 			switch ($game_result)
 			{
-				case 0:
+				case GAME_RESULT_PLAYING:
 					break;
-				case 1: // civils won
+				case GAME_RESULT_TOWN:
 					echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
 					break;
-				case 2: // mafia won
+				case GAME_RESULT_MAFIA:
 					echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
+					break;
+				case GAME_RESULT_TIE:
+					echo '<img src="images/transp.png" width="24" title="' . get_label('tie') . '">';
 					break;
 			}
 			echo '</td></tr>';
