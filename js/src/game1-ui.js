@@ -10,6 +10,34 @@ function _uiOption(value, current, text)
 	return '<option value="' + value + '">' + text + '</option>';
 }
 
+function _uiPlayerTitle(num)
+{
+	return '' + (num + 1) + ' (' + game.players[num].name + ')';
+}
+
+function _uiGenerateNoms()
+{
+	var first = _gameWhoSpeaksFirst(game.time.round);
+	var i = first;
+	var noms = '';
+	var delim = '';
+	do
+	{
+		var p = game.players[i];
+		if (isSet(p.nominating) && game.time.round < p.nominating.length && p.nominating[game.time.round] != null)
+		{
+			noms += delim + p.nominating[game.time.round];
+			delim = ', ';
+		}
+		if (++i >= 10)
+		{
+			i = 0;
+		}
+	}
+	while (i != first);
+	return noms ? l('ShowNoms', noms) : noms;
+}
+
 function _uiRender(flags)
 {
 	var timerTime = 60;
@@ -59,6 +87,7 @@ function _uiRender(flags)
 		
 		var status = '';
 		var control1Html = '';
+		var noms = '';
 		var nextDisabled = false;
 		var backDisabled = false;
 		if (!isSet(game.time))
@@ -137,11 +166,77 @@ function _uiRender(flags)
 				}
 				info = 'Night0';
 				break;
-			case 'day start':
-				break;
 			case 'night kill speaking':
 				break;
 			case 'speaking':
+				var p = game.players[game.time.speaker - 1];
+				if (!isSet(p.warnings) ||
+					p.warnings.length != 3 ||
+					(game.time.round != 0 &&
+					gameCompareTimes(p.warnings[2], { time: game.time.time, speaker: game.time.speaker, round: game.time.round - 1 }) < 0))
+				{
+					status = l('Speaking', _uiPlayerTitle(game.time.speaker - 1));
+					timerTime = 60;
+				}
+				else if (gamePlayersCount() > 4)
+				{
+					status = l('MissingSpeech', _uiPlayerTitle(game.time.speaker - 1));
+					timerTime = 0;
+				}
+				else
+				{
+					status = l('SpeakingShort', _uiPlayerTitle(game.time.speaker - 1));
+					timerTime = 30;
+				}
+				
+				var n = gameNextSpeaker();
+				if (n >= 0)
+				{
+					status += ' ' + l('NextFloor', _uiPlayerTitle(n));
+				}
+				else
+				{
+					status += ' ' + l('NextVoting');
+				}
+				
+				if (!gameIsVotingCanceled())
+				{
+					var html;
+					var noNom = true;
+					for (var i = 0; i < 10; ++i)
+					{
+						p = game.players[i];
+						if (!isSet(p.death))
+						{
+							var c = $('#control' + i);
+							var n = gameIsPlayerNominated(i);
+							if (n == 1)
+							{
+								c.addClass('day-grey');
+								c.html('<center>' + l('Nominated') + '</center>');
+							}
+							else
+							{
+								html = '<button class="day-vote" onclick="gameNominatePlayer(' + i + ')"';
+								
+								if (n == 2)
+								{
+									html += ' checked';
+									noNom = false;
+								}
+								html += '>' + l('Nominate', i + 1) + '</button>';
+								c.html(html);
+							}
+						}
+					}
+					html = '<button class="day-vote" onclick="gameNominatePlayer(-1)"';
+					if (noNom)
+						html += ' checked';
+					html += '>' + l('NoNom') + '</button>';
+					control1Html = html;
+				}
+				$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
+				noms = _uiGenerateNoms();
 				break;
 			case 'voting':
 				break;
@@ -252,6 +347,7 @@ function _uiRender(flags)
 		$('#control-1').html(control1Html);
 		$('#game-next').prop('disabled', nextDisabled);
 		$('#game-back').prop('disabled', backDisabled);
+		$('#noms').html(noms);
 	}
 	
 	if (flags & 64) // warnings
@@ -275,10 +371,6 @@ function _uiRender(flags)
 				html += '</td><td align="right">'
 				for (; j < player.warnings.length; ++j)
 				{
-					if (gameCompareTimes(player.warnings[j], game.time, true) > 0)
-					{
-						break;
-					}
 					html += '✔';
 				}
 				html += '</td></tr></table></b></font>';
@@ -303,10 +395,7 @@ function _uiErrorListener(type, message, data)
 	if (type == 0) // error getting data
 	{
 		// dlg.error(text, title, width, onClose)
-		dlg.error(message, undefined, undefined, function()
-		{
-			goTo({round:undefined});
-		});
+		dlg.error(message);
 	}
 	else // error setting data
 	{
@@ -330,6 +419,13 @@ function _uiPlayerAction(num, action)
 {
 	var dlgId = dlg.curId();
 	action(num);
+	dlg.close(dlgId);
+}
+
+function _uiChangeNomination(num)
+{
+	var dlgId = dlg.curId();
+	gameChangeNomination(num, parseInt($('#dlg-nominate').val()));
 	dlg.close(dlgId);
 }
 
@@ -699,7 +795,25 @@ function uiSetRole(num, role)
 function uiPlayerActions(num)
 {
 	var player = game.players[num];
-	var html = 
+	var html = '<center>';
+	if (isSet(game.time) && game.time.time == 'speaking' && gameCompareTimes({ time: 'speaking', speaker: num + 1, round: game.time.round }, game.time) <= 0)
+	{
+		var nom = -1;
+		if (isSet(player.nominating) && game.time.round < player.nominating.length && player.nominating[game.time.round] != null)
+		{
+			nom = player.nominating[game.time.round] - 1;
+		}
+		html += '<p><center>' + l("DidNom") + ': <select id="dlg-nominate" onchange="_uiChangeNomination(' + num + ')">' + _uiOption(-1, nom, '');
+		for (var i = 0; i < 10; ++i)
+		{
+			if (!isSet(game.players[i].death))
+			{
+				html += _uiOption(i, nom, i + 1);
+			}
+		}
+		html += '</select></p><br>';
+	}
+	html += 
 		'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerGiveUp)"><table class="transp" width="100%"><tr><td width="30"><img src="images/suicide.png"></td><td>' + l('GiveUp') + '</td></tr></table></button></p>' +
 		'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/delete.png"></td><td>' + l('KickOut') + '</td></tr></table></button></p>' +
 		'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerTeamKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/skull.png"></td><td>' + l('TeamKickOut') + '</td></tr></table></button></p>';
@@ -707,7 +821,8 @@ function uiPlayerActions(num)
 	{
 		html += '<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerRemoveWarning)"><table class="transp" width="100%"><tr><td width="30"><img src="images/warn-minus.png"></td><td>' + l('RemoveWarning') + '</td></tr></table></button></p>';
 	}
-	dlg.custom(html, l('PlayerActions', num + 1), 300, {});
+	html += '</center>';
+	dlg.custom(html, l('PlayerActions', num + 1), 360, {});
 }
 
 function uiCancelGame()

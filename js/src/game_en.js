@@ -1,5 +1,6 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["DidNom"] = "Nominated";
 _l["CancelGame"] = "All the data of this game will be lost. Next time you will need to start from scratch. Are you sure you want to cancel the game?";
 _l["RemoveWarning"] = "Remove the last warning.";
 _l["RandSeats"] = "Randomize seating";

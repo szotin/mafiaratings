@@ -264,18 +264,16 @@ function _gameTimeToInt(time)
 		return 3;
 	case 'sheriff':
 		return 4;
-	case 'day start':
-		return 5;
 	case 'night kill speaking':
-		return 6;
+		return 5;
 	case 'speaking':
-		return 7;
+		return 6;
 	case 'voting':
-		return 8;
+		return 7;
 	case 'day kill speaking':
-		return 9;
+		return 8;
 	}
-	return 10;
+	return 9;
 }
 
 // returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
@@ -342,7 +340,6 @@ function gameCompareTimes(time1, time2, roughly)
 		return _gameTimeToInt(t1) - _gameTimeToInt(t2);
 	}
 		
-	// todo: port the same logic with _gameWhoSpeaksFirst to include/game.php compare_gametimes(..)
 	var result = 0;
 	switch (t1)
 	{
@@ -623,7 +620,7 @@ function _gameEnd(winner)
 
 function _gameCheckEnd()
 {
-	if (isSet(game.time))
+	if (isSet(game.time) && gameAreRolesSet())
 	{
 		if (game.time.time == 'end')
 		{
@@ -836,6 +833,175 @@ function gameSetBonus(num, points, title, comment)
 	return true;
 }
 
+function gamePlayersCount()
+{
+	var count = 0;
+	for (var i = 0; i < 10; ++i)
+	{
+		if (!isSet(game.players[i].death))
+			++count;
+	}
+	return count;
+}
+
+function gameNextSpeaker()
+{
+	var nextSpeaker = -1;
+	if (isSet(game.time) && game.time.time == 'speaking')
+	{
+		var first = _gameWhoSpeaksFirst(game.time.round);
+		var nextSpeaker = game.time.speaker - 1;
+		var p;
+		while (1)
+		{
+			if (++nextSpeaker >= 10)
+			{
+				nextSpeaker = 0;
+			}
+			if (nextSpeaker == first)
+			{
+				break;
+			}
+			if (!isSet(game.players[nextSpeaker]).death)
+			{
+				return nextSpeaker;
+			}
+		}
+	}
+	return -1;
+}
+
+function gameIsVotingCanceled()
+{
+	for (var i = 0; i < 10; ++i)
+	{
+		var player = game.players[i];
+		if (isSet(player.death))
+		{
+			if (player.death.type == 'warnings')
+			{
+				if (player.warnings[3].round == game.time.round)
+				{
+					return true;
+				}
+			}
+			else if ((player.death.type == 'giveUp' || player.death.type == 'kickOut') && player.death.time.round == game.time.round)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+// Returns 0 if the player is not nominated; 1 - if the player is nominated; 2 - if the player is nominated by the currently speaking player.
+function gameIsPlayerNominated(num)
+{
+	++num;
+	for (var i = 0; i < 10; ++i)
+	{
+		var p = game.players[i];
+		if (isSet(p.nominating) && p.nominating[game.time.round] == num)
+		{
+			return game.time.time == 'speaking' && game.time.speaker == i + 1 ? 2 : 1;
+		}
+	}
+	return 0;
+}
+
+function gameNominatePlayer(num)
+{
+	if (game.time.time == 'speaking' && !gameIsPlayerNominated(num))
+	{
+		var p = game.players[game.time.speaker - 1];
+		if (num < 0)
+		{
+			if (isSet(p.nominating) && game.time.round < p.nominating.length)
+			{
+				p.nominating[game.time.round] = null;
+				while (p.nominating.length > 0 && p.nominating[p.nominating.length - 1] == null)
+				{
+					p.nominating.pop();
+				}
+				if (p.nominating.length == 0)
+				{
+					delete p.nominating;
+				}
+				gameDirty(4);
+			}
+		}
+		else
+		{
+			if (!isSet(p.nominating))
+			{
+				p.nominating = [];
+			}
+			for (var i = p.nominating.length; i <= game.time.round; ++i)
+			{
+				p.nominating.push(null);
+			}
+			p.nominating[game.time.round] = num + 1;
+			gameDirty(4);
+		}
+	}
+}
+
+function gameChangeNomination(num, nomNum)
+{
+	var p = game.players[num];
+	if (nomNum < 0)
+	{
+		if (isSet(p.nominating) && game.time.round < p.nominating.length)
+		{
+			p.nominating[game.time.round] = null;
+			while (p.nominating.length > 0 && p.nominating[p.nominating.length - 1] == null)
+			{
+				p.nominating.pop();
+			}
+			if (p.nominating.length == 0)
+			{
+				delete p.nominating;
+			}
+			gameDirty(4);
+		}
+	}
+	else
+	{
+		++nomNum;
+		for (var i = 0; i < 10; ++i)
+		{
+			var p1 = game.players[i];
+			if (isSet(p1.nominating) && game.time.round < p1.nominating.length && p1.nominating[game.time.round] == nomNum)
+			{
+				if (i == num)
+				{
+					return;
+				}
+				p1.nominating[game.time.round] = null;
+				while (p1.nominating.length > 0 && p1.nominating[p1.nominating.length - 1] == null)
+				{
+					p1.nominating.pop();
+				}
+				if (p1.nominating.length == 0)
+				{
+					delete p1.nominating;
+				}
+			}
+		}
+		
+		if (!isSet(p.nominating))
+		{
+			p.nominating = [];
+		}
+		for (var i = p.nominating.length; i <= game.time.round; ++i)
+		{
+			p.nominating.push(null);
+		}
+		p.nominating[game.time.round] = nomNum;
+		gameDirty(4);
+	}
+}
+
 function gameNext()
 {
 	if (!isSet(game.time))
@@ -846,47 +1012,67 @@ function gameNext()
 			game.startTime = Math.round((new Date()).getTime() / 1000);
 		}
 	}
-	else switch (game.time.time)
+	else 
 	{
-	case 'start':
-		if (gameAreRolesSet())
+		if (isSet(game.time.order))
 		{
-			game.time.time = 'arrangement';
+			delete game.time.order;
 		}
-		break;
-	case 'arrangement':
-		break;
-	case 'day start':
-		break;
-	case 'night kill speaking':
-		break;
-	case 'speaking':
-		break;
-	case 'voting':
-		break;
-	case 'day kill speaking':
-		break;
-	case 'shooting':
-		break;
-	case 'don':
-		break;
-	case 'sheriff':
-		break;
-	case 'end':
-		json.post('api/ops/game.php', { op: 'create', json: JSON.stringify(game) }, function()
+		switch (game.time.time)
 		{
-			goTo({round:undefined});
-		});
-		break;
+		case 'start':
+			if (gameAreRolesSet())
+			{
+				game.time.time = 'arrangement';
+			}
+			break;
+		case 'arrangement':
+			game.time.time = 'speaking';
+			game.time.speaker = _gameWhoSpeaksFirst(game.time.round) + 1;
+			break;
+		case 'night kill speaking':
+			break;
+		case 'speaking':
+			do
+			{
+				if (++game.time.speaker > 10)
+				{
+					game.time.speaker = 1;
+				}
+				if (game.time.speaker == _gameWhoSpeaksFirst(game.time.round) + 1)
+				{
+					game.time.time = 'voting';
+					game.time.votingRound = 0;
+					break;
+				}
+			}
+			while (isSet(game.players[game.time.speaker - 1].death));
+			break;
+		case 'voting':
+			break;
+		case 'day kill speaking':
+			break;
+		case 'shooting':
+			break;
+		case 'don':
+			break;
+		case 'sheriff':
+			break;
+		case 'end':
+			json.post('api/ops/game.php', { op: 'create', json: JSON.stringify(game) }, function()
+			{
+				goTo({round:undefined});
+			});
+			break;
+		}
 	}
-	gameDirty(5);
+	gameDirty(68);
 }
 
 function gameBack()
 {
 	if (isSet(game.time))
 	{
-		var dirtyFlag = 4;
 		if (isSet(game.time.order))
 		{
 			if (--game.time.order == 0)
@@ -901,12 +1087,13 @@ function gameBack()
 				{
 					while (player.warnings.length > 0 && gameCompareTimes(player.warnings[player.warnings.length-1], game.time) > 0)
 					{
+						console.log(player);
 						if (player.warnings.length == 4)
 						{
 							delete player.death;
 						}
 						player.warnings.pop();
-						dirtyFlag |= 64;
+						console.log(player);
 					}
 					if (player.warnings.length == 0)
 					{
@@ -919,61 +1106,110 @@ function gameBack()
 				}
 			}
 		}
-		else switch (game.time.time)
+		else
 		{
-		case 'start':
-			delete game.time;
-			break;
-		case 'arrangement':
-			game.time.time = 'start';
-			break;
-		case 'day start':
-			break;
-		case 'night kill speaking':
-			break;
-		case 'speaking':
-			break;
-		case 'voting':
-			break;
-		case 'day kill speaking':
-			break;
-		case 'shooting':
-			break;
-		case 'don':
-			break;
-		case 'sheriff':
-			break;
-		case 'end':
-			var maxDeathTime = null;
-			var num = -1;
+			switch (game.time.time)
+			{
+			case 'start':
+				delete game.time;
+				break;
+			case 'arrangement':
+				game.time.time = 'start';
+				break;
+			case 'night kill speaking':
+				break;
+			case 'speaking':
+				gameNominatePlayer(-1);
+				do
+				{
+					if (game.time.speaker == _gameWhoSpeaksFirst(0) + 1)
+					{
+						delete game.time.speaker;
+						if (game.time.round == 0)
+						{
+							game.time.time = 'arrangement';
+						}
+						else
+						{
+							game.time = 'sheriff';
+							for (var i = 0; i < 10; ++i)
+							{
+								var p = game.players[i];
+								if (isSet(p.death) && p.death.type == 'night' && p.death.round == game.time.round)
+								{
+									game.time = 'night kill speaking';
+									break;
+								}
+							}
+						}
+						break;
+					}
+					else if (--game.time.speaker <= 0)
+					{
+						game.time.speaker = 10;
+					}
+				}
+				while (isSet(game.players[game.time.speaker - 1].death));
+				break;
+			case 'voting':
+				break;
+			case 'day kill speaking':
+				break;
+			case 'shooting':
+				break;
+			case 'don':
+				break;
+			case 'sheriff':
+				break;
+			case 'end':
+				var maxDeathTime = null;
+				var num = -1;
+				for (var i = 0; i < 10; ++i)
+				{
+					var t = _gameGetPlayerDeathTime(i, true);
+					if (t != null && t.time != 'end' && (maxDeathTime == null || gameCompareTimes(maxDeathTime, t) < 0))
+					{
+						maxDeathTime = t;
+						num = i;
+					}
+				}
+				if (num >= 0) 
+				{
+					game.time = maxDeathTime;
+					if (game.winner)
+					{
+						delete game.winner;
+					}
+					if (game.endTime)
+					{
+						delete game.endTime;
+					}
+					if (isSet(maxDeathTime.order))
+					{
+						gameBack(); // we need to make one more step back to remove the last warning or mod-kill.
+						return; // gameDirty is already called by gameBack. No need to call it again.
+					}
+				}
+				break;
+			}
+			
+			// Check if there was an ordered event (like a warning or mod-kill) at this time.
 			for (var i = 0; i < 10; ++i)
 			{
-				var t = _gameGetPlayerDeathTime(i, true);
-				if (t != null && t.time != 'end' && (maxDeathTime == null || gameCompareTimes(maxDeathTime, t) < 0))
+				var p = game.players[i];
+				if (isSet(p.warnings) && p.warnings.length > 0)
 				{
-					maxDeathTime = t;
-					num = i;
+					if (gameCompareTimes(p.warnings[p.warnings.length - 1], game.time) > 0)
+					{
+						game.time = structuredClone(p.warnings[p.warnings.length - 1]);
+					}
+				}
+				if (isSet(p.death) && isSet(p.death.time) && gameCompareTimes(p.death.time, game.time) > 0)
+				{
+					game.time = structuredClone(p.death.time);
 				}
 			}
-			if (num >= 0) 
-			{
-				game.time = maxDeathTime;
-				if (game.winner)
-				{
-					delete game.winner;
-				}
-				if (game.endTime)
-				{
-					delete game.endTime;
-				}
-				if (isSet(maxDeathTime.order))
-				{
-					gameBack(); // we need to make one more step back to remove the last warning or mod-kill.
-					return; // gameDirty is already called by gameBack. No need to call it again.
-				}
-			}
-			break;
 		}
-		gameDirty(dirtyFlag);
+		gameDirty(68);
 	}
 }
