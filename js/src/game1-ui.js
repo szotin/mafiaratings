@@ -169,11 +169,11 @@ function _uiRender(flags)
 			case 'night kill speaking':
 				break;
 			case 'speaking':
-				var p = game.players[game.time.speaker - 1];
-				if (!isSet(p.warnings) ||
-					p.warnings.length != 3 ||
+				var player = game.players[game.time.speaker - 1];
+				if (!isSet(player.warnings) ||
+					player.warnings.length != 3 ||
 					(game.time.round != 0 &&
-					gameCompareTimes(p.warnings[2], { time: game.time.time, speaker: game.time.speaker, round: game.time.round - 1 }) < 0))
+					gameCompareTimes(player.warnings[2], { time: game.time.time, speaker: game.time.speaker, round: game.time.round - 1 }) < 0))
 				{
 					status = l('Speaking', _uiPlayerTitle(game.time.speaker - 1));
 					timerTime = 60;
@@ -199,14 +199,42 @@ function _uiRender(flags)
 					status += ' ' + l('NextVoting');
 				}
 				
+				var record = [];
+				if (isSet(player.record) && player.record.length > 0)
+				{
+					var r = player.record[player.record.length - 1];
+					if (r.time == 'speaking' && r.round == game.time.round)
+					{
+						record = r.record;
+					}
+				}
+				game.players.forEach(function(p,i)
+				{
+					var n = i + 1;
+					if (n != game.time.speaker)
+					{
+						var checked = 0;
+						for (const r of record)
+						{
+							if (r == n)
+								checked = 1;
+							else if (r == -n)
+								checked = -1;
+						}
+						$('#controlx'+i).html(
+							'<button class="icon" onclick="gameSetOnRecord(' +  n + ')" title="' + l('RecordCiv', n) + '"' + (checked > 0 ? ' checked' : '') + '><img class="role-icon" src="images/civ.png"></button>' +
+							'<button class="icon" onclick="gameSetOnRecord(-' + n + ')" title="' + l('RecordMaf', n) + '"' + (checked < 0 ? ' checked' : '') + '><img class="role-icon" src="images/maf.png"></button>');
+					}
+				});
+				
 				if (!gameIsVotingCanceled())
 				{
 					var html;
 					var noNom = true;
 					for (var i = 0; i < 10; ++i)
 					{
-						p = game.players[i];
-						if (!isSet(p.death))
+						var p = game.players[i];
+						if (!isSet(player.death))
 						{
 							var c = $('#control' + i);
 							var n = gameIsPlayerNominated(i);

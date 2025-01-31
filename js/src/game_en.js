@@ -1,5 +1,7 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["RecordCiv"] = "Leave {1} as town on record";
+_l["RecordMaf"] = "Leave {1} as mafia on record";
 _l["DidNom"] = "Nominated";
 _l["CancelGame"] = "All the data of this game will be lost. Next time you will need to start from scratch. Are you sure you want to cancel the game?";
 _l["RemoveWarning"] = "Remove the last warning.";

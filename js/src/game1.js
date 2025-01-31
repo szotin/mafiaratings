@@ -1002,6 +1002,66 @@ function gameChangeNomination(num, nomNum)
 	}
 }
 
+// num is 1 to 10 or -1 to -10. Positive values mean that player is left as town, negative - as mafia.
+// The function toggles the onRecord state. If the player is already left on record with the same role, the record is removed.
+function gameSetOnRecord(num)
+{
+	let t = game.time.time;
+	if (t == 'speaking')
+	{
+		let player = game.players[game.time.speaker - 1];
+		if (!isSet(player.record))
+		{
+			player.record = [];
+		}
+		else if (player.record.length > 0)
+		{
+			let r = player.record[player.record.length - 1];
+			if (r.time == t && r.round == game.time.round)
+			{
+				for (let i = 0; i < r.record.length; ++i)
+				{
+					let n = r.record[i];
+					if (n == num)
+					{
+						r.record.splice(i, 1);
+						gameDirty(4);
+						return;
+					}
+					else if (n == -num)
+					{
+						r.record[i] = num;
+						gameDirty(4);
+						return;
+					}
+				}
+				r.record.push(num);
+				gameDirty(4);
+				return;
+			}
+		}
+		player.record.push({ time: t, round: game.time.round, record: [num]});
+		gameDirty(4);
+	}
+}
+
+// removes the speaking players on record var if exists for the gameBack function
+function _gameRemoveOnRecord()
+{
+	if (game.time.time == 'speaking')
+	{
+		let player = game.players[game.time.speaker - 1];
+		if (isSet(player.record) && player.record.length > 0)
+		{
+			let r = player.record[player.record.length - 1];
+			if (r.time == game.time.time && r.round == game.time.round)
+			{
+				player.record.pop();
+			}
+		}
+	}
+}
+
 function gameNext()
 {
 	if (!isSet(game.time))
@@ -1120,6 +1180,7 @@ function gameBack()
 				break;
 			case 'speaking':
 				gameNominatePlayer(-1);
+				_gameRemoveOnRecord();
 				do
 				{
 					if (game.time.speaker == _gameWhoSpeaksFirst(0) + 1)
