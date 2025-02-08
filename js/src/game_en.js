@@ -1,5 +1,7 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["Splitting"] = "players are going to split the table";
+_l["VotingStart"] = "Voting start";
 _l["RecordCiv"] = "Leave {1} as town on record";
 _l["RecordMaf"] = "Leave {1} as mafia on record";
 _l["DidNom"] = "Nominated";

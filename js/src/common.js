@@ -46,13 +46,13 @@ function l()
 		return _l["UnknownError"];
 	}
 	
-	var result = _l[arguments[0]];
+	let result = _l[arguments[0]];
 	if (!isSet(result))
 	{
 		return _l["UnknownError"];
 	}
 	
-	for (var i = 1; i < arguments.length; ++i)
+	for (let i = 1; i < arguments.length; ++i)
 	{
 		result = result.replace(new RegExp('\\{' + i + '\\}', 'g'), arguments[i]);
 	}
@@ -72,8 +72,8 @@ var dlg = new function()
 	
 	this.custom = function(text, title, width, buttons, onClose)
 	{
-		var parentElem = $("#dlg");
-		var id = 'dlg' + _lastId;
+		let parentElem = $("#dlg");
+		let id = 'dlg' + _lastId;
 		++_lastId;
 		
 		if (!isNumber(width))
@@ -86,7 +86,7 @@ var dlg = new function()
 		}
 		
 		parentElem.append('<div id="' + id + '" title="' + title + '">' + text + '</div>');
-		var elem = $('#' + id);
+		let elem = $('#' + id);
 		//elem.html(text);
 		return elem.dialog(
 		{
@@ -180,7 +180,7 @@ var dlg = new function()
 	
 	this.page = function(formPage, width)
 	{
-		var id = null;
+		let id = null;
 		function formLoaded(text, title)
 		{
 			id = '#dlg' + _lastId;
@@ -203,7 +203,7 @@ var dlg = new function()
 	
 	this.form = function(formPage, onSuccess, width, onCancel)
 	{
-		var id = null;
+		let id = null;
 		function formCommited(obj)
 		{
 			if (id != null)
@@ -249,7 +249,7 @@ var dlg = new function()
 	
 	this.infoForm = function(formPage, width)
 	{
-		var id = null;
+		let id = null;
 		function formLoaded(text, title)
 		{
 			id = '#dlg' + _lastId;
@@ -301,7 +301,7 @@ var dialogWaiter = new function()
 			$("#loading").hide();
 		}
 		
-		var noDialog = false;
+		let noDialog = false;
 		if (isFunction(onError))
 		{
 			if (isSet(data))
@@ -350,7 +350,7 @@ var http = new function()
 	
 	this.connected = function(c, w)
 	{
-		var _c = _connected;
+		let _c = _connected;
 		if (isBool(c) && _connected != c)
 		{
 			_connected = c;
@@ -364,7 +364,7 @@ var http = new function()
 	
 	this.waiter = function(w)
 	{
-		var _w = _waiter;
+		let _w = _waiter;
 		if (isObject(w))
 		{
 			_waiter = w;
@@ -374,7 +374,7 @@ var http = new function()
 	
 	this.host = function(host)
 	{
-		var h = _host;
+		let h = _host;
 		if (isString(host) && host != _host)
 		{
 			_host = host;
@@ -399,7 +399,7 @@ var http = new function()
 
 	this.post = function(page, params, onSuccess, onError)
 	{
-		var w = _waiter;
+		let w = _waiter;
 		page = _host + page;
 		if (w.start())
 		{
@@ -407,7 +407,7 @@ var http = new function()
 			$.post(page, params).success(function(data, textStatus, response)
 			{
 				http.connected(true, w);
-				var error = onSuccess(response.responseText);
+				let error = onSuccess(response.responseText);
 				if (isString(error) && error.length > 0)
 				{
 					console.log(error);
@@ -420,7 +420,7 @@ var http = new function()
 			}).error(function(response)
 			{
 				http.connected(false, w);
-				var msg = http.errorMsg(response, page);
+				let msg = http.errorMsg(response, page);
 				console.log(msg);
 				w.error(msg, onError, response.responseText);
 			});
@@ -430,14 +430,14 @@ var http = new function()
 	
 	this.upload = function(page, params, maxSize, onSuccess, onError, onProgress)
 	{
-		var w = _waiter;
+		let w = _waiter;
 		page = _host + page;
 		if (w.start())
 		{
 			let request = new XMLHttpRequest();
 			let formData = new FormData();
 			
-			for (var param in params)
+			for (let param in params)
 			{
 				let value = params[param];
 				if (maxSize && value.size && maxSize < value.size)
@@ -465,7 +465,7 @@ var http = new function()
 					{
 						if (onSuccess)
 						{
-							var error = onSuccess(request.response);
+							let error = onSuccess(request.response);
 							if (isString(error) && error.length > 0)
 							{
 								console.log(error);
@@ -491,7 +491,7 @@ var http = new function()
 	
 	this.get = function(page, onSuccess, onError)
 	{
-		var w = _waiter;
+		let w = _waiter;
 		page = _host + page;
 		if (w.start())
 		{
@@ -499,7 +499,7 @@ var http = new function()
 			$.get(page).success(function(data, textStatus, response)
 			{
 				http.connected(true, w);
-				var error = onSuccess(response.responseText);
+				let error = onSuccess(response.responseText);
 				if (isString(error) && error.length > 0)
 				{
 					console.log(error);
@@ -512,7 +512,7 @@ var http = new function()
 			}).error(function(response)
 			{
 				http.connected(false, w);
-				var msg = http.errorMsg(response, page);
+				let msg = http.errorMsg(response, page);
 				console.log(msg);
 				w.error(msg, onError, response.responseText);
 			});
@@ -525,8 +525,8 @@ var html = new function()
 {
 	function _success(text, onSuccess, onError)
 	{
-		var title = "";
-		var pos;
+		let title = "";
+		let pos;
 		if (text.substring(0, 7) == "<title=")
 		{
 			pos = text.indexOf(">");
@@ -547,7 +547,7 @@ var html = new function()
 		if (pos >= 0)
 		{
 			pos += 7;
-			var end = text.lastIndexOf(">");
+			let end = text.lastIndexOf(">");
 			if (end > 0)
 			{
 				return text.substring(pos, end);
@@ -591,7 +591,7 @@ function loginDialog(message, userName, onError, actionAfterLogin)
 		html += '<script>$(function(){$("#lf-pwd").focus();});</script>';
 	}*/
 	
-	var d = dlg.okCancel(html, l('Login'), null, function()
+	dlg.okCancel(html, l('Login'), null, function()
 	{
 		login($('#lf-name').val(), $('#lf-pwd').val(), $('#lf-rem').attr('checked') ? 1 : 0, function()
 		{
@@ -608,10 +608,10 @@ var json = new function()
 {
 	function _success(text, onSuccess, onError, retry)
 	{
-		var result = null;
+		let result = null;
 		try
 		{
-			var obj = jQuery.parseJSON(text);
+			let obj = jQuery.parseJSON(text);
 			if (obj != null)
 			{
 				if (isSet(obj.login))
@@ -680,7 +680,7 @@ var json = new function()
 
 function showMenuBar()
 {
-	var menubar = $("#menubar");
+	let menubar = $("#menubar");
 	if (menubar != null)
 	{
 //		setTimeout(function() {
@@ -699,7 +699,7 @@ function showMenuBar()
 
 function setUrlParam(url, key, value)
 {
-	var str = key;
+	let str = key;
 	if (!isSet(value))
 	{
 		str = null;
@@ -712,7 +712,7 @@ function setUrlParam(url, key, value)
 			str += '=' + encodeURI(value);
 	}
 	
-	var beg = url.indexOf('?') + 1;
+	let beg = url.indexOf('?') + 1;
 	if (beg <= 0)
 	{
 		if (str === null)
@@ -722,12 +722,12 @@ function setUrlParam(url, key, value)
 	
 	while (true)
 	{
-		var end = url.indexOf('&', beg);
+		let end = url.indexOf('&', beg);
 		if (end < 0)
 		{
-			var s = url.substr(beg);
-			var k = s;
-			var epos = s.indexOf('=');
+			let s = url.substr(beg);
+			let k = s;
+			let epos = s.indexOf('=');
 			if (epos >= 0)
 				k = s.substr(0, epos);
 			if (k == key)
@@ -742,9 +742,9 @@ function setUrlParam(url, key, value)
 		}
 		else
 		{
-			var s = url.substr(beg, end - beg);
-			var k = s;
-			var epos = s.indexOf('=');
+			let s = url.substr(beg, end - beg);
+			let k = s;
+			let epos = s.indexOf('=');
 			if (epos >= 0)
 				k = s.substr(0, epos);
 			if (k == key)
@@ -761,7 +761,7 @@ function setUrlParam(url, key, value)
 function setUrlParams(url, params)
 {
 	if (isObject(params))
-		for (var key in params)
+		for (let key in params)
 			url = setUrlParam(url, key, params[key]);
 	return url;
 }
@@ -778,7 +778,7 @@ function getUrlWithParams(url, params)
 	
 	url = setUrlParams(url, params);
 	
-	var p = url.indexOf('#');
+	let p = url.indexOf('#');
 	if (p >= 0)
 		url = url.substr(0, p);
 	return url;
@@ -811,9 +811,9 @@ function login(name, pwd, rem, onSuccess, onError)
 		if (!isSet(name)) name = $("#header-username").val();
 		if (!isSet(onSuccess)) onSuccess = refr;
 		
-		var token = token_resp.token;
-		var rawProof = md5(pwd) + token + name;
-		var secProof = md5(rawProof);
+		let token = token_resp.token;
+		let rawProof = md5(pwd) + token + name;
+		let secProof = md5(rawProof);
 		json.post("api/ops/account.php",
 		{
 			op: "login"
@@ -831,16 +831,16 @@ function logout()
 
 function strToTimespan(str)
 {
-	var timespan = 0;
-	var recordExpected = true;
-	var number = 0;
-	var lastUnit = 0;
-	for (var pos = 0; pos < str.length; ++pos) 
+	let timespan = 0;
+	let recordExpected = true;
+	let number = 0;
+	let lastUnit = 0;
+	for (let pos = 0; pos < str.length; ++pos) 
 	{
-		var c = str.charAt(pos);
+		let c = str.charAt(pos);
 		if (recordExpected)
 		{
-			var n = parseInt(c);
+			let n = parseInt(c);
 			if (!isNaN(n))
 			{
 				number *= 10;
@@ -854,8 +854,8 @@ function strToTimespan(str)
 					return 0;
 				}
 				
-				var currentUnit = 0;
-				var multiplier = 1;
+				let currentUnit = 0;
+				let multiplier = 1;
 				switch (c)
 				{
 					case 'w':
@@ -907,15 +907,15 @@ function strToTimespan(str)
 
 function timespanToStr(timespan)
 {
-	var items = [['w', 60 * 60 * 24 * 7], ['d', 60 * 60 * 24], ['h', 60 * 60], ['m', 60], ['s', 1]];
-	var str = '';
-	var separator = '';
-	for (var i in items)
+	let items = [['w', 60 * 60 * 24 * 7], ['d', 60 * 60 * 24], ['h', 60 * 60], ['m', 60], ['s', 1]];
+	let str = '';
+	let separator = '';
+	for (let i in items)
 	{
-		var item = items[i];
+		let item = items[i];
 		if (timespan >= item[1])
 		{
-			var value = Math.floor(timespan / item[1]);
+			let value = Math.floor(timespan / item[1]);
 			str += separator + value + item[0];
 			timespan -= value * item[1];
 			separator = ' ';
@@ -926,7 +926,7 @@ function timespanToStr(timespan)
 
 function strToDate(str)
 {
-	var date = new Date(str);
+	let date = new Date(str);
 	date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
 	return date;
 }
@@ -942,7 +942,7 @@ function dateToStr(date, withTime)
 		return val;
 	}
 	
-	var result = 
+	let result = 
 		date.getFullYear() + "-" + 
 		tz(date.getMonth() + 1) + "-" + 
 		tz(date.getDate());

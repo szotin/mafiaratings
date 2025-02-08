@@ -64,6 +64,15 @@ var statusWaiter = new function()
 	}
 } // statusWaiter
 
+function _gameCutArray(arr)
+{
+	while (arr.length > 0 && arr[arr.length - 1] == null)
+	{
+		arr.pop();
+	}
+	return arr.length;
+}
+
 function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, connectionListener)
 {
 	_connectionListener = connectionListener;
@@ -80,7 +89,7 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 		// It can exist only when saving the game failed last time.
 		if (typeof localStorage == "object")
 		{
-			var str = localStorage['game'];
+			let str = localStorage['game'];
 			if (typeof str != "undefined" && str != null)
 			{
 				game = jQuery.parseJSON(str);
@@ -102,10 +111,10 @@ function gameSave()
 {
 	if (_isDirty)
 	{
-		var gameStr = JSON.stringify(game);
+		let gameStr = JSON.stringify(game);
 		if (_connectionState != 1) // 1 means that the other request is not finished yet
 		{
-			var w = http.waiter(statusWaiter);
+			let w = http.waiter(statusWaiter);
 			json.post('api/ops/game.php', { op: 'set_current', event_id: game.eventId, table: game.table - 1, round: game.round - 1, game: gameStr}, 
 			function() // success
 			{
@@ -167,8 +176,8 @@ function gameCancel()
 // If includingSpeech is true it returns final speech time instead of voting/shooting time.
 function _gameGetPlayerDeathTime(num, includingSpeech)
 {
-	var deathTime = null;
-	var player = game.players[num];
+	let deathTime = null;
+	let player = game.players[num];
 	if (!isSet(player.death))
 	{
 		deathTime = { 'time': 'end' }
@@ -191,17 +200,25 @@ function _gameGetPlayerDeathTime(num, includingSpeech)
 			}
 			else
 			{
-				deathTime.time = 'voting';
-				deathTime.nominant = num + 1;
 				deathTime.votingRound = 0;
-				for (var i = 0; i < 10; ++i)
+				for (let i = 0; i < 10; ++i)
 				{
-					var p = game.players[i];
+					let p = game.players[i];
 					if (isSet(p.voting) && p.voting.length > deathTime.round && isArray(p.voting[deathTime.round]))
 					{
 						deathTime.votingRound = p.voting[deathTime.round].length;
 						break;
 					}
+				}
+				
+				if (deathTime.votingRound == 0)
+				{
+					deathTime.time = 'voting';
+					deathTime.nominant = num + 1;
+				}
+				else
+				{
+					deathTime.time = 'voting kill all';
 				}
 			}
 		}
@@ -220,7 +237,7 @@ function _gameGetPlayerDeathTime(num, includingSpeech)
 function _gameWhoSpeaksFirst(round)
 {
 	// todo: support mafclub rules
-	var candidate = 0;
+	let candidate = 0;
 	if (round > 0)
 	{
 		candidate = _gameWhoSpeaksFirst(round - 1) + 1;
@@ -230,8 +247,9 @@ function _gameWhoSpeaksFirst(round)
 		}
 	}
 		
-	var dayStart = { "round": round, "time": 'night kill speaking' };
-	for (var i = 0; i < 10; ++i)
+	let dayStart = { "round": round, "time": 'night kill speaking' };
+	let i = 0;
+	for (; i < 10; ++i)
 	{
 		if (gameCompareTimes(_gameGetPlayerDeathTime(candidate), dayStart) > 0)
 		{
@@ -258,22 +276,26 @@ function _gameTimeToInt(time)
 		return 0;
 	case 'arrangement':
 		return 1;
-	case 'shooting':
+	case 'night start':
 		return 2;
-	case 'don':
+	case 'shooting':
 		return 3;
-	case 'sheriff':
+	case 'don':
 		return 4;
-	case 'night kill speaking':
+	case 'sheriff':
 		return 5;
-	case 'speaking':
+	case 'night kill speaking':
 		return 6;
-	case 'voting':
+	case 'speaking':
 		return 7;
-	case 'day kill speaking':
+	case 'voting':
 		return 8;
+	case 'voting kill all':
+		return 9;
+	case 'day kill speaking':
+		return 10;
 	}
-	return 9;
+	return 11;
 }
 
 // returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
@@ -282,14 +304,14 @@ function _whoWasNominatedEarlier(round, num1, num2)
 {
 	if (num1 != num2)
 	{
-		var speaksFirst = _gameWhoSpeaksFirst(round);
-		var i = speaksFirst;
+		let speaksFirst = _gameWhoSpeaksFirst(round);
+		let i = speaksFirst;
 		do
 		{
-			var p = game.players[i];
+			let p = game.players[i];
 			if (isSet(p.nominating) && round < p.nominating.length)
 			{
-				var n = p.nominating[round];
+				let n = p.nominating[round];
 				if (n == num1)
 				{
 					return -1;
@@ -326,27 +348,27 @@ function gameCompareTimes(time1, time2, roughly)
 		return -1;
 	}
 	
-	var round1 = isSet(time1.round) ? time1.round : 0;
-	var round2 = isSet(time2.round) ? time1.round : 0;
+	let round1 = isSet(time1.round) ? time1.round : 0;
+	let round2 = isSet(time2.round) ? time1.round : 0;
 	if (round1 != round2)
 	{
 		return round1 - round2;
 	}
 		
-	var t1 = isSet(time1.time) ? time1.time : 'start';
-	var t2 = isSet(time2.time) ? time2.time : 'start';
+	let t1 = isSet(time1.time) ? time1.time : 'start';
+	let t2 = isSet(time2.time) ? time2.time : 'start';
 	if (t1 != t2)
 	{
 		return _gameTimeToInt(t1) - _gameTimeToInt(t2);
 	}
 		
-	var result = 0;
+	let result = 0;
 	switch (t1)
 	{
 	case 'speaking':
-		var speaksFirst = _gameWhoSpeaksFirst(round1);
-		var speaker1 = (time1.speaker < speaksFirst ? 9 + time1.speaker : time1.speaker);
-		var speaker2 = (time2.speaker < speaksFirst ? 9 + time2.speaker : time2.speaker);
+		let speaksFirst = _gameWhoSpeaksFirst(round1);
+		let speaker1 = (time1.speaker < speaksFirst ? 9 + time1.speaker : time1.speaker);
+		let speaker2 = (time2.speaker < speaksFirst ? 9 + time2.speaker : time2.speaker);
 		result = speaker1 - speaker2;
 		break;
 
@@ -357,19 +379,11 @@ function gameCompareTimes(time1, time2, roughly)
 		}
 		else if (isSet(time1.nominant))
 		{
-			if (!isSet(time2.nominant))
-			{
-				result = isSet(time2.speaker) ? -1 : 1;
-			}
-			result = _whoWasNominatedEarlier(round1, time1.nominant, time2.nominant);
+			result = isSet(time2.nominant) ? _whoWasNominatedEarlier(time1.round, time1.nominant, time2.nominant) : (isSet(time2.speaker) ? -1 : 1);
 		}
 		else if (isSet(time1.speaker))
 		{
-			if (!isSet(time2.speaker))
-			{
-				result = 1;
-			}
-			result = _whoWasNominatedEarlier(round1, time1.speaker, time2.speaker);
+			result = isSet(time2.speaker) ? _whoWasNominatedEarlier(time1.round, time1.speaker, time2.speaker) : 1;
 		}
 		else
 		{
@@ -392,7 +406,7 @@ function gameCompareTimes(time1, time2, roughly)
 // Find user registration object for the event.
 function gameFindReg(userId)
 {
-	for (var i in regs)
+	for (let i in regs)
 	{
 		if (regs[i].id == userId)
 		{
@@ -404,7 +418,7 @@ function gameFindReg(userId)
 
 function gameSetPlayer(num, id)
 {
-	var result = -1;
+	let result = -1;
 	if (id != 0)
 	{
 		if (id == game.moderator.id)
@@ -412,9 +426,9 @@ function gameSetPlayer(num, id)
 			game.moderator.id = 0;
 			result = 10;
 		}
-		for (var i = 0; i < 10; ++i)
+		for (let i = 0; i < 10; ++i)
 		{
-			var p = game.players[i];
+			let p = game.players[i];
 			if (i != num && p.id == id)
 			{
 				p.id = 0;
@@ -424,8 +438,8 @@ function gameSetPlayer(num, id)
 		}
 	}
 	
-	var r = gameFindReg(id);
-	var p = game.players[num];
+	let r = gameFindReg(id);
+	let p = game.players[num];
 	if (r)
 	{
 		p.id = r.id;
@@ -462,13 +476,13 @@ function gameSetLang(lang)
 
 function gameSetModerator(userId)
 {
-	var result = -1;
+	let result = -1;
 	game.moderator = { id: userId };
 	if (userId != 0)
 	{
-		for (var i = 0; i < 10; ++i)
+		for (let i = 0; i < 10; ++i)
 		{
-			var p = game.players[i];
+			let p = game.players[i];
 			if (p.id == userId)
 			{
 				p.id = 0;
@@ -491,6 +505,7 @@ function gameIsNight()
 	{
 	case 'start':
 	case 'arrangement':
+	case 'night start':
 	case 'shooting':
 	case 'don':
 	case 'sheriff':
@@ -503,12 +518,12 @@ function gameIsNight()
 
 function gameRandomizeSeats()
 {
-	for (var i = 0; i < 10; ++i)
+	for (let i = 0; i < 10; ++i)
 	{
-		var j = Math.floor(Math.random() * 10);
+		let j = Math.floor(Math.random() * 10);
 		if (i != j)
 		{
-			var p = game.players[i];
+			let p = game.players[i];
 			game.players[i] = game.players[j];
 			game.players[j] = p;
 		}
@@ -520,7 +535,7 @@ function _gameRoleCounts()
 {
 	const roleCounts = game.players.reduce((counts, player) =>
 	{
-		var r = isSet(player.role) ? player.role : 'civ';
+		let r = isSet(player.role) ? player.role : 'civ';
 		counts[r] = (counts[r] || 0) + 1;
 		return counts;
 	},
@@ -545,18 +560,18 @@ function gameAreRolesSet()
 
 function gameSetRole(num, role)
 {
-	var player = game.players[num];
-	var oldRole = isSet(player.role) ? player.role : 'civ';
+	let player = game.players[num];
+	let oldRole = isSet(player.role) ? player.role : 'civ';
 	if (role != oldRole)
 	{
 		const roleCounts = _gameRoleCounts();
 		if (roleCounts[role] >= _gameExpectedRoleCount(role) ||
 			roleCounts[oldRole] <= _gameExpectedRoleCount(oldRole))
 		{
-			for (var i = 9; i >= 0; --i)
+			for (let i = 9; i >= 0; --i)
 			{
-				var p = game.players[i];
-				var r = isSet(p.role) ? p.role : 'civ';
+				let p = game.players[i];
+				let r = isSet(p.role) ? p.role : 'civ';
 				if (r == role)
 				{
 					if (oldRole == 'civ')
@@ -585,16 +600,16 @@ function gameGenerateRoles()
 	game.players[0].role = 'sheriff';
 	game.players[1].role = 'don';
 	game.players[2].role = game.players[3].role = 'maf';
-	for (var i = 4; i < 10; ++i)
+	for (let i = 4; i < 10; ++i)
 	{
 		delete game.players[i].role;
 	}
-	for (var i = 0; i < 10; ++i)
+	for (let i = 0; i < 10; ++i)
 	{
-		var j = Math.floor(Math.random() * 10);
+		let j = Math.floor(Math.random() * 10);
 		if (i != j)
 		{
-			var r = game.players[i].role;
+			let r = game.players[i].role;
 			if (game.players[j].role)
 				game.players[i].role = game.players[j].role;
 			else
@@ -627,11 +642,11 @@ function _gameCheckEnd()
 			return true;
 		}
 		
-		var redAlive = 0;
-		var blackAlive = 0;
-		for (var i = 0; i < 10; ++i)
+		let redAlive = 0;
+		let blackAlive = 0;
+		for (let i = 0; i < 10; ++i)
 		{
-			var p = game.players[i];
+			let p = game.players[i];
 			if (!isSet(p.death))
 			{
 				if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
@@ -674,8 +689,8 @@ function _gameIncTimeOrder()
 
 function gamePlayerWarning(num)
 {
-	var player = game.players[num];
-	var dirtyFlags = 64;
+	let player = game.players[num];
+	let dirtyFlags = 64;
 	
 	_gameIncTimeOrder();
 	if (!isSet(player.warnings))
@@ -711,7 +726,7 @@ function gamePlayerKickOut(num)
 
 function gamePlayerTeamKickOut(num)
 {
-	var p = game.players[num];
+	let p = game.players[num];
 	
 	_gameIncTimeOrder();
 	p.death = { 'round': game.time.round, 'type': 'teamKickOut', 'time': structuredClone(game.time) };
@@ -728,25 +743,25 @@ function gamePlayerTeamKickOut(num)
 
 function gamePlayerRemoveWarning(num)
 {
-	var player = game.players[num];
-	var i = player.warnings.length - 1;
+	let player = game.players[num];
+	let i = player.warnings.length - 1;
 	if (isSet(player.warnings) && i >= 0)
 	{
-		var w = player.warnings[i];
+		let w = player.warnings[i];
 		if (gameCompareTimes(w, game.time, true) == 0 && --game.time.order == 0)
 		{
 			delete game.time.order;
 		}
-		for (var i = 0; i < 10; ++i)
+		for (let i = 0; i < 10; ++i)
 		{
 			if (i == num) continue;
 			
-			var p = game.players[i];
+			let p = game.players[i];
 			if (isSet(p.warnings))
 			{
 				for (j = p.warnings.length - 1; j >= 0; --j)
 				{
-					var w1 = p.warnings[j];
+					let w1 = p.warnings[j];
 					if (gameCompareTimes(w, w1, true) == 0 && w1.order > w.order)
 					{
 						--w1.order;
@@ -777,9 +792,9 @@ function gameArrangePlayer(num, night)
 {
 	if (night > 0)
 	{
-		for (var i = 0; i < 10; ++i)
+		for (let i = 0; i < 10; ++i)
 		{
-			var p = game.players[i];
+			let p = game.players[i];
 			if (p.arranged == night)
 			{
 				delete p.arranged;
@@ -801,7 +816,7 @@ function gameSetBonus(num, points, title, comment)
 		return false;
 	}
 	
-	var player = game.players[num];
+	let player = game.players[num];
 	if (points)
 	{
 		if (title)
@@ -835,8 +850,8 @@ function gameSetBonus(num, points, title, comment)
 
 function gamePlayersCount()
 {
-	var count = 0;
-	for (var i = 0; i < 10; ++i)
+	let count = 0;
+	for (let i = 0; i < 10; ++i)
 	{
 		if (!isSet(game.players[i].death))
 			++count;
@@ -846,12 +861,12 @@ function gamePlayersCount()
 
 function gameNextSpeaker()
 {
-	var nextSpeaker = -1;
+	let nextSpeaker = -1;
 	if (isSet(game.time) && game.time.time == 'speaking')
 	{
-		var first = _gameWhoSpeaksFirst(game.time.round);
-		var nextSpeaker = game.time.speaker - 1;
-		var p;
+		let first = _gameWhoSpeaksFirst(game.time.round);
+		let nextSpeaker = game.time.speaker - 1;
+		let p;
 		while (1)
 		{
 			if (++nextSpeaker >= 10)
@@ -873,9 +888,9 @@ function gameNextSpeaker()
 
 function gameIsVotingCanceled()
 {
-	for (var i = 0; i < 10; ++i)
+	for (let i = 0; i < 10; ++i)
 	{
-		var player = game.players[i];
+		let player = game.players[i];
 		if (isSet(player.death))
 		{
 			if (player.death.type == 'warnings')
@@ -898,9 +913,9 @@ function gameIsVotingCanceled()
 function gameIsPlayerNominated(num)
 {
 	++num;
-	for (var i = 0; i < 10; ++i)
+	for (let i = 0; i < 10; ++i)
 	{
-		var p = game.players[i];
+		let p = game.players[i];
 		if (isSet(p.nominating) && p.nominating[game.time.round] == num)
 		{
 			return game.time.time == 'speaking' && game.time.speaker == i + 1 ? 2 : 1;
@@ -913,7 +928,7 @@ function gameNominatePlayer(num)
 {
 	if (game.time.time == 'speaking' && !gameIsPlayerNominated(num))
 	{
-		var p = game.players[game.time.speaker - 1];
+		let p = game.players[game.time.speaker - 1];
 		if (num < 0)
 		{
 			if (isSet(p.nominating) && game.time.round < p.nominating.length)
@@ -936,7 +951,7 @@ function gameNominatePlayer(num)
 			{
 				p.nominating = [];
 			}
-			for (var i = p.nominating.length; i <= game.time.round; ++i)
+			for (let i = p.nominating.length; i <= game.time.round; ++i)
 			{
 				p.nominating.push(null);
 			}
@@ -948,7 +963,7 @@ function gameNominatePlayer(num)
 
 function gameChangeNomination(num, nomNum)
 {
-	var p = game.players[num];
+	let p = game.players[num];
 	if (nomNum < 0)
 	{
 		if (isSet(p.nominating) && game.time.round < p.nominating.length)
@@ -968,9 +983,9 @@ function gameChangeNomination(num, nomNum)
 	else
 	{
 		++nomNum;
-		for (var i = 0; i < 10; ++i)
+		for (let i = 0; i < 10; ++i)
 		{
-			var p1 = game.players[i];
+			let p1 = game.players[i];
 			if (isSet(p1.nominating) && game.time.round < p1.nominating.length && p1.nominating[game.time.round] == nomNum)
 			{
 				if (i == num)
@@ -993,7 +1008,7 @@ function gameChangeNomination(num, nomNum)
 		{
 			p.nominating = [];
 		}
-		for (var i = p.nominating.length; i <= game.time.round; ++i)
+		for (let i = p.nominating.length; i <= game.time.round; ++i)
 		{
 			p.nominating.push(null);
 		}
@@ -1062,6 +1077,257 @@ function _gameRemoveOnRecord()
 	}
 }
 
+function gameGetNominees(votingRound)
+{
+	if (!isSet(votingRound))
+	{
+		votingRound = isSet(game.time.votingRound) ? game.time.votingRound : 0;
+	}
+	
+	let noms = [];
+	if (votingRound > 0)
+	{
+		let votes = [0,0,0,0,0,0,0,0,0,0];
+		for (let i = 0; i < 10; ++i)
+		{
+			let p = game.players[i];
+			if (isSet(p.voting) && game.time.round < p.voting.length && p.voting[game.time.round] != null)
+			{
+				if (isArray(p.voting[game.time.round]))
+				{
+					if (votingRound <= p.voting[game.time.round].length)
+					{
+						++votes[p.voting[game.time.round][votingRound - 1] - 1];
+					}
+				}
+				else if (votingRound == 1)
+				{
+					++votes[p.voting[game.time.round] - 1];
+				}
+			}
+		}
+		let max = 0;
+		for (const v of votes)
+		{
+			max = Math.max(v, max);
+		}
+		if (max > 0)
+		{
+			for (let i = 0; i < 10; ++i)
+			{
+				if (votes[i] == max)
+				{
+					noms.push(i + 1);
+				}
+			}
+		}
+	}
+	else
+	{
+		let first = _gameWhoSpeaksFirst(game.time.round);
+		let i = first;
+		do
+		{
+			let p = game.players[i];
+			if (isSet(p.nominating) && game.time.round < p.nominating.length && p.nominating[game.time.round] != null)
+			{
+				noms.push(p.nominating[game.time.round]);
+			}
+			if (++i >= 10)
+			{
+				i = 0;
+			}
+		}
+		while (i != first);
+	}
+	return noms;
+}
+
+// nominee is a numer of player 1-10
+function gameGetVotesCount(nominee)
+{
+	let count = 0;
+	for (let i = 0; i < 10; ++i)
+	{
+		let player = game.players[i];
+		if (isSet(player.voting) && game.time.round < player.voting.length)
+		{
+			let v = player.voting[game.time.round];
+			if (
+				(isNumber(v) && v == nominee) ||
+				(isArray(v) && game.time.votingRound < v.length && v[game.time.votingRound] == nominee))
+			{
+				++count;
+			}
+		}
+	}
+	return count;
+}
+
+// voter is 0-9
+function gameVote(voter)
+{
+	if (game.time.time == 'voting' && isSet(game.time.nominant))
+	{
+		let player = game.players[voter];
+		let arr = player.voting;
+		let index = game.time.round;
+		if (game.time.votingRound > 0)
+		{
+			arr = arr[index];
+			index = game.time.votingRound;
+		}
+		
+		if (arr[index] == game.time.nominant)
+		{
+			let noms = gameGetNominees();
+			if (noms[noms.length-1] != game.time.nominant)
+			{
+				arr[index] = noms[noms.length-1];
+				gameDirty(4);
+			}
+		}
+		else
+		{
+			arr[index] = game.time.nominant;
+			gameDirty(4);
+		}
+	}
+}
+
+// num is 0-9; when num is not set - create voting for all alive players
+function _gameCreateVoting(num)
+{
+	if (game.time.time == 'voting' && isSet(game.time.nominant))
+	{
+		let noms = gameGetNominees();
+		if (isSet(num))
+		{
+			let player = game.players[num];
+			if (!isSet(player.death))
+			{
+				if (!isSet(player.voting))
+				{
+					player.voting = [];
+				}
+				for (let i = player.voting.length; i <= game.time.round; ++i)
+				{
+					player.voting.push(null);
+				}
+				if (game.time.votingRound > 0)
+				{
+					if (!isArray(v))
+					{
+						player.voting[game.time.round] = [player.voting[game.time.round]];
+					}
+					
+					let a = player.voting[game.time.round];
+					for (let i = a.length; i <= game.time.votingRound; ++i)
+					{
+						a.push(null);
+					}
+					a[game.time.votingRound] = noms[noms.length - 1];
+				}
+				else if (noms.length > (game.time.round > 0 ? 0 : 1))
+				{
+					player.voting[game.time.round] = noms[noms.length - 1];
+				}
+			}
+		}
+		else
+		{
+			if (!isSet(game.splitting))
+			{
+				game.splitting = [true];
+			}
+			for (let i = game.splitting.length; i <= game.time.round; ++i)
+			{
+				game.splitting.push(false);
+			}
+			
+			for (let i = 0; i < 10; ++i)
+			{
+				_gameCreateVoting(i);
+			}
+		}
+	}
+}
+
+// num is 0-9
+function _gameDeleteVoting(num)
+{
+	if (game.time.time == 'voting' && isSet(game.time.nominant))
+	{
+		let noms = gameGetNominees();
+		if (isSet(num))
+		{
+			let player = game.players[num];
+			if (isSet(player.voting) && game.time.round < player.voting.length)
+			{
+				let v = player.voting[game.time.round];
+				if (isArray(v) && game.time.votingRound < v.length)
+				{
+					v[game.time.votingRound] = null;
+					switch (_gameCutArray(v))
+					{
+					case 0:
+						player.voting[game.time.round] = null;
+						if (_gameCutArray(player.voting) == 0)
+						{
+							delete player.voting;
+						}
+						break;
+					case 1:
+						player.voting[game.time.round] = v[0];
+						break;
+					}
+				}
+				else if (isNumber(v))
+				{
+					player.voting[game.time.round] = null;
+					if (_gameCutArray(player.voting) == 0)
+					{
+						delete player.voting;
+					}
+				}
+			}
+		}
+		else
+		{
+			if (game.time.votingRound == 0 && isSet(game.splitting))
+			{
+				while (game.time.round < game.splitting.length)
+				{
+					game.splitting.pop();
+				}
+				if (game.splitting.length == 0)
+				{
+					delete game.splitting;
+				}
+			}
+			
+			for (let i = 0; i < 10; ++i)
+			{
+				_gameDeleteVoting(i);
+			}
+		}
+	}
+}
+
+function gameSetSplitting(s)
+{
+	if (!isSet(game.splitting))
+	{
+		game.splitting = [true];
+	}
+	for (let i = game.splitting.length; i <= game.time.round; ++i)
+	{
+		game.splitting.push(false);
+	}
+	game.splitting[game.time.round] = s;
+	gameDirty(4);
+}
+
 function gameNext()
 {
 	if (!isSet(game.time))
@@ -1093,24 +1359,104 @@ function gameNext()
 		case 'night kill speaking':
 			break;
 		case 'speaking':
+			let first = _gameWhoSpeaksFirst(game.time.round);
 			do
 			{
 				if (++game.time.speaker > 10)
 				{
 					game.time.speaker = 1;
 				}
-				if (game.time.speaker == _gameWhoSpeaksFirst(game.time.round) + 1)
+				if (game.time.speaker == first + 1)
 				{
-					game.time.time = 'voting';
-					game.time.votingRound = 0;
+					let round = game.time.round;
+					if (gameIsVotingCanceled())
+					{
+						game.time = { round: round + 1, time: 'night start' };
+					}
+					else
+					{
+						let noms = gameGetNominees();
+						if (noms.length == 0 || (noms.length == 1 && round == 0))
+						{
+							game.time = { round: round + 1, time: 'night start' };
+						}
+						else if (noms.length == 1)
+						{
+							game.time = { round: round, time: 'day kill speaking', speaker: noms[0] };
+						}
+						else
+						{
+							game.time = { round: round, time: 'voting', votingRound: 0, nominant: noms[0] };
+							_gameCreateVoting();
+						}
+					}
 					break;
 				}
 			}
 			while (isSet(game.players[game.time.speaker - 1].death));
 			break;
 		case 'voting':
+			if (isSet(game.time.nominant))
+			{
+				let noms = gameGetNominees();
+				let i = noms.length;
+				for (i = 1; i < noms.length; ++i)
+				{
+					if (noms[i-1] == game.time.nominant)
+					{
+						game.time.nominant = noms[i];
+						break;
+					}
+				}
+				if (i >= noms.length)
+				{
+					let winners = gameGetNominees(game.time.votingRound + 1);
+					if (winners.length == 1)
+					{
+						var player = game.players[winners[0] - 1];
+						player.death = { type: 'day', round: game.time.round };
+						if (!_gameCheckEnd())
+						{
+							game.time = { time: 'day kill speaking', speaker: winners[0], round: game.time.round };
+						}
+					}
+					else if (game.time.votingRound > 0 && winners.length == noms.length)
+					{
+						game.time = { time: 'voting kill all', round: game.time.round, votingRound: game.time.votingRound };
+					}
+					else
+					{
+						delete game.time.nominant;
+						game.time.speaker = winners[0];
+					}
+				}
+			}
+			else // isSet(game.time.speaker) should always be true
+			{
+				let winners = gameGetNominees(game.time.votingRound + 1);
+				let i = winners.length;
+				for (i = 1; i < winners.length; ++i)
+				{
+					if (winners[i-1] == game.time.speaker)
+					{
+						game.time.speaker = winners[i];
+						break;
+					}
+				}
+				if (i >= winners.length)
+				{
+					delete game.time.speaker;
+					game.time.nominant = noms[0];
+					++game.time.votingRound;
+					_gameCreateVoting();
+				}
+			}
+			break;
+		case 'voting kill all':
 			break;
 		case 'day kill speaking':
+			break;
+		case 'night start':
 			break;
 		case 'shooting':
 			break;
@@ -1140,9 +1486,9 @@ function gameBack()
 				delete game.time.order;
 			}
 			
-			for (var i = 0; i < 10; ++i)
+			for (let i = 0; i < 10; ++i)
 			{
-				var player = game.players[i];
+				let player = game.players[i];
 				if (isSet(player.warnings) && player.warnings.length > 0)
 				{
 					while (player.warnings.length > 0 && gameCompareTimes(player.warnings[player.warnings.length-1], game.time) > 0)
@@ -1193,9 +1539,9 @@ function gameBack()
 						else
 						{
 							game.time = 'sheriff';
-							for (var i = 0; i < 10; ++i)
+							for (let i = 0; i < 10; ++i)
 							{
-								var p = game.players[i];
+								let p = game.players[i];
 								if (isSet(p.death) && p.death.type == 'night' && p.death.round == game.time.round)
 								{
 									game.time = 'night kill speaking';
@@ -1213,8 +1559,65 @@ function gameBack()
 				while (isSet(game.players[game.time.speaker - 1].death));
 				break;
 			case 'voting':
+				if (isSet(game.time.nominant))
+				{
+					let noms = gameGetNominees();
+					let i = noms.length;
+					if (i > 0 && noms[0] != game.time.nominant)
+					{
+						for (i = 1; i < noms.length; ++i)
+						{
+							if (noms[i] == game.time.nominant)
+							{
+								game.time.nominant = noms[i - 1];
+								break;
+							}
+						}
+					}
+					if (i == noms.length)
+					{
+						_gameDeleteVoting();
+						if (--game.time.votingRound >= 0)
+						{
+							delete game.time.nominant;
+							game.time.speaker = noms[noms.length - 1];
+						}
+						else
+						{
+							let s = _gameWhoSpeaksFirst();
+							if (s == 0) s = 10;
+							game.time = { round: game.time.round, time: 'speaking', speaker: s };
+						}
+					}
+				}
+				else  // isSet(game.time.speaker) should always be true
+				{
+					let winners = gameGetNominees(game.time.votingRound + 1);
+					let i = winners.length;
+					if (i > 0 && winners[0] != game.time.speaker)
+					{
+						for (i = 1; i < winners.length; ++i)
+						{
+							if (winners[i] == game.time.speaker)
+							{
+								game.time.speaker = winners[i - 1];
+								break;
+							}
+						}
+					}
+					if (i == winners.length)
+					{
+						let noms = gameGetNominees();
+						delete game.time.speaker;
+						game.time.nominant = noms[noms.length - 1];
+					}
+				}
+				break;
+			case 'voting kill all':
 				break;
 			case 'day kill speaking':
+				break;
+			case 'night start':
 				break;
 			case 'shooting':
 				break;
@@ -1223,11 +1626,11 @@ function gameBack()
 			case 'sheriff':
 				break;
 			case 'end':
-				var maxDeathTime = null;
-				var num = -1;
-				for (var i = 0; i < 10; ++i)
+				let maxDeathTime = null;
+				let num = -1;
+				for (let i = 0; i < 10; ++i)
 				{
-					var t = _gameGetPlayerDeathTime(i, true);
+					let t = _gameGetPlayerDeathTime(i, true);
 					if (t != null && t.time != 'end' && (maxDeathTime == null || gameCompareTimes(maxDeathTime, t) < 0))
 					{
 						maxDeathTime = t;
@@ -1255,9 +1658,9 @@ function gameBack()
 			}
 			
 			// Check if there was an ordered event (like a warning or mod-kill) at this time.
-			for (var i = 0; i < 10; ++i)
+			for (let i = 0; i < 10; ++i)
 			{
-				var p = game.players[i];
+				let p = game.players[i];
 				if (isSet(p.warnings) && p.warnings.length > 0)
 				{
 					if (gameCompareTimes(p.warnings[p.warnings.length - 1], game.time) > 0)

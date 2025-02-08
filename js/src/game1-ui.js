@@ -17,56 +17,46 @@ function _uiPlayerTitle(num)
 
 function _uiGenerateNoms()
 {
-	var first = _gameWhoSpeaksFirst(game.time.round);
-	var i = first;
-	var noms = '';
-	var delim = '';
-	do
+	let noms = gameGetNominees();
+	let nomsStr = '';
+	let delim = '';
+	for (const n of noms)
 	{
-		var p = game.players[i];
-		if (isSet(p.nominating) && game.time.round < p.nominating.length && p.nominating[game.time.round] != null)
-		{
-			noms += delim + p.nominating[game.time.round];
-			delim = ', ';
-		}
-		if (++i >= 10)
-		{
-			i = 0;
-		}
+		nomsStr += delim + n;
+		delim = ', ';
 	}
-	while (i != first);
-	return noms ? l('ShowNoms', noms) : noms;
+	return nomsStr ? l('ShowNoms', nomsStr) : nomsStr;
 }
 
 function _uiRender(flags)
 {
-	var timerTime = 60;
+	let timerTime = 60;
 	if (flags & 1) // players changed
 	{
-		var html = '<option value="0"></option>';
-		for (var i in regs)
+		let html = '<option value="0"></option>';
+		for (let i in regs)
 		{
-			var r = regs[i];
+			let r = regs[i];
 			html += '<option value="' + r.id + '">' + r.name + '</option>';;
 		}
 		
-		for (var i = 0; i < 10; ++i)
+		for (let i = 0; i < 10; ++i)
 		{
-			var p = game.players[i];
+			let p = game.players[i];
 			$('#player' + i).html(html).val(p.id ? p.id : 0);
 		}
 	}
 	
 	if (flags & 6) // game time changed or roles changed
 	{
-		var dStyle = gameIsNight() ? 'night-' : 'day-';
-		var eStyle = dStyle + 'empty';
+		let dStyle = gameIsNight() ? 'night-' : 'day-';
+		let eStyle = dStyle + 'empty';
 
 		$('#r-1').removeClass().addClass(eStyle);
 		$('#head').removeClass().addClass(eStyle);
-		for (var i = 0; i < 10; ++i)
+		for (let i = 0; i < 10; ++i)
 		{
-			var player = game.players[i];
+			let player = game.players[i];
 			$('#r' + i).removeClass().addClass(dStyle + (isSet(game.players[i].death) ? 'dead' : 'alive'));
 			$('#num' + i).removeClass();
 			$('#panel' + i).html('').removeClass();
@@ -85,11 +75,11 @@ function _uiRender(flags)
 			}
 		}
 		
-		var status = '';
-		var control1Html = '';
-		var noms = '';
-		var nextDisabled = false;
-		var backDisabled = false;
+		let status = '';
+		let control1Html = '';
+		let nomsStr = '';
+		let nextDisabled = false;
+		let backDisabled = false;
 		if (!isSet(game.time))
 		{
 			status = l('StartGame');
@@ -99,16 +89,16 @@ function _uiRender(flags)
 		}
 		else
 		{
-			var info = 'Day';
+			let info = 'Day';
 			switch (game.time.time)
 			{
 			case 'start':
 				status = l('AssignRoles');
 				control1Html = '<button class="day-vote" onclick="gameGenerateRoles()">' + l('GenRoles') + '</button>';
-				for (var i = 0; i < 10; ++i)
+				for (let i = 0; i < 10; ++i)
 				{
-					var p = game.players[i];
-					var r = isSet(p.role) ? p.role : 'civ';
+					let p = game.players[i];
+					let r = isSet(p.role) ? p.role : 'civ';
 					$('#controlx' + i).html(
 						'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
 						'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
@@ -127,10 +117,10 @@ function _uiRender(flags)
 				break;
 			case 'arrangement':
 				status = l('Arrange');
-				for (var i = 0; i < 10; ++i)
+				for (let i = 0; i < 10; ++i)
 				{
-					var player = game.players[i];
-					var role = isSet(player.role) ? player.role : 'civ';
+					let player = game.players[i];
+					let role = isSet(player.role) ? player.role : 'civ';
 					$('#panel' + i).html(
 						'<button class="night-char" id="arr-' + i + '-x" onclick="uiArrangePlayer(' + i + ', 0)">x</button>' +
 						'<button class="night-char" id="arr-' + i + '-1" onclick="uiArrangePlayer(' + i + ', 1)">1</button>' +
@@ -169,7 +159,7 @@ function _uiRender(flags)
 			case 'night kill speaking':
 				break;
 			case 'speaking':
-				var player = game.players[game.time.speaker - 1];
+				let player = game.players[game.time.speaker - 1];
 				if (!isSet(player.warnings) ||
 					player.warnings.length != 3 ||
 					(game.time.round != 0 &&
@@ -189,7 +179,7 @@ function _uiRender(flags)
 					timerTime = 30;
 				}
 				
-				var n = gameNextSpeaker();
+				let n = gameNextSpeaker();
 				if (n >= 0)
 				{
 					status += ' ' + l('NextFloor', _uiPlayerTitle(n));
@@ -199,10 +189,10 @@ function _uiRender(flags)
 					status += ' ' + l('NextVoting');
 				}
 				
-				var record = [];
+				let record = [];
 				if (isSet(player.record) && player.record.length > 0)
 				{
-					var r = player.record[player.record.length - 1];
+					let r = player.record[player.record.length - 1];
 					if (r.time == 'speaking' && r.round == game.time.round)
 					{
 						record = r.record;
@@ -210,10 +200,10 @@ function _uiRender(flags)
 				}
 				game.players.forEach(function(p,i)
 				{
-					var n = i + 1;
+					let n = i + 1;
 					if (n != game.time.speaker)
 					{
-						var checked = 0;
+						let checked = 0;
 						for (const r of record)
 						{
 							if (r == n)
@@ -229,15 +219,15 @@ function _uiRender(flags)
 				
 				if (!gameIsVotingCanceled())
 				{
-					var html;
-					var noNom = true;
-					for (var i = 0; i < 10; ++i)
+					let html;
+					let noNom = true;
+					for (let i = 0; i < 10; ++i)
 					{
-						var p = game.players[i];
+						let p = game.players[i];
 						if (!isSet(player.death))
 						{
-							var c = $('#control' + i);
-							var n = gameIsPlayerNominated(i);
+							let c = $('#control' + i);
+							let n = gameIsPlayerNominated(i);
 							if (n == 1)
 							{
 								c.addClass('day-grey');
@@ -264,11 +254,144 @@ function _uiRender(flags)
 					control1Html = html;
 				}
 				$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
-				noms = _uiGenerateNoms();
+				nomsStr = _uiGenerateNoms();
 				break;
 			case 'voting':
+				let noms = gameGetNominees();
+				if (isSet(game.time.nominant))
+				{
+					let index = 0;
+					for (let i = 0; i < noms.length; ++i)
+					{
+						$('#panel' + (noms[i] - 1)).html('<center>' + gameGetVotesCount(noms[i]) + '</center>').addClass('day-mark');
+						if (noms[i] == game.time.nominant)
+						{
+							index = i;
+						}
+					}
+					$('#r' + (game.time.nominant - 1)).removeClass().addClass('day-mark');
+					
+					let chState = '';
+					if (index < noms.length - 1)
+					{
+						status = l('Voting',
+							_uiPlayerTitle(noms[index] - 1),
+							_uiPlayerTitle(noms[index + 1] - 1));
+					}
+					else
+					{
+						status = l('VotingLast', _uiPlayerTitle(noms[index] - 1));
+						chState = ' checked';
+					}
+					
+					for (let i = 0; i < 10; ++i)
+					{
+						let player = game.players[i];
+						if (!isSet(player.death))
+						{
+							let vote = 0;
+							if (isSet(player.voting) && game.time.round < player.voting.length)
+							{
+								let v = player.voting[game.time.round];
+								if (isArray(v) && game.time.votingRound < v.length)
+								{
+									vote = v[game.time.votingRound];
+								}
+								else if (isNumber(v))
+								{
+									vote = v;
+								}
+							}
+							
+							if (vote == game.time.nominant)
+							{
+								$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" checked>' + l('vote', i + 1, game.time.nominant) + '</button>');
+							}
+							else
+							{
+								let j = 0;
+								for (; j < index; ++j)
+								{
+									if (noms[j] == vote)
+									{
+										break;
+									}
+								}
+								if (j == index)
+								{
+									$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" ' + chState + '>' + l('vote', i + 1, game.time.nominant) + '</button>');
+								}
+							}
+						}
+					}
+				}
+				else // isSet(game.time.speaker) should always be true
+				{
+					let index = 0;
+					for (let i = 0; i < noms.length; ++i)
+					{
+						$('#panel' + (noms[i] - 1)).html('<center>' + gameGetVotesCount(noms[i]) + '</center>').addClass('day-mark');
+						if (noms[i] == game.time.speaker)
+						{
+							index = i;
+						}
+					}
+					$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
+					
+					
+					if (index == 0)
+					{
+						status = l('RepeatVoting', noms.length) + '<br>'
+					}
+					status += l('Speaking', _uiPlayerTitle(noms[index] - 1)) + ' ';
+					p = game.current_nominant + 1;
+					if (index < noms.length - 1)
+					{
+						status += l('NextFloor', _uiPlayerTitle(noms[index + 1] - 1));
+					}
+					else
+					{
+						status += l('NextVoting');
+					}
+					
+					timerTime = 30;
+					
+					//let player = game.players[game.time.speaker - 1];
+					// let record = [];
+					// if (isSet(player.record) && player.record.length > 0)
+					// {
+						// let r = player.record[player.record.length - 1];
+						// if (r.time == 'speaking' && r.round == game.time.round)
+						// {
+							// record = r.record;
+						// }
+					// }
+					// game.players.forEach(function(p,i)
+					// {
+						// let n = i + 1;
+						// if (n != game.time.speaker)
+						// {
+							// let checked = 0;
+							// for (const r of record)
+							// {
+								// if (r == n)
+									// checked = 1;
+								// else if (r == -n)
+									// checked = -1;
+							// }
+							// $('#controlx'+i).html(
+								// '<button class="icon" onclick="gameSetOnRecord(' +  n + ')" title="' + l('RecordCiv', n) + '"' + (checked > 0 ? ' checked' : '') + '><img class="role-icon" src="images/civ.png"></button>' +
+								// '<button class="icon" onclick="gameSetOnRecord(-' + n + ')" title="' + l('RecordMaf', n) + '"' + (checked < 0 ? ' checked' : '') + '><img class="role-icon" src="images/maf.png"></button>');
+						// }
+					// });
+				}
+				nomsStr = _uiGenerateNoms();
+				break;
+			case 'voting kill all':
 				break;
 			case 'day kill speaking':
+				break;
+			case 'night start':
 				break;
 			case 'shooting':
 				break;
@@ -279,11 +402,11 @@ function _uiRender(flags)
 			case 'end':
 				status = '<h3>' + (game.winner == 'maf' ? l('MafWin') : l('CivWin')) + '</h3>' + l('Finish');
 				info = 'Day';
-				for (var i = 0; i < 10; ++i)
+				for (let i = 0; i < 10; ++i)
 				{
-					var player = game.players[i];
+					let player = game.players[i];
 //					$('#r' + i).removeClass().addClass(dStyle + 'alive');
-					var html = '<center>';
+					let html = '<center>';
 					switch (player.role)
 					{
 					case 'sheriff':
@@ -307,9 +430,9 @@ function _uiRender(flags)
 					html += '>';
 					if (isSet(player.legacy))
 					{
-						var leg = '';
-						var dlm = '';
-						for (var j = 0; j < player.legacy.length && j < 3; ++j)
+						let leg = '';
+						let dlm = '';
+						for (let j = 0; j < player.legacy.length && j < 3; ++j)
 						{
 							leg += dlm + (player.legacy[j] + 1);
 							dlm = ',';
@@ -320,11 +443,11 @@ function _uiRender(flags)
 					
 					if (player.bonus)
 					{
-						var points = 0;
-						var title = null;
+						let points = 0;
+						let title = null;
 						if (isArray(player.bonus))
 						{
-							for (var j = 0; j < player.bonus.length; ++j)
+							for (let j = 0; j < player.bonus.length; ++j)
 							{
 								if (isNumber(player.bonus[j]))
 								{
@@ -375,20 +498,20 @@ function _uiRender(flags)
 		$('#control-1').html(control1Html);
 		$('#game-next').prop('disabled', nextDisabled);
 		$('#game-back').prop('disabled', backDisabled);
-		$('#noms').html(noms);
+		$('#noms').html(nomsStr);
 	}
 	
 	if (flags & 64) // warnings
 	{
-		for (var i = 0; i < 10; ++i)
+		for (let i = 0; i < 10; ++i)
 		{
-			var player = game.players[i];
-			var html = '';
+			let player = game.players[i];
+			let html = '';
 			if (isSet(player.warnings) && player.warnings.length > 0)
 			{
-				var html = '<font color="#808000" size="4"><b><table width="100%" class="transp"><tr><td>';
-				var j;
-				for (j = 0; j < player.warnings.length; ++j)
+				html = '<font color="#808000" size="4"><b><table width="100%" class="transp"><tr><td>';
+				let j = 0;
+				for (; j < player.warnings.length; ++j)
 				{
 					if (gameCompareTimes(player.warnings[j], game.time, true) >= 0)
 					{
@@ -433,7 +556,7 @@ function _uiErrorListener(type, message, data)
 
 function _uiConnectionListener(state)
 {
-	var url = "images/connected.png";
+	let url = "images/connected.png";
 	if (state == 1)
 		url = "images/save.png";
 	else if (state == 2)
@@ -445,24 +568,21 @@ function _uiConnectionListener(state)
 
 function _uiPlayerAction(num, action)
 {
-	var dlgId = dlg.curId();
+	let dlgId = dlg.curId();
 	action(num);
 	dlg.close(dlgId);
 }
 
 function _uiChangeNomination(num)
 {
-	var dlgId = dlg.curId();
+	let dlgId = dlg.curId();
 	gameChangeNomination(num, parseInt($('#dlg-nominate').val()));
 	dlg.close(dlgId);
 }
 
-function uiNext()
+function _uiSplit()
 {
-	if (isSet(game.time) && game.time.time == 'end')
-	{
-	}
-	return true;
+	gameSetSplitting(!!$("#split").attr("checked"));
 }
 
 //-----------------------------------------------------------
@@ -483,10 +603,10 @@ var timer = new function()
 		if (_blinkCount <= 0) return;
 		try
 		{
-			var a = $('#t-area');
-			var c = a.attr('class');
-			var i = c.indexOf('timer-') + 6;
-			var n = (i >= 0 ? parseInt(c.substr(i, 1)) + 1 : 1);
+			let a = $('#t-area');
+			let c = a.attr('class');
+			let i = c.indexOf('timer-') + 6;
+			let n = (i >= 0 ? parseInt(c.substr(i, 1)) + 1 : 1);
 			if (isNaN(n) || n > 1)
 			{
 				n = 0;
@@ -503,8 +623,8 @@ var timer = new function()
 	function _set(val)
 	{
 		if (val < 0) val = 0;
-		var m = Math.floor(val / 60);
-		var s = val % 60;
+		let m = Math.floor(val / 60);
+		let s = val % 60;
 		if (s < 10)
 		{
 			s = '0' + s;
@@ -520,13 +640,13 @@ var timer = new function()
 	
 	function _get()
 	{
-		var v = 0;
+		let v = 0;
 		try
 		{
-			var a = $('#timer').html().split(':');
+			let a = $('#timer').html().split(':');
 			if (a.length > 0)
 			{
-				var m = 0;
+				let m = 0;
 				if (a.length == 1)
 				{
 					v = parseInt(a[0]);
@@ -640,7 +760,7 @@ var timer = new function()
 
 	this.inc = function(s)
 	{
-		var t;
+		let t;
 		if (_start > 0)
 		{
 			if (isNaN(_max)) _max = 0;
@@ -659,10 +779,10 @@ var timer = new function()
 	{
 		if (_start > 0)
 		{
-			var t = _max - Math.round(((new Date()).getTime() - _start) / 1000);
+			let t = _max - Math.round(((new Date()).getTime() - _start) / 1000);
 			// todo: implement user settings
-			// var f = mafia.data().user.settings.flags;
-			var f = 0;
+			// let f = mafia.data().user.settings.flags;
+			let f = 0;
 			if (t <= 0)
 			{
 				document.getElementById('prompt-snd').pause();
@@ -703,7 +823,7 @@ function uiStart(eventId, tableNum, roundNum)
 {
 	$('#ops').click(function()
 	{
-		var menu = $('#ops-menu').menu();
+		let menu = $('#ops-menu').menu();
 		menu.show(0, function()
 		{
 			menu.position(
@@ -734,7 +854,7 @@ function uiSetPlayer(num, userId)
 		$('#player' + num).val(userId);
 	}
 	
-	var n = gameSetPlayer(num, userId);
+	let n = gameSetPlayer(num, userId);
 	if (n >= 0)
 	{
 		$('#player' + n).val(0);
@@ -761,7 +881,7 @@ function uiCreatePlayer(num)
 
 function uiConfig(text, onClose)
 {
-	var html = '<table class="dialog_form" width="100%">';
+	let html = '<table class="dialog_form" width="100%">';
 	
 	if (text)
 	{
@@ -770,18 +890,18 @@ function uiConfig(text, onClose)
 	
 	html += '<tr><td>' + l('Moder') + ':</td><td><select id="dlg-moder">'
 	html += _uiOption(0, game.moderator.id, '');
-	for (var i in regs)
+	for (let i in regs)
 	{
-		var r = regs[i];
+		let r = regs[i];
 		html += _uiOption(r.id, game.moderator.id, r.name);
 	}
 	html += '</select></td></tr>';
 	if (langs.length > 1)
 	{
 		html += '<tr><td>' + l('Lang') + ':</td><td><select id="dlg-lang">';
-		for (var i in langs)
+		for (let i in langs)
 		{
-			var lang = langs[i];
+			let lang = langs[i];
 			html += _uiOption(lang.code, game.language, lang.name);
 		}
 		html += '</select></td></tr>';
@@ -822,17 +942,17 @@ function uiSetRole(num, role)
 
 function uiPlayerActions(num)
 {
-	var player = game.players[num];
-	var html = '<center>';
+	let player = game.players[num];
+	let html = '<center>';
 	if (isSet(game.time) && game.time.time == 'speaking' && gameCompareTimes({ time: 'speaking', speaker: num + 1, round: game.time.round }, game.time) <= 0)
 	{
-		var nom = -1;
+		let nom = -1;
 		if (isSet(player.nominating) && game.time.round < player.nominating.length && player.nominating[game.time.round] != null)
 		{
 			nom = player.nominating[game.time.round] - 1;
 		}
 		html += '<p><center>' + l("DidNom") + ': <select id="dlg-nominate" onchange="_uiChangeNomination(' + num + ')">' + _uiOption(-1, nom, '');
-		for (var i = 0; i < 10; ++i)
+		for (let i = 0; i < 10; ++i)
 		{
 			if (!isSet(game.players[i].death))
 			{
@@ -889,10 +1009,9 @@ function _uiBestClicked(type)
 	}
 }
 
-
 function uiBonusPoints(num, bonusObj)
 {
-	var p = game.players[num];
+	let p = game.players[num];
 	
 	if (!bonusObj)
 	{
@@ -905,7 +1024,7 @@ function uiBonusPoints(num, bonusObj)
 		{
 			if (isArray(p.bonus))
 			{
-				for (var i = 0; i < p.bonus.length; ++i)
+				for (let i = 0; i < p.bonus.length; ++i)
 				{
 					if (isNumber(p.bonus[i]))
 					{
@@ -928,7 +1047,7 @@ function uiBonusPoints(num, bonusObj)
 		}
 	}
 	
-	var html = '<table class="dialog_form" width="100%">';
+	let html = '<table class="dialog_form" width="100%">';
 	
 	html += '<tr><td>' + l('ExtraPoints') + ':</td><td><table width="100%" class="transp"><tr><td><input type="number" style="width: 45px;" step="0.1" id="dlg-points"';
 	if (bonusObj.points)
@@ -967,12 +1086,39 @@ function uiBonusPoints(num, bonusObj)
 		}
 	});
 }
+
+function uiStartVoting()
+{
+	let splitting = (game.time.round == 0);
+	if (isSet(game.splitting) && game.time.round < game.splitting.length)
+	{
+		splitting = game.splitting[game.time.round];
+	}
+	let html = '<table class="dialog_form" width="100%"><tr><td align="center"><p>' + _uiGenerateNoms() + '</p></td></tr></table><p><input type="checkbox" id="split"' + (splitting ? ' checked' : '') + ' onclick="_uiSplit()"> ' + l('Splitting') + '</p>';
+	dlg.info(html, l('VotingStart'), 400);
+}
 	
 function uiNext()
 {
-	if (isSet(game.time) && game.time.time == 'end')
+	if (isSet(game.time)) 
 	{
-		uiConfig(l('Confirm'), gameNext)
+		if (game.time.time == 'end')
+		{
+			uiConfig(l('Confirm'), gameNext);
+		}
+		else
+		{
+			gameNext();
+			
+			if (game.time.time == 'voting' && game.time.votingRound == 0)
+			{
+				let noms = gameGetNominees();
+				if (noms.length > 0 && game.time.nominant == noms[0])
+				{
+					uiStartVoting();
+				}
+			}
+		}
 	}
 	else
 	{

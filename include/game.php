@@ -30,7 +30,9 @@ define('GAMETIME_DAY_START', 'day start'); // day
 define('GAMETIME_NIGHT_KILL_SPEAKING', 'night kill speaking'); // day
 define('GAMETIME_SPEAKING', 'speaking'); // day
 define('GAMETIME_VOTING', 'voting'); // day
+define('GAMETIME_VOTING_KILL_ALL', 'voting kill all'); // day
 define('GAMETIME_DAY_KILL_SPEAKING', 'day kill speaking'); // day
+define('GAMETIME_NIGHT_START', 'night start'); // night
 define('GAMETIME_SHOOTING', 'shooting'); // night
 define('GAMETIME_DON', 'don'); // night
 define('GAMETIME_SHERIFF', 'sheriff'); // night
@@ -1556,6 +1558,9 @@ class Game
 				$gametime->speaker = $log->player_speaking + 1;
 				break;
 			case 11: // GAME_NIGHT_START:
+				$gametime->round = $log->round + 1;
+				$gametime->time = GAMETIME_NIGHT_START;
+				break;
 			case 12: // GAME_NIGHT_SHOOTING:
 				$gametime->round = $log->round + 1;
 				$gametime->time = GAMETIME_SHOOTING;
@@ -1609,24 +1614,28 @@ class Game
 				return 0;
 			case GAMETIME_ARRANGEMENT:
 				return 1;
-			case GAMETIME_SHOOTING:
+			case GAMETIME_NIGHT_START:
 				return 2;
-			case GAMETIME_DON:
+			case GAMETIME_SHOOTING:
 				return 3;
-			case GAMETIME_SHERIFF:
+			case GAMETIME_DON:
 				return 4;
-			case GAMETIME_DAY_START:
+			case GAMETIME_SHERIFF:
 				return 5;
-			case GAMETIME_NIGHT_KILL_SPEAKING:
+			case GAMETIME_DAY_START:
 				return 6;
-			case GAMETIME_SPEAKING:
+			case GAMETIME_NIGHT_KILL_SPEAKING:
 				return 7;
-			case GAMETIME_VOTING:
+			case GAMETIME_SPEAKING:
 				return 8;
-			case GAMETIME_DAY_KILL_SPEAKING:
+			case GAMETIME_VOTING:
 				return 9;
+			case GAMETIME_VOTING_KILL_ALL:
+				return 10;
+			case GAMETIME_DAY_KILL_SPEAKING:
+				return 11;
 		}
-		return 10;
+		return 12;
 	}
 	
 	static function is_night($gametime)
@@ -1637,6 +1646,7 @@ class Game
 			{
 				case GAMETIME_START:
 				case GAMETIME_ARRANGEMENT:
+				case GAMETIME_NIGHT_START:
 				case GAMETIME_SHOOTING:
 				case GAMETIME_DON:
 				case GAMETIME_SHERIFF:
@@ -1752,8 +1762,6 @@ class Game
 				}
 				else
 				{
-					$death_time->time = GAMETIME_VOTING;
-					$death_time->nominant = $player_num;
 					$death_time->votingRound = 0; // how to find out voting round??
 					foreach ($this->data->players as $p)
 					{
@@ -1762,6 +1770,16 @@ class Game
 							$death_time->votingRound = count($p->voting[$death_time->round]);
 							break;
 						}
+					}
+					
+					if ($death_time->votingRound == 0)
+					{
+						$death_time->time = GAMETIME_VOTING;
+						$death_time->nominant = $player_num;
+					}
+					else
+					{
+						$death_time->time = GAMETIME_VOTING_KILL_ALL;
 					}
 				}
 				break;
@@ -2164,10 +2182,12 @@ class Game
 			case GAMETIME_ARRANGEMENT:
 			case GAMETIME_DAY_START:
 			case GAMETIME_NIGHT_KILL_SPEAKING:
+			case GAMETIME_NIGHT_START:
 			case GAMETIME_SHOOTING:
 			case GAMETIME_DON:
 			case GAMETIME_SHERIFF:
 			case GAMETIME_END:
+			case GAMETIME_VOTING_KILL_ALL:
 				break;
 			case GAMETIME_VOTING:
 				if (!isset($gt->votingRound))
@@ -2206,8 +2226,8 @@ class Game
 				break;
 			default:
 				return 'incorrect time "' + $gt->time + '". Time must be one of: "' .
-					GAMETIME_START . '", "' . GAMETIME_ARRANGEMENT . '", "' . GAMETIME_DAY_START . '", "' . GAMETIME_NIGHT_KILL_SPEAKING . '", "' . GAMETIME_SPEAKING . '", "' . GAMETIME_VOTING . '", "' . 
-					GAMETIME_DAY_KILL_SPEAKING . '", "' . GAMETIME_SHOOTING . '", "' . GAMETIME_DON . '", "' . GAMETIME_SHERIFF . '", or "' . GAMETIME_END . '".';
+					GAMETIME_START . '", "' . GAMETIME_ARRANGEMENT . '", "' . GAMETIME_DAY_START . '", "' . GAMETIME_NIGHT_KILL_SPEAKING . '", "' . GAMETIME_SPEAKING . '", "' . GAMETIME_VOTING . '", "' . GAMETIME_VOTING_KILL_ALL . '", "' . 
+					GAMETIME_DAY_KILL_SPEAKING . '", "' . GAMETIME_NIGHT_START . '", "' . GAMETIME_SHOOTING . '", "' . GAMETIME_DON . '", "' . GAMETIME_SHERIFF . '", or "' . GAMETIME_END . '".';
 		}
 		return NULL;
 	}
@@ -2246,25 +2266,11 @@ class Game
 			}
 			else if (isset($gt1->nominant))
 			{
-				if (!isset($gt2->nominant))
-				{
-					$result = isset($gt2->speaker) ? -1 : 1;
-				}
-				else
-				{
-					$result = $this->who_was_nominated_earlier($gt1->round, $gt1->nominant, $gt2->nominant);
-				}
+				$result = isset($gt2->nominant) ? $this->who_was_nominated_earlier($gt1->round, $gt1->nominant, $gt2->nominant) : (isset($gt2->speaker) ? -1 : 1);
 			}
 			else if (isset($gt1->speaker))
 			{
-				if (!isset($gt2->speaker))
-				{
-					$result = 1;
-				}
-				else
-				{
-					$result = $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker);
-				}
+				$result = isset($gt2->speaker) ? $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker) : 1;
 			}
 			else
 			{
@@ -2874,9 +2880,13 @@ class Game
 					return get_label('when [0] gives their 30 second speech on split', call_user_func($output_player_function, $this, $gametime->speaker));
 				}
 				return get_label('during votings');
+			case GAMETIME_VOTING_KILL_ALL:
+				return get_label('during votings for killing all');
 			case GAMETIME_DAY_KILL_SPEAKING:
 				return get_label('during [0]\'s last speech', call_user_func($output_player_function, $this, $gametime->speaker));
 				break;
+			case GAMETIME_NIGHT_START:
+				return get_label('when the night starts');
 			case GAMETIME_SHOOTING:
 				return get_label('when the mafia shoots');
 			case GAMETIME_DON:
