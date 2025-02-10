@@ -50,7 +50,7 @@
 // /*GAME_STATE_VOTING_KILLED_SPEAKING*/7
 // /*GAME_STATE_VOTING*/8
 // /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9
-// /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10
+// /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10
 // /*GAME_STATE_NIGHT_START*/11
 // /*GAME_STATE_NIGHT_SHOOTING*/12
 // /*GAME_STATE_NIGHT_DON_CHECK*/13
@@ -88,7 +88,7 @@
 //------------------------------------------------------------------------------------------
 var mafia = new function()
 {
-	var _version = 3; // must match CURRENT_VERSION in api/ops/game.php
+	var _version = 4; // must match CURRENT_VERSION in api/ops/game.php
 	var _lDirty = 0;
 	var _gDirty = 0;
 	var _data = null;
@@ -1030,9 +1030,9 @@ var mafia = new function()
 // =================================================== The game
 	function _getNomIndex(num)
 	{
-		for (var i = 0; i < _curVoting.nominants.length; ++i)
+		for (var i = 0; i < _curVoting.nominees.length; ++i)
 		{
-			if (_curVoting.nominants[i].player_num == num)
+			if (_curVoting.nominees[i].player_num == num)
 			{
 				return i;
 			}
@@ -1050,7 +1050,7 @@ var mafia = new function()
 			_curVoting =
 			{
 				round: _curVoting.round,
-				nominants: [],
+				nominees: [],
 				voting_round: _curVoting.voting_round,
 				multiple_kill: false,
 				canceled: 0
@@ -1065,13 +1065,13 @@ var mafia = new function()
 				_curVoting.votes = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
 			}
 			
-			for (var i = 0; i < prev.nominants.length; ++i)
+			for (var i = 0; i < prev.nominees.length; ++i)
 			{
-				var n = prev.nominants[i];
+				var n = prev.nominees[i];
 				var p = game.players[n.player_num];
 				if (p.state == /*PLAYER_STATE_ALIVE*/0)
 				{
-					_addNominant(n.player_num, n.nominated_by);
+					_addnominee(n.player_num, n.nominated_by);
 				}
 				else if ((game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2) == 0)
 				{
@@ -1112,7 +1112,7 @@ var mafia = new function()
 					case /*GAME_STATE_DAY_START*/3:
 					case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
 					case /*GAME_STATE_VOTING*/8:
-					case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+					case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
 					case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
 						if (player.state != /*PLAYER_STATE_ALIVE*/0)
 						{
@@ -1233,12 +1233,12 @@ var mafia = new function()
 		}
 	}
 	
-	function _addNominant(num, by)
+	function _addNominee(num, by)
 	{
 		var game = _data.game;
 		if (typeof num == "undefined")
 		{
-			num = game.current_nominant;
+			num = game.current_nominee;
 			by = game.player_speaking;
 		}
 		else if (typeof by == "undefined")
@@ -1251,24 +1251,24 @@ var mafia = new function()
 			var player = game.players[num];
 			if (player.state == /*PLAYER_STATE_ALIVE*/0)
 			{
-				for (var i in _curVoting.nominants)
+				for (var i in _curVoting.nominees)
 				{
-					var nom = _curVoting.nominants[i];
+					var nom = _curVoting.nominees[i];
 					if (nom.player_num == num)
 					{
 						return false;
 					}
 				}
 				
-				var nominant =
+				var nominee =
 				{
 					player_num: num,
 					nominated_by: by,
 					count: 0
 				};
 				
-				var index = _curVoting.nominants.length;
-				_curVoting.nominants.push(nominant);
+				var index = _curVoting.nominees.length;
+				_curVoting.nominees.push(nominee);
 				if (_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2)
 					_voting = null;
 				else
@@ -1282,13 +1282,13 @@ var mafia = new function()
 		return false;
 	}
 	
-	function _removeNominant()
+	function _removeNominee()
 	{
 		if (_curVoting.canceled <= 0)
 		{
-			var idx = _curVoting.nominants.length - 1
-			var n = _curVoting.nominants[idx].player_num;
-			_curVoting.nominants.splice(idx, 1);
+			var idx = _curVoting.nominees.length - 1
+			var n = _curVoting.nominees[idx].player_num;
+			_curVoting.nominees.splice(idx, 1);
 			if ((_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2) == 0)
 			{
 				var v = _curVoting.votes;
@@ -1307,14 +1307,14 @@ var mafia = new function()
 		}
 	}
 	
-	function _vote(num, nominantIndex)
+	function _vote(num, nomineeIndex)
 	{
 		if (_curVoting.canceled <= 0 && (_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2) == 0)
 		{
-			var oldNominant = _curVoting.votes[num];
-			if (oldNominant >= 0 && oldNominant < _curVoting.nominants.length)
+			var oldNominee = _curVoting.votes[num];
+			if (oldNominee >= 0 && oldNominee < _curVoting.nominees.length)
 			{
-				--_curVoting.nominants[oldNominant].count;
+				--_curVoting.nominees[oldNominee].count;
 			}
 
 			var player = _data.game.players[num];
@@ -1324,14 +1324,14 @@ var mafia = new function()
 			}
 			else
 			{
-				if (nominantIndex < 0 || nominantIndex >= _curVoting.nominants.length)
+				if (nomineeIndex < 0 || nomineeIndex >= _curVoting.nominees.length)
 				{
-					nominantIndex = _curVoting.nominants.length - 1;
+					nomineeIndex = _curVoting.nominees.length - 1;
 				}
-				_curVoting.votes[num] = nominantIndex;
-				if (nominantIndex >= 0)
+				_curVoting.votes[num] = nomineeIndex;
+				if (nomineeIndex >= 0)
 				{
-					++_curVoting.nominants[nominantIndex].count;
+					++_curVoting.nominees[nomineeIndex].count;
 				}
 			}
 			_voting = null;
@@ -1355,35 +1355,35 @@ var mafia = new function()
 			_voting = { winners: [], round: _curVoting.round, voting_round: _curVoting.voting_round };
 			if (_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2)
 			{
-				if (_curVoting.nominants.length == 1)
+				if (_curVoting.nominees.length == 1)
 				{
-					_curVoting.nominants[0].count = 1;
+					_curVoting.nominees[0].count = 1;
 				}
-				for (var i in _curVoting.nominants)
+				for (var i in _curVoting.nominees)
 				{
-					var nominant = _curVoting.nominants[i];
-					if (nominant.count != 0)
+					var nominee = _curVoting.nominees[i];
+					if (nominee.count != 0)
 					{
-						_voting.winners.push(nominant.player_num);
+						_voting.winners.push(nominee.player_num);
 					}
 				}
 			}
 			else
 			{
 				var maxCount = 0;
-				for (var i in _curVoting.nominants)
+				for (var i in _curVoting.nominees)
 				{
-					var nominant = _curVoting.nominants[i];
-					if (nominant.count != 0)
+					var nominee = _curVoting.nominees[i];
+					if (nominee.count != 0)
 					{
-						if (nominant.count > maxCount)
+						if (nominee.count > maxCount)
 						{
-							maxCount = nominant.count;
-							_voting.winners = [nominant.player_num];
+							maxCount = nominee.count;
+							_voting.winners = [nominee.player_num];
 						}
-						else if (nominant.count == maxCount)
+						else if (nominee.count == maxCount)
 						{
-							_voting.winners.push(nominant.player_num);
+							_voting.winners.push(nominee.player_num);
 						}
 					}
 				}
@@ -1447,7 +1447,7 @@ var mafia = new function()
 		_curVoting = 
 		{
 			round: round,
-			nominants: [],
+			nominees: [],
 			voting_round: vround,
 			multiple_kill: false,
 			canceled: 0
@@ -1465,7 +1465,7 @@ var mafia = new function()
 		{
 			for (var n in noms)
 			{
-				_addNominant(noms[n], -1);
+				_addNominee(noms[n], -1);
 			}
 		}
 		game.votings.push(_curVoting);
@@ -1601,7 +1601,7 @@ var mafia = new function()
 			round: game.round,
     		gamestate: game.gamestate,
     		player_speaking: game.player_speaking, 
-    		current_nominant: game.current_nominant,
+    		current_nominee: game.current_nominee,
     		player: -1
 		};
 		
@@ -1627,7 +1627,7 @@ var mafia = new function()
 				game.gamestate = /*GAME_STATE_NIGHT0_START*/1;
 				game.round = 0;
 				game.player_speaking = -1;
-				game.current_nominant = -1;
+				game.current_nominee = -1;
 				game.table_opener = 0;
 				game.table_closer = 9;
 				
@@ -1652,10 +1652,10 @@ var mafia = new function()
 				break;
 
 			case /*GAME_STATE_DAY_START*/3:
-				if (game.current_nominant >= 0)
+				if (game.current_nominee >= 0)
 				{
-					_addNominant();
-					game.current_nominant = -1;
+					_addNominee();
+					game.current_nominee = -1;
 				}
 				game.gamestate = /*GAME_STATE_DAY_PLAYER_SPEAKING*/5;
 				game.player_speaking = mafia.nextPlayer(-1);
@@ -1667,12 +1667,12 @@ var mafia = new function()
 				break;
 
 			case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-				if (game.current_nominant >= 0)
+				if (game.current_nominee >= 0)
 				{
-					_addNominant();
+					_addNominee();
 				}
 
-				game.current_nominant = -1;
+				game.current_nominee = -1;
 				game.player_speaking = mafia.nextPlayer(game.player_speaking);
 				if (game.player_speaking < 0)
 				{
@@ -1681,7 +1681,7 @@ var mafia = new function()
 						game.gamestate = /*GAME_STATE_NIGHT_START*/11;
 						_newVoting(game.round + 1);
 					}
-					else switch(_curVoting.nominants.length)
+					else switch(_curVoting.nominees.length)
 					{
 						case 0:
 							game.gamestate = /*GAME_STATE_NIGHT_START*/11;
@@ -1697,7 +1697,7 @@ var mafia = new function()
 							else
 							{
 								game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
-								game.current_nominant = 0;
+								game.current_nominee = 0;
 								game.player_speaking = mafia.votingWinners()[0];
 								if (mafia.isKillingThisDay())
 								{
@@ -1707,8 +1707,8 @@ var mafia = new function()
 							break;
 
 						default:
-							game.current_nominant = 0;
-							game.player_speaking = _curVoting.nominants[0].player_num;
+							game.current_nominee = 0;
+							game.player_speaking = _curVoting.nominees[0].player_num;
 							game.gamestate = /*GAME_STATE_VOTING*/8;
 							break;
 					}
@@ -1716,16 +1716,16 @@ var mafia = new function()
 				break;
 
 			case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-				if (++game.current_nominant >= mafia.votingWinners().length)
+				if (++game.current_nominee >= mafia.votingWinners().length)
 				{
 					game.gamestate = /*GAME_STATE_NIGHT_START*/11;
 					_newVoting(game.round + 1);
 					game.player_speaking = -1;
-					game.current_nominant = -1;
+					game.current_nominee = -1;
 				}
 				else
 				{
-					game.player_speaking = mafia.votingWinners()[game.current_nominant];
+					game.player_speaking = mafia.votingWinners()[game.current_nominee];
 				}
 				break;
 
@@ -1735,11 +1735,11 @@ var mafia = new function()
 					game.gamestate = /*GAME_STATE_NIGHT_START*/11;
 					_newVoting(game.round + 1);
 					game.player_speaking = -1;
-					game.current_nominant = -1;
+					game.current_nominee = -1;
 				}
-				else if ((game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2) == 0 && game.current_nominant < _curVoting.nominants.length - 1)
+				else if ((game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2) == 0 && game.current_nominee < _curVoting.nominees.length - 1)
 				{
-					game.player_speaking = _curVoting.nominants[++game.current_nominant].player_num;
+					game.player_speaking = _curVoting.nominees[++game.current_nominee].player_num;
 				}
 				else switch (mafia.votingWinners().length)
 				{
@@ -1747,7 +1747,7 @@ var mafia = new function()
 					return;
 				case 1:
 					game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
-					game.current_nominant = 0;
+					game.current_nominee = 0;
 					game.player_speaking = mafia.votingWinners()[0];
 					if (mafia.isKillingThisDay())
 					{
@@ -1762,7 +1762,7 @@ var mafia = new function()
 					if (mafia.playersCount() % mafia.votingWinners().length != 0)
 						return;*/
 					game.gamestate = /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9;
-					game.current_nominant = -1;
+					game.current_nominee = -1;
 					game.player_speaking = -1;
 					break;
 				}
@@ -1775,18 +1775,18 @@ var mafia = new function()
 					if (!mafia.isKillingThisDay())
 					{
 						// round0 - nobody is killed they all are speaking
-						game.current_nominant = 0;
-						if (game.current_nominant >= mafia.votingWinners().length)
+						game.current_nominee = 0;
+						if (game.current_nominee >= mafia.votingWinners().length)
 						{
 							game.gamestate = /*GAME_STATE_NIGHT_START*/11;
 							_newVoting(game.round + 1);
 							game.player_speaking = -1;
-							game.current_nominant = -1;
+							game.current_nominee = -1;
 						}
 						else
 						{
 							game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
-							game.player_speaking = mafia.votingWinners()[game.current_nominant];
+							game.player_speaking = mafia.votingWinners()[game.current_nominee];
 						}
 					}
 					else if (_curVoting.canceled > 0 || (mafia.playersCount() == 4 && mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11) == /*RULES_SPLIT_ON_FOUR_PROHIBITED*/1))
@@ -1795,22 +1795,22 @@ var mafia = new function()
 						game.gamestate = /*GAME_STATE_NIGHT_START*/11;
 						_newVoting(game.round + 1);
 						game.player_speaking = -1;
-						game.current_nominant = -1;
+						game.current_nominee = -1;
 					}
 					else
 					{
 						// vote again
 						_newVoting(game.round);
-						game.current_nominant = 0;
-						if (game.current_nominant >= _curVoting.nominants.length)
+						game.current_nominee = 0;
+						if (game.current_nominee >= _curVoting.nominees.length)
 						{
 							game.gamestate = /*GAME_STATE_VOTING*/8;
 						}
 						else
 						{
-							game.gamestate = /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10;
+							game.gamestate = /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10;
 						}
-						game.player_speaking = _curVoting.nominants[game.current_nominant].player_num;
+						game.player_speaking = _curVoting.nominees[game.current_nominee].player_num;
 					}
 				}
 				else if (!_curVoting.multiple_kill || mafia.playersCount() == 3)
@@ -1822,7 +1822,7 @@ var mafia = new function()
 				else
 				{
 					game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
-					game.current_nominant = 0;
+					game.current_nominee = 0;
 					var winners = mafia.votingWinners();
 					game.player_speaking = winners[0];
 					var count = winners.length;
@@ -1833,7 +1833,7 @@ var mafia = new function()
 				}
 				break;
 
-			case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+			case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
 				if (_curVoting.canceled > 0)
 				{
 					game.gamestate = /*GAME_STATE_NIGHT_START*/11;
@@ -1841,13 +1841,13 @@ var mafia = new function()
 				}
 				else
 				{
-					if (++game.current_nominant >= _curVoting.nominants.length)
+					if (++game.current_nominee >= _curVoting.nominees.length)
 					{
 						game.gamestate = /*GAME_STATE_VOTING*/8;
-						game.current_nominant = 0;
+						game.current_nominee = 0;
 						game.player_speaking = -1;
 					}
-					game.player_speaking = _curVoting.nominants[game.current_nominant].player_num;
+					game.player_speaking = _curVoting.nominees[game.current_nominee].player_num;
 				}
 				break;
 
@@ -1871,7 +1871,7 @@ var mafia = new function()
 			case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
 				game.gamestate = /*GAME_STATE_DAY_START*/3;
 				++game.round;
-				game.current_nominant = -1;
+				game.current_nominee = -1;
 				if (mafia.getRule(/*RULES_ROTATION*/3) == /*RULES_ROTATION_LAST*/1)
 				{
 					game.table_opener = -1;
@@ -1962,15 +1962,15 @@ var mafia = new function()
 						switch (game.gamestate)
 						{
 							case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-								if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
+								if (logRec.current_nominee >= 0 && _curVoting.nominees.length > 0)
 								{
-									_removeNominant();
+									_removeNominee();
 								}
 								break;
 							case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-								if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
+								if (logRec.current_nominee >= 0 && _curVoting.nominees.length > 0)
 								{
-									_removeNominant();
+									_removeNominee();
 								}
 								break;
 							/*default:
@@ -1980,9 +1980,9 @@ var mafia = new function()
 						break;
 
 					case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-						if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
+						if (logRec.current_nominee >= 0 && _curVoting.nominees.length > 0)
 						{
-							_removeNominant();
+							_removeNominee();
 						}
 						break;
 
@@ -2014,9 +2014,9 @@ var mafia = new function()
 								}
 								break;
 						}
-						if (logRec.current_nominant >= 0 && _curVoting.nominants.length > 0)
+						if (logRec.current_nominee >= 0 && _curVoting.nominees.length > 0)
 						{
-							_removeNominant();
+							_removeNominee();
 						}
 						break;
 
@@ -2073,7 +2073,7 @@ var mafia = new function()
 						switch (game.gamestate)
 						{
 							case /*GAME_STATE_NIGHT_START*/11:
-							case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+							case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
 								if (game.votings.length > 1)
 								{
 									game.votings.pop();
@@ -2103,7 +2103,7 @@ var mafia = new function()
 						}
 						break;
 
-					case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+					case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
 						switch (game.gamestate)
 						{
 							case /*GAME_STATE_NIGHT_START*/11:
@@ -2113,7 +2113,7 @@ var mafia = new function()
 									_curVoting = game.votings[game.votings.length - 1];
 								}
 								break;
-							/*case /GAME_STATE_VOTING_NOMINANT_SPEAKING/10:
+							/*case /GAME_STATE_VOTING_NOMINEE_SPEAKING/10:
 							case /GAME_STATE_VOTING/8:
 								break;
 							default:
@@ -2206,7 +2206,7 @@ var mafia = new function()
 			game.round = logRec.round;
 			game.gamestate = logRec.gamestate;
 			game.player_speaking = logRec.player_speaking;
-			game.current_nominant = logRec.current_nominant;
+			game.current_nominee = logRec.current_nominee;
 			game.log.pop();
 
 			_gameStep(stepFlags);
@@ -2350,7 +2350,7 @@ var mafia = new function()
 		var player = game.players[num];
 		if (player.state == /*PLAYER_STATE_ALIVE*/0)
 		{
-			_vote(num, v ? game.current_nominant : -1);
+			_vote(num, v ? game.current_nominee : -1);
 			dirty();
 			_callStateChange(0);
 		}
@@ -2456,7 +2456,7 @@ var mafia = new function()
 				round: game.round,
 				gamestate: game.gamestate,
 				player_speaking: game.player_speaking,
-				current_nominant: game.current_nominant,
+				current_nominee: game.current_nominee,
 				player: num
 			};
 		
@@ -2509,7 +2509,7 @@ var mafia = new function()
 		{   
 			if (num < 0 || game.players[num].state == /*PLAYER_STATE_ALIVE*/0)
 			{
-				game.current_nominant = num;
+				game.current_nominee = num;
 				_gameStep(0);
 			}
 		}
@@ -2534,7 +2534,7 @@ var mafia = new function()
 			round: game.round,
 			gamestate: game.gamestate,
 			player_speaking: game.player_speaking,
-			current_nominant: game.current_nominant,
+			current_nominee: game.current_nominee,
 			player: num
 		};
 		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_GIVE_UP*/1, game.round);
@@ -2560,7 +2560,7 @@ var mafia = new function()
 			round: game.round,
 			gamestate: game.gamestate,
 			player_speaking: game.player_speaking,
-			current_nominant: game.current_nominant,
+			current_nominee: game.current_nominee,
 			player: num
 		};
 		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_KICKOUT*/3, game.round);
@@ -2586,7 +2586,7 @@ var mafia = new function()
 			round: game.round,
 			gamestate: game.gamestate,
 			player_speaking: game.player_speaking,
-			current_nominant: game.current_nominant,
+			current_nominee: game.current_nominee,
 			player: num
 		};
 		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_TEAM_KICKOUT*/4, game.round);
@@ -2611,7 +2611,7 @@ var mafia = new function()
 			{
 				game.players[num].don_check = game.round;
 			}
-			game.current_nominant = num;
+			game.current_nominee = num;
 			_gameStep(0);
 		}
 	}
@@ -2634,7 +2634,7 @@ var mafia = new function()
 			{
 				game.players[num].sheriff_check = game.round;
 			}
-			game.current_nominant = num;
+			game.current_nominee = num;
 			_gameStep(0);
 		}
 	}
@@ -2760,7 +2760,7 @@ var mafia = new function()
 			player_speaking: null,
 			table_opener: null,
 			table_closer: null,
-			current_nominant: null,
+			current_nominee: null,
 			votings: null,
 			shooting: null,
 			log: null,
@@ -2796,7 +2796,7 @@ var mafia = new function()
 			game.start_time = game.end_time = 0;
 		}
 		game.gamestate = /*GAME_STATE_NOT_STARTED*/0;
-		game.round = game.player_speaking = game.table_opener = game.table_closer = game.current_nominant = game.votings = game.shooting = game.log = null;
+		game.round = game.player_speaking = game.table_opener = game.table_closer = game.current_nominee = game.votings = game.shooting = game.log = null;
 		game.flags = 0;
 		for (var i = 0; i < 10; ++i)
 		{
@@ -2844,7 +2844,7 @@ var mafia = new function()
 				round: game.round,
 				gamestate: game.gamestate,
 				player_speaking: game.player_speaking,
-				current_nominant: game.current_nominant,
+				current_nominee: game.current_nominee,
 				player: game.player_speaking
 			};
 			_gameStep(/*STATE_CHANGE_FLAG_RESET_TIMER*/1, logRec);
@@ -2861,7 +2861,7 @@ var mafia = new function()
 				round: game.round,
 				gamestate: game.gamestate,
 				player_speaking: game.player_speaking,
-				current_nominant: game.current_nominant,
+				current_nominee: game.current_nominee,
 				player: -1
 			};
 			if (_curVoting.canceled > 0)
@@ -2942,12 +2942,12 @@ var mafia = new function()
 	
 	this.votingWinner = function(num, c)
 	{
-		if (num >= 0 && num < _curVoting.nominants.length && (_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2))
+		if (num >= 0 && num < _curVoting.nominees.length && (_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2))
 		{
-			var _c = _curVoting.nominants[num].count;
+			var _c = _curVoting.nominees[num].count;
 			if (typeof c == "number")
 			{
-				_curVoting.nominants[num].count = c;
+				_curVoting.nominees[num].count = c;
 				_voting = null;
 				_gameStep(0);
 			}

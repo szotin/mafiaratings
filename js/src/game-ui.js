@@ -338,7 +338,7 @@ mafia.ui = new function()
 					else
 					{
 						html = '<button class="day-vote" onclick="mafia.nominatePlayer(' + i + ')"';
-						if (i == game.current_nominant)
+						if (i == game.current_nominee)
 							html += ' checked';
 						html += '>' + l('Nominate', i + 1) + '</button>';
 						c.html(html);
@@ -346,7 +346,7 @@ mafia.ui = new function()
 				}
 			}
 			html = '<button class="day-vote" onclick="mafia.nominatePlayer(-1)"';
-			if (game.current_nominant < 0)
+			if (game.current_nominee < 0)
 				html += ' checked';
 			html += '>' + l('NoNom') + '</button>';
 			$('#control-1').html(html);
@@ -942,7 +942,7 @@ mafia.ui = new function()
 					}
 					
 					n = mafia.votingWinners();
-					p = game.current_nominant + 1;
+					p = game.current_nominee + 1;
 					if (p < n.length)
 					{
 						status += ' ' + l('NextFloor', mafia.playerTitle(n[p]));
@@ -961,7 +961,7 @@ mafia.ui = new function()
 					else if (game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2)
 					{
 						status = l('DoSimpVoting');
-						n = voting.nominants;
+						n = voting.nominees;
 						for (var i = 0; i < n.length; ++i)
 						{
 							var p = n[i].player_num;
@@ -975,8 +975,8 @@ mafia.ui = new function()
 					else
 					{
 						var ch_state = '';
-						n = voting.nominants;
-						p = game.current_nominant;
+						n = voting.nominees;
+						p = game.current_nominee;
 						var num = n[p].player_num;
 						for (var i = 0; i < n.length; ++i)
 						{
@@ -1001,12 +1001,12 @@ mafia.ui = new function()
 							p = game.players[i];
 							if (p.state == /*PLAYER_STATE_ALIVE*/0)
 							{
-								// console.log("." + i + '.' + " (current_nominant=" +  game.current_nominant + "; n[" + i + "]=" + n[i]);
-								if (n[i] == game.current_nominant)
+								// console.log("." + i + '.' + " (current_nominee=" +  game.current_nominee + "; n[" + i + "]=" + n[i]);
+								if (n[i] == game.current_nominee)
 								{
 									$('#control' + i).html('<button class="day-vote" onclick="mafia.vote(' + i + ', false)" checked>' + l('vote', i + 1, num + 1) + '</button>');
 								}
-								else if (n[i] > game.current_nominant)
+								else if (n[i] > game.current_nominee)
 								{
 									$('#control' + i).html('<button class="day-vote" onclick="mafia.vote(' + i + ', true)" ' + ch_state + '>' + l('vote', i + 1, num + 1) + '</button>');
 								}
@@ -1070,14 +1070,14 @@ mafia.ui = new function()
 					}
 					break;
 					
-				case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+				case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
 					if (voting.canceled > 0)
 					{
 						status = l('VotingCanceled') + ' ' + l('StartNight');
 					}
 					else
 					{
-						n = voting.nominants;
+						n = voting.nominees;
 						for (var i in n)
 						{
 							$('#num' + n[i].player_num).removeClass().addClass('day-mark');
@@ -1086,7 +1086,7 @@ mafia.ui = new function()
 						time = 30;
 						
 						status = l('Speaking', mafia.playerTitle(game.player_speaking)) + ' ';
-						p = game.current_nominant + 1;
+						p = game.current_nominee + 1;
 						if (p < n.length)
 						{
 							status += l('NextFloor', mafia.playerTitle(n[p].player_num));
@@ -1203,18 +1203,18 @@ mafia.ui = new function()
 			}
 			
 			$('#info').html(l(info, game.round + 1));
-			if (voting != null && voting.canceled <= 0 && voting.nominants.length > 0)
+			if (voting != null && voting.canceled <= 0 && voting.nominees.length > 0)
 			{
-				var nominants = "";
+				var nominees = "";
 				var voting = mafia.curVoting();
-				for (var i = 0; i < voting.nominants.length; ++i)
+				for (var i = 0; i < voting.nominees.length; ++i)
 				{
-					p = game.players[voting.nominants[i].player_num];
+					p = game.players[voting.nominees[i].player_num];
 					if (i > 0)
-						nominants += ", ";
-					nominants += (voting.nominants[i].player_num + 1);
+						nominees += ", ";
+					nominees += (voting.nominees[i].player_num + 1);
 				}
-				$('#noms').html(l('ShowNoms', nominants));
+				$('#noms').html(l('ShowNoms', nominees));
 			}
 			else
 			{
@@ -1873,14 +1873,14 @@ mafia.ui = new function()
 				break;
 			case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
 				if (num >= 0)
-					mafia.nominatePlayer(game.current_nominant == num ? -1 : num);
+					mafia.nominatePlayer(game.current_nominee == num ? -1 : num);
 				break;
 			case /*GAME_STATE_VOTING*/8:
 				if (num >= 0)
 				{
-					if (mafia.curVoting().votes[num] == game.current_nominant)
+					if (mafia.curVoting().votes[num] == game.current_nominee)
 						mafia.vote(num, false);
-					else if (mafia.curVoting().votes[num] > game.current_nominant)
+					else if (mafia.curVoting().votes[num] > game.current_nominee)
 						mafia.vote(num, true);
 				}
 				break;

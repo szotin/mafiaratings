@@ -214,7 +214,7 @@ function _gameGetPlayerDeathTime(num, includingSpeech)
 				if (deathTime.votingRound == 0)
 				{
 					deathTime.time = 'voting';
-					deathTime.nominant = num + 1;
+					deathTime.nominee = num + 1;
 				}
 				else
 				{
@@ -377,9 +377,9 @@ function gameCompareTimes(time1, time2, roughly)
 		{
 			result = time1.votingRound - time2.votingRound;
 		}
-		else if (isSet(time1.nominant))
+		else if (isSet(time1.nominee))
 		{
-			result = isSet(time2.nominant) ? _whoWasNominatedEarlier(time1.round, time1.nominant, time2.nominant) : (isSet(time2.speaker) ? -1 : 1);
+			result = isSet(time2.nominee) ? _whoWasNominatedEarlier(time1.round, time1.nominee, time2.nominee) : (isSet(time2.speaker) ? -1 : 1);
 		}
 		else if (isSet(time1.speaker))
 		{
@@ -387,7 +387,7 @@ function gameCompareTimes(time1, time2, roughly)
 		}
 		else
 		{
-			result = isSet(time2.nominant) || isSet(time2.speaker) ? -1 : 0;
+			result = isSet(time2.nominee) || isSet(time2.speaker) ? -1 : 0;
 		}
 		break;
 			
@@ -1167,7 +1167,7 @@ function gameGetVotesCount(nominee)
 // voter is 0-9
 function gameVote(voter)
 {
-	if (game.time.time == 'voting' && isSet(game.time.nominant))
+	if (game.time.time == 'voting' && isSet(game.time.nominee))
 	{
 		let player = game.players[voter];
 		let arr = player.voting;
@@ -1178,10 +1178,10 @@ function gameVote(voter)
 			index = game.time.votingRound;
 		}
 		
-		if (arr[index] == game.time.nominant)
+		if (arr[index] == game.time.nominee)
 		{
 			let noms = gameGetNominees();
-			if (noms[noms.length-1] != game.time.nominant)
+			if (noms[noms.length-1] != game.time.nominee)
 			{
 				arr[index] = noms[noms.length-1];
 				gameDirty(4);
@@ -1189,7 +1189,7 @@ function gameVote(voter)
 		}
 		else
 		{
-			arr[index] = game.time.nominant;
+			arr[index] = game.time.nominee;
 			gameDirty(4);
 		}
 	}
@@ -1198,7 +1198,7 @@ function gameVote(voter)
 // num is 0-9; when num is not set - create voting for all alive players
 function _gameCreateVoting(num)
 {
-	if (game.time.time == 'voting' && isSet(game.time.nominant))
+	if (game.time.time == 'voting' && isSet(game.time.nominee))
 	{
 		let noms = gameGetNominees();
 		if (isSet(num))
@@ -1256,7 +1256,7 @@ function _gameCreateVoting(num)
 // num is 0-9
 function _gameDeleteVoting(num)
 {
-	if (game.time.time == 'voting' && isSet(game.time.nominant))
+	if (game.time.time == 'voting' && isSet(game.time.nominee))
 	{
 		let noms = gameGetNominees();
 		if (isSet(num))
@@ -1386,7 +1386,7 @@ function gameNext()
 						}
 						else
 						{
-							game.time = { round: round, time: 'voting', votingRound: 0, nominant: noms[0] };
+							game.time = { round: round, time: 'voting', votingRound: 0, nominee: noms[0] };
 							_gameCreateVoting();
 						}
 					}
@@ -1396,15 +1396,15 @@ function gameNext()
 			while (isSet(game.players[game.time.speaker - 1].death));
 			break;
 		case 'voting':
-			if (isSet(game.time.nominant))
+			if (isSet(game.time.nominee))
 			{
 				let noms = gameGetNominees();
 				let i = noms.length;
 				for (i = 1; i < noms.length; ++i)
 				{
-					if (noms[i-1] == game.time.nominant)
+					if (noms[i-1] == game.time.nominee)
 					{
-						game.time.nominant = noms[i];
+						game.time.nominee = noms[i];
 						break;
 					}
 				}
@@ -1426,7 +1426,7 @@ function gameNext()
 					}
 					else
 					{
-						delete game.time.nominant;
+						delete game.time.nominee;
 						game.time.speaker = winners[0];
 					}
 				}
@@ -1446,7 +1446,7 @@ function gameNext()
 				if (i >= winners.length)
 				{
 					delete game.time.speaker;
-					game.time.nominant = noms[0];
+					game.time.nominee = noms[0];
 					++game.time.votingRound;
 					_gameCreateVoting();
 				}
@@ -1559,17 +1559,17 @@ function gameBack()
 				while (isSet(game.players[game.time.speaker - 1].death));
 				break;
 			case 'voting':
-				if (isSet(game.time.nominant))
+				if (isSet(game.time.nominee))
 				{
 					let noms = gameGetNominees();
 					let i = noms.length;
-					if (i > 0 && noms[0] != game.time.nominant)
+					if (i > 0 && noms[0] != game.time.nominee)
 					{
 						for (i = 1; i < noms.length; ++i)
 						{
-							if (noms[i] == game.time.nominant)
+							if (noms[i] == game.time.nominee)
 							{
-								game.time.nominant = noms[i - 1];
+								game.time.nominee = noms[i - 1];
 								break;
 							}
 						}
@@ -1579,7 +1579,7 @@ function gameBack()
 						_gameDeleteVoting();
 						if (--game.time.votingRound >= 0)
 						{
-							delete game.time.nominant;
+							delete game.time.nominee;
 							game.time.speaker = noms[noms.length - 1];
 						}
 						else
@@ -1609,7 +1609,7 @@ function gameBack()
 					{
 						let noms = gameGetNominees();
 						delete game.time.speaker;
-						game.time.nominant = noms[noms.length - 1];
+						game.time.nominee = noms[noms.length - 1];
 					}
 				}
 				break;

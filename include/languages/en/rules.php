@@ -448,7 +448,7 @@ return array
 					'Voting is canceled.',
 					'Voting is not canceled. No anti-monster rule.',
 					'Voting is canceled only if the monster is nominated.',
-					'Voting is not canceled. The dead monster participates as a nominant.',
+					'Voting is not canceled. The dead monster participates as a nominee.',
 				),
 			),
 			'When a player gets a fourth warning or disqualifying foul during the last speech of another player, the result of the game is determined by the result of the vote. The removed player receives a penalty in accordance with the tournament regulations.', // 9.11.

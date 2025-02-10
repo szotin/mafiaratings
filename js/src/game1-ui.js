@@ -258,18 +258,18 @@ function _uiRender(flags)
 				break;
 			case 'voting':
 				let noms = gameGetNominees();
-				if (isSet(game.time.nominant))
+				if (isSet(game.time.nominee))
 				{
 					let index = 0;
 					for (let i = 0; i < noms.length; ++i)
 					{
 						$('#panel' + (noms[i] - 1)).html('<center>' + gameGetVotesCount(noms[i]) + '</center>').addClass('day-mark');
-						if (noms[i] == game.time.nominant)
+						if (noms[i] == game.time.nominee)
 						{
 							index = i;
 						}
 					}
-					$('#r' + (game.time.nominant - 1)).removeClass().addClass('day-mark');
+					$('#r' + (game.time.nominee - 1)).removeClass().addClass('day-mark');
 					
 					let chState = '';
 					if (index < noms.length - 1)
@@ -303,9 +303,9 @@ function _uiRender(flags)
 								}
 							}
 							
-							if (vote == game.time.nominant)
+							if (vote == game.time.nominee)
 							{
-								$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" checked>' + l('vote', i + 1, game.time.nominant) + '</button>');
+								$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" checked>' + l('vote', i + 1, game.time.nominee) + '</button>');
 							}
 							else
 							{
@@ -319,7 +319,7 @@ function _uiRender(flags)
 								}
 								if (j == index)
 								{
-									$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" ' + chState + '>' + l('vote', i + 1, game.time.nominant) + '</button>');
+									$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" ' + chState + '>' + l('vote', i + 1, game.time.nominee) + '</button>');
 								}
 							}
 						}
@@ -344,7 +344,7 @@ function _uiRender(flags)
 						status = l('RepeatVoting', noms.length) + '<br>'
 					}
 					status += l('Speaking', _uiPlayerTitle(noms[index] - 1)) + ' ';
-					p = game.current_nominant + 1;
+					p = game.current_nominee + 1;
 					if (index < noms.length - 1)
 					{
 						status += l('NextFloor', _uiPlayerTitle(noms[index + 1] - 1));
@@ -1113,7 +1113,7 @@ function uiNext()
 			if (game.time.time == 'voting' && game.time.votingRound == 0)
 			{
 				let noms = gameGetNominees();
-				if (noms.length > 0 && game.time.nominant == noms[0])
+				if (noms.length > 0 && game.time.nominee == noms[0])
 				{
 					uiStartVoting();
 				}

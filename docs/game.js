@@ -1,7 +1,7 @@
 // This is how time of the game is set for workings surrenders and kick-outs. (...) - mean one of the set.
 { "night": 0, "time": ("start" / "arrangement" / "don" / "sheriff") }
 { "night": (1 / 2 / etc), "time": ("shooting" / "don" / "sheriff") }
-{ "day": (0, 1, 2, etc), "time": ("killed" / "voting" / "speaking" / "nominant"), "speaker": (0 / 1 / .. / 10) }
+{ "day": (0, 1, 2, etc), "time": ("killed" / "voting" / "speaking" / "nominee"), "speaker": (0 / 1 / .. / 10) }
 
 
 // Player numbers are between 1 and 10. Note that numbering is not started with 0.

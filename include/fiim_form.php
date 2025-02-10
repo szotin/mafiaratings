@@ -370,7 +370,7 @@ class FiimForm
 			for ($round = 0; $round < $round_count; ++$round)
 			{
 				$voting = $game->votings[$round];
-				if (!isset($voting->nominants))
+				if (!isset($voting->nominees))
 				{
 					continue;
 				}
@@ -381,19 +381,19 @@ class FiimForm
 				// }
 				
 				$x = 167.6;
-				for ($i = 0; $i < count($voting->nominants); ++$i)
+				for ($i = 0; $i < count($voting->nominees); ++$i)
 				{
-					$nominant = $voting->nominants[$i];
+					$nominee = $voting->nominees[$i];
 					$nom_start = '';
 					$nom_end = '';
-					$p = $data->players[$nominant->nominant - 1]; 
+					$p = $data->players[$nominee->nominee - 1]; 
 					if (isset($voting->winner) && isset($voting->killed) && $voting->killed)
 					{
 						if (is_array($voting->winner))
 						{
 							foreach ($voting->winner as $w)
 							{
-								if ($w == $nominant->nominant)
+								if ($w == $nominee->nominee)
 								{
 									$nom_start = '(';
 									$nom_end = ')';
@@ -401,7 +401,7 @@ class FiimForm
 								}
 							}
 						}
-						else if ($voting->winner == $nominant->nominant)
+						else if ($voting->winner == $nominee->nominee)
 						{
 							$nom_start = '(';
 							$nom_end = ')';
@@ -409,19 +409,19 @@ class FiimForm
 					}
 					
 					$this->pdf->SetXY($x, 22.5 + 25.0 * $round);
-					$this->pdf->Cell(10.2, 5.0, $nom_start . $nominant->nominant . $nom_end, 0, 2, 'C');
-					if (isset($nominant->voting) && is_array($nominant->voting) && count($nominant->voting) > 0)
+					$this->pdf->Cell(10.2, 5.0, $nom_start . $nominee->nominee . $nom_end, 0, 2, 'C');
+					if (isset($nominee->voting) && is_array($nominee->voting) && count($nominee->voting) > 0)
 					{
-						if (is_array($nominant->voting[0]))
+						if (is_array($nominee->voting[0]))
 						{
-							for ($votingRound = 0; $votingRound < count($nominant->voting) && $votingRound < 2; ++$votingRound)
+							for ($votingRound = 0; $votingRound < count($nominee->voting) && $votingRound < 2; ++$votingRound)
 							{
-								$this->pdf->Cell(10.2, 5.0, '' . count($nominant->voting[$votingRound]), 0, 2, 'C');
+								$this->pdf->Cell(10.2, 5.0, '' . count($nominee->voting[$votingRound]), 0, 2, 'C');
 							}
 						}
 						else
 						{
-							$this->pdf->Cell(10.2, 5.0, '' . count($nominant->voting), 0, 2, 'C');
+							$this->pdf->Cell(10.2, 5.0, '' . count($nominee->voting), 0, 2, 'C');
 						}
 					}
 					$x += 10.2;

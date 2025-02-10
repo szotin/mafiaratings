@@ -351,7 +351,7 @@ class ApiPage extends GetApiPageBase
 						$game->state = 'voting';
 						$game->round = $gs->round;
 						break;
-					case /*GAME_STATE_VOTING_NOMINANT_SPEAKING*/10:
+					case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
 						$game->phase = 'day';
 						$game->state = 'nomineeSpeaking';
 						$game->round = $gs->round;
@@ -408,13 +408,13 @@ class ApiPage extends GetApiPageBase
 					{
 						$game->votingCanceled = ($voting->canceled != 0);
 						$nominees = array();
-						foreach ($voting->nominants as $n)
+						foreach ($voting->nominees as $n)
 						{
 							$nominees[] = $n->player_num + 1;
 						}
-						if ($gs->gamestate == 5 /*GAME_DAY_PLAYER_SPEAKING*/ && $gs->current_nominant >= 0)
+						if ($gs->gamestate == 5 /*GAME_DAY_PLAYER_SPEAKING*/ && $gs->current_nominee >= 0)
 						{
-							$nominees[] = $gs->current_nominant + 1;
+							$nominees[] = $gs->current_nominee + 1;
 						}
 						$game->nominees = $nominees;
 					}
