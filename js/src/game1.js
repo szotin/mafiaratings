@@ -377,13 +377,13 @@ function gameCompareTimes(time1, time2, roughly)
 		{
 			result = time1.votingRound - time2.votingRound;
 		}
-		else if (isSet(time1.nominee))
-		{
-			result = isSet(time2.nominee) ? _whoWasNominatedEarlier(time1.round, time1.nominee, time2.nominee) : (isSet(time2.speaker) ? -1 : 1);
-		}
 		else if (isSet(time1.speaker))
 		{
-			result = isSet(time2.speaker) ? _whoWasNominatedEarlier(time1.round, time1.speaker, time2.speaker) : 1;
+			result = isSet(time2.speaker) ? _whoWasNominatedEarlier(time1.round, time1.speaker, time2.speaker) : (isSet(time2.nominee) ? -1 : 1;
+		}
+		else if (isSet(time1.nominee))
+		{
+			result = isSet(time2.nominee) ? _whoWasNominatedEarlier(time1.round, time1.nominee, time2.nominee) : 1);
 		}
 		else
 		{
@@ -1428,26 +1428,26 @@ function gameNext()
 					{
 						delete game.time.nominee;
 						game.time.speaker = winners[0];
+						++game.time.votingRound;
 					}
 				}
 			}
 			else // isSet(game.time.speaker) should always be true
 			{
-				let winners = gameGetNominees(game.time.votingRound + 1);
-				let i = winners.length;
-				for (i = 1; i < winners.length; ++i)
+				let noms = gameGetNominees();
+				let i = noms.length;
+				for (i = 1; i < noms.length; ++i)
 				{
-					if (winners[i-1] == game.time.speaker)
+					if (noms[i-1] == game.time.speaker)
 					{
-						game.time.speaker = winners[i];
+						game.time.speaker = noms[i];
 						break;
 					}
 				}
-				if (i >= winners.length)
+				if (i >= noms.length)
 				{
 					delete game.time.speaker;
 					game.time.nominee = noms[0];
-					++game.time.votingRound;
 					_gameCreateVoting();
 				}
 			}
@@ -1577,7 +1577,7 @@ function gameBack()
 					if (i == noms.length)
 					{
 						_gameDeleteVoting();
-						if (--game.time.votingRound >= 0)
+						if (game.time.votingRound >= 0)
 						{
 							delete game.time.nominee;
 							game.time.speaker = noms[noms.length - 1];
@@ -1592,21 +1592,22 @@ function gameBack()
 				}
 				else  // isSet(game.time.speaker) should always be true
 				{
-					let winners = gameGetNominees(game.time.votingRound + 1);
-					let i = winners.length;
-					if (i > 0 && winners[0] != game.time.speaker)
+					let noms = gameGetNominees();
+					let i = noms.length;
+					if (i > 0 && noms[0] != game.time.speaker)
 					{
-						for (i = 1; i < winners.length; ++i)
+						for (i = 1; i < noms.length; ++i)
 						{
-							if (winners[i] == game.time.speaker)
+							if (noms[i] == game.time.speaker)
 							{
-								game.time.speaker = winners[i - 1];
+								game.time.speaker = noms[i - 1];
 								break;
 							}
 						}
 					}
-					if (i == winners.length)
+					if (i == noms.length)
 					{
+						--game.time.votingRound;
 						let noms = gameGetNominees();
 						delete game.time.speaker;
 						game.time.nominee = noms[noms.length - 1];

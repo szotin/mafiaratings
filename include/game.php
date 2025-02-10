@@ -2264,13 +2264,13 @@ class Game
 			{
 				$result = $gt1->votingRound - $gt2->votingRound;
 			}
-			else if (isset($gt1->nominee))
-			{
-				$result = isset($gt2->nominee) ? $this->who_was_nominated_earlier($gt1->round, $gt1->nominee, $gt2->nominee) : (isset($gt2->speaker) ? -1 : 1);
-			}
 			else if (isset($gt1->speaker))
 			{
-				$result = isset($gt2->speaker) ? $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker) : 1;
+				$result = isset($gt2->speaker) ? $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker) : (isset($gt2->nominee) ? -1 : 1);
+			}
+			else if (isset($gt1->nominee))
+			{
+				$result = isset($gt2->nominee) ? $this->who_was_nominated_earlier($gt1->round, $gt1->nominee, $gt2->nominee) : 1);
 			}
 			else
 			{

@@ -14,7 +14,8 @@ define('STAGE_COMPLETE', 2);
 
 $_state = new stdClass();
 $_state->stage = STAGE_GAMES;
-$_state->total_count = 0;
+$_state->games_count = 0;
+$_state->issues_count = 0;
 $_state->games_change_count = 0;
 $_state->issues_change_count = 0;
 $_state->log_change_count = 0;
@@ -103,7 +104,7 @@ function convert_next_batch()
 		while ($row = $query->next())
 		{
 			list ($game_id, $log, $json) = $row;
-			++$_state->total_count;
+			++$_state->games_count;
 			$json = convert_game($json);
 			$log = convert_log($log);
 			if (is_null($json))
@@ -145,7 +146,7 @@ function convert_next_batch()
 		while ($row = $query->next())
 		{
 			list ($game_id, $json) = $row;
-			++$_state->total_count;
+			++$_state->issues_count;
 			$json = convert_game($json);
 			if (is_null($json))
 			{
@@ -201,7 +202,8 @@ try
 		{
 			$state = $_SESSION['convert_games_state'];
 			$state->stage += $_state->stage;
-			$state->total_count += $_state->total_count;
+			$state->games_count += $_state->games_count;
+			$state->issues_count += $_state->issues_count;
 			$state->games_change_count += $_state->games_change_count;
 			$state->issues_change_count += $_state->issues_change_count;
 			$state->log_change_count += $_state->log_change_count;
@@ -209,15 +211,17 @@ try
 		}
 		
 		writeLog('<h3>This itteration</h3>');
-		writeLog('&nbsp;&nbsp;Count: ' . $_state->total_count);
+		writeLog('&nbsp;&nbsp;Games count: ' . $_state->games_count);
 		writeLog('&nbsp;&nbsp;Games changed: ' . $_state->games_change_count);
 		writeLog('&nbsp;&nbsp;Game logs changed: ' . $_state->log_change_count);
+		writeLog('&nbsp;&nbsp;Issues count: ' . $_state->issues_count);
 		writeLog('&nbsp;&nbsp;Game issues changed: ' . $_state->issues_change_count);
 		writeLog('&nbsp;&nbsp;It took ' . $_state->spent_time . ' sec.');
 		writeLog('<h3>Total</h3>');
-		writeLog('&nbsp;&nbsp;Count: ' . $state->total_count);
+		writeLog('&nbsp;&nbsp;Games count: ' . $state->games_count);
 		writeLog('&nbsp;&nbsp;Games changed: ' . $state->games_change_count);
 		writeLog('&nbsp;&nbsp;Game logs changed: ' . $state->log_change_count);
+		writeLog('&nbsp;&nbsp;Issues count: ' . $state->issues_count);
 		writeLog('&nbsp;&nbsp;Game issues changed: ' . $state->issues_change_count);
 		writeLog('&nbsp;&nbsp;It took ' . $state->spent_time . ' sec.');
 		
