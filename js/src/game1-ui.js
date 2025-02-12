@@ -12,7 +12,11 @@ function _uiOption(value, current, text)
 
 function _uiPlayerTitle(num)
 {
-	return '' + (num + 1) + ' (' + game.players[num].name + ')';
+	let name = game.players[num].name;
+	let result = '' + (num + 1);
+	if (isSet(name) && name.length > 0)
+		result += ' (' + name + ')';
+	return result;
 }
 
 function _uiGenerateNoms()
@@ -28,509 +32,478 @@ function _uiGenerateNoms()
 	return nomsStr ? l('ShowNoms', nomsStr) : nomsStr;
 }
 
-function _uiRender(flags)
+function _uiShowOnRecordButtons()
 {
-	let timerTime = 60;
-	if (flags & 1) // players changed
+	let player = game.players[game.time.speaker - 1];
+	let record = [];
+	if (isSet(player.record) && player.record.length > 0)
 	{
-		let html = '<option value="0"></option>';
-		for (let i in regs)
+		let r = player.record[player.record.length - 1];
+		if (
+			r.time == game.time.time && r.round == game.time.round &&
+			(!isSet(game.time.votingRound) || !isSet(r.votingRound) || game.time.votingRound == r.votingRound))
 		{
-			let r = regs[i];
-			html += '<option value="' + r.id + '">' + r.name + '</option>';;
-		}
-		
-		for (let i = 0; i < 10; ++i)
-		{
-			let p = game.players[i];
-			$('#player' + i).html(html).val(p.id ? p.id : 0);
+			record = r.record;
 		}
 	}
-	
-	if (flags & 6) // game time changed or roles changed
+	game.players.forEach(function(p,i)
 	{
-		let dStyle = gameIsNight() ? 'night-' : 'day-';
-		let eStyle = dStyle + 'empty';
-
-		$('#r-1').removeClass().addClass(eStyle);
-		$('#head').removeClass().addClass(eStyle);
-		for (let i = 0; i < 10; ++i)
+		let n = i + 1;
+		if (n != game.time.speaker)
 		{
-			let player = game.players[i];
-			$('#r' + i).removeClass().addClass(dStyle + (isSet(game.players[i].death) ? 'dead' : 'alive'));
-			$('#num' + i).removeClass();
-			$('#panel' + i).html('').removeClass();
-			$('#control' + i).html('').removeClass();
-			$('#controlx' + i).html('').removeClass();
-			
-			if (isSet(player.death) || !isSet(game.time))
+			let checked = 0;
+			for (const r of record)
 			{
-				$('#btns-' + i).html('');
+				if (r == n)
+					checked = 1;
+				else if (r == -n)
+					checked = -1;
 			}
-			else
-			{
-				$('#btns-' + i).html(
-						'<button class="icon" onclick="gamePlayerWarning(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
-						'<button class="icon" onclick="uiPlayerActions(' + i + ')"><img src="images/more.png" title="' + l('GiveUp') + '"></button>');
-			}
+			$('#controlx'+i).html(
+				'<button class="icon" onclick="gameSetOnRecord(' +  n + ')" title="' + l('RecordCiv', n) + '"' + (checked > 0 ? ' checked' : '') + '><img class="role-icon" src="images/civ.png"></button>' +
+				'<button class="icon" onclick="gameSetOnRecord(-' + n + ')" title="' + l('RecordMaf', n) + '"' + (checked < 0 ? ' checked' : '') + '><img class="role-icon" src="images/maf.png"></button>');
 		}
+	});
+}
+
+function _uiRender(resetTimer)
+{
+	let timerTime = 60;
+	let html = '<option value="0"></option>';
+	for (let i in regs)
+	{
+		let r = regs[i];
+		html += '<option value="' + r.id + '">' + r.name + '</option>';;
+	}
+	
+	let dStyle = gameIsNight() ? 'night-' : 'day-';
+	let eStyle = dStyle + 'empty';
+
+	$('#r-1').removeClass().addClass(eStyle);
+	$('#head').removeClass().addClass(eStyle);
+	for (let i = 0; i < 10; ++i)
+	{
+		let player = game.players[i];
+		$('#r' + i).removeClass().addClass(dStyle + (isSet(game.players[i].death) ? 'dead' : 'alive'));
+		$('#num' + i).removeClass();
+		$('#panel' + i).html('').removeClass();
+		$('#control' + i).html('').removeClass();
+		$('#controlx' + i).html('').removeClass();
+		$('#player' + i).html(html).val(player.id ? player.id : 0);
 		
-		let status = '';
-		let control1Html = '';
-		let nomsStr = '';
-		let nextDisabled = false;
-		let backDisabled = false;
-		if (!isSet(game.time))
+		if (isSet(player.death) || !isSet(game.time))
 		{
-			status = l('StartGame');
-			$('#info').html('');
-			control1Html = '<button class="day-vote" onclick="gameRandomizeSeats()">' + l('RandSeats') + '</button>';
-			backDisabled = true;
+			$('#btns-' + i).html('');
 		}
 		else
 		{
-			let info = 'Day';
-			switch (game.time.time)
+			$('#btns-' + i).html(
+					'<button class="icon" onclick="gamePlayerWarning(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
+					'<button class="icon" onclick="uiPlayerActions(' + i + ')"><img src="images/more.png" title="' + l('GiveUp') + '"></button>');
+		}
+	}
+	
+	let status = '';
+	let control1Html = '';
+	let nomsStr = '';
+	let nextDisabled = false;
+	let backDisabled = false;
+	if (!isSet(game.time))
+	{
+		status = l('StartGame');
+		$('#info').html('');
+		control1Html = '<button class="day-vote" onclick="gameRandomizeSeats()">' + l('RandSeats') + '</button>';
+		backDisabled = true;
+	}
+	else
+	{
+		let info = 'Day';
+		switch (game.time.time)
+		{
+		case 'start':
+			status = l('AssignRoles');
+			control1Html = '<button class="day-vote" onclick="gameGenerateRoles()">' + l('GenRoles') + '</button>';
+			for (let i = 0; i < 10; ++i)
 			{
-			case 'start':
-				status = l('AssignRoles');
-				control1Html = '<button class="day-vote" onclick="gameGenerateRoles()">' + l('GenRoles') + '</button>';
+				let p = game.players[i];
+				let r = isSet(p.role) ? p.role : 'civ';
+				$('#controlx' + i).html(
+					'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
+					'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
+					'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
+					'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
+				$('#panel' + i).html(
+					'<select id="role-' + i + '" style="width:100px;" onchange="uiSetRole(' + i + ')">' +
+					_uiOption('civ', r, '') +
+					_uiOption('sheriff', r, l('sheriff')) +
+					_uiOption('maf', r, l('mafia')) +
+					_uiOption('don', r, l('don')) +
+					'</select>');
+				$('#role-' + i + '-' + r).attr('checked', '');
+			}
+			nextDisabled = !gameAreRolesSet();
+			break;
+		case 'arrangement':
+			status = l('Arrange');
+			for (let i = 0; i < 10; ++i)
+			{
+				let player = game.players[i];
+				let role = isSet(player.role) ? player.role : 'civ';
+				$('#panel' + i).html(
+					'<button class="night-char" id="arr-' + i + '-x" onclick="uiArrangePlayer(' + i + ', 0)">x</button>' +
+					'<button class="night-char" id="arr-' + i + '-1" onclick="uiArrangePlayer(' + i + ', 1)">1</button>' +
+					'<button class="night-char" id="arr-' + i + '-2" onclick="uiArrangePlayer(' + i + ', 2)">2</button>' +
+					'<button class="night-char" id="arr-' + i + '-3" onclick="uiArrangePlayer(' + i + ', 3)">3</button>');
+				$('#control' + i).html(
+					'<select id="arr-' + i + '" onchange="uiArrangePlayer(' + i + ')" style="width:120px;">' +
+					_uiOption(0, 0, '') +
+					_uiOption(1, 0, l('ArrNight', 1)) +
+					_uiOption(2, 0, l('ArrNight', 2)) +
+					_uiOption(3, 0, l('ArrNight', 3)) +
+					'</select>');
+				$('#controlx' + i).html(
+					'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
+					'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
+					'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
+					'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
+				if (isSet(player.arranged) && player.arranged > 0)
+				{
+					$('#arr-' + i + '-' + player.arranged).attr('checked', '');
+				}
+				$('#arr-' + i).val(player.arranged);
+				
+				if (player.role == 'maf')
+				{
+					$('#num' + i).addClass('night-mark');
+				}
+				else if (player.role == 'don')
+				{
+					$('#r' + i).removeClass().addClass('night-mark');
+				}
+				$('#role-' + i + '-' + role).attr('checked', '');
+			}
+			info = 'Night0';
+			break;
+		case 'night kill speaking':
+			break;
+		case 'speaking':
+			let player = game.players[game.time.speaker - 1];
+			if (!isSet(player.warnings) ||
+				player.warnings.length != 3 ||
+				(game.time.round != 0 &&
+				gameCompareTimes(player.warnings[2], { time: game.time.time, speaker: game.time.speaker, round: game.time.round - 1 }) < 0))
+			{
+				status = l('Speaking', _uiPlayerTitle(game.time.speaker - 1));
+				timerTime = 60;
+			}
+			else if (gamePlayersCount() > 4)
+			{
+				status = l('MissingSpeech', _uiPlayerTitle(game.time.speaker - 1));
+				timerTime = 0;
+			}
+			else
+			{
+				status = l('SpeakingShort', _uiPlayerTitle(game.time.speaker - 1));
+				timerTime = 30;
+			}
+			
+			let n = gameNextSpeaker();
+			if (n >= 0)
+			{
+				status += ' ' + l('NextFloor', _uiPlayerTitle(n));
+			}
+			else
+			{
+				status += ' ' + l('NextVoting');
+			}
+			
+			_uiShowOnRecordButtons();
+			
+			if (!gameIsVotingCanceled())
+			{
+				let noNom = true;
 				for (let i = 0; i < 10; ++i)
 				{
 					let p = game.players[i];
-					let r = isSet(p.role) ? p.role : 'civ';
-					$('#controlx' + i).html(
-						'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
-						'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
-						'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
-						'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
-					$('#panel' + i).html(
-						'<select id="role-' + i + '" style="width:100px;" onchange="uiSetRole(' + i + ')">' +
-						_uiOption('civ', r, '') +
-						_uiOption('sheriff', r, l('sheriff')) +
-						_uiOption('maf', r, l('mafia')) +
-						_uiOption('don', r, l('don')) +
-						'</select>');
-					$('#role-' + i + '-' + r).attr('checked', '');
-				}
-				nextDisabled = !gameAreRolesSet();
-				break;
-			case 'arrangement':
-				status = l('Arrange');
-				for (let i = 0; i < 10; ++i)
-				{
-					let player = game.players[i];
-					let role = isSet(player.role) ? player.role : 'civ';
-					$('#panel' + i).html(
-						'<button class="night-char" id="arr-' + i + '-x" onclick="uiArrangePlayer(' + i + ', 0)">x</button>' +
-						'<button class="night-char" id="arr-' + i + '-1" onclick="uiArrangePlayer(' + i + ', 1)">1</button>' +
-						'<button class="night-char" id="arr-' + i + '-2" onclick="uiArrangePlayer(' + i + ', 2)">2</button>' +
-						'<button class="night-char" id="arr-' + i + '-3" onclick="uiArrangePlayer(' + i + ', 3)">3</button>');
-					$('#control' + i).html(
-						'<select id="arr-' + i + '" onchange="uiArrangePlayer(' + i + ')" style="width:120px;">' +
-						_uiOption(0, 0, '') +
-						_uiOption(1, 0, l('ArrNight', 1)) +
-						_uiOption(2, 0, l('ArrNight', 2)) +
-						_uiOption(3, 0, l('ArrNight', 3)) +
-						'</select>');
-					$('#controlx' + i).html(
-						'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
-						'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
-						'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
-						'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
-					if (isSet(player.arranged) && player.arranged > 0)
+					if (!isSet(player.death))
 					{
-						$('#arr-' + i + '-' + player.arranged).attr('checked', '');
-					}
-					$('#arr-' + i).val(player.arranged);
-					
-					if (player.role == 'maf')
-					{
-						$('#num' + i).addClass('night-mark');
-					}
-					else if (player.role == 'don')
-					{
-						$('#r' + i).removeClass().addClass('night-mark');
-					}
-					$('#role-' + i + '-' + role).attr('checked', '');
-				}
-				info = 'Night0';
-				break;
-			case 'night kill speaking':
-				break;
-			case 'speaking':
-				let player = game.players[game.time.speaker - 1];
-				if (!isSet(player.warnings) ||
-					player.warnings.length != 3 ||
-					(game.time.round != 0 &&
-					gameCompareTimes(player.warnings[2], { time: game.time.time, speaker: game.time.speaker, round: game.time.round - 1 }) < 0))
-				{
-					status = l('Speaking', _uiPlayerTitle(game.time.speaker - 1));
-					timerTime = 60;
-				}
-				else if (gamePlayersCount() > 4)
-				{
-					status = l('MissingSpeech', _uiPlayerTitle(game.time.speaker - 1));
-					timerTime = 0;
-				}
-				else
-				{
-					status = l('SpeakingShort', _uiPlayerTitle(game.time.speaker - 1));
-					timerTime = 30;
-				}
-				
-				let n = gameNextSpeaker();
-				if (n >= 0)
-				{
-					status += ' ' + l('NextFloor', _uiPlayerTitle(n));
-				}
-				else
-				{
-					status += ' ' + l('NextVoting');
-				}
-				
-				let record = [];
-				if (isSet(player.record) && player.record.length > 0)
-				{
-					let r = player.record[player.record.length - 1];
-					if (r.time == 'speaking' && r.round == game.time.round)
-					{
-						record = r.record;
-					}
-				}
-				game.players.forEach(function(p,i)
-				{
-					let n = i + 1;
-					if (n != game.time.speaker)
-					{
-						let checked = 0;
-						for (const r of record)
+						let c = $('#control' + i);
+						let n = gameIsPlayerNominated(i);
+						if (n == 1)
 						{
-							if (r == n)
-								checked = 1;
-							else if (r == -n)
-								checked = -1;
-						}
-						$('#controlx'+i).html(
-							'<button class="icon" onclick="gameSetOnRecord(' +  n + ')" title="' + l('RecordCiv', n) + '"' + (checked > 0 ? ' checked' : '') + '><img class="role-icon" src="images/civ.png"></button>' +
-							'<button class="icon" onclick="gameSetOnRecord(-' + n + ')" title="' + l('RecordMaf', n) + '"' + (checked < 0 ? ' checked' : '') + '><img class="role-icon" src="images/maf.png"></button>');
-					}
-				});
-				
-				if (!gameIsVotingCanceled())
-				{
-					let html;
-					let noNom = true;
-					for (let i = 0; i < 10; ++i)
-					{
-						let p = game.players[i];
-						if (!isSet(player.death))
-						{
-							let c = $('#control' + i);
-							let n = gameIsPlayerNominated(i);
-							if (n == 1)
-							{
-								c.addClass('day-grey');
-								c.html('<center>' + l('Nominated') + '</center>');
-							}
-							else
-							{
-								html = '<button class="day-vote" onclick="gameNominatePlayer(' + i + ')"';
-								
-								if (n == 2)
-								{
-									html += ' checked';
-									noNom = false;
-								}
-								html += '>' + l('Nominate', i + 1) + '</button>';
-								c.html(html);
-							}
-						}
-					}
-					html = '<button class="day-vote" onclick="gameNominatePlayer(-1)"';
-					if (noNom)
-						html += ' checked';
-					html += '>' + l('NoNom') + '</button>';
-					control1Html = html;
-				}
-				$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
-				nomsStr = _uiGenerateNoms();
-				break;
-			case 'voting':
-				let noms = gameGetNominees();
-				if (isSet(game.time.nominee))
-				{
-					let index = 0;
-					for (let i = 0; i < noms.length; ++i)
-					{
-						$('#panel' + (noms[i] - 1)).html('<center>' + gameGetVotesCount(noms[i]) + '</center>').addClass('day-mark');
-						if (noms[i] == game.time.nominee)
-						{
-							index = i;
-						}
-					}
-					$('#r' + (game.time.nominee - 1)).removeClass().addClass('day-mark');
-					
-					let chState = '';
-					if (index < noms.length - 1)
-					{
-						status = l('Voting',
-							_uiPlayerTitle(noms[index] - 1),
-							_uiPlayerTitle(noms[index + 1] - 1));
-					}
-					else
-					{
-						status = l('VotingLast', _uiPlayerTitle(noms[index] - 1));
-						chState = ' checked';
-					}
-					
-					for (let i = 0; i < 10; ++i)
-					{
-						let player = game.players[i];
-						if (!isSet(player.death))
-						{
-							let vote = 0;
-							if (isSet(player.voting) && game.time.round < player.voting.length)
-							{
-								let v = player.voting[game.time.round];
-								if (isArray(v) && game.time.votingRound < v.length)
-								{
-									vote = v[game.time.votingRound];
-								}
-								else if (isNumber(v))
-								{
-									vote = v;
-								}
-							}
-							
-							if (vote == game.time.nominee)
-							{
-								$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" checked>' + l('vote', i + 1, game.time.nominee) + '</button>');
-							}
-							else
-							{
-								let j = 0;
-								for (; j < index; ++j)
-								{
-									if (noms[j] == vote)
-									{
-										break;
-									}
-								}
-								if (j == index)
-								{
-									$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" ' + chState + '>' + l('vote', i + 1, game.time.nominee) + '</button>');
-								}
-							}
-						}
-					}
-				}
-				else // isSet(game.time.speaker) should always be true
-				{
-					let index = 0;
-					for (let i = 0; i < noms.length; ++i)
-					{
-						$('#panel' + (noms[i] - 1)).html('<center>' + gameGetVotesCount(noms[i]) + '</center>').addClass('day-mark');
-						if (noms[i] == game.time.speaker)
-						{
-							index = i;
-						}
-					}
-					$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
-					
-					
-					if (index == 0)
-					{
-						status = l('RepeatVoting', noms.length) + '<br>'
-					}
-					status += l('Speaking', _uiPlayerTitle(noms[index] - 1)) + ' ';
-					p = game.current_nominee + 1;
-					if (index < noms.length - 1)
-					{
-						status += l('NextFloor', _uiPlayerTitle(noms[index + 1] - 1));
-					}
-					else
-					{
-						status += l('NextVoting');
-					}
-					
-					timerTime = 30;
-					
-					//let player = game.players[game.time.speaker - 1];
-					// let record = [];
-					// if (isSet(player.record) && player.record.length > 0)
-					// {
-						// let r = player.record[player.record.length - 1];
-						// if (r.time == 'speaking' && r.round == game.time.round)
-						// {
-							// record = r.record;
-						// }
-					// }
-					// game.players.forEach(function(p,i)
-					// {
-						// let n = i + 1;
-						// if (n != game.time.speaker)
-						// {
-							// let checked = 0;
-							// for (const r of record)
-							// {
-								// if (r == n)
-									// checked = 1;
-								// else if (r == -n)
-									// checked = -1;
-							// }
-							// $('#controlx'+i).html(
-								// '<button class="icon" onclick="gameSetOnRecord(' +  n + ')" title="' + l('RecordCiv', n) + '"' + (checked > 0 ? ' checked' : '') + '><img class="role-icon" src="images/civ.png"></button>' +
-								// '<button class="icon" onclick="gameSetOnRecord(-' + n + ')" title="' + l('RecordMaf', n) + '"' + (checked < 0 ? ' checked' : '') + '><img class="role-icon" src="images/maf.png"></button>');
-						// }
-					// });
-				}
-				nomsStr = _uiGenerateNoms();
-				break;
-			case 'voting kill all':
-				break;
-			case 'day kill speaking':
-				break;
-			case 'night start':
-				break;
-			case 'shooting':
-				break;
-			case 'don':
-				break;
-			case 'sheriff':
-				break;
-			case 'end':
-				status = '<h3>' + (game.winner == 'maf' ? l('MafWin') : l('CivWin')) + '</h3>' + l('Finish');
-				info = 'Day';
-				for (let i = 0; i < 10; ++i)
-				{
-					let player = game.players[i];
-//					$('#r' + i).removeClass().addClass(dStyle + 'alive');
-					let html = '<center>';
-					switch (player.role)
-					{
-					case 'sheriff':
-						html += '<img src="images/sheriff.png" class="role-icon" title="' + l('sheriff') + '">';
-						break
-					case 'maf':
-						html += '<img src="images/maf.png" class="role-icon" title="' + l('mafia') + '">';
-						break
-					case 'don':
-						html += '<img src="images/don.png" class="role-icon" title="' + l('don') + '">';
-						break
-					}
-					$('#panel' + i).html(html + '</center>').removeClass();
-					$('#control' + i).html('<button class="extra-pts" onclick="uiBonusPoints(' + i + ')"> ' + l('ExtraPoints', i + 1) + '</button>').removeClass();
-							
-					html = '<table width="100%" class="transp"><tr';
-					if (player.comment)
-					{
-						html += ' title="' + player.comment + '"';
-					}
-					html += '>';
-					if (isSet(player.legacy))
-					{
-						let leg = '';
-						let dlm = '';
-						for (let j = 0; j < player.legacy.length && j < 3; ++j)
-						{
-							leg += dlm + (player.legacy[j] + 1);
-							dlm = ',';
-						}
-						html += '<td width="40">' + l('legacy', leg) + '</td>';
-					}
-					html += '<td align="right">';
-					
-					if (player.bonus)
-					{
-						let points = 0;
-						let title = null;
-						if (isArray(player.bonus))
-						{
-							for (let j = 0; j < player.bonus.length; ++j)
-							{
-								if (isNumber(player.bonus[j]))
-								{
-									points = player.bonus[j];
-								}
-								else
-								{
-									title = player.bonus[j];
-								}
-							}
-						}
-						else if (isNumber(player.bonus))
-						{
-							points = player.bonus;
+							c.addClass('day-grey');
+							c.html('<center>' + l('Nominated') + '</center>');
 						}
 						else
 						{
-							title = player.bonus;
+							html = '<button class="day-vote" onclick="gameNominatePlayer(' + i + ')"';
+							
+							if (n == 2)
+							{
+								html += ' checked';
+								noNom = false;
+							}
+							html += '>' + l('Nominate', i + 1) + '</button>';
+							c.html(html);
+						}
+					}
+				}
+				html = '<button class="day-vote" onclick="gameNominatePlayer(-1)"';
+				if (noNom)
+					html += ' checked';
+				html += '>' + l('NoNom') + '</button>';
+				control1Html = html;
+			}
+			$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
+			nomsStr = _uiGenerateNoms();
+			break;
+		case 'voting':
+			let noms = gameGetNominees();
+			if (isSet(game.time.nominee))
+			{
+				let index = 0;
+				for (let i = 0; i < noms.length; ++i)
+				{
+					$('#panel' + (noms[i] - 1)).html('<center>' + gameGetVotesCount(noms[i]) + '</center>').addClass('day-mark');
+					if (noms[i] == game.time.nominee)
+					{
+						index = i;
+					}
+				}
+				$('#r' + (game.time.nominee - 1)).removeClass().addClass('day-mark');
+				
+				let chState = '';
+				if (index < noms.length - 1)
+				{
+					status = l('Voting',
+						_uiPlayerTitle(noms[index] - 1),
+						_uiPlayerTitle(noms[index + 1] - 1));
+				}
+				else
+				{
+					status = l('VotingLast', _uiPlayerTitle(noms[index] - 1));
+					chState = ' checked';
+				}
+				
+				for (let i = 0; i < 10; ++i)
+				{
+					let player = game.players[i];
+					if (!isSet(player.death))
+					{
+						let vote = 0;
+						if (isSet(player.voting) && game.time.round < player.voting.length)
+						{
+							let v = player.voting[game.time.round];
+							if (isArray(v) && game.time.votingRound < v.length)
+							{
+								vote = v[game.time.votingRound];
+							}
+							else if (isNumber(v))
+							{
+								vote = v;
+							}
 						}
 						
-						switch (title)
+						if (vote == game.time.nominee)
 						{
-						case 'bestPlayer':
-							html += '<img src="images/best_player.png" width="24"></td>';
-							break;
-					 	case 'bestMove':
-							html += '<img src="images/best_move.png" width="24"></td>';
-							break;
-						case 'worstMove':
-							html += '<img src="images/worst_move.png" width="24"></td>';
-							break;
+							$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" checked>' + l('vote', i + 1, game.time.nominee) + '</button>');
 						}
-						html += '<td width="48" align="right">';
-						if (points)
+						else
 						{
-							html += '<big><b>' + (points > 0 ? '+' : '') + points + '</b></big></td>';
+							let j = 0;
+							for (; j < index; ++j)
+							{
+								if (noms[j] == vote)
+								{
+									break;
+								}
+							}
+							if (j == index)
+							{
+								$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" ' + chState + '>' + l('vote', i + 1, game.time.nominee) + '</button>');
+							}
 						}
 					}
-					html += '</td></tr></table>';
-					$('#controlx' + i).html(html);
 				}
-				break;
+				
+				control1Html = 
+					'<button class="day-half-vote" onclick="gameVoteAll(1)">' + l('voteAll', game.time.nominee) + '</button>' +
+					'<button class="day-half-vote" onclick="gameVoteAll(0)">' + l('voteNone', game.time.nominee) + '</button>';
 			}
-			$('#info').html(l(info, game.time.round));
-		}
-		
-		$('#status').html(status);
-		$('#control-1').html(control1Html);
-		$('#game-next').prop('disabled', nextDisabled);
-		$('#game-back').prop('disabled', backDisabled);
-		$('#noms').html(nomsStr);
-	}
-	
-	if (flags & 64) // warnings
-	{
-		for (let i = 0; i < 10; ++i)
-		{
-			let player = game.players[i];
-			let html = '';
-			if (isSet(player.warnings) && player.warnings.length > 0)
+			else // isSet(game.time.speaker) should always be true
 			{
-				html = '<font color="#808000" size="4"><b><table width="100%" class="transp"><tr><td>';
-				let j = 0;
-				for (; j < player.warnings.length; ++j)
+				let index = 0;
+				for (let i = 0; i < noms.length; ++i)
 				{
-					if (gameCompareTimes(player.warnings[j], game.time, true) >= 0)
+					$('#panel' + (noms[i] - 1)).html('<center>' + gameGetVotesCount(noms[i]) + '</center>').addClass('day-mark');
+					if (noms[i] == game.time.speaker)
 					{
+						index = i;
+					}
+				}
+				$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
+				
+				
+				if (index == 0)
+				{
+					status = l('RepeatVoting', noms.length) + '<br>'
+				}
+				status += l('Speaking', _uiPlayerTitle(noms[index] - 1)) + ' ';
+				p = game.current_nominee + 1;
+				if (index < noms.length - 1)
+				{
+					status += l('NextFloor', _uiPlayerTitle(noms[index + 1] - 1));
+				}
+				else
+				{
+					status += l('NextVoting');
+				}
+				
+				_uiShowOnRecordButtons();
+				timerTime = 30;
+			}
+			nomsStr = _uiGenerateNoms();
+			break;
+		case 'voting kill all':
+			break;
+		case 'day kill speaking':
+			break;
+		case 'night start':
+			break;
+		case 'shooting':
+			break;
+		case 'don':
+			break;
+		case 'sheriff':
+			break;
+		case 'end':
+			status = '<h3>' + (game.winner == 'maf' ? l('MafWin') : l('CivWin')) + '</h3>' + l('Finish');
+			info = 'Day';
+			for (let i = 0; i < 10; ++i)
+			{
+				let player = game.players[i];
+//					$('#r' + i).removeClass().addClass(dStyle + 'alive');
+				html = '<center>';
+				switch (player.role)
+				{
+				case 'sheriff':
+					html += '<img src="images/sheriff.png" class="role-icon" title="' + l('sheriff') + '">';
+					break
+				case 'maf':
+					html += '<img src="images/maf.png" class="role-icon" title="' + l('mafia') + '">';
+					break
+				case 'don':
+					html += '<img src="images/don.png" class="role-icon" title="' + l('don') + '">';
+					break
+				}
+				$('#panel' + i).html(html + '</center>').removeClass();
+				$('#control' + i).html('<button class="extra-pts" onclick="uiBonusPoints(' + i + ')"> ' + l('ExtraPoints', i + 1) + '</button>').removeClass();
+						
+				html = '<table width="100%" class="transp"><tr';
+				if (player.comment)
+				{
+					html += ' title="' + player.comment + '"';
+				}
+				html += '>';
+				if (isSet(player.legacy))
+				{
+					let leg = '';
+					let dlm = '';
+					for (let j = 0; j < player.legacy.length && j < 3; ++j)
+					{
+						leg += dlm + (player.legacy[j] + 1);
+						dlm = ',';
+					}
+					html += '<td width="40">' + l('legacy', leg) + '</td>';
+				}
+				html += '<td align="right">';
+				
+				if (player.bonus)
+				{
+					let points = 0;
+					let title = null;
+					if (isArray(player.bonus))
+					{
+						for (let j = 0; j < player.bonus.length; ++j)
+						{
+							if (isNumber(player.bonus[j]))
+							{
+								points = player.bonus[j];
+							}
+							else
+							{
+								title = player.bonus[j];
+							}
+						}
+					}
+					else if (isNumber(player.bonus))
+					{
+						points = player.bonus;
+					}
+					else
+					{
+						title = player.bonus;
+					}
+					
+					switch (title)
+					{
+					case 'bestPlayer':
+						html += '<img src="images/best_player.png" width="24"></td>';
+						break;
+					case 'bestMove':
+						html += '<img src="images/best_move.png" width="24"></td>';
+						break;
+					case 'worstMove':
+						html += '<img src="images/worst_move.png" width="24"></td>';
 						break;
 					}
-					html += '✔';
+					html += '<td width="48" align="right">';
+					if (points)
+					{
+						html += '<big><b>' + (points > 0 ? '+' : '') + points + '</b></big></td>';
+					}
 				}
-				html += '</td><td align="right">'
-				for (; j < player.warnings.length; ++j)
-				{
-					html += '✔';
-				}
-				html += '</td></tr></table></b></font>';
+				html += '</td></tr></table>';
+				$('#controlx' + i).html(html);
 			}
-			$('#warn' + i).html(html);
+			break;
 		}
+		$('#info').html(l(info, game.time.round));
+	}
+	
+	$('#status').html(status);
+	$('#control-1').html(control1Html);
+	$('#game-next').prop('disabled', nextDisabled);
+	$('#game-back').prop('disabled', backDisabled);
+	$('#noms').html(nomsStr);
+	
+	for (let i = 0; i < 10; ++i)
+	{
+		let player = game.players[i];
+		html = '';
+		if (isSet(player.warnings) && player.warnings.length > 0)
+		{
+			html = '<font color="#808000" size="4"><b><table width="100%" class="transp"><tr><td>';
+			let j = 0;
+			for (; j < player.warnings.length; ++j)
+			{
+				if (gameCompareTimes(player.warnings[j], game.time, true) >= 0)
+				{
+					break;
+				}
+				html += '✔';
+			}
+			html += '</td><td align="right">'
+			for (; j < player.warnings.length; ++j)
+			{
+				html += '✔';
+			}
+			html += '</td></tr></table></b></font>';
+		}
+		$('#warn' + i).html(html);
 	}
 
-	if (flags & 128) // game time changed - timer has to be reset
+	if (resetTimer) // game time changed - timer has to be reset
 	{
 		timer.reset(timerTime);
 	}

@@ -1,4 +1,6 @@
 var game; // All vars here can be used by UI code, but it is strongly recommended to use them for reading only. If changes are absolutely needed, make sure gameDirty(...) is called after that.
+var log; // array of games in the previous times - it is used to return back in time.
+var lastSaved; // index in the log array of the last record that is saved to the server.
 var regs; // array of players registered for the event
 var langs; // array of languages allowed in the event
 var _isDirty = false; // signals if the game needs to be saved
@@ -7,14 +9,6 @@ var _connectionListener; // this function is called when connection status is ch
 var _errorListener; // parameter type is: 0 - getting game failed; 1 - saving game failed.
 var _lastDirtyTime = null; // game time at which function dirty was called last time.
 var _gameOnChange; // this function is called every time game changes. Parameter flags is a bit combination of: 
-// 1 - players changed 
-// 2 - roles changed
-// 4 - game time changed
-// 8 - rating/non-rating changed
-// 16 - language changed
-// 32 - moderator changed
-// 64 - warnings to players changed
-// 128 - gametime has changed. It is 1 when there is a real change in gametime. It is used to decide if the timer has to be reset.
 
 var statusWaiter = new function()
 {
@@ -78,12 +72,14 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 	_connectionListener = connectionListener;
 	_errorListener = errorListener;
 	_gameOnChange = gameOnChange;
-	json.post('api/ops/game.php', { op: 'get_current', event_id: eventId, table: tableNum, round: roundNum }, function(data)
+	json.post('api/ops/game.php', { op: 'get_current', lod: 1, event_id: eventId, table: tableNum, round: roundNum }, function(data)
 	{
+		log = data.log;
+		lastSaved = log.length;
 		game = data.game;
 		regs = data.regs;
 		langs = data.langs;
-		_gameOnChange(0xffff); // all flags are set
+		_gameOnChange(true);
 		
 		// If the game exists in the local storage, we use it instead of the server one.
 		// It can exist only when saving the game failed last time.
@@ -115,12 +111,13 @@ function gameSave()
 		if (_connectionState != 1) // 1 means that the other request is not finished yet
 		{
 			let w = http.waiter(statusWaiter);
-			json.post('api/ops/game.php', { op: 'set_current', event_id: game.eventId, table: game.table - 1, round: game.round - 1, game: gameStr}, 
+			json.post('api/ops/game.php', { op: 'set_current', event_id: game.eventId, table: game.table - 1, round: game.round - 1, game: JSON.stringify(game), logIndex: lastSaved, log: JSON.stringify(log.slice(lastSaved))}, 
 			function() // success
 			{
 				// The game is not needed in the local storage any more because the server has it.
 				delete localStorage['game'];
 				_isDirty = false;
+				lastSaved = log.length;
 			},
 			function(message) // error
 			{
@@ -136,27 +133,32 @@ function gameSave()
 	}
 }
 
+function gamePushState()
+{
+	log.push(structuredClone(game));
+}
+
 // Call this after each change in the game. It sets the flag that makes the game to be saved
-// Flags are for _gameOnChange function see the meainin in the beginning of the file where _gameOnChange is described
-function gameDirty(flags)
+function gameDirty()
 {
 	console.log(JSON.stringify(game, undefined, 2));
-//	console.table(game.players);
+	
+	let resetTimer = false;
 	_isDirty = true;
 	if (game.time == null)
 	{
 		if (_lastDirtyTime != null)
 		{
 			_lastDirtyTime = null;
-			flags |= 128; // game time changed
+			resetTimer = true;
 		}
 	}
 	else if (_lastDirtyTime == null || gameCompareTimes(_lastDirtyTime, game.time, true) != 0)
 	{
 		_lastDirtyTime = structuredClone(game.time);
-		flags |= 128; // game time changed
+		resetTimer = true;
 	}
-	_gameOnChange(flags);
+	_gameOnChange(resetTimer);
 }
 
 // Cancels the game and deletes the server record. All game data will be lost
@@ -300,7 +302,7 @@ function _gameTimeToInt(time)
 
 // returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
 // num1 and num2 are 1 based. The range is 1-10.
-function _whoWasNominatedEarlier(round, num1, num2)
+function _gameWhoWasNominatedEarlier(round, num1, num2)
 {
 	if (num1 != num2)
 	{
@@ -379,11 +381,11 @@ function gameCompareTimes(time1, time2, roughly)
 		}
 		else if (isSet(time1.speaker))
 		{
-			result = isSet(time2.speaker) ? _whoWasNominatedEarlier(time1.round, time1.speaker, time2.speaker) : (isSet(time2.nominee) ? -1 : 1;
+			result = isSet(time2.speaker) ? _gameWhoWasNominatedEarlier(time1.round, time1.speaker, time2.speaker) : (isSet(time2.nominee) ? -1 : 1);
 		}
 		else if (isSet(time1.nominee))
 		{
-			result = isSet(time2.nominee) ? _whoWasNominatedEarlier(time1.round, time1.nominee, time2.nominee) : 1);
+			result = isSet(time2.nominee) ? _gameWhoWasNominatedEarlier(time1.round, time1.nominee, time2.nominee) : 1;
 		}
 		else
 		{
@@ -392,7 +394,7 @@ function gameCompareTimes(time1, time2, roughly)
 		break;
 			
 	case 'day kill speaking':
-		result = _whoWasNominatedEarlier(round1, time1.speaker, time2.speaker);
+		result = _gameWhoWasNominatedEarlier(round1, time1.speaker, time2.speaker);
 		break;
 	}
 	
@@ -451,7 +453,7 @@ function gameSetPlayer(num, id)
 		p.name = '';
 	}
 	
-	gameDirty(1);
+	gameDirty();
 	return result;
 }
 
@@ -465,13 +467,13 @@ function gameSetIsRating(isRating)
 	{
 		delete game.rating;
 	}
-	gameDirty(8);
+	gameDirty();
 }
 	
 function gameSetLang(lang)
 {
 	game.language = lang;
-	gameDirty(16);
+	gameDirty();
 }
 
 function gameSetModerator(userId)
@@ -491,7 +493,7 @@ function gameSetModerator(userId)
 			}
 		}
 	}
-	gameDirty(32);
+	gameDirty();
 	return result;
 }
 
@@ -528,7 +530,7 @@ function gameRandomizeSeats()
 			game.players[j] = p;
 		}
 	}
-	gameDirty(1);
+	gameDirty();
 }
 
 function _gameRoleCounts()
@@ -588,10 +590,7 @@ function gameSetRole(num, role)
 		else
 			player.role = role;
 		
-		if (gameAreRolesSet() && _gameCheckEnd())
-			gameDirty(6);
-		else
-			gameDirty(2);
+		gameDirty();
 	}
 }
 
@@ -620,10 +619,8 @@ function gameGenerateRoles()
 				delete game.players[j].role;
 		}
 	}
-	if (_gameCheckEnd())
-		gameDirty(6);
-	else
-		gameDirty(2);
+	_gameCheckEnd();
+	gameDirty();
 }
 
 function _gameEnd(winner)
@@ -690,8 +687,8 @@ function _gameIncTimeOrder()
 function gamePlayerWarning(num)
 {
 	let player = game.players[num];
-	let dirtyFlags = 64;
 	
+	gamePushState();
 	_gameIncTimeOrder();
 	if (!isSet(player.warnings))
 	{
@@ -703,31 +700,33 @@ function gamePlayerWarning(num)
 	{
 		player.death = { round: game.time.round, type: 'warnings' };
 		_gameCheckEnd();
-		dirtyFlags |= 4;
 	}
-	gameDirty(dirtyFlags);
+	gameDirty();
 }
 
 function gamePlayerGiveUp(num)
 {
+	gamePushState();
 	_gameIncTimeOrder();
 	game.players[num].death = { 'round': game.time.round, 'type': 'giveUp', 'time': structuredClone(game.time) };
 	_gameCheckEnd();
-	gameDirty(4);
+	gameDirty();
 }
 
 function gamePlayerKickOut(num)
 {
+	gamePushState();
 	_gameIncTimeOrder();
 	game.players[num].death = { 'round': game.time.round, 'type': 'kickOut', 'time': structuredClone(game.time) };
 	_gameCheckEnd();
-	gameDirty(4);
+	gameDirty();
 }
 
 function gamePlayerTeamKickOut(num)
 {
 	let p = game.players[num];
 	
+	gamePushState();
 	_gameIncTimeOrder();
 	p.death = { 'round': game.time.round, 'type': 'teamKickOut', 'time': structuredClone(game.time) };
 	if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
@@ -738,7 +737,7 @@ function gamePlayerTeamKickOut(num)
 	{
 		_gameEnd('maf');
 	}
-	gameDirty(4);
+	gameDirty();
 }
 
 function gamePlayerRemoveWarning(num)
@@ -784,7 +783,7 @@ function gamePlayerRemoveWarning(num)
 		{
 			delete player.warnings;
 		}
-		gameDirty(64);
+		gameDirty();
 	}
 }
 
@@ -806,7 +805,7 @@ function gameArrangePlayer(num, night)
 	{
 		delete game.players[num].arranged;
 	}
-	gameDirty(4);
+	gameDirty();
 }
 
 function gameSetBonus(num, points, title, comment)
@@ -844,7 +843,7 @@ function gameSetBonus(num, points, title, comment)
 	{
 		delete player.comment;
 	}
-	gameDirty(4);
+	gameDirty();
 	return true;
 }
 
@@ -942,7 +941,7 @@ function gameNominatePlayer(num)
 				{
 					delete p.nominating;
 				}
-				gameDirty(4);
+				gameDirty();
 			}
 		}
 		else
@@ -956,7 +955,7 @@ function gameNominatePlayer(num)
 				p.nominating.push(null);
 			}
 			p.nominating[game.time.round] = num + 1;
-			gameDirty(4);
+			gameDirty();
 		}
 	}
 }
@@ -977,7 +976,7 @@ function gameChangeNomination(num, nomNum)
 			{
 				delete p.nominating;
 			}
-			gameDirty(4);
+			gameDirty();
 		}
 	}
 	else
@@ -1013,7 +1012,7 @@ function gameChangeNomination(num, nomNum)
 			p.nominating.push(null);
 		}
 		p.nominating[game.time.round] = nomNum;
-		gameDirty(4);
+		gameDirty();
 	}
 }
 
@@ -1022,7 +1021,7 @@ function gameChangeNomination(num, nomNum)
 function gameSetOnRecord(num)
 {
 	let t = game.time.time;
-	if (t == 'speaking')
+	if (t == 'speaking' || (t == 'voting' && isSet(game.time.speaker)))
 	{
 		let player = game.players[game.time.speaker - 1];
 		if (!isSet(player.record))
@@ -1032,7 +1031,9 @@ function gameSetOnRecord(num)
 		else if (player.record.length > 0)
 		{
 			let r = player.record[player.record.length - 1];
-			if (r.time == t && r.round == game.time.round)
+			if (
+				r.time == t && r.round == game.time.round &&
+				(!isSet(r.votingRound) || !isSet(game.time.votingRouns) || r.votingRound == game.time.votingRouns))
 			{
 				for (let i = 0; i < r.record.length; ++i)
 				{
@@ -1040,23 +1041,36 @@ function gameSetOnRecord(num)
 					if (n == num)
 					{
 						r.record.splice(i, 1);
-						gameDirty(4);
+						if (r.record.length == 0)
+						{
+							player.record.pop();
+							if (player.record.length == 0)
+							{
+								delete player.record;
+							}
+						}
+						gameDirty();
 						return;
 					}
 					else if (n == -num)
 					{
 						r.record[i] = num;
-						gameDirty(4);
+						gameDirty();
 						return;
 					}
 				}
 				r.record.push(num);
-				gameDirty(4);
+				gameDirty();
 				return;
 			}
 		}
-		player.record.push({ time: t, round: game.time.round, record: [num]});
-		gameDirty(4);
+		let r = { time: t, round: game.time.round, record: [num]};
+		if (isSet(game.time.votingRound))
+		{
+			r.votingRound = game.time.votingRound;
+		}
+		player.record.push(r);
+		gameDirty();
 	}
 }
 
@@ -1184,13 +1198,13 @@ function gameVote(voter)
 			if (noms[noms.length-1] != game.time.nominee)
 			{
 				arr[index] = noms[noms.length-1];
-				gameDirty(4);
+				gameDirty();
 			}
 		}
 		else
 		{
 			arr[index] = game.time.nominee;
-			gameDirty(4);
+			gameDirty();
 		}
 	}
 }
@@ -1216,7 +1230,7 @@ function _gameCreateVoting(num)
 				}
 				if (game.time.votingRound > 0)
 				{
-					if (!isArray(v))
+					if (!isArray(player.voting[game.time.round]))
 					{
 						player.voting[game.time.round] = [player.voting[game.time.round]];
 					}
@@ -1325,11 +1339,62 @@ function gameSetSplitting(s)
 		game.splitting.push(false);
 	}
 	game.splitting[game.time.round] = s;
-	gameDirty(4);
+	gameDirty();
+}
+
+// vote: true - all vote for nominee; false - nobody votes for nominee
+function gameVoteAll(vote)
+{
+	if (game.time.time == 'voting' && isSet(game.time.nominee))
+	{
+		let changed = false;
+		for (let i = 0; i < 10; ++i)
+		{
+			let player = game.players[i];
+			let arr = player.voting;
+			let index = game.time.round;
+			if (index >= arr.length)
+			{
+				continue;
+			}
+			if (game.time.votingRound > 0)
+			{
+				arr = arr[index];
+				index = game.time.votingRound;
+				if (index >= arr.length)
+				{
+					continue;
+				}
+			}
+			
+			if (vote) 
+			{
+				if (_gameWhoWasNominatedEarlier(game.time.round, game.time.nominee, arr[index]) < 0)
+				{
+					arr[index] = game.time.nominee;
+					changed = true;
+				}
+			}
+			else if (arr[index] == game.time.nominee)
+			{
+				let noms = gameGetNominees();
+				if (noms[noms.length-1] != game.time.nominee)
+				{
+					arr[index] = noms[noms.length-1];
+					changed = true;
+				}
+			}
+		}
+		if (changed)
+		{
+			gameDirty();
+		}
+	}
 }
 
 function gameNext()
 {
+	gamePushState();
 	if (!isSet(game.time))
 	{
 		game.time = { time: 'start', round: 0 };
@@ -1472,209 +1537,16 @@ function gameNext()
 			break;
 		}
 	}
-	gameDirty(68);
+	gameDirty();
 }
 
 function gameBack()
 {
-	if (isSet(game.time))
+	if (log.length > 0)
 	{
-		if (isSet(game.time.order))
-		{
-			if (--game.time.order == 0)
-			{
-				delete game.time.order;
-			}
-			
-			for (let i = 0; i < 10; ++i)
-			{
-				let player = game.players[i];
-				if (isSet(player.warnings) && player.warnings.length > 0)
-				{
-					while (player.warnings.length > 0 && gameCompareTimes(player.warnings[player.warnings.length-1], game.time) > 0)
-					{
-						console.log(player);
-						if (player.warnings.length == 4)
-						{
-							delete player.death;
-						}
-						player.warnings.pop();
-						console.log(player);
-					}
-					if (player.warnings.length == 0)
-					{
-						delete player.warnings;
-					}
-				}
-				if (isSet(player.death) && isSet(player.death.time) && gameCompareTimes(player.death.time, game.time) > 0)
-				{
-					delete player.death;
-				}
-			}
-		}
-		else
-		{
-			switch (game.time.time)
-			{
-			case 'start':
-				delete game.time;
-				break;
-			case 'arrangement':
-				game.time.time = 'start';
-				break;
-			case 'night kill speaking':
-				break;
-			case 'speaking':
-				gameNominatePlayer(-1);
-				_gameRemoveOnRecord();
-				do
-				{
-					if (game.time.speaker == _gameWhoSpeaksFirst(0) + 1)
-					{
-						delete game.time.speaker;
-						if (game.time.round == 0)
-						{
-							game.time.time = 'arrangement';
-						}
-						else
-						{
-							game.time = 'sheriff';
-							for (let i = 0; i < 10; ++i)
-							{
-								let p = game.players[i];
-								if (isSet(p.death) && p.death.type == 'night' && p.death.round == game.time.round)
-								{
-									game.time = 'night kill speaking';
-									break;
-								}
-							}
-						}
-						break;
-					}
-					else if (--game.time.speaker <= 0)
-					{
-						game.time.speaker = 10;
-					}
-				}
-				while (isSet(game.players[game.time.speaker - 1].death));
-				break;
-			case 'voting':
-				if (isSet(game.time.nominee))
-				{
-					let noms = gameGetNominees();
-					let i = noms.length;
-					if (i > 0 && noms[0] != game.time.nominee)
-					{
-						for (i = 1; i < noms.length; ++i)
-						{
-							if (noms[i] == game.time.nominee)
-							{
-								game.time.nominee = noms[i - 1];
-								break;
-							}
-						}
-					}
-					if (i == noms.length)
-					{
-						_gameDeleteVoting();
-						if (game.time.votingRound >= 0)
-						{
-							delete game.time.nominee;
-							game.time.speaker = noms[noms.length - 1];
-						}
-						else
-						{
-							let s = _gameWhoSpeaksFirst();
-							if (s == 0) s = 10;
-							game.time = { round: game.time.round, time: 'speaking', speaker: s };
-						}
-					}
-				}
-				else  // isSet(game.time.speaker) should always be true
-				{
-					let noms = gameGetNominees();
-					let i = noms.length;
-					if (i > 0 && noms[0] != game.time.speaker)
-					{
-						for (i = 1; i < noms.length; ++i)
-						{
-							if (noms[i] == game.time.speaker)
-							{
-								game.time.speaker = noms[i - 1];
-								break;
-							}
-						}
-					}
-					if (i == noms.length)
-					{
-						--game.time.votingRound;
-						let noms = gameGetNominees();
-						delete game.time.speaker;
-						game.time.nominee = noms[noms.length - 1];
-					}
-				}
-				break;
-			case 'voting kill all':
-				break;
-			case 'day kill speaking':
-				break;
-			case 'night start':
-				break;
-			case 'shooting':
-				break;
-			case 'don':
-				break;
-			case 'sheriff':
-				break;
-			case 'end':
-				let maxDeathTime = null;
-				let num = -1;
-				for (let i = 0; i < 10; ++i)
-				{
-					let t = _gameGetPlayerDeathTime(i, true);
-					if (t != null && t.time != 'end' && (maxDeathTime == null || gameCompareTimes(maxDeathTime, t) < 0))
-					{
-						maxDeathTime = t;
-						num = i;
-					}
-				}
-				if (num >= 0) 
-				{
-					game.time = maxDeathTime;
-					if (game.winner)
-					{
-						delete game.winner;
-					}
-					if (game.endTime)
-					{
-						delete game.endTime;
-					}
-					if (isSet(maxDeathTime.order))
-					{
-						gameBack(); // we need to make one more step back to remove the last warning or mod-kill.
-						return; // gameDirty is already called by gameBack. No need to call it again.
-					}
-				}
-				break;
-			}
-			
-			// Check if there was an ordered event (like a warning or mod-kill) at this time.
-			for (let i = 0; i < 10; ++i)
-			{
-				let p = game.players[i];
-				if (isSet(p.warnings) && p.warnings.length > 0)
-				{
-					if (gameCompareTimes(p.warnings[p.warnings.length - 1], game.time) > 0)
-					{
-						game.time = structuredClone(p.warnings[p.warnings.length - 1]);
-					}
-				}
-				if (isSet(p.death) && isSet(p.death.time) && gameCompareTimes(p.death.time, game.time) > 0)
-				{
-					game.time = structuredClone(p.death.time);
-				}
-			}
-		}
-		gameDirty(68);
+		game = log[log.length-1];
+		log.pop();
+		lastSaved = Math.min(lastSaved, log.length);
+		gameDirty();
 	}
 }

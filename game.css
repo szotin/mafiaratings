@@ -17,6 +17,8 @@ button.day-vote[checked] { border: 1px solid #909090; padding: 0px; background-c
 button.day-vote[disabled] { border: 1px solid #909090; padding: 0px; color: #808080; background-color: transparent; }
 button.day-vote:active { border: 1px inset #dddddd; padding: 0px;  }
 
+button.day-half-vote { border: 1px outset #dddddd; height: 28px; width: 80px; margin: 0px; padding: 1px; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+
 .night-alive { background-color: #c0c0b0; color: #303030; }
 .night-dead { background-color: #a0a090; color: #707070; }
 .night-mark { background-color: #779977; color: #303030; }

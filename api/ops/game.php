@@ -1783,8 +1783,8 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		$table = (int)get_required_param('table');
 		$round = (int)get_required_param('round');
+		$lod = (int)get_optional_param('lod', 0);
 		
-		Db::begin();
 		list($club_id, $tournament_id, $rules, $misc, $languages) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, rules, misc, languages FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
 		
@@ -1802,16 +1802,31 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please check the event languages. None of them is specified.'));
 		}
 	
-		$query = new DbQuery('SELECT game, user_id FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
+		$query = new DbQuery('SELECT game, log, user_id FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
 		if ($row = $query->next())
 		{
-			list ($game, $user_id) = $row;
+			list ($game, $log, $user_id) = $row;
 			if ($user_id != $_profile->user_id)
 			{
 				list($user_name) = Db::record(get_label('user'), 'SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
 				throw new Exc(get_label('The game is moderated by [0].', $user_name));
 			}
 			$game = json_decode($game);
+			if ($lod > 0)
+			{
+				if (is_null($log))
+				{
+					$log = array();
+				}
+				else
+				{
+					$log = json_decode($log);
+					if (!is_array($log))
+					{
+						$log = array();
+					}
+				}
+			}
 		}
 		else
 		{
@@ -1869,44 +1884,14 @@ class ApiPage extends OpsApiPageBase
 					}
 				}
 			}
+			$log = array();
 		}
 		
-		// // Check if all players in the game are registered for the event
-		// $reg_changed = false;
-		// foreach ($game->players as $player)
-		// {
-			// if (isset($player->id) && $player->id > 0)
-			// {
-				// $register = true;
-				// foreach ($regs as $reg)
-				// {
-					// if ($player->id == $reg->id)
-					// {
-						// $register = false;
-						// break;
-					// }
-				// }
-				// if ($register)
-				// {
-					// Db::exec(get_label('registration'), 'INSERT INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $event_id, $player->id, $player->name);
-					// $reg = new stdClass();
-					// $reg->id = $player->id;
-					// $reg->name = $player->name;
-					// $reg->flags = USER_PERM_PLAYER;
-					// $regs[] = $reg;
-					// $reg_changed = true;
-				// }
-			// }
-		// }
-		// if ($reg_changed)
-		// {
-			// // We need to sort players after the changes
-			// usort($regs, function($reg1, $reg2) { return strcmp($reg1->name, $reg2->name); });
-		// }
-		
-		Db::commit();
-		
 		$this->response['game'] = $game;
+		if ($lod > 0)
+		{
+			$this->response['log'] = $log;
+		}
 		$this->response['regs'] = get_event_reg_array($event_id);
 		$this->response['langs'] = $langs;
 	}
@@ -1918,6 +1903,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('table', 'Table number in the event. Table 1 is numbered as 0, 2 - 1, etc..');
 		$help->request_param('round', 'Game number. Round 1 is numbered as 0, 2 - 1, etc..');
 		$help->response_param('game', 'Game description in json format.');
+		$help->response_param('game', 'Array of the previous states of the game. It can be used to navigate through the game.');
 		$param = $help->response_param('regs', 'Array containing players registered for the event.');
 		$param->response_param('id', 'User id');
 		$param->response_param('name', 'Player name');
@@ -1936,25 +1922,88 @@ class ApiPage extends OpsApiPageBase
 		$table = (int)get_required_param('table');
 		$round = (int)get_required_param('round');
 		$game = get_required_param('game');
+		$log_tail_index = get_optional_param('logIndex', -1);
+		$log_tail = get_optional_param('log', NULL);
+		if (!is_null($log_tail))
+		{
+			$log_tail = json_decode($log_tail);
+			if (!is_array($log_tail))
+			{
+				throw new Exc('Log must be an array.');
+			}
+		}
+		
 		
 		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
 		
 		Db::begin();
-		$query = new DbQuery('SELECT user_id FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
+		$query = new DbQuery('SELECT user_id, log FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
 		if ($row = $query->next())
 		{
-			list ($user_id) = $row;
+			list ($user_id, $log) = $row;
+			$log_changed = false;
+			if (!is_null($log_tail))
+			{
+				if (is_null($log))
+				{
+					$log = array();
+					$log_changed = true;
+				}
+				else
+				{
+					$log = json_decode($log);
+					if (!is_array($log))
+					{
+						$log = array();
+					}
+				}
+				if ($log_tail_index < 0)
+				{
+					$log_tail_index = count($log);
+				}
+				
+				$new_log_length = $log_tail_index + count($log_tail);
+				for ($i = count($log); $i < $new_log_length; ++$i)
+				{
+					$log[] = NULL;
+					$log_changed = true;
+				}
+				for ($i = $log_tail_index; $i < $new_log_length; ++$i)
+				{
+					$log[$i] = $log_tail[$i - $log_tail_index];
+					$log_changed = true;
+				}
+				if (count($log) > $new_log_length)
+				{
+					$log = array_slice($log, 0, $new_log_length);
+					$log_changed = true;
+				}
+			}
+			
 			if ($user_id != $_profile->user_id)
 			{
 				list($user_name) = Db::record(get_label('user'), 'SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
 				throw new Exc(get_label('The game is moderated by [0].', $user_name));
 			}
-			Db::exec(get_label('game'), 'UPDATE current_games SET game = ? WHERE event_id = ? AND table_num = ? AND round_num = ?', $game, $event_id, $table, $round);
+			if ($log_changed)
+			{
+				$log = json_encode($log);
+				Db::exec(get_label('game'), 'UPDATE current_games SET game = ?, log = ? WHERE event_id = ? AND table_num = ? AND round_num = ?', $game, $log, $event_id, $table, $round);
+			}
+			else
+			{
+				Db::exec(get_label('game'), 'UPDATE current_games SET game = ? WHERE event_id = ? AND table_num = ? AND round_num = ?', $game, $event_id, $table, $round);
+			}
+		}
+		else if (is_null($log_tail))
+		{
+			Db::exec(get_label('game'), 'INSERT INTO current_games (event_id, table_num, round_num, user_id, game) VALUES (?, ?, ?, ?, ?)', $event_id, $table, $round, $_profile->user_id, $game);
 		}
 		else
 		{
-			Db::exec(get_label('game'), 'INSERT INTO current_games (event_id, table_num, round_num, user_id, game) VALUES (?, ?, ?, ?, ?)', $event_id, $table, $round, $_profile->user_id, $game);
+			$log_tail = json_encode($log_tail);
+			Db::exec(get_label('game'), 'INSERT INTO current_games (event_id, table_num, round_num, user_id, game, log) VALUES (?, ?, ?, ?, ?, ?)', $event_id, $table, $round, $_profile->user_id, $game, $log_tail);
 		}
 		Db::commit();
 	}
@@ -1966,6 +2015,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('table', 'Table number in the event. Table 1 is numbered as 0, 2 - 1, etc..');
 		$help->request_param('round', 'Game number. Round 1 is numbered as 0, 2 - 1, etc..');
 		$help->request_param('game', 'Json string defining current game state.');
+		$help->request_param('log', 'Addition to the array of previous states of the game.', 'log is not modified');
+		$help->request_param('logIndex', 'At which index should the provided log be added to the prev states of the game. The records after the logIndex+log.length are cut.<p>Examples:<br>recorded log is []. We send logIndex:1,log:[1,2]. Result is [null,1,2].<br>We send logIndex:2,log[3,4,5]. Result is: [null,1,3,4,5]<br>We send logIndex:3,log:[]. Result is: [null,1,3,4].<br>We send logIndex:0,log:[1,2]. Result is: [1,2]', 'end of the log is used');
 		return $help;
 	}
 }

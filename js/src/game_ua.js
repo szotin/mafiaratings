@@ -1,5 +1,7 @@
 ﻿if (typeof _l == "undefined") _l = {};
 
+_l["voteAll"] = "Всi";
+_l["voteNone"] = "Ніхто";
 _l["Splitting"] = "є озвучений попил";
 _l["VotingStart"] = "Початок голосування";
 _l["RecordCiv"] = "Залишити {1} мирним під протокол";

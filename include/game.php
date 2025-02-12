@@ -2270,7 +2270,7 @@ class Game
 			}
 			else if (isset($gt1->nominee))
 			{
-				$result = isset($gt2->nominee) ? $this->who_was_nominated_earlier($gt1->round, $gt1->nominee, $gt2->nominee) : 1);
+				$result = isset($gt2->nominee) ? $this->who_was_nominated_earlier($gt1->round, $gt1->nominee, $gt2->nominee) : 1;
 			}
 			else
 			{
