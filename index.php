@@ -83,18 +83,18 @@ class Page extends GeneralPageBase
 //		echo formatted_json($tournament);
 		
 		$future = ($tournament->start_time > time());
-		if ($future)
-		{
-			$dark_class = ' class = "darker"';
-			$light_class = ' class = "dark"';
-			$url = 'tournament_info.php';
-		}
-		else
-		{
+		// if ($future)
+		// {
+			// $dark_class = ' class = "darker"';
+			// $light_class = ' class = "dark"';
+			// $url = 'tournament_info.php';
+		// }
+		// else
+		// {
 			$dark_class = ' class = "dark"';
 			$light_class = '';
 			$url = 'tournament_standings.php';
-		}
+		// }
 		
 		echo '<table class="transp" width="100%">';
 		
@@ -112,7 +112,7 @@ class Page extends GeneralPageBase
 		}
 		echo '</td></tr>';
 		
-		echo '<tr' . $light_class . ' style="height: 40px;"><td align="center">' . $tournament->club_name . '</td><td width="34">';
+		echo '<tr' . ($this->max_series > 0 ? $light_class : $dark_class) . ' style="height: 40px;"><td align="center">' . $tournament->club_name . '</td><td width="34">';
 		$this->club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
 		$this->club_pic->show(ICONS_DIR, false, 30);
 		echo '</td></tr>';
@@ -249,22 +249,21 @@ class Page extends GeneralPageBase
 		return false;
 	}
 	
-	private function select_tournaments($condition, $in_series_only)
+	private function select_tournaments($condition, $limit, $in_series)
 	{
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name FROM tournaments t' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP()', $condition);
-		if ($in_series_only)
+			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND', $condition);
+		if (!$in_series)
 		{
-			$query->add(' AND EXISTS (SELECT st.series_id FROM series_tournaments st WHERE st.tournament_id = t.id)');
+			$query->add(' NOT');
 		}
-		$query->add(' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id LIMIT ' . (TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT));
-		$this->tournaments_list = '';
-		$delim = '';
-		$this->tournaments = array();
+		$query->add(' EXISTS (SELECT st.series_id FROM series_tournaments st WHERE st.tournament_id = t.id)');
+		$query->add(' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id LIMIT ' . $limit);
+		$delim = empty($this->tournaments_list) ? '' : ', ';
 		while ($row = $query->next())
 		{
 			$tournament = new stdClass();
@@ -278,13 +277,16 @@ class Page extends GeneralPageBase
 		}
 	}
 	
-	private function show_tournaments($condition)
+	private function show_tournaments($condition, $in_series)
 	{
-		$this->select_tournaments($condition, true);
-		if (count($this->tournaments) < TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT)
-		{
-			$this->select_tournaments($condition, false);
-		}
+		$this->tournaments_list = '';
+		$this->tournaments = array();
+		
+		$this->select_tournaments($condition, TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT, $in_series);
+		// if (count($this->tournaments) < TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT)
+		// {
+			// $this->select_tournaments($condition, TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT - count($this->tournaments), false);
+		// }
 		
 		if (empty($this->tournaments_list))
 		{
@@ -346,7 +348,7 @@ class Page extends GeneralPageBase
 				if ($tournament_count == 0)
 				{
 					echo '<table class="bordered light" width="100%">';
-					echo '<tr class="darker"><td colspan="' . TOURNAMENTS_COLUMN_COUNT . '"><b><a href="tournaments.php?future=1&bck=1">' . get_label('Tournaments') . '</b></td></tr>';
+					echo '<tr class="darker"><td colspan="' . TOURNAMENTS_COLUMN_COUNT . '"><b><a href="tournaments.php?future=1&bck=1">' . ($in_series ? get_label('Tournaments') : get_label('Club tournaments')) . '</b></td></tr>';
 				}
 				else
 				{
@@ -631,9 +633,10 @@ class Page extends GeneralPageBase
 		}
 		
 		// tournaments, events and series
-		$have_tables = $this->show_tournaments($condition) || $have_tables;
+		$have_tables = $this->show_tournaments($condition, true) || $have_tables;
 		$have_tables = $this->show_seriess($condition) || $have_tables;
-		$have_tables = $this->show_events($condition) || $have_tables;
+		$have_tables = $this->show_tournaments($condition, false) || $have_tables;
+		//$have_tables = $this->show_events($condition) || $have_tables;
 		
 		if ($had_tables)
 		{
