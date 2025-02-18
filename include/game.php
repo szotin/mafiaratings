@@ -1767,7 +1767,7 @@ class Game
 					{
 						if (isset($p->voting) && count($p->voting) > $death_time->round && is_array($p->voting[$death_time->round]))
 						{
-							$death_time->votingRound = count($p->voting[$death_time->round]);
+							$death_time->votingRound = count($p->voting[$death_time->round]) - 1;
 							break;
 						}
 					}

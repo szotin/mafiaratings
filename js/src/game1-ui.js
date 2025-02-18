@@ -66,6 +66,11 @@ function _uiShowOnRecordButtons()
 	});
 }
 
+function _uiShoot(shooter)
+{
+	gameShoot($('#shot' + shooter).val(), shooter);
+}
+
 function _uiRender(resetTimer)
 {
 	let timerTime = 60;
@@ -108,6 +113,7 @@ function _uiRender(resetTimer)
 	let nomsStr = '';
 	let nextDisabled = false;
 	let backDisabled = false;
+	let noms = null;
 	if (!isSet(game.time))
 	{
 		status = l('StartGame');
@@ -185,6 +191,30 @@ function _uiRender(resetTimer)
 			info = 'Night0';
 			break;
 		case 'night kill speaking':
+			$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
+			let p = game.players[game.time.speaker - 1];
+			status = l('GoodMorning') +
+				' ' + l('NightKill', _uiPlayerTitle(game.time.speaker - 1), l('KilledMale')) +
+				' ' + l('LastSpeech', l('He'), l('his')) +
+				l('NextFloor', _uiPlayerTitle(gameWhoSpeaksFirst()))
+			time = 60;
+			if (game.time.round == 1)
+			{
+				for (var i = 0; i < 10; ++i)
+				{
+					let p = game.players[i];
+					var c = $('#control' + i);
+					html = '<button class="day-vote" onclick="gameSetLegacy(' + i + ')"';
+					if (gameIsInLegacy(i))
+					{
+						html += ' checked';
+					}
+					html += '> ' + l('guess', i + 1) + '</button>';
+					c.html(html);
+				}
+				control1Html = '<button class="day-vote" onclick="gameSetLegacy(-1)">' + l('noGuess') + '</button>';
+			}
+			_uiShowOnRecordButtons();
 			break;
 		case 'speaking':
 			let player = game.players[game.time.speaker - 1];
@@ -194,7 +224,6 @@ function _uiRender(resetTimer)
 				gameCompareTimes(player.warnings[2], { time: game.time.time, speaker: game.time.speaker, round: game.time.round - 1 }) < 0))
 			{
 				status = l('Speaking', _uiPlayerTitle(game.time.speaker - 1));
-				timerTime = 60;
 			}
 			else if (gamePlayersCount() > 4)
 			{
@@ -225,7 +254,7 @@ function _uiRender(resetTimer)
 				for (let i = 0; i < 10; ++i)
 				{
 					let p = game.players[i];
-					if (!isSet(player.death))
+					if (!isSet(p.death))
 					{
 						let c = $('#control' + i);
 						let n = gameIsPlayerNominated(i);
@@ -258,7 +287,7 @@ function _uiRender(resetTimer)
 			nomsStr = _uiGenerateNoms();
 			break;
 		case 'voting':
-			let noms = gameGetNominees();
+			noms = gameGetNominees();
 			if (isSet(game.time.nominee))
 			{
 				let index = 0;
@@ -349,7 +378,6 @@ function _uiRender(resetTimer)
 					status = l('RepeatVoting', noms.length) + '<br>'
 				}
 				status += l('Speaking', _uiPlayerTitle(noms[index] - 1)) + ' ';
-				p = game.current_nominee + 1;
 				if (index < noms.length - 1)
 				{
 					status += l('NextFloor', _uiPlayerTitle(noms[index + 1] - 1));
@@ -365,16 +393,124 @@ function _uiRender(resetTimer)
 			nomsStr = _uiGenerateNoms();
 			break;
 		case 'voting kill all':
+			status = l('KillAll');
+
+			noms = gameGetNominees();
+			for (let i = 0; i < noms.length; ++i)
+			{
+				$('#panel' + (noms[i] - 1)).html('<center>' + gameGetVotesCount(noms[i]) + '</center>').addClass('day-mark');
+			}
+			for (let i = 0; i < 10; ++i)
+			{
+				let player = game.players[i];
+				let checked = player.voting[game.time.round][game.time.votingRound];
+				$('#control' + i).html('<button class="day-vote" onclick="gameVoteToKillAll(' + i + ')"' + (checked ? ' checked' : '') + '>' + (checked ? l('yes') : l('no')) + '</button>');
+			}
+			control1Html = 
+				'<button class="day-half-vote" onclick="gameAllVoteToKillAll(true)">' + l('voteAll', game.time.nominee) + '</button>' +
+				'<button class="day-half-vote" onclick="gameAllVoteToKillAll(false)">' + l('voteNone', game.time.nominee) + '</button>';
 			break;
 		case 'day kill speaking':
+			noms = gameGetVotingWinners();
+			for (let nom of noms)
+			{
+				$('#panel' + (nom - 1)).addClass('day-mark');
+			}
+			$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
+			
+			
+			status = l('DayKill', _uiPlayerTitle(game.time.speaker), l('KilledMale')) + ' ' + l('LastSpeech', l('He'), l('his'));
+			_uiShowOnRecordButtons();
 			break;
 		case 'night start':
+			status = l('NightStart');
+			info = 'Night';
 			break;
 		case 'shooting':
+			let shots = gameGetShots();
+			status = l('Shooting');
+			html = ')"><option value="-1"></option>';
+			for (let i = 0; i < 10; ++i)
+			{
+				let p = game.players[i];
+				if (!isSet(p.death))
+				{
+					html += '<option value="' + i + '">' + _uiPlayerTitle(i) + '</option>';
+					var str = '<button class="night-char" onclick="gameShoot(' + i + ')">x</button>';
+					for (let j = 0; j < shots.length; ++j)
+					{
+						let s = shots[j];
+						str += '<button class="night-char"';
+						if (s[1] == i)
+						{
+							str += ' checked';
+						}
+						str += ' onclick="gameShoot(' + i + ', ' + s[0] + ')">' + (s[0] + 1) + '</button>';
+					}
+					$('#panel' + i).html(str);
+				}
+			}
+			html += '</select>';
+			for (let i = 0; i < shots.length; ++i)
+			{
+				$('#control' + shots[i][0]).html('<select id="shot' + shots[i][0] + '" onchange="_uiShoot(' + shots[i][0] + html);
+				$('#shot' + shots[i][0]).val(shots[i][1]);
+			}
+			info = 'Night';
 			break;
 		case 'don':
+			if (gameIsDonAlive())
+			{
+				status = l('DonCheck');
+				let n = true;
+				for (let i = 0; i < 10; ++i)
+				{
+					let p = game.players[i];
+					if (isSet(p.don) && p.don == game.time.round)
+					{
+						let a = isSet(p.role) && p.role == 'sheriff' ? 'yes' : 'no';
+						$('#control' + i).html('<button class="night-vote" onclick="gameDonCheck(' + i + ')" checked> ' + l(a) + '</button>');
+						n = false;
+					}
+					else
+					{
+						$('#control' + i).html('<button class="night-vote" onclick="gameDonCheck(' + i + ')"> ' + l('Check', i + 1) + '</button>');
+					}
+				}
+				control1Html = '<button class="day-vote" onclick="gameDonCheck(-1)"' + (n ? ' checked' : '') + '> ' + l('NoCheck') + '</button>';
+			}
+			else
+			{
+				status = l('NoDon');
+			}
+			info = 'Night';
 			break;
 		case 'sheriff':
+			if (gameIsSheriffAlive())
+			{
+				status = l('SheriffCheck');
+				let n = true;
+				for (let i = 0; i < 10; ++i)
+				{
+					let p = game.players[i];
+					if (isSet(p.sheriff) && p.sheriff == game.time.round)
+					{
+						let a = isSet(p.role) && (p.role == 'maf' || p.role == 'don') ? 'yes' : 'no';
+						$('#control' + i).html('<button class="night-vote" onclick="gameSheriffCheck(' + i + ')" checked> ' + l(a) + '</button>');
+						n = false;
+					}
+					else
+					{
+						$('#control' + i).html('<button class="night-vote" onclick="gameSheriffCheck(' + i + ')"> ' + l('Check', i + 1) + '</button>');
+					}
+				}
+				control1Html = '<button class="day-vote" onclick="gameSheriffCheck(-1)"' + (n ? ' checked' : '') + '> ' + l('NoCheck') + '</button>';
+			}
+			else
+			{
+				status = l('NoSheriff');
+			}
+			info = 'Night';
 			break;
 		case 'end':
 			status = '<h3>' + (game.winner == 'maf' ? l('MafWin') : l('CivWin')) + '</h3>' + l('Finish');
@@ -382,7 +518,7 @@ function _uiRender(resetTimer)
 			for (let i = 0; i < 10; ++i)
 			{
 				let player = game.players[i];
-//					$('#r' + i).removeClass().addClass(dStyle + 'alive');
+				$('#r' + i).removeClass().addClass(dStyle + 'alive');
 				html = '<center>';
 				switch (player.role)
 				{
@@ -412,9 +548,9 @@ function _uiRender(resetTimer)
 					for (let j = 0; j < player.legacy.length && j < 3; ++j)
 					{
 						leg += dlm + (player.legacy[j] + 1);
-						dlm = ',';
+						dlm = ', ';
 					}
-					html += '<td width="40">' + l('legacy', leg) + '</td>';
+					html += '<td width="60">' + l('legacy', leg) + '</td>';
 				}
 				html += '<td align="right">';
 				

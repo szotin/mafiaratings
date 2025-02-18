@@ -1,5 +1,6 @@
 ﻿if (typeof _l == "undefined") _l = {};
 
+_l["KillAll"] = "Убити їх усіх?";
 _l["voteAll"] = "Всi";
 _l["voteNone"] = "Ніхто";
 _l["Splitting"] = "є озвучений попил";

@@ -1,5 +1,6 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["KillAll"] = "Kill them all?";
 _l["voteAll"] = "All";
 _l["voteNone"] = "Nobody";
 _l["Splitting"] = "players are going to split the table";
