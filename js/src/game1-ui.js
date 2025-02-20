@@ -10,10 +10,10 @@ function _uiOption(value, current, text)
 	return '<option value="' + value + '">' + text + '</option>';
 }
 
-function _uiPlayerTitle(num)
+function _uiPlayerTitle(index)
 {
-	let name = game.players[num].name;
-	let result = '' + (num + 1);
+	let name = game.players[index].name;
+	let result = '' + (index + 1);
 	if (isSet(name) && name.length > 0)
 		result += ' (' + name + ')';
 	return result;
@@ -96,15 +96,15 @@ function _uiRender(resetTimer)
 		$('#controlx' + i).html('').removeClass();
 		$('#player' + i).html(html).val(player.id ? player.id : 0);
 		
-		if (isSet(player.death) || !isSet(game.time))
-		{
-			$('#btns-' + i).html('');
-		}
-		else
+		if (gameIsPlayerAtTheTable(i))
 		{
 			$('#btns-' + i).html(
 					'<button class="icon" onclick="gamePlayerWarning(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
 					'<button class="icon" onclick="uiPlayerActions(' + i + ')"><img src="images/more.png" title="' + l('GiveUp') + '"></button>');
+		}
+		else
+		{
+			$('#btns-' + i).html('');
 		}
 	}
 	
@@ -403,8 +403,11 @@ function _uiRender(resetTimer)
 			for (let i = 0; i < 10; ++i)
 			{
 				let player = game.players[i];
-				let checked = player.voting[game.time.round][game.time.votingRound];
-				$('#control' + i).html('<button class="day-vote" onclick="gameVoteToKillAll(' + i + ')"' + (checked ? ' checked' : '') + '>' + (checked ? l('yes') : l('no')) + '</button>');
+				if (!isSet(player.death))
+				{
+					let checked = player.voting[game.time.round][game.time.votingRound];
+					$('#control' + i).html('<button class="day-vote" onclick="gameVoteToKillAll(' + i + ')"' + (checked ? ' checked' : '') + '>' + (checked ? l('yes') : l('no')) + '</button>');
+				}
 			}
 			control1Html = 
 				'<button class="day-half-vote" onclick="gameAllVoteToKillAll(true)">' + l('voteAll', game.time.nominee) + '</button>' +
@@ -419,7 +422,7 @@ function _uiRender(resetTimer)
 			$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
 			
 			
-			status = l('DayKill', _uiPlayerTitle(game.time.speaker), l('KilledMale')) + ' ' + l('LastSpeech', l('He'), l('his'));
+			status = l('DayKill', _uiPlayerTitle(game.time.speaker - 1), l('KilledMale')) + ' ' + l('LastSpeech', l('He'), l('his'));
 			_uiShowOnRecordButtons();
 			break;
 		case 'night start':

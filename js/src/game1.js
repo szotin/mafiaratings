@@ -1665,7 +1665,10 @@ function _gameIsAlive(who)
 	{
 		if (isSet(player.role) && player.role == who)
 		{
-			return !isSet(player.death);
+			if (!isSet(player.death) || (player.death.type == 'night' && player.death.round == game.time.round))
+			{
+				return true;
+			}
 		}
 	}
 	return false;
@@ -1788,6 +1791,81 @@ function gameIsInLegacy(index)
 	return false;
 }
 
+function gameIsPlayerAtTheTable(index)
+{
+	if (!isSet(game.time))
+	{
+		return false;
+	}
+
+	let player = game.players[index];
+	if (!isSet(player.death))
+	{
+		return true;
+	}
+	
+	if (player.death.round != game.time.round)
+	{
+		return false;
+	}
+	
+	switch (game.time.time)
+	{
+	case 'night kill speaking':
+	case 'don':
+	case 'sheriff':
+		if (player.death.type == 'night')
+		{
+			return true;
+		}
+		break;
+	case 'day kill speaking':
+		if (player.death.type == 'day')
+		{
+			if (game.time.speaker == index + 1)
+			{
+				return true;
+			}
+			
+			let noms = gameGetNominees();
+			for (let n of noms)
+			{
+				if (n == index + 1)
+				{
+					return false;
+				}
+				if (n == game.time.speaker)
+				{
+					return true;
+				}
+			}
+		}
+		break;
+	case 'end':
+		if (player.death.type == 'night' || player.death.type == 'day')
+		{
+			let dt = _gameGetPlayerDeathTime(index);
+			for (let i = 0; i < 10; ++i)
+			{
+				if (i != index)
+				{
+					let p = game.players[i];
+					if (isSet(p.death))
+					{
+						if (gameCompareTimes(_gameGetPlayerDeathTime(i), dt) > 0)
+						{
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		}
+		break;
+	}
+	return false;
+}
+
 function gameNext()
 {
 	gamePushState();
@@ -1842,14 +1920,14 @@ function gameNext()
 						{
 							game.time = { round: round + 1, time: 'night start' };
 						}
-						else if (noms.length == 1)
-						{
-							game.players[noms[0]-1].death = { type: 'day', round: game.time.round };
-							if (!_gameCheckEnd())
-							{
-								game.time = { time: 'day kill speaking', speaker: noms[0], round: game.time.round };
-							}
-						}
+						// else if (noms.length == 1)
+						// {
+							// game.players[noms[0]-1].death = { type: 'day', round: game.time.round };
+							// if (!_gameCheckEnd())
+							// {
+								// game.time = { time: 'day kill speaking', speaker: noms[0], round: game.time.round };
+							// }
+						// }
 						else
 						{
 							game.time = { round: round, time: 'voting', votingRound: 0, nominee: noms[0] };
