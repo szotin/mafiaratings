@@ -1831,9 +1831,10 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $event_id, $table, $round);
-			if ($query->next())
+			if ($row = $query->next())
 			{
-				throw new Exc(get_label('Game [0] table [1] has already been played. Remove the existing game if you want to replay it.'));
+				list ($gid) = $row;
+				throw new Exc(get_label('Game [0] table [1] has already been played (#[2]). Remove the existing game if you want to replay it.', $round + 1, $table + 1, $gid));
 			}
 			
 			$seating = NULL;
@@ -1853,7 +1854,7 @@ class ApiPage extends OpsApiPageBase
 			$game->features = Game::feature_flags_to_leters(GAME_FEATURE_MASK_MAFIARATINGS);
 			if (!is_null($tournament_id))
 			{
-				$game->tournament_id = (int)$tournament_id;
+				$game->tournamentId = (int)$tournament_id;
 			}
 			$game->moderator = new stdClass();
 			if (!is_null($seating) && count($seating) > 10)
@@ -1933,11 +1934,17 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		
 		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
 		
 		Db::begin();
+		$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $event_id, $table, $round);
+		if ($row = $query->next())
+		{
+			list ($gid) = $row;
+			throw new Exc(get_label('Game [0] table [1] has already been played (#[2]). Remove the existing game if you want to replay it.', $round + 1, $table + 1, $gid));
+		}
+		
 		$query = new DbQuery('SELECT user_id, log FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
 		if ($row = $query->next())
 		{

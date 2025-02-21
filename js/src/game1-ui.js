@@ -550,7 +550,7 @@ function _uiRender(resetTimer)
 					let dlm = '';
 					for (let j = 0; j < player.legacy.length && j < 3; ++j)
 					{
-						leg += dlm + (player.legacy[j] + 1);
+						leg += dlm + player.legacy[j];
 						dlm = ', ';
 					}
 					html += '<td width="60">' + l('legacy', leg) + '</td>';
@@ -1222,14 +1222,14 @@ function uiNext()
 		{
 			gameNext();
 			
-			if (game.time.time == 'voting' && game.time.votingRound == 0)
-			{
-				let noms = gameGetNominees();
-				if (noms.length > 0 && game.time.nominee == noms[0])
-				{
-					uiStartVoting();
-				}
-			}
+			// if (game.time.time == 'voting' && game.time.votingRound == 0)
+			// {
+				// let noms = gameGetNominees();
+				// if (noms.length > 0 && game.time.nominee == noms[0])
+				// {
+					// uiStartVoting();
+				// }
+			// }
 		}
 	}
 	else

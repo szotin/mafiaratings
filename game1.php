@@ -337,16 +337,16 @@ class Page extends PageBase
 			$rounds[$round]->user_name = $user_name;
 		}
 		
-		$query = new DbQuery('SELECT id, game_number FROM games WHERE event_id = ? AND game_table = ?  AND is_canceled = FALSE AND result > 0', $this->event_id, $this->table);
+		$query = new DbQuery('SELECT id, game_number, is_canceled, result FROM games WHERE event_id = ? AND game_table = ?', $this->event_id, $this->table);
 		while ($row = $query->next())
 		{
-			list ($game_id, $round) = $row;
+			$r = new stdClass();
+			list ($r->game_id, $round, $r->is_canceled, $r->result) = $row;
 			while ($round >= count($rounds))
 			{
 				$rounds[] = NULL;
 			}
-			$rounds[$round] = new stdClass();
-			$rounds[$round]->game_id = (int)$game_id;
+			$rounds[$round] = $r;
 		}
 		
 		if ($num_rounds <= 0)
@@ -380,7 +380,8 @@ class Page extends PageBase
 			
 			echo '<table class="transp" width="100%">';
 			
-			if (is_null($rounds[$i]))
+			$r = $rounds[$i];
+			if (is_null($r))
 			{
 				$darker_class = ' class="darker"';
 				$normal_class = '';
@@ -388,12 +389,24 @@ class Page extends PageBase
 				$url = 'game1.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
 				$onclick = '';
 			}
-			else if (isset($rounds[$i]->game_id))
+			else if (isset($r->game_id))
 			{
 				$darker_class = ' class="darkest"';
 				$normal_class = ' class="darker"';
-				$text = get_label('Complete');
 				$url = 'view_game.php?bck=1&id=' . $rounds[$i]->game_id;
+				if ($r->result <= 0)
+				{
+					$text = get_label('Playing using different method');
+					$url = NULL;
+				}
+				else if ($r->is_canceled)
+				{
+					$text = get_label('Canceled');
+				}
+				else
+				{
+					$text = get_label('Complete');
+				}
 				$onclick = '';
 			}
 			else
@@ -415,7 +428,11 @@ class Page extends PageBase
 			}
 			
 			echo '<tr' . $darker_class . '><td align="center"><p><b>' . get_label('Game [0]', $i + 1) . '</b></p></td></tr>';
-			echo '<tr' . $normal_class . '><td align="center" colspan="2"><p><a href="' . $url .'"' . $onclick . '>';
+			echo '<tr' . $normal_class . '><td align="center" colspan="2"><p>';
+			if (!is_null($url))
+			{
+				echo '<a href="' . $url .'"' . $onclick . '>';
+			}
 			echo '<img src="images/thegame.png"><br>' . $text;
 			echo '</a></p></td></tr></table>';
 			
@@ -462,6 +479,8 @@ class Page extends PageBase
 		echo '<ul id="ops-menu" style="position:absolute;" hidden>';
 		echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({round:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
 		echo '<li id="cancel" class="ops-item"><a href="#" onclick="uiCancelGame()"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
+		echo '<li type="separator"></li>';
+		echo '<li id="bug" class="ops-item"><a href="#" onclick="mr.gameBugReport()"><img src="images/bug.png" class="text"> '.get_label('Report a bug').'</li>';
 		echo '<li type="separator"></li>';
 //		echo '<li id="voting" class="ops-item"><a href="#" onclick="gameToggleVoting()"><img src="images/vote.png" class="text"> <span id="voting-txt">'.get_label('Cancel voting').'</span></a></li>';
 //		echo '<li type="separator"></li>';

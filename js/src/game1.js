@@ -4,6 +4,7 @@ var lastSaved; // index in the log array of the last record that is saved to the
 var regs; // array of players registered for the event
 var langs; // array of languages allowed in the event
 var _isDirty = false; // signals if the game needs to be saved
+var _runSaving = true; // signals if it's a good time to save current game
 var _connectionState = 0; // 0 when connected, 1 when connecting, 2 when disconnected, 3 when error
 var _connectionListener; // this function is called when connection status is changed. Parameter is 0 when connected, 1 when connecting, 2 when disconnected, 3 when error
 var _errorListener; // parameter type is: 0 - getting game failed; 1 - saving game failed.
@@ -105,7 +106,7 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 
 function gameSave()
 {
-	if (_isDirty)
+	if (_isDirty && _runSaving)
 	{
 		let gameStr = JSON.stringify(game);
 		if (_connectionState != 1) // 1 means that the other request is not finished yet
@@ -2092,11 +2093,17 @@ function gameNext()
 			break;
 		}
 		case 'end':
+			_runSaving = false; // stop saving current game
 			json.post('api/ops/game.php', { op: 'create', json: JSON.stringify(game) }, function()
 			{
 				goTo({round:undefined});
+			},
+			function (message, data)
+			{
+				_runSaving = true; // resume saving current game in case of error
+				return true;
 			});
-			break;
+			return; // Bypass gameDirty() - it is not needed any more
 		}
 	}
 	gameDirty();

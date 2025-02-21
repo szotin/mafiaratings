@@ -65,13 +65,16 @@ class Page extends PageBase
 		{
 			$title = $this->tournament_name . ': ' . $this->event_name . '. ';
 		}
-		if ($this->is_rating)
+		
+		$game_num = is_null($this->game_round) ? ('#' . $this->id) : ($this->game_round + 1);
+		$rating = $this->is_rating ? '.' : (' (' . get_label('non-rating'));
+		if (is_null($this->game_table))
 		{
-			$title .= get_label('Game [0]. [1]', $this->id, $state);
+			$title .= get_label('Game [0]. [1][2]', $game_num, $state, $rating);
 		}
 		else
 		{
-			$title .= get_label('Game [0] (non-rating). [1]', $this->id, $state);
+			$title .= get_label('Table [0], game [1][2] [3]', $this->game_table + 1, $game_num, $rating, $state);
 		}
 		return $title;
 	}
@@ -91,16 +94,16 @@ class Page extends PageBase
 		}
 		
 		list (
-			$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, 
+			$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->round_num, 
 			$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
 			$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
-			$this->start_time, $this->duration, $this->lang, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json, $this->round_num) =
+			$this->start_time, $this->duration, $this->lang, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json, $this->game_round, $this->game_table) =
 		Db::record(
 			get_label('game'),
-			'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags,' .
+			'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,' .
 			' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
 			' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
-			' g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json, e.round' .
+			' g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json, g.game_number, g.game_table' .
 				' FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
