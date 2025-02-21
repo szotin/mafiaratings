@@ -2028,6 +2028,7 @@ class Game
 			{
 				$max_votes = 0;
 				$num_voters = 0;
+				$voting_rounds = 0;
 				foreach ($voting->nominees as $nom)
 				{
 					if (isset($nom->voting))
@@ -2038,7 +2039,20 @@ class Game
 							$last = $nom->voting[$count-1];
 							if (is_array($last))
 							{
-								$count = count($last);
+								if ($voting_rounds > $count)
+								{
+									$count = 0;
+								}
+								else
+								{									
+									if ($voting_rounds < $count)
+									{
+										$voting_rounds = $count;
+										$max_votes = 0;
+										$num_voters = 0;
+									}
+									$count = count($last);
+								}
 							}
 							$max_votes = max($max_votes, $count);
 							$num_voters += $count;

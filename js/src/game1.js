@@ -89,7 +89,11 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 			let str = localStorage['game'];
 			if (typeof str != "undefined" && str != null)
 			{
-				game = jQuery.parseJSON(str);
+				let g = jQuery.parseJSON(str);
+				if (g.round == roundNum + 1 && g.table == tableNum + 1)
+				{					
+					game = g;
+				}
 			}
 		}
 		
@@ -2065,14 +2069,12 @@ function gameNext()
 			break;
 		case 'shooting':
 		{
+			game.time.time = 'don';
 			let killed = gameGetNightKill();
 			if (killed >= 0)
 			{
 				game.players[killed].death = { type: 'night', round: game.time.round };
-				if (!_gameCheckEnd())
-				{
-					game.time.time = 'don';
-				}
+				_gameCheckEnd();
 			}
 			break;
 		}
@@ -2096,6 +2098,7 @@ function gameNext()
 			_runSaving = false; // stop saving current game
 			json.post('api/ops/game.php', { op: 'create', json: JSON.stringify(game) }, function()
 			{
+				delete localStorage['game'];
 				goTo({round:undefined});
 			},
 			function (message, data)

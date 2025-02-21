@@ -1378,7 +1378,7 @@ class ApiPage extends OpsApiPageBase
 		$json = check_json($json);
 		
 		Db::begin();
-		$game = new Game($json, $feature_flags);
+		$game = new Game($json);
 		if (!isset($game->data->id))
 		{
 			$game->data->id = $game_id;
@@ -1391,7 +1391,6 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
-		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
 		$this->response['rebuild_ratings'] = $game->update();
 		Db::commit();
 		

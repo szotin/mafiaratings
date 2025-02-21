@@ -528,6 +528,10 @@ class GamePlayersStats
 					{
 						foreach ($v as $v1)
 						{
+							if (is_bool($v1))
+							{
+								break; // this is voting for killing all
+							}
 							$p = $this->players[$v1-1];
 							switch ($p->role)
 							{
