@@ -933,21 +933,17 @@ function gameNextSpeaker()
 		let first = gameWhoSpeaksFirst();
 		let nextSpeaker = game.time.speaker - 1;
 		let p;
-		while (1)
+		do
 		{
 			if (++nextSpeaker >= 10)
 			{
 				nextSpeaker = 0;
 			}
-			if (nextSpeaker == first)
-			{
-				break;
-			}
-			if (!isSet(game.players[nextSpeaker]).death)
+			if (!isSet(game.players[nextSpeaker].death))
 			{
 				return nextSpeaker;
 			}
-		}
+		} while (nextSpeaker != first);
 	}
 	return -1;
 }
@@ -1214,7 +1210,9 @@ function gameGetNominees(votingRound)
 		}
 		if (max > 0)
 		{
-			for (let i = 0; i < 10; ++i)
+			let first = gameWhoSpeaksFirst();
+			let i = first;
+			do
 			{
 				let p = game.players[i];
 				if (isSet(p.nominating) && game.time.round < p.nominating.length)
@@ -1225,7 +1223,12 @@ function gameGetNominees(votingRound)
 						noms.push(n);
 					}
 				}
+				if (++i >= 10)
+				{
+					i = 0;
+				}
 			}
+			while (i != first);
 		}
 	}
 	else
