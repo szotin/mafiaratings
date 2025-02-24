@@ -1811,6 +1811,7 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('The game is moderated by [0].', $user_name));
 			}
 			$game = json_decode($game);
+			Game::convert_to_current_version($game);
 			if ($lod > 0)
 			{
 				if (is_null($log))
@@ -1844,6 +1845,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			$game = new stdClass();
+			$game->version = GAME_CURRENT_VERSION;
 			$game->clubId = (int)$club_id;
 			$game->eventId = $event_id;
 			$game->table = $table + 1;

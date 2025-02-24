@@ -655,14 +655,27 @@ function _uiErrorListener(type, message, data)
 		console.log(data);
 	}
 	
-	if (type == 0) // error getting data
+	switch (type)
 	{
+	case 0: // error getting data
 		// dlg.error(text, title, width, onClose)
 		dlg.error(message);
-	}
-	else // error setting data
-	{
+		break;
+	case 1: // error setting data
 		// nothing to do - connection listener takes care
+		break;
+	case 2: // version mismatch
+		var _errorDialog = false;
+		if (!_errorDialog)
+		{
+			_errorDialog = true;
+			dlg.error(message, undefined, undefined, function()
+			{
+				_errorDialog = false;
+				window.location.reload(true);
+			});
+		}
+		break;
 	}
 }
 

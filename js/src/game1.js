@@ -1,3 +1,4 @@
+var version = "1.0"; // It must exactly match the value of GAME_CURRENT_VERSION in include/game.php
 var game; // All vars here can be used by UI code, but it is strongly recommended to use them for reading only. If changes are absolutely needed, make sure gameDirty(...) is called after that.
 var log; // array of games in the previous times - it is used to return back in time.
 var lastSaved; // index in the log array of the last record that is saved to the server.
@@ -7,7 +8,7 @@ var _isDirty = false; // signals if the game needs to be saved
 var _runSaving = true; // signals if it's a good time to save current game
 var _connectionState = 0; // 0 when connected, 1 when connecting, 2 when disconnected, 3 when error
 var _connectionListener; // this function is called when connection status is changed. Parameter is 0 when connected, 1 when connecting, 2 when disconnected, 3 when error
-var _errorListener; // parameter type is: 0 - getting game failed; 1 - saving game failed.
+var _errorListener; // parameter type is: 0 - getting game failed; 1 - saving game failed; 2 - version mismatch: must do hard page reload.
 var _lastDirtyTime = null; // game time at which function dirty was called last time.
 var _gameOnChange; // this function is called every time game changes. Parameter flags is a bit combination of: 
 
@@ -75,9 +76,25 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 	_gameOnChange = gameOnChange;
 	json.post('api/ops/game.php', { op: 'get_current', lod: 1, event_id: eventId, table: tableNum, round: roundNum }, function(data)
 	{
+		game = data.game;
+		if (!isSet(game.version))
+		{
+			game.version = version;
+		}
+		else if (game.version != version)
+		{
+			if (errorListener)
+			{
+				errorListener(2, l('ErrVersion', version, game.version), data);
+			}
+			else
+			{
+				window.location.reload(true);
+			}
+		}
+		
 		log = data.log;
 		lastSaved = log.length;
-		game = data.game;
 		regs = data.regs;
 		langs = data.langs;
 		_gameOnChange(true);
