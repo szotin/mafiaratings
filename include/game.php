@@ -6,23 +6,25 @@ require_once __DIR__ . '/event.php';
 require_once __DIR__ . '/game_ratings.php';
 require_once __DIR__ . '/game_players_stats.php';
 
-define('GAME_FEATURE_FLAG_ARRANGEMENT',                 0x00000001);
-define('GAME_FEATURE_FLAG_DON_CHECKS',                  0x00000002);
-define('GAME_FEATURE_FLAG_SHERIFF_CHECKS',              0x00000004);
-define('GAME_FEATURE_FLAG_DEATH',                       0x00000008);
-define('GAME_FEATURE_FLAG_DEATH_ROUND',                 0x00000010);
-define('GAME_FEATURE_FLAG_DEATH_TYPE',                  0x00000020);
-define('GAME_FEATURE_FLAG_DEATH_TIME',                  0x00000040);
-define('GAME_FEATURE_FLAG_LEGACY',                      0x00000080);
-define('GAME_FEATURE_FLAG_SHOOTING',                    0x00000100);
-define('GAME_FEATURE_FLAG_VOTING',                      0x00000200);
-define('GAME_FEATURE_FLAG_VOTING_KILL_ALL',             0x00000400);
-define('GAME_FEATURE_FLAG_NOMINATING',                  0x00000800);
-define('GAME_FEATURE_FLAG_WARNINGS',                    0x00001000);
-define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000);
+define('GAME_FEATURE_FLAG_ARRANGEMENT',                 0x00000001); // 1
+define('GAME_FEATURE_FLAG_DON_CHECKS',                  0x00000002); // 2
+define('GAME_FEATURE_FLAG_SHERIFF_CHECKS',              0x00000004); // 4
+define('GAME_FEATURE_FLAG_DEATH',                       0x00000008); // 8
+define('GAME_FEATURE_FLAG_DEATH_ROUND',                 0x00000010); // 16
+define('GAME_FEATURE_FLAG_DEATH_TYPE',                  0x00000020); // 32
+define('GAME_FEATURE_FLAG_DEATH_TIME',                  0x00000040); // 64
+define('GAME_FEATURE_FLAG_LEGACY',                      0x00000080); // 128
+define('GAME_FEATURE_FLAG_SHOOTING',                    0x00000100); // 256
+define('GAME_FEATURE_FLAG_VOTING',                      0x00000200); // 512
+define('GAME_FEATURE_FLAG_VOTING_KILL_ALL',             0x00000400); // 1024
+define('GAME_FEATURE_FLAG_NOMINATING',                  0x00000800); // 2048
+define('GAME_FEATURE_FLAG_WARNINGS',                    0x00001000); // 4096
+define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000); // 8192
+define('GAME_FEATURE_FLAG_SPLITTING',                   0x00004000); // 16384
+define('GAME_FEATURE_FLAG_ON_RECORD',                   0x00008000); // 32768
 
-define('GAME_FEATURE_MASK_ALL',                         0x00003fff);
-define('GAME_FEATURE_MASK_MAFIARATINGS',                0x00003bff); // ARRANGEMENT | DON_CHECKS | SHERIFF_CHECKS | DEATH | DEATH_ROUND | DEATH_TYPE | DEATH_TIME | LEGACY | SHOOTING | VOTING | NOMINATING | WARNINGS | WARNINGS_DETAILS
+define('GAME_FEATURE_MASK_ALL',                         0x0000ffff); // 65535
+define('GAME_FEATURE_MASK_MAFIARATINGS',                0x00003bff); // 15359 = ARRANGEMENT | DON_CHECKS | SHERIFF_CHECKS | DEATH | DEATH_ROUND | DEATH_TYPE | DEATH_TIME | LEGACY | SHOOTING | VOTING | NOMINATING | WARNINGS | WARNINGS_DETAILS
 
 define('GAMETIME_START', 'start'); // night
 define('GAMETIME_ARRANGEMENT', 'arrangement'); // night
@@ -418,7 +420,7 @@ class Game
 	
 	function init_flags()
 	{
-		$this->flags = 0;
+		$this->flags = $this->expected_flags;
 		for ($i = 0; $i < 10; ++$i)
 		{
 			$player = $this->data->players[$i];
@@ -495,9 +497,17 @@ class Game
 					$this->flags |= GAME_FEATURE_FLAG_WARNINGS_DETAILS;
 				}
 			}
+			if (isset($player->record))
+			{
+				$this->flags |= GAME_FEATURE_FLAG_ON_RECORD;
+			}
+		}
+
+		if (isset($this->data->splitting))
+		{
+			$this->flags |= GAME_FEATURE_FLAG_SPLITTING;
 		}
 		
-		$this->flags |= ($this->expected_flags & (GAME_FEATURE_FLAG_VOTING_KILL_ALL | GAME_FEATURE_FLAG_LEGACY | GAME_FEATURE_FLAG_DEATH_TIME));
 		$this->data->features = Game::feature_flags_to_leters($this->flags);
 	}
 	
@@ -1424,6 +1434,18 @@ class Game
 		return true;
 	}
 	
+	function check_splitting($fix)
+	{
+		// todo: implement checking splitting
+		return true;
+	}
+	
+	function check_on_record($fix)
+	{
+		// todo: implement checking on-record records
+		return true;
+	}
+	
 	function fix()
 	{
 		$this->check(true);
@@ -1458,6 +1480,8 @@ class Game
 			$done = $done && $this->check_shooting($fix);
 			$done = $done && $this->check_voting($fix);
 			$done = $done && $this->check_warnings($fix);
+			$done = $done && $this->check_splitting($fix);
+			$done = $done && $this->check_on_record($fix);
 		}
 	}
 	
@@ -2536,6 +2560,21 @@ class Game
 						}
 					}
 					break;
+				case GAME_FEATURE_FLAG_SPLITTING:
+					if (isset($this->data->splitting))
+					{
+						unset($this->data->splitting);
+					}
+					break;
+				case GAME_FEATURE_FLAG_ON_RECORD:
+					foreach ($this->data->players as $player)
+					{
+						if (isset($player->record))
+						{
+							unset($player->record);
+						}
+					}
+					break;
 			}
 			$this->flags &= ~$flag;
 			$flags = $next_flags;
@@ -2608,6 +2647,14 @@ class Game
 		{
 			$letters .= 'r';
 		}
+		if ($flags & GAME_FEATURE_FLAG_SPLITTING)
+		{
+			$letters .= 'p';
+		}
+		if ($flags & GAME_FEATURE_FLAG_ON_RECORD)
+		{
+			$letters .= 'o';
+		}
 		return $letters;
 	}
 	
@@ -2618,48 +2665,54 @@ class Game
 		{
 			switch ($letters[$i])
 			{
-				case 'a':
-					$flags |= GAME_FEATURE_FLAG_ARRANGEMENT;
-					break;
-				case 'g':
-					$flags |= GAME_FEATURE_FLAG_DON_CHECKS;
-					break;
-				case 's':
-					$flags |= GAME_FEATURE_FLAG_SHERIFF_CHECKS;
-					break;
-				case 'd':
-					$flags |= GAME_FEATURE_FLAG_DEATH;
-					break;
-				case 'u':
-					$flags |= GAME_FEATURE_FLAG_DEATH_ROUND;
-					break;
-				case 't':
-					$flags |= GAME_FEATURE_FLAG_DEATH_TYPE;
-					break;
-				case 'c':
-					$flags |= GAME_FEATURE_FLAG_DEATH_TIME;
-					break;
-				case 'l':
-					$flags |= GAME_FEATURE_FLAG_LEGACY;
-					break;
-				case 'h':
-					$flags |= GAME_FEATURE_FLAG_SHOOTING;
-					break;
-				case 'v':
-					$flags |= GAME_FEATURE_FLAG_VOTING;
-					break;
-				case 'k':
-					$flags |= GAME_FEATURE_FLAG_VOTING_KILL_ALL;
-					break;
-				case 'n':
-					$flags |= GAME_FEATURE_FLAG_NOMINATING;
-					break;
-				case 'w':
-					$flags |= GAME_FEATURE_FLAG_WARNINGS;
-					break;
-				case 'r':
-					$flags |= GAME_FEATURE_FLAG_WARNINGS_DETAILS;
-					break;
+			case 'a':
+				$flags |= GAME_FEATURE_FLAG_ARRANGEMENT;
+				break;
+			case 'g':
+				$flags |= GAME_FEATURE_FLAG_DON_CHECKS;
+				break;
+			case 's':
+				$flags |= GAME_FEATURE_FLAG_SHERIFF_CHECKS;
+				break;
+			case 'd':
+				$flags |= GAME_FEATURE_FLAG_DEATH;
+				break;
+			case 'u':
+				$flags |= GAME_FEATURE_FLAG_DEATH_ROUND;
+				break;
+			case 't':
+				$flags |= GAME_FEATURE_FLAG_DEATH_TYPE;
+				break;
+			case 'c':
+				$flags |= GAME_FEATURE_FLAG_DEATH_TIME;
+				break;
+			case 'l':
+				$flags |= GAME_FEATURE_FLAG_LEGACY;
+				break;
+			case 'h':
+				$flags |= GAME_FEATURE_FLAG_SHOOTING;
+				break;
+			case 'v':
+				$flags |= GAME_FEATURE_FLAG_VOTING;
+				break;
+			case 'k':
+				$flags |= GAME_FEATURE_FLAG_VOTING_KILL_ALL;
+				break;
+			case 'n':
+				$flags |= GAME_FEATURE_FLAG_NOMINATING;
+				break;
+			case 'w':
+				$flags |= GAME_FEATURE_FLAG_WARNINGS;
+				break;
+			case 'r':
+				$flags |= GAME_FEATURE_FLAG_WARNINGS_DETAILS;
+				break;
+			case 'p':
+				$flags |= GAME_FEATURE_FLAG_SPLITTING;
+				break;
+			case 'o':
+				$flags |= GAME_FEATURE_FLAG_ON_RECORD;
+				break;
 			}
 		}
 		return $flags;

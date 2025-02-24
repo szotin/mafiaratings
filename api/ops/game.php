@@ -745,7 +745,7 @@ class CommandQueue
 		
 		if ($rec->game->event_id > 0)
 		{
-			$game = new Game($rec->game);
+			$game = new Game($rec->game, GAME_FEATURE_MASK_MAFIARATINGS);
 			$game->update();
 		}
 		else
@@ -1304,7 +1304,7 @@ class ApiPage extends OpsApiPageBase
 		$json = check_json($json);
 		
 		Db::begin();
-		$feature_flags = GAME_FEATURE_MASK_MAFIARATINGS;
+		$feature_flags = GAME_FEATURE_MASK_ALL;
 		$game = new Game($json, $feature_flags);
 		$data = $game->data;
 		$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
@@ -1378,7 +1378,10 @@ class ApiPage extends OpsApiPageBase
 		$json = check_json($json);
 		
 		Db::begin();
-		$game = new Game($json);
+		list($club_id, $user_id, $event_id, $tournament_id, $feature_flags) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id, feature_flags FROM games WHERE id = ?', $game_id);
+		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
+		
+		$game = new Game($json, $feature_flags);
 		if (!isset($game->data->id))
 		{
 			$game->data->id = $game_id;
@@ -1387,9 +1390,6 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('Game id does not match the one in the game'));
 		}	
-		
-		list($club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
-		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$this->response['rebuild_ratings'] = $game->update();
 		Db::commit();
@@ -1850,7 +1850,7 @@ class ApiPage extends OpsApiPageBase
 			$game->round = $round + 1;
 			$game->language = $langs[0]->code;
 			$game->rules = $rules;
-			$game->features = Game::feature_flags_to_leters(GAME_FEATURE_MASK_MAFIARATINGS);
+			$game->features = Game::feature_flags_to_leters(GAME_FEATURE_MASK_ALL);
 			if (!is_null($tournament_id))
 			{
 				$game->tournamentId = (int)$tournament_id;

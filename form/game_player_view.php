@@ -89,13 +89,13 @@ try
 	}
 	echo '</tr></table>';
 	
-	list($json, $club_id, $tournament_id, $tournament_flags, $round_num) = Db::record(get_label('game'), 
-		'SELECT g.json, g.club_id, t.id, t.flags, e.round'.
+	list($json, $club_id, $tournament_id, $tournament_flags, $round_num, $$feature_flags) = Db::record(get_label('game'), 
+		'SELECT g.json, g.club_id, t.id, t.flags, e.round, g.feature_flags'.
 		' FROM games g'.
 		' JOIN events e ON e.id = g.event_id'.
 		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 		' WHERE g.id = ?', $game_id);
-	$game = new Game($json);
+	$game = new Game($json, $feature_flags);
 	$player = $game->data->players[$player_num-1];
 	$player_id = 0;
 	$full_player_name = $player->name;

@@ -130,8 +130,8 @@ try
 		echo '<span id="round">';
 	}
 	
-	list($json) = Db::record(get_label('game'), 'SELECT json FROM games WHERE id = ?', $game_id);
-	$game = new Game($json);
+	list($json, $feature_flags) = Db::record(get_label('game'), 'SELECT json, feature_flags FROM games WHERE id = ?', $game_id);
+	$game = new Game($json, $feature_flags);
 	
 	$players = array();
 	$query = new DbQuery(
