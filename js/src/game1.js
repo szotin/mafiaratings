@@ -318,14 +318,16 @@ function _gameTimeToInt(time)
 		return 7;
 	case 'speaking':
 		return 8;
-	case 'voting':
+	case 'voting start':
 		return 9;
-	case 'voting kill all':
+	case 'voting':
 		return 10;
-	case 'day kill speaking':
+	case 'voting kill all':
 		return 11;
+	case 'day kill speaking':
+		return 12;
 	}
-	return 12;
+	return 13;
 }
 
 // returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
@@ -719,7 +721,11 @@ function _gameOnModKill()
 	{
 		if (isSet(game.time))
 		{
-			if (game.time.time == 'voting')
+			if (game.time.time == 'voting start')
+			{
+				game.time = { round: game.time.round + 1, time: 'night start' };
+			}
+			else if (game.time.time == 'voting')
 			{
 				let cancelVoting = true;
 				if (isSet(game.time.nominee))
@@ -1951,18 +1957,9 @@ function gameNext()
 						{
 							game.time = { round: round + 1, time: 'night start' };
 						}
-						// else if (noms.length == 1)
-						// {
-							// game.players[noms[0]-1].death = { type: 'day', round: game.time.round };
-							// if (!_gameCheckEnd())
-							// {
-								// game.time = { time: 'day kill speaking', speaker: noms[0], round: game.time.round };
-							// }
-						// }
 						else
 						{
-							game.time = { round: round, time: 'voting', votingRound: 0, nominee: noms[0] };
-							_gameCreateVoting();
+							game.time = { round: round, time: 'voting start' };
 						}
 					}
 					break;
@@ -1970,6 +1967,21 @@ function gameNext()
 			}
 			while (isSet(game.players[game.time.speaker - 1].death));
 			break;
+		case 'voting start':
+		{
+			let noms = gameGetNominees();
+			let round = game.time.round;
+			if (noms.length == 0 || (noms.length == 1 && round == 0))
+			{
+				game.time = { round: round + 1, time: 'night start' };
+			}
+			else
+			{
+				game.time = { round: round, time: 'voting', votingRound: 0, nominee: noms[0] };
+				_gameCreateVoting();
+			}
+			break;
+		}
 		case 'voting':
 			if (isSet(game.time.nominee))
 			{

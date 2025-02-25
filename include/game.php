@@ -35,6 +35,7 @@ define('GAMETIME_RELAXED_SITTING', 'relaxed sitting'); // night
 define('GAMETIME_DAY_START', 'day start'); // day
 define('GAMETIME_NIGHT_KILL_SPEAKING', 'night kill speaking'); // day
 define('GAMETIME_SPEAKING', 'speaking'); // day
+define('GAMETIME_VOTING_START', 'voting start'); // day
 define('GAMETIME_VOTING', 'voting'); // day
 define('GAMETIME_VOTING_KILL_ALL', 'voting kill all'); // day
 define('GAMETIME_DAY_KILL_SPEAKING', 'day kill speaking'); // day
@@ -1552,8 +1553,7 @@ class Game
 			case 6: // GAME_VOTING_START:
 			case 20: // GAME_DAY_FREE_DISCUSSION:
 				$gametime->round = $log->round;
-				$gametime->votingRound = 0;
-				$gametime->time = GAMETIME_VOTING;
+				$gametime->time = GAMETIME_VOTING_START;
 				break;
 			case 7: // GAME_VOTING_KILLED_SPEAKING:
 				$gametime->round = $log->round;
@@ -1658,14 +1658,16 @@ class Game
 				return 8;
 			case GAMETIME_SPEAKING:
 				return 9;
-			case GAMETIME_VOTING:
+			case GAMETIME_VOTING_START:
 				return 10;
-			case GAMETIME_VOTING_KILL_ALL:
+			case GAMETIME_VOTING:
 				return 11;
-			case GAMETIME_DAY_KILL_SPEAKING:
+			case GAMETIME_VOTING_KILL_ALL:
 				return 12;
+			case GAMETIME_DAY_KILL_SPEAKING:
+				return 13;
 		}
-		return 13;
+		return 14;
 	}
 	
 	static function is_night($gametime)
@@ -2227,6 +2229,7 @@ class Game
 			case GAMETIME_ARRANGEMENT:
 			case GAMETIME_RELAXED_SITTING:
 			case GAMETIME_DAY_START:
+			case GAMETIME_VOTING_START:
 			case GAMETIME_NIGHT_KILL_SPEAKING:
 			case GAMETIME_NIGHT_START:
 			case GAMETIME_SHOOTING:
@@ -2277,7 +2280,7 @@ class Game
 				break;
 			default:
 				return 'incorrect time "' + $gt->time + '". Time must be one of: "' .
-					GAMETIME_START . '", "' . GAMETIME_ARRANGEMENT . '", "' . GAMETIME_RELAXED_SITTING . '", "' . GAMETIME_DAY_START . '", "' . GAMETIME_NIGHT_KILL_SPEAKING . '", "' . GAMETIME_SPEAKING . '", "' . GAMETIME_VOTING . '", "' . GAMETIME_VOTING_KILL_ALL . '", "' . 
+					GAMETIME_START . '", "' . GAMETIME_ARRANGEMENT . '", "' . GAMETIME_RELAXED_SITTING . '", "' . GAMETIME_DAY_START . '", "' . GAMETIME_NIGHT_KILL_SPEAKING . '", "' . GAMETIME_SPEAKING . '", "' . GAMETIME_VOTING_START . '", "' . GAMETIME_VOTING . '", "' . GAMETIME_VOTING_KILL_ALL . '", "' . 
 					GAMETIME_DAY_KILL_SPEAKING . '", "' . GAMETIME_NIGHT_START . '", "' . GAMETIME_SHOOTING . '", "' . GAMETIME_DON . '", "' . GAMETIME_SHERIFF . '", or "' . GAMETIME_END . '".';
 		}
 		return NULL;
@@ -2952,6 +2955,8 @@ class Game
 				return get_label('during night kill last speech');
 			case GAMETIME_SPEAKING:
 				return get_label('during [0]\'s speech', call_user_func($output_player_function, $this, $gametime->speaker));
+			case GAMETIME_VOTING_START:
+				return get_label('at the beginning of the votings');
 			case GAMETIME_VOTING:
 				if (isset($gametime->nominee))
 				{

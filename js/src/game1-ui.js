@@ -301,6 +301,18 @@ function _uiRender(resetTimer)
 			$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
 			nomsStr = _uiGenerateNoms();
 			break;
+		case 'voting start':
+			nomsStr = _uiGenerateNoms();
+			status = l('VotingStart', nomsStr);
+			for (let i = 0; i < 10; ++ i)
+			{
+				let p = game.players[i];
+				if (isSet(p.nominating) && game.time.round < p.nominating.length && p.nominating[game.time.round] != null)
+				{
+					$('#control' + i).html('<center>' + l('HasNom', p.nominating[game.time.round]) + '</center>');
+				}
+			}
+			break;
 		case 'voting':
 			noms = gameGetNominees();
 			if (isSet(game.time.nominee))
@@ -1084,7 +1096,7 @@ function uiPlayerActions(num)
 {
 	let player = game.players[num];
 	let html = '<center>';
-	if (isSet(game.time) && game.time.time == 'speaking' && gameCompareTimes({ time: 'speaking', speaker: num + 1, round: game.time.round }, game.time) <= 0)
+	if (isSet(game.time) && ((game.time.time == 'speaking' && gameCompareTimes({ time: 'speaking', speaker: num + 1, round: game.time.round }, game.time) <= 0) || game.time.time == 'voting start'))
 	{
 		let nom = -1;
 		if (isSet(player.nominating) && game.time.round < player.nominating.length && player.nominating[game.time.round] != null)
