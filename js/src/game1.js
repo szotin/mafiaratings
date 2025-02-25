@@ -304,26 +304,28 @@ function _gameTimeToInt(time)
 		return 0;
 	case 'arrangement':
 		return 1;
-	case 'night start':
+	case 'relaxed sitting':
 		return 2;
-	case 'shooting':
+	case 'night start':
 		return 3;
-	case 'don':
+	case 'shooting':
 		return 4;
-	case 'sheriff':
+	case 'don':
 		return 5;
-	case 'night kill speaking':
+	case 'sheriff':
 		return 6;
-	case 'speaking':
+	case 'night kill speaking':
 		return 7;
-	case 'voting':
+	case 'speaking':
 		return 8;
-	case 'voting kill all':
+	case 'voting':
 		return 9;
-	case 'day kill speaking':
+	case 'voting kill all':
 		return 10;
+	case 'day kill speaking':
+		return 11;
 	}
-	return 11;
+	return 12;
 }
 
 // returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
@@ -533,6 +535,7 @@ function gameIsNight()
 	{
 	case 'start':
 	case 'arrangement':
+	case 'relaxed sitting':
 	case 'night start':
 	case 'shooting':
 	case 'don':
@@ -1917,6 +1920,9 @@ function gameNext()
 			}
 			break;
 		case 'arrangement':
+			game.time.time = 'relaxed sitting';
+			break;
+		case 'relaxed sitting':
 			game.time.time = 'speaking';
 			game.time.speaker = gameWhoSpeaksFirst() + 1;
 			break;

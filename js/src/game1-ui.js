@@ -190,6 +190,22 @@ function _uiRender(resetTimer)
 			}
 			info = 'Night0';
 			break;
+		case 'relaxed sitting':
+			status = l('RelaxedSitting');
+			for (let i = 0; i < 10; ++i)
+			{
+				let player = game.players[i];
+				let role = isSet(player.role) ? player.role : 'civ';
+				$('#controlx' + i).html(
+					'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
+					'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
+					'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
+					'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
+				$('#role-' + i + '-' + role).attr('checked', '');
+			}
+			timerTime = 20;
+			info = 'Night0';
+			break;
 		case 'night kill speaking':
 			$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
 			let p = game.players[game.time.speaker - 1];
@@ -197,7 +213,6 @@ function _uiRender(resetTimer)
 				' ' + l('NightKill', _uiPlayerTitle(game.time.speaker - 1), l('KilledMale')) +
 				' ' + l('LastSpeech', l('He'), l('his')) +
 				l('NextFloor', _uiPlayerTitle(gameWhoSpeaksFirst()))
-			time = 60;
 			if (game.time.round == 1)
 			{
 				for (var i = 0; i < 10; ++i)

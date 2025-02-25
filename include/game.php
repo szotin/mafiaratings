@@ -31,6 +31,7 @@ define('GAME_FEATURE_MASK_MAFIARATINGS',                0x00003bff); // 15359 = 
 
 define('GAMETIME_START', 'start'); // night
 define('GAMETIME_ARRANGEMENT', 'arrangement'); // night
+define('GAMETIME_RELAXED_SITTING', 'relaxed sitting'); // night
 define('GAMETIME_DAY_START', 'day start'); // day
 define('GAMETIME_NIGHT_KILL_SPEAKING', 'night kill speaking'); // day
 define('GAMETIME_SPEAKING', 'speaking'); // day
@@ -1641,28 +1642,30 @@ class Game
 				return 0;
 			case GAMETIME_ARRANGEMENT:
 				return 1;
-			case GAMETIME_NIGHT_START:
+			case GAMETIME_RELAXED_SITTING:
 				return 2;
-			case GAMETIME_SHOOTING:
+			case GAMETIME_NIGHT_START:
 				return 3;
-			case GAMETIME_DON:
+			case GAMETIME_SHOOTING:
 				return 4;
-			case GAMETIME_SHERIFF:
+			case GAMETIME_DON:
 				return 5;
-			case GAMETIME_DAY_START:
+			case GAMETIME_SHERIFF:
 				return 6;
-			case GAMETIME_NIGHT_KILL_SPEAKING:
+			case GAMETIME_DAY_START:
 				return 7;
-			case GAMETIME_SPEAKING:
+			case GAMETIME_NIGHT_KILL_SPEAKING:
 				return 8;
-			case GAMETIME_VOTING:
+			case GAMETIME_SPEAKING:
 				return 9;
-			case GAMETIME_VOTING_KILL_ALL:
+			case GAMETIME_VOTING:
 				return 10;
-			case GAMETIME_DAY_KILL_SPEAKING:
+			case GAMETIME_VOTING_KILL_ALL:
 				return 11;
+			case GAMETIME_DAY_KILL_SPEAKING:
+				return 12;
 		}
-		return 12;
+		return 13;
 	}
 	
 	static function is_night($gametime)
@@ -1673,6 +1676,7 @@ class Game
 			{
 				case GAMETIME_START:
 				case GAMETIME_ARRANGEMENT:
+				case GAMETIME_RELAXED_SITTING:
 				case GAMETIME_NIGHT_START:
 				case GAMETIME_SHOOTING:
 				case GAMETIME_DON:
@@ -2221,6 +2225,7 @@ class Game
 		{
 			case GAMETIME_START:
 			case GAMETIME_ARRANGEMENT:
+			case GAMETIME_RELAXED_SITTING:
 			case GAMETIME_DAY_START:
 			case GAMETIME_NIGHT_KILL_SPEAKING:
 			case GAMETIME_NIGHT_START:
@@ -2228,7 +2233,12 @@ class Game
 			case GAMETIME_DON:
 			case GAMETIME_SHERIFF:
 			case GAMETIME_END:
+				break;
 			case GAMETIME_VOTING_KILL_ALL:
+				if (!isset($gt->votingRound))
+				{
+					return 'votingRound must be set.';
+				}
 				break;
 			case GAMETIME_VOTING:
 				if (!isset($gt->votingRound))
@@ -2267,7 +2277,7 @@ class Game
 				break;
 			default:
 				return 'incorrect time "' + $gt->time + '". Time must be one of: "' .
-					GAMETIME_START . '", "' . GAMETIME_ARRANGEMENT . '", "' . GAMETIME_DAY_START . '", "' . GAMETIME_NIGHT_KILL_SPEAKING . '", "' . GAMETIME_SPEAKING . '", "' . GAMETIME_VOTING . '", "' . GAMETIME_VOTING_KILL_ALL . '", "' . 
+					GAMETIME_START . '", "' . GAMETIME_ARRANGEMENT . '", "' . GAMETIME_RELAXED_SITTING . '", "' . GAMETIME_DAY_START . '", "' . GAMETIME_NIGHT_KILL_SPEAKING . '", "' . GAMETIME_SPEAKING . '", "' . GAMETIME_VOTING . '", "' . GAMETIME_VOTING_KILL_ALL . '", "' . 
 					GAMETIME_DAY_KILL_SPEAKING . '", "' . GAMETIME_NIGHT_START . '", "' . GAMETIME_SHOOTING . '", "' . GAMETIME_DON . '", "' . GAMETIME_SHERIFF . '", or "' . GAMETIME_END . '".';
 		}
 		return NULL;
@@ -2926,6 +2936,8 @@ class Game
 				return get_label('at the beginning of the game');
 			case GAMETIME_ARRANGEMENT:
 				return get_label('when mafia arranges');
+			case GAMETIME_RELAXED_SITTING:
+				return get_label('during relaxed sitting');
 			case GAMETIME_DAY_START:
 				return get_label('at the beginning of the day');
 			case GAMETIME_NIGHT_KILL_SPEAKING:
