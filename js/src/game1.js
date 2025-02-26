@@ -456,6 +456,10 @@ function gameSetPlayer(num, id)
 		if (id == game.moderator.id)
 		{
 			game.moderator.id = 0;
+			if (isSet(game.moderator.name))
+			{
+				delete game.moderator.name;
+			}
 			result = 10;
 		}
 		for (let i = 0; i < 10; ++i)
@@ -471,18 +475,33 @@ function gameSetPlayer(num, id)
 	}
 	
 	let r = gameFindReg(id);
-	let p = game.players[num];
-	if (r)
+	if (num >= 0 && num < 10)
 	{
-		p.id = r.id;
-		p.name = r.name;
+		let p = game.players[num];
+		if (r)
+		{
+			p.id = r.id;
+			p.name = r.name;
+		}
+		else
+		{
+			p.id = 0;
+			p.name = '';
+		}
+	}
+	else if (r)
+	{
+		game.moderator.id = r.id;
+		game.moderator.name = r.name;
 	}
 	else
 	{
-		p.id = 0;
-		p.name = '';
+		game.moderator.id = 0;
+		if (isSet(game.moderator.name))
+		{
+			delete game.moderator.name;
+		}
 	}
-	
 	gameDirty();
 	return result;
 }
@@ -504,27 +523,6 @@ function gameSetLang(lang)
 {
 	game.language = lang;
 	gameDirty();
-}
-
-function gameSetModerator(userId)
-{
-	let result = -1;
-	game.moderator = { id: userId };
-	if (userId != 0)
-	{
-		for (let i = 0; i < 10; ++i)
-		{
-			let p = game.players[i];
-			if (p.id == userId)
-			{
-				p.id = 0;
-				p.name = "";
-				result = i;
-			}
-		}
-	}
-	gameDirty();
-	return result;
 }
 
 function gameIsNight()

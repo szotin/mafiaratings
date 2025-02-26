@@ -1031,23 +1031,24 @@ function uiCreatePlayer(num)
 	dlg.form("form/event_create_player.php?event_id=" + game.eventId, function(data) { uiRegisterPlayer(num, data); }, 500);
 }
 
-function uiConfig(text, onClose)
+function uiConfig(txt, onClose)
 {
 	let html = '<table class="dialog_form" width="100%">';
+	let moderatorId = isSet(game.moderator) && isSet(game.moderator.id) ? game.moderator.id : 0;
 	
-	if (text)
+	if (txt)
 	{
-		html += '<tr><td colspan="2" align="center"><p><b>' + text + '</b></p></td></tr>';
+		html += '<tr><td colspan="2" align="center"><p><b>' + txt + '</b></p></td></tr>';
 	}
 	
-	html += '<tr><td>' + l('Moder') + ':</td><td><select id="dlg-moder">'
-	html += _uiOption(0, game.moderator.id, '');
+	html += '<tr><td>' + l('Moder') + ':</td><td><table class="transp" width="100%"><tr><td width="30"><button class="icon" onclick="uiRegisterPlayer(10)"><img src="images/user.png" class="icon"></button></td><td><select id="player10">'
+	html += _uiOption(0, moderatorId, '');
 	for (let i in regs)
 	{
 		let r = regs[i];
-		html += _uiOption(r.id, game.moderator.id, r.name);
+		html += _uiOption(r.id, moderatorId, r.name);
 	}
-	html += '</select></td></tr>';
+	html += '</select></td></tr></table></td></tr>';
 	if (langs.length > 1)
 	{
 		html += '<tr><td>' + l('Lang') + ':</td><td><select id="dlg-lang">';
@@ -1075,8 +1076,12 @@ function uiConfig(text, onClose)
 		{
 			gameSetLang($('#dlg-lang').val());
 		}
-		gameSetModerator($('#dlg-moder').val());
-		if (onClose)
+		gameSetPlayer(10, $('#player10').val());
+		if (!isSet(game.moderator) || !isSet(game.moderator.id) || game.moderator.id <= 0)
+		{
+			dlg.error(l('EnterModer'), undefined, undefined, function() { uiConfig(txt, onClose); });
+		}			
+		else if (onClose)
 		{
 			onClose();
 		}
@@ -1274,7 +1279,7 @@ function uiNext()
 	}
 	else
 	{
-		gameNext();
+		uiConfig(undefined, gameNext);
 	}
 }
 

@@ -1,5 +1,6 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["EnterModer"] = "Enter the moderator please.";
 _l["RelaxedSitting"] = "Relaxed sitting. You can wake up sheriff if needed. Click \"Next\" to start the day.";
 _l["KillAll"] = "Kill them all?";
 _l["voteAll"] = "All";
