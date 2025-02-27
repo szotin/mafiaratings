@@ -66,6 +66,11 @@ function _uiShowOnRecordButtons()
 	});
 }
 
+function _uiNominate(playerIndex)
+{
+	gameChangeNomination(playerIndex, parseInt($('#nominated' + playerIndex).val()) - 1);
+}
+
 function _uiShoot(shooter)
 {
 	gameShoot($('#shot' + shooter).val(), shooter);
@@ -304,12 +309,25 @@ function _uiRender(resetTimer)
 		case 'voting start':
 			nomsStr = _uiGenerateNoms();
 			status = l('VotingStart', nomsStr);
+			html = _uiOption(0, 0, '');
 			for (let i = 0; i < 10; ++ i)
 			{
 				let p = game.players[i];
-				if (isSet(p.nominating) && game.time.round < p.nominating.length && p.nominating[game.time.round] != null)
+				if (!isSet(p.death))
 				{
-					$('#control' + i).html('<center>' + l('HasNom', p.nominating[game.time.round]) + '</center>');
+					html += _uiOption(i + 1, 0, i + 1);
+				}
+			}
+			for (let i = 0; i < 10; ++ i)
+			{
+				let p = game.players[i];
+				if (!isSet(p.death))
+				{
+					$('#control' + i).html('<center>' + l('HasNom') + ': <select id="nominated' + i + '" onclick="_uiNominate(' + i + ')">' + html + '</select></center>');
+					if (isSet(p.nominating) && game.time.round < p.nominating.length && p.nominating[game.time.round] != null)
+					{
+						$('#nominated' + i).val(p.nominating[game.time.round]);
+					}
 				}
 			}
 			break;
