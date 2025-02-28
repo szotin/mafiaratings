@@ -480,7 +480,7 @@ class Page extends PageBase
 		echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({round:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
 		echo '<li id="cancel" class="ops-item"><a href="#" onclick="uiCancelGame()"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
 		echo '<li type="separator"></li>';
-		echo '<li id="bug" class="ops-item"><a href="#" onclick="mr.gameBugReport()"><img src="images/bug.png" class="text"> '.get_label('Report a bug').'</li>';
+		echo '<li id="bug" class="ops-item"><a href="#" onclick="uiBugReport()"><img src="images/bug.png" class="text"> '.get_label('Report a bug').'</li>';
 		echo '<li type="separator"></li>';
 //		echo '<li id="voting" class="ops-item"><a href="#" onclick="gameToggleVoting()"><img src="images/vote.png" class="text"> <span id="voting-txt">'.get_label('Cancel voting').'</span></a></li>';
 //		echo '<li type="separator"></li>';

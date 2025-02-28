@@ -1,5 +1,8 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["BugReportPh"] = "Please enter the bug description.";
+_l["BugReport"] = "Report a bug";
+_l["BugReported"] = "Thank you for reporting this issue. We will try to fix it as soon as possible.";
 _l["EnterModer"] = "Enter the moderator please.";
 _l["RelaxedSitting"] = "Relaxed sitting. You can wake up sheriff if needed. Click \"Next\" to start the day.";
 _l["KillAll"] = "Kill them all?";

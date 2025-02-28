@@ -2027,6 +2027,40 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('logIndex', 'At which index should the provided log be added to the prev states of the game. The records after the logIndex+log.length are cut.<p>Examples:<br>recorded log is []. We send logIndex:1,log:[1,2]. Result is [null,1,2].<br>We send logIndex:2,log[3,4,5]. Result is: [null,1,3,4,5]<br>We send logIndex:3,log:[]. Result is: [null,1,3,4].<br>We send logIndex:0,log:[1,2]. Result is: [1,2]', 'end of the log is used');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// report_bug
+	//-------------------------------------------------------------------------------------------------------
+	function report_bug_op()
+	{
+		global $_profile, $_lang;
+		
+		$event_id = (int)get_required_param('event_id');
+		$table = (int)get_required_param('table');
+		$round = (int)get_required_param('round');
+		$comment = get_required_param('comment');
+		
+		Db::begin();
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+		
+		list ($count) = Db::record(get_label('game'), 'SELECT COUNT(*) FROM bug_reports WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $table, $round);
+		if ($count < 3) // allow only 3 bug reports per game
+		{
+			Db::exec(get_label('game'), 'INSERT INTO bug_reports (event_id, table_num, round_num, user_id, game, log, comment) SELECT event_id, table_num, round_num, user_id, game, log, ? FROM current_games WHERE  event_id = ? AND table_num = ? AND round_num = ?', $comment, $event_id, $table, $round);
+		}
+		Db::commit();
+	}
+	
+	function report_bug_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Report a bug on the currently playing game.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('table', 'Table number in the event. Table 1 is numbered as 0, 2 - 1, etc..');
+		$help->request_param('round', 'Game number. Round 1 is numbered as 0, 2 - 1, etc..');
+		$help->request_param('comment', 'Explanation of the bug.');
+		return $help;
+	}
 }
 
 $page = new ApiPage();

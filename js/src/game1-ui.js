@@ -1272,6 +1272,26 @@ function uiStartVoting()
 	let html = '<table class="dialog_form" width="100%"><tr><td align="center"><p>' + _uiGenerateNoms() + '</p></td></tr></table><p><input type="checkbox" id="split"' + (splitting ? ' checked' : '') + ' onclick="_uiSplit()"> ' + l('Splitting') + '</p>';
 	dlg.info(html, l('VotingStart'), 400);
 }
+
+function uiBugReport()
+{
+	let html = '<table class="dialog_form" width="100%"><tr><td align="center"><textarea id="dlg-comment" placeholder="' + l('BugReportPh') + '" cols="60" rows="8"></textarea></td></tr></table>';
+	dlg.okCancel(html, l('BugReport'), 500, function()
+	{
+		let txt = $('#dlg-comment').val().trim();
+		if (txt.length == 0)
+		{
+			uiBugReport();
+		}
+		else
+		{
+			gameBugReport(txt, function()
+			{
+				dlg.info(l('BugReported'));
+			});
+		}
+	});
+}
 	
 function uiNext()
 {

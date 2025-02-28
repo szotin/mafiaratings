@@ -1898,6 +1898,11 @@ function gameIsPlayerAtTheTable(index)
 	return false;
 }
 
+function gameBugReport(txt, onSuccess)
+{
+	json.post('api/ops/game.php', { op: 'report_bug', event_id: game.eventId, table: game.table - 1, round: game.round - 1, comment: txt}, onSuccess);
+}
+
 function gameNext()
 {
 	gamePushState();
