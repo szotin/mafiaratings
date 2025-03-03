@@ -1620,10 +1620,10 @@ class ApiPage extends OpsApiPageBase
 		$worst_move = (int)get_optional_param('worst_move', 0);
 		
 		Db::begin();
-		list($game, $club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT json, club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
+		list($json, $feature_flags, $club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
-		$game = json_decode($game);
+		$game = new Game($json, $feature_flags);
 		
 		$bonus = 0;
 		if ($points != 0)
@@ -1676,7 +1676,7 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		$player = $game->players[$player_num - 1];
+		$player = $game->data->players[$player_num - 1];
 		if ($bonus === 0)
 		{
 			unset($player->comment);
@@ -1691,7 +1691,8 @@ class ApiPage extends OpsApiPageBase
 			}
 			$player->bonus = $bonus;
 		}
-		Db::exec(get_label('game'), 'UPDATE games SET json = ? WHERE id = ?', json_encode($game), $game_id);
+		
+		$game->update();
 		Db::commit();
 	}
 	
