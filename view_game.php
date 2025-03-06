@@ -97,13 +97,13 @@ class Page extends PageBase
 			$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->round_num, 
 			$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
 			$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
-			$this->start_time, $this->duration, $this->lang, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json, $this->game_round, $this->game_table, $feature_flags) =
+			$this->start_time, $this->duration, $this->lang, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json, $this->game_round, $this->game_table, $feature_flags, $this->has_log) =
 		Db::record(
 			get_label('game'),
 			'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,' .
 			' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
 			' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
-			' g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json, g.game_number, g.game_table, g.feature_flags' .
+			' g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json, g.game_number, g.game_table, g.feature_flags, LENGTH(g.log)' .
 				' FROM games g' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
@@ -439,6 +439,10 @@ class Page extends PageBase
 				else
 				{
 					echo '<button class="icon" onclick="mr.deleteVideo(' . $this->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $this->id) . '\')" title="' . get_label('Remove game [0] video', $this->id) . '"><img src="images/film-delete.png" border="0"></button>';
+				}
+				if ($_profile->is_admin() && $this->has_log)
+				{
+					echo '<button class="icon" onclick="mr.restoreGameFromLog(' . $this->id . ')" title="' . get_label('Restore the game [0] from log', $this->id) . '"><img src="images/bug.png" border="0"></button>';
 				}
 			}
 		}

@@ -1624,6 +1624,10 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$game = new Game($json, $feature_flags);
+		if ($game->data->id != $game_id)
+		{
+			throw new Exc(get_label('Game id does not match the one in the game'));
+		}	
 		
 		$bonus = 0;
 		if ($points != 0)
@@ -1682,7 +1686,7 @@ class ApiPage extends OpsApiPageBase
 			unset($player->comment);
 			unset($player->bonus);
 		}
-		else
+		else 
 		{
 			$player->comment = get_required_param('comment');
 			if (empty($player->comment))
@@ -2062,6 +2066,36 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('comment', 'Explanation of the bug.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// restore_from_log
+	//-------------------------------------------------------------------------------------------------------
+	function restore_from_log_op()
+	{
+		global $_profile, $_lang;
+		
+		check_permissions(PERMISSION_ADMIN);
+		
+		$game_id = (int)get_required_param('game_id');
+		
+		Db::begin();
+		list($json_str) = Db::record(get_label('game'), 'SELECT log FROM games WHERE id = ?', $game_id);
+		if (is_null($json_str))
+		{
+			throw new Exc('Game can not be restored - it has no log');
+		}
+		$gs = json_decode($json_str);
+		$game = new Game($gs, GAME_FEATURE_MASK_MAFIARATINGS);
+		$game->update();
+		Db::commit();
+	}
+	
+	// function restore_from_log_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_ADMIN, 'Restore the game from log.');
+		// $help->request_param('game_id', 'Game id.');
+		// return $help;
+	// }
 }
 
 $page = new ApiPage();

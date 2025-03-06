@@ -134,6 +134,10 @@ class Game
 				{
 					$this->data->winner = 'civ';
 				}
+				else if ($g->gamestate == 25 /*GAME_CIVIL_END*/)
+				{
+					// ???
+				}
 				else
 				{
 					throw new Exc(get_label('The game [0] is not finished yet.', $g->id));
@@ -522,6 +526,8 @@ class Game
 		$sheriff_count = 0;
 		$maf_count = 0;
 		$don_count = 0;
+		$alive_maf_count = 0;
+		$alive_civ_count = 0;
 		for ($i = 0; $i < 10; ++$i)
 		{
 			$player = $this->data->players[$i];
@@ -531,15 +537,31 @@ class Game
 				{
 					case 'sheriff':
 						++$sheriff_count;
+						if (!isset($player->death))
+						{
+							++$alive_civ_count;
+						}
 						break;
 					case 'don':
 						++$don_count;
+						if (!isset($player->death))
+						{
+							++$alive_maf_count;
+						}
 						break;
 					case 'maf':
 						++$maf_count;
+						if (!isset($player->death))
+						{
+							++$alive_maf_count;
+						}
 						break;
 					case 'civ':
 						++$civ_count;
+						if (!isset($player->death))
+						{
+							++$alive_civ_count;
+						}
 						break;
 					default:
 						throw new Exc('Player ' . ($i + 1) . ' has invalid role "' . $player->role .  '". Role must be one of: "civ", "sheriff", "maf", or "don".');
@@ -548,6 +570,10 @@ class Game
 			else
 			{
 				++$civ_count;
+				if (!isset($player->death))
+				{
+					++$alive_civ_count;
+				}
 			}
 			
 			if (isset($player->death))
@@ -674,6 +700,18 @@ class Game
 		if ($don_count != 1)
 		{
 			throw new Exc('This game has ' . $don_count . ' dons. Must be 1.');
+		}
+		
+		if (!isset($this->data->winner))
+		{
+			if ($alive_maf_count == 0)
+			{
+				$this->data->winner = 'civ';
+			}
+			else if ($alive_maf_count >= $alive_civ_count)
+			{
+				$this->data->winner = 'maf';
+			}
 		}
 		return true;
 	}
