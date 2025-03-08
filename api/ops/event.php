@@ -443,11 +443,11 @@ class ApiPage extends OpsApiPageBase
 						continue;
 					}
 					$game = json_decode($game);
-					if (isset($game->tournament_id))
+					if (isset($game->tournamentId))
 					{
-						unset($game->tournament_id);
+						unset($game->tournamentId);
 					}
-					Db::exec(get_label('game'), 'UPDATE games SET tournament_id = NULL, json = ? WHERE event_id = ?', json_encode($game), $event_id);
+					Db::exec(get_label('game'), 'UPDATE games SET tournament_id = NULL, json = ? WHERE id = ?', json_encode($game), $game_id);
 				}
 			}
 			else
@@ -513,8 +513,8 @@ class ApiPage extends OpsApiPageBase
 						continue;
 					}
 					$game = json_decode($game);
-					$game->tournament_id = (int)$tournament_id;
-					Db::exec(get_label('game'), 'UPDATE games SET tournament_id = ?, json = ? WHERE event_id = ?', $tournament_id, json_encode($game), $event_id);
+					$game->tournamentId = (int)$tournament_id;
+					Db::exec(get_label('game'), 'UPDATE games SET tournament_id = ?, json = ? WHERE id = ?', $tournament_id, json_encode($game), $game_id);
 				}
 			}
 		}
@@ -1609,9 +1609,11 @@ class ApiPage extends OpsApiPageBase
 			{
 				continue;
 			}
+			throw new Exc($game);
 			$game = json_decode($game);
-			$game->tournament_id = (int)$tournament_id;
-			Db::exec(get_label('game'), 'UPDATE games SET tournament_id = ?, json = ? WHERE event_id = ?', $tournament_id, json_encode($game), $event_id);
+			
+			$game->tournamentId = (int)$tournament_id;
+			Db::exec(get_label('game'), 'UPDATE games SET tournament_id = ?, json = ? WHERE id = ?', $tournament_id, json_encode($game), $game_id);
 		}
 		
 		Db::commit();
