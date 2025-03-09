@@ -1463,96 +1463,12 @@ function _gameCreateVoting(num)
 		}
 		else
 		{
-			if (!isSet(game.splitting))
-			{
-				game.splitting = [true];
-			}
-			for (let i = game.splitting.length; i <= game.time.round; ++i)
-			{
-				game.splitting.push(false);
-			}
-			
 			for (let i = 0; i < 10; ++i)
 			{
 				_gameCreateVoting(i);
 			}
 		}
 	}
-}
-
-// num is 0-9
-function _gameDeleteVoting(num)
-{
-	if (game.time.time == 'voting' && isSet(game.time.nominee))
-	{
-		let noms = gameGetNominees();
-		if (isSet(num))
-		{
-			let player = game.players[num];
-			if (isSet(player.voting) && game.time.round < player.voting.length)
-			{
-				let v = player.voting[game.time.round];
-				if (isArray(v) && game.time.votingRound < v.length)
-				{
-					v[game.time.votingRound] = null;
-					switch (_gameCutArray(v))
-					{
-					case 0:
-						player.voting[game.time.round] = null;
-						if (_gameCutArray(player.voting) == 0)
-						{
-							delete player.voting;
-						}
-						break;
-					case 1:
-						player.voting[game.time.round] = v[0];
-						break;
-					}
-				}
-				else if (isNumber(v))
-				{
-					player.voting[game.time.round] = null;
-					if (_gameCutArray(player.voting) == 0)
-					{
-						delete player.voting;
-					}
-				}
-			}
-		}
-		else
-		{
-			if (game.time.votingRound == 0 && isSet(game.splitting))
-			{
-				while (game.time.round < game.splitting.length)
-				{
-					game.splitting.pop();
-				}
-				if (game.splitting.length == 0)
-				{
-					delete game.splitting;
-				}
-			}
-			
-			for (let i = 0; i < 10; ++i)
-			{
-				_gameDeleteVoting(i);
-			}
-		}
-	}
-}
-
-function gameSetSplitting(s)
-{
-	if (!isSet(game.splitting))
-	{
-		game.splitting = [true];
-	}
-	for (let i = game.splitting.length; i <= game.time.round; ++i)
-	{
-		game.splitting.push(false);
-	}
-	game.splitting[game.time.round] = s;
-	gameDirty();
 }
 
 // vote: true - all vote for nominee; false - nobody votes for nominee

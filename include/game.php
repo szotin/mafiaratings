@@ -23,10 +23,10 @@ define('GAME_FEATURE_FLAG_VOTING_KILL_ALL',             0x00000400); // 1024
 define('GAME_FEATURE_FLAG_NOMINATING',                  0x00000800); // 2048
 define('GAME_FEATURE_FLAG_WARNINGS',                    0x00001000); // 4096
 define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000); // 8192
-define('GAME_FEATURE_FLAG_SPLITTING',                   0x00004000); // 16384
+// define('GAME_FEATURE_FLAG_SPLITTING',                   0x00004000); // 16384
 define('GAME_FEATURE_FLAG_ON_RECORD',                   0x00008000); // 32768
 
-define('GAME_FEATURE_MASK_ALL',                         0x0000ffff); // 65535
+define('GAME_FEATURE_MASK_ALL',                         0x0000bfff); // 65535 - GAME_FEATURE_FLAG_SPLITTING
 define('GAME_FEATURE_MASK_MAFIARATINGS',                0x00003bff); // 15359 = ARRANGEMENT | DON_CHECKS | SHERIFF_CHECKS | DEATH | DEATH_ROUND | DEATH_TYPE | DEATH_TIME | LEGACY | SHOOTING | VOTING | NOMINATING | WARNINGS | WARNINGS_DETAILS
 
 define('GAMETIME_START', 'start'); // night
@@ -513,10 +513,10 @@ class Game
 			}
 		}
 
-		if (isset($this->data->splitting))
-		{
-			$this->flags |= GAME_FEATURE_FLAG_SPLITTING;
-		}
+		// if (isset($this->data->splitting))
+		// {
+			// $this->flags |= GAME_FEATURE_FLAG_SPLITTING;
+		// }
 		
 		$this->data->features = Game::feature_flags_to_leters($this->flags);
 	}
@@ -2615,12 +2615,12 @@ class Game
 						}
 					}
 					break;
-				case GAME_FEATURE_FLAG_SPLITTING:
-					if (isset($this->data->splitting))
-					{
-						unset($this->data->splitting);
-					}
-					break;
+				// case GAME_FEATURE_FLAG_SPLITTING:
+					// if (isset($this->data->splitting))
+					// {
+						// unset($this->data->splitting);
+					// }
+					// break;
 				case GAME_FEATURE_FLAG_ON_RECORD:
 					foreach ($this->data->players as $player)
 					{
@@ -2702,10 +2702,10 @@ class Game
 		{
 			$letters .= 'r';
 		}
-		if ($flags & GAME_FEATURE_FLAG_SPLITTING)
-		{
-			$letters .= 'p';
-		}
+		// if ($flags & GAME_FEATURE_FLAG_SPLITTING)
+		// {
+			// $letters .= 'p';
+		// }
 		if ($flags & GAME_FEATURE_FLAG_ON_RECORD)
 		{
 			$letters .= 'o';
@@ -2762,9 +2762,9 @@ class Game
 			case 'r':
 				$flags |= GAME_FEATURE_FLAG_WARNINGS_DETAILS;
 				break;
-			case 'p':
-				$flags |= GAME_FEATURE_FLAG_SPLITTING;
-				break;
+			// case 'p':
+				// $flags |= GAME_FEATURE_FLAG_SPLITTING;
+				// break;
 			case 'o':
 				$flags |= GAME_FEATURE_FLAG_ON_RECORD;
 				break;

@@ -1,3 +1,5 @@
+var _renderCallback = null;
+
 //-----------------------------------------------------------
 // Private API. Don't use it outside of this file.
 //-----------------------------------------------------------
@@ -496,6 +498,17 @@ function _uiRender(resetTimer)
 						str += ' onclick="gameShoot(' + i + ', ' + s[0] + ')">' + (s[0] + 1) + '</button>';
 					}
 					$('#panel' + i).html(str);
+					if (isSet(p.role))
+					{
+						if (p.role == 'maf')
+						{
+							$('#num' + i).addClass('night-mark');
+						}
+						else if (p.role == 'don')
+						{
+							$('#r' + i).removeClass().addClass('night-mark');
+						}
+					}
 				}
 			}
 			html += '</select>';
@@ -524,6 +537,10 @@ function _uiRender(resetTimer)
 					{
 						$('#control' + i).html('<button class="night-vote" onclick="gameDonCheck(' + i + ')"> ' + l('Check', i + 1) + '</button>');
 					}
+					if (isSet(p.role) && p.role == 'don')
+					{
+						$('#r' + i).removeClass().addClass('night-mark');
+					}
 				}
 				control1Html = '<button class="day-vote" onclick="gameDonCheck(-1)"' + (n ? ' checked' : '') + '> ' + l('NoCheck') + '</button>';
 			}
@@ -550,6 +567,10 @@ function _uiRender(resetTimer)
 					else
 					{
 						$('#control' + i).html('<button class="night-vote" onclick="gameSheriffCheck(' + i + ')"> ' + l('Check', i + 1) + '</button>');
+					}
+					if (isSet(p.role) && p.role == 'sheriff')
+					{
+						$('#r' + i).removeClass().addClass('night-mark');
 					}
 				}
 				control1Html = '<button class="day-vote" onclick="gameSheriffCheck(-1)"' + (n ? ' checked' : '') + '> ' + l('NoCheck') + '</button>';
@@ -691,6 +712,11 @@ function _uiRender(resetTimer)
 	{
 		timer.reset(timerTime);
 	}
+	
+	if (_renderCallback != null)
+	{
+		_renderCallback();
+	}
 }
 
 function _uiErrorListener(type, message, data)
@@ -748,11 +774,6 @@ function _uiChangeNomination(num)
 	let dlgId = dlg.curId();
 	gameChangeNomination(num, parseInt($('#dlg-nominate').val()));
 	dlg.close(dlgId);
-}
-
-function _uiSplit()
-{
-	gameSetSplitting(!!$("#split").attr("checked"));
 }
 
 //-----------------------------------------------------------
@@ -1015,13 +1036,13 @@ function uiStart(eventId, tableNum, roundNum)
 // User with userId must be registered for the event. Use uiRegisterPlayer instead if uncertain.
 function uiSetPlayer(num, userId)
 {
-	if (!userId)
+	if (userId)
 	{
-		userId = $('#player' + num).val();
+		$('#player' + num).val(userId);
 	}
 	else
 	{
-		$('#player' + num).val(userId);
+		userId = $('#player' + num).val();
 	}
 	
 	let n = gameSetPlayer(num, userId);
@@ -1043,7 +1064,7 @@ function uiRegisterPlayer(num, data)
 		dlg.infoForm("form/event_register_player.php?num=" + num + "&event_id=" + game.eventId, 800);
 	}
 }
-	
+
 function uiCreatePlayer(num)
 {
 	dlg.form("form/event_create_player.php?event_id=" + game.eventId, function(data) { uiRegisterPlayer(num, data); }, 500);
@@ -1051,50 +1072,62 @@ function uiCreatePlayer(num)
 
 function uiConfig(txt, onClose)
 {
-	let html = '<table class="dialog_form" width="100%">';
-	let moderatorId = isSet(game.moderator) && isSet(game.moderator.id) ? game.moderator.id : 0;
-	
-	if (txt)
+	function _genHtml()
 	{
-		html += '<tr><td colspan="2" align="center"><p><b>' + txt + '</b></p></td></tr>';
-	}
-	
-	html += '<tr><td>' + l('Moder') + ':</td><td><table class="transp" width="100%"><tr><td width="30"><button class="icon" onclick="uiRegisterPlayer(10)"><img src="images/user.png" class="icon"></button></td><td><select id="player10">'
-	html += _uiOption(0, moderatorId, '');
-	for (let i in regs)
-	{
-		let r = regs[i];
-		html += _uiOption(r.id, moderatorId, r.name);
-	}
-	html += '</select></td></tr></table></td></tr>';
-	if (langs.length > 1)
-	{
-		html += '<tr><td>' + l('Lang') + ':</td><td><select id="dlg-lang">';
-		for (let i in langs)
-		{
-			let lang = langs[i];
-			html += _uiOption(lang.code, game.language, lang.name);
-		}
-		html += '</select></td></tr>';
-	}
-	
-	html += '<tr><td colspan="2"><input type="checkbox" id="dlg-rating"';
-	if (!isSet(game.rating) || game.rating)
-	{
-		html += ' checked';
-	}
-	html += '> ' + l('Rating') + '</td></tr>';
-
-	html += '</table>';
+		let html = '<table class="dialog_form" width="100%">';
+		let moderatorId = isSet(game.moderator) && isSet(game.moderator.id) ? game.moderator.id : 0;
 		
+		if (txt)
+		{
+			html += '<tr><td colspan="2" align="center"><p><b>' + txt + '</b></p></td></tr>';
+		}
+		
+		html += '<tr><td>' + l('Moder') + ':</td><td><table class="transp" width="100%"><tr><td width="30"><button class="icon" onclick="uiRegisterPlayer(10)"><img src="images/user.png" class="icon"></button></td><td><select id="referee">'
+		html += _uiOption(0, moderatorId, '');
+		for (let i in regs)
+		{
+			let r = regs[i];
+			html += _uiOption(r.id, moderatorId, r.name);
+		}
+		html += '</select></td></tr></table></td></tr>';
+		if (langs.length > 1)
+		{
+			html += '<tr><td>' + l('Lang') + ':</td><td><select id="dlg-lang">';
+			for (let i in langs)
+			{
+				let lang = langs[i];
+				html += _uiOption(lang.code, game.language, lang.name);
+			}
+			html += '</select></td></tr>';
+		}
+		
+		html += '<tr><td colspan="2"><input type="checkbox" id="dlg-rating"';
+		if (!isSet(game.rating) || game.rating)
+		{
+			html += ' checked';
+		}
+		html += '> ' + l('Rating') + '</td></tr>';
+
+		html += '</table>';
+		return html;
+	}
+	
+	function _refresh()
+	{
+		$('#content').html(_genHtml());
+	}
+	
+	let html = '<div id="content">' + _genHtml() + '</div>';
+	_renderCallback = _refresh;
 	dlg.okCancel(html, $('#game-id').text(), 500, function()
 	{
+		_renderCallback = null;
 		gameSetIsRating($('#dlg-rating').attr('checked') ? 1 : 0);
 		if (langs.length > 1)
 		{
 			gameSetLang($('#dlg-lang').val());
 		}
-		gameSetPlayer(10, $('#player10').val());
+		gameSetPlayer(10, $('#referee').val());
 		if (!isSet(game.moderator) || !isSet(game.moderator.id) || game.moderator.id <= 0)
 		{
 			dlg.error(l('EnterModer'), undefined, undefined, function() { uiConfig(txt, onClose); });
@@ -1262,17 +1295,6 @@ function uiBonusPoints(num, bonusObj)
 	});
 }
 
-function uiStartVoting()
-{
-	let splitting = (game.time.round == 0);
-	if (isSet(game.splitting) && game.time.round < game.splitting.length)
-	{
-		splitting = game.splitting[game.time.round];
-	}
-	let html = '<table class="dialog_form" width="100%"><tr><td align="center"><p>' + _uiGenerateNoms() + '</p></td></tr></table><p><input type="checkbox" id="split"' + (splitting ? ' checked' : '') + ' onclick="_uiSplit()"> ' + l('Splitting') + '</p>';
-	dlg.info(html, l('VotingStart'), 400);
-}
-
 function uiBugReport()
 {
 	let html = '<table class="dialog_form" width="100%"><tr><td align="center"><textarea id="dlg-comment" placeholder="' + l('BugReportPh') + '" cols="60" rows="8"></textarea></td></tr></table>';
@@ -1304,15 +1326,6 @@ function uiNext()
 		else
 		{
 			gameNext();
-			
-			// if (game.time.time == 'voting' && game.time.votingRound == 0)
-			// {
-				// let noms = gameGetNominees();
-				// if (noms.length > 0 && game.time.nominee == noms[0])
-				// {
-					// uiStartVoting();
-				// }
-			// }
 		}
 	}
 	else
