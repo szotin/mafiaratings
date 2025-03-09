@@ -64,6 +64,7 @@ define('GAME_ACTION_SHOOTING', 'shooting');
 
 define('GAME_TO_EVENT_MAX_DISTANCE', 10800);
 
+define('GAME_NO_SOUND', 1);
 define('GAME_DEFAULT_PROMPT_SOUND', 2);
 define('GAME_DEFAULT_END_SOUND', 3);
 

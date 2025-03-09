@@ -1,6 +1,7 @@
 <?php
 
 require_once 'include/page_base.php';
+require_once 'include/game.php';
 
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
@@ -562,31 +563,37 @@ class Page extends PageBase
 		echo '<td align="right"><button class="game-btn" id="game-next" onclick="uiNext()" title="' . get_label('Next') . '"><img src="images/next.png" class="text"></button></td>';
 		echo '</tr></table></div>';
 		
-		list ($prompt_sound_id, $end_sound_id) = Db::record(get_label('user'), 'SELECT prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $_profile->user_id);
-		if (is_null($prompt_sound_id))
+		$prompt_sound_id = is_null($club_prompt_sound_id) ? GAME_DEFAULT_PROMPT_SOUND : $club_prompt_sound_id;
+		$end_sound_id = is_null($club_end_sound_id) ? GAME_DEFAULT_END_SOUND : $club_end_sound_id;
+		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $_profile->user_id);
+		if ($row = $query->next())
 		{
-			if (is_null($club_prompt_sound_id))
+			list($p_id, $e_id) = $row;
+			if (!is_null($p_id))
 			{
-				$prompt_sound_id = GAME_DEFAULT_PROMPT_SOUND;
+				$prompt_sound_id = $p_id;
 			}
-			else
+			if (!is_null($e_id))
 			{
-				$prompt_sound_id = $club_prompt_sound_id;
+				$end_sound_id = $e_id;
 			}
 		}
-		if (is_null($end_sound_id))
+		if ($prompt_sound_id == GAME_NO_SOUND)
 		{
-			if (is_null($club_end_sound_id))
-			{
-				$end_sound_id = GAME_DEFAULT_END_SOUND;
-			}
-			else
-			{
-				$end_sound_id = $club_end_sound_id;
-			}
+			echo '<audio id="prompt-snd"></audio>';
 		}
-		echo '<audio id="end-snd" src="sounds/' . $end_sound_id . '.mp3" preload></audio>';
-		echo '<audio id="prompt-snd" src="sounds/' . $prompt_sound_id . '.mp3" preload></audio>';
+		else
+		{
+			echo '<audio id="prompt-snd" src="sounds/' . $prompt_sound_id . '.mp3" preload="auto"></audio>';
+		}
+		if ($end_sound_id == GAME_NO_SOUND)
+		{
+			echo '<audio id="end-snd"></audio>';
+		}
+		else
+		{
+			echo '<audio id="end-snd" src="sounds/' . $end_sound_id . '.mp3" preload="auto"></audio>';
+		}
 	}
 	
 	protected function show_body()
