@@ -1744,7 +1744,7 @@ $labelMenu = array (
 'during [0]\'s speech' => 'во время речи [0]', // include/game.php
 '[0]\'s legacy is [1].' => '[0] оставляет черными [1].', // view_game.php
 'Display pattern must contain \'#\' character.' => 'правило показа валюты обязано содержать символ \'#\'.', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php
-'Participate in testing the new game client. Don\'t check it please. Betta testing has not started yet.' => 'Проучаствовать в тестировании нового клиента игры. Пока не выбирайте эту опцию. Бетта тестирование еще не началось.', // form/account_edit.php
+'Participate in betta-testing of the new game client.' => 'Проучаствовать в бетта-тестировании нового клиента игры.', // form/account_edit.php
 'during relaxed sitting' => 'во время свободной посадки', // include/game.php
 'at the beginning of the votings' => 'в начале голосования', // include/game.php
 );

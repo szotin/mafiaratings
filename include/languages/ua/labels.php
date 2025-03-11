@@ -1744,7 +1744,7 @@ $labelMenu = array (
 'during [0]\'s speech' => '[EMPTY]', // include/game.php, include/game.php
 'Tournament rounds can be grouped to calculate stats required for scoring seperately. For example, compensation for being shot first night (Ci) can be calculated in the finals separately. In this case main round and semi-finals can belong to \'main\' group, and finals to \'final\' group.' => '[EMPTY]', // include/scoring.php, include/scoring.php
 'Display pattern must contain \'#\' character.' => '[EMPTY]', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php, api/ops/country.php, api/ops/currency.php, api/ops/currency.php
-'Participate in testing the new game client. Don\'t check it please. Betta testing has not started yet.' => '[EMPTY]', // form/account_edit.php, form/account_edit.php
+'Participate in betta-testing of the new game client.' => '[EMPTY]', // form/account_edit.php, form/account_edit.php
 'during relaxed sitting' => '[EMPTY]', // include/game.php
 'at the beginning of the votings' => '[EMPTY]', // include/game.php
 );

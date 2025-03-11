@@ -129,7 +129,7 @@ try
 	{
 		echo ' checked';
 	}
-	echo '>'.get_label('Participate in testing the new game client. Don\'t check it please. Betta testing has not started yet.').'</p>';
+	echo '>'.get_label('Participate in betta-testing of the new game client.').'</p>';
 	
 ?>
 	<script>
