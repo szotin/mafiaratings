@@ -297,7 +297,6 @@ class ApiPage extends OpsApiPageBase
 				if ($row = $query->next())
 				{
 					list($event_id) = $row;
-					Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id = ?', $event_id);
 					Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', $event_misc, $event_id);
 					if (Db::affected_rows() > 0)
 					{
@@ -346,7 +345,6 @@ class ApiPage extends OpsApiPageBase
 			}
 			$round_num = count($rounds) - $i - 1;
 		}
-		Db::exec(get_label('user'), 'DELETE FROM tournament_users WHERE tournament_id = ? AND team_id IS NULL', $tournament_id);
 		Db::commit();
 		
 		$this->response['rounds'] = $rounds;
