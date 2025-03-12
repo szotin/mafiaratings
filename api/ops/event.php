@@ -682,33 +682,77 @@ class ApiPage extends OpsApiPageBase
 		global $_profile, $_lang;
 		
 		$event_id = (int)get_required_param('event_id');
-		
-		check_permissions(PERMISSION_USER);
 		$user_id = get_optional_param('user_id', $_profile->user_id);
-		if ($user_id != $_profile->user_id)
+		list($user_name, $city_name) = Db::record(get_label('user'), 
+			'SELECT nu.name, nc.name FROM users u '.
+			' JOIN cities c ON c.id = u.city_id'.
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
+			' WHERE u.id = ?', $user_id);
+		
+		if ($event_id > 0)
 		{
-			list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
-			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
+			check_permissions(PERMISSION_USER);
+			if ($user_id != $_profile->user_id)
+			{
+				list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+				check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
+			}
+			
+			$odds = min(max((int)get_optional_param('odds', 100), 0), 100);
+			$late = (int)get_optional_param('odds', 0);
+			$friends = (int)get_optional_param('friends', 0);
+			$nickname = get_optional_param('nickname', '');
+			if (empty($nickname))
+			{
+				$nickname = $user_name;
+			}
+			
+			Db::begin();
+			Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $user_id);
+			Db::exec(get_label('registration'), 
+				'INSERT INTO event_users (event_id, user_id, coming_odds, people_with_me, late, nickname) VALUES (?, ?, ?, ?, ?, ?)',
+				$event_id, $user_id, $odds, $friends, $late, $nickname);
+			Db::commit();
+			
+			$this->response['regs'] = get_event_reg_array($event_id);
 		}
-		
-		$odds = min(max((int)get_optional_param('odds', 100), 0), 100);
-		$late = (int)get_optional_param('odds', 0);
-		$friends = (int)get_optional_param('friends', 0);
-		$nickname = get_optional_param('nickname', '');
-		if (empty($nickname))
+		else
 		{
-			$nickname = $_profile->user_name;
+			// demo game
+			if (!isset($_SESSION['demo_game']))
+			{
+				throw new Exc(get_label('Unknown [0]', get_label('event')));
+			}
+			$data = $_SESSION['demo_game'];
+			
+			$not_exists = true;
+			$no_city = true;
+			foreach ($data->regs as $r)
+			{
+				if ($r->id == $user_id)
+				{
+					$not_exists = false;
+					break;
+				}
+				if ($no_city && $r->name == $user_name)
+				{
+					$user_name = $user_name . ' (' . $city_name . ')'; 
+					$no_city = false;
+				}
+			}
+			
+			if ($not_exists)
+			{
+				$r = new stdClass();
+				$r->id = (int)$user_id;
+				$r->name = $user_name;
+				$data->regs[] = $r;
+				usort($data->regs, function($a, $b) { return strcmp($a->name, $b->name); });
+			}
+			$this->response['regs'] = $data->regs;
 		}
-		
-		Db::begin();
-		Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $user_id);
-		Db::exec(get_label('registration'), 
-			'INSERT INTO event_users (event_id, user_id, coming_odds, people_with_me, late, nickname) VALUES (?, ?, ?, ?, ?, ?)',
-			$event_id, $user_id, $odds, $friends, $late, $nickname);
-		Db::commit();
-		
 		$this->response['user_id'] = $user_id;
-		$this->response['regs'] = get_event_reg_array($event_id);
 	}
 	
 	function attend_op_help()
@@ -741,25 +785,57 @@ class ApiPage extends OpsApiPageBase
 		$email = get_required_param('email');
 		$gender = get_required_param('gender');
 		
-		list($club_id, $tournament_id, $city_id) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, c.city_id FROM events e JOIN clubs c ON c.id = e.club_id WHERE e.id = ?', $event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
-		
-		$flags = NEW_USER_FLAGS;
-		if ($gender > 0)
+		if ($event_id > 0)
 		{
-			$flags |= USER_FLAG_MALE;
+			list($club_id, $tournament_id, $city_id) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, c.city_id FROM events e JOIN clubs c ON c.id = e.club_id WHERE e.id = ?', $event_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
+			
+			$flags = NEW_USER_FLAGS;
+			if ($gender > 0)
+			{
+				$flags |= USER_FLAG_MALE;
+			}
+				
+			Db::begin();
+			$names = new Names(-1, get_label('user name'), 'users', 0, new SQL(' AND o.city_id = ?', $city_id), $name);
+			$user_id = create_user($names, $email, $club_id, $city_id);
+			Db::exec(get_label('registration'), 
+				'INSERT INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)',
+				$event_id, $user_id, $name);
+			Db::commit();
+				
+			$this->response['user_id'] = $user_id;
+			$this->response['regs'] = get_event_reg_array($event_id);
 		}
+		else
+		{
+			// demo game
+			if (!isset($_SESSION['demo_game']))
+			{
+				throw new Exc(get_label('Unknown [0]', get_label('event')));
+			}
+			$data = $_SESSION['demo_game'];
 			
-		Db::begin();
-		$names = new Names(-1, get_label('user name'), 'users', 0, new SQL(' AND o.city_id = ?', $city_id), $name);
-		$user_id = create_user($names, $email, $club_id, $city_id);
-		Db::exec(get_label('registration'), 
-			'INSERT INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)',
-			$event_id, $user_id, $name);
-		Db::commit();
+			$user_id = 0;
+			foreach ($data->regs as $r)
+			{
+				$user_id = min($r->id, $user_id);
+				if ($r->name == $name)
+				{
+					throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('User name'), $name));
+				}
+			}
+			--$user_id;
+
+			$r = new stdClass();
+			$r->id = (int)$user_id;
+			$r->name = $name;
+			$data->regs[] = $r;
+			usort($data->regs, function($a, $b) { return strcmp($a->name, $b->name); });
 			
-		$this->response['user_id'] = $user_id;
-		$this->response['regs'] = get_event_reg_array($event_id);
+			$this->response['user_id'] = $user_id;
+			$this->response['regs'] = $data->regs;
+		}
 	}
 	
 	function new_player_attend_op_help()

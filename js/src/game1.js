@@ -188,7 +188,7 @@ function gameCancel()
 {
 	json.post('api/ops/game.php', { op: 'cancel_current', event_id: game.eventId, table: game.table - 1, round: game.round - 1 }, function()
 	{
-		goTo({round:undefined});
+		goTo({round:undefined, demo:undefined});
 	});
 }
 
@@ -2056,7 +2056,7 @@ function gameNext()
 			json.post('api/ops/game.php', { op: 'create', json: JSON.stringify(game) }, function()
 			{
 				delete localStorage['game'];
-				goTo({round:undefined});
+				goTo({round:undefined, demo:undefined});
 			},
 			function (message, data)
 			{

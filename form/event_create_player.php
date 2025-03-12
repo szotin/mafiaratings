@@ -23,14 +23,11 @@ try
 		$num = (int)$_REQUEST['num'];
 	}
 	
-	list($event_flags, $club_id, $club_flags, $tournament_id, $tournament_flags, $city_id, $area_id) = Db::record(get_label('event'), 
-		'SELECT e.flags, c.id, c.flags, t.id, t.flags, ct.id, ct.area_id'.
-		' FROM events e'.
-		' JOIN clubs c ON c.id = e.club_id'.
-		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
-		' JOIN cities ct ON ct.id = c.city_id'.
-		' WHERE e.id = ?', $event_id);
-	check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+	if ($event_id > 0)
+	{
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+	}
 	
 	dialog_title(get_label('New player'));
 	echo '<table class="dialog_form" width="100%">';

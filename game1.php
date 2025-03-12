@@ -29,6 +29,7 @@ class Page extends PageBase
 		$this->event_id = 0;
 		$this->table = -1;
 		$this->round = -1;
+		$this->demo = false;
 		
 		if (isset($_REQUEST['event_id']))
 		{
@@ -55,6 +56,12 @@ class Page extends PageBase
 		else if (isset($_REQUEST['club_id']))
 		{
 			$this->club_id = (int)$_REQUEST['club_id'];
+		}
+		else if (isset($_REQUEST['demo']))
+		{
+			$this->table = 0;
+			$this->round = 0;
+			$this->demo = true;
 		}
 	}
 	
@@ -459,42 +466,61 @@ class Page extends PageBase
 	{
 		global $_profile;
 		
-		list ($event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $club_prompt_sound_id, $club_end_sound_id) = 
-			Db::record(get_label('event'), 
-			'SELECT e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, c.prompt_sound_id, c.end_sound_id'.
-			' FROM events e'.
-			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
-			' JOIN clubs c ON c.id = e.club_id'.
-			' WHERE e.id = ?', $this->event_id);
-			
-		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
-		
-		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
-		$pic->
-			set($event_id, $event_name, $event_flags)->
-			set($tournament_id, $tournament_name, $tournament_flags)->
-			set($club_id, $club_name, $club_flags);
-		
-		echo '<div id="demo">'.get_label('Demo').'</div>';
-		
-		echo '<ul id="ops-menu" style="position:absolute;" hidden>';
-		echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({round:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
-		echo '<li id="cancel" class="ops-item"><a href="#" onclick="uiCancelGame()"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
-		echo '<li type="separator"></li>';
-		echo '<li id="bug" class="ops-item"><a href="#" onclick="uiBugReport()"><img src="images/bug.png" class="text"> '.get_label('Report a bug').'</li>';
-		echo '<li type="separator"></li>';
-//		echo '<li id="voting" class="ops-item"><a href="#" onclick="gameToggleVoting()"><img src="images/vote.png" class="text"> <span id="voting-txt">'.get_label('Cancel voting').'</span></a></li>';
-//		echo '<li type="separator"></li>';
-		echo '<li id="obs" class="ops-item"><a href="#" onclick="mr.';
-		if (is_null($tournament_id))
+		if ($this->event_id > 0)
 		{
-			echo 'eventObs(' . $event_id;
+			list ($event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $club_prompt_sound_id, $club_end_sound_id) = 
+				Db::record(get_label('event'), 
+				'SELECT e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, c.prompt_sound_id, c.end_sound_id'.
+				' FROM events e'.
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+				' JOIN clubs c ON c.id = e.club_id'.
+				' WHERE e.id = ?', $this->event_id);
+			check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $this->event_id, $tournament_id);
 		}
 		else
 		{
-			echo 'tournamentObs(' . $tournament_id;
+			$event_name = get_label('Demo');
+			$club_prompt_sound_id = GAME_DEFAULT_PROMPT_SOUND;
+			$club_end_sound_id = GAME_DEFAULT_END_SOUND;
 		}
-		echo ', ' . $_profile->user_id . ')"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
+		
+		if ($this->event_id > 0)
+		{
+			$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+			$pic->
+				set($this->event_id, $event_name, $event_flags)->
+				set($tournament_id, $tournament_name, $tournament_flags)->
+				set($club_id, $club_name, $club_flags);
+		}
+		else
+		{
+			$pic = new Picture(USER_PICTURE);
+			$pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
+			
+			echo '<div id="demo">'.get_label('Demo').'</div>';
+		}
+		
+		echo '<ul id="ops-menu" style="position:absolute;" hidden>';
+		echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({round:undefined, demo:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
+		echo '<li id="cancel" class="ops-item"><a href="#" onclick="uiCancelGame()"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
+		echo '<li type="separator"></li>';
+		if ($this->event_id > 0)
+		{
+			echo '<li id="bug" class="ops-item"><a href="#" onclick="uiBugReport()"><img src="images/bug.png" class="text"> '.get_label('Report a bug').'</li>';
+			echo '<li type="separator"></li>';
+			// echo '<li id="voting" class="ops-item"><a href="#" onclick="gameToggleVoting()"><img src="images/vote.png" class="text"> <span id="voting-txt">'.get_label('Cancel voting').'</span></a></li>';
+			// echo '<li type="separator"></li>';
+			echo '<li id="obs" class="ops-item"><a href="#" onclick="mr.';
+			if (is_null($tournament_id))
+			{
+				echo 'eventObs(' . $this->event_id;
+			}
+			else
+			{
+				echo 'tournamentObs(' . $tournament_id;
+			}
+			echo ', ' . $_profile->user_id . ')"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
+		}
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSettings()"><img src="images/settings.png" class="text"> '.get_label('Settings').'</a></li>';
 		echo '</ul>';
 		
@@ -598,7 +624,11 @@ class Page extends PageBase
 	
 	protected function show_body()
 	{
-		if ($this->event_id <= 0)
+		if ($this->demo)
+		{
+			$this->game();
+		}
+		else if ($this->event_id <= 0)
 		{
 			$this->select_event();
 		}
@@ -621,6 +651,10 @@ class Page extends PageBase
 		if ($this->event_id > 0 && $this->table >= 0 && $this->round >= 0)
 		{
 			echo 'uiStart(' . $this->event_id . ', ' . $this->table . ', ' . $this->round . ');';
+		}
+		else if ($this->demo)
+		{
+			echo 'uiStart(0, 0, 0);';
 		}
 	}
 }

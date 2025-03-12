@@ -1029,6 +1029,13 @@ function uiStart(eventId, tableNum, roundNum)
 	});
 	
 	timer.show();
+	
+	// Todo: when the old client will be removed, make demo unhidden in css and remove this code
+	if (eventId <= 0)
+	{
+		$('#demo').show();
+	}
+	
 	gameInit(eventId, tableNum, roundNum, _uiRender, _uiErrorListener, _uiConnectionListener);
 }
 	
@@ -1128,7 +1135,7 @@ function uiConfig(txt, onClose)
 			gameSetLang($('#dlg-lang').val());
 		}
 		gameSetPlayer(10, $('#referee').val());
-		if (!isSet(game.moderator) || !isSet(game.moderator.id) || game.moderator.id <= 0)
+		if (!isSet(game.moderator) || !isSet(game.moderator.id) || game.moderator.id == 0)
 		{
 			dlg.error(l('EnterModer'), undefined, undefined, function() { uiConfig(txt, onClose); });
 		}			

@@ -35,7 +35,11 @@ function create_user($names, $email, $club_id, $city_id, $flags = NEW_USER_FLAGS
 		throw new Exc(get_label('Please enter [0].', get_label('user name')));
 	}
 	
-	if ($email != '' && !is_email($email))
+	if (empty($email))
+	{
+		throw new Exc(get_label('Please enter [0].', get_label('email address')));
+	}
+	else if (!is_email($email))
 	{
 		throw new Exc(get_label('[0] is not a valid email address.', $email));
 	}
