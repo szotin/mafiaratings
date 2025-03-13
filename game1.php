@@ -2,6 +2,7 @@
 
 require_once 'include/page_base.php';
 require_once 'include/game.php';
+require_once 'include/event.php';
 
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
@@ -56,6 +57,32 @@ class Page extends PageBase
 		else if (isset($_REQUEST['club_id']))
 		{
 			$this->club_id = (int)$_REQUEST['club_id'];
+		}
+		else if (isset($_REQUEST['bug_id']))
+		{
+			$bug_id = (int)$_REQUEST['bug_id'];
+			list ($event_id, $table, $round, $game, $log) = Db::record('bug', 'SELECT event_id, table_num, round_num, game, log FROM bug_reports WHERE id = ?', $bug_id);
+			
+			$langs = array();
+			$lang = LANG_NO;
+			while (($lang = get_next_lang($lang, LANG_ALL)) != LANG_NO)
+			{
+				$l = new stdClass();
+				$l->code = get_lang_code($lang);
+				$l->name = get_lang_str($lang);
+				$langs[] = $l;
+			}
+			
+			$data = new stdClass();
+			$data->game = json_decode($game);
+			$data->log = json_decode($log);
+			$data->regs = get_event_reg_array($event_id);
+			$data->langs = $langs;
+			$_SESSION['demo_game'] = $data;
+			
+			$this->table = $table;
+			$this->round = $round;
+			$this->demo = true;
 		}
 		else if (isset($_REQUEST['demo']))
 		{

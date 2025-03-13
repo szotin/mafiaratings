@@ -460,4 +460,6 @@ define('GAME_RESULT_TOWN', 1);
 define('GAME_RESULT_MAFIA', 2);
 define('GAME_RESULT_TIE', 3);
 
+define('MAIN_ADMIN_ID', 1);
+
 ?>

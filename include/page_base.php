@@ -376,23 +376,30 @@ class PageBase
 		foreach ($menu as $item)
 		{
 			echo '<li';
-			if (strpos($item->page, $url) !== false)
+			if (is_null($item->page))
 			{
-				echo ' class="ui-state-disabled"';
+				echo ' type="separator">';
 			}
-			echo '><a href="' . $item->page . '"';
-			if ($item->title != NULL)
+			else
 			{
-				echo ' title="' . $item->title . '"';
-			}
-			if ($item->new_window)
-			{
-				echo ' target="_blank"';
-			}
-			echo '>' . $item->text . '</a>';
-			if ($item->submenu != NULL)
-			{
-				PageBase::show_menu($item->submenu, NULL);
+				if (strpos($item->page, $url) !== false)
+				{
+					echo ' class="ui-state-disabled"';
+				}
+				echo '><a href="' . $item->page . '"';
+				if ($item->title != NULL)
+				{
+					echo ' title="' . $item->title . '"';
+				}
+				if ($item->new_window)
+				{
+					echo ' target="_blank"';
+				}
+				echo '>' . $item->text . '</a>';
+				if ($item->submenu != NULL)
+				{
+					PageBase::show_menu($item->submenu, NULL);
+				}
 			}
 			echo '</li>';
 		}

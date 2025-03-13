@@ -3341,6 +3341,15 @@ class Game
 			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $data->id, $json, $issues, $feature_flags, $new_feature_flags);
 			$json = $new_json;
 			$feature_flags = $new_feature_flags;
+			
+			$query = new DbQuery('SELECT id, email FROM users WHERE id = ' . MAIN_ADMIN_ID);
+			while ($row = $query->next())
+			{
+				list($admin_id, $admin_email) = $row;
+				$body = '<p>Hi, Admin!</p><p>Game #' . $data->id . ' has consistency issues.</p><p><a href="' . get_server_url() . '/game_issues.php">Please check</a></p>';			
+				$text_body = "Hi, Admin!\r\n\r\nGame #" . $data->id . " has consistency issues.\r\nPlease check: " . get_server_url() . '/game_issues.php';
+				send_email($admin_email, $body, $text_body, 'Game issue');
+			}
 		}
 		
 		$rebuild_ratings = false;

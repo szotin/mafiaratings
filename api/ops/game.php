@@ -2163,6 +2163,15 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('game'), 'INSERT INTO bug_reports (event_id, table_num, round_num, user_id, game, log, comment) SELECT event_id, table_num, round_num, user_id, game, log, ? FROM current_games WHERE  event_id = ? AND table_num = ? AND round_num = ?', $comment, $event_id, $table, $round);
 		}
 		Db::commit();
+		
+		$query = new DbQuery('SELECT id, email FROM users WHERE id = ' . MAIN_ADMIN_ID);
+		while ($row = $query->next())
+		{
+			list($admin_id, $admin_email) = $row;
+			$body = '<p>Hi, Admin!</p><p>' . $_profile->user_name . ' reported a bug.</p><p><a href="' . get_server_url() . '/game_bugs.php">Please check</a>.</p>';			
+			$text_body = "Hi, Admin!\r\n\r\n" . $_profile->user_name . " reported a bug.\r\nPlease check: " . get_server_url() . '/game_bugs.php';
+			send_email($admin_email, $body, $text_body, 'Bug report');
+		}
 	}
 	
 	function report_bug_op_help()
@@ -2172,6 +2181,25 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('table', 'Table number in the event. Table 1 is numbered as 0, 2 - 1, etc..');
 		$help->request_param('round', 'Game number. Round 1 is numbered as 0, 2 - 1, etc..');
 		$help->request_param('comment', 'Explanation of the bug.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// bug_resolved
+	//-------------------------------------------------------------------------------------------------------
+	function bug_resolved_op()
+	{
+		global $_profile, $_lang;
+		
+		$bug_id = (int)get_required_param('bug_id');
+		check_permissions(PERMISSION_ADMIN);
+		Db::exec(get_label('game'), 'DELETE FROM bug_reports WHERE id = ?', $bug_id);
+	}
+	
+	function bug_resolved_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Delete the bug because it is resolved.');
+		$help->request_param('bug_id', 'Bug id.');
 		return $help;
 	}
 
