@@ -133,6 +133,9 @@ function gameSave()
 		if (_connectionState != 1) // 1 means that the other request is not finished yet
 		{
 			let w = http.waiter(statusWaiter);
+			// console.log('Saving');
+			// console.log(lastSaved);
+			// console.log(log.slice(lastSaved));
 			json.post('api/ops/game.php', { op: 'set_current', event_id: game.eventId, table: game.table - 1, round: game.round - 1, game: JSON.stringify(game), logIndex: lastSaved, log: JSON.stringify(log.slice(lastSaved))}, 
 			function() // success
 			{
@@ -2102,8 +2105,16 @@ function gameBack()
 {
 	if (gameCanGoBack())
 	{
-		game = log[log.length-1];
-		log.pop();
+		let g = null;
+		while (log.length > 0 && g == null)
+		{
+			g = log[log.length-1];
+			log.pop();
+		}
+		if (g != null)
+		{
+			game = g;
+		}
 		lastSaved = Math.min(lastSaved, log.length);
 		gameDirty();
 	}

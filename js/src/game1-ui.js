@@ -717,6 +717,7 @@ function _uiRender(resetTimer)
 
 function _uiErrorListener(type, message, data)
 {
+	console.log('Error: ' + message);
 	if (data)
 	{
 		console.log(data);
@@ -793,170 +794,200 @@ function _uiNextRole(index, back)
 	}
 }
 
-function _uiOnKey(e)
+function _uiProceedKeyEvent(e)
 {
 	let dlgId = dlg.curId();
-	if (dlgId >= 0)
+	if (dlgId <= 0 && !e.ctrlKey) // some referees use ctrl-number to switch between tabs, so we prevent any proceeding with ctrl
 	{
-		return;
-	}
-	
-	var code = e.keyCode;
-	if (!timer._hidden)
-	{
-		if (code == /*space*/32)
+		var code = e.keyCode;
+		if (!timer._hidden)
 		{
-			timer.toggle();
-			return;
-		}
-		else if (code == /*up*/38)
-		{
-			timer.inc(5);
-			return;
-		}
-		else if (code == /*down*/40)
-		{
-			timer.inc(-5);
-			return;
-		}
-	}
-	
-	var index = -1;
-	if (code >= /*1*/49 && code <= /*9*/57)
-		index = code - /*1*/49;
-	else if (code >= /*1*/97 && code <= /*9*/105)
-		index = code - /*1*/97;
-	else if (code == /*0*/48 || code == /*0*/96)
-		index = 9;
-
-	if (code == /*enter*/13 || code == /*right*/39)
-	{
-		uiNext();
-	}
-	else if (code == /*back*/8 || code == /*left*/37)
-	{
-		uiBack();
-	}
-	else if (code == /*b*/66)
-	{
-		uiBugReport();
-	}
-	else if (isSet(game.time))
-	{
-		if (index >= 0)
-		{
-			if (e.altKey)
+			if (code == /*space*/32)
 			{
-				if (e.shiftKey || e.ctrlKey)
-					uiPlayerActions(index);
-				else 
+				timer.toggle();
+				return true;
+			}
+			if (code == /*up*/38)
+			{
+				timer.inc(5);
+				return true;
+			}
+			if (code == /*down*/40)
+			{
+				timer.inc(-5);
+				return true;
+			}
+		}
+		
+		var index = -1;
+		if (code >= /*1*/49 && code <= /*9*/57)
+			index = code - /*1*/49;
+		else if (code >= /*1*/97 && code <= /*9*/105)
+			index = code - /*1*/97;
+		else if (code == /*0*/48 || code == /*0*/96)
+			index = 9;
+
+		if (code == /*enter*/13 || code == /*right*/39)
+		{
+			uiNext();
+			return true;
+		}
+		if (code == /*back*/8 || code == /*left*/37)
+		{
+			uiBack();
+			return true;
+		}
+		if (code == /*b*/66)
+		{
+			uiBugReport();
+			return true;
+		}
+		
+		if (isSet(game.time))
+		{
+			if (index >= 0)
+			{
+				if (e.shiftKey)
+				{
 					gamePlayerWarning(index);
+					return true;
+				}
+				if (e.altKey)
+				{
+					uiPlayerActions(index);
+					return true;
+				}
+				
+				switch (game.time.time)
+				{
+				case 'start':
+					_uiNextRole(index, e.shiftKey);
+					return true;
+				case 'arrangement':
+					uiArrangePlayer(index, e.shiftKey ? 0 : 1);
+					return true;
+				case 'speaking':
+					gameNominatePlayer(gameIsPlayerNominated(index) == 2 ? -1 : index);
+					return true;
+				case 'voting':
+					gameVote(index, 0);
+					return true;
+				case 'voting kill all':
+					gameVoteToKillAll(index);
+					return true;
+				case 'shooting':
+					gameShoot(index);
+					return true;
+				case 'don':
+					gameDonCheck(index);
+					return true;
+				case 'sheriff':
+					gameSheriffCheck(index);
+					return true;
+				case 'night kill speaking':
+					if (game.time.round == 1)
+					{
+						gameSetLegacy(index);
+						return true;
+					}
+					break;
+				}
 			}
 			else switch (game.time.time)
 			{
 			case 'start':
-				_uiNextRole(index, e.shiftKey);
-				break;
-			case 'arrangement':
-				uiArrangePlayer(index, e.shiftKey ? 0 : 1);
+				if (code == /*g*/71)
+				{
+					gameGenerateRoles();
+					return true;
+				}
 				break;
 			case 'speaking':
-				gameNominatePlayer(gameIsPlayerNominated(index) == 2 ? -1 : index);
+				if (code == /*-*/189)
+				{
+					gameNominatePlayer(-1);
+					return true;
+				}
 				break;
 			case 'voting':
-				gameVote(index, 0);
+				if (code == /*+*/187)
+				{
+					gameVoteAll(1);
+					return true;
+				}
+				else if (code == /*-*/189)
+				{
+					gameVoteAll(0);
+					return true;
+				}
 				break;
 			case 'voting kill all':
-				gameVoteToKillAll(index);
+				if (code == /*+*/187)
+				{
+					gameAllVoteToKillAll(true);
+					return true;
+				}
+				else if (code == /*-*/189)
+				{
+					gameAllVoteToKillAll(false);
+					return true;
+				}
 				break;
 			case 'shooting':
-				gameShoot(index);
+				if (code == /*-*/189)
+				{
+					let shots = gameGetShots();
+					for (let i = 0; i < shots.length; ++i)
+					{
+						gameShoot(-1, shots[i][0]);
+					}
+					return true;
+				}
 				break;
 			case 'don':
-				gameDonCheck(index);
+				if (code == /*-*/189)
+				{
+					gameDonCheck(-1);
+					return true;
+				}
 				break;
 			case 'sheriff':
-				gameSheriffCheck(index);
+				if (code == /*-*/189)
+				{
+					gameSheriffCheck(-1);
+					return true;
+				}
 				break;
 			case 'night kill speaking':
-				if (game.time.round == 1)
+				if (code == /*-*/189 && game.time.round == 1)
 				{
-					gameSetLegacy(index);
+					gameSetLegacy(-1);
+					return true;
 				}
 				break;
 			}
 		}
-		else switch (game.time.time)
+		
+		if (index >= 0)
 		{
-		case 'start':
-			if (code == /*g*/71)
-			{
-				gameGenerateRoles();
-			}
-			break;
-		case 'speaking':
-			if (code == /*-*/189)
-			{
-				gameNominatePlayer(-1);
-			}
-			break;
-		case 'voting':
-			if (code == /*+*/187)
-			{
-				gameVoteAll(1);
-			}
-			else if (code == /*-*/189)
-			{
-				gameVoteAll(0);
-			}
-			break;
-		case 'voting kill all':
-			if (code == /*+*/187)
-			{
-				gameAllVoteToKillAll(true);
-			}
-			else if (code == /*-*/189)
-			{
-				gameAllVoteToKillAll(false);
-			}
-			break;
-		case 'shooting':
-			if (code == /*-*/189)
-			{
-				let shots = gameGetShots();
-				for (let i = 0; i < shots.length; ++i)
-				{
-					gameShoot(-1, shots[i][0]);
-				}
-			}
-			break;
-		case 'don':
-			if (code == /*-*/189)
-			{
-				gameDonCheck(-1);
-			}
-			break;
-		case 'sheriff':
-			if (code == /*-*/189)
-			{
-				gameSheriffCheck(-1);
-			}
-			break;
-		case 'night kill speaking':
-			if (code == /*-*/189 && game.time.round == 1)
-			{
-				gameSetLegacy(-1);
-			}
-			break;
+			uiRegisterPlayer(index);
+			return true;
+		}
+		
+		if (code == /*s*/83)
+		{
+			gameRandomizeSeats();
+			return true;
 		}
 	}
-	else if (index >= 0)
+	return false;
+}
+
+function _uiOnKey(e)
+{
+	if (_uiProceedKeyEvent(e))
 	{
-		uiRegisterPlayer(index);
-	}
-	else if (code == /*s*/83)
-	{
-		gameRandomizeSeats();
+		e.preventDefault();
 	}
 }
 
@@ -1220,7 +1251,7 @@ function uiStart(eventId, tableNum, roundNum)
 		$('#demo').show();
 	}
 	
-	document.addEventListener("keyup", _uiOnKey); 
+	document.addEventListener("keydown", _uiOnKey); 
 	
 	gameInit(eventId, tableNum, roundNum, _uiRender, _uiErrorListener, _uiConnectionListener);
 }
