@@ -118,15 +118,12 @@ function _uiRender(resetTimer)
 	let status = '';
 	let control1Html = '';
 	let nomsStr = '';
-	let nextDisabled = false;
-	let backDisabled = false;
 	let noms = null;
 	if (!isSet(game.time))
 	{
 		status = l('StartGame');
 		$('#info').html('');
 		control1Html = '<button class="day-vote" onclick="gameRandomizeSeats()">' + l('RandSeats') + '</button>';
-		backDisabled = true;
 	}
 	else
 	{
@@ -154,7 +151,6 @@ function _uiRender(resetTimer)
 					'</select>');
 				$('#role-' + i + '-' + r).attr('checked', '');
 			}
-			nextDisabled = !gameAreRolesSet();
 			break;
 		case 'arrangement':
 			status = l('Arrange');
@@ -382,7 +378,7 @@ function _uiRender(resetTimer)
 						
 						if (vote == game.time.nominee)
 						{
-							$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" checked>' + l('vote', i + 1, game.time.nominee) + '</button>');
+							$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', 1)" checked>' + l('vote', i + 1, game.time.nominee) + '</button>');
 						}
 						else
 						{
@@ -396,7 +392,7 @@ function _uiRender(resetTimer)
 							}
 							if (j == index)
 							{
-								$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', true)" ' + chState + '>' + l('vote', i + 1, game.time.nominee) + '</button>');
+								$('#control' + i).html('<button class="day-vote" onclick="gameVote(' + i + ', 1)" ' + chState + '>' + l('vote', i + 1, game.time.nominee) + '</button>');
 							}
 						}
 					}
@@ -678,8 +674,8 @@ function _uiRender(resetTimer)
 	
 	$('#status').html(status);
 	$('#control-1').html(control1Html);
-	$('#game-next').prop('disabled', nextDisabled);
-	$('#game-back').prop('disabled', backDisabled);
+	$('#game-next').prop('disabled', !gameCanGoNext());
+	$('#game-back').prop('disabled', !gameCanGoBack());
 	$('#noms').html(nomsStr);
 	
 	for (let i = 0; i < 10; ++i)
@@ -774,6 +770,194 @@ function _uiChangeNomination(num)
 	let dlgId = dlg.curId();
 	gameChangeNomination(num, parseInt($('#dlg-nominate').val()));
 	dlg.close(dlgId);
+}
+
+function _uiNextRole(index, back)
+{
+	let p = game.players[index];
+	if (!isSet(p.role) || p.role == 'civ')
+	{
+		uiSetRole(index, back ? 'don' : 'sheriff');
+	}
+	else if (p.role == 'sheriff')
+	{
+		uiSetRole(index, back ? 'civ' : 'maf');
+	}
+	else if (p.role == 'maf')
+	{
+		uiSetRole(index, back ? 'sheriff' : 'don');
+	}
+	else if (p.role == 'don')
+	{
+		uiSetRole(index, back ? 'maf' : 'civ');
+	}
+}
+
+function _uiOnKey(e)
+{
+	let dlgId = dlg.curId();
+	if (dlgId >= 0)
+	{
+		return;
+	}
+	
+	var code = e.keyCode;
+	if (!timer._hidden)
+	{
+		if (code == /*space*/32)
+		{
+			timer.toggle();
+			return;
+		}
+		else if (code == /*up*/38)
+		{
+			timer.inc(5);
+			return;
+		}
+		else if (code == /*down*/40)
+		{
+			timer.inc(-5);
+			return;
+		}
+	}
+	
+	var index = -1;
+	if (code >= /*1*/49 && code <= /*9*/57)
+		index = code - /*1*/49;
+	else if (code >= /*1*/97 && code <= /*9*/105)
+		index = code - /*1*/97;
+	else if (code == /*0*/48 || code == /*0*/96)
+		index = 9;
+
+	if (code == /*enter*/13 || code == /*right*/39)
+	{
+		uiNext();
+	}
+	else if (code == /*back*/8 || code == /*left*/37)
+	{
+		uiBack();
+	}
+	else if (code == /*b*/66)
+	{
+		uiBugReport();
+	}
+	else if (isSet(game.time))
+	{
+		if (index >= 0)
+		{
+			if (e.altKey)
+			{
+				if (e.shiftKey || e.ctrlKey)
+					uiPlayerActions(index);
+				else 
+					gamePlayerWarning(index);
+			}
+			else switch (game.time.time)
+			{
+			case 'start':
+				_uiNextRole(index, e.shiftKey);
+				break;
+			case 'arrangement':
+				uiArrangePlayer(index, e.shiftKey ? 0 : 1);
+				break;
+			case 'speaking':
+				gameNominatePlayer(gameIsPlayerNominated(index) == 2 ? -1 : index);
+				break;
+			case 'voting':
+				gameVote(index, 0);
+				break;
+			case 'voting kill all':
+				gameVoteToKillAll(index);
+				break;
+			case 'shooting':
+				gameShoot(index);
+				break;
+			case 'don':
+				gameDonCheck(index);
+				break;
+			case 'sheriff':
+				gameSheriffCheck(index);
+				break;
+			case 'night kill speaking':
+				if (game.time.round == 1)
+				{
+					gameSetLegacy(index);
+				}
+				break;
+			}
+		}
+		else switch (game.time.time)
+		{
+		case 'start':
+			if (code == /*g*/71)
+			{
+				gameGenerateRoles();
+			}
+			break;
+		case 'speaking':
+			if (code == /*-*/189)
+			{
+				gameNominatePlayer(-1);
+			}
+			break;
+		case 'voting':
+			if (code == /*+*/187)
+			{
+				gameVoteAll(1);
+			}
+			else if (code == /*-*/189)
+			{
+				gameVoteAll(0);
+			}
+			break;
+		case 'voting kill all':
+			if (code == /*+*/187)
+			{
+				gameAllVoteToKillAll(true);
+			}
+			else if (code == /*-*/189)
+			{
+				gameAllVoteToKillAll(false);
+			}
+			break;
+		case 'shooting':
+			if (code == /*-*/189)
+			{
+				let shots = gameGetShots();
+				for (let i = 0; i < shots.length; ++i)
+				{
+					gameShoot(-1, shots[i][0]);
+				}
+			}
+			break;
+		case 'don':
+			if (code == /*-*/189)
+			{
+				gameDonCheck(-1);
+			}
+			break;
+		case 'sheriff':
+			if (code == /*-*/189)
+			{
+				gameSheriffCheck(-1);
+			}
+			break;
+		case 'night kill speaking':
+			if (code == /*-*/189 && game.time.round == 1)
+			{
+				gameSetLegacy(-1);
+			}
+			break;
+		}
+	}
+	else if (index >= 0)
+	{
+		uiRegisterPlayer(index);
+	}
+	else if (code == /*s*/83)
+	{
+		gameRandomizeSeats();
+	}
 }
 
 //-----------------------------------------------------------
@@ -1036,6 +1220,8 @@ function uiStart(eventId, tableNum, roundNum)
 		$('#demo').show();
 	}
 	
+	document.addEventListener("keyup", _uiOnKey); 
+	
 	gameInit(eventId, tableNum, roundNum, _uiRender, _uiErrorListener, _uiConnectionListener);
 }
 	
@@ -1158,34 +1344,37 @@ function uiSetRole(num, role)
 function uiPlayerActions(num)
 {
 	let player = game.players[num];
-	let html = '<center>';
-	if (isSet(game.time) && ((game.time.time == 'speaking' && gameCompareTimes({ time: 'speaking', speaker: num + 1, round: game.time.round }, game.time) <= 0) || game.time.time == 'voting start'))
+	if (!isSet(player.death))
 	{
-		let nom = -1;
-		if (isSet(player.nominating) && game.time.round < player.nominating.length && player.nominating[game.time.round] != null)
+		let html = '<center>';
+		if (isSet(game.time) && ((game.time.time == 'speaking' && gameCompareTimes({ time: 'speaking', speaker: num + 1, round: game.time.round }, game.time) <= 0) || game.time.time == 'voting start'))
 		{
-			nom = player.nominating[game.time.round] - 1;
-		}
-		html += '<p><center>' + l("DidNom") + ': <select id="dlg-nominate" onchange="_uiChangeNomination(' + num + ')">' + _uiOption(-1, nom, '');
-		for (let i = 0; i < 10; ++i)
-		{
-			if (!isSet(game.players[i].death))
+			let nom = -1;
+			if (isSet(player.nominating) && game.time.round < player.nominating.length && player.nominating[game.time.round] != null)
 			{
-				html += _uiOption(i, nom, i + 1);
+				nom = player.nominating[game.time.round] - 1;
 			}
+			html += '<p><center>' + l("DidNom") + ': <select id="dlg-nominate" onchange="_uiChangeNomination(' + num + ')">' + _uiOption(-1, nom, '');
+			for (let i = 0; i < 10; ++i)
+			{
+				if (!isSet(game.players[i].death))
+				{
+					html += _uiOption(i, nom, i + 1);
+				}
+			}
+			html += '</select></p><br>';
 		}
-		html += '</select></p><br>';
+		html += 
+			'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerGiveUp)"><table class="transp" width="100%"><tr><td width="30"><img src="images/suicide.png"></td><td>' + l('GiveUp') + '</td></tr></table></button></p>' +
+			'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/delete.png"></td><td>' + l('KickOut') + '</td></tr></table></button></p>' +
+			'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerTeamKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/skull.png"></td><td>' + l('TeamKickOut') + '</td></tr></table></button></p>';
+		if (isSet(player.warnings) && player.warnings.length > 0)
+		{
+			html += '<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerRemoveWarning)"><table class="transp" width="100%"><tr><td width="30"><img src="images/warn-minus.png"></td><td>' + l('RemoveWarning') + '</td></tr></table></button></p>';
+		}
+		html += '</center>';
+		dlg.custom(html, l('PlayerActions', num + 1), 360, {});
 	}
-	html += 
-		'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerGiveUp)"><table class="transp" width="100%"><tr><td width="30"><img src="images/suicide.png"></td><td>' + l('GiveUp') + '</td></tr></table></button></p>' +
-		'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/delete.png"></td><td>' + l('KickOut') + '</td></tr></table></button></p>' +
-		'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerTeamKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/skull.png"></td><td>' + l('TeamKickOut') + '</td></tr></table></button></p>';
-	if (isSet(player.warnings) && player.warnings.length > 0)
-	{
-		html += '<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerRemoveWarning)"><table class="transp" width="100%"><tr><td width="30"><img src="images/warn-minus.png"></td><td>' + l('RemoveWarning') + '</td></tr></table></button></p>';
-	}
-	html += '</center>';
-	dlg.custom(html, l('PlayerActions', num + 1), 360, {});
 }
 
 function uiCancelGame()
