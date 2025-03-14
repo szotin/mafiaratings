@@ -1548,7 +1548,35 @@ function uiNext()
 	{
 		if (game.time.time == 'end')
 		{
-			uiConfig(l('Confirm'), gameNext);
+			uiConfig(l('Confirm'), function()
+			{
+				let hasNoReg = false;
+				let allNoReg = true;
+				for (let i = 0; i < 10; ++i)
+				{
+					if (game.players[i].id <= 0)
+					{
+						hasNoReg = true;
+					}
+					else
+					{
+						allNoReg = false;
+					}
+				}
+				
+				if (allNoReg)
+				{
+					dlg.yesNo(l('AllNoReg'), null, null, gameNext);
+				}
+				else if (hasNoReg && (!isSet(game.rating) || game.rating))
+				{
+					dlg.yesNo(l('HasNoReg'), null, null, gameNext);
+				}
+				else
+				{
+					gameNext();
+				}
+			});
 		}
 		else
 		{
