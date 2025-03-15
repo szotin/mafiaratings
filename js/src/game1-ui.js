@@ -796,8 +796,7 @@ function _uiNextRole(index, back)
 
 function _uiProceedKeyEvent(e)
 {
-	let dlgId = dlg.curId();
-	if (dlgId <= 0 && !e.ctrlKey) // some referees use ctrl-number to switch between tabs, so we prevent any proceeding with ctrl
+	if (!dlg.onScreen() && !e.ctrlKey) // some referees use ctrl-number to switch between tabs, so we prevent any proceeding with ctrl
 	{
 		var code = e.keyCode;
 		if (!timer._hidden)
@@ -1540,6 +1539,11 @@ function uiBugReport()
 			});
 		}
 	});
+}
+
+function uiSettings()
+{
+	dlg.form("form/game_settings.php" , refr, 600);
 }
 	
 function uiNext()
