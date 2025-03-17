@@ -704,6 +704,37 @@ function _gameCheckEnd()
 	return false;
 }
 
+function _gameCheckTie()
+{
+	let round = game.time.round - 2;
+	if (gameCompareTimes(game.time, {round: game.time.round, time: 'shooting'}) <= 0)
+	{
+		--round;
+	}
+	
+	if (round <= 0)
+	{
+		return false;
+	}
+	
+	let lastTime = {round: round, time: 'shooting'};
+	for (let i = 0; i < 10; ++i)
+	{
+		let p = game.players[i];
+		if (isSet(p.death))
+		{
+			let dt = _gameGetPlayerDeathTime(i);
+			if (gameCompareTimes(lastTime, dt) <= 0 && gameCompareTimes(dt, game.time) <= 0)
+			{
+				return false;
+			}
+		}
+	}
+	
+	_gameEnd('tie');
+	return true;
+}
+
 function _gameIncTimeOrder()
 {
 	if (isSet(game.time.order))
@@ -2063,6 +2094,10 @@ function gameNext()
 				{
 					game.players[killed].death = { type: 'night', round: game.time.round };
 					_gameCheckEnd();
+				}
+				else
+				{
+					_gameCheckTie();
 				}
 				break;
 			}

@@ -47,14 +47,17 @@ class Page extends PageBase
 		$state = '';
 		switch ($this->result)
 		{
-			case 0:
+			case GAME_RESULT_PLAYING:
 				$state = get_label('Still playing.');
 				break;
-			case 1:
+			case GAME_RESULT_TOWN:
 				$state = get_label('Town wins.');
 				break;
-			case 2:
+			case GAME_RESULT_MAFIA:
 				$state = get_label('Mafia wins.');
+				break;
+			case GAME_RESULT_TIE:
+				$state = get_label('Tie.');
 				break;
 		}
 		if ($this->tournament_name == NULL)
@@ -67,7 +70,7 @@ class Page extends PageBase
 		}
 		
 		$game_num = is_null($this->game_round) ? ('#' . $this->id) : ($this->game_round + 1);
-		$rating = $this->is_rating ? '.' : (' (' . get_label('non-rating'));
+		$rating = $this->is_rating ? '.' : (' (' . get_label('non-rating') . ').');
 		if (is_null($this->game_table))
 		{
 			$title .= get_label('Game [0]. [1][2]', $game_num, $state, $rating);

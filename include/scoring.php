@@ -1221,7 +1221,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	$red_win_rate = 0;
 	if ($scoring->is_game_difficulty_used)
 	{
-		list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(id), SUM(IF(result = 1, 1, 0)) FROM games WHERE event_id = ? AND result > 0 AND is_canceled = 0 AND is_rating <> 0', $event_id);
+		list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(id), SUM(IF(result = ' . GAME_RESULT_TOWN . ', 1, 0)) FROM games WHERE event_id = ? AND result > 0 AND is_canceled = 0 AND is_rating <> 0', $event_id);
 		if ($count > 0)
 		{
 			$red_win_rate = max(min((float)($red_wins / $count), 1), 0);
@@ -1655,7 +1655,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$red_win_rate = 0;
 		if ($scoring->is_game_difficulty_used)
 		{
-			list ($count, $red_wins) = Db::record(get_label('tournament'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $hide_table_condition);
+			list ($count, $red_wins) = Db::record(get_label('tournament'), 'SELECT count(g.id), SUM(IF(g.result = '.GAME_RESULT_TOWN.', 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0', $tournament_id, $hide_table_condition);
 			if ($count > 0)
 			{
 				$red_win_rate = max(min((float)($red_wins / $count), 1), 0);
@@ -1790,7 +1790,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			$group->red_win_rate = 0;
 			if ($scoring->is_game_difficulty_used)
 			{
-				list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = 1, 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0' . $group->cond, $tournament_id);
+				list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = '.GAME_RESULT_TOWN.', 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND g.result > 0 AND g.is_canceled = 0 AND g.is_rating <> 0' . $group->cond, $tournament_id);
 				if ($count > 0)
 				{
 					$group->red_win_rate = max(min((float)($red_wins / $count), 1), 0);

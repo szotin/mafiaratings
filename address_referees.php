@@ -76,7 +76,7 @@ class Page extends AddressPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = 1, 1, 0)) AS civ, SUM(IF(g.result = 2, 1, 0)) AS maf, c.id, c.name, c.flags' .
+			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = ' . GAME_RESULT_TOWN . ', 1, 0)) AS civ, SUM(IF(g.result = ' . GAME_RESULT_MAFIA . ', 1, 0)) AS maf, SUM(IF(g.result = ' . GAME_RESULT_TIE . ', 1, 0)) AS tie, c.id, c.name, c.flags' .
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
@@ -91,13 +91,14 @@ class Page extends AddressPageBase
 		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
 		echo '<td width="100" align="center">'.get_label('Civil wins').'</td>';
 		echo '<td width="100" align="center">'.get_label('Mafia wins').'</td>';
+		echo '<td width="100" align="center">'.get_label('Ties').'</td>';
 		echo '</tr>';
 
 		$number = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $civil_wins, $mafia_wins, $club_id, $club_name, $club_flags) = $row;
+			list ($id, $name, $flags, $civil_wins, $mafia_wins, $ties, $club_id, $club_name, $club_flags) = $row;
 
 			echo '<tr><td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
@@ -109,7 +110,7 @@ class Page extends AddressPageBase
 			$this->club_pic->show(ICONS_DIR, true, 40);
 			echo '</td>';
 			
-			$games = $civil_wins + $mafia_wins;
+			$games = $civil_wins + $mafia_wins + $ties;
 			
 			echo '<td align="center" class="dark">' . $games . '</td>';
 			if ($civil_wins > 0)
@@ -123,6 +124,14 @@ class Page extends AddressPageBase
 			if ($mafia_wins > 0)
 			{
 				echo '<td align="center">' . $mafia_wins . ' (' . number_format(($mafia_wins*100.0)/$games, 1) . '%)</td>';
+			}
+			else
+			{
+				echo '<td align="center">&nbsp;</td>';
+			}
+			if ($ties > 0)
+			{
+				echo '<td align="center">' . $ties . ' (' . number_format(($ties*100.0)/$games, 1) . '%)</td>';
 			}
 			else
 			{

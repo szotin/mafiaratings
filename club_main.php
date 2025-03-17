@@ -245,26 +245,28 @@ class Page extends ClubPageBase
 		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
 		$have_tables = false;
 		
-		$playing_count = 0;
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
+		$tie_count = 0;
 		$query = new DbQuery('SELECT result, count(*) FROM games WHERE club_id = ? AND is_canceled = FALSE GROUP BY result', $this->id);
 		while ($row = $query->next())
 		{
 			switch ($row[0])
 			{
-				case 0:
-					$playing_count = $row[1];
+				case GAME_RESULT_PLAYING:
 					break;
-				case 1:
+				case GAME_RESULT_TOWN:
 					$civils_win_count = $row[1];
 					break;
-				case 2:
+				case GAME_RESULT_MAFIA:
 					$mafia_win_count = $row[1];
+					break;
+				case GAME_RESULT_TIE:
+					$tie_count = $row[1];
 					break;
 			}
 		}
-		$games_count = $civils_win_count + $mafia_win_count + $playing_count;
+		$games_count = $civils_win_count + $mafia_win_count + $tie_count;
 		
 		if ($games_count > 0)
 		{
@@ -403,34 +405,25 @@ class Page extends ClubPageBase
 		{
 			echo '<p><table class="bordered light" width="100%">';
 			echo '<tr class="darker"><td colspan="2"><b>' . get_label('Stats') . '</b></td></tr>';
-			echo '<tr><td width="200">'.get_label('Games played').':</td><td>' . ($civils_win_count + $mafia_win_count) . '</td></tr>';
-			if ($civils_win_count + $mafia_win_count > 0)
-			{
-				echo '<tr><td>'.get_label('Mafia wins').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
-				echo '<tr><td>'.get_label('Town wins').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
-			}
-			if ($playing_count > 0)
-			{
-				echo '<tr><td>'.get_label('Still playing').'</td><td>' . $playing_count . '</td></tr>';
-			}
+			echo '<tr><td width="200">'.get_label('Games played').':</td><td>' . $games_count . '</td></tr>';
+			echo '<tr><td>'.get_label('Mafia wins').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/$games_count, 1) . '%)</td></tr>';
+			echo '<tr><td>'.get_label('Town wins').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/$games_count, 1) . '%)</td></tr>';
+			echo '<tr><td>'.get_label('Ties').':</td><td>' . $tie_count . ' (' . number_format($tie_count*100.0/$games_count, 1) . '%)</td></tr>';
 			
-			if ($civils_win_count + $mafia_win_count > 0)
-			{
-				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p, games g WHERE p.game_id = g.id AND g.club_id = ?', $this->id);
-				echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
-				
-				list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT moderator_id) FROM games WHERE club_id = ? AND is_canceled = FALSE AND result > 0', $this->id);
-				echo '<tr><td>'.get_label('Referees').':</td><td>' . $counter . '</td></tr>';
-				
-				list ($a_game, $s_game, $l_game) = Db::record(
-					get_label('game'),
-					'SELECT AVG(end_time - start_time), MIN(end_time - start_time), MAX(end_time - start_time) ' .
-						'FROM games WHERE is_canceled = FALSE AND result > 0 AND club_id = ?', 
-					$this->id);
-				echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
-				echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';
-				echo '<tr><td>'.get_label('Longest game').':</td><td>' . format_time($l_game) . '</td></tr>';
-			}
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p, games g WHERE p.game_id = g.id AND g.club_id = ?', $this->id);
+			echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
+			
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT moderator_id) FROM games WHERE club_id = ? AND is_canceled = FALSE AND result > 0', $this->id);
+			echo '<tr><td>'.get_label('Referees').':</td><td>' . $counter . '</td></tr>';
+			
+			list ($a_game, $s_game, $l_game) = Db::record(
+				get_label('game'),
+				'SELECT AVG(end_time - start_time), MIN(end_time - start_time), MAX(end_time - start_time) ' .
+					'FROM games WHERE is_canceled = FALSE AND result > 0 AND club_id = ? AND end_time > start_time + 900 AND end_time < start_time + 20000', 
+				$this->id);
+			echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
+			echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';
+			echo '<tr><td>'.get_label('Longest game').':</td><td>' . format_time($l_game) . '</td></tr>';
 			echo '</table></p>';
 		}
 		

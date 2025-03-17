@@ -71,43 +71,39 @@ class Page extends ClubPageBase
 
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
 		
-		$playing_count = 0;
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
+		$tie_count = 0;
 		$query = new DbQuery('SELECT g.result, count(*) FROM games g WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
 		$query->add(' GROUP BY result');
 		while ($row = $query->next())
 		{
 			switch ($row[0])
 			{
-				case 0:
-					$playing_count = $row[1];
+				case GAME_RESULT_PLAYING:
 					break;
-				case 1:
+				case GAME_RESULT_TOWN:
 					$civils_win_count = $row[1];
 					break;
-				case 2:
+				case GAME_RESULT_MAFIA:
 					$mafia_win_count = $row[1];
+					break;
+				case GAME_RESULT_TIE:
+					$tie_count = $row[1];
 					break;
 			}
 		}
-		$games_count = $civils_win_count + $mafia_win_count + $playing_count;
+		$games_count = $civils_win_count + $mafia_win_count + $tie_count;
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td colspan="2"><a href="club_games.php?bck=1&id=' . $this->id . '"><b>' . get_label('Stats') . '</b></a></td></tr>';
-		echo '<tr><td width="200">'.get_label('Games played').':</td><td>' . ($civils_win_count + $mafia_win_count) . '</td></tr>';
-		if ($civils_win_count + $mafia_win_count > 0)
+		echo '<tr><td width="200">'.get_label('Games played').':</td><td>' . $games_count . '</td></tr>';
+		if ($games_count > 0)
 		{
-			echo '<tr><td>'.get_label('Mafia wins').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
-			echo '<tr><td>'.get_label('Town wins').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/($civils_win_count + $mafia_win_count), 1) . '%)</td></tr>';
-		}
-		if ($playing_count > 0)
-		{
-			echo '<tr><td>'.get_label('Still playing').'</td><td>' . $playing_count . '</td></tr>';
-		}
-		
-		if ($civils_win_count + $mafia_win_count > 0)
-		{
+			echo '<tr><td>'.get_label('Mafia wins').':</td><td>' . $mafia_win_count . ' (' . number_format($mafia_win_count*100.0/$games_count, 1) . '%)</td></tr>';
+			echo '<tr><td>'.get_label('Town wins').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/$games_count, 1) . '%)</td></tr>';
+			echo '<tr><td>'.get_label('Ties').':</td><td>' . $tie_count . ' (' . number_format($tie_count*100.0/$games_count, 1) . '%)</td></tr>';
+
 			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.club_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
 			echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 			
@@ -146,23 +142,26 @@ class Page extends ClubPageBase
 				echo '<tr class="darker"><td colspan="2"><b>';
 				switch ($kill_type)
 				{
-				case 0:
+				case KILL_TYPE_SURVIVED:
 					echo get_label('Survived');
 					break;
-				case 1:
+				case KILL_TYPE_DAY:
 					echo get_label('Killed in day');
 					break;
-				case 2:
+				case KILL_TYPE_NIGHT:
 					echo get_label('Killed in night');
 					break;
-				case 3:
+				case KILL_TYPE_WARNINGS:
 					echo get_label('Killed by warnings');
 					break;
-				case 4:
+				case KILL_TYPE_GIVE_UP:
 					echo get_label('Gave up');
 					break;
-				case 5:
+				case KILL_TYPE_KICK_OUT:
 					echo get_label('Kicked out');
+					break;
+				case KILL_TYPE_TEAM_KICK_OUT:
+					echo get_label('Mod team kills');
 					break;
 				}
 				echo ':</b></td></tr>';

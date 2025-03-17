@@ -7,7 +7,7 @@ initiate_session();
 
 try
 {
-	if ($_profile == NULL || !$_profile->is_admin())
+	if ($_profile == NULL)
 	{
 		throw new FatalExc(get_label('No permissions'));
 	}

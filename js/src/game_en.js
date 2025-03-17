@@ -1,5 +1,6 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["Tie"] = "Tie!";
 _l["AllNoReg"] = "None of the players is registered with mafiaratings. It does not make sense to save this kind of game. Are you sure you want to save it?";
 _l["HasNoReg"] = "Some of the players in this game are not registered with mafiaratings. Are you sure this is a rating game?";
 _l["BugReportPh"] = "Please enter the bug description.";

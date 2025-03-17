@@ -578,7 +578,19 @@ function _uiRender(resetTimer)
 			info = 'Night';
 			break;
 		case 'end':
-			status = '<h3>' + (game.winner == 'maf' ? l('MafWin') : l('CivWin')) + '</h3>' + l('Finish');
+			if (game.winner == 'maf')
+			{
+				status = l('MafWin');
+			}
+			else if (game.winner == 'civ')
+			{
+				status = l('CivWin');
+			}
+			else
+			{
+				status = l('Tie');
+			}
+			status = '<h3>' + status + '</h3>' + l('Finish');
 			info = 'Day';
 			for (let i = 0; i < 10; ++i)
 			{

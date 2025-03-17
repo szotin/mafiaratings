@@ -136,23 +136,20 @@ class Page extends UserPageBase
 			}
 			
 			echo '<p><select id="result" onChange="filterChanged()">';
-			show_option(0, $result_filter, get_label('All games'));
-			show_option(1, $result_filter, get_label('Town wins'));
-			show_option(2, $result_filter, get_label('Mafia wins'));
+			show_option(-1, $result_filter, get_label('All games'));
+			show_option(GAME_RESULT_TOWN, $result_filter, get_label('Town wins'));
+			show_option(GAME_RESULT_MAFIA, $result_filter, get_label('Mafia wins'));
+			show_option(GAME_RESULT_TIE, $result_filter, get_label('Ties'));
 			echo '</select>';
 			echo '</p>';
 			
-			switch ($result_filter)
+			if ($result_filter < 0)
 			{
-				case 1:
-					$condition->add(' AND g.result = 1');
-					break;
-				case 2:
-					$condition->add(' AND g.result = 2');
-					break;
-				default:
-					$condition->add(' AND g.result <> 0');
-					break;
+				$condition->add(' AND g.result > 0');
+			}
+			else
+			{
+				$condition->add(' AND g.result = ?', $result_filter);
 			}
 			
 			list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.moderator_id = ?', $this->id, $condition);
@@ -251,7 +248,7 @@ class Page extends UserPageBase
 						echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 						break;
 					case GAME_RESULT_TIE:
-						echo '<img src="images/transp.png" width="24" title="' . get_label('tie') . '">';
+					echo '<img src="images/tie.png" title="' . get_label('tie') . '" style="opacity: 0.5;">';
 						break;
 				}
 				echo '</td></tr>';

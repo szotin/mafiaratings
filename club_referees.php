@@ -74,7 +74,7 @@ class Page extends ClubPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)), c.id, c.name, c.flags, cu.flags FROM users u' .
+			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = ' . GAME_RESULT_TOWN . ', 1, 0)) AS civ, SUM(IF(g.result = ' . GAME_RESULT_MAFIA . ', 1, 0)) AS maf, SUM(IF(g.result = ' . GAME_RESULT_TIE . ', 1, 0)) AS tie, c.id, c.name, c.flags, cu.flags FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
@@ -88,6 +88,7 @@ class Page extends ClubPageBase
 		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
 		echo '<td width="100" align="center">'.get_label('Civil wins').'</td>';
 		echo '<td width="100" align="center">'.get_label('Mafia wins').'</td>';
+		echo '<td width="100" align="center">'.get_label('Ties').'</td>';
 		echo '</tr>';
 
 		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
@@ -96,7 +97,7 @@ class Page extends ClubPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $civil_wins, $mafia_wins, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
+			list ($id, $name, $flags, $civil_wins, $mafia_wins, $ties, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
 
 			echo '<tr><td class="dark" align="center">' . $number . '</td>';
 			echo '<td width="50">';
@@ -111,7 +112,7 @@ class Page extends ClubPageBase
 			}
 			echo '</td>';
 			
-			$games = $civil_wins + $mafia_wins;
+			$games = $civil_wins + $mafia_wins + $ties;
 			
 			echo '<td align="center">' . $games . '</td>';
 			if ($civil_wins > 0)
@@ -125,6 +126,14 @@ class Page extends ClubPageBase
 			if ($mafia_wins > 0)
 			{
 				echo '<td align="center">' . $mafia_wins . ' (' . number_format(($mafia_wins*100.0)/$games, 1) . '%)</td>';
+			}
+			else
+			{
+				echo '<td align="center">&nbsp;</td>';
+			}
+			if ($ties > 0)
+			{
+				echo '<td align="center">' . $ties . ' (' . number_format(($ties*100.0)/$games, 1) . '%)</td>';
 			}
 			else
 			{

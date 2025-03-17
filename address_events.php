@@ -94,7 +94,7 @@ class Page extends AddressPageBase
 
 		$query = new DbQuery(
 			'SELECT c.id, c.name, c.flags, e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, ' .
-				' (SELECT count(*) FROM games WHERE event_id = e.id AND result IN (1, 2)) as games,' .
+				' (SELECT count(*) FROM games WHERE event_id = e.id AND result > 0) as games,' .
 				' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 				' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);

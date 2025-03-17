@@ -109,7 +109,7 @@ class Page extends SeriesPageBase
 		
 		$moders = array();
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = 1, 1, 0)), SUM(IF(g.result = 2, 1, 0)), c.id, c.name, c.flags' . 
+			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = ' . GAME_RESULT_TOWN . ', 1, 0)) AS civ, SUM(IF(g.result = ' . GAME_RESULT_MAFIA . ', 1, 0)) AS maf, SUM(IF(g.result = ' . GAME_RESULT_TIE . ', 1, 0)) AS tie, c.id, c.name, c.flags' . 
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
@@ -120,7 +120,7 @@ class Page extends SeriesPageBase
 		while ($row = $query->next())
 		{
 			$moder = new stdClass();
-			list($moder->id, $moder->name, $moder->flags, $moder->red_wins, $moder->black_wins, $moder->club_id, $moder->club_name, $moder->club_flags) = $row;
+			list($moder->id, $moder->name, $moder->flags, $moder->red_wins, $moder->black_wins, $moder->ties, $moder->club_id, $moder->club_name, $moder->club_flags) = $row;
 			$moders[] = $moder;
 		}
 		
@@ -148,6 +148,7 @@ class Page extends SeriesPageBase
 		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
 		echo '<td width="60" align="center">'.get_label('Civil wins').'</td>';
 		echo '<td width="60" align="center">'.get_label('Mafia wins').'</td>';
+		echo '<td width="60" align="center">'.get_label('Ties').'</td>';
 		echo '<td width="80" align="center">'.get_label('Warnings').'</td>';
 		echo '<td width="80" align="center">'.get_label('Mod kills').'</td>';
 		echo '<td width="80" align="center">'.get_label('Mod team kills').'</td>';
@@ -170,7 +171,7 @@ class Page extends SeriesPageBase
 			$this->club_pic->show(ICONS_DIR, true, 40);
 			echo '</td>';
 			
-			$games = $moder->red_wins + $moder->black_wins;
+			$games = $moder->red_wins + $moder->black_wins + $moder->ties;
 			
 			echo '<td align="center" class="dark">' . $games . '</td>';
 			if ($moder->red_wins > 0)
@@ -184,6 +185,14 @@ class Page extends SeriesPageBase
 			if ($moder->black_wins > 0)
 			{
 				echo '<td align="center">' . $moder->black_wins . '<br><i>' . number_format(($moder->black_wins*100.0)/$games, 1) . '%</i></td>';
+			}
+			else
+			{
+				echo '<td align="center">&nbsp;</td>';
+			}
+			if ($moder->ties > 0)
+			{
+				echo '<td align="center">' . $moder->ties . '<br><i>' . number_format(($moder->ties*100.0)/$games, 1) . '%</i></td>';
 			}
 			else
 			{

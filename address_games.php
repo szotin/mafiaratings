@@ -47,11 +47,12 @@ class Page extends AddressPageBase
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		echo '<select id="results" onChange="filterChanged()">';
 		show_option(-1, $result_filter, get_label('All games'));
-		show_option(1, $result_filter, get_label('Town wins'));
-		show_option(2, $result_filter, get_label('Mafia wins'));
+		show_option(GAME_RESULT_TOWN, $result_filter, get_label('Town wins'));
+		show_option(GAME_RESULT_MAFIA, $result_filter, get_label('Mafia wins'));
+		show_option(GAME_RESULT_TIE, $result_filter, get_label('Ties'));
 		if ($this->is_manager)
 		{
-			show_option(0, $result_filter, get_label('Unfinished games'));
+			show_option(GAME_RESULT_PLAYING, $result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
 		echo '&emsp;&emsp;';
@@ -239,7 +240,7 @@ class Page extends AddressPageBase
 					echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 					break;
 				case GAME_RESULT_TIE:
-					echo '<img src="images/transp.png" width="24" title="' . get_label('tie') . '">';
+					echo '<img src="images/tie.png" title="' . get_label('tie') . '" style="opacity: 0.5;">';
 					break;
 			}
 

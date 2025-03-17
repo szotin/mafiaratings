@@ -109,12 +109,13 @@ class Page extends GeneralPageBase
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
 		echo '&emsp;&emsp;';
 		echo ' <select id="results" onChange="filterResults()" title="' . get_label('Filter games by result.') . '">';
-		show_option(-1, $this->result_filter, get_label('All games'));
-		show_option(1, $this->result_filter, get_label('Town wins'));
-		show_option(2, $this->result_filter, get_label('Mafia wins'));
-		if ($this->is_admin)
+		show_option(-1, $result_filter, get_label('All games'));
+		show_option(GAME_RESULT_TOWN, $result_filter, get_label('Town wins'));
+		show_option(GAME_RESULT_MAFIA, $result_filter, get_label('Mafia wins'));
+		show_option(GAME_RESULT_TIE, $result_filter, get_label('Ties'));
+		if ($this->is_manager)
 		{
-			show_option(0, $this->result_filter, get_label('Unfinished games'));
+			show_option(GAME_RESULT_PLAYING, $result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
 		echo '&emsp;&emsp;';
@@ -286,7 +287,7 @@ class Page extends GeneralPageBase
 					echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 					break;
 				case GAME_RESULT_TIE:
-					echo '<img src="images/transp.png" width="24" title="' . get_label('tie') . '">';
+					echo '<img src="images/tie.png" title="' . get_label('tie') . '" style="opacity: 0.5;">';
 					break;
 			}
 			echo '</td></tr>';

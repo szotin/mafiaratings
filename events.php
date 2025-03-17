@@ -142,7 +142,7 @@ class Page extends GeneralPageBase
 		$colunm_counter = 0;
 		$query = new DbQuery(
 			'SELECT e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags,' .
-			' (SELECT count(*) FROM games WHERE event_id = e.id AND result IN (1, 2) AND is_canceled = 0) as games,' .
+			' (SELECT count(*) FROM games WHERE event_id = e.id AND result > 0 AND is_canceled = 0) as games,' .
 			' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);

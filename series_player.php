@@ -563,8 +563,9 @@ class Page extends SeriesPageBase
 		show_option(0, $result_filter, get_label('All games'));
 		show_option(1, $result_filter, get_label('Town wins'));
 		show_option(2, $result_filter, get_label('Mafia wins'));
-		show_option(3, $result_filter, get_label('[0] wins', $this->user_name));
-		show_option(4, $result_filter, get_label('[0] losses', $this->user_name));
+		show_option(3, $result_filter, get_label('Ties'));
+		show_option(4, $result_filter, get_label('[0] wins', $this->user_name));
+		show_option(5, $result_filter, get_label('[0] losses', $this->user_name));
 		echo '</select> ';
 		show_roles_select($roles, 'rolesChanged()', get_label('Games where [0] was in a specific role.', $this->user_name), ROLE_NAME_FLAG_SINGLE);
 		show_checkbox_filter(array(get_label('with video'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
@@ -600,15 +601,18 @@ class Page extends SeriesPageBase
 		switch ($result_filter)
 		{
 			case 1:
-				$condition->add(' AND g.result = 1');
+				$condition->add(' AND g.result = '.GAME_RESULT_TOWN);
 				break;
 			case 2:
-				$condition->add(' AND g.result = 2');
+				$condition->add(' AND g.result = '.GAME_RESULT_MAFIA);
 				break;
 			case 3:
-				$condition->add(' AND p.won > 0');
+				$condition->add(' AND g.result = '.GAME_RESULT_TIE);
 				break;
 			case 4:
+				$condition->add(' AND p.won > 0');
+				break;
+			case 5:
 				$condition->add(' AND p.won = 0');
 				break;
 			default:

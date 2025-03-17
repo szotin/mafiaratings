@@ -110,11 +110,12 @@ class Page extends SeriesPageBase
 		echo '&emsp;&emsp;';
 		echo '<select id="results" onChange="filterResults()" title="' . get_label('Filter games by result.') . '">';
 		show_option(-1, $this->result_filter, get_label('All games'));
-		show_option(1, $this->result_filter, get_label('Town wins'));
-		show_option(2, $this->result_filter, get_label('Mafia wins'));
+		show_option(GAME_RESULT_TOWN, $this->result_filter, get_label('Town wins'));
+		show_option(GAME_RESULT_MAFIA, $this->result_filter, get_label('Mafia wins'));
+		show_option(GAME_RESULT_TIE, $this->result_filter, get_label('Ties'));
 		if ($this->is_admin)
 		{
-			show_option(0, $this->result_filter, get_label('Unfinished games'));
+			show_option(GAME_RESULT_PLAYING, $this->result_filter, get_label('Unfinished games'));
 		}
 		echo '</select>';
 		echo '&emsp;&emsp;';
@@ -273,7 +274,7 @@ class Page extends SeriesPageBase
 					echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
 					break;
 				case GAME_RESULT_TIE:
-					echo '<img src="images/transp.png" width="24" title="' . get_label('tie') . '">';
+					echo '<img src="images/tie.png" title="' . get_label('tie') . '" style="opacity: 0.5;">';
 					break;
 			}
 			echo '</td></tr>';
