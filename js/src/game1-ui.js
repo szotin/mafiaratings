@@ -245,7 +245,7 @@ function _uiRender(resetTimer)
 			}
 			else if (gamePlayersCount() > 4)
 			{
-				status = l('MissingSpeech', _uiPlayerTitle(game.time.speaker - 1));
+				status = l('MissingSpeech', _uiPlayerTitle(game.time.speaker - 1), l('he'), l('his'));
 				timerTime = 0;
 			}
 			else
@@ -1095,6 +1095,8 @@ var timer = new function()
 	
 	this.reset = function(total)
 	{
+		document.getElementById('prompt-snd').pause();
+		document.getElementById('end-snd').pause();
 		if (_start > 0)
 		{
 			$('#timerImg').attr('src', "images/resume_big.png");
@@ -1129,7 +1131,7 @@ var timer = new function()
 			// timer.start();
 	}
 	
-	this.stop = function()
+	this.stop = function(continueSound)
 	{
 		if (_start > 0)
 		{
@@ -1141,6 +1143,11 @@ var timer = new function()
 			{
 			}
 			_start = 0;
+		}
+		if (!continueSound)
+		{
+			document.getElementById('prompt-snd').pause();
+			document.getElementById('end-snd').pause();
 		}
 	}
 	
@@ -1211,7 +1218,7 @@ var timer = new function()
 				}
 				_cur = 0;
 				_set(_cur);
-				timer.stop();
+				timer.stop(true);
 			}
 			else
 			{

@@ -46,6 +46,7 @@ DROP TABLE IF EXISTS `tournament_places`;
 DROP TABLE IF EXISTS `series_places`;
 DROP TABLE IF EXISTS `series_extra_points`;
 DROP TABLE IF EXISTS `current_games`;
+DROP TABLE IF EXISTS `bug_reports`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `event_broadcasts`;
 DROP TABLE IF EXISTS `events`;

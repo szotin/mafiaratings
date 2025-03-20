@@ -81,6 +81,19 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 		{
 			game.version = version;
 		}
+		
+		if (eventId <= 0)
+		{
+			if (isSet(game.eventId) && game.eventId > 0)
+			{
+				console.log('Changed eventId from ' + game.eventId + ' to 0.');
+				game.eventId = 0;
+			}
+			if (game.version != version)
+			{
+				console.log('Version mismatch the game version is  ' + game.version + '; software version is ' + version);
+			}
+		}
 		else if (game.version != version)
 		{
 			if (errorListener)
@@ -166,8 +179,7 @@ function gamePushState()
 // Call this after each change in the game. It sets the flag that makes the game to be saved
 function gameDirty()
 {
-	console.log(JSON.stringify(game, undefined, 2));
-	
+//	console.log(JSON.stringify(game, undefined, 2));
 	let resetTimer = false;
 	_isDirty = true;
 	if (game.time == null)
@@ -402,8 +414,8 @@ function gameCompareTimes(time1, time2, roughly)
 	{
 	case 'speaking':
 		let speaksFirst = gameWhoSpeaksFirst(round1);
-		let speaker1 = (time1.speaker < speaksFirst ? 9 + time1.speaker : time1.speaker);
-		let speaker2 = (time2.speaker < speaksFirst ? 9 + time2.speaker : time2.speaker);
+		let speaker1 = (time1.speaker <= speaksFirst ? 10 + time1.speaker : time1.speaker);
+		let speaker2 = (time2.speaker <= speaksFirst ? 10 + time2.speaker : time2.speaker);
 		result = speaker1 - speaker2;
 		break;
 
@@ -1003,17 +1015,21 @@ function gameNextSpeaker()
 		let first = gameWhoSpeaksFirst();
 		let nextSpeaker = game.time.speaker - 1;
 		let p;
-		do
+		while (true)
 		{
 			if (++nextSpeaker >= 10)
 			{
 				nextSpeaker = 0;
 			}
+			if (nextSpeaker == first)
+			{
+				break;
+			}
 			if (!isSet(game.players[nextSpeaker].death))
 			{
 				return nextSpeaker;
 			}
-		} while (nextSpeaker != first);
+		}
 	}
 	return -1;
 }

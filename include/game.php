@@ -2347,8 +2347,8 @@ class Game
 		{
 		case GAMETIME_SPEAKING:
 			$speaks_first = $this->who_speaks_first($gt1->round);
-			$speaker1 = ($gt1->speaker < $speaks_first ? 10 + $gt1->speaker : $gt1->speaker);
-			$speaker2 = ($gt2->speaker < $speaks_first ? 10 + $gt2->speaker : $gt2->speaker);
+			$speaker1 = ($gt1->speaker <= $speaks_first ? 10 + $gt1->speaker : $gt1->speaker);
+			$speaker2 = ($gt2->speaker <= $speaks_first ? 10 + $gt2->speaker : $gt2->speaker);
 			$result = $speaker1 - $speaker2;
 			break;
 
