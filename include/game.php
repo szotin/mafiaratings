@@ -26,7 +26,7 @@ define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000); // 8192
 // define('GAME_FEATURE_FLAG_SPLITTING',                   0x00004000); // 16384
 define('GAME_FEATURE_FLAG_ON_RECORD',                   0x00008000); // 32768
 
-define('GAME_FEATURE_MASK_ALL',                         0x0000bfff); // 65535 - GAME_FEATURE_FLAG_SPLITTING
+define('GAME_FEATURE_MASK_ALL',                         0x0000bfff); // 49151 = 65535 - GAME_FEATURE_FLAG_SPLITTING
 define('GAME_FEATURE_MASK_MAFIARATINGS',                0x00003bff); // 15359 = ARRANGEMENT | DON_CHECKS | SHERIFF_CHECKS | DEATH | DEATH_ROUND | DEATH_TYPE | DEATH_TIME | LEGACY | SHOOTING | VOTING | NOMINATING | WARNINGS | WARNINGS_DETAILS
 
 define('GAMETIME_START', 'start'); // night
@@ -778,9 +778,9 @@ class Game
 				switch ($death_type)
 				{
 					case '';
+					case DEATH_TYPE_WARNINGS:
 						break;
 					case DEATH_TYPE_GIVE_UP:
-					case DEATH_TYPE_WARNINGS:
 					case DEATH_TYPE_KICK_OUT:
 					case DEATH_TYPE_TEAM_KICK_OUT:
 						if ($death_time != NULL)
@@ -796,7 +796,7 @@ class Game
 						}
 						else if ($this->flags & GAME_FEATURE_FLAG_DEATH_TIME)
 						{
-							if ($this->set_issue($fix, 'Death round is not set for player ' . ($i + 1) . '.', ' Kill time info for all players is removed.'))
+							if ($this->set_issue($fix, 'Death time is not set for player ' . ($i + 1) . '.', ' Kill time info for all players is removed.'))
 							{
 								$this->remove_flags(GAME_FEATURE_FLAG_DEATH_TIME);
 								return false;
