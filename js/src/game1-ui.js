@@ -1271,7 +1271,11 @@ function uiStart(eventId, tableNum, roundNum)
 	
 	document.addEventListener("keydown", _uiOnKey); 
 	
-	gameInit(eventId, tableNum, roundNum, _uiRender, _uiErrorListener, _uiConnectionListener);
+	gameInit(eventId, tableNum, roundNum, _uiRender, _uiErrorListener, _uiConnectionListener, function(data)
+	{
+		document.getElementById('prompt-snd').src = data.prompt_sound;
+		document.getElementById('end-snd').src = data.end_sound;
+	});
 }
 	
 // Call this to change a player at num. Don't use gameSetPlayer.	

@@ -69,7 +69,7 @@ function _gameCutArray(arr)
 	return arr.length;
 }
 
-function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, connectionListener)
+function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, connectionListener, onSuccess)
 {
 	_connectionListener = connectionListener;
 	_errorListener = errorListener;
@@ -129,6 +129,11 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 		
 		// Save the game every second
 		setInterval(gameSave, 1000);
+		
+		if (onSuccess)
+		{
+			onSuccess(data);
+		}
 		
 	}, 
 	function (message, data)

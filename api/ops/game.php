@@ -1979,6 +1979,39 @@ class ApiPage extends OpsApiPageBase
 			$_SESSION['demo_game'] = $data;
 		}
 		
+		list ($club_prompt_sound, $club_end_sound) = Db::record(get_label('club'), 'SELECT prompt_sound_id, end_sound_id FROM clubs WHERE id = ?', $game->clubId);
+		$prompt_sound = is_null($club_prompt_sound) ? GAME_DEFAULT_PROMPT_SOUND : $club_prompt_sound;
+		$end_sound = is_null($club_end_sound) ? GAME_DEFAULT_END_SOUND : $club_end_sound;
+		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $_profile->user_id);
+		if ($row = $query->next())
+		{
+			list($p_id, $e_id) = $row;
+			if (!is_null($p_id))
+			{
+				$prompt_sound = $p_id;
+			}
+			if (!is_null($e_id))
+			{
+				$end_sound = $e_id;
+			}
+		}
+		if ($prompt_sound == GAME_NO_SOUND)
+		{
+			$prompt_sound = '';
+		}
+		else
+		{
+			$prompt_sound = 'sounds/' . $prompt_sound . '.mp3';
+		}
+		if ($end_sound == GAME_NO_SOUND)
+		{
+			$end_sound = '';
+		}
+		else
+		{
+			$end_sound = 'sounds/' . $end_sound . '.mp3';
+		}
+		
 		$this->response['game'] = $game;
 		if ($lod > 0)
 		{
@@ -1986,6 +2019,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		$this->response['regs'] = $regs;
 		$this->response['langs'] = $langs;
+		$this->response['prompt_sound'] = $prompt_sound;
+		$this->response['end_sound'] = $end_sound;
 	}
 	
 	function get_current_op_help()

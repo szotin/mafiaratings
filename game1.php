@@ -495,9 +495,9 @@ class Page extends PageBase
 		
 		if ($this->event_id > 0)
 		{
-			list ($event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $club_prompt_sound_id, $club_end_sound_id) = 
+			list ($event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 				Db::record(get_label('event'), 
-				'SELECT e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, c.prompt_sound_id, c.end_sound_id'.
+				'SELECT e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags'.
 				' FROM events e'.
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 				' JOIN clubs c ON c.id = e.club_id'.
@@ -507,8 +507,6 @@ class Page extends PageBase
 		else
 		{
 			$event_name = get_label('Demo');
-			$club_prompt_sound_id = GAME_DEFAULT_PROMPT_SOUND;
-			$club_end_sound_id = GAME_DEFAULT_END_SOUND;
 		}
 		
 		if ($this->event_id > 0)
@@ -616,37 +614,8 @@ class Page extends PageBase
 		echo '<td align="right"><button class="game-btn" id="game-next" onclick="uiNext()" title="' . get_label('Next') . '"><img src="images/next.png" class="text"></button></td>';
 		echo '</tr></table></div>';
 		
-		$prompt_sound_id = is_null($club_prompt_sound_id) ? GAME_DEFAULT_PROMPT_SOUND : $club_prompt_sound_id;
-		$end_sound_id = is_null($club_end_sound_id) ? GAME_DEFAULT_END_SOUND : $club_end_sound_id;
-		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $_profile->user_id);
-		if ($row = $query->next())
-		{
-			list($p_id, $e_id) = $row;
-			if (!is_null($p_id))
-			{
-				$prompt_sound_id = $p_id;
-			}
-			if (!is_null($e_id))
-			{
-				$end_sound_id = $e_id;
-			}
-		}
-		if ($prompt_sound_id == GAME_NO_SOUND)
-		{
-			echo '<audio id="prompt-snd"></audio>';
-		}
-		else
-		{
-			echo '<audio id="prompt-snd" src="sounds/' . $prompt_sound_id . '.mp3" preload="auto"></audio>';
-		}
-		if ($end_sound_id == GAME_NO_SOUND)
-		{
-			echo '<audio id="end-snd"></audio>';
-		}
-		else
-		{
-			echo '<audio id="end-snd" src="sounds/' . $end_sound_id . '.mp3" preload="auto"></audio>';
-		}
+		echo '<audio id="prompt-snd"></audio>';
+		echo '<audio id="end-snd"></audio>';
 	}
 	
 	protected function show_body()
