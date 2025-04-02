@@ -1903,6 +1903,34 @@ function gameCanGoBack()
 	return log.length > 0;
 }
 
+function gameHasFeature(letter)
+{
+	return !isSet(game.features) || game.features.includes(letter);
+}
+
+function gameSetFeature(letter, on)
+{
+	if (!isSet(game.features))
+	{
+		game.features = 'agsdutclhvknwro';
+	}
+	
+	if (!on)
+	{
+		let features = game.features.replace(letter, '');
+		if (features != game.features)
+		{
+			game.features = features;
+			gameDirty();
+		}
+	}
+	else if (!game.features.includes(letter))
+	{
+		game.features += letter;
+		gameDirty();
+	}
+}
+
 function gameNext()
 {
 	if (gameCanGoNext())

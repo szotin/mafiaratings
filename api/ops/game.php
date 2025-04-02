@@ -788,8 +788,8 @@ class CommandQueue
 		else
 		{
 			Db::exec(get_label('user'),
-				'INSERT INTO game_settings (user_id, flags, prompt_sound_id, end_sound_id) VALUES (?, ?, ?, ?, ?, ?)',
-				$_profile->user_id, $rec->flags, $rec->prompt_sound, $rec->end_sound);
+				'INSERT INTO game_settings (user_id, flags, prompt_sound_id, end_sound_id, $feature_flags) VALUES (?, ?, ?, ?, ?)',
+				$_profile->user_id, $rec->flags, $rec->prompt_sound, $rec->end_sound, GAME_FEATURE_MASK_ALL);
 		}
 	}
 }
@@ -1306,6 +1306,11 @@ class ApiPage extends OpsApiPageBase
 		$feature_flags = GAME_FEATURE_MASK_ALL;
 		$game = new Game($json, $feature_flags);
 		$data = $game->data;
+		if (isset($data->features))
+		{
+			$feature_flags = Game::leters_to_feature_flags($data->features);
+		}
+		
 		if (isset($data->eventId) && $data->eventId > 0)
 		{
 			$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
@@ -1342,6 +1347,22 @@ class ApiPage extends OpsApiPageBase
 			$this->response['rebuild_ratings'] = $game->update();
 			
 			Db::exec(get_label('game'), 'DELETE FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $data->eventId, $table_num, $round_num);
+			
+			$query = new DbQuery('SELECT feature_flags FROM game_settings WHERE user_id = ?', $_profile->user_id);
+			if ($row = $query->next())
+			{
+				list ($user_feature_flags) = $row;
+				if ($user_feature_flags != $feature_flags)
+				{
+					Db::exec(get_label('game'), 'UPDATE game_settings SET feature_flags = ? WHERE user_id = ?', $feature_flags, $_profile->user_id);
+				}
+			}
+			else if ($feature_flags != GAME_FEATURE_MASK_ALL)
+			{
+				Db::exec(get_label('user'),
+					'INSERT INTO game_settings (user_id, flags, $feature_flags) VALUES (?, 0, ?)',
+					$_profile->user_id, $feature_flags);
+			}
 			Db::commit();
 			
 			if (isset($game->issues))
@@ -1358,7 +1379,7 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			// demo game
-			unset($_SESSION['demo_game']);
+			unset($_SESSION['demogame']);
 			$this->response['rebuild_ratings'] = false;
 		}
 	}
@@ -1780,7 +1801,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			unset($_SESSION['demo_game']);
+			unset($_SESSION['demogame']);
 		}
 	}
 	
@@ -1804,6 +1825,16 @@ class ApiPage extends OpsApiPageBase
 		$table = (int)get_required_param('table');
 		$round = (int)get_required_param('round');
 		$lod = (int)get_optional_param('lod', 0);
+		
+		$feature_flags = GAME_FEATURE_MASK_ALL;
+		$prompt_sound = NULL;
+		$end_sound = NULL;
+		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id, feature_flags FROM game_settings WHERE user_id = ?', $_profile->user_id);
+		if ($row = $query->next())
+		{
+			list($prompt_sound, $end_sound, $feature_flags) = $row;
+		}
+		
 		if ($event_id > 0)
 		{
 			list($club_id, $tournament_id, $rules, $misc, $languages) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, rules, misc, languages FROM events WHERE id = ?', $event_id);
@@ -1874,7 +1905,7 @@ class ApiPage extends OpsApiPageBase
 				$game->round = $round + 1;
 				$game->language = $langs[0]->code;
 				$game->rules = $rules;
-				$game->features = Game::feature_flags_to_leters(GAME_FEATURE_MASK_ALL);
+				$game->features = Game::feature_flags_to_leters($feature_flags);
 				if (!is_null($tournament_id))
 				{
 					$game->tournamentId = (int)$tournament_id;
@@ -1913,9 +1944,9 @@ class ApiPage extends OpsApiPageBase
 			
 			$regs = get_event_reg_array($event_id);
 		}
-		else if (isset($_SESSION['demo_game']))
+		else if (isset($_SESSION['demogame']))
 		{
-			$data = $_SESSION['demo_game'];
+			$data = $_SESSION['demogame'];
 			$game = $data->game;
 			$regs = $data->regs;
 			$langs = $data->langs;
@@ -1956,7 +1987,7 @@ class ApiPage extends OpsApiPageBase
 			$game->round = 0;
 			$game->language = get_lang_code($_lang);
 			$game->rules = default_rules_code();
-			$game->features = Game::feature_flags_to_leters(GAME_FEATURE_MASK_ALL);
+			$game->features = Game::feature_flags_to_leters($feature_flags);
 			$game->moderator = new stdClass();
 			$game->moderator->id = 0;
 			
@@ -1976,40 +2007,20 @@ class ApiPage extends OpsApiPageBase
 			$data->regs = $regs;
 			$data->langs = $langs;
 			$data->log = $log;
-			$_SESSION['demo_game'] = $data;
+			$_SESSION['demogame'] = $data;
 		}
 		
-		list ($club_prompt_sound, $club_end_sound) = Db::record(get_label('club'), 'SELECT prompt_sound_id, end_sound_id FROM clubs WHERE id = ?', $game->clubId);
-		$prompt_sound = is_null($club_prompt_sound) ? GAME_DEFAULT_PROMPT_SOUND : $club_prompt_sound;
-		$end_sound = is_null($club_end_sound) ? GAME_DEFAULT_END_SOUND : $club_end_sound;
-		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $_profile->user_id);
-		if ($row = $query->next())
+		if (is_null($prompt_sound) || is_null($end_sound))
 		{
-			list($p_id, $e_id) = $row;
-			if (!is_null($p_id))
+			list ($club_prompt_sound, $club_end_sound) = Db::record(get_label('club'), 'SELECT prompt_sound_id, end_sound_id FROM clubs WHERE id = ?', $game->clubId);
+			if (is_null($prompt_sound))
 			{
-				$prompt_sound = $p_id;
+				$prompt_sound = is_null($club_prompt_sound) ? GAME_DEFAULT_PROMPT_SOUND : $club_prompt_sound;
 			}
-			if (!is_null($e_id))
+			if (is_null($end_sound))
 			{
-				$end_sound = $e_id;
+				$end_sound = is_null($club_end_sound) ? GAME_DEFAULT_END_SOUND : $club_end_sound;
 			}
-		}
-		if ($prompt_sound == GAME_NO_SOUND)
-		{
-			$prompt_sound = '';
-		}
-		else
-		{
-			$prompt_sound = 'sounds/' . $prompt_sound . '.mp3';
-		}
-		if ($end_sound == GAME_NO_SOUND)
-		{
-			$end_sound = '';
-		}
-		else
-		{
-			$end_sound = 'sounds/' . $end_sound . '.mp3';
 		}
 		
 		$this->response['game'] = $game;
@@ -2152,15 +2163,15 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			// Demo game
-			if (!isset($_SESSION['demo_game']))
+			if (!isset($_SESSION['demogame']))
 			{
 				throw new Exc(get_label('Unknown [0]', get_label('event')));
 			}
 			
-			$data = $_SESSION['demo_game'];
+			$data = $_SESSION['demogame'];
 			$data->game = json_decode($game);
 			$this->update_game_log($data->log, $log_tail, $log_tail_index);
-			$_SESSION['demo_game'] = $data;
+			$_SESSION['demogame'] = $data;
 		}
 	}
 	

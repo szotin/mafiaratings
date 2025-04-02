@@ -9,22 +9,22 @@ require_once __DIR__ . '/game_players_stats.php';
 // GAME_CURRENT_VERSION must exactly match to the value of version var in js/game1.js
 define('GAME_CURRENT_VERSION', '1.0'); // Major version means that the format of the game has been changed. Minor version means that the game client has been changed and need to be updated.
 
-define('GAME_FEATURE_FLAG_ARRANGEMENT',                 0x00000001); // 1
-define('GAME_FEATURE_FLAG_DON_CHECKS',                  0x00000002); // 2
-define('GAME_FEATURE_FLAG_SHERIFF_CHECKS',              0x00000004); // 4
-define('GAME_FEATURE_FLAG_DEATH',                       0x00000008); // 8
-define('GAME_FEATURE_FLAG_DEATH_ROUND',                 0x00000010); // 16
-define('GAME_FEATURE_FLAG_DEATH_TYPE',                  0x00000020); // 32
-define('GAME_FEATURE_FLAG_DEATH_TIME',                  0x00000040); // 64
-define('GAME_FEATURE_FLAG_LEGACY',                      0x00000080); // 128
-define('GAME_FEATURE_FLAG_SHOOTING',                    0x00000100); // 256
-define('GAME_FEATURE_FLAG_VOTING',                      0x00000200); // 512
-define('GAME_FEATURE_FLAG_VOTING_KILL_ALL',             0x00000400); // 1024
-define('GAME_FEATURE_FLAG_NOMINATING',                  0x00000800); // 2048
-define('GAME_FEATURE_FLAG_WARNINGS',                    0x00001000); // 4096
-define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000); // 8192
-// define('GAME_FEATURE_FLAG_SPLITTING',                   0x00004000); // 16384
-define('GAME_FEATURE_FLAG_ON_RECORD',                   0x00008000); // 32768
+define('GAME_FEATURE_FLAG_ARRANGEMENT',                 0x00000001); // 'a' - 1 
+define('GAME_FEATURE_FLAG_DON_CHECKS',                  0x00000002); // 'g' - 2
+define('GAME_FEATURE_FLAG_SHERIFF_CHECKS',              0x00000004); // 's' - 4
+define('GAME_FEATURE_FLAG_DEATH',                       0x00000008); // 'd' - 8
+define('GAME_FEATURE_FLAG_DEATH_ROUND',                 0x00000010); // 'u' - 16
+define('GAME_FEATURE_FLAG_DEATH_TYPE',                  0x00000020); // 't' - 32
+define('GAME_FEATURE_FLAG_DEATH_TIME',                  0x00000040); // 'c' - 64
+define('GAME_FEATURE_FLAG_LEGACY',                      0x00000080); // 'l' - 128
+define('GAME_FEATURE_FLAG_SHOOTING',                    0x00000100); // 'h' - 256
+define('GAME_FEATURE_FLAG_VOTING',                      0x00000200); // 'v' - 512
+define('GAME_FEATURE_FLAG_VOTING_KILL_ALL',             0x00000400); // 'k' - 1024
+define('GAME_FEATURE_FLAG_NOMINATING',                  0x00000800); // 'n' - 2048
+define('GAME_FEATURE_FLAG_WARNINGS',                    0x00001000); // 'w' - 4096
+define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000); // 'r' - 8192
+// define('GAME_FEATURE_FLAG_SPLITTING',                   0x00004000); // 'p' - 16384
+define('GAME_FEATURE_FLAG_ON_RECORD',                   0x00008000); // 'o' - 32768
 
 define('GAME_FEATURE_MASK_ALL',                         0x0000bfff); // 49151 = 65535 - GAME_FEATURE_FLAG_SPLITTING
 define('GAME_FEATURE_MASK_MAFIARATINGS',                0x00003bff); // 15359 = ARRANGEMENT | DON_CHECKS | SHERIFF_CHECKS | DEATH | DEATH_ROUND | DEATH_TYPE | DEATH_TIME | LEGACY | SHOOTING | VOTING | NOMINATING | WARNINGS | WARNINGS_DETAILS
@@ -375,7 +375,7 @@ class Game
 					}
 				}
 			}
-			$this->expected_flags = $this->flags = $feature_flags;
+			$this->flags = $feature_flags;
 		}
 		catch (Exception $e)
 		{
@@ -426,99 +426,6 @@ class Game
 			$this->issues = array($issue);
 		}
 		return $fix;
-	}
-	
-	function init_flags()
-	{
-		$this->flags = $this->expected_flags;
-		for ($i = 0; $i < 10; ++$i)
-		{
-			$player = $this->data->players[$i];
-			if (isset($player->arranged))
-			{
-				$this->flags |= GAME_FEATURE_FLAG_ARRANGEMENT;
-			}
-			if (isset($player->don))
-			{
-				$this->flags |= GAME_FEATURE_FLAG_DON_CHECKS;
-			}
-			if (isset($player->sheriff))
-			{
-				$this->flags |= GAME_FEATURE_FLAG_SHERIFF_CHECKS;
-			}
-			if (isset($player->death))
-			{
-				if (is_bool($player->death))
-				{
-					$this->flags |= GAME_FEATURE_FLAG_DEATH;
-				}
-				if (is_string($player->death))
-				{
-					$this->flags |= GAME_FEATURE_FLAG_DEATH | GAME_FEATURE_FLAG_DEATH_TYPE;
-				}
-				else if (is_numeric($player->death))
-				{
-					$this->flags |= GAME_FEATURE_FLAG_DEATH | GAME_FEATURE_FLAG_DEATH_ROUND;
-				}
-				else if (is_object($player->death))
-				{
-					$this->flags |= GAME_FEATURE_FLAG_DEATH;
-					if (isset($player->death->round))
-					{
-						$this->flags |= GAME_FEATURE_FLAG_DEATH_ROUND;
-					}
-					if (isset($player->death->type))
-					{
-						$this->flags |= GAME_FEATURE_FLAG_DEATH_TYPE;
-					}
-					if (isset($player->death->time))
-					{
-						$this->flags |= GAME_FEATURE_FLAG_DEATH_TIME;
-					}
-				}
-			}
-			
-			if (isset($player->legacy))
-			{
-				$this->flags |= GAME_FEATURE_FLAG_LEGACY;
-			}
-			
-			if (isset($player->shooting))
-			{
-				$this->flags |= GAME_FEATURE_FLAG_SHOOTING;
-			}
-			if (isset($player->voting))
-			{
-				$this->flags |= GAME_FEATURE_FLAG_VOTING;
-				if (is_array($player->voting) && count($player->voting) > 0 && is_bool(end($player->voting)))
-				{
-					$this->flags |= GAME_FEATURE_FLAG_VOTING_KILL_ALL;
-				}
-			}
-			if (isset($player->nominating))
-			{
-				$this->flags |= GAME_FEATURE_FLAG_NOMINATING;
-			}
-			if (isset($player->warnings))
-			{
-				$this->flags |= GAME_FEATURE_FLAG_WARNINGS;
-				if (is_array($player->warnings))
-				{
-					$this->flags |= GAME_FEATURE_FLAG_WARNINGS_DETAILS;
-				}
-			}
-			if (isset($player->record))
-			{
-				$this->flags |= GAME_FEATURE_FLAG_ON_RECORD;
-			}
-		}
-
-		// if (isset($this->data->splitting))
-		// {
-			// $this->flags |= GAME_FEATURE_FLAG_SPLITTING;
-		// }
-		
-		$this->data->features = Game::feature_flags_to_leters($this->flags);
 	}
 	
 	function check_game_result($fix = false)
@@ -1510,7 +1417,7 @@ class Game
 		{
 			unset($this->issues);
 		}
-		$this->init_flags();
+		$this->cleanup_features();
 		
 		// Maximum 10 attempts to fix
 		$done = false;
@@ -2383,156 +2290,85 @@ class Game
 		return $result;
 	}
 	
-	function remove_flags($flags)
+	function cleanup_features()
 	{
-		$flags &= $this->flags;
-		if ($flags == 0)
+		if ($this->flags == GAME_FEATURE_MASK_ALL)
 		{
 			return;
 		}
-		
+
 		$reinit_votings = false;
-		do
+		$all_flags = GAME_FEATURE_MASK_ALL;
+		while ($all_flags != 0)
 		{
-			$next_flags = ($flags - 1) & $flags;
-			$flag = ($flags - $next_flags) & $this->flags;
+			$new_flags = $all_flags & ($all_flags - 1);
+			$flag = $all_flags - $new_flags;
+			$all_flags = $new_flags;
+			if ($this->flags & $flag)
+			{
+				continue;
+			}
 			switch ($flag)
 			{
-				case 0:
-					break;
-				case GAME_FEATURE_FLAG_ARRANGEMENT:
-					foreach ($this->data->players as $player)
+			case GAME_FEATURE_FLAG_ARRANGEMENT:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->arranged))
 					{
-						if (isset($player->arranged))
-						{
-							unset($player->arranged);
-						}
+						unset($player->arranged);
 					}
-					break;
-				case GAME_FEATURE_FLAG_DON_CHECKS:
-					foreach ($this->data->players as $player)
+				}
+				break;
+			case GAME_FEATURE_FLAG_DON_CHECKS:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->don))
 					{
-						if (isset($player->don))
-						{
-							unset($player->don);
-						}
+						unset($player->don);
 					}
-					break;
-				case GAME_FEATURE_FLAG_SHERIFF_CHECKS:
-					foreach ($this->data->players as $player)
+				}
+				break;
+			case GAME_FEATURE_FLAG_SHERIFF_CHECKS:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->sheriff))
 					{
-						if (isset($player->sheriff))
-						{
-							unset($player->sheriff);
-						}
+						unset($player->sheriff);
 					}
-					break;
-				case GAME_FEATURE_FLAG_DEATH:
-					foreach ($this->data->players as $player)
+				}
+				break;
+			case GAME_FEATURE_FLAG_DEATH:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->death))
 					{
-						if (isset($player->death))
-						{
-							unset($player->death);
-						}
+						unset($player->death);
 					}
-					$flag &= ~(GAME_FEATURE_FLAG_DEATH_TYPE | GAME_FEATURE_FLAG_DEATH_ROUND | GAME_FEATURE_FLAG_DEATH_TIME);
-					$reinit_votings = true;
-					break;
-				case GAME_FEATURE_FLAG_DEATH_ROUND:
-					foreach ($this->data->players as $player)
+				}
+				$flag &= ~(GAME_FEATURE_FLAG_DEATH_TYPE | GAME_FEATURE_FLAG_DEATH_ROUND | GAME_FEATURE_FLAG_DEATH_TIME);
+				$reinit_votings = true;
+				break;
+			case GAME_FEATURE_FLAG_DEATH_ROUND:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->death))
 					{
-						if (isset($player->death))
+						if (is_numeric($player->death))
 						{
-							if (is_numeric($player->death))
+							$player->death = true;
+						}
+						else if (is_object($player->death))
+						{
+							if ($this->flags & GAME_FEATURE_FLAG_DEATH_TIME)
 							{
-								$player->death = true;
-							}
-							else if (is_object($player->death))
-							{
-								if ($this->flags & GAME_FEATURE_FLAG_DEATH_TIME)
+								if (isset($player->death->round))
 								{
-									if (isset($player->death->round))
-									{
-										unset($player->death->round);
-									}
-								}
-								else if (($this->flags & GAME_FEATURE_FLAG_DEATH_TYPE) != 0 && isset($player->death->type) && is_string($player->death->type))
-								{
-									$player->death = $player->death->type;
-								}
-								else
-								{
-									$player->death = true;
+									unset($player->death->round);
 								}
 							}
-						}
-					}
-					$reinit_votings = true;
-					break;
-				case GAME_FEATURE_FLAG_DEATH_TYPE:
-					foreach ($this->data->players as $player)
-					{
-						if (isset($player->death))
-						{
-							if (is_string($player->death))
+							else if (($this->flags & GAME_FEATURE_FLAG_DEATH_TYPE) != 0 && isset($player->death->type) && is_string($player->death->type))
 							{
-								$player->death = true;
-							}
-							else if (is_object($player->death))
-							{
-								if ($this->flags & GAME_FEATURE_FLAG_DEATH_TIME)
-								{
-									if (isset($player->death->type))
-									{
-										unset($player->death->type);
-									}
-								}
-								else if (($this->flags & GAME_FEATURE_FLAG_DEATH_ROUND) != 0 && isset($player->death->round) && is_numeric($player->death->round))
-								{
-									$player->death = $player->death->round;
-								}
-								else
-								{
-									$player->death = true;
-								}
-							}
-						}
-					}
-					$reinit_votings = true;
-					break;
-				case GAME_FEATURE_FLAG_DEATH_TIME:
-					foreach ($this->data->players as $player)
-					{
-						if (isset($player->death) && is_object($player->death))
-						{
-							if ($this->flags & GAME_FEATURE_FLAG_DEATH_ROUND)
-							{
-								if ($this->flags & GAME_FEATURE_FLAG_DEATH_TYPE)
-								{
-									if (isset($player->death->time))
-									{
-										unset($player->death->time);
-									}
-								}
-								else if (isset($player->death->round) && is_numeric($player->death->round))
-								{
-									$player->death = $player->death->round;
-								}
-								else
-								{
-									$player->death = true;
-								}
-							}
-							else if ($this->flags & GAME_FEATURE_FLAG_DEATH_TYPE)
-							{
-								if (isset($player->death->type) && is_string($player->death->type))
-								{
-									$player->death = $player->death->type;
-								}
-								else
-								{
-									$player->death = true;
-								}
+								$player->death = $player->death->type;
 							}
 							else
 							{
@@ -2540,107 +2376,184 @@ class Game
 							}
 						}
 					}
-					break;
-				case GAME_FEATURE_FLAG_LEGACY:
-					foreach ($this->data->players as $player)
+				}
+				$reinit_votings = true;
+				break;
+			case GAME_FEATURE_FLAG_DEATH_TYPE:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->death))
 					{
-						if (isset($player->legacy))
+						if (is_string($player->death))
 						{
-							unset($player->legacy);
+							$player->death = true;
 						}
-					}
-					break;
-				case GAME_FEATURE_FLAG_SHOOTING:
-					foreach ($this->data->players as $player)
-					{
-						if (isset($player->shooting))
+						else if (is_object($player->death))
 						{
-							unset($player->shooting);
-						}
-					}
-					break;
-				case GAME_FEATURE_FLAG_VOTING:
-					foreach ($this->data->players as $player)
-					{
-						if (isset($player->voting))
-						{
-							unset($player->voting);
-						}
-					}
-					$flag |= GAME_FEATURE_FLAG_VOTING_KILL_ALL;
-					$reinit_votings = true;
-					break;
-				case GAME_FEATURE_FLAG_VOTING_KILL_ALL:
-					foreach ($this->data->players as $player)
-					{
-						if (isset($player->voting))
-						{
-							foreach ($player->voting as $vote)
+							if ($this->flags & GAME_FEATURE_FLAG_DEATH_TIME)
 							{
-								if (is_array($vote) && count($vote) > 0 && is_bool($vote[count($vote) - 1]))
+								if (isset($player->death->type))
 								{
-									array_pop($vote);
+									unset($player->death->type);
 								}
+							}
+							else if (($this->flags & GAME_FEATURE_FLAG_DEATH_ROUND) != 0 && isset($player->death->round) && is_numeric($player->death->round))
+							{
+								$player->death = $player->death->round;
+							}
+							else
+							{
+								$player->death = true;
 							}
 						}
 					}
-					$reinit_votings = true;
-					break;
-				case GAME_FEATURE_FLAG_NOMINATING:
-					foreach ($this->data->players as $player)
+				}
+				$reinit_votings = true;
+				break;
+			case GAME_FEATURE_FLAG_DEATH_TIME:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->death) && is_object($player->death))
 					{
-						if (isset($player->nominating))
+						if ($this->flags & GAME_FEATURE_FLAG_DEATH_ROUND)
 						{
-							unset($player->nominating);
+							if ($this->flags & GAME_FEATURE_FLAG_DEATH_TYPE)
+							{
+								if (isset($player->death->time))
+								{
+									unset($player->death->time);
+								}
+							}
+							else if (isset($player->death->round) && is_numeric($player->death->round))
+							{
+								$player->death = $player->death->round;
+							}
+							else
+							{
+								$player->death = true;
+							}
+						}
+						else if ($this->flags & GAME_FEATURE_FLAG_DEATH_TYPE)
+						{
+							if (isset($player->death->type) && is_string($player->death->type))
+							{
+								$player->death = $player->death->type;
+							}
+							else
+							{
+								$player->death = true;
+							}
+						}
+						else
+						{
+							$player->death = true;
 						}
 					}
-					$reinit_votings = true;
-					break;
-				case GAME_FEATURE_FLAG_WARNINGS:
-					foreach ($this->data->players as $player)
+				}
+				break;
+			case GAME_FEATURE_FLAG_LEGACY:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->legacy))
 					{
-						if (isset($player->warnings))
+						unset($player->legacy);
+					}
+				}
+				break;
+			case GAME_FEATURE_FLAG_SHOOTING:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->shooting))
+					{
+						unset($player->shooting);
+					}
+				}
+				break;
+			case GAME_FEATURE_FLAG_VOTING:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->voting))
+					{
+						unset($player->voting);
+					}
+				}
+				$flag |= GAME_FEATURE_FLAG_VOTING_KILL_ALL;
+				$reinit_votings = true;
+				break;
+			case GAME_FEATURE_FLAG_VOTING_KILL_ALL:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->voting))
+					{
+						foreach ($player->voting as $vote)
 						{
-							unset($player->warnings);
+							if (is_array($vote) && count($vote) > 0 && is_bool($vote[count($vote) - 1]))
+							{
+								array_pop($vote);
+							}
 						}
 					}
-					$flag &= ~GAME_FEATURE_FLAG_WARNINGS_DETAILS;
-					break;
-				case GAME_FEATURE_FLAG_WARNINGS_DETAILS:
-					foreach ($this->data->players as $player)
+				}
+				$reinit_votings = true;
+				break;
+			case GAME_FEATURE_FLAG_NOMINATING:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->nominating))
 					{
-						if (isset($player->warnings))
-						{
-							$player->warnings = count($player->warnings);
-						}
+						unset($player->nominating);
 					}
-					break;
-				// case GAME_FEATURE_FLAG_SPLITTING:
-					// if (isset($this->data->splitting))
-					// {
-						// unset($this->data->splitting);
-					// }
-					// break;
-				case GAME_FEATURE_FLAG_ON_RECORD:
-					foreach ($this->data->players as $player)
+				}
+				$reinit_votings = true;
+				break;
+			case GAME_FEATURE_FLAG_WARNINGS:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->warnings))
 					{
-						if (isset($player->record))
-						{
-							unset($player->record);
-						}
+						unset($player->warnings);
 					}
-					break;
+				}
+				$flag &= ~GAME_FEATURE_FLAG_WARNINGS_DETAILS;
+				break;
+			case GAME_FEATURE_FLAG_WARNINGS_DETAILS:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->warnings))
+					{
+						$player->warnings = count($player->warnings);
+					}
+				}
+				break;
+			// case GAME_FEATURE_FLAG_SPLITTING:
+				// if (isset($this->data->splitting))
+				// {
+					// unset($this->data->splitting);
+				// }
+				// break;
+			case GAME_FEATURE_FLAG_ON_RECORD:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->record))
+					{
+						unset($player->record);
+					}
+				}
+				break;
 			}
-			$this->flags &= ~$flag;
-			$flags = $next_flags;
 		}
-		while ($flags != 0);
 		
 		if (isset($this->votings) && $reinit_votings)
 		{
 			$this->init_votings(true);
 		}
+	}
+	
+	function remove_flags($flags)
+	{
+		$this->flags &= ~$flags;
 		$this->data->features = Game::feature_flags_to_leters($this->flags);
+		$this->cleanup_features();
 	}
 	
 	static function feature_flags_to_leters($flags)
@@ -3291,7 +3204,7 @@ class Game
 		$this->check(false);
 		$data = $this->data;
 		$json = $this->to_json();
-		$feature_flags = Game::leters_to_feature_flags($data->features);
+		$old_feature_flags = $this->flags;
 		$is_data_rating = !isset($data->rating) || $data->rating;
 		
 		if (!isset($data->id))
@@ -3331,16 +3244,14 @@ class Game
 		{
 			$this->check(true);
 			$new_json = $this->to_json();
-			$new_feature_flags = Game::leters_to_feature_flags($data->features);
 			$issues = '<ul>';
 			foreach ($this->issues as $issue)
 			{
 				$issues .= '<li>' . $issue . '</li>';
 			}
 			$issues .= '</ul>';
-			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $data->id, $json, $issues, $feature_flags, $new_feature_flags);
+			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $data->id, $json, $issues, $old_feature_flags, $this->flags);
 			$json = $new_json;
-			$feature_flags = $new_feature_flags;
 			
 			$query = new DbQuery('SELECT id, email FROM users WHERE id = ' . MAIN_ADMIN_ID);
 			while ($row = $query->next())
@@ -3378,7 +3289,7 @@ class Game
 			Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $data->id);
 			Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $data->id);
 			Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $data->id);
-			Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $data->id, $feature_flags);
+			Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $data->id, $this->flags);
 		}
 		
 		// Save game json and feature flags
@@ -3406,7 +3317,7 @@ class Game
 			'UPDATE games SET json = ?, feature_flags = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
 				'rules = ?, is_rating = ?, is_fiim_exported = 0 WHERE id = ?',
-			$json, $feature_flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
+			$json, $this->flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
 			$language, $data->startTime, $data->endTime, $game_result,
 			$data->rules, $is_data_rating, $data->id);
 		

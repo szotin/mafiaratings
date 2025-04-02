@@ -1,5 +1,14 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["Accurate"] = "Please specify how accurate you are while entering data. Uncheck everything that you skip:";
+_l["feature_a"] = "static arrangements";
+_l["feature_g"] = "don checks";
+_l["feature_s"] = "sheriff checks";
+_l["feature_l"] = "legacy of the first killed player";
+_l["feature_v"] = "how players vote";
+_l["feature_k"] = "who votes for killing all";
+_l["feature_n"] = "nominations";
+_l["feature_o"] = "what is left on record";
 _l["Tie"] = "Tie!";
 _l["AllNoReg"] = "None of the players is registered with mafiaratings. It does not make sense to save this kind of game. Are you sure you want to save it?";
 _l["HasNoReg"] = "Some of the players in this game are not registered with mafiaratings. Are you sure this is a rating game?";

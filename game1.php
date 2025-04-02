@@ -78,7 +78,7 @@ class Page extends PageBase
 			$data->log = json_decode($log);
 			$data->regs = get_event_reg_array($event_id);
 			$data->langs = $langs;
-			$_SESSION['demo_game'] = $data;
+			$_SESSION['demogame'] = $data;
 			
 			$this->table = $table;
 			$this->round = $round;

@@ -720,11 +720,11 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			// demo game
-			if (!isset($_SESSION['demo_game']))
+			if (!isset($_SESSION['demogame']))
 			{
 				throw new Exc(get_label('Unknown [0]', get_label('event')));
 			}
-			$data = $_SESSION['demo_game'];
+			$data = $_SESSION['demogame'];
 			
 			$not_exists = true;
 			$no_city = true;
@@ -810,11 +810,11 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			// demo game
-			if (!isset($_SESSION['demo_game']))
+			if (!isset($_SESSION['demogame']))
 			{
 				throw new Exc(get_label('Unknown [0]', get_label('event')));
 			}
-			$data = $_SESSION['demo_game'];
+			$data = $_SESSION['demogame'];
 			
 			$user_id = 0;
 			foreach ($data->regs as $r)

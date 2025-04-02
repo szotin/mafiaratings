@@ -1,4 +1,5 @@
 var _renderCallback = null;
+var _cofigurableFeatures = "agslvkno";
 
 //-----------------------------------------------------------
 // Private API. Don't use it outside of this file.
@@ -627,7 +628,7 @@ function _uiRender(resetTimer)
 						leg += dlm + player.legacy[j];
 						dlm = ', ';
 					}
-					html += '<td width="60">' + l('legacy', leg) + '</td>';
+					html += '<td width="70">' + l('legacy', leg) + '</td>';
 				}
 				html += '<td align="right">';
 				
@@ -1354,6 +1355,13 @@ function uiConfig(txt, onClose)
 		}
 		html += '> ' + l('Rating') + '</td></tr>';
 
+		html += '<tr><td colspan="2"><p>' + l('Accurate') + '</p>';
+		for (const letter of _cofigurableFeatures)
+		{
+			html += '<input type="checkbox" id="dlg-f-' + letter + '"' + (gameHasFeature(letter) ? ' checked' : '') + '> ' + l('feature_' + letter) + '<br>';
+		}
+		html += '</td></tr>';
+
 		html += '</table>';
 		return html;
 	}
@@ -1374,10 +1382,14 @@ function uiConfig(txt, onClose)
 			gameSetLang($('#dlg-lang').val());
 		}
 		gameSetPlayer(10, $('#referee').val());
+		for (const letter of _cofigurableFeatures)
+		{
+			gameSetFeature(letter, $('#dlg-f-' + letter).attr('checked'));
+		}
 		if (!isSet(game.moderator) || !isSet(game.moderator.id) || game.moderator.id == 0)
 		{
 			dlg.error(l('EnterModer'), undefined, undefined, function() { uiConfig(txt, onClose); });
-		}			
+		}
 		else if (onClose)
 		{
 			onClose();
