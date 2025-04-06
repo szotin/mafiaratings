@@ -2030,8 +2030,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		$this->response['regs'] = $regs;
 		$this->response['langs'] = $langs;
-		$this->response['prompt_sound'] = $prompt_sound;
-		$this->response['end_sound'] = $end_sound;
+		$this->response['prompt_sound'] = 'sounds/' . $prompt_sound . '.mp3';
+		$this->response['end_sound'] = 'sounds/' . $end_sound . '.mp3';
 	}
 	
 	function get_current_op_help()
