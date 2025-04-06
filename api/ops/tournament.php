@@ -1170,13 +1170,13 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// add_score
+	// set_score
 	//-------------------------------------------------------------------------------------------------------
-	function add_score_op()
+	function set_score_op()
 	{
 		$tournament_id = (int)get_required_param('tournament_id');
 		$user_id = (int)get_required_param('user_id');
-		$main_points = (double)get_optional_param('main_points', 0);
+		$points = (double)get_optional_param('points', 0);
 		$bonus_points = get_optional_param('bonus_points', NULL);
 		$shot_points = get_optional_param('shot_points', NULL);
 		$games_count = get_optional_param('games_count', NULL);
@@ -1185,10 +1185,10 @@ class ApiPage extends OpsApiPageBase
 			$games_count = NULL;
 		}
 		
-		$points = 
-			$main_points + 
-			(is_null($bonus_points) ? 0 : $bonus_points) +
-			(is_null($shot_points) ? 0 : $shot_points);
+		$bp = is_null($bonus_points) ? 0 : $bonus_points;
+		$sp = is_null($shot_points) ? 0 : $shot_points;
+		
+		$main_points = $points - $bp - $sp;
 		
 		list($club_id, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, flags FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
@@ -1199,8 +1199,17 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
+		list ($records_count) = Db::record(get_label('score'), 'SELECT COUNT(*) FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
+		if ($records_count > 0)
+		{
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+			list($place) = Db::record(get_label('score'), 'SELECT place FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
+			Db::exec(get_label('score'), 'DELETE FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
+			Db::exec(get_label('score'), 'UPDATE tournament_places SET place = place - 1 WHERE tournament_id = ? AND place > ?', $tournament_id, $place);
+		}
+		
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
-		list($place) = Db::record(get_label('score'), 'SELECT count(*) FROM tournament_places WHERE tournament_id = ? AND (main_points + bonus_points + shot_points - ? > 0.001 OR (main_points + bonus_points + shot_points - ? > -0.001 AND (bonus_points - ? > 0.001 OR (bonus_points - ? > -0.001 AND user_id < ?))))', $tournament_id, $points, $points, $bonus_points, $bonus_points, $user_id);
+		list($place) = Db::record(get_label('score'), 'SELECT count(*) FROM tournament_places WHERE tournament_id = ? AND (main_points + IFNULL(bonus_points,0) + IFNULL(shot_points,0) - ? > 0.0001 OR (main_points + IFNULL(bonus_points,0) + IFNULL(shot_points,0) - ? > -0.001 AND (IFNULL(bonus_points,0) - ? > 0.0001 OR (IFNULL(bonus_points,0) - ? > -0.001 AND user_id < ?))))', $tournament_id, $points, $points, $bp, $bp, $user_id);
 		++$place;
 		Db::exec(get_label('score'), 'UPDATE tournament_places SET place = place + 1 WHERE tournament_id = ? AND place >= ?', $tournament_id, $place);
 		Db::exec(get_label('score'), 'INSERT INTO tournament_places (tournament_id, user_id, place, main_points, bonus_points, shot_points, games_count) VALUES (?, ?, ?, ?, ?, ?, ?)', $tournament_id, $user_id, $place, $main_points, $bonus_points, $shot_points, $games_count);
@@ -1212,17 +1221,17 @@ class ApiPage extends OpsApiPageBase
 		$log_details->bonus_points = $bonus_points;
 		$log_details->shot_points = $shot_points;
 		$log_details->games_count = $games_count;
-		db_log(LOG_OBJECT_USER, 'added score', $log_details, $user_id);
+		db_log(LOG_OBJECT_USER, 'set score', $log_details, $user_id);
 		Db::commit();
 	}
 	
-	function add_score_op_help()
+	function set_score_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Manually add player score for a tournament. Tournament must have no games. This is only for the tournaments where game inforation is missing.');
 		
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->request_param('user_id', 'User id of a player who played on this tournament.');
-		$help->request_param('main_points', 'Main poinst for the player.', '0.');
+		$help->request_param('points', 'Total points of the player. Bonus and shot points are included', '0.');
 		$help->request_param('bonus_points', 'Bonus (extra) poinst for the player.', 'null, which is unknown.');
 		$help->request_param('shot_points', 'Poinst for being shot first night for the player.', 'null, which is unknown');
 		$help->request_param('games_count', 'Number of games played.', 'null, which is unknown');

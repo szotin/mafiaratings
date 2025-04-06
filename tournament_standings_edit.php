@@ -29,8 +29,8 @@ class Page extends TournamentPageBase
 		
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center">';
-		echo '<td width="40">';
-		echo '<button class="icon" onclick="addScore()" title="' . get_label('Create [0]', get_label('score')) . '"><img src="images/create.png" border="0"></button>';
+		echo '<td width="80">';
+		echo '<button class="icon" onclick="setScore()" title="' . get_label('Create [0]', get_label('score')) . '"><img src="images/create.png" border="0"></button>';
 		echo '</td>';
 		echo '<td width="40"></td>';
 		echo '<td colspan="3" align="left">'.get_label('Player').'</td>';
@@ -65,6 +65,7 @@ class Page extends TournamentPageBase
 			echo '<tr>';
 			echo '<td align="center">';
 			echo '<button class="icon" onclick="removeScore(' . $user_id . ')" title="' . get_label('Remove [0]', get_label('score')) . '"><img src="images/delete.png" border="0"></button>';
+			echo '<button class="icon" onclick="setScore(' . $user_id . ')" title="' . get_label('Edit [0]', get_label('score')) . '"><img src="images/edit.png" border="0"></button>';
 			echo '</td>';
 			
 			echo '<td align="center" class="dark">' . $place . '</td>';
@@ -129,11 +130,22 @@ class Page extends TournamentPageBase
 		}
 ?>
 
-		function addScore()
+		function setScore(userId)
 		{
 			prompt(function()
 			{
-				dlg.form("form/tournament_score_add.php?tournament_id=" + <?php echo $this->id; ?>, refr, 600, refr);
+				let url = "form/tournament_score_set.php?tournament_id=" + <?php echo $this->id; ?>;
+				if (userId)
+					url += "&user_id=" + userId;
+				dlg.form(url, refr, 400, refr);
+			});
+		}
+		
+		function editScore(userId)
+		{
+			prompt(function()
+			{
+				dlg.form("form/tournament_score_set.php?user_id=" + userId + "&tournament_id=" + <?php echo $this->id; ?>, refr, 600, refr);
 			});
 		}
 		
