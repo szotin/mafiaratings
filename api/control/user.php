@@ -33,7 +33,7 @@ class ApiPage extends ControlApiPageBase
 		if ($term == '')
 		{
 			$query = new DbQuery(
-				'SELECT u.id, nu.name, NULL, ni.name'.
+				'SELECT u.id, nu.name, NULL, ni.name, 0'.
 				' FROM users u'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN cities i ON i.id = u.city_id'.
@@ -67,21 +67,31 @@ class ApiPage extends ControlApiPageBase
 		}
 		else
 		{
+			$wildcard = '%' . $term . '%';
 			$query = new DbQuery(
-				'SELECT u.id, nu.name as user_name, NULL, ni.name FROM users u' .
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0' .
-					' JOIN cities i ON i.id = u.city_id'.
-					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
-					' WHERE nu.name LIKE ?' .
-					' UNION' .
-					' SELECT DISTINCT u.id, nu.name as user_name, r.nickname, ni.name FROM users u' . 
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0' .
-					' JOIN cities i ON i.id = u.city_id'.
-					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
-					' JOIN event_users r ON r.user_id = u.id' .
-					' WHERE r.nickname <> nu.name AND r.nickname LIKE ? ORDER BY user_name',
-				'%' . $term . '%',
-				'%' . $term . '%');
+				'SELECT DISTINCT u.id, nu.name, NULL, nct.name, IF(n.name = ?, 0, IF(LOCATE(?, n.name) = 1, 1, 2)) as mtch'.
+				' FROM names n'.
+				' JOIN users u ON u.name_id = n.id' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities ct ON ct.id = u.city_id' .
+				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0 ' .
+				' WHERE n.name LIKE ?'.
+				' ORDER BY mtch, n.name', $term, $term, $wildcard);
+				
+			// $query = new DbQuery(
+				// 'SELECT u.id, nu.name as user_name, NULL, ni.name, IF(nu.name = ?, 0, IF(LOCATE(?, nu.name) = 1, 1, 2)) as mtch FROM users u' .
+					// ' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0' .
+					// ' JOIN cities i ON i.id = u.city_id'.
+					// ' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
+					// ' WHERE nu.name LIKE ?' .
+					// ' UNION' .
+					// ' SELECT DISTINCT u.id, nu.name as user_name, r.nickname, ni.name, 2 FROM users u' . 
+					// ' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0' .
+					// ' JOIN cities i ON i.id = u.city_id'.
+					// ' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
+					// ' JOIN event_users r ON r.user_id = u.id' .
+					// ' WHERE r.nickname <> nu.name AND r.nickname LIKE ? ORDER BY mtch, user_name',
+				// $term, $term, $wildcard, $wildcard);
 		}
 		if ($num > 0)
 		{
@@ -100,7 +110,7 @@ class ApiPage extends ControlApiPageBase
 		while ($row = $query->next())
 		{
 			$player = new stdClass();
-			list ($player->id, $player->name, $nickname, $player->city) = $row;
+			list ($player->id, $player->name, $nickname, $player->city, $match) = $row;
 			$player->id = (int)$player->id;
 			$player->label = $player->name . ', ' . $player->city;
 			if ($nickname != NULL)

@@ -27,7 +27,7 @@ try
 		$user_id = (int)$_REQUEST['user_id'];
 		list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
 		dialog_title(get_label('Edit tournament score for [0]', $user_name));
-		list ($main_points, $bonus_points, $shot_points) = Db::record(get_label('score'), 'SELECT main_points, bonus_points, shot_points, games_count FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
+		list ($main_points, $bonus_points, $shot_points, $games_count) = Db::record(get_label('score'), 'SELECT main_points, bonus_points, shot_points, games_count FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
 		$total_points = $main_points + $bonus_points + $shot_points;
 	}
 	else

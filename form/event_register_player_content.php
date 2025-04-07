@@ -45,7 +45,8 @@ try
 	$query = new DbQuery('SELECT DISTINCT u.id, nu.name, u.flags, c.id, c.name, a.id, na.name, ct.id, nct.name, IF(nu.name = ?, 0, IF(LOCATE(?, nu.name) = 1, 1, 2)) as mtch, (', $name, $name, $games_count_query);
 	$query->add(
 			') as games_count' .
-			' FROM users u' .
+			' FROM names n'.
+			' JOIN users u ON u.name_id = n.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 			' JOIN cities ct ON ct.id = u.city_id' .
@@ -57,7 +58,7 @@ try
 	{
 		$name_wildcard = '%' . $name . '%';
 		$query->add(
-				' AND (nu.name LIKE ? OR' .
+				' AND (n.name LIKE ? OR' .
 				' u.email LIKE ? OR' .
 				' u.id IN (SELECT DISTINCT user_id FROM event_users WHERE nickname LIKE ?))',
 			$name_wildcard,
