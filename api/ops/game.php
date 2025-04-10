@@ -12,10 +12,6 @@ require_once '../../include/mwt_game.php';
 
 define('EVENTS_FUTURE_LIMIT', 1209600); // 2 weeks
 
-define('GAME_SETTINGS_SIMPLIFIED_CLIENT', 0x1);
-define('GAME_SETTINGS_START_TIMER', 0x2);
-define('GAME_SETTINGS_NO_BLINKING', 0x8); // 0x4 is available
-
 function def_club()
 {
 	global $_profile;
@@ -1826,13 +1822,14 @@ class ApiPage extends OpsApiPageBase
 		$round = (int)get_required_param('round');
 		$lod = (int)get_optional_param('lod', 0);
 		
+		$settings_flags = 0;
 		$feature_flags = GAME_FEATURE_MASK_ALL;
 		$prompt_sound = NULL;
 		$end_sound = NULL;
-		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id, feature_flags FROM game_settings WHERE user_id = ?', $_profile->user_id);
+		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id, flags, feature_flags FROM game_settings WHERE user_id = ?', $_profile->user_id);
 		if ($row = $query->next())
 		{
-			list($prompt_sound, $end_sound, $feature_flags) = $row;
+			list($prompt_sound, $end_sound, $settings_flags, $feature_flags) = $row;
 		}
 		
 		if ($event_id > 0)
@@ -2032,6 +2029,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['langs'] = $langs;
 		$this->response['prompt_sound'] = 'sounds/' . $prompt_sound . '.mp3';
 		$this->response['end_sound'] = 'sounds/' . $end_sound . '.mp3';
+		$this->response['flags'] = $settings_flags;
 	}
 	
 	function get_current_op_help()
@@ -2041,11 +2039,14 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('table', 'Table number in the event. Table 1 is numbered as 0, 2 - 1, etc..');
 		$help->request_param('round', 'Game number. Round 1 is numbered as 0, 2 - 1, etc..');
 		$help->response_param('game', 'Game description in json format.');
-		$help->response_param('game', 'Array of the previous states of the game. It can be used to navigate through the game.');
+		$help->response_param('log', 'Array of the previous states of the game. It can be used to navigate through the game.', NULL, 1);
 		$param = $help->response_param('regs', 'Array containing players registered for the event.');
 		$param->response_param('id', 'User id');
 		$param->response_param('name', 'Player name');
 		$param->response_param('flags', 'Permission bit-flags: 1 - player; 2 - referee; 4 - manager.');
+		$help->response_param('prompt_sound', 'URL of the sound to play in 10 sec before the speach end.');
+		$help->response_param('end_sound', 'URL of the sound to play at the speach end.');
+		$help->response_param('flags', 'Game settings flags: 1 - not used; 2 - start timer on speaches automatically; 4 - can change roles during arrangement; 8 - no timer blinking.');
 		return $help;
 	}
 	
@@ -2278,6 +2279,112 @@ class ApiPage extends OpsApiPageBase
 		// $help->request_param('game_id', 'Game id.');
 		// return $help;
 	// }
+	
+	
+	//-------------------------------------------------------------------------------------------------------
+	// settings
+	//-------------------------------------------------------------------------------------------------------
+	function settings_op()
+	{
+		global $_profile;
+		
+		$club_id = (int)get_optional_param('club_id', 0);
+		$user_id = (int)get_optional_param('user_id', $_profile->user_id);
+		
+		check_permissions(PERMISSION_OWNER, $user_id);
+		
+		Db::begin();
+		if ($club_id > 0)
+		{
+			list ($old_prompt_sound_id, $old_end_sound_id) = Db::record(get_label('club'), 'SELECT prompt_sound_id, end_sound_id FROM clubs WHERE id = ?', $club_id);
+			
+			$prompt_sound_id = (int)get_optional_param('prompt_sound_id', $old_prompt_sound_id);
+			if ($prompt_sound_id <= 0)
+			{
+				$prompt_sound_id = NULL;
+			}
+			$end_sound_id = (int)get_optional_param('end_sound_id', $old_end_sound_id);
+			if ($end_sound_id <= 0)
+			{
+				$end_sound_id = NULL;
+			}
+			
+			if ($prompt_sound_id != $old_prompt_sound_id || $end_sound_id != $old_end_sound_id)
+			{
+				Db::exec(get_label('club'), 'UPDATE clubs SET prompt_sound_id = ?, end_sound_id = ? WHERE id = ?', $prompt_sound_id, $end_sound_id, $club_id);
+				$log_details = new stdClass();
+				if ($prompt_sound_id != $old_prompt_sound_id)
+				{
+					$log_details->prompt_sound_id = $prompt_sound_id;
+				}
+				if ($end_sound_id != $old_end_sound_id)
+				{
+					$log_details->end_sound_id = $end_sound_id;
+				}
+				db_log(LOG_OBJECT_CLUB, 'changed', $log_details, $club_id, $club_id);
+			}
+		}
+		else
+		{
+			$exists = false;
+			$old_flags = 0;
+			$old_prompt_sound_id = NULL;
+			$old_end_sound_id = NULL;
+			
+			$query = new DbQuery('SELECT flags, prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $user_id);
+			if ($row = $query->next())
+			{
+				list ($old_flags, $old_prompt_sound_id, $old_end_sound_id) = $row;
+				$exists = true;
+			}
+			
+			$flags = (int)get_optional_param('flags', $old_flags);
+			$flags = ($flags & GAME_SETTINGS_EDITABLE_MASK) + ($old_flags & ~GAME_SETTINGS_EDITABLE_MASK);
+			
+			$prompt_sound_id = (int)get_optional_param('prompt_sound_id', $old_prompt_sound_id);
+			if ($prompt_sound_id <= 0)
+			{
+				$prompt_sound_id = NULL;
+			}
+			
+			$end_sound_id = (int)get_optional_param('end_sound_id', $old_end_sound_id);
+			if ($end_sound_id <= 0)
+			{
+				$end_sound_id = NULL;
+			}
+			
+			if ($exists)
+			{
+				Db::exec(get_label('user'), 'UPDATE game_settings SET prompt_sound_id = ?, end_sound_id = ?, flags = ? WHERE user_id = ?', $prompt_sound_id, $end_sound_id, $flags, $user_id);
+			}
+			else
+			{
+				Db::exec(get_label('user'), 'INSERT INTO game_settings (user_id, flags, prompt_sound_id, end_sound_id, feature_flags) VALUES (?, ?, ?, ?, ?)', $user_id, $flags, $prompt_sound_id, $end_sound_id, GAME_FEATURE_MASK_ALL);
+			}
+			
+			$log_details = new stdClass();
+			if ($prompt_sound_id != $old_prompt_sound_id)
+			{
+				$log_details->prompt_sound_id = $prompt_sound_id;
+			}
+			if ($end_sound_id != $old_end_sound_id)
+			{
+				$log_details->end_sound_id = $end_sound_id;
+			}
+			db_log(LOG_OBJECT_USER, 'game settings', $log_details, $user_id);
+		}
+		Db::commit();
+	}
+	
+	function settings_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Set game settings for a club or a user.');
+		$help->request_param('club_id', 'Club id to set default game settings for.', 'the default settings are set for the current user.');
+		$help->request_param('prompt_sound_id', 'Sound id for the ten second prompt before the end of the speech.', 'remains the same');
+		$help->request_param('end_sound_id', 'Sound id for the the end of the speech.', 'remains the same');
+		$help->request_param('flags', 'Game settings flags: 1 - not used; 2 - start timer on speaches automatically; 4 - can change roles during arrangement; 8 - no timer blinking.', 'remains the same');
+		return $help;
+	}
 }
 
 $page = new ApiPage();

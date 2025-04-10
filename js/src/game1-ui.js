@@ -1,5 +1,6 @@
 var _renderCallback = null;
 var _cofigurableFeatures = "agslvkno";
+var _settingsFlags = 0;
 
 //-----------------------------------------------------------
 // Private API. Don't use it outside of this file.
@@ -82,6 +83,7 @@ function _uiShoot(shooter)
 function _uiRender(resetTimer)
 {
 	let timerTime = 60;
+	let timerNeeded = true;
 	let html = '<option value="0"></option>';
 	for (let i in regs)
 	{
@@ -124,7 +126,11 @@ function _uiRender(resetTimer)
 	{
 		status = l('StartGame');
 		$('#info').html('');
-		control1Html = '<button class="day-vote" onclick="gameRandomizeSeats()">' + l('RandSeats') + '</button>';
+		if (_settingsFlags & 16/*GAME_SETTINGS_RANDOMIZE_SEATING*/)
+		{
+			control1Html = '<button class="day-vote" onclick="gameRandomizeSeats()">' + l('RandSeats') + '</button>';
+		}
+		timerNeeded = false;
 	}
 	else
 	{
@@ -133,6 +139,7 @@ function _uiRender(resetTimer)
 		{
 		case 'start':
 			status = l('AssignRoles');
+			timerNeeded = false;
 			control1Html = '<button class="day-vote" onclick="gameGenerateRoles()">' + l('GenRoles') + '</button>';
 			for (let i = 0; i < 10; ++i)
 			{
@@ -171,11 +178,15 @@ function _uiRender(resetTimer)
 					_uiOption(2, 0, l('ArrNight', 2)) +
 					_uiOption(3, 0, l('ArrNight', 3)) +
 					'</select>');
-				$('#controlx' + i).html(
-					'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
-					'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
-					'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
-					'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
+					
+				if (_settingsFlags & 4/*GAME_SETTINGS_CHANGE_ROLES_IN_ARRANGEMENT*/)
+				{
+					$('#controlx' + i).html(
+						'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
+						'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
+						'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
+						'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
+				}
 				if (isSet(player.arranged) && player.arranged > 0)
 				{
 					$('#arr-' + i + '-' + player.arranged).attr('checked', '');
@@ -196,16 +207,19 @@ function _uiRender(resetTimer)
 			break;
 		case 'relaxed sitting':
 			status = l('RelaxedSitting');
-			for (let i = 0; i < 10; ++i)
+			if (_settingsFlags & 4/*GAME_SETTINGS_CHANGE_ROLES_IN_ARRANGEMENT*/)
 			{
-				let player = game.players[i];
-				let role = isSet(player.role) ? player.role : 'civ';
-				$('#controlx' + i).html(
-					'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
-					'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
-					'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
-					'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
-				$('#role-' + i + '-' + role).attr('checked', '');
+				for (let i = 0; i < 10; ++i)
+				{
+					let player = game.players[i];
+					let role = isSet(player.role) ? player.role : 'civ';
+					$('#controlx' + i).html(
+						'<button class="night-char" id="role-' + i + '-civ" onclick="uiSetRole(' + i + ', \'civ\')"><img class="role-icon" src="images/civ.png"></button>' +
+						'<button class="night-char" id="role-' + i + '-sheriff" onclick="uiSetRole(' + i + ', \'sheriff\')" title="' + l('sheriff') + '"><img class="role-icon" src="images/sheriff.png"></button>' +
+						'<button class="night-char" id="role-' + i + '-maf" onclick="uiSetRole(' + i + ', \'maf\')" title="' + l('mafia') + '"><img class="role-icon" src="images/maf.png"></button>' +
+						'<button class="night-char" id="role-' + i + '-don" onclick="uiSetRole(' + i + ', \'don\')" title="' + l('don') + '"><img class="role-icon" src="images/don.png"></button>');
+					$('#role-' + i + '-' + role).attr('checked', '');
+				}
 			}
 			timerTime = 20;
 			info = 'Night0';
@@ -308,6 +322,7 @@ function _uiRender(resetTimer)
 		case 'voting start':
 			nomsStr = _uiGenerateNoms();
 			status = l('VotingStart', nomsStr);
+			timerNeeded = false;
 			html = _uiOption(0, 0, '');
 			for (let i = 0; i < 10; ++ i)
 			{
@@ -334,6 +349,7 @@ function _uiRender(resetTimer)
 			noms = gameGetNominees();
 			if (isSet(game.time.nominee))
 			{
+				timerNeeded = false;
 				let index = 0;
 				for (let i = 0; i < noms.length; ++i)
 				{
@@ -438,7 +454,7 @@ function _uiRender(resetTimer)
 			break;
 		case 'voting kill all':
 			status = l('KillAll');
-
+			timerNeeded = false;
 			noms = gameGetNominees();
 			for (let i = 0; i < noms.length; ++i)
 			{
@@ -471,11 +487,13 @@ function _uiRender(resetTimer)
 			break;
 		case 'night start':
 			status = l('NightStart');
+			timerNeeded = false;
 			info = 'Night';
 			break;
 		case 'shooting':
 			let shots = gameGetShots();
 			status = l('Shooting');
+			timerNeeded = false;
 			html = ')"><option value="-1"></option>';
 			for (let i = 0; i < 10; ++i)
 			{
@@ -545,6 +563,7 @@ function _uiRender(resetTimer)
 			{
 				status = l('NoDon');
 			}
+			timerNeeded = false;
 			info = 'Night';
 			break;
 		case 'sheriff':
@@ -576,6 +595,7 @@ function _uiRender(resetTimer)
 			{
 				status = l('NoSheriff');
 			}
+			timerNeeded = false;
 			info = 'Night';
 			break;
 		case 'end':
@@ -592,6 +612,7 @@ function _uiRender(resetTimer)
 				status = l('Tie');
 			}
 			status = '<h3>' + status + '</h3>' + l('Finish');
+			timerNeeded = false;
 			info = 'Day';
 			for (let i = 0; i < 10; ++i)
 			{
@@ -720,6 +741,10 @@ function _uiRender(resetTimer)
 	if (resetTimer) // game time changed - timer has to be reset
 	{
 		timer.reset(timerTime);
+		if (timerNeeded && (_settingsFlags & 2/*GAME_SETTINGS_START_TIMER*/) != 0)
+		{
+			timer.start();
+		}
 	}
 	
 	if (_renderCallback != null)
@@ -908,7 +933,7 @@ function _uiProceedKeyEvent(e)
 			else switch (game.time.time)
 			{
 			case 'start':
-				if (code == /*g*/71)
+				if (code == /*g*/71 && (_settingsFlags & 16/*GAME_SETTINGS_RANDOMIZE_SEATING*/) != 0)
 				{
 					gameGenerateRoles();
 					return true;
@@ -979,17 +1004,19 @@ function _uiProceedKeyEvent(e)
 				break;
 			}
 		}
-		
-		if (index >= 0)
-		{
-			uiRegisterPlayer(index);
-			return true;
-		}
-		
-		if (code == /*s*/83)
-		{
-			gameRandomizeSeats();
-			return true;
+		else
+		{			
+			if (code == /*s*/83 && (_settingsFlags & 16/*GAME_SETTINGS_RANDOMIZE_SEATING*/) != 0)
+			{
+				gameRandomizeSeats();
+				return true;
+			}
+			
+			if (index >= 0)
+			{
+				uiRegisterPlayer(index);
+				return true;
+			}
 		}
 	}
 	return false;
@@ -1126,10 +1153,6 @@ var timer = new function()
 			_start = (new Date()).getTime();
 		}
 		_set(_cur);
-		
-		// todo: imlement user settings
-		// if (mafia.data().user.settings.flags & /*S_FLAG_START_TIMER*/0x2)
-			// timer.start();
 	}
 	
 	this.stop = function(continueSound)
@@ -1205,16 +1228,13 @@ var timer = new function()
 		if (_start > 0)
 		{
 			let t = _max - Math.round(((new Date()).getTime() - _start) / 1000);
-			// todo: implement user settings
-			// let f = mafia.data().user.settings.flags;
-			let f = 0;
 			if (t <= 0)
 			{
 				document.getElementById('prompt-snd').pause();
 				document.getElementById('end-snd').play();
-				if ((f & /*S_FLAG_NO_BLINKING*/0x8) == 0)
+				if ((_settingsFlags & 8/*GAME_SETTINGS_NO_BLINKING*/) == 0)
 				{
-					_blinkCount = 15;
+					_blinkCount = 12;
 					_blink();
 				}
 				_cur = 0;
@@ -1226,7 +1246,7 @@ var timer = new function()
 				if (_get() > _prompt && t <= _prompt)
 				{
 					document.getElementById('prompt-snd').play();
-					if ((f & /*S_FLAG_NO_BLINKING*/0x8) == 0)
+					if ((_settingsFlags & 8/*GAME_SETTINGS_NO_BLINKING*/) == 0)
 					{
 						_blinkCount = 2;
 						_blink();
@@ -1276,6 +1296,7 @@ function uiStart(eventId, tableNum, roundNum)
 	{
 		document.getElementById('prompt-snd').src = data.prompt_sound;
 		document.getElementById('end-snd').src = data.end_sound;
+		_settingsFlags = data.flags;
 	});
 }
 	
@@ -1578,7 +1599,10 @@ function uiBugReport()
 
 function uiSettings()
 {
-	dlg.form("form/game_settings.php" , refr, 600);
+	let url = "form/game_settings.php";
+	if (game.clubId)
+		url += "?club_id=" + game.clubId;
+	dlg.form(url, refr, 600);
 }
 	
 function uiNext()

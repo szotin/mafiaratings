@@ -11,53 +11,38 @@ class Page extends UserPageBase
 		check_permissions(PERMISSION_OWNER, $this->id);
 		
 		$sounds = array();
-		$query = new DbQuery('SELECT id, name FROM sounds WHERE user_id = ? ORDER BY name', $this->id);
+		$query = new DbQuery('SELECT id, name FROM sounds WHERE user_id = ? OR (club_id IS NULL AND user_id IS NULL) ORDER BY name', $this->id);
 		while ($row = $query->next())
 		{
 			$sounds[] = $row;
 		}
 		
-		$global_sounds = array();
-		$query = new DbQuery('SELECT id, name FROM sounds WHERE club_id IS NULL AND user_id IS NULL ORDER BY id');
-		while ($row = $query->next())
-		{
-			$global_sounds[] = $row;
-		}
-		
-		$def_prompt_sound = 0;
-		$def_end_sound = 0;
+		$prompt_sound = 0;
+		$end_sound = 0;
 		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id FROM game_settings WHERE user_id = ?', $this->id);
 		if ($row = $query->next())
 		{
-			list($def_prompt_sound, $def_end_sound) = $row;
+			list($prompt_sound, $end_sound) = $row;
 		}
 		
 		echo '<p>';
-		echo get_label('Default 10 sec prompt sound') . ': <select id="def-prompt" onchange="promptSoundChanged()">';
-		show_option(0, $def_prompt_sound, get_label('[use club sound]'));
-		foreach ($global_sounds as $row)
-		{
-			list ($id, $name) = $row;
-			show_option($id, $def_prompt_sound, $name);
-		}
+		echo get_label('10 sec prompt sound') . ': <select id="def-prompt" onchange="promptSoundChanged()">';
+		show_option(GAME_NO_SOUND, $prompt_sound, '');
+		show_option(0, $prompt_sound, get_label('[use club sound]'));
 		foreach ($sounds as $row)
 		{
 			list ($id, $name) = $row;
-			show_option($id, $def_prompt_sound, $name);
+			show_option($id, $prompt_sound, $name);
 		}
 		echo '</select>   ';
 		
-		echo get_label('Default end of speech sound') . ': <select id="def-end" onchange="endSoundChanged()">';
-		show_option(0, $def_end_sound, get_label('[use club sound]'));
-		foreach ($global_sounds as $row)
-		{
-			list ($id, $name) = $row;
-			show_option($id, $def_end_sound, $name);
-		}
+		echo get_label('End of speech sound') . ': <select id="def-end" onchange="endSoundChanged()">';
+		show_option(GAME_NO_SOUND, $end_sound, '');
+		show_option(0, $end_sound, get_label('[use club sound]'));
 		foreach ($sounds as $row)
 		{
 			list ($id, $name) = $row;
-			show_option($id, $def_end_sound, $name);
+			show_option($id, $end_sound, $name);
 		}
 		echo '</select></p>';
 		
@@ -98,9 +83,9 @@ class Page extends UserPageBase
 		{
 			var id = $("#def-prompt").val();
 			playSound(id)
-			json.post("api/ops/sound.php",
+			json.post("api/ops/game.php",
 			{
-				op: 'set_def_sound'
+				op: 'settings'
 				, prompt_sound_id: id
 			});
 		}
@@ -109,9 +94,9 @@ class Page extends UserPageBase
 		{
 			var id = $("#def-end").val();
 			playSound(id)
-			json.post("api/ops/sound.php",
+			json.post("api/ops/game.php",
 			{
-				op: 'set_def_sound'
+				op: 'settings'
 				, end_sound_id: id
 			});
 		}

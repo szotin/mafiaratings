@@ -110,7 +110,6 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 		lastSaved = log.length;
 		regs = data.regs;
 		langs = data.langs;
-		_gameOnChange(true);
 		
 		// If the game exists in the local storage, we use it instead of the server one.
 		// It can exist only when saving the game failed last time.
@@ -134,7 +133,7 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 		{
 			onSuccess(data);
 		}
-		
+		_gameOnChange(true);
 	}, 
 	function (message, data)
 	{
