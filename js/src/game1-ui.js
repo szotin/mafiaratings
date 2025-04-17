@@ -857,6 +857,19 @@ function _uiProceedKeyEvent(e)
 			}
 		}
 		
+		if (code == /*l*/76)
+		{
+			if (e.shiftKey)
+			{
+				console.log(JSON.stringify(game, undefined, 2));
+			}
+			else
+			{
+				console.log(game);
+			}
+			return true;
+		}
+		
 		var index = -1;
 		if (code >= /*1*/49 && code <= /*9*/57)
 			index = code - /*1*/49;

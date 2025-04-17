@@ -1772,6 +1772,57 @@ class Game
 		}
 		return $death_time;
 	}
+	
+	function day_kill_death_time($round)
+	{
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$p = $this->data->players[$i];
+			if (isset($p->death) && $p->death->type == DEATH_TYPE_DAY && $p->death->round == $round)
+			{
+				return $this->get_player_death_time($i + 1);
+			}
+		}
+		return NULL;
+	}
+	
+	function is_voting_canceled($round)
+	{
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $this->data->players[$i];
+			if (isset($player->death))
+			{
+				$r = -1;
+				if ($player->death->type == DEATH_TYPE_WARNINGS)
+				{
+					$r = $player->warnings[3]->round;
+				}
+				else if (($player->death->type == DEATH_TYPE_GIVE_UP || $player->death->type == DEATH_TYPE_KICK_OUT))
+				{
+					$r = $player->death->round;
+				}
+
+				if ($r == $round)
+				{
+					$d = $this->day_kill_death_time($r);
+					if ($d == null || $this->compare_gametimes($d, $this->get_player_death_time($i + 1)) >= 0)
+					{
+						return true;
+					}
+				}
+				else if ($r == $round - 1)
+				{
+					$d = $this->day_kill_death_time($r);
+					if ($d != null && $this->compare_gametimes($d, $this->get_player_death_time($i + 1)) < 0)
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
 		
 	function who_speaks_first($round)
 	{
