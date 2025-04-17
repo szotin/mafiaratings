@@ -31,9 +31,9 @@ function show_bonus($bonus, $comment)
 	}
 }
 
-function url_prev($game_id, $round, $is_day)
+function url_prev($url_params, $round, $is_day)
 {
-	$url = 'form/game_round_view.php?game_id=' .  $game_id . '&round=';
+	$url = 'form/game_round_view.php' .  $url_params . '&round=';
 	if ($is_day)
 	{
 		$url .= $round . '&night';
@@ -45,9 +45,9 @@ function url_prev($game_id, $round, $is_day)
 	return $url;
 }
 
-function url_next($game_id, $round, $is_day)
+function url_next($url_params, $round, $is_day)
 {
-	$url = 'form/game_round_view.php?game_id=' .  $game_id . '&round=';
+	$url = 'form/game_round_view.php' .  $url_params . '&round=';
 	if ($is_day)
 	{
 		$url .= ($round + 1) . '&night';
@@ -111,11 +111,29 @@ initiate_session();
 
 try
 {
-	if (!isset($_REQUEST['game_id']))
+	$game_id = -1;
+	if (isset($_REQUEST['game_id']))
 	{
-		throw new Exc(get_label('Unknown [0]', get_label('game')));
+		$game_id = (int)$_REQUEST['game_id'];
 	}
-	$game_id = $_REQUEST['game_id'];
+	
+	$event_id = -1;
+	if (isset($_REQUEST['event_id']))
+	{
+		$event_id = (int)$_REQUEST['event_id'];
+	}
+	
+	$game_table = -1;
+	if (isset($_REQUEST['table']))
+	{
+		$game_table = (int)$_REQUEST['table'];
+	}
+	
+	$game_number = -1;
+	if (isset($_REQUEST['number']))
+	{
+		$game_number = (int)$_REQUEST['number'];
+	}
 	
 	if (!isset($_REQUEST['round']))
 	{
@@ -130,23 +148,46 @@ try
 		echo '<span id="round">';
 	}
 	
-	list($json, $feature_flags) = Db::record(get_label('game'), 'SELECT json, feature_flags FROM games WHERE id = ?', $game_id);
+	if ($game_id > 0)
+	{
+		list($json, $feature_flags, $event_id) = Db::record(get_label('game'), 'SELECT json, feature_flags, event_id FROM games WHERE id = ?', $game_id);
+		$url_params = '?game_id=' . $game_id;
+	}
+	else
+	{
+		list($json) = Db::record(get_label('game'), 'SELECT game FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $game_table, $game_number);
+		$feature_flags = GAME_FEATURE_MASK_ALL;
+		$url_params = '?event_id=' . $event_id . '&table=' . $game_table . '&number=' . $game_number;
+	}
 	$game = new Game($json, $feature_flags);
+
+	$plist = '';
+	$delim = '';
+	foreach ($game->data->players as $player)
+	{
+		if (isset($player->id) && $player->id > 0)
+		{
+			$plist .= $delim . $player->id;
+			$delim = ',';
+		}
+	}
 	
 	$players = array();
-	$query = new DbQuery(
-		'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags' . 
-			' FROM players p' . 
-			' JOIN games g ON g.id = p.game_id' . 
-			' JOIN users u ON u.id = p.user_id' . 
-			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-			' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = g.event_id' . 
-			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' . 
-			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' . 
-			' WHERE p.game_id = ?', $game_id);
-	while ($row = $query->next())
+	if (!empty($plist))
 	{
-		$players[$row[0]] = $row;
+		$query = new DbQuery(
+			'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags' . 
+				' FROM users u' .
+				' JOIN events e ON e.id = ?'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
+				' WHERE u.id IN (' . $plist . ')', $event_id);
+		while ($row = $query->next())
+		{
+			$players[$row[0]] = $row;
+		}
 	}
 	
 	$user_pic =
@@ -434,7 +475,7 @@ try
 <script>
 	function go_prev()
 	{
-		html.get("<?php echo url_prev($game_id, $round, $is_day); ?>", function(html)
+		html.get("<?php echo url_prev($url_params, $round, $is_day); ?>", function(html)
 		{
 			$("#round").html(html);
 		});
@@ -442,7 +483,7 @@ try
 	
 	function go_next()
 	{
-		html.get("<?php echo url_next($game_id, $round, $is_day); ?>", function(html)
+		html.get("<?php echo url_next($url_params, $round, $is_day); ?>", function(html)
 		{
 			$("#round").html(html);
 		});

@@ -69,7 +69,7 @@ class Page extends PageBase
 			$title = $this->tournament_name . ': ' . $this->event_name . '. ';
 		}
 		
-		$game_num = is_null($this->game_round) ? ('#' . $this->id) : ($this->game_round + 1);
+		$game_num = is_null($this->game_number) ? ('#' . $this->id) : ($this->game_number + 1);
 		$rating = $this->is_rating ? '.' : (' (' . get_label('non-rating') . ').');
 		if (is_null($this->game_table))
 		{
@@ -93,33 +93,96 @@ class Page extends PageBase
 		}
 		if ($this->id <= 0)
 		{
-			throw new FatalExc(get_label('Unknown [0]', get_label('game')));
+			$this->event_id = 0;
+			if (isset($_REQUEST['event_id']))
+			{
+				$this->event_id = (int)$_REQUEST['event_id'];
+			}
+			else
+			{
+				throw new FatalExc(get_label('Unknown [0]', get_label('game')));
+			}
+			
+			$this->game_table = NULL;
+			if (isset($_REQUEST['table']))
+			{
+				$this->game_table = (int)$_REQUEST['table'];
+			}
+			
+			$this->game_number = NULL;
+			if (isset($_REQUEST['number']))
+			{
+				$this->game_number = (int)$_REQUEST['number'];
+			}
+			
+			if (!is_null($this->game_table) && !is_null($this->game_number))
+			{
+				$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $this->event_id, $this->game_table, $this->game_number);
+				if ($row = $query->next())
+				{
+					list ($this->id) = $row;
+					$this->id = (int)$this->id;
+				}
+			}
+			
+			if ($this->id <= 0)
+			{
+				$sql = 	'SELECT g.user_id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,'.
+						' c.id, c.name, c.flags, a.id, a.name, a.flags, g.game, g.round_num'.
+						' FROM current_games g'.
+						' JOIN events e ON e.id = g.event_id' .
+						' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+						' JOIN clubs c ON c.id = e.club_id' . 
+						' JOIN addresses a ON a.id = e.address_id' .
+						' JOIN cities ct ON ct.id = a.city_id' .
+						' WHERE g.event_id = ? AND g.table_num = ?';
+				list (
+					$this->user_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->round_num, 
+					$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $json, $this->game_number) =
+				is_null($this->game_number) ? 
+					Db::record(get_label('game'),  $sql . '  ORDER BY g.round_num DESC LIMIT 1', $this->event_id, $this->game_table) :
+					Db::record(get_label('game'),  $sql . ' AND g.round_num = ?', $this->event_id, $this->game_table, $this->game_number);
+					
+				$feature_flags = GAME_FEATURE_MASK_ALL;
+				$this->video_id = NULL;
+				$this->is_canceled = false;
+				$this->has_log = false;
+				$this->civ_odds = -1; // for the future calculate it when roles are shown
+			}
 		}
 		
-		list (
-			$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->round_num, 
-			$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
-			$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
-			$this->start_time, $this->duration, $this->lang, $this->civ_odds, $this->result, $this->video_id, $this->rules, $this->is_canceled, $this->is_rating, $json, $this->game_round, $this->game_table, $feature_flags, $this->has_log) =
-		Db::record(
-			get_label('game'),
-			'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,' .
-			' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
-			' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
-			' g.start_time, g.end_time - g.start_time, g.language, g.civ_odds, g.result, g.video_id, e.rules, g.is_canceled, g.is_rating, g.json, g.game_number, g.game_table, g.feature_flags, LENGTH(g.log)' .
-				' FROM games g' .
-				' JOIN events e ON e.id = g.event_id' .
-				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
-				' JOIN clubs c ON c.id = g.club_id' . 
-				' JOIN addresses a ON a.id = e.address_id' .
-				' JOIN cities ct ON ct.id = a.city_id' .
-				' JOIN users m ON m.id = g.moderator_id' .
-				' JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN event_users eu ON eu.user_id = m.id AND eu.event_id = g.event_id' .
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = m.id AND tu.tournament_id = g.tournament_id' .
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
-				' WHERE g.id = ?',
-			$this->id);
+		if ($this->id > 0)
+		{
+			list (
+				$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->round_num, 
+				$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
+				$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
+				$this->civ_odds, $this->video_id, $this->is_canceled, $json, $this->game_number, $this->game_table, $feature_flags, $this->has_log) =
+			Db::record(
+				get_label('game'),
+				'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,' .
+				' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
+				' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
+				' g.civ_odds, g.video_id, g.is_canceled, g.json, g.game_number, g.game_table, g.feature_flags, LENGTH(g.log)' .
+					' FROM games g' .
+					' JOIN events e ON e.id = g.event_id' .
+					' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
+					' JOIN clubs c ON c.id = g.club_id' . 
+					' JOIN addresses a ON a.id = e.address_id' .
+					' JOIN cities ct ON ct.id = a.city_id' .
+					' JOIN users m ON m.id = g.moderator_id' .
+					' JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
+					' LEFT OUTER JOIN event_users eu ON eu.user_id = m.id AND eu.event_id = g.event_id' .
+					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = m.id AND tu.tournament_id = g.tournament_id' .
+					' LEFT OUTER JOIN club_users cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
+					' WHERE g.id = ?',
+				$this->id);
+			$this->url_params = '?game_id=' . $this->id;
+		}
+		else
+		{
+			$this->url_params = '?event_id=' . $this->event_id . '&table=' . $this->game_table . '&number=' . $this->game_number;
+		}
 			
 		$this->is_editor = is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->user_id, $this->club_id, $this->event_id, $this->tournament_id);
 		$this->show_all = $this->is_editor && isset($_REQUEST['show_all']);
@@ -160,9 +223,44 @@ class Page extends PageBase
 		
 		$this->game = new Game($json, $feature_flags);
 		
-		$this->start_time = format_date($this->start_time, $this->timezone, true);
-		$this->duration = format_time($this->duration);
-		$this->language = get_lang_str($this->lang);
+		if (!isset($this->moder_id) && isset($this->game->data->moderator->id))
+		{
+			list ($this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags) = Db::record(get_label('user'), 
+				'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+				' WHERE u.id = ?',
+				$this->event_id, $this->tournament_id, $this->club_id, $this->game->data->moderator->id);
+		}
+		
+		$this->start_time = format_date($this->game->data->startTime, $this->timezone, true);
+		$this->duration = '';
+		if (isset($this->game->data->endTime))
+		{
+			$this->duration = format_time($this->game->data->endTime - $this->game->data->startTime);
+		}
+		$this->lang = get_lang_by_code($this->game->data->language);
+		$this->is_rating = isset($this->game->data->rating) ? $this->game->data->rating : true;
+		
+		$this->result = GAME_RESULT_PLAYING;
+		if (isset($this->game->data->winner))
+		{
+			if ($this->game->data->winner == 'maf')
+			{
+				$this->result = GAME_RESULT_MAFIA;
+			}
+			else if ($this->game->data->winner == 'civ')
+			{
+				$this->result = GAME_RESULT_TOWN;
+			}
+			else if ($this->game->data->winner == 'tie')
+			{
+				$this->result = GAME_RESULT_TIE;
+			}
+		}
 		
 		if ($this->is_canceled)
 		{
@@ -174,23 +272,39 @@ class Page extends PageBase
 		}
 		
 		// Players
+		$plist = '';
+		$delim = '';
+		foreach ($this->game->data->players as $player)
+		{
+			if (isset($player->id) && $player->id > 0)
+			{
+				$plist .= $delim . $player->id;
+				$delim = ',';
+			}
+		}
+		
 		$this->my_user_id = 0;
 		$this->players = array();
-		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM players p' . 
-			' JOIN users u ON u.id = p.user_id' . 
-			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-			' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' . 
-			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' . 
-			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' . 
-			' WHERE p.game_id = ?', $this->event_id, $this->tournament_id, $this->club_id, $this->id);
-		while ($row = $query->next())
+		if (!empty($plist))
 		{
-			$uid = (int)$row[0];
-			$this->players[$uid] = $row;
-			if (!is_null($_profile) && $_profile->user_id == $uid)
+			$query = new DbQuery(
+				'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags' . 
+					' FROM users u' .
+					' JOIN events e ON e.id = ?'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+					' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
+					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
+					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
+					' WHERE u.id IN (' . $plist . ')', $this->event_id);
+			while ($row = $query->next())
 			{
-				$this->my_user_id = $uid;
+				$players[$row[0]] = $row;
+				$uid = (int)$row[0];
+				$this->players[$uid] = $row;
+				if (!is_null($_profile) && $_profile->user_id == $uid)
+				{
+					$this->my_user_id = $uid;
+				}
 			}
 		}
 		
@@ -402,12 +516,15 @@ class Page extends PageBase
 		$this->address_pic->set($this->address_id, $this->address, $this->address_flags);
 		$this->address_pic->show(ICONS_DIR, true, 48);
 		echo '</td><td>';
-		$this->player_pic->
-			set($this->moder_id, $this->event_moder_nickname, $this->event_moder_flags, 'e' . $this->event_id)->
-			set($this->moder_id, $this->moder_name, $this->tournament_moder_flags, 't' . $this->tournament_id)->
-			set($this->moder_id, $this->moder_name, $this->club_moder_flags, 'c' . $this->club_id)->
-			set($this->moder_id, $this->moder_name, $this->moder_flags);
-		$this->player_pic->show(ICONS_DIR, true, 48);
+		if (isset($this->moder_id))
+		{
+			$this->player_pic->
+				set($this->moder_id, $this->event_moder_nickname, $this->event_moder_flags, 'e' . $this->event_id)->
+				set($this->moder_id, $this->moder_name, $this->tournament_moder_flags, 't' . $this->tournament_id)->
+				set($this->moder_id, $this->moder_name, $this->club_moder_flags, 'c' . $this->club_id)->
+				set($this->moder_id, $this->moder_name, $this->moder_flags);
+			$this->player_pic->show(ICONS_DIR, true, 48);
+		}
 		echo '</td><td>' . $this->start_time . '</td><td>' . $this->duration . '</td><td>';
 		echo '<span class="lang">' . get_short_lang_str($this->lang) . '</span>';
 		if ($this->civ_odds >= 0 && $this->civ_odds <= 1)
@@ -891,42 +1008,39 @@ class Page extends PageBase
 	
 	protected function js()
 	{
-		if (isset($this->id) && $this->id > 0)
-		{
 ?>
-			function viewPlayer(num)
+		function viewPlayer(num)
+		{
+			html.get("form/game_player_view.php<?php echo $this->url_params . $this->show_all; ?>&player_num=" + num, function(html)
 			{
-				html.get("form/game_player_view.php?game_id=<?php echo $this->id . $this->show_all; ?>&player_num=" + num, function(html)
-				{
-					dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 600);
-				});
-			}
-			
-			function viewDay(round)
-			{
-				html.get("form/game_round_view.php?game_id=<?php echo $this->id; ?>&round=" + round, function(html)
-				{
-					dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 800);
-				});
-			}
-			
-			function viewNight(round)
-			{
-				html.get("form/game_round_view.php?game_id=<?php echo $this->id; ?>&night&round=" + round, function(html)
-				{
-					dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 800);
-				});
-			}
-			
-			function deleteGame(id)
-			{
-				mr.deleteGame(id, '<?php echo get_label('Are you sure you want to delete the game [0]?', $this->id); ?>', function()
-				{
-					<?php echo $this->on_delete; ?>
-				});
-			}
-<?php
+				dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 600);
+			});
 		}
+		
+		function viewDay(round)
+		{
+			html.get("form/game_round_view.php<?php echo $this->url_params; ?>&round=" + round, function(html)
+			{
+				dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 800);
+			});
+		}
+		
+		function viewNight(round)
+		{
+			html.get("form/game_round_view.php<?php echo $this->url_params; ?>&night&round=" + round, function(html)
+			{
+				dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 800);
+			});
+		}
+		
+		function deleteGame(id)
+		{
+			mr.deleteGame(id, '<?php echo get_label('Are you sure you want to delete the game [0]?', $this->id); ?>', function()
+			{
+				<?php echo $this->on_delete; ?>
+			});
+		}
+<?php
 	}
 }
 

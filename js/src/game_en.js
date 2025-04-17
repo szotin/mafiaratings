@@ -1,5 +1,6 @@
 if (typeof _l == "undefined") _l = {};
 
+_l["ViewGame"] = "View game log";
 _l["Accurate"] = "Please specify how accurate you are while entering data. Uncheck everything that you skip:";
 _l["feature_a"] = "static arrangements";
 _l["feature_g"] = "don checks";

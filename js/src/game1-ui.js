@@ -614,6 +614,7 @@ function _uiRender(resetTimer)
 			status = '<h3>' + status + '</h3>' + l('Finish');
 			timerNeeded = false;
 			info = 'Day';
+			control1Html = '<button class="extra-pts" onclick="uiViewGame()"> ' + l('ViewGame') + '</button>'
 			for (let i = 0; i < 10; ++i)
 			{
 				let player = game.players[i];
@@ -1603,6 +1604,11 @@ function uiSettings()
 	if (game.clubId)
 		url += "?club_id=" + game.clubId;
 	dlg.form(url, refr, 600);
+}
+
+function uiViewGame()
+{
+	window.open('view_game.php?event_id=' + game.eventId + '&table=' + (game.table - 1) + '&number=' + (game.round - 1), '_blank').focus();
 }
 	
 function uiNext()

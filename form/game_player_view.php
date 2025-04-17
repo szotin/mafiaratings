@@ -55,11 +55,29 @@ function show_bonus($bonus)
 
 try
 {
-	if (!isset($_REQUEST['game_id']))
+	$game_id = -1;
+	if (isset($_REQUEST['game_id']))
 	{
-		throw new Exc(get_label('Unknown [0]', get_label('game')));
+		$game_id = (int)$_REQUEST['game_id'];
 	}
-	$game_id = $_REQUEST['game_id'];
+	
+	$event_id = -1;
+	if (isset($_REQUEST['event_id']))
+	{
+		$event_id = (int)$_REQUEST['event_id'];
+	}
+	
+	$game_table = -1;
+	if (isset($_REQUEST['table']))
+	{
+		$game_table = (int)$_REQUEST['table'];
+	}
+	
+	$game_number = -1;
+	if (isset($_REQUEST['number']))
+	{
+		$game_number = (int)$_REQUEST['number'];
+	}
 	
 	if (!isset($_REQUEST['player_num']))
 	{
@@ -89,12 +107,27 @@ try
 	}
 	echo '</tr></table>';
 	
-	list($json, $club_id, $tournament_id, $tournament_flags, $round_num, $$feature_flags) = Db::record(get_label('game'), 
-		'SELECT g.json, g.club_id, t.id, t.flags, e.round, g.feature_flags'.
-		' FROM games g'.
-		' JOIN events e ON e.id = g.event_id'.
-		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
-		' WHERE g.id = ?', $game_id);
+	if ($game_id > 0)
+	{
+		list($json, $club_id, $event_id, $tournament_id, $tournament_flags, $round_num, $feature_flags) = Db::record(get_label('game'), 
+			'SELECT g.json, g.event_id, g.club_id, t.id, t.flags, e.round, g.feature_flags'.
+			' FROM games g'.
+			' JOIN events e ON e.id = g.event_id'.
+			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+			' WHERE g.id = ?', $game_id);
+		$url_params = '?game_id=' . $game_id;
+	}
+	else
+	{
+		list($json, $club_id, $tournament_id, $tournament_flags, $round_num) = Db::record(get_label('game'), 
+			'SELECT g.game, e.club_id, t.id, t.flags, e.round'.
+			' FROM current_games g'.
+			' JOIN events e ON e.id = g.event_id'.
+			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+			' WHERE g.event_id = ? AND g.table_num = ? AND g.round_num = ?', $event_id, $game_table, $game_number);
+		$feature_flags = GAME_FEATURE_MASK_ALL;
+		$url_params = '?event_id=' . $event_id . '&table=' . $game_table . '&number=' . $game_number;
+	}
 	$game = new Game($json, $feature_flags);
 	$player = $game->data->players[$player_num-1];
 	$player_id = 0;
@@ -107,11 +140,11 @@ try
 			'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags' . 
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' JOIN games g ON g.id = ?' . 
-				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = g.event_id' . 
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' . 
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' . 
-				' WHERE u.id = ?', $game_id, $player->id);
+				' JOIN events e ON e.id = ?' . 
+				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
+				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
+				' WHERE u.id = ?', $event_id, $player->id);
 		if (empty($player_name))
 		{
 			$full_player_name = $player_name = $pname;
@@ -580,7 +613,7 @@ try
 <script>
 	function go_prev()
 	{
-		html.get("form/game_player_view.php?game_id=<?php echo $game_id; ?>&recursive&player_num=" + <?php echo $player_num - 1; ?>, function(html)
+		html.get("form/game_player_view.php<?php echo $url_params; ?>&recursive&player_num=" + <?php echo $player_num - 1; ?>, function(html)
 		{
 			$("#user").html(html);
 		});
@@ -588,7 +621,7 @@ try
 	
 	function go_next(onSuccess)
 	{
-		html.get("form/game_player_view.php?game_id=<?php echo $game_id; ?>&recursive&player_num=" + <?php echo $player_num + 1; ?>, function(html)
+		html.get("form/game_player_view.php<?php echo $url_params; ?>&recursive&player_num=" + <?php echo $player_num + 1; ?>, function(html)
 		{
 			$("#user").html(html);
 		});
