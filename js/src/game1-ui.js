@@ -542,15 +542,15 @@ function _uiRender(resetTimer)
 				for (let i = 0; i < 10; ++i)
 				{
 					let p = game.players[i];
-					if (isSet(p.don) && p.don == game.time.round)
+					if (!isSet(p.don))
+					{
+						$('#control' + i).html('<button class="night-vote" onclick="gameDonCheck(' + i + ')"> ' + l('Check', i + 1) + '</button>');
+					}
+					else if (p.don == game.time.round)
 					{
 						let a = isSet(p.role) && p.role == 'sheriff' ? 'yes' : 'no';
 						$('#control' + i).html('<button class="night-vote" onclick="gameDonCheck(' + i + ')" checked> ' + l(a) + '</button>');
 						n = false;
-					}
-					else
-					{
-						$('#control' + i).html('<button class="night-vote" onclick="gameDonCheck(' + i + ')"> ' + l('Check', i + 1) + '</button>');
 					}
 					if (isSet(p.role) && p.role == 'don')
 					{
@@ -574,15 +574,15 @@ function _uiRender(resetTimer)
 				for (let i = 0; i < 10; ++i)
 				{
 					let p = game.players[i];
-					if (isSet(p.sheriff) && p.sheriff == game.time.round)
+					if (!isSet(p.sheriff))
+					{
+						$('#control' + i).html('<button class="night-vote" onclick="gameSheriffCheck(' + i + ')"> ' + l('Check', i + 1) + '</button>');
+					}
+					else if (p.sheriff == game.time.round)
 					{
 						let a = isSet(p.role) && (p.role == 'maf' || p.role == 'don') ? 'yes' : 'no';
 						$('#control' + i).html('<button class="night-vote" onclick="gameSheriffCheck(' + i + ')" checked> ' + l(a) + '</button>');
 						n = false;
-					}
-					else
-					{
-						$('#control' + i).html('<button class="night-vote" onclick="gameSheriffCheck(' + i + ')"> ' + l('Check', i + 1) + '</button>');
 					}
 					if (isSet(p.role) && p.role == 'sheriff')
 					{

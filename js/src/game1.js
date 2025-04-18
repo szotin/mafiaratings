@@ -1704,35 +1704,57 @@ function gameIsSheriffAlive()
 // index 0-9
 function gameDonCheck(index)
 {
-	for (let p of game.players)
+	let dirty = false;
+	for (let i = 0; i < 10; ++i)
 	{
-		if (isSet(p.don) && p.don == game.time.round)
+		let p = game.players[i];
+		if (i != index && isSet(p.don) && p.don == game.time.round)
 		{
 			delete p.don;
+			dirty = true;
 		}
 	}
 	if (index >= 0)
 	{
-		game.players[index].don = game.time.round;
+		let player = game.players[index];
+		if (!isSet(player.don))
+		{
+			player.don = game.time.round;
+			dirty = true;
+		}
 	}
-	gameDirty();
+	if (dirty)
+	{
+		gameDirty();
+	}
 }
 
 // index 0-9
 function gameSheriffCheck(index)
 {
-	for (let p of game.players)
+	let dirty = false;
+	for (let i = 0; i < 10; ++i)
 	{
-		if (isSet(p.sheriff) && p.sheriff == game.time.round)
+		let p = game.players[i];
+		if (i != index && isSet(p.sheriff) && p.sheriff == game.time.round)
 		{
 			delete p.sheriff;
+			dirty = true;
 		}
 	}
 	if (index >= 0)
 	{
-		game.players[index].sheriff = game.time.round;
+		let player = game.players[index];
+		if (!isSet(player.sheriff))
+		{
+			player.sheriff = game.time.round;
+			dirty = true;
+		}
 	}
-	gameDirty();
+	if (dirty)
+	{
+		gameDirty();
+	}
 }
 
 function gameSetLegacy(index)

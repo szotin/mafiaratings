@@ -179,7 +179,15 @@ class ApiPage extends GetApiPageBase
 			else
 			{
 				$player->state = 'dead';
-				$player->deathRound = $p->death->round;
+				// todo: remove this logic. Set round to what it is.
+				if (isset($p->death->time) && $this->is_night($p->death->time))
+				{
+					$player->deathRound = $p->death->round - 1;
+				}
+				else
+				{
+					$player->deathRound = $p->death->round;
+				}
 				switch ($p->death->type)
 				{
 				case DEATH_TYPE_GIVE_UP:
@@ -187,6 +195,10 @@ class ApiPage extends GetApiPageBase
 					break;
 				case DEATH_TYPE_WARNINGS:
 					$player->deathType = 'warnings';
+					if (isset($player->warnings) && is_array($player->warnings) && count($player->warnings) > 0 && $this->is_night($player->warnings[count($player->warnings) - 1]))
+					{
+						$player->deathRound = $p->death->round - 1;
+					}
 					break;
 				case DEATH_TYPE_KICK_OUT:
 					$player->deathType = 'kickOut';
@@ -196,6 +208,7 @@ class ApiPage extends GetApiPageBase
 					break;
 				case DEATH_TYPE_NIGHT:
 					$player->deathType = 'shooting';
+					$player->deathRound = $p->death->round - 1;
 					break;
 				case DEATH_TYPE_DAY:
 					$player->deathType = 'voting';
