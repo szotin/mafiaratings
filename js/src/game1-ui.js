@@ -1623,6 +1623,82 @@ function uiViewGame()
 {
 	window.open('view_game.php?event_id=' + game.eventId + '&table=' + (game.table - 1) + '&number=' + (game.round - 1), '_blank').focus();
 }
+
+import OBSWebSocket from './obs-websocket.browser.js'; // Adjust path as needed
+
+const obsWebSocketAddress = 'ws://localhost:4455'; // Your OBS WebSocket address
+const obsWebSocketPassword = 'your_obs_websocket_password'; // Your OBS WebSocket password
+
+async function switchScene(sceneName) {
+	try {
+		const ws = new OBSWebSocket();
+
+		ws.onopen = () => {
+			// Identify with OBS
+			ws.send(JSON.stringify({
+				'request-type': 'Identify',
+				'd': {
+					'rpcVersion': 1
+				}
+			}));
+		};
+
+		ws.onmessage = (event) => {
+			const data = JSON.parse(event.data);
+
+			if (data['request-type'] === 'Identify') {
+				if (data['status'] !== 'ok') {
+					console.error('OBS WebSocket Identify failed:', data);
+					ws.close();
+					return;
+				}
+
+				// Authenticate if a password is set
+				if (obsWebSocketPassword) {
+					const auth = btoa(':' + obsWebSocketPassword);
+					ws.send(JSON.stringify({
+						'request-type': 'Authenticate',
+						'd': {
+							'authentication': auth
+						}
+					}));
+				} else {
+					// If no password, proceed to switch scene
+					sendSetCurrentScene();
+				}
+			} else if (data['request-type'] === 'Authenticate') {
+				if (data['status'] !== 'ok') {
+					console.error('OBS WebSocket Authenticate failed:', data);
+					ws.close();
+					return;
+				}
+				sendSetCurrentScene();
+			} else if (data['request-type'] === 'SetCurrentProgramScene') {
+				if (data['status'] === 'ok') {
+					console.log('Scene switched to:', sceneName);
+				} else {
+					console.error('Error switching scene:', data);
+				}
+				ws.close();
+			}
+		};
+
+		ws.onerror = (error) => {
+			console.error('WebSocket error:', error);
+		};
+
+		function sendSetCurrentScene() {
+			ws.send(JSON.stringify({
+				'request-type': 'SetCurrentProgramScene',
+				'request-id': '1', // Needs a unique ID for each request
+				'scene-name': sceneName
+			}));
+		}
+
+	} catch (error) {
+		console.error('Error:', error);
+	}
+}
 	
 function uiNext()
 {
