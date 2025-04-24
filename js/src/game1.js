@@ -2265,36 +2265,38 @@ var _currentObsScene = '';
 function obsInit(scenes)
 {
 	_obsScenes = scenes;
-	
-	for (let i = 0; i < _obsScenes.scenes.length;)
+	if (_obsScenes != null)
 	{
-		let s = _obsScenes.scenes[i];
-		let n = parseInt(s.event);
-		if (n >= 1 && n <= 10)
+		for (let i = 0; i < _obsScenes.scenes.length;)
 		{
-			_obsPlayers[n-1] = s.scene;
-			_obsScenes.scenes.splice(i, 1);
+			let s = _obsScenes.scenes[i];
+			let n = parseInt(s.event);
+			if (n >= 1 && n <= 10)
+			{
+				_obsPlayers[n-1] = s.scene;
+				_obsScenes.scenes.splice(i, 1);
+			}
+			else if (s.event == '')
+				_obsScenes.scenes.splice(i, 1);
+			else
+				++i;
 		}
-		else if (s.event == '')
-			_obsScenes.scenes.splice(i, 1);
-		else
-			++i;
-	}
-	
-	let scene = null;
-	for (let i = 0; i < 10; ++i)
-		if (_obsPlayers[i] == null)
-			_obsPlayers[i] = scene;
-		else
-			scene = _obsPlayers[i];
-	
-	if (scene != null)
-	{
+		
+		let scene = null;
 		for (let i = 0; i < 10; ++i)
 			if (_obsPlayers[i] == null)
 				_obsPlayers[i] = scene;
 			else
-				break;
+				scene = _obsPlayers[i];
+		
+		if (scene != null)
+		{
+			for (let i = 0; i < 10; ++i)
+				if (_obsPlayers[i] == null)
+					_obsPlayers[i] = scene;
+				else
+					break;
+		}
 	}
 }
 
