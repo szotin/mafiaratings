@@ -1956,6 +1956,12 @@ function gameSetFeature(letter, on)
 	}
 }
 
+// For future use. It will soon be replaced with something that is really checking rules.
+function _gameLastSpeechExists()
+{
+	return true; // yes last speech
+}
+
 function gameNext()
 {
 	if (gameCanGoNext())
@@ -1989,6 +1995,10 @@ function gameNext()
 				break;
 			case 'night kill speaking':
 				game.time = { time: 'speaking', round: game.time.round, speaker: (gameWhoSpeaksFirst() + 1) };
+				if (_gameLastSpeechExists())
+				{
+					_gameCheckEnd();
+				}
 				break;
 			case 'speaking':
 				let first = gameWhoSpeaksFirst();
@@ -2057,9 +2067,10 @@ function gameNext()
 						{
 							var player = game.players[winners[0] - 1];
 							player.death = { type: 'day', round: game.time.round };
-							if (!_gameCheckEnd())
+							game.time = { time: 'day kill speaking', speaker: winners[0], round: game.time.round };
+							if (!_gameLastSpeechExists())
 							{
-								game.time = { time: 'day kill speaking', speaker: winners[0], round: game.time.round };
+								_gameCheckEnd();
 							}
 						}
 						else if (game.time.votingRound > 0 && winners.length == noms.length)
@@ -2110,9 +2121,10 @@ function gameNext()
 					{
 						game.players[nom - 1].death = { type: 'day', round: game.time.round };
 					}
-					if (!_gameCheckEnd())
+					game.time = { time: 'day kill speaking', round: game.time.round, speaker: noms[0] };
+					if (!_gameLastSpeechExists())
 					{
-						game.time = { time: 'day kill speaking', round: game.time.round, speaker: noms[0] };
+						_gameCheckEnd();
 					}
 				}
 				else
@@ -2131,13 +2143,17 @@ function gameNext()
 						break;
 					}
 				}
-				if (i >= noms.length - 1)
+				if (i < noms.length - 1)
 				{
-					game.time = { time: 'night start', round: game.time.round + 1 };
+					game.time.speaker = noms[i+1];
 				}
 				else
 				{
-					game.time.speaker = noms[i+1];
+					game.time = { time: 'night start', round: game.time.round + 1 };
+					if (_gameLastSpeechExists())
+					{
+						_gameCheckEnd();
+					}
 				}
 				break;
 			}
@@ -2167,7 +2183,10 @@ function gameNext()
 				if (killed >= 0)
 				{
 					game.players[killed].death = { type: 'night', round: game.time.round };
-					_gameCheckEnd();
+					if (!_gameLastSpeechExists())
+					{
+						_gameCheckEnd();
+					}
 				}
 				else
 				{
