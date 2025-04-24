@@ -1826,15 +1826,16 @@ class ApiPage extends OpsApiPageBase
 		$feature_flags = GAME_FEATURE_MASK_ALL;
 		$prompt_sound = NULL;
 		$end_sound = NULL;
-		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id, flags, feature_flags FROM game_settings WHERE user_id = ?', $_profile->user_id);
+		$obs_scenes = NULL;
+		$query = new DbQuery('SELECT prompt_sound_id, end_sound_id, flags, feature_flags, obs_scenes FROM game_settings WHERE user_id = ?', $_profile->user_id);
 		if ($row = $query->next())
 		{
-			list($prompt_sound, $end_sound, $settings_flags, $feature_flags) = $row;
+			list($prompt_sound, $end_sound, $settings_flags, $feature_flags, $obs_scenes) = $row;
 		}
 		
 		if ($event_id > 0)
 		{
-			list($club_id, $tournament_id, $rules, $misc, $languages) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, rules, misc, languages FROM events WHERE id = ?', $event_id);
+			list($club_id, $tournament_id, $rules, $misc, $languages, $event_flags) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, rules, misc, languages, flags FROM events WHERE id = ?', $event_id);
 			check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
 			
 			$langs = array();
@@ -1916,6 +1917,8 @@ class ApiPage extends OpsApiPageBase
 				{
 					$game->moderator->id = 0;
 				}
+				$game->streaming = (($event_flags & EVENT_FLAG_STREAMING) != 0);
+
 				
 				$game->players = array(
 					new stdClass(), new stdClass(), new stdClass(), new stdClass(), new stdClass(),
@@ -1987,6 +1990,7 @@ class ApiPage extends OpsApiPageBase
 			$game->features = Game::feature_flags_to_leters($feature_flags);
 			$game->moderator = new stdClass();
 			$game->moderator->id = 0;
+			$game->streaming = false;
 			
 			$game->players = array(
 				new stdClass(), new stdClass(), new stdClass(), new stdClass(), new stdClass(),
@@ -2020,6 +2024,11 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
+		if (!is_null($obs_scenes))
+		{
+			$obs_scenes = json_decode($obs_scenes);
+		}
+		
 		$this->response['game'] = $game;
 		if ($lod > 0)
 		{
@@ -2030,6 +2039,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['prompt_sound'] = 'sounds/' . $prompt_sound . '.mp3';
 		$this->response['end_sound'] = 'sounds/' . $end_sound . '.mp3';
 		$this->response['flags'] = $settings_flags;
+		$this->response['obs_scenes'] = $obs_scenes;
 	}
 	
 	function get_current_op_help()
@@ -2338,6 +2348,31 @@ class ApiPage extends OpsApiPageBase
 				$exists = true;
 			}
 			
+			$obs_scenes = get_optional_param('obs_scenes', NULL);
+			if (!is_null($obs_scenes))
+			{
+				// Make sure json is correct
+				$obs_scenes = json_decode($obs_scenes);
+				$correct = isset($obs_scenes->url) && isset($obs_scenes->password) && isset($obs_scenes->scenes) && is_array($obs_scenes->scenes);
+				if ($correct)
+				{
+					for($i = 0; $i < count($obs_scenes->scenes); ++$i)
+					{
+						$s = $obs_scenes->scenes[$i];
+						if (!isset($s->scene) || !isset($s->event))
+						{
+							$correct = false;
+							break;
+						}
+					}
+				}
+				if (!$correct)
+				{
+					throw new Exc('Invalid obs scenes format');
+				}
+				$obs_scenes = json_encode($obs_scenes);
+			}
+			
 			$flags = (int)get_optional_param('flags', $old_flags);
 			$flags = ($flags & GAME_SETTINGS_EDITABLE_MASK) + ($old_flags & ~GAME_SETTINGS_EDITABLE_MASK);
 			
@@ -2353,25 +2388,34 @@ class ApiPage extends OpsApiPageBase
 				$end_sound_id = NULL;
 			}
 			
-			if ($exists)
+			if (!$exists)
+			{
+				Db::exec(get_label('user'), 'INSERT INTO game_settings (user_id, flags, prompt_sound_id, end_sound_id, feature_flags) VALUES (?, ?, ?, ?, ?)', $user_id, $flags, $prompt_sound_id, $end_sound_id, GAME_FEATURE_MASK_ALL);
+			}
+			else if (is_null($obs_scenes))
 			{
 				Db::exec(get_label('user'), 'UPDATE game_settings SET prompt_sound_id = ?, end_sound_id = ?, flags = ? WHERE user_id = ?', $prompt_sound_id, $end_sound_id, $flags, $user_id);
 			}
 			else
 			{
-				Db::exec(get_label('user'), 'INSERT INTO game_settings (user_id, flags, prompt_sound_id, end_sound_id, feature_flags) VALUES (?, ?, ?, ?, ?)', $user_id, $flags, $prompt_sound_id, $end_sound_id, GAME_FEATURE_MASK_ALL);
+				Db::exec(get_label('user'), 'UPDATE game_settings SET prompt_sound_id = ?, end_sound_id = ?, flags = ?, obs_scenes = ? WHERE user_id = ?', $prompt_sound_id, $end_sound_id, $flags, $obs_scenes, $user_id);
 			}
-			
-			$log_details = new stdClass();
-			if ($prompt_sound_id != $old_prompt_sound_id)
-			{
-				$log_details->prompt_sound_id = $prompt_sound_id;
-			}
-			if ($end_sound_id != $old_end_sound_id)
-			{
-				$log_details->end_sound_id = $end_sound_id;
-			}
-			db_log(LOG_OBJECT_USER, 'game settings', $log_details, $user_id);
+
+			// No need to log game_settings. They are changing too often when obs scenes are edited
+			// $log_details = new stdClass();
+			// if ($prompt_sound_id != $old_prompt_sound_id)
+			// {
+				// $log_details->prompt_sound_id = $prompt_sound_id;
+			// }
+			// if ($end_sound_id != $old_end_sound_id)
+			// {
+				// $log_details->end_sound_id = $end_sound_id;
+			// }
+			// if ($flags != $old_flags)
+			// {
+				// $log_details->flags = $flags;
+			// }
+			// db_log(LOG_OBJECT_USER, 'game settings', $log_details, $user_id);
 		}
 		Db::commit();
 	}

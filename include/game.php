@@ -32,7 +32,7 @@ define('GAME_FEATURE_MASK_MAFIARATINGS',                0x00003bff); // 15359 = 
 define('GAMETIME_START', 'start'); // night
 define('GAMETIME_ARRANGEMENT', 'arrangement'); // night
 define('GAMETIME_RELAXED_SITTING', 'relaxed sitting'); // night
-define('GAMETIME_DAY_START', 'day start'); // day
+define('GAMETIME_DAY_START', 'day start'); // day : not used in the current client - investigate removal
 define('GAMETIME_NIGHT_KILL_SPEAKING', 'night kill speaking'); // day
 define('GAMETIME_SPEAKING', 'speaking'); // day
 define('GAMETIME_VOTING_START', 'voting start'); // day

@@ -556,14 +556,6 @@ var mr = new function()
 		json.post("api/ops/event.php", { op: "remove_user", event_id: eventId, user_id: userId }, refr);
 	}
 	
-	this.eventObs = function(eventId, userId)
-	{
-		var url = "form/obs_urls.php?event_id=" + eventId;
-		if (userId)
-			url += '&user_id=' + userId;
-		dlg.infoForm(url, 600);
-	}
-	
 	this.eventCreateBroadcast = function(eventId)
 	{
 		dlg.form("form/event_add_broadcast.php?event_id=" + eventId, refr, 400);
@@ -680,14 +672,6 @@ var mr = new function()
 	this.unattendTournament = function(tournamentId)
 	{
 		json.post("api/ops/tournament.php", { op: "remove_user", tournament_id: tournamentId }, refr);
-	}
-	
-	this.tournamentObs = function(tournamentId, userId)
-	{
-		var url = "form/obs_urls.php?tournament_id=" + tournamentId;
-		if (userId)
-			url += '&user_id=' + userId;
-		dlg.infoForm(url, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------

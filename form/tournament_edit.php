@@ -242,6 +242,13 @@ try
 		echo ' checked';
 	}
 	echo  '> ' . get_label('pin to the main page.') . '<br>';
+
+	echo '<input type="checkbox" id="form-streaming"';
+	if ($flags & TOURNAMENT_FLAG_STREAMING)
+	{
+		echo ' checked';
+	}
+	echo  '> ' . get_label('video streaming games.') . '<br>';
 	
 	echo '</td></tr>';
 	echo '</table>';
@@ -502,6 +509,7 @@ try
 		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
+		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
 		_flags |= $("#form-hide-table").val();
 		_flags |= $("#form-hide-bonus").val();
 		

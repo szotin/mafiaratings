@@ -190,6 +190,7 @@ try
 	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '<br>';
 	echo '<input type="checkbox" id="form-manual_scoring"> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
 	echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.') . '<br>';
+	echo '<input type="checkbox" id="form-streaming" checked> ' . get_label('video streaming games.') . '<br>';
 	echo '</table>';
 	
 	$fiim_id = 0;
@@ -483,6 +484,7 @@ try
 		if ($("#form-award-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_SHERIFF; ?>;
 		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
+		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
 		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
 		_flags |= $("#form-hide-table").val();
 		_flags |= $("#form-hide-bonus").val();

@@ -202,7 +202,7 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_users.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name)),
 				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
-				new MenuItem('javascript:mr.tournamentObs(' . $this->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
+				new MenuItem('game_obs.php?bck=1&user_id=0&tournament_id=' . $this->id, get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
 				new MenuItem('tournament_mwt.php?id=' . $this->id, get_label('MWT integration'), get_label('Synchronize tournament with MWT site. Receive seating, send games, etc..')),
 				new MenuItem('tournament_broadcasts_edit.php?id=' . $this->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts')),
 			);

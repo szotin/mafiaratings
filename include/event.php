@@ -962,7 +962,7 @@ class EventPageBase extends PageBase
 				$manager_menu[] = new MenuItem('event_mailings.php?id=' . $this->event->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->event->name));
 			}
 			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->event->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->event->name));
-			$manager_menu[] = new MenuItem('javascript:mr.eventObs(' . $this->event->id . ')', get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.'));
+			$manager_menu[] = new MenuItem('game_obs.php?bck=1&user_id=0&event_id=' . $this->event->id, get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.'));
 			$manager_menu[] = new MenuItem('event_broadcasts_edit.php?id=' . $this->event->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts'));
 			
 			if ($this->is_manager && is_null($this->event->tournament_id))

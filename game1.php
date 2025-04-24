@@ -16,6 +16,7 @@ class Page extends PageBase
 		echo '<script src="js/game1.js"></script>';
 		echo '<script src="js/game1-ui.js"></script>';
 		echo '<script src="js/game_' . get_lang_code($_lang) . '.js"></script>';
+		echo '<script src="js/obs-websocket-js.js"></script>';
 	}
 	
 	// no title to save space for the game
@@ -535,16 +536,16 @@ class Page extends PageBase
 			echo '<li type="separator"></li>';
 			// echo '<li id="voting" class="ops-item"><a href="#" onclick="gameToggleVoting()"><img src="images/vote.png" class="text"> <span id="voting-txt">'.get_label('Cancel voting').'</span></a></li>';
 			// echo '<li type="separator"></li>';
-			echo '<li id="obs" class="ops-item"><a href="#" onclick="mr.';
+			echo '<li id="obs" class="ops-item"><a href="#" onclick="goTo(\'game_obs.php\',{bck:1,';
 			if (is_null($tournament_id))
 			{
-				echo 'eventObs(' . $this->event_id;
+				echo 'event_id:' . $this->event_id;
 			}
 			else
 			{
-				echo 'tournamentObs(' . $tournament_id;
+				echo 'tournament_id:' . $tournament_id;
 			}
-			echo ', ' . $_profile->user_id . ')"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
+			echo '})"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
 		}
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSettings()"><img src="images/settings.png" class="text"> '.get_label('Settings').'</a></li>';
 		echo '</ul>';

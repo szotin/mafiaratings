@@ -187,6 +187,13 @@ try
 	}
 	echo '> '.get_label('pin to the main page.');
 	
+	echo '<br><input type="checkbox" id="form-streaming"';
+	if (($event->flags & EVENT_FLAG_STREAMING) != 0)
+	{
+		echo ' checked';
+	}
+	echo '> '.get_label('video streaming games.');
+	
 	echo '</table>';
 	
 	echo '<table class="transp" width="100%"><tr>';
@@ -396,6 +403,7 @@ try
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo EVENT_FLAG_PINNED; ?>;
+		if ($("#form-streaming").attr('checked')) _flags |= <?php echo EVENT_FLAG_STREAMING; ?>;
 		
 		var params =
 		{

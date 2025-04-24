@@ -21,8 +21,8 @@ try
 	
 	dialog_title(get_label('Create [0]', get_label('tournament round')));
 	$tournament_id = (int)$_REQUEST['tournament_id'];
-	list($club_id, $addr_id, $rules_code, $langs, $scoring_id, $scoring_version, $scoring_options, $country, $city) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.address_id, t.rules, t.langs, t.scoring_id, t.scoring_version, t.scoring_options, c.id, c.country_id' .
+	list($club_id, $addr_id, $rules_code, $langs, $scoring_id, $scoring_version, $scoring_options, $country, $city, $tournament_flags) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.address_id, t.rules, t.langs, t.scoring_id, t.scoring_version, t.scoring_options, c.id, c.country_id, t.flags' .
 		' FROM tournaments t' .
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities c ON c.id = a.city_id' .
@@ -97,6 +97,12 @@ try
 	echo '<tr><td colspan="2">';
 		
 	echo '<input type="checkbox" id="form-all_mod" checked> '.get_label('everyone can referee games.');
+	echo '<br><input type="checkbox" id="form-streaming"';
+	if ($tournament_flags & TOURNAMENT_FLAG_STREAMING)
+	{
+		echo ' checked';
+	}
+	echo '> '.get_label('video streaming games.');
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -181,6 +187,7 @@ try
 		
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
+		if ($("#form-streaming").attr('checked')) _flags |= <?php echo EVENT_FLAG_STREAMING; ?>;
 		
 		var params =
 		{
