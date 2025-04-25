@@ -1,9 +1,3 @@
-<!DOCTYPE HTML>
-<html>
-<head>
-<META content="text/html; charset=utf-8" http-equiv=Content-Type>
-</head><body>
-
 <?php
 
 require_once '../include/tournament.php';
@@ -13,6 +7,12 @@ try
 {
 	initiate_session();
 	check_maintenance();
+
+	echo '<!DOCTYPE HTML>';
+	echo '<html>';
+	echo '<head>';
+	echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
+	echo '</head><body>';
 	
 	if (!isset($_REQUEST['id']))
 	{
