@@ -8,12 +8,24 @@ require_once '../include/scoring.php';
 require_once '../include/picture.php';
 
 define('ROW_COUNT', 10);
-define('COULUMN_COUNT', 3);
+define('COLUMN_COUNT', 3);
 
 try
 {
 	initiate_session();
 	check_maintenance();
+	
+	$row_count = ROW_COUNT;
+	if (isset($_REQUEST['rows']))
+	{
+		$row_count = (int)$_REQUEST['rows'];
+	}
+	
+	$column_count = COLUMN_COUNT;
+	if (isset($_REQUEST['columns']))
+	{
+		$column_count = (int)$_REQUEST['columns'];
+	}
 	
 	//$club_pic = new Picture(CLUB_PICTURE);
 	$tournament_user_pic =
@@ -78,9 +90,9 @@ try
 	
 	$number = 0;
 	echo '<table border="1"><tr>';
-	for ($i = 0; $i < COULUMN_COUNT; ++$i)
+	for ($i = 0; $i < $column_count; ++$i)
 	{
-		for ($j = 0; $j < ROW_COUNT; ++$j)
+		for ($j = 0; $j < $row_count; ++$j)
 		{
 			if ($number >= $players_count)
 			{
