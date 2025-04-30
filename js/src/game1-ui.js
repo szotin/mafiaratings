@@ -898,12 +898,17 @@ function _uiProceedKeyEvent(e)
 		{
 			if (index >= 0)
 			{
+				if (isSet(game.time.speaker) && e.shiftKey && e.altKey)
+				{
+					gameToggleOnRecord(index + 1);
+					return true;
+				}
 				if (e.shiftKey)
 				{
 					gamePlayerWarning(index);
 					return true;
 				}
-				if (e.altKey)
+				else if (e.altKey)
 				{
 					uiPlayerActions(index);
 					return true;

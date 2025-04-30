@@ -1326,20 +1326,61 @@ function gameSetOnRecord(num)
 	}
 }
 
-// removes the speaking players on record var if exists for the gameBack function
-function _gameRemoveOnRecord()
+// num is 1 to 10.
+// The function toggles the onRecord state. If the player is left as town, it toggles to mafia. If left as mafia - removes on record. If no record - leaves as town.
+function gameToggleOnRecord(num)
 {
-	if (game.time.time == 'speaking')
+	let t = game.time.time;
+	if (isSet(game.time.speaker))
 	{
 		let player = game.players[game.time.speaker - 1];
-		if (isSet(player.record) && player.record.length > 0)
+		if (!isSet(player.record))
+		{
+			player.record = [];
+		}
+		else if (player.record.length > 0)
 		{
 			let r = player.record[player.record.length - 1];
-			if (r.time == game.time.time && r.round == game.time.round)
+			if (
+				r.time == t && r.round == game.time.round &&
+				(!isSet(r.votingRound) || !isSet(game.time.votingRouns) || r.votingRound == game.time.votingRouns))
 			{
-				player.record.pop();
+				for (let i = 0; i < r.record.length; ++i)
+				{
+					let n = r.record[i];
+					if (n == num)
+					{
+						r.record[i] = -num;
+						gameDirty();
+						return;
+					}
+					if (n == -num)
+					{
+						r.record.splice(i, 1);
+						if (r.record.length == 0)
+						{
+							player.record.pop();
+							if (player.record.length == 0)
+							{
+								delete player.record;
+							}
+						}
+						gameDirty();
+						return;
+					}
+				}
+				r.record.push(num);
+				gameDirty();
+				return;
 			}
 		}
+		let r = { time: t, round: game.time.round, record: [num]};
+		if (isSet(game.time.votingRound))
+		{
+			r.votingRound = game.time.votingRound;
+		}
+		player.record.push(r);
+		gameDirty();
 	}
 }
 
