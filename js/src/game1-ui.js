@@ -1399,7 +1399,7 @@ function uiConfig(txt, onClose)
 			}
 			html += '> ' + l('Streaming') + '<br>'
 		}
-		'</td></tr>';
+		html += '</td></tr>';
 
 		html += '<tr><td colspan="2"><p>' + l('Accurate') + '</p>';
 		for (const letter of _cofigurableFeatures)
