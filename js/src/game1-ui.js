@@ -1453,40 +1453,69 @@ function uiSetRole(num, role)
 	gameSetRole(num, role);
 }
 
+function _uiSwapRoles(num)
+{
+	let dlgId = dlg.curId();
+	if (!gameExchangeRoles(num, $('#dlg-role').val()))
+	{
+		dlg.error(l('SwapRolesFail'));
+	}
+	dlg.close(dlgId);
+}
+
 function uiPlayerActions(num)
 {
 	let player = game.players[num];
-	if (!isSet(player.death))
+	let html = '<center>';
+	if (isSet(game.time) && ((game.time.time == 'speaking' && gameCompareTimes({ time: 'speaking', speaker: num + 1, round: game.time.round }, game.time) <= 0) || game.time.time == 'voting start'))
 	{
-		let html = '<center>';
-		if (isSet(game.time) && ((game.time.time == 'speaking' && gameCompareTimes({ time: 'speaking', speaker: num + 1, round: game.time.round }, game.time) <= 0) || game.time.time == 'voting start'))
+		let nom = -1;
+		if (isSet(player.nominating) && game.time.round < player.nominating.length && player.nominating[game.time.round] != null)
 		{
-			let nom = -1;
-			if (isSet(player.nominating) && game.time.round < player.nominating.length && player.nominating[game.time.round] != null)
-			{
-				nom = player.nominating[game.time.round] - 1;
-			}
-			html += '<p><center>' + l("DidNom") + ': <select id="dlg-nominate" onchange="_uiChangeNomination(' + num + ')">' + _uiOption(-1, nom, '');
-			for (let i = 0; i < 10; ++i)
-			{
-				if (!isSet(game.players[i].death))
-				{
-					html += _uiOption(i, nom, i + 1);
-				}
-			}
-			html += '</select></p><br>';
+			nom = player.nominating[game.time.round] - 1;
 		}
-		html += 
-			'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerGiveUp)"><table class="transp" width="100%"><tr><td width="30"><img src="images/suicide.png"></td><td>' + l('GiveUp') + '</td></tr></table></button></p>' +
-			'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/delete.png"></td><td>' + l('KickOut') + '</td></tr></table></button></p>' +
-			'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerTeamKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/skull.png"></td><td>' + l('TeamKickOut') + '</td></tr></table></button></p>';
-		if (isSet(player.warnings) && player.warnings.length > 0)
+		html += '<p><center>' + l("DidNom") + ': <select id="dlg-nominate" onchange="_uiChangeNomination(' + num + ')">' + _uiOption(-1, nom, '');
+		for (let i = 0; i < 10; ++i)
 		{
-			html += '<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerRemoveWarning)"><table class="transp" width="100%"><tr><td width="30"><img src="images/warn-minus.png"></td><td>' + l('RemoveWarning') + '</td></tr></table></button></p>';
+			if (!isSet(game.players[i].death))
+			{
+				html += _uiOption(i, nom, i + 1);
+			}
 		}
-		html += '</center>';
-		dlg.custom(html, l('PlayerActions', num + 1), 360, {});
+		html += '</select></p><br>';
 	}
+	html += 
+		'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerGiveUp)"><table class="transp" width="100%"><tr><td width="30"><img src="images/suicide.png"></td><td>' + l('GiveUp') + '</td></tr></table></button></p>' +
+		'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/delete.png"></td><td>' + l('KickOut') + '</td></tr></table></button></p>' +
+		'<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerTeamKickOut)"><table class="transp" width="100%"><tr><td width="30"><img src="images/skull.png"></td><td>' + l('TeamKickOut') + '</td></tr></table></button></p>';
+	if (isSet(player.warnings) && player.warnings.length > 0)
+	{
+		html += '<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerRemoveWarning)"><table class="transp" width="100%"><tr><td width="30"><img src="images/warn-minus.png"></td><td>' + l('RemoveWarning') + '</td></tr></table></button></p>';
+	}
+	
+	if (isSet(game.time) && game.time.time != 'end')
+	{
+		html += '<br><p>' + l('SwapRole') + ': <select id="dlg-role" onchange="_uiSwapRoles(' + num + ')"><option value="-1"></option>';
+		for (let i = 0; i < 10; ++i)
+		{
+			if (i != num)
+			{
+				let p = game.players[i];
+				if (isSet(p.role))
+				{
+					if (!isSet(player.role) || p.role != player.role)
+						html += '<option value="' + i + '">' + (i + 1) + '</option>';
+				}
+				else if (isSet(player.role) && player.role != 'civ')
+					html += '<option value="' + i + '">' + (i + 1) + '</option>';
+			}
+		}
+		html += '</select></p>';
+	}
+	
+	html += '</center>';
+	
+	dlg.custom(html, l('PlayerActions', num + 1), 360, {});
 }
 
 function uiCancelGame()

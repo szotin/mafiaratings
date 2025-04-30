@@ -646,6 +646,67 @@ function gameSetRole(num, role)
 	}
 }
 
+function _gameExchangeRoles(index1, index2)
+{
+	let result = false;
+	let p1 = game.players[index1];
+	let p2 = game.players[index2];
+	if (isSet(p1.role))
+	{
+		if (!isSet(p2.role))
+		{
+			p2.role = p1.role;
+			delete p1.role;
+			result = true;
+		}
+		else if (p1.role != p2.role)
+		{
+			let r = p1.role;
+			p1.role = p2.role;
+			p2.role = r;
+			result = true;
+		}
+	}
+	else if (isSet(p2.role))
+	{
+		p1.role = p2.role;
+		delete p2.role;
+		result = true;
+	}
+	
+	if (result)
+	{
+		if (isSet(p1.shooting))
+		{
+			if (!isSet(p2.shooting))
+			{
+				p2.shooting = p1.shooting;
+				delete p1.shooting;
+			}
+		}
+		else if (isSet(p2.shooting))
+		{
+			p1.shooting = p2.shooting;
+			delete p2.shooting;
+		}
+	}
+	return result;
+}
+
+function gameExchangeRoles(index1, index2)
+{
+	if (_gameExchangeRoles(index1, index2))
+	{
+		if (_gameIsEnd())
+		{
+			_gameExchangeRoles(index1, index2);
+			return false;
+		}
+		gameDirty();
+	}
+	return true;
+}
+
 function gameGenerateRoles()
 {
 	game.players[0].role = 'sheriff';
@@ -682,13 +743,22 @@ function _gameEnd(winner)
 	game.endTime = Math.round((new Date()).getTime() / 1000);
 }
 
-function _gameCheckEnd()
+// Returns 0 if game continues; 1 on town win; 2 on mafia win; 3 on tie.
+function _gameIsEnd()
 {
 	if (isSet(game.time) && gameAreRolesSet())
 	{
-		if (game.time.time == 'end')
+		if (isSet(game.winner))
 		{
-			return true;
+			switch (game.winner)
+			{
+			case 'civ':
+				return 1;
+			case 'maf':
+				return 2;
+			case 'tie':
+				return 3;
+			}
 		}
 		
 		let redAlive = 0;
@@ -711,15 +781,29 @@ function _gameCheckEnd()
 		
 		if (blackAlive <= 0)
 		{
-			_gameEnd('civ');
-			return true;
+			return 1;
 		}
 		
 		if (blackAlive >= redAlive)
 		{
-			_gameEnd('maf');
-			return true;
+			return 2;
 		}
+	}
+	return 0;
+}
+
+function _gameCheckEnd()
+{
+	switch (_gameIsEnd())
+	{
+	case 1:
+		_gameEnd('civ');
+		return true;
+	case 2:
+		_gameEnd('maf');
+		return true;
+	case 3: // no need to do anything on tie, everything is right already
+		return true;
 	}
 	return false;
 }
@@ -832,69 +916,57 @@ function _gameOnModKill()
 function gamePlayerWarning(num)
 {
 	let player = game.players[num];
-	if (!isSet(player.death))
+	gamePushState();
+	_gameIncTimeOrder();
+	if (!isSet(player.warnings))
 	{
-		gamePushState();
-		_gameIncTimeOrder();
-		if (!isSet(player.warnings))
-		{
-			player.warnings = [];
-		}
-		player.warnings.push(structuredClone(game.time));
-		
-		if (player.warnings.length >= 4)
-		{
-			player.death = { round: game.time.round, type: 'warnings' };
-			_gameOnModKill();
-		}
-		gameDirty();
+		player.warnings = [];
 	}
+	player.warnings.push(structuredClone(game.time));
+	
+	if (player.warnings.length >= 4)
+	{
+		player.death = { round: game.time.round, type: 'warnings' };
+		_gameOnModKill();
+	}
+	gameDirty();
 }
 
 function gamePlayerGiveUp(num)
 {
 	let player = game.players[num];
-	if (!isSet(player.death))
-	{
-		gamePushState();
-		_gameIncTimeOrder();
-		player.death = { 'round': game.time.round, 'type': 'giveUp', 'time': structuredClone(game.time) };
-		_gameOnModKill();
-		gameDirty();
-	}
+	gamePushState();
+	_gameIncTimeOrder();
+	player.death = { 'round': game.time.round, 'type': 'giveUp', 'time': structuredClone(game.time) };
+	_gameOnModKill();
+	gameDirty();
 }
 
 function gamePlayerKickOut(num)
 {
 	let player = game.players[num];
-	if (!isSet(player.death))
-	{
-		gamePushState();
-		_gameIncTimeOrder();
-		player.death = { 'round': game.time.round, 'type': 'kickOut', 'time': structuredClone(game.time) };
-		_gameOnModKill();
-		gameDirty();
-	}
+	gamePushState();
+	_gameIncTimeOrder();
+	player.death = { 'round': game.time.round, 'type': 'kickOut', 'time': structuredClone(game.time) };
+	_gameOnModKill();
+	gameDirty();
 }
 
 function gamePlayerTeamKickOut(num)
 {
 	let p = game.players[num];
-	if (!isSet(p.death))
+	gamePushState();
+	_gameIncTimeOrder();
+	p.death = { 'round': game.time.round, 'type': 'teamKickOut', 'time': structuredClone(game.time) };
+	if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
 	{
-		gamePushState();
-		_gameIncTimeOrder();
-		p.death = { 'round': game.time.round, 'type': 'teamKickOut', 'time': structuredClone(game.time) };
-		if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
-		{
-			_gameEnd('civ');
-		}
-		else
-		{
-			_gameEnd('maf');
-		}
-		gameDirty();
+		_gameEnd('civ');
 	}
+	else
+	{
+		_gameEnd('maf');
+	}
+	gameDirty();
 }
 
 function gamePlayerRemoveWarning(num)
@@ -1590,14 +1662,18 @@ function gameGetShots()
 	for (let i = 0; i < 10; ++i)
 	{
 		let player = game.players[i];
-		if (!isSet(player.death) && isSet(player.role) && (player.role == 'maf' || player.role == 'don'))
+		if (isSet(player.role) && (player.role == 'maf' || player.role == 'don'))
 		{
-			let shot = null;
-			if (isSet(player.shooting) && game.time.round <= player.shooting.length)
+			let dt = _gameGetPlayerDeathTime(i);
+			if (gameCompareTimes({round:game.time.round,time:'shooting'},dt) <= 0)
 			{
-				shot = player.shooting[game.time.round - 1] - 1;
+				let shot = null;
+				if (isSet(player.shooting) && game.time.round <= player.shooting.length)
+				{
+					shot = player.shooting[game.time.round - 1] - 1;
+				}
+				result.push([i, shot]);
 			}
-			result.push([i, shot]);
 		}
 	}
 	return result;
