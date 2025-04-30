@@ -1692,7 +1692,18 @@ function gameShoot(target, shooter, noDirty)
 		{
 			player.shooting.push(null);
 		}
-		player.shooting[game.time.round - 1] = parseInt(target) + 1;
+		if (player.shooting[game.time.round - 1] != null)
+		{
+			player.shooting[game.time.round - 1] = null;
+			if (_gameCutArray(player.shooting) == 0)
+			{
+				delete player.shooting;
+			}
+		}
+		else
+		{
+			player.shooting[game.time.round - 1] = parseInt(target) + 1;
+		}
 		if (!isSet(noDirty))
 		{
 			gameDirty();
