@@ -893,6 +893,37 @@ class Page extends PageBase
 							break;
 					}
 					break;
+				case GAME_ACTION_ON_RECORD:
+					$r = '';
+					foreach ($action->record as $rec)
+					{
+						if (!empty($r))
+						{
+							$r .= ', ';
+						}
+						if ($rec < 0)
+						{
+							$r .= get_label('[0] black', get_player_number_html($this->game, -$rec));
+						}
+						else
+						{
+							$r .= get_label('[0] red', get_player_number_html($this->game, $rec));
+						}
+					}
+					echo get_label('[0] leaves on record: [1]', get_player_number_html($this->game, $action->speaker), $r);
+					break;
+				case GAME_ACTION_KILL_ALL:
+					$v = '';
+					foreach ($action->votes as $vote)
+					{
+						if (!empty($v))
+						{
+							$v .= ', ';
+						}
+						$v .= get_player_number_html($this->game, $vote);
+					}
+					echo get_label('Voted to kill all: [0].', $v);
+					break;
 				case GAME_ACTION_DON:
 					echo get_label('Don checks [0].', get_player_number_html($this->game, $action->player));
 					break;

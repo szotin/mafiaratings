@@ -61,6 +61,8 @@ define('GAME_ACTION_LEGACY', 'legacy');
 define('GAME_ACTION_NOMINATING', 'nominating');
 define('GAME_ACTION_VOTING', 'voting');
 define('GAME_ACTION_SHOOTING', 'shooting');
+define('GAME_ACTION_ON_RECORD', 'record');
+define('GAME_ACTION_KILL_ALL', 'kill_all');
 
 define('GAME_TO_EVENT_MAX_DISTANCE', 10800);
 
@@ -2763,6 +2765,16 @@ class Game
 				}
 				$arrangement->players[$player->arranged - 1] = $i + 1;
 			}
+			if (isset($player->record))
+			{
+				foreach ($player->record as $record)
+				{
+					$action = clone $record;
+					$action->action = GAME_ACTION_ON_RECORD;
+					$action->speaker = $i + 1;
+					$actions[] = $action;
+				}
+			}
 			if (isset($player->death))
 			{
 				$action = $this->get_player_death_time($i + 1, true);
@@ -2855,6 +2867,7 @@ class Game
 		}
 		
 		$this->init_votings();
+		//print_json($this->votings);
 		for ($round = 0; $round < count($this->votings); ++$round)
 		{
 			$voting = $this->votings[$round];
@@ -2862,6 +2875,7 @@ class Game
 			{
 				continue;
 			}
+			$voting_rounds = 1;
 			foreach ($voting->nominees as $nominee)
 			{
 				if (isset($nominee->by))
@@ -2876,6 +2890,7 @@ class Game
 				}
 				if (isset($nominee->voting) && count($nominee->voting) > 0)
 				{
+					$voting_rounds = max($voting_rounds, count($nominee->voting));
 					if (is_array($nominee->voting[0]))
 					{
 						for ($votingRound = 0; $votingRound < count($nominee->voting); ++$votingRound)
@@ -2902,6 +2917,26 @@ class Game
 						$actions[] = $action;
 					}
 				}
+			}
+			if (isset($voting->voted_to_kill))
+			{
+				$noms = array();
+				foreach ($voting->nominees as $nominee)
+				{
+					if (isset($nominee->voting) && count($nominee->voting) == $voting_rounds)
+					{
+						$noms[] = $nominee->nominee;
+					}
+				}
+				
+				$action = new stdClass();
+				$action->round = $round;
+				$action->time = GAMETIME_VOTING_KILL_ALL;
+				$action->votingRound = $voting_rounds + 1;
+				$action->votes = $voting->voted_to_kill;
+				$action->nominees = $noms;
+				$action->action = GAME_ACTION_KILL_ALL;
+				$actions[] = $action;
 			}
 		}
 		usort($actions, array($this, 'compare_gametimes'));

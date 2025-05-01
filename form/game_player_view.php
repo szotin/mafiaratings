@@ -132,7 +132,7 @@ try
 	$player = $game->data->players[$player_num-1];
 	$player_id = 0;
 	$full_player_name = $player->name;
-	$player_name = $player->name;
+	$player_name = '<b>' . $player->name . '</b>';
 	$player_flags = 0; 
 	if (isset($player->id) && $player->id > 0)
 	{
@@ -381,6 +381,74 @@ try
 					else
 					{
 						$action_text = get_label('[0] leaves the game. [1]', $player_name, $info);
+					}
+				}
+				break;
+			case GAME_ACTION_KILL_ALL:
+				$is_voter = false;
+				foreach ($action->votes as $v)
+				{
+					if ($v == $player_num)
+					{
+						$is_voter = true;
+						break;
+					}
+				}
+				
+				$noms = '';
+				foreach ($action->nominees as $n)
+				{
+					if (!empty($noms))
+					{
+						$noms .= ', ';
+					}
+					$noms .= get_player_number_html($game, $n);
+				}
+				
+				if ($is_voter)
+				{
+					$action_text = get_label('[0] votes to kill all [1]', $player_name, $noms);
+				}
+				else
+				{
+					$action_text = get_label('[0] does not vote to kill all [1]', $player_name, $noms);
+				}
+				break;
+			case GAME_ACTION_ON_RECORD:
+				if ($action->speaker == $player_num)
+				{
+					$r = '';
+					foreach ($action->record as $rec)
+					{
+						if (!empty($r))
+						{
+							$r .= ', ';
+						}
+						
+						if ($rec < 0)
+						{
+							$r .= get_label('[0] black', get_player_number_html($game, -$rec));
+						}
+						else
+						{
+							$r .= get_label('[0] red', get_player_number_html($game, $rec));
+						}
+					}
+					$action_text = get_label('[0] leaves on record: [1]', $player_name, $r);
+				}
+				else foreach ($action->record as $rec)
+				{
+					if ($player_num == abs($rec))
+					{
+						if ($rec > 0)
+						{
+							$action_text = get_label('[0] leaves [1] red', get_player_number_html($game, $action->speaker), $player_name);
+						}
+						else
+						{
+							$action_text = get_label('[0] leaves [1] black', get_player_number_html($game, $action->speaker), $player_name);
+						}
+						break;
 					}
 				}
 				break;
