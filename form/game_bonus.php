@@ -51,19 +51,45 @@ class BonusInfo
 
 try
 {
-	if (!isset($_REQUEST['game_id']))
-	{
-		throw new FatalExc(get_label('Unknown [0]', get_label('game')));
-	}
-	$game_id = (int)$_REQUEST['game_id'];
-	
 	if (!isset($_REQUEST['player_num']))
 	{
 		throw new FatalExc(get_label('Unknown [0]', get_label('player')));
 	}
 	$player_num = max(min((int)$_REQUEST['player_num'], 10), 1);
 	
-	list($game) = Db::record(get_label('game'), 'SELECT json FROM games WHERE id = ?', $game_id);
+	$game_id = 0;
+	if (isset($_REQUEST['game_id']))
+	{
+		$game_id = (int)$_REQUEST['game_id'];
+	}
+	
+	if ($game_id <= 0)
+	{
+		if (!isset($_REQUEST['event_id']) || !isset($_REQUEST['table']) || !isset($_REQUEST['number']))
+		{
+			throw new FatalExc(get_label('Unknown [0]', get_label('game')));
+		}
+		
+		$event_id = (int)$_REQUEST['event_id'];
+		$game_table = (int)$_REQUEST['table'];
+		$game_number = (int)$_REQUEST['number'];
+		
+		$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $event_id, $game_table, $game_number);
+		if ($row = $query->next())
+		{
+			list ($game_id) = $row;
+			$game_id = (int)$game_id;
+		}
+	}
+	
+	if ($game_id > 0)
+	{
+		list($game) = Db::record(get_label('game'), 'SELECT json FROM games WHERE id = ?', $game_id);
+	}
+	else
+	{
+		list($game) = Db::record(get_label('game'), 'SELECT game FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $game_table, $game_number);
+	}
 	$game = json_decode($game);
 	if (!isset($game->players))
 	{
@@ -128,22 +154,50 @@ try
 				break;
 		}
 	}
-	
-	function commit(onSuccess)
+<?php
+	if ($game_id > 0)
 	{
-		json.post("api/ops/game.php",
+?>	
+		function commit(onSuccess)
 		{
-			op: 'set_bonus'
-			, game_id: <?php echo $game_id; ?>
-			, player_num: <?php echo $player_num; ?>
-			, points: $("#dlg-points").val()
-			, best_player: $("#dlg-bp").attr("checked") ? 1 : 0
-			, best_move: $("#dlg-bm").attr("checked") ? 1 : 0
-			, worst_move: $("#dlg-wm").attr("checked") ? 1 : 0
-			, comment: $('#dlg-comment').val()
-		},
-		onSuccess);
+			json.post("api/ops/game.php",
+			{
+				op: 'set_bonus'
+				, game_id: <?php echo $game_id; ?>
+				, player_num: <?php echo $player_num; ?>
+				, points: $("#dlg-points").val()
+				, best_player: $("#dlg-bp").attr("checked") ? 1 : 0
+				, best_move: $("#dlg-bm").attr("checked") ? 1 : 0
+				, worst_move: $("#dlg-wm").attr("checked") ? 1 : 0
+				, comment: $('#dlg-comment').val()
+			},
+			onSuccess);
+		}
+<?php
 	}
+	else
+	{
+?>	
+		function commit(onSuccess)
+		{
+			json.post("api/ops/game.php",
+			{
+				op: 'set_bonus'
+				, event_id: <?php echo $event_id; ?>
+				, table: <?php echo $game_table; ?>
+				, number: <?php echo $game_number; ?>
+				, player_num: <?php echo $player_num; ?>
+				, points: $("#dlg-points").val()
+				, best_player: $("#dlg-bp").attr("checked") ? 1 : 0
+				, best_move: $("#dlg-bm").attr("checked") ? 1 : 0
+				, worst_move: $("#dlg-wm").attr("checked") ? 1 : 0
+				, comment: $('#dlg-comment').val()
+			},
+			onSuccess);
+		}
+<?php
+	}
+?>
 	</script>
 <?php
 	echo '<ok>';

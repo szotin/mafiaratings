@@ -1633,24 +1633,46 @@ class ApiPage extends OpsApiPageBase
 	function set_bonus_op()
 	{
 		global $_profile, $_lang;
-		
-		$game_id = (int)get_required_param('game_id');
 		$player_num = (int)get_required_param('player_num');
 		if ($player_num < 1 || $player_num > 10)
 		{
 			throw new Exc(get_label('Invalid [0]', get_label('player number')));
 		}
+		
+		$game_id = (int)get_optional_param('game_id', 0);
+		if ($game_id <= 0)
+		{
+			$event_id = (int)get_required_param('event_id');
+			$game_table = (int)get_required_param('table');
+			$game_number = (int)get_required_param('number');
+			
+			$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $event_id, $game_table, $game_number);
+			if ($row = $query->next())
+			{
+				list ($game_id) = $row;
+				$game_id = (int)$game_id;
+			}
+		}
+		
 		$points = (float)get_optional_param('points', 0);
 		$best_player = (int)get_optional_param('best_player', 0);
 		$best_move = (int)get_optional_param('best_move', 0);
 		$worst_move = (int)get_optional_param('worst_move', 0);
 		
 		Db::begin();
-		list($json, $feature_flags, $club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
+		if ($game_id > 0)
+		{
+			list($json, $feature_flags, $club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT json, feature_flags, club_id, user_id, event_id, tournament_id FROM games WHERE id = ?', $game_id);
+		}
+		else
+		{
+			list($json, $club_id, $user_id, $event_id, $tournament_id) = Db::record(get_label('game'), 'SELECT g.game, e.club_id, g.user_id, g.event_id, e.tournament_id FROM current_games g JOIN events e ON e.id = g.event_id WHERE g.event_id = ? AND g.table_num = ? AND g.round_num = ?', $event_id, $game_table, $game_number);
+			$feature_flags = GAME_FEATURE_MASK_ALL;
+		}
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$game = new Game($json, $feature_flags);
-		if ($game->data->id != $game_id)
+		if ($game_id > 0 && $game->data->id != $game_id)
 		{
 			throw new Exc(get_label('Game id does not match the one in the game'));
 		}	
@@ -1722,7 +1744,14 @@ class ApiPage extends OpsApiPageBase
 			$player->bonus = $bonus;
 		}
 		
-		$game->update();
+		if ($game_id > 0)
+		{
+			$game->update();
+		}
+		else
+		{
+			Db::exec(get_label('game'), 'UPDATE current_games SET game = ? WHERE event_id = ? AND table_num = ? AND round_num = ?', json_encode($game->data), $event_id, $game_table, $game_number);
+		}
 		Db::commit();
 	}
 	

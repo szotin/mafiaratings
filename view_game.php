@@ -93,36 +93,20 @@ class Page extends PageBase
 		}
 		if ($this->id <= 0)
 		{
-			$this->event_id = 0;
-			if (isset($_REQUEST['event_id']))
-			{
-				$this->event_id = (int)$_REQUEST['event_id'];
-			}
-			else
+			if (!isset($_REQUEST['event_id']) || !isset($_REQUEST['table']) || !isset($_REQUEST['number']))
 			{
 				throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 			}
 			
-			$this->game_table = NULL;
-			if (isset($_REQUEST['table']))
-			{
-				$this->game_table = (int)$_REQUEST['table'];
-			}
+			$this->event_id = (int)$_REQUEST['event_id'];
+			$this->game_table = (int)$_REQUEST['table'];
+			$this->game_number = (int)$_REQUEST['number'];
 			
-			$this->game_number = NULL;
-			if (isset($_REQUEST['number']))
+			$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $this->event_id, $this->game_table, $this->game_number);
+			if ($row = $query->next())
 			{
-				$this->game_number = (int)$_REQUEST['number'];
-			}
-			
-			if (!is_null($this->game_table) && !is_null($this->game_number))
-			{
-				$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $this->event_id, $this->game_table, $this->game_number);
-				if ($row = $query->next())
-				{
-					list ($this->id) = $row;
-					$this->id = (int)$this->id;
-				}
+				list ($this->id) = $row;
+				$this->id = (int)$this->id;
 			}
 			
 			if ($this->id <= 0)
@@ -467,7 +451,16 @@ class Page extends PageBase
 		echo '</td>';
 		if ($this->is_editor)
 		{
-			echo '<td width="40" align="center"><button class="icon" onclick="mr.gameBonus(' . $this->id . ', ' . $num . ')" title="' . get_label('Set bonus for [0]', $player_name) . '"><img src="images/award.png" width="24"></button></td>';
+			echo '<td width="40" align="center"><button class="icon" onclick="';
+			if ($this->id > 0)
+			{
+				echo 'mr.gameBonus(' . $this->id . ', ' . $num . ')';
+			}
+			else
+			{
+				echo 'mr.currentGameBonus(' . $this->event_id . ', ' . $this->game_table . ', ' . $this->game_number . ', ' . $num . ')';
+			}
+			echo '" title="' . get_label('Set bonus for [0]', $player_name) . '"><img src="images/award.png" width="24"></button></td>';
 		}
 		echo '</tr></table>';
 	}
@@ -544,29 +537,32 @@ class Page extends PageBase
 		
 		// Buttons to manage the game
 		echo '<td align="right" valign="top">';
-		if (is_permitted(PERMISSION_USER))
+		if ($this->id > 0)
 		{
-			echo '<button class="icon" onclick="mr.gotoObjections(' . $this->id . ')" title="' . get_label('File an objection to the game [0] results.', $this->id) . '">';
-			echo '<img src="images/objection.png" border="0"></button>';
-			if ($this->is_editor)
+			if (is_permitted(PERMISSION_USER))
 			{
-				echo '<button class="icon" onclick="deleteGame(' . $this->id . ')" title="' . get_label('Delete game [0]', $this->id) . '"><img src="images/delete.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.editGame(' . $this->id . ')" title="' . get_label('Edit game [0]', $this->id) . '"><img src="images/edit.png" border="0"></button>';
-				if ($this->video_id == NULL)
+				echo '<button class="icon" onclick="mr.gotoObjections(' . $this->id . ')" title="' . get_label('File an objection to the game [0] results.', $this->id) . '">';
+				echo '<img src="images/objection.png" border="0"></button>';
+				if ($this->is_editor)
 				{
-					echo '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Add game [0] video', $this->id) . '"><img src="images/film-add.png" border="0"></button>';
-				}
-				else
-				{
-					echo '<button class="icon" onclick="mr.deleteVideo(' . $this->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $this->id) . '\')" title="' . get_label('Remove game [0] video', $this->id) . '"><img src="images/film-delete.png" border="0"></button>';
-				}
-				if ($_profile->is_admin() && $this->has_log)
-				{
-					echo '<button class="icon" onclick="mr.restoreGameFromLog(' . $this->id . ')" title="' . get_label('Restore the game [0] from log', $this->id) . '"><img src="images/bug.png" border="0"></button>';
+					echo '<button class="icon" onclick="deleteGame(' . $this->id . ')" title="' . get_label('Delete game [0]', $this->id) . '"><img src="images/delete.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.editGame(' . $this->id . ')" title="' . get_label('Edit game [0]', $this->id) . '"><img src="images/edit.png" border="0"></button>';
+					if ($this->video_id == NULL)
+					{
+						echo '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Add game [0] video', $this->id) . '"><img src="images/film-add.png" border="0"></button>';
+					}
+					else
+					{
+						echo '<button class="icon" onclick="mr.deleteVideo(' . $this->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $this->id) . '\')" title="' . get_label('Remove game [0] video', $this->id) . '"><img src="images/film-delete.png" border="0"></button>';
+					}
+					if ($_profile->is_admin() && $this->has_log)
+					{
+						echo '<button class="icon" onclick="mr.restoreGameFromLog(' . $this->id . ')" title="' . get_label('Restore the game [0] from log', $this->id) . '"><img src="images/bug.png" border="0"></button>';
+					}
 				}
 			}
+			echo '<button class="icon" onclick="mr.fiimGameForm(' . $this->id . ')" title="' . get_label('FIIM game [0] form', $this->id) . '"><img src="images/fiim.png" border="0"></button>';
 		}
-		echo '<button class="icon" onclick="mr.fiimGameForm(' . $this->id . ')" title="' . get_label('FIIM game [0] form', $this->id) . '"><img src="images/fiim.png" border="0"></button>';
 		echo '</td></tr><tr><td align="right" valign="bottom"></td></tr></table>';
 		
 		// Next game button

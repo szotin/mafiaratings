@@ -1152,6 +1152,7 @@ var timer = new function()
 		_cur = _max = total;
 		_prompt = total / 6;
 		_set(_cur);
+		$('#t-area').attr('class', total > 0 ? 'timer timer-0' : 'timer timer-1');
 	}
 	
 	this.show = function()
@@ -1240,6 +1241,7 @@ var timer = new function()
 			t = _get() + s;
 		}
 		_set(t);
+		$('#t-area').attr('class', 'timer timer-0');
 	}
 
 	this.tick = function()
@@ -1667,7 +1669,7 @@ function uiSettings()
 
 function uiViewGame()
 {
-	window.open('view_game.php?event_id=' + game.eventId + '&table=' + (game.table - 1) + '&number=' + (game.round - 1), '_blank').focus();
+	goTo('view_game.php', {bck: 1, event_id: game.eventId, table: game.table - 1, number: game.round - 1});
 }
 
 function uiNext()

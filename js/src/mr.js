@@ -1098,6 +1098,11 @@ var mr = new function()
 		dlg.form("form/game_bonus.php?game_id=" + gameId + '&player_num=' + playerNum, refr, 500);
 	}
 	
+	this.currentGameBonus = function(eventId, tableNum, gameNum, playerNum)
+	{
+		dlg.form("form/game_bonus.php?event_id=" + eventId + '&table=' + tableNum + '&number=' + tableNum + '&player_num=' + playerNum, refr, 500);
+	}
+	
 	this.ownGame = function(eventId, table, round, userId, promptStr)
 	{
 		function _own()
