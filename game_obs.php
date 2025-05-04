@@ -33,10 +33,11 @@ class Page extends GeneralPageBase
 		$this->langs = LANG_ALL_VISUAL;
 		
 		$this->event_id = 0;
+		$this->event_name = '';
 		if (isset($_REQUEST['event_id']))
 		{
 			$this->event_id = (int)$_REQUEST['event_id'];
-			list($club_id, $tournament_id, $this->token, $this->langs) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, security_token, languages FROM events WHERE id = ?', $this->event_id);
+			list($club_id, $tournament_id, $this->token, $this->langs, $this->event_name) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, security_token, languages, name FROM events WHERE id = ?', $this->event_id);
 			if (!is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $this->event_id, $tournament_id))
 			{
 				$this->token = NULL;
@@ -71,6 +72,30 @@ class Page extends GeneralPageBase
 			if ($this->user_id <= 0 && is_null($this->token))
 			{
 				$this->user_id = $_profile->user_id;
+			}
+		}
+		
+		if ($this->view == VIEW_GLYPHS)
+		{
+			$this->events = array();
+			if ($this->event_id > 0)
+			{
+				$e = new stdClass();
+				$e->id = $this->event_id;
+				$e->name = $this->event_name;
+				$this->events[] = $e;
+			}
+			else
+			{
+				$query = new DbQuery('SELECT id, name FROM events WHERE tournament_id = ?', $this->tournament_id);
+				while ($row = $query->next())
+				{
+					list ($eid, $ename) = $row;
+					$e = new stdClass();
+					$e->id = $eid;
+					$e->name = $ename;
+					$this->events[] = $e;
+				}
 			}
 		}
 	}
@@ -109,7 +134,7 @@ class Page extends GeneralPageBase
 	
 	function show_glyphs()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		if (is_valid_lang($this->langs))
 		{
@@ -121,7 +146,7 @@ class Page extends GeneralPageBase
 		}
 		
 		echo '<table class="transp" width="100%"><tr>';
-		echo '<td>' . get_label('Language') . ': <select id="lang" onchange="generateUrl()">';
+		echo '<td>' . get_label('Language') . ': <select id="lang" onchange="generateUrls()">';
 		$l = LANG_NO;
 		while (($l = get_next_lang($l, LANG_ALL_VISUAL)) != LANG_NO)
 		{
@@ -139,17 +164,24 @@ class Page extends GeneralPageBase
 		{
 			echo '<input type="hidden" value="' . $this->user_id . '">';
 		}
-		
-		echo '<td align="right">' . get_label('Glyphs type') . ': <select id="gtype" onchange="generateUrl()">';
-		show_option(0, 0, get_label('Full screen'));
-		show_option(1, 0, get_label('Glyphs only'));
-		show_option(2, 0, get_label('Info only'));
-		echo '</td>';
-		
+		echo '<td align="right">' . get_label('Table') . ': <input id="table" type="number" min="1" value="1" style="width: 30px;" onchange="generateUrls()"></td>';
 		echo '</tr></table></p>';
 		
-		echo '<p><table class="bordered light" width="100%"><tr>';
-		echo '<td width="64" class="dark">' . get_label('URL') . ':</td><td id="url"></td><td width="180" id="size"></td><td align="center" width="64"><button onclick="copyUrl()">' . get_label('Copy') . '</button></td>';
+		echo '<p><table class="bordered light" width="100%">';
+		echo '<tr class="header"><td width="180">' . get_label('Type') . '</td><td>' . get_label('URL') . '</td><td width="110">' . get_label('Recomended size') . '</td><td width="64"></td></tr>';
+		echo '<tr><td class="dark">' . get_label('Glyphs and info full screen') . ':</td><td id="url-0"></td><td>1920 x 1080</td><td align="center"><button onclick="copyUrl(0)">' . get_label('Copy') . '</button></td></tr>';
+		echo '<tr><td class="dark">' . get_label('Glyphs only') . ':</td><td id="url-1"></td><td>1920 x 260</td><td align="center"><button onclick="copyUrl(1)">' . get_label('Copy') . '</button></td></tr>';
+		echo '<tr><td class="dark">' . get_label('Info only') . ':</td><td id="url-2"></td><td>1920 x 100</td><td align="center"><button onclick="copyUrl(2)">' . get_label('Copy') . '</button></td></tr>';
+		echo '<tr><td class="dark">' . get_label('Tournament table') . ':</td><td id="url-3"></td><td>';
+		echo '<table class="transp" width="100%">';
+		echo '<tr><td>' . get_label('rows') . ':</td><td><input id="row" style="width: 30px;" type="number" min="1" value="10" onchange="generateUrls()"></td></tr>';
+		echo '<tr><td>' . get_label('columns') . ':</td><td><input id="col" style="width: 30px;" type="number" min="1" value="1" onchange="generateUrls()"></td></tr>';
+		echo '</table></td><td align="center"><button onclick="copyUrl(3)">' . get_label('Copy') . '</button></td></tr>';
+		for ($i = 0; $i < count($this->events); ++$i)
+		{
+			$e = $this->events[$i];
+			echo '<tr><td class="dark">' . get_label('Next game for [0]', $e->name) . ':</td><td id="url-' . ($i + 4) . '"></td><td>880 x 240</td><td align="center"><button onclick="copyUrl(' . ($i + 4) . ')">' . get_label('Copy') . '</button></td></tr>';
+		}
 		echo '</tr></table></p>';
 	}
 	
@@ -361,54 +393,53 @@ class Page extends GeneralPageBase
 		else
 		{
 ?>
-			var url = '';
+			var events = <?php echo json_encode($this->events); ?>;
+			var url = Array(<?php echo count($this->events) + 4; ?>).fill('');
 			var userId = <?php echo $this->user_id; ?>;
+			var site = '<?php echo get_server_url(); ?>';
+			
 			function changeUser(data)
 			{
 				userId = data ? data.id : 0;
-				generateUrl();
+				generateUrls();
 			}
-
-			function generateUrl()
+			
+			function generateUrls()
 			{
-				let html = '';
-				let htmlSize = '';
 				if (userId > 0)
 				{
 					let params = '?user_id=' + userId + '&token=<?php echo $this->token; ?>&locale=' + $('#lang').val();
-					let site = '<?php echo get_server_url(); ?>';
-					htmlSize = '<?php echo get_label('Recomended size'); ?>: ';
-					switch ($('#gtype').val())
-					{
-					case '1':
-						url = site + '/obs_plugins/players-overlay-plugin/#/players' + params;
-						htmlSize += '1920 x 260';
-						break;
-					case '2':
-						url = site + '/obs_plugins/players-overlay-plugin/#/gamestats' + params;
-						htmlSize += '1920 x 100';
-						break;
-					default:
-						url = site + '/obs_plugins/players-overlay-plugin/#/overlay' + params;
-						htmlSize += '1920 x 1080';
-						break;
-					}
-					html = '<a href="' + url + '" target="_blank">' + url + '</a>';
+					url[1] = site + '/obs_plugins/players-overlay-plugin/#/players' + params;
+					url[2] = site + '/obs_plugins/players-overlay-plugin/#/gamestats' + params;
+					url[0] = site + '/obs_plugins/players-overlay-plugin/#/overlay' + params;
 				}
 				else
 				{
-					html = '<?php echo get_label('Please select a user account that will be used to referee games.'); ?>';
+					url[0] = url[1] = url[2] = '<?php echo get_label('Please select a user account that will be used to referee games.'); ?>';
 				}
-				$('#url').html(html);
-				$('#size').html(htmlSize);
+				
+				url[3] = site + '/plugins/standings.php?id=<?php echo $this->tournament_id; ?>&rows=' + $('#row').val() + '&columns=' + $('#col').val();
+				
+				for (let i = 0; i < events.length; ++i)
+				{
+					url[i + 4] = site + '/plugins/next_game.php?table=' + $('#table').val() + '&id=' + events[i].id;
+				}
+				
+				for (let i = 0; i < url.length; ++i)
+				{
+					if (url[i].startsWith("htt"))
+						$('#url-' + i).html(url[i].length > 0 ? '<a href="' + url[i] + '" target="_blank">' + url[i] + '</a>' : '');
+					else
+						$('#url-' + i).html('<b>'+url[i]+'</b>');
+				}
 			}
 			
-			function copyUrl()
+			function copyUrl(i)
 			{
-				navigator.clipboard.writeText(url);
+				navigator.clipboard.writeText(url[i]);
 			}
 			
-			generateUrl();
+			generateUrls();
 <?php
 		}
 	}

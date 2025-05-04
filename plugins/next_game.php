@@ -44,7 +44,7 @@ try
 	}
 	if ($table >= count($misc->seating))
 	{
-		throw new Exc('Table ' . $table . ' is invalid. There are only ' . count($misc->seating) . ' tables.' );
+		throw new Exc('Table ' . ($table + 1) . ' is invalid. There are only ' . count($misc->seating) . ' tables.' );
 	}
 
 	$playing_now = array();
