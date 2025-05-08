@@ -281,6 +281,50 @@ function _gameGetPlayerDeathTime(num, includingSpeech)
 	return deathTime;
 }
 
+// Note: next two functions are not what you expect. They are just a service functions for gameWhoSpeaksFirst(round)
+// They return next and prev speakers based on their alive status at the beginning of the round. Not based on their speech. 
+// They also do not consider who is speaking first/lase. For example _gamePrevSpeaker(0, 0) returns 9, though 10 does not speak before 1 in round 0. Same: _gameNextSpeaker(9, 0) returns 0, thought 1 does not speak after 10.
+function _gameNextSpeaker(index, round)
+{
+	let dayStart = { "round": round, "time": 'night kill speaking' };
+	let end = index;
+	do
+	{
+		if (++index >= 10)
+		{
+			index = 0;
+		}
+		
+		if (gameCompareTimes(_gameGetPlayerDeathTime(index), dayStart) > 0)
+		{
+			return index;
+		}
+	}
+	while (index != end);
+	return -1;
+}
+
+function _gamePrevSpeaker(index, round)
+{
+	let dayStart = { "round": round, "time": 'night kill speaking' };
+	let end = index;
+	do
+	{
+		if (--index < 0)
+		{
+			index = 9;
+		}
+		
+		if (gameCompareTimes(_gameGetPlayerDeathTime(index), dayStart) > 0)
+		{
+			return index;
+		}
+	}
+	while (index != end);
+	return -1;
+}
+
+// returns player index 0-9
 function gameWhoSpeaksFirst(round)
 {
 	if (!isSet(round))
@@ -288,34 +332,17 @@ function gameWhoSpeaksFirst(round)
 		round = game.time.round;
 	}
 	
-	// todo: support mafclub rules
-	let candidate = 0;
-	if (round > 0)
+	if (round == 0)
 	{
-		candidate = gameWhoSpeaksFirst(round - 1) + 1;
-		if (candidate >= 10)
-		{
-			candidate = 0;
-		}
+		return _gameNextSpeaker(9, 0);
 	}
-	let dayStart = { "round": round, "time": 'night kill speaking' };
-	let i = 0;
-	for (; i < 10; ++i)
+
+	let prev = gameWhoSpeaksFirst(round - 1);
+	if (gameGetRule(/*RULES_ROTATION*/3) == /*RULES_ROTATION_LAST*/1)
 	{
-		if (gameCompareTimes(_gameGetPlayerDeathTime(candidate), dayStart) > 0)
-		{
-			break;
-		}
-		else if (++candidate >= 10)
-		{
-			candidate = 0;
-		}
+		prev = _gameNextSpeaker(_gamePrevSpeaker(prev, round - 1), round);
 	}
-	if (i >= 10)
-	{
-		return -1;
-	}
-	return candidate;
+	return _gameNextSpeaker(prev);
 }
 
 // time is a string specifying rough time of the game.
@@ -2082,6 +2109,11 @@ function gameSetFeature(letter, on)
 		game.features += letter;
 		gameDirty();
 	}
+}
+
+function gameGetRule(ruleIndex)
+{
+	return game.rules.substr(ruleIndex, 1);
 }
 
 // For future use. It will soon be replaced with something that is really checking rules.
