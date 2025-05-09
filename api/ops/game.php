@@ -1356,7 +1356,7 @@ class ApiPage extends OpsApiPageBase
 			else if ($feature_flags != GAME_FEATURE_MASK_ALL)
 			{
 				Db::exec(get_label('user'),
-					'INSERT INTO game_settings (user_id, flags, $feature_flags) VALUES (?, 0, ?)',
+					'INSERT INTO game_settings (user_id, flags, feature_flags) VALUES (?, 0, ?)',
 					$_profile->user_id, $feature_flags);
 			}
 			Db::commit();
