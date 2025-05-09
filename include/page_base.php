@@ -241,7 +241,7 @@ class PageBase
 			echo '<td valign="middle" align="right">';
 			echo '<a href="index.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('Home') . '"><img src="images/home.png" /></a></>';
 			// echo '<a href="ratings.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('Ratings') . '"><img src="images/clubs.png" /></a>';
-			echo '<a href="game' . (($_profile->user_flags & USER_FLAG_TEST_NEW_GAME) ? '1' : '') . '.php?bck=0" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('The game') . '"><img src="images/thegame.png" /></a>';
+			echo '<a href="game.php?bck=0" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('The game') . '"><img src="images/thegame.png" /></a>';
 			if ($club != NULL)
 			{
 				echo ' <a href="club_main.php?id=' . $club->id . '" title="' . $club->name . '" id="header-club"  onMouseEnter="javascript:';

@@ -1,2973 +1,2558 @@
-// /*GAME_FLAG_LOG_CORRUPTED*/1
-// /*GAME_FLAG_SIMPLIFIED_CLIENT*/2
+var version = "1.0"; // It must exactly match the value of GAME_CURRENT_VERSION in include/game.php
+var game; // All vars here can be used by UI code, but it is strongly recommended to use them for reading only. If changes are absolutely needed, make sure gameDirty(...) is called after that.
+var log; // array of games in the previous times - it is used to return back in time.
+var lastSaved; // index in the log array of the last record that is saved to the server.
+var regs; // array of players registered for the event
+var langs; // array of languages allowed in the event
+var _isDirty = false; // signals if the game needs to be saved
+var _runSaving = true; // signals if it's a good time to save current game
+var _connectionState = 0; // 0 when connected, 1 when connecting, 2 when disconnected, 3 when error
+var _connectionListener; // this function is called when connection status is changed. Parameter is 0 when connected, 1 when connecting, 2 when disconnected, 3 when error
+var _errorListener; // parameter type is: 0 - getting game failed; 1 - saving game failed; 2 - version mismatch: must do hard page reload.
+var _lastDirtyTime = null; // game time at which function dirty was called last time.
+var _gameOnChange; // this function is called every time game changes. Parameter flags is a bit combination of: 
 
-// /*LOGREC_TYPE_NORMAL*/0
-// /*LOGREC_TYPE_MISSED_SPEECH*/1 // deprecated now it's normal - we know that player misses speech by player.mute var
-// /*LOGREC_TYPE_WARNING*/2
-// /*LOGREC_TYPE_GIVE_UP*/3
-// /*LOGREC_TYPE_KICK_OUT*/4
-// /*LOGREC_TYPE_POSTPONE_MUTE*/5
-// /*LOGREC_TYPE_CANCEL_VOTING*/6
-// /*LOGREC_TYPE_RESUME_VOTING*/7
-// /*LOGREC_TYPE_TEAM_KICK_OUT*/8
+const DEFAULT_FEATURES = 'agsdutclhvknwro';
 
-// /*EVENT_FLAG_CANCELED*/4
-// /*EVENT_FLAG_ALL_CAN_REFEREE*/8
-// /*EVENT_FLAG_CHAMPIONSHIP*/0x20
-
-// /*ROLE_CIVILIAN*/0
-// /*ROLE_SHERIFF*/1
-// /*ROLE_MAFIA*/2
-// /*ROLE_DON*/3
-
-// /*PLAYER_STATE_ALIVE*/0
-// /*PLAYER_STATE_KILLED_NIGHT*/1
-// /*PLAYER_STATE_KILLED_DAY*/2
-
-// /*PLAYER_KR_ALIVE*/-1
-// /*PLAYER_KR_NORMAL*/0
-// /*PLAYER_KR_GIVE_UP*/1
-// /*PLAYER_KR_WARNINGS*/2
-// /*PLAYER_KR_KICKOUT*/3
-// /*PLAYER_KR_TEAM_KICKOUT*/4
-
-// /*U_PERM_PLAYER*/1
-// /*U_PERM_MODER*/2
-// /*U_PERM_MANAGER*/4
-// /*U_FLAG_MALE*/64
-// /*U_FLAG_IMMUNITY*/1024
-
-// /*S_FLAG_SIMPLIFIED_CLIENT*/0x1
-// /*S_FLAG_START_TIMER*/0x2
-// /*S_FLAG_NO_SOUND*/0x4
-// /*S_FLAG_NO_BLINKING*/0x8
-
-// /*GAME_STATE_NOT_STARTED*/0
-// /*GAME_STATE_NIGHT0_START*/1
-// /*GAME_STATE_NIGHT0_ARRANGE*/2
-// /*GAME_STATE_DAY_START*/3
-// /*GAME_STATE_DAY_PLAYER_SPEAKING*/5
-// /*GAME_STATE_VOTING_KILLED_SPEAKING*/7
-// /*GAME_STATE_VOTING*/8
-// /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9
-// /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10
-// /*GAME_STATE_NIGHT_START*/11
-// /*GAME_STATE_NIGHT_SHOOTING*/12
-// /*GAME_STATE_NIGHT_DON_CHECK*/13
-// /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15
-// /*GAME_STATE_MAFIA_WON*/17
-// /*GAME_STATE_CIVIL_WON*/18
-// /*GAME_STATE_DAY_FREE_DISCUSSION*/20
-// /*GAME_STATE_DAY_GUESS3*/21 // deprecated
-// /*GAME_STATE_BEST_PLAYER*/22 // deprecated
-// /*GAME_STATE_BEST_MOVE*/23 // deprecated
-// /*GAME_STATE_END*/25
-
-// /*RULES_FIRST_DAY_VOTING*/8
-// /*RULES_FIRST_DAY_VOTING_TO_TALK*/1
-// /*RULES_SPLIT_ON_FOUR*/11
-// /*RULES_SPLIT_ON_FOUR_PROHIBITED*/1
-// /*RULES_KILLED_NOMINATE*/13
-// /*RULES_KILLED_NOMINATE_ALLOWED*/1
-// /*RULES_ANTIMONSTER*/19
-// /*RULES_ANTIMONSTER_NO*/1
-// /*RULES_ANTIMONSTER_NOMINATED*/2
-// /*RULES_LEGACY*/15
-// /*RULES_LEGACY_FIRST*/0
-// /*RULES_LEGACY_NO*/1
-// /*RULES_LEGACY_ANY*/2
-// /*RULES_ROTATION*/3
-
-
-// /*STATE_CHANGE_FLAG_RESET_TIMER*/1
-// /*STATE_CHANGE_FLAG_CLUB_CHANGED*/2
-// /*STATE_CHANGE_FLAG_GAME_WAS_ENDED*/4
-
-//------------------------------------------------------------------------------------------
-// game data
-//------------------------------------------------------------------------------------------
-var mafia = new function()
+var statusWaiter = new function()
 {
-	var _version = 4; // must match CURRENT_VERSION in api/ops/game.php
-	var _lDirty = 0;
-	var _gDirty = 0;
-	var _data = null;
-	var _clubs = null;
-	
-	var _sortedPlayers;
-	var _sortedRegs;
-	var _sortedEvents;
-	
-	var _stateChange = null;
-	var _dirtyEvent = null;
-	var _failEvent = null;
-	var _editing;
-	
-	var _curEventId = 0;
-	var _curUserId = 0;
-	
-	var _curVoting = null;
-	var _voting = null;
-	
-	var _syncStart = 0;
-	var _demoEvent = null;
-	
-	this.sPlayers = function() { return _sortedPlayers; }
-	this.sReg = function(eventId) { return _sortedRegs[eventId]; }
-	this.sEvents = function() { return _sortedEvents; }
-	
-	function _dirty(l, g)
+	function setState(state)
 	{
-		l = l > 0 ? l : 0;
-		g = g > 0 ? g : 0;
-		var b = (l > 0) != (_lDirty > 0) || (g > 0) != (_gDirty > 0);
-		_lDirty = l;
-		_gDirty = g;
-		if (b && _dirtyEvent != null)
+		if (_connectionState != state)
 		{
-			_dirtyEvent(l > 0, g > 0);
+			_connectionState = state;
+			if (_connectionListener)
+			{
+				_connectionListener(state);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	// returning false cancels the operation
+	this.start = function()
+	{
+		return setState(1);
+	}
+	
+	this.success = function()
+	{
+		setState(http.connected() ? 0 : 2);
+	}
+	
+	this.error = function(message, onError)
+	{
+		setState(http.connected() ? 3 : 2);
+		if (onError)
+		{
+			onError(message);
 		}
 	}
 	
-	function _callStateChange(flags)
+	this.info = function(message, title, onClose)
 	{
-		if (_stateChange != null)
-		{
-			_stateChange(flags);
-		}
+		console.log(message);
+		onClose();
 	}
 	
-	this.load = function(clubId)
+	this.update = function()
 	{
+		setState(http.connected() ? 0 : 2);
+	}
+} // statusWaiter
+
+function _gameCutArray(arr)
+{
+	while (arr.length > 0 && arr[arr.length - 1] == null)
+	{
+		arr.pop();
+	}
+	return arr.length;
+}
+
+function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, connectionListener, onSuccess)
+{
+	_connectionListener = connectionListener;
+	_errorListener = errorListener;
+	_gameOnChange = gameOnChange;
+	json.post('api/ops/game.php', { op: 'get_current', lod: 1, event_id: eventId, table: tableNum, round: roundNum }, function(data)
+	{
+		game = data.game;
+		if (!isSet(game.version))
+		{
+			game.version = version;
+		}
+		
+		if (eventId <= 0)
+		{
+			if (isSet(game.eventId) && game.eventId > 0)
+			{
+				console.log('Changed eventId from ' + game.eventId + ' to 0.');
+				game.eventId = 0;
+			}
+			if (game.version != version)
+			{
+				console.log('Version mismatch the game version is  ' + game.version + '; software version is ' + version);
+			}
+		}
+		else if (game.version != version)
+		{
+			if (errorListener)
+			{
+				errorListener(2, l('ErrVersion', version, game.version), data);
+			}
+			else
+			{
+				window.location.reload(true);
+			}
+		}
+		
+		log = data.log;
+		lastSaved = log.length;
+		regs = data.regs;
+		langs = data.langs;
+		
+		obsInit(data.obs_scenes);
+		
+		// If the game exists in the local storage, we use it instead of the server one.
+		// It can exist only when saving the game failed last time.
 		if (typeof localStorage == "object")
 		{
-			var str = localStorage['data'];
+			let str = localStorage['game'];
 			if (typeof str != "undefined" && str != null)
 			{
-				var data = jQuery.parseJSON(str);
-				if (clubId <= 0 || data.clubId == clubId)
-				{
-					mafia.data(data);
-					_dirty(0, _data.dirty);
-				}
-			}
-		}
-	}
-	
-	this.save = function(forse)
-	{
-		if (typeof forse != "boolean") forse = false;
-		if (_data != null && (_lDirty > 0 || forse))
-		{
-			if (typeof localStorage == "object")
-			{
-				_data.dirty = _gDirty;
-				localStorage['data'] = JSON.stringify(_data);
-			}
-			_dirty(0, _gDirty);
-		}
-	}
-	
-	this.stateChange = function(e)
-	{
-		var _e = _stateChange;
-		if (typeof e == "function")
-		{
-			_stateChange = e;
-		}
-		return _e;
-	}
-	
-	this.editing = function(e)
-	{
-		var _e = _editing;
-		if (typeof e == "boolean")
-		{
-			_editing = e;
-		}
-		return _e;
-	}
-	
-	this.failEvent = function(f)
-	{
-		var _f = _failEvent;
-		if (typeof f == "function")
-		{
-			_failEvent = f;
-		}
-		return _f;
-	}
-	
-	function dirty() { _dirty(1, _gDirty + 1); }
-	this.localDirty = function() { return _lDirty > 0; }
-	this.globalDirty = function() { return _gDirty > 0; }
-	this.dirtyEvent = function(od)
-	{
-		var _od = _dirtyEvent;
-		if (typeof od == "function")
-		{
-			_dirtyEvent = od;
-		}
-		return _od;
-	}
-	
-	this.data = function(d)
-	{
-		if (typeof d == "object")
-		{
-			var stateChangeFlags = 0;
-			if (_data == null)
-			{
-				stateChangeFlags = /*STATE_CHANGE_FLAG_RESET_TIMER*/1 + /*STATE_CHANGE_FLAG_CLUB_CHANGED*/2;
-			}
-			else if (_data.club.id != d.club.id)
-			{
-				stateChangeFlags = /*STATE_CHANGE_FLAG_CLUB_CHANGED*/2;
-			}
-			function userSort(a, b) { return players[a].name.toLocaleLowerCase().localeCompare(players[b].name.toLocaleLowerCase()); }
-			_data = d;
-			var club = d.club;
-			var players = club.players;
-			var game = d.game;
-			_sortedPlayers = [];
-			for (var id in players)
-			{
-				_sortedPlayers.push(id);
-				id = parseInt(id);
-				if (id < _curUserId)
-				{
-					_curUserId = id;
-				}
-			}
-			_sortedPlayers.sort(userSort);
-			
-			club.haunters.sort(userSort);
-			
-			var events = club.events;
-			if (typeof events[0] != "undefined")
-			{
-				_demoEvent = events[0];
-			}
-			else if (_demoEvent == null || _demoEvent.club_id != club.id)
-			{
-				_demoEvent =  
-				{
-					id: 0,
-					club_id: club.id,
-					rules_code: club.rules_code,
-					tournament_id: 0,
-					name: l("DemoEvent"),
-					start_time: 0,
-					duration: 4294967295,
-					langs: club.langs,
-					flags: /*EVENT_FLAG_FUN*/32,
-					reg: { }
-				};
-			}
-			events[0] = _demoEvent;
-			
-			var event = events[game.event_id];
-			if (typeof event == "undefined")
-			{
-				game.event_id = 0;
-				event = _demoEvent;
-			}
-			
-			for (var i = 0; i < 10; ++i)
-			{
-				var p = game.players[i];
-				var r = event.reg;
-				if (p.id != 0)
-				{
-					var u = players[p.id];
-					if (typeof u == "undefined")
-					{
-						p.id = 0;
-					}
-					else if (typeof r[p.id] == "undefined")
-					{
-						r[p.id] = u.name;
-					}
-				}
-			}
-			
-			_sortedEvents = [];
-			_sortedRegs = {};
-			for (var id in events)
-			{
-				_sortedEvents.push(id);
-				if (id < _curEventId)
-				{
-					_curEventId = id;
-				}
-				
-				var reg = events[id].reg;
-				var a = [];
-				for (var i in reg)
-				{
-					a.push(i);
-				}
-				a.sort(function(a, b)
-				{
-					if (reg[a])
-					{
-						if (reg[b])
-							return reg[a].toLocaleLowerCase().localeCompare(reg[b].toLocaleLowerCase());
-						else
-							return -1;
-					}
-					else
-						return 1;
-				});
-				_sortedRegs[id] = a;
-			}
-			_sortedEvents.sort(function(a, b) { return events[a].start_time - events[b].start_time; });
-			
-			if (typeof _data['requests'] == "undefined")
-				_data['requests'] = [];
-			
-			_curVoting = null;
-			if (game.votings != null && game.votings.length > 0)
-			{
-				_curVoting = game.votings[game.votings.length - 1];
-			}
-			
-			if (game.lang == 0 || ((game.lang - 1) & game.lang) != 0)
-			{
-				if (((event.langs - 1) & event.langs) == 0)
-				{
-					game.lang = event.langs;
-				}
-				else if (((club.langs - 1) & club.langs) == 0)
-				{
-					game.lang = club.langs;
-				}
-				else
-				{
-					game.lang = 0;
-				}
-			}
-			
-			if (game.moder_id == 0)
-			{
-				game.moder_id = (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) ? 0 : _data.user.id;
-			}
-			
-			_callStateChange(stateChangeFlags);
-			
-			if (typeof _data.fail == 'string' && _failEvent != null)
-			{
-				_failEvent(_data.fail, false);
-			}
-		}
-		return _data;
-	}
-	
-	this.time = function()
-	{
-		return Math.round((new Date()).getTime() / 1000);
-	}
-	
-	this.sync = function(clubId, eventId, success)
-	{
-		var now = (new Date()).getTime();
-		if (_syncStart > 0 && (now - _syncStart) < 600000) // 10 minutes timeout
-		{
-			return;
-		}
-		_syncStart = now;
-		
-		if (typeof clubId != "number")
-			clubId = 0;
-		if (typeof eventId != "number")
-			eventId = 0;
-		
-		if (_data == null)
-		{
-			mafia.load(clubId);
-		}
-	
-		request = { op: 'sync' };
-		if (_data != null)
-		{
-			if (clubId <= 0)
-			{
-				clubId = _data.club.id;
-			}
-			
-			if (eventId <= 0)
-			{
-				eventId = _data.game.event_id;
-			}
-			
-			if (_gDirty > 0)
-			{
-				request['game'] = JSON.stringify(_data.game);
-				if (_data.requests.length > 0)
-				{
-					request['data'] = JSON.stringify(_data.requests);
+				let g = jQuery.parseJSON(str);
+				if (g.round == roundNum + 1 && g.table == tableNum + 1)
+				{					
+					game = g;
 				}
 			}
 		}
 		
-		if (clubId > 0)
-		{
-			request['club_id'] = clubId;
-		}
+		// Save the game every second
+		setInterval(gameSave, 1000);
 		
-		var oldDirty = _gDirty;
-		json.post('api/ops/game.php', request, function(data)
+		if (onSuccess)
 		{
-//			console.log(data);
-			if (typeof data.console == "object")
-				for (var i = 0; i < data.console.length; ++i)
-					console.log('Sync log: ' + data.console[i]);
-				
-			if (_version != data.version)
-			{
-				if (_failEvent != null)
-				{
-					_failEvent(l('ErrVersion', _version, data.version), true);
-				}
-				else
-				{
-					window.location.reload(true);
-				}
-			}
-				
-			_dirty(_lDirty, _gDirty - oldDirty);
-			_syncStart = 0;
-			if (typeof data.club != 'undefined')
-			{
-				if (typeof data.club.events[eventId] != "undefined")
-				{
-					data.game.event_id = eventId;
-				}
-				switch (data.game.gamestate)
-				{
-					case /*GAME_STATE_MAFIA_WON*/17:
-					case /*GAME_STATE_CIVIL_WON*/18:
-						data.game.gamestate = /*GAME_STATE_END*/25;
-						break;
-				}
-				mafia.data(data);
-			}
-			mafia.save(true);
-			if (typeof success != "undefined")
-			{
-				success();
-			}
-		}, function () { _syncStart = 0; http.connected(false); });
-	}
-	
-	this.player = function(num, id)
-	{
-		var game = _data.game;
-		var club = _data.club;
-		var event = club.events[game.event_id];
-		var result = -1;
-		if (num == 10)
-		{
-			game.moder_id = id;
-			if (id != 0)
-			{
-				for (var i = 0; i < 10; ++i)
-				{
-					var p = game.players[i];
-					if (p.id == id)
-					{
-						p.id = 0;
-						p.nick = "";
-						p.warnings = 0;
-						result = i;
-					}
-				}
-			}
-			dirty();
+			onSuccess(data);
 		}
-		else
-		{
-			var nick = '';
-			var is_male = 1;
-			var has_immunity = 0;
-			if (id != 0)
-			{
-				nick = event.reg[id];
-				var u = club.players[id];
-				if (u)
-				{
-					is_male = (u.flags & /*U_FLAG_MALE*/64) ? 1 : 0;
-					has_immunity = (u.flags & /*U_FLAG_IMMUNITY*/1024) ? 1 : 0;
-				}
-				
-				if (id == game.moder_id)
-				{
-					if (game.gamestate != /*GAME_STATE_NOT_STARTED*/0 || (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) == 0)
-						return -1;
-					game.moder_id = 0;
-					result = 10;
-				}
-				for (var i = 0; i < 10; ++i)
-				{
-					var p = game.players[i];
-					if (i != num && p.id == id)
-					{
-						p.id = 0;
-						p.nick = "";
-						result = i;
-					}
-				}
-			}
-			var p = game.players[num];
-			p.id = id;
-			p.nick = nick;
-			p.is_male = is_male;
-			p.has_immunity = has_immunity;
-			dirty();
-		}
-		return result;
-	}
-	
-	this.userTitle = function(pid)
+		_gameOnChange(true);
+	}, 
+	function (message, data)
 	{
-		if (pid == 0 || !_data.club.players[pid]) return '';
-		var t =  _data.club.players[pid].name;
-		var event = _data.club.events[_data.game.event_id];
-		if (typeof event != "undefined")
-		{
-			var nick = event.reg[pid];
-			if (nick && nick.toLocaleLowerCase() != t.toLocaleLowerCase())
-			{
-				t = nick + ' (' + t + ')';
-			}
-		}
-		return t;
-	}
-	
-	this.playerTitle = function(num)
+		_errorListener(0, message, data);
+		return false; // no error dialog
+	});
+}
+
+function gameSave()
+{
+	if (_isDirty && _runSaving)
 	{
-		var pid = _data.game.players[num].id;
-		var title = num + 1;
-		if (pid > 0)
+		let gameStr = JSON.stringify(game);
+		if (_connectionState != 1) // 1 means that the other request is not finished yet
 		{
-			var t =  _data.club.players[pid].name;
-			var event = _data.club.events[_data.game.event_id];
-			if (typeof event != "undefined")
+			let w = http.waiter(statusWaiter);
+			// console.log('Saving');
+			// console.log(lastSaved);
+			// console.log(log.slice(lastSaved));
+			json.post('api/ops/game.php', { op: 'set_current', event_id: game.eventId, table: game.table - 1, round: game.round - 1, game: JSON.stringify(game), logIndex: lastSaved, log: JSON.stringify(log.slice(lastSaved))}, 
+			function() // success
 			{
-				var nick = event.reg[pid];
-				if (typeof nick != "undefined")
+				// The game is not needed in the local storage any more because the server has it.
+				delete localStorage['game'];
+				_isDirty = false;
+				lastSaved = log.length;
+			},
+			function(message) // error
+			{
+				// Save it to the local storage if server is not accessible
+				if (typeof localStorage == "object")
 				{
-					t = nick;
+					localStorage['game'] = gameStr;
 				}
-			}
-			title += ' (' + t + ')';
+				_errorListener(1, message);
+			});
+			http.waiter(w);
 		}
-		return title;
 	}
-	
-	this.findPlayer = function(name)
+}
+
+function gamePushState()
+{
+	log.push(structuredClone(game));
+}
+
+// Call this after each change in the game. It sets the flag that makes the game to be saved
+function gameDirty()
+{
+//	console.log(JSON.stringify(game, undefined, 2));
+	let resetTimer = false;
+	_isDirty = true;
+	if (game.time == null)
 	{
-		var pl = null;
-		var searchInNicks = true;
-		name = name.toLocaleLowerCase();
-		for (var pid in _data.club.players)
+		if (_lastDirtyTime != null)
 		{
-			var p = _data.club.players[pid];
-			if (p.name.toLocaleLowerCase() == name)
-				return p;
-			if (searchInNicks)
-			{
-				for (var n of p.nicks)
-				{
-					if (n.toLocaleLowerCase() == name)
-					{
-						if (pl == null)
-						{
-							pl = p;
-						}
-						else
-						{
-							searchInNicks = false;
-							pl = null;
-						}
-						break;
-					}
-				}
-			}
+			_lastDirtyTime = null;
+			resetTimer = true;
 		}
-		return pl;
 	}
-	
-	this.rating = function(value)
+	else if (_lastDirtyTime == null || gameCompareTimes(_lastDirtyTime, game.time, true) != 0)
 	{
-		var r = (_data.game.flags & /*GAME_FLAG_FUN*/1) == 0;
-		if (typeof value != "undefined")
+		_lastDirtyTime = structuredClone(game.time);
+		resetTimer = true;
+	}
+	_gameOnChange(resetTimer);
+}
+
+// Cancels the game and deletes the server record. All game data will be lost
+function gameCancel()
+{
+	json.post('api/ops/game.php', { op: 'cancel_current', event_id: game.eventId, table: game.table - 1, round: game.round - 1 }, function()
+	{
+		goTo({round:undefined, demo:undefined});
+	});
+}
+
+// For players who were shot this is stooting time.
+// For players who were voted out this is voting to them time
+// For players who are not dead - end of the game
+// If unknown - null
+// num - 0 to 9.
+// If includingSpeech is true it returns final speech time instead of voting/shooting time.
+function _gameGetPlayerDeathTime(num, includingSpeech)
+{
+	let deathTime = null;
+	let player = game.players[num];
+	if (!isSet(player.death))
+	{
+		deathTime = { 'time': 'end' }
+		if (isSet(game.time))
+			deathTime.round = game.time.round;
+	}
+	else if (isSet(player.death.time))
+	{
+		deathTime = structuredClone(player.death.time);
+	}
+	else if (isSet(player.death.type))
+	{
+		if (player.death.type == 'day')
 		{
-			if (value)
+			deathTime = { 'round': player.death.round };
+			if (includingSpeech)
 			{
-				_data.game.flags &= ~/*GAME_FLAG_FUN*/1;
+				deathTime.time = 'day kill speaking';
+				deathTime.speaker = num + 1;
 			}
 			else
 			{
-				_data.game.flags |= /*GAME_FLAG_FUN*/1;
-			}
-		}
-		return r;
-	}
-	
-	this.eventId = function(event_id)
-	{
-		event_id = parseInt(event_id);
-		
-		var game = _data.game;
-		var old_id = game.event_id;
-		if (game.event_id != event_id)
-		{
-			var club = _data.club;
-			var event = club.events[event_id];
-			var oldEvent = club.events[game.event_id];
-			game.tournament_id = event.tournament_id;
-			mafia.rating((event.flags & /*EVENT_FLAG_FUN*/32) == 0);
-			game.event_id = event_id;
-			game.lang = parseInt(event.langs);
-			game.rules_code = event.rules_code;
-			if ((game.lang - 1) & game.lang)
-			{
-				game.lang = 0;
-			}
-			
-			if ((event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) == 0)
-			{
-				game.moder_id = _data.user.id;
-			}
-			else
-			{
-				var nick = oldEvent.reg[game.moder_id];
-				if (nick)
+				deathTime.votingRound = 0;
+				for (let i = 0; i < 10; ++i)
 				{
-					mafia.register(nick, game.moder_id);
+					let p = game.players[i];
+					if (isSet(p.voting) && p.voting.length > deathTime.round && isArray(p.voting[deathTime.round]))
+					{
+						deathTime.votingRound = p.voting[deathTime.round].length - 1;
+						break;
+					}
+				}
+				
+				if (deathTime.votingRound == 0)
+				{
+					deathTime.time = 'voting';
+					deathTime.nominee = num + 1;
 				}
 				else
 				{
-					game.moder_id = _data.user.id;
+					deathTime.time = 'voting kill all';
+				}
+			}
+		}
+		else if (player.death.type == 'night')
+		{
+			deathTime = { 'round': player.death.round, 'time': (includingSpeech ? 'night kill speaking' : 'shooting') };
+		}
+		else if (player.death.type == 'warnings')
+		{
+			deathTime = structuredClone(player.warnings[3]);
+		}
+	}
+	return deathTime;
+}
+
+// Note: next two functions are not what you expect. They are just a service functions for gameWhoSpeaksFirst(round)
+// They return next and prev speakers based on their alive status at the beginning of the round. Not based on their speech. 
+// They also do not consider who is speaking first/lase. For example _gamePrevSpeaker(0, 0) returns 9, though 10 does not speak before 1 in round 0. Same: _gameNextSpeaker(9, 0) returns 0, thought 1 does not speak after 10.
+function _gameNextSpeaker(index, round)
+{
+	let dayStart = { "round": round, "time": 'night kill speaking' };
+	let end = index;
+	do
+	{
+		if (++index >= 10)
+		{
+			index = 0;
+		}
+		
+		if (gameCompareTimes(_gameGetPlayerDeathTime(index), dayStart) > 0)
+		{
+			return index;
+		}
+	}
+	while (index != end);
+	return -1;
+}
+
+function _gamePrevSpeaker(index, round)
+{
+	let dayStart = { "round": round, "time": 'night kill speaking' };
+	let end = index;
+	do
+	{
+		if (--index < 0)
+		{
+			index = 9;
+		}
+		
+		if (gameCompareTimes(_gameGetPlayerDeathTime(index), dayStart) > 0)
+		{
+			return index;
+		}
+	}
+	while (index != end);
+	return -1;
+}
+
+// returns player index 0-9
+function gameWhoSpeaksFirst(round)
+{
+	if (!isSet(round))
+	{
+		round = game.time.round;
+	}
+	
+	if (round == 0)
+	{
+		return _gameNextSpeaker(9, 0);
+	}
+
+	let prev = gameWhoSpeaksFirst(round - 1);
+	if (gameGetRule(/*RULES_ROTATION*/3) == /*RULES_ROTATION_LAST*/1)
+	{
+		prev = _gameNextSpeaker(_gamePrevSpeaker(prev, round - 1), round);
+	}
+	return _gameNextSpeaker(prev);
+}
+
+// time is a string specifying rough time of the game.
+function _gameTimeToInt(time)
+{
+	switch (time)
+	{
+	case 'start':
+		return 0;
+	case 'arrangement':
+		return 1;
+	case 'relaxed sitting':
+		return 2;
+	case 'night start':
+		return 3;
+	case 'shooting':
+		return 4;
+	case 'don':
+		return 5;
+	case 'sheriff':
+		return 6;
+	case 'night kill speaking':
+		return 7;
+	case 'speaking':
+		return 8;
+	case 'voting start':
+		return 9;
+	case 'voting':
+		return 10;
+	case 'voting kill all':
+		return 11;
+	case 'day kill speaking':
+		return 12;
+	}
+	return 13;
+}
+
+// returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
+// num1 and num2 are 1 based. The range is 1-10.
+function _gameWhoWasNominatedEarlier(round, num1, num2)
+{
+	if (num1 != num2)
+	{
+		let speaksFirst = gameWhoSpeaksFirst(round);
+		let i = speaksFirst;
+		do
+		{
+			let p = game.players[i];
+			if (isSet(p.nominating) && round < p.nominating.length)
+			{
+				let n = p.nominating[round];
+				if (n == num1)
+				{
+					return -1;
+				}
+				if (n == num2)
+				{
+					return 1;
 				}
 			}
 			
-			for (var i = 0; i < 10; ++i)
+			++i;
+			if (i >= 10)
 			{
-				var p = game.players[i];
-				var nick = oldEvent.reg[p.id];
-				if (nick)
-				{
-					mafia.register(nick, p.id);
-				}
-				else
-				{
-					p.id = 0;
-					p.nick = "";
-				}
+				i = 0;
 			}
-			dirty();
-		}
-		return old_id;
+		} while (i != speaksFirst);
 	}
-	
-	this.tournamentId = function(tournament_id)
+	return 0;
+}
+
+// returns <0 if time1 < time2; >0 if time1 > time2; 0 if time1 == time2
+// When roughly is true it does not consider order fiels. All times with the same game state are considered the same.
+// For example suppose when player 7 speaks in round 2, player 3 gets a warning, then player 4 takes a warning, then player 10 is removed from the game.
+// If roughly is false or missing, all four events will appear in order 1. 7 speaks, then 3 gets an order, etc...
+// If roughly is true, all four events are considered to happen at the same time - when 7 is speaking.
+function gameCompareTimes(time1, time2, roughly)
+{
+	if (!isSet(time2))
 	{
-		var game = _data.game;
-		if (typeof tournament_id != "undefined" && game.tournament_id != tournament_id)
-		{
-			game.tournament_id = tournament_id;
-			if (tournament_id > 0)
-			{
-				game.flags &= ~/*GAME_FLAG_FUN*/1;
-			}
-			dirty();
-		}
-		return game.tournament_id;
+		return isSet(time1) ? 1 : 0;
 	}
-	
-	this.gameTable = function(t)
+	if (!isSet(time1))
 	{
-		var game = _data.game;
-		if (typeof t != 'undefined')
-		{
-			var event = _data.club.events[game.event_id];
-			if (t >= 0 && event.seating && t < event.seating.length)
-			{
-				if (t != game.table)
-				{
-					game.table = t;
-					var g = event.seating[game.table][game.number];
-					if (g)
-					{
-						for (var i = 0; i < g.length && i < 10; ++i)
-						{
-							mafia.player(i, g[i]);
-						}
-					}
-					dirty();
-				}
-			}
-			else if (typeof game.table != 'undefined')
-			{
-				delete game.table;
-				dirty();
-			}
-		}
-		if (typeof game.table == 'undefined')
-		{
-			return -1;
-		}
-		return game.table;
-	}
-	
-	this.gameNumber = function(n)
-	{
-		var game = _data.game;
-		if (typeof n != 'undefined')
-		{
-			var event = _data.club.events[game.event_id];
-			if (n >= 0 && event.seating && event.seating[game.table] && n < event.seating[game.table].length)
-			{
-				if (n != game.number)
-				{
-					game.number = n;
-					var g = event.seating[game.table][game.number];
-					if (g)
-					{
-						for (var i = 0; i < g.length && i < 10; ++i)
-						{
-							mafia.player(i, g[i]);
-						}
-					}
-					dirty();
-				}
-			}
-			else if (typeof game.number != 'undefined')
-			{
-				delete game.number;
-				dirty();
-			}
-		}
-		if (typeof game.table == 'undefined')
-		{
-			return -1;
-		}
-		return game.number;
-	}
-	
-	this.createEvent = function(event)
-	{
-		if (typeof event.addr_id == "undefined" && $.trim(event.addr).length == 0)
-		{
-			throw l('ErrNoAddr');
-		}
-		
-		var now = mafia.time();
-	
-		--_curEventId;
-		event['id'] = _curEventId;
-		event['action'] = 'new-event';
-		event['time'] = mafia.time();
-		event['start'] = now;
-		_data.requests.push(event);
-		
-		var club = _data.club;
-		var events = club.events;
-		events[_curEventId] =
-		{
-			id: _curEventId,
-			rules_code: event.rules_code,
-			name: event.name,
-			start_time: now,
-			langs: event.langs,
-			duration: event.duration,
-			flags: event.flags,
-			tournament_id: event.tournament_id,
-			reg: {}
-		};
-		
-		// can use a better algorythm to update sEvents, but we don't care - there is not too many events
-		_sortedEvents = [];
-		for (var id in events)
-		{
-			_sortedEvents.push(id);
-		}
-		_sortedEvents.sort(function(a, b) { return events[a].start_time - events[b].start_time; });
-		
-		_sortedRegs[_curEventId] = [];
-		
-		return _curEventId;
-	}
-	
-	this.extendEvent = function(id, time)
-	{
-		var e = _data.club.events[id];
-		var end = mafia.time() + parseInt(time);
-		e.duration = end - e.start_time;
-		
-		var req =
-		{
-			action: 'extend-event',
-			time: mafia.time(),
-			id: id,
-			duration: e.duration
-		};
-		_data.requests.push(req);
-		dirty();
-	}
-	
-	this.register = function(nick, user_id)
-	{
-		var event = _data.club.events[_data.game.event_id];
-		if (typeof event != "undefined")
-		{
-			var reg = event.reg;
-			if (typeof reg[user_id] == "undefined")
-			{
-				reg[user_id] = nick;
-				
-				var sReg = _sortedRegs[event.id];
-				sReg.push(user_id);
-				sReg.sort(function(a, b) { return reg[a].toLocaleLowerCase().localeCompare(reg[b].toLocaleLowerCase()); });
-				
-				var eventId = _data.game.event_id;
-				if (eventId != 0)
-				{
-					var reg =
-					{
-						action: 'reg',
-						time: mafia.time(),
-						id: user_id,
-						'nick': nick,
-						event: _data.game.event_id
-					};
-					_data.requests.push(reg);
-				}
-				dirty();
-			}
-		}
-	}
-	
-	this.regIncomer = function(name, nick, user_id, flags)
-	{
-		var club = _data.club;
-		var event = club.events[_data.game.event_id];
-		if (typeof event != "undefined")
-		{
-			if (typeof user_id == "undefined" || user_id == 0)
-			{
-				user_id = (--_curUserId);
-				flags = 65;
-			}
-			
-			var players = club.players;
-			if (typeof players[user_id] == "undefined")
-			{
-				players[user_id] =
-				{
-					'id': user_id,
-					'name': name,
-					'flags': flags,
-					'nicks': []
-				}
-			}
-			
-			var reg = event.reg;
-			if (typeof reg[user_id] == "undefined")
-			{
-				reg[user_id] = nick;
-				
-				var sReg = _sortedRegs[event.id];
-				sReg.push(user_id);
-				sReg.sort(function(a, b) { return reg[a].toLocaleLowerCase().localeCompare(reg[b].toLocaleLowerCase()); });
-				
-				var req =
-				{
-					action: 'reg-incomer',
-					time: mafia.time(),
-					nick: nick,
-					event: _data.game.event_id,
-					flags: flags,
-					id: user_id
-				};
-				if (user_id <= 0)
-				{
-					req['name'] = name;
-				}
-				_data.requests.push(req);
-			}
-			dirty();
-		}
-		return user_id;
-	}
-	
-	this.checkUser = function(name)
-	{
-		var club = _data.club;
-		var event = club.events[_data.game.event_id];
-		var players = club.players;
-		
-		if (event.id == 0)
-		{
-			return l('ErrDemo');
-		}
-		
-		name = name.trim();
-		if (name == '')
-		{
-			return l('ErrNoUserName');
-		}
-		
-		var lName = name.toLocaleLowerCase();
-		for (var pid in club.players)
-		{
-			if (club.players[pid].name.toLocaleLowerCase() == lName)
-			{
-				return l('ErrUserExists', name);
-			}
-		}
-		return null;
-	}
-	
-	this.createUser = function(name, nick, email, flags)
-	{
-		var club = _data.club;
-		var event = club.events[_data.game.event_id];
-		var players = club.players;
-		
-		name = name.trim();
-		email = email.trim();
-		
-		var error = mafia.checkUser(name);
-		if (error != null)
-		{
-			throw error;
-		}
-		
-		var user_id = (--_curUserId);
-		players[user_id] =
-		{
-			'id': user_id,
-			'name': name,
-			'flags': flags,
-			'nicks': []
-		};
-		
-		var reg = event.reg;
-		reg[user_id] = nick;
-			
-		var sReg = _sortedRegs[event.id];
-		sReg.push(user_id);
-		sReg.sort(function(a, b) { return reg[a].toLocaleLowerCase().localeCompare(reg[b].toLocaleLowerCase()); });
-		
-		var req =
-		{
-			action: 'new-user',
-			time: mafia.time(),
-			name: name,
-			nick: nick,
-			email: email,
-			event: event.id,
-			flags: flags,
-			id: user_id
-		};
-		_data.requests.push(req);
-		dirty();
-		return user_id;
-	}
-	
-	this.canBack = function()
-	{
-		return _data.game.log != null && _data.game.log.length > 0;
-	}
-	
-	this.canNext = function()
-	{
-		return _data.game.moder_id > 0 && _data.game.lang > 0;
-	}
-	
-	this.canRestart = function()
-	{
-		return _data.game.gamestate > /*GAME_STATE_NOT_STARTED*/0;
-	}
-	
-	this.getRule = function(ruleNum)
-	{
-		return _data.game.rules_code.substr(ruleNum, 1);
-	}
-	
-	this.rulesCode = function(code)
-	{
-		if (typeof code == "undefined")
-		{
-			return _data.game.rules_code;
-		}
-		
-		if (_data.game.rules_code != code)
-		{
-			_data.game.rules_code = code;
-			dirty();
-		}
-	}
-	
-	this.lang = function(lang)
-	{
-		if ((lang - 1) & lang)
-		{
-			lang = 0;
-		}
-		var game = _data.game;
-		if (game.lang != lang)
-		{
-			game.lang = lang;
-			dirty();
-		}
-		return game.lang;
-	}
-	
-// =================================================== The game
-	function _getNomIndex(num)
-	{
-		for (var i = 0; i < _curVoting.nominees.length; ++i)
-		{
-			if (_curVoting.nominees[i].player_num == num)
-			{
-				return i;
-			}
-		}
 		return -1;
 	}
 	
-	function _duplicateVoting(forward)
+	let round1 = isSet(time1.round) ? time1.round : 0;
+	let round2 = isSet(time2.round) ? time2.round : 0;
+	if (round1 != round2)
 	{
-		var game = _data.game;
-		var prev;
-		if (forward)
-		{
-			prev = _curVoting;
-			_curVoting =
-			{
-				round: _curVoting.round,
-				nominees: [],
-				voting_round: _curVoting.voting_round,
-				multiple_kill: false,
-				canceled: 0
-			};
-			
-			if (game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2)
-			{
-				_curVoting.votes = null;
-			}
-			else
-			{
-				_curVoting.votes = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
-			}
-			
-			for (var i = 0; i < prev.nominees.length; ++i)
-			{
-				var n = prev.nominees[i];
-				var p = game.players[n.player_num];
-				if (p.state == /*PLAYER_STATE_ALIVE*/0)
-				{
-					_addnominee(n.player_num, n.nominated_by);
-				}
-				else if ((game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2) == 0)
-				{
-					for (var j = 0; j < 10; ++j)
-					{
-						var v = prev.votes[j];
-						if (v >= i) --v;
-						if (v >= 0) _vote(j, v);
-					}
-				}
-			}
-			
-			game.votings.push(_curVoting);
-		}
-		else if (game.votings.length > 1)
-		{
-			prev = game.votings[game.votings.length - 2];
-			if (_curVoting.round == prev.round && _curVoting.voting_round == prev.voting_round)
-			{
-				game.votings.pop();
-				_curVoting = prev;
-			}
-		}
-	}
-	
-	function _onPlayerStateChange(player, reason)
-	{
-		var game = _data.game;
-
-		// check if canceling/uncanceling voting needed
-		switch (reason)
-		{
-			case /*PLAYER_KR_WARNINGS*/2:
-			case /*PLAYER_KR_KICKOUT*/3:
-			case /*PLAYER_KR_GIVE_UP*/1:
-				switch (game.gamestate)
-				{
-					case /*GAME_STATE_DAY_START*/3:
-					case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-					case /*GAME_STATE_VOTING*/8:
-					case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
-					case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
-						if (player.state != /*PLAYER_STATE_ALIVE*/0)
-						{
-							_curVoting.canceled += 2;
-							var nomIdx = _getNomIndex(player.number);
-							var antimonster = mafia.getRule(/*RULES_ANTIMONSTER*/19);
-							if (
-								antimonster == /*RULES_ANTIMONSTER_NO*/1 ||
-								(antimonster == /*RULES_ANTIMONSTER_NOMINATED*/2 && nomIdx < 0))
-							{
-								if ((_curVoting.canceled & 1) == 0)
-									_duplicateVoting(true);
-							}
-						}
-						else
-						{
-							if (_curVoting.canceled <= 1)
-								_duplicateVoting(false);
-							_curVoting.canceled -= 2;
-						}
-						break;
-				}
-				break;
-		}
-
-		// update player counts
-		if (player.role >= /*ROLE_MAFIA*/2)
-		{
-			if (player.state != /*PLAYER_STATE_ALIVE*/0)
-			{
-				if (typeof game.shooting[game.round] != 'undefined')
-				{
-					delete game.shooting[game.round][player.number];
-				}
-			}
-			else if (typeof game.shooting[game.round] != 'undefined')
-			{
-				var arranged = -1;
-				for (var i = 0; i < 10; ++i)
-				{
-					if (game.players[i].arranged == game.round)
-					{
-						arranged = i;
-						break;
-					}
-				}
-				game.shooting[game.round][player.number] = arranged;
-			}
-		}
-
-		if (player.state != /*PLAYER_STATE_ALIVE*/0)
-		{
-			if (reason == /*PLAYER_KR_TEAM_KICKOUT*/4)
-			{
-				game.gamestate = /*GAME_STATE_END*/25;
-			}
-			else
-			{
-				var maf_count = 0;
-				var civ_count = 0;
-				for (var i = 0; i < 10; ++i)
-				{
-					var p = game.players[i];
-					if (p.state == /*PLAYER_STATE_ALIVE*/0)
-					{
-						if (p.role <= /*ROLE_SHERIFF*/1)
-							++civ_count;
-						else
-							++maf_count;
-					}
-				}
-			
-				// check if the game is over
-				if (maf_count <= 0 || civ_count <= maf_count)
-				{
-					game.gamestate = /*GAME_STATE_END*/25;
-				}
-			}
-		}
-	}
-	
-	function _killPlayer(num, isNight, reason, round)
-	{
-		var player = _data.game.players[num];
-		if (player.state == /*PLAYER_STATE_ALIVE*/0)
-		{
-			if (isNight)
-			{
-				player.state = /*PLAYER_STATE_KILLED_NIGHT*/1;
-			}
-			else
-			{
-				player.state = /*PLAYER_STATE_KILLED_DAY*/2;
-			}
-			player.kill_round = round;
-			player.kill_reason = reason;
-			_onPlayerStateChange(player, reason);
-		}
-	}
-
-	function _resurrectPlayer(num)
-	{
-		try
-		{
-			var player = _data.game.players[num];
-			if (player.state != /*PLAYER_STATE_ALIVE*/0)
-			{
-				var reason = player.kill_reason;
-				player.state = /*PLAYER_STATE_ALIVE*/0;
-				player.kill_round = -1;
-				player.kill_reason = /*PLAYER_KR_ALIVE*/-1;
-				_onPlayerStateChange(player, reason);
-			}
-		}
-		catch(e)
-		{
-			handleError(e);
-		}
-	}
-	
-	function _addNominee(num, by)
-	{
-		var game = _data.game;
-		if (typeof num == "undefined")
-		{
-			num = game.current_nominee;
-			by = game.player_speaking;
-		}
-		else if (typeof by == "undefined")
-		{
-			by = game.player_speaking;
-		}
-	
-		if (_curVoting.canceled <= 0)
-		{
-			var player = game.players[num];
-			if (player.state == /*PLAYER_STATE_ALIVE*/0)
-			{
-				for (var i in _curVoting.nominees)
-				{
-					var nom = _curVoting.nominees[i];
-					if (nom.player_num == num)
-					{
-						return false;
-					}
-				}
-				
-				var nominee =
-				{
-					player_num: num,
-					nominated_by: by,
-					count: 0
-				};
-				
-				var index = _curVoting.nominees.length;
-				_curVoting.nominees.push(nominee);
-				if (_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2)
-					_voting = null;
-				else
-					for (var i = 0; i < 10; ++i)
-					{
-						_vote(i, index);
-					}
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	function _removeNominee()
-	{
-		if (_curVoting.canceled <= 0)
-		{
-			var idx = _curVoting.nominees.length - 1
-			var n = _curVoting.nominees[idx].player_num;
-			_curVoting.nominees.splice(idx, 1);
-			if ((_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2) == 0)
-			{
-				var v = _curVoting.votes;
-				for (var i = 0; i < 10; ++i)
-				{
-					if (v[i] > idx)
-					{
-						--v[i];
-					}
-					else if (v[i] == idx)
-					{
-						_vote(i, -1);
-					}
-				}
-			}
-		}
-	}
-	
-	function _vote(num, nomineeIndex)
-	{
-		if (_curVoting.canceled <= 0 && (_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2) == 0)
-		{
-			var oldNominee = _curVoting.votes[num];
-			if (oldNominee >= 0 && oldNominee < _curVoting.nominees.length)
-			{
-				--_curVoting.nominees[oldNominee].count;
-			}
-
-			var player = _data.game.players[num];
-			if (player.state != /*PLAYER_STATE_ALIVE*/0)
-			{
-				_curVoting.votes[num] = -1;
-			}
-			else
-			{
-				if (nomineeIndex < 0 || nomineeIndex >= _curVoting.nominees.length)
-				{
-					nomineeIndex = _curVoting.nominees.length - 1;
-				}
-				_curVoting.votes[num] = nomineeIndex;
-				if (nomineeIndex >= 0)
-				{
-					++_curVoting.nominees[nomineeIndex].count;
-				}
-			}
-			_voting = null;
-		}
-	}
-	
-	this.getNominationIndex = function(num)
-	{
-		return _getNomIndex(num);
-	}
-	
-	this.isNominated = function(num)
-	{
-		return _getNomIndex(num) >= 0;
-	}
-	
-	this.votingWinners = function()
-	{
-		if (_voting == null || _voting.round != _curVoting.round || _voting.voting_round != _curVoting.voting_round)
-		{
-			_voting = { winners: [], round: _curVoting.round, voting_round: _curVoting.voting_round };
-			if (_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2)
-			{
-				if (_curVoting.nominees.length == 1)
-				{
-					_curVoting.nominees[0].count = 1;
-				}
-				for (var i in _curVoting.nominees)
-				{
-					var nominee = _curVoting.nominees[i];
-					if (nominee.count != 0)
-					{
-						_voting.winners.push(nominee.player_num);
-					}
-				}
-			}
-			else
-			{
-				var maxCount = 0;
-				for (var i in _curVoting.nominees)
-				{
-					var nominee = _curVoting.nominees[i];
-					if (nominee.count != 0)
-					{
-						if (nominee.count > maxCount)
-						{
-							maxCount = nominee.count;
-							_voting.winners = [nominee.player_num];
-						}
-						else if (nominee.count == maxCount)
-						{
-							_voting.winners.push(nominee.player_num);
-						}
-					}
-				}
-			}
-		}
-		return _voting.winners;
+		return round1 - round2;
 	}
 		
-	function _assignRole(role)
+	let t1 = isSet(time1.time) ? time1.time : 'start';
+	let t2 = isSet(time2.time) ? time2.time : 'start';
+	if (t1 != t2)
 	{
-		var game = _data.game;
-		while (true)
-		{
-			var i = Math.floor(Math.random() * 10);
-			var p = game.players[i];
-			if (p.role == /*ROLE_CIVILIAN*/0)
-			{
-				p.role = role;
-				return;
-			}
-		}
+		return _gameTimeToInt(t1) - _gameTimeToInt(t2);
 	}
-	
-	this.whoMurdered = function()
+		
+	let result = 0;
+	switch (t1)
 	{
-		var game = _data.game;
-		var shots = mafia.shots();
+	case 'speaking':
+		let speaksFirst = gameWhoSpeaksFirst(round1);
+		let speaker1 = (time1.speaker <= speaksFirst ? 10 + time1.speaker : time1.speaker);
+		let speaker2 = (time2.speaker <= speaksFirst ? 10 + time2.speaker : time2.speaker);
+		result = speaker1 - speaker2;
+		break;
 
-		var num = -1;
-		for (var p in shots)
+	case 'voting':
+		if (time1.votingRound != time2.votingRound)
 		{
-			var pNum = shots[p];
-			if (pNum < 0)
-			{
-				return -1;
-			}
-
-			if (num < 0)
-			{
-				num = pNum;
-			}
-			else if (num != pNum)
-			{
-				return -1;
-			}
+			result = time1.votingRound - time2.votingRound;
 		}
-		return num;
-	}
-	
-	function _newVoting(round)
-	{
-		var game = _data.game;
-		var vround = 0;
-		var noms = null;
-		if (_curVoting != null && _curVoting.round == round)
+		else if (isSet(time1.speaker))
 		{
-			noms = mafia.votingWinners();
-			vround = 1;
+			result = isSet(time2.speaker) ? _gameWhoWasNominatedEarlier(time1.round, time1.speaker, time2.speaker) : (isSet(time2.nominee) ? -1 : 1);
 		}
-	
-		_curVoting = 
+		else if (isSet(time1.nominee))
 		{
-			round: round,
-			nominees: [],
-			voting_round: vround,
-			multiple_kill: false,
-			canceled: 0
-		};
-		if (game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2)
-		{
-			_curVoting.votes = null;
+			result = isSet(time2.nominee) ? _gameWhoWasNominatedEarlier(time1.round, time1.nominee, time2.nominee) : 1;
 		}
 		else
 		{
-			_curVoting.votes = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
+			result = isSet(time2.nominee) || isSet(time2.speaker) ? -1 : 0;
 		}
-		
-		if (noms != null)
-		{
-			for (var n in noms)
-			{
-				_addNominee(noms[n], -1);
-			}
-		}
-		game.votings.push(_curVoting);
+		break;
+			
+	case 'day kill speaking':
+		result = _gameWhoWasNominatedEarlier(round1, time1.speaker, time2.speaker);
+		break;
 	}
 	
-	function _gameStep(flags, logRec)
+	if (result == 0 && !roughly)
 	{
-		//console.log(logRec);
-		if (typeof logRec != "undefined")
-		{
-			_data.game.log.push(logRec);
-		}
+		result = (isSet(time1.order) ? time1.order : -1) - (isSet(time2.order) ? time2.order : -1);
+	}
+	return result;
+}
 
-		if (!_editing)
-		{
-			_data.game.end_time = mafia.time();
-		}
-		dirty();
-		_callStateChange(flags);
-	}
-	
-	this.playersCount = function(t)
+// Find user registration object for the event.
+function gameFindReg(userId)
+{
+	for (let i in regs)
 	{
-		var game = _data.game;
-		var count = 0;
-		for (var i = 0; i < 10; ++i)
+		if (regs[i].id == userId)
 		{
-			var p = game.players[i];
-			if (p.state == /*PLAYER_STATE_ALIVE*/0)
-			{
-				if (typeof t == "undefined" || (t && p.role <= /*ROLE_SHERIFF*/1) || (!t && p.role > /*ROLE_SHERIFF*/1))
-					++count;
-			}
+			return regs[i];
 		}
-		return count;
 	}
-	
-	this.checkGameEnd = function()
+	return null;
+}
+
+function gameSetPlayer(num, id)
+{
+	let result = -1;
+	if (id != 0)
 	{
-		var game = _data.game;
-		var maf_count = 0;
-		var civ_count = 0;
-		for (var i = 0; i < 10; ++i)
+		if (id == game.moderator.id)
 		{
-			var p = game.players[i];
-			if (p.state == /*PLAYER_STATE_ALIVE*/0)
+			game.moderator.id = 0;
+			if (isSet(game.moderator.name))
 			{
-				if (p.role <= /*ROLE_SHERIFF*/1)
-				{
-					++civ_count;
-				}
-				else
-				{
-					++maf_count;
-				}
+				delete game.moderator.name;
 			}
-			else if (p.kill_reason == /*PLAYER_KR_TEAM_KICKOUT*/4)
+			result = 10;
+		}
+		for (let i = 0; i < 10; ++i)
+		{
+			let p = game.players[i];
+			if (i != num && p.id == id)
 			{
-				if (p.role <= /*ROLE_SHERIFF*/1)
-				{
-					return /*GAME_STATE_MAFIA_WON*/17;
-				}
-				return /*GAME_STATE_CIVIL_WON*/18;
+				p.id = 0;
+				p.name = '';
+				result = i;
 			}
-		}
-		
-		if (maf_count <= 0)
-		{
-			return /*GAME_STATE_CIVIL_WON*/18;
-		}
-		else if (maf_count >= civ_count)
-		{
-			return /*GAME_STATE_MAFIA_WON*/17;
-		}
-		return 0;
-	}
-	
-	this.generateRoles = function(forse)
-	{
-		if (typeof forse == "undefined") forse = true;
-		
-		var changed = false;
-		var game = _data.game;
-		var m = 0;
-		var d = 0;
-		var s = 0;
-		for (var i = 0; i < 10; ++i)
-		{
-			var p = game.players[i];
-			var c = false;
-			switch (p.role)
-			{
-			case /*ROLE_SHERIFF*/1:
-				if (forse || s == 1)
-					p.role = /*ROLE_CIVILIAN*/0;
-				else
-					++s;
-				break;
-			case /*ROLE_MAFIA*/2:
-				if (forse || m == 2)
-					p.role = /*ROLE_CIVILIAN*/0;
-				else
-					++m;
-				break;
-			case /*ROLE_DON*/3:
-				if (forse || d == 1)
-					p.role = /*ROLE_CIVILIAN*/0;
-				else
-					++d;
-				break;
-			default:
-				p.role = /*ROLE_CIVILIAN*/0;
-				break;
-			}
-		}
-		while (s++ < 1) _assignRole(/*ROLE_SHERIFF*/1);
-		while (m++ < 2) _assignRole(/*ROLE_MAFIA*/2);
-		while (d++ < 1) _assignRole(/*ROLE_DON*/3);
-		
-		if (forse)
-		{
-			dirty();
-			_callStateChange(0);
 		}
 	}
 	
-	this.next = function()
+	let r = gameFindReg(id);
+	if (num >= 0 && num < 10)
 	{
-		var game = _data.game;
-		var logRec = 
+		let p = game.players[num];
+		if (r)
 		{
-			type: /*LOGREC_TYPE_NORMAL*/0,
-			round: game.round,
-    		gamestate: game.gamestate,
-    		player_speaking: game.player_speaking, 
-    		current_nominee: game.current_nominee,
-    		player: -1
-		};
-		
-		switch (game.gamestate)
+			p.id = r.id;
+			p.name = r.name;
+		}
+		else
 		{
-			case /*GAME_STATE_NOT_STARTED*/0:
-				if (!mafia.canNext())
-				{
-					throw l("ErrGameNotReady");
-				}
+			p.id = 0;
+			p.name = '';
+		}
+	}
+	else if (r)
+	{
+		game.moderator.id = r.id;
+		game.moderator.name = r.name;
+	}
+	else
+	{
+		game.moderator.id = 0;
+		if (isSet(game.moderator.name))
+		{
+			delete game.moderator.name;
+		}
+	}
+	gameDirty();
+	return result;
+}
 
-				if (_data.user.settings.flags & /*S_FLAG_SIMPLIFIED_CLIENT*/0x1)
-				{
-					game.flags |= /*GAME_FLAG_SIMPLIFIED_CLIENT*/2;
-				}
-				else
-				{
-					game.flags &= ~/*GAME_FLAG_SIMPLIFIED_CLIENT*/2;
-				}
-				
-				mafia.generateRoles(false);
+function gameSetIsRating(isRating)
+{
+	if (!isRating)
+	{
+		game.rating = false;
+	}
+	else
+	{
+		delete game.rating;
+	}
+	gameDirty();
+}
+	
+function gameSetLang(lang)
+{
+	game.language = lang;
+	gameDirty();
+}
 
-				game.gamestate = /*GAME_STATE_NIGHT0_START*/1;
-				game.round = 0;
-				game.player_speaking = -1;
-				game.current_nominee = -1;
-				game.table_opener = 0;
-				game.table_closer = 9;
-				
-				game.votings = [];
-				_newVoting(0);
-				
-				game.shooting = [];
-				game.log = [];
+function gameIsNight()
+{
+	if (!isSet(game.time))
+	{
+		return false;
+	}
+	switch (game.time.time)
+	{
+	case 'start':
+	case 'arrangement':
+	case 'relaxed sitting':
+	case 'night start':
+	case 'shooting':
+	case 'don':
+	case 'sheriff':
+		return true;
+	case 'end':
+		return game.winner == 'maf';
+	}
+	return false;
+}
 
-				if (!_editing)
+function gameRandomizeSeats()
+{
+	for (let i = 0; i < 10; ++i)
+	{
+		let j = Math.floor(Math.random() * 10);
+		if (i != j)
+		{
+			let p = game.players[i];
+			game.players[i] = game.players[j];
+			game.players[j] = p;
+		}
+	}
+	gameDirty();
+}
+
+function _gameRoleCounts()
+{
+	const roleCounts = game.players.reduce((counts, player) =>
+	{
+		let r = isSet(player.role) ? player.role : 'civ';
+		counts[r] = (counts[r] || 0) + 1;
+		return counts;
+	},
+	{});
+	return roleCounts;
+}
+
+function _gameExpectedRoleCount(role)
+{
+	if (role == 'maf')
+		return 2;
+	if (role == 'don' || role == 'sheriff')
+		return 1;
+	return 6;
+}
+
+function gameAreRolesSet()
+{
+	const roleCounts = _gameRoleCounts();
+	return roleCounts.civ == 6 && roleCounts.maf == 2 && roleCounts.sheriff == 1 && roleCounts.don == 1;
+}
+
+function gameSetRole(num, role)
+{
+	let player = game.players[num];
+	let oldRole = isSet(player.role) ? player.role : 'civ';
+	if (role != oldRole)
+	{
+		const roleCounts = _gameRoleCounts();
+		if (roleCounts[role] >= _gameExpectedRoleCount(role) ||
+			roleCounts[oldRole] <= _gameExpectedRoleCount(oldRole))
+		{
+			for (let i = 9; i >= 0; --i)
+			{
+				let p = game.players[i];
+				let r = isSet(p.role) ? p.role : 'civ';
+				if (r == role)
 				{
-					game.start_time = mafia.time();
-				}
-				break;
-
-			case /*GAME_STATE_NIGHT0_START*/1:
-				game.gamestate = /*GAME_STATE_NIGHT0_ARRANGE*/2;
-				break;
-
-			case /*GAME_STATE_NIGHT0_ARRANGE*/2:
-				game.gamestate = /*GAME_STATE_DAY_START*/3;
-				break;
-
-			case /*GAME_STATE_DAY_START*/3:
-				if (game.current_nominee >= 0)
-				{
-					_addNominee();
-					game.current_nominee = -1;
-				}
-				game.gamestate = /*GAME_STATE_DAY_PLAYER_SPEAKING*/5;
-				game.player_speaking = mafia.nextPlayer(-1);
-				break;
-				
-			case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-				game.gamestate = /*GAME_STATE_DAY_PLAYER_SPEAKING*/5;
-				game.player_speaking = mafia.nextPlayer(-1);
-				break;
-
-			case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-				if (game.current_nominee >= 0)
-				{
-					_addNominee();
-				}
-
-				game.current_nominee = -1;
-				game.player_speaking = mafia.nextPlayer(game.player_speaking);
-				if (game.player_speaking < 0)
-				{
-					if (_curVoting.canceled > 0)
-					{
-						game.gamestate = /*GAME_STATE_NIGHT_START*/11;
-						_newVoting(game.round + 1);
-					}
-					else switch(_curVoting.nominees.length)
-					{
-						case 0:
-							game.gamestate = /*GAME_STATE_NIGHT_START*/11;
-							_newVoting(game.round + 1);
-							break;
-
-						case 1:
-							if (mafia.getRule(/*RULES_FIRST_DAY_VOTING*/8) != /*RULES_FIRST_DAY_VOTING_TO_TALK*/1 && game.round == 0)
-							{
-								game.gamestate = /*GAME_STATE_NIGHT_START*/11;
-								_newVoting(game.round + 1);
-							}
-							else
-							{
-								game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
-								game.current_nominee = 0;
-								game.player_speaking = mafia.votingWinners()[0];
-								if (mafia.isKillingThisDay())
-								{
-									_killPlayer(game.player_speaking, false, /*PLAYER_KR_NORMAL*/0, game.round);
-								}
-							}
-							break;
-
-						default:
-							game.current_nominee = 0;
-							game.player_speaking = _curVoting.nominees[0].player_num;
-							game.gamestate = /*GAME_STATE_VOTING*/8;
-							break;
-					}
-				}
-				break;
-
-			case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-				if (++game.current_nominee >= mafia.votingWinners().length)
-				{
-					game.gamestate = /*GAME_STATE_NIGHT_START*/11;
-					_newVoting(game.round + 1);
-					game.player_speaking = -1;
-					game.current_nominee = -1;
-				}
-				else
-				{
-					game.player_speaking = mafia.votingWinners()[game.current_nominee];
-				}
-				break;
-
-			case /*GAME_STATE_VOTING*/8:
-				if (_curVoting.canceled > 0)
-				{
-					game.gamestate = /*GAME_STATE_NIGHT_START*/11;
-					_newVoting(game.round + 1);
-					game.player_speaking = -1;
-					game.current_nominee = -1;
-				}
-				else if ((game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2) == 0 && game.current_nominee < _curVoting.nominees.length - 1)
-				{
-					game.player_speaking = _curVoting.nominees[++game.current_nominee].player_num;
-				}
-				else switch (mafia.votingWinners().length)
-				{
-				case 0:
-					return;
-				case 1:
-					game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
-					game.current_nominee = 0;
-					game.player_speaking = mafia.votingWinners()[0];
-					if (mafia.isKillingThisDay())
-					{
-						_killPlayer(game.player_speaking, false, /*PLAYER_KR_NORMAL*/0, game.round);
-					}
-					break;
-				default:
-/*					
-					Find out how commenting this out affects simplified voting?
-					console.log(mafia.playersCount());
-					console.log(mafia.votingWinners().length);
-					if (mafia.playersCount() % mafia.votingWinners().length != 0)
-						return;*/
-					game.gamestate = /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9;
-					game.current_nominee = -1;
-					game.player_speaking = -1;
+					if (oldRole == 'civ')
+						delete p.role;
+					else
+						p.role = oldRole;
 					break;
 				}
-				break;
+			}
+		}
+		
+		if (player.role == 'civ')
+			delete player.role;
+		else
+			player.role = role;
+		
+		gameDirty();
+	}
+}
 
-			case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
-				/*_assert_(mafia.votingWinners().length > 1);*/
-				if (_curVoting.voting_round == 0)
+function _gameExchangeRoles(index1, index2)
+{
+	let result = false;
+	let p1 = game.players[index1];
+	let p2 = game.players[index2];
+	if (isSet(p1.role))
+	{
+		if (!isSet(p2.role))
+		{
+			p2.role = p1.role;
+			delete p1.role;
+			result = true;
+		}
+		else if (p1.role != p2.role)
+		{
+			let r = p1.role;
+			p1.role = p2.role;
+			p2.role = r;
+			result = true;
+		}
+	}
+	else if (isSet(p2.role))
+	{
+		p1.role = p2.role;
+		delete p2.role;
+		result = true;
+	}
+	
+	if (result)
+	{
+		if (isSet(p1.shooting))
+		{
+			if (!isSet(p2.shooting))
+			{
+				p2.shooting = p1.shooting;
+				delete p1.shooting;
+			}
+		}
+		else if (isSet(p2.shooting))
+		{
+			p1.shooting = p2.shooting;
+			delete p2.shooting;
+		}
+	}
+	return result;
+}
+
+function gameExchangeRoles(index1, index2)
+{
+	if (_gameExchangeRoles(index1, index2))
+	{
+		if (_gameIsEnd())
+		{
+			_gameExchangeRoles(index1, index2);
+			return false;
+		}
+		gameDirty();
+	}
+	return true;
+}
+
+function gameGenerateRoles()
+{
+	game.players[0].role = 'sheriff';
+	game.players[1].role = 'don';
+	game.players[2].role = game.players[3].role = 'maf';
+	for (let i = 4; i < 10; ++i)
+	{
+		delete game.players[i].role;
+	}
+	for (let i = 0; i < 10; ++i)
+	{
+		let j = Math.floor(Math.random() * 10);
+		if (i != j)
+		{
+			let r = game.players[i].role;
+			if (game.players[j].role)
+				game.players[i].role = game.players[j].role;
+			else
+				delete game.players[i].role;
+			if (r)
+				game.players[j].role = r;
+			else
+				delete game.players[j].role;
+		}
+	}
+	_gameCheckEnd();
+	gameDirty();
+}
+
+function _gameEnd(winner)
+{
+	game.winner = winner;
+	game.time = { 'time': 'end', 'round': game.time.round };
+	game.endTime = Math.round((new Date()).getTime() / 1000);
+}
+
+// Returns 0 if game continues; 1 on town win; 2 on mafia win; 3 on tie.
+function _gameIsEnd()
+{
+	if (isSet(game.time) && gameAreRolesSet())
+	{
+		if (isSet(game.winner))
+		{
+			switch (game.winner)
+			{
+			case 'civ':
+				return 1;
+			case 'maf':
+				return 2;
+			case 'tie':
+				return 3;
+			}
+		}
+		
+		let redAlive = 0;
+		let blackAlive = 0;
+		for (let i = 0; i < 10; ++i)
+		{
+			let p = game.players[i];
+			if (!isSet(p.death))
+			{
+				if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
 				{
-					if (!mafia.isKillingThisDay())
+					++blackAlive;
+				}
+				else
+				{
+					++redAlive;
+				}
+			}
+		}
+		
+		if (blackAlive <= 0)
+		{
+			return 1;
+		}
+		
+		if (blackAlive >= redAlive)
+		{
+			return 2;
+		}
+	}
+	return 0;
+}
+
+function _gameCheckEnd()
+{
+	switch (_gameIsEnd())
+	{
+	case 1:
+		_gameEnd('civ');
+		return true;
+	case 2:
+		_gameEnd('maf');
+		return true;
+	case 3: // no need to do anything on tie, everything is right already
+		return true;
+	}
+	return false;
+}
+
+function _gameCheckTie()
+{
+	let round = game.time.round - 2;
+	if (gameCompareTimes(game.time, {round: game.time.round, time: 'shooting'}) <= 0)
+	{
+		--round;
+	}
+	
+	if (round <= 0)
+	{
+		return false;
+	}
+	
+	let lastTime = {round: round, time: 'shooting'};
+	for (let i = 0; i < 10; ++i)
+	{
+		let p = game.players[i];
+		if (isSet(p.death))
+		{
+			let dt = _gameGetPlayerDeathTime(i);
+			if (gameCompareTimes(lastTime, dt) <= 0 && gameCompareTimes(dt, game.time) <= 0)
+			{
+				return false;
+			}
+		}
+	}
+	
+	_gameEnd('tie');
+	return true;
+}
+
+function _gameIncTimeOrder()
+{
+	if (isSet(game.time.order))
+	{
+		++game.time.order;
+	}
+	else
+	{
+		game.time.order = 1;
+	}
+}
+
+function _gameOnModKill()
+{
+	if (!_gameCheckEnd())
+	{
+		if (isSet(game.time))
+		{
+			if (game.time.time == 'voting start')
+			{
+				game.time = { round: game.time.round + 1, time: 'night start' };
+			}
+			else if (game.time.time == 'voting')
+			{
+				let cancelVoting = true;
+				if (isSet(game.time.nominee))
+				{
+					let winners = gameGetNominees(game.time.round + 1);
+					if (winners.length == 1)
 					{
-						// round0 - nobody is killed they all are speaking
-						game.current_nominee = 0;
-						if (game.current_nominee >= mafia.votingWinners().length)
+						let noms = gameGetNominees();
+						for (let i = 0; i < noms.length; ++i)
 						{
-							game.gamestate = /*GAME_STATE_NIGHT_START*/11;
-							_newVoting(game.round + 1);
-							game.player_speaking = -1;
-							game.current_nominee = -1;
-						}
-						else
-						{
-							game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
-							game.player_speaking = mafia.votingWinners()[game.current_nominee];
+							if (noms[i] == game.time.nominee)
+							{
+								break;
+							}
+							if (noms[i] == winners[0])
+							{
+								cancelVoting = false;
+								break;
+							}
 						}
 					}
-					else if (_curVoting.canceled > 0 || (mafia.playersCount() == 4 && mafia.getRule(/*RULES_SPLIT_ON_FOUR*/11) == /*RULES_SPLIT_ON_FOUR_PROHIBITED*/1))
+				}
+				if (cancelVoting)
+				{
+					for (let i = 0; i < 10; ++i)
 					{
-						// A special case: 4 players, multiple winners - no second voting. Nobody is killed.
-						game.gamestate = /*GAME_STATE_NIGHT_START*/11;
-						_newVoting(game.round + 1);
-						game.player_speaking = -1;
-						game.current_nominee = -1;
+						let p = game.players[i];
+						if (isSet(p.nominating) && game.time.round < p.nominating.length)
+						{
+							p.nominating[game.time.round] = null;
+							if (_gameCutArray(p.nominating) == 0)
+							{
+								delete p.nominating;
+							}
+						}
+						if (isSet(p.voting) && game.time.round < p.voting.length)
+						{
+							p.voting[game.time.round] = null;
+							if (_gameCutArray(p.voting) == 0)
+							{
+								delete p.voting;
+							}
+						}
+					}
+					game.time = { round: game.time.round + 1, time: 'night start' };
+				}
+			}
+		}
+	}
+}
+
+function gamePlayerWarning(num)
+{
+	let player = game.players[num];
+	gamePushState();
+	_gameIncTimeOrder();
+	if (!isSet(player.warnings))
+	{
+		player.warnings = [];
+	}
+	player.warnings.push(structuredClone(game.time));
+	
+	if (player.warnings.length >= 4)
+	{
+		player.death = { round: game.time.round, type: 'warnings' };
+		_gameOnModKill();
+	}
+	gameDirty();
+}
+
+function gamePlayerGiveUp(num)
+{
+	let player = game.players[num];
+	gamePushState();
+	_gameIncTimeOrder();
+	player.death = { 'round': game.time.round, 'type': 'giveUp', 'time': structuredClone(game.time) };
+	_gameOnModKill();
+	gameDirty();
+}
+
+function gamePlayerKickOut(num)
+{
+	let player = game.players[num];
+	gamePushState();
+	_gameIncTimeOrder();
+	player.death = { 'round': game.time.round, 'type': 'kickOut', 'time': structuredClone(game.time) };
+	_gameOnModKill();
+	gameDirty();
+}
+
+function gamePlayerTeamKickOut(num)
+{
+	let p = game.players[num];
+	gamePushState();
+	_gameIncTimeOrder();
+	p.death = { 'round': game.time.round, 'type': 'teamKickOut', 'time': structuredClone(game.time) };
+	if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
+	{
+		_gameEnd('civ');
+	}
+	else
+	{
+		_gameEnd('maf');
+	}
+	gameDirty();
+}
+
+function gamePlayerRemoveWarning(num)
+{
+	let player = game.players[num];
+	let i = player.warnings.length - 1;
+	if (isSet(player.warnings) && i >= 0)
+	{
+		let w = player.warnings[i];
+		if (gameCompareTimes(w, game.time, true) == 0 && --game.time.order == 0)
+		{
+			delete game.time.order;
+		}
+		for (let i = 0; i < 10; ++i)
+		{
+			if (i == num) continue;
+			
+			let p = game.players[i];
+			if (isSet(p.warnings))
+			{
+				for (j = p.warnings.length - 1; j >= 0; --j)
+				{
+					let w1 = p.warnings[j];
+					if (gameCompareTimes(w, w1, true) == 0 && w1.order > w.order)
+					{
+						--w1.order;
 					}
 					else
 					{
-						// vote again
-						_newVoting(game.round);
-						game.current_nominee = 0;
-						if (game.current_nominee >= _curVoting.nominees.length)
-						{
-							game.gamestate = /*GAME_STATE_VOTING*/8;
-						}
-						else
-						{
-							game.gamestate = /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10;
-						}
-						game.player_speaking = _curVoting.nominees[game.current_nominee].player_num;
+						break;
 					}
 				}
-				else if (!_curVoting.multiple_kill || mafia.playersCount() == 3)
-				{
-					// 3 players is a special case. They can't be all killed, so we ignore multiple_kill flag.
-					game.gamestate = /*GAME_STATE_NIGHT_START*/11;
-					_newVoting(game.round + 1);
-				}
-				else
-				{
-					game.gamestate = /*GAME_STATE_VOTING_KILLED_SPEAKING*/7;
-					game.current_nominee = 0;
-					var winners = mafia.votingWinners();
-					game.player_speaking = winners[0];
-					var count = winners.length;
-					for (var i = 0; i < count; ++i)
-					{
-						_killPlayer(winners[i], false, /*PLAYER_KR_NORMAL*/0, game.round);
-					}
-				}
-				break;
-
-			case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
-				if (_curVoting.canceled > 0)
-				{
-					game.gamestate = /*GAME_STATE_NIGHT_START*/11;
-					_newVoting(game.round + 1);
-				}
-				else
-				{
-					if (++game.current_nominee >= _curVoting.nominees.length)
-					{
-						game.gamestate = /*GAME_STATE_VOTING*/8;
-						game.current_nominee = 0;
-						game.player_speaking = -1;
-					}
-					game.player_speaking = _curVoting.nominees[game.current_nominee].player_num;
-				}
-				break;
-
-			case /*GAME_STATE_NIGHT_START*/11:
-				game.gamestate = /*GAME_STATE_NIGHT_SHOOTING*/12;
-				break;
-
-			case /*GAME_STATE_NIGHT_SHOOTING*/12:
-				game.player_speaking = mafia.whoMurdered();
-				game.gamestate = /*GAME_STATE_NIGHT_DON_CHECK*/13;
-				if (game.player_speaking >= 0)
-				{
-					_killPlayer(game.player_speaking, true, /*PLAYER_KR_NORMAL*/0, game.round);
-				}
-				break;
-
-			case /*GAME_STATE_NIGHT_DON_CHECK*/13:
-				game.gamestate = /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15;
-				break;
-
-			case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
-				game.gamestate = /*GAME_STATE_DAY_START*/3;
-				++game.round;
-				game.current_nominee = -1;
-				if (mafia.getRule(/*RULES_ROTATION*/3) == /*RULES_ROTATION_LAST*/1)
-				{
-					game.table_opener = -1;
-					game.table_closer = mafia.nextPlayer(game.table_closer);
-					game.table_opener = mafia.nextPlayer(game.table_closer);
-				}
-				else
-				{
-					game.table_opener = mafia.nextPlayer(game.table_opener);
-					game.table_closer = mafia.prevPlayer(game.table_opener);
-				}
-				break;
-
-			case /*GAME_STATE_BEST_PLAYER*/22: // deprecated
-			case /*GAME_STATE_BEST_MOVE*/23: // deprecated
-				game.gamestate = /*GAME_STATE_END*/25;
-				break;
-				
-			case /*GAME_STATE_END*/25:
-				game.gamestate = mafia.checkGameEnd();
-				mafia.submit();
-				
-			case /*GAME_STATE_MAFIA_WON*/17:
-			case /*GAME_STATE_CIVIL_WON*/18:
-				return;
+			}
+			if (isSet(p.death) && isSet(p.death.time) && gameCompareTimes(w, p.death.time, true) == 0 && p.death.time.order > w.order)
+			{
+				--p.death.time.order;
+			}
 		}
-		_gameStep(/*STATE_CHANGE_FLAG_RESET_TIMER*/1, logRec);
-	}
-
-	this.back = function()
-	{
-		var game = _data.game;
-		var logNum = game.log.length - 1;
-		if (logNum >= 0)
+		
+		if (player.warnings.length > 1)
+			player.warnings.splice(player.warnings.length - 1, 1);
+		else if (player.warnings.length == 1)
 		{
-			var game = _data.game;
-			var logRec = game.log[logNum];
-			
-			var stepFlags = 0;
-			if (logRec.type <= /*LOGREC_TYPE_MISSED_SPEECH*/1)
-				stepFlags |= /*STATE_CHANGE_FLAG_RESET_TIMER*/1;
-			if (game.gamestate == /*GAME_STATE_END*/25)
-				stepFlags |= /*STATE_CHANGE_FLAG_GAME_WAS_ENDED*/4;
-
-			if (logRec.type == /*LOGREC_TYPE_WARNING*/2)
-			{
-				var player = game.players[logRec.player];
-				if (player.warnings >= 4)
-				{
-					player.warnings = 3;
-					_resurrectPlayer(logRec.player);
-				}
-				else if (player.warnings == 3)
-				{
-					player.warnings = 2;
-					player.mute = -1;
-				}
-				else if (player.warnings > 0)
-				{
-					--player.warnings;
-				}
-			}
-			else if (logRec.type == /*LOGREC_TYPE_GIVE_UP*/3 || logRec.type == /*LOGREC_TYPE_KICK_OUT*/4 || logRec.type == /*LOGREC_TYPE_TEAM_KICK_OUT*/8)
-			{
-				_resurrectPlayer(logRec.player);
-			}
-			else if (logRec.type == /*LOGREC_TYPE_POSTPONE_MUTE*/5)
-			{
-				var player = game.players[logRec.player];
-				player.mute = logRec.round;
-			}
-			else if (logRec.type == /*LOGREC_TYPE_CANCEL_VOTING*/6)
-			{
-				_curVoting.canceled = 0;
-			}
-			else if (logRec.type == /*LOGREC_TYPE_RESUME_VOTING*/7)
-			{
-				if (logRec.player > 0)
-					_curVoting.canceled = logRec.player;
-				else
-					_duplicateVoting(false);
-			}
-			else
-			{
-				switch (logRec.gamestate)
-				{
-					case /*GAME_STATE_DAY_START*/3:
-						switch (game.gamestate)
-						{
-							case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-								if (logRec.current_nominee >= 0 && _curVoting.nominees.length > 0)
-								{
-									_removeNominee();
-								}
-								break;
-							case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-								if (logRec.current_nominee >= 0 && _curVoting.nominees.length > 0)
-								{
-									_removeNominee();
-								}
-								break;
-							/*default:
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								break;*/
-						}
-						break;
-
-					case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-						if (logRec.current_nominee >= 0 && _curVoting.nominees.length > 0)
-						{
-							_removeNominee();
-						}
-						break;
-
-					case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-						if (logRec.type == /*LOGREC_TYPE_MISSED_SPEECH*/1)
-						{
-							game.players[logRec.player_speaking].mute = -1;
-						}
-						switch (game.gamestate)
-						{
-							case /*GAME_STATE_NIGHT_START*/11:
-								if (game.votings.length > 1)
-								{
-									game.votings.pop();
-									_curVoting = game.votings[game.votings.length - 1];
-								}
-								break;
-							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-							case /*GAME_STATE_MAFIA_WON*/17:
-							case /*GAME_STATE_CIVIL_WON*/18:
-							case /*GAME_STATE_END*/25:
-							case /*GAME_STATE_BEST_PLAYER*/22:
-							case /*GAME_STATE_BEST_MOVE*/23:
-								if (mafia.isKillingThisDay())
-								{
-									var winners = mafia.votingWinners();
-									/*_assert_(winners.length == 1);*/
-									_resurrectPlayer(winners[0]);
-								}
-								break;
-						}
-						if (logRec.current_nominee >= 0 && _curVoting.nominees.length > 0)
-						{
-							_removeNominee();
-						}
-						break;
-
-					case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-						switch (game.gamestate)
-						{
-							case /*GAME_STATE_NIGHT_START*/11:
-								if (game.votings.length > 1)
-								{
-									game.votings.pop();
-									_curVoting = game.votings[game.votings.length - 1];
-								}
-								break;
-							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-								break;
-							/*default:
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								break;*/
-						}
-						break;
-
-					case /*GAME_STATE_VOTING*/8:
-						switch (game.gamestate)
-						{
-							case /*GAME_STATE_NIGHT_START*/11:
-								if (game.votings.length > 1)
-								{
-									game.votings.pop();
-									_curVoting = game.votings[game.votings.length - 1];
-								}
-								break;
-							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-							case /*GAME_STATE_MAFIA_WON*/17:
-							case /*GAME_STATE_CIVIL_WON*/18:
-							case /*GAME_STATE_END*/25:
-							case /*GAME_STATE_BEST_PLAYER*/22:
-							case /*GAME_STATE_BEST_MOVE*/23:
-								if (mafia.isKillingThisDay())
-								{
-									/*_assert_(winners.length == 1);*/
-									_resurrectPlayer(mafia.votingWinners()[0]);
-								}
-								break;
-							/*case /GAME_STATE_VOTING/8:
-							case /GAME_STATE_VOTING_MULTIPLE_WINNERS/9:
-								break;
-							default:
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								break;*/
-						}
-						break;
-
-					case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
-						switch (game.gamestate)
-						{
-							case /*GAME_STATE_NIGHT_START*/11:
-							case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
-								if (game.votings.length > 1)
-								{
-									game.votings.pop();
-									_curVoting = game.votings[game.votings.length - 1];
-								}
-								break;
-							case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-							case /*GAME_STATE_MAFIA_WON*/17:
-							case /*GAME_STATE_CIVIL_WON*/18:
-							case /*GAME_STATE_END*/25:
-							case /*GAME_STATE_BEST_PLAYER*/22:
-							case /*GAME_STATE_BEST_MOVE*/23:
-								/*_assert_(_curVoting.canceled <= 0);*/
-								if (mafia.isKillingThisDay())
-								{
-									var winners = mafia.votingWinners();
-									/*_assert_(count > 1);*/
-									for (var i = 0; i < winners.length; ++i)
-									{
-										_resurrectPlayer(winners[i]);
-									}
-								}
-								break;
-							/*default:
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								break;*/
-						}
-						break;
-
-					case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
-						switch (game.gamestate)
-						{
-							case /*GAME_STATE_NIGHT_START*/11:
-								if (game.votings.length > 1)
-								{
-									game.votings.pop();
-									_curVoting = game.votings[game.votings.length - 1];
-								}
-								break;
-							/*case /GAME_STATE_VOTING_NOMINEE_SPEAKING/10:
-							case /GAME_STATE_VOTING/8:
-								break;
-							default:
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								break;*/
-						}
-						break;
-
-					case /*GAME_STATE_NIGHT_SHOOTING*/12:
-						switch (game.gamestate)
-						{
-							case /*GAME_STATE_NIGHT_DON_CHECK*/13:
-							case /*GAME_STATE_MAFIA_WON*/17:
-							case /*GAME_STATE_CIVIL_WON*/18:
-							case /*GAME_STATE_END*/25:
-							case /*GAME_STATE_BEST_PLAYER*/22:
-							case /*GAME_STATE_BEST_MOVE*/23:
-								if (game.player_speaking >= 0)
-								{
-									_resurrectPlayer(game.player_speaking);
-								}
-								for (var i = 0; i < 10; ++i)
-								{
-									if (game.players[i].don_check == game.round)
-									{
-										game.players[i].don_check = -1;
-									}
-								}
-								break;
-							/*default:
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								break;*/
-						}
-						break;
-				
-					case /*GAME_STATE_NIGHT_DON_CHECK*/13:
-						switch (game.gamestate)
-						{
-							case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
-								for (var i = 0; i < 10; ++i)
-								{
-									if (game.players[i].sheriff_check == game.round)
-									{
-										game.players[i].sheriff_check = -1;
-									}
-								}
-								break;
-							/*case /GAME_STATE_NIGHT_DON_CHECK/14:
-								break;
-							default:
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								break;*/
-						}
-						break;
-
-					case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
-						switch (game.gamestate)
-						{
-							case /*GAME_STATE_DAY_START*/3:
-								if (mafia.getRule(/*RULES_ROTATION*/3) == /*RULES_ROTATION_LAST*/1)
-								{
-									game.table_closer = mafia.prevPlayer(game.table_closer);
-									game.table_opener = -1;
-									game.table_opener = mafia.nextPlayer(game.table_closer);
-								}
-								else
-								{
-									game.table_opener = mafia.prevPlayer(game.table_opener);
-									game.table_closer = mafia.prevPlayer(game.table_opener);
-								}
-								break;
-							/*case /GAME_STATE_NIGHT_SHERIFF_CHECK/16:
-								break;
-							default:
-								_fail_(l("ErrBrokenLog", game.gamestate, logRec.gamestate));
-								break;*/
-						}
-						break;
-				}
-
-				if (game.gamestate == /*GAME_STATE_NIGHT_SHOOTING*/12)
-				{
-					while (game.shooting.length > game.round)
-					{
-						game.shooting.pop();
-					}
-				}
-			}
-
-			game.round = logRec.round;
-			game.gamestate = logRec.gamestate;
-			game.player_speaking = logRec.player_speaking;
-			game.current_nominee = logRec.current_nominee;
-			game.log.pop();
-
-			_gameStep(stepFlags);
+			delete player.warnings;
 		}
+		gameDirty();
 	}
+}
 
-	this.isNight = function()
+function gameArrangePlayer(num, night)
+{
+	if (night > 0)
 	{
-		switch (_data.game.gamestate)
+		for (let i = 0; i < 10; ++i)
 		{
-			case /*GAME_STATE_NIGHT0_START*/1:
-			case /*GAME_STATE_NIGHT0_ARRANGE*/2:
-			case /*GAME_STATE_NIGHT_START*/11:
-			case /*GAME_STATE_NIGHT_SHOOTING*/12:
-			case /*GAME_STATE_NIGHT_DON_CHECK*/13:
-			case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
-				return true;
+			let p = game.players[i];
+			if (p.arranged == night)
+			{
+				delete p.arranged;
+			}
 		}
+		game.players[num].arranged = night;
+	}
+	else
+	{
+		delete game.players[num].arranged;
+	}
+	gameDirty();
+}
+
+function gameSetBonus(num, points, title, comment)
+{
+	if ((points || title) && !comment) // comment must be set if either points or title are set
+	{
 		return false;
 	}
-
-	this.nextPlayer = function(num)
-	{
-		var game = _data.game;
-		if (num < 0)
-		{
-			num = game.table_opener;
-			var player = game.players[num];
-			while (player.state != /*PLAYER_STATE_ALIVE*/0)
-			{
-				++num;
-				if (num >= 10)
-				{
-					num = 0;
-				}
-				player = game.players[num];
-			}
-			return num;
-		}
-
-		while (true)
-		{
-			++num;
-			if (num >= 10)
-			{
-				num = 0;
-			}
-
-			if (num == game.table_opener)
-			{
-				return -1;
-			}
-
-			var player = game.players[num];
-			if (player.state == /*PLAYER_STATE_ALIVE*/0)
-			{
-				return num;
-			}
-		}
-	}
-
-	this.prevPlayer = function(num)
-	{
-		var game = _data.game;
-		if (num < 0)
-		{
-			num = game.table_opener;
-		}
 	
-		while (true)
-		{
-			--num;
-			if (num < 0)
-			{
-				num = 9;
-			}
-
-			var player = game.players[num];
-			if (player.state == /*PLAYER_STATE_ALIVE*/0)
-			{
-				return num;
-			}
-		}
-	}
-	
-	this.guess = function(num)
+	let player = game.players[num];
+	if (points)
 	{
-		var game = _data.game;
-		if (num < 0 || num >= 10) num = -1;
-		if (game.guess3 == null)
+		if (title)
 		{
-			game.guess3 = [-1, -1, -1];
-		}
-		if (game.guess3.length < 3)
-		{
-			game.guess3.push(num);
+			player.bonus = [points, title];
 		}
 		else
 		{
-			game.guess3[0] = game.guess3[1];
-			game.guess3[1] = game.guess3[2];
-			game.guess3[2] = num;
+			player.bonus = points;
 		}
-		dirty();
-		_callStateChange(0);
 	}
-	
-	this.isGuessed = function(num)
+	else if (title)
 	{
-		var game = _data.game;
-		if (game.guess3 != null)
-		{
-			for (var i = 0; i < game.guess3.length && i < 3; ++i)
-			{
-				if (game.guess3[i] == num)
-				{
-					return true;
-				}
-			}
-		}
-		return false;
+		player.bonus = title;
 	}
-	
-	this.noGuess = function()
+	else if (player.bonus)
 	{
-		var game = _data.game;
-		if (game.guess3 != null)
-		{
-			for (var i = 0; i < game.guess3.length; ++i)
-			{
-				game.guess3[i] = -1;
-			}
-		}
-		dirty();
-		_callStateChange(0);
+		delete player.bonus;
 	}
-	
-	this.vote = function(num, v)
+	if (comment)
 	{
-		var game = _data.game;
-		var player = game.players[num];
-		if (player.state == /*PLAYER_STATE_ALIVE*/0)
-		{
-			_vote(num, v ? game.current_nominee : -1);
-			dirty();
-			_callStateChange(0);
-		}
+		player.comment = comment;
 	}
+	else if (player.comment)
+	{
+		delete player.comment;
+	}
+	gameDirty();
+	return true;
+}
 
-	this.canDonCheck = function()
+function gamePlayersCount()
+{
+	let count = 0;
+	for (let i = 0; i < 10; ++i)
 	{
-		var game = _data.game;
-		for (var i in game.players)
+		if (!isSet(game.players[i].death))
+			++count;
+	}
+	return count;
+}
+
+function gameNextSpeaker()
+{
+	let nextSpeaker = -1;
+	if (isSet(game.time) && game.time.time == 'speaking')
+	{
+		let first = gameWhoSpeaksFirst();
+		let nextSpeaker = game.time.speaker - 1;
+		let p;
+		while (true)
 		{
-			var player = game.players[i];
-			if (player.role == /*ROLE_DON*/3)
+			if (++nextSpeaker >= 10)
 			{
-				if (player.state == /*PLAYER_STATE_ALIVE*/0)
-				{
-					return true;
-				}
-				else if (
-					player.state == /*PLAYER_STATE_KILLED_NIGHT*/1 &&
-					player.kill_round == game.round &&
-					player.kill_reason == /*PLAYER_KR_NORMAL*/0)
-				{
-					return true;
-				}
+				nextSpeaker = 0;
+			}
+			if (nextSpeaker == first)
+			{
 				break;
 			}
-		}
-		return false;
-	}
-
-	this.canSheriffCheck = function()
-	{
-		var game = _data.game;
-		for (var i in game.players)
-		{
-			var player = game.players[i];
-			if (player.role == /*ROLE_SHERIFF*/1)
+			if (!isSet(game.players[nextSpeaker].death))
 			{
-				if (player.state == /*PLAYER_STATE_ALIVE*/0)
+				return nextSpeaker;
+			}
+		}
+	}
+	return -1;
+}
+
+function _gameDayKillDeathTime(round)
+{
+	for (let i = 0; i < 10; ++i)
+	{
+		let p = game.players[i];
+		if (isSet(p.death) && p.death.type == 'day' && p.death.round == round)
+		{
+			return _gameGetPlayerDeathTime(i);
+		}
+	}
+	return null;
+}
+
+function gameIsVotingCanceled()
+{
+	for (let i = 0; i < 10; ++i)
+	{
+		let player = game.players[i];
+		if (isSet(player.death))
+		{
+			let r = -1;
+			if (player.death.type == 'warnings')
+			{
+				r = player.warnings[3].round;
+			}
+			else if ((player.death.type == 'giveUp' || player.death.type == 'kickOut'))
+			{
+				r = player.death.round;
+			}
+
+			if (r == game.time.round)
+			{
+				let d = _gameDayKillDeathTime(r);
+				if (d == null || gameCompareTimes(d, _gameGetPlayerDeathTime(i)) >= 0)
 				{
 					return true;
 				}
-				else if (
-					player.state == /*PLAYER_STATE_KILLED_NIGHT*/1 &&
-					player.kill_round == game.round &&
-					player.kill_reason == /*PLAYER_KR_NORMAL*/0)
+			}
+			else if (r == game.time.round - 1)
+			{
+				let d = _gameDayKillDeathTime(r);
+				if (d != null && gameCompareTimes(d, _gameGetPlayerDeathTime(i)) < 0)
 				{
 					return true;
 				}
-				break;
 			}
 		}
-		return false;
 	}
+	return false;
+}
 
-	this.setPlayerRole = function(num, role)
+// Returns 0 if the player is not nominated; 1 - if the player is nominated; 2 - if the player is nominated by the currently speaking player.
+function gameIsPlayerNominated(num)
+{
+	++num;
+	for (let i = 0; i < 10; ++i)
 	{
-		var game = _data.game;
-		if (game.gamestate == /*GAME_STATE_NIGHT0_START*/1)
+		let p = game.players[i];
+		if (isSet(p.nominating) && game.time.round < p.nominating.length && p.nominating[game.time.round] == num)
 		{
-			var player = game.players[num];
-			if (role != player.role)
+			return game.time.time == 'speaking' && game.time.speaker == i + 1 ? 2 : 1;
+		}
+	}
+	return 0;
+}
+
+function gameNominatePlayer(num)
+{
+	if (game.time.time == 'speaking' && !gameIsPlayerNominated(num))
+	{
+		let p = game.players[game.time.speaker - 1];
+		if (!isSet(p.death))
+		{
+			if (num < 0)
 			{
-				for (var i = 9; i >= 0; --i)
+				if (isSet(p.nominating) && game.time.round < p.nominating.length)
 				{
-					var p = game.players[i];
-					if (p.role == role)
+					p.nominating[game.time.round] = null;
+					if (_gameCutArray(p.nominating) == 0)
 					{
-						p.role = player.role;
-						break;
+						delete p.nominating;
 					}
+					gameDirty();
 				}
-				player.role = role;
-				_gameStep(0);
+			}
+			else if (!isSet(game.players[num].death))
+			{
+				if (!isSet(p.nominating))
+				{
+					p.nominating = [];
+				}
+				for (let i = p.nominating.length; i <= game.time.round; ++i)
+				{
+					p.nominating.push(null);
+				}
+				p.nominating[game.time.round] = num + 1;
+				gameDirty();
 			}
 		}
 	}
-	
-	this.isKillingThisDay = function()
-	{
-		return _data.game.round > 0 || mafia.getRule(/*RULES_FIRST_DAY_VOTING*/8) != /*RULES_FIRST_DAY_VOTING_TO_TALK*/1;
-	}
-	
-	this.warnPlayer = function(num)
-	{
-		var game = _data.game;
-		switch (game.gamestate)
-		{
-			case /*GAME_STATE_MAFIA_WON*/17:
-			case /*GAME_STATE_CIVIL_WON*/18:
-			case /*GAME_STATE_BEST_PLAYER*/22:
-			case /*GAME_STATE_BEST_MOVE*/23:
-			case /*GAME_STATE_END*/25:
-				return;
-		}
+}
 
-		var player = game.players[num];
-		if (player.state == /*PLAYER_STATE_ALIVE*/0)
+function gameChangeNomination(num, nomNum)
+{
+	let p = game.players[num];
+	if (nomNum < 0)
+	{
+		if (isSet(p.nominating) && game.time.round < p.nominating.length)
 		{
-			var logRec =
+			p.nominating[game.time.round] = null;
+			if (_gameCutArray(p.nominating) == 0)
 			{
-				type: /*LOGREC_TYPE_WARNING*/2,
-				round: game.round,
-				gamestate: game.gamestate,
-				player_speaking: game.player_speaking,
-				current_nominee: game.current_nominee,
-				player: num
-			};
+				delete p.nominating;
+			}
+			gameDirty();
+		}
+	}
+	else
+	{
+		++nomNum;
+		for (let i = 0; i < 10; ++i)
+		{
+			let p1 = game.players[i];
+			if (isSet(p1.nominating) && game.time.round < p1.nominating.length && p1.nominating[game.time.round] == nomNum)
+			{
+				if (i == num)
+				{
+					return;
+				}
+				p1.nominating[game.time.round] = null;
+				while (p1.nominating.length > 0 && p1.nominating[p1.nominating.length - 1] == null)
+				{
+					p1.nominating.pop();
+				}
+				if (p1.nominating.length == 0)
+				{
+					delete p1.nominating;
+				}
+			}
+		}
 		
-			switch (++player.warnings)
+		if (!isSet(p.nominating))
+		{
+			p.nominating = [];
+		}
+		for (let i = p.nominating.length; i <= game.time.round; ++i)
+		{
+			p.nominating.push(null);
+		}
+		p.nominating[game.time.round] = nomNum;
+		gameDirty();
+	}
+}
+
+// num is 1 to 10 or -1 to -10. Positive values mean that player is left as town, negative - as mafia.
+// The function toggles the onRecord state. If the player is already left on record with the same role, the record is removed.
+function gameSetOnRecord(num)
+{
+	let t = game.time.time;
+	if (isSet(game.time.speaker))
+	{
+		let player = game.players[game.time.speaker - 1];
+		if (!isSet(player.record))
+		{
+			player.record = [];
+		}
+		else if (player.record.length > 0)
+		{
+			let r = player.record[player.record.length - 1];
+			if (
+				r.time == t && r.round == game.time.round &&
+				(!isSet(r.votingRound) || !isSet(game.time.votingRouns) || r.votingRound == game.time.votingRouns))
 			{
-				case 3:
-					switch (game.gamestate)
+				for (let i = 0; i < r.record.length; ++i)
+				{
+					let n = r.record[i];
+					if (n == num)
 					{
-						case /*GAME_STATE_NOT_STARTED*/0:
-						case /*GAME_STATE_NIGHT0_START*/1:
-						case /*GAME_STATE_NIGHT0_ARRANGE*/2:
-						case /*GAME_STATE_DAY_START*/3:
-						case /*GAME_STATE_DAY_FREE_DISCUSSION*/20:
-							player.mute = game.round;
-							break;
-						
-						case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-							player.mute = game.round;
-							if (game.player_speaking >= game.table_opener)
+						r.record.splice(i, 1);
+						if (r.record.length == 0)
+						{
+							player.record.pop();
+							if (player.record.length == 0)
 							{
-								if (num <= game.player_speaking && num >= game.table_opener)
-								{
-									++player.mute;
-								}
+								delete player.record;
 							}
-							else if (num <= game.player_speaking || num >= game.table_opener)
+						}
+						gameDirty();
+						return;
+					}
+					else if (n == -num)
+					{
+						r.record[i] = num;
+						gameDirty();
+						return;
+					}
+				}
+				r.record.push(num);
+				gameDirty();
+				return;
+			}
+		}
+		let r = { time: t, round: game.time.round, record: [num]};
+		if (isSet(game.time.votingRound))
+		{
+			r.votingRound = game.time.votingRound;
+		}
+		player.record.push(r);
+		gameDirty();
+	}
+}
+
+// num is 1 to 10.
+// The function toggles the onRecord state. If the player is left as town, it toggles to mafia. If left as mafia - removes on record. If no record - leaves as town.
+function gameToggleOnRecord(num)
+{
+	let t = game.time.time;
+	if (isSet(game.time.speaker))
+	{
+		let player = game.players[game.time.speaker - 1];
+		if (!isSet(player.record))
+		{
+			player.record = [];
+		}
+		else if (player.record.length > 0)
+		{
+			let r = player.record[player.record.length - 1];
+			if (
+				r.time == t && r.round == game.time.round &&
+				(!isSet(r.votingRound) || !isSet(game.time.votingRouns) || r.votingRound == game.time.votingRouns))
+			{
+				for (let i = 0; i < r.record.length; ++i)
+				{
+					let n = r.record[i];
+					if (n == num)
+					{
+						r.record[i] = -num;
+						gameDirty();
+						return;
+					}
+					if (n == -num)
+					{
+						r.record.splice(i, 1);
+						if (r.record.length == 0)
+						{
+							player.record.pop();
+							if (player.record.length == 0)
 							{
-								++player.mute;
+								delete player.record;
 							}
-							break;
-						
-						default:
-							player.mute = game.round + 1;
-							break;
-					}
-					break;
-				case 4:
-					_killPlayer(num, mafia.isNight(), /*PLAYER_KR_WARNINGS*/2, game.round);
-					break;
-			}
-			
-			_gameStep(0, logRec);
-		}
-	}
-
-	this.nominatePlayer = function(num)
-	{
-		var game = _data.game;
-		if (game.gamestate == /*GAME_STATE_DAY_PLAYER_SPEAKING*/5 || (game.gamestate == /*GAME_STATE_DAY_START*/3 && mafia.getRule(/*RULES_KILLED_NOMINATE*/13) == /*RULES_KILLED_NOMINATE_ALLOWED*/1))
-		{   
-			if (num < 0 || game.players[num].state == /*PLAYER_STATE_ALIVE*/0)
-			{
-				game.current_nominee = num;
-				_gameStep(0);
-			}
-		}
-	}
-
-	this.giveUp = function(num)
-	{
-		var game = _data.game;
-		switch (game.gamestate)
-		{
-			case /*GAME_STATE_MAFIA_WON*/17:
-			case /*GAME_STATE_CIVIL_WON*/18:
-			case /*GAME_STATE_BEST_PLAYER*/22:
-			case /*GAME_STATE_BEST_MOVE*/23:
-			case /*GAME_STATE_END*/25:
-				return;
-		}
-		
-		var logRec =
-		{
-			type: /*LOGREC_TYPE_GIVE_UP*/3,
-			round: game.round,
-			gamestate: game.gamestate,
-			player_speaking: game.player_speaking,
-			current_nominee: game.current_nominee,
-			player: num
-		};
-		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_GIVE_UP*/1, game.round);
-		_gameStep(0, logRec);
-	}
-
-	this.kickOut = function(num)
-	{
-		var game = _data.game;
-		switch (game.gamestate)
-		{
-			case /*GAME_STATE_MAFIA_WON*/17:
-			case /*GAME_STATE_CIVIL_WON*/18:
-			case /*GAME_STATE_BEST_PLAYER*/22:
-			case /*GAME_STATE_BEST_MOVE*/23:
-			case /*GAME_STATE_END*/25:
-				return;
-		}
-
-		var logRec = 
-		{
-			type: /*LOGREC_TYPE_KICK_OUT*/4,
-			round: game.round,
-			gamestate: game.gamestate,
-			player_speaking: game.player_speaking,
-			current_nominee: game.current_nominee,
-			player: num
-		};
-		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_KICKOUT*/3, game.round);
-		_gameStep(0, logRec);
-	}
-
-	this.teamKickOut = function(num)
-	{
-		var game = _data.game;
-		switch (game.gamestate)
-		{
-			case /*GAME_STATE_MAFIA_WON*/17:
-			case /*GAME_STATE_CIVIL_WON*/18:
-			case /*GAME_STATE_BEST_PLAYER*/22:
-			case /*GAME_STATE_BEST_MOVE*/23:
-			case /*GAME_STATE_END*/25:
-				return;
-		}
-
-		var logRec = 
-		{
-			type: /*LOGREC_TYPE_TEAM_KICK_OUT*/8,
-			round: game.round,
-			gamestate: game.gamestate,
-			player_speaking: game.player_speaking,
-			current_nominee: game.current_nominee,
-			player: num
-		};
-		_killPlayer(num, mafia.isNight(), /*PLAYER_KR_TEAM_KICKOUT*/4, game.round);
-		_gameStep(0, logRec);
-	}
-
-	this.donCheck = function(num)
-	{
-		var game = _data.game;
-		if (game.gamestate == /*GAME_STATE_NIGHT_DON_CHECK*/13)
-		{
-			for (var i = 0; i < 10; ++i)
-			{
-				var player = game.players[i];
-				if (player.don_check == game.round)
-				{
-					player.don_check = -1;
-				}
-			}
-		
-			if (num >= 0)
-			{
-				game.players[num].don_check = game.round;
-			}
-			game.current_nominee = num;
-			_gameStep(0);
-		}
-	}
-
-	this.sheriffCheck = function(num)
-	{
-		var game = _data.game;
-		if (game.gamestate == /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15)
-		{
-			for (var i = 0; i < 10; ++i)
-			{
-				var player = game.players[i];
-				if (player.sheriff_check == game.round)
-				{
-					player.sheriff_check = -1;
-				}
-			}
-		
-			if (num >= 0)
-			{
-				game.players[num].sheriff_check = game.round;
-			}
-			game.current_nominee = num;
-			_gameStep(0);
-		}
-	}
-
-	this.arrangePlayer = function(num, round)
-	{
-		var game = _data.game;
-		if (game.gamestate == /*GAME_STATE_NIGHT0_ARRANGE*/2)
-		{
-			var player = game.players[num];
-			if (player.arranged != round)
-			{
-				if (round >= 0)
-				{
-					for (var i = 0; i < 10; ++i)
-					{
-						var p = game.players[i];
-						if (p.arranged == round)
-						{
-							p.arranged = -1;
 						}
+						gameDirty();
+						return;
 					}
 				}
-				player.arranged = round;
-				_gameStep(0);
+				r.record.push(num);
+				gameDirty();
+				return;
 			}
 		}
+		let r = { time: t, round: game.time.round, record: [num]};
+		if (isSet(game.time.votingRound))
+		{
+			r.votingRound = game.time.votingRound;
+		}
+		player.record.push(r);
+		gameDirty();
+	}
+}
+
+function gameGetNominees(votingRound)
+{
+	if (!isSet(votingRound))
+	{
+		votingRound = isSet(game.time.votingRound) ? game.time.votingRound : 0;
 	}
 	
-	this.shots = function()
+	let noms = [];
+	if (votingRound > 0)
 	{
-		var game = _data.game;
-		if (typeof game.shooting[game.round] == 'undefined')
+		let votes = [0,0,0,0,0,0,0,0,0,0];
+		for (let i = 0; i < 10; ++i)
 		{
-			var shots = {};
-			var arranged = -1;
-			for (var i = 0; i < 10; ++i)
+			let p = game.players[i];
+			if (isSet(p.voting) && game.time.round < p.voting.length && p.voting[game.time.round] != null)
 			{
-				var p = game.players[i];
-				if (p.state == /*PLAYER_STATE_ALIVE*/0)
+				if (isArray(p.voting[game.time.round]))
 				{
-					if (p.arranged == game.round)
+					if (votingRound <= p.voting[game.time.round].length)
 					{
-						arranged = i;
-					}
-					if (p.role >= /*ROLE_MAFIA*/2)
-					{
-						shots[i] = arranged;
-					}
-				}
-			}
-			for (var i in shots)
-			{
-				shots[i] = arranged;
-			}
-			game.shooting[game.round] = shots;
-		}
-		return game.shooting[game.round];
-	}
-
-	this.shoot = function(num, shooterNum)
-	{
-		var game = _data.game;
-		if (game.gamestate == /*GAME_STATE_NIGHT_SHOOTING*/12)
-		{
-			var shots = mafia.shots();
-			if (typeof shooterNum != 'undefined')
-			{
-				shots[shooterNum] = num;
-			}
-			else for (var i in shots)
-			{
-				shots[i] = num;
-			}
-			
-			dirty();
-			_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
-		}
-	}
-	
-	function _newGame(id)
-	{
-		var club = _data.club;
-		var lang = club.langs;
-		var user = _data.user;
-		var rules = _data.club.rules_code;
-		var event = club.events[_data.game.event_id];
-		var moder_id = (event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) ? 0 : user.id;
-		var flags = (event.flags & /*EVENT_FLAG_FUN*/32) ? /*GAME_FLAG_FUN*/1 : 0;
-		if (typeof id == "undefined")
-		{
-			id = 0;
-		}
-		
-		if (typeof event != "undefined")
-		{
-			lang = event.langs;
-			if ((event.flags & /*EVENT_FLAG_ALL_CAN_REFEREE*/8) == 0)
-			{
-				mid = user.id;
-			}
-			rules = event.rules_code;
-		}
-		if (((lang - 1) & lang) != 0)
-		{
-			lang = 0;
-		}
-	
-		var game =
-		{
-			id: id,
-			club_id: club.id,
-			user_id: user.id,
-			moder_id: moder_id,
-			lang: lang,
-			event_id: event.id,
-			tournament_id: event.tournament_id,
-			start_time: 0,
-			end_time: 0,
-			players: [],
-			gamestate: 0,
-			round: null,
-			player_speaking: null,
-			table_opener: null,
-			table_closer: null,
-			current_nominee: null,
-			votings: null,
-			shooting: null,
-			log: null,
-			flags: flags,
-			guess3: null,
-			rules_code: rules,
-			table: _data.game.table,
-			number: _data.game.number
-		}
-		
-		for (var i = 0; i < 10; ++i)
-		{
-			game.players.push(
-			{
-				id: 0, number: i, nick: "", is_male: 1, has_immunity: 0, role: 0, warnings: 0, state: 0,
-				kill_round: -1, kill_reason: -1, arranged: -1, don_check: -1, sheriff_check: -1, mute: -1
-			});
-		}
-		
-		_data.game = game;
-		if (typeof game.number != 'undefined')
-		{
-			mafia.gameNumber(+game.number+1);
-		}
-	}
-
-	this.restart = function()
-	{
-		var game = _data.game;
-		game.guess3 = null;
-		if (!_editing)
-		{
-			game.start_time = game.end_time = 0;
-		}
-		game.gamestate = /*GAME_STATE_NOT_STARTED*/0;
-		game.round = game.player_speaking = game.table_opener = game.table_closer = game.current_nominee = game.votings = game.shooting = game.log = null;
-		game.flags = 0;
-		for (var i = 0; i < 10; ++i)
-		{
-			var p = game.players[i];
-			p.mute = -1;
-			p.role = p.warnings = p.state = 0;
-			p.kill_round = p.kill_reason = p.arranged = p.don_check = p.sheriff_check = -1;
-		}
-		_curVoting = null;
-		
-		dirty();
-		_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
-	}
-
-	this.votingKillAll = function(killAll)
-	{
-		var m = _curVoting.multiple_kill;
-		if (typeof killAll != 'undefined')
-		{
-			var game = _data.game;
-			if (game.gamestate == /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9)
-			{
-				_curVoting.multiple_kill = killAll;
-				_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/0);
-			}
-		}
-		return m;
-	}
-
-	this.curVoting = function()
-	{
-		return _curVoting;
-	}
-	
-	this.postponeMute = function()
-	{
-		var game = _data.game;
-		var p = game.players[game.player_speaking];
-		if (p.mute == game.round)
-		{
-			++p.mute;
-			var logRec = 
-			{
-				type: /*LOGREC_TYPE_POSTPONE_MUTE*/5,
-				round: game.round,
-				gamestate: game.gamestate,
-				player_speaking: game.player_speaking,
-				current_nominee: game.current_nominee,
-				player: game.player_speaking
-			};
-			_gameStep(/*STATE_CHANGE_FLAG_RESET_TIMER*/1, logRec);
-		}
-	}
-	
-	this.toggleVoting = function()
-	{
-		if (_curVoting != null)
-		{
-			var game = _data.game;
-			var logRec = 
-			{
-				round: game.round,
-				gamestate: game.gamestate,
-				player_speaking: game.player_speaking,
-				current_nominee: game.current_nominee,
-				player: -1
-			};
-			if (_curVoting.canceled > 0)
-			{
-				logRec['type'] = /*LOGREC_TYPE_RESUME_VOTING*/7;
-				if (_curVoting.canceled > 1)
-					_duplicateVoting(true);
-				logRec['player'] = _curVoting.canceled;
-				_curVoting.canceled = 0;
-			}
-			else
-			{
-				logRec['type'] = /*LOGREC_TYPE_CANCEL_VOTING*/6;
-				_curVoting.canceled = 1;
-			}
-			_gameStep(/*STATE_CHANGE_FLAG_RESET_TIMER*/1, logRec);
-		}
-	}
-	
-	this.submit = function()
-	{
-		var game = _data.game;
-		if (game.gamestate >= /*GAME_STATE_MAFIA_WON*/17 && game.gamestate <= /*GAME_STATE_CIVIL_WON*/18)
-		{
-			_newGame();
-			_curVoting = null;
-			if (game.event_id != 0)
-			{
-				var req =
-				{
-					action: 'submit-game',
-					time: mafia.time(),
-					game: game
-				};
-				_data.requests.push(req);
-				
-				for (var i = 0; i < 10; ++i)
-				{
-					var p = game.players[i];
-					if (p.id != 0)
-					{
-						if (p.state == /*PLAYER_STATE_KILLED_NIGHT*/1 && p.kill_round == 0 && p.kill_reason == /*PLAYER_KR_NORMAL*/0)
-						{
-							_data.club.players[p.id].flags |= /*U_FLAG_IMMUNITY*/1024;
-						}
-						else
-						{
-							_data.club.players[p.id].flags &= ~/*U_FLAG_IMMUNITY*/1024;
-						}
+						++votes[p.voting[game.time.round][votingRound - 1] - 1];
 					}
 				}
+				else if (votingRound == 1)
+				{
+					++votes[p.voting[game.time.round] - 1];
+				}
 			}
-			dirty();
-			
-			mafia.sync();
-			mafia.save();
-			
-			_callStateChange(/*STATE_CHANGE_FLAG_RESET_TIMER*/1);
 		}
-	}
-	
-	this.settings = function(promptSound, endSound, flags)
-	{
-		var s = _data.user.settings;
-		s.flags = flags;
-		s.prompt_sound = promptSound;
-		s.end_sound = endSound;
-		var req =
+		let max = 0;
+		for (const v of votes)
 		{
-			action: 'settings',
-			prompt_sound: promptSound,
-			end_sound: endSound,
-			flags: flags
-		};
-		_data.requests.push(req);
-		dirty();
-	}
-	
-	this.votingWinner = function(num, c)
-	{
-		if (num >= 0 && num < _curVoting.nominees.length && (_data.game.flags & /*GAME_FLAG_SIMPLIFIED_CLIENT*/2))
+			max = Math.max(v, max);
+		}
+		if (max > 0)
 		{
-			var _c = _curVoting.nominees[num].count;
-			if (typeof c == "number")
+			let first = gameWhoSpeaksFirst();
+			let i = first;
+			do
 			{
-				_curVoting.nominees[num].count = c;
-				_voting = null;
-				_gameStep(0);
+				let p = game.players[i];
+				if (isSet(p.nominating) && game.time.round < p.nominating.length)
+				{
+					let n = p.nominating[game.time.round];
+					if (votes[n-1] == max)
+					{
+						noms.push(n);
+					}
+				}
+				if (++i >= 10)
+				{
+					i = 0;
+				}
 			}
-			return _c;
+			while (i != first);
 		}
+	}
+	else
+	{
+		let first = gameWhoSpeaksFirst();
+		let i = first;
+		do
+		{
+			let p = game.players[i];
+			if (isSet(p.nominating) && game.time.round < p.nominating.length && p.nominating[game.time.round] != null)
+			{
+				noms.push(p.nominating[game.time.round]);
+			}
+			if (++i >= 10)
+			{
+				i = 0;
+			}
+		}
+		while (i != first);
+	}
+	return noms;
+}
+
+function gameGetVotingWinners()
+{
+	for (let player of game.players)
+	{
+		if (!isSet(player.death) && isSet(player.voting) && game.time.round < player.voting.length)
+		{
+			let v = player.voting[game.time.round];
+			if (isArray(v))
+			{
+				if (isBool(v[v.length-1]))
+					return gameGetNominees(v.length - 1);
+				return gameGetNominees(v.length);
+			}
+			break;
+		}
+	}
+	return gameGetNominees(1);
+}
+
+// nominee is a numer of player 1-10
+function gameGetVotesCount(nominee)
+{
+	let count = 0;
+	for (let i = 0; i < 10; ++i)
+	{
+		let player = game.players[i];
+		if (isSet(player.voting) && game.time.round < player.voting.length)
+		{
+			let v = player.voting[game.time.round];
+			if (
+				(isNumber(v) && v == nominee) ||
+				(isArray(v) && game.time.votingRound < v.length && v[game.time.votingRound] == nominee))
+			{
+				++count;
+			}
+		}
+	}
+	return count;
+}
+
+// voter - player who votes 0-9
+// type - 0 - toggle, 1 - vote, -1 unvote
+// returns 0 if nothing happens, 1 if voted; -1 if unvoted
+function _gameVote(voter, type)
+{
+	let player = game.players[voter];
+	let arr = player.voting;
+	let index = game.time.round;
+	if (index >= arr.length)
+	{
+		return 0;
+	}
+	if (game.time.votingRound > 0)
+	{
+		arr = arr[index];
+		index = game.time.votingRound;
+		if (index >= arr.length)
+		{
+			return 0;
+		}
+	}
+	if (_gameWhoWasNominatedEarlier(game.time.round, arr[index], game.time.nominee) < 0)
+	{
 		return 0;
 	}
 	
-	this.setBonus = function(num, obj)
+	if (arr[index] == game.time.nominee)
 	{
-		if (num >= 0 && num < 10)
+		if (type <= 0)
 		{
-			var p = _data.game.players[num];
-			if (obj.bonus)
-				p.bonus = obj.bonus;
-			else if (p.bonus)
-				delete p.bonus;
-			p.extra_points = parseFloat(obj.extra_points);
-			p.comment = obj.comment;
-			dirty();
+			let noms = gameGetNominees();
+			if (noms[noms.length-1] != game.time.nominee)
+			{
+				arr[index] = noms[noms.length-1];
+				return -1;
+			}
 		}
 	}
+	else if (arr[index] != game.time.nominee && type >= 0)
+	{
+		arr[index] = game.time.nominee;
+		return 1;
+	}
+	return 0;
+}
+
+// voter is 0-9
+function gameVote(voter)
+{
+	if (game.time.time == 'voting' && isSet(game.time.nominee))
+	{
+		let result = _gameVote(voter, 0);
+		if (result != 0)
+		{
+			// For round 0 if all players are alive and nobody voted yet - next 4 players should also vote
+			if (result > 0 && game.time.round == 0)
+			{
+				let nobodyVoted = true;
+				for (let i = 0; i < 10; ++i)
+				{
+					if (i != voter)
+					{
+						let player = game.players[i];
+						let arr = player.voting;
+						let index = game.time.round;
+						if (index >= arr.length)
+						{
+							nobodyVoted = false;
+							break;
+						}
+						if (game.time.votingRound > 0)
+						{
+							arr = arr[index];
+							index = game.time.votingRound;
+							if (index >= arr.length)
+							{
+								nobodyVoted = false;
+								break;
+							}
+						}
+						if (_gameWhoWasNominatedEarlier(game.time.round, arr[index], game.time.nominee) <= 0)
+						{
+							nobodyVoted = false;
+							break;
+						}
+					}
+				}
+				if (nobodyVoted)
+				{
+					++voter;
+					for (let i = 0; i < 4; ++i)
+					{
+						if (voter >= 10)
+						{
+							voter = 0;
+						}
+						_gameVote(voter, 1);
+						++voter;
+					}
+				}
+			}
+			gameDirty();
+		}
+	}
+}
+
+// num is 0-9; when num is not set - create voting for all alive players
+function _gameCreateVoting(num)
+{
+	if (game.time.time == 'voting' && isSet(game.time.nominee))
+	{
+		let noms = gameGetNominees();
+		if (isSet(num))
+		{
+			let player = game.players[num];
+			if (!isSet(player.death))
+			{
+				if (!isSet(player.voting))
+				{
+					player.voting = [];
+				}
+				for (let i = player.voting.length; i <= game.time.round; ++i)
+				{
+					player.voting.push(null);
+				}
+				if (game.time.votingRound > 0)
+				{
+					if (!isArray(player.voting[game.time.round]))
+					{
+						player.voting[game.time.round] = [player.voting[game.time.round]];
+					}
+					
+					let a = player.voting[game.time.round];
+					for (let i = a.length; i <= game.time.votingRound; ++i)
+					{
+						a.push(null);
+					}
+					a[game.time.votingRound] = noms[noms.length - 1];
+				}
+				else if (noms.length > (game.time.round > 0 ? 0 : 1))
+				{
+					player.voting[game.time.round] = noms[noms.length - 1];
+				}
+			}
+		}
+		else
+		{
+			for (let i = 0; i < 10; ++i)
+			{
+				_gameCreateVoting(i);
+			}
+		}
+	}
+}
+
+// vote: true - all vote for nominee; false - nobody votes for nominee
+function gameVoteAll(vote)
+{
+	if (game.time.time == 'voting' && isSet(game.time.nominee))
+	{
+		let changed = false;
+		for (let i = 0; i < 10; ++i)
+		{
+			if (_gameVote(i, vote ? 1 : -1) != 0)
+			{
+				changed = true;
+			}
+		}
+		if (changed)
+		{
+			gameDirty();
+		}
+	}
+}
+
+function gameVoteToKillAll(voter)
+{
+	let player = game.players[voter];
+	player.voting[game.time.round][game.time.votingRound] = !player.voting[game.time.round][game.time.votingRound];
+	gameDirty();
+}
+
+function gameAllVoteToKillAll(vote)
+{
+	for (let player of game.players)
+	{
+		if (!isSet(player.death))
+		{
+			player.voting[game.time.round][game.time.votingRound] = vote;
+		}
+	}		
+	gameDirty();
+}
+
+// returns an array of shots in the form [[maf1Index, maf1Shot], [maf2Index, maf2Shot], [maf3Index, maf3Shot]] all values 0-9
+function gameGetShots()
+{
+	let result = [];
+	for (let i = 0; i < 10; ++i)
+	{
+		let player = game.players[i];
+		if (isSet(player.role) && (player.role == 'maf' || player.role == 'don'))
+		{
+			let dt = _gameGetPlayerDeathTime(i);
+			if (gameCompareTimes({round:game.time.round,time:'shooting'},dt) <= 0)
+			{
+				let shot = null;
+				if (isSet(player.shooting) && game.time.round <= player.shooting.length)
+				{
+					shot = player.shooting[game.time.round - 1] - 1;
+				}
+				result.push([i, shot]);
+			}
+		}
+	}
+	return result;
+}
+
+function gameShoot(target, shooter, noDirty)
+{
+	if (isSet(shooter))
+	{
+		let player = game.players[shooter];
+		if (!isSet(player.shooting))
+		{
+			player.shooting = [];
+		}
+		for (let i = player.shooting.length; i < game.time.round; ++i)
+		{
+			player.shooting.push(null);
+		}
+		if (player.shooting[game.time.round - 1] != null)
+		{
+			player.shooting[game.time.round - 1] = null;
+			if (_gameCutArray(player.shooting) == 0)
+			{
+				delete player.shooting;
+			}
+		}
+		else
+		{
+			player.shooting[game.time.round - 1] = parseInt(target) + 1;
+		}
+		if (!isSet(noDirty))
+		{
+			gameDirty();
+		}
+	}
+	else
+	{
+		for (let i = 0; i < 10; ++i)
+		{
+			let player = game.players[i];
+			if (!isSet(player.death) && isSet(player.role) && (player.role == 'maf' || player.role == 'don'))
+			{
+				gameShoot(target, i, true);
+			}
+		}
+		gameDirty();
+	}
+}
+
+// Returns player index 0-9 killed in this round. 
+// -1 if nobody is killed.
+function gameGetNightKill()
+{
+	let killedIndex = -1;
+	for (let s of gameGetShots())
+	{
+		if (s[1] == null)
+		{
+			return -1;
+		}
+		if (killedIndex < 0)
+		{
+			killedIndex = s[1];
+		}
+		else if (killedIndex != s[1])
+		{
+			return -1;
+		}
+	}
+	return killedIndex;
+}
+
+// returns true if players voted to kill all in this round
+function _gameKillAll()
+{
+	let killAll = 0;
+	for (const player of game.players)
+	{
+		if (!isSet(player.death))
+		{
+			if (player.voting[game.time.round][game.time.votingRound])
+			{
+				++killAll;
+			}
+			else
+			{
+				--killAll;
+			}
+		}
+	}
+	return killAll > 0;
+}
+
+function _gameIsAlive(who)
+{
+	for (player of game.players)
+	{
+		if (isSet(player.role) && player.role == who)
+		{
+			if (!isSet(player.death) || (player.death.type == 'night' && player.death.round == game.time.round))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+function gameIsDonAlive()
+{
+	return _gameIsAlive('don');
+}
+
+function gameIsSheriffAlive()
+{
+	return _gameIsAlive('sheriff');
+}
+
+// index 0-9
+function gameDonCheck(index)
+{
+	let dirty = false;
+	for (let i = 0; i < 10; ++i)
+	{
+		let p = game.players[i];
+		if (i != index && isSet(p.don) && p.don == game.time.round)
+		{
+			delete p.don;
+			dirty = true;
+		}
+	}
+	if (index >= 0)
+	{
+		let player = game.players[index];
+		if (!isSet(player.don))
+		{
+			player.don = game.time.round;
+			dirty = true;
+		}
+	}
+	if (dirty)
+	{
+		gameDirty();
+	}
+}
+
+// index 0-9
+function gameSheriffCheck(index)
+{
+	let dirty = false;
+	for (let i = 0; i < 10; ++i)
+	{
+		let p = game.players[i];
+		if (i != index && isSet(p.sheriff) && p.sheriff == game.time.round)
+		{
+			delete p.sheriff;
+			dirty = true;
+		}
+	}
+	if (index >= 0)
+	{
+		let player = game.players[index];
+		if (!isSet(player.sheriff))
+		{
+			player.sheriff = game.time.round;
+			dirty = true;
+		}
+	}
+	if (dirty)
+	{
+		gameDirty();
+	}
+}
+
+function gameSetLegacy(index)
+{
+	for (let i = 0; i < 10; ++i)
+	{
+		let player = game.players[i];
+		if (isSet(player.death) && player.death.type == 'night' && player.death.round == 1)
+		{
+			if (++index > 0)
+			{
+				if (!isSet(player.legacy))
+				{
+					player.legacy = [];
+				}
+				let j = 0;
+				for (; j < player.legacy.length; ++j)
+				{
+					if (player.legacy[j] == index)
+					{
+						break;
+					}
+				}
+				if (j < player.legacy.length)
+				{
+					player.legacy.splice(j, 1);
+					if (player.legacy.length == 0)
+					{
+						delete player.legacy;
+					}
+				}
+				else
+				{
+					player.legacy.push(index);
+					if (player.legacy.length > 3)
+					{
+						player.legacy.splice(0, player.legacy.length - 3);
+					}
+				}
+				gameDirty();
+			}
+			else if (isSet(player.legacy))
+			{
+				delete player.legacy;
+				gameDirty();
+			}
+			break;
+		}
+	}
+}
+
+function gameIsInLegacy(index)
+{
+	++index;
+	for (let i = 0; i < 10; ++i)
+	{
+		let player = game.players[i];
+		if (isSet(player.death) && player.death.type == 'night' && player.death.round == 1)
+		{
+			if (isSet(player.legacy))
+			{
+				for (let n of player.legacy)
+				{
+					if (n == index)
+					{
+						return true;
+					}
+				}
+			}
+			break;
+		}
+	}
+	return false;
+}
+
+function gameIsPlayerAtTheTable(index)
+{
+	if (!isSet(game.time))
+	{
+		return false;
+	}
+
+	let player = game.players[index];
+	if (!isSet(player.death))
+	{
+		return true;
+	}
+	
+	if (player.death.round != game.time.round)
+	{
+		return false;
+	}
+	
+	switch (game.time.time)
+	{
+	case 'night kill speaking':
+	case 'don':
+	case 'sheriff':
+		if (player.death.type == 'night')
+		{
+			return true;
+		}
+		break;
+	case 'day kill speaking':
+		if (player.death.type == 'day')
+		{
+			if (game.time.speaker == index + 1)
+			{
+				return true;
+			}
+			
+			let noms = gameGetNominees();
+			for (let n of noms)
+			{
+				if (n == index + 1)
+				{
+					return false;
+				}
+				if (n == game.time.speaker)
+				{
+					return true;
+				}
+			}
+		}
+		break;
+	case 'end':
+		if (player.death.type == 'night' || player.death.type == 'day')
+		{
+			let dt = _gameGetPlayerDeathTime(index);
+			for (let i = 0; i < 10; ++i)
+			{
+				if (i != index)
+				{
+					let p = game.players[i];
+					if (isSet(p.death))
+					{
+						if (gameCompareTimes(_gameGetPlayerDeathTime(i), dt) > 0)
+						{
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		}
+		break;
+	}
+	return false;
+}
+
+function gameBugReport(txt, onSuccess)
+{
+	json.post('api/ops/game.php', { op: 'report_bug', event_id: game.eventId, table: game.table - 1, round: game.round - 1, comment: txt}, onSuccess);
+}
+
+function gameCanGoNext()
+{
+	if (isSet(game.time) && game.time.time == 'start' && !gameAreRolesSet())
+	{
+		return false;
+	}
+	return true;
+}
+
+function gameCanGoBack()
+{
+	return log.length > 0;
+}
+
+function gameHasFeature(letter)
+{
+	return !isSet(game.features) || game.features.includes(letter);
+}
+
+function gameSetFeature(letter, on)
+{
+	if (!isSet(game.features))
+	{
+		game.features = DEFAULT_FEATURES;
+	}
+	
+	if (!on)
+	{
+		let features = game.features.replace(letter, '');
+		if (features != game.features)
+		{
+			game.features = features;
+			gameDirty();
+		}
+	}
+	else if (!game.features.includes(letter))
+	{
+		game.features += letter;
+		gameDirty();
+	}
+}
+
+function gameGetRule(ruleIndex)
+{
+	return game.rules.substr(ruleIndex, 1);
+}
+
+// For future use. It will soon be replaced with something that is really checking rules.
+function _gameLastSpeechExists()
+{
+	return true; // yes last speech
+}
+
+function gameNext()
+{
+	if (gameCanGoNext())
+	{
+		gamePushState();
+		if (!isSet(game.time))
+		{
+			game.time = { time: 'start', round: 0 };
+			if (!isSet(game.startTime))
+			{
+				game.startTime = Math.round((new Date()).getTime() / 1000);
+			}
+		}
+		else 
+		{
+			if (isSet(game.time.order))
+			{
+				delete game.time.order;
+			}
+			switch (game.time.time)
+			{
+			case 'start':
+				game.time.time = 'arrangement';
+				break;
+			case 'arrangement':
+				game.time.time = 'relaxed sitting';
+				break;
+			case 'relaxed sitting':
+				game.time.time = 'speaking';
+				game.time.speaker = gameWhoSpeaksFirst() + 1;
+				break;
+			case 'night kill speaking':
+				game.time = { time: 'speaking', round: game.time.round, speaker: (gameWhoSpeaksFirst() + 1) };
+				if (_gameLastSpeechExists())
+				{
+					_gameCheckEnd();
+				}
+				break;
+			case 'speaking':
+				let first = gameWhoSpeaksFirst();
+				do
+				{
+					if (++game.time.speaker > 10)
+					{
+						game.time.speaker = 1;
+					}
+					if (game.time.speaker == first + 1)
+					{
+						let round = game.time.round;
+						if (gameIsVotingCanceled())
+						{
+							game.time = { round: round + 1, time: 'night start' };
+						}
+						else
+						{
+							let noms = gameGetNominees();
+							if (noms.length == 0 || (noms.length == 1 && round == 0))
+							{
+								game.time = { round: round + 1, time: 'night start' };
+							}
+							else
+							{
+								game.time = { round: round, time: 'voting start' };
+							}
+						}
+						break;
+					}
+				}
+				while (isSet(game.players[game.time.speaker - 1].death));
+				break;
+			case 'voting start':
+			{
+				let noms = gameGetNominees();
+				let round = game.time.round;
+				if (noms.length == 0 || (noms.length == 1 && round == 0))
+				{
+					game.time = { round: round + 1, time: 'night start' };
+				}
+				else
+				{
+					game.time = { round: round, time: 'voting', votingRound: 0, nominee: noms[0] };
+					_gameCreateVoting();
+				}
+				break;
+			}
+			case 'voting':
+				if (isSet(game.time.nominee))
+				{
+					let noms = gameGetNominees();
+					let i = noms.length;
+					for (i = 1; i < noms.length; ++i)
+					{
+						if (noms[i-1] == game.time.nominee)
+						{
+							game.time.nominee = noms[i];
+							break;
+						}
+					}
+					if (i >= noms.length)
+					{
+						let winners = gameGetNominees(game.time.votingRound + 1);
+						if (winners.length == 1)
+						{
+							var player = game.players[winners[0] - 1];
+							player.death = { type: 'day', round: game.time.round };
+							game.time = { time: 'day kill speaking', speaker: winners[0], round: game.time.round };
+							if (!_gameLastSpeechExists())
+							{
+								_gameCheckEnd();
+							}
+						}
+						else if (game.time.votingRound > 0 && winners.length == noms.length)
+						{
+							game.time = { time: 'voting kill all', round: game.time.round, votingRound: game.time.votingRound + 1 };
+							let noms = gameGetNominees();
+							for (let player of game.players)
+							{
+								if (!isSet(player.death))
+								{
+									player.voting[game.time.round].push(false);
+								}
+							}
+						}
+						else
+						{
+							delete game.time.nominee;
+							game.time.speaker = winners[0];
+							++game.time.votingRound;
+						}
+					}
+				}
+				else // isSet(game.time.speaker) should always be true
+				{
+					let noms = gameGetNominees();
+					let i = noms.length;
+					for (i = 1; i < noms.length; ++i)
+					{
+						if (noms[i-1] == game.time.speaker)
+						{
+							game.time.speaker = noms[i];
+							break;
+						}
+					}
+					if (i >= noms.length)
+					{
+						delete game.time.speaker;
+						game.time.nominee = noms[0];
+						_gameCreateVoting();
+					}
+				}
+				break;
+			case 'voting kill all':
+				if (_gameKillAll())
+				{
+					let noms = gameGetNominees();
+					for (nom of noms)
+					{
+						game.players[nom - 1].death = { type: 'day', round: game.time.round };
+					}
+					game.time = { time: 'day kill speaking', round: game.time.round, speaker: noms[0] };
+					if (!_gameLastSpeechExists())
+					{
+						_gameCheckEnd();
+					}
+				}
+				else
+				{
+					game.time = { time: 'night start', round: game.time.round + 1 };
+				}
+				break;
+			case 'day kill speaking':
+			{
+				noms = gameGetVotingWinners();
+				let i = 0;
+				for (; i < noms.length; ++i)
+				{
+					if (noms[i] == game.time.speaker)
+					{
+						break;
+					}
+				}
+				if (i < noms.length - 1)
+				{
+					game.time.speaker = noms[i+1];
+				}
+				else
+				{
+					game.time = { time: 'night start', round: game.time.round + 1 };
+					if (_gameLastSpeechExists())
+					{
+						_gameCheckEnd();
+					}
+				}
+				break;
+			}
+			case 'night start':
+				game.time.time = 'shooting';
+				for (let i = 0; i < 10; ++i)
+				{
+					let p = game.players[i];
+					if (isSet(p.arranged) && p.arranged == game.time.round)
+					{
+						for (let j = 0; j < 10; ++j)
+						{
+							let p1 = game.players[j];
+							if (!isSet(p1.death) && isSet(p1.role) && (p1.role == 'maf' || p1.role == 'don'))
+							{
+								gameShoot(i, j, true);
+							}
+						}
+						break;
+					}
+				}
+				break;
+			case 'shooting':
+			{
+				game.time.time = 'don';
+				let killed = gameGetNightKill();
+				if (killed >= 0)
+				{
+					game.players[killed].death = { type: 'night', round: game.time.round };
+					if (!_gameLastSpeechExists())
+					{
+						_gameCheckEnd();
+					}
+				}
+				else
+				{
+					_gameCheckTie();
+				}
+				break;
+			}
+			case 'don':
+				game.time.time = 'sheriff';
+				break;
+			case 'sheriff':
+			{
+				let killed = gameGetNightKill();
+				if (killed >= 0)
+				{
+					game.time = { time: 'night kill speaking', round: game.time.round, speaker: killed + 1 };
+				}
+				else
+				{
+					game.time = { time: 'speaking', round: game.time.round, speaker: gameWhoSpeaksFirst() + 1 };
+				}
+				break;
+			}
+			case 'end':
+				// remove temporary fields
+				let time = game.time;
+				let obsScene = null;
+				delete game.time;
+				if (isSet(game.obsScene))
+					delete game.obsScene;
+				
+				_runSaving = false; // stop saving current game
+				json.post('api/ops/game.php', { op: 'create', json: JSON.stringify(game) }, function()
+				{
+					delete localStorage['game'];
+					goTo({round:undefined, demo:undefined});
+				},
+				function (message, data)
+				{
+					// restore temporary fields
+					game.time = time;
+					if (obsScene)
+						game.obsScene = obsScene;
+					
+					_runSaving = true; // resume saving current game in case of error
+					return true;
+				});
+				return; // Bypass gameDirty() - it is not needed any more
+			}
+		}
+		gameDirty();
+		obsAfterNext();
+	}
+}
+
+function gameBack()
+{
+	if (gameCanGoBack())
+	{
+		let g = null;
+		while (log.length > 0 && g == null)
+		{
+			g = log[log.length-1];
+			log.pop();
+		}
+		if (g != null)
+		{
+			// Parameters that can not be reverted
+			let rating = !isSet(game.rating) || game.rating;
+			let features = isSet(game.features) ? game.features : DEFAULT_FEATURES;
+			let streaming = isSet(game.streaming) && game.streaming;
+			
+			game = g;
+			
+			// restore non-revertable parameters
+			game.streaming = streaming;
+			game.features = features;
+			game.rating = rating;
+			if (game.rating)
+				delete game.rating;
+		}
+		lastSaved = Math.min(lastSaved, log.length);
+		gameDirty();
+		obsAfterBack();
+	}
+}
+
+// OBS Studio interaction
+// Web sockets: https://github.com/obs-websocket-community-projects/obs-websocket-js
+// Protocol: https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#setcurrentprogramscene
+var _obsScenes = null;
+var _obsPlayers = [null,null,null,null,null,null,null,null,null,null];
+var _currentObsScene = '';
+
+function obsInit(scenes)
+{
+	_obsScenes = scenes;
+	if (_obsScenes != null)
+	{
+		for (let i = 0; i < _obsScenes.scenes.length;)
+		{
+			let s = _obsScenes.scenes[i];
+			let n = parseInt(s.event);
+			if (n >= 1 && n <= 10)
+			{
+				_obsPlayers[n-1] = s.scene;
+				_obsScenes.scenes.splice(i, 1);
+			}
+			else if (s.event == '')
+				_obsScenes.scenes.splice(i, 1);
+			else
+				++i;
+		}
+		
+		let scene = null;
+		for (let i = 0; i < 10; ++i)
+			if (_obsPlayers[i] == null)
+				_obsPlayers[i] = scene;
+			else
+				scene = _obsPlayers[i];
+		
+		if (scene != null)
+		{
+			for (let i = 0; i < 10; ++i)
+				if (_obsPlayers[i] == null)
+					_obsPlayers[i] = scene;
+				else
+					break;
+		}
+	}
+}
+
+function obsSetStreaming(on)
+{
+	if (_obsScenes)
+	{
+		game.streaming = !!on;
+	}
+}
+
+async function _obsSwitchScene(sceneName)
+{
+	try
+	{
+		const obs = new OBSWebSocket();
+		await obs.connect(_obsScenes.url, _obsScenes.password);
+		await obs.call('SetCurrentProgramScene', {sceneName: sceneName});
+		await obs.disconnect();
+	}
+	catch (error)
+	{
+		console.error('Failed to connect to OBS Studio', error.code, error.message);
+	}
+}
+
+function obsSwitchScene(sceneName)
+{
+	game.obsScene = sceneName;
+	if (_currentObsScene != sceneName)
+	{
+		_obsSwitchScene(sceneName);
+		_currentObsScene = sceneName;
+	}
+}
+
+function obsProceedEvent(ev)
+{
+	if (_obsScenes != null)
+	{
+		if (ev == 'voting start' || ev == 'voting kill all')
+		{
+			ev = 'voting';
+		}
+		
+		let scene = null;
+		for (let s of _obsScenes.scenes)
+		{
+			if (s.event == ev)
+			{
+				scene = s;
+				break;
+			}
+		}
+		
+		if (scene)
+		{
+			obsSwitchScene(scene.scene);
+			return true;
+		}
+	}
+	return false;
+}
+
+function obsAfterNext()
+{
+	if (_obsScenes != null && isSet(game.streaming) && game.streaming)
+	{
+		if (isSet(game.time.speaker) && _obsPlayers[game.time.speaker-1] != null)
+			obsSwitchScene(_obsPlayers[game.time.speaker-1]);
+		else if (!obsProceedEvent(game.time.time))
+			obsProceedEvent(gameIsNight() ? 'night' : 'day');
+	}
+}
+	
+function obsAfterBack()
+{
+	if (_obsScenes != null && isSet(game.streaming) && game.streaming && isSet(game.obsScene))
+		obsSwitchScene(game.obsScene);
 }

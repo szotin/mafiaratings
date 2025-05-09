@@ -51,7 +51,7 @@ class Page extends GeneralPageBase
 			$user_pic->set($user_id, $user_name, $user_flags);
 			$user_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
-			echo '<td align="center"><a href="game1.php?bug_id=' . $bug_id . '" target="_blank">' . get_label('Table [0] / Game [1]', $table, $round) . '</a></td>';
+			echo '<td align="center"><a href="game.php?bug_id=' . $bug_id . '" target="_blank">' . get_label('Table [0] / Game [1]', $table, $round) . '</a></td>';
 			echo '<td><pre>' . $comment . '</pre></td>';
 			echo '</tr>';
 		}

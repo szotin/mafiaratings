@@ -60,7 +60,7 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 			$now < $start_time + $duration && $now >= $start_time && 
 			is_permitted(PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $id))
 		{
-			echo '<button class="icon" onclick="goTo(\'game' . (($_profile->user_flags & USER_FLAG_TEST_NEW_GAME) ? '1' : '') . '.php\', {tournament_id: ' . $id . ',bck:0})" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
+			echo '<button class="icon" onclick="goTo(\'game.php\', {tournament_id: ' . $id . ',bck:0})" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
 		}
 	}
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';

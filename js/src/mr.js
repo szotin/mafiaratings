@@ -1110,7 +1110,7 @@ var mr = new function()
 			json.post(
 				"api/ops/game.php",
 				{op:'own_current', event_id: eventId, "table": table, "round": round},
-				goTo('game1.php?event_id=' + eventId + '&table=' + table + '&round=' + round));
+				goTo('game.php?event_id=' + eventId + '&table=' + table + '&round=' + round));
 		}
 
 		if (isString(promptStr))
