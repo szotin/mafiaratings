@@ -342,7 +342,7 @@ function gameWhoSpeaksFirst(round)
 	{
 		prev = _gameNextSpeaker(_gamePrevSpeaker(prev, round - 1), round);
 	}
-	return _gameNextSpeaker(prev);
+	return _gameNextSpeaker(prev, round);
 }
 
 // time is a string specifying rough time of the game.
