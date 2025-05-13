@@ -411,7 +411,7 @@ class ApiPage extends OpsApiPageBase
 		
 		
 		$rules_code = get_optional_param('rules_code', $old_rules_code);
-		check_rules_code($rules_code);
+		$rules_code = check_rules_code($rules_code);
 		
 		$flags = (int)get_optional_param('flags', $old_flags);
 		$flags = ($flags & EVENT_EDITABLE_MASK) + ($old_flags & ~EVENT_EDITABLE_MASK);

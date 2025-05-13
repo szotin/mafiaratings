@@ -338,7 +338,7 @@ function gameWhoSpeaksFirst(round)
 	}
 
 	let prev = gameWhoSpeaksFirst(round - 1);
-	if (gameGetRule(/*RULES_ROTATION*/3) == /*RULES_ROTATION_LAST*/1)
+	if (gameGetRule(/*RULES_ROTATION*/0) == /*RULES_ROTATION_LAST*/1)
 	{
 		prev = _gameNextSpeaker(_gamePrevSpeaker(prev, round - 1), round);
 	}
