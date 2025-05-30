@@ -4,7 +4,7 @@ require_once 'include/user.php';
 require_once 'include/player_stats.php';
 
 // Most likely using these flags is incorrect here.
-// The role that is sent is most likely one of POINTS_ALL, POINTS_RED, POINTS_DARK, etc.
+// The role that is sent is most likely one of POINTS_ALL, POINTS_RED, POINTS_BLACK, etc.
 define("ROLE_FLAG_CIVIL", 1);
 define("ROLE_FLAG_SHERIFF", 2);
 define("ROLE_FLAG_MAFIA", 4);

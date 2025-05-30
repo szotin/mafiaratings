@@ -27,8 +27,8 @@ function get_mwt_user($mwt_id)
 	$lang = LANG_RUSSIAN;
 	Db::exec(
 		get_label('user'), 
-		'INSERT INTO users (name_id, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id, games, games_won, rating, mwt_id) ' .
-			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?, 0, 0, ' . USER_INITIAL_RATING . ', ?)',
+		'INSERT INTO users (name_id, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id, mwt_id) ' .
+			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?, ?)',
 		$name_id, md5(rand_string(8)), '', $email, NEW_USER_FLAGS | USER_FLAG_IMPORTED, MWT_CLUB_ID, LANG_ALL, LANG_RUSSIAN, MWT_CITY_ID, $mwt_id);
 	list ($user_id) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
 	

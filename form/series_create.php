@@ -89,6 +89,10 @@ try
 	
 	echo '<tr><td colspan="2">';
 	echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.');
+	if ($league_flags & LEAGUE_FLAG_ELITE)
+	{
+		echo '<br><input type="checkbox" id="form-elite"> ' . get_label('elite series. The tournaments with more than one star become elite tournaments and bring more rating points.');
+	}
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -214,6 +218,7 @@ try
 		
 		var _flags = 0;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo SERIES_FLAG_PINNED; ?>;
+		if ($("#form-elite").attr('checked')) _flags |= <?php echo SERIES_FLAG_ELITE; ?>;
 		
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive

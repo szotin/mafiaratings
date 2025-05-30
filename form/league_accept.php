@@ -36,17 +36,27 @@ try
 	echo '<tr><td>'.get_label('Contact email').':</td><td><a href="mailto:' . $email . '">' . $email . '</a></td><tr>';
 	echo '<tr><td>'.get_label('Contact phone(s)').':</td><td>' . $phone . '</td><tr>';
 	
+	if (is_permitted(PERMISSION_ADMIN))
+	{
+		echo '<tr><td colspan="2">';
+		echo '<input type="checkbox" id="form-elite"> ' . get_label('elite league. Elite leagues can create elite series that bring more rating points.');
+		echo '</td></tr>';
+	}
 	echo '</table>';
 	
 ?>
 	<script>
 	function commit(onSuccess)
 	{
+		let flags = 0;
+		if ($("#form-elite").attr('checked')) flags |= <?php echo LEAGUE_FLAG_ELITE; ?>;
+		
 		json.post("api/ops/league.php",
 		{
 			op: "accept"
 			, request_id: <?php echo $id; ?>
 			, name: $("#form-name").val()
+			, flags: flags
 		},
 		onSuccess);
 	}

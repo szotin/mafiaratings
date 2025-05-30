@@ -296,7 +296,7 @@ class Page extends UserPageBase
 				$this->user_pic->set($id, $name, $flags);
 				$this->user_pic->show(ICONS_DIR, true, 48);
 				echo '</td><td><a href="user_info.php?id=' . $id . '">' . cut_long_name($name, 45) . '</a></td>';
-				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
+				echo '<td width="60" align="center">' . number_format(USER_INITIAL_RATING + $rating) . '</td>';
 				echo '</tr>';
 			}
 			echo '</table>';

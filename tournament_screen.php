@@ -156,7 +156,7 @@ try
 				$page_size = $rows * $cols;
 			
 				$query = new DbQuery(
-					'SELECT u.id, nu.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
+					'SELECT u.id, nu.name, '.USER_INITIAL_RATING.' + u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
 						' FROM tournament_users tu' . 
 						' JOIN users u ON tu.user_id = u.id' .
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
@@ -172,7 +172,7 @@ try
 				if (count($players) == 0)
 				{
 					$query = new DbQuery(
-						'SELECT u.id, nu.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, NULL, cu.flags' . 
+						'SELECT u.id, nu.name, '.USER_INITIAL_RATING.' + u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, NULL, cu.flags' . 
 						' FROM users u' . 
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .

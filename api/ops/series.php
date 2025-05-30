@@ -21,7 +21,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		$league_id = (int)get_required_param('league_id');
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		list($league_name, $league_rules, $league_langs, $gaining_id) = Db::record(get_label('league'), 'SELECT name, rules, langs, gaining_id FROM leagues WHERE id = ?', $league_id);
+		list($league_name, $league_rules, $league_langs, $league_flags, $gaining_id) = Db::record(get_label('league'), 'SELECT name, rules, langs, flags, gaining_id FROM leagues WHERE id = ?', $league_id);
 		
 		$gaining_id = (int)get_optional_param('gaining_id'); //, $gaining_id);
 		list($gaining_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $gaining_id);
@@ -47,7 +47,13 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$notes = get_optional_param('notes', '');
-		$flags = (int)get_optional_param('flags', 0) & SERIES_EDITABLE_MASK;
+		$flags = (int)get_optional_param('flags', NEW_SERIES_FLAGS);
+		$flags = ($flags & SERIES_EDITABLE_MASK) + (NEW_SERIES_FLAGS & ~SERIES_EDITABLE_MASK);
+		if (($league_flags & LEAGUE_FLAG_ELITE) == 0)
+		{
+			$flags &= ~SERIES_FLAG_ELITE;
+		}
+		
 		$langs = get_optional_param('langs', $league_langs);
 		$timezone = get_timezone();
 		
@@ -141,7 +147,7 @@ class ApiPage extends OpsApiPageBase
 			Db::record(get_label('sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
 		
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		list($league_name, $league_rules, $league_langs) = Db::record(get_label('league'), 'SELECT name, rules, langs FROM leagues WHERE id = ?', $league_id);
+		list($league_name, $league_rules, $league_langs, $league_flags) = Db::record(get_label('league'), 'SELECT name, rules, langs, flags FROM leagues WHERE id = ?', $league_id);
 		
 		$gaining_id = (int)get_optional_param('gaining_id', $old_gaining_id);
 		if ($gaining_id != $old_gaining_id)
@@ -155,6 +161,10 @@ class ApiPage extends OpsApiPageBase
 		$langs = get_optional_param('langs', $old_langs);
 		$flags = (int)get_optional_param('flags', $old_flags);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + ($old_flags & ~SERIES_EDITABLE_MASK);
+		if (($league_flags & LEAGUE_FLAG_ELITE) == 0)
+		{
+			$flags &= ~LEAGUE_FLAG_ELITE;
+		}
 		
 		$fee = get_optional_param('fee', $old_fee);
 		if (!is_null($fee) && $fee < 0)
@@ -243,6 +253,46 @@ class ApiPage extends OpsApiPageBase
 					'DELETE FROM series_series WHERE child_id = ? AND parent_id = ?', $series_id, $parent_id);
 				// todo send notification for series too:
 				// send_series_notification('tournament_series_remove', $tournament_id, $name, $club_id, $club->name, $s);
+			}
+		}
+		
+		// Update child tournaments when elite flag changed
+		if (($flags & SERIES_FLAG_ELITE) != ($old_flags & SERIES_FLAG_ELITE))
+		{
+			$query = new DbQuery(
+				'SELECT g.id, g.end_time FROM games g'.
+				' JOIN series_tournaments t ON t.tournament_id = g.tournament_id'.
+				' WHERE t.series_id = ? AND t.stars > 1 AND g.is_canceled = 0 AND g.is_rating <> 0'.
+				' ORDER BY g.end_time, g.id'.
+				' LIMIT 1', $series_id);
+			if ($row = $query->next())
+			{
+				list ($game_id, $game_end_time) = $row;
+				$prev_game_id = NULL;
+				$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $game_end_time, $game_end_time, $game_id);
+				if ($row = $query->next())
+				{
+					list($prev_game_id) = $row;
+				}
+				Game::rebuild_ratings($prev_game_id, $game_end_time);
+			}
+			
+			if ($flags & SERIES_FLAG_ELITE)
+			{
+				Db::exec(get_label('tournaments'), 'UPDATE series_tournaments st JOIN tournaments t ON t.id = st.tournament_id SET t.flags = t.flags | ' . TOURNAMENT_FLAG_ELITE . ' WHERE st.series_id = ? AND st.stars > 1', $series_id);
+			}
+			else
+			{
+				Db::exec(get_label('tournaments'), 
+					'UPDATE series_tournaments st'.
+					' JOIN tournaments t ON t.id = st.tournament_id'.
+					' SET t.flags = t.flags & ~' . TOURNAMENT_FLAG_ELITE. 
+					' WHERE st.series_id = ? AND t.id NOT IN ('.
+						'SELECT st1.tournament_id'.
+						' FROM series_tournaments st1'.
+						' JOIN series s1 ON s1.id = st1.series_id'.
+						' WHERE s1.id <> st.series_id AND (s1.flags & ' . SERIES_FLAG_ELITE . ') <> 0 AND st1.stars > 1'.
+					')', $series_id);
 			}
 		}
 		

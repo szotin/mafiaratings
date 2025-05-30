@@ -426,80 +426,80 @@ function get_role_name($role, $flags = 0)
 		case 0:
 			switch ($role)
 			{
-				case POINTS_ALL:
-					return get_label('All roles');
-				case POINTS_RED:
-					return get_label('Reds');
-				case POINTS_DARK:
-					return get_label('Blacks');
-				case POINTS_CIVIL:
-					return get_label('Civilians');
-				case POINTS_SHERIFF:
-					return get_label('Sheriff');
-				case POINTS_MAFIA:
-					return get_label('Mafiosi');
-				case POINTS_DON:
-					return get_label('Don');
+			case POINTS_ALL:
+				return get_label('All roles');
+			case POINTS_RED:
+				return get_label('Reds');
+			case POINTS_BLACK:
+				return get_label('Blacks');
+			case POINTS_CIVIL:
+				return get_label('Civilians');
+			case POINTS_SHERIFF:
+				return get_label('Sheriff');
+			case POINTS_MAFIA:
+				return get_label('Mafiosi');
+			case POINTS_DON:
+				return get_label('Don');
 			}
 			break;
 			
 		case ROLE_NAME_FLAG_LOWERCASE:
 			switch ($role)
 			{
-				case POINTS_ALL:
-					return get_label('all roles');
-				case POINTS_RED:
-					return get_label('reds');
-				case POINTS_DARK:
-					return get_label('blacks');
-				case POINTS_CIVIL:
-					return get_label('civilians');
-				case POINTS_SHERIFF:
-					return get_label('sheriff');
-				case POINTS_MAFIA:
-					return get_label('mafiosi');
-				case POINTS_DON:
-					return get_label('don');
+			case POINTS_ALL:
+				return get_label('all roles');
+			case POINTS_RED:
+				return get_label('reds');
+			case POINTS_BLACK:
+				return get_label('blacks');
+			case POINTS_CIVIL:
+				return get_label('civilians');
+			case POINTS_SHERIFF:
+				return get_label('sheriff');
+			case POINTS_MAFIA:
+				return get_label('mafiosi');
+			case POINTS_DON:
+				return get_label('don');
 			}
 			break;
 			
 		case ROLE_NAME_FLAG_SINGLE:
 			switch ($role)
 			{
-				case POINTS_ALL:
-					return get_label('Any role');
-				case POINTS_RED:
-					return get_label('Red');
-				case POINTS_DARK:
-					return get_label('Black');
-				case POINTS_CIVIL:
-					return get_label('Civilian');
-				case POINTS_SHERIFF:
-					return get_label('Sheriff');
-				case POINTS_MAFIA:
-					return get_label('Mafiosi');
-				case POINTS_DON:
-					return get_label('Don');
+			case POINTS_ALL:
+				return get_label('Any role');
+			case POINTS_RED:
+				return get_label('Red');
+			case POINTS_BLACK:
+				return get_label('Black');
+			case POINTS_CIVIL:
+				return get_label('Civilian');
+			case POINTS_SHERIFF:
+				return get_label('Sheriff');
+			case POINTS_MAFIA:
+				return get_label('Mafiosi');
+			case POINTS_DON:
+				return get_label('Don');
 			}
 			break;
 			
 		case ROLE_NAME_MASK_ALL:
 			switch ($role)
 			{
-				case POINTS_ALL:
-					return get_label('any role');
-				case POINTS_RED:
-					return get_label('red');
-				case POINTS_DARK:
-					return get_label('black');
-				case POINTS_CIVIL:
-					return get_label('civilian');
-				case POINTS_SHERIFF:
-					return get_label('sheriff');
-				case POINTS_MAFIA:
-					return get_label('mafiosi');
-				case POINTS_DON:
-					return get_label('don');
+			case POINTS_ALL:
+				return get_label('any role');
+			case POINTS_RED:
+				return get_label('red');
+			case POINTS_BLACK:
+				return get_label('black');
+			case POINTS_CIVIL:
+				return get_label('civilian');
+			case POINTS_SHERIFF:
+				return get_label('sheriff');
+			case POINTS_MAFIA:
+				return get_label('mafiosi');
+			case POINTS_DON:
+				return get_label('don');
 			}
 			break;
 	}
@@ -511,7 +511,7 @@ function show_roles_select($roles, $on_change, $title, $flags = 0)
 	echo '<select name="roles" id="roles" onChange="' . $on_change . '" title="' . $title . '">';
 	show_option(POINTS_ALL, $roles, get_role_name(POINTS_ALL, $flags));
 	show_option(POINTS_RED, $roles, get_role_name(POINTS_RED, $flags));
-	show_option(POINTS_DARK, $roles, get_role_name(POINTS_DARK, $flags));
+	show_option(POINTS_BLACK, $roles, get_role_name(POINTS_BLACK, $flags));
 	show_option(POINTS_CIVIL, $roles, get_role_name(POINTS_CIVIL, $flags));
 	show_option(POINTS_SHERIFF, $roles, get_role_name(POINTS_SHERIFF, $flags));
 	show_option(POINTS_MAFIA, $roles, get_role_name(POINTS_MAFIA, $flags));
@@ -527,7 +527,7 @@ function get_roles_condition($roles)
 	case POINTS_RED:
 		$role_condition->add(' AND p.role < 2');
 		break;
-	case POINTS_DARK:
+	case POINTS_BLACK:
 		$role_condition->add(' AND p.role > 1');
 		break;
 	case POINTS_CIVIL:

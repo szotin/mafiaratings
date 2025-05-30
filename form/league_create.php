@@ -4,6 +4,7 @@ require_once '../include/session.php';
 require_once '../include/languages.php';
 require_once '../include/url.php';
 require_once '../include/email.php';
+require_once '../include/security.php';
 
 initiate_session();
 
@@ -29,12 +30,25 @@ try
 	echo '<tr><td>'.get_label('Contact phone(s)').':</td><td>';
 	echo '<input class="longest" id="form-phone">';
 	echo '</td></tr>';
+	
+	if (is_permitted(PERMISSION_ADMIN))
+	{
+		echo '<tr><td colspan="2">';
+		echo '<input type="checkbox" id="form-elite"> ' . get_label('elite league. Elite leagues can create elite series that bring more rating points.');
+		echo '</td></tr>';
+	}
+	
+	echo '</table>';
 				
 ?>	
 	<script>
 	function commit(onSuccess)
 	{
-		var languages = mr.getLangs();
+		let languages = mr.getLangs();
+		
+		let flags = 0;
+		if ($("#form-elite").attr('checked')) flags |= <?php echo LEAGUE_FLAG_ELITE; ?>;
+		
 		json.post("api/ops/league.php",
 		{
 			op: 'create'
@@ -43,6 +57,7 @@ try
 			, email: $("#form-email").val()
 			, phone: $("#form-phone").val()
 			, langs: languages
+			, flags: flags
 		},
 		onSuccess);
 	}

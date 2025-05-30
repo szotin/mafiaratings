@@ -112,6 +112,9 @@ define('USER_SERIES_ICON_MAX_VERSION', 7);
 // 15 - 0x04000 -  16384 - name was changed during registration
 // 16 - 0x08000 -  32768 - reserved (not to interfere with user-league perm flag manager)
 // 17 - 0x10000 -  65536 - user was imported from another system (for example MWT)
+// 18 - 0x20000 - 131072 - red rating needs to be reset.
+// 19 - 0x40000 - 262144 - black rating needs to be reset.
+// 20 - 0x80000 - 524288 - a flag used in rebuilding ratings for limiting the query. MySQL does not support LIMIT in complicated update queries. This flag is used to simplify the query.
 define('USER_FLAG_NO_PASSWORD', 0x20);
 define('USER_FLAG_MALE', 0x40);
 define('USER_FLAG_MESSAGE_NOTIFY', 0x100);
@@ -119,8 +122,11 @@ define('USER_FLAG_PHOTO_NOTIFY', 0x200);
 define('USER_FLAG_IMMUNITY', 0x400);
 define('USER_FLAG_NAME_CHANGED', 0x4000);
 define('USER_FLAG_IMPORTED', 0x10000);
+define('USER_FLAG_RESET_RED_RATING', 0x20000);
+define('USER_FLAG_RESET_BLACK_RATING', 0x40000);
+define('USER_FLAG_RESET_TMP_RATING', 0x80000);
 
-define('USER_INITIAL_RATING', 0);
+define('USER_INITIAL_RATING', 1000);
 
 define('USER_ICON_MASK', 0x3800);
 define('USER_ICON_MASK_OFFSET', 11);
@@ -185,7 +191,7 @@ define('ICON_HEIGHT', 70);
 
 define('POINTS_ALL', 0);
 define('POINTS_RED', 1);
-define('POINTS_DARK', 2);
+define('POINTS_BLACK', 2);
 define('POINTS_CIVIL', 3);
 define('POINTS_SHERIFF', 4);
 define('POINTS_MAFIA', 5);
@@ -260,6 +266,7 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 // 23 - 0x0400000 -  4194304 - do not try to calculate number of players - just use what is specified in the db record
 // 24 - 0x0800000 -  8388608 - user registration for the tournament is closed. Only a manager can register users.
 // 25 - 0x1000000 - 16777216 - games of the tournament are video streamed.
+// 26 - 0x2000000 - 33554432 - this is elite tournament. Elite tournaments are the tournaments of the elite series with more than one star. Players get higher rating out of them. 
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
@@ -275,6 +282,7 @@ define('TOURNAMENT_FLAG_AWARD_DON', 0x4000);
 define('TOURNAMENT_FLAG_FORCE_NUM_PLAYERS', 0x400000);
 define('TOURNAMENT_FLAG_REGISTRATION_CLOSED', 0x800000);
 define('TOURNAMENT_FLAG_STREAMING', 0x1000000);
+define('TOURNAMENT_FLAG_ELITE', 0x2000000);
 define('TOURNAMENT_EDITABLE_MASK', 0x1ff7f70); // LONG_TERM | SINGLE_GAME | TOURNAMENT_FLAG_PINNED | TEAM | MANUAL_SCORE | AWARD_* | HIDE_MASK_* | TOURNAMENT_FLAG_FORCE_NUM_PLAYERS | TOURNAMENT_FLAG_REGISTRATION_CLOSED | TOURNAMENT_FLAG_STREAMING
 
 define('TOURNAMENT_ICON_MASK', 0x7);
@@ -308,11 +316,14 @@ define('COMPETITION_BEST_DON', 0x10);
 //  5 - 0x0010 -     16 - dirty flag - something is changed in series scoring. Tables must be rebuilt.
 //  6 - 0x0020 -     32 - series is finished - all scoring is complete
 //  7 - 0x0040 -     64 - series is pinned to the front page of the site (only site admins can do it)
+//  8 - 0x0080 -    128 - elite flag can be assigned to the series of the elite leagues. Tournaments/subseries of the elite series with more than one star become elite tournaments/series and players get higher rating.
 define('SERIES_FLAG_CANCELED', 0x8);
 define('SERIES_FLAG_DIRTY',    0x10);
 define('SERIES_FLAG_FINISHED', 0x20);
 define('SERIES_FLAG_PINNED', 0x40);
-define('SERIES_EDITABLE_MASK', 0x40); // SERIES_FLAG_PINNED
+define('SERIES_FLAG_ELITE', 0x80);
+define('NEW_SERIES_FLAGS', 0);
+define('SERIES_EDITABLE_MASK', 0xc0); // SERIES_FLAG_PINNED | SERIES_FLAG_ELITE
 
 define('SERIES_ICON_MASK', 0x7);
 define('SERIES_ICON_MASK_OFFSET', 0);
@@ -372,8 +383,11 @@ define('CLUB_ICON_MAX_VERSION', 7);
 // 2 - 0x0002 -      2 - icon mask
 // 3 - 0x0004 -      4 - icon mask
 // 4 - 0x0008 -      8 - icon mask
-define('LEAGUE_FLAG_RETIRED', 1);
+// 5 - 0x0010 -     16 - elite league. Elite league can have elite series. Only admin can create elite leagues or assign/remove elite status to/from the leagues.
+define('LEAGUE_FLAG_RETIRED', 0x1);
+define('LEAGUE_FLAG_ELITE', 0x10);
 define('NEW_LEAGUE_FLAGS', 0);
+define('LEAGUE_EDITABLE_MASK', 0x10); // LEAGUE_FLAG_ELITE
 
 define('LEAGUE_ICON_MASK', 0xe);
 define('LEAGUE_ICON_MASK_OFFSET', 1);

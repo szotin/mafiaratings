@@ -113,7 +113,6 @@ class SeriesPageBase extends PageBase
 		(
 			new MenuItem('series_info.php?id=' . $this->id, get_label('Sеriеs '), get_label('General series information')),
 			new MenuItem('series_standings.php?id=' . $this->id, get_label('Standings'), get_label('Series standings')),
-			new MenuItem('series_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this series.')),
 			new MenuItem('series_series.php?id=' . $this->id, get_label('Subseries'), get_label('Subseries of this series')),
 			new MenuItem('series_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('Tournaments of this series')),
 			new MenuItem('series_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the series')),
@@ -123,6 +122,7 @@ class SeriesPageBase extends PageBase
 				new MenuItem('series_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('series_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
 				new MenuItem('series_referees.php?id=' . $this->id, get_label('Referees'), get_label('Statistics of the series referees')),
+				new MenuItem('series_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this series.')),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(

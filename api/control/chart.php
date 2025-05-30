@@ -53,7 +53,7 @@ class ApiPage extends ControlApiPageBase
 				
 				foreach ($user_ids as $user_id)
 				{
-					$this->response[] = new ChartData('', $_chart_colors[$current_color++]);
+					$this->response[] = new ChartData('', $_chart_colors[$current_color++], USER_INITIAL_RATING);
 				}
 			
 				list($min_time, $max_time) = Db::record(get_label('game'), 'SELECT MIN(g.end_time), MAX(g.end_time) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id IN (' . $player_list . ') AND g.is_canceled = FALSE AND g.result > 0 AND g.is_rating <> 0');

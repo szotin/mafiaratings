@@ -21,9 +21,9 @@ try
 	$series_id = (int)$_REQUEST['id'];
 	$timezone = get_timezone();	
 	
-	list ($league_id, $name, $start_time, $duration, $langs, $notes, $flags, $league_langs, $gaining_id, $gaining_version, $fee, $currency_id) = 
+	list ($league_id, $name, $start_time, $duration, $langs, $notes, $flags, $league_langs, $league_flags, $gaining_id, $gaining_version, $fee, $currency_id) = 
 		Db::record(get_label('sеriеs'), 
-			'SELECT s.league_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags, l.langs, s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' . 
+			'SELECT s.league_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags, l.langs, l.flags, s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' . 
 			' JOIN leagues l ON l.id = s.league_id' .
 			' WHERE s.id = ?', $series_id);
 	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
@@ -112,6 +112,15 @@ try
 		echo ' checked';
 	}
 	echo  '> ' . get_label('pin to the main page.');
+	if ($league_flags & LEAGUE_FLAG_ELITE)
+	{
+		echo '<br><input type="checkbox" id="form-elite"';
+		if ($flags & SERIES_FLAG_ELITE)
+		{
+			echo ' checked';
+		}
+		echo  '> ' . get_label('elite series. The tournaments with more than one star become elite tournaments and bring more rating points.');
+	}
 	echo '</td></tr>';
 	
 	echo'</table>';
@@ -244,6 +253,7 @@ try
 		
 		var _flags = 0;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo SERIES_FLAG_PINNED; ?>;
+		if ($("#form-elite").attr('checked')) _flags |= <?php echo SERIES_FLAG_ELITE; ?>;
 		
 		var series = [];
 		for (const i in seriesList) 

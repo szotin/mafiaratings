@@ -413,7 +413,7 @@ class Page extends UserPageBase
 				else
 				{
 					echo '<td>';
-					echo format_rating($rating_before);
+					echo format_rating(USER_INITIAL_RATING + $rating_before);
 					if ($rating_earned >= 0)
 					{
 						echo ' + ' . format_rating($rating_earned);
@@ -422,7 +422,7 @@ class Page extends UserPageBase
 					{
 						echo ' - ' . format_rating(-$rating_earned);
 					}
-					echo ' = ' . format_rating($rating_before + $rating_earned);
+					echo ' = ' . format_rating(USER_INITIAL_RATING + $rating_before + $rating_earned);
 				}
 				// echo '<td>' . format_rating($rating_earned);
 				echo '</td></tr>';

@@ -170,7 +170,6 @@ class TournamentPageBase extends PageBase
 			new MenuItem('tournament_info.php?id=' . $this->id, get_label('Tournament'), get_label('General tournament information')),
 			new MenuItem('tournament_rounds.php?id=' . $this->id, get_label('Rounds'), get_label('Tournament rounds')),
 			new MenuItem('tournament_standings.php?id=' . $this->id, get_label('Standings'), get_label('Tournament standings')),
-			new MenuItem('tournament_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this tournament.')),
 			new MenuItem('tournament_seating.php?id=' . $this->id, get_label('Seating'), get_label('Tournament seating.')),
 			new MenuItem('tournament_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of the tournament')),
 			new MenuItem('#stats', get_label('Reports'), NULL, array
@@ -179,6 +178,7 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('tournament_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
 				new MenuItem('tournament_referees.php?id=' . $this->id, get_label('Referees'), get_label('Statistics of the tournament referees')),
+				new MenuItem('tournament_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing on this tournament.')),
 				new MenuItem('tournament_fiim_form.php?tournament_id=' . $this->id, get_label('FIIM'), get_label('PDF report for sending to FIIM Mafia World Tour'), NULL, true),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array

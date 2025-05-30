@@ -129,7 +129,7 @@ class ApiPage extends OpsApiPageBase
 		if ($src_games > 0)
 		{
 			$log_details->games_played = (int)$src_games;
-			$log_details->rating = (float)$src_rating;
+			$log_details->rating = USER_INITIAL_RATING + (float)$src_rating;
 		}
 		
 		// rename pictures

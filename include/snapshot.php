@@ -21,32 +21,6 @@ function compare_players($player1, $player2)
 	return $player1->src - $player2->src;
 }
 
-class SnapshotPlayer
-{
-	public $id;
-	public $rating;
-	public $user_name; // todo replace with name_id
-	public $user_flags;
-	public $club_id;
-	public $club_name;
-	public $club_flags;
-	
-	function __construct($row, $rating = NULL)
-	{
-		if ($rating == NULL)
-		{
-			list($this->id, $this->rating, $this->user_name, $this->user_flags, $this->club_id, $this->club_name, $this->club_flags) = $row;
-			$this->id = (int)$this->id;
-			$this->rating = (float)$this->rating;
-		}
-		else
-		{
-			$this->id = (int)$row;
-			$this->rating = (float)$rating;
-		}
-	}
-}
-
 class Snapshot
 {
 	public $time;
@@ -90,9 +64,10 @@ class Snapshot
 		$list = "";
 		foreach ($players as $player)
 		{
-			$id = $player[0];
-			$rating = $player[1];
-			$this->top100[] = new SnapshotPlayer($id, $rating);
+			$p = new stdClass();
+			$p->id = (int)$player[0];
+			$p->rating = (float)$player[1];
+			$this->top100[] = $p;
 		}
 	}
 	
@@ -125,11 +100,11 @@ class Snapshot
 					' JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0'.
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id'.
 					' WHERE p.game_id = ('.
-					' SELECT p1.game_id'.
-					' FROM players p1 '.
-					' WHERE p1.user_id = p.user_id AND p1.game_end_time <= ?'.
-					' ORDER BY p1.game_end_time DESC, p1.game_id DESC'.
-					' LIMIT 1)'.
+						' SELECT p1.game_id'.
+						' FROM players p1 '.
+						' WHERE p1.user_id = p.user_id AND p1.game_end_time <= ?'.
+						' ORDER BY p1.game_end_time DESC, p1.game_id DESC'.
+						' LIMIT 1)'.
 					' ORDER BY rating DESC, p.user_id DESC '.
 					' LIMIT 100', $this->time);
 		}
@@ -147,7 +122,17 @@ class Snapshot
 		
 		while ($row = $query->next())
 		{
-			$this->top100[] = new SnapshotPlayer($row);
+			$player = new stdClass();
+			list($player->id, $player->rating, $player->user_name, $player->user_flags, $player->club_id, $player->club_name, $player->club_flags) = $row;
+			$player->id = (int)$player->id;
+			$player->rating = (float)$player->rating + USER_INITIAL_RATING;
+			$player->user_flags = (int)$player->user_flags;
+			if (!is_null($player->club_id))
+			{
+				$player->club_id = (int)$player->club_id;
+				$player->club_flags = (int)$player->club_flags;
+			}
+			$this->top100[] = $player;
 		}
 	}
 	

@@ -119,8 +119,8 @@ function create_user($names, $email, $club_id, $city_id, $flags = NEW_USER_FLAGS
 	
 	Db::exec(
 		get_label('user'), 
-		'INSERT INTO users (name_id, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id, games, games_won, rating) ' .
-			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?, 0, 0, ' . USER_INITIAL_RATING . ')',
+		'INSERT INTO users (name_id, password, auth_key, email, flags, club_id, languages, reg_time, def_lang, city_id) ' .
+			'VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?, ?)',
 		$name_id, md5(rand_string(8)), '', $email, $flags, $club_id, $langs, $lang, $city_id);
 	list ($user_id) = Db::record(get_label('user'), 'SELECT LAST_INSERT_ID()');
 	
@@ -192,7 +192,6 @@ class UserPageBase extends PageBase
 		$menu = array
 		(
 			new MenuItem('user_info.php?id=' . $this->id, get_label('Player'), get_label('User information')),
-			new MenuItem('user_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How [0] competes with the other players', $this->title)),
 			new MenuItem('user_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('[0] clubs', $this->title)),
 			new MenuItem('user_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series history', $this->title)),
 			new MenuItem('user_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->title)),
@@ -204,6 +203,7 @@ class UserPageBase extends PageBase
 				new MenuItem('user_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				//new MenuItem('player_compare_select.php?id=' . $this->id, get_label('Compare'), get_label('Compare [0] with other players', $this->title)),
 				new MenuItem('user_referees.php?id=' . $this->id, get_label('Referees'), get_label('How [0] played with different referees', $this->title)),
+				new MenuItem('user_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How [0] competes with the other players', $this->title)),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(

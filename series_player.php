@@ -742,7 +742,7 @@ class Page extends SeriesPageBase
 			else
 			{
 				echo '<td>';
-				echo format_rating($rating_before);
+				echo format_rating(USER_INITIAL_RATING + $rating_before);
 				if ($rating_earned >= 0)
 				{
 					echo ' + ' . format_rating($rating_earned);
@@ -751,7 +751,7 @@ class Page extends SeriesPageBase
 				{
 					echo ' - ' . format_rating(-$rating_earned);
 				}
-				echo ' = ' . format_rating($rating_before + $rating_earned);
+				echo ' = ' . format_rating(USER_INITIAL_RATING + $rating_before + $rating_earned);
 			}
 			// echo '<td>' . format_rating($rating_earned);
 			echo '</td></tr>';
@@ -803,7 +803,7 @@ class Page extends SeriesPageBase
 		if ($stats->games_played > 0)
 		{
 			echo '<tr><td class="dark" width="300">'.get_label('Wins').':</td><td>' . $stats->games_won . ' (' . number_format($stats->games_won*100.0/$stats->games_played, 1) . '%)</td></tr>';
-			echo '<tr><td class="dark">'.get_label('Rating').':</td><td>' . get_label('[0] ([1] per game)', number_format($stats->rating, 2), number_format($stats->rating/$stats->games_played, 3)) . '</td></tr>';
+			echo '<tr><td class="dark">'.get_label('Earned rating').':</td><td>' . get_label('[0] ([1] per game)', number_format($stats->rating, 2), number_format($stats->rating/$stats->games_played, 3)) . '</td></tr>';
 			echo '<tr><td class="dark">'.get_label('Best player').':</td><td>' . $stats->best_player . ' (' . number_format($stats->best_player*100.0/$stats->games_played, 1) . '%)</td></tr>';
 			echo '<tr><td class="dark">'.get_label('Best move').':</td><td>' . $stats->best_move . ' (' . number_format($stats->best_move*100.0/$stats->games_played, 1) . '%)</td></tr>';
 			echo '<tr><td class="dark">'.get_label('Auto-bonus removed').':</td><td>' . $stats->worst_move . ' (' . number_format($stats->worst_move*100.0/$stats->games_played, 1) . '%)</td></tr>';
@@ -948,7 +948,7 @@ class Page extends SeriesPageBase
 			}
 			echo '</table></p>';
 			
-			if ($roles == POINTS_DARK || $roles == POINTS_MAFIA || $roles == POINTS_DON)
+			if ($roles == POINTS_BLACK || $roles == POINTS_MAFIA || $roles == POINTS_DON)
 			{
 				$mafia_stats = new MafiaStats($this->user_id, $roles, $condition);
 				echo '<p><table class="bordered light" width="100%">';

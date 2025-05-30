@@ -2,6 +2,7 @@
 
 require_once 'include/general_page_base.php';
 require_once 'include/pages.php';
+require_once 'include/scoring.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -56,7 +57,7 @@ class Page extends GeneralPageBase
 				echo '</td>';
 				
 				echo '<td><a href="merge_user.php?bck=1&id=' . $id . '">' . cut_long_name($name, 80) . '</a></td>';
-				echo '<td>' . $rating . '</td>';
+				echo '<td>' . format_rating(USER_INITIAL_RATING + $rating) . '</td>';
 				echo '<td>' . $games . '</td></tr>';
 			}
 			echo '</table>';

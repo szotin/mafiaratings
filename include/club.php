@@ -150,7 +150,6 @@ class ClubPageBase extends PageBase
 		(
 			new MenuItem('club_main.php?id=' . $this->id, get_label('Club'), get_label('[0] main page', $this->name))
 			, new MenuItem('club_ratings.php?id=' . $this->id, get_label('Ratings'), get_label('[0] ratings', $this->name))
-			, new MenuItem('club_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing in the club.'))
 			, new MenuItem('club_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->name))
 			, new MenuItem('club_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
 			, new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name))
@@ -160,6 +159,7 @@ class ClubPageBase extends PageBase
 				, new MenuItem('club_by_numbers.php?id=' . $this->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.'))
 				, new MenuItem('club_nominations.php?id=' . $this->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.'))
 				, new MenuItem('club_referees.php?id=' . $this->id, get_label('Referees'), get_label('Referees statistics of [0]', $this->name))
+				, new MenuItem('club_competition.php?id=' . $this->id, get_label('Competition chart'), get_label('How players were competing in the club.'))
 			))
 			, new MenuItem('#resources', get_label('Resources'), NULL, array
 			(

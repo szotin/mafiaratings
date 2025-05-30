@@ -1088,6 +1088,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($game_id, $end_time) = $row;
 				
+				$prev_game_id = NULL;
 				$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
 				if ($row = $query->next())
 				{

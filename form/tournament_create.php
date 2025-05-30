@@ -191,6 +191,8 @@ try
 	echo '<input type="checkbox" id="form-manual_scoring"> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
 	echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.') . '<br>';
 	echo '<input type="checkbox" id="form-streaming" checked> ' . get_label('video streaming games.') . '<br>';
+	echo '</td></tr>';
+	
 	echo '</table>';
 	
 	$fiim_id = 0;

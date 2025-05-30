@@ -260,7 +260,7 @@ class Page extends UserPageBase
 			}
 			echo '</table></p>';
 			
-			if ($roles == POINTS_DARK || $roles == POINTS_MAFIA || $roles == POINTS_DON)
+			if ($roles == POINTS_BLACK || $roles == POINTS_MAFIA || $roles == POINTS_DON)
 			{
 				$mafia_stats = new MafiaStats($this->id, $roles, $condition);
 				echo '<p><table class="bordered light" width="100%">';

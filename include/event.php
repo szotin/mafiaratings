@@ -929,7 +929,6 @@ class EventPageBase extends PageBase
 		(
 			new MenuItem('event_info.php?id=' . $this->event->id, get_label('Event'), get_label('General event information')),
 			new MenuItem('event_standings.php?id=' . $this->event->id, get_label('Standings'), get_label('Event standings')),
-			new MenuItem('event_competition.php?id=' . $this->event->id, get_label('Competition chart'), get_label('How players were competing on this event.')),
 			new MenuItem('event_games.php?id=' . $this->event->id, get_label('Games'), get_label('Games list of the event')),
 			new MenuItem('#stats', get_label('Reports'), NULL, array
 			(
@@ -937,6 +936,7 @@ class EventPageBase extends PageBase
 				new MenuItem('event_by_numbers.php?id=' . $this->event->id, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
 				new MenuItem('event_nominations.php?id=' . $this->event->id, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
 				new MenuItem('event_referees.php?id=' . $this->event->id, get_label('Referees'), get_label('Referees statistics of [0]', $this->event->name)),
+				new MenuItem('event_competition.php?id=' . $this->event->id, get_label('Competition chart'), get_label('How players were competing on this event.')),
 			)),
 			new MenuItem('#resources', get_label('Resources'), NULL, array
 			(

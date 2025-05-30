@@ -694,7 +694,7 @@ class Page extends GeneralPageBase
 				$this->club_pic->set($club_id, $club_name, $club_flags);
 				$this->club_pic->show(ICONS_DIR, false, 36);
 				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city_name . '</a></td>';
-				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
+				echo '<td width="60" align="center">' . number_format(USER_INITIAL_RATING + $rating) . '</td>';
 				echo '</tr>';
 				
 				++$number;

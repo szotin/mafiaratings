@@ -151,7 +151,7 @@ class ApiPage extends GetApiPageBase
 			$player->club_id = (int)$player->club_id;
 			$player->games = (int)$player->games;
 			$player->games_won = (int)$player->games_won;
-			$player->rating = (float)$player->rating;
+			$player->rating = USER_INITIAL_RATING + (float)$player->rating;
 			$player->city_id = (int)$player->city_id;
 			
 			if ($lod >= 1 && is_permitted(PERMISSION_CLUB_MANAGER, $player->club_id))

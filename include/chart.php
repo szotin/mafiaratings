@@ -144,13 +144,14 @@ class ChartData
 	public $borderColor; // This is a string. The format is 'rgb(100,200,100)' or 'rgba(100,200,100,0.2)'
 	public $data; // array of ChartPoint
 	
-	function __construct ($label, $color) // $color is ChartColor
+	function __construct ($label, $color, $initial_value = 0) // $color is ChartColor
 	{
 		$this->label = $label;
 		$this->lineTension = 0;
 		$this->fill = false;
 		$this->backgroundColor = $this->borderColor = 'rgba(' . $color->r . ',' . $color->g . ',' . $color->b . ',0.7)';
 		$this->data = array();
+		$this->initial_value = $initial_value;
 	}
 	
 	function add_point($timestamp, $delta)
@@ -159,6 +160,10 @@ class ChartData
 		if ($count > 0)
 		{
 			$delta += $this->data[$count - 1]->y;
+		}
+		else
+		{
+			$delta += $this->initial_value;
 		}
 		$this->data[] = new ChartPoint($timestamp, $delta);
 	}

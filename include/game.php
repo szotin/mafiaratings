@@ -3370,7 +3370,8 @@ class Game
 			
 			// clean up stats
 			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated - 1 WHERE id = (SELECT moderator_id FROM games WHERE id = ?)', $data->id);
-			Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games - 1, u.games_won = u.games_won - p.won, u.rating = u.rating - p.rating_earned WHERE p.game_id = ?', $data->id);
+			Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games - 1, u.games_won = u.games_won - p.won, u.rating = u.rating - p.rating_earned, u.red_rating = u.red_rating - p.rating_earned WHERE p.game_id = ? AND p.role <= ' . ROLE_SHERIFF, $data->id);
+			Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games - 1, u.games_won = u.games_won - p.won, u.rating = u.rating - p.rating_earned, u.black_rating = u.black_rating - p.rating_earned WHERE p.game_id = ? AND p.role >= ' . ROLE_MAFIA, $data->id);
 			Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id = ?', $data->id);
 			Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $data->id);
 			Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $data->id);
@@ -3415,7 +3416,8 @@ class Game
 			// calculate ratings
 			update_game_ratings($data->id);
 			
-			Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games + 1, u.games_won = u.games_won + p.won, u.rating = u.rating + p.rating_earned WHERE p.game_id = ?', $data->id);
+			Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games + 1, u.games_won = u.games_won + p.won, u.rating = u.rating + p.rating_earned, u.red_rating = u.red_rating + p.rating_earned, u.flags = u.flags & ~' . USER_FLAG_RESET_RED_RATING . ' WHERE p.game_id = ? AND p.role <= ' . ROLE_SHERIFF, $data->id);
+			Db::exec(get_label('user'), 'UPDATE players p JOIN users u ON u.id = p.user_id SET u.games = u.games + 1, u.games_won = u.games_won + p.won, u.rating = u.rating + p.rating_earned, u.black_rating = u.black_rating + p.rating_earned, u.flags = u.flags & ~' . USER_FLAG_RESET_BLACK_RATING . ' WHERE p.game_id = ? AND p.role >= ' . ROLE_MAFIA, $data->id);
 			Db::exec(get_label('user'), 'UPDATE users SET games_moderated = games_moderated + 1 WHERE id = ?', $data->moderator->id);
 		}
 		

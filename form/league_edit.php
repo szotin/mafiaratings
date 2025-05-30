@@ -75,13 +75,28 @@ try
 		show_option($gaining_id, $league_gaining_id, $gaining_name);
 	}
 	echo '</select></td></tr>';
+	
+	if (is_permitted(PERMISSION_ADMIN))
+	{
+		echo '<tr><td colspan="2">';
+		echo '<input type="checkbox" id="form-elite"';
+		if ($flags & LEAGUE_FLAG_ELITE)
+		{
+			echo ' checked';
+		}
+		echo  '> ' . get_label('elite league. Elite leagues can create elite series that bring more rating points.');
+		echo '</td></tr>';
+	}
+	
 	echo '</table>';
 	
 ?>	
 	<script>
 	function commit(onSuccess)
 	{
-		var languages = mr.getLangs();
+		let flags = 0;
+		if ($("#form-elite").attr('checked')) flags |= <?php echo LEAGUE_FLAG_ELITE; ?>;
+		let languages = mr.getLangs();
 		json.post("api/ops/league.php",
 		{
 			op: "change"
@@ -94,6 +109,7 @@ try
 			, normalizer_id: $("#form-normalizer").val()
 			, gaining_id: $("#form-gaining").val()
 			, langs: languages
+			, flags: flags
 		},
 		onSuccess);
 	}

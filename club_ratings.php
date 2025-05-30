@@ -8,7 +8,9 @@ require_once 'include/user.php';
 require_once 'include/scoring.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
-define('ROLES_COUNT', 7);
+define('SORT_BY_RATING', 0);
+define('SORT_BY_RED_RATING', 1);
+define('SORT_BY_BLACK_RATING', 2);
 	
 class Page extends ClubPageBase
 {
@@ -25,10 +27,14 @@ class Page extends ClubPageBase
 		
 		parent::prepare();
 		
-		$this->role = POINTS_ALL;
-		if (isset($_REQUEST['role']))
+		$this->sort = SORT_BY_RATING;
+		if (isset($_REQUEST['sort']))
 		{
-			$this->role = $_REQUEST['role'];
+			$this->sort = (int)$_REQUEST['sort'];
+			if ($this->sort < 0 || $this->sort > SORT_BY_BLACK_RATING)
+			{
+				$this->sort = SORT_BY_RATING;
+			}
 		}
 		
 		$this->user_id = 0;
@@ -58,15 +64,7 @@ class Page extends ClubPageBase
 	private function no_user_error()
 	{
 		global $_profile;
-		
-		if ($this->role == POINTS_ALL)
-		{
-			$message = get_label('[0] played no games.', $this->user_name);
-		}
-		else
-		{
-			$message = get_label('[0] played no games as [1].', $this->user_name, get_role_name($this->role, ROLE_NAME_FLAG_SINGLE | ROLE_NAME_FLAG_LOWERCASE));
-		}
+		$message = get_label('[0] played no games.', $this->user_name);
 		$this->errorMessage($message);
 	}
 	
@@ -80,68 +78,42 @@ class Page extends ClubPageBase
 		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(' WHERE u.club_id = ? AND u.games > 0', $this->id);
-		if ($this->role == POINTS_ALL)
+		$query = new DbQuery(
+			'SELECT u.id, nu.name, u.rating as rating, u.red_rating, u.black_rating, u.games as games, u.games_won as won, u.flags, c.id, c.name, c.flags, cu.flags' .
+				' FROM users u' . 
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = u.id',
+				$condition);
+		$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
+		if ($this->user_id > 0)
 		{
-			$query = new DbQuery(
-				'SELECT u.id, nu.name, u.rating as rating, u.games as games, u.games_won as won, u.flags, c.id, c.name, c.flags, cu.flags' .
-					' FROM users u' . 
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' JOIN clubs c ON u.club_id = c.id' .
-					' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = u.id',
-					$condition);
-			$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
-			if ($this->user_id > 0)
+			$pos_query = new DbQuery(
+				'SELECT u.id, nu.name, u.rating, u.games, u.games_won'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' WHERE u.id = ? AND u.club_id = ?', 
+				$this->user_id, $this->id);
+			if ($row = $pos_query->next())
 			{
-				$pos_query = new DbQuery(
-					'SELECT u.id, nu.name, u.rating, u.games, u.games_won'.
-					' FROM users u'.
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' WHERE u.id = ? AND u.club_id = ?', 
-					$this->user_id, $this->id);
-				if ($row = $pos_query->next())
+				list ($u_id, $u_name, $u_rating, $u_games, $u_won) = $row;
+				if ($u_games > 0)
 				{
-					list ($u_id, $u_name, $u_rating, $u_games, $u_won) = $row;
-					if ($u_games > 0)
+					$pos_query = new DbQuery('SELECT count(*) FROM users u', $condition);
+					$pos_query->add(' AND u.id <> ? AND (u.rating > ? OR (u.rating = ? AND (u.games_won > ? OR (u.games_won = ? AND (u.games > ? OR (u.games = ? AND u.id < ?))))))', $u_id, $u_rating, $u_rating, $u_won, $u_won, $u_games, $u_games, $u_id);
+					switch ($this->sort)
 					{
-						$pos_query = new DbQuery('SELECT count(*) FROM users u', $condition);
+					case SORT_BY_RED_RATING:
+						$pos_query->add(' AND u.id <> ? AND (u.red_rating > ? OR (u.red_rating = ? AND (u.games_won > ? OR (u.games_won = ? AND (u.games > ? OR (u.games = ? AND u.id < ?))))))', $u_id, $u_red_rating, $u_red_rating, $u_won, $u_won, $u_games, $u_games, $u_id);
+						break;
+					case SORT_BY_BLACK_RATING:
+						$pos_query->add(' AND u.id <> ? AND (u.black_rating > ? OR (u.black_rating = ? AND (u.games_won > ? OR (u.games_won = ? AND (u.games > ? OR (u.games = ? AND u.id < ?))))))', $u_id, $u_black_rating, $u_black_rating, $u_won, $u_won, $u_games, $u_games, $u_id);
+						break;
+					case SORT_BY_RATING:
+					default:
 						$pos_query->add(' AND u.id <> ? AND (u.rating > ? OR (u.rating = ? AND (u.games_won > ? OR (u.games_won = ? AND (u.games > ? OR (u.games = ? AND u.id < ?))))))', $u_id, $u_rating, $u_rating, $u_won, $u_won, $u_games, $u_games, $u_id);
-						list($user_pos) = $pos_query->next();
-						$_page = floor($user_pos / PAGE_SIZE);
+						break;
 					}
-					else
-					{
-						$this->no_user_error();
-					}
-				}
-			}
-		}
-		else
-		{
-			$condition->add(get_roles_condition($this->role));
-			$query = new DbQuery(
-				'SELECT u.id, nu.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.flags, c.id, c.name, c.flags, cu.flags' .
-					' FROM users u' . 
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-					' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = u.id' .
-					' JOIN players p ON p.user_id = u.id', $condition);
-			$query->add(' GROUP BY u.id');
-			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id', $condition);
-			if ($this->user_id > 0)
-			{
-				$pos_query = new DbQuery(
-					'SELECT u.id, nu.name, ' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) as rating, count(*) as games, SUM(p.won) as won, u.club_id, u.city_id, c.country_id'.
-					' FROM players p'.
-					' JOIN users u ON p.user_id = u.id'.
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' JOIN cities c ON u.city_id = c.id', $condition);
-				$pos_query->add(' AND u.id = ? GROUP BY u.id', $this->user_id);
-				
-				if ($row = $pos_query->next())
-				{
-					list ($u_id, $u_name, $u_rating, $u_games, $u_won) = $row;
-					$pos_query = new DbQuery('SELECT count(*) FROM (SELECT u.id FROM players p JOIN users u ON p.user_id = u.id ', $condition);
-					$pos_query->add(' AND u.id <> ? GROUP BY u.id HAVING (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) > ? OR (' . USER_INITIAL_RATING . ' + SUM(p.rating_earned) = ? AND (SUM(p.won) > ? OR (SUM(p.won) = ? AND (count(p.game_id) > ? OR (count(p.game_id) = ? AND u.id < ?))))))) as upper', $u_id, $u_rating, $u_rating, $u_won, $u_won, $u_games, $u_games, $u_id);
 					list($user_pos) = $pos_query->next();
 					$_page = floor($user_pos / PAGE_SIZE);
 				}
@@ -151,7 +123,20 @@ class Page extends ClubPageBase
 				}
 			}
 		}
-		$query->add(' ORDER BY rating DESC, won DESC, games DESC, u.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		switch ($this->sort)
+		{
+		case SORT_BY_RED_RATING:
+			$query->add(' ORDER BY red_rating DESC, won DESC, games DESC, u.id');
+			break;
+		case SORT_BY_BLACK_RATING:
+			$query->add(' ORDER BY black_rating DESC, won DESC, games DESC, u.id');
+			break;
+		case SORT_BY_RATING:
+		default:
+			$query->add(' ORDER BY rating DESC, won DESC, games DESC, u.id');
+			break;
+		}
+		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
 		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 			
@@ -161,18 +146,42 @@ class Page extends ClubPageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
 		echo '<td colspan="2">'.get_label('Player').'</td>';
-		echo '<td width="80" align="center">'.get_label('Rating').'</td>';
-		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="80" align="center">'.get_label('Wins').'</td>';
-		echo '<td width="80" align="center">'.get_label('Winning %').'</td>';
-		echo '<td width="80" align="center">'.get_label('Rating per game').'</td>';
+		if ($this->sort == SORT_BY_RATING)
+		{
+			echo '<td width="60" align="center">'.get_label('Rating').'</td>';
+		}
+		else
+		{
+			echo '<td width="60" align="center"><a href="#" onclick="goTo({sort:undefined,page:undefined})">'.get_label('Rating').'</a></td>';
+		}
+		if ($this->sort == SORT_BY_RED_RATING)
+		{
+			echo '<td width="60" align="center">'.get_label('Red rating').'</td>';
+		}
+		else
+		{
+			echo '<td width="60" align="center"><a href="#" onclick="goTo({sort:' . SORT_BY_RED_RATING . ',page:undefined})">'.get_label('Red rating').'</a></td>';
+		}
+		if ($this->sort == SORT_BY_BLACK_RATING)
+		{
+			echo '<td width="60" align="center">'.get_label('Black rating').'</td>';
+		}
+		else
+		{
+			echo '<td width="60" align="center"><a href="#" onclick="goTo({sort:' . SORT_BY_BLACK_RATING . ',page:undefined})">'.get_label('Black rating').'</a></td>';
+		}
+		echo '<td width="60" align="center">'.get_label('Redness').'</td>';
+		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
+		echo '<td width="60" align="center">'.get_label('Wins').'</td>';
+		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
+		echo '<td width="60" align="center">'.get_label('Rating per game').'</td>';
 		echo '</tr>';
 
 		$number = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
+			list ($id, $name, $rating, $red_rating, $black_rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
 
 			if ($id == $this->user_id)
 			{
@@ -191,7 +200,32 @@ class Page extends ClubPageBase
 			$club_user_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-			echo '<td align="center" class="' . $highlight . '">' . format_rating($rating) . '</td>';
+			if ($this->sort == SORT_BY_RATING)
+			{
+				echo '<td align="center" class="' . $highlight . '"><b>' . format_rating($rating + USER_INITIAL_RATING) . '</b></td>';
+			}
+			else
+			{
+				echo '<td align="center">' . format_rating($rating + USER_INITIAL_RATING) . '</td>';
+			}
+			if ($this->sort == SORT_BY_RED_RATING)
+			{
+				echo '<td align="center" class="' . $highlight . '"><b>' . format_rating($red_rating + USER_INITIAL_RATING) . '</b></td>';
+			}
+			else
+			{
+				echo '<td align="center">' . format_rating($red_rating + USER_INITIAL_RATING) . '</td>';
+			}
+			if ($this->sort == SORT_BY_BLACK_RATING)
+			{
+				echo '<td align="center" class="' . $highlight . '"><b>' . format_rating($black_rating + USER_INITIAL_RATING) . '</b></td>';
+			}
+			else
+			{
+				echo '<td align="center">' . format_rating($black_rating + USER_INITIAL_RATING) . '</td>';
+			}
+			echo '<td align="center">' . format_rating($red_rating - $black_rating) . '</td>';
+			
 			echo '<td align="center">' . $games_played . '</td>';
 			echo '<td align="center">' . $games_won . '</td>';
 			if ($games_played != 0)

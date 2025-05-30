@@ -255,6 +255,20 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
+		// Check if elite flag should be set
+		foreach ($parent_series as $s)
+		{
+			if ($s->stars > 1)
+			{
+				list($sflags) = Db::record(get_label('series', 'SELECT flags FROM series WHERE id = ?', $s->id);
+				if ($sflags & SERIES_FLAG_ELITE)
+				{
+					$flags |= TOURNAMENT_FLAG_ELITE;
+					break;
+				}
+			}
+		}
+		
 		$address_id = (int)get_required_param('address_id');
 		if ($address_id <= 0)
 		{
@@ -570,6 +584,7 @@ class ApiPage extends OpsApiPageBase
 				$old_parent_series[$s->id] = $s;
 			}
 			
+			$flags &= ~TOURNAMENT_FLAG_ELITE;
 			foreach ($parent_series as $s)
 			{
 				$changed = false;
@@ -625,6 +640,15 @@ class ApiPage extends OpsApiPageBase
 						Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $s->id);
 					}
 					$parent_series_changed = true;
+				}
+				
+				if ($s->stars > 1)
+				{
+					list($sflags) = Db::record(get_label('series', 'SELECT flags FROM series WHERE id = ?', $s->id);
+					if ($sflags & SERIES_FLAG_ELITE)
+					{
+						$flags |= TOURNAMENT_FLAG_ELITE;
+					}
 				}
 			}
 			
@@ -906,7 +930,7 @@ class ApiPage extends OpsApiPageBase
 			if ($row = $query->next())
 			{
 				list($game_id, $end_time) = $row;
-				
+				$prev_game_id = NULL;
 				$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
 				if ($row = $query->next())
 				{

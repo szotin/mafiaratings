@@ -61,6 +61,8 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('Please select at least one language.'));
 		}
+		$flags = (int)get_optional_param('flags', NEW_LEAGUE_FLAGS);
+		$flags = ($flags & LEAGUE_EDITABLE_MASK) + (NEW_LEAGUE_FLAGS & ~LEAGUE_EDITABLE_MASK);
 		
 		$email = trim(get_optional_param('email', $_profile->user_email));
 		if (!empty($email) && !is_email($email))
@@ -76,8 +78,8 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('league'),
-				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?, ?)',
-				$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
+				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
+				$name, $langs, $flags, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
@@ -163,7 +165,7 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_normalizer_id, $old_gaining_id, $old_rules, $old_flags) = Db::record(get_label('league'),
 			'SELECT name, web_site, email, phone, langs, scoring_id, normalizer_id, gaining_id, rules, flags FROM leagues c WHERE id = ?', $league_id);
-		
+			
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
 		{
@@ -180,6 +182,18 @@ class ApiPage extends OpsApiPageBase
 		}
 		$gaining_id = get_optional_param('gaining_id', $old_gaining_id);
 		$langs = (int)get_optional_param('langs', $old_langs);
+		$flags = (int)get_optional_param('flags', $old_flags);
+		if ($_profile->is_admin())
+		{
+			$flags = ($flags & LEAGUE_EDITABLE_MASK) + ($old_flags & ~LEAGUE_EDITABLE_MASK);
+		}
+		else
+		{
+			// return when there will be more editable flags
+			// $flags = ($flags & (LEAGUE_EDITABLE_MASK & ~LEAGUE_FLAG_ELITE) + ($old_flags & ~(LEAGUE_EDITABLE_MASK & ~LEAGUE_FLAG_ELITE));
+			$flags = $old_flags;
+		}
+		
 		$rules = get_optional_param('rules', $old_rules);
 		if (!is_string($rules))
 		{
@@ -228,7 +242,6 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('[0] is not a valid email address.', $email));
 		}
 		
-		$flags = $old_flags;
 		if (isset($_FILES['logo']))
 		{
 			upload_logo('logo', '../../' . LEAGUE_PICS_DIR, $league_id);
@@ -275,7 +288,10 @@ class ApiPage extends OpsApiPageBase
 			if ($old_flags != $flags)
 			{
 				$log_details->flags = $flags;
-				$log_details->logo_uploaded = true;
+				if (($old_flags & LEAGUE_ICON_MASK) != ($flags & LEAGUE_ICON_MASK))
+				{
+					$log_details->logo_uploaded = true;
+				}
 			}
 			if ($scoring_id != $old_scoring_id)
 			{
@@ -320,6 +336,8 @@ class ApiPage extends OpsApiPageBase
 		
 		check_permissions(PERMISSION_ADMIN);
 		$request_id = (int)get_required_param('request_id');
+		$flags = (int)get_optional_param('flags', NEW_LEAGUE_FLAGS);
+		$flags = ($flags & LEAGUE_EDITABLE_MASK) + (NEW_LEAGUE_FLAGS & ~LEAGUE_EDITABLE_MASK);
 		
 		Db::begin();
 		list($url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone) = Db::record(
@@ -338,8 +356,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ' . NEW_LEAGUE_FLAGS . ', ?, ?, ?, \'{}\', ?, ?, ?)',
-			$name, $langs, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
+			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
+			$name, $langs, $flags, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		

@@ -541,7 +541,7 @@ class Page extends ClubPageBase
 				$this->club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
 				$this->club_user_pic->show(ICONS_DIR, true, 50);
 				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-				echo '<td width="60" align="center">' . number_format($rating) . '</td>';
+				echo '<td width="60" align="center">' . number_format(USER_INITIAL_RATING + $rating) . '</td>';
 				echo '</tr>';
 				
 				++$number;

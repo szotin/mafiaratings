@@ -46,7 +46,7 @@ class ApiPage extends GetApiPageBase
 					$role = POINTS_RED;
 					break;
 				case 'b';
-					$role = POINTS_DARK;
+					$role = POINTS_BLACK;
 					break;
 				case 'c';
 					$role = POINTS_CIVIL;

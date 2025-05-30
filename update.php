@@ -332,7 +332,12 @@ class UpdateRules extends Updater
 		return $updated;
 	}
 	
-	function update($state)
+	protected function onTimeout($state)
+	{
+		// In the future keep batch sizes in the $state and reduce it on timeout
+	}
+	
+	protected function update($state)
 	{
 		if (!isset($state->stage))
 		{

@@ -99,7 +99,7 @@ class Page extends GeneralPageBase
 		$i = 1;
 		foreach ($prev_snapshot->top100 as $player)
 		{
-			echo '<tr><td width="20">' . $i . '</td><td>' . $player->user_name . '</td><td width="80">' . format_rating($player->rating) . '</td></tr>';
+			echo '<tr><td width="20">' . $i . '</td><td>' . $player->user_name . '</td><td width="80">' . format_rating(USER_INITIAL_RATING + $player->rating) . '</td></tr>';
 			++$i;
 		}
 		echo '</table></td><td>';
@@ -125,7 +125,7 @@ class Page extends GeneralPageBase
 		$i = 1;
 		foreach ($snapshot->top100 as $player)
 		{
-			echo '<tr><td width="20">' . $i . '</td><td>' . $player->user_name . '</td><td width="80">' . format_rating($player->rating) . '</td></tr>';
+			echo '<tr><td width="20">' . $i . '</td><td>' . $player->user_name . '</td><td width="80">' . format_rating(USER_INITIAL_RATING + $player->rating) . '</td></tr>';
 			++$i;
 		}
 		echo '</table>';
