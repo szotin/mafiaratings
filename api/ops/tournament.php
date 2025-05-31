@@ -260,7 +260,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($s->stars > 1)
 			{
-				list($sflags) = Db::record(get_label('series', 'SELECT flags FROM series WHERE id = ?', $s->id);
+				list($sflags) = Db::record(get_label('series'), 'SELECT flags FROM series WHERE id = ?', $s->id);
 				if ($sflags & SERIES_FLAG_ELITE)
 				{
 					$flags |= TOURNAMENT_FLAG_ELITE;
@@ -644,7 +644,7 @@ class ApiPage extends OpsApiPageBase
 				
 				if ($s->stars > 1)
 				{
-					list($sflags) = Db::record(get_label('series', 'SELECT flags FROM series WHERE id = ?', $s->id);
+					list($sflags) = Db::record(get_label('series'), 'SELECT flags FROM series WHERE id = ?', $s->id);
 					if ($sflags & SERIES_FLAG_ELITE)
 					{
 						$flags |= TOURNAMENT_FLAG_ELITE;
