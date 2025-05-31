@@ -76,8 +76,8 @@ function update_game_ratings($game_id)
 	{
 		if (is_null($tournament_id))
 		{
-			$WINNING_K = 4;
-			$LOOSING_K = 3;
+			$WINNING_K = 2;
+			$LOOSING_K = 1.5;
 			$LOCK_PERIOD = 1209600; // two weeks
 		}
 		else if ($tournament_flags & TOURNAMENT_FLAG_ELITE)
@@ -88,15 +88,15 @@ function update_game_ratings($game_id)
 		}
 		else
 		{
-			$WINNING_K = 16;
-			$LOOSING_K = 12;
+			$WINNING_K = 8;
+			$LOOSING_K = 6;
 			$LOCK_PERIOD = 2419200; // four weeks
 		}
 	}
 	else if (is_null($tournament_id))
 	{
-		$WINNING_K = 8;
-		$LOOSING_K = 6;
+		$WINNING_K = 4;
+		$LOOSING_K = 3;
 		$LOCK_PERIOD = 1209600; // two weeks
 	}
 	else if ($tournament_flags & TOURNAMENT_FLAG_ELITE)
@@ -107,8 +107,8 @@ function update_game_ratings($game_id)
 	}
 	else
 	{
-		$WINNING_K = 32;
-		$LOOSING_K = 24;
+		$WINNING_K = 16;
+		$LOOSING_K = 12;
 		$LOCK_PERIOD = 2419200; // four weeks
 	}
 	

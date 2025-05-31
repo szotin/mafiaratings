@@ -66,19 +66,28 @@ abstract class Updater
 			
 			$this->readState();
 
-			$items_count = $this->getExpectedItemsCount();
-			$this->log('------ Task: ' . $this->state->task . ' ------');
-			$this->log('Iteration: ' . $this->state->_stats->runs);
-			$this->log('Expected items count: ' . $items_count);
-			$time = time();
-			$items_count = $this->update($items_count);
-			$time = time() - $time; 
-			if ($items_count > 0)
+			$first_time = true;
+			while (true)
 			{
-				$this->updateTimeStats($items_count, $time);
+				$items_count = $this->getExpectedItemsCount();
+				if (!$first_time && !$this->canDoOneMoreRun($items_count))
+				{
+					break;
+				}
+				$this->log('------ Task: ' . $this->state->task . ' ------');
+				$this->log('Iteration: ' . $this->state->_stats->runs);
+				$this->log('Expected items count: ' . $items_count . ' in ' . $this->timeLeft() . ' sec');
+				$first_time = false;
+				$time = time();
+				$items_count = $this->update($items_count);
+				$time = time() - $time; 
+				if ($items_count > 0)
+				{
+					$this->updateTimeStats($items_count, $time);
+				}
+				$this->log('Actual items count: ' . $items_count . ' in ' . $time . ' sec');
+				$this->log('Total items count: ' . $this->state->_stats->sum_items);
 			}
-			$this->log('Actual items count: ' . $items_count . ' in ' . $time . ' sec');
-			$this->log('Total items count: ' . $this->state->_stats->sum_items);
 			
 			if ($this->state->task == END_RUNNING)
 			{
@@ -284,14 +293,23 @@ abstract class Updater
 		return $this->timeLeft() > 2 * $this->getAverageItemTime();
 	}
 	
+	protected function canDoOneMoreRun($items_count)
+	{
+		$a = $this->getAverageItemTime();
+		$b = $this->getAverageConstTime();
+		return $a * ($items_count + 1) + $b < $this->timeLeft();
+	}
+
+	
 	protected function getExpectedItemsCount()
 	{
 		$a = $this->getAverageItemTime();
 		$b = $this->getAverageConstTime();
 		$time_left = $this->timeLeft();
-		$this->log('Av item time: ' . $a);
-		$this->log('Av const time: ' . $b);
-		$result = max((int)floor($this->timeLeft() - $b / $a), MIN_EXPECTED_ITEMS);
+		// $this->log('Av item time: ' . $a);
+		// $this->log('Av const time: ' . $b);
+		$result = max((int)floor(($this->timeLeft() - $b) / $a), MIN_EXPECTED_ITEMS);
+		// $this->log('Can process: ' . $result);
 		if ($this->state->_stats->last_items_count > 0)
 		{
 			$result = min($this->state->_stats->last_items_count * MAX_EXPECTED_ITEMS_GROWTH, $result);
