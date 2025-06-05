@@ -44,13 +44,13 @@ class ApiPage extends GetApiPageBase
 		{
 			$game->id = $g->id;
 		}
-		if (isset($g->round))
+		if (isset($g->gameNum))
 		{
-			$game->tour = $g->round;
+			$game->tour = $g->gameNum
 		}
-		if (isset($g->table))
+		if (isset($g->tableNum))
 		{
-			$game->table = $g->table;
+			$game->table = $g->tableNum;
 		}
 		
 		if (isset($game->tour))

@@ -39,8 +39,8 @@ class ApiPage extends OpsApiPageBase
 		if (isset($data->eventId) && $data->eventId > 0)
 		{
 			$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
-			$table_num = isset($data->table) ? $data->table : NULL;
-			$game_num = isset($data->round) ? $data->round : NULL;
+			$table_num = isset($data->tableNum) ? $data->tableNum : NULL;
+			$game_num = isset($data->gameNum) ? $data->gameNum : NULL;
 			check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $data->clubId, $data->eventId, $tournament_id);
 			
 			if ($data->winner == 'maf')
@@ -702,8 +702,8 @@ class ApiPage extends OpsApiPageBase
 				$game->version = GAME_CURRENT_VERSION;
 				$game->clubId = (int)$club_id;
 				$game->eventId = $event_id;
-				$game->table = $table_num;
-				$game->round = $game_num;
+				$game->tableNum = $table_num;
+				$game->gameNum = $game_num;
 				$game->language = $langs[0]->code;
 				$game->rules = $rules;
 				$game->features = Game::feature_flags_to_leters($feature_flags);
@@ -786,8 +786,8 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($game->clubId) = Db::record(get_label('club'), 'SELECT MIN(id) FROM clubs');
 			}
-			$game->table = 0;
-			$game->round = 0;
+			$game->tableNum = 0;
+			$game->gameNum = 0;
 			$game->language = get_lang_code($_lang);
 			$game->rules = default_rules_code();
 			$game->features = Game::feature_flags_to_leters($feature_flags);

@@ -264,9 +264,18 @@ class Page extends PageBase
 		
 		$column_count = 0;
 		
-		echo '<p><table class="transp" width="100%"><tr><td width="60">';
+		echo '<p><table class="transp" width="100%"><tr><td width="60"><a href="';
+		if (is_null($tournament_id))
+		{
+			echo 'event_standings.php?bck=1&id=' . $event_id;
+		}
+		else
+		{
+			echo 'tournament_standings.php?bck=1&id=' . $tournament_id;
+		}
+		echo '">';
 		$pic->show(ICONS_DIR, false, 56);
-		echo '</td><td><h2>' . $event_name . '</h2></td><td>';
+		echo '</a></td><td><h2>' . $event_name . '</h2></td><td>';
 		show_back_button();
 		echo '</td><tr></table></p>';
 
@@ -392,9 +401,18 @@ class Page extends PageBase
 			$games[] = NULL;
 		}
 		
-		echo '<p><table class="transp" width="100%"><tr><td width="60">';
+		echo '<p><table class="transp" width="100%"><tr><td width="60"><a href="';
+		if (is_null($tournament_id))
+		{
+			echo 'event_standings.php?bck=1&id=' . $event_id;
+		}
+		else
+		{
+			echo 'tournament_standings.php?bck=1&id=' . $tournament_id;
+		}
+		echo '">';
 		$pic->show(ICONS_DIR, false, 56);
-		echo '</td><td><h2>' . $event_name . '</h2></td><td>';
+		echo '</a></td><td><h2>' . $event_name . '</h2></td><td>';
 		show_back_button();
 		echo '</td><tr></table></p>';
 		
@@ -637,7 +655,6 @@ class Page extends PageBase
 		}
 		else if ($this->game_num <= 0)
 		{
-			echo 'dsdsds';
 			$this->select_game();
 		}
 		else

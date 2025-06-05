@@ -1669,7 +1669,7 @@ function uiSettings()
 
 function uiViewGame()
 {
-	goTo('view_game.php', {bck: 1, event_id: game.eventId, table: game.table, number: game.round});
+	goTo('view_game.php', {bck: 1, event_id: game.eventId, table_num: game.tableNum, game_num: game.gameNum});
 }
 
 function uiNext()

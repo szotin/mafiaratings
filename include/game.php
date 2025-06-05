@@ -3400,13 +3400,16 @@ class Game
 			throw new Exc(get_label('Unknown [0]', get_label('result')));
 		}
 		
+		$table_num = isset($data->tableNum) ? $data->tableNum : NULL;
+		$game_num = isset($data->gameNum) ? $data->gameNum : NULL;
+		
 		Db::exec(get_label('game'),
 			'UPDATE games SET json = ?, feature_flags = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
-				'rules = ?, is_rating = ?, is_fiim_exported = 0 WHERE id = ?',
+				'rules = ?, is_rating = ?, is_fiim_exported = 0, table_num = ?, game_num = ? WHERE id = ?',
 			$json, $this->flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
 			$language, $data->startTime, $data->endTime, $game_result,
-			$data->rules, $is_data_rating, $data->id);
+			$data->rules, $is_data_rating, $table_num, $game_num, $data->id);
 		
 		if (!$is_canceled)
 		{
