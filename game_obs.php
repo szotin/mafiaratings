@@ -422,7 +422,7 @@ class Page extends GeneralPageBase
 				
 				for (let i = 0; i < events.length; ++i)
 				{
-					url[i + 4] = site + '/plugins/next_game.php?table=' + $('#table').val() + '&id=' + events[i].id;
+					url[i + 4] = site + '/plugins/next_game.php?table_num=' + $('#table').val() + '&id=' + events[i].id;
 				}
 				
 				for (let i = 0; i < url.length; ++i)

@@ -313,13 +313,13 @@ class Page extends TournamentPageBase
 		echo '<div id="progress"></div>';
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr class="dark"><th width="80"></th><th width="40">'.get_label('Table').'</th><th width="40">'.get_label('Game').'</th><th width="32"></th><th></th></tr>';
-		$query = new DbQuery('SELECT id, game_table, game_number, is_fiim_exported FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND game_table IS NOT NULL AND game_number IS NOT NULL ORDER BY game_table, game_number, id', $this->id);
+		$query = new DbQuery('SELECT id, table_num, game_num, is_fiim_exported FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND table_num IS NOT NULL AND game_num IS NOT NULL ORDER BY table_num, game_num, id', $this->id);
 		while ($row = $query->next())
 		{
-			list ($id, $table, $number, $is_exported) = $row;
+			list ($id, $table_num, $game_num, $is_exported) = $row;
 			echo '<tr align="center"><td><a href="view_game.php?id='.$id.'&bck=1">'.$id.'</td>';
-			echo '<td>'.($table + 1).'</td>';
-			echo '<td>'.($number + 1).'</td>';
+			echo '<td>'.$table_num.'</td>';
+			echo '<td>'.$game_num.'</td>';
 			echo '<td><button class="big_icon" onclick="exportGame('.$id.')"><img src="images/right.png" width="32"></button></td>';
 			echo '<td>';
 			if ($is_exported)

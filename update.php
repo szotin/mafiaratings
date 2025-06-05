@@ -185,10 +185,10 @@ class UpdateRules extends Updater
 		}
 		
 		Db::begin();
-		$query = new DbQuery('SELECT event_id, table_num, round_num, game, log FROM current_games WHERE tmp = 0 LIMIT 50');
+		$query = new DbQuery('SELECT event_id, table_num, game_num, game, log FROM current_games WHERE tmp = 0 LIMIT 50');
 		while ($row = $query->next())
 		{
-			list ($event_id, $table, $round, $game, $log) = $row;
+			list ($event_id, $table_num, $game_num, $game, $log) = $row;
 			
 			$game = json_decode($game);
 			if (isset($game->rules))
@@ -207,7 +207,7 @@ class UpdateRules extends Updater
 			}
 			$log = json_encode($log);
 			
-			Db::exec('game', 'UPDATE current_games SET game = ?, log = ?, tmp = 1 WHERE event_id = ? AND table_num = ? AND round_num = ?', $game, $log, $event_id, $table, $round);
+			Db::exec('game', 'UPDATE current_games SET game = ?, log = ?, tmp = 1 WHERE event_id = ? AND table_num = ? AND game_num = ?', $game, $log, $event_id, $table_num, $game_num);
 			++$state->currentGameCount;
 			$updated = true;
 		}

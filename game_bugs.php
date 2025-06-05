@@ -20,7 +20,7 @@ class Page extends GeneralPageBase
 		$user_pic = new Picture(USER_PICTURE);
 
 		$query = new DbQuery(
-			'SELECT b.id, c.id, c.name, c.flags, e.id, e.name, e.flags, b.table_num, b.round_num, u.id, nu.name, u.flags, comment'.
+			'SELECT b.id, c.id, c.name, c.flags, e.id, e.name, e.flags, b.table_num, b.game_num, u.id, nu.name, u.flags, comment'.
 			' FROM bug_reports b'.
 			' JOIN events e ON e.id = b.event_id'.
 			' JOIN clubs c ON c.id = e.club_id'.
@@ -32,7 +32,7 @@ class Page extends GeneralPageBase
 		echo '<tr class="th darker" align="center"><td width="28"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('User').'</td><td width="90">' . get_label('Game') . '</td><td>Report</td></tr>';
 		while ($row = $query->next())
 		{
-			list ($bug_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $table, $round, $user_id, $user_name, $user_flags, $comment) = $row;
+			list ($bug_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $table_num, $game_num, $user_id, $user_name, $user_flags, $comment) = $row;
 		
 			echo '<tr align="center">';
 			echo '<td valign="middle">';
@@ -51,7 +51,7 @@ class Page extends GeneralPageBase
 			$user_pic->set($user_id, $user_name, $user_flags);
 			$user_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
-			echo '<td align="center"><a href="game.php?bug_id=' . $bug_id . '" target="_blank">' . get_label('Table [0] / Game [1]', $table, $round) . '</a></td>';
+			echo '<td align="center"><a href="game.php?bug_id=' . $bug_id . '" target="_blank">' . get_label('Table [0] / Game [1]', $table_num, $game_num) . '</a></td>';
 			echo '<td><pre>' . $comment . '</pre></td>';
 			echo '</tr>';
 		}

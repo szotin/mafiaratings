@@ -69,15 +69,15 @@ class Page extends PageBase
 			$title = $this->tournament_name . ': ' . $this->event_name . '. ';
 		}
 		
-		$game_num = is_null($this->game_number) ? ('#' . $this->id) : ($this->game_number + 1);
+		$game_num = is_null($this->game_num) ? ('#' . $this->id) : $this->game_num;
 		$rating = $this->is_rating ? '.' : (' (' . get_label('non-rating') . ').');
-		if (is_null($this->game_table))
+		if (is_null($this->table_num))
 		{
 			$title .= get_label('Game [0]. [1][2]', $game_num, $state, $rating);
 		}
 		else
 		{
-			$title .= get_label('Table [0], game [1][2] [3]', $this->game_table + 1, $game_num, $rating, $state);
+			$title .= get_label('Table [0], game [1][2] [3]', $this->table_num, $game_num, $rating, $state);
 		}
 		return $title;
 	}
@@ -99,10 +99,10 @@ class Page extends PageBase
 			}
 			
 			$this->event_id = (int)$_REQUEST['event_id'];
-			$this->game_table = (int)$_REQUEST['table'];
-			$this->game_number = (int)$_REQUEST['number'];
+			$this->table_num = (int)$_REQUEST['table'];
+			$this->game_num = (int)$_REQUEST['number'];
 			
-			$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $this->event_id, $this->game_table, $this->game_number);
+			$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND table_num = ? AND game_num = ?', $this->event_id, $this->table_num, $this->game_num);
 			if ($row = $query->next())
 			{
 				list ($this->id) = $row;
@@ -112,7 +112,7 @@ class Page extends PageBase
 			if ($this->id <= 0)
 			{
 				$sql = 	'SELECT g.user_id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,'.
-						' c.id, c.name, c.flags, a.id, a.name, a.flags, g.game, g.round_num'.
+						' c.id, c.name, c.flags, a.id, a.name, a.flags, g.game, g.game_num'.
 						' FROM current_games g'.
 						' JOIN events e ON e.id = g.event_id' .
 						' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
@@ -122,10 +122,10 @@ class Page extends PageBase
 						' WHERE g.event_id = ? AND g.table_num = ?';
 				list (
 					$this->user_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->round_num, 
-					$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $json, $this->game_number) =
-				is_null($this->game_number) ? 
-					Db::record(get_label('game'),  $sql . '  ORDER BY g.round_num DESC LIMIT 1', $this->event_id, $this->game_table) :
-					Db::record(get_label('game'),  $sql . ' AND g.round_num = ?', $this->event_id, $this->game_table, $this->game_number);
+					$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, $json, $this->game_num) =
+				is_null($this->game_num) ? 
+					Db::record(get_label('game'),  $sql . '  ORDER BY g.game_num DESC LIMIT 1', $this->event_id, $this->table_num) :
+					Db::record(get_label('game'),  $sql . ' AND g.game_num = ?', $this->event_id, $this->table_num, $this->game_num);
 					
 				$feature_flags = GAME_FEATURE_MASK_ALL;
 				$this->video_id = NULL;
@@ -141,13 +141,13 @@ class Page extends PageBase
 				$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->round_num, 
 				$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
 				$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
-				$this->civ_odds, $this->video_id, $this->is_canceled, $json, $this->game_number, $this->game_table, $feature_flags, $this->has_log) =
+				$this->civ_odds, $this->video_id, $this->is_canceled, $json, $this->game_num, $this->table_num, $feature_flags, $this->has_log) =
 			Db::record(
 				get_label('game'),
 				'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,' .
 				' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
 				' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
-				' g.civ_odds, g.video_id, g.is_canceled, g.json, g.game_number, g.game_table, g.feature_flags, LENGTH(g.log)' .
+				' g.civ_odds, g.video_id, g.is_canceled, g.json, g.game_num, g.table_num, g.feature_flags, LENGTH(g.log)' .
 					' FROM games g' .
 					' JOIN events e ON e.id = g.event_id' .
 					' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
@@ -165,7 +165,7 @@ class Page extends PageBase
 		}
 		else
 		{
-			$this->url_params = '?event_id=' . $this->event_id . '&table=' . $this->game_table . '&number=' . $this->game_number;
+			$this->url_params = '?event_id=' . $this->event_id . '&table_num=' . $this->table_num . '&game_num=' . $this->game_num;
 		}
 			
 		$this->is_editor = is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->user_id, $this->club_id, $this->event_id, $this->tournament_id);
@@ -458,7 +458,7 @@ class Page extends PageBase
 			}
 			else
 			{
-				echo 'mr.currentGameBonus(' . $this->event_id . ', ' . $this->game_table . ', ' . $this->game_number . ', ' . $num . ')';
+				echo 'mr.currentGameBonus(' . $this->event_id . ', ' . $this->table_num . ', ' . $this->game_num . ', ' . $num . ')';
 			}
 			echo '" title="' . get_label('Set bonus for [0]', $player_name) . '"><img src="images/award.png" width="24"></button></td>';
 		}

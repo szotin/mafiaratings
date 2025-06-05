@@ -123,16 +123,16 @@ try
 		$event_id = (int)$_REQUEST['event_id'];
 	}
 	
-	$game_table = -1;
-	if (isset($_REQUEST['table']))
+	$table_num = 0;
+	if (isset($_REQUEST['table_num']))
 	{
-		$game_table = (int)$_REQUEST['table'];
+		$table_num = (int)$_REQUEST['table_num'];
 	}
 	
-	$game_number = -1;
-	if (isset($_REQUEST['number']))
+	$game_num = 0;
+	if (isset($_REQUEST['game_num']))
 	{
-		$game_number = (int)$_REQUEST['number'];
+		$game_num = (int)$_REQUEST['game_num'];
 	}
 	
 	if (!isset($_REQUEST['round']))
@@ -155,9 +155,9 @@ try
 	}
 	else
 	{
-		list($json) = Db::record(get_label('game'), 'SELECT game FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $game_table, $game_number);
+		list($json) = Db::record(get_label('game'), 'SELECT game FROM current_games WHERE event_id = ? AND table_num = ? AND game_num = ?', $event_id, $table_num, $game_num);
 		$feature_flags = GAME_FEATURE_MASK_ALL;
-		$url_params = '?event_id=' . $event_id . '&table=' . $game_table . '&number=' . $game_number;
+		$url_params = '?event_id=' . $event_id . '&table_num=' . $table_num . '&game_num=' . $game_num;
 	}
 	$game = new Game($json, $feature_flags);
 

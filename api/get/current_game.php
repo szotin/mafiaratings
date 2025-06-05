@@ -66,7 +66,7 @@ class ApiPage extends GetApiPageBase
 		}
 		else if (isset($game->id))
 		{
-			$game->name = get_label('Game #[0]', $this->gs->id);
+			$game->name = get_label('Game #[0]', $game->id);
 		}
 		
 		$speaker = -1;
@@ -180,7 +180,7 @@ class ApiPage extends GetApiPageBase
 			{
 				$player->state = 'dead';
 				// todo: remove this logic. Set round to what it is.
-				if (isset($p->death->time) && $this->is_night($p->death->time))
+				if (isset($p->death->time) && Game::is_night($p->death->time))
 				{
 					$player->deathRound = $p->death->round - 1;
 				}
@@ -195,7 +195,7 @@ class ApiPage extends GetApiPageBase
 					break;
 				case DEATH_TYPE_WARNINGS:
 					$player->deathType = 'warnings';
-					if (isset($player->warnings) && is_array($player->warnings) && count($player->warnings) > 0 && $this->is_night($player->warnings[count($player->warnings) - 1]))
+					if (isset($player->warnings) && is_array($player->warnings) && count($player->warnings) > 0 && Game::is_night($player->warnings[count($player->warnings) - 1]))
 					{
 						$player->deathRound = $p->death->round - 1;
 					}
@@ -402,372 +402,6 @@ class ApiPage extends GetApiPageBase
 		return $game;
 	}
 	
-	private function old_game()
-	{
-		global $_lang;
-		
-		$server_url = get_server_url();
-		$game = new stdClass();
-		
-		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		$game->club = new stdClass();
-		$game->club->name = $this->club_name;
-		$game->club->photoUrl = $server_url . '/' . $this->club_pic->url(SOURCE_DIR);
-		$game->club->tnailUrl = $server_url . '/' . $this->club_pic->url(TNAILS_DIR);
-		$game->club->iconUrl = $server_url . '/' . $this->club_pic->url(ICONS_DIR);
-		$game->club->hasPhoto = $this->club_pic->has_image();
-		
-		$game->city = $this->city;
-		$game->country = $this->country;
-		
-		if (!is_null($this->tournament_id))
-		{
-			$this->tournament_pic->set($this->tournament_id, $this->tournament_name, $this->tournament_flags);
-			$game->tournament = new stdClass();
-			$game->tournament->name = $this->tournament_name;
-			$game->tournament->photoUrl = $server_url . '/' . $this->tournament_pic->url(SOURCE_DIR);
-			$game->tournament->tnailUrl = $server_url . '/' . $this->tournament_pic->url(TNAILS_DIR);
-			$game->tournament->iconUrl = $server_url . '/' . $this->tournament_pic->url(ICONS_DIR);
-			$game->tournament->hasPhoto = $this->tournament_pic->has_image();
-			
-			$game->stage = (int)$this->stage;
-		}
-		
-		if (isset($this->gs->id))
-		{
-			$game->id = $this->gs->id;
-			if (isset($this->gs->number))
-			{
-				$game->tour = $this->gs->number + 1;
-				if (isset($this->gs->table))
-				{
-					$game->table = $this->gs->table + 1;
-					$game->name = get_label('Table [0] / Game [1]', $game->table, $game->tour);
-				}
-				else
-				{
-					$game->name = get_label('Game [0]', $game->tour);
-				}
-			}
-			else
-			{
-				$game->name = get_label('Game #[0]', $this->gs->id);
-			}
-		}
-		switch ($this->gs->gamestate)
-		{
-			case /*GAME_STATE_NOT_STARTED*/0:
-			case /*GAME_STATE_VOTING*/8:
-			case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
-				$speachPossible = false;
-				break;
-			default:
-				$speachPossible  = true;
-				break;
-		}
-		if (isset($this->gs->players))
-		{
-			$game->players = array();
-			foreach ($this->gs->players as $p)
-			{
-				$player = new stdClass();
-				$player->id = (int)$p->id;
-				$player->name = $p->nick;
-				$player->number = $p->number + 1;
-				$player->isSpeaking = ($speachPossible && $p->number == $this->gs->player_speaking);
-				
-				if ($player->id > 0)
-				{
-					list($event_user_flags, $tournament_user_flags, $club_user_flags, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $player->city, $player->country) = Db::record(get_label('user'), 
-						'SELECT eu.flags, tu.flags, cu.flags, u.flags, c.id, c.name, c.flags, ni.name, no.name FROM users u' .
-						' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-						' JOIN cities i ON i.id = u.city_id' .
-						' JOIN countries o ON o.id = i.country_id' .
-						' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
-						' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
-						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
-						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
-						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
-						' WHERE u.id = ?', 
-						$this->event_id, $this->tournament_id, $this->club_id, $player->id);
-					if ($p->is_male)
-					{
-						$player->gender = 'male';
-					}
-					else
-					{
-						$player->gender = 'female';
-					}
-					
-					if (!is_null($user_club_id))
-					{
-						$this->club_pic->set($user_club_id, $user_club_name, $user_club_flags);
-						$player->club = new stdClass();
-						$player->club->name = $user_club_name;
-						$player->club->photoUrl = $server_url . '/' . $this->club_pic->url(SOURCE_DIR);
-						$player->club->tnailUrl = $server_url . '/' . $this->club_pic->url(TNAILS_DIR);
-						$player->club->iconUrl = $server_url . '/' . $this->club_pic->url(ICONS_DIR);
-						$player->club->hasPhoto = $this->club_pic->has_image();
-					}
-				}
-				else
-				{
-					$event_user_flags = $tournament_user_flags = $club_user_flags = $user_flags = 0;
-				}
-				$this->user_pic->
-					set($player->id, $player->name, $event_user_flags, 'e' . $this->event_id)->
-					set($player->id, $player->name, $tournament_user_flags, 't' . $this->tournament_id)->
-					set($player->id, $player->name, $club_user_flags, 'c' . $this->club_id)->
-					set($player->id, $player->name, $user_flags);
-				$player->photoUrl = $server_url . '/' . $this->user_pic->url(SOURCE_DIR);
-				$player->tnailUrl = $server_url . '/' . $this->user_pic->url(TNAILS_DIR);
-				$player->iconUrl = $server_url . '/' . $this->user_pic->url(ICONS_DIR);
-				$player->hasPhoto = $this->user_pic->has_image();
-				
-				switch ($p->role)
-				{
-					case 0:
-						$player->role = 'town';
-						break;
-					case 1:
-						$player->role = 'sheriff';
-						break;
-					case 2:
-						$player->role = 'maf';
-						break;
-					case 3:
-						$player->role = 'don';
-						break;
-				}
-				$player->warnings = $p->warnings;
-				if ($p->don_check >= 0)
-				{
-					$player->checkedByDon = $p->don_check + 1;
-				}
-				if ($p->sheriff_check >= 0)
-				{
-					$player->checkedBySheriff = $p->sheriff_check + 1;
-				}
-				
-				if ($p->state == 0 /*PLAYER_STATE_ALIVE*/)
-				{
-					$player->state = 'alive';
-				}
-				else
-				{
-					$player->state = 'dead';
-					$player->deathRound = $p->kill_round;
-					switch ($p->kill_reason)
-					{
-						case 1 /*KILL_REASON_GIVE_UP*/:
-							$player->deathType = 'giveUp';
-							break;
-						case 2 /*KILL_REASON_WARNINGS*/:
-							$player->deathType = 'warnings';
-							break;
-						case 3 /*KILL_REASON_KICK_OUT*/:
-							$player->deathType = 'kickOut';
-							break;
-						case 4 /*KILL_REASON_TEAM_KICK_OUT*/:
-							$player->deathType = 'oppositeTeamWins';
-							break;
-						case 0 /*KILL_REASON_NORMAL*/:
-						default:
-							if ($p->state == 1 /*PLAYER_STATE_KILLED_NIGHT*/)
-							{
-								$player->deathType = 'shooting';
-							}
-							else
-							{
-								$player->deathType = 'voting';
-							}
-							break;
-					}
-				}
-				
-				$game->players[] = $player;
-			}
-			
-			$game->moderator = new stdClass();
-			$game->moderator->id = (int)$this->gs->moder_id;
-			if ($this->gs->moder_id > 0)
-			{
-				list($game->moderator->name, $event_user_flags, $tournament_user_flags, $club_user_flags, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $game->moderator->city, $game->moderator->country) = Db::record(get_label('user'), 
-					'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, nu.name, u.flags, c.id, c.name, c.flags, ni.name, no.name' .
-					' FROM users u' .
-					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-					' JOIN cities i ON i.id = u.city_id' .
-					' JOIN countries o ON o.id = i.country_id' .
-					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
-					' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
-					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
-					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
-					' WHERE u.id = ?', 
-					$this->event_id, $this->tournament_id, $this->club_id, $this->gs->moder_id);
-				if (is_null($game->moderator->name))
-				{
-					$game->moderator->name = $user_name;
-				}
-				
-				if ($user_flags & USER_FLAG_MALE)
-				{
-					$game->moderator->gender = 'male';
-				}
-				else
-				{
-					$game->moderator->gender = 'female';
-				}
-			}
-			else
-			{
-				$game->moderator->name = '';
-				$event_user_flags = $tournament_user_flags = $club_user_flags = $user_flags = 0;
-			}
-			$this->user_pic->
-				set($this->gs->moder_id, $game->moderator->name, $event_user_flags, 'e' . $this->event_id)->
-				set($this->gs->moder_id, $game->moderator->name, $tournament_user_flags, 't' . $this->tournament_id)->
-				set($this->gs->moder_id, $game->moderator->name, $club_user_flags, 'c' . $this->club_id)->
-				set($this->gs->moder_id, $game->moderator->name, $user_flags);
-			$game->moderator->photoUrl = $server_url . '/' . $this->user_pic->url(SOURCE_DIR);
-			$game->moderator->tnailUrl = $server_url . '/' . $this->user_pic->url(TNAILS_DIR);
-			$game->moderator->iconUrl = $server_url . '/' . $this->user_pic->url(ICONS_DIR);
-			$game->moderator->hasPhoto = $this->user_pic->has_image();
-			
-			if (!is_null($user_club_id))
-			{
-				$this->club_pic->set($user_club_id, $user_club_name, $user_club_flags);
-				$game->moderator->club = new stdClass();
-				$game->moderator->club->name = $user_club_name;
-				$game->moderator->club->photoUrl = $server_url . '/' . $this->club_pic->url(SOURCE_DIR);
-				$game->moderator->club->tnailUrl = $server_url . '/' . $this->club_pic->url(TNAILS_DIR);
-				$game->moderator->club->iconUrl = $server_url . '/' . $this->club_pic->url(ICONS_DIR);
-				$game->moderator->club->hasPhoto = $this->club_pic->has_image();
-			}
-			
-			switch ($this->gs->gamestate)
-			{
-				case /*GAME_STATE_NOT_STARTED*/0:
-					$game->phase = 'night';
-					$game->state = 'notStarted';
-					$game->round = 0;
-					break;
-				case /*GAME_STATE_NIGHT0_START*/1:
-					$game->phase = 'night';
-					$game->state = 'starting';
-					$game->round = 0;
-					break;
-				case /*GAME_STATE_NIGHT0_ARRANGE*/2:
-					$game->phase = 'night';
-					$game->state = 'arranging';
-					$game->round = 0;
-					break;
-				case /*GAME_STATE_DAY_START*/3:
-					$game->phase = 'day';
-					$game->state = 'starting';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_DAY_PLAYER_SPEAKING*/5:
-					$game->phase = 'day';
-					$game->state = 'speaking';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_VOTING_KILLED_SPEAKING*/7:
-					$game->phase = 'day';
-					$game->state = 'nightKillSpeaking';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_VOTING*/8:
-				case /*GAME_STATE_VOTING_MULTIPLE_WINNERS*/9:
-					$game->phase = 'day';
-					$game->state = 'voting';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_VOTING_NOMINEE_SPEAKING*/10:
-					$game->phase = 'day';
-					$game->state = 'nomineeSpeaking';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_NIGHT_START*/11:
-					$game->phase = 'night';
-					$game->state = 'starting';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_NIGHT_SHOOTING*/12:
-					$game->phase = 'night';
-					$game->state = 'shooting';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_NIGHT_DON_CHECK*/13:
-					$game->phase = 'night';
-					$game->state = 'donChecking';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_NIGHT_SHERIFF_CHECK*/15:
-					$game->phase = 'night';
-					$game->state = 'sheriffChecking';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_MAFIA_WON*/17:
-					$game->phase = 'day';
-					$game->state = 'mafiaWon';
-					$game->round = $this->gs->round;
-					break;
-				case /*GAME_STATE_CIVIL_WON*/18:
-					$game->phase = 'day';
-					$game->state = 'townWon';
-					$game->round = $this->gs->round;
-					break;
-				default:
-					$game->phase = 'day';
-					$game->state = 'unknown';
-					$game->round = $this->gs->round;
-					break;
-			}
-			
-			if ($game->phase != 'night')
-			{
-				$voting = NULL;
-				foreach ($this->gs->votings as $v)
-				{
-					if ($v->round == $this->gs->round && $v->voting_round == 0)
-					{
-						$voting = $v;
-						break;
-					}
-				}
-				if ($voting != NULL)
-				{
-					$game->votingCanceled = ($voting->canceled != 0);
-					$nominees = array();
-					foreach ($voting->nominees as $n)
-					{
-						$nominees[] = $n->player_num + 1;
-					}
-					if ($this->gs->gamestate == 5 /*GAME_DAY_PLAYER_SPEAKING*/ && $this->gs->current_nominee >= 0)
-					{
-						$nominees[] = $this->gs->current_nominee + 1;
-					}
-					$game->nominees = $nominees;
-				}
-			}
-		}
-		if ($this->gs->guess3 != NULL)
-		{
-			$game->legacy = array();
-			foreach ($this->gs->guess3 as $n)
-			{
-				if ($n >= 0 && $n < 10)
-				{
-					$game->legacy[] = $n + 1;
-				}
-			}
-			sort($game->legacy);
-		}
-		return $game;
-	}
-	
 	protected function prepare_response()
 	{
 		global $_lang;
@@ -786,8 +420,8 @@ class ApiPage extends GetApiPageBase
 		$moderator_id = (int)get_optional_param('moderator_id', 0);
 		$event_id = (int)get_optional_param('event_id', 0);
 		$tournament_id = (int)get_optional_param('tournament_id', 0);
-		$table = (int)get_optional_param('table', -1);
-		$number = (int)get_optional_param('number', -1);
+		$table_num = (int)get_optional_param('table_num', 0);
+		$game_num = (int)get_optional_param('game_num', 0);
 		
 		$query = new DbQuery(
 			'SELECT g.game, e.security_token, t.security_token, e.id, e.name, e.flags, t.id, t.name, t.flags, e.round, c.id, c.name, c.flags, ni.name, no.name'.
@@ -812,13 +446,13 @@ class ApiPage extends GetApiPageBase
 		{
 			$query->add(' AND e.tournament_id = ?', $tournament_id); 
 		}
-		if ($table >= 0)
+		if ($table_num > 0)
 		{
-			$query->add(' AND g.table_num = ?', $table); 
+			$query->add(' AND g.table_num = ?', $table_num); 
 		}
-		if ($number >= 0)
+		if ($game_num > 0)
 		{
-			$query->add(' AND g.round_num = ?', $number); 
+			$query->add(' AND g.game_num = ?', $game_num); 
 		}
 		
 		while ($row = $query->next())
@@ -833,48 +467,6 @@ class ApiPage extends GetApiPageBase
 		if (isset($this->game))
 		{
 			$this->response['game'] = $this->new_game();
-			return;
-		}
-		
-		$query = new DbQuery(
-			'SELECT g.log, e.security_token, t.security_token, e.id, e.name, e.flags, t.id, t.name, t.flags, e.round, c.id, c.name, c.flags, ni.name, no.name'.
-			' FROM games g'.
-			' JOIN events e ON e.id = g.event_id'.
-			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
-			' JOIN clubs c ON c.id = e.club_id'.
-			' JOIN addresses a ON a.id = e.address_id'.
-			' JOIN cities i ON i.id = a.city_id' .
-			' JOIN countries o ON o.id = i.country_id' .
-			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
-			' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
-			' WHERE g.result = 0');
-		if ($game_id > 0)
-		{
-			$query->add(' AND g.id = ?', $game_id);
-		}
-		if ($moderator_id  > 0)
-		{
-			$query->add(' AND g.moderator_id = ?', $moderator_id);
-		}
-		if ($user_id  > 0)
-		{
-			$query->add(' AND g.user_id = ?', $user_id);
-		}
-		$query->add(' ORDER BY g.id');
-		
-		while ($row = $query->next())
-		{
-			list($log, $event_token, $tournament_token, $this->event_id, $this->event_name, $this->event_flags, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->stage, $this->club_id, $this->club_name, $this->club_flags, $this->city, $this->country) = $row;
-			if ((!is_null($event_token) && $event_token === $token) || (!is_null($tournament_token) && $tournament_token === $token))
-			{
-				$this->gs = json_decode($log);
-				break;
-			}
-		}
-		
-		if (isset($this->gs))
-		{
-			$this->response['game'] = $this->old_game();
 		}
 	}
 	

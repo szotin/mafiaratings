@@ -1100,17 +1100,17 @@ var mr = new function()
 	
 	this.currentGameBonus = function(eventId, tableNum, gameNum, playerNum)
 	{
-		dlg.form("form/game_bonus.php?event_id=" + eventId + '&table=' + tableNum + '&number=' + tableNum + '&player_num=' + playerNum, refr, 500);
+		dlg.form("form/game_bonus.php?event_id=" + eventId + '&table_num=' + tableNum + '&game_num=' + gameNum + '&player_num=' + playerNum, refr, 500);
 	}
 	
-	this.ownGame = function(eventId, table, round, userId, promptStr)
+	this.ownGame = function(eventId, tableNum, gameNum, userId, promptStr)
 	{
 		function _own()
 		{
 			json.post(
 				"api/ops/game.php",
-				{op:'own_current', event_id: eventId, "table": table, "round": round},
-				goTo('game.php?event_id=' + eventId + '&table=' + table + '&round=' + round));
+				{op:'own_current', event_id: eventId, "table_num": tableNum, "game_num": gameNum},
+				goTo('game.php?event_id=' + eventId + '&table_num=' + tableNum + '&game_num=' + gameNum));
 		}
 
 		if (isString(promptStr))

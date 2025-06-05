@@ -19,11 +19,11 @@ try
 		throw new Exc('Unknown tournament round');
 	}
 	$event_id = (int)$_REQUEST['id'];
-	$table = 0;
-	if (isset($_REQUEST['table']))
+	if (!isset($_REQUEST['table_num']))
 	{
-		$table = max((int)$_REQUEST['table'], 1) - 1;
+		throw new Exc('Unknown table');
 	}
+	$table_num = max((int)$_REQUEST['table_num'], 1);
 	
 	list ($event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $misc) = 
 		Db::record('round', 
@@ -42,13 +42,13 @@ try
 	{
 		throw new Exc('No seating for this event');
 	}
-	if ($table >= count($misc->seating))
+	if ($table_num - 1 >= count($misc->seating))
 	{
-		throw new Exc('Table ' . ($table + 1) . ' is invalid. There are only ' . count($misc->seating) . ' tables.' );
+		throw new Exc('Table ' . $table_num . ' is invalid. There are only ' . count($misc->seating) . ' tables.' );
 	}
 
 	$playing_now = array();
-	$query = new DbQuery('SELECT round_num, game FROM current_games WHERE event_id = ? AND table_num = ? ORDER BY round_num', $event_id, $table);
+	$query = new DbQuery('SELECT game_num, game FROM current_games WHERE event_id = ? AND table_num = ? ORDER BY game_num', $event_id, $table_num);
 	while ($row = $query->next())
 	{
 		list ($n, $g) = $row;
@@ -61,32 +61,32 @@ try
 	}
 	//throw new Exc(formatted_json($playing_now));
 	
-	$game_number = 0;
-	while (array_key_exists($game_number, $playing_now))
+	$game_num = 1;
+	while (array_key_exists($game_num, $playing_now))
 	{
-		++$game_number;
+		++$game_num;
 	}
 
-	$query = new DbQuery('SELECT game_number FROM games WHERE event_id = ? AND result > 0 AND game_table = ? ORDER BY game_number', $event_id, $table);
+	$query = new DbQuery('SELECT game_num FROM games WHERE event_id = ? AND result > 0 AND table_num = ? ORDER BY game_num', $event_id, $table_num);
 	while ($row = $query->next())
 	{
 		
 		list ($n) = $row;
-		if ($game_number != $n)
+		if ($game_num != $n)
 		{
 			break;
 		}
 
 		do
 		{
-			++$game_number;
+			++$game_num;
 		} 
-		while (array_key_exists($game_number, $playing_now));
+		while (array_key_exists($game_num, $playing_now));
 	}
 	
-	if ($game_number < count($misc->seating[$table]))
+	if ($game_num <= count($misc->seating[$table_num - 1]))
 	{
-		$seating = $misc->seating[$table][$game_number];
+		$seating = $misc->seating[$table_num - 1][$game_num - 1];
 		$user_list = '';
 		$delim = '';
 		foreach ($seating as $user_id)
@@ -121,7 +121,7 @@ try
 			new Picture(USER_PICTURE))));
 	
 		echo '<table><tr><td colspan="10" align="center">';
-		echo '<h2>Следующая игра. Cтол ' . ($table + 1) . '. Раунд ' . ($game_number + 1) . '.</h2></td></tr>';
+		echo '<h2>Следующая игра. Cтол ' . $table_num . '. Игра ' . $game_num . '.</h2></td></tr>';
 		echo '</tr><tr>';
 		
 		foreach ($seating as $user_id)

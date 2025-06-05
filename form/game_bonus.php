@@ -65,16 +65,16 @@ try
 	
 	if ($game_id <= 0)
 	{
-		if (!isset($_REQUEST['event_id']) || !isset($_REQUEST['table']) || !isset($_REQUEST['number']))
+		if (!isset($_REQUEST['event_id']) || !isset($_REQUEST['table_num']) || !isset($_REQUEST['game_num']))
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 		}
 		
 		$event_id = (int)$_REQUEST['event_id'];
-		$game_table = (int)$_REQUEST['table'];
-		$game_number = (int)$_REQUEST['number'];
+		$table_num = (int)$_REQUEST['table_num'];
+		$game_num = (int)$_REQUEST['game_num'];
 		
-		$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND game_table = ? AND game_number = ?', $event_id, $game_table, $game_number);
+		$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND table_num = ? AND game_num = ?', $event_id, $table_num, $game_num);
 		if ($row = $query->next())
 		{
 			list ($game_id) = $row;
@@ -88,7 +88,7 @@ try
 	}
 	else
 	{
-		list($game) = Db::record(get_label('game'), 'SELECT game FROM current_games WHERE event_id = ? AND table_num = ? AND round_num = ?', $event_id, $game_table, $game_number);
+		list($game) = Db::record(get_label('game'), 'SELECT game FROM current_games WHERE event_id = ? AND table_num = ? AND game_num = ?', $event_id, $table_num, $game_num);
 	}
 	$game = json_decode($game);
 	if (!isset($game->players))
@@ -184,8 +184,8 @@ try
 			{
 				op: 'set_bonus'
 				, event_id: <?php echo $event_id; ?>
-				, table: <?php echo $game_table; ?>
-				, number: <?php echo $game_number; ?>
+				, table_num: <?php echo $table_num; ?>
+				, game_num: <?php echo $game_num; ?>
 				, player_num: <?php echo $player_num; ?>
 				, points: $("#dlg-points").val()
 				, best_player: $("#dlg-bp").attr("checked") ? 1 : 0

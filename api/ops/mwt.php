@@ -719,10 +719,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			$tournament_id = (int)get_required_param('tournament_id');
 			
-			list ($total) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND game_table IS NOT NULL AND game_number IS NOT NULL', $tournament_id);
+			list ($total) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND table_num IS NOT NULL AND game_num IS NOT NULL', $tournament_id);
 			$total = (int)$total;
 			
-			list ($progress) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND game_table IS NOT NULL AND game_number IS NOT NULL AND is_fiim_exported <> 0', $tournament_id);
+			list ($progress) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND table_num IS NOT NULL AND game_num IS NOT NULL AND is_fiim_exported <> 0', $tournament_id);
 			$progress = (int)$progress;
 			
 			if ($progress < $total)

@@ -29,8 +29,8 @@ class Page extends PageBase
 		$this->club_id = 0;
 		$this->tournament_id = 0;
 		$this->event_id = 0;
-		$this->table = -1;
-		$this->round = -1;
+		$this->table_num = 0;
+		$this->game_num = 0;
 		$this->demo = false;
 		
 		if (isset($_REQUEST['event_id']))
@@ -40,13 +40,13 @@ class Page extends PageBase
 			$this->club_id = (int)$this->club_id;
 			$this->tournament_id = is_null($this->tournament_id) ? 0 : (int)$this->tournament_id;
 			
-			if (isset($_REQUEST['table']))
+			if (isset($_REQUEST['table_num']))
 			{
-				$this->table = (int)$_REQUEST['table'];
+				$this->table_num = (int)$_REQUEST['table_num'];
 			}
-			if (isset($_REQUEST['round']))
+			if (isset($_REQUEST['game_num']))
 			{
-				$this->round = (int)$_REQUEST['round'];
+				$this->game_num = (int)$_REQUEST['game_num'];
 			}
 		}
 		else if (isset($_REQUEST['tournament_id']))
@@ -62,7 +62,7 @@ class Page extends PageBase
 		else if (isset($_REQUEST['bug_id']))
 		{
 			$bug_id = (int)$_REQUEST['bug_id'];
-			list ($event_id, $table, $round, $game, $log) = Db::record('bug', 'SELECT event_id, table_num, round_num, game, log FROM bug_reports WHERE id = ?', $bug_id);
+			list ($event_id, $table_num, $game_num, $game, $log) = Db::record('bug', 'SELECT event_id, table_num, game_num, game, log FROM bug_reports WHERE id = ?', $bug_id);
 			
 			$langs = array();
 			$lang = LANG_NO;
@@ -81,14 +81,14 @@ class Page extends PageBase
 			$data->langs = $langs;
 			$_SESSION['demogame'] = $data;
 			
-			$this->table = $table;
-			$this->round = $round;
+			$this->table_num = $table_num;
+			$this->game_num = $game_num;
 			$this->demo = true;
 		}
 		else if (isset($_REQUEST['demo']))
 		{
-			$this->table = 0;
-			$this->round = 0;
+			$this->table_num = 1;
+			$this->game_num = 1;
 			$this->demo = true;
 		}
 	}
@@ -255,11 +255,11 @@ class Page extends PageBase
 		
 		if ($num_tables < 0)
 		{
-			list ($max_table_num1) = Db::record(get_label('game'), 'SELECT MAX(game_table) FROM games WHERE event_id = ?', $this->event_id);
-			$max_table_num1 = is_null($max_table_num1) ? -1 : (int)$max_table_num1;
+			list ($max_table_num1) = Db::record(get_label('game'), 'SELECT MAX(table_num) FROM games WHERE event_id = ?', $this->event_id);
+			$max_table_num1 = is_null($max_table_num1) ? 0 : (int)$max_table_num1;
 			list ($max_table_num2) = Db::record(get_label('game'), 'SELECT MAX(table_num) FROM current_games WHERE event_id = ?', $this->event_id);
-			$max_table_num2 = is_null($max_table_num2) ? -1 : (int)$max_table_num2;
-			$num_tables = max($max_table_num1, $max_table_num2) + 2;
+			$max_table_num2 = is_null($max_table_num2) ? 0 : (int)$max_table_num2;
+			$num_tables = max($max_table_num1, $max_table_num2) + 1;
 		}
 		
 		$column_count = 0;
@@ -270,11 +270,11 @@ class Page extends PageBase
 		show_back_button();
 		echo '</td><tr></table></p>';
 
-		for ($i = 0; $i < $num_tables; ++$i)
+		for ($i = 1; $i <= $num_tables; ++$i)
 		{
 			if ($column_count == 0)
 			{
-				if ($i == 0)
+				if ($i == 1)
 				{
 					echo '<table class="bordered light" width="100%">';
 				}
@@ -289,8 +289,8 @@ class Page extends PageBase
 			
 			echo '<table class="transp" width="100%">';
 			
-			echo '<tr class="darker"><td align="center"><p><b>' . get_label('Table [0]', $i + 1) . '</b></p></td></tr>';
-			echo '<tr><td align="center" colspan="2"><p><a href="game.php?bck=1&event_id=' . $this->event_id . '&table=' . $i . '">';
+			echo '<tr class="darker"><td align="center"><p><b>' . get_label('Table [0]', $i) . '</b></p></td></tr>';
+			echo '<tr><td align="center" colspan="2"><p><a href="game.php?bck=1&event_id=' . $this->event_id . '&table_num=' . $i . '">';
 			echo '<img src="images/game_table.png" width="70">';
 			echo '</a></p></td></tr></table>';
 			
@@ -302,7 +302,7 @@ class Page extends PageBase
 				$column_count = 0;
 			}
 		}
-		if ($i > 0)
+		if ($i > 1)
 		{
 			if ($column_count > 0)
 			{
@@ -312,7 +312,7 @@ class Page extends PageBase
 		}
 	}
 	
-	private function select_round()
+	private function select_game()
 	{
 		global $_lang, $_profile;
 		
@@ -336,58 +336,60 @@ class Page extends PageBase
 			set($tournament_id, $tournament_name, $tournament_flags)->
 			set($club_id, $club_name, $club_flags);
 		
-		$num_rounds = -1;
+		$num_games = -1;
 		if (!is_null($misc))
 		{
 			$misc = json_decode($misc);
-			if (isset($misc->seating) && isset($misc->seating[$this->table]))
+			if (isset($misc->seating) && isset($misc->seating[$this->table_num - 1]))
 			{
-				$num_rounds = count($misc->seating[$this->table]);
+				$num_games = count($misc->seating[$this->table_num - 1]);
 			}
 		}
 		
-		if ($num_rounds > 0)
+		if ($num_games > 0)
 		{
-			$rounds = array_fill(0, $num_rounds, NULL);
+			$games = array_fill(0, $num_games, NULL);
 		}
 		else
 		{
-			$rounds = array();
+			$games = array();
 		}
 		
 		$query = new DbQuery(
-			'SELECT g.round_num, g.user_id, n.name'.
+			'SELECT g.game_num, g.user_id, n.name'.
 			' FROM current_games g'.
 			' JOIN users u ON u.id = g.user_id'.
 			' JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0'.
-			' WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table);
+			' WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table_num);
 		while ($row = $query->next())
 		{
-			list ($round, $user_id, $user_name) = $row;
-			while ($round >= count($rounds))
+			list ($game_num, $user_id, $user_name) = $row;
+			$index = $game_num - 1;
+			while ($index >= count($games))
 			{
-				$rounds[] = NULL;
+				$games[] = NULL;
 			}
-			$rounds[$round] = new stdClass();
-			$rounds[$round]->user_id = (int)$user_id;
-			$rounds[$round]->user_name = $user_name;
+			$games[$index] = new stdClass();
+			$games[$index]->user_id = (int)$user_id;
+			$games[$index]->user_name = $user_name;
 		}
 		
-		$query = new DbQuery('SELECT id, game_number, is_canceled, result FROM games WHERE event_id = ? AND game_table = ?', $this->event_id, $this->table);
+		$query = new DbQuery('SELECT id, game_num, is_canceled, result FROM games WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table_num);
 		while ($row = $query->next())
 		{
 			$r = new stdClass();
-			list ($r->game_id, $round, $r->is_canceled, $r->result) = $row;
-			while ($round >= count($rounds))
+			list ($r->game_id, $game_num, $r->is_canceled, $r->result) = $row;
+			$index = $game_num - 1;
+			while ($index >= count($games))
 			{
-				$rounds[] = NULL;
+				$games[] = NULL;
 			}
-			$rounds[$round] = $r;
+			$games[$index] = $r;
 		}
 		
-		if ($num_rounds <= 0)
+		if ($num_games <= 0)
 		{
-			$rounds[] = NULL;
+			$games[] = NULL;
 		}
 		
 		echo '<p><table class="transp" width="100%"><tr><td width="60">';
@@ -397,7 +399,7 @@ class Page extends PageBase
 		echo '</td><tr></table></p>';
 		
 		$column_count = 0;
-		for ($i = 0; $i < count($rounds); ++$i)
+		for ($i = 0; $i < count($games); ++$i)
 		{
 			if ($column_count == 0)
 			{
@@ -416,20 +418,20 @@ class Page extends PageBase
 			
 			echo '<table class="transp" width="100%">';
 			
-			$r = $rounds[$i];
+			$r = $games[$i];
 			if (is_null($r))
 			{
 				$darker_class = ' class="darker"';
 				$normal_class = '';
 				$text = '';
-				$url = 'game.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
+				$url = 'game.php?bck=1&event_id=' . $this->event_id . '&table_num=' . $this->table_num . '&game_num=' . ($i + 1);
 				$onclick = '';
 			}
 			else if (isset($r->game_id))
 			{
 				$darker_class = ' class="darkest"';
 				$normal_class = ' class="darker"';
-				$url = 'view_game.php?bck=1&id=' . $rounds[$i]->game_id;
+				$url = 'view_game.php?bck=1&id=' . $games[$i]->game_id;
 				if ($r->result <= 0)
 				{
 					$text = get_label('Playing using different method');
@@ -449,17 +451,17 @@ class Page extends PageBase
 			{
 				$darker_class = ' class="darker"';
 				$normal_class = ' class="dark"';
-				if ($rounds[$i]->user_id == $_profile->user_id)
+				if ($games[$i]->user_id == $_profile->user_id)
 				{
-					$text = get_label('Playing now', $rounds[$i]->user_name);
-					$url = 'game.php?bck=1&event_id=' . $this->event_id . '&table=' . $this->table . '&round=' . $i;
+					$text = get_label('Playing now', $games[$i]->user_name);
+					$url = 'game.php?bck=1&event_id=' . $this->event_id . '&table_num=' . $this->table_num . '&game_num=' . ($i + 1);
 					$onclick = '';
 				}
 				else
 				{
-					$text = get_label('Moderated by [0] now', $rounds[$i]->user_name);
+					$text = get_label('Moderated by [0] now', $games[$i]->user_name);
 					$url = '#';
-					$onclick = ' onclick="mr.ownGame('.$this->event_id.','.$this->table.','.$i.','.$rounds[$i]->user_id.',\''.get_label('[0] is already moderating this game. Do you want to take is over from them?', $rounds[$i]->user_name).'\')"';
+					$onclick = ' onclick="mr.ownGame('.$this->event_id.','.$this->table_num.','.($i+1).','.$games[$i]->user_id.',\''.get_label('[0] is already moderating this game. Do you want to take is over from them?', $games[$i]->user_name).'\')"';
 				}
 			}
 			
@@ -527,7 +529,7 @@ class Page extends PageBase
 		}
 		
 		echo '<ul id="ops-menu" style="position:absolute;" hidden>';
-		echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({round:undefined, demo:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
+		echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({game_num:undefined, demo:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
 		echo '<li id="cancel" class="ops-item"><a href="#" onclick="uiCancelGame()"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
 		echo '<li type="separator"></li>';
 		if ($this->event_id > 0)
@@ -601,7 +603,7 @@ class Page extends PageBase
 		echo '<table class="invis" width="100%"><tr>';
 		echo '<td><img id="saving-img" border="0" src="images/connected.png"></td>';
 		echo '<td id="saving"></td>';
-		echo '<td align="right"><button id="game-id" class="config-btn" onclick="uiConfig()"><b>'.get_label('[0]: Table [1]. Game [2].', $event_name, $this->table + 1, $this->round + 1).'</b></button></td>';
+		echo '<td align="right"><button id="game-id" class="config-btn" onclick="uiConfig()"><b>'.get_label('[0]: Table [1]. Game [2].', $event_name, $this->table_num, $this->game_num).'</b></button></td>';
 		echo '</tr></table>';
 		echo '</td>';
 		echo '<td id="control-1"></td>';
@@ -629,13 +631,14 @@ class Page extends PageBase
 		{
 			$this->select_event();
 		}
-		else if ($this->table < 0)
+		else if ($this->table_num <= 0)
 		{
 			$this->select_table();
 		}
-		else if ($this->round < 0)
+		else if ($this->game_num <= 0)
 		{
-			$this->select_round();
+			echo 'dsdsds';
+			$this->select_game();
 		}
 		else
 		{
@@ -645,9 +648,9 @@ class Page extends PageBase
 	
 	protected function js_on_load()
 	{
-		if ($this->event_id > 0 && $this->table >= 0 && $this->round >= 0)
+		if ($this->event_id > 0 && $this->table_num > 0 && $this->game_num > 0)
 		{
-			echo 'uiStart(' . $this->event_id . ', ' . $this->table . ', ' . $this->round . ');';
+			echo 'uiStart(' . $this->event_id . ', ' . $this->table_num . ', ' . $this->game_num . ');';
 		}
 		else if ($this->demo)
 		{

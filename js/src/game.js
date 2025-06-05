@@ -71,12 +71,12 @@ function _gameCutArray(arr)
 	return arr.length;
 }
 
-function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, connectionListener, onSuccess)
+function gameInit(eventId, tableNum, gameNum, gameOnChange, errorListener, connectionListener, onSuccess)
 {
 	_connectionListener = connectionListener;
 	_errorListener = errorListener;
 	_gameOnChange = gameOnChange;
-	json.post('api/ops/game.php', { op: 'get_current', lod: 1, event_id: eventId, table: tableNum, round: roundNum }, function(data)
+	json.post('api/ops/game.php', { op: 'get_current', lod: 1, event_id: eventId, table_num: tableNum, game_num: gameNum }, function(data)
 	{
 		game = data.game;
 		if (!isSet(game.version))
@@ -123,7 +123,7 @@ function gameInit(eventId, tableNum, roundNum, gameOnChange, errorListener, conn
 			if (typeof str != "undefined" && str != null)
 			{
 				let g = jQuery.parseJSON(str);
-				if (g.round == roundNum + 1 && g.table == tableNum + 1)
+				if (g.round == gameNum && g.table == tableNum)
 				{					
 					game = g;
 				}
@@ -157,7 +157,7 @@ function gameSave()
 			// console.log('Saving');
 			// console.log(lastSaved);
 			// console.log(log.slice(lastSaved));
-			json.post('api/ops/game.php', { op: 'set_current', event_id: game.eventId, table: game.table - 1, round: game.round - 1, game: JSON.stringify(game), logIndex: lastSaved, log: JSON.stringify(log.slice(lastSaved))}, 
+			json.post('api/ops/game.php', { op: 'set_current', event_id: game.eventId, table_num: game.table, game_num: game.round, game: JSON.stringify(game), logIndex: lastSaved, log: JSON.stringify(log.slice(lastSaved))}, 
 			function() // success
 			{
 				// The game is not needed in the local storage any more because the server has it.
@@ -209,9 +209,9 @@ function gameDirty()
 // Cancels the game and deletes the server record. All game data will be lost
 function gameCancel()
 {
-	json.post('api/ops/game.php', { op: 'cancel_current', event_id: game.eventId, table: game.table - 1, round: game.round - 1 }, function()
+	json.post('api/ops/game.php', { op: 'cancel_current', event_id: game.eventId, table_num: game.table, game_num: game.round }, function()
 	{
-		goTo({round:undefined, demo:undefined});
+		goTo({game_num:undefined, demo:undefined});
 	});
 }
 
@@ -2066,7 +2066,7 @@ function gameIsPlayerAtTheTable(index)
 
 function gameBugReport(txt, onSuccess)
 {
-	json.post('api/ops/game.php', { op: 'report_bug', event_id: game.eventId, table: game.table - 1, round: game.round - 1, comment: txt}, onSuccess);
+	json.post('api/ops/game.php', { op: 'report_bug', event_id: game.eventId, table_num: game.table, game_num: game.round, comment: txt}, onSuccess);
 }
 
 function gameCanGoNext()
@@ -2382,7 +2382,7 @@ function gameNext()
 				json.post('api/ops/game.php', { op: 'create', json: JSON.stringify(game) }, function()
 				{
 					delete localStorage['game'];
-					goTo({round:undefined, demo:undefined});
+					goTo({game_num:undefined, demo:undefined});
 				},
 				function (message, data)
 				{
