@@ -17,12 +17,12 @@ class UpdateGames extends Updater
 
 	protected function update($items_count)
 	{
-		$done = true;
+		$count = 0;
 		Db::begin();
 		$query = new DbQuery('SELECT id, json FROM games WHERE id > ? LIMIT ' . $items_count, $this->state->id);
 		while ($row = $query->next())
 		{
-			$done = false;
+			++$count;
 			list($game_id, $game) = $row;
 			$game = json_decode($game);
 			$change = false;
@@ -31,6 +31,7 @@ class UpdateGames extends Updater
 				$game->tableNum = $game->table;
 				unset($game->table);
 				$change = true;
+				 
 			}
 			if (isset($game->round))
 			{
@@ -47,11 +48,11 @@ class UpdateGames extends Updater
 		}
 		Db::commit();
 		$this->log('Updated ' . $this->state->updated . ' games');
-		if ($done)
+		if ($count <= 0)
 		{
 			$this->setTask(END_RUNNING);
 		}
-		return $items_count;
+		return $count;
 	}
 }
 
