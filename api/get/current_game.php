@@ -16,6 +16,8 @@ class ApiPage extends GetApiPageBase
 		$server_url = get_server_url();
 		$game = new stdClass();
 		
+		$show_roles = !isset($g->hideRoles) || !$g->hideRoles;
+		
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
 		$game->club = new stdClass();
 		$game->club->name = $this->club_name;
@@ -46,7 +48,7 @@ class ApiPage extends GetApiPageBase
 		}
 		if (isset($g->gameNum))
 		{
-			$game->tour = $g->gameNum
+			$game->tour = $g->gameNum;
 		}
 		if (isset($g->tableNum))
 		{
@@ -139,13 +141,16 @@ class ApiPage extends GetApiPageBase
 			$player->iconUrl = $server_url . '/' . $this->user_pic->url(ICONS_DIR);
 			$player->hasPhoto = $this->user_pic->has_image();
 			
-			if (!isset($p->role) || $p->role == 'civ')
+			if ($show_roles)
 			{
-				$player->role = 'town';
-			}
-			else
-			{
-				$player->role = $p->role;
+				if (!isset($p->role) || $p->role == 'civ')
+				{
+					$player->role = 'town';
+				}
+				else
+				{
+					$player->role = $p->role;
+				}
 			}
 
 			if (isset($p->warnings))
@@ -163,13 +168,17 @@ class ApiPage extends GetApiPageBase
 			{
 				$player->warnings = 0;
 			}
-			if (isset($p->don))
+			
+			if ($show_roles)
 			{
-				$player->checkedByDon = $p->don;
-			}
-			if (isset($p->sheriff))
-			{
-				$player->checkedBySheriff = $p->sheriff;
+				if (isset($p->don))
+				{
+					$player->checkedByDon = $p->don;
+				}
+				if (isset($p->sheriff))
+				{
+					$player->checkedBySheriff = $p->sheriff;
+				}
 			}
 			
 			if (!isset($p->death))
@@ -517,14 +526,14 @@ class ApiPage extends GetApiPageBase
 				$players->sub_param('iconUrl', 'URL of the user logo icon. If user is missing - a link to a transparent image. (70x70 px).');
 				$players->sub_param('hasPhoto', 'True - if a player has custom photo. False - when player did not upload photo, or when id<=0, which means there is no player.');
 				$players->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
-				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don".');
+				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don". It is set only when the flag hideRoles is not set in the game.');
 				$players->sub_param('warnings', 'Number of warnings.');
 				$players->sub_param('isSpeaking', 'A boolean which is true when the player is speaking.');
 				$players->sub_param('state', 'Player state - "dead" or "alive".');
 				$players->sub_param('deathRound', 'If player state is "dead" it is set to the round number when they died.');
 				$players->sub_param('deathType', 'If player state is "dead" it is set to the type of their death. One of: "voting", "shooting", "warnings", "giveUp", or "kickOut".');
-				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened.');
-				$players->sub_param('checkedBySheriff', 'If a player was checked by the sheriff it contains the round number when it happened.');
+				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened. It is set only when the flag hideRoles is not set in the game.');
+				$players->sub_param('checkedBySheriff', 'If a player was checked by the sheriff it contains the round number when it happened. It is set only when the flag hideRoles is not set in the game.');
 			$moderator = $param->sub_param('moderator', 'Moderator.');
 				$moderator->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
 				$moderator->sub_param('name', 'Moderator nickname.');

@@ -7,7 +7,7 @@ require_once __DIR__ . '/game_ratings.php';
 require_once __DIR__ . '/game_players_stats.php';
 
 // GAME_CURRENT_VERSION must exactly match to the value of version var in js/game.js
-define('GAME_CURRENT_VERSION', '1.0'); // Major version means that the format of the game has been changed. Minor version means that the game client has been changed and need to be updated.
+define('GAME_CURRENT_VERSION', '1.1'); // Major version means that the format of the game has been changed. Minor version means that the game client has been changed and need to be updated.
 
 define('GAME_FEATURE_FLAG_ARRANGEMENT',                 0x00000001); // 'a' - 1 
 define('GAME_FEATURE_FLAG_DON_CHECKS',                  0x00000002); // 'g' - 2

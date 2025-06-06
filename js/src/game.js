@@ -1,4 +1,4 @@
-var version = "1.0"; // It must exactly match the value of GAME_CURRENT_VERSION in include/game.php
+var version = "1.1"; // It must exactly match the value of GAME_CURRENT_VERSION in include/game.php
 var game; // All vars here can be used by UI code, but it is strongly recommended to use them for reading only. If changes are absolutely needed, make sure gameDirty(...) is called after that.
 var log; // array of games in the previous times - it is used to return back in time.
 var lastSaved; // index in the log array of the last record that is saved to the server.
@@ -71,6 +71,12 @@ function _gameCutArray(arr)
 	return arr.length;
 }
 
+function gameHardReload()
+{
+	localStorage.clear();
+	window.location.reload(true);
+}
+
 function gameInit(eventId, tableNum, gameNum, gameOnChange, errorListener, connectionListener, onSuccess)
 {
 	_connectionListener = connectionListener;
@@ -104,7 +110,7 @@ function gameInit(eventId, tableNum, gameNum, gameOnChange, errorListener, conne
 			}
 			else
 			{
-				window.location.reload(true);
+				gameHardReload();
 			}
 		}
 		
@@ -556,17 +562,39 @@ function gameSetPlayer(num, id)
 	return result;
 }
 
+function gameIsRating()
+{
+	return !isSet(game.rating) || game.rating;
+}
+
 function gameSetIsRating(isRating)
 {
-	if (!isRating)
-	{
-		game.rating = false;
-	}
-	else
+	if (isRating)
 	{
 		delete game.rating;
 	}
+	else
+	{
+		game.rating = false;
+	}
 	gameDirty();
+}
+
+function gameAreRolesHidden()
+{
+	return isSet(game.hideRoles) && game.hideRoles;
+}
+
+function gameHideRoles(hide)
+{
+	if (hide)
+	{
+		game.hideRoles = true;
+	}
+	else
+	{
+		delete game.hideRoles;
+	}
 }
 	
 function gameSetLang(lang)

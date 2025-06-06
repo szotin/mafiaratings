@@ -779,7 +779,7 @@ function _uiErrorListener(type, message, data)
 			dlg.error(message, undefined, undefined, function()
 			{
 				_errorDialog = false;
-				window.location.reload(true);
+				gameHardReload();
 			});
 		}
 		break;
@@ -1391,11 +1391,18 @@ function uiConfig(txt, onClose)
 		}
 		
 		html += '<tr><td colspan="2"><input type="checkbox" id="dlg-rating"';
-		if (!isSet(game.rating) || game.rating)
+		if (gameIsRating())
 		{
 			html += ' checked';
 		}
 		html += '> ' + l('Rating') + '<br>'
+		
+		html += '<input type="checkbox" id="dlg-hide-roles"';
+		if (gameAreRolesHidden())
+		{
+			html += ' checked';
+		}
+		html += '> ' + l('HideRoles') + '<br>'
 		
 		if (_obsScenes)
 		{
@@ -1430,6 +1437,7 @@ function uiConfig(txt, onClose)
 	{
 		_renderCallback = null;
 		gameSetIsRating($('#dlg-rating').attr('checked') ? 1 : 0);
+		gameHideRoles($('#dlg-hide-roles').attr('checked') ? 1 : 0);
 		obsSetStreaming($('#dlg-streaming').attr('checked') ? 1 : 0);
 		if (langs.length > 1)
 		{
