@@ -463,6 +463,7 @@ class ApiPage extends GetApiPageBase
 		{
 			$query->add(' AND g.game_num = ?', $game_num); 
 		}
+		$query->add(' ORDER BY g.event_id DESC, g.table_num DESC, g.game_num DESC');
 		
 		while ($row = $query->next())
 		{
