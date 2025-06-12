@@ -2185,6 +2185,7 @@ class Game
 					if (
 						isset($player->death) && 
 						isset($player->death->time) &&
+						isset($player->death->type) &&
 						$player->death->type != DEATH_TYPE_NIGHT && 
 						$player->death->type != DEATH_TYPE_DAY &&
 						$this->compare_gametimes($player->death->time, $voting_end_time) < 0 &&

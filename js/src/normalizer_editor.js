@@ -210,8 +210,8 @@ function getCondHtml(policyNum, min, max)
 	var str = _data.strings;
 	var policy = _data.normalizer.policies[policyNum];
 	var html = '';
-	var minChecked = (typeof min != "undefined");
-	var maxChecked = (typeof max != "undefined");
+	var minChecked = isSet(min);
+	var maxChecked = isSet(max);
 	
 	var minMinProp = 'min="0"';
 	var minMaxProp = '';
@@ -222,9 +222,9 @@ function getCondHtml(policyNum, min, max)
 	var post = '';
 	if (policy.games)
 	{
-		if (typeof policy.games.max != "undefined")
+		if (isSet(policy.games.max))
 			minMaxProp = ' max="' + policy.games.max + '"';
-		if (typeof policy.games.min != "undefined")
+		if (isSet(policy.games.min))
 		{
 			maxMinProp = ' min="' + policy.games.min + '"';
 			maxPre = str.cntMaxPre1;
@@ -238,9 +238,9 @@ function getCondHtml(policyNum, min, max)
 	}
 	else if (policy.gamesPerc)
 	{
-		if (typeof policy.gamesPerc.max != "undefined")
+		if (isSet(policy.gamesPerc.max))
 			minMaxProp = ' max="' + policy.gamesPerc.max + '"';
-		if (typeof policy.gamesPerc.min != "undefined")
+		if (isSet(policy.gamesPerc.min))
 		{
 			maxMinProp = ' min="' + policy.gamesPerc.min + '"';
 			maxPre = str.cntMaxPre1;
@@ -255,9 +255,9 @@ function getCondHtml(policyNum, min, max)
 	}
 	else if (policy.rounds)
 	{
-		if (typeof policy.rounds.max != "undefined")
+		if (isSet(policy.rounds.max))
 			minMaxProp = ' max="' + policy.rounds.max + '"';
-		if (typeof policy.rounds.min != "undefined")
+		if (isSet(policy.rounds.min))
 		{
 			maxMinProp = ' min="' + policy.rounds.min + '"';
 			maxPre = str.cntMaxPre1;
@@ -271,9 +271,9 @@ function getCondHtml(policyNum, min, max)
 	}
 	else if (policy.roundsPerc)
 	{
-		if (typeof policy.roundsPerc.max != "undefined")
+		if (isSet(policy.roundsPerc.max))
 			minMaxProp = ' max="' + policy.roundsPerc.max + '"';
-		if (typeof policy.roundsPerc.min != "undefined")
+		if (isSet(policy.roundsPerc.min))
 		{
 			maxMinProp = ' min="' + policy.roundsPerc.min + '"';
 			maxPre = str.cntMaxPre1;
@@ -288,9 +288,9 @@ function getCondHtml(policyNum, min, max)
 	}
 	else if (policy.winPerc)
 	{
-		if (typeof policy.winPerc.max != "undefined")
+		if (isSet(policy.winPerc.max))
 			minMaxProp = ' max="' + policy.winPerc.max + '"';
-		if (typeof policy.winPerc.min != "undefined")
+		if (isSet(policy.winPerc.min))
 		{
 			maxMinProp = ' min="' + policy.winPerc.min + '"';
 			maxPre = str.rateMaxPre1;
@@ -378,6 +378,9 @@ function onPolicyAvTypeChange(policyNum)
 		case '2':
 			obj.min = 10;
 			break;
+		case '3':
+			obj.minPercOfMax = 10;
+			break;
 	}
     refreshNormalizerEditor(true);
 }
@@ -399,6 +402,8 @@ function onPolicyAvValueChange(policyNum)
 			p.gameAv = {};
 		if (p.gameAv.min)
 			p.gameAv.min = v;
+		else if (p.gameAv.minPercOfMax)
+			p.gameAv.minPercOfMax = v;
 		else
 			p.gameAv.add = v;
 	}
@@ -413,18 +418,23 @@ function getRuleHtml(policyNum)
 	if (policy.gameAv)
 	{
 		var avType = 0;
-		if (typeof policy.gameAv.add != "undefined")
+		if (isSet(policy.gameAv.add))
 		{
 			avType = 1;
 		}
-		else if (typeof policy.gameAv.min != "undefined")
+		else if (isSet(policy.gameAv.min))
 		{
 			avType = 2;
+		}
+		else if (isSet(policy.gameAv.minPercOfMax))
+		{
+			avType = 3;
 		}
 		html += '<p><select id="policy-av-type-' + policyNum + '" onchange="onPolicyAvTypeChange(' + policyNum + ')">';
 		html += '<option value="0"' + (avType == 0 ? ' selected' : '') + '>' + str.avTypeNothing + '</option>'; 
 		html += '<option value="1"' + (avType == 1 ? ' selected' : '') + '>' + str.avGamesTypeAdd + '</option>'; 
 		html += '<option value="2"' + (avType == 2 ? ' selected' : '') + '>' + str.avGamesTypeMin + '</option>'; 
+		html += '<option value="3"' + (avType == 3 ? ' selected' : '') + '>' + str.avGamesTypeMinPercOfMax + '</option>'; 
 		html += '</select></p>';
 		
 		switch (avType)
@@ -438,16 +448,19 @@ function getRuleHtml(policyNum)
 			case 2:
 				html += '<p>' + str.avGamesMin + ': <input type="number" style="width: 35px;" min="1" id="policy-av-val-' + policyNum + '" onchange="onPolicyAvValueChange(' + policyNum + ')" value="' + policy.gameAv.min + '"></p>';
 				break;
+			case 3:
+				html += '<p>' + str.avGamesMinPercOfMax + ': <input type="number" style="width: 35px;" min="1" max="100" id="policy-av-val-' + policyNum + '" onchange="onPolicyAvValueChange(' + policyNum + ')" value="' + policy.gameAv.minPercOfMax + '"> %</p>';
+				break;
 		}
 	}
 	else if (policy.roundAv)
 	{
 		var avType = 0;
-		if (typeof policy.roundAv.add != "undefined")
+		if (isSet(policy.roundAv.add))
 		{
 			avType = 1;
 		}
-		else if (typeof policy.roundAv.min != "undefined")
+		else if (isSet(policy.roundAv.min))
 		{
 			avType = 2;
 		}
@@ -479,11 +492,11 @@ function getRuleHtml(policyNum)
 		var max = -1;
 		if (policy.multiply)
 		{
-			if (typeof policy.multiply.val != "undefined")
+			if (isSet(policy.multiply.val))
 			{
 				val = policy.multiply.val;
 			}   
-			if (typeof policy.multiply.max != "undefined")
+			if (isSet(policy.multiply.max))
 			{
 				max = policy.multiply.max;
 			}
@@ -549,23 +562,27 @@ function getRuleHelp(policyNum)
 	var str = _data.strings;
 	if (policy.gameAv)
 	{
-		if (typeof policy.gameAv.add != "undefined")
+		if (isSet(policy.gameAv.add))
 		{
 			return str.avGamesTypeAddHelp;
 		}
-		if (typeof policy.gameAv.min != "undefined")
+		if (isSet(policy.gameAv.min))
 		{
 			return str.avGamesTypeMinHelp;
+		}
+		if (isSet(policy.gameAv.minPercOfMax))
+		{
+			return str.avGamesTypeMinPercOfMaxHelp;
 		}
 		return str.avGamesTypeNothingHelp;
 	}
 	else if (policy.roundAv)
 	{
-		if (typeof policy.roundAv.add != "undefined")
+		if (isSet(policy.roundAv.add))
 		{
 			return str.avRoundsTypeAddHelp;
 		}
-		if (typeof policy.roundAv.min != "undefined")
+		if (isSet(policy.roundAv.min))
 		{
 			return str.avRoundsTypeMinHelp;
 		}
@@ -580,7 +597,7 @@ function getRuleHelp(policyNum)
 		var max = -1;
 		if (policy.multiply)
 		{
-			if (typeof policy.multiply.max != "undefined")
+			if (isSet(policy.multiply.max))
 			{
 				max = policy.multiply.max;
 			}

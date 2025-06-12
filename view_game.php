@@ -684,16 +684,13 @@ class Page extends PageBase
 				{
 					$death_type = $player->death;
 				}
-				else 
+				else if (isset($player->death->round))
 				{
-					if (isset($player->death->round))
-					{
-						$death_round = $player->death->round;
-					}
-					if (isset($player->death->type))
-					{
-						$death_type = $player->death->type;
-					}
+					$death_round = $player->death->round;
+				}
+				if (isset($player->death->type))
+				{
+					$death_type = $player->death->type;
 				}
 				
 				switch ($death_type)
@@ -719,7 +716,7 @@ class Page extends PageBase
 				default:
 					if ($death_round > 0)
 					{
-						echo get_label('[0] round', $player->death);
+						echo get_label('[0] round', $death_round);
 					}
 					break;
 				}

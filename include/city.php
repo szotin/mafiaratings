@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/email.php';
+require_once __DIR__ . '/google_geo_key.php';
 
 define('UNDEFINED_CITY', -1);
 define('ALL_CITIES', 0);
@@ -169,6 +170,25 @@ function show_city_buttons($id, $name, $flags)
 		echo '<button class="icon" onclick="mr.deleteCity(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
 		echo '<button class="icon" onclick="mr.editCity(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
 	}
+}
+
+// Gets distance between two cities in meters
+function get_distance($city_name1, $city_name2)
+{
+    $city_name1 = urlencode($city_name1);
+    $city_name2 = urlencode($city_name2);
+    $apiUrl = 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=' . $city_name1 . '&destinations=' . $city_name2 . '&key=' . GOOGLE_API_KEY;
+    $response = file_get_contents($apiUrl);
+    $data = json_decode($response);
+    if ($data->status != 'OK')
+	{
+		if (isset($data->error_message))
+		{
+			throw new Exc($data->error_message);
+		}
+		throw new Exc($data->status);
+    } 
+	return $data->rows[0]->elements[0]->distance->value;
 }
 
 ?>

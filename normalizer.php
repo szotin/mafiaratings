@@ -102,12 +102,15 @@ class Page extends PageBase
 				
 				avGamesTypeAdd: "<?php echo get_label('Add value to the number of games played'); ?>",
 				avGamesTypeMin: "<?php echo get_label('Set minimum games'); ?>",
+				avGamesTypeMinPercOfMax: "<?php echo get_label('Set minimum games % of the max games played'); ?>",
 				avGamesTypeNothingHelp: "<?php echo get_label('For example: if a player played 20 games and scored 12.6 points in sum, the final score is 12.6 / 20 = 0.63. Which is the average points per game.'); ?>",
 				avGamesTypeAddHelp: "<?php echo get_label('For example: if you set the value to add to 2, and a player played 8 games and scored 5.4 points, the final score is 5.4 / (8 + 2) = 0.54. This algorithm makes sure that players with low number of games do not have the highest scores.'); ?>",
 				avGamesTypeMinHelp: "<?php echo get_label('For example: if you set minimum games to 20, and a player played 8 games and scored 5.4 points, the final score is 5.4 / MAX(8, 20) = 5.4 / 20 = 0.27. This algorithm makes sure that players with low number of games do not have the highest scores.'); ?>",
+				avGamesTypeMinPercOfMaxHelp:  "<?php echo get_label('For example: if you set minimum games to 20%, and a player played 8 games, and scored 5.4 points.<br>The player who played the most games in the tournament played 200 games.<br>Then the final score is 5.4 / MAX(8, 200 * 20%) = 5.4 / MAX(8, 40) = 5.4 / 40 = 0.135.'); ?>",
 				avGamesNone: "<?php echo get_label('Divide the score to the number of games.'); ?>",
 				avGamesAdd: "<?php echo get_label('Divide the score to the number of games plus'); ?>",
 				avGamesMin: "<?php echo get_label('Divide the score to the number of games but not less games than'); ?>",
+				avGamesMinPercOfMax: "<?php echo get_label('Divide the score to the number of games but not less games than a % of maximum games played'); ?>",
 				
 				avRoundsTypeAdd: "<?php echo get_label('Add value to the number of rounds played'); ?>",
 				avRoundsTypeMin: "<?php echo get_label('Set minimum rounds'); ?>",

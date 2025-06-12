@@ -1396,7 +1396,8 @@ function set_player_normalization($player, $max_games_played, $max_rounds_played
 				{
 					$add = isset($policy->gameAv->add) ? $policy->gameAv->add : 0;
 					$min = isset($policy->gameAv->min) ? $policy->gameAv->min : 0;
-					$games_count = max($player->games_count + $add, $min);
+					$minPercOfMax = isset($policy->gameAv->minPercOfMax) ? round($policy->gameAv->minPercOfMax * $max_games_played / 100) : 0;
+					$games_count = max(max($player->games_count + $add, $min), $minPercOfMax);
 					if ($games_count > 0)
 					{
 						$multiplier = 1 / $games_count;

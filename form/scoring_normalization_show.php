@@ -60,8 +60,24 @@ try
 	
 	dialog_title(get_label('How normalization rate is calculated for [0] in [1].', $user_name, $tournament_name));
 	
-	list($games_played, $games_won, $rounds_played) = Db::record(get_label('player'), 'SELECT COUNT(DISTINCT g.id), SUM(p.won), COUNT(DISTINCT g.event_id) FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ? AND g.tournament_id = ?', $user_id, $tournament_id);
-	list($max_games_played, $max_rounds_played) = Db::record(get_label('tournament'), 'SELECT MAX(gp), MAX(rp) FROM (SELECT p.user_id, COUNT(DISTINCT g.id) AS gp, COUNT(DISTINCT g.event_id) AS rp FROM players p JOIN games g ON g.id = p.game_id WHERE g.tournament_id = ? GROUP BY p.user_id) AS players', $tournament_id);
+	list($games_played, $games_won, $rounds_played) = Db::record(get_label('player'),
+		'SELECT COUNT(DISTINCT g.id), SUM(p.won), COUNT(DISTINCT g.event_id)'.
+		' FROM players p'.
+		' JOIN games g ON g.id = p.game_id'.
+		' WHERE p.user_id = ? AND g.tournament_id = ? AND g.is_rating <> 0 AND g.is_canceled = FALSE', $user_id, $tournament_id);
+	// $query = new DbQuery(
+		// 'SELECT MAX(gp), MAX(rp)'.
+		// ' FROM (SELECT p.user_id, COUNT(DISTINCT g.id) AS gp, COUNT(DISTINCT g.event_id) AS rp'.
+			// ' FROM players p JOIN games g ON g.id = p.game_id'.
+			// ' WHERE g.tournament_id = ? AND g.is_rating <> 0 AND g.is_canceled = FALSE'.
+			// ' GROUP BY p.user_id) AS players', $tournament_id);
+	// echo $query->get_parsed_sql();
+	list($max_games_played, $max_rounds_played) = Db::record(get_label('tournament'), 
+		'SELECT MAX(gp), MAX(rp)'.
+		' FROM (SELECT p.user_id, COUNT(DISTINCT g.id) AS gp, COUNT(DISTINCT g.event_id) AS rp'.
+			' FROM players p JOIN games g ON g.id = p.game_id'.
+			' WHERE g.tournament_id = ? AND g.is_rating <> 0 AND g.is_canceled = FALSE'.
+			' GROUP BY p.user_id) AS players', $tournament_id);
 
 	$total_normalization = 1;
 	echo '<table class="bordered light" width="100%">';
@@ -283,8 +299,15 @@ try
 				{
 					$div = max($games_played, $policy->gameAv->min);
 					$normalization = $div == 0 ? 0 : 1 / $div;
-					echo get_label('The final score is divided by the number of[0] played by a player plus [1].', get_label(' games'), $policy->gameAv->add) . '</p><p>';
-					echo get_label('Player [1] played [2][0]. The final score is multiplied by [3] = 1 / [4] = 1 / MAX([2], [5])', get_label(' games'), $user_name, $games_played, format_coeff($normalization), $div, $policy->gameAv->add);
+					echo get_label('The final score is divided by the number of[0] played by a player. But if this number is lower than [1] it is divided by [1].', get_label(' games'), $policy->gameAv->min) . '</p><p>';
+					echo get_label('Player [1] played [2][0]. The final score is multiplied by [3] = 1 / [4] = 1 / MAX([2], [5])', get_label(' games'), $user_name, $games_played, format_coeff($normalization), $div, $policy->gameAv->min);
+				}
+				else if (isset($policy->gameAv->minPercOfMax))
+				{
+					$div = max($games_played, round($max_games_played * $policy->gameAv->minPercOfMax / 100));
+					$normalization = $div == 0 ? 0 : 1 / $div;
+					echo get_label('The final score is divided by the number of games played by a player. But if it is lower than [0]% of the games played by the most active player, it is divided by [0]% of the most games played.', $policy->gameAv->minPercOfMax) . '</p><p>';
+					echo get_label('Player [0] played [1] games. Maximum games played in the tournament by any player is [5]. The [4]% of [5] is [6] (rounded).<p>The final score is multiplied by 1 / MAX([1], [6]) = 1 / [3] = [2]</p>', $user_name, $games_played, format_coeff($normalization), $div, $policy->gameAv->minPercOfMax, $max_games_played, round($max_games_played * $policy->gameAv->minPercOfMax / 100));
 				}
 				else
 				{

@@ -59,14 +59,12 @@ class Page extends TournamentPageBase
 		$this->normalizer = '{}';
 		if (isset($_REQUEST['nid']))
 		{
-			$this->normalizer_id = (int)$_REQUEST['nid'];
-			$this->tournament_player_params .= '&nid=' . $this->normalizer_id;
+			$this->normalizer_id = (int)$_REQUEST['nid']; 
 			if ($this->normalizer_id > 0)
 			{
 				if (isset($_REQUEST['nver']))
 				{
 					$this->normalizer_version = (int)$_REQUEST['nver'];
-					$this->tournament_player_params .= '&nver=' . $this->normalizer_version;
 					list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
 				}
 				else

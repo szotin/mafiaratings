@@ -2,6 +2,7 @@
 
 require_once 'include/tournament.php';
 require_once 'include/pages.php';
+require_once 'include/city.php';
 
 class Page extends TournamentPageBase
 {
@@ -160,7 +161,7 @@ class Page extends TournamentPageBase
 				}
 				else
 				{
-					echo '<td colspan="2"><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
+					echo '<td colspan="2"><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . ' (' . round(get_distance('Vancouver, BC', $city) / 1000) . ' km)</a></td>';
 				}
 				
 				echo '<td width="200">';

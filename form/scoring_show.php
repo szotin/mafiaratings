@@ -291,6 +291,12 @@ try
 					echo get_label('The final score is divided by the number of[0] played by a player.', get_label(' games')) . get_label(' If the number of games is lower than [0] it is still divided by [0].', $policy->gameAv->min) . '</p><p>* ';
 					echo get_label('For example if a player played 2[0] and scored 2.4 points, the final score is 2.4 / max(2, [1]) = [2].', get_label(' games'), $policy->gameAv->add, format_score(2.4 / max(2, $policy->gameAv->add)));
 				}
+				else if (isset($policy->gameAv->minPercOfMax))
+				{
+					$min_games = round($policy->gameAv->minPercOfMax * 50 / 100);
+					echo get_label('The final score is divided by the number of games played by a player.') . get_label(' If the number of games is lower than [0]% of the maximum games played by a player, it is divided by this [0]% of the games.', $policy->gameAv->min) . '</p><p>* ';
+					echo get_label('For example: A player played 2 games and scored 2.4 points, where the most active player player played 50 games. Then the final score is 2.4 / max(2, 50 * [0]%) = 2.4 / max(2, [1]) = [2].', $policy->gameAv->minPercOfMax, $min_games, format_score(2.4 / max(2, $min_games)));
+				}
 				else
 				{
 					echo get_label('The final score is divided by the number of[0] played by a player.', get_label(' games')) . '</p><p>* ';
