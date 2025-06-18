@@ -63,7 +63,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->city_id = $city_id;
 		db_log(LOG_OBJECT_ADDRESS, 'created', $log_details, $addr_id, $club_id);
 
-		$warning = load_map_info($addr_id);
+		$warning = load_map_info($addr_id, '../../' . ADDRESS_PICS_DIR);
 		if ($warning != NULL)
 		{
 			echo '<p>' . $warning . '</p>';
@@ -259,13 +259,18 @@ class ApiPage extends OpsApiPageBase
 	function google_map_op()
 	{
 		$address_id = (int)get_required_param('address_id');
-		$change_picture = (int)get_optional_param('picture', 1);
-		$set_url = (int)get_optional_param('url', 1);
+		$change_picture = (int)get_optional_param('picture', 0);
+		
+		$picture_dir = NULL;
+		if ($change_picture)
+		{
+			$picture_dir = '../../' . ADDRESS_PICS_DIR;
+		}
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM addresses WHERE id = ?', $address_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
-		$warning = load_map_info($address_id, $set_url, $change_picture);
+		$warning = load_map_info($address_id, $picture_dir);
 		Db::commit();
 		
 		if ($warning != NULL)

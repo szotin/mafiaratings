@@ -2,10 +2,33 @@
 
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/email.php';
-require_once __DIR__ . '/google_geo_key.php';
+require_once __DIR__ . '/geo.php';
 
 define('UNDEFINED_CITY', -1);
 define('ALL_CITIES', 0);
+
+function get_city_coordinates($city_name, $country_name)
+{
+	try
+	{
+		$coord = get_address_coordinates($city_name . ', ' . $country_name);
+	}
+	catch (Throwable $ex)
+	{
+		try
+		{
+			$coord = get_address_coordinates($country_name);
+		}
+		catch (Throwable $ex1)
+		{
+			// Vancouver, Canada
+			$coord = new stdClass();
+			$coord->lat = 49.2827291;
+			$coord->lng = -123.1207375;
+		}
+	}
+	return $coord;
+}
 
 function retrieve_city_id($city, $country_id, $timezone = NULL)
 {
@@ -30,11 +53,14 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 	}
 	else
 	{
+		list ($country_name) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0');
+		$coord = get_city_coordinates($city, $country_name);
+		
 		Db::exec(get_label('name'), 'INSERT INTO names (langs, name) VALUES (?, ?)', DB_ALL_LANGS, $city);
 		list ($name_id) = Db::record(get_label('name'), 'SELECT LAST_INSERT_ID()');
 		Db::exec(get_label('city'),
-			'INSERT INTO cities (country_id, name_id, flags, timezone) VALUES (?, ?, ' . CITY_FLAG_NOT_CONFIRMED . ', ?)',
-			$country_id, $name_id, $timezone);
+			'INSERT INTO cities (country_id, name_id, flags, timezone, lat, lon) VALUES (?, ?, ' . CITY_FLAG_NOT_CONFIRMED . ', ?, ?, ?)',
+			$country_id, $name_id, $timezone, $coord->lat, $coord->lng);
 		list($city_id) = Db::record(get_label('city'), 'SELECT LAST_INSERT_ID()');
 		Db::exec(get_label('city'), 'INSERT INTO city_names (city_id, name) VALUES (?, ?)', $city_id, $city);
 		
@@ -42,7 +68,21 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 		$log_details->name = $city;
 		$log_details->timezone = $timezone;
 		$log_details->flags = CITY_FLAG_NOT_CONFIRMED;
+		$log_details->lat = $coord->lat;
+		$log_details->lon = $coord->lng;
 		db_log(LOG_OBJECT_CITY, 'created', $log_details, $city_id);
+		
+		$club_name = NULL;
+		if ($_profile && $_profile->user_club_id != NULL && isset($_profile->clubs[$_profile->user_club_id]))
+		{
+			$club_name = $_profile->clubs[$_profile->user_club_id]->name;
+		}
+
+		$user_name = 'new user';
+		if ($_profile)
+		{
+			$user_name = $_profile->user_name;
+		}
 		
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.email'.
@@ -52,15 +92,10 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 		while ($row = $query->next())
 		{
 			list($admin_id, $admin_name, $admin_email) = $row;
-			$club_name = NULL;
-			if ($_profile->user_club_id != NULL && isset($_profile->clubs[$_profile->user_club_id]))
-			{
-				$club_name = $_profile->clubs[$_profile->user_club_id]->name;
-			}
 			$body =
 				'<p>Hi, ' . $admin_name .
-				'!</p><p>' . $_profile->user_name;
-			if (!is_null($club_name))
+				'!</p><p>' . $user_name;
+			if ($club_name)
 			{
 				$body .=	' (' . $club_name . ')';
 			}
@@ -69,7 +104,7 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 				'</a>.</p><p>Please confirm!</p>';
 			$text_body =
 				'Hi, ' . $admin_name .
-				"!\r\n\r\n" . $_profile->user_name .
+				"!\r\n\r\n" . $user_name .
 				' created new city ' . $city . 
 				' (' . get_server_url() . 
 				'/cities.php).\r\nPlease confirm!\r\n';
@@ -170,25 +205,6 @@ function show_city_buttons($id, $name, $flags)
 		echo '<button class="icon" onclick="mr.deleteCity(' . $id . ')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
 		echo '<button class="icon" onclick="mr.editCity(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
 	}
-}
-
-// Gets distance between two cities in meters
-function get_distance($city_name1, $city_name2)
-{
-    $city_name1 = urlencode($city_name1);
-    $city_name2 = urlencode($city_name2);
-    $apiUrl = 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=' . $city_name1 . '&destinations=' . $city_name2 . '&key=' . GOOGLE_API_KEY;
-    $response = file_get_contents($apiUrl);
-    $data = json_decode($response);
-    if ($data->status != 'OK')
-	{
-		if (isset($data->error_message))
-		{
-			throw new Exc($data->error_message);
-		}
-		throw new Exc($data->status);
-    } 
-	return $data->rows[0]->elements[0]->distance->value;
 }
 
 ?>

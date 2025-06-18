@@ -31,8 +31,7 @@ try
 			$address_id);
 	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 
-	echo '<p><input type="checkbox" id="form-picture" checked> ' . get_label('change address picture to the map image.') . '</p>';
-	echo '<p><input type="checkbox" id="form-url" checked> ' . get_label('add google maps link to the address.') . '</p>';
+	echo '<p><input type="checkbox" id="form-picture"> ' . get_label('change address picture to the map image.') . '</p>';
 ?>	
 	<script>
 	function commit(onSuccess)
@@ -42,7 +41,6 @@ try
 			op: "google_map"
 			, address_id: <?php echo $address_id; ?>
 			, picture: $('#form-picture').attr('checked') ? 1 : 0
-			, url: $('#form-url').attr('checked') ? 1 : 0
 		};
 		json.post("api/ops/address.php", params, onSuccess);
 	}

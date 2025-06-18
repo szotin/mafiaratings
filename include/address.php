@@ -4,7 +4,7 @@ require_once __DIR__ . '/page_base.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/club.php';
 require_once __DIR__ . '/image.php';
-require_once __DIR__ . '/google_geo_key.php';
+require_once __DIR__ . '/geo.php';
 
 function addr_label($addr, $addr_city, $addr_country)
 {
@@ -15,109 +15,51 @@ function addr_label($addr, $addr_city, $addr_country)
 	return $addr . ', ' . $addr_city . ', ' . $addr_country;
 }
 
-function load_map_info($addr_id, $set_url = true, $set_image = true)
+function load_map_info($addr_id, $picture_dir = NULL)
 {
-	list($address, $club_id, $flags, $city_id, $city_name, $country_name) = Db::record(
+	list($address, $club_id, $old_flags, $old_map_url, $old_lat, $old_lon, $city_id, $city_name, $country_name, $city_lat, $city_lon) = Db::record(
 		get_label('address'), 
-		'SELECT a.address, a.club_id, a.flags, a.city_id, ni.name, no.name FROM addresses a' . 
+		'SELECT a.address, a.club_id, a.flags, a.map_url, a.lat, a.lon, a.city_id, ni.name, no.name, i.lat, i.lon FROM addresses a' . 
 		' JOIN cities i ON i.id = a.city_id' .
 		' JOIN countries o ON o.id = i.country_id' . 
 		' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . LANG_ENGLISH . ') <> 0 ' .
 		' JOIN names no ON no.id = o.name_id AND (no.langs & ' . LANG_ENGLISH . ') <> 0 ' .
 		' WHERE a.id = ?', 
 		$addr_id);
-	$geo_address = str_replace(' ', '+', $address . ',' . $city_name . ',' . $country_name);
-	//echo $geo_address . '<br>';
-	$geo_address = urlencode($geo_address);
+	$address = str_replace(' ', '+', $address . ',' . $city_name . ',' . $country_name);
+	//echo $address . '<br>';
 	
-	$url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . $geo_address . '&sensor=false&key=' . GOOGLE_API_KEY;
-	// echo $url . '<br>';
-	
-	$json = file_get_contents($url);
-	if ($json === FALSE)
+	try
 	{
-		return get_label('Bad google maps responce');
+		$coord = get_address_coordinates($address);
 	}
-//	echo '<pre>' . $json . '</pre><br>';
-
-	$values = json_decode($json, true);
-	if ($values == NULL)
+	catch (Throwable $ex)
 	{
-		return get_label('Bad google maps responce');
+		$coord = new stdClass();
+		$coord->lat = $city_lat;
+		$coord->lng = $city_lon;
 	}
+	$map_url = get_address_url($address, $coord);
 	
-/*	echo '<pre>';
-	var_dump($values);
-	echo '</pre>';*/
-	
-	if (!isset($values['status']) || $values['status'] != 'OK')
+	$flags = $old_flags;
+	if (!is_null($picture_dir))
 	{
-		return get_label('Google maps failed to find the address');
-	}
-
-	if (!isset($values['results']))
-	{
-		return get_label('Google maps failed to find the address');
-	}
-	$results = $values['results'];
-	
-	if (!isset($results[0]))
-	{
-		return get_label('Google maps failed to find the address');
-	}
-	$result = $results[0];
-	
-	if (!isset($result['geometry']))
-	{
-		return get_label('Google maps failed to find the address');
-	}
-	$geometry = $result['geometry'];
-	
-	if (!isset($geometry['location']))
-	{
-		return get_label('Google maps failed to find the address');
-	}
-	$location = $geometry['location'];
-	
-	if (!isset($location['lat']) || !isset($location['lng']))
-	{
-		return get_label('Google maps failed to find the address');
-	}
-	$lat = $location['lat'];
-	$lng = $location['lng'];
-//	echo $lat . ', ' . $lng . '<br>';
-
-	if ($set_url)
-	{
-		$google_url = 'http://maps.google.com/maps?q=' . $geo_address . '&hl=en&sll=' . $lat . ',' . $lng . '&t=m&z=13';
-		Db::exec(get_label('address'), 'UPDATE addresses SET map_url = ? WHERE id = ?', $google_url, $addr_id);
-		if (Db::affected_rows() > 0)
-		{
-			$log_details = new stdClass();
-			$log_details->map_url = $google_url;
-			db_log(LOG_OBJECT_ADDRESS, 'generated', $log_details, $addr_id, $club_id);
-		}
-	}
-	
-	if ($set_image)
-	{
-		$image_url = 'https://maps.googleapis.com/maps/api/staticmap?center=' . $geo_address . '&zoom=12&size=' . TNAIL_WIDTH . 'x' . TNAIL_HEIGHT . '&maptype=roadmap&markers=color:blue%7Clabel:S%7C' . $lat . ',' . $lng . '&sensor=false&format=PNG&key=' . GOOGLE_API_KEY;
-		//echo '<a href="' . $google_url . '" target="_blank"><img src="' . $image_url . '"></a>';
-	
+		$image_url = get_address_image_url($address, TNAIL_WIDTH, TNAIL_HEIGHT, $coord);
 		$image = file_get_contents($image_url);
 		if ($image === false)
 		{
 			return get_label('Failed to get map image from google maps');
 		}
-		
-		$dir = '../../' . ADDRESS_PICS_DIR; // this function is called from api/ops only. Make it a param if it is not so.
-		if (file_put_contents($dir . $addr_id . '.png', $image) === false)
+			
+		//	'../../'
+		// $dir = $root_dir . ADDRESS_PICS_DIR; // this function is called from api/ops only. Make it a param if it is not so.
+		if (file_put_contents($picture_dir . $addr_id . '.png', $image) === false)
 		{
 			return get_label('Failed to get map image from google maps');
 		}
-		
-		build_pic_tnail($dir, $addr_id);
-		
+			
+		build_pic_tnail($picture_dir, $addr_id);
+			
 		$icon_version = (($flags & ADDRESS_ICON_MASK) >> ADDRESS_ICON_MASK_OFFSET) + 1;
 		if ($icon_version > ADDRESS_ICON_MAX_VERSION)
 		{
@@ -125,14 +67,29 @@ function load_map_info($addr_id, $set_url = true, $set_image = true)
 		}
 		$flags = ($flags & ~ADDRESS_ICON_MASK) + ($icon_version << ADDRESS_ICON_MASK_OFFSET);
 		$flags |= ADDRESS_FLAG_GENERATED;
-		
-		Db::exec(get_label('address'), 'UPDATE addresses SET flags = ? WHERE id = ?', $flags, $addr_id);
-		if (Db::affected_rows() > 0)
+	}
+			
+	Db::exec(get_label('address'), 'UPDATE addresses SET map_url = ?, flags = ?, lat = ?, lon = ? WHERE id = ?', $map_url, $flags, $coord->lat, $coord->lng, $addr_id);
+	if (Db::affected_rows() > 0)
+	{
+		$log_details = new stdClass();
+		if ($map_url != $old_map_url)
 		{
-			$log_details = new stdClass(); 
-			$log_details->flags = $flags;
-			db_log(LOG_OBJECT_ADDRESS, 'generated', $log_details, $addr_id, $club_id);
+			$log_details->map_url = $map_url;
 		}
+		if ($flags != $old_flags)
+		{
+			$log_details->flags = $flags;
+		}
+		if (abs($old_lat - $coord->lat) > 0.001)
+		{
+			$log_details->lat = $coord->lat;
+		}
+		if (abs($old_lon - $coord->lng) > 0.001)
+		{
+			$log_details->lon = $coord->lng;
+		}
+		db_log(LOG_OBJECT_ADDRESS, 'generated', $log_details, $addr_id, $club_id);
 	}
 	return NULL;
 }

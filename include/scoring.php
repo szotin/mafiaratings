@@ -1606,11 +1606,12 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		' COUNT(g.id), COUNT(DISTINCT g.event_id),' . 
 		' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)),' . 
 		' SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)),' . 
-		' tu.flags, cu.flags' .
+		' tu.flags, cu.flags, ct.lat, ct.lon' .
 			' FROM players p' . 
 			' JOIN games g ON g.id = p.game_id' . 
 			' JOIN events e ON e.id = g.event_id' . 
-			' JOIN users u ON u.id = p.user_id' . 
+			' JOIN users u ON u.id = p.user_id' .
+			' JOIN cities ct ON ct.id = u.city_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
 			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
@@ -1635,6 +1636,8 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$player->normalizer = $normalizer;
 		$player->tournament_user_flags = (int)$row[12];
 		$player->club_user_flags = (int)$row[13];
+		$player->lat = (double)$row[14];
+		$player->lon = (double)$row[15];
 		
 		$max_games_played = max($max_games_played, $player->games_count);
 		$max_rounds_played = max($max_rounds_played, $player->events_count);

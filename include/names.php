@@ -342,6 +342,18 @@ class Names
 		return $str;
 	}
 	
+	function get_name($lang)
+	{
+		for ($i = 0; $i < count($this->names); ++$i)
+		{
+			if ($this->names[$i]->langs & $lang)
+			{
+				return $this->names[$i]->name;
+			}
+		}
+		return '';
+	}
+	
 	static function show_control($names = NULL, $control_id = 'form-name', $var_name = 'nameControl')
 	{
 		echo '<ul id="' . $control_id . '-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';

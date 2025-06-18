@@ -37,6 +37,12 @@ function retrieve_country_id($country)
 		$log_details->flags = COUNTRY_FLAG_NOT_CONFIRMED;
 		db_log(LOG_OBJECT_COUNTRY, 'created', $log_details, $country_id);
 		
+		$user_name = 'new user';
+		if ($_profile != NULL)
+		{
+			$user_name = $_profile->user_name;
+		}
+		
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.email'.
 			' FROM users u'.
@@ -47,12 +53,12 @@ function retrieve_country_id($country)
 			list($admin_id, $admin_name, $admin_email) = $row;
 			$body =
 				'<p>Hi, ' . $admin_name .
-				'!</p><p>' . $_profile->user_name .
+				'!</p><p>' . $user_name .
 				' created new country <a href="' . get_server_url() . '/countries.php">' . $country .
 				'</a>.</p><p>Please confirm!</p>';
 			$text_body =
 				'Hi, ' . $admin_name .
-				'!\r\n\r\n' . $_profile->user_name .
+				'!\r\n\r\n' . $user_name .
 				' created new country ' . $country . 
 				' (' . get_server_url() . 
 				'/countries.php).\r\n\r\nPlease confirm!\r\n';

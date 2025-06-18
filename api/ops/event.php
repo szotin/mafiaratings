@@ -66,7 +66,7 @@ class ApiPage extends OpsApiPageBase
 				$log_details->city_id = $city_id;
 				db_log(LOG_OBJECT_ADDRESS, 'created', $log_details, $address_id, $club->id);
 		
-				$warning = load_map_info($address_id);
+				$warning = load_map_info($address_id, '../../' . ADDRESS_PICS_DIR);
 				if ($warning != NULL)
 				{
 					echo '<p>' . $warning . '</p>';

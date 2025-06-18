@@ -25,6 +25,7 @@ class ApiPage extends OpsApiPageBase
 		if (isset($_REQUEST['country_id']))
 		{
 			$country_id = (int)$_REQUEST['country_id'];
+			list ($country) = Db::record(get_label('country'), 'SELECT n.name FROM countries c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0');
 		}
 		if ($country_id <= 0)
 		{
@@ -57,11 +58,12 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please enter [0].', get_label('city name')));
 		}
 		
+		$coord = get_city_coordinates($names->get_name(LANG_ENGLISH), $country);
 		Db::exec(
 			get_label('city'), 
-			'INSERT INTO cities (country_id, name_id, timezone, area_id, flags) ' .
-				'VALUES (?, ?, ?, ?, ?)',
-			$country_id, $name_id, $timezone, $area_id, $flags);
+			'INSERT INTO cities (country_id, name_id, timezone, area_id, flags, lat, lon) ' .
+				'VALUES (?, ?, ?, ?, ?, ?, ?)',
+			$country_id, $name_id, $timezone, $area_id, $flags, $coord->lat, $coord->lng);
 		list ($city_id) = Db::record(get_label('city'), 'SELECT LAST_INSERT_ID()');
 		if ($area_id == NULL)
 		{
@@ -80,6 +82,8 @@ class ApiPage extends OpsApiPageBase
 		$log_details->area_id = $area_id;
 		$log_details->timezone = $timezone;
 		$log_details->flags = $flags;
+		$log_details->lat = $coord->lat;
+		$log_details->lon = $coord->lng;
 		db_log(LOG_OBJECT_CITY, 'created', $log_details, $city_id);
 			
 		Db::commit();
@@ -165,8 +169,10 @@ class ApiPage extends OpsApiPageBase
 			$country_id = retrieve_country_id($country);
 		}
 		
+		$coord = get_city_coordinates($names->get_name(LANG_ENGLISH), $country);
+		
 		$op = 'changed';
-		$query = new DbQuery('UPDATE cities SET country_id = ?, name_id = ?, area_id = ?, timezone = ?', $country_id, $name_id, $area_id, $timezone);
+		$query = new DbQuery('UPDATE cities SET country_id = ?, name_id = ?, area_id = ?, timezone = ?, lat = ?, lon = ?', $country_id, $name_id, $area_id, $timezone, $coord->lat, $coord->lng);
 		if ($confirm)
 		{
 			$query->add(', flags = (flags & ~' . CITY_FLAG_NOT_CONFIRMED . ')');
@@ -194,6 +200,8 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->timezone = $timezone;
 			}
+			$log_details->lat = $coord->lat;
+			$log_details->lon = $coord->lng;
 			db_log(LOG_OBJECT_CITY, $op, $log_details, $city_id);
 		}
 		Db::commit();
