@@ -91,16 +91,21 @@ class Page extends PageBase
 		{
 			$this->id = (int)$_REQUEST['id'];
 		}
+		
+		$this->url_params = '';
+		$this->show_all = '';
+		$this->on_delete = '';
+		
 		if ($this->id <= 0)
 		{
-			if (!isset($_REQUEST['event_id']) || !isset($_REQUEST['table']) || !isset($_REQUEST['number']))
+			if (!isset($_REQUEST['event_id']) || !isset($_REQUEST['table_num']) || !isset($_REQUEST['game_num']))
 			{
 				throw new FatalExc(get_label('Unknown [0]', get_label('game')));
 			}
 			
 			$this->event_id = (int)$_REQUEST['event_id'];
-			$this->table_num = (int)$_REQUEST['table'];
-			$this->game_num = (int)$_REQUEST['number'];
+			$this->table_num = (int)$_REQUEST['table_num'];
+			$this->game_num = (int)$_REQUEST['game_num'];
 			
 			$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND table_num = ? AND game_num = ?', $this->event_id, $this->table_num, $this->game_num);
 			if ($row = $query->next())
@@ -130,7 +135,6 @@ class Page extends PageBase
 				$feature_flags = GAME_FEATURE_MASK_ALL;
 				$this->video_id = NULL;
 				$this->is_canceled = false;
-				$this->has_log = false;
 				$this->civ_odds = -1; // for the future calculate it when roles are shown
 			}
 		}
@@ -141,13 +145,13 @@ class Page extends PageBase
 				$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->round_num, 
 				$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
 				$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
-				$this->civ_odds, $this->video_id, $this->is_canceled, $json, $this->game_num, $this->table_num, $feature_flags, $this->has_log) =
+				$this->civ_odds, $this->video_id, $this->is_canceled, $json, $this->game_num, $this->table_num, $feature_flags) =
 			Db::record(
 				get_label('game'),
 				'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,' .
 				' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
 				' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
-				' g.civ_odds, g.video_id, g.is_canceled, g.json, g.game_num, g.table_num, g.feature_flags, LENGTH(g.log)' .
+				' g.civ_odds, g.video_id, g.is_canceled, g.json, g.game_num, g.table_num, g.feature_flags' .
 					' FROM games g' .
 					' JOIN events e ON e.id = g.event_id' .
 					' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
@@ -169,15 +173,10 @@ class Page extends PageBase
 		}
 			
 		$this->is_editor = is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->user_id, $this->club_id, $this->event_id, $this->tournament_id);
-		$this->show_all = $this->is_editor && isset($_REQUEST['show_all']);
-		if ($this->show_all)
+		if ($this->is_editor && isset($_REQUEST['show_all']))
 		{
 			$this->show_all = '&show_all';
 			$this->tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
-		}
-		else
-		{
-			$this->show_all = '';
 		}
 		
 		$this->hide_bonus = false;
@@ -377,6 +376,7 @@ class Page extends PageBase
 			}
 			$this->on_delete = 'goTo("' . $back_url . '");';
 		}
+		
 	}
 	
 	private function show_bonus($bonus, $comment)
@@ -554,10 +554,6 @@ class Page extends PageBase
 					else
 					{
 						echo '<button class="icon" onclick="mr.deleteVideo(' . $this->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $this->id) . '\')" title="' . get_label('Remove game [0] video', $this->id) . '"><img src="images/film-delete.png" border="0"></button>';
-					}
-					if ($_profile->is_admin() && $this->has_log)
-					{
-						echo '<button class="icon" onclick="mr.restoreGameFromLog(' . $this->id . ')" title="' . get_label('Restore the game [0] from log', $this->id) . '"><img src="images/bug.png" border="0"></button>';
 					}
 				}
 			}

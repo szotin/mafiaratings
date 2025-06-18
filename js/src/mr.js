@@ -1123,14 +1123,6 @@ var mr = new function()
 		}
 	}
 	
-	this.restoreGameFromLog = function(gameId)
-	{
-		dlg.yesNo('Are you sure?', null, null, function()
-		{
-			json.post("api/ops/game.php", { op: 'restore_from_log', game_id: gameId }, refr);
-		});
-	}
-	
 	//--------------------------------------------------------------------------------------
 	// game objections
 	//--------------------------------------------------------------------------------------

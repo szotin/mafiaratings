@@ -1064,37 +1064,6 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
-	// restore_from_log
-	//-------------------------------------------------------------------------------------------------------
-	function restore_from_log_op()
-	{
-		global $_profile, $_lang;
-		
-		check_permissions(PERMISSION_ADMIN);
-		
-		$game_id = (int)get_required_param('game_id');
-		
-		Db::begin();
-		list($json_str) = Db::record(get_label('game'), 'SELECT log FROM games WHERE id = ?', $game_id);
-		if (is_null($json_str))
-		{
-			throw new Exc('Game can not be restored - it has no log');
-		}
-		$gs = json_decode($json_str);
-		$game = new Game($gs, GAME_FEATURE_MASK_MAFIARATINGS);
-		$game->update();
-		Db::commit();
-	}
-	
-	// function restore_from_log_op_help()
-	// {
-		// $help = new ApiHelp(PERMISSION_ADMIN, 'Restore the game from log.');
-		// $help->request_param('game_id', 'Game id.');
-		// return $help;
-	// }
-	
-	
-	//-------------------------------------------------------------------------------------------------------
 	// settings
 	//-------------------------------------------------------------------------------------------------------
 	function settings_op()
