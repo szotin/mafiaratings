@@ -245,7 +245,7 @@ class Page extends UserPageBase
 		$query = new DbQuery(
 			'SELECT p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
 				' JOIN games g ON g.id = p.game_id' .
-				' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0 GROUP BY p.role ORDER BY p.role',
+				' WHERE p.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 GROUP BY p.role ORDER BY p.role',
 			$this->id);
 		while ($row = $query->next())
 		{

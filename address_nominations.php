@@ -25,7 +25,7 @@ class Page extends AddressPageBase
 		list($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 		if (isset($_REQUEST['min']))
 		{
 			$this->min_games = $_REQUEST['min'];
@@ -146,11 +146,11 @@ class Page extends AddressPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
@@ -170,7 +170,7 @@ class Page extends AddressPageBase
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN events e ON g.event_id = e.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' WHERE e.address_id = ? AND g.is_canceled = FALSE AND g.result > 0',
+				' WHERE e.address_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0',
 			$this->id, $condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $min_games);
 		

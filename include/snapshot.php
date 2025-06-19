@@ -90,7 +90,7 @@ class Snapshot
 			$_lang = LANG_DEFAULT;
 		}
 		$this->top100 = array();
-		$query = new DbQuery('SELECT id FROM games WHERE end_time > ? AND result > 0 AND is_rating <> 0 AND is_canceled = 0 LIMIT 1', $this->time);
+		$query = new DbQuery('SELECT id FROM games WHERE end_time > ? AND (flags & '.(GAME_FLAG_RATING & GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' LIMIT 1', $this->time);
 		if ($query->next())
 		{
 			$query = new DbQuery(

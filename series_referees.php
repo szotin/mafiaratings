@@ -57,7 +57,7 @@ class Page extends SeriesPageBase
 		echo '</td></tr></table></p>';
 		
 		$subseries_csv = get_subseries_csv($this->id);
-		$condition = new SQL(' WHERE g.result > 0 AND st.series_id IN ('.$subseries_csv.')');
+		$condition = new SQL(' WHERE st.series_id IN ('.$subseries_csv.')');
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
 		{
@@ -80,19 +80,19 @@ class Page extends SeriesPageBase
 		}
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		if ($this->filter & FLAG_FILTER_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))

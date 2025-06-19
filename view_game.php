@@ -47,9 +47,6 @@ class Page extends PageBase
 		$state = '';
 		switch ($this->result)
 		{
-			case GAME_RESULT_PLAYING:
-				$state = get_label('Still playing.');
-				break;
 			case GAME_RESULT_TOWN:
 				$state = get_label('Town wins.');
 				break;
@@ -134,7 +131,7 @@ class Page extends PageBase
 					
 				$feature_flags = GAME_FEATURE_MASK_ALL;
 				$this->video_id = NULL;
-				$this->is_canceled = false;
+				$this->flags = false;
 				$this->civ_odds = -1; // for the future calculate it when roles are shown
 			}
 		}
@@ -145,13 +142,13 @@ class Page extends PageBase
 				$this->user_id, $this->event_id, $this->event_name, $this->event_flags, $this->timezone, $this->event_time, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->round_num, 
 				$this->club_id, $this->club_name, $this->club_flags, $this->address_id, $this->address, $this->address_flags, 
 				$this->moder_id, $this->moder_name, $this->moder_flags, $this->event_moder_nickname, $this->event_moder_flags, $this->tournament_moder_flags, $this->club_moder_flags,
-				$this->civ_odds, $this->video_id, $this->is_canceled, $json, $this->game_num, $this->table_num, $feature_flags) =
+				$this->civ_odds, $this->video_id, $this->flags, $json, $this->game_num, $this->table_num, $feature_flags) =
 			Db::record(
 				get_label('game'),
 				'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,' .
 				' c.id, c.name, c.flags, a.id, a.name, a.flags,' .
 				' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
-				' g.civ_odds, g.video_id, g.is_canceled, g.json, g.game_num, g.table_num, g.feature_flags' .
+				' g.civ_odds, g.video_id, g.flags, g.json, g.game_num, g.table_num, g.feature_flags' .
 					' FROM games g' .
 					' JOIN events e ON e.id = g.event_id' .
 					' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
@@ -228,7 +225,7 @@ class Page extends PageBase
 		$this->lang = get_lang_by_code($this->game->data->language);
 		$this->is_rating = isset($this->game->data->rating) ? $this->game->data->rating : true;
 		
-		$this->result = GAME_RESULT_PLAYING;
+		$this->result = 0;
 		if (isset($this->game->data->winner))
 		{
 			if ($this->game->data->winner == 'maf')
@@ -245,7 +242,7 @@ class Page extends PageBase
 			}
 		}
 		
-		if ($this->is_canceled)
+		if ($this->flags & GAME_FLAG_CANCELED)
 		{
 			$this->_title = '<s>' . $this->generate_title() . '</s> <big><span style="color:blue;">' . get_label('Game canceled') . '.</span></big>';
 		}
@@ -345,14 +342,14 @@ class Page extends PageBase
 		
 		$this->url_base .= $separator . 'id=';
 		$this->prev_game_id = $this->next_game_id = 0;
-		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id < ? AND g.start_time <= ? AND g.result > 0', $this->id, $this->game->data->startTime, $condition);
+		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id < ? AND g.start_time <= ?', $this->id, $this->game->data->startTime, $condition);
 		$query->add(' ORDER BY g.start_time DESC, g.id DESC');
 		if ($row = $query->next())
 		{
 			list($this->prev_game_id) = $row;
 		}
 		
-		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id > ? AND g.start_time >= ? AND g.result > 0', $this->id, $this->game->data->startTime, $condition);
+		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id > ? AND g.start_time >= ?', $this->id, $this->game->data->startTime, $condition);
 		$query->add(' ORDER BY g.start_time, g.id');
 		if ($row = $query->next())
 		{

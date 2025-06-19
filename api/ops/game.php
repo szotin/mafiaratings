@@ -180,7 +180,7 @@ class ApiPage extends OpsApiPageBase
 		$game_id = (int)get_required_param('game_id');
 		
 		Db::begin();
-		list($club_id, $user_id, $event_id, $tournament_id, $end_time, $is_rating) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id, end_time, is_rating FROM games WHERE id = ?', $game_id);
+		list($club_id, $user_id, $event_id, $tournament_id, $end_time, $flags) = Db::record(get_label('game'), 'SELECT club_id, user_id, event_id, tournament_id, end_time, flags FROM games WHERE id = ?', $game_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
 		$prev_game_id = NULL;
@@ -190,7 +190,7 @@ class ApiPage extends OpsApiPageBase
 			list($prev_game_id) = $row;
 		}
 		
-		if ($is_rating)
+		if ($flags & GAME_FLAG_RATING)
 		{
 			Game::rebuild_ratings($prev_game_id, $end_time);
 		}

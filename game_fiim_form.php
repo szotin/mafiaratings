@@ -17,8 +17,8 @@ try
 	
 	if ($game_id > 0)
 	{
-		list ($tournament_name, $event_name, $json, $is_canceled, $timezone, $moder_name, $feature_flags) = Db::record(get_label('game'), 
-			'SELECT t.name, e.name, g.json, g.is_canceled, c.timezone, nu.name, g.feature_flags FROM games g' .
+		list ($tournament_name, $event_name, $json, $timezone, $moder_name, $feature_flags) = Db::record(get_label('game'), 
+			'SELECT t.name, e.name, g.json, c.timezone, nu.name, g.feature_flags FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
 			' JOIN addresses a ON a.id = e.address_id' .
 			' JOIN cities c ON c.id = a.city_id' .

@@ -299,16 +299,16 @@ class ApiPage extends OpsApiPageBase
 	function stats_op()
 	{
 		$last_id = 0;
-		$query = new DbQuery('SELECT id, json, feature_flags, end_time, is_canceled FROM games WHERE result > 0');
+		$query = new DbQuery('SELECT id, json, feature_flags, end_time FROM games');
 		if (isset($_REQUEST['last_id']))
 		{
 			$last_id = $_REQUEST['last_id'];
 			list($last_end) = Db::record(get_label('game'), 'SELECT end_time FROM games WHERE id = ?', $last_id);
-			$query->add(' AND (end_time > ? OR (end_time = ? AND id > ?))', $last_end, $last_end, $last_id);
+			$query->add(' WHERE (end_time > ? OR (end_time = ? AND id > ?))', $last_end, $last_end, $last_id);
 		}
 		else
 		{
-			list ($count) = Db::record('games', 'SELECT count(*) FROM games WHERE result > 0');
+			list ($count) = Db::record('games', 'SELECT count(*) FROM games');
 			$this->response['count'] = $count;
 			lock_site(true);
 		}
@@ -322,7 +322,7 @@ class ApiPage extends OpsApiPageBase
 		
 		foreach ($games as $row)
 		{
-			list($id, $json, $features, $end_time, $is_canceled) = $row;
+			list($id, $json, $features, $end_time) = $row;
 			$last_id = $id;
 			++$c;
 			try
@@ -391,7 +391,7 @@ class ApiPage extends OpsApiPageBase
 		$game_id = NULL;
 		if ($days > 0)
 		{
-			list($game_id, $end_time) = Db::record(get_label('games'), 'SELECT id, end_time FROM games WHERE result > 0 AND is_canceled = 0 AND end_time > ? ORDER BY end_time, id LIMIT 1', $end_time);
+			list($game_id, $end_time) = Db::record(get_label('games'), 'SELECT id, end_time FROM games WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND end_time > ? ORDER BY end_time, id LIMIT 1', $end_time);
 		}
 		Game::rebuild_ratings($game_id, $end_time);
 	}
@@ -454,25 +454,6 @@ class ApiPage extends OpsApiPageBase
 	{
 		return PERMISSION_ADMIN;
 	}
-	
-	//-------------------------------------------------------------------------------------------------------
-	// clean_games_cache
-	//-------------------------------------------------------------------------------------------------------
-	function clean_games_cache_op()
-	{
-		Db::exec(get_label('game'), 'DELETE FROM games WHERE result = 0 AND start_time = 0');
-	}
-	
-	// No help. We want to keep this API internal.
-	// function clean_games_cache_op_help()
-	// {
-	// }
-	
-	function clean_games_cache_op_permissions()
-	{
-		return PERMISSION_ADMIN;
-	}
-
 }
 
 // No version support. We want to keep this API internal.

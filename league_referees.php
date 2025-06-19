@@ -56,7 +56,7 @@ class Page extends LeaguePageBase
 		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' WHERE g.result > 0 AND s.league_id = ?', $this->id);
+		$condition = new SQL(' WHERE s.league_id = ?', $this->id);
 		$ccc_id = $this->ccc_filter->get_id();
 		switch($this->ccc_filter->get_type())
 		{
@@ -79,19 +79,19 @@ class Page extends LeaguePageBase
 		}
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		if ($this->filter & FLAG_FILTER_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))

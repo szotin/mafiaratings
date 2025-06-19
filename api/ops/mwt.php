@@ -702,7 +702,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$mwt_game = convert_game_to_mwt($game_id);
 		throw new Exc(formatted_json($mwt_game));
-		Db::exec(get_label('game'), 'UPDATE games SET is_fiim_exported = 1 WHERE id = ?', $game_id);
+		Db::exec(get_label('game'), 'UPDATE games SET flags = flags | '.GAME_FLAG_FIIM.' WHERE id = ?', $game_id);
 	}
 	
 	function export_game_op()
@@ -719,15 +719,15 @@ class ApiPage extends OpsApiPageBase
 		{
 			$tournament_id = (int)get_required_param('tournament_id');
 			
-			list ($total) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND table_num IS NOT NULL AND game_num IS NOT NULL', $tournament_id);
+			list ($total) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND (flags & '.GAME_FLAG_CANCELED.') = 0 AND (flags & '.GAME_FLAG_RATING.') <> 0 AND table_num IS NOT NULL AND game_num IS NOT NULL', $tournament_id);
 			$total = (int)$total;
 			
-			list ($progress) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND table_num IS NOT NULL AND game_num IS NOT NULL AND is_fiim_exported <> 0', $tournament_id);
+			list ($progress) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND (flags & '.GAME_FLAG_CANCELED.') = 0 AND (flags & '.GAME_FLAG_RATING.') <> 0 AND table_num IS NOT NULL AND game_num IS NOT NULL AND (flags & '.GAME_FLAG_FIIM.') <> 0', $tournament_id);
 			$progress = (int)$progress;
 			
 			if ($progress < $total)
 			{
-				list ($game_id) = Db::record(get_label('game'), 'SELECT id FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND is_fiim_exported = 0 LIMIT 1', $tournament_id);
+				list ($game_id) = Db::record(get_label('game'), 'SELECT id FROM games WHERE tournament_id = ? AND (flags & '.GAME_FLAG_CANCELED.') = 0 AND (flags & '.GAME_FLAG_RATING.') <> 0 AND (flags & '.GAME_FLAG_FIIM.') = 0 LIMIT 1', $tournament_id);
 				$this->export_game($game_id);
 				++$progress;
 			}

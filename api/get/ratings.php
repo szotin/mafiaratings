@@ -251,7 +251,7 @@ class ApiPage extends GetApiPageBase
 		}
 		else if ($address > 0)
 		{
-			$condition->add(' AND u.id IN (SELECT DISTINCT p1.user_id FROM players p1 JOIN games g1 ON p1.game_id = g1.id JOIN events e1 ON g1.event_id = e1.id WHERE e1.address_id = ? AND g1.is_canceled = FALSE AND g1.result > 0)', $address);
+			$condition->add(' AND u.id IN (SELECT DISTINCT p1.user_id FROM players p1 JOIN games g1 ON p1.game_id = g1.id JOIN events e1 ON g1.event_id = e1.id WHERE e1.address_id = ? AND (g1.flags & '.GAME_FLAG_CANCELED.') = 0)', $address);
 		}
 		else if ($city > 0)
 		{
@@ -346,9 +346,9 @@ class ApiPage extends GetApiPageBase
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
 				' JOIN players p ON p.user_id = u.id' .
-				' JOIN games g ON p.game_id = g.id AND g.is_canceled = FALSE AND g.result > 0', $condition); 
+				' JOIN games g ON p.game_id = g.id AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $condition); 
 			$query->add(' GROUP BY u.id ');
-			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id JOIN games g ON p.game_id = g.id AND g.is_canceled = FALSE AND g.result > 0', $condition);
+			$count_query = new DbQuery('SELECT count(DISTINCT u.id) FROM users u JOIN players p ON p.user_id = u.id JOIN games g ON p.game_id = g.id AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $condition);
 		}
 		else switch($in_role)
 		{

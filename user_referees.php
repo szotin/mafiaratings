@@ -77,19 +77,19 @@ class Page extends UserPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		if ($filter & FLAG_FILTER_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
@@ -101,7 +101,7 @@ class Page extends UserPageBase
 			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id, $condition);
+		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id = ?', $this->id, $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
@@ -109,7 +109,7 @@ class Page extends UserPageBase
 			' JOIN games g ON p.game_id = g.id' .
 			' JOIN users u ON g.moderator_id = u.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-			' WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0',
+			' WHERE p.user_id = ?',
 			$this->id, $condition);
 		$query->add(' GROUP BY u.id ORDER BY gcount DESC, rating DESC, gwon DESC, p.user_id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		

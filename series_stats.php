@@ -64,11 +64,11 @@ class Page extends SeriesPageBase
 		}
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
@@ -101,19 +101,17 @@ class Page extends SeriesPageBase
 			break;
 		}
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0', $condition);
 
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
 		$tie_count = 0;
-		$query = new DbQuery('SELECT g.result, count(*) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
+		$query = new DbQuery('SELECT g.result, count(*) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0', $condition);
 		$query->add(' GROUP BY result');
 		while ($row = $query->next())
 		{
 			switch ($row[0])
 			{
-				case GAME_RESULT_PLAYING:
-					break;
 				case GAME_RESULT_TOWN:
 					$civils_win_count = $row[1];
 					break;
@@ -136,10 +134,10 @@ class Page extends SeriesPageBase
 			echo '<tr><td>'.get_label('Town wins').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/$games_count, 1) . '%)</td></tr>';
 			echo '<tr><td>'.get_label('Ties').':</td><td>' . $tie_count . ' (' . number_format($tie_count*100.0/$games_count, 1) . '%)</td></tr>';
 
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0', $condition);
 			echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 			
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0', $condition);
 			echo '<tr><td>'.get_label('Referees').':</td><td>' . $counter . '</td></tr>';
 			
 			list ($a_game, $s_game, $l_game) = Db::record(
@@ -147,7 +145,7 @@ class Page extends SeriesPageBase
 				'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) ' .
 				'FROM games g ' .
 				'JOIN series_tournaments st ON st.tournament_id = g.tournament_id ' .
-				'WHERE g.is_canceled = FALSE AND g.result > 0 AND g.end_time > g.start_time + 900 AND g.end_time < g.start_time + 20000', 
+				'WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND g.end_time > g.start_time + 900 AND g.end_time < g.start_time + 20000', 
 				$condition);
 			echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';
@@ -157,7 +155,7 @@ class Page extends SeriesPageBase
 		
 		if ($games_count > 0)
 		{
-			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE g.is_canceled = FALSE AND g.result > 0', $condition);
+			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id JOIN series_tournaments st ON st.tournament_id = g.tournament_id WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0', $condition);
 			$query->add(' GROUP BY p.kill_type, p.role');
 			$killed = array();
 			while ($row = $query->next())

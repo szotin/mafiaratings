@@ -408,7 +408,7 @@ class Page extends TournamentPageBase
 		show_roles_select($roles, 'rolesChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' AND g.is_rating <> 0 AND g.is_canceled = FALSE AND g.tournament_id = ?', $this->id);
+		$condition = new SQL(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0 AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND g.tournament_id = ?', $this->id);
 		$stats = new PlayerStats($this->user_id, $roles, $condition);
 		$mafs_in_legacy = $stats->guess3maf * 3 + $stats->guess2maf * 2 + $stats->guess1maf;
 		

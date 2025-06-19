@@ -210,6 +210,14 @@ define('LOG_PAGE_SIZE', 100);
 define('DEFAULT_ROW_COUNT', 20);
 define('DEFAULT_COLUMN_COUNT', 5);
 
+// game flags
+//  1  - 0x0001 -      1 - rating game when set
+//  2  - 0x0002 -      2 - canceled
+//  3  - 0x0004 -      4 - exported from MWT site
+define('GAME_FLAG_RATING', 0x1);
+define('GAME_FLAG_CANCELED', 0x2);
+define('GAME_FLAG_FIIM', 0x4);
+
 // event flags
 //  1  - 0x0001 -      1 - event should not be shown in the event list before the end of the event
 //  2  - 0x0002 -      2 - event should not be shown in the event list after the end of the event
@@ -471,7 +479,6 @@ define('BROADCAST_STATUS_NOT_STARTED', 0);
 define('BROADCAST_STATUS_STARTED', 1);
 define('BROADCAST_STATUS_ENDED', 2);
 
-define('GAME_RESULT_PLAYING', 0);
 define('GAME_RESULT_TOWN', 1);
 define('GAME_RESULT_MAFIA', 2);
 define('GAME_RESULT_TIE', 3);

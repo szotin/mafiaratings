@@ -168,7 +168,7 @@ class ApiPage extends GetApiPageBase
 		
 		if ($user_id > 0)
 		{
-			$condition->add(' AND t.id IN (SELECT e.tournament_id FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE p.user_id = ? AND g.is_canceled = FALSE AND g.result > 0)', $user_id);
+			$condition->add(' AND t.id IN (SELECT e.tournament_id FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id WHERE p.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0)', $user_id);
 		}
 		
 		if ($langs > 0)

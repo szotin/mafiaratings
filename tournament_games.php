@@ -29,10 +29,6 @@ class Page extends TournamentPageBase
 		if (isset($_REQUEST['results']))
 		{
 			$result_filter = (int)$_REQUEST['results'];
-			if ($result_filter == 0 && !$is_manager)
-			{
-				$result_filter = -1;
-			}
 		}
 		
 		$filter = FLAG_FILTER_DEFAULT;
@@ -47,10 +43,6 @@ class Page extends TournamentPageBase
 		show_option(GAME_RESULT_TOWN, $result_filter, get_label('Town wins'));
 		show_option(GAME_RESULT_MAFIA, $result_filter, get_label('Mafia wins'));
 		show_option(GAME_RESULT_TIE, $result_filter, get_label('Ties'));
-		if ($is_manager)
-		{
-			show_option(GAME_RESULT_PLAYING, $result_filter, get_label('Unfinished games'));
-		}
 		echo '</select>';
 		echo '&emsp;&emsp;';
 		show_date_filter();
@@ -59,11 +51,7 @@ class Page extends TournamentPageBase
 		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(' WHERE g.tournament_id = ?', $this->id);
-		if ($result_filter < 0)
-		{
-			$condition->add(' AND g.result <> 0');
-		}
-		else
+		if ($result_filter > 0)
 		{
 			$condition->add(' AND g.result = ?', $result_filter);
 		}
@@ -78,19 +66,19 @@ class Page extends TournamentPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		if ($filter & FLAG_FILTER_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
@@ -123,7 +111,7 @@ class Page extends TournamentPageBase
 		}
 		echo '>&nbsp;</td><td width="100">'.get_label('Round').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, g.user_id, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled,' . 
+			'SELECT g.id, g.user_id, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags,' . 
 			' e.id, e.name, e.flags, a.id, a.name, a.flags, tu.flags, cu.flags' . 
 				' FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
@@ -140,11 +128,11 @@ class Page extends TournamentPageBase
 		while ($row = $query->next())
 		{
 			list (
-				$game_id, $game_user_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, 
+				$game_id, $game_user_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $flags, 
 				$event_id, $event_name, $event_flags, $address_id, $address_name, $address_flags, $tournament_moder_flags, $club_moder_flags) = $row;
 
 			echo '<tr align="center"';
-			if ($is_canceled || !$is_rating)
+			if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 			{
 				echo ' class="dark"';
 			}
@@ -172,7 +160,7 @@ class Page extends TournamentPageBase
 				echo '</td>';
 			}
 			
-			if ($is_canceled || !$is_rating)
+			if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 			{
 				echo '<td align="left" style="padding-left:12px;">';
 			}
@@ -194,16 +182,16 @@ class Page extends TournamentPageBase
 				echo '</td></tr></table>';
 			}
 			
-			if ($is_canceled)
+			if ($flags & GAME_FLAG_CANCELED)
 			{
 				echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
-				if (!$is_rating)
+				if (($flags & GAME_FLAG_RATING) == 0)
 				{
 					echo '<br>' . get_label('Non-rating');
 				}
 				echo '</b></td>';
 			}
-			else if (!$is_rating)
+			else if (($flags & GAME_FLAG_RATING) == 0)
 			{
 				echo '</td><td width="100" class="darker"><b>' . get_label('Non-rating') . '</b></td>';
 			}
@@ -222,8 +210,6 @@ class Page extends TournamentPageBase
 			echo '<td>';
 			switch ($game_result)
 			{
-				case GAME_RESULT_PLAYING:
-					break;
 				case GAME_RESULT_TOWN:
 					echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
 					break;

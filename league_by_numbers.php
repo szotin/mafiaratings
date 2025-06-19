@@ -187,15 +187,15 @@ class Page extends LeaguePageBase
 			$sort_type = (int)$_REQUEST['sort'];
 		}
 		
-		$condition = new SQL(' WHERE s.league_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
+		$condition = new SQL(' WHERE s.league_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 		$condition->add(get_roles_condition($this->roles));
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))

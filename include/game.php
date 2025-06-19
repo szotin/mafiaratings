@@ -2903,7 +2903,7 @@ class Game
 		{
 			throw new Exc(get_label('Game number is not set.'));
 		}
-		list($is_canceled, $is_rating) = Db::record(get_label('game'), 'SELECT is_canceled, is_rating FROM games WHERE id = ?', $data->id);
+		list($flags) = Db::record(get_label('game'), 'SELECT flags FROM games WHERE id = ?', $data->id);
 				
 		if (!isset($data->clubId))
 		{
@@ -2956,14 +2956,14 @@ class Game
 		}
 		
 		$rebuild_ratings = false;
-		if (!$is_canceled)
+		if (($flags & GAME_FLAG_CANCELED) == 0)
 		{
-			if ($is_data_rating || $is_rating)
+			if ($is_data_rating || ($flags & GAME_FLAG_RATING) != 0)
 			{
-				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND g1.is_rating <> 0 AND g1.is_canceled = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & '.GAME_FLAG_RATING.') <> 0 AND (g1.flags & '.GAME_FLAG_CANCELED.') = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
 				if ($games_after_count > 0)
 				{
-					if ($is_data_rating && $is_rating)
+					if ($is_data_rating && ($flags & GAME_FLAG_RATING) != 0)
 					{
 						$rebuild_ratings = $this->is_players_result_changed();
 					}
@@ -3012,12 +3012,12 @@ class Game
 		Db::exec(get_label('game'),
 			'UPDATE games SET json = ?, feature_flags = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
-				'rules = ?, is_rating = ?, is_fiim_exported = 0, table_num = ?, game_num = ? WHERE id = ?',
+				'rules = ?, flags = ?, table_num = ?, game_num = ? WHERE id = ?',
 			$json, $this->flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
 			$language, $data->startTime, $data->endTime, $game_result,
-			$data->rules, $is_data_rating, $table_num, $game_num, $data->id);
+			$data->rules, $is_data_rating ? GAME_FLAG_RATING : 0, $table_num, $game_num, $data->id);
 		
-		if (!$is_canceled)
+		if (($flags & GAME_FLAG_CANCELED) == 0)
 		{
 			$stats = new GamePlayersStats($this);
 			$stats->save();

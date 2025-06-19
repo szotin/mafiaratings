@@ -193,7 +193,7 @@ class Page extends AddressPageBase
 		$numbers = array();
 		$query = new DbQuery(
 			'SELECT p.number, COUNT(*) as games, SUM(p.won) as won, SUM(p.rating_earned) as rating, SUM(p.warns) as warnings, SUM(IF(p.checked_by_sheriff < 0, 0, 1)) as sheriff_check, SUM(IF(p.checked_by_don < 0, 0, 1)) as don_check, SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ', 1, 0)) as killed_first, SUM(IF(p.kill_type = ' . KILL_TYPE_NIGHT . ', 1, 0)) as killed_night' .
-			' FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
+			' FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND (g.flags & '.GAME_FLAG_RATING.') = 0', $this->id);
 		$query->add(get_roles_condition($roles));
 		if ($filter & FLAG_FILTER_TOURNAMENT)
 		{
@@ -205,11 +205,11 @@ class Page extends AddressPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$query->add(' AND g.is_rating <> 0');
+			$query->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$query->add(' AND g.is_rating = 0');
+			$query->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{

@@ -188,15 +188,15 @@ class Page extends SeriesPageBase
 		}
 		
 		$subseries_csv = get_subseries_csv($this->id);
-		$condition = new SQL(' WHERE st.series_id IN ('.$subseries_csv.') AND g.is_canceled = FALSE AND g.result > 0');
+		$condition = new SQL(' WHERE st.series_id IN ('.$subseries_csv.') AND (g.flags & '.GAME_FLAG_CANCELED.') = 0');
 		$condition->add(get_roles_condition($this->roles));
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))

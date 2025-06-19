@@ -48,7 +48,7 @@ class Page extends TournamentPageBase
 				$this->mwt_players = $tournament_misc->mwt_players;
 			}
 		}
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT COUNT(*) FROM games WHERE tournament_id = ? AND result > 0 AND is_canceled = FALSE AND is_rating <> 0', $this->id);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT COUNT(*) FROM games WHERE tournament_id = ? AND (flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $this->id);
 		
 		$this->view = -1;
 		if (isset($_REQUEST['view']))
@@ -313,16 +313,16 @@ class Page extends TournamentPageBase
 		echo '<div id="progress"></div>';
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr class="dark"><th width="80"></th><th width="40">'.get_label('Table').'</th><th width="40">'.get_label('Game').'</th><th width="32"></th><th></th></tr>';
-		$query = new DbQuery('SELECT id, table_num, game_num, is_fiim_exported FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0 AND result > 0 AND table_num IS NOT NULL AND game_num IS NOT NULL ORDER BY table_num, game_num, id', $this->id);
+		$query = new DbQuery('SELECT id, table_num, game_num, flags FROM games WHERE tournament_id = ? AND (flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' AND table_num IS NOT NULL AND game_num IS NOT NULL ORDER BY table_num, game_num, id', $this->id);
 		while ($row = $query->next())
 		{
-			list ($id, $table_num, $game_num, $is_exported) = $row;
+			list ($id, $table_num, $game_num, $flags) = $row;
 			echo '<tr align="center"><td><a href="view_game.php?id='.$id.'&bck=1">'.$id.'</td>';
 			echo '<td>'.$table_num.'</td>';
 			echo '<td>'.$game_num.'</td>';
 			echo '<td><button class="big_icon" onclick="exportGame('.$id.')"><img src="images/right.png" width="32"></button></td>';
 			echo '<td>';
-			if ($is_exported)
+			if ($flags & GAME_FLAG_FIIM)
 			{
 				echo '<b>'.get_label('exported').'</b>';
 			}
@@ -379,7 +379,7 @@ class Page extends TournamentPageBase
 		echo '<button ' . ($this->view == VIEW_MWT_ID ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MWT_ID . ',page:undefined})">' . get_label('MWT ID') . '</button>';
 		echo '<button ' . ($this->view == VIEW_SEATING ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_SEATING . ',page:undefined})"' . ($this->has_mwt ? '' : ' disabled') . '>' . get_label('Import seating') . '</button>';
 		echo '<button ' . ($this->view == VIEW_MAPPING ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MAPPING . ',page:undefined})"' . ($this->has_mwt && !is_null($this->mwt_players) ? '' : ' disabled') . '>' . get_label('Players mapping') . '</button>';
-		echo '<button ' . ($this->view == VIEW_GAMES ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_GAMES . ',page:undefined})"' . ($this->has_mwt && $this->games_count >= 0 ? '' : ' disabled') . '>' . get_label('Export games') . '</button>';
+		// echo '<button ' . ($this->view == VIEW_GAMES ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_GAMES . ',page:undefined})"' . ($this->has_mwt && $this->games_count >= 0 ? '' : ' disabled') . '>' . get_label('Export games') . '</button>';
 		echo '</div>';
 		
 		switch ($this->view)

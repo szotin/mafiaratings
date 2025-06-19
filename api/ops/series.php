@@ -262,7 +262,7 @@ class ApiPage extends OpsApiPageBase
 			$query = new DbQuery(
 				'SELECT g.id, g.end_time FROM games g'.
 				' JOIN series_tournaments t ON t.tournament_id = g.tournament_id'.
-				' WHERE t.series_id = ? AND t.stars > 1 AND g.is_canceled = 0 AND g.is_rating <> 0'.
+				' WHERE t.series_id = ? AND t.stars > 1 AND (g.flags & '.(GAME_FLAG_RATING | GAME_IS_CANCELED).') = '.GAME_FLAG_RATING.
 				' ORDER BY g.end_time, g.id'.
 				' LIMIT 1', $series_id);
 			if ($row = $query->next())

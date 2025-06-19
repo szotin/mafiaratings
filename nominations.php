@@ -79,11 +79,11 @@ class Page extends GeneralPageBase
 		}
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$this->condition->add(' AND g.is_rating <> 0');
+			$this->condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$this->condition->add(' AND g.is_rating = 0');
+			$this->condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
@@ -117,7 +117,7 @@ class Page extends GeneralPageBase
 			break;
 		}
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities ct ON ct.id = a.city_id WHERE g.is_canceled = FALSE AND g.result > 0 ', $this->condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id JOIN addresses a ON a.id = e.address_id JOIN cities ct ON ct.id = a.city_id WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0 ', $this->condition);
 		$this->condition->add(get_roles_condition($this->roles));
 		
 		if (isset($_REQUEST['min']))
@@ -194,7 +194,7 @@ class Page extends GeneralPageBase
 				' JOIN events e ON e.id = g.event_id'.
 				' JOIN addresses a ON a.id = e.address_id'.
 				' JOIN cities ct ON ct.id = a.city_id' .
-				' WHERE g.is_canceled = FALSE AND g.result > 0',
+				' WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0',
 			$this->condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $this->min_games);
 		

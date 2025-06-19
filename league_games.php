@@ -37,10 +37,6 @@ class Page extends LeaguePageBase
 		if (isset($_REQUEST['results']))
 		{
 			$this->result_filter = (int)$_REQUEST['results'];
-			if ($this->result_filter == 0 && !$this->is_admin)
-			{
-				$this->result_filter = -1;
-			}
 		}
 		
 		$this->flag_filter = FLAG_FILTER_DEFAULT;
@@ -58,11 +54,7 @@ class Page extends LeaguePageBase
 		$club_pic = new Picture(CLUB_PICTURE);
 		
 		$condition = new SQL(' WHERE s.league_id = ?', $this->id);
-		if ($this->result_filter < 0)
-		{
-			$condition->add(' AND g.result <> 0');
-		}
-		else
+		if ($this->result_filter > 0)
 		{
 			$condition->add(' AND g.result = ?', $this->result_filter);
 		}
@@ -77,19 +69,19 @@ class Page extends LeaguePageBase
 		}
 		if ($this->flag_filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($this->flag_filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		if ($this->flag_filter & FLAG_FILTER_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') <> 0');
 		}
 		if ($this->flag_filter & FLAG_FILTER_NO_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
@@ -111,10 +103,6 @@ class Page extends LeaguePageBase
 		show_option(GAME_RESULT_TOWN, $this->result_filter, get_label('Town wins'));
 		show_option(GAME_RESULT_MAFIA, $this->result_filter, get_label('Mafia wins'));
 		show_option(GAME_RESULT_TIE, $this->result_filter, get_label('Ties'));
-		if ($this->is_admin)
-		{
-			show_option(GAME_RESULT_PLAYING, $this->result_filter, get_label('Unfinished games'));
-		}
 		echo '</select>';
 		echo '&emsp;&emsp;';
 		show_date_filter();
@@ -159,7 +147,7 @@ class Page extends LeaguePageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.is_rating, g.is_canceled, a.id, a.name, a.flags FROM games g' .
+			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags, a.id, a.name, a.flags FROM games g' .
 				' JOIN series_tournaments st ON st.tournament_id = g.tournament_id' .
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
@@ -174,10 +162,10 @@ class Page extends LeaguePageBase
 		$num = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
-			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $is_rating, $is_canceled, $address_id, $address_name, $address_flags) = $row;
+			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $flags, $address_id, $address_name, $address_flags) = $row;
 			
 			echo '<tr align="center"';
-			if ($is_canceled || !$is_rating)
+			if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 			{
 				echo ' class="dark"';
 			}
@@ -205,7 +193,7 @@ class Page extends LeaguePageBase
 				echo '</td>';
 			}
 			
-			if ($is_canceled || !$is_rating)
+			if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 			{
 				echo '<td align="left" style="padding-left:12px;">';
 			}
@@ -230,16 +218,16 @@ class Page extends LeaguePageBase
 				echo '</td></tr></table>';
 			}
 			
-			if ($is_canceled)
+			if ($flags & GAME_FLAG_CANCELED)
 			{
 				echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
-				if (!$is_rating)
+				if (($flags & GAME_FLAG_RATING) == 0)
 				{
 					echo '<br>' . get_label('Non-rating');
 				}
 				echo '</b></td>';
 			}
-			else if (!$is_rating)
+			else if (($flags & GAME_FLAG_RATING) == 0)
 			{
 				echo '</td><td width="100" class="darker"><b>' . get_label('Non-rating') . '</b></td>';
 			}
@@ -264,8 +252,6 @@ class Page extends LeaguePageBase
 			echo '<td>';
 			switch ($game_result)
 			{
-				case GAME_RESULT_PLAYING:
-					break;
 				case GAME_RESULT_TOWN:
 					echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
 					break;

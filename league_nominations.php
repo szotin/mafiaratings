@@ -67,14 +67,14 @@ class Page extends LeaguePageBase
 		}
 		
 		date_default_timezone_set(get_timezone());
-		$this->condition = new SQL(' WHERE g.is_canceled = FALSE AND g.result > 0 AND s.league_id = ?', $this->id);
+		$this->condition = new SQL(' WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND s.league_id = ?', $this->id);
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$this->condition->add(' AND g.is_rating <> 0');
+			$this->condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$this->condition->add(' AND g.is_rating = 0');
+			$this->condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		
 		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);

@@ -29,7 +29,7 @@ function update_game_ratings($game_id)
 {
 	$players = array();
 	$query = new DbQuery(
-		'SELECT p.user_id, p1.role_rating_before + p1.rating_earned, p2.rating_before + p2.rating_earned, p2.rating_lock_until, p.role, p.won, g.is_rating, t.id, t.flags, g.end_time'.
+		'SELECT p.user_id, p1.role_rating_before + p1.rating_earned, p2.rating_before + p2.rating_earned, p2.rating_lock_until, p.role, p.won, g.flags, t.id, t.flags, g.end_time'.
 		' FROM players p'.
 		' JOIN games g ON g.id = p.game_id'.
 		' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id'.
@@ -39,7 +39,7 @@ function update_game_ratings($game_id)
 	while ($row = $query->next())
 	{
 		$player = new stdClass();
-		list ($player->user_id, $player->role_rating, $player->rating, $player->rating_lock_until, $player->role, $player->won, $is_rating, $tournament_id, $tournament_flags, $game_end_time) = $row;
+		list ($player->user_id, $player->role_rating, $player->rating, $player->rating_lock_until, $player->role, $player->won, $flags, $tournament_id, $tournament_flags, $game_end_time) = $row;
 		if (is_null($player->rating))
 		{
 			$player->rating = 0;
@@ -55,13 +55,13 @@ function update_game_ratings($game_id)
 		$players[] = $player;
 	}
 	
-	if (!isset($is_rating))
+	if (!isset($flags))
 	{
 		echo get_label('Game [0] has no players. Deleting it makes much sense.', $game_id) . '<br>';
 		return;
 	}
 	
-	if (!$is_rating)
+	if (($flags & GAME_FLAG_RATING) == 0)
 	{
 		foreach ($players as $player)
 		{
@@ -142,7 +142,7 @@ function update_game_ratings($game_id)
 		$civ_odds = 1.0 / (1.0 + pow(10.0, ($maf_sum / $maf_count - $civ_sum / $civ_count) / 400));
 	}
 	
-	if ($is_rating)
+	if ($flags & GAME_FLAG_RATING)
 	{
 		foreach ($players as $player)
 		{

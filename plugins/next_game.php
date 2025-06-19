@@ -67,7 +67,7 @@ try
 		++$game_num;
 	}
 
-	$query = new DbQuery('SELECT game_num FROM games WHERE event_id = ? AND result > 0 AND table_num = ? ORDER BY game_num', $event_id, $table_num);
+	$query = new DbQuery('SELECT game_num FROM games WHERE event_id = ? AND table_num = ? ORDER BY game_num', $event_id, $table_num);
 	while ($row = $query->next())
 	{
 		

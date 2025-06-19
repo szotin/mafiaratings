@@ -80,11 +80,11 @@ class Page extends GeneralPageBase
 			}
 			if ($this->filter & FLAG_FILTER_EMPTY)
 			{
-				$condition->add(' AND NOT EXISTS (SELECT tp.user_id FROM tournament_places tp WHERE tp.tournament_id = t.id) AND NOT EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0)');
+				$condition->add(' AND NOT EXISTS (SELECT tp.user_id FROM tournament_places tp WHERE tp.tournament_id = t.id) AND NOT EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id)');
 			}
 			if ($this->filter & FLAG_FILTER_NOT_EMPTY)
 			{
-				$condition->add(' AND (EXISTS (SELECT tp.user_id FROM tournament_places tp WHERE tp.tournament_id = t.id) OR EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id AND g.result > 0))');
+				$condition->add(' AND (EXISTS (SELECT tp.user_id FROM tournament_places tp WHERE tp.tournament_id = t.id) OR EXISTS (SELECT g.id FROM games g WHERE g.tournament_id = t.id))');
 			}
 			if ($this->filter & FLAG_FILTER_CANCELED)
 			{
@@ -147,7 +147,7 @@ class Page extends GeneralPageBase
 		$colunm_counter = 0;
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, t.num_players, a.id, a.address, a.flags, ni.name,' .
-			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND is_canceled = FALSE AND result > 0) as games,' .
+			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
 			$condition);

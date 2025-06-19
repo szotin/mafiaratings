@@ -64,19 +64,19 @@ try
 		'SELECT COUNT(DISTINCT g.id), SUM(p.won), COUNT(DISTINCT g.event_id)'.
 		' FROM players p'.
 		' JOIN games g ON g.id = p.game_id'.
-		' WHERE p.user_id = ? AND g.tournament_id = ? AND g.is_rating <> 0 AND g.is_canceled = FALSE', $user_id, $tournament_id);
+		' WHERE p.user_id = ? AND g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $user_id, $tournament_id);
 	// $query = new DbQuery(
 		// 'SELECT MAX(gp), MAX(rp)'.
 		// ' FROM (SELECT p.user_id, COUNT(DISTINCT g.id) AS gp, COUNT(DISTINCT g.event_id) AS rp'.
 			// ' FROM players p JOIN games g ON g.id = p.game_id'.
-			// ' WHERE g.tournament_id = ? AND g.is_rating <> 0 AND g.is_canceled = FALSE'.
+			// ' WHERE g.tournament_id = ? AND (g.flags & '.GAME_FLAG_RATING.') <> 0 AND (g.flags & '.GAME_FLAG_CANCELED.') = 0'.
 			// ' GROUP BY p.user_id) AS players', $tournament_id);
 	// echo $query->get_parsed_sql();
 	list($max_games_played, $max_rounds_played) = Db::record(get_label('tournament'), 
 		'SELECT MAX(gp), MAX(rp)'.
 		' FROM (SELECT p.user_id, COUNT(DISTINCT g.id) AS gp, COUNT(DISTINCT g.event_id) AS rp'.
 			' FROM players p JOIN games g ON g.id = p.game_id'.
-			' WHERE g.tournament_id = ? AND g.is_rating <> 0 AND g.is_canceled = FALSE'.
+			' WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.
 			' GROUP BY p.user_id) AS players', $tournament_id);
 
 	$total_normalization = 1;

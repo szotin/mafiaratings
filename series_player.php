@@ -582,19 +582,19 @@ class Page extends SeriesPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		if ($filter & FLAG_FILTER_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') = 0');
 		}
 		
 		$condition->add(get_roles_condition($roles));
@@ -614,9 +614,6 @@ class Page extends SeriesPageBase
 				break;
 			case 5:
 				$condition->add(' AND p.won = 0');
-				break;
-			default:
-				$condition->add(' AND g.result <> 0');
 				break;
 		}
 		
@@ -639,7 +636,7 @@ class Page extends SeriesPageBase
 		echo '</td><td width="48">'.get_label('Club').'</td><td width="240">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td></tr>';
 		
 		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.is_rating, g.is_canceled, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM players p' .
+			'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.flags, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM players p' .
 			' JOIN games g ON g.id = p.game_id' .
 			' JOIN clubs c ON c.id = g.club_id' .
 			' JOIN events e ON e.id = g.event_id' .
@@ -656,10 +653,10 @@ class Page extends SeriesPageBase
 		{
 			list (
 				$game_id, $club_id, $club_name, $club_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, 
-				$game_result, $is_rating, $is_canceled, $role, $rating_before, $rating_earned, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags) = $row;
+				$game_result, $flags, $role, $rating_before, $rating_earned, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags) = $row;
 		
 			echo '<tr align="center"';
-			if ($is_canceled || !$is_rating)
+			if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 			{
 				echo ' class="dark"';
 			}
@@ -726,16 +723,16 @@ class Page extends SeriesPageBase
 					break;
 			}
 			echo '</td>';
-			if ($is_canceled)
+			if ($flags & GAME_FLAG_CANCELED)
 			{
 				echo '<td class="darker">' . get_label('Canceled');
-				if (!$is_rating)
+				if (($flags & GAME_FLAG_RATING) == 0)
 				{
 					echo '<br>' . get_label('Non-rating');
 				}
 				echo '';
 			}
-			else if (!$is_rating)
+			else if (($flags & GAME_FLAG_RATING) == 0)
 			{
 				echo '<td class="darker">' . get_label('Non-rating') . '';
 			}
@@ -783,7 +780,7 @@ class Page extends SeriesPageBase
 		
 		$subseries_csv = get_subseries_csv($this->id);
 		
-		$condition = new SQL(' AND g.is_rating <> 0 AND g.is_canceled = FALSE AND g.tournament_id IN (SELECT tournament_id FROM series_tournaments WHERE series_id IN ('.$subseries_csv.'))');
+		$condition = new SQL(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0 AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND g.tournament_id IN (SELECT tournament_id FROM series_tournaments WHERE series_id IN ('.$subseries_csv.'))');
 		$stats = new PlayerStats($this->user_id, $roles, $condition);
 		$mafs_in_legacy = $stats->guess3maf * 3 + $stats->guess2maf * 2 + $stats->guess1maf;
 		

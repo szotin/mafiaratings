@@ -22,17 +22,17 @@ try
 	
 	$form = new FiimForm();
 	$query = new DbQuery(
-		'SELECT g.id, t.name, e.name, g.json, g.is_canceled, c.timezone, nu.name, g.feature_flags FROM games g' .
+		'SELECT g.id, t.name, e.name, g.json, c.timezone, nu.name, g.feature_flags FROM games g' .
 		' JOIN events e ON e.id = g.event_id' .
 		' JOIN addresses a ON a.id = e.address_id' .
 		' JOIN cities c ON c.id = a.city_id' .
 		' JOIN users u ON u.id = g.moderator_id' .
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 		' JOIN tournaments t ON t.id = e.tournament_id' .
-		' WHERE t.id = ? AND g.result > 0 ORDER BY g.end_time', $tournament_id);
+		' WHERE t.id = ? ORDER BY g.end_time', $tournament_id);
 	while ($row = $query->next())
 	{
-		list ($game_id, $tournament_name, $event_name, $json, $is_canceled, $timezone, $moder_name, $feature_flags) = $row;
+		list ($game_id, $tournament_name, $event_name, $json, $timezone, $moder_name, $feature_flags) = $row;
 		$game = new Game($json, $feature_flags);
 		$form->add($game, $event_name, $tournament_name, $moder_name, $timezone);
 	}

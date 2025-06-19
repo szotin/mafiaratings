@@ -56,7 +56,7 @@ class ApiPage extends ControlApiPageBase
 					$this->response[] = new ChartData('', $_chart_colors[$current_color++], USER_INITIAL_RATING);
 				}
 			
-				list($min_time, $max_time) = Db::record(get_label('game'), 'SELECT MIN(g.end_time), MAX(g.end_time) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id IN (' . $player_list . ') AND g.is_canceled = FALSE AND g.result > 0 AND g.is_rating <> 0');
+				list($min_time, $max_time) = Db::record(get_label('game'), 'SELECT MIN(g.end_time), MAX(g.end_time) FROM players p JOIN games g ON p.game_id = g.id WHERE p.user_id IN (' . $player_list . ') AND (g.flags & '.(GAME_FLAG_CANCELED | GAME_FLAG_RATING).') = '.GAME_FLAG_RATING);
 				if ($min_time != NULL && $max_time != NULL) // || $max_time - $min_time < MIN_PERIOD_ON_GRAPH)
 				{
 					$period = floor(($max_time - $min_time) / MAX_POINTS_ON_GRAPH);
@@ -70,7 +70,7 @@ class ApiPage extends ControlApiPageBase
 						' JOIN games g ON p.game_id = g.id'.
 						' JOIN users u ON p.user_id = u.id'.
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-						' WHERE u.id IN (' . $player_list . ') AND g.is_canceled = FALSE AND g.result > 0 AND g.is_rating <> 0'.
+						' WHERE u.id IN (' . $player_list . ') AND (g.flags & '.(GAME_FLAG_CANCELED | GAME_FLAG_RATING).') = '.GAME_FLAG_RATING.
 						' GROUP BY u.id, period'.
 						' ORDER BY u.id, period');
 					

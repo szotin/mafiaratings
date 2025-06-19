@@ -104,19 +104,19 @@ class Page extends UserPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		if ($filter & FLAG_FILTER_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_CANCELED)
 		{
-			$condition->add(' AND g.is_canceled = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
@@ -130,24 +130,15 @@ class Page extends UserPageBase
 		
 		if ($moder != 0)
 		{
-			if ($result_filter > 2 && $result_filter < 5)
-			{
-				$result_filter = 0;
-			}
-			
 			echo '<p><select id="result" onChange="filterChanged()">';
-			show_option(-1, $result_filter, get_label('All games'));
+			show_option(0, $result_filter, get_label('All games'));
 			show_option(GAME_RESULT_TOWN, $result_filter, get_label('Town wins'));
 			show_option(GAME_RESULT_MAFIA, $result_filter, get_label('Mafia wins'));
 			show_option(GAME_RESULT_TIE, $result_filter, get_label('Ties'));
 			echo '</select>';
 			echo '</p>';
 			
-			if ($result_filter < 0)
-			{
-				$condition->add(' AND g.result > 0');
-			}
-			else
+			if ($result_filter > 0)
 			{
 				$condition->add(' AND g.result = ?', $result_filter);
 			}
@@ -159,7 +150,7 @@ class Page extends UserPageBase
 			echo '<tr class="th darker" align="center"><td width="48"></td><td colspan="2"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Result').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, g.is_rating, g.is_canceled, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM games g' .
+				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, g.flags, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
@@ -171,17 +162,17 @@ class Page extends UserPageBase
 			$num = $_page * PAGE_SIZE;
 			while ($row = $query->next())
 			{
-				list ($game_id, $club_id, $club_name, $club_flags, $timezone, $start, $duration, $game_result, $is_rating, $is_canceled, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags) = $row;
+				list ($game_id, $club_id, $club_name, $club_flags, $timezone, $start, $duration, $game_result, $flags, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags) = $row;
 				
 				echo '<tr align="center"';
-				if ($is_canceled || !$is_rating)
+				if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 				{
 					echo ' class="dark"';
 				}
 				echo '>';
 				echo '<td>' . ++$num . '</td>';
 
-				if ($is_canceled || !$is_rating)
+				if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 				{
 					echo '<td align="left" style="padding-left:12px;">';
 				}
@@ -206,16 +197,16 @@ class Page extends UserPageBase
 					echo '</td></tr></table>';
 				}
 			
-				if ($is_canceled)
+				if ($flags & GAME_FLAG_CANCELED)
 				{
 					echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
-					if (!$is_rating)
+					if (($flags & GAME_FLAG_RATING) == 0)
 					{
 						echo '<br>' . get_label('Non-rating');
 					}
 					echo '</b></td>';
 				}
-				else if (!$is_rating)
+				else if (($flags & GAME_FLAG_RATING) == 0)
 				{
 					echo '</s></td><td width="100" class="darker"><b>' . get_label('Non-rating') . '</b></td>';
 				}
@@ -239,8 +230,6 @@ class Page extends UserPageBase
 				echo '<td>';
 				switch ($game_result)
 				{
-					case GAME_RESULT_PLAYING:
-						break;
 					case GAME_RESULT_TOWN:
 						echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
 						break;
@@ -291,9 +280,6 @@ class Page extends UserPageBase
 				case 4:
 					$condition->add(' AND p.won = 0');
 					break;
-				default:
-					$condition->add(' AND g.result <> 0');
-					break;
 			}
 			
 			list ($count) = Db::record(get_label('player'), 'SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?', $this->id, $condition);
@@ -302,7 +288,7 @@ class Page extends UserPageBase
 			echo '<tr class="th darker" align="center"><td width="48"></td><td></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td></tr>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.is_rating, g.is_canceled, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM players p' .
+				'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.flags, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags FROM players p' .
 				' JOIN games g ON g.id = p.game_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
@@ -319,10 +305,10 @@ class Page extends UserPageBase
 			{
 				list (
 					$game_id, $club_id, $club_name, $club_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, 
-					$game_result, $is_rating, $is_canceled, $role, $rating_before, $rating_earned, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags) = $row;
+					$game_result, $flags, $role, $rating_before, $rating_earned, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags) = $row;
 			
 				echo '<tr align="center"';
-				if ($is_canceled || !$is_rating)
+				if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 				{
 					echo ' class="dark"';
 				}
@@ -397,16 +383,16 @@ class Page extends UserPageBase
 						break;
 				}
 				echo '</td>';
-				if ($is_canceled)
+				if ($flags & GAME_FLAG_CANCELED)
 				{
 					echo '<td class="darker">' . get_label('Canceled');
-					if (!$is_rating)
+					if (($flags & GAME_FLAG_RATING) == 0)
 					{
 						echo '<br>' . get_label('Non-rating');
 					}
 					echo '';
 				}
-				else if (!$is_rating)
+				else if (($flags & GAME_FLAG_RATING) == 0)
 				{
 					echo '<td class="darker">' . get_label('Non-rating') . '';
 				}

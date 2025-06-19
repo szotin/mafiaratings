@@ -294,7 +294,7 @@ class Page extends TournamentPageBase
 		
 		if ($this->options & HIDE_PLAYED)
 		{
-			$query = new DbQuery('SELECT table_num, game_num FROM games WHERE result <> 0 AND event_id = ?', $this->round_id);
+			$query = new DbQuery('SELECT table_num, game_num FROM games WHERE event_id = ?', $this->round_id);
 			while ($row = $query->next())
 			{
 				list($t, $g) = $row;

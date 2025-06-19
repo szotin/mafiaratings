@@ -90,11 +90,11 @@ class Page extends UserPageBase
 		}
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
@@ -345,7 +345,7 @@ class Page extends UserPageBase
 			$playing_count = 0;
 			$civils_win_count = 0;
 			$mafia_win_count = 0;
-			$query = new DbQuery('SELECT result, count(*) FROM games WHERE moderator_id = ? AND is_canceled = FALSE GROUP BY result', $this->id);
+			$query = new DbQuery('SELECT result, count(*) FROM games WHERE moderator_id = ? AND (flags & '.GAME_FLAG_CANCELED.') = FALSE GROUP BY result', $this->id);
 			while ($row = $query->next())
 			{
 				switch ($row[0])

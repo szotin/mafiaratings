@@ -22,7 +22,7 @@ class Page extends EventPageBase
 		list($timezone) = Db::record(get_label('event'), 'SELECT c.timezone FROM events e JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE e.id = ?', $this->event->id);
 		date_default_timezone_set($timezone);
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->event->id);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->event->id);
 	}
 	
 	protected function show_body()
@@ -101,11 +101,11 @@ class Page extends EventPageBase
 		$condition = get_roles_condition($roles);
 		if ($filter & FLAG_FILTER_RATING)
 		{
-			$condition->add(' AND g.is_rating <> 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($filter & FLAG_FILTER_NO_RATING)
 		{
-			$condition->add(' AND g.is_rating = 0');
+			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
@@ -129,7 +129,7 @@ class Page extends EventPageBase
 				' LEFT OUTER JOIN event_users eu ON eu.event_id = ? AND eu.user_id = u.id' .
 				' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = ? AND tu.user_id = u.id' .
 				' LEFT OUTER JOIN club_users cu ON cu.club_id = ? AND cu.user_id = u.id' .
-				' WHERE g.event_id = ? AND g.is_canceled = FALSE AND g.result > 0',
+				' WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0',
 				$this->event->id, $this->event->tournament_id, $this->event->club_id, $this->event->id, $condition);
 		$query->add(' GROUP BY p.user_id');
 		

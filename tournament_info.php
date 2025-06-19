@@ -20,7 +20,7 @@ class Page extends TournamentPageBase
 		
 		$now = time();
 		
-		list($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND is_canceled = 0 AND is_rating <> 0', $this->id);
+		list($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ? AND (flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $this->id);
 		
 		$players = array();
 		$applications = array();

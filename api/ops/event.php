@@ -1083,7 +1083,7 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('[0] games were played in this event. Only club managers can delete it.', $games_count));
 			}
 			
-			$query = new DbQuery('SELECT id, end_time FROM games WHERE event_id = ? AND is_rating <> 0 ORDER BY end_time, id LIMIT 1', $event_id);
+			$query = new DbQuery('SELECT id, end_time FROM games WHERE event_id = ? AND (flags & '.GAME_FLAG_RATING.') <> 0 ORDER BY end_time, id LIMIT 1', $event_id);
 			if ($row = $query->next())
 			{
 				list($game_id, $end_time) = $row;
@@ -1248,10 +1248,10 @@ class ApiPage extends OpsApiPageBase
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		
-		$query = new DbQuery('SELECT id, json, feature_flags, is_canceled FROM games WHERE event_id = ? AND result > 0', $event_id);
+		$query = new DbQuery('SELECT id, json, feature_flags FROM games WHERE event_id = ?', $event_id);
 		while ($row = $query->next())
 		{
-			list ($game_id, $json, $feature_flags, $is_canceled) = $row;
+			list ($game_id, $json, $feature_flags) = $row;
 			$game = new Game($json, $feature_flags);
 			if ($game->change_user($user_id, $new_user_id, $nickname))
 			{

@@ -68,14 +68,14 @@ class Page extends SeriesPageBase
 		
 		date_default_timezone_set(get_timezone());
 		$subseries_csv = get_subseries_csv($this->id);
-		$this->condition = new SQL(' WHERE g.is_canceled = FALSE AND g.result > 0 AND st.series_id IN ('.$subseries_csv.')');
+		$this->condition = new SQL(' WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND st.series_id IN ('.$subseries_csv.')');
 		if ($this->filter & FLAG_FILTER_RATING)
 		{
-			$this->condition->add(' AND g.is_rating <> 0');
+			$this->condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
 		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
-			$this->condition->add(' AND g.is_rating = 0');
+			$this->condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
 		
 		$this->ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);

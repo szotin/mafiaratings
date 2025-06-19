@@ -383,11 +383,11 @@ class Page extends PageBase
 			$games[$index]->user_name = $user_name;
 		}
 		
-		$query = new DbQuery('SELECT id, game_num, is_canceled, result FROM games WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table_num);
+		$query = new DbQuery('SELECT id, game_num, flags, result FROM games WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table_num);
 		while ($row = $query->next())
 		{
 			$r = new stdClass();
-			list ($r->game_id, $game_num, $r->is_canceled, $r->result) = $row;
+			list ($r->game_id, $game_num, $r->flags, $r->result) = $row;
 			$index = $game_num - 1;
 			while ($index >= count($games))
 			{
@@ -455,7 +455,7 @@ class Page extends PageBase
 					$text = get_label('Playing using different method');
 					$url = NULL;
 				}
-				else if ($r->is_canceled)
+				else if ($r->flags & GAME_FLAG_CANCELED)
 				{
 					$text = get_label('Canceled');
 				}

@@ -42,7 +42,7 @@ class Page extends UserPageBase
 		$condition = new SQL(
 			' FROM tournament_places tp' .
 			' JOIN tournaments t ON tp.tournament_id = t.id' .
-			' LEFT OUTER JOIN games g ON g.tournament_id = t.id AND g.is_canceled = FALSE AND g.result > 0' .
+			' LEFT OUTER JOIN games g ON g.tournament_id = t.id AND (g.flags & '.GAME_FLAG_CANCELED.') = 0' .
 			' LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = tp.user_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .

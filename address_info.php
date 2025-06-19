@@ -13,13 +13,11 @@ class Page extends AddressPageBase
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
 		$tie_count = 0;
-		$query = new DbQuery('SELECT g.result, count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE GROUP BY g.result', $this->id);
+		$query = new DbQuery('SELECT g.result, count(*) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 GROUP BY g.result', $this->id);
 		while ($row = $query->next())
 		{
 			switch ($row[0])
 			{
-				case GAME_RESULT_PLAYING:
-					break;
 				case GAME_RESULT_TOWN:
 					$civils_win_count = $row[1];
 					break;
@@ -49,13 +47,13 @@ class Page extends AddressPageBase
 				echo '<tr><td class="dark">'.get_label('Ties').':</td><td>' . $tie_count . ' (' . number_format($tie_count*100.0/$games_count, 1) . '%)</td></tr>';
 			}
 			
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE AND g.result > 0', $this->id);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON p.game_id = g.id JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 			echo '<tr><td class="dark">'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 			
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND g.is_canceled = FALSE', $this->id);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g JOIN events e ON g.event_id = e.id WHERE e.address_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 			echo '<tr><td class="dark">'.get_label('Referees').':</td><td>' . $counter . '</td></tr>';
 			
-			list ($a_game, $s_game, $l_game) = Db::record(get_label('game'), 'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) FROM games g JOIN events e ON g.event_id = e.id WHERE g.result > 0 AND g.end_time > g.start_time + 900 AND g.end_time < g.start_time + 20000 AND e.address_id = ? AND g.is_canceled = FALSE', $this->id);
+			list ($a_game, $s_game, $l_game) = Db::record(get_label('game'), 'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) FROM games g JOIN events e ON g.event_id = e.id WHERE g.end_time > g.start_time + 900 AND g.end_time < g.start_time + 20000 AND e.address_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 			echo '<tr><td class="dark">'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 			echo '<tr><td class="dark">'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';
 			echo '<tr><td class="dark">'.get_label('Longest game').':</td><td>' . format_time($l_game) . '</td></tr>';
