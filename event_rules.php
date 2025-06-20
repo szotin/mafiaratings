@@ -19,7 +19,7 @@ class Page extends EventPageBase
 		echo ' <input type="radio" onclick="filter(' . RULES_VIEW_SHORTEST .')"' . ($view >= RULES_VIEW_SHORTEST ? ' checked' : '') . '> ' . get_label('shortest');
 		echo '</td></tr></table></p>';
 		
-		show_rules($this->event->rules_code, $view);
+		show_rules($this->rules_code, $view);
 	}
 	
 	protected function js()

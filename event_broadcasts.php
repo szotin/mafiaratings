@@ -26,7 +26,7 @@ class Page extends EventPageBase
 		$days = array();
 		$current_day = NULL;
 		$current_table = NULL;
-		$query = new DbQuery('SELECT day_num, table_num, part_num, url, status FROM event_broadcasts WHERE event_id = ? ORDER BY day_num, table_num, part_num', $this->event->id);
+		$query = new DbQuery('SELECT day_num, table_num, part_num, url, status FROM event_broadcasts WHERE event_id = ? ORDER BY day_num, table_num, part_num', $this->id);
 		while ($row = $query->next())
 		{
 			list ($day, $table, $part, $url, $status) = $row;

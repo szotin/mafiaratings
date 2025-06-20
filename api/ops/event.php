@@ -700,7 +700,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			$odds = min(max((int)get_optional_param('odds', 100), 0), 100);
-			$late = (int)get_optional_param('odds', 0);
+			$late = (int)get_optional_param('late', 0);
 			$friends = (int)get_optional_param('friends', 0);
 			$nickname = get_optional_param('nickname', '');
 			if (empty($nickname))
@@ -855,125 +855,30 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
-	// TODO: replace with the get api
-	// get 
-	//-------------------------------------------------------------------------------------------------------
-	function get_op()
-	{
-		$event_id = (int)get_required_param('event_id');
-		$event = new Event();
-		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MEMBER, $event->club_id);
-		
-		$date_format = 'Y-m-d';
-		if (isset($_REQUEST['date_format']))
-		{
-			$date_format = $_REQUEST['df'];
-		}
-
-		$time_format = 'H:i';
-		if (isset($_REQUEST['time_format']))
-		{
-			$time_format = $_REQUEST['tf'];
-		}
-
-		$this->response['id'] = $event->id;
-		$this->response['name'] = $event->name;
-		$this->response['fee'] = $event->fee;
-		$this->response['currency_id'] = $event->fee;
-		$this->response['club_id'] = $event->club_id;
-		$this->response['club_name'] = $event->club_name;
-		$this->response['club_url'] = $event->club_url;
-		$this->response['start'] = $event->timestamp;
-		$this->response['duration'] = $event->duration;
-		$this->response['addr_id'] = $event->addr_id;
-		$this->response['addr'] = $event->addr;
-		$this->response['addr_url'] = $event->addr_url;
-		$this->response['timezone'] = $event->timezone;
-		$this->response['city'] = $event->city;
-		$this->response['country'] = $event->country;
-		$this->response['notes'] = $event->notes;
-		$this->response['langs'] = $event->langs;
-		$this->response['flags'] = $event->flags;
-		$this->response['rules_code'] = $event->rules_code;
-		$this->response['scoring_id'] = $event->scoring_id;
-		$this->response['scoring_version'] = $event->scoring_version;
-		$this->response['scoring_options'] = $event->scoring_options;
-		
-		$base = get_server_url() . '/';
-		if (($event->addr_flags & ADDRESS_ICON_MASK) != 0)
-		{
-			$this->response['addr_image'] = $base . ADDRESS_PICS_DIR . TNAILS_DIR . $event->addr_id . '.jpg';
-		}
-		
-		date_default_timezone_set($event->timezone);
-		$this->response['date_str'] = date($date_format, $event->timestamp);
-		$this->response['time_str'] = date($time_format, $event->timestamp);
-		$this->response['hour'] = date('G', $event->timestamp);
-		$this->response['minute'] = round(date('i', $event->timestamp) / 10) * 10;
-	}
-	
-	function get_op_help()
-	{
-		$help = new ApiHelp(PERMISSION_CLUB_MEMBER, 'Get event details. TODO: it should be moved to <q>get</q> API.');
-		$help->request_param('event_id', 'Event id.');
-		$help->response_param('id', 'Event id.');
-		$help->response_param('name', 'Event name.');
-		$help->response_param('fee', 'Admission rate.');
-		$help->response_param('currency_id', 'Currency id for the admission rate.');
-		$help->response_param('club_id', 'Club id.');
-		$help->response_param('club_name', 'Club name.');
-		$help->response_param('club_url', 'Club URL.');
-		$help->response_param('start', 'Unix timestamp for the start time.');
-		$help->response_param('duration', 'Event duration in seconds.');
-		$help->response_param('addr_id', 'Address id.');
-		$help->response_param('addr', 'Event address.');
-		$help->response_param('addr_url', 'Address url.');
-		
-		$timezone_help = 'Event timezone. One of: <select>';
-		$zones = DateTimeZone::listIdentifiers();
-		foreach ($zones as $zone)
-		{
-			$timezone_help .= '<option>' . $zone . '</option>';
-		}
-		$timezone_help .= '</select>';
-		
-		$help->response_param('timezone', $timezone_help);
-		$help->response_param('city', 'Event city name using default language.');
-		$help->response_param('country', 'Event country name using default language.');
-		$help->response_param('notes', 'Event notes.');
-		$help->response_param('langs', 'Event languages. A bit combination of language ids.' . valid_langs_help());
-		$help->response_param('rules_code', 'Game rules code.');
-		$help->response_param('scoring_id', 'Scoring system id.');
-		return $help;
-	}
-
-	//-------------------------------------------------------------------------------------------------------
 	// extend
 	//-------------------------------------------------------------------------------------------------------
 	function extend_op()
 	{
 		$event_id = (int)get_required_param('event_id');
-		$event = new Event();
-		$event->load($event_id);
+		$duration = (int)get_required_param('duration');
+		Db::begin();
+		list ($club_id, $tournament_id, $timestamp, $old_duration) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, start_time, duration FROM events WHERE id = ?', $event_id);
 		check_permissions(
 			PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
 			PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
-			$event->club_id, $event->id, $event->tournament_id);
+			$club_id, $event_id, $tournament_id);
 		
-		if ($event->timestamp + $event->duration + EVENT_ALIVE_TIME < time())
+		if ($timestamp + $old_duration + EVENT_ALIVE_TIME < time())
 		{
 			throw new Exc(get_label('The event is too old. It can not be extended.'));
 		}
 		
-		$duration = (int)get_required_param('duration');
-		Db::begin();
-		Db::exec(get_label('event'), 'UPDATE events SET duration = ? WHERE id = ?', $duration, $event->id);
+		Db::exec(get_label('event'), 'UPDATE events SET duration = ? WHERE id = ?', $duration, $event_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
 			$log_details->duration = $duration;
-			db_log(LOG_OBJECT_EVENT, 'extended', $log_details, $event->id, $event->club_id);
+			db_log(LOG_OBJECT_EVENT, 'extended', $log_details, $event_id, $club_id);
 		}
 		Db::commit();
 	}
@@ -992,12 +897,9 @@ class ApiPage extends OpsApiPageBase
 	function cancel_op()
 	{
 		$event_id = (int)get_required_param('event_id');
-		$event = new Event();
-		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $event->club_id, $event->id, $event->tournament_id);
-		
 		Db::begin();
-		list($club_id) = Db::record(get_label('club'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
+		list ($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 		
 		Db::exec(get_label('event'), 'UPDATE events SET flags = ((flags | ' . EVENT_FLAG_CANCELED . ') & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $event_id);
 		if (Db::affected_rows() > 0)
@@ -1031,11 +933,11 @@ class ApiPage extends OpsApiPageBase
 	function restore_op()
 	{
 		$event_id = (int)get_required_param('event_id');
-		$event = new Event();
-		$event->load($event_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $event->club_id, $event->id, $event->tournament_id);
-		
+
 		Db::begin();
+		list ($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
+		
 		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . (EVENT_FLAG_CANCELED | EVENT_FLAG_FINISHED) . ') WHERE id = ?', $event_id);
 		if (Db::affected_rows() > 0)
 		{

@@ -27,9 +27,6 @@ try
 	check_permissions(PERMISSION_CLUB_MEMBER, $club_id);
 	$club = $_profile->clubs[$club_id];
 	
-	$event = new Event();
-	$event->set_club($club);
-	
 	$start = new DateTime();
 	$end = new DateTime();
 	$end->add(new DateInterval('P2M'));
@@ -47,11 +44,11 @@ try
 	if (count($tournaments) > 0)
 	{
 		echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
-		show_option(0, $event->tournament_id, '');
+		show_option(0, 0, '');
 		foreach ($tournaments as $row)
 		{
 			list($tid, $tname) = $row;
-			show_option($tid, $event->tournament_id, $tname);
+			show_option($tid, 0, $tname);
 		}
 		echo '</select> <span id="form-round-span"></span></td></tr>';
 	}
@@ -86,16 +83,16 @@ try
 		echo '</td></tr>';
 	}
 		
-	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($event->duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
+	echo '<tr><td>'.get_label('Duration').':</td><td><input value="6h" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 		
-	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $event->club_id);
+	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id" onChange="addressClick()">';
 	echo '<option value="-1">' . get_label('New address') . '</option>';
 	$selected_address = '';
 	while ($row = $query->next())
 	{
-		if (show_option($row[0], $event->addr_id, $row[1]))
+		if (show_option($row[0], 0, $row[1]))
 		{
 			$selected_address = $row[1];
 		}
@@ -148,7 +145,7 @@ try
 	echo '</select></td></tr>';
 	
 	echo '<tr><td valign="top">' . get_label('Scoring system') . '</td><td>';
-	show_scoring_select($event->club_id, $event->scoring_id, $event->scoring_version, 0, 0, json_decode($event->scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');
+	show_scoring_select($club_id, -1, 0, 0, 0, new stdClass(), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');
 	echo '</td></tr>';
 	
 	if (is_valid_lang($club->langs))
@@ -158,41 +155,18 @@ try
 	else
 	{
 		echo '<tr><td>'.get_label('Languages').':</td><td>';
-		langs_checkboxes($event->langs, $club->langs, NULL, '<br>', 'form-');
+		langs_checkboxes(LANG_ALL, $club->langs, NULL, '<br>', 'form-');
 		echo '</td></tr>';
 	}
 		
-	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4">' . htmlspecialchars($event->notes, ENT_QUOTES) . '</textarea></td></tr>';
+	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
 		
-	echo '<input type="checkbox" id="form-all_mod"';
-	if (($event->flags & EVENT_FLAG_ALL_CAN_REFEREE) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('everyone can referee games.');
-	
-	echo '<br><input type="checkbox" id="form-fun"';
-	if (($event->flags & EVENT_FLAG_FUN) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('non-rating event.');
-	
-	echo '<br><input type="checkbox" id="form-pin"';
-	if (($event->flags & EVENT_FLAG_PINNED) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('pin to the main page.');
-	
-	echo '<br><input type="checkbox" id="form-streaming"';
-	if (($event->flags & EVENT_FLAG_STREAMING) != 0)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('video streaming games.');
+	echo '<input type="checkbox" id="form-all_mod" checked> '.get_label('everyone can referee games.');
+	echo '<br><input type="checkbox" id="form-fun"> '.get_label('non-rating event.');
+	echo '<br><input type="checkbox" id="form-pin"> '.get_label('pin to the main page.');
+	echo '<br><input type="checkbox" id="form-streaming"> '.get_label('video streaming games.');
 	
 	echo '</table>';
 	
@@ -204,7 +178,7 @@ try
 			' JOIN cities c ON a.city_id = c.id' . 
 			' WHERE e.club_id = ?' .
 			' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0 ORDER BY e.start_time DESC LIMIT 30',
-		$event->club_id);
+		$club_id);
 	echo get_label('Copy event data from') . ': <select id="form-copy" onChange="copyEvent()"><option value="0"></option>';
 	while ($row = $query->next())
 	{
@@ -227,9 +201,9 @@ try
 		}
 	}
 	
-	var scoringId = <?php echo $event->scoring_id; ?>;
-	var scoringVersion = <?php echo $event->scoring_version; ?>;
-	var scoringOptions = '<?php echo $event->scoring_options; ?>';
+	var scoringId = -1;
+	var scoringVersion = 0;
+	var scoringOptions = {};
 	function onScoringChange(s)
 	{
 		scoringId = s.sId;
@@ -358,25 +332,32 @@ try
 	
 	function copyEvent()
 	{
-		json.get("api/ops/event.php?op=get&event_id=" + $("#form-copy").val(), function(e)
+		json.get("api/get/events.php?lod=1&event_id=" + $("#form-copy").val(), function(data)
 		{
-			$("#form-name").val(e.name);
-			$("#form-time").val(e.time_str);
-			$("#form-tournament").val(e.tournament_id);
-			$("#form-duration").val(timespanToStr(e.duration));
-			$("#form-addr_id").val(e.addr_id);
-			$("#form-fee").val(e.fee);
-			$("#form-currency").val(e.currency);
-			$("#form-rules").val(e.rules_code);
-			$("#form-scoring-sel").val(e.scoring_id);
-			$("#form-scoring-ver").val(e.scoring_version);
-			$('#form-scoring-options').val(e.scoring_options);
-			$("#form-notes").val(e.notes);
-			$("#form-all_mod").prop('checked', (e.flags & <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>) != 0);
-			$("#form-fun").prop('checked', (e.flags & <?php echo EVENT_FLAG_FUN; ?>) != 0);
-			mr.setLangs(e.langs, "form-");
-			addressClick();
-			tournamentChange();
+			if (isSet(data.events) && data.events.length > 0)
+			{
+				let e = data.events[0];
+				
+				console.log(e);
+				
+				$("#form-name").val(e.name);
+				$("#form-time").val(e.start.split('T')[1]);
+				if (isSet(e.tournament_id))
+				{
+					$("#form-tournament").val(e.tournament_id);
+				}
+				$("#form-duration").val(timespanToStr(e.duration));
+				$("#form-addr_id").val(e.address_id);
+				$("#form-fee").val(e.fee);
+				$("#form-currency").val(e.currency_id);
+				$("#form-rules").val(e.rules.code);
+				$("#form-scoring-sel").val(e.scoring_id);
+				$("#form-scoring-ver").val(e.scoring_version);
+				$("#form-notes").val(e.notes);
+				mr.setLangs(e.langs, "form-");
+				addressClick();
+				tournamentChange();
+			}
 		});
 		$("#form-copy").val(0);
 	}

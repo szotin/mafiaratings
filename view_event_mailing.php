@@ -1,44 +1,36 @@
 <?php
 
-require_once 'include/page_base.php';
 require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/event_mailing.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
-class Page extends PageBase
+class Page extends EventPageBase
 {
-	private $id;
-	private $event;
-	private $send_time;
-	private $langs;
-	private $flags;
-	private $status;
-	
-	private function parse_sample_email($email_addr, $type, $langs)
+	private function parse_sample_email()
 	{
 		global $_profile, $_lang;
 		$code = generate_email_code();
 		$base_url = get_server_url() . '/email_request.php?user_id=' . $_profile->user_id . '&code=' . $code;
 		
-		$lang = get_event_email_lang($_lang, $langs);
-		list($subj, $body, $text_body) = get_event_email($type, $lang);
+		$lang = get_event_email_lang($_lang, $this->mailing_langs);
+		list($subj, $body, $text_body) = get_event_email($this->mailing_type, $lang);
 
 		$tags = get_bbcode_tags();
 		$tags['root'] = new Tag(get_server_url());
-		$tags['event_name'] = new Tag($this->event->name);
-		$tags['event_id'] = new Tag($this->event->id);
-		$tags['event_date'] = new Tag(format_date($this->event->timestamp, $this->event->timezone, false, $lang));
-		$tags['event_time'] = new Tag(date('H:i', $this->event->timestamp));
-		$tags['notes'] = new Tag($this->event->notes);
-		$tags['langs'] = new Tag(get_langs_str($this->event->langs, ', ', LOWERCASE, $lang));
-		$tags['address'] = new Tag($this->event->addr);
-		$tags['address_url'] = new Tag($this->event->addr_url);
-		$tags['address_id'] = new Tag($this->event->addr_id);
-		if ($this->event->id > 0)
+		$tags['event_name'] = new Tag($this->name);
+		$tags['event_id'] = new Tag($this->id);
+		$tags['event_date'] = new Tag(format_date($this->start_time, $this->timezone, false, $lang));
+		$tags['event_time'] = new Tag(date('H:i', $this->start_time));
+		$tags['notes'] = new Tag($this->notes);
+		$tags['langs'] = new Tag(get_langs_str($this->langs, ', ', LOWERCASE, $lang));
+		$tags['address'] = new Tag($this->address);
+		$tags['address_url'] = new Tag($this->address_url);
+		$tags['address_id'] = new Tag($this->address_id);
+		if ($this->id > 0)
 		{
-			$tags['address_image'] = new Tag('<img src="' . get_server_url() . '/' . ADDRESS_PICS_DIR . TNAILS_DIR . $this->event->addr_id . '.jpg">');
+			$tags['address_image'] = new Tag('<img src="' . get_server_url() . '/' . ADDRESS_PICS_DIR . TNAILS_DIR . $this->address_id . '.jpg">');
 		}
 		else
 		{
@@ -46,9 +38,9 @@ class Page extends PageBase
 		}
 		$tags['user_name'] = new Tag($_profile->user_name);
 		$tags['user_id'] = new Tag($_profile->user_id);
-		$tags['email'] = new Tag($email_addr);
-		$tags['club_name'] = new Tag($this->event->club_name);
-		$tags['club_id'] = new Tag($this->event->club_id);
+		$tags['email'] = new Tag($_profile->user_email);
+		$tags['club_name'] = new Tag($this->club_name);
+		$tags['club_id'] = new Tag($this->club_id);
 		$tags['code'] = new Tag($code);
 		$tags['accept'] = new Tag('<a href="' . $base_url . '&accept=1" target="_blank">', '</a>');
 		$tags['decline'] = new Tag('<a href="' . $base_url . '&decline=1" target="_blank">', '</a>');
@@ -66,26 +58,27 @@ class Page extends PageBase
 	protected function prepare()
 	{
 		global $_profile;
-		if (!isset($_REQUEST['id']))
+		
+		parent::prepare();
+		
+		if (!isset($_REQUEST['mailing_id']))
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('mailing')));
 		}
-		$this->id = $_REQUEST['id'];
+		$this->mailing_id = $_REQUEST['mailing_id'];
 		
-		list($event_id, $this->send_time, $this->type, $this->langs, $this->flags, $this->status) =
-			Db::record(get_label('email'), 'SELECT event_id, send_time, type, langs, flags, status FROM event_mailings WHERE id = ?', $this->id);
+		list($event_id, $this->send_time, $this->mailing_type, $this->mailing_langs, $this->mailing_status) =
+			Db::record(get_label('email'), 'SELECT event_id, send_time, type, langs, status FROM event_mailings WHERE id = ?', $this->mailing_id);
 
-		$this->event = new Event();
-		$this->event->load($event_id);
-		$this->_title = get_label('Mailing for [0]', $this->event->get_full_name());
-		check_permissions(PERMISSION_CLUB_MANAGER, $this->event->club_id);
+		$this->_title = get_label('Mailing for [0]', $this->get_full_name());
+		check_permissions(PERMISSION_CLUB_MANAGER, $this->club_id);
 	}
 	
 	protected function show_body()
 	{
 		global $_profile, $_page, $_lang;
 		
-		list($p_body, $p_subj, $this->lang) = $this->parse_sample_email($_profile->user_email, $this->type, $this->langs);
+		list($p_body, $p_subj, $this->lang) = $this->parse_sample_email();
 		
 		$timezone = get_timezone();
 		echo '<table class="bordered light" width="100%">';
@@ -95,9 +88,9 @@ class Page extends PageBase
 		echo '<tr><td colspan="3">' . $p_body . '</td></tr>';
 		echo '</table>';
 
-		if ($this->status == MAILING_SENDING || $this->status == MAILING_COMPLETE)
+		if ($this->mailing_status == MAILING_SENDING || $this->mailing_status == MAILING_COMPLETE)
 		{
-			list ($count) = Db::record(get_label('email'), 'SELECT count(*) FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT . ' AND obj_id = ?', $this->id);
+			list ($count) = Db::record(get_label('email'), 'SELECT count(*) FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT . ' AND obj_id = ?', $this->mailing_id);
 			show_pages_navigation(PAGE_SIZE, $count);
 		
 			echo '<table class="bordered light" width="100%">';
@@ -111,7 +104,7 @@ class Page extends PageBase
 				' WHERE e.obj = ' . EMAIL_OBJ_EVENT . ' AND e.obj_id = ?'.
 				' ORDER BY nu.name'.
 				' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, 
-				$this->id);
+				$this->mailing_id);
 			while ($row = $query->next())
 			{
 				list($user_id, $user_name, $user_flags, $send_time) = $row;

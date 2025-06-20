@@ -20,7 +20,7 @@ class Page extends EventPageBase
 	{
 		parent::prepare();
 		
-		list($timezone) = Db::record(get_label('event'), 'SELECT c.timezone FROM events e JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE e.id = ?', $this->event->id);
+		list($timezone) = Db::record(get_label('event'), 'SELECT c.timezone FROM events e JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE e.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 	}
 	
@@ -59,12 +59,12 @@ class Page extends EventPageBase
 			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->event->id, $condition);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id, $condition);
 		
 		$civils_win_count = 0;
 		$mafia_win_count = 0;
 		$tie_count = 0;
-		$query = new DbQuery('SELECT g.result, count(*) FROM games g WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->event->id, $condition);
+		$query = new DbQuery('SELECT g.result, count(*) FROM games g WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id, $condition);
 		$query->add(' GROUP BY result');
 		while ($row = $query->next())
 		{
@@ -84,7 +84,7 @@ class Page extends EventPageBase
 		$games_count = $civils_win_count + $mafia_win_count + $tie_count;
 		
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td colspan="2"><a href="event_games.php?bck=1&id=' . $this->event->id . '"><b>' . get_label('Stats') . '</b></a></td></tr>';
+		echo '<tr class="darker"><td colspan="2"><a href="event_games.php?bck=1&id=' . $this->id . '"><b>' . get_label('Stats') . '</b></a></td></tr>';
 		echo '<tr><td width="200">'.get_label('Games played').':</td><td>' . $games_count . '</td></tr>';
 		if ($games_count > 0)
 		{
@@ -92,17 +92,17 @@ class Page extends EventPageBase
 			echo '<tr><td>'.get_label('Town wins').':</td><td>' . $civils_win_count . ' (' . number_format($civils_win_count*100.0/$games_count, 1) . '%)</td></tr>';
 			echo '<tr><td>'.get_label('Ties').':</td><td>' . $tie_count . ' (' . number_format($tie_count*100.0/$games_count, 1) . '%)</td></tr>';
 
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->event->id);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 			echo '<tr><td>'.get_label('People played').':</td><td>' . $counter . '</td></tr>';
 			
-			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->event->id);
+			list ($counter) = Db::record(get_label('game'), 'SELECT COUNT(DISTINCT g.moderator_id) FROM games g WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 			echo '<tr><td>'.get_label('Referees').':</td><td>' . $counter . '</td></tr>';
 			
 			list ($a_game, $s_game, $l_game) = Db::record(
 				get_label('game'),
 				'SELECT AVG(g.end_time - g.start_time), MIN(g.end_time - g.start_time), MAX(g.end_time - g.start_time) ' .
 					'FROM games g WHERE (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND g.event_id = ? AND g.end_time > g.start_time + 900 AND g.end_time < g.start_time + 20000', 
-				$this->event->id);
+				$this->id);
 			echo '<tr><td>'.get_label('Average game duration').':</td><td>' . format_time($a_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Shortest game').':</td><td>' . format_time($s_game) . '</td></tr>';
 			echo '<tr><td>'.get_label('Longest game').':</td><td>' . format_time($l_game) . '</td></tr>';
@@ -111,7 +111,7 @@ class Page extends EventPageBase
 		
 		if ($games_count > 0)
 		{
-			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->event->id);
+			$query = new DbQuery('SELECT p.kill_type, p.role, count(*) FROM players p JOIN games g ON p.game_id = g.id WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 			$query->add(' GROUP BY p.kill_type, p.role');
 			$killed = array();
 			while ($row = $query->next())

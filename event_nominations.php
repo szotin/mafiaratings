@@ -19,10 +19,10 @@ class Page extends EventPageBase
 	{
 		parent::prepare();
 		
-		list($timezone) = Db::record(get_label('event'), 'SELECT c.timezone FROM events e JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE e.id = ?', $this->event->id);
+		list($timezone) = Db::record(get_label('event'), 'SELECT c.timezone FROM events e JOIN addresses a ON e.address_id = a.id JOIN cities c ON a.city_id = c.id WHERE e.id = ?', $this->id);
 		date_default_timezone_set($timezone);
 		
-		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->event->id);
+		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 	}
 	
 	protected function show_body()
@@ -130,7 +130,7 @@ class Page extends EventPageBase
 				' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = ? AND tu.user_id = u.id' .
 				' LEFT OUTER JOIN club_users cu ON cu.club_id = ? AND cu.user_id = u.id' .
 				' WHERE g.event_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0',
-				$this->event->id, $this->event->tournament_id, $this->event->club_id, $this->event->id, $condition);
+				$this->id, $this->tournament_id, $this->club_id, $this->id, $condition);
 		$query->add(' GROUP BY p.user_id');
 		
 		if ($sort & 2)
@@ -215,12 +215,12 @@ class Page extends EventPageBase
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
 			$event_user_pic->
-				set($id, $user_nickname, $event_user_flags, 'e' . $this->event->id)->
-				set($id, $name, $tournament_user_flags, 't' . $this->event->tournament_id)->
-				set($id, $name, $club_user_flags, 'c' . $this->event->club_id)->
+				set($id, $user_nickname, $event_user_flags, 'e' . $this->id)->
+				set($id, $name, $tournament_user_flags, 't' . $this->tournament_id)->
+				set($id, $name, $club_user_flags, 'c' . $this->club_id)->
 				set($id, $name, $flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
-			echo '</td><td><a href="event_player.php?id=' . $this->event->id . '&user_id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
+			echo '</td><td><a href="event_player.php?id=' . $this->id . '&user_id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
 			$this->club_pic->set($club_id, $club_name, $club_flags);
 			$this->club_pic->show(ICONS_DIR, true, 40);

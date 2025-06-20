@@ -10,7 +10,7 @@ class Page extends EventPageBase
 {
 	protected function show_body()
 	{
-		PhotoAlbum::show_thumbnails(new SQL('WHERE p.album_id = a.id AND a.event_id = ?', $this->event->id), '&event=' . $this->event->id);
+		PhotoAlbum::show_thumbnails(new SQL('WHERE p.album_id = a.id AND a.event_id = ?', $this->id), '&event=' . $this->id);
 	}
 }
 

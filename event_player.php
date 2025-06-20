@@ -30,24 +30,24 @@ class Page extends EventPageBase
 		
 		if (isset($_REQUEST['scoring_id']))
 		{
-			$this->event->scoring_id = (int)$_REQUEST['scoring_id'];
+			$this->scoring_id = (int)$_REQUEST['scoring_id'];
 			if (isset($_REQUEST['scoring_version']))
 			{
-				$this->event->scoring_version = (int)$_REQUEST['scoring_version'];
-				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->event->scoring_id, $this->event->scoring_version);
+				$this->scoring_version = (int)$_REQUEST['scoring_version'];
+				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 			}
 			else
 			{
-				list($this->scoring, $this->event->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->event->scoring_id);
+				list($this->scoring, $this->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
 			}
 		}
 		else
 		{
-			list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->event->scoring_id, $this->event->scoring_version);
+			list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 		}
 		$this->scoring = json_decode($this->scoring);
 		
-		$this->scoring_options = json_decode($this->event->scoring_options);
+		$this->scoring_options = json_decode($this->scoring_options);
 		if (isset($_REQUEST['scoring_ops']))
 		{
 			$ops = json_decode($_REQUEST['scoring_ops']);
@@ -68,9 +68,9 @@ class Page extends EventPageBase
 		{
 			if ($this->is_me)
 			{
-				$this->event->tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
+				$this->tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
 			}
-			$data = event_scores($this->event->id, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->scoring_options, $this->event->tournament_flags, $this->event->round_num);
+			$data = event_scores($this->id, $this->user_id, SCORING_LOD_PER_POLICY | SCORING_LOD_PER_GAME | SCORING_LOD_NO_SORTING, $this->scoring, $this->scoring_options, $this->tournament_flags, $this->round_num);
 			if (isset($data[$this->user_id]))
 			{
 				$this->player = $data[$this->user_id];
@@ -88,7 +88,7 @@ class Page extends EventPageBase
 						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
 						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
 						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
-						' WHERE u.id = ?', $this->event->id, $this->event->tournament_id, $this->event->club_id, $this->user_id);
+						' WHERE u.id = ?', $this->id, $this->tournament_id, $this->club_id, $this->user_id);
 			}
 		}
 		else
@@ -108,9 +108,9 @@ class Page extends EventPageBase
 			new Picture(USER_CLUB_PICTURE,
 			new Picture(USER_PICTURE))));
 		$this->player_pic->
-			set($this->player->id, $this->player->nickname, $this->player->event_user_flags, 'e' . $this->event->id)->
-			set($this->player->id, $this->player->name, $this->player->tournament_user_flags, 't' . $this->event->tournament_id)->
-			set($this->player->id, $this->player->name, $this->player->club_user_flags, 'c' . $this->event->club_id)->
+			set($this->player->id, $this->player->nickname, $this->player->event_user_flags, 'e' . $this->id)->
+			set($this->player->id, $this->player->name, $this->player->tournament_user_flags, 't' . $this->tournament_id)->
+			set($this->player->id, $this->player->name, $this->player->club_user_flags, 'c' . $this->club_id)->
 			set($this->player->id, $this->player->name, $this->player->flags);
 	}
 	
@@ -124,10 +124,10 @@ class Page extends EventPageBase
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td align="right">';
 		echo get_label('Select a player') . ': ';
-		show_user_input('user_name', '', 'must&event=' . $this->event->id, get_label('Select a player'), 'selectPlayer');
-		if ($this->player->id > 0 && is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id))
+		show_user_input('user_name', '', 'must&event=' . $this->id, get_label('Select a player'), 'selectPlayer');
+		if ($this->player->id > 0 && is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id, $this->id, $this->tournament_id))
 		{
-			echo '</td><td align="right" width="20"><button class="icon" onclick="changeEventPlayer(' . $this->event->id . ', ' . $this->player->id . ', \'' . $this->player->name . '\')" title="' . get_label('Replace [0] with someone else in [1].', $this->player->name, $this->event->name) . '">';
+			echo '</td><td align="right" width="20"><button class="icon" onclick="changeEventPlayer(' . $this->id . ', ' . $this->player->id . ', \'' . $this->player->name . '\')" title="' . get_label('Replace [0] with someone else in [1].', $this->player->name, $this->name) . '">';
 			echo '<img src="images/user_change.png" border="0"></button>';
 		}
 		echo '</td></tr></table>';
@@ -155,7 +155,7 @@ class Page extends EventPageBase
 		echo '<p>';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
 		echo '</td></tr></table></p>';
 		
 		echo '<table class="bordered light" width="100%">';
@@ -228,7 +228,7 @@ class Page extends EventPageBase
 		
 		foreach ($this->player->games as $game)
 		{
-			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->event->id . '&id=' . $game->game_id . $this->show_all . '&bck=1">' . get_label('Game #[0]', $game->game_id) . '</a></td>';
+			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->id . '&id=' . $game->game_id . $this->show_all . '&bck=1">' . get_label('Game #[0]', $game->game_id) . '</a></td>';
 			echo '<td align="right" width="50">';
 			switch ($game->role)
 			{
@@ -276,7 +276,7 @@ class Page extends EventPageBase
 			echo '</tr>';
 		}
 		
-		$query = new DbQuery('SELECT points, reason, mvp FROM event_extra_points WHERE event_id = ? AND user_id = ?', $this->event->id, $this->user_id);
+		$query = new DbQuery('SELECT points, reason, mvp FROM event_extra_points WHERE event_id = ? AND user_id = ?', $this->id, $this->user_id);
 		$output_needed = true;
 		while ($row = $query->next())
 		{
@@ -364,7 +364,7 @@ class Page extends EventPageBase
 		show_roles_select($roles, 'rolesChanged()', get_label('Use stats of a specific role.'), ROLE_NAME_FLAG_SINGLE);
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' AND g.event_id = ?', $this->event->id);
+		$condition = new SQL(' AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' AND g.event_id = ?', $this->id);
 		$stats = new PlayerStats($this->user_id, $roles, $condition);
 		$mafs_in_legacy = $stats->guess3maf * 3 + $stats->guess2maf * 2 + $stats->guess1maf;
 		

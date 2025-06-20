@@ -9,8 +9,8 @@ class Page extends EventPageBase
 	{
 		global $_profile, $_page, $_lang;
 		
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id);
-		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->event->club_id, $this->event->id, $this->event->tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id, $this->tournament_id);
+		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id, $this->id, $this->tournament_id);
 		
 		$event_user_pic =
 			new Picture(USER_EVENT_PICTURE, 
@@ -23,7 +23,7 @@ class Page extends EventPageBase
 		echo '<td width="87">';
 		if ($can_edit)
 		{
-			echo '<button class="icon" onclick="mr.addEventUser(' . $this->event->id . ')" title="' . get_label('Add registration to [0].', $this->event->name) . '"><img src="images/create.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.addEventUser(' . $this->id . ')" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button>';
 		}
 		echo '</td>';
 		echo '<td colspan="4">' . get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
@@ -41,7 +41,7 @@ class Page extends EventPageBase
 			' LEFT OUTER JOIN club_users cu ON cu.club_id = e.club_id AND cu.user_id = eu.user_id' .
 			' WHERE eu.event_id = ?' .
 			' ORDER BY nu.name',
-			$this->event->id);
+			$this->id);
 		while ($row = $query->next())
 		{
 			list($id, $name, $email, $user_flags, $user_nickname, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_user_flags, $city) = $row;
@@ -49,9 +49,9 @@ class Page extends EventPageBase
 			echo '<tr class="light"><td class="dark">';
 			if ($can_edit)
 			{
-				echo '<button class="icon" onclick="mr.removeEventUser(' . $id . ', ' . $this->event->id . ')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.editEventAccess(' . $id . ', ' . $this->event->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.eventUserPhoto(' . $id . ', ' . $this->event->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->event->name) . '"><img src="images/photo.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.removeEventUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.editEventAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.eventUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
 			}
 			else
 			{
@@ -61,7 +61,7 @@ class Page extends EventPageBase
 			
 			echo '<td width="60" align="center">';
 			$event_user_pic->
-				set($id, $user_nickname, $event_user_flags, 'e' . $this->event->id)->
+				set($id, $user_nickname, $event_user_flags, 'e' . $this->id)->
 				set($id, $name, $tournament_user_flags, 't' . $tournament_id)->
 				set($id, $name, $club_user_flags, 'c' . $user_club_id)->
 				set($id, $name, $user_flags);

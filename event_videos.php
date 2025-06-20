@@ -32,7 +32,7 @@ class Page extends EventPageBase
 	{
 		global $_profile, $_page;
 		
-		$langs = $this->event->langs;
+		$langs = $this->langs;
 		if (isset($_REQUEST['langs']))
 		{
 			$langs = (int)$_REQUEST['langs'];
@@ -51,7 +51,7 @@ class Page extends EventPageBase
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$video_count = 0;
 		$column_count = 0;
-		$can_add = is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $this->event->club_id, $this->event->id, $this->event->tournament_id);
+		$can_add = is_permitted(PERMISSION_CLUB_MEMBER | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id, $this->tournament_id);
 		
 		if ($can_add)
 		{
@@ -60,19 +60,19 @@ class Page extends EventPageBase
 			++$column_count;
 		}
 		
-		list ($count) = Db::record(get_label('video'), 'SELECT count(*) FROM videos v WHERE v.event_id = ?', $this->event->id, $condition);
+		list ($count) = Db::record(get_label('video'), 'SELECT count(*) FROM videos v WHERE v.event_id = ?', $this->id, $condition);
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		show_video_type_select($this->video_type, 'vtype', 'filter()');
 		echo '</td><td align="right">';
-		langs_checkboxes($langs, $this->event->langs, NULL, ' ', '', 'filter()');
+		langs_checkboxes($langs, $this->langs, NULL, ' ', '', 'filter()');
 		echo '</tr></table></p>';
 		show_pages_navigation($page_size, $count);
 		
 		if ($can_add)
 		{
 			echo '<table class="bordered light" width="100%">';
-			echo '<tr><td align="center" width="' . COLUMN_WIDTH . '%"><a href="#" onclick="mr.createVideo(' . $this->video_type . ', null, ' . $this->event->id , ', null)">';
+			echo '<tr><td align="center" width="' . COLUMN_WIDTH . '%"><a href="#" onclick="mr.createVideo(' . $this->video_type . ', null, ' . $this->id , ', null)">';
 			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '" title="' . get_label('Add [0]', get_label('video')) . '">';
 			echo '</td>';
 		}
@@ -82,7 +82,7 @@ class Page extends EventPageBase
 			' JOIN clubs c ON c.id = v.club_id' .
 			' LEFT OUTER JOIN events e ON e.id = v.event_id' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
-			' WHERE v.event_id = ?', $this->event->id, $condition);
+			' WHERE v.event_id = ?', $this->id, $condition);
 		$query->add(' ORDER BY v.video_time DESC, v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		while ($row = $query->next())
 		{
@@ -115,8 +115,8 @@ class Page extends EventPageBase
 			echo '</b></td></tr>';
 			
 			echo '<tr><td><span style="position:relative;">';
-			echo '<a href="video.php?bck=1&id=' . $video_id . '&event_id=' . $this->event->id . '&vtype=' . $this->video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="' . PICTURE_WIDTH . '" title="' . $title . '">';
-			if (!is_valid_lang($this->event->langs) && is_valid_lang($lang))
+			echo '<a href="video.php?bck=1&id=' . $video_id . '&event_id=' . $this->id . '&vtype=' . $this->video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="' . PICTURE_WIDTH . '" title="' . $title . '">';
+			if (!is_valid_lang($this->langs) && is_valid_lang($lang))
 			{
 				echo '<span class="video-lang">' . get_short_lang_str($lang) . '</span>';
 			}

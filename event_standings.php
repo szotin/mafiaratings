@@ -24,29 +24,29 @@ class Page extends EventPageBase
 		
 		parent::prepare();
 		
-		$this->event_player_params = '&id=' . $this->event->id;
+		$this->event_player_params = '&id=' . $this->id;
 		if (isset($_REQUEST['scoring_id']))
 		{
-			$this->event->scoring_id = (int)$_REQUEST['scoring_id'];
-			$this->event_player_params .= '&scoring_id=' . $this->event->scoring_id;
+			$this->scoring_id = (int)$_REQUEST['scoring_id'];
+			$this->event_player_params .= '&scoring_id=' . $this->scoring_id;
 			if (isset($_REQUEST['scoring_version']))
 			{
-				$this->event->scoring_version = (int)$_REQUEST['scoring_version'];
-				$this->event_player_params .= '&scoring_version=' . $this->event->scoring_version;
-				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->event->scoring_id, $this->event->scoring_version);
+				$this->scoring_version = (int)$_REQUEST['scoring_version'];
+				$this->event_player_params .= '&scoring_version=' . $this->scoring_version;
+				list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 			}
 			else
 			{
-				list($this->scoring, $this->event->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->event->scoring_id);
+				list($this->scoring, $this->scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $this->scoring_id);
 			}
 		}
 		else
 		{
-			list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->event->scoring_id, $this->event->scoring_version);
+			list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 		}
 		$this->scoring = json_decode($this->scoring);
 		
-		$this->scoring_options = json_decode($this->event->scoring_options);
+		$this->scoring_options = json_decode($this->scoring_options);
 		if (isset($_REQUEST['scoring_ops']))
 		{
 			$this->event_player_params .= '&scoring_ops=' . rawurlencode($_REQUEST['scoring_ops']);
@@ -92,18 +92,18 @@ class Page extends EventPageBase
 		}
 		
 		echo '<form method="get" name="viewForm">';
-		echo '<input type="hidden" name="id" value="' . $this->event->id . '">';
+		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
-		show_scoring_select($this->event->club_id, $this->event->scoring_id, $this->event->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
+		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, 'event=' . $this->event->id, get_label('Go to the page where a specific player is located.'));
+		show_user_input('page', $this->user_name, 'event=' . $this->id, get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></form>';
 		
-		$condition = new SQL(' AND g.event_id = ?', $this->event->id);
+		$condition = new SQL(' AND g.event_id = ?', $this->id);
 		
-		$players = event_scores($this->event->id, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $this->scoring, $this->scoring_options, $this->event->tournament_flags, $this->event->round_num);
+		$players = event_scores($this->id, null, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_ROLE, $this->scoring, $this->scoring_options, $this->tournament_flags, $this->round_num);
 		$players_count = count($players);
 		if ($this->user_id > 0)
 		{
@@ -168,9 +168,9 @@ class Page extends EventPageBase
 			echo '<td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">';
 			echo '<table class="transp" width="100%"><tr><td width="56">';
 			$event_user_pic->
-				set($player->id, $player->nickname, $player->event_user_flags, 'e' . $this->event->id)->
-				set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->event->tournament_id)->
-				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->event->club_id)->
+				set($player->id, $player->nickname, $player->event_user_flags, 'e' . $this->id)->
+				set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->tournament_id)->
+				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
 				set($player->id, $player->name, $player->flags);
 			$event_user_pic->show(ICONS_DIR, true, 50);
 			echo '</a></td><td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">' . $player->name . '</a></td>';
@@ -241,7 +241,7 @@ class Page extends EventPageBase
 		echo '</td><td id="comments"></td></tr></table>';
 ?>
 		<script type="text/javascript">
-			mr.showComments("event", <?php echo $this->event->id; ?>, 5);
+			mr.showComments("event", <?php echo $this->id; ?>, 5);
 			
 			function submitScoring(s)
 			{
@@ -253,7 +253,7 @@ class Page extends EventPageBase
 	
 	private function no_user_error()
 	{
-		$this->errorMessage(get_label('[0] did not play in [1].', $this->user_name, $this->event->name));
+		$this->errorMessage(get_label('[0] did not play in [1].', $this->user_name, $this->name));
 	}
 }
 

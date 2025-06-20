@@ -52,7 +52,7 @@ class Page extends EventPageBase
 		show_checkbox_filter(array(get_label('with video'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' WHERE g.event_id = ?', $this->event->id);
+		$condition = new SQL(' WHERE g.event_id = ?', $this->id);
 		if ($result_filter > 0)
 		{
 			$condition->add(' AND g.result = ?', $result_filter);
@@ -178,7 +178,7 @@ class Page extends EventPageBase
 			{
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&event_id=' . $this->event->id . '&bck=1"><b>' . get_label('Game #[0]', $game_id);
+			echo '<a href="view_game.php?id=' . $game_id . '&event_id=' . $this->id . '&bck=1"><b>' . get_label('Game #[0]', $game_id);
 			echo '</b><br>' . format_date($start, $timezone, true) . '</a>';
 			if ($video_id != NULL)
 			{
@@ -203,9 +203,9 @@ class Page extends EventPageBase
 			
 			echo '<td>';
 			$referee_pic->
-				set($referee_id, $event_referee_nickname, $event_referee_flags, 'e' . $this->event->id)->
-				set($referee_id, $referee_name, $tournament_referee_flags, 't' . $this->event->tournament_id)->
-				set($referee_id, $referee_name, $club_referee_flags, 'c' . $this->event->club_id)->
+				set($referee_id, $event_referee_nickname, $event_referee_flags, 'e' . $this->id)->
+				set($referee_id, $referee_name, $tournament_referee_flags, 't' . $this->tournament_id)->
+				set($referee_id, $referee_name, $club_referee_flags, 'c' . $this->club_id)->
 				set($referee_id, $referee_name, $referee_flags);
 			$referee_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';

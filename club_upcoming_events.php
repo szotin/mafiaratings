@@ -97,7 +97,7 @@ class Page extends ClubPageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr><td class="dark" style="padding:2px;">';
-				Event::show_buttons($id, $tour_id, $start_time, $duration, $flags, $this->id, $this->flags, ($come_odds != NULL && $come_odds > 0));
+				show_event_buttons($id, $tour_id, $start_time, $duration, $flags, $this->id, $this->flags, ($come_odds != NULL && $come_odds > 0));
 				echo '</td></tr>';	
 			}
 			
@@ -111,7 +111,7 @@ class Page extends ClubPageBase
 			
 			if ($come_odds != NULL)
 			{
-				echo '<br><br><b>' . Event::odds_str($come_odds, $bringing, $late) . '</b>';
+				echo '<br><br><b>' . event_odds_str($come_odds, $bringing, $late) . '</b>';
 			}
 			echo '</td></tr></table>';
 			

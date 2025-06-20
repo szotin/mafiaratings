@@ -119,7 +119,7 @@ class Page extends GeneralPageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr class="dark"><td style="padding:2px;">';
-				Event::show_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, ($come_odds != NULL && $come_odds > 0));
+				show_event_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, ($come_odds != NULL && $come_odds > 0));
 				echo '</td></tr>';	
 			}
 			
@@ -145,7 +145,7 @@ class Page extends GeneralPageBase
 			
 			if ($come_odds != NULL)
 			{
-				echo '<br><br><b>' . Event::odds_str($come_odds, $bringing, $late) . '</b>';
+				echo '<br><br><b>' . event_odds_str($come_odds, $bringing, $late) . '</b>';
 			}
 			echo '</td></tr></table>';
 			
