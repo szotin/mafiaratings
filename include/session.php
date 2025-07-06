@@ -3,7 +3,7 @@
 require_once __DIR__ . '/branding.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/names.php';
-require_once __DIR__ . '/rand_str.php';
+require_once __DIR__ . '/utilities.php';
 require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/languages.php';
 require_once __DIR__ . '/localization.php';
@@ -16,7 +16,7 @@ if (isset($_SERVER['HTTP_USER_AGENT']))
 	$_http_agent = $_SERVER['HTTP_USER_AGENT'];
 }
 
-if (!isset($_SERVER['HTTPS']) && is_production_server())
+if (is_web() && !isset($_SERVER['HTTPS']) && is_production_server())
 {
 	$url = 'https://';
 	if (isset($_SERVER['SERVER_NAME']))

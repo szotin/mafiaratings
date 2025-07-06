@@ -5,30 +5,45 @@ define('TOURNAMENT_CREDIT_GAMES_PERCENT', 50);
 setDir();
 require_once 'include/security.php';
 require_once 'include/scoring.php';
+require_once 'include/gaining.php';
 
-$_web = isset($_SERVER['HTTP_HOST']);
 $_filename = 'complete_competitions.log';
 $_file = NULL;
+$_whole_exec_time = ini_get('max_execution_time');
  
-if ($_web)
+if (is_web())
 {
 	if (isset($_REQUEST['no_log']))
 	{
 		$_filename = NULL;
 	}
-	define('MAX_EXEC_TIME', 25);
+	if (isset($_REQUEST['time']))
+	{
+		$_whole_exec_time = (int)$_REQUEST['time'];
+	}
+	if ($_whole_exec_time <= 0)
+	{
+		$_whole_exec_time = 30; // half a minute
+	}
 }
-else
+else if ($_whole_exec_time <= 0)
 {
-	define('MAX_EXEC_TIME', 180); // 3 minutes
+	$_whole_exec_time = 240; // 4 minutes
 }
+
+$_max_exec_time = floor($_whole_exec_time * 5 / 6);
+set_time_limit($_whole_exec_time);
 
 function writeLog($str)
 {
-	global $_web, $_file, $_filename;
-	if ($_web)
+	global $_file, $_filename;
+	if (is_web())
 	{
-		echo $str . " <br>\n";
+		echo $str . ' <br>';
+	}
+	else
+	{
+		echo $str . "\n";
 	}
 	
 	if ($_filename)
@@ -365,56 +380,34 @@ function calculate_series()
 {
 	$result = false;
 	$query = new DbQuery(
-		'SELECT s.id, s.flags, g.gaining FROM series s' . 
+		'SELECT s.id, s.flags, g.gaining, s.finals_id FROM series s' . 
 		' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version' .
 		' WHERE (s.flags & ' . SERIES_FLAG_DIRTY  . ') <> 0 LIMIT 1');
 	if ($row = $query->next())
 	{
-		list($series_id, $series_flags, $gaining) = $row;
+		list($series_id, $series_flags, $gaining, $finals_id) = $row;
 		$gaining = json_decode($gaining);
 //		print_json($gaining);
-
-		$t_sum_power = (int)get_gainig_sum_power($gaining, false);
-		if ($t_sum_power > 0)
-		{
-			$t_score_sum_query = 'SUM(POW(tp.main_points + tp.bonus_points + tp.shot_points, ' . $t_sum_power . '))';
-			$t_score_query = 'POW(p.main_points + p.bonus_points + p.shot_points, ' . $t_sum_power . ')';
-		}
-		else
-		{
-			$t_score_query = $t_score_sum_query = '0';
-		}
 		
-		$s_sum_power = (int)get_gainig_sum_power($gaining, true);
-		if ($s_sum_power > 0)
-		{
-			$s_score_sum_query = 'SUM(POW(sp.score, ' . $s_sum_power . '))';
-			$s_score_query = 'POW(sp.score, ' . $s_sum_power . ')';
-		}
-		else
-		{
-			$s_score_query = $s_score_sum_query = '0';
-		}
-//		echo formatted_json($gaining);
-		
-		$tournaments = array();
+		$tournament_players = array();
 		$query = new DbQuery(
-			'SELECT st.tournament_id, st.stars, COUNT(tp.user_id), '.$t_score_sum_query.
+			'SELECT st.tournament_id, COUNT(tp.user_id)'.
 			' FROM series_tournaments st'.
 			' JOIN tournament_places tp ON tp.tournament_id = st.tournament_id'.
 			' WHERE st.series_id = ? AND (st.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0'.
 			' GROUP BY st.tournament_id', $series_id);
-//		echo $query->get_parsed_sql() . '<br>';
 		while ($row = $query->next())
 		{
-			list($tournament_id, $stars, $players, $points_sum) = $row;
-//			echo 'tournament: ' . $tournament_id . '; stars: ' . $stars . '; players: ' . $players . '; sum: ' . $points_sum . '<br>';
-			$tournaments[$tournament_id] = create_gaining_table($gaining, $stars, $players, $points_sum, false);
+			list($tournament_id, $num_players) = $row;
+			if ($tournament_id != $finals_id)
+			{
+				$tournament_players[$tournament_id] = (int)$num_players;
+			}
 		}
 		
-		$child_series = array();
+		$child_series_players = array();
 		$query = new DbQuery(
-			'SELECT ss.child_id, ss.stars, COUNT(sp.user_id), '.$s_score_sum_query.
+			'SELECT ss.child_id, COUNT(sp.user_id)'.
 			' FROM series_series ss'.
 			' JOIN series_places sp ON sp.series_id = ss.child_id'.
 			' JOIN series s ON s.id = ss.child_id'.
@@ -422,21 +415,27 @@ function calculate_series()
 			' GROUP BY ss.child_id', $series_id);
 		while ($row = $query->next())
 		{
-			list($child_series_id, $stars, $players, $points_sum) = $row;
-			$child_series[$child_series_id] = create_gaining_table($gaining, $stars, $players, $points_sum, true);
+			list($child_series_id, $num_players) = $row;
+			$child_series_players[$child_series_id] = (int)$num_players;
 		}
 		
 		$max_tournaments = isset($gaining->maxTournaments) ? $gaining->maxTournaments : 0;
 		$players = array();
 		
 		$query = new DbQuery(
-			'SELECT t.tournament_id, p.user_id, p.place, p.games_count, p.wins, '.$t_score_query.
+			'SELECT t.tournament_id, p.user_id, p.place, p.games_count, p.wins, p.main_points + p.bonus_points + p.shot_points, t.stars'.
 			' FROM tournament_places p'.
 			' JOIN series_tournaments t ON t.tournament_id = p.tournament_id'.
-			' WHERE t.series_id = ? AND (t.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0', $series_id);
+			' WHERE t.series_id = ? AND (t.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0'.
+			' ORDER BY t.tournament_id', $series_id);
 		while ($row = $query->next())
 		{
-			list($tournament_id, $player_id, $place, $games, $wins, $score) = $row;
+			list($tournament_id, $player_id, $place, $games, $wins, $score, $stars) = $row;
+			if ($tournament_id == $finals_id)
+			{
+				continue;
+			}
+			
 			if (!isset($players[$player_id]))
 			{
 				$player = new stdClass();
@@ -459,7 +458,7 @@ function calculate_series()
 				$player = $players[$player_id];
 			}
 			
-			$points = get_gaining_points($tournaments[$tournament_id], $place, $score);
+			$points = get_gaining_points($tournament_id, $gaining, $stars, $place, $score, $tournament_players[$tournament_id], false);
 			if ($max_tournaments > 0)
 			{
 				if (count($player->p) >= $max_tournaments)
@@ -484,7 +483,7 @@ function calculate_series()
 			}
 			else
 			{
-				$player->points += get_gaining_points($tournaments[$tournament_id], $place, $score);
+				$player->points += $points;
 			}
 			++$player->tournaments;
 			$player->games += $games;
@@ -492,14 +491,15 @@ function calculate_series()
 		}
 		
 		$query = new DbQuery(
-			'SELECT sp.series_id, sp.user_id, sp.place, sp.games, sp.wins, '.$s_score_query.
+			'SELECT sp.series_id, sp.user_id, sp.place, sp.games, sp.wins, sp.score, ss.stars'.
 			' FROM series_places sp'.
 			' JOIN series_series ss ON ss.child_id = sp.series_id'.
 			' JOIN series s ON s.id = sp.series_id'.
-			' WHERE ss.parent_id = ? AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0', $series_id);
+			' WHERE ss.parent_id = ? AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0'.
+			' ORDER BY sp.series_id', $series_id);
 		while ($row = $query->next())
 		{
-			list($child_series_id, $player_id, $place, $games, $wins, $score) = $row;
+			list($child_series_id, $player_id, $place, $games, $wins, $score, $stars) = $row;
 			if (!isset($players[$player_id]))
 			{
 				$player = new stdClass();
@@ -522,7 +522,7 @@ function calculate_series()
 				$player = $players[$player_id];
 			}
 			
-			$points = get_gaining_points($child_series[$child_series_id], $place, $score);
+			$points = get_gaining_points($child_series_id, $gaining, $stars, $place, $score, $child_series_players[$child_series_id], true);
 			if ($max_tournaments > 0)
 			{
 				if (count($player->p) >= $max_tournaments)
@@ -547,7 +547,7 @@ function calculate_series()
 			}
 			else
 			{
-				$player->points += get_gaining_points($child_series[$child_series_id], $place, $score);
+				$player->points += $points;
 			}
 			++$player->tournaments;
 			$player->games += $games;
@@ -671,16 +671,19 @@ function complete_series()
 try
 {
 	date_default_timezone_set('America/Vancouver');
-	if ($_web)
+	if (is_web())
 	{
 		initiate_session();
 		check_permissions(PERMISSION_ADMIN);
 	}
 	
 	$exec_start_time = time();
+	writeLog('Time budget: ' . $_whole_exec_time . ' sec');
+	
+	
 	$spent_time = 0;
 	$count = 0;
-	while ($spent_time < MAX_EXEC_TIME)
+	while ($spent_time < $_max_exec_time)
 	{
 		if (!complete_event() && !complete_tournament() && !calculate_series() && !complete_series())
 		{
@@ -692,7 +695,7 @@ try
 	writeLog('It took ' . $spent_time . ' sec.');
 	
 	// Retire idle clubs
-	if ($spent_time < MAX_EXEC_TIME)
+	if ($spent_time < $_max_exec_time)
 	{
 		$wait_time = 60 * 60 * 24 * 365 / 2; // half a year
 		$retired_clubs = 0;
@@ -708,7 +711,7 @@ try
 		}
 	}
 	
-	// if ($_web && $count > 0)
+	// if (is_web() && $count > 0)
 	// {
 		// echo '<script>window.location.reload();</script>';
 	// }

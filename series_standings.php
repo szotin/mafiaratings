@@ -4,7 +4,7 @@ require_once 'include/series.php';
 require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
-require_once 'include/scoring.php';
+require_once 'include/gaining.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -58,14 +58,7 @@ class Page extends SeriesPageBase
 		{
 			$s = new stdClass();
 			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
-			$gaining = json_decode($gaining);
-			$s->sum_power = (int)get_gainig_sum_power($gaining, true);
-			$sum = 0;
-			if ($s->sum_power > 0)
-			{
-				list($sum) = Db::record(get_label('tournament'), 'SELECT SUM(POW(tp.main_points + tp.bonus_points + tp.shot_points, ' . $s->sum_power . ')) FROM tournament_places tp WHERE tp.tournament_id = ?', $this->id);
-			}
-			$s->points = create_gaining_table($gaining, $s->stars, $count, $sum, true);
+			$s->gaining = json_decode($gaining);
 			$parent_series[] = $s;
 		}
 		$parent_series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
@@ -144,7 +137,7 @@ class Page extends SeriesPageBase
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . format_gain(get_gaining_points($s->points, $place, pow($points, $s->sum_power))) . '</td>';
+					echo '<td align="center">' . format_gain(get_gaining_points($s->id, $s->gaining, $s->stars, $place, $points, $count, true)) . '</td>';
 				}
 				else
 				{

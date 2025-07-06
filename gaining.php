@@ -1,7 +1,7 @@
 <?php
 
 require_once 'include/general_page_base.php';
-require_once 'include/scoring.php';
+require_once 'include/gaining.php';
 
 class Page extends GeneralPageBase
 {

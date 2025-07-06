@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/error.php';
 require_once __DIR__ . '/localization.php';
+require_once __DIR__ . '/utilities.php';
 
 define('EV_MAX_VALUE', 2000000000);
 define('EV_MIN_VALUE', -2000000000);
@@ -37,6 +38,7 @@ abstract class EvFunction
 {
 	public abstract function evaluate($evaluator, $args);
 	public abstract function name();
+	public abstract function id();
 	public function is_deterministic() { return true; }
 }
 
@@ -54,8 +56,13 @@ class EvFuncRound extends EvFunction
 			return round($args[0]->evaluate(), $args[1]->evaluate());
 		}
 	}
-	
+
 	public function name()
+	{
+		return 'round';
+	}
+
+	public function id()
 	{
 		return 'round';
 	}
@@ -71,8 +78,13 @@ class EvFuncFloor extends EvFunction
 		}
 		return 0;
 	}
-	
+
 	public function name()
+	{
+		return 'floor';
+	}
+
+	public function id()
 	{
 		return 'floor';
 	}
@@ -88,8 +100,13 @@ class EvFuncCeil extends EvFunction
 		}
 		return 0;
 	}
-	
+
 	public function name()
+	{
+		return 'ceil';
+	}
+
+	public function id()
 	{
 		return 'ceil';
 	}
@@ -119,8 +136,13 @@ class EvFuncLog extends EvFunction
 			return log($value, $args[1]->evaluate());
 		}
 	}
-	
+
 	public function name()
+	{
+		return 'log';
+	}
+
+	public function id()
 	{
 		return 'log';
 	}
@@ -137,8 +159,13 @@ class EvFuncMin extends EvFunction
 		}
 		return $result;
 	}
-	
+
 	public function name()
+	{
+		return 'min';
+	}
+
+	public function id()
 	{
 		return 'min';
 	}
@@ -155,8 +182,13 @@ class EvFuncMax extends EvFunction
 		}
 		return $result;
 	}
-	
+
 	public function name()
+	{
+		return 'max';
+	}
+
+	public function id()
 	{
 		return 'max';
 	}
@@ -164,20 +196,28 @@ class EvFuncMax extends EvFunction
 
 class EvFuncParam extends EvFunction
 {
-	public function __construct($name)
+	public function __construct($name, $id = NULL)
 	{
 		$this->name = $name;
+		if (is_null($id))
+		{
+			$this->id = $name;
+		}
+		else
+		{
+			$this->id = $id;
+		}
 	}
 	
 	public function evaluate($evaluator, $args)
 	{
 		$param_name = $this->name;
-		if (!isset($evaluator->$param_name))
+		if (!isset($evaluator->vars->$param_name))
 		{
 			return 0;
 		}
 		
-		$param = $evaluator->$param_name;
+		$param = $evaluator->vars->$param_name;
 		for ($i = 0; $i < count($args); ++$i)
 		{
 			if (is_array($param))
@@ -199,9 +239,13 @@ class EvFuncParam extends EvFunction
 				}
 				$param = $param[$arg];
 			}
-			else
+			else if (is_numeric($param))
 			{
 				return $param;
+			}
+			else
+			{
+				return 0;
 			}
 		}
 		
@@ -213,17 +257,26 @@ class EvFuncParam extends EvFunction
 			}
 			$param = $param[0];
 		}
-		return $param;
+		if (is_numeric($param))
+		{
+			return $param;
+		}
+		return 0;
 	}
 	
 	public function is_deterministic() 
 	{
 		return false;
 	}
-	
+
 	public function name()
 	{
 		return $this->name;
+	}
+
+	public function id()
+	{
+		return $this->id;
 	}
 }
 
@@ -251,10 +304,7 @@ class EvNode
 	
 	public function is_complete()
 	{
-		return
-			$this->type == EV_LEXEM_VALUE ||
-			$this->type == EV_LEXEM_CLOSE_BRACKET ||
-			$this->type == EV_LEXEM_FUNC;
+		return $this->type == EV_LEXEM_VALUE || $this->type == EV_LEXEM_CLOSE_BRACKET;
 	}
 	
 	public function optimize()
@@ -308,11 +358,7 @@ class EvNode
 		case EV_LEXEM_COLUMN:
 			return ':';
 		case EV_LEXEM_FUNC:
-			if (isset($this->index))
-			{
-				return $this->evaluator->functions[$this->index]->name();
-			}
-			return  'unknown function';
+			return $this->name;
 		}
 		return  'unknown lexem';
 	}
@@ -353,6 +399,8 @@ class EvNode
 			$result .= '+';
 			break;
 		case EV_LEXEM_UNARY_MINUS:
+			$result .= '-';
+			break;
 		case EV_LEXEM_MINUS:
 			$result .= '-';
 			break;
@@ -384,14 +432,7 @@ class EvNode
 			$result .= ':';
 			break;
 		case EV_LEXEM_FUNC:
-			if (isset($this->index))
-			{
-				$result .= $this->evaluator->functions[$this->index]->name();
-			}
-			else
-			{
-				$result .= 'unknown function';
-			}
+			$result .= $this->name;
 			break;
 		}
 		return $result;
@@ -859,25 +900,30 @@ class EvTernaryOpNode extends EvNode
 
 class EvFuncNode extends EvNode
 {
-	public function __construct($evaluator, $index, $position, $prev)
+	public function __construct($evaluator, $name, $position, $prev)
 	{
 		parent::__construct($evaluator, EV_LEXEM_FUNC, $position, $prev);
-		$this->index = $index;
+		
+		$this->name = $name;
+		$this->index = -1;
+		for ($i = 0; $i < count($evaluator->functions); ++$i)
+		{
+			if (strcasecmp($evaluator->functions[$i]->name(), $name) == 0)
+			{
+				$this->index = $i;
+				break;
+			}
+		}
 	}
 	
 	public function complete()
 	{
-		if (!$this->next)
-		{
-			$this->evaluator->unexpectedLexem($this);
-		}
-		
-		if ($this->next->type != EV_LEXEM_OPEN_BRACKET)
-		{
-			$this->evaluator->unexpectedLexem($this->next);
-		}
-		
 		$this->args = array();
+		if (!$this->next || $this->next->type != EV_LEXEM_OPEN_BRACKET)
+		{
+			return;
+		}
+		
 		$open_bracket = $this->next;
 		while ($open_bracket->type != EV_LEXEM_CLOSE_BRACKET)
 		{
@@ -942,16 +988,60 @@ class EvFuncNode extends EvNode
 	
 	public function evaluate()
 	{
-		$result = $this->evaluator->functions[$this->index]->evaluate($this->evaluator, $this->args);
-		// echo $this->position.': '.$this->evaluator->functions[$this->index]->name();
-		// $delim ='(';
-		// foreach($this->args as $arg)
-		// {
-			// echo $delim.$arg->evaluate();
-			// $delim = ',';
-		// }
-		// echo ')='.$result.'<br>';
-		return $result;
+		if ($this->index >= 0)
+		{
+			return $this->evaluator->functions[$this->index]->evaluate($this->evaluator, $this->args);
+		}
+		
+		$name = $this->name;
+		if (isset($this->evaluator->vars->$name))
+		{
+			$param = $this->evaluator->vars->$name;
+			for ($i = 0; $i < count($this->args); ++$i)
+			{
+				if (is_array($param))
+				{
+					$param_count = count($param); 
+					if ($param_count == 0)
+					{
+						return 0;
+					}
+					
+					$arg = floor($this->args[$i]->evaluate());
+					if ($arg < 0)
+					{
+						$arg = 0;
+					}
+					else if ($arg >= $param_count)
+					{
+						$arg = $param_count - 1;
+					}
+					$param = $param[$arg];
+				}
+				else if (is_numeric($param))
+				{
+					return $param;
+				}
+				else
+				{
+					return 0;
+				}
+			}
+			
+			while (is_array($param))
+			{
+				if (count($param) == 0)
+				{
+					return 0;
+				}
+				$param = $param[0];
+			}
+			if (is_numeric($param))
+			{
+				return $param;
+			}
+		}
+		return 0;
 	}
 	
 	public function to_string($indent = 0)
@@ -969,7 +1059,12 @@ class EvFuncNode extends EvNode
 	
 	public function optimize()
 	{
-		$can_optimize = $this->evaluator->functions[$this->index]->is_deterministic();
+		$can_optimize = false;
+		if ($this->index >= 0)
+		{
+			$can_optimize = $this->evaluator->functions[$this->index]->is_deterministic();
+		}
+		
 		if (isset($this->args))
 		{
 			for ($i = 0; $i < count($this->args); ++$i)
@@ -985,6 +1080,7 @@ class EvFuncNode extends EvNode
 				}
 			}
 		}
+		
 		if ($can_optimize)
 		{
 			return new EvValueNode($this->evaluator, $this->evaluate(), $this->position, NULL);
@@ -995,7 +1091,7 @@ class EvFuncNode extends EvNode
 	
 	function has_function($name)
 	{
-		if (strcasecmp($this->evaluator->functions[$this->index]->name(), $name) == 0)
+		if (strcasecmp($this->name, $name) == 0)
 		{
 			return true;
 		}
@@ -1085,10 +1181,19 @@ class EvBracketNode extends EvNode
 //------------------------------------------------------------------------------------------------
 class Evaluator
 {
-	public function __construct($expr, &$functions)
+	public function __construct($expr, $functions)
 	{
 		$this->functions = &$functions;
+		$this->node = NULL;
+		$this->vars = new stdClass();
 		$this->parse($expr);
+		// $this->lh = false;
+		// if ($expr == 'matter(10) ? 0.7 : (matter(11) ? 0.5 : 0)')
+		// {
+			// echo $expr . '<br>';
+			// $this->print_nodes();
+			// $this->lh = true;
+		// }
 	}
 	
 	public function parse($expr)
@@ -1109,11 +1214,12 @@ class Evaluator
 	
 	public function evaluate()
 	{
-		if (!isset($this->node))
+		$result = 0;
+		if (isset($this->node))
 		{
-			return 0;
+			$result = max(min($this->node->evaluate(), EV_MAX_VALUE), EV_MIN_VALUE);
 		}
-		return max(min($this->node->evaluate(), EV_MAX_VALUE), EV_MIN_VALUE);
+		return $result;
 	}
 	
 	public function optimize()
@@ -1327,7 +1433,7 @@ class Evaluator
 		}
 		else if ($c == '-')
 		{
-			if ($prevNode && $prevNode->is_complete())
+			if ($prevNode && ($prevNode->type == EV_LEXEM_VALUE || $prevNode->type == EV_LEXEM_CLOSE_BRACKET || $prevNode->type == EV_LEXEM_FUNC))
 			{
 				$node = new EvBinaryOpNode($this, EV_LEXEM_MINUS, $index, $prevNode);
 			}
@@ -1379,26 +1485,158 @@ class Evaluator
 		}
 		else
 		{
-			for ($i = 0; $i < count($this->functions); ++$i)
+			$func_name = '';
+			while (ctype_alnum($c) || $c == '_')
 			{
-				$func_name = $this->functions[$i]->name();
-				if (stripos($expr, $func_name, $index) === $index)
+				$func_name .= $c;
+				if (++$index >= strlen($expr))
 				{
-					$index += strlen($func_name);
-					$node = new EvFuncNode($this, $i, $index, $prevNode);
+					break;
 				}
+				$c = $expr[$index];
 			}
-			if (is_null($node))
+			if (empty($func_name))
 			{
 				throw new Exc(get_label('Unexpected lexem: [0]', $index));
 			}
+			$node = new EvFuncNode($this, $func_name, $index, $prevNode);
 		}
 		return $node;
 	}
 	
+	// private static function check_var_name($name)
+	// {
+		// if (strlen($name) == 0)
+		// {
+			// return false;
+		// }
+		
+		// if (!ctype_alpha($name[0]) && $name[0] != '_')
+		// {
+			// return false;
+		// }
+		// for ($i = 1; $i < strlen($name); ++$i)
+		// {			
+			// if (!ctype_alnum($name[$i]) && $name[$i] != '_')
+			// {
+				// return false;
+			// }
+		// }
+		// return true;
+	// }
+	
+	public function set_var($name, $value)
+	{
+		if (!is_numeric($value) && !is_array($value))
+		{
+			if (is_string($value))
+			{
+				$expr = $this->expr;
+				$node = $this->node;
+				try
+				{
+					$this->parse($value);
+					$value = $this->evaluate();
+				}
+				finally
+				{
+					$this->expr = $expr;
+					$this->node = $node;
+				}
+			}
+			else 
+			{
+				$value = 0;
+			}
+		}
+		$this->vars->$name = $value;
+	}
+	
+	public function unset_var($name)
+	{
+		if (isset($this->vars->$name))
+		{
+			unset($this->vars->$name);
+		}
+	}
+	
+	public function is_var_set($name)
+	{
+		return isset($this->vars->$name);
+	}
+	
+	public function get_var($name)
+	{
+		if (isset($this->vars->$name))
+		{
+			return $this->vars->$name;
+		}
+		return 0;
+	}
+	
+	private function _add_var($name, $value, $vars)
+	{
+		if (!isset($this->vars->$name))
+		{
+			if (!is_numeric($value) && !is_array($value))
+			{
+				if (is_string($value))
+				{
+					$this->vars->$name = 0;
+					$this->parse($value);
+					foreach ($vars as $v => $n)
+					{
+						if ($n != $name && $this->has_function($n))
+						{
+							$this->_add_var($n, $n, $vars);
+						}
+					}
+					$value = $this->evaluate();
+				}
+				else
+				{
+					$value = 0;
+				}
+			}
+			$this->vars->$name = $value;
+		}
+	}
+	
+	public function unset_vars($vars)
+	{
+		foreach ($vars as $name => $value)
+		{
+			$this->unset_var($name);
+		}
+	}
+	
+	// Formulas should be like:
+	// { var1: "log(12+50/14, 10)^3", var2: "var1+4.23" }
+	// Every formula is calculated and values for var1 and var2 are added to evaluator.
+	// Note that vars can depend on each other. In this example var2 depends on var1.
+	public function set_vars($vars)
+	{
+		$this->unset_vars($vars);
+		
+		$expr = $this->expr;
+		$node = $this->node;
+		try
+		{
+			foreach ($vars as $name => $value)
+			{
+				$this->_add_var($name, $value, $vars);
+			}
+		}
+		finally
+		{
+			$this->expr = $expr;
+			$this->node = $node;
+		}
+	}
+	
 	public function print_nodes()
 	{
-		echo '-----------------------------------------<br>';
+		echo '----------------------------------------- nodes<br>';
 		if (!isset($this->node))
 		{
 			return;
@@ -1412,6 +1650,26 @@ class Evaluator
 			$node = $node->next;
 		}
 		echo '</pre>';
+		echo '-----------------------------------------<br>';
+	}
+	
+	public function print_vars()
+	{
+		echo '----------------------------------------- vars<br>';
+		foreach ($this->vars as $name => $value)
+		{
+			echo $name . ' = ';
+			if (is_numeric($value) || is_string($value))
+			{
+				echo $value;
+			}
+			else
+			{
+				echo json_encode($value);
+			}
+			echo "<br>";
+		}
+		echo '-----------------------------------------<br>';
 	}
 }
 

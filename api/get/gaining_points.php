@@ -1,7 +1,7 @@
 <?php
 
 require_once '../../include/api.php';
-require_once '../../include/scoring.php';
+require_once '../../include/gaining.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -44,12 +44,6 @@ class ApiPage extends GetApiPageBase
 			$stars = (int)$_REQUEST['stars'];
 		}
 		
-		$stars = 1;
-		if (isset($_REQUEST['stars']))
-		{
-			$stars = (double)$_REQUEST['stars'];
-		}
-		
 		$players = 20;
 		if (isset($_REQUEST['players']))
 		{
@@ -63,11 +57,9 @@ class ApiPage extends GetApiPageBase
 		}
 		
 		$points = array();
-		$table = create_gaining_table($gaining, $stars, $players, 0, $series);
-		$this->response['table'] = $table;
-		for ($p = 1; $p <= $table->players; ++$p)
+		for ($p = 1; $p <= $players; ++$p)
 		{
-			$points[] = get_gaining_points($table, $p, 0);
+			$points[] = get_gaining_points(0, $gaining, $stars, $p, 0, $players, $series);
 		}
 		$this->response['points'] = $points;
 	}

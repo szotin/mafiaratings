@@ -372,7 +372,7 @@ class PageBase
 		{
 			echo '<ul style="display:none;">';
 		}
-		
+
 		foreach ($menu as $item)
 		{
 			echo '<li';

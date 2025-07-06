@@ -4,10 +4,10 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/evaluator.php';
+require_once __DIR__ . '/utilities.php';
 
 define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIIM)
 define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
-define('GAINING_DEFAULT_ID', 1); // Default gaining system is hardcoded here to MWT (Mafia World Tour)
 
 //define('SCORING_TRACK_ROLE', -1); //ROLE_CIVILIAN);
 
@@ -103,10 +103,6 @@ class EvFuncMatter extends EvFunction
 {
 	public function evaluate($evaluator, $args)
 	{
-		if (!isset($evaluator->matter))
-		{
-			return 0;
-		}
 		if (count($args) <= 0)
 		{
 			$matter = 0;
@@ -116,10 +112,15 @@ class EvFuncMatter extends EvFunction
 			$matter = round($args[0]->evaluate());
 		}
 		$flag = 1 << $matter;
-		return ($evaluator->matter & $flag) ? 1 : 0;
+		return ($evaluator->get_var('matter') & $flag) ? 1 : 0;
 	}
-	
+
 	public function name()
+	{
+		return 'matter';
+	}
+
+	public function id()
 	{
 		return 'matter';
 	}
@@ -130,7 +131,9 @@ class EvFuncMatter extends EvFunction
 	}
 }
 
-$_scoring_functions = array(
+function get_scoring_functions()
+{
+	return array(
 		new EvFuncRound(), 
 		new EvFuncFloor(), 
 		new EvFuncCeil(), 
@@ -142,6 +145,7 @@ $_scoring_functions = array(
 		new EvFuncParam('role'), // 0-civ,1-sheriff;2-maf;3-don
 		new EvFuncParam('difficulty'),
 		new EvFuncMatter());
+}
 
 function is_hiding_bonus_needed($tournament_flags, $round_num)
 {
@@ -237,53 +241,9 @@ function format_coeff($coeff, $sign_digits = 3)
 	return round($coeff, $sign_digits - floor(log10($coeff)) - 1);
 }
 
-function format_float($number, $digits, $zeroes = true)
-{
-	if ($number == 0)
-	{
-		if ($zeroes)
-		{
-			return 0;
-		}
-		return '';
-	}
-	
-	$int_number = (int)($number * pow(10, $digits + 1));
-	if ($int_number % 10 >= 5)
-	{
-		$int_number /= 10;
-		$int_number += 1;
-	}
-	else
-	{
-		$int_number /= 10;
-	}
-	
-	$result = number_format($number, $digits);
-	$pos = -1;
-	for ($i = strlen($result) - 1; $i >= 0 && $result[$i] == '0'; --$i)
-	{
-		$pos = $i;
-	}
-	if ($pos >= 0)
-	{
-		if ($result[$i] == '.')
-		{
-			--$pos;
-		}
-		$result = substr($result, 0, $pos);
-	}
-	return $result;
-}
-
 function format_score($score, $zeroes = true)
 {
 	return format_float($score, 3, $zeroes);
-}
-
-function format_gain($gain, $zeroes = true)
-{
-	return format_float($gain, 2, $zeroes);
 }
 
 function format_rating($rating)
@@ -640,8 +600,9 @@ function init_player_score($player, $scoring, $lod_flags)
 // returns true if game difficulty is used
 function create_evaluators($scoring)
 {
-	global $_scoring_groups, $_scoring_functions;
+	global $_scoring_groups;
 	$scoring->is_game_difficulty_used = false;
+	$functions = get_scoring_functions();
 	
 	foreach ($_scoring_groups as $group_name)
 	{
@@ -660,7 +621,7 @@ function create_evaluators($scoring)
 				{
 					if (!isset($policy->evaluator))
 					{
-						$policy->evaluator = new Evaluator($policy->points, $_scoring_functions);
+						$policy->evaluator = new Evaluator($policy->points, $functions);
 					}
 					$scoring->is_game_difficulty_used = $scoring->is_game_difficulty_used || $policy->evaluator->has_function('difficulty');
 				}
@@ -674,7 +635,7 @@ function create_evaluators($scoring)
 			{
 				if (!isset($policy->mvpEvaluator))
 				{
-					$policy->mvpEvaluator = new Evaluator($policy->mvp, $_scoring_functions);
+					$policy->mvpEvaluator = new Evaluator($policy->mvp, $functions);
 				}
 				$scoring->is_game_difficulty_used = $scoring->is_game_difficulty_used || $policy->mvpEvaluator->has_function('difficulty');
 			}
@@ -787,11 +748,11 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 			
 			if (isset($policy->evaluator))
 			{
-				$policy->evaluator->difficulty = $difficulty;
-				$policy->evaluator->counter = $counters;
-				$policy->evaluator->bonus = $extra_pts;
-				$policy->evaluator->role = $game_role;
-				$policy->evaluator->matter = $game_flags;
+				$policy->evaluator->set_var('difficulty', $difficulty);
+				$policy->evaluator->set_var('counter', $counters);
+				$policy->evaluator->set_var('bonus', $extra_pts);
+				$policy->evaluator->set_var('role', $game_role);
+				$policy->evaluator->set_var('matter', $game_flags);
 				$points = $policy->evaluator->evaluate();
 			}
 			else
@@ -803,11 +764,11 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 			{
 				if (is_string($policy->mvp))
 				{
-					$policy->mvpEvaluator->difficulty = $difficulty;
-					$policy->mvpEvaluator->counter = $counters;
-					$policy->mvpEvaluator->bonus = $extra_pts;
-					$policy->mvpEvaluator->role = $game_role;
-					$policy->mvpEvaluator->matter = $game_flags;
+					$policy->mvpEvaluator->set_var('difficulty', $difficulty);
+					$policy->mvpEvaluator->set_var('counter', $counters);
+					$policy->mvpEvaluator->set_var('bonus', $extra_pts);
+					$policy->mvpEvaluator->set_var('role', $game_role);
+					$policy->mvpEvaluator->set_var('matter', $game_flags);
 					$mvp_points = $policy->mvpEvaluator->evaluate();
 				}
 				else if (is_bool($policy->mvp))
@@ -2276,682 +2237,6 @@ function get_scoring_group_policies_count($group, $scoring, $options = NULL)
 	return $count;
 }
 
-function get_gaining_points($table, $place, $score)
-{
-	--$place; // switch to 0 based index
-	if ($place < 0 || $place >= $table->players)
-	{
-		return 0;
-	}
-	
-	if (isset($table->asIs))
-	{
-		return $score * $table->asIs;
-	}
-	
-	$min_points = 0;
-	if (isset($table->minPoints))
-	{
-		$min_points = (float)$table->minPoints;
-	}
-	
-	$share_points = 0;
-	if (isset($table->pointsPool) && $table->scoreSum > 0)
-	{
-		if ($table->tournamentScorePower > 0)
-		{
-			$share_points = $table->pointsPool * min(max($score / $table->scoreSum, 0), 1);
-		}
-		else
-		{
-			$share_points = $table->pointsPool / $table->players;
-		}
-	}
-		
-	if (isset($table->points))
-	{
-		$points_count = count($table->points);
-		if ($place < $points_count)
-		{
-			return $share_points + $table->points[$place]; 
-		}
-		
-		$formula = 0;
-		if (isset($table->formula))
-		{
-			$formula = (int)$table->formula;
-		}
-		
-		if ($formula > 0 && $points_count > 0)
-		{
-			return $share_points + $min_points + ($table->points[$points_count - 1] - $min_points) * pow(($table->players - $place - 1) / ($table->players - $points_count), $formula);
-		}
-	}
-	return $share_points + $min_points;
-}
-
-function _gaining_tables_regression($table1, $table2, $stars, $players)
-{
-	if ($table1->stars == $stars && $table2->stars == $stars)
-	{
-		if ($table1->players == $players)
-		{
-			return $table1;
-		}
-		if ($table2->players == $players)
-		{
-			return $table2;
-		}
-		
-		if ($table1->players == $table2->players)
-		{
-			throw Exc('Regression is impossible between stars ' . $table1->stars . '=>' . $stars . '=>' . $table2->stars . ' and players ' . $table1->players . '=>' . $players . '=>' . $table2->players);
-		}
-		
-		$points1 = 0;
-		if (isset($table1->points))
-		{
-			$points1 = count($table1->points);
-		}
-		
-		$points2 = 0;
-		if (isset($table2->points))
-		{
-			$points2 = count($table2->points);
-		}
-		
-		$table = new stdClass();
-		$table->stars = $stars;
-		$table->players = $players;
-		
-		$min_points1 = 0;
-		if (isset($table1->minPoints))
-		{
-			$min_points1 = $table1->minPoints;
-		}
-		$min_points2 = 0;
-		if (isset($table2->minPoints))
-		{
-			$min_points2 = $table2->minPoints;
-		}
-		$min_points = ($min_points2 * ($players - $table1->players) + $min_points1 * ($table2->players - $players)) / ($table2->players - $table1->players);
-		if ($min_points != 0)
-		{
-			$table->minPoints = $min_points;
-		}
-		
-		$ppp1 = 0;
-		if (isset($table1->pointsPerPlayer))
-		{
-			$ppp1 = $table1->pointsPerPlayer;
-		}
-		$ppp2 = 0;
-		if (isset($table2->pointsPerPlayer))
-		{
-			$ppp2 = $table2->pointsPerPlayer;
-		}
-		$ppp = ($ppp2 * ($players - $table1->players) + $ppp1 * ($table2->players - $players)) / ($table2->players - $table1->players);
-		if ($ppp != 0)
-		{
-			$table->pointsPerPlayer = $ppp;
-		}
-		
-		if (isset($table1->formula))
-		{
-			$table->formula = $table1->formula;
-		}
-		$table->points = array();
-		$i = 0;
-		while (true)
-		{
-			$keep_going = false;
-			if ($i < $points1)
-			{
-				$keep_going = true;
-				$p1 = $table1->points[$i];
-			}
-			else
-			{
-				$p1 = get_gaining_points($table1, $i + 1, 0);
-			}
-			if ($i < $points2)
-			{
-				$keep_going = true;
-				$p2 = $table2->points[$i];
-			}
-			else
-			{
-				$p2 = get_gaining_points($table2, $i + 1, 0);
-			}
-			
-			if ($keep_going)
-			{
-				$table->points[$i] = ($p2 * ($players - $table1->players) + $p1 * ($table2->players - $players)) / ($table2->players - $table1->players);
-				++$i;
-			}
-			else
-			{
-				break;
-			}
-		}
-		return $table;
-	}
-	else if ($table1->players == $players && $table2->players == $players)
-	{
-		if ($table1->stars == $stars)
-		{
-			return $table1;
-		}
-		if ($table2->stars == $stars)
-		{
-			return $table2;
-		}
-		
-		if ($table1->stars == $table2->stars)
-		{
-			throw Exc('Regression is impossible between stars ' . $table1->stars . '=>' . $stars . '=>' . $table2->stars . ' and players ' . $table1->players . '=>' . $players . '=>' . $table2->players);
-		}
-		
-		$points1 = 0;
-		if (isset($table1->points))
-		{
-			$points1 = count($table1->points);
-		}
-		
-		$points2 = 0;
-		if (isset($table2->points))
-		{
-			$points2 = count($table2->points);
-		}
-		
-		$table = new stdClass();
-		$table->stars = $stars;
-		$table->players = $players;
-		
-		$min_points1 = 0;
-		if (isset($table1->minPoints))
-		{
-			$min_points1 = $table1->minPoints;
-		}
-		$min_points2 = 0;
-		if (isset($table2->minPoints))
-		{
-			$min_points2 = $table2->minPoints;
-		}
-		$min_points = ($min_points2 * ($stars - $table1->stars) + $min_points1 * ($table2->stars - $stars)) / ($table2->stars - $table1->stars);
-		if ($min_points != 0)
-		{
-			$table->minPoints = $min_points;
-		}
-		
-		$ppp1 = 0;
-		if (isset($table1->pointsPerPlayer))
-		{
-			$ppp1 = $table1->pointsPerPlayer;
-		}
-		$ppp2 = 0;
-		if (isset($table2->pointsPerPlayer))
-		{
-			$ppp2 = $table2->pointsPerPlayer;
-		}
-		$ppp = ($ppp2 * ($stars - $table1->stars) + $ppp1 * ($table2->stars - $stars)) / ($table2->stars - $table1->stars);
-		if ($ppp != 0)
-		{
-			$table->pointsPerPlayer = $ppp;
-		}
-		
-		if (isset($table1->formula))
-		{
-			$table->formula = $table1->formula;
-		}
-		$table->points = array();
-		$i = 0;
-		while (true)
-		{
-			$keep_going = false;
-			if ($i < $points1)
-			{
-				$keep_going = true;
-				$p1 = $table1->points[$i];
-			}
-			else
-			{
-				$p1 = get_gaining_points($table1, $i + 1, 0);
-			}
-			if ($i < $points2)
-			{
-				$keep_going = true;
-				$p2 = $table2->points[$i];
-			}
-			else
-			{
-				$p2 = get_gaining_points($table2, $i + 1, 0);
-			}
-			
-			if ($keep_going)
-			{
-				$table->points[$i] = ($p2 * ($stars - $table1->stars) + $p1 * ($table2->stars - $stars)) / ($table2->stars - $table1->stars);
-				++$i;
-			}
-			else
-			{
-				break;
-			}
-		}
-		return $table;
-	}
-	throw Exc('Regression is impossible between stars ' . $table1->stars . '=>' . $stars . '=>' . $table2->stars . ' and players ' . $table1->players . '=>' . $players . '=>' . $table2->players);
-}
-
-function _create_zero_gaining_table($stars, $players)
-{
-	$table = new stdClass();
-	$table->stars = $stars;
-	$table->players = $players;
-	return $table;
-}
-
-function _create_gaining_table_for_players($gaining, $stars_obj, $players_obj, $players)
-{
-	$stars = 1;
-	if (isset($stars_obj->stars))
-	{
-		$stars = $stars_obj->stars;
-	}
-	
-	$table = new stdClass();
-	$table->stars = isset($stars_obj->stars) ? $stars_obj->stars : 1;
-	$table->players = $players;
-	if (isset($players_obj->points))
-	{
-		$table->points = $players_obj->points;
-	}
-	
-	if (isset($players_obj->pointsPerPlayer))
-	{
-		$table->pointsPerPlayer = $players_obj->pointsPerPlayer;
-	}
-	
-	if (isset($stars_obj->minPoints))
-	{
-		$table->minPoints = $stars_obj->minPoints;
-	}
-	
-	if (isset($stars_obj->formula))
-	{
-		$table->formula = $stars_obj->formula;
-	}
-	else if (isset($gaining->formula))
-	{
-		$table->formula = $gaining->formula;
-	}
-	return $table;
-}
-
-function _create_gaining_table_for_stars($gaining, $stars_obj, $players)
-{
-	$table = NULL;
-	$stars = 1;
-	if (isset($stars_obj->stars))
-	{
-		$stars = $stars_obj->stars;
-	}
-	
-	if (isset($stars_obj->points))
-	{
-		$players_obj1 = $players_obj2 = NULL;
-		$delta1 = $delta2 = 100000000;
-		for ($i = 0; $i < count($stars_obj->points); ++$i)
-		{
-			$players_obj = $stars_obj->points[$i];
-			$p = isset($players_obj->players) ? $players_obj->players : 10;
-			if ($players == $p)
-			{
-				$players_obj1 = $players_obj;
-				$players_obj2 = NULL;
-				break;
-			}
-			
-			$delta = abs($p - $players);
-			if ($delta < $delta1 && $delta2 <= $delta1)
-			{
-				$players_obj1 = $players_obj;
-				$delta1 = $delta;
-			}
-			else if ($delta < $delta2)
-			{
-				$players_obj2 = $players_obj;
-				$delta2 = $delta;
-			}
-		}
-		
-		if ($players_obj1 != NULL)
-		{
-			if ($players_obj2 != NULL)
-			{
-				$players1 = isset($players_obj1->players) ? $players_obj1->players : 1;
-				$players2 = isset($players_obj2->players) ? $players_obj2->players : 1;
-				if ($players1 > $players2)
-				{
-					$players_obj = $players_obj2;
-					$players_obj2 = $players_obj1;
-					$players_obj1 = $players_obj;
-					
-					$p = $players2;
-					$players2 = $players1;
-					$players1 = $p;
-				}
-				
-				if ($players < $players1)
-				{
-					if (!isset($gaining->lessPlayers) || $gaining->lessPlayers == 'no')
-					{
-						$table = _create_zero_gaining_table($stars, $players);
-					}
-					else if ($gaining->lessPlayers == 'closest')
-					{
-						$table = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj1, $players);
-					}
-					else if ($gaining->lessPlayers != 'extrapolate')
-					{
-						throw new Exc('Invalid lessPlayers value "' . $gaining->lessPlayers . '". Valid values are: "no", "closest", and "extrapolate".');
-					}
-				}
-				else if ($players < $players2)
-				{
-					if (!isset($gaining->midPlayers) || $gaining->midPlayers == 'min')
-					{
-						$table = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj1, $players);
-					}
-					else if ($gaining->midPlayers == 'max')
-					{
-						$table = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj2, $players);
-					}
-					else if ($gaining->midPlayers == 'closest')
-					{
-						if (abs($players1 - $players) < abs($players2 - $players))
-						{
-							$table = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj1, $players);
-						}
-						else
-						{
-							$table = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj2, $players);
-						}
-					}
-					else if ($gaining->midPlayers == 'no')
-					{
-						$table = _create_zero_gaining_table($stars, $players);
-					}
-					else if ($gaining->midPlayers != 'interpolate')
-					{
-						throw new Exc('Invalid midPlayers value "' . $gaining->midPlayers . '". Valid values are: "no", "min", "max", "closest", and "interpolate".');
-					}
-				}
-				else
-				{
-					if (!isset($gaining->morePlayers) || $gaining->morePlayers == 'closest')
-					{
-						$table = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj1, $players);
-					}
-					else if ($gaining->morePlayers == 'no')
-					{
-						$table = _create_zero_gaining_table($stars, $players);
-					}
-					else if ($gaining->morePlayers != 'extrapolate')
-					{
-						throw new Exc('Invalid morePlayers value "' . $gaining->morePlayers . '". Valid values are: "no", "closest", and "extrapolate".');
-					}
-				}
-				
-				if (is_null($table))
-				{
-					$result = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj1, $players1);
-					if ($players1 != $players2)
-					{
-						$result2 = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj2, $players2);
-						$result = _gaining_tables_regression($result, $result2, $stars, $players);
-					}
-					$table = $result;
-				}
-			}
-			else
-			{
-				$table = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj1, $players);
-			}
-		}
-		else if ($players_obj2 != NULL)
-		{
-			$table = _create_gaining_table_for_players($gaining, $stars_obj, $players_obj2, $players);
-		}
-	}
-	
-	if (is_null($table))
-	{
-		$table = _create_zero_gaining_table($stars, $players);
-
-	}
-	return $table;
-}
-
-function copy_gaining($dst, $src)
-{
-	foreach ($src as $key => $value)
-	{
-		if ($key == 'tournaments' || $key == 'series')
-		{
-			continue;
-		}
-		$dst->$key = $value;
-	}
-}
-
-function prepare_gaining($gaining, $is_series)
-{
-	if ($is_series)
-	{
-		if (isset($gaining->series))
-		{
-			$result = new stdClass();
-			copy_gaining($result, $gaining);
-			copy_gaining($result, $gaining->series);
-			$gaining = $result;
-		}
-	}
-	else if (isset($gaining->tournaments))
-	{
-		$result = new stdClass();
-		copy_gaining($result, $gaining);
-		copy_gaining($result, $gaining->tournaments);
-		$gaining = $result;
-	}
-	return $gaining;
-}
-
-function get_gainig_sum_power($gaining, $is_series)
-{
-	$gaining = prepare_gaining($gaining, $is_series);
-	if (isset($gaining->useTournamentScore))
-	{
-		return max((int)$gaining->useTournamentScore, 0);
-	}
-	if (isset($gaining->asIs))
-	{
-		return 1;
-	}
-	return 0;
-}
-
-function create_gaining_table($gaining, $stars, $players, $score_sum, $is_series)
-{
-	$table = NULL;
-	$gaining = prepare_gaining($gaining, $is_series);
-	if (isset($gaining->points))
-	{
-		$stars_array = $gaining->points;
-		$stars_obj1 = $stars_obj2 = NULL;
-		$delta1 = $delta2 = 100000000;
-		for ($i = 0; $i < count($stars_array); ++$i)
-		{
-			$stars_obj = $stars_array[$i];
-			$s = isset($stars_obj->stars) ? $stars_obj->stars : 1;
-			if ($s == $stars)
-			{
-				$stars_obj1 = $stars_obj;
-				$stars_obj2 = NULL;
-				break;
-			}
-			
-			$delta = abs($s - $stars);
-			if ($delta < $delta1 && $delta2 <= $delta1)
-			{
-				$stars_obj1 = $stars_obj;
-				$delta1 = $delta;
-			}
-			else if ($delta < $delta2)
-			{
-				$stars_obj2 = $stars_obj;
-				$delta2 = $delta;
-			}
-		}
-		
-		// print_json($stars_obj1);
-		// print_json($stars_obj2);
-		
-		if ($stars_obj1 != NULL)
-		{
-			if ($stars_obj2 != NULL)
-			{
-				$stars1 = isset($stars_obj1->stars) ? $stars_obj1->stars : 1;
-				$stars2 = isset($stars_obj2->stars) ? $stars_obj2->stars : 1;
-				if ($stars1 > $stars2)
-				{
-					$stars_obj = $stars_obj2;
-					$stars_obj2 = $stars_obj1;
-					$stars_obj1 = $stars_obj;
-					
-					$s = $stars2;
-					$stars2 = $stars1;
-					$stars1 = $s;
-				}
-				
-				if ($stars < $stars1)
-				{
-					if (!isset($gaining->lessStars) || $gaining->lessStars == 'no')
-					{
-						$table = _create_zero_gaining_table($stars, $players);
-					}
-					else if ($gaining->lessStars == 'closest')
-					{
-						$table = _create_gaining_table_for_stars($gaining, $stars_obj1, $players);
-					}
-					else if ($gaining->lessStars != 'extrapolate')
-					{
-						throw new Exc('Invalid lessStars value "' . $gaining->lessStars . '". Valid values are: "no", "closest", and "extrapolate".');
-					}
-				}
-				else if ($stars < $stars2)
-				{
-					if (!isset($gaining->midStars) || $gaining->midStars == 'closest')
-					{
-						if (abs($stars1 - $stars) < abs($stars2 - $stars))
-						{
-							$table = _create_gaining_table_for_stars($gaining, $stars_obj1, $players);
-						}
-						else
-						{
-							$table = _create_gaining_table_for_stars($gaining, $stars_obj2, $players);
-						}
-					}
-					else if ($gaining->midStars == 'min')
-					{
-						$table = _create_gaining_table_for_stars($gaining, $stars_obj1, $players);
-					}
-					else if ($gaining->midStars == 'max')
-					{
-						$table = _create_gaining_table_for_stars($gaining, $stars_obj2, $players);
-					}
-					else if ($gaining->midStars == 'no')
-					{
-						$table = _create_zero_gaining_table($stars, $players);
-					}
-					else if ($gaining->midStars != 'interpolate')
-					{
-						throw new Exc('Invalid midStars value "' . $gaining->midStars . '". Valid values are: "no", "min", "max", "closest", and "interpolate".');
-					}
-				}
-				else
-				{
-					if (!isset($gaining->moreStars) || $gaining->moreStars == 'no')
-					{
-						$table = _create_zero_gaining_table($stars, $players);
-					}
-					else if ($gaining->moreStars == 'closest')
-					{
-						$table = _create_gaining_table_for_stars($gaining, $stars_obj1, $players);
-					}
-					else if ($gaining->moreStars != 'extrapolate')
-					{
-						throw new Exc('Invalid moreStars value "' . $gaining->moreStars . '". Valid values are: "no", "closest", and "extrapolate".');
-					}
-				}
-				
-				if (is_null($table))
-				{
-					$table = _create_gaining_table_for_stars($gaining, $stars_obj1, $players);
-					if ($stars1 != $stars2)
-					{
-						$table2 = _create_gaining_table_for_stars($gaining, $stars_obj2, $players);
-						$table = _gaining_tables_regression($table, $table2, $stars, $players);
-					}
-				}
-			}
-			else
-			{
-				$table = _create_gaining_table_for_stars($gaining, $stars_obj1, $players);
-			}
-		}
-		else if ($stars_obj2 != NULL)
-		{
-			$table = _create_gaining_table_for_stars($gaining, $stars_obj2, $players);
-		}
-	}
-	
-	if (is_null($table))
-	{
-		$table = _create_zero_gaining_table($stars, $players);
-	}
-	
-	$points_pool = 0;
-	if (isset($table->pointsPerPlayer))
-	{
-		// calculate sum of the points from the table
-		$sum = 0;
-		if (isset($table->points))
-		{
-			for ($i = 1; $i <= $players; ++$i)
-			{
-				$sum += get_gaining_points($table, $i, 0);
-			}
-		}
-		$points_pool = max($table->pointsPerPlayer * $players - $sum, 0); // the remaining points to distribute between players based on their score
-	}
-	
-	if ($points_pool > 0 && isset($gaining->useTournamentScore))
-	{
-		$table->pointsPool = $points_pool;
-		$table->tournamentScorePower = max((int)$gaining->useTournamentScore, 0);
-		$table->scoreSum = $score_sum;
-	}
-	
-	if (isset($gaining->asIs))
-	{
-		$table->asIs = $gaining->asIs;
-	}
-	
-	//echo formatted_json($table);
-	return $table;
-}
-
 function api_scoring_help($param)
 {
 	$param->sub_param('Help on scoring json structure is not implemented yet.', '', '-');
@@ -2960,11 +2245,6 @@ function api_scoring_help($param)
 function api_normalizer_help($param)
 {
 	$param->sub_param('Help on normalizer json structure is not implemented yet.', '', '-');
-}
-
-function api_gaining_help($param)
-{
-	$param->sub_param('Help on gaining json structure is not implemented yet.', '', '-');
 }
 
 function get_scoring_group_label($scoring, $group_name, $short = false)

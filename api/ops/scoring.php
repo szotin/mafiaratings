@@ -8,7 +8,7 @@ define('CURRENT_VERSION', 0);
 
 function check_scoring($scoring)
 {
-	global $_scoring_groups, $_scoring_functions;
+	global $_scoring_groups;
 	foreach ($_scoring_groups as $group_name)
 	{
 		if (!isset($scoring->$group_name))
@@ -26,7 +26,7 @@ function check_scoring($scoring)
 			}
 			try
 			{
-				$e = new Evaluator($policy->points, $_scoring_functions);
+				$ev = new Evaluator($policy->points, get_scoring_functions());
 			}
 			catch (Exception $e)
 			{

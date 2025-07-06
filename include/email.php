@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/rand_str.php';
+require_once __DIR__ . '/utilities.php';
 require_once __DIR__ . '/server.php';
 require_once __DIR__ . '/message.php';
 require_once __DIR__ . '/db.php';

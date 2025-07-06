@@ -195,7 +195,7 @@ class TournamentPageBase extends PageBase
 		);
 		if ($this->broadcasts > 0)
 		{
-			$menu[7]->submenu[] = new MenuItem('tournament_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('Tournament broadcasts.'));
+			$menu[6]->submenu[] = new MenuItem('tournament_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('Tournament broadcasts.'));
 		}
 		if ($this->is_manager)
 		{

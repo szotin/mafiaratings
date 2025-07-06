@@ -5,7 +5,7 @@ require_once 'include/club.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/tournament.php';
-require_once 'include/scoring.php';
+require_once 'include/gaining.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/pages.php';
 require_once 'include/player_stats.php';
@@ -149,31 +149,11 @@ class Page extends SeriesPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
 		
-		$t_sum_power = (int)get_gainig_sum_power($this->gaining, false);
-		if ($t_sum_power > 0)
-		{
-			$t_score_query = 'POW(p.main_points + p.bonus_points + p.shot_points, ' . $t_sum_power . '), SUM(POW(p1.main_points + p1.bonus_points + p1.shot_points, ' . $t_sum_power . '))';
-		}
-		else
-		{
-			$t_score_query = '0, 0';
-		}
-		
-		$s_sum_power = (int)get_gainig_sum_power($this->gaining, true);
-		if ($s_sum_power > 0)
-		{
-			$s_score_query = 'POW(p.score, ' . $s_sum_power . '), SUM(POW(p1.score, ' . $s_sum_power . '))';
-		}
-		else
-		{
-			$s_score_query = '0, 0';
-		}
-		
 		$delim = '';
 		$cs_tournaments = '';
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, s.flags, p.place, n.name, t.start_time, t.duration, ct.timezone, COUNT(p1.user_id), '.$t_score_query.
+			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, s.flags, p.place, n.name, t.start_time, t.duration, ct.timezone, COUNT(p1.user_id), p.main_points + p.bonus_points + p.shot_points'.
 			' FROM tournament_places p'.
 			' JOIN tournaments t ON t.id = p.tournament_id'.
 			' JOIN tournament_places p1 ON p1.tournament_id = t.id'.
@@ -190,9 +170,9 @@ class Page extends SeriesPageBase
 			list(
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->club_id, $tournament->club_name, $tournament->club_flags, 
 				$tournament->stars, $tournament->series_tournament_flags, $tournament->place, $tournament->city_name, $tournament->time, $tournament->duration, $tournament->timezone, 
-				$tournament->players_count, $tournament->points, $tournament->points_sum) = $row;
+				$tournament->players_count, $tournament->points) = $row;
 			$tournament->exclude = (($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) != 0);
-			$tournament->score = get_gaining_points(create_gaining_table($this->gaining, $tournament->stars, $tournament->players_count, $tournament->points_sum, false), $tournament->place, $tournament->points);
+			$tournament->score = get_gaining_points($tournament->id, $this->gaining, $tournament->stars, $tournament->place, $tournament->points, $tournament->players_count, false);
 			$tournament->type = TYPE_TOURNAMENT;
 			$tournaments[] = $tournament;
 			$cs_tournaments .= $delim . $tournament->id;
@@ -202,7 +182,7 @@ class Page extends SeriesPageBase
 		$delim = '';
 		$cs_child_series = '';
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), '.$s_score_query.
+			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), p.score'.
 			' FROM series_places p'.
 			' JOIN series s ON s.id = p.series_id'.
 			' JOIN series_places p1 ON p1.series_id = s.id'.
@@ -216,9 +196,9 @@ class Page extends SeriesPageBase
 			list(
 				$c_series->id, $c_series->name, $c_series->flags, $c_series->league_id, $c_series->league_name, $c_series->league_flags, 
 				$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration, 
-				$c_series->players_count, $c_series->points, $c_series->points_sum) = $row;
+				$c_series->players_count, $c_series->points) = $row;
 			$c_series->exclude = (($c_series->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) != 0);
-			$c_series->score = get_gaining_points(create_gaining_table($this->gaining, $c_series->stars, $c_series->players_count, $c_series->points_sum, true), $c_series->place, $c_series->points);
+			$c_series->score = get_gaining_points($c_series->id, $this->gaining, $c_series->stars, $c_series->place, $c_series->points, $c_series->players_count, true);
 			$c_series->type = TYPE_SERIES;
 			$c_series->timezone = $default_timezone;
 			$tournaments[] = $c_series;
@@ -266,7 +246,7 @@ class Page extends SeriesPageBase
 				for ($i = 1; $i < count($tournaments); ++$i)
 				{
 					$tournament = $tournaments[$i];
-					if ($tournament->exclude)
+					if ($tournament->exclude || $tournament->id == $this->finals_id)
 					{
 						continue;
 					}
@@ -286,7 +266,7 @@ class Page extends SeriesPageBase
 				for (; $i < count($tournaments); ++$i)
 				{
 					$tournament = $tournaments[$i];
-					if ($tournament->exclude)
+					if ($tournament->exclude || $tournament->id == $this->finals_id)
 					{
 						continue;
 					}
@@ -517,6 +497,11 @@ class Page extends SeriesPageBase
 			{
 				echo '<td class="dark"><font color="#808080">' . format_score($tournament->score) . '</font></td>';
 				echo '<td><font color="#808080">' . $tournament->players_count . '</font></td>';
+			}
+			else if ($tournament->type == TYPE_TOURNAMENT && $tournament->id == $this->finals_id)
+			{
+				echo '<td class="dark"></td>';
+				echo '<td>' . $tournament->players_count . '</td>';
 			}
 			else
 			{

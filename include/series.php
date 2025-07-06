@@ -80,6 +80,7 @@ class SeriesPageBase extends PageBase
 	protected $timezone;
 	protected $gaining_id;
 	protected $gaining_version;
+	protected $finals_id;
 	
 	protected function prepare()
 	{
@@ -95,10 +96,10 @@ class SeriesPageBase extends PageBase
 		$this->league_pic = new Picture(LEAGUE_PICTURE);
 		list(
 			$this->name, $this->league_id, $this->league_name, $this->league_flags,
-			$this->start_time, $this->duration, $this->langs, $this->notes, $this->flags, $this->rules, $this->gaining_id, $this->gaining_version) =
+			$this->start_time, $this->duration, $this->langs, $this->notes, $this->flags, $this->rules, $this->gaining_id, $this->gaining_version, $this->finals_id) =
 		Db::record(
 			get_label('sеriеs'),
-			'SELECT s.name, l.id, l.name, l.flags, s.start_time, s.duration, s.langs, s.notes, s.flags, s.rules, s.gaining_id, s.gaining_version FROM series s' .
+			'SELECT s.name, l.id, l.name, l.flags, s.start_time, s.duration, s.langs, s.notes, s.flags, s.rules, s.gaining_id, s.gaining_version, s.finals_id FROM series s' .
 				' JOIN leagues l ON l.id = s.league_id' .
 				' WHERE s.id = ?',
 			$this->id);

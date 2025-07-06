@@ -4,7 +4,7 @@ require_once 'include/series.php';
 require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
-require_once 'include/scoring.php';
+require_once 'include/gaining.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
