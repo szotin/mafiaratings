@@ -153,7 +153,7 @@ class Page extends SeriesPageBase
 		$cs_tournaments = '';
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, s.flags, p.place, n.name, t.start_time, t.duration, ct.timezone, COUNT(p1.user_id), p.main_points + p.bonus_points + p.shot_points'.
+			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, s.flags, p.place, n.name, t.start_time, t.duration, ct.timezone, COUNT(p1.user_id), p.main_points + p.bonus_points + p.shot_points, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff'.
 			' FROM tournament_places p'.
 			' JOIN tournaments t ON t.id = p.tournament_id'.
 			' JOIN tournament_places p1 ON p1.tournament_id = t.id'.
@@ -170,9 +170,9 @@ class Page extends SeriesPageBase
 			list(
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->club_id, $tournament->club_name, $tournament->club_flags, 
 				$tournament->stars, $tournament->series_tournament_flags, $tournament->place, $tournament->city_name, $tournament->time, $tournament->duration, $tournament->timezone, 
-				$tournament->players_count, $tournament->points) = $row;
+				$tournament->players_count, $tournament->points, $tournament->rating_sum, $tournament->rating_sum20, $tournament->trav_dist, $tournament->guest_coef) = $row;
 			$tournament->exclude = (($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) != 0);
-			$tournament->score = get_gaining_points($tournament->id, $this->gaining, $tournament->stars, $tournament->place, $tournament->points, $tournament->players_count, false);
+			$tournament->score = get_gaining_points($tournament->id, $this->gaining, $tournament->stars, $tournament->place, $tournament->points, $tournament->players_count, $tournament->rating_sum, $tournament->rating_sum20, $tournament->trav_dist, $tournament->guest_coef, false);
 			$tournament->type = TYPE_TOURNAMENT;
 			$tournaments[] = $tournament;
 			$cs_tournaments .= $delim . $tournament->id;
@@ -198,7 +198,7 @@ class Page extends SeriesPageBase
 				$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration, 
 				$c_series->players_count, $c_series->points) = $row;
 			$c_series->exclude = (($c_series->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) != 0);
-			$c_series->score = get_gaining_points($c_series->id, $this->gaining, $c_series->stars, $c_series->place, $c_series->points, $c_series->players_count, true);
+			$c_series->score = get_gaining_points($c_series->id, $this->gaining, $c_series->stars, $c_series->place, $c_series->points, $c_series->players_count, 0, 0, 0, 0, true);
 			$c_series->type = TYPE_SERIES;
 			$c_series->timezone = $default_timezone;
 			$tournaments[] = $c_series;

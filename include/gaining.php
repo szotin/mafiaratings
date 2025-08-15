@@ -19,10 +19,14 @@ function get_gaining_functions()
 		new EvFuncParam('table'),
 		new EvFuncParam('score'),
 		new EvFuncParam('numPlayers'),
-		new EvFuncParam('stars'));
+		new EvFuncParam('stars'),
+		new EvFuncParam('ratingSum'),
+		new EvFuncParam('ratingSum20'),
+		new EvFuncParam('travelingDistance'),
+		new EvFuncParam('guestCoef'));
 }
 
-function get_gaining_points($competition_id, $gaining, $stars, $place, $score, $num_players, $is_series = false)
+function get_gaining_points($competition_id, $gaining, $stars, $place, $score, $num_players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, $is_series = false)
 {
 	if (!isset($gaining->__cache) || $gaining->__cache->competition_id != $competition_id || $gaining->__cache->is_series != $is_series)
 	{
@@ -49,6 +53,10 @@ function get_gaining_points($competition_id, $gaining, $stars, $place, $score, $
 		}
 		$evaluator->set_var('stars', $stars);
 		$evaluator->set_var('numPlayers', $num_players);
+		$evaluator->set_var('ratingSum', $rating_sum);
+		$evaluator->set_var('ratingSum20', $rating_sum20);
+		$evaluator->set_var('travelingDistance', $trav_dist);
+		$evaluator->set_var('guestCoef', $guest_coef);
 		
 		if (isset($gaining->globals))
 		{
@@ -93,10 +101,6 @@ function show_gaining_info($gaining)
 	if (isset($gaining->__cache))
 	{
 		$gaining->__cache->evaluator->print_vars();
-	}
-	else
-	{
-		echo 'dsdsdsddd';
 	}
 }
 

@@ -114,6 +114,11 @@ function get_distance($lat1, $lon1, $lat2, $lon2, $unit = GEO_METERS)
 	return $c * $unit;
 }
 
+function convert_distance($distanсe, $src_unit, $dst_unit)
+{
+	return $distanсe * $dst_unit / $src_unit;
+}
+
 // Not used right now, but we keep the code in case it will be needed in the future
 // Requests and shows a map directly from google.
 /*$_address_script = 'showAddressMap()';

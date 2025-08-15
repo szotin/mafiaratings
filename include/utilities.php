@@ -52,6 +52,32 @@ function format_float($number, $digits, $zeroes = true)
 	return $result;
 }
 
+function format_coeff($coeff, $sign_digits = 3)
+{
+	return round($coeff, $sign_digits - floor(log10($coeff)) - 1);
+}
+
+function format_score($score, $zeroes = true)
+{
+	return format_float($score, 3, $zeroes);
+}
+
+function format_rating($rating)
+{
+	$fraction = 100;
+	$rat = abs($rating);
+	$digits = 0;
+	if ($rat > 0.0001)
+	{
+		while ($rat < $fraction)
+		{
+			$fraction /= 10;
+			++$digits;
+		}
+	}
+	return number_format($rating, $digits);
+}
+
 if (!function_exists('array_is_list')) 
 {
 	function array_is_list(array &$arr)

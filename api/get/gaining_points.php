@@ -56,10 +56,34 @@ class ApiPage extends GetApiPageBase
 			$series = (bool)$_REQUEST['series'];
 		}
 		
+		$rating_sum = 500 * $players;
+		if (isset($_REQUEST['rating_sum']))
+		{
+			$rating_sum = (bool)$_REQUEST['rating_sum'];
+		}
+		
+		$rating_sum20 = 500 * 20;
+		if (isset($_REQUEST['rating_sum20']))
+		{
+			$rating_sum20 = (bool)$_REQUEST['rating_sum20'];
+		}
+		
+		$trav_dist = 0;
+		if (isset($_REQUEST['trav_dist']))
+		{
+			$trav_dist = (bool)$_REQUEST['trav_dist'];
+		}
+		
+		$guest_coeff += log(1 + $trav_dist / 600, 2);
+		if (isset($_REQUEST['guest_coef']))
+		{
+			$guest_coef = (bool)$_REQUEST['guest_coef'];
+		}
+		
 		$points = array();
 		for ($p = 1; $p <= $players; ++$p)
 		{
-			$points[] = get_gaining_points(0, $gaining, $stars, $p, 0, $players, $series);
+			$points[] = get_gaining_points(0, $gaining, $stars, $p, 0, $players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, $series);
 		}
 		$this->response['points'] = $points;
 	}

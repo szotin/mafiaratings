@@ -12,6 +12,7 @@ require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
 require_once __DIR__ . '/currency.php';
+require_once __DIR__ . '/geo.php';
 
 define('TOURNAMENT_TYPE_CUSTOM', 0);
 define('TOURNAMENT_TYPE_FIIM_ONE_ROUND', 1);
@@ -102,6 +103,11 @@ class TournamentPageBase extends PageBase
 	protected $num_players;
 	protected $lat;
 	protected $lon;
+	protected $num_regs;
+	protected $rating_sum;
+	protected $rating_sum_20;
+	protected $traveling_distance;
+	protected $guest_coeff;
 	
 	protected function prepare()
 	{
@@ -118,7 +124,7 @@ class TournamentPageBase extends PageBase
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->fee, $this->currency_id, $this->currency_pattern,
 			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, 
-			$this->rules_code, $this->flags, $this->mwt_id, $this->num_players, $this->lat, $this->lon) =
+			$this->rules_code, $this->flags, $this->mwt_id, $this->num_players, $this->lat, $this->lon, $this->num_regs, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff) =
 		Db::record(
 			get_label('tournament'),
 			'SELECT t.name, c.id, c.name, c.flags,' . 
@@ -126,7 +132,7 @@ class TournamentPageBase extends PageBase
 				' ct.id, nct.name, cr.id, ncr.name, ct.timezone,' . 
 				' t.start_time, t.duration, t.langs, t.notes, t.fee, t.currency_id, cu.pattern,'.
 				' t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options,'.
-				' t.rules, t.flags, t.mwt_id, t.num_players, a.lat, a.lon' .
+				' t.rules, t.flags, t.mwt_id, t.num_players, a.lat, a.lon, t.num_regs, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff' .
 				' FROM tournaments t' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN addresses a ON a.id = t.address_id' .
@@ -447,6 +453,51 @@ function get_round_name($round_num)
 			return get_label('quarter-final');
 		default:
 			return get_label('1/[0] final', pow(2, $round_num - 1));
+	}
+}
+
+function update_tournament_stats($tournament_id, $lat = NULL, $lon = NULL, $flags = NULL)
+{
+	if (is_null($flags) || is_null($lat) || is_null($lon))
+	{
+		list ($flags, $lat, $lon) = Db::record(get_label('tournament'), 'SELECT t.flags, a.lat, a.lon FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
+	}
+	
+	if ($flags & TOURNAMENT_FLAG_FINISHED)
+	{
+		// just mark is as no-finished and let complete_competitions.php do the job.
+		Db::exec(get_label('tournament'), 
+			'UPDATE tournaments SET flags = flags & ~'.TOURNAMENT_FLAG_FINISHED.' WHERE id = ?', $tournament_id);
+	}
+	else
+	{
+		$counter = 0;
+		$rating_sum = 0;
+		$rating_sum_20 = 0;
+		$traveling_distance = 0;
+		$guest_coeff = 0;
+		$query = new DbQuery(
+			'SELECT c.lon, c.lat, tu.rating'.
+			' FROM tournament_users tu'.
+			' JOIN cities c ON c.id = tu.city_id'.
+			' WHERE tu.tournament_id = ? AND (tu.flags & '.(USER_TOURNAMENT_FLAG_NOT_ACCEPTED | USER_PERM_PLAYER).') = '.USER_PERM_PLAYER.
+			' ORDER BY tu.rating DESC', $tournament_id);
+		while ($row = $query->next())
+		{
+			list ($user_lon, $user_lat, $rating) = $row;
+			$td = get_distance($user_lat, $user_lon, $lat, $lon, GEO_MILES);
+			$rating_sum += $rating;
+			if ($counter < 20)
+			{
+				$rating_sum_20 += $rating;
+			}
+			$traveling_distance += $td;
+			$guest_coeff += log(1 + $td / 600, 2);
+			++$counter;
+		}
+		Db::exec(get_label('tournament'), 
+			'UPDATE tournaments SET num_regs = ?, rating_sum = ?, rating_sum_20 = ?, traveling_distance = ?, guest_coeff = ?'.
+			' WHERE id = ?', $counter, $rating_sum, $rating_sum_20, $traveling_distance, $guest_coeff, $tournament_id);
 	}
 }
 

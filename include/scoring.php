@@ -236,32 +236,6 @@ function compare_role_scores($role, $player1, $player2)
 	return $games_count2 - $games_count1;
 }
 
-function format_coeff($coeff, $sign_digits = 3)
-{
-	return round($coeff, $sign_digits - floor(log10($coeff)) - 1);
-}
-
-function format_score($score, $zeroes = true)
-{
-	return format_float($score, 3, $zeroes);
-}
-
-function format_rating($rating)
-{
-	$fraction = 100;
-	$rat = abs($rating);
-	$digits = 0;
-	if ($rat > 0.0001)
-	{
-		while ($rat < $fraction)
-		{
-			$fraction /= 10;
-			++$digits;
-		}
-	}
-	return number_format($rating, $digits);
-}
-
 define('SCORING_SELECT_FLAG_NO_PREFIX', 1);
 define('SCORING_SELECT_FLAG_NO_VERSION', 2);
 define('SCORING_SELECT_FLAG_NO_FLAGS_OPTION', 8);
@@ -1567,7 +1541,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		' COUNT(g.id), COUNT(DISTINCT g.event_id),' . 
 		' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)),' . 
 		' SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)),' . 
-		' tu.flags, cu.flags, ct.lat, ct.lon' .
+		' tu.flags, cu.flags, ct.id, ct.lat, ct.lon, ct1.id, ct1.lat, ct1.lon' .
 			' FROM players p' . 
 			' JOIN games g ON g.id = p.game_id' . 
 			' JOIN events e ON e.id = g.event_id' . 
@@ -1576,29 +1550,42 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
 			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
+			' LEFT OUTER JOIN cities ct1 ON ct1.id = tu.city_id' .
 			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
 			' WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $tournament_id, $condition);
 	$query->add(' GROUP BY u.id');
 	while ($row = $query->next())
 	{
 		$player = new stdClass();
-		$player->id = (int)$row[0];
-		$player->name = $row[1];
-		$player->flags = (int)$row[2];
-		$player->langs = (int)$row[3];
-		$player->club_id = (int)$row[4];
-		$player->club_name = $row[5];
-		$player->club_flags = (int)$row[6];
-		$player->games_count = (int)$row[7];
-		$player->events_count = (int)$row[8];
-		$player->killed_first_count = (int)$row[9];
-		$player->wins = (int)$row[10];
-		$player->special_role_wins = (int)$row[11];
+		list (
+			$player->id, $player->name, $player->flags, $player->langs, $player->club_id, $player->club_name, $player->club_flags,
+			$player->games_count, $player->events_count, $player->killed_first_count, $player->wins, $player->special_role_wins, 
+			$player->tournament_user_flags, $player->club_user_flags, $city1_id, $lat1, $lon1, $city_id, $lat, $lon) = $row;
+		$player->id = (int)$player->id;
+		$player->flags = (int)$player->flags;
+		$player->langs = (int)$player->langs;
+		$player->club_id = (int)$player->club_id;
+		$player->club_flags = (int)$player->club_flags;
+		$player->games_count = (int)$player->games_count;
+		$player->events_count = (int)$player->events_count;
+		$player->killed_first_count = (int)$player->killed_first_count;
+		$player->wins = (int)$player->wins;
+		$player->special_role_wins = (int)$player->special_role_wins;
 		$player->normalizer = $normalizer;
-		$player->tournament_user_flags = (int)$row[12];
-		$player->club_user_flags = (int)$row[13];
-		$player->lat = (double)$row[14];
-		$player->lon = (double)$row[15];
+		$player->tournament_user_flags = (int)$player->tournament_user_flags;
+		$player->club_user_flags = (int)$player->club_user_flags;
+		if (is_null($city_id))
+		{
+			$player->city_id = $city1_id;
+			$player->lat = (double)$lat1;
+			$player->lon = (double)$lon1;
+		}
+		else
+		{
+			$player->city_id = $city_id;
+			$player->lat = (double)$lat;
+			$player->lon = (double)$lon;
+		}
 		
 		$max_games_played = max($max_games_played, $player->games_count);
 		$max_rounds_played = max($max_rounds_played, $player->events_count);
@@ -1629,12 +1616,12 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		
 		// Calculate final values for counters
 		$games = array();
-		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, e.name, e.round FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $tournament_id, $condition);
+		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, e.name, e.round, p.rating_before FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $tournament_id, $condition);
 		$query->add(' ORDER BY g.end_time');
 		while ($row = $query->next())
 		{
 			$games[] = $row;
-			list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_name, $round_num) = $row;
+			list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_name, $round_num, $rating_before) = $row;
 			if (isset($players[$player_id])) // It happens that it is not set but I have no idea why. To be investigated.
 			{
 				add_player_counters($players[$player_id]->counters[0], $scoring, $flags, $role);
@@ -1644,7 +1631,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
         // Calculate scores
 		foreach ($games as $row)
 		{
-            list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_name, $round_num) = $row;
+            list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_name, $round_num, $rating_before) = $row;
 			if (is_hiding_bonus_needed($tournament_flags, $round_num))
 			{
 				$extra_points = 0;
@@ -1653,6 +1640,11 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			if (isset($players[$player_id])) // It happens that it is not set but I have no idea why. To be investigated.
 			{
 				$p = $players[$player_id];
+				if (!isset($p->first_game_end) || $p->first_game_end > $game_end_time)
+				{
+					$p->first_game_end = $game_end_time;
+					$p->rating = $rating_before;
+				}					
 				add_player_counters($p->counters[1], $scoring, $flags, $role);
 				add_player_score($p, $p->counters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $options, $event_name);
 			}
@@ -1766,7 +1758,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			$counters = array();
 			$games = array();
 			$query = new DbQuery(
-				'SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, g.event_id, e.round, e.name'.
+				'SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, g.event_id, e.round, e.name, p.rating_before'.
 				' FROM players p'.
 				' JOIN games g ON g.id = p.game_id'.
 				' JOIN events e ON e.id = g.event_id'.
@@ -1777,7 +1769,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
             while ($row = $query->next())
             {
 				$games[] = $row;
-				list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_id, $round_num, $event_name) = $row;
+				list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_id, $round_num, $event_name, $rating_before) = $row;
 				
 				if (!isset($counters[$player_id]))
 				{
@@ -1792,7 +1784,13 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			// Calculate scores of this group
 			foreach ($games as $row)
 			{
-				list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_id, $round_num, $event_name) = $row;
+				list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_id, $round_num, $event_name, $rating_before) = $row;
+				$p = $players[$player_id];
+				if (!isset($p->first_game_end) || $p->first_game_end > $game_end_time)
+				{
+					$p->first_game_end = $game_end_time;
+					$p->rating = $rating_before;
+				}					
 				if (is_hiding_bonus_needed($tournament_flags, $round_num))
 				{
 					$extra_points = 0;
@@ -1813,7 +1811,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 					$scoring_options = $group->options;
 				}
 				add_player_counters($player_couters[1], $scoring, $flags, $role);
-				add_player_score($players[$player_id], $player_couters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $group->red_win_rate, $lod_flags, $scoring_options, $event_name);
+				add_player_score($p, $player_couters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $group->red_win_rate, $lod_flags, $scoring_options, $event_name);
 			}
 		}
     }

@@ -44,13 +44,37 @@ try
 		$place = (int)$_REQUEST['place'];
 	}
 	
+	$rating_sum = 500 * $players;
+	if (isset($_REQUEST['rating_sum']))
+	{
+		$rating_sum = (bool)$_REQUEST['rating_sum'];
+	}
+	
+	$rating_sum20 = 500 * 20;
+	if (isset($_REQUEST['rating_sum20']))
+	{
+		$rating_sum20 = (bool)$_REQUEST['rating_sum20'];
+	}
+	
+	$trav_dist = 0;
+	if (isset($_REQUEST['trav_dist']))
+	{
+		$trav_dist = (bool)$_REQUEST['trav_dist'];
+	}
+	
+	$guest_coeff += log(1 + $trav_dist / 600, 2);
+	if (isset($_REQUEST['guest_coef']))
+	{
+		$guest_coef = (bool)$_REQUEST['guest_coef'];
+	}
+	
 	$points = array();
 	$message = false;
 	$all_the_same = true;
-	$points[] = get_gaining_points(0, $gaining, $stars, 1, 0, $players, false);
+	$points[] = get_gaining_points(0, $gaining, $stars, 1, 0, $players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, false);
 	for ($p = 2; $p <= $players; ++$p)
 	{
-		$gp = get_gaining_points(0, $gaining, $stars, $p, 0, $players, false);
+		$gp = get_gaining_points(0, $gaining, $stars, $p, 0, $players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, false);
 		$points[] = $gp;
 		if ($all_the_same && abs($points[0] - $gp) > 0.00001)
 		{

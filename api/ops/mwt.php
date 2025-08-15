@@ -366,7 +366,8 @@ class ApiPage extends OpsApiPageBase
 		$tournament_id = (int)get_required_param('tournament_id');
 		
 		Db::begin();
-		list ($tournament_id, $club_id, $mwt_id, $tournament_misc) = Db::record(get_label('tournament'), 'SELECT id, club_id, mwt_id, misc FROM tournaments WHERE id = ?', $tournament_id);
+		list ($tournament_id, $club_id, $mwt_id, $tournament_misc, $tournament_flags, $tournament_lat, $tournament_lon) = Db::record(get_label('tournament'), 
+			'SELECT t.id, t.club_id, t.mwt_id, t.misc, t.flags, a.lon, a.lat FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		if (is_null($mwt_id))
 		{
@@ -528,8 +529,8 @@ class ApiPage extends OpsApiPageBase
 						$lang = $_lang;
 					}
 					
-					list ($user_name, $user_mwt_name) = Db::record(get_label('user'), 
-						'SELECT nu.name, u.mwt_name'.
+					list ($user_name, $user_mwt_name, $player_city_id, $player_rating) = Db::record(get_label('user'), 
+						'SELECT nu.name, u.mwt_name, u.city_id, u.rating'.
 						' FROM users u'.
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
 						' WHERE u.id = ?', $player_id);
@@ -540,10 +541,12 @@ class ApiPage extends OpsApiPageBase
 					}
 					
 					Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $round_id, $player_id, $user_name);
-					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) VALUES (?, ?, '.USER_TOURNAMENT_NEW_PLAYER_FLAGS.')', $tournament_id, $player_id);
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, '.USER_TOURNAMENT_NEW_PLAYER_FLAGS.', ?, ?)', $tournament_id, $player_id, $player_city_id, $player_rating);
 				}
 				$players[] = $player_id;
 			}
+			update_tournament_stats($tournament_id, $tournament_lat, $tournament_lon, $tournament_flags);
+			
 			$misc->seating[$table_num][$game_num] = $players;
 			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $round_id);
 			++$progress;
@@ -577,15 +580,19 @@ class ApiPage extends OpsApiPageBase
 		$tournament_id = (int)get_required_param('tournament_id');
 		$mwt_user_name = get_optional_param('mwt_name', NULL); 
 		
-		list ($club_id, $mwt_id, $tournament_misc, $lang) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.mwt_id, t.misc, t.langs FROM tournaments t WHERE t.id = ?', $tournament_id);
+		list ($club_id, $mwt_id, $tournament_misc, $lang, $tournament_lat, $tournament_lon, $tournament_flags) = Db::record(get_label('tournament'), 
+			'SELECT t.club_id, t.mwt_id, t.misc, t.langs, a.lat, a.lon, t.flags'.
+			' FROM tournaments t'.
+			' JOIN addresses a ON a.id = t.address_id'.
+			' WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		
 		if (!is_valid_lang($lang))
 		{
 			$lang = $_lang;
 		}
-		list ($user_name, $old_mwt_user_name) = Db::record(get_label('user'), 
-			'SELECT nu.name, u.mwt_name'.
+		list ($user_name, $old_mwt_user_name, $user_city_id, $user_rating) = Db::record(get_label('user'), 
+			'SELECT nu.name, u.mwt_name, u.city_id, u.rating'.
 			' FROM users u'.
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$lang.') <> 0'.
 			' WHERE u.id = ?', $user_id);
@@ -668,11 +675,14 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($event->misc), $event->id);
+			Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE event_id = ? AND user_id IN (SELECT id FROM users WHERE mwt_id = ?)', $event->id, $mwt_id);
 			Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $event->id, $user_id, $user_name);
 		}
 
-		Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) VALUES (?, ?, ?)', $tournament_id, $user_id, USER_TOURNAMENT_NEW_PLAYER_FLAGS);
+		Db::exec(get_label('registration'), 'DELETE FROM tournament_users WHERE tournament_id = ? AND user_id IN (SELECT id FROM users WHERE mwt_id = ?)', $tournament_id, $mwt_id);
+		Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)', $tournament_id, $user_id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $user_city_id, $user_rating);
 		Db::exec(get_label('round'), 'UPDATE tournaments SET misc = ? WHERE id = ?', json_encode($tournament_misc), $tournament_id);
+		update_tournament_stats($tournament_id, $tournament_lat, $tournament_lon, $tournament_flags);
 
 		if (!is_null($mwt_id) && $mwt_id > 0)
 		{

@@ -14,12 +14,12 @@ class Page extends TournamentPageBase
 		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id,$this->id);
 		
 		$is_team_tournament = (($this->flags & TOURNAMENT_FLAG_TEAM) != 0);
-		if (!$is_team_tournament)
-		{
-			// Event if it is not a team tournament, teams can exist. Team in this case is a set of players who should not play with each other.
-			list($count) = Db::record(get_label('team'), 'SELECT count(*) FROM tournament_teams WHERE tournament_id = ?', $this->id);
-			$is_team_tournament = ($count > 0);
-		}
+		// if (!$is_team_tournament)
+		// {
+			// // Even if it is not a team tournament, teams can exist. Team in this case is a set of players who should not play with each other.
+			// list($count) = Db::record(get_label('team'), 'SELECT count(*) FROM tournament_teams WHERE tournament_id = ?', $this->id);
+			// $is_team_tournament = ($count > 0);
+		// }
 		
 		$tournament_user_pic =
 			new Picture(USER_TOURNAMENT_PICTURE,
@@ -32,7 +32,7 @@ class Page extends TournamentPageBase
 		{
 			echo '<td width="100">' . get_label('Team') . '</td>';
 		}
-		echo '<td width="87">';
+		echo '<td width="116">';
 		if ($can_edit)
 		{
 			echo '<button class="icon" onclick="mr.addTournamentUser(' . $this->id . ')" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button>';
@@ -136,7 +136,8 @@ class Page extends TournamentPageBase
 				echo '<td class="dark">';
 				if ($can_edit)
 				{
-					echo '<button class="icon" onclick="mr.removeTournamentUser(' . $this->id . ', ' . $id . ')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.removeTournamentUser(' . $this->id . ', ' . $id . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.editTournamentUser(' . $this->id . ', ' . $id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
 					echo '<button class="icon" onclick="mr.editTournamentAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
 					echo '<button class="icon" onclick="mr.tournamentUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
 				}
@@ -161,7 +162,7 @@ class Page extends TournamentPageBase
 				}
 				else
 				{
-					echo '<td colspan="2"><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b></a></td>';
+					echo '<td colspan="2"><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
 				}
 				
 				echo '<td width="200">';

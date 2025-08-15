@@ -7,6 +7,7 @@ require_once '../../include/city.php';
 require_once '../../include/country.php';
 require_once '../../include/image.php';
 require_once '../../include/game.php';
+require_once '../../include/tournament.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -91,6 +92,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('log'), 'UPDATE log SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE user_id = ? AND tournament_id IN (SELECT tournament_id FROM (SELECT tournament_id FROM tournament_places WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('tournament'), 'UPDATE tournament_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~'.TOURNAMENT_FLAG_FINISHED.' WHERE id IN (SELECT tournament_id FROM tournament_users WHERE user_id=?)', $src_id); // tournaments need to be rebuild to make sure rating in the registration is up to date
 		Db::exec(get_label('tournament'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id IN (SELECT tournament_id FROM (SELECT tournament_id FROM tournament_users WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('tournament'), 'UPDATE tournament_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('series'), 'DELETE FROM series_places WHERE user_id = ? AND series_id IN (SELECT series_id FROM (SELECT series_id FROM series_places WHERE user_id = ?) x)', $src_id, $dst_id);
@@ -241,7 +243,12 @@ class ApiPage extends OpsApiPageBase
 		}
 		else if ($tournament_id > 0)
 		{
-			list($club_id, $flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, tu.flags FROM tournament_users tu JOIN tournaments t ON t.id = tu.tournament_id WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
+			list($club_id, $flags, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 
+				'SELECT t.club_id, tu.flags, a.lat, a.lon, t.flags'.
+				' FROM tournament_users tu'.
+				' JOIN tournaments t ON t.id = tu.tournament_id'.
+				' JOIN addresses a ON a.id = t.address_id'.
+				' WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 			$flags = access_flags($flags);
 			
@@ -252,6 +259,8 @@ class ApiPage extends OpsApiPageBase
 				$log_details->tournament_id = $tournament_id;
 				$log_details->tournament_flags = $flags;
 				db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id);
+				
+				update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
 			}
 		}
 		else if ($club_id > 0)

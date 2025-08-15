@@ -169,6 +169,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 					country_id: <?php echo $country_id; ?>
 				}, response);
 			}
+			, select: function(event, ui) { <?php if ($on_select != NULL) echo $on_select . '(ui.item);'; ?> }
 			, minLength: 0
 		});
 		</script>
@@ -188,7 +189,7 @@ function show_city_input($name, $value, $country_id = -1, $on_select = NULL)
 					country_name: $("#<?php echo $country_id; ?>").val()
 				}, response);
 			}
-			, select: function(event, ui) { $("#<?php echo $country_id; ?>").val(ui.item.country); <?php if ($on_select != NULL) echo $on_select . '();'; ?> }
+			, select: function(event, ui) { $("#<?php echo $country_id; ?>").val(ui.item.country); <?php if ($on_select != NULL) echo $on_select . '(ui.item);'; ?> }
 			, minLength: 0
 		});
 		</script>

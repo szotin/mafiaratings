@@ -261,9 +261,11 @@ class UserPageBase extends PageBase
 function show_user_input($name, $value, $condition, $title, $js_function = 'mr.gotoFind')
 {
 	global $_profile;
+	
+	$clear_function_name = str_replace('-', '_', $name) . '_clear';
 
 	echo '<input type="text" id="' . $name . '" placeholder="' . get_label('Select player') . '" title="' . $title . '"/>';
-	echo '<button class="small_icon" onclick="$(&quot;#' . $name . '&quot;).val(\'\')"><img src="images/clear.png" width="12"></button>';
+	echo '<button class="small_icon" onclick="' . $clear_function_name . '()"><img src="images/clear.png" width="12"></button>';
 	$url = 'api/control/user.php?control=' . $name;
 	if (!empty($condition))
 	{
@@ -283,6 +285,12 @@ function show_user_input($name, $value, $condition, $title, $js_function = 'mr.g
 		})
 		.on("focus", function () { $(this).autocomplete("search", ''); })
 		.val("<?php echo $value; ?>");
+		
+		function <?php echo $clear_function_name; ?>()
+		{
+			$("#<?php echo $name; ?>").val('');
+			<?php echo $js_function; ?>({id:0});
+		}
 		</script>
 <?php
 }

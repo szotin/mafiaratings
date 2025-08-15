@@ -651,10 +651,28 @@ var mr = new function()
 		dlg.form("form/add_user.php?tournament_id=" + tournamentId, refr, 400);
 	}
 
-	this.removeTournamentUser = function(tournamentId, userId)
+	this.editTournamentUser = function(tournamentId, userId)
 	{
-		json.post("api/ops/tournament.php", { op: "remove_user", tournament_id: tournamentId, user_id: userId }, refr);
+		dlg.form("form/edit_user.php?tournament_id=" + tournamentId + "&user_id=" + userId, refr, 400);
 	}
+
+	this.removeTournamentUser = function(tournamentId, userId, confirmMessage)
+	{
+		function _remove()
+		{
+			json.post("api/ops/tournament.php", { op: "remove_user", tournament_id: tournamentId, user_id: userId }, refr);
+		}
+		
+		if (isString(confirmMessage))
+		{
+			dlg.yesNo(confirmMessage, null, null, _remove);
+		}
+		else
+		{
+			_remove();
+		}
+	}
+	
 	
 	this.acceptTournamentUser = function(tournamentId, userId)
 	{

@@ -6,6 +6,7 @@ setDir();
 require_once 'include/security.php';
 require_once 'include/scoring.php';
 require_once 'include/gaining.php';
+require_once 'include/geo.php';
 
 $_filename = 'complete_competitions.log';
 $_file = NULL;
@@ -203,16 +204,22 @@ function complete_tournament()
 	Db::begin();
 	
 	$query = new DbQuery(
-		'SELECT t.id, t.flags, sv.scoring, t.scoring_options, t.num_players, nv.normalizer, (SELECT max(st.stars) FROM series_tournaments st WHERE st.tournament_id = t.id) as stars FROM tournaments t' . 
+		'SELECT t.id, t.flags, sv.scoring, t.scoring_options, t.num_players, nv.normalizer, (SELECT max(st.stars) FROM series_tournaments st WHERE st.tournament_id = t.id) as stars, a.lat, a.lon'.
+		' FROM tournaments t' . 
 		' JOIN scoring_versions sv ON sv.scoring_id = t.scoring_id AND sv.version = t.scoring_version' .
 		' LEFT OUTER JOIN normalizer_versions nv ON nv.normalizer_id = t.normalizer_id AND nv.version = t.normalizer_version' .
+		' JOIN addresses a ON a.id = t.address_id'.
 		' WHERE t.start_time + t.duration < UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_FINISHED . ') = 0 LIMIT 1');
 	if ($row = $query->next())
 	{
-		list($tournament_id, $tournament_flags, $scoring, $scoring_options, $num_players, $normalizer, $stars) = $row;
+		list($tournament_id, $tournament_flags, $scoring, $scoring_options, $num_players, $normalizer, $stars, $lat, $lon) = $row;
 		$tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK); // no hiding tables/bonuses any more - tournament is complete
 		$real_count = $players_count = 0;
 		$min_games = 0;
+		$rating_sum = 0;
+		$rating_sum_20 = 0; 
+		$traveling_distance = 0;
+		$guest_coeff = 0;
 		if (($tournament_flags & TOURNAMENT_FLAG_CANCELED))
 		{
 			Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE tournament_id = ?', $tournament_id);
@@ -220,21 +227,54 @@ function complete_tournament()
 		else if ($tournament_flags & TOURNAMENT_FLAG_MANUAL_SCORE)
 		{
 			$players = array();
-			$query1 = new DbQuery('SELECT user_id, place FROM tournament_places WHERE tournament_id = ?', $tournament_id);
+			$query1 = new DbQuery(
+				'SELECT tp.user_id, tp.place, uc.id, uc.lat, uc.lon, tc.id, tc.lat, tc.lon, p.rating_before'.
+				' FROM tournament_places tp'.
+				' JOIN tournaments t ON t.id = tp.tournament_id'.
+				' JOIN users u ON u.id = tp.user_id'.
+				' JOIN cities uc ON uc.id = u.city_id'.
+				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = tp.user_id AND tu.tournament_id = tp.tournament_id'.
+				' LEFT OUTER JOIN cities tc ON tc.id = tu.city_id'.
+				' LEFT OUTER JOIN players p ON p.user_id = u.id AND p.game_end_time = (SELECT MAX(game_end_time) FROM players WHERE user_id = u.id AND game_end_time < t.start_time)'.
+				' WHERE tp.tournament_id = ?'.
+				' ORDER BY p.rating_before DESC', $tournament_id);
 			while ($row1 = $query1->next())
 			{
 				$player = new stdClass();
-				list($player->id, $player->place) = $row1;
+				list($player->id, $player->place, $user_city_id, $user_lat, $user_lon, $player->lat, $player->lon, $player->city_id, $player->rating) = $row1;
+				if (is_null($player->city_id))
+				{
+					$player->city_id = $user_city_id;
+					$player->lat = $user_lat;
+					$player->lon = $user_lon;
+				}
+				if (is_null($player->rating))
+				{
+					$player->rating = 0;
+				}
 				$players[] = $player;
 			}
 			$real_count = $players_count = count($players);
 			
-			$place = 1;
+			$counter = 0;
 			foreach ($players as $player)
 			{
-				$importance = get_tournament_importance($stars, $place, $players_count);
+				$importance = get_tournament_importance($stars, $player->place, $players_count);
 				Db::exec(get_label('player'), 'UPDATE tournament_places SET importance = ? WHERE tournament_id = ? AND user_id = ?', $importance, $tournament_id, $player->id);
-				++$place;
+				Db::exec(get_label('player'), 
+					'INSERT INTO tournament_users(tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)'.
+					' ON DUPLICATE KEY UPDATE rating = ?, flags = (flags | ' . USER_PERM_PLAYER . ') & ~' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED, 
+					$tournament_id, $player->id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $player->city_id, $player->rating, $player->rating);
+					
+				$td = get_distance($player->lat, $player->lon, $lat, $lon, GEO_MILES);
+				$rating_sum += $player->rating;
+				if ($counter < 20)
+				{
+					$rating_sum_20 += $player->rating;
+					++$counter;
+				}
+				$traveling_distance += $td;
+				$guest_coeff += log(1 + $td / 600, 2);
 			}
 		}
 		else
@@ -311,6 +351,7 @@ function complete_tournament()
 			$real_count = min($real_count, $players_count);
 			
 			Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE tournament_id = ?', $tournament_id);
+			$top20_ratings = array();
 			$place = 1;
 			for ($number = 0; $number < $real_count; ++$number)
 			{
@@ -319,18 +360,57 @@ function complete_tournament()
 				$main_points = $player->main_points;
 				$bonus_points = $player->extra_points + $player->legacy_points + $player->penalty_points;
 				$shot_points = $player->night1_points;
-				Db::exec(get_label('player'), 'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags, $player->wins);
+				Db::exec(get_label('player'), 
+					'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+					$tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags, $player->wins);
+				Db::exec(get_label('player'), 
+					'INSERT INTO tournament_users(tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)'.
+					' ON DUPLICATE KEY UPDATE rating = ?, flags = (flags | ' . USER_PERM_PLAYER . ') & ~' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED, 
+					$tournament_id, $player->id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $player->city_id, $player->rating, $player->rating);
+					
+				$td = get_distance($player->lat, $player->lon, $lat, $lon, GEO_MILES);
+				$rating_sum += $player->rating;
+				$traveling_distance += $td;
+				$guest_coeff += log(1 + $td / 600, 2);
+				if (count($top20_ratings) >= 20)
+				{
+					$min_index = 0;
+					for ($i = 1; $i < 20; ++$i)
+					{
+						if ($top20_ratings[$i] < $top20_ratings[$min_index])
+						{
+							$min_index = $i;
+						}
+					}
+					if ($top20_ratings[$min_index] < $player->rating)
+					{
+						$top20_ratings[$min_index] = $player->rating;
+					}
+				}
+				else
+				{
+					$top20_ratings[] = $player->rating;
+				}
 				++$place;
+			}
+			
+			foreach ($top20_ratings as $rating20)
+			{
+				$rating_sum_20 += $rating20;
 			}
 		}
 		
 		if (($tournament_flags & TOURNAMENT_FLAG_FORCE_NUM_PLAYERS) == 0)
 		{
-			Db::exec(get_label('tournament'), 'UPDATE tournaments SET num_players = ?, flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ' WHERE id = ?', $real_count, $tournament_id);
+			Db::exec(get_label('tournament'), 
+				'UPDATE tournaments SET num_players = ?, flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ', num_regs = ?, rating_sum = ?, rating_sum_20 = ?, traveling_distance = ?, guest_coeff = ?'.
+				' WHERE id = ?', $real_count, $real_count, $rating_sum, $rating_sum_20, $traveling_distance, $guest_coeff, $tournament_id);
 		}
 		else
 		{
-			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ' WHERE id = ?', $tournament_id);
+			Db::exec(get_label('tournament'), 
+				'UPDATE tournaments SET flags = flags | ' . TOURNAMENT_FLAG_FINISHED .  ', num_regs = ?, rating_sum = ?, rating_sum_20 = ?, traveling_distance = ?, guest_coeff = ?'.
+				' WHERE id = ?', $real_count, $rating_sum, $rating_sum_20, $traveling_distance, $guest_coeff, $tournament_id);
 		}
 		Db::exec(get_label('series'), 'UPDATE series s JOIN series_tournaments st ON st.series_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .  ' WHERE st.tournament_id = ?', $tournament_id);
 		
@@ -423,14 +503,15 @@ function calculate_series()
 		$players = array();
 		
 		$query = new DbQuery(
-			'SELECT t.tournament_id, p.user_id, p.place, p.games_count, p.wins, p.main_points + p.bonus_points + p.shot_points, t.stars'.
+			'SELECT st.tournament_id, p.user_id, p.place, p.games_count, p.wins, p.main_points + p.bonus_points + p.shot_points, st.stars, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff'.
 			' FROM tournament_places p'.
-			' JOIN series_tournaments t ON t.tournament_id = p.tournament_id'.
-			' WHERE t.series_id = ? AND (t.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0'.
-			' ORDER BY t.tournament_id', $series_id);
+			' JOIN series_tournaments st ON st.tournament_id = p.tournament_id AND st.series_id = ?'.
+			' JOIN tournaments t ON t.id = p.tournament_id'.
+			' WHERE (st.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0'.
+			' ORDER BY t.id', $series_id);
 		while ($row = $query->next())
 		{
-			list($tournament_id, $player_id, $place, $games, $wins, $score, $stars) = $row;
+			list($tournament_id, $player_id, $place, $games, $wins, $score, $stars, $rating_sum, $rating_sum20, $trav_dist, $guest_coef) = $row;
 			if ($tournament_id == $finals_id)
 			{
 				continue;
@@ -443,6 +524,8 @@ function calculate_series()
 				$player->tournaments = 0;
 				$player->games = 0;
 				$player->wins = 0;
+				$player->total_cut_off = 0;
+				$player->cut_off = 0;
 				if ($max_tournaments > 0)
 				{
 					$player->p = array();
@@ -458,7 +541,7 @@ function calculate_series()
 				$player = $players[$player_id];
 			}
 			
-			$points = get_gaining_points($tournament_id, $gaining, $stars, $place, $score, $tournament_players[$tournament_id], false);
+			$points = get_gaining_points($tournament_id, $gaining, $stars, $place, $score, $tournament_players[$tournament_id], $rating_sum, $rating_sum20, $trav_dist, $guest_coef, false);
 			if ($max_tournaments > 0)
 			{
 				if (count($player->p) >= $max_tournaments)
@@ -473,6 +556,7 @@ function calculate_series()
 					}
 					if ($player->p[$min_index] <= $points)
 					{
+						$player->total_cut_off += $player->p[$min_index];
 						$player->p[$min_index] = $points;
 					}
 				}
@@ -507,6 +591,8 @@ function calculate_series()
 				$player->tournaments = 0;
 				$player->games = 0;
 				$player->wins = 0;
+				$player->total_cut_off = 0;
+				$player->cut_off = 0;
 				if ($max_tournaments > 0)
 				{
 					$player->p = array();
@@ -522,7 +608,7 @@ function calculate_series()
 				$player = $players[$player_id];
 			}
 			
-			$points = get_gaining_points($child_series_id, $gaining, $stars, $place, $score, $child_series_players[$child_series_id], true);
+			$points = get_gaining_points($child_series_id, $gaining, $stars, $place, $score, $child_series_players[$child_series_id], 0, 0, 0, 0, true);
 			if ($max_tournaments > 0)
 			{
 				if (count($player->p) >= $max_tournaments)
@@ -537,6 +623,7 @@ function calculate_series()
 					}
 					if ($player->p[$min_index] <= $points)
 					{
+						$player->total_cut_off += $player->p[$min_index];
 						$player->p[$min_index] = $points;
 					}
 				}
@@ -565,6 +652,8 @@ function calculate_series()
 				$player->tournaments = 0;
 				$player->games = 0;
 				$player->wins = 0;
+				$player->total_cut_off = 0;
+				$player->cut_off = 0;
 				if ($max_tournaments > 0)
 				{
 					$player->p = array();
@@ -594,6 +683,7 @@ function calculate_series()
 					}
 					if ($player->p[$min_index] <= $points)
 					{
+						$player->total_cut_off += $player->p[$min_index];
 						$player->p[$min_index] = $points;
 					}
 				}
@@ -614,9 +704,15 @@ function calculate_series()
 			foreach ($players as $player)
 			{
 				$player->points = 0;
+				$player->cut_off = 1000000000;
 				foreach ($player->p as $p)
 				{
 					$player->points += $p;
+					$player->cut_off = min($player->cut_off, $p);
+				}
+				if (count($player->p) < $max_tournaments)
+				{
+					$player->cut_off = 0;
 				}
 				unset($player->p);
 			}
@@ -630,8 +726,8 @@ function calculate_series()
 		foreach ($players as $player)
 		{
 			$importance = get_series_importance($place, $players_count);
-			Db::exec(get_label('series'), 'INSERT INTO series_places (series_id, user_id, place, importance, score, tournaments, games, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
-				$series_id, $player->id, $place, $importance, $player->points, $player->tournaments, $player->games, $player->wins);
+			Db::exec(get_label('series'), 'INSERT INTO series_places (series_id, user_id, place, importance, score, tournaments, games, wins, total_cut_off, cut_off) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+				$series_id, $player->id, $place, $importance, $player->points, $player->tournaments, $player->games, $player->wins, $player->total_cut_off, $player->cut_off);
 			++$place;
 		}
 		

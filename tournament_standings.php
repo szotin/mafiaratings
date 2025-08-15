@@ -447,7 +447,7 @@ class Page extends TournamentPageBase
 			{
 				if ($number < $this->num_players && $s->stars > 0)
 				{
-					echo '<td align="center">' . format_gain(get_gaining_points($this->id, $s->gaining, $s->stars, $number + 1, $player->points, $players_count, false)) . '</td>';
+					echo '<td align="center">' . format_gain(get_gaining_points($this->id, $s->gaining, $s->stars, $number + 1, $player->points, $players_count, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff, false)) . '</td>';
 					// if ($player->id == 3536)
 					// {
 						// show_gaining_info($s->gaining);
@@ -589,7 +589,7 @@ class Page extends TournamentPageBase
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . format_gain(get_gaining_points($this->id, $s->gaining, $s->stars, $place, $sum, $count, false)) . '</td>';
+					echo '<td align="center">' . format_gain(get_gaining_points($this->id, $s->gaining, $s->stars, $place, $sum, $count, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff, false)) . '</td>';
 				}
 				else
 				{

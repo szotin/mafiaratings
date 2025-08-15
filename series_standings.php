@@ -76,6 +76,8 @@ class Page extends SeriesPageBase
 		echo '<tr class="th darker" align="center"><td width="40"></td>';
 		echo '<td colspan="3" align="left">'.get_label('Player').'</td>';
 		echo '<td width="80">'.get_label('Points').'</td>';
+		echo '<td width="80">'.get_label('Cut off').'</td>';
+		echo '<td width="80">'.get_label('Total cut off').'</td>';
 		echo '<td width="80">'.get_label('Tournaments played').'</td>';
 		echo '<td width="80">'.get_label('Points per tournament').'</td>';
 		// echo '<td width="80">'.get_label('Games played (won)').'</td>';
@@ -90,7 +92,7 @@ class Page extends SeriesPageBase
 		echo '</tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, p.place, p.score, p.tournaments, p.games, p.wins, c.id, c.name, c.flags'.
+			'SELECT u.id, nu.name, u.flags, p.place, p.score, p.tournaments, p.games, p.wins, p.total_cut_off, p.cut_off, c.id, c.name, c.flags'.
 			' FROM series_places p'.
 			' JOIN users u ON u.id = p.user_id'.
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
@@ -103,7 +105,7 @@ class Page extends SeriesPageBase
 		$club_pic = new Picture(CLUB_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($player_id, $player_name, $player_flags, $place, $points, $tournaments, $games, $wins, $club_id, $club_name, $club_flags) = $row;
+			list ($player_id, $player_name, $player_flags, $place, $points, $tournaments, $games, $wins, $total_cut_off, $cut_off, $club_id, $club_name, $club_flags) = $row;
 			if ($player_id == $this->user_id)
 			{
 				echo '<tr align="center" class="darker">';
@@ -129,6 +131,8 @@ class Page extends SeriesPageBase
 			echo '</td>';
 			
 			echo '<td class="' . $highlight . '">' . format_gain($points) . '</td>';
+			echo '<td>' . format_gain($cut_off) . '</td>';
+			echo '<td>' . format_gain($total_cut_off) . '</td>';
 			echo '<td>' . $tournaments . '</td>';
 			echo '<td>' . ($tournaments > 0 ? format_gain($points / $tournaments) : '') . '</td>';
 			// echo '<td>' . $games . ' (' . $wins . ')</td>';
@@ -137,7 +141,7 @@ class Page extends SeriesPageBase
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . format_gain(get_gaining_points($s->id, $s->gaining, $s->stars, $place, $points, $count, true)) . '</td>';
+					echo '<td align="center">' . format_gain(get_gaining_points($s->id, $s->gaining, $s->stars, $place, $points, $count, 0, 0, 0, 0, true)) . '</td>';
 				}
 				else
 				{

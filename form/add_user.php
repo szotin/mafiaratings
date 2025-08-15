@@ -3,6 +3,7 @@
 require_once '../include/session.php';
 require_once '../include/user.php';
 require_once '../include/security.php';
+require_once '../include/city.php';
 
 initiate_session();
 
@@ -64,36 +65,77 @@ try
 		show_user_input('form-user', '', '', get_label('Select player.'), 'onSelect');
 		echo '</td></tr>';
 	}
-	if (isset($tournament_id) && ($flags & TOURNAMENT_FLAG_TEAM) != 0)
+	if (isset($tournament_id))
 	{
-		echo '<tr><td width="120">' . get_label('Team') . ':</td><td>';
+		$city_name = '';
+		if ($user_id > 0)
+		{
+			list ($city_name) = Db::record(get_label('user'), 
+				'SELECT nc.name FROM users u'.
+				' JOIN cities c ON c.id = u.city_id' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
+				' WHERE u.id = ?', $user_id);
+		}
 		
-		echo '<input type="text" id="form-team" placeholder="' . get_label('Select team') . '" title="Select player\'s team in the tournament."/>';
-		$url = 'api/control/team.php?tournament_id=' . $tournament_id . '&term=';
+		echo '<tr><td>' . get_label('City') . ':</td><td>';
+		show_city_input('form-city', $city_name, -1, 'onCitySelect');
+		echo '</tr>';
+		
+		if ($flags & TOURNAMENT_FLAG_TEAM)
+		{
+			echo '<tr><td>' . get_label('Team') . ':</td><td>';
+			
+			echo '<input type="text" id="form-team" placeholder="' . get_label('Select team') . '" title="Select player\'s team in the tournament."/>';
+			$url = 'api/control/team.php?tournament_id=' . $tournament_id . '&term=';
 ?>
-		<script>
-		$("#form-team").autocomplete(
-		{ 
-			source: function(request, response)
-			{
-				$.getJSON("<?php echo $url; ?>" + $("#form-team").val(), null, response);
-			},
-			minLength: 0
-		})
-		.on("focus", function () { $(this).autocomplete("search", ''); });
-		</script>
+			<script>
+			$("#form-team").autocomplete(
+			{ 
+				source: function(request, response)
+				{
+					$.getJSON("<?php echo $url; ?>" + $("#form-team").val(), null, response);
+				},
+				minLength: 0
+			})
+			.on("focus", function () { $(this).autocomplete("search", ''); });
+			</script>
 <?php
-		
-		echo '</td></tr>';
+			
+			echo '</td></tr>';
+		}
 	}
 	echo '</table>';
 
 ?>
 	<script>
 	var userId = <?php echo $user_id; ?>;
+	var cityId = 0;
 	function onSelect(_user)
 	{
 		userId = _user.id;
+		$("#form-city").val('');
+		if (userId > 0)
+		{
+			json.post("api/get/players.php", { user_id: userId }, 
+				function (data)
+				{
+					if (isArray(data.players) && data.players.length > 0 && isSet(data.players[0].city_id))
+					{
+						$("#form-city").val(data.players[0].city);
+					}
+					else
+					{
+						$("#form-city").val('');
+					}
+					onCitySelect({id:0})
+				});				
+		}
+	}
+	
+	function onCitySelect(_city)
+	{
+		console.log(_city);
+		cityId = _city.id;
 	}
 	
 	function commit(onSuccess)
@@ -125,6 +167,7 @@ try
 			{
 				op: "add_user"
 				, user_id: userId
+				, city_id: cityId
 				, tournament_id: <?php echo $tournament_id; ?>
 				, team: $('#form-team').val()
 			}, onSuccess);
@@ -137,6 +180,7 @@ try
 			{
 				op: "add_user"
 				, user_id: userId
+				, city_id: cityId
 				, tournament_id: <?php echo $tournament_id; ?>
 			}, onSuccess);
 <?php

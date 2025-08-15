@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/event.php';
+require_once '../../include/tournament.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
 require_once '../../include/datetime.php';
@@ -452,7 +453,11 @@ class ApiPage extends OpsApiPageBase
 			}
 			else
 			{
-				list ($new_club_id, $scoring_id, $scoring_version, $rules_code, $tournament_flags, $tournament_start, $tournament_duration) = Db::record(get_label('tournament'), 'SELECT club_id, scoring_id, scoring_version, rules, flags, start_time, duration FROM tournaments WHERE id = ?', $tournament_id);
+				list ($new_club_id, $scoring_id, $scoring_version, $rules_code, $tournament_flags, $tournament_start, $tournament_duration, $tournament_lat, $tournament_lon) = Db::record(get_label('tournament'), 
+					'SELECT t.club_id, t.scoring_id, t.scoring_version, t.rules, t.flags, t.start_time, t.duration, a.lat, a.lon'.
+					' FROM tournaments t'.
+					' JOIN addresses a ON a.id = t.address_id'.
+					' WHERE t.id = ?', $tournament_id);
 				if ($new_club_id != $club_id)
 				{
 					// Currently there is no API for changing event club. However in the future such an API might exist.
@@ -477,14 +482,15 @@ class ApiPage extends OpsApiPageBase
 				}
 				
 				// Add event registrations to tournament registrations
-				$query = new DbQuery('SELECT user_id, flags FROM event_users WHERE event_id = ?', $event_id);
+				$query = new DbQuery('SELECT e.user_id, e.flags, u.city_id, u.rating FROM event_users e JOIN users u ON u.id = e.user_id WHERE e.event_id = ?', $event_id);
 				while ($row = $query->next())
 				{
-					list($user_id, $user_flags) = $row;
+					list($user_id, $user_flags, $user_city_id, $user_rating) = $row;
 					$user_flags &= USER_PERM_MASK;
 					// Note that we are loosing user custom picture here if exists. We can fix it in the future if it is a problem.
-					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) values (?, ?, ?)', $tournament_id, $user_id, $user_flags);
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $tournament_id, $user_id, $user_flags, $user_city_id, $user_rating);
 				}
+				update_tournament_stats($tournament_id, $tournament_lat, $tournament_lon, $tournament_flags);
 				
 				// if tournament is not a long term tournament, make the event hidden
 				if (($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
@@ -1532,11 +1538,14 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
-		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, $flags) = 
-			Db::record(get_label('event'), 'SELECT club_id, name, address_id, start_time, duration, languages, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags FROM events WHERE id = ?', $event_id);
+		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, $flags, $lat, $lon) = 
+			Db::record(get_label('event'), 
+				'SELECT e.club_id, e.name, e.address_id, e.start_time, e.duration, e.languages, e.notes, e.fee, e.currency_id, e.scoring_id, e.scoring_version, e.scoring_options, e.rules, e.flags, a.lat, a.lon'.
+				' FROM events e'.
+				' JOIN addresses a ON a.id = e.address_id'.
+				' WHERE e.id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
-		$tournament_flags = 0;
 		Db::exec(
 			get_label('tournament'), 
 			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -1560,14 +1569,15 @@ class ApiPage extends OpsApiPageBase
 		$log_details->flags = 0;
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
-		$query = new DbQuery('SELECT user_id, flags FROM event_users WHERE event_id = ?', $event_id);
+		$query = new DbQuery('SELECT e.user_id, e.flags, u.city_id, u.rating FROM event_users e JOIN users u ON u.id = e.user_id WHERE e.event_id = ?', $event_id);
 		while ($row = $query->next())
 		{
-			list($user_id, $user_flags) = $row;
+			list($user_id, $user_flags, $user_city_id, $user_rating) = $row;
 			$user_flags &= USER_PERM_MASK;
 			// Note that we are loosing user custom picture here if exists. We can fix it in the future if it is a problem.
-			Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags) values (?, ?, ?)', $tournament_id, $user_id, $user_flags);
+			Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $tournament_id, $user_id, $user_flags, $user_city_id, $user_rating);
 		}
+		update_tournament_stats($tournament_id, $lat, $lon, 0);
 			
 		$name = get_label('main round');
 		$flags |= EVENT_MASK_HIDDEN;
@@ -1588,7 +1598,6 @@ class ApiPage extends OpsApiPageBase
 			{
 				continue;
 			}
-			throw new Exc($game);
 			$game = json_decode($game);
 			
 			$game->tournamentId = (int)$tournament_id;

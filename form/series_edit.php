@@ -95,13 +95,14 @@ try
 	}
 	
 	$query = new DbQuery('SELECT id, name FROM gainings WHERE league_id IS NULL OR league_id = ? ORDER BY name', $league_id);
-	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
+	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining" onchange="gainingChanged()">';
 	while ($row = $query->next())
 	{
 		list($gid, $gname) = $row;
 		show_option($gid, $gaining_id, $gname);
 	}
-	echo '</select></td></tr>';
+	echo '</select> <select id="form-gaining-version"></select>';
+	echo '</td></tr>';
 	
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
@@ -129,6 +130,24 @@ try
 
 	<script type="text/javascript" src="js/rater.min.js"></script>
 	<script>
+	function gainingChanged(version)
+	{
+		json.post("api/get/gainings.php", { gaining_id: $('#form-gaining').val() }, function(data)
+		{
+			let g = data.gainings[0];
+			let c = $('#form-gaining-version');
+			c.find('option').remove();
+			for (var v of g.versions)
+			{
+				c.append($('<option>').val(v.version).text(v.version));
+			}
+			if (isSet(version))
+				c.val(version);
+			else
+				c.val(v.version);
+		});
+	}
+	gainingChanged(<?php echo $gaining_version; ?>);
 	
 	var seriesList = <?php echo $series_list; ?>;
 	function setSeries()
@@ -278,6 +297,7 @@ try
 			start: $('#form-start').val(),
 			end: dateToStr(_end),
 			gaining_id: $('#form-gaining').val(),
+			gaining_version: $('#form-gaining-version').val(),
 			langs: _langs,
 			flags: _flags,
 		};
