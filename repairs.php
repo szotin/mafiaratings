@@ -104,7 +104,7 @@ class Page extends GeneralPageBase
 		echo '<input type="submit" class="btn long" value="Events" onclick="rebuildEvents()"> ';
 		echo '<input type="submit" class="btn long" value="Tournaments" onclick="rebuildTournaments()"> ';
 		echo '<input type="submit" class="btn long" value="Series" onclick="rebuildSeries()"> ';
-		echo '</p><p><a href="complete_competitions.php">Rebuild now</a></p>';
+		echo '</p><p><a href="complete_competitions.php?time=180">Rebuild now</a></p>';
 		$this->show_error_logs();
 	}
 	

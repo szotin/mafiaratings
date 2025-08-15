@@ -139,7 +139,7 @@ class Page extends TournamentPageBase
 				echo '</a>';
 			}
 			echo '</td></tr>';
-			echo '<tr class="dark"><td colspan="2" style="padding-left:6px;">';
+			echo '<tr><td colspan="2" style="padding-left:6px;" align="center">';
 			echo $city . '<br>';
 			echo get_label('[0] km', format_rating(get_distance($this->lat, $this->lon, $lat, $lon, GEO_KILOMETERS))) . '<br>';
 			echo get_label('Rating: [0]', format_rating($rating+1000)) . '</td></tr>';
@@ -203,7 +203,7 @@ class Page extends TournamentPageBase
 				echo '</a>';
 			}
 			echo '</td></tr>';
-			echo '<tr class="dark"><td colspan="2" style="padding-left:6px;">';
+			echo '<tr><td colspan="2" style="padding-left:6px;" align="center">';
 			echo $city . '<br>';
 			echo get_label('[0] km', format_rating(get_distance($this->lat, $this->lon, $lat, $lon, GEO_KILOMETERS))) . '<br>';
 			echo get_label('Rating: [0]', format_rating($rating+1000)) . '</td></tr>';
