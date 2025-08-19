@@ -648,7 +648,7 @@ class ApiPage extends OpsApiPageBase
 				list($mwt_user_id, $mwt_user_flags, $mwt_user_name) = $row;
 				if (($mwt_user_flags & USER_FLAG_IMPORTED) == 0)
 				{
-					throw new Exc(get_label('MWT ID [0] is already used by <a href="user_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_user_id, $mwt_user_name));
+					throw new Exc(get_label('[3] ID [0] is already used by <a href="user_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_user_id, $mwt_user_name, 'MWT'));
 				}
 				$this->merge_users($mwt_user_id, $user_id, $name);
 				echo get_label('User [0] is now merged to your account because they were auto-created for MWT ID [1].', $mwt_user_name, $mwt_id);

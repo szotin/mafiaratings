@@ -30,82 +30,20 @@ class ApiPage extends OpsApiPageBase
 		
 		$feature_flags = GAME_FEATURE_MASK_ALL;
 		$game = new Game($json, $feature_flags);
-		$data = $game->data;
-		if (isset($data->features))
-		{
-			$feature_flags = Game::leters_to_feature_flags($data->features);
-		}
 		
-		if (isset($data->eventId) && $data->eventId > 0)
+		Db::begin();
+		$this->response['rebuild_ratings'] = $game->create();
+		Db::commit();
+		
+		if (isset($game->issues))
 		{
-			$tournament_id = isset($data->tournamentId) ? $data->tournamentId : NULL;
-			$table_num = isset($data->tableNum) ? $data->tableNum : NULL;
-			$game_num = isset($data->gameNum) ? $data->gameNum : NULL;
-			check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $data->clubId, $data->eventId, $tournament_id);
-			
-			if ($data->winner == 'maf')
+			$text = get_label('The game contains the next issues:') . '<ul>';
+			foreach ($game->issues as $issue)
 			{
-				$result_code = GAME_RESULT_MAFIA;
+				$text .= '<li>' . $issue . '</li>';
 			}
-			else if ($data->winner == 'civ')
-			{
-				$result_code = GAME_RESULT_TOWN;
-			}
-			else if ($data->winner == 'tie')
-			{
-				$result_code = GAME_RESULT_TIE;
-			}
-			else
-			{
-				throw new Exc(get_label('Unknown [0]', get_label('result')));
-			}
-			
-			Db::begin();
-			Db::exec(get_label('game'),
-				'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, start_time, end_time, result, rules, table_num, game_num) ' .
-					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-				$data->clubId, $data->eventId, $tournament_id, $data->moderator->id, $_profile->user_id, get_lang_by_code($data->language),
-				$data->startTime, $data->endTime, $result_code, $data->rules, $table_num, $game_num);
-			list ($data->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');
-			$data->id = (int)$data->id;
-
-			$this->response['rebuild_ratings'] = $game->update();
-			
-			Db::exec(get_label('game'), 'DELETE FROM current_games WHERE event_id = ? AND table_num = ? AND game_num = ?', $data->eventId, $table_num, $game_num);
-			
-			$query = new DbQuery('SELECT feature_flags FROM game_settings WHERE user_id = ?', $_profile->user_id);
-			if ($row = $query->next())
-			{
-				list ($user_feature_flags) = $row;
-				if ($user_feature_flags != $feature_flags)
-				{
-					Db::exec(get_label('game'), 'UPDATE game_settings SET feature_flags = ? WHERE user_id = ?', $feature_flags, $_profile->user_id);
-				}
-			}
-			else if ($feature_flags != GAME_FEATURE_MASK_ALL)
-			{
-				Db::exec(get_label('user'),
-					'INSERT INTO game_settings (user_id, flags, feature_flags) VALUES (?, 0, ?)',
-					$_profile->user_id, $feature_flags);
-			}
-			Db::commit();
-			
-			if (isset($game->issues))
-			{
-				$text = get_label('The game contains the next issues:') . '<ul>';
-				foreach ($game->issues as $issue)
-				{
-					$text .= '<li>' . $issue . '</li>';
-				}
-				$text .= '</ul>' . get_label('They are all fixed but the original version of the game is also saved. Please check Game Issues in the management menu.');
-				$this->response['message'] = $text;
-			}
-		}
-		else
-		{
-			// demo game
-			unset($_SESSION['demogame']);
-			$this->response['rebuild_ratings'] = false;
+			$text .= '</ul>' . get_label('They are all fixed but the original version of the game is also saved. Please check Game Issues in the management menu.');
+			$this->response['message'] = $text;
 		}
 	}
 	

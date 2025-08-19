@@ -58,38 +58,6 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 	}
 }
 
-function create_event($event_name, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $tournament_flags)
-{
-	$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
-	if ($tournament_flags & TOURNAMENT_FLAG_STREAMING)
-	{
-		$flags |= EVENT_FLAG_STREAMING;
-	}
-	Db::exec(
-		get_label('round'), 
-		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, fee, currency_id, scoring_id, scoring_version, scoring_options, tournament_id, rules, round) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-		$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num);
-		
-	$log_details = new stdClass();
-	$log_details->name = $event_name;
-	$log_details->tournament_id = $tournament_id;
-	$log_details->club_id = $club_id; 
-	$log_details->address_id = $address_id; 
-	$log_details->start = $start;
-	$log_details->duration = $end - $start;
-	$log_details->langs = $langs;
-	$log_details->notes = $notes;
-	$log_details->fee = $fee;
-	$log_details->currency_id = $currency_id;
-	$log_details->scoring_id = $scoring_id;
-	$log_details->scoring_version = $scoring_version;
-	$log_details->scoring_options = $scoring_options;
-	$log_details->rules_code = $rules_code;
-	$log_details->flags = $flags;
-	$log_details->round_num = $round_num;
-	db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id);
-}
-
 function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $tournament_flags)
 {
 	global $_lang;
@@ -105,11 +73,12 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 	{
 		case TOURNAMENT_TYPE_FIIM_ONE_ROUND:
 			$ops = new stdClass();
+			$ops->group = 'main';
 			if (isset($scoring_options->flags))
 			{
 				$ops->flags = $scoring_options->flags;
 			}
-			create_event(get_label('main round'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
 			break;
 		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3:
 			$ops = new stdClass();
@@ -119,10 +88,10 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_event(get_label('main round'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
 			$ops->group = 'final';
 			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_event(get_label('final'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
 			break;
 		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4:
 			$ops = new stdClass();
@@ -132,9 +101,9 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_event(get_label('main round'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
 			$ops->group = 'final';
-			create_event(get_label('final'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
 			break;
 		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3:
 			$ops = new stdClass();
@@ -144,11 +113,11 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_event(get_label('main round'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
-			create_event(get_label('semi-final'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags);
 			$ops->group = 'final';
 			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_event(get_label('final'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
 			break;
 		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4:
 			$ops = new stdClass();
@@ -158,10 +127,10 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_event(get_label('main round'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
-			create_event(get_label('semi-final'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags);
 			$ops->group = 'final';
-			create_event(get_label('final'), $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
 			break;
 		default:
 			break;
@@ -179,6 +148,23 @@ function tournament_type_help_str()
 	$str .= '<li value="' . TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4 . '">Two rounds long. FIIM tournament with main round, semi-final round, and final round. Final round has 4 games or more.</li>';
 	$str .= '<li value="' . TOURNAMENT_TYPE_CHAMPIONSHIP . '">Seasonal championship. No rounds created. They will be created manually in the future.</li>';
 	return $str;
+}
+
+function parse_id_from_url($url, $site_name)
+{
+	if (empty($url))
+	{
+		return NULL;
+	}
+	if (!is_null($url) && !is_numeric($url))
+	{
+		$url = parse_number_from_url($url, '/tournaments/');
+		if ($url <= 0)
+		{
+			throw new Exc(get_label('Invalid [0] ID. Id has to be an integer, or a URL of the tournament in the [0] site.', $site_name));
+		}
+	}
+	return $url;
 }
 
 class ApiPage extends OpsApiPageBase
@@ -428,8 +414,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id) = 
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id FROM tournaments t' . 
+		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id, $old_imafia_id) = 
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id, t.imafia_id FROM tournaments t' . 
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -525,33 +511,31 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Tournament ends before or right after the start.'));
 		}
 		
-		// Set MWT ID
-		$mwt_id = get_optional_param('mwt_id', $old_mwt_id);
-		if (empty($mwt_id))
+		$mwt_id = parse_id_from_url(get_optional_param('mwt_id', $old_mwt_id), 'MWT');
+		if ($mwt_id != $old_mwt_id)
 		{
-			$mwt_id = NULL;
-		}
-		if (!is_null($mwt_id))
-		{
-			if (!is_numeric($mwt_id))
+			$query = new DbQuery(
+				'SELECT t.id, t.flags, t.name'.
+				' FROM tournaments t'.
+				' WHERE t.id <> ? AND t.mwt_id = ?', $tournament_id, $mwt_id);
+			if ($row = $query->next())
 			{
-				$mwt_id = parse_number_from_url($mwt_id, '/tournaments/');
-				if ($mwt_id <= 0)
-				{
-					throw new Exc(get_label('Invalid MWT ID. Id has to be an integer, or a URL of the tournament in the MWT site.'));
-				}
+				list($mwt_tournament_id, $mwt_tournament_flags, $mwt_tournament_name) = $row;
+				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_tournament_id, $mwt_tournament_name, 'MWT'));
 			}
-			if ($mwt_id != $old_mwt_id)
+		}
+		
+		$imafia_id = parse_id_from_url(get_optional_param('imafia_id', $old_imafia_id), 'iMafia');
+		if ($imafia_id != $old_imafia_id)
+		{
+			$query = new DbQuery(
+				'SELECT t.id, t.flags, t.name'.
+				' FROM tournaments t'.
+				' WHERE t.id <> ? AND t.imafia_id = ?', $tournament_id, $imafia_id);
+			if ($row = $query->next())
 			{
-				$query = new DbQuery(
-					'SELECT t.id, t.flags, t.name'.
-					' FROM tournaments t'.
-					' WHERE t.id <> ? AND t.mwt_id = ?', $tournament_id, $mwt_id);
-				if ($row = $query->next())
-				{
-					list($mwt_tournament_id, $mwt_tournament_flags, $mwt_tournament_name) = $row;
-					throw new Exc(get_label('MWT ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_tournament_id, $mwt_tournament_name));
-				}
+				list($imafia_tournament_id, $imafia_tournament_flags, $imafia_tournament_name) = $row;
+				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $imafia_id, $imafia_tournament_id, $imafia_tournament_name, 'iMafia'));
 			}
 		}
 		
@@ -728,8 +712,8 @@ class ApiPage extends OpsApiPageBase
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, rules = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $rules_code, $tournament_id);
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, imafia_id = ?, rules = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $imafia_id, $rules_code, $tournament_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			$log_details = new stdClass();
@@ -791,6 +775,10 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->mwt_id = $mwt_id;
 			}
+			if ($old_imafia_id != $imafia_id)
+			{
+				$log_details->imafia_id = $imafia_id;
+			}
 			if ($logo_uploaded)
 			{
 				$log_details->logo_uploaded = true;
@@ -851,6 +839,7 @@ class ApiPage extends OpsApiPageBase
 									'</ol>', 'remain the same.');
 		$help->request_param('address_id', 'Address id of the tournament.', 'remains the same.');
 		$help->request_param('mwt_id', 'Id of this tournament on the MWT site. It can be either integer or MWT site URL for the tournament (for example: <a href="https://mafiaworldtour.com/tournaments/2898">https://mafiaworldtour.com/tournaments/2898</a>).', "remains the same");
+		$help->request_param('imafia_id', 'Id of this tournament on the iMafia site. It can be either integer or iMafia site URL for the tournament (for example: <a href="https://mafiaworldtour.com/tournaments/2898">https://mafiaworldtour.com/tournaments/2898</a>).', "remains the same");
 		return $help;
 	}
 	

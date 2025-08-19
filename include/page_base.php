@@ -555,7 +555,10 @@ class PageBase
 		}
 		$this->js_on_load();
 		echo "\n\t});\n";
-		$this->js();
+		if (is_null($this->_err_message))
+		{
+			$this->js();
+		}
 		echo "\n</script>";
 	}
 	

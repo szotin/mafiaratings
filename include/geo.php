@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/google_geo_key.php';
+require_once __DIR__ . '/api_keys.php';
 
 define('GEO_METERS', 6371000);
 define('GEO_KILOMETERS', 6371);

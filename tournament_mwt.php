@@ -101,7 +101,7 @@ class Page extends TournamentPageBase
 	
 	private function show_mwt_id()
 	{
-		echo '<p>'.get_label('Please ented MWT ID of this tournament').': <input id="mwt_id" ';
+		echo '<p>'.get_label('Please ented [0] ID of this tournament', 'MWT').': <input id="mwt_id" ';
 		if (!is_null($this->mwt_id) && $this->mwt_id > 0)
 		{
 			echo ' value="' . $this->mwt_id . '"';

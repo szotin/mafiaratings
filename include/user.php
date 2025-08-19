@@ -160,6 +160,7 @@ class UserPageBase extends PageBase
 	protected $club;
 	protected $club_flags;
 	protected $mwt_id;
+	protected $imafia_id;
 	
 	protected function prepare()
 	{
@@ -171,9 +172,9 @@ class UserPageBase extends PageBase
 		}
 		$this->id = $_REQUEST['id'];
 
-		list ($this->name, $this->email, $this->flags, $this->games_moderated, $this->reg_date, $this->langs, $this->city, $this->country, $this->club_id, $this->club, $this->club_flags, $this->mwt_id) = 
+		list ($this->name, $this->email, $this->flags, $this->games_moderated, $this->reg_date, $this->langs, $this->city, $this->country, $this->club_id, $this->club, $this->club_flags, $this->mwt_id, $this->imafia_id) = 
 			Db::record(get_label('user'),
-				'SELECT nu.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, ni.name, no.name, c.id, c.name, c.flags, u.mwt_id FROM users u' .
+				'SELECT nu.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, ni.name, no.name, c.id, c.name, c.flags, u.mwt_id, u.imafia_id FROM users u' .
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' JOIN cities i ON i.id = u.city_id' .
 					' JOIN countries o ON o.id = i.country_id' .
@@ -240,10 +241,18 @@ class UserPageBase extends PageBase
 		$user_pic->show(TNAILS_DIR, false);
 		echo '</td></tr></table><td valign="top"><h2 class="user">' . $this->title . '</h2><br><h3>' . $this->_title . '</h3><p class="subtitle">';
 		echo $this->city . ', ' . $this->country . '</p>';
+
+		echo '<p class="subtitle">';
 		if (!is_null($this->mwt_id))
 		{
-			echo '<p class="subtitle"><a href="https://mafiaworldtour.com/user/' . $this->mwt_id . '/show" target="_blank"><img src="images/fiim.png" title="' . get_label('MWT link') . '"></a></p>';
+			echo '<a href="https://mafiaworldtour.com/user/' . $this->mwt_id . '/show" target="_blank"><img src="images/fiim.png" width="24" title="' . get_label('[0] link', 'MWT') . '"></a> ';
 		}
+		if (!is_null($this->imafia_id))
+		{
+			echo '<a href="https://imafia.org/u/' . $this->imafia_id . '" target="_blank"><img src="images/imafia.png" width="24" title="' . get_label('[0] link', 'iMafia') . '"></a> ';
+		}
+		echo '</p>';
+
 		echo '</td><td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td align="right" valign="bottom" colspan="2">';

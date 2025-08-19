@@ -99,6 +99,7 @@ class TournamentPageBase extends PageBase
 	protected $rules_code;
 	protected $flags;
 	protected $mwt_id;
+	protected $imafia_id;
 	protected $series;
 	protected $num_players;
 	protected $lat;
@@ -124,7 +125,7 @@ class TournamentPageBase extends PageBase
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->fee, $this->currency_id, $this->currency_pattern,
 			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, 
-			$this->rules_code, $this->flags, $this->mwt_id, $this->num_players, $this->lat, $this->lon, $this->num_regs, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff) =
+			$this->rules_code, $this->flags, $this->mwt_id, $this->imafia_id, $this->num_players, $this->lat, $this->lon, $this->num_regs, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff) =
 		Db::record(
 			get_label('tournament'),
 			'SELECT t.name, c.id, c.name, c.flags,' . 
@@ -132,7 +133,7 @@ class TournamentPageBase extends PageBase
 				' ct.id, nct.name, cr.id, ncr.name, ct.timezone,' . 
 				' t.start_time, t.duration, t.langs, t.notes, t.fee, t.currency_id, cu.pattern,'.
 				' t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options,'.
-				' t.rules, t.flags, t.mwt_id, t.num_players, a.lat, a.lon, t.num_regs, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff' .
+				' t.rules, t.flags, t.mwt_id, t.imafia_id, t.num_players, a.lat, a.lon, t.num_regs, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff' .
 				' FROM tournaments t' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN addresses a ON a.id = t.address_id' .
@@ -210,8 +211,11 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_users.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name)),
 				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
-				new MenuItem('game_obs.php?bck=1&user_id=0&tournament_id=' . $this->id, get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
+				new MenuItem(null, null, null),
 				new MenuItem('tournament_mwt.php?id=' . $this->id, get_label('MWT integration'), get_label('Synchronize tournament with MWT site. Receive seating, send games, etc..')),
+				new MenuItem('tournament_imafia.php?id=' . $this->id, get_label('iMafia integration'), get_label('Synchronize tournament with iMafia site. Receive games, etc..')),
+				new MenuItem(null, null, null),
+				new MenuItem('game_obs.php?bck=1&user_id=0&tournament_id=' . $this->id, get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
 				new MenuItem('tournament_broadcasts_edit.php?id=' . $this->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts')),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
@@ -260,7 +264,11 @@ class TournamentPageBase extends PageBase
 		echo '</h3><p class="subtitle">' . format_date_period($this->start_time, $this->duration, $this->timezone);
 		if (!is_null($this->mwt_id))
 		{
-			echo ' (<a href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank">' . get_label('MWT link') . '</a>)';
+			echo ' (<a href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank">' . get_label('[0] link', 'MWT') . '</a>)';
+		}
+		if (!is_null($this->imafia_id))
+		{
+			echo ' (<a href="https://imafia.org/tournament/' . $this->imafia_id . '" target="_blank">' . get_label('[0] link', 'iMafia') . '</a>)';
 		}
 		
 		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)
@@ -454,6 +462,43 @@ function get_round_name($round_num)
 		default:
 			return get_label('1/[0] final', pow(2, $round_num - 1));
 	}
+}
+
+function create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $tournament_flags)
+{
+	$event_name = get_round_name($round_num);
+	$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
+	if ($tournament_flags & TOURNAMENT_FLAG_STREAMING)
+	{
+		$flags |= EVENT_FLAG_STREAMING;
+	}
+	Db::exec(
+		get_label('round'), 
+		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, fee, currency_id, scoring_id, scoring_version, scoring_options, tournament_id, rules, round) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+		$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num);
+	list ($round_id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');
+	
+		
+	$log_details = new stdClass();
+	$log_details->name = $event_name;
+	$log_details->tournament_id = $tournament_id;
+	$log_details->club_id = $club_id; 
+	$log_details->address_id = $address_id; 
+	$log_details->start = $start;
+	$log_details->duration = $end - $start;
+	$log_details->langs = $langs;
+	$log_details->notes = $notes;
+	$log_details->fee = $fee;
+	$log_details->currency_id = $currency_id;
+	$log_details->scoring_id = $scoring_id;
+	$log_details->scoring_version = $scoring_version;
+	$log_details->scoring_options = $scoring_options;
+	$log_details->rules_code = $rules_code;
+	$log_details->flags = $flags;
+	$log_details->round_num = $round_num;
+	db_log(LOG_OBJECT_EVENT, 'round created', $log_details, $tournament_id, $club_id);
+	
+	return $round_id;
 }
 
 function update_tournament_stats($tournament_id, $lat = NULL, $lon = NULL, $flags = NULL)
