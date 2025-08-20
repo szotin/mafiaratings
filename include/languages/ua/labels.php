@@ -1763,6 +1763,26 @@ $labelMenu = array (
 'Edit [0] registration for [1]' => '[EMPTY]', // form/edit_user.php, form/edit_user.php
 'Cut off' => '[EMPTY]', // series_standings.php, series_standings.php
 'Total cut off' => '[EMPTY]', // series_standings.php, series_standings.php
+'Please ented [0] ID of this tournament' => '[EMPTY]', // tournament_imafia.php, tournament_mwt.php, tournament_imafia.php, tournament_mwt.php
+'Import games' => '[EMPTY]', // tournament_imafia.php, tournament_imafia.php
+'Successfuly imported [0] games' => '[EMPTY]', // tournament_imafia.php, tournament_imafia.php
+'The tournament already contains games. They all will be deleted and replaced with the imported ones.<p>Are you sure you want to continue?</p>' => '[EMPTY]', // tournament_imafia.php, tournament_imafia.php
+'iMafia integration' => '[EMPTY]', // tournament_imafia.php, include/tournament.php, tournament_imafia.php, include/tournament.php
+'[0] km' => '[EMPTY]', // tournament_info.php, tournament_info.php, tournament_info.php, tournament_info.php, tournament_info.php, tournament_info.php
+'Rating: [0]' => '[EMPTY]', // tournament_info.php, tournament_info.php, tournament_info.php, tournament_info.php
+'Are you sure you want to unregister [0]?' => '[EMPTY]', // tournament_users.php, tournament_users.php
+'Synchronize tournament with iMafia site. Receive games, etc..' => '[EMPTY]', // include/tournament.php, include/tournament.php
+'[0] link' => '[EMPTY]', // include/tournament.php, include/tournament.php, include/user.php, include/user.php, include/tournament.php, include/tournament.php, include/user.php, include/user.php
+'No games received from [0]' => '[EMPTY]', // api/ops/imafia.php, api/ops/imafia.php
+'Please complete players/referees mapping' => '[EMPTY]', // api/ops/imafia.php, api/ops/imafia.php
+'This tournament is not iMafia tournament.' => '[EMPTY]', // api/ops/imafia.php, api/ops/imafia.php
+'Invalid [0] ID. Id has to be an integer, or a URL of the tournament in the [0] site.' => '[EMPTY]', // api/ops/tournament.php, api/ops/tournament.php
+'[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>' => '[EMPTY]', // api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php
+'[3] ID [0] is already used by <a href="user_info.php?id=[1]">[2]</a>' => '[EMPTY]', // api/ops/user.php, api/ops/user.php
+'Map mafiaratings player to [1] player [0]' => '[EMPTY]', // form/imafia_map_player.php, form/mwt_map_player.php, form/imafia_map_player.php, form/mwt_map_player.php
+'Referee mapping is not set for the tournament.' => '[EMPTY]', // form/imafia_map_ref.php, form/imafia_map_ref.php
+'Set referee for [0], table [1]' => '[EMPTY]', // form/imafia_map_ref.php, form/imafia_map_ref.php
+'not multiplied to round coefficient' => '[EMPTY]', // scoring.php, scoring.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1777,25 +1797,6 @@ $labelMenu = array (
 'Display pattern must contain \'#\' character.' => '[EMPTY]', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php, api/ops/country.php, api/ops/currency.php, api/ops/currency.php
 'During don\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'During sheriff\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
-'Please ented [0] ID of this tournament' => '[EMPTY]', // tournament_imafia.php, tournament_mwt.php
-'Import games' => '[EMPTY]', // tournament_imafia.php
-'Successfuly imported [0] games' => '[EMPTY]', // tournament_imafia.php
-'The tournament already contains games. They all will be deleted and replaced with the imported ones.<p>Are you sure you want to continue?</p>' => '[EMPTY]', // tournament_imafia.php
-'iMafia integration' => '[EMPTY]', // tournament_imafia.php, include/tournament.php
-'[0] km' => '[EMPTY]', // tournament_info.php, tournament_info.php, tournament_info.php
-'Rating: [0]' => '[EMPTY]', // tournament_info.php, tournament_info.php
-'Are you sure you want to unregister [0]?' => '[EMPTY]', // tournament_users.php
-'Synchronize tournament with iMafia site. Receive games, etc..' => '[EMPTY]', // include/tournament.php
-'[0] link' => '[EMPTY]', // include/tournament.php, include/tournament.php, include/user.php, include/user.php
-'No games received from [0]' => '[EMPTY]', // api/ops/imafia.php
-'Please complete players/referees mapping' => '[EMPTY]', // api/ops/imafia.php
-'This tournament is not iMafia tournament.' => '[EMPTY]', // api/ops/imafia.php
-'Invalid [0] ID. Id has to be an integer, or a URL of the tournament in the [0] site.' => '[EMPTY]', // api/ops/tournament.php
-'[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>' => '[EMPTY]', // api/ops/tournament.php, api/ops/tournament.php
-'[3] ID [0] is already used by <a href="user_info.php?id=[1]">[2]</a>' => '[EMPTY]', // api/ops/user.php
-'Map mafiaratings player to [1] player [0]' => '[EMPTY]', // form/imafia_map_player.php, form/mwt_map_player.php
-'Referee mapping is not set for the tournament.' => '[EMPTY]', // form/imafia_map_ref.php
-'Set referee for [0], table [1]' => '[EMPTY]', // form/imafia_map_ref.php
 );
 
 return $labelMenu;

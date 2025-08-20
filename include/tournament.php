@@ -264,11 +264,11 @@ class TournamentPageBase extends PageBase
 		echo '</h3><p class="subtitle">' . format_date_period($this->start_time, $this->duration, $this->timezone);
 		if (!is_null($this->mwt_id))
 		{
-			echo ' (<a href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank">' . get_label('[0] link', 'MWT') . '</a>)';
+			echo '<br><br><a href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank"><img src="images/fiim.png" width="24" title="' . get_label('[0] link', 'MWT') . '"></a>';
 		}
-		if (!is_null($this->imafia_id))
+		else if (!is_null($this->imafia_id))
 		{
-			echo ' (<a href="https://imafia.org/tournament/' . $this->imafia_id . '" target="_blank">' . get_label('[0] link', 'iMafia') . '</a>)';
+			echo '<br><br><a href="https://imafia.org/tournament/' . $this->imafia_id . '" target="_blank"><img src="images/imafia.png" width="24" title="' . get_label('[0] link', 'iMafia') . '"></a>';
 		}
 		
 		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)

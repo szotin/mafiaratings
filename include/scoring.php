@@ -487,7 +487,6 @@ function init_player_score($player, $scoring, $lod_flags)
 	$player->scoring = $scoring;
     $player->points = 0;
     $player->mvp_points = 0;
-	$player->weighted_games_count = 0;
 	if (isset($scoring->counters) && count($scoring->counters) > 0)
 	{
 		$player->counters = array(
@@ -540,7 +539,6 @@ function init_player_score($player, $scoring, $lod_flags)
 			$role_points->points = 0;
 			$role_points->mvp_points = 0;
 			$role_points->games_count = 0;
-			$role_points->weighted_games_count = 0;
 			if ($lod_flags & SCORING_LOD_PER_GROUP)
 			{
 				foreach ($_scoring_groups as $group)
@@ -652,7 +650,6 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 	{
 		$weight = $options->weight;
 	}
-	$player->weighted_games_count += $weight;
 	
 	$total_points = 0;
 	$total_mvp_points = 0;
@@ -734,6 +731,12 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 				$points = $policy->points;
 			}
 			
+			$policy_weight = $weight;
+			if (isset($policy->noWeight) && $policy->noWeight)
+			{
+				$policy_weight = 1;
+			}
+			
 			if (isset($policy->mvp))
 			{
 				if (is_string($policy->mvp))
@@ -760,19 +763,19 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 				{
 					$mvp_points = $policy->mvp;
 				}
-				$total_mvp_points += $mvp_points * $weight;
+				$total_mvp_points += $mvp_points * $policy_weight;
 			}
 			
 			// if ($player->id == 25)
 			// {
 				// echo 'game_id: ' . $game_id . '; matter: ' . $policy->matter . '; points: ' . $points;
-				// if ($weight != 1)
+				// if ($policy_weight != 1)
 				// {
-					// echo ' * ' . $weight . ' = ' . ($points * $weight);
+					// echo ' * ' . $policy_weight . ' = ' . ($points * $policy_weight);
 				// }
 				// echo '<br>';
 			// } 
-            $points *= $weight;
+            $points *= $policy_weight;
 			$total_points += $points;
 			if ($lod_flags & SCORING_LOD_PER_GROUP)
 			{
@@ -874,7 +877,6 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 		$r->points += $total_points;
 		$r->mvp_points += $total_mvp_points;
 		++$r->games_count;
-		$r->weighted_games_count += $weight;
         if ($lod_flags & SCORING_LOD_PER_GROUP)
         {
             foreach ($_scoring_groups as $group)

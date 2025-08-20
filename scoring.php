@@ -128,6 +128,7 @@ class Page extends PageBase
 				yesMvp: "<?php echo get_label('taken into account in the definition of MVP'); ?>",
 				customMvp: "<?php echo get_label('taken into account in the definition of MVP but calculated differently'); ?>",
 				mvpPoints: "<?php echo get_label('MVP points'); ?>",
+				noWeight: "<?php echo get_label('not multiplied to round coefficient'); ?>",
 				policyName: "<?php echo get_label('Policy name'); ?>",
 			},
 			sections:

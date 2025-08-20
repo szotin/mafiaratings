@@ -19,6 +19,11 @@ function score_title($points, $raw_points, $normalization)
 	return '';
 }
 
+function compare_games($game1, $game2)
+{
+	return $game2->time - $game1->time;
+}
+
 class Page extends TournamentPageBase
 {
 	protected function prepare()
@@ -106,6 +111,7 @@ class Page extends TournamentPageBase
 			if (isset($data[$this->user_id]))
 			{
 				$this->player = $data[$this->user_id];
+				usort($this->player->games, 'compare_games'); // scoring system does not guarantee propper sorting. It can be possibly achieved in the future but not yet.
 			}
 			else
 			{

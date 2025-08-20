@@ -84,6 +84,17 @@ function mvpRadioChange(controlId, value)
     refreshScoringEditor(true);
 }
 
+function noWeightChange(controlId)
+{
+    var ids = controlId.split('-');
+    var policy = _data.scoring[ids[0]][parseInt(ids[1])];
+    if ($('#' + controlId).attr('checked'))
+		policy.noWeight = true;
+	else
+		delete policy.noWeight;
+    refreshScoringEditor(true);
+}
+
 function mvpPointsChange(controlId)
 {
 	var ids = controlId.split('-');
@@ -355,6 +366,7 @@ function sectionHtml(sectionName)
 				{
 					html += '<tr><td><p>' + _data.strings.mvpPoints + ':</p></td><td><p><input id="' + mvpId + '" style="width: 350px;" oninput="mvpPointsChange(\'' + mvpId + '\')"><button class="small_icon" onclick="mr.functionHelp()"><img src="images/function.png" width="12"></button></p></td></tr>';
 				}
+				html += '<tr><td colspan="2"><input id="' + base + '-noweight" type="checkbox"' + (isSet(policy.noWeight) && policy.noWeight ? ' checked' : '') + ' onclick="noWeightChange(\'' + base + '-noweight\')"> ' + _data.strings.noWeight + '</td></tr>';
 				html += '</table>';
 			}
 			html += '</td></tr>';

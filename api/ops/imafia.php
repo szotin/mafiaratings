@@ -130,6 +130,8 @@ class ApiPage extends OpsApiPageBase
 	
 	function import_games_op()
 	{
+		set_time_limit(180);
+		
 		$tournament_id = (int)get_required_param('tournament_id');
 		$imafia_id = (int)get_required_param('imafia_id');
 		if ($imafia_id <= 0)
@@ -334,7 +336,7 @@ class ApiPage extends OpsApiPageBase
 							$p->role = 'don';
 							break;
 					}
-					$bonus = (float)$player->points_plus + (float)$player->points_plus;
+					$bonus = (float)$player->points_plus + (float)$player->points_minus;
 					if (abs($bonus) > 0.001)
 					{
 						$p->bonus = $bonus;

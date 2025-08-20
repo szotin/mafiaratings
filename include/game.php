@@ -2836,60 +2836,6 @@ class Game
 		return $timezone;
 	}
 	
-	private function is_players_result_changed()
-	{
-		$db_players = array(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-		$query = new DbQuery('SELECT number, user_id, won FROM players WHERE game_id = ?', $this->data->id);
-		while ($row = $query->next())
-		{
-			$db_players[(int)$row[0]-1] = $row;
-		}
-		
-		for ($i = 0; $i < 10; ++$i)
-		{
-			$player = $this->data->players[$i];
-			$db_player = $db_players[$i];
-			if ($db_player != NULL)
-			{
-				list($number, $user_id, $won) = $db_player;
-				if (!isset($player->id) || $player->id != $user_id)
-				{
-					return true;
-				}
-				else if ($this->data->winner == 'civ')
-				{
-					if (isset($player->role) && ($player->role == 'maf' || $player->role == 'don'))
-					{
-						if ($won)
-						{
-							return true;
-						}
-					}
-					else if (!$won)
-					{
-						return true;
-					}
-				}
-				else if (isset($player->role) && ($player->role == 'maf' || $player->role == 'don'))
-				{
-					if (!$won)
-					{
-						return true;
-					}
-				}
-				else if ($won)
-				{
-					return true;
-				}
-			}
-			else if (isset($player->id) && $player->id > 0)
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-	
 	// returns true if the ratings are to be rebuild as the result of the update
 	function update()
 	{
@@ -2960,17 +2906,10 @@ class Game
 		{
 			if ($is_data_rating || ($flags & GAME_FLAG_RATING) != 0)
 			{
-				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN players p ON g.id = p.game_id JOIN players p1 ON p.user_id = p1.user_id JOIN games g1 ON g1.id = p1.game_id WHERE g.id = ? AND (g1.flags & '.GAME_FLAG_RATING.') <> 0 AND (g1.flags & '.GAME_FLAG_CANCELED.') = 0 AND (g1.end_time > g.end_time OR (g1.end_time = g.end_time AND g1.id > g.id))', $data->id);
+				list($games_after_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE (g.flags & '.GAME_FLAG_RATING.') <> 0 AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND g.end_time >= ?', $data->id);
 				if ($games_after_count > 0)
 				{
-					if ($is_data_rating && ($flags & GAME_FLAG_RATING) != 0)
-					{
-						$rebuild_ratings = $this->is_players_result_changed();
-					}
-					else
-					{
-						$rebuild_ratings = true;
-					}
+					$rebuild_ratings = true;
 				}
 			}
 			
