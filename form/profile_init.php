@@ -19,8 +19,15 @@ try
 	
 	echo '<table class="bordered" width="100%">';
 	
+	list ($city_name, $country_name) = Db::record(get_label('city'), 
+		'SELECT nct.name, ncr.name FROM cities ct' .
+		' JOIN countries cr ON cr.id = ct.country_id' .
+		' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+		' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0' .
+		' WHERE ct.id = ?', $_profile->city_id);
+	
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
-	show_country_input('form-country', COUNTRY_DETECT, 'form-city', 'updateClub');
+	show_country_input('form-country', $country_name, 'form-city', 'updateClub');
 	echo '</td>';
 	
 	echo '<td width="' . ICON_WIDTH . '" align="center" valign="top" rowspan="8">';
@@ -39,7 +46,7 @@ try
 	}
 	
 	echo '<tr><td>' . get_label('City') . ':</td><td>';
-	show_city_input('form-city', CITY_DETECT, 'form-country', 'updateClub');
+	show_city_input('form-city', $city_name, 'form-country', 'updateClub');
 	echo '</td></tr>';
 	
 	echo '<tr><td width="120" valign="top">' . get_label('Gender') . ':</td><td>';
