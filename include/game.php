@@ -761,35 +761,6 @@ class Game
 		return true;
 	}
 	
-	function has_voting($round)
-	{
-		$voting = $this->votings[$round];
-		if (isset($voting->canceled) && $voting->canceled)
-		{
-			// voting was canceled
-			return false;
-		}
-		if (!isset($voting->nominees))
-		{
-			// no one nominated
-			return false;
-		}
-		switch (count($voting->nominees))
-		{
-			case 0:
-				// no one nominated
-				return false;
-			case 1:
-				// only one nominated in round 0
-				if (get_rule($this->get_rules(), RULES_FIRST_DAY_VOTING) != RULES_FIRST_DAY_VOTING_TO_TALK)
-				{
-					return $round > 0;
-				}
-				break;
-		}
-		return true;
-	}
-	
 	private function check_voted_out($fix, $player_num, $round)
 	{
 		$player = $this->data->players[$player_num - 1];
@@ -814,7 +785,7 @@ class Game
 		else if (is_string($player->death))
 		{
 			if (
-				$player->death != DEATH_TYPE_DAY &&
+				$player->death == DEATH_TYPE_NIGHT &&
 				$this->set_issue($fix, 'Player was voted out in round ' . $round . ' but was dead by ' . $player->death . '.', ' All votings are removed.'))
 			{
 				$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
@@ -831,7 +802,7 @@ class Game
 				return false;
 			}
 			if (
-				$player->death->type != DEATH_TYPE_DAY &&
+				$player->death->type == DEATH_TYPE_NIGHT &&
 				$this->set_issue($fix, 'Player was voted out in round ' . $round . ' but was dead by ' . $player->death->type . '.', ' All votings are removed.'))
 			{
 				$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
@@ -881,7 +852,7 @@ class Game
 				}
 				else if (
 					$voting_time->round < count($this->votings) && 
-					$this->has_voting($voting_time->round) &&
+					!$this->is_voting_canceled($voting_time->round) &&
 					$this->set_issue($fix, 'Player ' . ($i + 1) . ' did not vote in round ' . $voting_time->round . '. Although they were alive and voting was not canceled.', ' All votings are removed.'))
 				{
 					// player was alive but did not vote in this round
@@ -1734,72 +1705,49 @@ class Game
 				}
 				
 				// are the winners killed
+				$voting->killed = false;
 				if (isset($voting->voted_to_kill))
 				{
 					$voting->killed = (count($voting->voted_to_kill) * 2 > $num_voters);
 				}
 				else if (isset($voting->winner))
 				{
+					$player_num = 0;
 					if (is_numeric($voting->winner))
 					{
-						$player = $this->data->players[$voting->winner-1];
-						$voting->killed = (isset($player->death) && $player->death->round == $round && $player->death->type == DEATH_TYPE_DAY);
+						$player_num = $voting->winner;
 					}
-					else if (count($voting->winner))
+					else if (count($voting->winner) > 0)
 					{
-						$player = $this->data->players[$voting->winner[0]-1];
-						$voting->killed = (isset($player->death) && $player->death->round == $round && $player->death->type == DEATH_TYPE_DAY);
+						$player_num = $voting->winner[0];
+					}
+					if ($player_num > 0)
+					{
+						$player = $this->data->players[$player_num-1];
+						if (isset($player->death)) 
+						{
+							if ($player->death->round == $round && $player->death->type == DEATH_TYPE_DAY)
+							{
+								$voting->killed = true;
+							}
+							else if (isset($player->death->time) && $player->death->type != DEATH_TYPE_DAY && $player->death->type != DEATH_TYPE_NIGHT)
+							{
+								$last_speech_time = new stdClass();
+								$last_speech_time->time = GAMETIME_DAY_KILL_SPEAKING;
+								$last_speech_time->round = $round;
+								$last_speech_time->speaker = $player_num;
+								$last_speech_time->order = 1000000000; // make sure it is greater than any other order value
+								$voting->killed = $this->compare_gametimes($player->death->time, $last_speech_time) < 0;
+							}
+						}
 					}
 				}
 			}
 			
 			// Was voting canceled
-			if ($this->flags & GAME_FEATURE_FLAG_DEATH_TIME)
+			if ($this->is_voting_canceled($round))
 			{
-				// todo check how antimonster rule is set: RULES_ANTIMONSTER - RULES_ANTIMONSTER_NO_VOTING, RULES_ANTIMONSTER_NO, RULES_ANTIMONSTER_NOMINATED, RULES_ANTIMONSTER_PARTICIPATION
-				// Note that player can be shot or voted out and killed by warnings at the same time. In this case voting is not canceled even if RULES_ANTIMONSTER_NO_VOTING is set.
-				// How to support it in data?
-				$voting_end_time = new stdClass();
-				if (isset($voting->winner))
-				{
-					$voting_end_time->round = $round;
-					$voting_end_time->time = GAMETIME_VOTING;
-					$voting_end_time->votingRound = $total_voting_rounds - 1;
-					if (is_numeric($voting->winner))
-					{
-						$voting_end_time->nominee = $voting->winner;
-					}
-					else
-					{
-						$voting_end_time->nominee = $voting->winner[count($voting->winner)-1];
-					}
-				}
-				else
-				{
-					$voting_end_time->round = $round + 1;
-					$voting_end_time->time = GAMETIME_SHOOTING;
-				}
-				// echo 'round: ' . $round . '<br>';
-				// print_json($voting_end_time);
-				
-				foreach ($this->data->players as $player)
-				{
-					// todo check how antimonster rule is set: RULES_ANTIMONSTER - RULES_ANTIMONSTER_NO_VOTING, RULES_ANTIMONSTER_NO, RULES_ANTIMONSTER_NOMINATED, RULES_ANTIMONSTER_PARTICIPATION
-					// Note that player can be shot or voted out and killed by warnings at the same time. In this case voting is not canceled even if RULES_ANTIMONSTER_NO_VOTING is set.
-					// How to support it in data?
-					if (
-						isset($player->death) && 
-						isset($player->death->time) &&
-						isset($player->death->type) &&
-						$player->death->type != DEATH_TYPE_NIGHT && 
-						$player->death->type != DEATH_TYPE_DAY &&
-						$this->compare_gametimes($player->death->time, $voting_end_time) < 0 &&
-						($prev_voting_end_time == NULL || $this->compare_gametimes($prev_voting_end_time, $player->death->time) <= 0))
-					{
-						$voting->canceled = true;
-					}
-				}
-				$prev_voting_end_time = $voting_end_time;
+				$voting->canceled = true;
 			}
 			
 			$this->votings[] = $voting;
@@ -1913,8 +1861,8 @@ class Game
 		{
 		case GAMETIME_SPEAKING:
 			$speaks_first = $this->who_speaks_first($gt1->round);
-			$speaker1 = ($gt1->speaker <= $speaks_first ? 10 + $gt1->speaker : $gt1->speaker);
-			$speaker2 = ($gt2->speaker <= $speaks_first ? 10 + $gt2->speaker : $gt2->speaker);
+			$speaker1 = ($gt1->speaker < $speaks_first ? 10 + $gt1->speaker : $gt1->speaker);
+			$speaker2 = ($gt2->speaker < $speaks_first ? 10 + $gt2->speaker : $gt2->speaker);
 			$result = $speaker1 - $speaker2;
 			break;
 
@@ -2888,6 +2836,7 @@ class Game
 				$issues .= '<li>' . $issue . '</li>';
 			}
 			$issues .= '</ul>';
+			Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $data->id, $old_feature_flags);
 			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $data->id, $json, $issues, $old_feature_flags, $this->flags);
 			$json = $new_json;
 			

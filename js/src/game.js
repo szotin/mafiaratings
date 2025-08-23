@@ -455,8 +455,8 @@ function gameCompareTimes(time1, time2, roughly)
 	{
 	case 'speaking':
 		let speaksFirst = gameWhoSpeaksFirst(round1);
-		let speaker1 = (time1.speaker <= speaksFirst ? 10 + time1.speaker : time1.speaker);
-		let speaker2 = (time2.speaker <= speaksFirst ? 10 + time2.speaker : time2.speaker);
+		let speaker1 = (time1.speaker < speaksFirst ? 10 + time1.speaker : time1.speaker);
+		let speaker2 = (time2.speaker < speaksFirst ? 10 + time2.speaker : time2.speaker);
 		result = speaker1 - speaker2;
 		break;
 
