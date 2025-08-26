@@ -1,0 +1,1 @@
+UPDATE users SET flags = flags | 512;

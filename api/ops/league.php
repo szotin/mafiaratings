@@ -6,6 +6,7 @@ require_once '../../include/address.php';
 require_once '../../include/event.php';
 require_once '../../include/url.php';
 require_once '../../include/scoring.php';
+require_once '../../include/gaining.php';
 require_once '../../include/image.php';
 
 define('CURRENT_VERSION', 0);
@@ -113,7 +114,7 @@ class ApiPage extends OpsApiPageBase
 				'SELECT u.id, nu.name, u.email, u.def_lang'.
 				' FROM users u'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-				' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 and u.email <> \'\'');
+				' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 and u.email <> \'\' AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0');
 			while ($row = $query->next())
 			{
 				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
@@ -128,7 +129,7 @@ class ApiPage extends OpsApiPageBase
 					'sender' => new Tag($_profile->user_name));
 				$body = parse_tags($body, $tags);
 				$text_body = parse_tags($text_body, $tags);
-				send_email($admin_email, $body, $text_body, $subj);
+				send_email($admin_email, $body, $text_body, $subj, admin_unsubscribe_url($admin_id), $admin_def_lang);
 			}
 			
 			echo  
@@ -388,11 +389,13 @@ class ApiPage extends OpsApiPageBase
 			'root' => new Tag(get_server_url()),
 			'user_id' => new Tag($user_id),
 			'user_name' => new Tag($user_name),
-			'league_name' => new Tag($name));
+			'league_name' => new Tag($name),
+			'league_id' => new Tag($league_id));
 		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/accept_league.php';
 		$body = parse_tags($body, $tags);
 		$text_body = parse_tags($text_body, $tags);
-		send_email($user_email, $body, $text_body, $subj);
+		// We are not checking if user is unsubscribed. They created request, we have to reply.
+		send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);
 		
 		Db::commit();
 		
@@ -434,6 +437,7 @@ class ApiPage extends OpsApiPageBase
 		Db::commit();
 		if ($reason != '')
 		{
+			
 			$lang = get_lang_code($user_lang);
 			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/decline_league.php';
 			$tags = array(
@@ -443,7 +447,8 @@ class ApiPage extends OpsApiPageBase
 				'league_name' => new Tag($name));
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
-			send_email($user_email, $body, $text_body, $subj);
+			// We are not checking if user is unsubscribed. They created request, we have to reply.
+			send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);
 		}
 	}
 	
@@ -617,7 +622,7 @@ class ApiPage extends OpsApiPageBase
 					'SELECT u.id, nu.name, u.email, u.def_lang'.
 					' FROM league_managers l'.
 					' JOIN users u ON u.id = l.user_id'.
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0'.
 					' WHERE l.league_id = ?', $league_id);
 				while ($row = $query->next())
 				{
@@ -643,7 +648,7 @@ class ApiPage extends OpsApiPageBase
 						'sender' => new Tag($_profile->user_name));
 					$body = parse_tags($body, $tags);
 					$text_body = parse_tags($text_body, $tags);
-					send_email($user_email, $body, $text_body, $subj);
+					send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);
 				}
 			}
 			
@@ -656,7 +661,7 @@ class ApiPage extends OpsApiPageBase
 					' FROM club_users uc'.
 					' JOIN users u ON uc.user_id = u.id'.
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-					' WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
+					' WHERE uc.club_id = ? AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0 AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
 				while ($row = $query->next())
 				{
 					list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -681,7 +686,7 @@ class ApiPage extends OpsApiPageBase
 						'sender' => new Tag($_profile->user_name));
 					$body = parse_tags($body, $tags);
 					$text_body = parse_tags($text_body, $tags);
-					send_email($user_email, $body, $text_body, $subj);
+					send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);
 				}
 			}
 			$this->response['flags'] = $flags;
@@ -733,7 +738,7 @@ class ApiPage extends OpsApiPageBase
 				'SELECT u.id, nu.name, u.email, u.def_lang'.
 				' FROM league_managers l'.
 				' JOIN users u ON u.id = l.user_id'.
-				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0'.
 				' WHERE l.league_id = ?', $league_id);
 			while ($row = $query->next())
 			{
@@ -760,7 +765,7 @@ class ApiPage extends OpsApiPageBase
 					'sender' => new Tag($_profile->user_name));
 				$body = parse_tags($body, $tags);
 				$text_body = parse_tags($text_body, $tags);
-				send_email($user_email, $body, $text_body, $subj);
+				send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);
 			}
 		}
 		
@@ -773,7 +778,7 @@ class ApiPage extends OpsApiPageBase
 				' FROM club_users uc'.
 				' JOIN users u ON uc.user_id = u.id'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-				' WHERE uc.club_id = ? AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
+				' WHERE uc.club_id = ? AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0 AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
 			while ($row = $query->next())
 			{
 				list($user_id, $user_name, $user_email, $user_lang) = $row;
@@ -801,7 +806,7 @@ class ApiPage extends OpsApiPageBase
 						'sender' => new Tag($_profile->user_name));
 					$body = parse_tags($body, $tags);
 					$text_body = parse_tags($text_body, $tags);
-					send_email($user_email, $body, $text_body, $subj);
+					send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);
 				}
 			}
 		}

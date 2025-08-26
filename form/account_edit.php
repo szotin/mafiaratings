@@ -111,18 +111,18 @@ try
 	echo '<tr><td class="dark">' . get_label('MWT account id') . ':</td><td class="light"><input id="form-mwt" value="' . $mwt_id . '"></td></tr>';
 	echo '</table>';
 	
-	echo '<p><input type="checkbox" id="form-message_notify"';
-	if (($user_flags & USER_FLAG_MESSAGE_NOTIFY) != 0)
+	echo '<p><input type="checkbox" id="form-notify"';
+	if (($user_flags & USER_FLAG_NOTIFY) != 0)
 	{
 		echo ' checked';
 	}
 	echo '>'.get_label('I would like to receive emails when someone replies to me or sends me a private message.');
-	echo '<br><input type="checkbox" id="form-photo_notify"';
-	if (($user_flags & USER_FLAG_PHOTO_NOTIFY) != 0)
+	echo '<br><input type="checkbox" id="form-admin_notify"';
+	if (($user_flags & USER_FLAG_ADMIN_NOTIFY) != 0)
 	{
 		echo ' checked';
 	}
-	echo '>'.get_label('I would like to receive emails when someone tags me on a photo.').'</p>';
+	echo '>'.get_label('I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.').'</p>';
 	
 ?>
 	<script>
@@ -190,8 +190,8 @@ try
 			, phone: $("#form-phone").val()
 			, mwt_id: $("#form-mwt").val()
 			, langs: languages
-			, message_notify: ($("#form-message_notify").attr("checked") ? 1 : 0)
-			, photo_notify: ($("#form-photo_notify").attr('checked') ? 1 : 0)
+			, notify: ($("#form-notify").attr("checked") ? 1 : 0)
+			, admin_notify: ($("#form-admin_notify").attr('checked') ? 1 : 0)
 		};
 		nameControl.fillRequest(request);
 		json.post("api/ops/user.php", request, onSuccess);

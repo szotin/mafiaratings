@@ -542,7 +542,7 @@ class ApiPage extends OpsApiPageBase
 		// while ($row = $query->next())
 		// {
 			// list($user_id, $user_email, $user_flags, $user_lang) = $row;
-			// if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			// if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_NOTIFY) == 0 || empty($user_email))
 			// {
 				// continue;
 			// }
@@ -566,7 +566,7 @@ class ApiPage extends OpsApiPageBase
 			// list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/comment_tournament.php';
 			// $body = parse_tags($body, $tags);
 			// $text_body = parse_tags($text_body, $tags);
-			// send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_TOURNAMENT, $tournament_id, $code);
+			// send_notification($user_email, $body, $text_body, $subj, $user_id, $user_lang, EMAIL_OBJ_SERIES, $tournament_id, $code);
 		// }
 	// }
 	

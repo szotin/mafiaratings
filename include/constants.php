@@ -104,7 +104,7 @@ define('USER_SERIES_ICON_MAX_VERSION', 7);
 // 07 - 0x00040 -     64 - male
 // 08 - 0x00080 -    128 - available
 // 09 - 0x00100 -    256 - notify on comments
-// 10 - 0x00200 -    512 - notify on photo
+// 10 - 0x00200 -    512 - notify on changes in managed objects
 // 11 - 0x00400 -   1024 - immunity
 // 12 - 0x00800 -   2048 - icon mask
 // 13 - 0x01000 -   4096 - icon mask
@@ -117,8 +117,8 @@ define('USER_SERIES_ICON_MAX_VERSION', 7);
 // 20 - 0x80000 - 524288 - a flag used in rebuilding ratings for limiting the query. MySQL does not support LIMIT in complicated update queries. This flag is used to simplify the query.
 define('USER_FLAG_NO_PASSWORD', 0x20);
 define('USER_FLAG_MALE', 0x40);
-define('USER_FLAG_MESSAGE_NOTIFY', 0x100);
-define('USER_FLAG_PHOTO_NOTIFY', 0x200);
+define('USER_FLAG_NOTIFY', 0x100);
+define('USER_FLAG_ADMIN_NOTIFY', 0x200);
 define('USER_FLAG_IMMUNITY', 0x400);
 define('USER_FLAG_NAME_CHANGED', 0x4000);
 define('USER_FLAG_IMPORTED', 0x10000);
@@ -132,7 +132,7 @@ define('USER_ICON_MASK', 0x3800);
 define('USER_ICON_MASK_OFFSET', 11);
 define('USER_ICON_MAX_VERSION', 7);
 
-define('NEW_USER_FLAGS', 0x320); // USER_FLAG_MESSAGE_NOTIFY | USER_FLAG_PHOTO_NOTIFY | USER_FLAG_NO_PASSWORD
+define('NEW_USER_FLAGS', 0x320); // USER_FLAG_NOTIFY | USER_FLAG_ADMIN_NOTIFY | USER_FLAG_NO_PASSWORD
 
 define('INCOMER_FLAGS_MALE', USER_FLAG_MALE);
 define('INCOMER_FLAGS_EXISTING', 0x80);

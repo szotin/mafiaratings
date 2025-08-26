@@ -23,13 +23,14 @@ class Page extends PageBase
 		{
 			$user_id = $_REQUEST['user_id'];
 		}
-		else if (isset($_REQUEST['uid'])) // Remove it. It is a temporary fix, because some emails with uid are already sent in October 2018. If you are reading it in November 2018 or later, remove it.
-		{
-			$user_id = $_REQUEST['uid'];
-		}
 		else
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('user')));
+		}
+		
+		if (isset($_REQUEST['unsub']))
+		{
+			throw new RedirectExc('unsubscribe.php?code=' . $code);
 		}
 
 		$query = new DbQuery(
@@ -46,14 +47,9 @@ class Page extends PageBase
 			throw new Exc('login failed');
 		}
 
-		if (isset($_REQUEST['unsub']))
-		{
-			throw new RedirectExc('unsubscribe.php');
-		}
-		
 		switch ($obj)
 		{
-			case EMAIL_OBJ_EVENT:
+			case EMAIL_OBJ_EVENT_INVITATION:
 				if (isset($_REQUEST['decline']))
 				{
 					$query1 = new DbQuery('SELECT event_id FROM event_mailings WHERE id = ?', $obj_id);
@@ -70,6 +66,9 @@ class Page extends PageBase
 						throw new RedirectExc('event_info.php?attend&id=' . $row1[0]);
 					}
 				}
+				throw new RedirectExc('event_info.php?id=' . $obj_id);
+				
+			case EMAIL_OBJ_EVENT:
 				throw new RedirectExc('event_info.php?id=' . $obj_id);
 				
 			case EMAIL_OBJ_TOURNAMENT:
@@ -117,12 +116,6 @@ class Page extends PageBase
 				}
 				break;
 			
-			// +-----------------------+
-			// | #SUGGEST_JOINING_CLUB |
-			// +-----------------------+
-			// case EMAIL_JOIN_CLUB:
-				// break;
-				
 			default:
 				throw new FatalExc(get_label('Invalid request'));
 		}

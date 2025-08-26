@@ -137,16 +137,16 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		if (!$("#form-player").attr("checked"))
+		if ($("#form-player").length == 0 || $("#form-player").attr("checked"))
+		{
+			doCommit(onSuccess);
+		}
+		else
 		{
 			dlg.yesNo("<?php echo get_label('Are you sure you want to revoke player permission from [0]? They will not be able to play if you do it.', $user_name); ?>", null, null, function()
 			{
 				doCommit(onSuccess);
 			});
-		}
-		else
-		{
-			doCommit(onSuccess);
 		}
 	}
 	</script>

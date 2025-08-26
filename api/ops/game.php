@@ -272,7 +272,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
 		
-			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_NOTIFY) == 0 || empty($user_email))
 			{
 				continue;
 			}
@@ -299,7 +299,7 @@ class ApiPage extends OpsApiPageBase
 			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/comment_game.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
-			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_GAME, $game_id, $code);
+			send_notification($user_email, $body, $text_body, $subj, $user_id, $user_lang, EMAIL_OBJ_GAME, $game_id, $code);
 		}
 	}
 	
@@ -966,6 +966,7 @@ class ApiPage extends OpsApiPageBase
 		while ($row = $query->next())
 		{
 			list($admin_id, $admin_email) = $row;
+			// We are not checking if admin is unsubscribed, because this is a dedicated admin. This email should always go.
 			$body = '<p>Hi, Admin!</p><p>' . $_profile->user_name . ' reported a bug.</p><p><a href="' . get_server_url() . '/game_bugs.php">Please check</a>.</p>';			
 			$text_body = "Hi, Admin!\r\n\r\n" . $_profile->user_name . " reported a bug.\r\nPlease check: " . get_server_url() . '/game_bugs.php';
 			send_email($admin_email, $body, $text_body, 'Bug report');

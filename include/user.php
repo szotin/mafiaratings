@@ -24,7 +24,7 @@ function send_activation_email($user_id, $name, $email)
 	list($subj, $body, $text_body) = include __DIR__ .  '/languages/' . get_lang_code($_lang) . '/email/user_activation.php';
 	$body = parse_tags($body, $tags);
 	$text_body = parse_tags($text_body, $tags);
-	send_notification($email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_SIGN_IN, 0, $email_code);
+	send_notification($email, $body, $text_body, $subj, $user_id, $_lang, EMAIL_OBJ_SIGN_IN, 0, $email_code);
 }
 
 function create_user($names, $email, $club_id, $city_id, $flags = NEW_USER_FLAGS)

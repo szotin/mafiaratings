@@ -44,13 +44,13 @@ function retrieve_country_id($country)
 		}
 		
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.email'.
+			'SELECT u.id, nu.name, u.email, u.flags'.
 			' FROM users u'.
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-			' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 and u.email <> \'\'');
+			' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 and u.email <> \'\' AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0');
 		while ($row = $query->next())
 		{
-			list($admin_id, $admin_name, $admin_email) = $row;
+			list($admin_id, $admin_name, $admin_email, $admin_flags) = $row;
 			$body =
 				'<p>Hi, ' . $admin_name .
 				'!</p><p>' . $user_name .
@@ -62,7 +62,7 @@ function retrieve_country_id($country)
 				' created new country ' . $country . 
 				' (' . get_server_url() . 
 				'/countries.php).\r\n\r\nPlease confirm!\r\n';
-			send_email($admin_email, $body, $text_body, 'New country');
+			send_email($admin_email, $body, $text_body, 'New country', admin_unsubscribe_url($admin_id), LANG_ENGLISH);
 		}
 	}
 	Db::commit();

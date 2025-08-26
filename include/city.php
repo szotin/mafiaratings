@@ -88,7 +88,7 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 			'SELECT u.id, nu.name, u.email'.
 			' FROM users u'.
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-			' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 and u.email <> \'\'');
+			' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 and u.email <> \'\' AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0');
 		while ($row = $query->next())
 		{
 			list($admin_id, $admin_name, $admin_email) = $row;
@@ -108,7 +108,7 @@ function retrieve_city_id($city, $country_id, $timezone = NULL)
 				' created new city ' . $city . 
 				' (' . get_server_url() . 
 				'/cities.php).\r\nPlease confirm!\r\n';
-			send_email($admin_email, $body, $text_body, 'New city');
+			send_email($admin_email, $body, $text_body, 'New city', admin_unsubscribe_url($admin_id), LANG_ENGLISH);
 		}
 	}
 	Db::commit();

@@ -4,7 +4,9 @@ require_once 'include/session.php';
 initiate_session();
 echo '<html><head><title>'.get_label('Email tags').'</title><META content="text/html; charset=utf-8" http-equiv=Content-Type></head><body style="{background-color:#aaaaaa; color:#303030;}">';
 
-echo '<h3>'.get_label('Email tags').'</h3><table class="transp" width="100%"><tr><td width="150">'.get_label('Unsubscribe button').'</td><td><b>[unsub]</b>'.get_label('Button text').'<b>[/unsub]</b></td></tr>';
+echo '<h3>'.get_label('Email tags').'</h3>';
+echo '<table class="transp" width="100%">';
+
 if (isset($_REQUEST['e']))
 {
 	echo '<tr><td>'.get_label('Accept button').'</td><td><b>[accept]</b>'.get_label('Button text').'<b>[/accept]</b></td></tr>';

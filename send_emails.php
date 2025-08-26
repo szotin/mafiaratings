@@ -52,7 +52,7 @@ function sendTournamentRegNotification($tournament_id, $tournament_name, $manage
 	list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email/tournament_new_reg.php';
 	$body = parse_tags($body, $tags);
 	$text_body = parse_tags($text_body, $tags);
-	send_email($manager_email, $body, $text_body, $subj);
+	send_email($manager_email, $body, $text_body, $subj, admin_unsubscribe_url($manager_id), $manager_lang);
 }
 
 define('NO_TEXT', 'Please enable http in your email client in order to read this message');
@@ -86,7 +86,7 @@ try
 				' FROM tournament_users tu'.
 				' JOIN users u ON u.id = tu.user_id'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-				' WHERE (tu.flags & '.USER_PERM_MANAGER.') <> 0 AND tu.tournament_id = ?', $tournament_id);
+				' WHERE (tu.flags & '.USER_PERM_MANAGER.') <> 0 AND tu.tournament_id = ? AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0', $tournament_id);
 			while ($row1 = $query1->next())
 			{
 				list ($manager_id, $manager_name, $manager_email, $manager_lang) = $row1;
@@ -102,7 +102,7 @@ try
 					' FROM club_users cu'.
 					' JOIN users u ON u.id = cu.user_id'.
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-					' WHERE (cu.flags & '.USER_PERM_MANAGER.') <> 0 AND cu.club_id = ?', $club_id);
+					' WHERE (cu.flags & '.USER_PERM_MANAGER.') <> 0 AND cu.club_id = ? AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0', $club_id);
 				while ($row1 = $query1->next())
 				{
 					list ($manager_id, $manager_name, $manager_email, $manager_lang) = $row1;
@@ -249,7 +249,7 @@ try
 				
 				try
 				{
-					send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_EVENT, $mailing_id, $code);
+					send_notification($user_email, $body, $text_body, $subj, $user_id, $user_lang, EMAIL_OBJ_EVENT_INVITATION, $mailing_id, $code);
 					++$count;
 					echo 'Email about ' . $event_name . ' at ' . date('l, F d, Y', $event_start_time) . ' has been sent to ' . $user_name . EOL;
 				}
@@ -312,7 +312,7 @@ try
 			
 			$user_name = $user_photo[1];
 			$email = $user_photo[2];
-			$lang = get_lang_code($user_photo[4]);
+			$lang = (int)$user_photo[4];
 			$count = count($user_photos);
 			$code = generate_email_code();
 			
@@ -343,12 +343,12 @@ try
 				'url' => new Tag($request_base),
 				'unsub' => new Tag('<a href="' . get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $code . '&unsub=1" target="_blank">', '</a>'));
 				
-			list($subj, $body, $text_body) = include 'include/languages/' . $lang . '/email/photo.php';
+			list($subj, $body, $text_body) = include 'include/languages/' . get_lang_code($lang) . '/email/photo.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
 			try
 			{
-				send_notification($email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_PHOTO, 0, $code);
+				send_notification($email, $body, $text_body, $subj, $user_id, $lang, EMAIL_OBJ_PHOTO, 0, $code);
 				echo 'Email about photo tagging has been sent to ' . $user_name . EOL;
 			}
 			catch (Exception $e)

@@ -577,27 +577,27 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$flags = $old_flags;
-		if (isset($_REQUEST['message_notify']))
+		if (isset($_REQUEST['notify']))
 		{
-			if ($_REQUEST['message_notify'])
+			if ($_REQUEST['notify'])
 			{
-				$flags |= USER_FLAG_MESSAGE_NOTIFY;
+				$flags |= USER_FLAG_NOTIFY;
 			}
 			else
 			{
-				$flags &= ~USER_FLAG_MESSAGE_NOTIFY;
+				$flags &= ~USER_FLAG_NOTIFY;
 			}
 		}
 		
-		if (isset($_REQUEST['photo_notify']))
+		if (isset($_REQUEST['admin_notify']))
 		{
-			if ($_REQUEST['photo_notify'])
+			if ($_REQUEST['admin_notify'])
 			{
-				$flags |= USER_FLAG_PHOTO_NOTIFY;
+				$flags |= USER_FLAG_ADMIN_NOTIFY;
 			}
 			else
 			{
-				$flags &= ~USER_FLAG_PHOTO_NOTIFY;
+				$flags &= ~USER_FLAG_ADMIN_NOTIFY;
 			}
 		}
 		
@@ -778,8 +778,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('male', '1 for male, 0 for female.', 'remains the same');
 		$help->request_param('pwd1', 'User password.', 'remains the same');
 		$help->request_param('pwd2', 'Password confirmation. Must be the same as <q>pwd1</q>. Must be set when <q>pwd1</q> is set. Ignored when <q>pwd1</q> is not set.', '-');
-		$help->request_param('message_notify', '1 to notify user when someone replies to his/her message, 0 to turn notificetions off.', 'remains the same');
-		$help->request_param('photo_notify', '1 to notify user when someone comments on his/her photo, 0 to turn notificetions off.', 'remains the same');
+		$help->request_param('notify', '1 to notify user when someone replies to his/her message, 0 to turn notificetions off.', 'remains the same');
+		$help->request_param('admin_notify', '1 to notify about administrative changes in the objects that this user is managing, 0 to turn notificetions off.', 'remains the same');
 		$help->request_param('picture', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		$help->request_param('mwt_id', 'Id of this user on the MWT site. It can be either integer or MWT site URL for user profile (for example: <a href="https://mafiaworldtour.com/user/9715/show">https://mafiaworldtour.com/user/9715/show</a>).', "remains the same");
 

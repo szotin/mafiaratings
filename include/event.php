@@ -142,10 +142,8 @@ function event_tags()
 	return array(
 		array('[accept_btn=' . get_label('Coming') . ']', get_label('Accept button')),
 		array('[decline_btn=' . get_label('Not coming') . ']', get_label('Decline button')),
-		array('[unsub_btn=' . get_label('Unsubscribe') . ']', get_label('Unsubscribe button')),
 		array('[accept]' . get_label('Coming') . '[/accept]', get_label('Accept link')),
 		array('[decline]' . get_label('Not coming') . '[/decline]', get_label('Decline link')),
-		array('[unsub]' . get_label('Unsubscribe') . '[/unsub]', get_label('Unsubscribe link')),
 		array('[event_name]', get_label('Event name')),
 		array('[event_id]', get_label('Event id')),
 		array('[event_date]', get_label('Event date')),

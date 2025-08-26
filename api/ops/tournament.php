@@ -23,7 +23,7 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 		' JOIN leagues l ON l.id = s.league_id' .
 		' JOIN league_managers lm ON lm.league_id = s.league_id' .
 		' JOIN users u ON u.id = lm.user_id' .
-		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0'.
 		' WHERE s.id = ?', $series->id);
 	while ($row = $query->next())
 	{
@@ -54,7 +54,7 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 			'sender' => new Tag($_profile->user_name));
 		$body = parse_tags($body, $tags);
 		$text_body = parse_tags($text_body, $tags);
-		send_email($user_email, $body, $text_body, $subj);
+		send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);
 	}
 }
 
@@ -1359,7 +1359,7 @@ class ApiPage extends OpsApiPageBase
 		while ($row = $query->next())
 		{
 			list($user_id, $user_name, $user_email, $user_flags, $user_lang) = $row;
-			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_MESSAGE_NOTIFY) == 0 || empty($user_email))
+			if ($user_id == $_profile->user_id || ($user_flags & USER_FLAG_NOTIFY) == 0 || empty($user_email))
 			{
 				continue;
 			}
@@ -1383,7 +1383,7 @@ class ApiPage extends OpsApiPageBase
 			list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/comment_tournament.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
-			send_notification($user_email, $body, $text_body, $subj, $user_id, EMAIL_OBJ_TOURNAMENT, $tournament_id, $code);
+			send_notification($user_email, $body, $text_body, $subj, $user_id, $user_lang, EMAIL_OBJ_TOURNAMENT, $tournament_id, $code);
 		}
 	}
 	
@@ -1755,8 +1755,8 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $tournament_name, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		
-		list ($user_id, $user_name, $user_email, $user_lang) = db::record(get_label('user'), 
-			'SELECT u.id, nu.name, u.email, u.def_lang'.
+		list ($user_id, $user_name, $user_email, $user_lang, $user_flags) = db::record(get_label('user'), 
+			'SELECT u.id, nu.name, u.email, u.def_lang, u.flags'.
 			' FROM users u'.
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' WHERE u.id = ?', $user_id);
@@ -1772,23 +1772,24 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
 			throw new Exc(get_label('User [0] did not apply for the tournament.', $user_name));
 		}
 		Db::commit();
 		
-		$lang = get_lang_code($user_lang);
-		$tags = array(
-			'root' => new Tag(get_server_url()),
-			'user_id' => new Tag($user_id),
-			'user_name' => new Tag($user_name),
-			'tournament_id' => new Tag($tournament_id),
-			'tournament_name' => new Tag($tournament_name));
-		list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/tournament_user_accept.php';
-		$body = parse_tags($body, $tags);
-		$text_body = parse_tags($text_body, $tags);
-		send_email($user_email, $body, $text_body, $subj);
-		
+		if ($user_flags & USER_FLAG_NOTIFY)
+		{
+			$lang = get_lang_code($user_lang);
+			$tags = array(
+				'root' => new Tag(get_server_url()),
+				'user_id' => new Tag($user_id),
+				'user_name' => new Tag($user_name),
+				'tournament_id' => new Tag($tournament_id),
+				'tournament_name' => new Tag($tournament_name));
+			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/tournament_user_accept.php';
+			$body = parse_tags($body, $tags);
+			$text_body = parse_tags($text_body, $tags);
+			send_email($user_email, $body, $text_body, $subj, user_unsubscribe_url($user_id), $user_lang);
+		}
 		
 		$this->response['tournament_id'] = $tournament_id;
 		$this->response['user_id'] = $user_id;
