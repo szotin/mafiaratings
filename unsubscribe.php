@@ -1,3 +1,10 @@
+<html>
+<head>
+<title><?php echo PRODUCT_NAME; ?> API reference</title>
+<META content="text/html; charset=utf-8" http-equiv=Content-Type>
+<script src="js/common.js"></script>
+</head><body>
+
 <?php
 
 require_once 'include/session.php';
@@ -7,8 +14,6 @@ initiate_session();
 
 try
 {
-	echo '<script src="js/common.js"></script>';
-
 	Db::begin();
 	
 	$is_admin = false;
@@ -148,3 +153,5 @@ catch (Exception $e)
 }
 
 ?>
+
+</body></html>

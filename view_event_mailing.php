@@ -90,7 +90,7 @@ class Page extends EventPageBase
 
 		if ($this->mailing_status == MAILING_SENDING || $this->mailing_status == MAILING_COMPLETE)
 		{
-			list ($count) = Db::record(get_label('email'), 'SELECT count(*) FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT . ' AND obj_id = ?', $this->mailing_id);
+			list ($count) = Db::record(get_label('email'), 'SELECT count(*) FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT_INVITATION . ' AND obj_id = ?', $this->mailing_id);
 			show_pages_navigation(PAGE_SIZE, $count);
 		
 			echo '<table class="bordered light" width="100%">';
@@ -101,7 +101,7 @@ class Page extends EventPageBase
 				' FROM emails e'.
 				' JOIN users u ON e.user_id = u.id'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' WHERE e.obj = ' . EMAIL_OBJ_EVENT . ' AND e.obj_id = ?'.
+				' WHERE e.obj = ' . EMAIL_OBJ_EVENT_INVITATION . ' AND e.obj_id = ?'.
 				' ORDER BY nu.name'.
 				' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE, 
 				$this->mailing_id);

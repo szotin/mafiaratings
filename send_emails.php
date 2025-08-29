@@ -163,7 +163,7 @@ try
 				' AND u.email <> \'\'' .
 				' AND uc.club_id = ?' .
 				' AND (uc.flags & ' . (USER_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED) . ') = ' . (USER_PERM_PLAYER | USER_CLUB_FLAG_SUBSCRIBED) .
-				' AND u.id NOT IN (SELECT user_id FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT . ' AND obj_id = ?)',
+				' AND u.id NOT IN (SELECT user_id FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT_INVITATION . ' AND obj_id = ?)',
 				$mailing_langs, $club_id, $mailing_id);
 		
 			if ($to_flags != MAILING_FLAG_TO_ALL)
@@ -207,8 +207,8 @@ try
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 				' WHERE ', $condition);
 			$query1->add(' ORDER BY u.id LIMIT ' . $emails_remaining);
-			// echo $query1->get_parsed_sql();
-			// echo '</br>';
+			//echo '<p>'.$query1->get_parsed_sql().'</p>';
+			
 			while ($row1 = $query1->next())
 			{
 				list($user_id, $user_name, $user_email, $user_lang, $user_langs) = $row1;
