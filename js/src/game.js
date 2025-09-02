@@ -906,68 +906,6 @@ function _gameIncTimeOrder()
 	}
 }
 
-function _gameOnModKill()
-{
-	if (!_gameCheckEnd())
-	{
-		if (isSet(game.time))
-		{
-			if (game.time.time == 'voting start')
-			{
-				game.time = { round: game.time.round + 1, time: 'night start' };
-			}
-			else if (game.time.time == 'voting')
-			{
-				let cancelVoting = true;
-				if (isSet(game.time.nominee))
-				{
-					let winners = gameGetNominees(game.time.round + 1);
-					if (winners.length == 1)
-					{
-						let noms = gameGetNominees();
-						for (let i = 0; i < noms.length; ++i)
-						{
-							if (noms[i] == game.time.nominee)
-							{
-								break;
-							}
-							if (noms[i] == winners[0])
-							{
-								cancelVoting = false;
-								break;
-							}
-						}
-					}
-				}
-				if (cancelVoting)
-				{
-					for (let i = 0; i < 10; ++i)
-					{
-						let p = game.players[i];
-						if (isSet(p.nominating) && game.time.round < p.nominating.length)
-						{
-							p.nominating[game.time.round] = null;
-							if (_gameCutArray(p.nominating) == 0)
-							{
-								delete p.nominating;
-							}
-						}
-						if (isSet(p.voting) && game.time.round < p.voting.length)
-						{
-							p.voting[game.time.round] = null;
-							if (_gameCutArray(p.voting) == 0)
-							{
-								delete p.voting;
-							}
-						}
-					}
-					game.time = { round: game.time.round + 1, time: 'night start' };
-				}
-			}
-		}
-	}
-}
-
 function gamePlayerWarning(num)
 {
 	let player = game.players[num];
@@ -982,7 +920,7 @@ function gamePlayerWarning(num)
 	if (player.warnings.length >= 4)
 	{
 		player.death = { round: game.time.round, type: 'warnings' };
-		_gameOnModKill();
+		_gameCheckEnd();
 	}
 	gameDirty();
 }
@@ -993,7 +931,7 @@ function gamePlayerGiveUp(num)
 	gamePushState();
 	_gameIncTimeOrder();
 	player.death = { 'round': game.time.round, 'type': 'giveUp', 'time': structuredClone(game.time) };
-	_gameOnModKill();
+	_gameCheckEnd();
 	gameDirty();
 }
 
@@ -1003,7 +941,7 @@ function gamePlayerKickOut(num)
 	gamePushState();
 	_gameIncTimeOrder();
 	player.death = { 'round': game.time.round, 'type': 'kickOut', 'time': structuredClone(game.time) };
-	_gameOnModKill();
+	_gameCheckEnd();
 	gameDirty();
 }
 
@@ -1169,15 +1107,81 @@ function gameNextSpeaker()
 	return -1;
 }
 
-function _gameDayKillDeathTime(round)
+function _whenVotingIsDecided(round)
 {
+	let votes = [0,0,0,0,0,0,0,0,0,0];
+	let killAll = 0;
+	let saveAll = 0;
+	let maxVotes = 0;
+	let votingRound = 0;
 	for (let i = 0; i < 10; ++i)
 	{
 		let p = game.players[i];
-		if (isSet(p.death) && p.death.type == 'day' && p.death.round == round)
+		if (isSet(p.voting) && p.voting.length > round)
 		{
-			return _gameGetPlayerDeathTime(i);
+			let v = p.voting[round]
+			if (isArray(v))
+			{
+				if (isBool(v[v.length - 1]))
+				{
+					if (v[v.length - 1])
+					{
+						++killAll;
+					}
+					else
+					{
+						++saveAll;
+					}
+					votingRound = Math.max(votingRound, v.length - 2);
+					v = v[v.length - 2];
+				}
+				else
+				{
+					votingRound = Math.max(votingRound, v.length - 1);
+					v = v[v.length - 1];
+				}
+			}
+			if (v != null)
+			{
+				maxVotes = Math.max(maxVotes, ++votes[v - 1]);
+			}
 		}
+	}
+	
+	winners = [];
+	for (let i = 0; i < 10; ++i)
+	{
+		if (votes[i] == maxVotes)
+		{
+			winners.push(i);
+		}
+	}
+	
+	if (winners.length == 1)
+	{
+		// now we need to find out when the voting was actually decided
+		let noms = gameGetNominees(votingRound, round);
+		if (noms.length == 0)
+		{
+			return null;
+		}
+		if (noms.length == 1)
+		{
+			return { "round":round, "time":'voting start' };
+		}
+		for (let i = 0; i < noms.length - 2; ++i)
+		{
+			let n = noms[i];
+			if (votes[n-1] == maxVotes)
+			{
+				return { "round":round, "votingRound":votingRound, "time":'voting', "nominee":n, "winners":winners }; // winners is not needed in time definition, but we use it in isVotingCanceled to avoid recalculating winners there
+			}
+		}
+		return { "round":round, "votingRound":votingRound, "time":'voting', "nominee":noms[noms.length-2], "winners":winners };
+	}
+	else if (winners.length > 0 && killAll > saveAll)
+	{
+		return { "round":round, "votingRound":votingRound + 1, "time":'voting kill all', "winners":winners };
 	}
 	return null;
 }
@@ -1189,30 +1193,43 @@ function gameIsVotingCanceled()
 		let player = game.players[i];
 		if (isSet(player.death))
 		{
-			let r = -1;
+			let r = -2;
 			if (player.death.type == 'warnings')
 			{
 				r = player.warnings[3].round;
 			}
-			else if ((player.death.type == 'giveUp' || player.death.type == 'kickOut'))
+			else if (player.death.type == 'giveUp' || player.death.type == 'kickOut')
 			{
 				r = player.death.round;
 			}
 
 			if (r == game.time.round)
 			{
-				let d = _gameDayKillDeathTime(r);
-				if (d == null || gameCompareTimes(d, _gameGetPlayerDeathTime(i)) >= 0)
+				let d = _whenVotingIsDecided(r);
+				if ((d == null || gameCompareTimes(d, _gameGetPlayerDeathTime(i)) >= 0) && i != gameGetNightKill(r, true))
 				{
 					return true;
 				}
 			}
 			else if (r == game.time.round - 1)
 			{
-				let d = _gameDayKillDeathTime(r);
+				let d = _whenVotingIsDecided(r);
 				if (d != null && gameCompareTimes(d, _gameGetPlayerDeathTime(i)) < 0)
 				{
-					return true;
+					// when the one who is mod-killed is also voted out, the voting is not canceked in the next round
+					let votedOut = false;
+					for (const w of d.winners)
+					{
+						if (w == i)
+						{
+							votedOut = true;
+							break;
+						}
+					}
+					if (!votedOut)
+					{
+						return true;
+					}
 				}
 			}
 		}
@@ -1439,8 +1456,13 @@ function gameToggleOnRecord(num)
 	}
 }
 
-function gameGetNominees(votingRound)
+function gameGetNominees(votingRound, round)
 {
+	if (!isSet(round))
+	{
+		round = game.time.round;
+	}
+	
 	if (!isSet(votingRound))
 	{
 		votingRound = isSet(game.time.votingRound) ? game.time.votingRound : 0;
@@ -1453,18 +1475,18 @@ function gameGetNominees(votingRound)
 		for (let i = 0; i < 10; ++i)
 		{
 			let p = game.players[i];
-			if (isSet(p.voting) && game.time.round < p.voting.length && p.voting[game.time.round] != null)
+			if (isSet(p.voting) && round < p.voting.length && p.voting[round] != null)
 			{
-				if (isArray(p.voting[game.time.round]))
+				if (isArray(p.voting[round]))
 				{
-					if (votingRound <= p.voting[game.time.round].length)
+					if (votingRound <= p.voting[round].length)
 					{
-						++votes[p.voting[game.time.round][votingRound - 1] - 1];
+						++votes[p.voting[round][votingRound - 1] - 1];
 					}
 				}
 				else if (votingRound == 1)
 				{
-					++votes[p.voting[game.time.round] - 1];
+					++votes[p.voting[round] - 1];
 				}
 			}
 		}
@@ -1480,9 +1502,9 @@ function gameGetNominees(votingRound)
 			do
 			{
 				let p = game.players[i];
-				if (isSet(p.nominating) && game.time.round < p.nominating.length)
+				if (isSet(p.nominating) && round < p.nominating.length)
 				{
-					let n = p.nominating[game.time.round];
+					let n = p.nominating[round];
 					if (votes[n-1] == max)
 					{
 						noms.push(n);
@@ -1503,9 +1525,9 @@ function gameGetNominees(votingRound)
 		do
 		{
 			let p = game.players[i];
-			if (isSet(p.nominating) && game.time.round < p.nominating.length && p.nominating[game.time.round] != null)
+			if (isSet(p.nominating) && round < p.nominating.length && p.nominating[round] != null)
 			{
-				noms.push(p.nominating[game.time.round]);
+				noms.push(p.nominating[round]);
 			}
 			if (++i >= 10)
 			{
@@ -1752,23 +1774,31 @@ function gameAllVoteToKillAll(vote)
 }
 
 // returns an array of shots in the form [[maf1Index, maf1Shot], [maf2Index, maf2Shot], [maf3Index, maf3Shot]] all values 0-9
-function gameGetShots()
+function gameGetShots(round)
 {
-	let result = [];
-	for (let i = 0; i < 10; ++i)
+	if (!isSet(round))
 	{
-		let player = game.players[i];
-		if (isSet(player.role) && (player.role == 'maf' || player.role == 'don'))
+		round = game.time.round;
+	}
+	
+	let result = [];
+	if (round > 0)
+	{
+		for (let i = 0; i < 10; ++i)
 		{
-			let dt = _gameGetPlayerDeathTime(i);
-			if (gameCompareTimes({round:game.time.round,time:'shooting'},dt) <= 0)
+			let player = game.players[i];
+			if (isSet(player.role) && (player.role == 'maf' || player.role == 'don'))
 			{
-				let shot = null;
-				if (isSet(player.shooting) && game.time.round <= player.shooting.length)
+				let dt = _gameGetPlayerDeathTime(i);
+				if (gameCompareTimes({round:round,time:'shooting'},dt) <= 0)
 				{
-					shot = player.shooting[game.time.round - 1] - 1;
+					let shot = null;
+					if (isSet(player.shooting) && round <= player.shooting.length && player.shooting[round - 1] != null)
+					{
+						shot = player.shooting[round - 1] - 1;
+					}
+					result.push([i, shot]);
 				}
-				result.push([i, shot]);
 			}
 		}
 	}
@@ -1820,11 +1850,22 @@ function gameShoot(target, shooter, noDirty)
 }
 
 // Returns player index 0-9 killed in this round. 
+// If raw is true it returns killed player even if they were mod-killed after being shot. When raw is false, and shot player was mod-killed - it is considered as no kill.
 // -1 if nobody is killed.
-function gameGetNightKill()
+function gameGetNightKill(round, raw)
 {
+	if (!isSet(round))
+	{
+		round = game.time.round;
+	}
+	
+	if (!isSet(raw))
+	{
+		raw = false;
+	}
+	
 	let killedIndex = -1;
-	for (let s of gameGetShots())
+	for (let s of gameGetShots(round))
 	{
 		if (s[1] == null)
 		{
@@ -1835,6 +1876,14 @@ function gameGetNightKill()
 			killedIndex = s[1];
 		}
 		else if (killedIndex != s[1])
+		{
+			return -1;
+		}
+	}
+	if (killedIndex >= 0 && !raw)
+	{
+		let p = game.players[killedIndex];
+		if (isSet(p.death) && (p.death.type == 'warnings' || p.death.type == 'giveUp' || p.death.type == 'kickOut'))
 		{
 			return -1;
 		}
@@ -2221,22 +2270,31 @@ function gameNext()
 				while (isSet(game.players[game.time.speaker - 1].death));
 				break;
 			case 'voting start':
-			{
-				let noms = gameGetNominees();
-				let round = game.time.round;
-				if (noms.length == 0 || (noms.length == 1 && round == 0))
+				if (gameIsVotingCanceled())
 				{
-					game.time = { round: round + 1, time: 'night start' };
+					game.time = { round: game.time.round + 1, time: 'night start' };
 				}
 				else
 				{
-					game.time = { round: round, time: 'voting', votingRound: 0, nominee: noms[0] };
-					_gameCreateVoting();
+					let noms = gameGetNominees();
+					let round = game.time.round;
+					if (noms.length == 0 || (noms.length == 1 && round == 0))
+					{
+						game.time = { round: round + 1, time: 'night start' };
+					}
+					else
+					{
+						game.time = { round: round, time: 'voting', votingRound: 0, nominee: noms[0] };
+						_gameCreateVoting();
+					}
 				}
 				break;
-			}
 			case 'voting':
-				if (isSet(game.time.nominee))
+				if (gameIsVotingCanceled())
+				{
+					game.time = { round: game.time.round + 1, time: 'night start' };
+				}
+				else if (isSet(game.time.nominee))
 				{
 					let noms = gameGetNominees();
 					let i = noms.length;
@@ -2254,11 +2312,18 @@ function gameNext()
 						if (winners.length == 1)
 						{
 							var player = game.players[winners[0] - 1];
-							player.death = { type: 'day', round: game.time.round };
 							game.time = { time: 'day kill speaking', speaker: winners[0], round: game.time.round };
-							if (!_gameLastSpeechExists())
+							if (isSet(player.death) && (player.death.type == 'warnings' || player.death.type == 'giveUp' || player.death.type == 'kickOut'))
 							{
-								_gameCheckEnd();
+								gameNext(); // skip this speech, go next - the player is dead already
+							}
+							else
+							{
+								player.death = { type: 'day', round: game.time.round };
+								if (!_gameLastSpeechExists())
+								{
+									_gameCheckEnd();
+								}
 							}
 						}
 						else if (game.time.votingRound > 0 && winners.length == noms.length)
@@ -2302,15 +2367,29 @@ function gameNext()
 				}
 				break;
 			case 'voting kill all':
-				if (_gameKillAll())
+				if (gameIsVotingCanceled())
+				{
+					game.time = { round: game.time.round + 1, time: 'night start' };
+				}
+				else if (_gameKillAll())
 				{
 					let noms = gameGetNominees();
 					for (nom of noms)
 					{
-						game.players[nom - 1].death = { type: 'day', round: game.time.round };
+						let p = game.players[nom - 1];
+						if (!isSet(p.death))
+						{
+							p.death = { type: 'day', round: game.time.round };
+						}
 					}
-					game.time = { time: 'day kill speaking', round: game.time.round, speaker: noms[0] };
-					if (!_gameLastSpeechExists())
+					let n = noms[0];
+					let player = game.players[n-1];
+					game.time = { time: 'day kill speaking', round: game.time.round, speaker: n };
+					if (player.death.type == 'warnings' || player.death.type == 'giveUp' || player.death.type == 'kickOut')
+					{
+						gameNext(); // skip this speech, go next - the player is dead already
+					}
+					else if (!_gameLastSpeechExists())
 					{
 						_gameCheckEnd();
 					}
@@ -2333,7 +2412,13 @@ function gameNext()
 				}
 				if (i < noms.length - 1)
 				{
-					game.time.speaker = noms[i+1];
+					let num = noms[i+1];
+					let player = game.players[num-1];
+					game.time.speaker = num;
+					if (player.death.type == 'warnings' || player.death.type == 'giveUp' || player.death.type == 'kickOut')
+					{
+						gameNext(); // skip this speech, go next - the player is dead already
+					}
 				}
 				else
 				{

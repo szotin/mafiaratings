@@ -357,7 +357,7 @@ try
 						}
 						$info = get_label('[0] are still playing.', $info);
 					}
-					if (isset($player->death) && isset($player->death->type) && ($player->death->type != DEATH_TYPE_NIGHT && $player->death->type != DEATH_TYPE_DAY))
+					if (isset($player->death) && isset($player->death->type))
 					{
 						switch ($player->death->type)
 						{
@@ -372,6 +372,12 @@ try
 								break;
 							case DEATH_TYPE_TEAM_KICK_OUT:
 								$action_text = get_label('[0] is kicked out from the game with team defeat [2]. [1]', $player_name, $is_maf ? get_label('Town wins.') : get_label('Mafia wins.'), $game->get_gametime_text($action));
+								break;
+							case DEATH_TYPE_NIGHT:
+								$action_text = get_label('[0] is shot and leaves the game. [1]', $player_name, $info);
+								break;
+							case DEATH_TYPE_DAY:
+								$action_text = get_label('[0] is voted out and leaves the game. [1]', $player_name, $info);
 								break;
 							default:
 								$action_text = get_label('[0] leaves the game. [1]', $player_name, $info);

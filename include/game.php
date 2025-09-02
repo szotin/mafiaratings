@@ -9,6 +9,10 @@ require_once __DIR__ . '/game_players_stats.php';
 // GAME_CURRENT_VERSION must exactly match to the value of version var in js/game.js
 define('GAME_CURRENT_VERSION', '1.1'); // Major version means that the format of the game has been changed. Minor version means that the game client has been changed and need to be updated.
 
+define('GAME_YES', 1);
+define('GAME_NO', 0);
+define('GAME_UNKNOWN', -1);
+
 define('GAME_FEATURE_FLAG_ARRANGEMENT',                 0x00000001); // 'a' - 1 
 define('GAME_FEATURE_FLAG_DON_CHECKS',                  0x00000002); // 'g' - 2
 define('GAME_FEATURE_FLAG_SHERIFF_CHECKS',              0x00000004); // 's' - 4
@@ -25,6 +29,9 @@ define('GAME_FEATURE_FLAG_WARNINGS',                    0x00001000); // 'w' - 40
 define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000); // 'r' - 8192
 // define('GAME_FEATURE_FLAG_SPLITTING',                   0x00004000); // 'p' - 16384
 define('GAME_FEATURE_FLAG_ON_RECORD',                   0x00008000); // 'o' - 32768
+
+define('GAME_CONFIGURABLE_FEATURES',                    0x00008e87); // ARRANGEMENT | DON_CHECKS | SHERIFF_CHECKS | LEGACY | VOTING | VOTING_KILL_ALL | NOMINATING | ON_RECORD
+define('GAME_NON_CONFIGURABLE_FEATURES',                0x00003178); // DEATH | DEATH_ROUND | DEATH_TYPE | DEATH_TIME | SHOOTING | WARNINGS | WARNINGS_DETAILS
 
 define('GAME_FEATURE_MASK_ALL',                         0x0000bfff); // 49151 = 65535 - GAME_FEATURE_FLAG_SPLITTING
 define('GAME_FEATURE_MASK_MAFIARATINGS',                0x00003bff); // 15359 = ARRANGEMENT | DON_CHECKS | SHERIFF_CHECKS | DEATH | DEATH_ROUND | DEATH_TYPE | DEATH_TIME | LEGACY | SHOOTING | VOTING | NOMINATING | WARNINGS | WARNINGS_DETAILS
@@ -679,6 +686,11 @@ class Game
 	
 	private function check_vote($fix, $voter_num, $voter_death_time, $voted_num, $voting_time)
 	{
+		if ($this->is_voting_canceled($voting_time->round) == GAME_YES)
+		{
+			return;
+		}
+		
 		$voting_time->nominee = $voted_num;
 		// Check that voter was alive during voting
 		if ($voter_death_time != NULL && $this->compare_gametimes($voter_death_time, $voting_time) < 0)
@@ -852,13 +864,19 @@ class Game
 				}
 				else if (
 					$voting_time->round < count($this->votings) && 
-					!$this->is_voting_canceled($voting_time->round) &&
-					$this->set_issue($fix, 'Player ' . ($i + 1) . ' did not vote in round ' . $voting_time->round . '. Although they were alive and voting was not canceled.', ' All votings are removed.'))
+					!$this->is_voting_canceled($voting_time->round))
 				{
-					// player was alive but did not vote in this round
-					// Voting was not canceled. Player had to vote.
-					$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
-					return false;
+					$noms = count($this->get_nominees($voting_time->round, 0));
+					if ($noms > 0 && ($voting_time->round > 0 || $noms > 1))
+					{
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' did not vote in round ' . $voting_time->round . '. Although they were alive and voting was not canceled.', ' All votings are removed.'))
+						{
+							// player was alive but did not vote in this round
+							// Voting was not canceled. Player had to vote.
+							$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
+							return false;
+						}
+					}
 				}
 			}
 		}
@@ -1351,17 +1369,146 @@ class Game
 		return $death_time;
 	}
 	
-	function day_kill_death_time($round)
+	private function when_voting_is_decided($round)
 	{
+		$votes = array(0,0,0,0,0,0,0,0,0,0);
+		$kill_all = 0;
+		$save_all = 0;
+		$max_votes = 0;
+		$voting_round = 0;
 		for ($i = 0; $i < 10; ++$i)
 		{
 			$p = $this->data->players[$i];
-			if (isset($p->death) && $p->death->type == DEATH_TYPE_DAY && $p->death->round == $round)
+			if (isset($p->voting) && count($p->voting) > $round)
 			{
-				return $this->get_player_death_time($i + 1);
+				$v = $p->voting[$round];
+				if (is_array($v))
+				{
+					if (is_bool($v[count($v) - 1]))
+					{
+						if ($v[count($v) - 1])
+						{
+							++$kill_all;
+						}
+						else
+						{
+							++$save_all;
+						}
+						$voting_round = max($voting_round, count($v) - 2);
+						$v = $v[count($v) - 2];
+					}
+					else
+					{
+						$voting_round = max($voting_round, count($v) - 1);
+						$v = $v[count($v) - 1];
+					}
+				}
+				if ($v != NULL)
+				{
+					$max_votes = max($max_votes, ++$votes[$v - 1]);
+				}
 			}
 		}
-		return NULL;
+		
+		$winners = array();
+		for ($i = 0; $i < 10; ++$i)
+		{
+			if ($votes[$i] == $max_votes)
+			{
+				$winners[] = $i;
+			}
+		}
+		
+		$result = NULL;
+		if (count($winners) == 1)
+		{
+			// now we need to find out when the voting was actually decided
+			$noms = $this->get_nominees($round, $voting_round);
+			if (count($noms) > 0)
+			{
+				$result = new stdClass();
+				$result->round = $round;
+				if (count($noms) == 1)
+				{
+					$result->time = GAMETIME_VOTING_START;
+				}
+				else
+				{
+					$result->votingRound = $voting_round;
+					$result->time = GAMETIME_VOTING;
+					$result->nominee = $noms[count($noms) - 2];
+					$result->winners = $winners;  // winners is not needed in time definition, but we use it in isVotingCanceled to avoid recalculating winners there
+					for ($i = 0; $i < count($noms) - 2; ++$i)
+					{
+						$n = $noms[$i];
+						if ($votes[$n-1] == $max_votes)
+						{
+							$result->nominee = $n;
+							break;
+						}
+					}
+				}
+			}
+		}
+		else if (count($winners) > 0 && $kill_all > $save_all)
+		{
+			$result = new stdClass();
+			$result->round = $round;
+			$result->votingRound = $voting_round;
+			$result->time = GAMETIME_VOTING_KILL_ALL;
+			$result->winners = $winners;  // winners is not needed in time definition, but we use it in isVotingCanceled to avoid recalculating winners there
+		}
+		return $result;
+	}
+	
+	private function get_shots($round)
+	{
+		$result = array();
+		if ($round > 0)
+		{
+			$shooting_time = new stdClass();
+			$shooting_time->round = $round;
+			$shooting_time->time = GAMETIME_SHOOTING;
+			for ($i = 0; $i < 10; ++$i)
+			{
+				$player = $this->data->players[$i];
+				if (isset($player->role) && ($player->role == 'maf' || $player->role == 'don'))
+				{
+					$dt = $this->get_player_death_time($i + 1);
+					if ($this->compare_gametimes($shooting_time, $dt) <= 0)
+					{
+						$shot = NULL;
+						if (isset($player->shooting) && $round <= count($player->shooting) && !is_null($player->shooting[$round - 1]))
+						{
+							$shot = $player->shooting[$round - 1] - 1;
+						}
+						$result[] = $shot;
+					}
+				}
+			}
+		}
+		return $result;
+	}
+	
+	private function get_night_kill($round)
+	{
+		$killed_index = -1;
+		foreach ($this->get_shots($round) as $s)
+		{
+			if ($s == null)
+			{
+				return -1;
+			}
+			if ($killed_index < 0)
+			{
+				$killed_index = $s;
+			}
+			else if ($killed_index != $s)
+			{
+				return -1;
+			}
+		}
+		return $killed_index;
 	}
 	
 	function is_voting_canceled($round)
@@ -1371,35 +1518,74 @@ class Game
 			$player = $this->data->players[$i];
 			if (isset($player->death))
 			{
-				$r = -1;
+				$r = -2;
 				if ($player->death->type == DEATH_TYPE_WARNINGS)
 				{
-					$r = $player->warnings[3]->round;
+					if (isset($player->death->round))
+					{
+						$r = $player->death->round;
+					}
+					else if (isset($player->death->time) && isset($player->death->time->round))
+					{
+						$r = $player->death->time->round;
+					}
+					else if (isset($player->warnings) && count($player->warnings) > 3)
+					{
+						$r = $player->warnings[3]->round;
+					}
+					else
+					{
+						return GAME_UNKNOWN;
+					}
 				}
 				else if (($player->death->type == DEATH_TYPE_GIVE_UP || $player->death->type == DEATH_TYPE_KICK_OUT))
 				{
-					$r = $player->death->round;
+					if (isset($player->death->round))
+					{
+						$r = $player->death->round;
+					}
+					else if (isset($player->death->time) && isset($player->death->time->round))
+					{
+						$r = $player->death->time->round;
+					}
+					else
+					{
+						return GAME_UNKNOWN;
+					}
 				}
 
 				if ($r == $round)
 				{
-					$d = $this->day_kill_death_time($r);
-					if ($d == null || $this->compare_gametimes($d, $this->get_player_death_time($i + 1)) >= 0)
+					$d = $this->when_voting_is_decided($r);
+					if ($d == NULL || $this->compare_gametimes($d, $this->get_player_death_time($i + 1)) >= 0 && $i != $this->get_night_kill($r))
 					{
-						return true;
+						return GAME_YES;
 					}
 				}
 				else if ($r == $round - 1)
 				{
-					$d = $this->day_kill_death_time($r);
-					if ($d != null && $this->compare_gametimes($d, $this->get_player_death_time($i + 1)) < 0)
+					$d = $this->when_voting_is_decided($r);
+					if ($d != NULL && $this->compare_gametimes($d, $this->get_player_death_time($i + 1)) < 0)
 					{
-						return true;
+						// when the one who is mod-killed is also voted out, the voting is not canceked in the next round
+						$votedOut = false;
+						foreach ($d->winners as $w)
+						{
+							if ($w == $i)
+							{
+								$votedOut = true;
+								break;
+							}
+						}
+						if (!$votedOut)
+						{
+							return GAME_YES;
+						}
 					}
 				}
 			}
 		}
-		return false;
+		return GAME_NO;
 	}
 		
 	function who_speaks_first($round)
@@ -1745,7 +1931,7 @@ class Game
 			}
 			
 			// Was voting canceled
-			if ($this->is_voting_canceled($round))
+			if ($this->is_voting_canceled($round) == GAME_YES)
 			{
 				$voting->canceled = true;
 			}
@@ -2291,6 +2477,79 @@ class Game
 			}
 		}
 		return $flags;
+	}
+	
+	function get_nominees($round, $voting_round)
+	{
+		$noms = array();
+		if ($voting_round > 0)
+		{
+			$votes = array(0,0,0,0,0,0,0,0,0,0);
+			for ($i = 0; $i < 10; ++$i)
+			{
+				$p = $this->data->players[$i];
+				if (isset($p->voting) && $round < count($p->voting) && !is_null($p->voting[$round]))
+				{
+					if (is_array($p->voting[$round]))
+					{
+						if ($voting_round <= count($p->voting[$round]))
+						{
+							++$votes[$p->voting[$round][$voting_round - 1] - 1];
+						}
+					}
+					else if ($voting_round == 1)
+					{
+						++$votes[$p->voting[$round] - 1];
+					}
+				}
+			}
+			$max = 0;
+			foreach ($votes as $v)
+			{
+				$max = max($v, $max);
+			}
+			if ($max > 0)
+			{
+				$first = $this->who_speaks_first($round);
+				$i = $first;
+				do
+				{
+					$p = $this->data->players[$i];
+					if (isset($p->nominating) && $round < count($p->nominating))
+					{
+						$n = $p->nominating[$round];
+						if ($votes[$n-1] == $max)
+						{
+							$noms[] = $n;
+						}
+					}
+					if (++$i >= 10)
+					{
+						$i = 0;
+					}
+				}
+				while ($i != $first);
+			}
+		}
+		else
+		{
+			$first = $this->who_speaks_first($round);
+			$i = $first;
+			do
+			{
+				$p = $this->data->players[$i];
+				if (isset($p->nominating) && $round < count($p->nominating) && !is_null($p->nominating[$round]))
+				{
+					$noms[] = $p->nominating[$round];
+				}
+				if (++$i >= 10)
+				{
+					$i = 0;
+				}
+			}
+			while ($i != $first);
+		}
+		return $noms;
 	}
 	
 	function get_actions()

@@ -644,7 +644,7 @@ class ApiPage extends OpsApiPageBase
 				$game->gameNum = $game_num;
 				$game->language = $langs[0]->code;
 				$game->rules = $rules;
-				$game->features = Game::feature_flags_to_leters($feature_flags);
+				$game->features = Game::feature_flags_to_leters($feature_flags | GAME_NON_CONFIGURABLE_FEATURES);
 				if (!is_null($tournament_id))
 				{
 					$game->tournamentId = (int)$tournament_id;
@@ -1086,6 +1086,7 @@ class ApiPage extends OpsApiPageBase
 			
 			$flags = (int)get_optional_param('flags', $old_flags);
 			$flags = ($flags & GAME_SETTINGS_EDITABLE_MASK) + ($old_flags & ~GAME_SETTINGS_EDITABLE_MASK);
+			$flags |= GAME_NON_CONFIGURABLE_FEATURES;
 			
 			$prompt_sound_id = (int)get_optional_param('prompt_sound_id', $old_prompt_sound_id);
 			if ($prompt_sound_id <= 0)

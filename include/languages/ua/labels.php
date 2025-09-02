@@ -1776,6 +1776,15 @@ $labelMenu = array (
 'Referee mapping is not set for the tournament.' => '[EMPTY]', // form/imafia_map_ref.php, form/imafia_map_ref.php
 'Set referee for [0], table [1]' => '[EMPTY]', // form/imafia_map_ref.php, form/imafia_map_ref.php
 'not multiplied to round coefficient' => '[EMPTY]', // scoring.php, scoring.php
+'Hello, [0]. Your subscription to administrative notifications from [1] is restored.' => '[EMPTY]', // unsubscribe.php, unsubscribe.php
+'Hello, [0]. You will no longer recieve administrative notifications from [1].' => '[EMPTY]', // unsubscribe.php, unsubscribe.php
+'Hello, [0]. Your subscription to [1] is restored.' => '[EMPTY]', // unsubscribe.php, unsubscribe.php
+'Hello, [0]. You will no longer recieve emails from [1].' => '[EMPTY]', // unsubscribe.php, unsubscribe.php
+'Hello, [0]. Your subscription to notifications from [1] is restored.' => '[EMPTY]', // unsubscribe.php, unsubscribe.php
+'Hello, [0]. You will no longer recieve notifications from [1].' => '[EMPTY]', // unsubscribe.php, unsubscribe.php
+'Click here to unsubscribe' => '[EMPTY]', // unsubscribe.php, unsubscribe.php
+'Click here to subscribe back' => '[EMPTY]', // unsubscribe.php, unsubscribe.php
+'Error: [0]' => '[EMPTY]', // unsubscribe.php, unsubscribe.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1790,16 +1799,10 @@ $labelMenu = array (
 'Display pattern must contain \'#\' character.' => '[EMPTY]', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php, api/ops/country.php, api/ops/currency.php, api/ops/currency.php
 'During don\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'During sheriff\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
-'Hello, [0]. Your subscription to administrative notifications from [1] is restored.' => '[EMPTY]', // unsubscribe.php
-'Hello, [0]. You will no longer recieve administrative notifications from [1].' => '[EMPTY]', // unsubscribe.php
-'Hello, [0]. Your subscription to [1] is restored.' => '[EMPTY]', // unsubscribe.php
-'Hello, [0]. You will no longer recieve emails from [1].' => '[EMPTY]', // unsubscribe.php
-'Hello, [0]. Your subscription to notifications from [1] is restored.' => '[EMPTY]', // unsubscribe.php
-'Hello, [0]. You will no longer recieve notifications from [1].' => '[EMPTY]', // unsubscribe.php
-'Click here to unsubscribe' => '[EMPTY]', // unsubscribe.php
-'Click here to subscribe back' => '[EMPTY]', // unsubscribe.php
-'Error: [0]' => '[EMPTY]', // unsubscribe.php
-'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => '[EMPTY]', // form/account_edit.php
+'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => '[EMPTY]', // form/account_edit.php, form/account_edit.php
+'[0] is shot and leaves the game. [1]' => '[EMPTY]', // view_game.php, form/game_player_view.php
+'[0] is voted out and leaves the game. [1]' => '[EMPTY]', // view_game.php, form/game_player_view.php
+'Nobody voted to kill all' => '[EMPTY]', // view_game.php
 );
 
 return $labelMenu;

@@ -1776,6 +1776,15 @@ $labelMenu = array (
 'Referee mapping is not set for the tournament.' => 'Меппинг судей не сделан для турнира.', // form/imafia_map_ref.php
 'Set referee for [0], table [1]' => 'Назначить судью в [0], стол [1]', // form/imafia_map_ref.php
 'not multiplied to round coefficient' => 'не умножается на коэфициент раунда', // scoring.php
+'Hello, [0]. Your subscription to administrative notifications from [1] is restored.' => 'Здравствуйте, [0]. Ваша подписка на административные уведомления от [1] восстановлена.', // unsubscribe.php
+'Hello, [0]. You will no longer recieve administrative notifications from [1].' => 'Здравствуйте, [0]. Вы больше не будете получать административные уведомления от [1].', // unsubscribe.php
+'Hello, [0]. Your subscription to [1] is restored.' => 'Здравствуйте, [0]. Ваща подписка на [1] восстановлена.', // unsubscribe.php
+'Hello, [0]. You will no longer recieve emails from [1].' => 'Здравствуйте, [0]. Вы больше не будете получать уведомления от [1].', // unsubscribe.php
+'Hello, [0]. Your subscription to notifications from [1] is restored.' => 'Здравствуйте, [0]. Ваша подписка на уведомления от [1] восстановлена.', // unsubscribe.php
+'Hello, [0]. You will no longer recieve notifications from [1].' => 'Здравствуйте, [0]. Вы больше не будете получать уведомления от [1].', // unsubscribe.php
+'Click here to unsubscribe' => 'Нажмите здесь, чтобы отписаться', // unsubscribe.php
+'Click here to subscribe back' => 'Нажмите здесь, чтобы восстановить подписку', // unsubscribe.php
+'Error: [0]' => 'Ошибка: [0]', // unsubscribe.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1790,16 +1799,10 @@ $labelMenu = array (
 'Display pattern must contain \'#\' character.' => 'правило показа валюты обязано содержать символ \'#\'.', // api/ops/country.php, api/ops/currency.php, api/ops/currency.php
 'During don\'s check' => 'Во время донской проверки', // game_obs.php
 'During sheriff\'s check' => 'Во время шерифской проверки', // game_obs.php
-'Hello, [0]. Your subscription to administrative notifications from [1] is restored.' => 'Здравствуйте, [0]. Ваша подписка на административные уведомления от [1] восстановлена.', // unsubscribe.php
-'Hello, [0]. You will no longer recieve administrative notifications from [1].' => 'Здравствуйте, [0]. Вы больше не будете получать административные уведомления от [1].', // unsubscribe.php
-'Hello, [0]. Your subscription to [1] is restored.' => 'Здравствуйте, [0]. Ваща подписка на [1] восстановлена.', // unsubscribe.php
-'Hello, [0]. You will no longer recieve emails from [1].' => 'Здравствуйте, [0]. Вы больше не будете получать уведомления от [1].', // unsubscribe.php
-'Hello, [0]. Your subscription to notifications from [1] is restored.' => 'Здравствуйте, [0]. Ваша подписка на уведомления от [1] восстановлена.', // unsubscribe.php
-'Hello, [0]. You will no longer recieve notifications from [1].' => 'Здравствуйте, [0]. Вы больше не будете получать уведомления от [1].', // unsubscribe.php
-'Click here to unsubscribe' => 'Нажмите здесь, чтобы отписаться', // unsubscribe.php
-'Click here to subscribe back' => 'Нажмите здесь, чтобы восстановить подписку', // unsubscribe.php
-'Error: [0]' => 'Ошибка: [0]', // unsubscribe.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
+'[0] is shot and leaves the game. [1]' => '[0] застрелен(а) и покидает игру. [1]', // view_game.php, form/game_player_view.php
+'[0] is voted out and leaves the game. [1]' => '[0] заголосован(а) и покидает игру. [1]', // view_game.php, form/game_player_view.php
+'Nobody voted to kill all' => 'Никто не проголосовал за убийство всех.', // view_game.php
 );
 
 return $labelMenu;
