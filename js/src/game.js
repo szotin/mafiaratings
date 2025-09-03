@@ -1198,7 +1198,7 @@ function gameIsVotingCanceled()
 			{
 				r = player.warnings[3].round;
 			}
-			else if (player.death.type == 'giveUp' || player.death.type == 'kickOut')
+			else if (player.death.type == 'giveUp' || player.death.type == 'kickOut' ||  player.death.type == 'teamKickOut')
 			{
 				r = player.death.round;
 			}

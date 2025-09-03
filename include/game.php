@@ -1538,7 +1538,7 @@ class Game
 						return GAME_UNKNOWN;
 					}
 				}
-				else if (($player->death->type == DEATH_TYPE_GIVE_UP || $player->death->type == DEATH_TYPE_KICK_OUT))
+				else if (($player->death->type == DEATH_TYPE_GIVE_UP || $player->death->type == DEATH_TYPE_KICK_OUT || $player->death->type == DEATH_TYPE_TEAM_KICK_OUT))
 				{
 					if (isset($player->death->round))
 					{
