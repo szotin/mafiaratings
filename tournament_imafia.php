@@ -37,7 +37,6 @@ class Page extends TournamentPageBase
 		$this->has_imafia = !is_null($this->imafia_id) && $this->imafia_id > 0;
 		
 		$this->players = NULL;
-		$this->refs = NULL;
 		list ($tournament_misc) = Db::record(get_label('tournament'), 'SELECT misc FROM tournaments WHERE id = ?', $this->id);
 		if (!is_null($tournament_misc))
 		{
@@ -47,10 +46,6 @@ class Page extends TournamentPageBase
 				if (isset($tournament_misc->imafia->players))
 				{
 					$this->players = $tournament_misc->imafia->players;
-				}
-				if (isset($tournament_misc->imafia->refs))
-				{
-					$this->refs = $tournament_misc->imafia->refs;
 				}
 			}
 		}
@@ -116,7 +111,12 @@ class Page extends TournamentPageBase
 		}
 		echo '></p>';
 		
-		echo '<button onclick="importGames()">'.get_label('Import games').'</button><p></p>';
+		echo '<button onclick="importGames()">'.get_label('Import games').'</button>';
+		if ($this->games_count > 0)
+		{
+			echo '&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<input id="overwrite" type="checkbox"> ' . get_label('overwrite existing games');
+		}
+		echo '<p></p>';
 		
 		if ($this->games_count > 0)
 		{
@@ -124,52 +124,6 @@ class Page extends TournamentPageBase
 		}
 		
 		$user_pic = new Picture(USER_PICTURE);
-		if (!is_null($this->refs))
-		{
-			echo '<p><h3>' . get_label('Referees') . '</h3>';
-			echo '<table class="bordered light" width="100%">';
-			//print_json($this->refs);
-			$round_count = count($this->refs);
-			for ($i = 0; $i < $round_count; ++$i)
-			{
-				$table_count = count($this->refs[$i]);
-				if ($table_count <= 0)
-				{
-					continue;
-				}
-				
-				if ($i > 0)
-				{
-					$round_num = $round_count - $i;
-				}
-				else
-				{
-					$round_num = $i;
-				}
-				for ($j = 0; $j < $table_count; ++$j)
-				{
-					$ref = $this->refs[$i][$j];
-					echo '<tr>';
-					if ($j == 0)
-					{
-						echo '<td rowspan="' . $table_count . '" width="210" align="center">' . get_round_name($round_num) . '</td>';
-					}
-					echo '<td width="210" align="center">' . get_label('Table [0]', $j + 1) . '</td>';
-					echo '<td width="40" align="center"><button class="big_icon" onclick="mapRef('.$i.','.$j.')"><img src="images/right.png" width="32"></button></td>';
-					echo '<td>';
-					if (!is_null($ref))
-					{
-						echo '<table class="transp" width="100%"><tr>';
-						echo '<td width="52">';
-						$user_pic->set($ref->id, $ref->name, $ref->flags);
-						$user_pic->show(ICONS_DIR, true, 48);
-						echo '</td><td><a href="user_info.php?id='.$ref->id.'&bck=1">' . $ref->name . '</a></td></tr></table></td>';
-					}
-					echo '</td></tr>';
-				}
-			}
-			echo '</table></p>';
-		}
 		if (!is_null($this->players))
 		{
 			echo '<p><h3>' . get_label('Players') . '</h3>';
@@ -177,6 +131,7 @@ class Page extends TournamentPageBase
 			foreach ($this->players as $player)
 			{
 				echo '<tr><td width="420">';
+				echo '<table class="transp" width="100%"><tr><td width="32"><button class="icon" onclick="createUser(\'' . $player->imafia_name . '\', ' . $player->imafia_id . ')" title="' . get_label('Create new user') . '"><img src="images/create.png"></button></td><td>';
 				if (is_null($player->imafia_id))
 				{
 					echo $player->name;
@@ -185,6 +140,7 @@ class Page extends TournamentPageBase
 				{
 					echo '<a href="https://imafia.org/u/'.$player->imafia_id.'" target="_blank">'.$player->imafia_name.'</a>';
 				}
+				echo '</td></tr></table>';
 				echo '</td>';
 				
 				echo '<td width="40" align="center"><button class="big_icon" onclick="mapPlayer('.$player->imafia_id.')"><img src="images/right.png" width="32"></button>';
@@ -208,16 +164,32 @@ class Page extends TournamentPageBase
 	
 	protected function js()
 	{
-		global $_profile;
-		
+		global $_profile;		
 ?>
-		function _doImport()
+		function createUser(name, imafiaId)
+		{
+			dlg.form("form/create_user.php?name=" + name + "&club_id=<?php echo $this->club_id; ?>", 
+				function(data)
+				{
+					json.post("api/ops/imafia.php",
+					{
+						op: "map_player"
+						, user_id: data.id
+						, imafia_id: imafiaId
+						, tournament_id: <?php echo $this->id; ?>
+					}, refr);
+					
+				}, 480);
+		}
+
+		function _doImport(overwrite)
 		{
 			let params =
 			{
 				op: "import_games",
 				tournament_id: <?php echo $this->id; ?>,
 				imafia_id: $("#imafia_id").val(),
+				overwrite: overwrite
 			};
 			json.post("api/ops/imafia.php", params, refr);
 		}
@@ -228,14 +200,18 @@ class Page extends TournamentPageBase
 			if ($this->games_count > 0)
 			{
 ?>
-				dlg.yesNo("<?php echo get_label('The tournament already contains games. They all will be deleted and replaced with the imported ones.<p>Are you sure you want to continue?</p>'); ?>", null, null, _doImport);
+				var overwrite = ($('#overwrite').length > 0 && $("#overwrite").attr("checked")) ? 1 : 0;
+				if (overwrite)
+					dlg.yesNo("<?php echo get_label('The tournament already contains games. They all will be deleted and replaced with the imported ones.<p>Are you sure you want to continue?</p>'); ?>", null, null, function(){_doImport(overwrite);});
+				else
+					_doImport(false);
 
 <?php
 			}
 			else
 			{
 ?>
-				_doImport();
+				_doImport(false);
 <?php
 			}
 ?>
@@ -246,12 +222,6 @@ class Page extends TournamentPageBase
 			dlg.form("form/imafia_map_player.php?imafia_id=" + imafiaId + "&tournament_id=<?php echo $this->id; ?>", refr, 480);
 		}
 		
-		function mapRef(stage, table)
-		{
-			dlg.form("form/imafia_map_ref.php?stage=" + stage + "&table=" + table + "&tournament_id=<?php echo $this->id; ?>", refr, 480);
-		}
-		
-
 <?php
 	}
 }

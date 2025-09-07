@@ -97,9 +97,18 @@ class ApiPage extends OpsApiPageBase
 			{
 				continue;
 			}
+			
+			if ($game->referees_id && !array_key_exists($game->referees_id, $players))
+			{
+				$ref_id = $game->referees_id;
+				$p = new stdClass();
+				$p->imafia_id = $game->referees_id;
+				$p->imafia_name = $content->referees_array->$ref_id->name;
+				$players[$game->referees_id] = $p;
+			}
 			foreach ($game->players as $number => $player)
 			{
-				if (!array_key_exists($player->players_id, $players))
+				if ($player->players_id && !array_key_exists($player->players_id, $players))
 				{
 					$p = new stdClass();
 					$p->imafia_id = $player->players_id;
@@ -134,6 +143,7 @@ class ApiPage extends OpsApiPageBase
 		
 		$tournament_id = (int)get_required_param('tournament_id');
 		$imafia_id = (int)get_required_param('imafia_id');
+		$overwrite = (int)get_optional_param('overwrite', 0);
 		if ($imafia_id <= 0)
 		{
 			$imafia_id = NULL;
@@ -175,34 +185,6 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		$refs = NULL;
-		if (isset($misc->imafia) && isset($misc->imafia->refs))
-		{
-			if ($ready_for_import)
-			{
-				$refs = $misc->imafia->refs;
-				foreach ($refs as $stage)
-				{
-					foreach ($stage as $table)
-					{
-						if (is_null($table))
-						{
-							$ready_for_import = false;
-							break;
-						}
-					}
-					if (!$ready_for_import)
-					{
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			$ready_for_import = false;
-		}
-		
 		if ($ready_for_import)
 		{
 			usort($content->games, 'compare_games');
@@ -215,24 +197,43 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::begin();
 			
-			// cleanup
-			Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('game'), 'DELETE FROM games WHERE tournament_id = ?', $tournament_id);
-			
-			Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('user'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('comment'), 'DELETE FROM event_comments WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('points'), 'DELETE FROM event_extra_points WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('mailing'), 'DELETE FROM event_mailings WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('place'), 'DELETE FROM event_places WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('album'), 'DELETE FROM photo_albums WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('video'), 'DELETE FROM videos WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('round'), 'DELETE FROM events WHERE tournament_id = ?', $tournament_id);
+			$existing_games = array();
+			if ($overwrite)
+			{
+				// cleanup games
+				$prev_game_id = NULL;
+				$query = new DbQuery('SELECT id, end_time FROM games WHERE tournament_id = ? AND (flags & '.GAME_FLAG_RATING.') <> 0 ORDER BY end_time, id LIMIT 1', $tournament_id);
+				if ($row = $query->next())
+				{
+					list($game_id, $end_time) = $row;
+					$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
+					if ($row = $query->next())
+					{
+						list ($prev_game_id) = $row;
+					}
+				}
+				
+				Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $prev_game_id, $tournament_id);
+				Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+				Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+				Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+				Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+				Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+				Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+				Db::exec(get_label('game'), 'DELETE FROM games WHERE tournament_id = ?', $tournament_id);
+			}
+			else
+			{
+				$query = new DbQuery('SELECT id, event_id, table_num, game_num FROM games WHERE tournament_id = ?', $tournament_id);
+				while ($row = $query->next())
+				{
+					list ($game_id, $event_id, $table_num, $game_num) = $row;
+					if (!is_null($table_num) && !is_null($game_num))
+					{
+						$existing_games[$event_id . '-' . $table_num . '-' . $game_num] = (int)$game_id;
+					}
+				}
+			}
 			
 			// create rounds
 			$ops = json_decode($ops);
@@ -244,23 +245,45 @@ class ApiPage extends OpsApiPageBase
 			$round_ops->weight = 1.2;
 			$round_ops->group = 'final';
 			
+			$max_stage = (int)$content->games[$games_count-1]->stage;
+			
 			$rounds = array();
-			$max_stage = (int)$content->games[$games_count-1]->stage - 1;
-			if ($max_stage > 0)
+			$query = new DbQuery('SELECT id, round FROM events WHERE tournament_id = ?', $tournament_id);
+			while ($row = $query->next())
+			{
+				list ($round_id, $round_num) = $row;
+				if ($round_num == 0)
+				{
+					$rounds[1] = (int)$round_id;
+				}
+				else
+				{
+					$rounds[$max_stage + 1 - $round_num] = (int)$round_id;
+				}
+			}
+			
+			if ($max_stage > 1 && !array_key_exists($max_stage, $rounds))
 			{
 				$round_id = create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($round_ops), $tournament_id, $rules_code, 1, $tournament_flags);
-				$rounds[$max_stage + 1] = (int)$round_id;
+				$rounds[$max_stage] = (int)$round_id;
 			}
 			unset($round_ops->weight);
 			$round_ops->group = 'main';
-			for ($i = 1; $i < $max_stage; ++$i)
+			for ($i = 1; $i < $max_stage - 1; ++$i)
 			{
-				$round_id = create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($round_ops), $tournament_id, $rules_code, $i + 1, $tournament_flags);
-				$rounds[$max_stage + 1 - $i] = (int)$round_id;
+				if (!array_key_exists($max_stage - $i, $rounds))
+				{
+					$round_id = create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($round_ops), $tournament_id, $rules_code, $i + 1, $tournament_flags);
+					$rounds[$max_stage - $i] = (int)$round_id;
+				}
 			}
-			$round_id = create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($round_ops), $tournament_id, $rules_code, 0, $tournament_flags);
-			$rounds[1] = (int)$round_id;
+			if (!array_key_exists(1, $rounds))
+			{
+				$round_id = create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($round_ops), $tournament_id, $rules_code, 0, $tournament_flags);
+				$rounds[1] = (int)$round_id;
+			}
 			
+			// create games
 			$lang = get_next_lang(LANG_NO, $langs);
 			if (!is_valid_lang($lang))
 			{
@@ -271,11 +294,20 @@ class ApiPage extends OpsApiPageBase
 			$game_start = $start;
 			$game_number = 1;
 			$game_stage = 1;
-			// create games
+			
 			$games = array();
 			foreach ($content->games as $game)
 			{
-				$ref = $refs[$game->stage - 1][$game->table - 1];
+				if ($game->result < 1 || $game->result > 3)
+				{
+					continue;
+				}
+				
+				$event_id = $rounds[$game->stage];
+				if (array_key_exists($event_id . '-' . $game->table . '-' . $game->name, $existing_games))
+				{
+					continue;
+				}
 				
 				if ($game_number != $game->name || $game_stage != $game->stage)
 				{
@@ -290,7 +322,7 @@ class ApiPage extends OpsApiPageBase
 				
 				$g = new stdClass();
 				$g->clubId = (int)$club_id;
-				$g->eventId = $rounds[$game->stage];
+				$g->eventId = $event_id;
 				$g->tableNum = (int)$game->table;
 				$g->gameNum = (int)$game->name;
 				$g->language = $lang;
@@ -298,8 +330,9 @@ class ApiPage extends OpsApiPageBase
 				$g->features = 'ldut';
 				$g->tournamentId = (int)$tournament_id;
 				$g->moderator = new stdClass();
-				$g->moderator->id = $ref->id;
-				$g->moderator->name = $ref->name;
+				$mapping = $players[$game->referees_id];
+				$g->moderator->id = $mapping->id;
+				$g->moderator->name = $mapping->name;
 				$g->startTime = $game_start;
 				$g->endTime = $g->startTime + 2100;
 				$g->comment = $game->comment;
@@ -321,9 +354,12 @@ class ApiPage extends OpsApiPageBase
 				foreach ($game->players as $num => $player)
 				{
 					$p = $g->players[$num - 1];
-					$mapping = $players[$player->players_id];
-					$p->id = $mapping->id;
-					$p->name = $mapping->name;
+					if (array_key_exists($player->players_id, $players))
+					{
+						$mapping = $players[$player->players_id];
+						$p->id = $mapping->id;
+						$p->name = $mapping->name;
+					}
 					switch ($player->roles_id)
 					{
 						case 2:
@@ -387,21 +423,6 @@ class ApiPage extends OpsApiPageBase
 				$misc->imafia->players[] = $player;
 			}
 			usort($misc->imafia->players, 'compare_players');
-			
-			$misc->imafia->refs = array();
-			foreach ($content->games as $game)
-			{
-				$stage = (int)$game->stage - 1;
-				$table = (int)$game->table - 1;
-				while ($stage >= count($misc->imafia->refs))
-				{
-					$misc->imafia->refs[] = array();
-				}
-				while ($table >= count($misc->imafia->refs[$stage]))
-				{
-					$misc->imafia->refs[$stage][] = NULL;
-				}
-			}
 			
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET misc = ? WHERE id = ?', json_encode($misc), $tournament_id);
 			echo get_label('Please complete players/referees mapping');
@@ -483,65 +504,6 @@ class ApiPage extends OpsApiPageBase
 		// $help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Finish the tournament. After finishing the tournament within one hour players will get all series points for this tournament. Finish tournament functionality lets not to wait until the time expires and get the results quicker.');
 		// return $help;
 	// }
-	
-	//-------------------------------------------------------------------------------------------------------
-	// map_referee
-	//-------------------------------------------------------------------------------------------------------
-	function map_referee_op()
-	{
-		global $_lang;
-		
-		$tournament_id = (int)get_required_param('tournament_id');
-		$stage = (int)get_required_param('stage');
-		$table = (int)get_required_param('table');
-		$user_id = (int)get_required_param('user_id');
-		
-		Db::begin();
-		list ($club_id, $misc) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.misc FROM tournaments t WHERE t.id = ?', $tournament_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
-		
-		if ($user_id > 0)
-		{
-			list ($user_name, $user_flags) = Db::record(get_label('user'), 'SELECT n.name, u.flags FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
-		}
-		
-		$misc = json_decode($misc);
-		if (!isset($misc->imafia) || !isset($misc->imafia->refs))
-		{
-			throw new Exc(get_label('This tournament is not iMafia tournament.'));
-		}
-		if ($stage >= count($misc->imafia->refs))
-		{
-			throw new Exc(get_label('Invalid [0]', get_label('round')));
-		}
-		if ($table >= count($misc->imafia->refs[$stage]))
-		{
-			throw new Exc(get_label('Invalid [0]', get_label('table')));
-		}
-		
-		if ($user_id > 0)
-		{
-			$ref = new stdClass();
-			$ref->id = $user_id;
-			$ref->name = $user_name;
-			$ref->flags = (int)$user_flags;
-		}
-		else
-		{
-			$ref = NULL;
-		}
-		$misc->imafia->refs[$stage][$table] = $ref;
-		
-		Db::exec(get_label('tournament'), 'UPDATE tournaments u SET misc = ? WHERE id = ?', json_encode($misc), $tournament_id);
-		Db::commit();
-	}
-	
-	// function map_referee_op_help()
-	// {
-		// $help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Finish the tournament. After finishing the tournament within one hour players will get all series points for this tournament. Finish tournament functionality lets not to wait until the time expires and get the results quicker.');
-		// return $help;
-	// }
-	
 	
 	//-------------------------------------------------------------------------------------------------------
 	// cleanup

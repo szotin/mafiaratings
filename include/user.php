@@ -10,21 +10,19 @@ function send_activation_email($user_id, $name, $email)
 {
 	global $_lang;
 
-	if ($email == '')
+	if (!empty($email))
 	{
-		return true;
+		$email_code = md5(rand_string(8));
+		$tags = array(
+			'root' => new Tag(get_server_url()),
+			'user_name' => new Tag($name),
+			'url' => new Tag(get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $email_code . '&email=' . urlencode($email)));
+		
+		list($subj, $body, $text_body) = include __DIR__ .  '/languages/' . get_lang_code($_lang) . '/email/user_activation.php';
+		$body = parse_tags($body, $tags);
+		$text_body = parse_tags($text_body, $tags);
+		send_notification($email, $body, $text_body, $subj, $user_id, $_lang, EMAIL_OBJ_SIGN_IN, 0, $email_code);
 	}
-
-	$email_code = md5(rand_string(8));
-	$tags = array(
-		'root' => new Tag(get_server_url()),
-		'user_name' => new Tag($name),
-		'url' => new Tag(get_server_url() . '/email_request.php?user_id=' . $user_id . '&code=' . $email_code . '&email=' . urlencode($email)));
-	
-	list($subj, $body, $text_body) = include __DIR__ .  '/languages/' . get_lang_code($_lang) . '/email/user_activation.php';
-	$body = parse_tags($body, $tags);
-	$text_body = parse_tags($text_body, $tags);
-	send_notification($email, $body, $text_body, $subj, $user_id, $_lang, EMAIL_OBJ_SIGN_IN, 0, $email_code);
 }
 
 function create_user($names, $email, $club_id, $city_id, $flags = NEW_USER_FLAGS)
@@ -34,12 +32,9 @@ function create_user($names, $email, $club_id, $city_id, $flags = NEW_USER_FLAGS
 	{
 		throw new Exc(get_label('Please enter [0].', get_label('user name')));
 	}
-	
-	if (empty($email))
-	{
-		throw new Exc(get_label('Please enter [0].', get_label('email address')));
-	}
-	else if (!is_email($email))
+
+	$email = trim($email);
+	if (!empty($email) && !is_email($email))
 	{
 		throw new Exc(get_label('[0] is not a valid email address.', $email));
 	}

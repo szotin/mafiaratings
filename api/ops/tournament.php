@@ -915,7 +915,7 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('[0] games were played in this tournament. The operation is dangerous. Only site administrator can delete it. Please contact him at admin@mafiaratings.com.', $games_count));
 			}
 			
-			$query = new DbQuery('SELECT id, end_time FROM games WHERE tournament_id = ? AND (g.flags & '.GAME_FLAG_RATING.') <> 0 ORDER BY end_time, id LIMIT 1', $tournament_id);
+			$query = new DbQuery('SELECT id, end_time FROM games WHERE tournament_id = ? AND (flags & '.GAME_FLAG_RATING.') <> 0 ORDER BY end_time, id LIMIT 1', $tournament_id);
 			if ($row = $query->next())
 			{
 				list($game_id, $end_time) = $row;

@@ -131,8 +131,8 @@ try
 	$game = new Game($json, $feature_flags);
 	$player = $game->data->players[$player_num-1];
 	$player_id = 0;
-	$full_player_name = $player->name;
-	$player_name = '<b>' . $player->name . '</b>';
+	$full_player_name = isset($player->name) ? $player->name : '';
+	$player_name = '<b>' . $full_player_name . '</b>';
 	$player_flags = 0; 
 	if (isset($player->id) && $player->id > 0)
 	{
@@ -149,9 +149,9 @@ try
 		{
 			$full_player_name = $player_name = $pname;
 		}
-		else if ($pname != $player->name)
+		else if ($pname != $full_player_name)
 		{
-			$full_player_name = $player->name . ' (' . $pname . ')';
+			$full_player_name .= ' (' . $pname . ')';
 		}
 	}
 	if (empty($player_name))

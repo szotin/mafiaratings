@@ -35,7 +35,7 @@ function get_player_number_html($game, $num)
 	{
 		$role = get_label('invalid');
 	}
-	return '<a href="javascript:viewPlayer(' . $num . ')" title="' . $player->name . ' (' . $role . ')">' . $num . $role_add . '</a>';
+	return '<a href="javascript:viewPlayer(' . $num . ')" title="' . (isset($player->name) ? $player->name : $num) . ' (' . $role . ')">' . $num . $role_add . '</a>';
 }
 
 
@@ -426,7 +426,11 @@ class Page extends PageBase
 		else
 		{
 			echo '<img src="images/icons/user_null.png" width="48" height="48">';
-			$player_name = $player->name;
+			$player_name = '';
+			if (isset($player->name))
+			{
+				$player_name = $player->name;
+			}
 		}
 		echo '</a></td><td><a href="javascript:viewPlayer(' . $num . ')">' . $player_name . '</a></td><td align="right"';
 

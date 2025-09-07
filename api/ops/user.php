@@ -216,6 +216,60 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
+	// create
+	//-------------------------------------------------------------------------------------------------------
+	function create_op()
+	{
+		$name = trim(get_required_param('name'));
+		$email = trim(get_required_param('email'), '');
+		$club_id = trim(get_required_param('club_id'), 0);
+		
+		Db::begin();
+		$city_id = get_optional_param('city_id', 0);
+		if ($city_id <= 0)
+		{
+			$country_id = get_optional_param('country_id', 0);
+			if ($country_id <= 0)
+			{
+				$country = trim(get_required_param('country'));
+				if (empty($country))
+				{
+					throw new Exc(get_label('Please enter country.'));
+				}
+				$country_id = retrieve_country_id($country);
+			}
+			
+			$city = trim(get_required_param('city'));
+			if (empty($country))
+			{
+				throw new Exc(get_label('Please enter city.'));
+			}
+			$city_id = retrieve_city_id($_REQUEST['city'], $country_id, get_timezone());
+		}
+		
+		$names = new Names(0, get_label('user name'), 'users', 0, new SQL(' AND o.city_id = ?', $city_id));
+		$user_id = create_user($names, $email, $club_id, $city_id);					
+		Db::commit();
+		
+		$this->response['id'] = $user_id;
+	}
+	
+	function create_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_EVERYONE, 'Create new user account.');
+		Names::help($help, 'User', false);
+		$help->request_param('email', 'Account email. Currently it does not have to be unique.', 'user without email is created');
+		$help->request_param('club_id', 'Default club id.', 'a user without a club is created');
+		$help->request_param('country_id', 'Country id.', 'remains the same unless <q>country</q> is set');
+		$help->request_param('country', 'Country name. An alternative to <q>country_id</q>. It is used only if <q>country_id</q> is not set.', 'remains the same unless <q>country_id</q> is set');
+		$help->request_param('city_id', 'City id.', 'remains the same unless <q>city</q> is set');
+		$help->request_param('city', 'City name. An alternative to <q>city_id</q>. It is used only if <q>city_id</q> is not set.', 'remains the same unless <q>city_id</q> is not set');
+
+		$help->response_param('message', 'Localized user message sayings that the account is created.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
 	// access
 	//-------------------------------------------------------------------------------------------------------
 	function access_op()
