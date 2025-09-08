@@ -60,7 +60,6 @@ try
 	function onSelect(_user)
 	{
 		user = _user;
-		console.log(user);
 	}
 	
 	function commit(onSuccess)

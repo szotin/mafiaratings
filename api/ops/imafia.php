@@ -126,13 +126,14 @@ class ApiPage extends OpsApiPageBase
 			$delim = ',';
 		}
 		
-		$query = new DbQuery('SELECT u.imafia_id, u.id, n.name, u.flags FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.imafia_id IN (' . $players_list . ')');
+		$query = new DbQuery('SELECT u.imafia_id, u.imafia_name, u.id, n.name, u.flags FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.imafia_id IN (' . $players_list . ')');
 		while ($row = $query->next())
 		{
-			list ($imafia_id, $id, $name, $flags) = $row;
+			list ($imafia_id, $imafia_name, $id, $name, $flags) = $row;
 			$players[$imafia_id]->id = $id;
 			$players[$imafia_id]->name = $name;
 			$players[$imafia_id]->flags = $flags;
+			$players[$imafia_id]->old_imafia_name = $imafia_name;
 		}
 		return $players;
 	}
@@ -149,6 +150,7 @@ class ApiPage extends OpsApiPageBase
 			$imafia_id = NULL;
 		}
 		
+		Db::begin();
 		list ($club_id, $old_imafia_id, $address_id, $start, $duration, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $ops, $rules_code, $tournament_flags, $misc) = 
 			Db::record(get_label('tournament'), 'SELECT club_id, imafia_id, address_id, start_time, duration, notes, langs, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags, misc FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
@@ -164,12 +166,10 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($imafia_id != $old_imafia_id)
 		{
-			Db::begin();
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET imafia_id = ? WHERE id = ?', $imafia_id, $tournament_id);
 			$log_details = new stdClass();
 			$log_details->imafia_id = $imafia_id;
 			db_log(LOG_OBJECT_TOURNAMENT, 'changed`', $log_details, $tournament_id, $club_id);
-			Db::commit();
 		}
 		
 		$content = post('https://imafia.org/api/tournament_games/' . $imafia_id . '?api_key=' . IMAFIA_API_KEY);
@@ -181,7 +181,10 @@ class ApiPage extends OpsApiPageBase
 			if (!isset($player->id))
 			{
 				$ready_for_import = false;
-				break;
+			}
+			else if (!empty($player->imafia_name) && $player->imafia_name != $player->old_imafia_name)
+			{
+				Db::exec(get_label('user'), 'UPDATE users SET imafia_name = ? WHERE id = ?', $player->imafia_name, $player->id);
 			}
 		}
 		
@@ -194,8 +197,6 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('No games received from [0]', 'iMafia'));
 			}
 			$end = $start + $duration;
-			
-			Db::begin();
 			
 			$existing_games = array();
 			if ($overwrite)
@@ -410,8 +411,6 @@ class ApiPage extends OpsApiPageBase
 				$game = new Game($g, 'ldut');
 				$game->create();
 			}
-			
-			Db::commit();
 		}
 		else
 		{
@@ -427,6 +426,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET misc = ? WHERE id = ?', json_encode($misc), $tournament_id);
 			echo get_label('Please complete players/referees mapping');
 		}
+		Db::commit();
 	}
 	
 	// function import_games_op_help()
@@ -490,10 +490,10 @@ class ApiPage extends OpsApiPageBase
 		}
 		$misc = json_encode($misc);
 		
-		Db::exec(get_label('user'), 'UPDATE users u SET imafia_id = NULL WHERE imafia_id = ?', $imafia_id);
+		Db::exec(get_label('user'), 'UPDATE users u SET imafia_id = NULL, imafia_name = "" WHERE imafia_id = ?', $imafia_id);
 		if ($user_id > 0)
 		{
-			Db::exec(get_label('user'), 'UPDATE users u SET imafia_id = ? WHERE id = ?', $imafia_id, $user_id);
+			Db::exec(get_label('user'), 'UPDATE users u SET imafia_id = ?, imafia_name = ? WHERE id = ?', $imafia_id, $player->imafia_name, $user_id);
 		}
 		Db::exec(get_label('tournament'), 'UPDATE tournaments u SET misc = ? WHERE id = ?', $misc, $tournament_id);
 		Db::commit();

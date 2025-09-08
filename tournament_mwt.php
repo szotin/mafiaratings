@@ -343,6 +343,7 @@ class Page extends TournamentPageBase
 		foreach ($this->mwt_players as $player)
 		{
 			echo '<tr><td width="420">';
+			echo '<table class="transp" width="100%"><tr><td width="32"><button class="icon" onclick="createUser(\'' . $player->name . '\', ' . $player->id . ')" title="' . get_label('Create new user') . '"><img src="images/create.png"></button></td><td>';
 			if (is_null($player->mwt_id))
 			{
 				echo $player->name;
@@ -351,6 +352,7 @@ class Page extends TournamentPageBase
 			{
 				echo '<a href="'.$_mwt_site.'/user/'.$player->mwt_id.'/show" target="_blank">'.$player->name.'</a>';
 			}
+			echo '</td></tr></table>';
 			echo '</td>';
 			
 			echo '<td width="40" align="center"><button class="big_icon" onclick="mapMwtPlayer('.$player->id.')"><img src="images/right.png" width="32"></button>';
@@ -478,6 +480,23 @@ class Page extends TournamentPageBase
 	private function mapping_js()
 	{
 ?>
+		function createUser(name, mwtId)
+		{
+			dlg.form("form/create_user.php?name=" + name + "&club_id=<?php echo $this->club_id; ?>", 
+				function(data)
+				{
+					json.post("api/ops/mwt.php",
+					{
+						op: "map_player"
+						, user_id: data.id
+						, player_id: mwtId
+						, tournament_id: <?php echo $this->id; ?>
+						, mwt_name: name
+					}, refr);
+					
+				}, 480);
+		}
+
 		function mapMwtPlayer(playerId)
 		{
 			dlg.form("form/mwt_map_player.php?player_id=" + playerId + "&tournament_id=<?php echo $this->id; ?>", refr, 480);
