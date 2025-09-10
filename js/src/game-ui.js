@@ -900,7 +900,7 @@ function _uiProceedKeyEvent(e)
 			{
 				if (isSet(game.time.speaker) && e.shiftKey && e.altKey)
 				{
-					gameToggleOnRecord(index + 1);
+					uiPlayerActions(index);
 					return true;
 				}
 				if (e.shiftKey)
@@ -910,7 +910,7 @@ function _uiProceedKeyEvent(e)
 				}
 				else if (e.altKey)
 				{
-					uiPlayerActions(index);
+					gameToggleOnRecord(index + 1);
 					return true;
 				}
 				
