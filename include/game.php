@@ -77,6 +77,10 @@ define('GAME_NO_SOUND', 1);
 define('GAME_DEFAULT_PROMPT_SOUND', 2);
 define('GAME_DEFAULT_END_SOUND', 3);
 
+define('DAMPING_COEFF', 0.7);
+define('SHOOTING_REDNESS_COEFF', 0.7);
+define('POINTS_TO_BE_FOUND_LATER', 1000000);
+
 class Game
 {
 	public $data;
@@ -1471,12 +1475,12 @@ class Game
 			$shooting_time->time = GAMETIME_SHOOTING;
 			for ($i = 0; $i < 10; ++$i)
 			{
-				$player = $this->data->players[$i];
-				if (isset($player->role) && ($player->role == 'maf' || $player->role == 'don'))
+				if ($this->is_maf($i + 1))
 				{
 					$dt = $this->get_player_death_time($i + 1);
 					if ($this->compare_gametimes($shooting_time, $dt) <= 0)
 					{
+						$player = $this->data->players[$i];
 						$shot = NULL;
 						if (isset($player->shooting) && $round <= count($player->shooting) && !is_null($player->shooting[$round - 1]))
 						{
@@ -1586,6 +1590,41 @@ class Game
 			}
 		}
 		return GAME_NO;
+	}
+	
+	function is_round_critical($round)
+	{
+		if ($this->is_voting_canceled($round))
+		{
+			return false;
+		}
+		
+		$voting_time = new stdClass();
+		$voting_time->round = $round;
+		$voting_time->time = GAMETIME_VOTING_START;
+		$this->count_players($voting_time, $civs, $mafs);
+		return $civs <= $mafs + 2;
+	}
+	
+	function count_players($time, &$civs, &$mafs)
+	{
+		$mafs = 0;
+		$civs = 0;
+		for ($num = 1; $num <= 10; ++$num)
+		{
+			$death_time = $this->get_player_death_time($num);
+			if (is_null($death_time) || $this->compare_gametimes($death_time, $time) > 0)
+			{
+				if ($this->is_maf($num))
+				{
+					++$mafs;
+				}
+				else
+				{
+					++$civs;
+				}
+			}
+		}
 	}
 		
 	function who_speaks_first($round)
@@ -2754,6 +2793,570 @@ class Game
 		}
 		usort($actions, array($this, 'compare_gametimes'));
 		return $actions;
+	}
+	
+	function is_maf($player_num)
+	{
+		$player = $this->data->players[$player_num-1];
+		return isset($player->role) && ($player->role == 'don' || $player->role == 'maf');
+	}
+	
+	function is_sheriff($player_num)
+	{
+		$player = $this->data->players[$player_num-1];
+		return isset($player->role) && $player->role == 'sheriff';
+	}
+	
+	function get_mafiaratings_points()
+	{
+		// Collect all actions related to mafiaratings points
+		$actions = array();
+		$voting = array();
+		$shooting = array();
+		$shooting_time = new stdClass();
+		$shooting_time->time = GAMETIME_SHOOTING;
+		$sheriff_index = 0;
+		for($i = 0; $i < 10; ++$i)
+		{
+			$player = $this->data->players[$i];
+			if (isset($player->record))
+			{
+				foreach ($player->record as $record)
+				{
+					$action = clone $record;
+					$action->speaker = $i + 1;
+					$actions[] = $action;
+				}
+			}
+			if (isset($player->sheriff))
+			{
+				$action = new stdClass();
+				$action->round = $player->sheriff;
+				$action->time = GAMETIME_SHERIFF;
+				if ($this->is_maf($i + 1))
+				{
+					$action->player = - $i - 1;
+				}
+				else
+				{
+					$action->player = $i + 1;
+				}
+				$actions[] = $action;
+				$sheriff_index = $i;
+			}
+			if (isset($player->legacy))
+			{
+				$action = new stdClass();
+				$action->round = 1;
+				if (isset($player->dead))
+				{
+					if (is_numeric($player->dead))
+					{
+						$action->round = $player->dead;
+					}
+					else if(isset($player->dead->round))
+					{
+						$action->round = $player->dead->round;
+					}
+				}
+				$action->time = GAMETIME_NIGHT_KILL_SPEAKING;
+				$action->speaker = $i + 1;
+				$action->record = array();
+				$maf_count = 0;
+				foreach ($player->legacy as $l)
+				{
+					if ($this->is_maf($l))
+					{
+						++$maf_count;
+					}
+					$action->record[] = -$l;
+				}
+				if ($maf_count > 1) // we don't want to penalize player who is forced to leave three black colors without enough options.
+				{
+					$actions[] = $action;
+				}
+			}
+			if (isset($player->shooting))
+			{
+				$death_time = $this->get_player_death_time($i + 1);
+				for ($round = 0; $round < count($player->shooting) && $round < count($shooting); ++$round)
+				{
+					$shooting_time->round = $round + 1;
+					if ($death_time == NULL || $this->compare_gametimes($death_time, $shooting_time) >= 0)
+					{
+						if ($shooting[$round] != $player->shooting[$round])
+						{
+							$shooting[$round] = NULL;
+						}
+					}						
+				}
+				
+				for (; $round < count($player->shooting); ++$round)
+				{
+					$shooting_time->round = $round + 1;
+					if ($death_time == NULL || $this->compare_gametimes($death_time, $shooting_time) >= 0)
+					{
+						$shooting[] = $player->shooting[$round];
+					}
+					else
+					{
+						$shooting[] = NULL;
+					}
+				}
+				
+				for (; $round < count($shooting); ++$round)
+				{
+					$shooting_time->round = $round + 1;
+					if ($death_time == NULL || $this->compare_gametimes($death_time, $shooting_time) >= 0)
+					{
+						$shooting[$round] = NULL;
+					}					
+				}
+			}
+			if (isset($player->voting))
+			{
+				for ($round = count($voting); $round < count($player->voting); ++$round)
+				{
+					if ($round == 0)
+					{
+						$voting[] = NULL;
+					}
+					else
+					{
+						$v = new stdClass();
+						$v->round = $round;
+						$v->time = GAMETIME_VOTING_KILL_ALL; // it is more than possible that voting does not have this phase. We set it for sorting reasons - it is guaranteed before the speaches of killed players, and guaranteed after the splitting speaches.
+						$v->voting = array();
+						$voting[] = $v;
+						$actions[] = $v;
+					}
+				}
+				
+				for ($round = 1; $round < count($player->voting); ++$round)
+				{
+					$v = $voting[$round];
+					
+					$voted_to = $player->voting[$round];
+					if (is_null($voted_to))
+					{
+						$voted_to = 0;
+					}
+					else if (is_array($voted_to))
+					{
+						$last_index = count($voted_to) - 1;
+						if ($last_index >= 0)
+						{
+							if (is_bool($voted_to[$last_index]))
+							{
+								if (!isset($v->kill_all))
+								{
+									$v->kill_all = array();
+								}
+								if ($voted_to[$last_index])
+								{
+									$v->kill_all[] = $i + 1;
+								}
+								else
+								{
+									$v->kill_all[] = - $i - 1;
+								}
+								if ($last_index > 0)
+								{
+									$voted_to = $voted_to[$last_index - 1];
+								}
+							}
+							else
+							{
+								$voted_to = $voted_to[$last_index];
+							}
+						}
+						else
+						{
+							$voted_to = 0;
+						}
+					}
+					
+					if ($voted_to > 0)
+					{
+						if (!array_key_exists($voted_to, $v->voting))
+						{
+							$v->voting[$voted_to] = array();
+						}
+						$v->voting[$voted_to][] = $i + 1;
+					}
+				}
+			}
+		}
+		
+		for ($round = 0; $round < count($shooting); ++$round)
+		{
+			if ($shooting[$round] != NULL)
+			{
+				$action = new stdClass();
+				$action->time = GAMETIME_SHOOTING;
+				$action->round = $round + 1;
+				$action->player = $shooting[$round];
+				$actions[] = $action;
+			}
+		}
+		
+		usort($actions, array($this, 'compare_gametimes'));
+
+		// calculate redness
+		$redness = array(0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7);
+		foreach ($actions as $action)
+		{
+			$new_redness = $redness;
+			switch ($action->time)
+			{
+				case GAMETIME_SHOOTING:
+					$new_redness[$action->player-1] += (1 - $redness[$action->player-1]) * SHOOTING_REDNESS_COEFF;
+					// nothing to do with the points
+					break;
+				case GAMETIME_SHERIFF:
+					if ($action->player > 0)
+					{
+						$new_redness[$action->player-1] += (1 - $redness[$action->player-1]) * $redness[$sheriff_index] * DAMPING_COEFF;
+					}
+					else
+					{
+						$new_redness[-$action->player-1] *= (1 - $redness[$sheriff_index] * DAMPING_COEFF);
+					}
+					// nothing to do with the points
+					break;
+				case GAMETIME_VOTING_KILL_ALL: // voted out
+					$voting_time = new stdClass();
+					$voting_time->round = $round;
+					$voting_time->time = GAMETIME_VOTING_START;
+					$this->count_players($voting_time, $civs, $mafs);
+					
+					$max_votes = 0;
+					foreach ($action->voting as $dst => $votes)
+					{
+						$max_votes = max($max_votes, count($votes));
+					}
+
+					if (isset($action->kill_all))
+					{
+						$civ_winners = 0;
+						$maf_winners = 0;
+						$winners = array();
+						foreach ($action->voting as $dst => $votes)
+						{
+							if (count($votes) == $max_votes)
+							{
+								$winners[] = $dst;
+								if ($this->is_maf($dst))
+								{
+									++$maf_winners;
+								}
+								else
+								{
+									++$civ_winners;
+								}
+							}
+						}
+						
+						$good_one = ($maf_winners > 0 && $civs - $civ_winners - $mafs + $maf_winners > 1);
+						$killed = 0;
+						foreach ($action->kill_all as $src)
+						{
+							if ($src < 0)
+							{
+								--$killed;
+							}
+							else
+							{
+								++$killed;
+							}
+						}
+						$killed = ($killed > 0);
+						
+						foreach ($action->kill_all as $src)
+						{
+							if ($src < 0)
+							{
+								continue;
+							}
+							$src_maf = $this->is_maf($src);
+							foreach ($winners as $dst)
+							{
+								if ($src == $dst)
+								{
+									continue;
+								}
+								$new_redness[$dst-1] *= (1 - $redness[$src-1] * DAMPING_COEFF);
+								
+								if ($src_maf)
+								{
+									if ($mafs > $maf_winners)
+									{
+										if ($this->is_maf($dst))
+										{
+											$action->points[] = array($src, $dst, 0); // Zero means disregard all previous on-record points.
+										}
+										else
+										{
+											$dst_player = $this->data->players[$dst-1];
+											if (isset($dst_player->death) && $dst_player->death->type != DEATH_TYPE_NIGHT)
+											{
+												$action->points[] = array($src, $dst, $redness[$dst-1] * $redness[$src-1] * ($killed ? 1 : DAMPING_COEFF));
+											}
+											else
+											{
+												$action->points[] = array($src, $dst, POINTS_TO_BE_FOUND_LATER); // The result will be final dst points multiplied by src redness.
+											}
+										}
+									}
+								}
+								else if ($this->is_maf($dst))
+								{
+									$action->points[] = array($src, $dst, $redness[$dst-1] * $redness[$src-1] * ($killed ? 1 : DAMPING_COEFF));
+								}
+								else if (!$good_one)
+								{
+									$action->points[] = array($src, $dst, -$redness[$dst-1] * $redness[$src-1] * ($killed ? 1 : DAMPING_COEFF));
+								}
+							}
+						}
+					}
+					else
+					{
+						$winner = 0;
+						foreach ($action->voting as $dst => $votes)
+						{
+							if (count($votes) == $max_votes)
+							{
+								$winner = $dst;
+								break;
+							}
+						}
+						
+						foreach ($action->voting as $dst => $votes)
+						{
+							foreach ($votes as $src)
+							{
+								if ($src == $dst)
+								{
+									continue;
+								}
+								$new_redness[$dst-1] *= (1 - $redness[$src-1] * DAMPING_COEFF);
+								
+								if ($this->is_maf($src))
+								{
+									if ($this->is_maf($dst))
+									{
+										$action->points[] = array($src, $dst, 0); // Zero means disregard all previous on-record points.
+									}
+									else
+									{
+										$dst_player = $this->data->players[$dst-1];
+										if (isset($dst_player->death) && $dst_player->death->type != DEATH_TYPE_NIGHT)
+										{
+											$action->points[] = array($src, $dst, $redness[$dst-1] * $redness[$src-1] * ($winner == $dst ? 1 : DAMPING_COEFF));
+										}
+										else
+										{
+											$action->points[] = array($src, $dst, POINTS_TO_BE_FOUND_LATER); // The result will be final dst points multiplied by src redness.
+										}
+									}
+								}
+								else if ($civs <= $mafs + 2) // critical round
+								{
+									$p = $redness[$dst-1] * $redness[$src-1];
+									if ($dst != $winner) // not a deciding vote
+									{
+										$p *= DAMPING_COEFF;
+									}
+									if (!$this->is_maf($dst))
+									{
+										$p = -$p;
+									}
+									$action->points[] = array($src, $dst, $p);
+								}
+								else if ($this->is_maf($dst))
+								{
+									$p = $redness[$dst-1] * $redness[$src-1];
+									if ($dst != $winner) // not a deciding vote
+									{
+										$p *= DAMPING_COEFF;
+									}
+									$action->points[] = array($src, $dst, $p);
+								}
+							}
+						}
+					}
+					break;
+				case GAMETIME_NIGHT_KILL_SPEAKING: // legacy and or on record
+				case GAMETIME_SPEAKING:
+				case GAMETIME_VOTING: // splitting speach
+				case GAMETIME_DAY_KILL_SPEAKING:
+					$action->points = array();
+					foreach ($action->record as $r)
+					{
+						$src = $action->speaker;
+						if ($r > 0)
+						{
+							$dst = $r;
+							$new_redness[$dst-1] += (1 - $redness[$dst-1]) * $redness[$src-1] * DAMPING_COEFF;
+						}
+						else
+						{
+							$dst = -$r;
+							$new_redness[$dst-1] *= (1 - $redness[$src-1] * DAMPING_COEFF);
+						}
+						
+						if ($this->is_maf($src))
+						{
+							$dst_player = $this->data->players[$dst-1];
+							if ($this->is_maf($dst))
+							{
+								if (!isset($dst_player->death))
+								{
+									$action->points[] = array($src, $dst, (1 - $redness[$dst-1]) * $redness[$src-1] * DAMPING_COEFF);
+								}
+								else if ($dst_player->death->type == DEATH_TYPE_DAY && $this->compare_gametimes($action, $this->get_player_death_time($dst)) < 0)
+								{
+									$action->points[] = array($src, $dst, ($redness[$dst-1] - 1) * $redness[$src-1] * DAMPING_COEFF);
+								}
+							}
+							else
+							{
+								if (isset($dst_player->death) && $dst_player->death->type != DEATH_TYPE_NIGHT && $dst_player->death->round > 0 && $this->compare_gametimes($action, $this->get_player_death_time($dst)) < 0)
+								{
+									$action->points[] = array($src, $dst, abs($new_redness[$dst-1]-$redness[$dst-1]));
+								}
+								else
+								{
+									$action->points[] = array($src, $dst, POINTS_TO_BE_FOUND_LATER); // The result will be final dst points multiplied by src redness.
+								}
+							}
+						}
+						else if ($this->is_maf($dst))
+						{
+							$action->points[] = array($src, $dst, $redness[$dst-1] - $new_redness[$dst-1]);
+						}
+						else
+						{
+							$action->points[] = array($src, $dst, $new_redness[$dst-1] - $redness[$dst-1]);
+						}
+					}
+					break;
+			}
+			$redness = $new_redness;
+			
+			// normalize redness
+			$sum = 0;
+			foreach ($redness as $r)
+			{
+				$sum += $r;
+			}
+			if ($sum > 7.000001)
+			{
+				$delta = 7 / $sum;
+				for ($i = 0; $i < 10; ++$i)
+				{
+					$redness[$i] *= $delta;
+					$redness[$i] = min($redness[$i], max($redness[$i], 0), 1);
+				}
+			}
+			else if ($sum < 6.999999)
+			{
+				$delta = (7 - $sum) / (10 - $sum);
+				for ($i = 0; $i < 10; ++$i)
+				{
+					$redness[$i] += (1 - $redness[$i]) * $delta;
+					$redness[$i] = min($redness[$i], max($redness[$i], 0), 1);
+				}
+			}
+			
+			// arrays are copied in php
+			$action->redness = $redness; 
+		}
+		
+		// calculate points
+		$points = array(array(0,0,0,0,0,0,0,0,0,0));
+		for ($i = 1; $i < 10; ++$i)
+		{
+			$points[] = $points[0];
+		}
+		
+		// calculate for civs
+		foreach ($actions as $action)
+		{
+			if (!isset($action->points))
+			{
+				continue;
+			}
+			foreach ($action->points as $ap)
+			{
+				$src = $ap[0];
+				if ($this->is_maf($src))
+				{
+					continue;
+				}
+				
+				$dst = $ap[1];
+				$p = $ap[2];
+				if ($p < 0)
+				{
+					$points[$src-1][$dst-1] = min($points[$src-1][$dst-1], $p);
+				}
+				else
+				{
+					$points[$src-1][$dst-1] = max($points[$src-1][$dst-1], $p);
+				}
+			}
+		}
+		
+		// calculate for mafs
+		foreach ($actions as $action)
+		{
+			if (!isset($action->points))
+			{
+				continue;
+			}
+			foreach ($action->points as &$ap)
+			{
+				$src = $ap[0];
+				if (!$this->is_maf($src))
+				{
+					continue;
+				}
+				
+				$dst = $ap[1];
+				$p = $ap[2];
+				if ($p == POINTS_TO_BE_FOUND_LATER) // Convert the result to the final dst points multiplied by src redness.
+				{
+					$p = 0;
+					for ($i = 0; $i < 10; ++$i)
+					{
+						$p += $points[$dst-1][$i];
+					}
+					$p *= -$action->redness[$src-1];
+					$ap[2] = $p;
+				}
+				
+				if ($p == 0) // Zero means disregard all previous on-record points.
+				{
+					$points[$src-1][$dst-1] = 0;
+				}
+				else if ($p < 0)
+				{
+					$points[$src-1][$dst-1] = min($points[$src-1][$dst-1], $p);
+				}
+				else
+				{
+					$points[$src-1][$dst-1] = max($points[$src-1][$dst-1], $p);
+				}
+			}
+		}
+		
+		//throw new Exc($points);
+		$result = new stdClass();
+		$result->actions = $actions;
+		$result->points = $points;
+		return $result;
 	}
 	
 	private static function add_time_help($param, $event)

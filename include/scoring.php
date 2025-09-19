@@ -630,7 +630,7 @@ function add_player_counters(&$counters, $scoring, $game_flags, $game_role)
 	}
 }
 
-function add_player_score($player, &$counters, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $red_win_rate, $lod_flags, $options, $event_name = NULL)
+function add_player_score($player, &$counters, $scoring, $game_id, $game_end_time, $game_flags, $game_role, $extra_pts, $red_win_rate, $lod_flags, $options, $mr_points, $event_name = NULL)
 {
 	global $_scoring_groups;
 	
@@ -724,6 +724,7 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 				$policy->evaluator->set_var('bonus', $extra_pts);
 				$policy->evaluator->set_var('role', $game_role);
 				$policy->evaluator->set_var('matter', $game_flags);
+				$policy->evaluator->set_var('mr_points', $mr_points);
 				$points = $policy->evaluator->evaluate();
 			}
 			else
@@ -746,6 +747,7 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 					$policy->mvpEvaluator->set_var('bonus', $extra_pts);
 					$policy->mvpEvaluator->set_var('role', $game_role);
 					$policy->mvpEvaluator->set_var('matter', $game_flags);
+					$policy->mvpEvaluator->set_var('mr_points', $mr_points);
 					$mvp_points = $policy->mvpEvaluator->evaluate();
 				}
 				else if (is_bool($policy->mvp))
@@ -1171,7 +1173,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	
 	// Calculate final values for counters
 	$games = array();
-	$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $event_id, $condition);
+	$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.event_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $event_id, $condition);
     $query->add(' ORDER BY g.end_time');
 	while ($row = $query->next())
 	{
@@ -1183,7 +1185,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	// Calculate scores
 	foreach ($games as $row)
 	{
-		list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time) = $row;
+		list ($player_id, $flags, $role, $extra_points, $mr_points, $game_id, $game_end_time) = $row;
 		if (is_hiding_bonus_needed($tournament_flags, $round_num))
 		{
 			$extra_points = 0;
@@ -1191,7 +1193,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 		}
 		$p = $players[$player_id];
 		add_player_counters($p->counters[1], $scoring, $flags, $role);
-		add_player_score($p, $p->counters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $options);
+		add_player_score($p, $p->counters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $options, $mr_points);
 	}
 	
 	// Add event extra points
@@ -1618,7 +1620,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		
 		// Calculate final values for counters
 		$games = array();
-		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, e.name, e.round, p.rating_before FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $tournament_id, $condition);
+		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, e.name, e.round, p.rating_before FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $tournament_id, $condition);
 		$query->add(' ORDER BY g.end_time');
 		while ($row = $query->next())
 		{
@@ -1633,7 +1635,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
         // Calculate scores
 		foreach ($games as $row)
 		{
-            list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_name, $round_num, $rating_before) = $row;
+            list ($player_id, $flags, $role, $extra_points, $mr_points, $game_id, $game_end_time, $event_name, $round_num, $rating_before) = $row;
 			if (is_hiding_bonus_needed($tournament_flags, $round_num))
 			{
 				$extra_points = 0;
@@ -1648,7 +1650,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 					$p->rating = $rating_before;
 				}					
 				add_player_counters($p->counters[1], $scoring, $flags, $role);
-				add_player_score($p, $p->counters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $options, $event_name);
+				add_player_score($p, $p->counters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $options, $mr_points, $event_name);
 			}
         }
     }
@@ -1760,7 +1762,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			$counters = array();
 			$games = array();
 			$query = new DbQuery(
-				'SELECT p.user_id, p.flags, p.role, p.extra_points, g.id, g.end_time, g.event_id, e.round, e.name, p.rating_before'.
+				'SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, g.event_id, e.round, e.name, p.rating_before'.
 				' FROM players p'.
 				' JOIN games g ON g.id = p.game_id'.
 				' JOIN events e ON e.id = g.event_id'.
@@ -1786,7 +1788,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			// Calculate scores of this group
 			foreach ($games as $row)
 			{
-				list ($player_id, $flags, $role, $extra_points, $game_id, $game_end_time, $event_id, $round_num, $event_name, $rating_before) = $row;
+				list ($player_id, $flags, $role, $extra_points, $mr_points, $game_id, $game_end_time, $event_id, $round_num, $event_name, $rating_before) = $row;
 				$p = $players[$player_id];
 				if (!isset($p->first_game_end) || $p->first_game_end > $game_end_time)
 				{
@@ -1813,7 +1815,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 					$scoring_options = $group->options;
 				}
 				add_player_counters($player_couters[1], $scoring, $flags, $role);
-				add_player_score($p, $player_couters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $group->red_win_rate, $lod_flags, $scoring_options, $event_name);
+				add_player_score($p, $player_couters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $group->red_win_rate, $lod_flags, $scoring_options, $mr_points, $event_name);
 			}
 		}
     }

@@ -3,6 +3,16 @@
 require_once 'include/page_base.php';
 require_once 'include/game.php';
 
+define('VIEW_GENERAL', 0);
+define('VIEW_LOG', 1);
+define('VIEW_ROUND', 2);
+define('VIEW_PLAYER', 3);
+define('VIEW_MR_POINTS', 4);
+define('VIEW_MR_POINTS_LOG', 5);
+define('VIEW_COUNT', 6);
+
+define('REDNESS_WIDTH', 150);
+
 function get_player_number_html($game, $num)
 {
 	if (!is_numeric($num) || $num < 1 || $num > 10)
@@ -38,6 +48,37 @@ function get_player_number_html($game, $num)
 	return '<a href="javascript:viewPlayer(' . $num . ')" title="' . (isset($player->name) ? $player->name : $num) . ' (' . $role . ')">' . $num . $role_add . '</a>';
 }
 
+function get_list_string($list)
+{
+	$str = '';
+	$delim = '';
+	foreach ($list as $num)
+	{
+		$str .= $delim . $num;
+		$delim = ', ';
+	}
+	return $str;
+}
+
+function get_on_rec_string($list)
+{
+	$str = '';
+	$delim = '';
+	foreach ($list as $num)
+	{
+		$str .= $delim;
+		if ($num < 0)
+		{
+			$str .= get_label('[0] black', -$num);
+		}
+		else
+		{
+			$str .= get_label('[0] red', $num);
+		}
+		$delim = ', ';
+	}
+	return $str;
+}
 
 class Page extends PageBase
 {
@@ -87,6 +128,22 @@ class Page extends PageBase
 		if (isset($_REQUEST['id']))
 		{
 			$this->id = (int)$_REQUEST['id'];
+		}
+		
+		$this->view = VIEW_GENERAL;
+		if (isset($_REQUEST['view']))
+		{
+			$this->view = (int)$_REQUEST['view'];
+			if ($this->view < 0 || $this->view >= VIEW_COUNT)
+			{
+				$this->view = VIEW_GENERAL;
+			}
+		}
+		
+		$this->round = -1;
+		if (isset($_REQUEST['round']))
+		{
+			$this->round = (int)$_REQUEST['round'];
 		}
 		
 		$this->url_params = '';
@@ -475,7 +532,7 @@ class Page extends PageBase
 		// Prev game button
 		if ($this->prev_game_id > 0)
 		{
-			echo '<td width="24"><a href="' . $this->url_base . $this->prev_game_id . $this->show_all . '" title="' . get_label('Previous game #[0]', $this->prev_game_id) . '"><img src="images/prev.png"></a></td>';
+			echo '<td width="24"><button class="icon" onclick="goTo({id:' . $this->prev_game_id . '})" title="' . get_label('Previous game #[0]', $this->prev_game_id) . '"><img src="images/prev.png"></button></td>';
 		}
 		echo '<td>'; 
 		
@@ -558,7 +615,7 @@ class Page extends PageBase
 					}
 				}
 			}
-			echo '<button class="icon" onclick="mr.fiimGameForm(' . $this->id . ')" title="' . get_label('FIIM game [0] form', $this->id) . '"><img src="images/fiim.png" border="0"></button>';
+			//echo '<button class="icon" onclick="mr.fiimGameForm(' . $this->id . ')" title="' . get_label('FIIM game [0] form', $this->id) . '"><img src="images/fiim.png" border="0"></button>';
 		}
 		echo '</td></tr><tr><td align="right" valign="bottom"></td></tr></table>';
 		
@@ -566,7 +623,7 @@ class Page extends PageBase
 		echo '</td><td align="right" valign="top">';
 		if ($this->next_game_id > 0)
 		{
-			echo '<td width="24"><a href="' . $this->url_base . $this->next_game_id . $this->show_all . '" title="' . get_label('Next game #[0]', $this->next_game_id) . '"><img src="images/next.png"></a></td>';
+			echo '<td width="24"><button class="icon" onclick="goTo({id:' . $this->next_game_id . '})" title="' . get_label('Next game #[0]', $this->next_game_id) . '"><img src="images/next.png"></button></td>';
 		}
 		echo '</tr></table>';
 		
@@ -619,6 +676,41 @@ class Page extends PageBase
 			}
 		}
 		
+		echo '<div class="tab">';
+		echo '<button ' . ($this->view == VIEW_GENERAL ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_GENERAL . '})">' . get_label('General info') . '</button>';
+		echo '<button ' . ($this->view == VIEW_LOG ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_LOG . '})">' . get_label('Log') . '</button>';
+		echo '<button ' . ($this->view == VIEW_ROUND ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_ROUND . '})">' . get_label('Per round') . '</button>';
+		echo '<button ' . ($this->view == VIEW_PLAYER ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_PLAYER . '})">' . get_label('Per player') . '</button>';
+		echo '<button ' . ($this->view == VIEW_MR_POINTS ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MR_POINTS . '})">' . get_label('MR points') . '</button>';
+		echo '<button ' . ($this->view == VIEW_MR_POINTS_LOG ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MR_POINTS_LOG . '})">' . get_label('MR points log') . '</button>';
+		echo '</div><p>';
+		
+		switch ($this->view)
+		{
+		case VIEW_GENERAL:
+			$this->show_general();
+			break;
+		case VIEW_LOG:
+			$this->show_log();
+			break;
+		case VIEW_ROUND:
+			$this->show_round();
+			break;
+		case VIEW_PLAYER:
+			$this->show_player();
+			break;
+		case VIEW_MR_POINTS:
+			$this->show_mr_points();
+			break;
+		case VIEW_MR_POINTS_LOG:
+			$this->show_mr_points_log();
+			break;
+		}
+		echo '</p><div id="comments"></div>';
+	}
+	
+	function show_general()
+	{
 		echo '<table class="bordered" width="100%">';
 		$comment = '';
 		if (!$this->hide_bonus)
@@ -740,8 +832,11 @@ class Page extends PageBase
 		}
 		echo '</table>';
 		
-		echo '</td><td rowspan="2" valign="top">';
-		// Game
+		echo '</td></tr></table>';
+	}
+	
+	function show_log()
+	{
 		$alive = array(true, true, true, true, true, true, true, true, true, true);
 		$maf_alive = 3;
 		$civ_alive = 7;
@@ -1026,8 +1121,1059 @@ class Page extends PageBase
 		{
 			echo '</ul></td></tr></table>';
 		}
+	}
+
+	function show_round()
+	{
+		$is_day = isset($_REQUEST['day']);
 		
-		echo '</td></tr><tr><td valign="top" id="comments"></td></tr></table>';
+		if ($is_day)
+		{
+			$start = new stdClass();
+			$start->round = $this->round;
+			$start->time = GAMETIME_DAY_START;
+			
+			$end = new stdClass();
+			$end->round = $this->round + 1;
+			$end->time = GAMETIME_SHOOTING;
+		}
+		else
+		{
+			$start = new stdClass();
+			$start->round = $this->round;
+			$start->time = GAMETIME_SHOOTING;
+			
+			$end = new stdClass();
+			$end->round = $this->round;
+			$end->time = GAMETIME_DAY_START;
+		}
+		
+		echo '<table class="transp" width="100%"><tr><td width="48">';
+		if ($is_day)
+		{
+			echo '<button class="icon" onclick="goTo({day:undefined})"><img src="images/prev.png"></button>';
+		}
+		else if ($this->round > 0)
+		{
+			echo '<button class="icon" onclick="goTo({day:1,round:' . ($this->round - 1) . '})"><img src="images/prev.png"></button>';
+		}
+		echo '</td><td align="center"><h3>';
+		if ($is_day)
+		{
+			echo get_label('Day [0].', $this->round);
+		}
+		else
+		{
+			echo get_label('Night [0].', $this->round);
+		}
+		echo '</h3></td><td align="right" width="48">';
+		if ($this->game->compare_gametimes($this->game->get_last_gametime(true), $end) >= 0)
+		{
+			if ($is_day)
+			{
+				echo '<button class="icon" onclick="goTo({day:undefined,round:' . ($this->round + 1) . '})"><img src="images/next.png"></button>';
+			}
+			else
+			{
+				echo '<button class="icon" onclick="goTo({day:1})"><img src="images/next.png"></button>';
+			}
+		}
+		echo '</td></tr></table>';
+		
+		
+		echo '<table class="bordered light" width="100%">';
+		echo '<tr class="header" align="center"><td colspan="2">';
+		if ($is_day)
+		{
+			echo '<td width="80"><b>' . get_label('Nominated') . '</b></td><td width="80"><b>' . get_label('Voted') . '</b></td>';
+		}
+		else if ($this->round > 0)
+		{
+			echo '<td width="80"><b>' . get_label('Shot') . '</b></td><td width="80"><b>' . get_label('Checked') . '</b></td>';
+		}
+		else
+		{
+			echo '<td width="160"><b>' . get_label('Arranged') . '</b></td>';
+		}
+		echo '<td width="100"><b>' . get_label('Warnings') . '</b></td><td width="100"><b>' . get_label('Killed') . '</b></td><td width="36"><b>' . get_label('Role') . '</b></td></tr>';
+		for ($i = 1; $i <= 10; ++$i)
+		{
+			$player = $this->game->data->players[$i-1];
+			$death_time = $this->game->get_player_death_time($i);
+			$dead_already = $death_time != NULL && $this->game->compare_gametimes($death_time, $start) < 0;
+			if ($dead_already)
+			{
+				echo '<tr class="darker"><td width="20" class="darkest" align="center">' . $i . '</td>';
+			}
+			else
+			{
+				echo '<tr><td width="20" class="darker" align="center">' . $i . '</td>';
+			}
+			
+			echo '<td>';
+			$this->show_player_html($i);
+			echo '</td>';
+			
+			if ($is_day)
+			{
+				echo '<td align="center">';
+				if (isset($player->nominating[$this->round]))
+				{
+					echo $player->nominating[$this->round];
+				}
+				echo '</td>';
+				
+				echo '<td align="center">';
+				if (isset($player->voting[$this->round]))
+				{
+					if (is_array($player->voting[$this->round]))
+					{
+						$delim = '';
+						foreach ($player->voting[$this->round] as $vote)
+						{
+							echo $delim;
+							$delim = ', ';
+							if (is_bool($vote))
+							{
+								echo get_label('kill');
+							}
+							else
+							{
+								echo $vote;
+							}
+						}
+					}
+					else
+					{
+						echo $player->voting[$this->round];
+					}
+				}
+				echo '</td>';
+			}
+			else if ($this->round > 0)
+			{
+				echo '<td align="center">';
+				if (isset($player->shooting[$this->round - 1]))
+				{
+					echo $player->shooting[$this->round - 1];
+				}
+				echo '</td>';
+				
+				echo '<td align="center">';
+				if (isset($player->role))
+				{
+					if ($player->role == 'don')
+					{
+						for ($j = 0; $j < 10; ++$j)
+						{
+							$p = $this->game->data->players[$j];
+							if (isset($p->don) && $p->don == $this->round)
+							{
+								echo $j + 1;
+								break;
+							}
+						}
+					}
+					else if ($player->role == 'sheriff')
+					{
+						for ($j = 0; $j < 10; ++$j)
+						{
+							$p = $this->game->data->players[$j];
+							if (isset($p->sheriff) && $p->sheriff == $this->round)
+							{
+								echo $j + 1;
+								break;
+							}
+						}
+					}
+				}
+				echo '</td>';
+			}
+			else 
+			{
+				echo '<td align="center">';
+				if (isset($player->arranged))
+				{
+					echo get_label('In round [0]', $player->arranged);
+				}
+				echo '</td>';
+			}
+			
+			echo '<td>';
+			if (isset($player->warnings))
+			{
+				$prev_rounds = 0;
+				$this_round = 0;
+				if (is_numeric($player->warnings))
+				{
+					$prev_rounds = $player->warnings;
+				}
+				else foreach ($player->warnings as $warning)
+				{
+					if ($this->game->compare_gametimes($warning, $start) < 0)
+					{
+						++$prev_rounds;
+					}
+					else if ($this->game->compare_gametimes($warning, $end) < 0)
+					{
+						++$this_round;
+					}
+				}
+				echo '<big><table class="transp" width="100%"><tr><td>';
+				for ($j = 0; $j < $prev_rounds; ++$j)
+				{
+					echo '✔';
+				}
+				echo '</td><td align="right">';
+				for ($j = 0; $j < $this_round; ++$j)
+				{
+					echo '✔';
+				}
+				echo '</td></tr></table></big>';
+			}
+			echo '</td>';
+			
+			echo '<td>';
+			if ($dead_already || $this->game->compare_gametimes($death_time, $end) < 0)
+			{
+				echo '<table class="transp"><tr><td width="30"><img src="images/dead.png" width="24" height="24"></td><td>';
+				$death_round = -1;
+				$death_type = '';
+				if (isset($player->death))
+				{
+					if (is_numeric($player->death))
+					{
+						$death_round = $player->death;
+					}
+					else if (is_string($player->death))
+					{
+						$death_type = $player->death;
+					}
+					else 
+					{
+						if (isset($player->death->round))
+						{
+							$death_round = $player->death->round;
+						}
+						if (isset($player->death->type))
+						{
+							$death_type = $player->death->type;
+						}
+					}
+				}
+				
+				switch ($death_type)
+				{
+				case DEATH_TYPE_GIVE_UP:
+					echo get_label('gave up [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+					break;
+				case DEATH_TYPE_WARNINGS:
+					echo get_label('four warnings [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+					break;
+				case DEATH_TYPE_KICK_OUT:
+					echo get_label('kicked out [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+					break;
+				case DEATH_TYPE_TEAM_KICK_OUT:
+					echo get_label('team defeat [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+					break;
+				case DEATH_TYPE_NIGHT:
+					echo get_label('in night [0]', $death_round >= 0 ? $death_round : '' );
+					break;
+				case DEATH_TYPE_DAY:
+					echo get_label('in day [0]', $death_round >= 0 ? $death_round : '' );
+					break;
+				default:
+					if ($death_round > 0)
+					{
+						echo get_label('[0] round', $player->death);
+					}
+					break;
+				}
+				echo '</td></tr></table>';
+			}
+			echo '</td>';
+			
+			echo '<td align="center">';
+			if (isset($player->role))
+			{
+				switch ($player->role)
+				{
+					case 'sheriff':
+						echo '<img src="images/sheriff.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
+						break;
+					case 'don':
+						echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
+						break;
+					case 'maf':
+						echo '<img src="images/maf.png" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
+						break;
+				}
+			}
+			echo '</td>';
+			
+			echo '</tr>';
+		}
+		echo '</table>';
+	}
+
+	function show_player()
+	{
+		global $_lang, $_profile;
+		
+		$player_num = 1;
+		if (isset($_REQUEST['player_num']))
+		{
+			$player_num = (int)$_REQUEST['player_num'];
+		}
+		
+		echo '<table class="transp" width="100%"><tr>';
+		if ($player_num > 1)
+		{
+			echo '<td><button class="icon" onclick="goTo({player_num:'.($player_num-1).'})" title="' . get_label('Player #[0]', $player_num - 1) . '"><img src="images/prev.png"></button></td>';
+		}
+		if ($player_num < 10)
+		{
+			echo '<td align="right"><button class="icon" onclick="goTo({player_num:'.($player_num+1).'})" title="' . get_label('Player #[0]', $player_num + 1) . '"><img src="images/next.png"></button></td>';
+		}
+		echo '</tr></table>';
+		
+		$player = $this->game->data->players[$player_num-1];
+		$player_id = 0;
+		$full_player_name = isset($player->name) ? $player->name : '';
+		$player_name = '<b>' . $full_player_name . '</b>';
+		$player_flags = 0; 
+		if (isset($player->id) && $player->id > 0)
+		{
+			list($player_id, $pname, $player_flags, $event_player_nickname, $event_player_flags, $tournament_player_flags, $club_player_flags) = Db::record(get_label('user'), 
+				'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags' . 
+					' FROM users u' .
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+					' JOIN events e ON e.id = ?' . 
+					' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
+					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
+					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
+					' WHERE u.id = ?', $this->event_id, $player->id);
+			if (empty($player_name))
+			{
+				$full_player_name = $player_name = $pname;
+			}
+			else if ($pname != $full_player_name)
+			{
+				$full_player_name .= ' (' . $pname . ')';
+			}
+		}
+		if (empty($player_name))
+		{
+			$full_player_name = $player_name = $player_num;
+		}
+		
+		if (isset($_REQUEST['show_all']) && 
+			is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id))
+		{
+			$this->tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
+		}
+		
+		$show_bonus = true;
+		if (($this->tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0 && ($_profile == NULL || $_profile->user_id != $player_id))
+		{
+			switch (($this->tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
+			{
+				case 1:
+					return;
+				case 2:
+					if ($round_num == 1)
+					{
+						return;
+					}
+					break;
+				case 3:
+					if ($round_num == 1 || $round_num == 2)
+					{
+						return;
+					}
+					break;
+			}
+			switch (($this->tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
+			{
+				case 1:
+					$show_bonus = false;
+					break;
+				case 2:
+					$show_bonus = ($round_num != 1);
+					break;
+				case 3:
+					$show_bonus = ($round_num != 1 && $round_num != 2);
+					break;
+			}
+		}
+		
+		echo '<table class="bordered" width="100%"><tr><td width="1">';
+		if ($player_id > 0)
+		{
+			$user_pic =
+				new Picture(USER_EVENT_PICTURE, 
+				new Picture(USER_TOURNAMENT_PICTURE,
+				new Picture(USER_CLUB_PICTURE,
+				new Picture(USER_PICTURE))));
+			$user_pic->
+				set($player_id, $event_player_nickname, $event_player_flags, 'e' . $this->game->data->eventId)->
+				set($player_id, $full_player_name, $tournament_player_flags, 't' . (isset($this->game->data->tournamentId) ? $this->game->data->tournamentId : ''))->
+				set($player_id, $full_player_name, $club_player_flags, 'c' . $this->game->data->clubId)->
+				set($player_id, $full_player_name, $player_flags);
+			echo '<a href="user_info.php?bck=1&id=' . $player_id . '">';
+			$user_pic->show(TNAILS_DIR, false);
+			echo '</a>';
+		}
+		else
+		{
+			echo '<img src="images/tnails/user.png">';
+		}
+		echo '</td><td align="center"><h3><p>' . get_label('Number [0]', $player_num) . '</p><p>' . $full_player_name . '</p><p>';
+		if (!isset($player->role) || $player->role == 'civ')
+		{
+			echo get_label('Civilian') . '</p><p><img src="images/civ.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
+		}
+		else if ($player->role == 'sheriff')
+		{
+			echo get_label('Sheriff') . '</p><p><img src="images/sheriff.png" title="' . get_label('don') . '" style="opacity: 0.5;"> ';
+		}
+		else if ($player->role == 'maf')
+		{
+			echo get_label('Mafia') . '</p><p><img src="images/maf.png" title="' . get_label('mafia') . '" style="opacity: 0.5;"> ';
+		}
+		else if ($player->role == 'don')
+		{
+			echo get_label('Don') . '</p><p><img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;"> ';
+		}
+		echo '</p></h3></td></tr>';
+
+		if ($show_bonus)
+		{
+			if (isset($player->bonus))
+			{
+				$comment = isset($player->comment) ? str_replace('"', '&quot;', $player->comment) : '';
+				echo '<tr><td align="center">';
+				echo '<table class="transp"><tr>';
+				if (is_array($player->bonus))
+				{
+					foreach ($player->bonus as $bonus)
+					{
+						$this->show_bonus($bonus, $comment);
+					}
+				}
+				else
+				{
+					$this->show_bonus($player->bonus, $comment);
+				}
+				echo '</tr></table>';
+				echo '</td><td>';
+				if (isset($player->comment))
+				{
+					echo '<i>' . $player->comment . '</i></td></tr>';
+				}	
+				echo '</td></tr>';
+			}
+			else if (isset($player->comment))
+			{
+				echo '<tr><td colspan="2"><i>' . $player->comment . '</i></td></tr>';
+			}
+		}
+
+		$alive = array(true, true, true, true, true, true, true, true, true, true);
+		$maf_alive = 3;
+		$civ_alive = 7;
+		$warnings = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		$round = -1;
+		$is_night = true;
+		$actions = $this->game->get_actions();
+		$players = $this->game->data->players;
+		
+		// Game
+		foreach ($actions as $action)
+		{
+			$action_text = NULL;
+			switch ($action->action)
+			{
+				case GAME_ACTION_ARRANGEMENT:
+					if (isset($player->role) && $player->role == 'don')
+					{
+						$arrangement = '';
+						for ($i = 0; $i < count($action->players); ++$i)
+						{
+							if ($i > 0)
+							{
+								$arrangement .= get_label(', then ');
+							}
+							$arrangement .= get_player_number_html($this->game, $action->players[$i]);
+						}
+						$action_text = get_label('[0] statically arranges [1].', $player_name, $arrangement);
+					}
+					else
+					{
+						for ($i = 0; $i < count($action->players); ++$i)
+						{
+							if ($action->players[$i] == $player_num)
+							{
+								break;
+							}
+						}
+						if ($i < count($action->players))
+						{
+							$action_text = get_label('[0] is statically arranged for night [1].', $player_name, $i + 1);
+						}
+					}
+					break;
+				case GAME_ACTION_LEAVING:
+					$alive[$action->player-1] = false;
+					$p = $players[$action->player-1];
+					$is_maf = false;
+					if (isset($p->role) && ($p->role == 'maf' || $p->role == 'don'))
+					{
+						$is_maf = true;
+						--$maf_alive;
+					}
+					else
+					{
+						--$civ_alive;
+					}
+					if ($action->player == $player_num)
+					{
+						$info = '';
+						if ($maf_alive <= 0)
+						{
+							$info = get_label('Town wins.');
+						}
+						else if ($maf_alive >= $civ_alive)
+						{
+							$info = get_label('Mafia wins.');
+						}
+						else
+						{
+							for ($i = 0; $i < 10; ++$i)
+							{
+								if (!$alive[$i])
+								{
+									continue;
+								}
+								if (!empty($info))
+								{
+									$info .= ', ';
+								}
+								$info .= get_player_number_html($this->game, $i + 1);
+							}
+							$info = get_label('[0] are still playing.', $info);
+						}
+						if (isset($player->death) && isset($player->death->type))
+						{
+							switch ($player->death->type)
+							{
+								case DEATH_TYPE_GIVE_UP:
+									$action_text = get_label('[0] gives up and leaves the game [2]. [1]', $player_name, $info, $this->game->get_gametime_text($action));
+									break;
+								case DEATH_TYPE_WARNINGS:
+									$action_text = get_label('[0] gets fourth warning and leaves the game. [1]', $player_name, $info);
+									break;
+								case DEATH_TYPE_KICK_OUT:
+									$action_text = get_label('[0] is kicked out from the game [2]. [1]', $player_name, $info, $this->game->get_gametime_text($action));
+									break;
+								case DEATH_TYPE_TEAM_KICK_OUT:
+									$action_text = get_label('[0] is kicked out from the game with team defeat [2]. [1]', $player_name, $is_maf ? get_label('Town wins.') : get_label('Mafia wins.'), $this->game->get_gametime_text($action));
+									break;
+								case DEATH_TYPE_NIGHT:
+									$action_text = get_label('[0] is shot and leaves the game. [1]', $player_name, $info);
+									break;
+								case DEATH_TYPE_DAY:
+									$action_text = get_label('[0] is voted out and leaves the game. [1]', $player_name, $info);
+									break;
+								default:
+									$action_text = get_label('[0] leaves the game. [1]', $player_name, $info);
+									break;
+							}
+						}
+						else
+						{
+							$action_text = get_label('[0] leaves the game. [1]', $player_name, $info);
+						}
+					}
+					break;
+				case GAME_ACTION_KILL_ALL:
+					$is_voter = false;
+					foreach ($action->votes as $v)
+					{
+						if ($v == $player_num)
+						{
+							$is_voter = true;
+							break;
+						}
+					}
+					
+					$noms = '';
+					foreach ($action->nominees as $n)
+					{
+						if (!empty($noms))
+						{
+							$noms .= ', ';
+						}
+						$noms .= get_player_number_html($this->game, $n);
+					}
+					
+					if ($is_voter)
+					{
+						$action_text = get_label('[0] votes to kill all [1]', $player_name, $noms);
+					}
+					else
+					{
+						$action_text = get_label('[0] does not vote to kill all [1]', $player_name, $noms);
+					}
+					break;
+				case GAME_ACTION_ON_RECORD:
+					if ($action->speaker == $player_num)
+					{
+						$r = '';
+						foreach ($action->record as $rec)
+						{
+							if (!empty($r))
+							{
+								$r .= ', ';
+							}
+							
+							if ($rec < 0)
+							{
+								$r .= get_label('[0] black', get_player_number_html($this->game, -$rec));
+							}
+							else
+							{
+								$r .= get_label('[0] red', get_player_number_html($this->game, $rec));
+							}
+						}
+						$action_text = get_label('[0] leaves on record: [1]', $player_name, $r);
+					}
+					else foreach ($action->record as $rec)
+					{
+						if ($player_num == abs($rec))
+						{
+							if ($rec > 0)
+							{
+								$action_text = get_label('[0] leaves [1] red', get_player_number_html($this->game, $action->speaker), $player_name);
+							}
+							else
+							{
+								$action_text = get_label('[0] leaves [1] black', get_player_number_html($this->game, $action->speaker), $player_name);
+							}
+							break;
+						}
+					}
+					break;
+				case GAME_ACTION_WARNING:
+					if ($action->player == $player_num)
+					{
+						switch (++$warnings[$action->player-1])
+						{
+							case 2:
+								$action_text = get_label('[0] gets second warning [1].', $player_name, $this->game->get_gametime_text($action));
+								break;
+							case 3:
+								$action_text = get_label('[0] gets third warning [1].', $player_name, $this->game->get_gametime_text($action));
+								break;
+							case 4:
+								$action_text = get_label('[0] gets fourth warning [1].', $player_name, $this->game->get_gametime_text($action));
+								break;
+							default:
+								$action_text = get_label('[0] gets a warning [1].', $player_name, $this->game->get_gametime_text($action));
+								break;
+						}
+					}
+					break;
+				case GAME_ACTION_DON:
+					if (isset($player->role) && $player->role == 'don')
+					{
+						$action_text = get_label('[0] checks [1].', $player_name, get_player_number_html($this->game, $action->player));
+					}
+					else if ($action->player == $player_num)
+					{
+						$action_text = get_label('[0] is checked by don.', $player_name, get_player_number_html($this->game, $action->player), isset($players[$action->player-1]->role) && $players[$action->player-1]->role == 'sheriff' ? get_label('Finds the sheriff') : get_label('Not the sheriff'));
+					}
+					break;
+				case GAME_ACTION_SHERIFF:
+					if (isset($player->role) && $player->role == 'sheriff')
+					{
+						$action_text = get_label('[0] checks [1].', $player_name, get_player_number_html($this->game, $action->player));
+					}
+					else if ($action->player == $player_num)
+					{
+						$action_text = get_label('[0] is checked by sheriff.', $player_name, get_player_number_html($this->game, $action->player), isset($players[$action->player-1]->role) && $players[$action->player-1]->role == 'sheriff' ? get_label('Finds the sheriff') : get_label('Not the sheriff'));
+					}
+					break;
+					break;
+				case GAME_ACTION_LEGACY:
+					if ($action->player == $player_num)
+					{
+						$legacy = '';
+						foreach ($action->legacy as $leg)
+						{
+							if (!empty($legacy))
+							{
+								$legacy .= ', ';
+							}
+							$legacy .= get_player_number_html($this->game, $leg);
+						}
+						$action_text = get_label('[0] leaves the legacy [1].', $player_name, $legacy);
+					}
+					break;
+				case GAME_ACTION_NOMINATING:
+					if ($action->speaker == $player_num)
+					{
+						$action_text = get_label('[0] nominates [1].', $player_name, get_player_number_html($this->game, $action->nominee));
+					}
+					else if ($action->nominee == $player_num)
+					{
+						$action_text = get_label('[0] nominates [1].', get_player_number_html($this->game, $action->speaker), $player_name);
+					}
+					break;
+				case GAME_ACTION_VOTING:
+					if ($action->nominee == $player_num)
+					{
+						switch (count($action->votes))
+						{
+							case 0:
+								$action_text = get_label('No one votes for [0].', get_player_number_html($this->game, $action->nominee));
+								break;
+							case 1:
+								$action_text = get_label('Only [0] votes for [1].', get_player_number_html($this->game, $action->votes[0]), $player_name);
+								break;
+							default:
+								$voters = '';
+								foreach ($action->votes as $vote)
+								{
+									if (!empty($voters))
+									{
+										$voters .= ', ';
+									}
+									$voters .= get_player_number_html($this->game, $vote);
+								}
+								$action_text = get_label('[0] vote for [1].', $voters, $player_name);
+						}
+					}
+					else
+					{
+						$output = false;
+						$voters = '';
+						foreach ($action->votes as $vote)
+						{
+							if ($vote == $player_num)
+							{
+								$output = true;
+							}
+							else
+							{
+								if (!empty($voters))
+								{
+									$voters .= ', ';
+								}
+								$voters .= get_player_number_html($this->game, $vote);
+							}
+						}
+						if ($output)
+						{
+							if (empty($voters))
+							{
+								$action_text = get_label('[0] votes for [1] alone.', $player_name, get_player_number_html($this->game, $action->nominee));
+							}
+							else
+							{
+								$action_text = get_label('[0] with [1] vote for [2].', $player_name, $voters, get_player_number_html($this->game, $action->nominee));
+							}
+						}
+					}
+					break;
+				case GAME_ACTION_SHOOTING:
+					if (!is_array($action->shooting))
+					{
+						if ($action->shooting == $player_num)
+						{
+							$action_text = get_label('Mafia shoots [0].', $player_name);
+						}
+					}
+					else if (count($action->shooting) == 1)
+					{
+						$shooting = key($action->shooting);
+						if (!empty($shooting))
+						{
+							if ($shooting == $player_num)
+							{
+								$action_text = get_label('Mafia shoots [0].', $player_name);
+							}
+							else foreach ($action->shooting[$shooting] as $shooter)
+							{
+								if ($shooter == $player_num)
+								{
+									$shooters_count = count($action->shooting[$shooting]);
+									switch ($shooters_count)
+									{
+										case 1:
+											$action_text = get_label('[0] kills [1].', $player_name, get_player_number_html($this->game, $shooting));
+											break;
+										case 2:
+											$action_text = get_label('[0] with [2] other maf kills [1].', $player_name, get_player_number_html($this->game, $shooting), $shooters_count - 1);
+											break;
+										default:
+											$action_text = get_label('[0] with [2] other mafs kills [1].', $player_name, get_player_number_html($this->game, $shooting), $shooters_count - 1);
+											break;
+									}
+									break;
+								}
+							}
+						}
+					}
+					else
+					{
+						$miss_details = '';
+						foreach ($action->shooting as $victim => $shot)
+						{
+							if ($victim == $player_num)
+							{
+								if (count($shot) == 1)
+								{
+									$action_text = get_label('[0] shoots [1] but misses.', get_player_number_html($this->game, $shot[0]), $player_name);
+								}
+								else
+								{
+									$action_text = get_label('[0] and [1] shoot [2] but miss.', get_player_number_html($this->game, $shot[0]), get_player_number_html($this->game, $shot[1]), $player_name);
+								}
+							}
+							else
+							{
+								foreach ($shot as $shooter)
+								{
+									if ($shooter == $player_num)
+									{
+										$action_text = get_label('[0] shoots [1] but misses.', $player_name, get_player_number_html($this->game, $victim));
+										break;
+									}
+								}
+							}
+						}
+					}
+					break;
+			}
+			
+			if (is_null($action_text))
+			{
+				continue;
+			}
+			
+			$night = Game::is_night($action);
+			if ($action->round != $round || $is_night != $night)
+			{
+				if ($round >= 0)
+				{
+					echo '</ul>';
+				}
+				if ($night)
+				{
+					echo '</td></tr><tr class="dark"><td colspan="2"><a href="javascript:viewNight(' . $action->round . ')"><b>' . get_label('Night [0]', $action->round) . '</b></a><ul>';
+				}
+				else
+				{
+					echo '</td></tr><tr class="light"><td colspan="2" valign="top"><a href="javascript:viewDay(' . $action->round . ')"><b>' . get_label('Day [0]', $action->round) . '</b></a><ul>';
+				}
+				$round = $action->round;
+				$is_night = $night;
+			}
+			
+			echo '<li>' . $action_text . '</li>';
+		}
+		if ($round >= 0)
+		{
+			echo '</ul>';
+		}
+		echo '</td></tr></table>';
+	}
+	
+	function show_player_pic($i)
+	{
+		$player = $this->game->data->players[$i];
+		if (isset($player->id) && isset($this->players[$player->id]))
+		{
+			list($player_id, $player_name, $player_flags, $event_player_nickname, $event_player_flags, $tournament_player_flags, $club_player_flags) = $this->players[$player->id];
+			if ($player_name != $player->name)
+			{
+				$player_name = $player->name . ' (' . $player_name . ')';
+			}
+			
+			$this->player_pic->
+				set($player_id, $event_player_nickname, $event_player_flags, 'e' . $this->event_id)->
+				set($player_id, $player_name, $tournament_player_flags, 't' . $this->tournament_id)->
+				set($player_id, $player_name, $club_player_flags, 'c' . $this->club_id)->
+				set($player_id, $player_name, $player_flags);
+			$this->player_pic->show(ICONS_DIR, false, 48);
+			echo '</a>';
+		}
+		else
+		{
+			echo '<img src="images/icons/user_null.png" width="48" height="48">';
+			$player_name = '';
+			if (isset($player->name))
+			{
+				$player_name = $player->name;
+			}
+		}
+		echo '<br><b>' . ($i + 1) . '</b>';
+	}
+
+	function show_mr_points()
+	{
+		$p = $this->game->get_mafiaratings_points();
+		echo '<p><table class="bordered light" width="100%">';
+		echo '<tr class="darker"><td width="64"></td>';
+		for ($i = 0; $i < 10; ++$i)
+		{
+			echo '<td width="64" align="center"';
+			if ($this->game->is_maf($i+1))
+			{
+				echo ' class="darkest"';
+			}
+			echo '>';
+			$this->show_player_pic($i);
+			echo '</td>';
+		}
+		echo '<td align="center"><b>'.get_label('Sum').'</b></td></tr>';
+		
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$normal = '';
+			$highlight = ' class="darker"';
+			if ($this->game->is_maf($i+1))
+			{
+				$highlight = ' class="darkest"';
+				$normal = ' class="dark"';
+			}
+			
+			echo '<tr'.$normal.'><td align="center"'.$highlight.'>';
+			$this->show_player_pic($i);
+			echo '</td>';
+			$sum = 0;
+			for ($j = 0; $j < 10; ++$j)
+			{
+				$class = '';
+				if ($i == $j)
+				{
+					$class = $highlight;
+				}
+				else if ($this->game->is_maf($j+1))
+				{
+					$class = ' class="dark"';
+				}
+				echo '<td align="center"'.$class.'>';
+				if ($p->points[$i][$j] != 0)
+				{
+					echo number_format($p->points[$i][$j], 2);
+				}
+				echo '</td>';
+				$sum += $p->points[$i][$j];
+			}
+			echo '<td align="center"><b>' . number_format($sum, 2) . '</b></td></tr>';
+		}
+		echo '</table></p>';
+	}
+
+	function show_mr_points_log()
+	{
+		$p = $this->game->get_mafiaratings_points();
+		
+		echo '<p><table class="bordered light" width="100%">';
+		echo '<tr class="darker"><th>'.get_label('Action').'</th><th width="' . (REDNESS_WIDTH + 40) . '">'.get_label('Redness').'</th><th width="320">'.get_label('Points').'</th></tr>';
+		foreach ($p->actions as $action)
+		{
+			echo '<tr><td>';
+			switch ($action->time)
+			{
+				case GAMETIME_SHOOTING:
+					echo '<a href="javascript:viewNight(' . $action->round . ')"><b>'.get_label('Night [0]', $action->round).'</b></a><p>';
+					echo get_label('Mafia shoots [0].', $action->player).'</p>';
+					break;
+				case GAMETIME_SHERIFF:
+					echo '<a href="javascript:viewNight(' . $action->round . ')"><b>'.get_label('Night [0]', $action->round).'</b></a><p>';
+					echo get_label('Sheriff checks [0].', abs($action->player)).'</p>';
+					break;
+				case GAMETIME_VOTING_KILL_ALL: // voted out
+					echo '<a href="javascript:viewDay(' . $action->round . ')"><b>'.get_label('Day [0] voting', $action->round).'</b></a><p>';
+					$delim = '';
+					foreach ($action->voting as $dst => $v)
+					{
+						echo $delim . get_list_string($v).' '.get_label('vote for [0].', $dst);
+						$delim = '<br>';
+					}
+					if (isset($action->kill_all))
+					{
+						echo '</p>'.get_list_string($action->kill_all).' '.get_label('vote to kill all.').'<p>';
+					}
+					echo '</p>';
+					break;
+				case GAMETIME_NIGHT_KILL_SPEAKING: // legacy and or on record
+				case GAMETIME_SPEAKING:
+				case GAMETIME_VOTING: // splitting speach
+				case GAMETIME_DAY_KILL_SPEAKING:
+					echo '<a href="javascript:viewDay(' . $action->round . ')"><b>'.get_label('Day [0]', $action->round).'</b></a><p>';
+					echo get_label('[0] leaves on record: [1]', $action->speaker, get_on_rec_string($action->record)).'</p>';
+					break;
+				default:
+					echo $action->time;
+					break;
+			}
+			echo '</td><td align="center">';
+			echo '<table class="transp">';
+			for ($i = 1; $i <= 10; ++$i)
+			{
+				$redness = $action->redness[$i-1];
+				$player = $this->game->data->players[$i-1];
+				$red_width = round(REDNESS_WIDTH * $redness);
+				$text = get_label('Redness of player [0] is [1]%.', $i, number_format($redness * 100, 1));
+				echo '<tr><td width="20">'.$i.'</td><td><img src="images/red_dot.png" width="' . $red_width . '" height="12" title="' . $text . '">';
+				echo '<img src="images/black_dot.png" width="' . (REDNESS_WIDTH - $red_width) . '" height="12" title="' . $text . '">';
+				if (isset($player->role))
+				{
+					switch ($player->role)
+					{
+						case 'sheriff':
+							echo ' <img src="images/sheriff.png" width="12" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
+							break;
+						case 'don':
+							echo ' <img src="images/don.png" width="12" title="' . get_label('don') . '" style="opacity: 0.5;">';
+							break;
+						case 'maf':
+							echo ' <img src="images/maf.png" width="12" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
+							break;
+					}
+				}
+				echo '</td></tr>';
+			}
+			echo '</table></td>';
+			echo '<td>';
+			if (isset($action->points))
+			{
+				$delim = '';
+				foreach ($action->points as $points)
+				{
+					$src = $points[0];
+					$dst = $points[1];
+					$pts = $points[2];
+					$is_active = ($pts == $p->points[$src-1][$dst-1]);
+					if ($is_active)
+					{
+						echo '<b>';
+					}
+					echo $delim . get_label('[0] receives [1] points for giving color to [2]', $src, number_format($pts, 2), $dst);
+					if ($is_active)
+					{
+						echo '</b>';
+					}
+					$delim = '<br>';
+				}
+			}
+			echo '</td></tr>';
+		}
+		echo '</table></p>';
 	}
 	
 	protected function js_on_load()
@@ -1045,26 +2191,17 @@ class Page extends PageBase
 ?>
 		function viewPlayer(num)
 		{
-			html.get("form/game_player_view.php<?php echo $this->url_params . $this->show_all; ?>&player_num=" + num, function(html)
-			{
-				dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 600);
-			});
+			goTo({view:<?php echo VIEW_PLAYER; ?>,player_num:num});
 		}
 		
 		function viewDay(round)
 		{
-			html.get("form/game_round_view.php<?php echo $this->url_params; ?>&round=" + round, function(html)
-			{
-				dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 800);
-			});
+			goTo({view:<?php echo VIEW_ROUND; ?>,round:round,day:1});
 		}
 		
 		function viewNight(round)
 		{
-			html.get("form/game_round_view.php<?php echo $this->url_params; ?>&night&round=" + round, function(html)
-			{
-				dlg.info(html, "<?php echo get_label('Game [0]', $this->id); ?>", 800);
-			});
+			goTo({view:<?php echo VIEW_ROUND; ?>,round:round,day:undefined});
 		}
 		
 		function deleteGame(id)

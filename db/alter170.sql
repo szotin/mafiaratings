@@ -1,0 +1,1 @@
+ALTER TABLE players ADD COLUMN mr_points DOUBLE NOT NULL;

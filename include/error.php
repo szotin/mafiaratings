@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/log.php';
 require_once __DIR__ . '/server.php';
+require_once __DIR__ . '/json.php';
 
 class FatalExc extends Exception
 {
@@ -23,6 +24,10 @@ class FatalExc extends Exception
 		if (is_testing_server() && !empty($this->details))
 		{
 			$message .= '<p>' . $this->details . '</p>';
+		}
+		if (is_null($message) || is_object($message) || is_array($message))
+		{
+			$message = formatted_json($message);
 		}
 		parent::__construct($message);
     }
@@ -86,6 +91,10 @@ class Exc extends FatalExc
 {
     public function __construct($message, $details = NULL, $for_log = false)
 	{
+		if (is_null($message) || is_object($message) || is_array($message))
+		{
+			$message = formatted_json($message);
+		}
 		parent::__construct($message, $details, $for_log);
     }
 }
@@ -112,6 +121,10 @@ class LoginExc extends Exception
 	
     public function __construct($message = '', $user_name = NULL)
 	{
+		if (is_null($message) || is_object($message) || is_array($message))
+		{
+			$message = formatted_json($message);
+		}
 		parent::__construct($message);
 		$this->user_name = $user_name;
     }
