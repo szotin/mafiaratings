@@ -2082,7 +2082,7 @@ class Page extends PageBase
 		$p = $this->game->get_mafiaratings_points();
 		
 		echo '<p><table class="bordered light" width="100%">';
-		echo '<tr class="darker"><th>'.get_label('Action').'</th><th width="' . (REDNESS_WIDTH + 40) . '">'.get_label('Redness').'</th><th width="320">'.get_label('Points').'</th></tr>';
+		echo '<tr class="darker"><th>'.get_label('Action').'</th><th width="' . (REDNESS_WIDTH + 40) . '">'.get_label('Redness').'</th><th width="450">'.get_label('Points').'</th></tr>';
 		foreach ($p->actions as $action)
 		{
 			echo '<tr><td>';
@@ -2159,14 +2159,14 @@ class Page extends PageBase
 					$dst = $points[1];
 					$pts = $points[2];
 					$is_active = ($pts == $p->points[$src-1][$dst-1]);
+					echo $delim;
 					if ($is_active)
 					{
-						echo '<b>';
+						echo '<b>' . get_label('[0] receives [1] points for giving color to [2].', $src, number_format($pts, 2), $dst) . '</b>';
 					}
-					echo $delim . get_label('[0] receives [1] points for giving color to [2]', $src, number_format($pts, 2), $dst);
-					if ($is_active)
+					else
 					{
-						echo '</b>';
+						echo get_label('[0] could receive [1] points for giving color to [2] but they already have [3] points for it.', $src, number_format($pts, 2), $dst, number_format($p->points[$src-1][$dst-1], 2));
 					}
 					$delim = '<br>';
 				}
