@@ -300,7 +300,7 @@ class Page extends TournamentPageBase
 				list($t, $g) = $row;
 				if (
 					!is_null($t) && $t > 0 && $t <= count($this->misc->seating) && 
-					$this->misc->seating[$t] != NULL &&
+					$this->misc->seating[$t-1] != NULL &&
 					!is_null($g) && $g > 0 && $g <= count($this->misc->seating[$t-1]))
 				{
 					$this->misc->seating[$t-1][$g-1] = NULL;
