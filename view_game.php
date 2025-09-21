@@ -146,6 +146,12 @@ class Page extends PageBase
 			$this->round = (int)$_REQUEST['round'];
 		}
 		
+		$this->player_num = 0;
+		if (isset($_REQUEST['player_num']))
+		{
+			$this->player_num = (int)$_REQUEST['player_num'];
+		}
+		
 		$this->url_params = '';
 		$this->show_all = '';
 		$this->on_delete = '';
@@ -399,15 +405,15 @@ class Page extends PageBase
 		
 		$this->url_base .= $separator . 'id=';
 		$this->prev_game_id = $this->next_game_id = 0;
-		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id < ? AND g.start_time <= ?', $this->id, $this->game->data->startTime, $condition);
-		$query->add(' ORDER BY g.start_time DESC, g.id DESC');
+		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id <> ? AND g.end_time <= ?', $this->id, $this->game->data->endTime, $condition);
+		$query->add(' ORDER BY g.end_time DESC, g.id DESC');
 		if ($row = $query->next())
 		{
 			list($this->prev_game_id) = $row;
 		}
 		
-		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id > ? AND g.start_time >= ?', $this->id, $this->game->data->startTime, $condition);
-		$query->add(' ORDER BY g.start_time, g.id');
+		$query = new DbQuery('SELECT g.id FROM games g WHERE g.id <> ? AND g.end_time >= ?', $this->id, $this->game->data->endTime, $condition);
+		$query->add(' ORDER BY g.end_time, g.id');
 		if ($row = $query->next())
 		{
 			list($this->next_game_id) = $row;
@@ -1420,24 +1426,20 @@ class Page extends PageBase
 	{
 		global $_lang, $_profile;
 		
-		$player_num = 1;
-		if (isset($_REQUEST['player_num']))
-		{
-			$player_num = (int)$_REQUEST['player_num'];
-		}
+		$this->player_num = min(max($this->player_num,1),10);
 		
 		echo '<table class="transp" width="100%"><tr>';
-		if ($player_num > 1)
+		if ($this->player_num > 1)
 		{
-			echo '<td><button class="icon" onclick="goTo({player_num:'.($player_num-1).'})" title="' . get_label('Player #[0]', $player_num - 1) . '"><img src="images/prev.png"></button></td>';
+			echo '<td><button class="icon" onclick="goTo({player_num:'.($this->player_num-1).'})" title="' . get_label('Player #[0]', $this->player_num - 1) . '"><img src="images/prev.png"></button></td>';
 		}
-		if ($player_num < 10)
+		if ($this->player_num < 10)
 		{
-			echo '<td align="right"><button class="icon" onclick="goTo({player_num:'.($player_num+1).'})" title="' . get_label('Player #[0]', $player_num + 1) . '"><img src="images/next.png"></button></td>';
+			echo '<td align="right"><button class="icon" onclick="goTo({player_num:'.($this->player_num+1).'})" title="' . get_label('Player #[0]', $this->player_num + 1) . '"><img src="images/next.png"></button></td>';
 		}
 		echo '</tr></table>';
 		
-		$player = $this->game->data->players[$player_num-1];
+		$player = $this->game->data->players[$this->player_num-1];
 		$player_id = 0;
 		$full_player_name = isset($player->name) ? $player->name : '';
 		$player_name = '<b>' . $full_player_name . '</b>';
@@ -1464,7 +1466,7 @@ class Page extends PageBase
 		}
 		if (empty($player_name))
 		{
-			$full_player_name = $player_name = $player_num;
+			$full_player_name = $player_name = $this->player_num;
 		}
 		
 		if (isset($_REQUEST['show_all']) && 
@@ -1528,7 +1530,7 @@ class Page extends PageBase
 		{
 			echo '<img src="images/tnails/user.png">';
 		}
-		echo '</td><td align="center"><h3><p>' . get_label('Number [0]', $player_num) . '</p><p>' . $full_player_name . '</p><p>';
+		echo '</td><td align="center"><h3><p>' . get_label('Number [0]', $this->player_num) . '</p><p>' . $full_player_name . '</p><p>';
 		if (!isset($player->role) || $player->role == 'civ')
 		{
 			echo get_label('Civilian') . '</p><p><img src="images/civ.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
@@ -1612,7 +1614,7 @@ class Page extends PageBase
 					{
 						for ($i = 0; $i < count($action->players); ++$i)
 						{
-							if ($action->players[$i] == $player_num)
+							if ($action->players[$i] == $this->player_num)
 							{
 								break;
 							}
@@ -1636,7 +1638,7 @@ class Page extends PageBase
 					{
 						--$civ_alive;
 					}
-					if ($action->player == $player_num)
+					if ($action->player == $this->player_num)
 					{
 						$info = '';
 						if ($maf_alive <= 0)
@@ -1700,7 +1702,7 @@ class Page extends PageBase
 					$is_voter = false;
 					foreach ($action->votes as $v)
 					{
-						if ($v == $player_num)
+						if ($v == $this->player_num)
 						{
 							$is_voter = true;
 							break;
@@ -1727,7 +1729,7 @@ class Page extends PageBase
 					}
 					break;
 				case GAME_ACTION_ON_RECORD:
-					if ($action->speaker == $player_num)
+					if ($action->speaker == $this->player_num)
 					{
 						$r = '';
 						foreach ($action->record as $rec)
@@ -1750,7 +1752,7 @@ class Page extends PageBase
 					}
 					else foreach ($action->record as $rec)
 					{
-						if ($player_num == abs($rec))
+						if ($this->player_num == abs($rec))
 						{
 							if ($rec > 0)
 							{
@@ -1765,7 +1767,7 @@ class Page extends PageBase
 					}
 					break;
 				case GAME_ACTION_WARNING:
-					if ($action->player == $player_num)
+					if ($action->player == $this->player_num)
 					{
 						switch (++$warnings[$action->player-1])
 						{
@@ -1789,7 +1791,7 @@ class Page extends PageBase
 					{
 						$action_text = get_label('[0] checks [1].', $player_name, get_player_number_html($this->game, $action->player));
 					}
-					else if ($action->player == $player_num)
+					else if ($action->player == $this->player_num)
 					{
 						$action_text = get_label('[0] is checked by don.', $player_name, get_player_number_html($this->game, $action->player), isset($players[$action->player-1]->role) && $players[$action->player-1]->role == 'sheriff' ? get_label('Finds the sheriff') : get_label('Not the sheriff'));
 					}
@@ -1799,14 +1801,14 @@ class Page extends PageBase
 					{
 						$action_text = get_label('[0] checks [1].', $player_name, get_player_number_html($this->game, $action->player));
 					}
-					else if ($action->player == $player_num)
+					else if ($action->player == $this->player_num)
 					{
 						$action_text = get_label('[0] is checked by sheriff.', $player_name, get_player_number_html($this->game, $action->player), isset($players[$action->player-1]->role) && $players[$action->player-1]->role == 'sheriff' ? get_label('Finds the sheriff') : get_label('Not the sheriff'));
 					}
 					break;
 					break;
 				case GAME_ACTION_LEGACY:
-					if ($action->player == $player_num)
+					if ($action->player == $this->player_num)
 					{
 						$legacy = '';
 						foreach ($action->legacy as $leg)
@@ -1821,17 +1823,17 @@ class Page extends PageBase
 					}
 					break;
 				case GAME_ACTION_NOMINATING:
-					if ($action->speaker == $player_num)
+					if ($action->speaker == $this->player_num)
 					{
 						$action_text = get_label('[0] nominates [1].', $player_name, get_player_number_html($this->game, $action->nominee));
 					}
-					else if ($action->nominee == $player_num)
+					else if ($action->nominee == $this->player_num)
 					{
 						$action_text = get_label('[0] nominates [1].', get_player_number_html($this->game, $action->speaker), $player_name);
 					}
 					break;
 				case GAME_ACTION_VOTING:
-					if ($action->nominee == $player_num)
+					if ($action->nominee == $this->player_num)
 					{
 						switch (count($action->votes))
 						{
@@ -1860,7 +1862,7 @@ class Page extends PageBase
 						$voters = '';
 						foreach ($action->votes as $vote)
 						{
-							if ($vote == $player_num)
+							if ($vote == $this->player_num)
 							{
 								$output = true;
 							}
@@ -1889,7 +1891,7 @@ class Page extends PageBase
 				case GAME_ACTION_SHOOTING:
 					if (!is_array($action->shooting))
 					{
-						if ($action->shooting == $player_num)
+						if ($action->shooting == $this->player_num)
 						{
 							$action_text = get_label('Mafia shoots [0].', $player_name);
 						}
@@ -1899,13 +1901,13 @@ class Page extends PageBase
 						$shooting = key($action->shooting);
 						if (!empty($shooting))
 						{
-							if ($shooting == $player_num)
+							if ($shooting == $this->player_num)
 							{
 								$action_text = get_label('Mafia shoots [0].', $player_name);
 							}
 							else foreach ($action->shooting[$shooting] as $shooter)
 							{
-								if ($shooter == $player_num)
+								if ($shooter == $this->player_num)
 								{
 									$shooters_count = count($action->shooting[$shooting]);
 									switch ($shooters_count)
@@ -1930,7 +1932,7 @@ class Page extends PageBase
 						$miss_details = '';
 						foreach ($action->shooting as $victim => $shot)
 						{
-							if ($victim == $player_num)
+							if ($victim == $this->player_num)
 							{
 								if (count($shot) == 1)
 								{
@@ -1945,7 +1947,7 @@ class Page extends PageBase
 							{
 								foreach ($shot as $shooter)
 								{
-									if ($shooter == $player_num)
+									if ($shooter == $this->player_num)
 									{
 										$action_text = get_label('[0] shoots [1] but misses.', $player_name, get_player_number_html($this->game, $victim));
 										break;
@@ -2072,54 +2074,156 @@ class Page extends PageBase
 				echo '</td>';
 				$sum += $p->points[$i][$j];
 			}
-			echo '<td align="center"><b>' . number_format($sum, 2) . '</b></td></tr>';
+			echo '<td align="center"><b><a href="javascript:goTo({view:'.VIEW_MR_POINTS_LOG.',player_num:'.($i+1).'})">' . number_format($sum, 2) . '</a></b></td></tr>';
 		}
 		echo '</table></p>';
+	}
+	
+	private function is_in_action($player_num, $action)
+	{
+		if ($player_num == 0)
+		{
+			return true;
+		}
+		
+		switch ($action->time)
+		{
+		case GAMETIME_SHOOTING:
+		case GAMETIME_SHERIFF:
+			return $player_num == $action->player;
+			
+		case GAMETIME_VOTING_KILL_ALL: // voted out
+			foreach ($action->voting as $dst => $votes)
+			{
+				if ($player_num == $dst)
+				{
+					return true;
+				}
+				foreach ($votes as $v)
+				{
+					if ($player_num == $v)
+					{
+						return true;
+					}
+				}
+			}
+			break;
+			
+		case GAMETIME_NIGHT_KILL_SPEAKING: // legacy and or on record
+		case GAMETIME_SPEAKING:
+		case GAMETIME_VOTING: // splitting speach
+		case GAMETIME_DAY_KILL_SPEAKING:
+			if ($player_num == $action->speaker)
+			{
+				return true;
+			}
+			foreach ($action->record as $r)
+			{
+				if ($player_num == abs($r))
+				{
+					return true;
+				}
+			}
+			break;
+		}
+		return false;
 	}
 
 	function show_mr_points_log()
 	{
 		$p = $this->game->get_mafiaratings_points();
 		
+		echo '<p><table class="transp" width="100%"><tr><td align="center"><select id="player" onchange="viewPlayerMrLog()">';
+		show_option(0, $this->player_num, '');
+		for ($i = 1; $i <= 10; ++$i)
+		{
+			$player = $this->game->data->players[$i-1];
+			if (isset($player->name))
+			{
+				show_option($i, $this->player_num, $i . ': ' . $player->name);
+			}
+			else
+			{
+				show_option($i, $this->player_num, $i);
+			}
+		}
+		echo '</select></td></tr></table></p>';
+		
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr class="darker"><th>'.get_label('Action').'</th><th width="' . (REDNESS_WIDTH + 40) . '">'.get_label('Redness').'</th><th width="450">'.get_label('Points').'</th></tr>';
 		foreach ($p->actions as $action)
 		{
-			echo '<tr><td>';
+			if (!$this->is_in_action($this->player_num, $action))
+			{
+				continue;
+			}
+			
 			switch ($action->time)
 			{
-				case GAMETIME_SHOOTING:
-					echo '<a href="javascript:viewNight(' . $action->round . ')"><b>'.get_label('Night [0]', $action->round).'</b></a><p>';
-					echo get_label('Mafia shoots [0].', $action->player).'</p>';
-					break;
-				case GAMETIME_SHERIFF:
-					echo '<a href="javascript:viewNight(' . $action->round . ')"><b>'.get_label('Night [0]', $action->round).'</b></a><p>';
-					echo get_label('Sheriff checks [0].', abs($action->player)).'</p>';
-					break;
-				case GAMETIME_VOTING_KILL_ALL: // voted out
-					echo '<a href="javascript:viewDay(' . $action->round . ')"><b>'.get_label('Day [0] voting', $action->round).'</b></a><p>';
-					$delim = '';
-					foreach ($action->voting as $dst => $v)
+			case GAMETIME_SHOOTING:
+				echo '<tr><td><a href="javascript:viewNight(' . $action->round . ')"><b>'.get_label('Night [0]', $action->round).'</b></a><p>';
+				echo get_label('Mafia shoots [0].', $action->player).'</p>';
+				break;
+			case GAMETIME_SHERIFF:
+				echo '<tr><td><a href="javascript:viewNight(' . $action->round . ')"><b>'.get_label('Night [0]', $action->round).'</b></a><p>';
+				echo get_label('Sheriff checks [0].', abs($action->player)).'</p>';
+				break;
+			case GAMETIME_VOTING_KILL_ALL: // voted out
+				echo '<tr><td><a href="javascript:viewDay(' . $action->round . ')"><b>'.get_label('Day [0] voting', $action->round).'</b></a><p>';
+				$delim = '';
+				foreach ($action->voting as $dst => $votes)
+				{
+					if ($this->player_num == 0 || $dst == $this->player_num)
 					{
-						echo $delim . get_list_string($v).' '.get_label('vote for [0].', $dst);
-						$delim = '<br>';
+						echo $delim . get_list_string($votes).' '.get_label('vote for [0].', $dst);
 					}
-					if (isset($action->kill_all))
+					else foreach ($votes as $v)
+					{
+						if ($v == $this->player_num)
+						{
+							echo $delim . $v .' '.get_label('votes for [0].', $dst);
+						}
+					}
+					$delim = '<br>';
+				}
+				if (isset($action->kill_all))
+				{
+					if ($this->player_num == 0)
 					{
 						echo '</p>'.get_list_string($action->kill_all).' '.get_label('vote to kill all.').'<p>';
 					}
-					echo '</p>';
-					break;
-				case GAMETIME_NIGHT_KILL_SPEAKING: // legacy and or on record
-				case GAMETIME_SPEAKING:
-				case GAMETIME_VOTING: // splitting speach
-				case GAMETIME_DAY_KILL_SPEAKING:
-					echo '<a href="javascript:viewDay(' . $action->round . ')"><b>'.get_label('Day [0]', $action->round).'</b></a><p>';
+					else foreach ($action->kill_all as $v)
+					{
+						if ($v == $this->player_num)
+						{
+							echo '</p>'.$v.' '.get_label('votes to kill all.').'<p>';
+							break;
+						}
+					}
+				}
+				echo '</p>';
+				break;
+			case GAMETIME_NIGHT_KILL_SPEAKING: // legacy and or on record
+			case GAMETIME_SPEAKING:
+			case GAMETIME_VOTING: // splitting speach
+			case GAMETIME_DAY_KILL_SPEAKING:
+				echo '<tr><td><a href="javascript:viewDay(' . $action->round . ')"><b>'.get_label('Day [0]', $action->round).'</b></a><p>';
+				if ($this->player_num == 0 || $this->player_num == $action->speaker)
+				{
 					echo get_label('[0] leaves on record: [1]', $action->speaker, get_on_rec_string($action->record)).'</p>';
-					break;
-				default:
-					echo $action->time;
-					break;
+				}
+				else foreach ($action->record as $r)
+				{
+					if ($r == $this->player_num)
+					{
+						echo get_label('[0] leaves on record: [1]', $action->speaker, get_label('[0] red', $r)).'</p>';
+						break;
+					}
+				}
+				break;
+			default:
+				echo '<tr><td>' . $action->time;
+				break;
 			}
 			echo '</td><td align="center">';
 			echo '<table class="transp">';
@@ -2135,15 +2239,15 @@ class Page extends PageBase
 				{
 					switch ($player->role)
 					{
-						case 'sheriff':
-							echo ' <img src="images/sheriff.png" width="12" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
-							break;
-						case 'don':
-							echo ' <img src="images/don.png" width="12" title="' . get_label('don') . '" style="opacity: 0.5;">';
-							break;
-						case 'maf':
-							echo ' <img src="images/maf.png" width="12" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
-							break;
+					case 'sheriff':
+						echo ' <img src="images/sheriff.png" width="12" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
+						break;
+					case 'don':
+						echo ' <img src="images/don.png" width="12" title="' . get_label('don') . '" style="opacity: 0.5;">';
+						break;
+					case 'maf':
+						echo ' <img src="images/maf.png" width="12" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
+						break;
 					}
 				}
 				echo '</td></tr>';
@@ -2158,17 +2262,20 @@ class Page extends PageBase
 					$src = $points[0];
 					$dst = $points[1];
 					$pts = $points[2];
-					$is_active = ($pts == $p->points[$src-1][$dst-1]);
-					echo $delim;
-					if ($is_active)
+					if ($this->player_num == 0 || $this->player_num == $src || $this->player_num == $dst)
 					{
-						echo '<b>' . get_label('[0] receives [1] points for giving color to [2].', $src, number_format($pts, 2), $dst) . '</b>';
+						$is_active = ($pts == $p->points[$src-1][$dst-1]);
+						echo $delim;
+						if ($is_active)
+						{
+							echo '<b>' . get_label('[0] receives [1] points for giving color to [2].', $src, number_format($pts, 2), $dst) . '</b>';
+						}
+						else
+						{
+							echo get_label('[0] could receive [1] points for giving color to [2] but they already have [3] points for it.', $src, number_format($pts, 2), $dst, number_format($p->points[$src-1][$dst-1], 2));
+						}
+						$delim = '<br>';
 					}
-					else
-					{
-						echo get_label('[0] could receive [1] points for giving color to [2] but they already have [3] points for it.', $src, number_format($pts, 2), $dst, number_format($p->points[$src-1][$dst-1], 2));
-					}
-					$delim = '<br>';
 				}
 			}
 			echo '</td></tr>';
@@ -2210,6 +2317,15 @@ class Page extends PageBase
 			{
 				<?php echo $this->on_delete; ?>
 			});
+		}
+		
+		function viewPlayerMrLog()
+		{
+			let p = $('#player').val();
+			if (p < 1 || p > 10)
+				goTo({player_num:undefined});
+			else
+				goTo({player_num:p});
 		}
 <?php
 	}
