@@ -80,6 +80,7 @@ define('GAME_DEFAULT_END_SOUND', 3);
 define('DAMPING_COEFF', 0.7);
 define('SHOOTING_REDNESS_COEFF', 0.7);
 define('POINTS_TO_BE_FOUND_LATER', 1000000);
+define('DECIDING_VOTE_COEFF', 1.2);
 
 class Game
 {
@@ -3026,7 +3027,7 @@ class Game
 					break;
 				case GAMETIME_VOTING_KILL_ALL: // voted out
 					$voting_time = new stdClass();
-					$voting_time->round = $round;
+					$voting_time->round = $action->round;
 					$voting_time->time = GAMETIME_VOTING_START;
 					$this->count_players($voting_time, $civs, $mafs);
 					
@@ -3072,6 +3073,24 @@ class Game
 						}
 						$killed = ($killed > 0);
 						
+						$kill_all_votes_count = 0;
+						foreach ($action->kill_all as $src)
+						{
+							if ($src < 0)
+							{
+								continue;
+							}
+							++$kill_all_votes_count;
+							foreach ($winners as $dst)
+							{
+								if ($src == $dst)
+								{
+									continue;
+								}
+								$new_redness[$dst-1] *= (1 - $redness[$src-1] * DAMPING_COEFF);
+							}
+						}
+						
 						foreach ($action->kill_all as $src)
 						{
 							if ($src < 0)
@@ -3085,7 +3104,6 @@ class Game
 								{
 									continue;
 								}
-								$new_redness[$dst-1] *= (1 - $redness[$src-1] * DAMPING_COEFF);
 								
 								if ($src_maf)
 								{
@@ -3100,7 +3118,7 @@ class Game
 											$dst_player = $this->data->players[$dst-1];
 											if (isset($dst_player->death) && $dst_player->death->type != DEATH_TYPE_NIGHT)
 											{
-												$action->points[] = array($src, $dst, $redness[$dst-1] * $redness[$src-1] * ($killed ? 1 : DAMPING_COEFF));
+												$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_votes_count);
 											}
 											else
 											{
@@ -3111,11 +3129,11 @@ class Game
 								}
 								else if ($this->is_maf($dst))
 								{
-									$action->points[] = array($src, $dst, $redness[$dst-1] * $redness[$src-1] * ($killed ? 1 : DAMPING_COEFF));
+									$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_votes_count);
 								}
 								else if (!$good_one)
 								{
-									$action->points[] = array($src, $dst, -$redness[$dst-1] * $redness[$src-1] * ($killed ? 1 : DAMPING_COEFF));
+									$action->points[] = array($src, $dst, ($new_redness[$dst-1] - $redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_votes_count);
 								}
 							}
 						}
@@ -3128,12 +3146,8 @@ class Game
 							if (count($votes) == $max_votes)
 							{
 								$winner = $dst;
-								break;
 							}
-						}
-						
-						foreach ($action->voting as $dst => $votes)
-						{
+							
 							foreach ($votes as $src)
 							{
 								if ($src == $dst)
@@ -3141,6 +3155,18 @@ class Game
 									continue;
 								}
 								$new_redness[$dst-1] *= (1 - $redness[$src-1] * DAMPING_COEFF);
+							}
+						}
+						
+						foreach ($action->voting as $dst => $votes)
+						{
+							$votes_count = count($votes);
+							foreach ($votes as $src)
+							{
+								if ($src == $dst)
+								{
+									continue;
+								}
 								
 								if ($this->is_maf($src))
 								{
@@ -3153,7 +3179,7 @@ class Game
 										$dst_player = $this->data->players[$dst-1];
 										if (isset($dst_player->death) && $dst_player->death->type != DEATH_TYPE_NIGHT)
 										{
-											$action->points[] = array($src, $dst, $redness[$dst-1] * $redness[$src-1] * ($winner == $dst ? 1 : DAMPING_COEFF));
+											$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $votes_count);
 										}
 										else
 										{
@@ -3161,27 +3187,13 @@ class Game
 										}
 									}
 								}
-								else if ($civs <= $mafs + 2) // critical round
-								{
-									$p = $redness[$dst-1] * $redness[$src-1];
-									if ($dst != $winner) // not a deciding vote
-									{
-										$p *= DAMPING_COEFF;
-									}
-									if (!$this->is_maf($dst))
-									{
-										$p = -$p;
-									}
-									$action->points[] = array($src, $dst, $p);
-								}
 								else if ($this->is_maf($dst))
 								{
-									$p = $redness[$dst-1] * $redness[$src-1];
-									if ($dst != $winner) // not a deciding vote
-									{
-										$p *= DAMPING_COEFF;
-									}
-									$action->points[] = array($src, $dst, $p);
+									$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $votes_count);
+								}
+								else if ($civs <= $mafs + 2) // critical round
+								{
+									$action->points[] = array($src, $dst, ($new_redness[$dst-1] - $redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $votes_count);
 								}
 							}
 						}
