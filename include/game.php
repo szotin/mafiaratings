@@ -3058,7 +3058,7 @@ class Game
 							}
 						}
 						
-						$good_one = ($maf_winners > 0 && $civs - $civ_winners - $mafs + $maf_winners > 1);
+						$critical = ($civs - count($winners) - $mafs <= 1);
 						$killed = 0;
 						foreach ($action->kill_all as $src)
 						{
@@ -3073,6 +3073,7 @@ class Game
 						}
 						$killed = ($killed > 0);
 						
+						$kill_all_red_voters_count = 0;
 						$kill_all_votes_count = 0;
 						foreach ($action->kill_all as $src)
 						{
@@ -3081,6 +3082,10 @@ class Game
 								continue;
 							}
 							++$kill_all_votes_count;
+							if (!$this->is_maf($src))
+							{
+								++$kill_all_red_voters_count;
+							}
 							foreach ($winners as $dst)
 							{
 								if ($src == $dst)
@@ -3129,11 +3134,11 @@ class Game
 								}
 								else if ($this->is_maf($dst))
 								{
-									$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_votes_count);
+									$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_red_votes_count);
 								}
-								else if (!$good_one)
+								else if ($critical)
 								{
-									$action->points[] = array($src, $dst, ($new_redness[$dst-1] - $redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_votes_count);
+									$action->points[] = array($src, $dst, ($new_redness[$dst-1] - $redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_red_votes_count);
 								}
 							}
 						}
@@ -3160,7 +3165,17 @@ class Game
 						
 						foreach ($action->voting as $dst => $votes)
 						{
-							$votes_count = count($votes);
+							$votes_count = 0;
+							$red_votes_count = 0;
+							foreach ($votes as $src)
+							{
+								++$votes_count;
+								if (!$this->is_maf($src))
+								{
+									++$red_votes_count;
+								}
+							}
+
 							foreach ($votes as $src)
 							{
 								if ($src == $dst)
@@ -3189,11 +3204,11 @@ class Game
 								}
 								else if ($this->is_maf($dst))
 								{
-									$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $votes_count);
+									$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $red_votes_count);
 								}
 								else if ($civs <= $mafs + 2) // critical round
 								{
-									$action->points[] = array($src, $dst, ($new_redness[$dst-1] - $redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $votes_count);
+									$action->points[] = array($src, $dst, ($new_redness[$dst-1] - $redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $red_votes_count);
 								}
 							}
 						}
