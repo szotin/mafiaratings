@@ -360,6 +360,11 @@ function complete_tournament()
 				$main_points = $player->main_points;
 				$bonus_points = $player->extra_points + $player->legacy_points + $player->penalty_points;
 				$shot_points = $player->night1_points;
+				if (is_null($player->rating))
+				{
+					$player->rating = 0;
+				}
+				
 				Db::exec(get_label('player'), 
 					'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
 					$tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags, $player->wins);
