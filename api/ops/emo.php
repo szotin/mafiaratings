@@ -27,7 +27,6 @@ function post($url, $body)
 	{
 		throw new Exc(get_label('Unable to connect to [0].', 'emotion.games'));
 	}
-	
 	$data = json_decode($result);
 	if (is_null($result))
 	{
@@ -449,6 +448,7 @@ class ApiPage extends OpsApiPageBase
 				$g->language = $lang;
 				$g->rules = $rules_code;
 				$g->features = 'ldut';
+				$g->comment = $game->comment;
 				$g->tournamentId = (int)$tournament_id;
 				
 				$g->moderator = new stdClass();
@@ -501,7 +501,7 @@ class ApiPage extends OpsApiPageBase
 							$p->role = 'don';
 							break;
 					}
-					$bonus = (float)$player->points_plus + (float)$player->points_minus;
+					$bonus = (float)$player->points_plus - (float)$player->points_minus;
 					if (abs($bonus) > 0.001)
 					{
 						$p->bonus = $bonus;
