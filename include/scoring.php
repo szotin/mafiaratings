@@ -176,7 +176,7 @@ function compare_role_scores($role, $player1, $player2)
 	{
 		return 1;
 	}
-
+	
 	switch ($role)
 	{
 		case ROLE_CIVILIAN:
@@ -226,11 +226,6 @@ function compare_role_scores($role, $player1, $player2)
 	if (abs($mvp_points1 - $mvp_points2) > 0.001)
 	{
 		return $mvp_points1 - $mvp_points2;
-	}
-	
-	if (abs($points1 - $points2) > 0.001)
-	{
-		return $points1 - $points2;
 	}
 	
 	return $games_count2 - $games_count1;

@@ -499,7 +499,7 @@ class Page extends TournamentPageBase
 
 		function mapMwtPlayer(playerId)
 		{
-			dlg.form("form/mwt_map_player.php?player_id=" + playerId + "&tournament_id=<?php echo $this->id; ?>", refr, 480);
+			dlg.form("form/map_player_mwt.php?player_id=" + playerId + "&tournament_id=<?php echo $this->id; ?>", refr, 480);
 		}
 <?php
 	}

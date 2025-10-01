@@ -414,8 +414,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id, $old_imafia_id) = 
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id, t.imafia_id FROM tournaments t' . 
+		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id, $old_imafia_id, $old_emo_id) = 
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id, t.imafia_id, t.emo_id FROM tournaments t' . 
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -493,6 +493,7 @@ class ApiPage extends OpsApiPageBase
 		if ($address_id != $old_address_id)
 		{
 			list ($timezone) = Db::record(get_label('address'), 'SELECT c.timezone FROM addresses a JOIN cities c ON a.city_id = c.id WHERE a.id = ?', $address_id);
+			update_tournament_stats($tournament_id);
 		}
 		else
 		{
@@ -535,7 +536,21 @@ class ApiPage extends OpsApiPageBase
 			if ($row = $query->next())
 			{
 				list($imafia_tournament_id, $imafia_tournament_flags, $imafia_tournament_name) = $row;
-				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $imafia_id, $imafia_tournament_id, $imafia_tournament_name, 'iMafia'));
+				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $imafia_id, $imafia_tournament_id, $imafia_tournament_name, 'Emotion Games'));
+			}
+		}
+		
+		$emo_id = parse_id_from_url(get_optional_param('emo_id', $old_emo_id), 'Emotion.games');
+		if ($emo_id != $old_emo_id)
+		{
+			$query = new DbQuery(
+				'SELECT t.id, t.flags, t.name'.
+				' FROM tournaments t'.
+				' WHERE t.id <> ? AND t.emo_id = ?', $tournament_id, $emo_id);
+			if ($row = $query->next())
+			{
+				list($emo_tournament_id, $emo_tournament_flags, $emo_tournament_name) = $row;
+				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $emo_id, $emo_tournament_id, $emo_tournament_name, 'Emotion.games'));
 			}
 		}
 		
@@ -712,8 +727,8 @@ class ApiPage extends OpsApiPageBase
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, imafia_id = ?, rules = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $imafia_id, $rules_code, $tournament_id);
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $imafia_id, $emo_id, $rules_code, $tournament_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			$log_details = new stdClass();
@@ -779,6 +794,10 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->imafia_id = $imafia_id;
 			}
+			if ($old_emo_id != $emo_id)
+			{
+				$log_details->emo_id = $emo_id;
+			}
 			if ($logo_uploaded)
 			{
 				$log_details->logo_uploaded = true;
@@ -840,6 +859,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('address_id', 'Address id of the tournament.', 'remains the same.');
 		$help->request_param('mwt_id', 'Id of this tournament on the MWT site. It can be either integer or MWT site URL for the tournament (for example: <a href="https://mafiaworldtour.com/tournaments/2898">https://mafiaworldtour.com/tournaments/2898</a>).', "remains the same");
 		$help->request_param('imafia_id', 'Id of this tournament on the iMafia site. It can be either integer or iMafia site URL for the tournament (for example: <a href="https://mafiaworldtour.com/tournaments/2898">https://mafiaworldtour.com/tournaments/2898</a>).', "remains the same");
+		$help->request_param('emo_id', 'Id of this tournament on the emotion.games site.', "remains the same");
 		return $help;
 	}
 	

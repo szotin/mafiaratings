@@ -156,6 +156,7 @@ class UserPageBase extends PageBase
 	protected $club_flags;
 	protected $mwt_id;
 	protected $imafia_id;
+	protected $emo_id;
 	
 	protected function prepare()
 	{
@@ -167,9 +168,9 @@ class UserPageBase extends PageBase
 		}
 		$this->id = $_REQUEST['id'];
 
-		list ($this->name, $this->email, $this->flags, $this->games_moderated, $this->reg_date, $this->langs, $this->city, $this->country, $this->club_id, $this->club, $this->club_flags, $this->mwt_id, $this->imafia_id) = 
+		list ($this->name, $this->email, $this->flags, $this->games_moderated, $this->reg_date, $this->langs, $this->city, $this->country, $this->club_id, $this->club, $this->club_flags, $this->mwt_id, $this->imafia_id, $this->emo_id) = 
 			Db::record(get_label('user'),
-				'SELECT nu.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, ni.name, no.name, c.id, c.name, c.flags, u.mwt_id, u.imafia_id FROM users u' .
+				'SELECT nu.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, ni.name, no.name, c.id, c.name, c.flags, u.mwt_id, u.imafia_id, u.emo_id FROM users u' .
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' JOIN cities i ON i.id = u.city_id' .
 					' JOIN countries o ON o.id = i.country_id' .
@@ -245,6 +246,10 @@ class UserPageBase extends PageBase
 		if (!is_null($this->imafia_id))
 		{
 			echo '<a href="https://imafia.org/u/' . $this->imafia_id . '" target="_blank"><img src="images/imafia.png" width="24" title="' . get_label('[0] link', 'iMafia') . '"></a> ';
+		}
+		if (!is_null($this->emo_id))
+		{
+			echo '<a href="https://tournament.emotion.games/players/' . $this->emo_id . '" target="_blank"><img src="images/emo.png" width="24" title="' . get_label('[0] link', 'Emotion.games') . '"></a> ';
 		}
 		echo '</p>';
 

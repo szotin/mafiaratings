@@ -218,14 +218,22 @@ class GamePlayersStats
 			if (isset($game_player->legacy))
 			{
 				$mafs_guessed = 0;
-				foreach ($game_player->legacy as $legacy)
+				if (is_array($game_player->legacy))
 				{
-					$p = $data->players[$legacy - 1];
-					if (isset($p->role) && ($p->role == 'maf' || $p->role == 'don'))
+					foreach ($game_player->legacy as $legacy)
 					{
-						++$mafs_guessed;
+						$p = $data->players[$legacy - 1];
+						if (isset($p->role) && ($p->role == 'maf' || $p->role == 'don'))
+						{
+							++$mafs_guessed;
+						}
 					}
 				}
+				else
+				{
+					$mafs_guessed = (int)$game_player->legacy;
+				}
+				
 				if ($mafs_guessed >= 3)
 				{
 					$player->scoring_flags |= SCORING_FLAG_FIRST_LEGACY_3;

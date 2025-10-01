@@ -4,13 +4,13 @@ require_once 'include/tournament.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
-//require_once 'include/imafia.php';
+//require_once 'include/emo.php';
 
-define('VIEW_IMAFIA_ID', 0);
+define('VIEW_EMO_ID', 0);
 define('VIEW_GAME_IMPORT', 1);
 define('VIEW_COUNT', 2);
 
-function compare_imafia_players($player1, $player2)
+function compare_emo_players($player1, $player2)
 {
 	if ($player1->id > 0)
 	{
@@ -34,18 +34,18 @@ class Page extends TournamentPageBase
 	{
 		parent::prepare();
 		
-		$this->has_imafia = !is_null($this->imafia_id) && $this->imafia_id > 0;
+		$this->has_emo = !is_null($this->emo_id) && $this->emo_id > 0;
 		
 		$this->players = NULL;
 		list ($tournament_misc) = Db::record(get_label('tournament'), 'SELECT misc FROM tournaments WHERE id = ?', $this->id);
 		if (!is_null($tournament_misc))
 		{
 			$tournament_misc = json_decode($tournament_misc);
-			if (isset($tournament_misc->imafia))
+			if (isset($tournament_misc->emo))
 			{
-				if (isset($tournament_misc->imafia->players))
+				if (isset($tournament_misc->emo->players))
 				{
-					$this->players = $tournament_misc->imafia->players;
+					$this->players = $tournament_misc->emo->players;
 				}
 			}
 		}
@@ -60,9 +60,9 @@ class Page extends TournamentPageBase
 		}
 		
 		$this->token = '';
-		if (isset($_SESSION['imafia_token']))
+		if (isset($_SESSION['emo_token']))
 		{
-			$this->token = $_SESSION['imafia_token'];
+			$this->token = $_SESSION['emo_token'];
 		}
 	}
 	
@@ -72,9 +72,9 @@ class Page extends TournamentPageBase
 		
 		$players_list = '';
 		$delim = '';
-		if (!is_null($this->imafia_players))
+		if (!is_null($this->emo_players))
 		{
-			foreach ($this->imafia_players as $player)
+			foreach ($this->emo_players as $player)
 			{
 				if ($player->id > 0)
 				{
@@ -104,10 +104,10 @@ class Page extends TournamentPageBase
 	
 	protected function show_body()
 	{
-		echo '<p>'.get_label('Please ented [0] ID of this tournament', 'iMafia').': <input id="imafia_id" ';
-		if (!is_null($this->imafia_id) && $this->imafia_id > 0)
+		echo '<p>'.get_label('Please ented [0] ID of this tournament', 'emotion.games').': <input id="emo_id" ';
+		if (!is_null($this->emo_id) && $this->emo_id > 0)
 		{
-			echo ' value="' . $this->imafia_id . '"';
+			echo ' value="' . $this->emo_id . '"';
 		}
 		echo '></p>';
 		
@@ -130,20 +130,25 @@ class Page extends TournamentPageBase
 			echo '<table class="bordered light" width="100%">';
 			foreach ($this->players as $player)
 			{
-				echo '<tr><td width="420">';
-				echo '<table class="transp" width="100%"><tr><td width="32"><button class="icon" onclick="createUser(\'' . $player->imafia_name . '\', ' . $player->imafia_id . ')" title="' . get_label('Create new user') . '"><img src="images/create.png"></button></td><td>';
-				if (is_null($player->imafia_id))
+				if (isset($player->candidate_id)) // Skip the autodetected referees for now. Let the system always use the autodetected value.
 				{
-					echo $player->name;
+					continue;
 				}
-				else
+
+				echo '<tr><td width="420">';
+				echo '<table class="transp" width="100%"><tr><td width="32"><button class="icon" onclick="createUser(\'' . $player->emo_name . '\', ' . $player->emo_id . ')" title="' . get_label('Create new user') . '"><img src="images/create.png"></button></td><td>';
+				if (!is_null($player->emo_id) && $player->emo_id > 0)
 				{
-					echo '<a href="https://imafia.org/u/'.$player->imafia_id.'" target="_blank">'.$player->imafia_name.'</a>';
+					echo '<a href="https://tournament.emotion.games/players/'.$player->emo_id.'" target="_blank">'.$player->emo_name.'</a>';
+				}
+				else if (isset($player->emo_name))
+				{
+					echo $player->emo_name;
 				}
 				echo '</td></tr></table>';
 				echo '</td>';
 				
-				echo '<td width="40" align="center"><button class="big_icon" onclick="mapPlayer('.$player->imafia_id.')"><img src="images/right.png" width="32"></button>';
+				echo '<td width="40" align="center"><button class="big_icon" onclick="mapPlayer('.$player->emo_id.')"><img src="images/right.png" width="32"></button>';
 				if (isset($player->id))
 				{
 					echo '<td><table class="transp" width="100%"><tr>';
@@ -166,16 +171,16 @@ class Page extends TournamentPageBase
 	{
 		global $_profile;		
 ?>
-		function createUser(name, imafiaId)
+		function createUser(name, emoId)
 		{
 			dlg.form("form/create_user.php?name=" + name + "&club_id=<?php echo $this->club_id; ?>", 
 				function(data)
 				{
-					json.post("api/ops/imafia.php",
+					json.post("api/ops/emo.php",
 					{
 						op: "map_player"
 						, user_id: data.id
-						, imafia_id: imafiaId
+						, emo_id: emoId
 						, tournament_id: <?php echo $this->id; ?>
 					}, refr);
 					
@@ -188,10 +193,10 @@ class Page extends TournamentPageBase
 			{
 				op: "import_games",
 				tournament_id: <?php echo $this->id; ?>,
-				imafia_id: $("#imafia_id").val(),
+				emo_id: $("#emo_id").val(),
 				overwrite: overwrite
 			};
-			json.post("api/ops/imafia.php", params, refr);
+			json.post("api/ops/emo.php", params, refr);
 		}
 
 		function importGames()
@@ -217,9 +222,9 @@ class Page extends TournamentPageBase
 ?>
 		}
 
-		function mapPlayer(imafiaId)
+		function mapPlayer(emoId)
 		{
-			dlg.form("form/map_player_imafia.php?imafia_id=" + imafiaId + "&tournament_id=<?php echo $this->id; ?>", refr, 480);
+			dlg.form("form/map_player_emo.php?emo_id=" + emoId + "&tournament_id=<?php echo $this->id; ?>", refr, 480);
 		}
 		
 <?php
@@ -227,6 +232,6 @@ class Page extends TournamentPageBase
 }
 
 $page = new Page();
-$page->run(get_label('iMafia integration'));
+$page->run(get_label('[0] integration', 'Emotional.games'));
 
 ?>

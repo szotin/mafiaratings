@@ -550,13 +550,20 @@ function convert_game_to_mwt($game_id)
 					{
 						$result->best_move_value = $player->legacy;
 						$result->best_move = 0;
-						foreach ($player->legacy as $l)
+						if (is_array($player->legacy))
 						{
-							$p = $game->players[$l-1]; 
-							if (isset($p->role) && ($p->role == 'maf' || $p->role == 'don'))
+							foreach ($player->legacy as $l)
 							{
-								++$result->best_move;
+								$p = $game->players[$l-1]; 
+								if (isset($p->role) && ($p->role == 'maf' || $p->role == 'don'))
+								{
+									++$result->best_move;
+								}
 							}
+						}
+						else
+						{
+							$result->best_move = (int)$player->legacy;
 						}
 					}
 				}

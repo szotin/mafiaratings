@@ -1,0 +1,6 @@
+ALTER TABLE tournaments ADD COLUMN emo_id INT(11) NULL;
+ALTER TABLE users ADD COLUMN emo_id INT(11) NULL;
+ALTER TABLE users ADD COLUMN emo_name VARCHAR(128) NOT NULL;
+
+ALTER TABLE `users` ADD UNIQUE KEY (`emo_id`);
+ALTER TABLE `tournaments` ADD UNIQUE KEY (`emo_id`);

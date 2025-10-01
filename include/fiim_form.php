@@ -214,15 +214,23 @@ class FiimForm
 				if (isset($player->legacy))
 				{
 					$killed_first = $i + 1;
-					$guess_right = 0;
-					foreach ($player->legacy as $num)
+					if (is_array($player->legacy))
 					{
-						$p = $data->players[$num-1];
-						if (isset($p->role) && ($p->role == "maf" || $p->role == "don"))
+						$guess_right = 0;
+						foreach ($player->legacy as $num)
 						{
-							++$guess_right;
+							$p = $data->players[$num-1];
+							if (isset($p->role) && ($p->role == "maf" || $p->role == "don"))
+							{
+								++$guess_right;
+							}
 						}
 					}
+					else
+					{
+						$guess_right = (int)$player->legacy;
+					}
+					
 					if ($guess_right >= 3)
 					{
 						$extra_points += 0.5;
@@ -315,10 +323,13 @@ class FiimForm
 				$this->pdf->Cell(10.5, 10.1, '' . $killed_first, 0, 0, 'C');
 				
 				$x = 54.0;
-				for ($i = 0; $i < count($legacy) && $i < 3; ++$i, $x += 11.5)
+				if (is_array($legacy))
 				{
-					$this->pdf->SetXY($x, 165.2);
-					$this->pdf->Cell(8.0, 10.1, '' . $legacy[$i], 0, 0, 'C');
+					for ($i = 0; $i < count($legacy) && $i < 3; ++$i, $x += 11.5)
+					{
+						$this->pdf->SetXY($x, 165.2);
+						$this->pdf->Cell(8.0, 10.1, '' . $legacy[$i], 0, 0, 'C');
+					}
 				}
 			}
 			

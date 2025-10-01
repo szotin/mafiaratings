@@ -100,6 +100,7 @@ class TournamentPageBase extends PageBase
 	protected $flags;
 	protected $mwt_id;
 	protected $imafia_id;
+	protected $emo_id;
 	protected $series;
 	protected $num_players;
 	protected $lat;
@@ -125,7 +126,7 @@ class TournamentPageBase extends PageBase
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->fee, $this->currency_id, $this->currency_pattern,
 			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, 
-			$this->rules_code, $this->flags, $this->mwt_id, $this->imafia_id, $this->num_players, $this->lat, $this->lon, $this->num_regs, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff) =
+			$this->rules_code, $this->flags, $this->mwt_id, $this->imafia_id, $this->emo_id, $this->num_players, $this->lat, $this->lon, $this->num_regs, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff) =
 		Db::record(
 			get_label('tournament'),
 			'SELECT t.name, c.id, c.name, c.flags,' . 
@@ -133,7 +134,7 @@ class TournamentPageBase extends PageBase
 				' ct.id, nct.name, cr.id, ncr.name, ct.timezone,' . 
 				' t.start_time, t.duration, t.langs, t.notes, t.fee, t.currency_id, cu.pattern,'.
 				' t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options,'.
-				' t.rules, t.flags, t.mwt_id, t.imafia_id, t.num_players, a.lat, a.lon, t.num_regs, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff' .
+				' t.rules, t.flags, t.mwt_id, t.imafia_id, t.emo_id, t.num_players, a.lat, a.lon, t.num_regs, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff' .
 				' FROM tournaments t' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN addresses a ON a.id = t.address_id' .
@@ -212,8 +213,9 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
 				new MenuItem(null, null, null),
-				new MenuItem('tournament_mwt.php?id=' . $this->id, get_label('MWT integration'), get_label('Synchronize tournament with MWT site. Receive seating, send games, etc..')),
-				new MenuItem('tournament_imafia.php?id=' . $this->id, get_label('iMafia integration'), get_label('Synchronize tournament with iMafia site. Receive games, etc..')),
+				new MenuItem('tournament_mwt.php?id=' . $this->id, get_label('[0] integration', 'MWT'), get_label('Synchronize tournament with [0] site. Receive seating, send games, etc..', 'MWT')),
+				new MenuItem('tournament_imafia.php?id=' . $this->id, get_label('[0] integration', 'iMafia'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'iMafia')),
+				new MenuItem('tournament_emo.php?id=' . $this->id, get_label('[0] integration', 'Emotion.games'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'emotion.games')),
 				new MenuItem(null, null, null),
 				new MenuItem('game_obs.php?bck=1&user_id=0&tournament_id=' . $this->id, get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
 				new MenuItem('tournament_broadcasts_edit.php?id=' . $this->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts')),
@@ -269,6 +271,10 @@ class TournamentPageBase extends PageBase
 		else if (!is_null($this->imafia_id))
 		{
 			echo '<br><br><a href="https://imafia.org/tournament/' . $this->imafia_id . '" target="_blank"><img src="images/imafia.png" width="24" title="' . get_label('[0] link', 'iMafia') . '"></a>';
+		}
+		else if (!is_null($this->emo_id))
+		{
+			echo '<br><br><a href="https://tournament.emotion.games/results/' . $this->emo_id . '" target="_blank"><img src="images/emo.png" width="24" title="' . get_label('[0] link', 'Emotion.games') . '"></a>';
 		}
 		
 		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)

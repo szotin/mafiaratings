@@ -1035,16 +1035,23 @@ class Page extends PageBase
 					echo get_label('Sheriff checks [0].', get_player_number_html($this->game, $action->player));
 					break;
 				case GAME_ACTION_LEGACY:
-					$legacy = '';
-					foreach ($action->legacy as $leg)
+					if (is_array($action->legacy))
 					{
-						if (!empty($legacy))
+						$legacy = '';
+						foreach ($action->legacy as $leg)
 						{
-							$legacy .= ', ';
+							if (!empty($legacy))
+							{
+								$legacy .= ', ';
+							}
+							$legacy .= get_player_number_html($this->game, $leg);
 						}
-						$legacy .= get_player_number_html($this->game, $leg);
+						echo get_label('[0]\'s legacy is [1].', get_player_number_html($this->game, $action->player), $legacy);
 					}
-					echo get_label('[0]\'s legacy is [1].', get_player_number_html($this->game, $action->player), $legacy);
+					else
+					{
+						$action_text = get_label('[0] leaves [1] mafs in the legacy.', get_player_number_html($this->game, $action->player), (int)$action->legacy);
+					}
 					break;
 				case GAME_ACTION_NOMINATING:
 					echo get_label('[0] nominates [1].', get_player_number_html($this->game, $action->speaker), get_player_number_html($this->game, $action->nominee));
@@ -1810,16 +1817,23 @@ class Page extends PageBase
 				case GAME_ACTION_LEGACY:
 					if ($action->player == $this->player_num)
 					{
-						$legacy = '';
-						foreach ($action->legacy as $leg)
+						if (is_array($action->legacy))
 						{
-							if (!empty($legacy))
+							$legacy = '';
+							foreach ($action->legacy as $leg)
 							{
-								$legacy .= ', ';
+								if (!empty($legacy))
+								{
+									$legacy .= ', ';
+								}
+								$legacy .= get_player_number_html($this->game, $leg);
 							}
-							$legacy .= get_player_number_html($this->game, $leg);
+							$action_text = get_label('[0] leaves the legacy [1].', $player_name, $legacy);
 						}
-						$action_text = get_label('[0] leaves the legacy [1].', $player_name, $legacy);
+						else
+						{
+							$action_text = get_label('[0] leaves [1] mafs in the legacy.', $player_name, (int)$action->legacy);
+						}
 					}
 					break;
 				case GAME_ACTION_NOMINATING:

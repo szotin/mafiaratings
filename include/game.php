@@ -29,6 +29,7 @@ define('GAME_FEATURE_FLAG_WARNINGS',                    0x00001000); // 'w' - 40
 define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000); // 'r' - 8192
 // define('GAME_FEATURE_FLAG_SPLITTING',                   0x00004000); // 'p' - 16384
 define('GAME_FEATURE_FLAG_ON_RECORD',                   0x00008000); // 'o' - 32768
+define('GAME_FEATURE_FLAG_SIMPLIFIED_LEGACY',           0x00010000); // 'i' - 65536
 
 define('GAME_CONFIGURABLE_FEATURES',                    0x00008e87); // ARRANGEMENT | DON_CHECKS | SHERIFF_CHECKS | LEGACY | VOTING | VOTING_KILL_ALL | NOMINATING | ON_RECORD
 define('GAME_NON_CONFIGURABLE_FEATURES',                0x00003178); // DEATH | DEATH_ROUND | DEATH_TYPE | DEATH_TIME | SHOOTING | WARNINGS | WARNINGS_DETAILS
@@ -279,48 +280,60 @@ class Game
 					}
 				}
 			}
-			if (isset($player->legacy) && ($this->flags & (GAME_FEATURE_FLAG_DEATH | GAME_FEATURE_FLAG_DEATH_ROUND)) != 0)
+			if (isset($player->legacy))
 			{
-				if (isset($player->death))
+				if (is_array($player->legacy))
 				{
-					$death_type = NULL;
-					$death_round = -1;
-					if (is_string($player->death))
+					$this->flags &= ~GAME_FEATURE_FLAG_SIMPLIFIED_LEGACY;
+				}
+				else
+				{
+					$this->flags &= ~GAME_FEATURE_FLAG_LEGACY;
+				}
+				
+				if (($this->flags & (GAME_FEATURE_FLAG_DEATH | GAME_FEATURE_FLAG_DEATH_ROUND)) != 0)
+				{
+					if (isset($player->death))
 					{
-						$death_type = $player->death;
-					}
-					else if (is_numeric($player->death))
-					{
-						$death_round = $player->death;
-					}
-					else 
-					{
-						if (isset($player->death->type))
+						$death_type = NULL;
+						$death_round = -1;
+						if (is_string($player->death))
 						{
-							$death_type = $player->death->type;
+							$death_type = $player->death;
 						}
-						if (isset($player->death->round))
+						else if (is_numeric($player->death))
 						{
-							$death_round = $player->death->round;
+							$death_round = $player->death;
 						}
-					}
-					
-					if (
-						$death_type != NULL && 
-						$death_type != "night" && 
-						$this->set_issue($fix, 'Player ' . ($i + 1) . ' was not killed in night. he/she can not leave legacy.', ' Player\'s legacy data is removed.'))
-					{
-						unset($player->legacy);
-						return false;
-					}
-					
-					if (
-						$death_round > 1 && 
-						$this->set_issue($fix, 'Player ' . ($i + 1) . ' was killed in round ' . $death_round . ' he/she can not leave legacy.', ' Player\'s legacy data is removed.'))
-					{
-						unset($player->legacy);
-						return false;
+						else 
+						{
+							if (isset($player->death->type))
+							{
+								$death_type = $player->death->type;
+							}
+							if (isset($player->death->round))
+							{
+								$death_round = $player->death->round;
+							}
+						}
 						
+						if (
+							$death_type != NULL && 
+							$death_type != "night" && 
+							$this->set_issue($fix, 'Player ' . ($i + 1) . ' was not killed in night. he/she can not leave legacy.', ' Player\'s legacy data is removed.'))
+						{
+							unset($player->legacy);
+							return false;
+						}
+						
+						if (
+							$death_round > 1 && 
+							$this->set_issue($fix, 'Player ' . ($i + 1) . ' was killed in round ' . $death_round . ' he/she can not leave legacy.', ' Player\'s legacy data is removed.'))
+						{
+							unset($player->legacy);
+							return false;
+							
+						}
 					}
 				}
 				else if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has to be dead to leave a legacy.', ' Player\'s legacy data is removed.'))
@@ -2287,7 +2300,16 @@ class Game
 			case GAME_FEATURE_FLAG_LEGACY:
 				foreach ($this->data->players as $player)
 				{
-					if (isset($player->legacy))
+					if (isset($player->legacy) && is_array($player->legacy))
+					{
+						unset($player->legacy);
+					}
+				}
+				break;			
+			case GAME_FEATURE_FLAG_SIMPLIFIED_LEGACY:
+				foreach ($this->data->players as $player)
+				{
+					if (isset($player->legacy) && !is_array($player->legacy))
 					{
 						unset($player->legacy);
 					}
@@ -2424,6 +2446,10 @@ class Game
 		{
 			$letters .= 'l';
 		}
+		if ($flags & GAME_FEATURE_FLAG_SIMPLIFIED_LEGACY)
+		{
+			$letters .= 'i';
+		}
 		if ($flags & GAME_FEATURE_FLAG_SHOOTING)
 		{
 			$letters .= 'h';
@@ -2489,6 +2515,9 @@ class Game
 				break;
 			case 'l':
 				$flags |= GAME_FEATURE_FLAG_LEGACY;
+				break;
+			case 'i':
+				$flags |= GAME_FEATURE_FLAG_SIMPLIFIED_LEGACY;
 				break;
 			case 'h':
 				$flags |= GAME_FEATURE_FLAG_SHOOTING;
@@ -2845,7 +2874,7 @@ class Game
 				$actions[] = $action;
 				$sheriff_index = $i;
 			}
-			if (isset($player->legacy))
+			if (isset($player->legacy) && is_array($player->legacy))
 			{
 				$action = new stdClass();
 				$action->round = 1;

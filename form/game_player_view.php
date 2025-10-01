@@ -502,16 +502,23 @@ try
 			case GAME_ACTION_LEGACY:
 				if ($action->player == $player_num)
 				{
-					$legacy = '';
-					foreach ($action->legacy as $leg)
+					if (is_array($action->legacy))
 					{
-						if (!empty($legacy))
+						$legacy = '';
+						foreach ($action->legacy as $leg)
 						{
-							$legacy .= ', ';
+							if (!empty($legacy))
+							{
+								$legacy .= ', ';
+							}
+							$legacy .= get_player_number_html($game, $leg);
 						}
-						$legacy .= get_player_number_html($game, $leg);
+						$action_text = get_label('[0] leaves the legacy [1].', $player_name, $legacy);
 					}
-					$action_text = get_label('[0] leaves the legacy [1].', $player_name, $legacy);
+					else
+					{
+						$action_text = get_label('[0] leaves [1] mafs in the legacy.', $player_name, (int)$action->legacy);
+					}
 				}
 				break;
 			case GAME_ACTION_NOMINATING:
