@@ -179,30 +179,54 @@ function compare_role_scores($role, $player1, $player2)
 	
 	switch ($role)
 	{
-		case ROLE_CIVILIAN:
-			$games_count1 = $player1->roles[ROLE_CIVILIAN]->games_count + $player1->roles[ROLE_SHERIFF]->games_count;
-			$mvp_points1 = $player1->roles[ROLE_CIVILIAN]->mvp_points + $player1->roles[ROLE_SHERIFF]->mvp_points;
-			$points1 = $player1->roles[ROLE_CIVILIAN]->points + $player1->roles[ROLE_SHERIFF]->points;
-			$games_count2 = $player2->roles[ROLE_CIVILIAN]->games_count + $player2->roles[ROLE_SHERIFF]->games_count;
-			$mvp_points2 = $player2->roles[ROLE_CIVILIAN]->mvp_points + $player2->roles[ROLE_SHERIFF]->mvp_points;
-			$points2 = $player2->roles[ROLE_CIVILIAN]->points + $player2->roles[ROLE_SHERIFF]->points;
-			break;
-		case ROLE_MAFIA:
-			$games_count1 = $player1->roles[ROLE_MAFIA]->games_count + $player1->roles[ROLE_DON]->games_count;
-			$mvp_points1 = $player1->roles[ROLE_MAFIA]->mvp_points + $player1->roles[ROLE_DON]->mvp_points;
-			$points1 = $player1->roles[ROLE_MAFIA]->points + $player1->roles[ROLE_DON]->points;
-			$games_count2 = $player2->roles[ROLE_MAFIA]->games_count + $player2->roles[ROLE_DON]->games_count;
-			$mvp_points2 = $player2->roles[ROLE_MAFIA]->mvp_points + $player2->roles[ROLE_DON]->mvp_points;
-			$points2 = $player2->roles[ROLE_MAFIA]->points + $player2->roles[ROLE_DON]->points;
-			break;
-		default:
-			$games_count1 = $player1->roles[$role]->games_count;
-			$mvp_points1 = $player1->roles[$role]->mvp_points;
-			$points1 = $player1->roles[$role]->points;
-			$games_count2 = $player2->roles[$role]->games_count;
-			$mvp_points2 = $player2->roles[$role]->mvp_points;
-			$points2 = $player2->roles[$role]->points;
-			break;
+	case 0: // COMPETITION_BEST_CIV
+		$games_count1 = $player1->roles[ROLE_CIVILIAN]->games_count;
+		$mvp_points1 = $player1->roles[ROLE_CIVILIAN]->mvp_points;
+		$points1 = $player1->roles[ROLE_CIVILIAN]->points;
+		$games_count2 = $player2->roles[ROLE_CIVILIAN]->games_count;
+		$mvp_points2 = $player2->roles[ROLE_CIVILIAN]->mvp_points;
+		$points2 = $player2->roles[ROLE_CIVILIAN]->points;
+		break;
+	case 1: // COMPETITION_BEST_SHERIFF
+		$games_count1 = $player1->roles[ROLE_SHERIFF]->games_count;
+		$mvp_points1 = $player1->roles[ROLE_SHERIFF]->mvp_points;
+		$points1 = $player1->roles[ROLE_SHERIFF]->points;
+		$games_count2 = $player2->roles[ROLE_SHERIFF]->games_count;
+		$mvp_points2 = $player2->roles[ROLE_SHERIFF]->mvp_points;
+		$points2 = $player2->roles[ROLE_SHERIFF]->points;
+		break;
+	case 2:// COMPETITION_BEST_RED
+		$games_count1 = $player1->roles[ROLE_CIVILIAN]->games_count + $player1->roles[ROLE_SHERIFF]->games_count;
+		$mvp_points1 = $player1->roles[ROLE_CIVILIAN]->mvp_points + $player1->roles[ROLE_SHERIFF]->mvp_points;
+		$points1 = $player1->roles[ROLE_CIVILIAN]->points + $player1->roles[ROLE_SHERIFF]->points;
+		$games_count2 = $player2->roles[ROLE_CIVILIAN]->games_count + $player2->roles[ROLE_SHERIFF]->games_count;
+		$mvp_points2 = $player2->roles[ROLE_CIVILIAN]->mvp_points + $player2->roles[ROLE_SHERIFF]->mvp_points;
+		$points2 = $player2->roles[ROLE_CIVILIAN]->points + $player2->roles[ROLE_SHERIFF]->points;
+		break;
+	case 3: // COMPETITION_BEST_MAF
+		$games_count1 = $player1->roles[ROLE_MAFIA]->games_count;
+		$mvp_points1 = $player1->roles[ROLE_MAFIA]->mvp_points;
+		$points1 = $player1->roles[ROLE_MAFIA]->points;
+		$games_count2 = $player2->roles[ROLE_MAFIA]->games_count;
+		$mvp_points2 = $player2->roles[ROLE_MAFIA]->mvp_points;
+		$points2 = $player2->roles[ROLE_MAFIA]->points;
+		break;
+	case 4: // COMPETITION_BEST_DON
+		$games_count1 = $player1->roles[ROLE_DON]->games_count;
+		$mvp_points1 = $player1->roles[ROLE_DON]->mvp_points;
+		$points1 = $player1->roles[ROLE_DON]->points;
+		$games_count2 = $player2->roles[ROLE_DON]->games_count;
+		$mvp_points2 = $player2->roles[ROLE_DON]->mvp_points;
+		$points2 = $player2->roles[ROLE_DON]->points;
+		break;
+	case 5: // COMPETITION_BEST_BLACK
+		$games_count1 = $player1->roles[ROLE_MAFIA]->games_count + $player1->roles[ROLE_DON]->games_count;
+		$mvp_points1 = $player1->roles[ROLE_MAFIA]->mvp_points + $player1->roles[ROLE_DON]->mvp_points;
+		$points1 = $player1->roles[ROLE_MAFIA]->points + $player1->roles[ROLE_DON]->points;
+		$games_count2 = $player2->roles[ROLE_MAFIA]->games_count + $player2->roles[ROLE_DON]->games_count;
+		$mvp_points2 = $player2->roles[ROLE_MAFIA]->mvp_points + $player2->roles[ROLE_DON]->mvp_points;
+		$points2 = $player2->roles[ROLE_MAFIA]->points + $player2->roles[ROLE_DON]->points;
+		break;
 	}
 	
 	// if ($role == SCORING_TRACK_ROLE)
@@ -1915,8 +1939,8 @@ function set_mvp_flags($players)
 	$with_roles = isset($p->roles);
 	if ($with_roles)
 	{
-		$roles = array(NULL, NULL, NULL, NULL);
-		$roles_winners_count = array(0, 0, 0, 0);
+		$roles = array(NULL, NULL, NULL, NULL, NULL, NULL);
+		$roles_winners_count = array(0, 0, 0, 0, 0, 0);
 	}
     $mvp = NULL;
     $mvp_winner_count = 0;
@@ -1941,7 +1965,7 @@ function set_mvp_flags($players)
 		
 		if ($with_roles)
 		{
-			for ($i = 0; $i < 4; ++$i)
+			for ($i = 0; $i < 6; ++$i)
 			{
 				$cmp = compare_role_scores($i, $player, $roles[$i]);
 				// if ($i == SCORING_TRACK_ROLE)
@@ -1981,7 +2005,7 @@ function set_mvp_flags($players)
     }
 	if ($with_roles)
 	{
-		for ($i = 0; $i < 4; ++$i)
+		for ($i = 0; $i < 6; ++$i)
 		{
 			$flags <<= 1;
 			if ($roles[$i] != NULL && $roles_winners_count[$i] <= 2) // we give a win by lower place only when there are 2 or less pretenders

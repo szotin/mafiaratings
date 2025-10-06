@@ -249,32 +249,34 @@ define('EVENT_ALIVE_TIME', 28800); // event can be extended during this time aft
 define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during this time after being finished (2 weeks)
 
 // tournament flags
-//  1 - 0x0000001 -        1 - icon mask
-//  2 - 0x0000002 -        2 - icon mask
-//  3 - 0x0000004 -        4 - icon mask
-//  4 - 0x0000008 -        8 - canceled
-//  5 - 0x0000010 -       16 - long term tournament. Like a seasonal club championship.
-//  6 - 0x0000020 -       32 - single games from non-tournament events can be assigned to the tournament.
-//  7 - 0x0000040 -       64 - tournament is pinned to the front page of the site (only site admins can do it)
-//  8 - 0x0000080 -      128 - tournament is finished - all scoring is complete
-//  9 - 0x0000100 -      256 - teams tournament
-// 10 - 0x0000200 -      512 - we have no games information about this tournament - scores are entered manually
-// 11 - 0x0000400 -     1024 - this tournament has MVP as an award
-// 12 - 0x0000800 -     2096 - this tournament has best red as an award
-// 13 - 0x0001000 -     4096 - this tournament has best sheriff as an award
-// 14 - 0x0002000 -     8192 - this tournament has best black as an award
-// 15 - 0x0004000 -    16384 - this tournament has best don as an award
-// 16 - 0x0008000 -    32768 - reserved
-// 17 - 0x0010000 -    65536 - hide scoring table mask
-// 18 - 0x0020000 -   131072 - hide scoring table mask
-// 19 - 0x0040000 -   262144 - hide scoring table mask
-// 20 - 0x0080000 -   524288 - hide bonus mask
-// 21 - 0x0100000 -  1048576 - hide bonus mask
-// 22 - 0x0200000 -  2097152 - hide bonus mask
-// 23 - 0x0400000 -  4194304 - do not try to calculate number of players - just use what is specified in the db record
-// 24 - 0x0800000 -  8388608 - user registration for the tournament is closed. Only a manager can register users.
-// 25 - 0x1000000 - 16777216 - games of the tournament are video streamed.
-// 26 - 0x2000000 - 33554432 - this is elite tournament. Elite tournaments are the tournaments of the elite series with more than one star. Players get higher rating out of them. 
+//  1 - 0x0000001 -         1 - icon mask
+//  2 - 0x0000002 -         2 - icon mask
+//  3 - 0x0000004 -         4 - icon mask
+//  4 - 0x0000008 -         8 - canceled
+//  5 - 0x0000010 -        16 - long term tournament. Like a seasonal club championship.
+//  6 - 0x0000020 -        32 - single games from non-tournament events can be assigned to the tournament.
+//  7 - 0x0000040 -        64 - tournament is pinned to the front page of the site (only site admins can do it)
+//  8 - 0x0000080 -       128 - tournament is finished - all scoring is complete
+//  9 - 0x0000100 -       256 - teams tournament
+// 10 - 0x0000200 -       512 - we have no games information about this tournament - scores are entered manually
+// 11 - 0x0000400 -      1024 - this tournament has MVP as an award
+// 12 - 0x0000800 -      2096 - this tournament has best red as an award
+// 13 - 0x0001000 -      4096 - this tournament has best sheriff as an award
+// 14 - 0x0002000 -      8192 - this tournament has best black as an award
+// 15 - 0x0004000 -     16384 - this tournament has best don as an award
+// 16 - 0x0008000 -     32768 - reserved
+// 17 - 0x0010000 -     65536 - hide scoring table mask
+// 18 - 0x0020000 -    131072 - hide scoring table mask
+// 19 - 0x0040000 -    262144 - hide scoring table mask
+// 20 - 0x0080000 -    524288 - hide bonus mask
+// 21 - 0x0100000 -   1048576 - hide bonus mask
+// 22 - 0x0200000 -   2097152 - hide bonus mask
+// 23 - 0x0400000 -   4194304 - do not try to calculate number of players - just use what is specified in the db record
+// 24 - 0x0800000 -   8388608 - user registration for the tournament is closed. Only a manager can register users.
+// 25 - 0x1000000 -  16777216 - games of the tournament are video streamed.
+// 26 - 0x2000000 -  33554432 - this is elite tournament. Elite tournaments are the tournaments of the elite series with more than one star. Players get higher rating out of them. 
+// 27 - 0x4000000 -  67108864 - do not use sheriff games for best red. 
+// 28 - 0x8000000 - 134217728 - do not use don games for best black. 
 define('TOURNAMENT_FLAG_CANCELED', 0x8);
 define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
@@ -291,7 +293,9 @@ define('TOURNAMENT_FLAG_FORCE_NUM_PLAYERS', 0x400000);
 define('TOURNAMENT_FLAG_REGISTRATION_CLOSED', 0x800000);
 define('TOURNAMENT_FLAG_STREAMING', 0x1000000);
 define('TOURNAMENT_FLAG_ELITE', 0x2000000);
-define('TOURNAMENT_EDITABLE_MASK', 0x1ff7f70); // LONG_TERM | SINGLE_GAME | TOURNAMENT_FLAG_PINNED | TEAM | MANUAL_SCORE | AWARD_* | HIDE_MASK_* | TOURNAMENT_FLAG_FORCE_NUM_PLAYERS | TOURNAMENT_FLAG_REGISTRATION_CLOSED | TOURNAMENT_FLAG_STREAMING
+define('TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED', 0x4000000);
+define('TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK', 0x8000000);
+define('TOURNAMENT_EDITABLE_MASK', 0xdff7f70); // LONG_TERM | SINGLE_GAME | TOURNAMENT_FLAG_PINNED | TEAM | MANUAL_SCORE | AWARD_* | HIDE_MASK_* | TOURNAMENT_FLAG_FORCE_NUM_PLAYERS | TOURNAMENT_FLAG_REGISTRATION_CLOSED | TOURNAMENT_FLAG_STREAMING | TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED | TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);
@@ -306,15 +310,19 @@ define('TOURNAMENT_HIDE_BONUS_MASK_OFFSET', 19);
 
 // competition places flags
 //  1 - 0x0001 -      1 - MVP
-//  2 - 0x0002 -      2 - best red player
-//  3 - 0x0004 -      3 - best sheriff
-//  4 - 0x0008 -      4 - best black player
-//  5 - 0x0010 -      5 - best don
+//  2 - 0x0002 -      2 - best civilian player (non-sheriff)
+//  3 - 0x0004 -      4 - best sheriff
+//  4 - 0x0008 -      8 - best red player (civ+sheriff)
+//  5 - 0x0010 -     16 - best maf player (non-don)
+//  6 - 0x0020 -     32 - best don
+//  7 - 0x0040 -     64 - best black player (maf+don)
 define('COMPETITION_MVP', 0x1);
-define('COMPETITION_BEST_RED', 0x2);
+define('COMPETITION_BEST_CIV', 0x2);
 define('COMPETITION_BEST_SHERIFF', 0x4);
-define('COMPETITION_BEST_BLACK', 0x8);
-define('COMPETITION_BEST_DON', 0x10);
+define('COMPETITION_BEST_RED', 0x8);
+define('COMPETITION_BEST_MAF', 0x10);
+define('COMPETITION_BEST_DON', 0x20);
+define('COMPETITION_BEST_BLACK', 0x40);
 
 // series flags
 //  1 - 0x0001 -      1 - icon mask

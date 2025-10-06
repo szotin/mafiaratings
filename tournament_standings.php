@@ -16,8 +16,10 @@ define('VIEW_MVP', 2);
 define('SORT_BY_MVP', 0);
 define('SORT_BY_RED', 1);
 define('SORT_BY_BLACK', 2);
-define('SORT_BY_SHERIFF', 3);
-define('SORT_BY_DON', 4);
+define('SORT_BY_CIV', 3);
+define('SORT_BY_MAF', 4);
+define('SORT_BY_SHERIFF', 5);
+define('SORT_BY_DON', 6);
 
 function score_title($points, $raw_points, $normalization)
 {
@@ -42,6 +44,14 @@ function compare_mvp($player1, $player2)
 	case SORT_BY_BLACK:
 		$mvp_points1 = $player1->roles[ROLE_MAFIA]->mvp_points + $player1->roles[ROLE_DON]->mvp_points;
 		$mvp_points2 = $player2->roles[ROLE_MAFIA]->mvp_points + $player2->roles[ROLE_DON]->mvp_points;
+		break;
+	case SORT_BY_CIV:
+		$mvp_points1 = $player1->roles[ROLE_CIVILIAN]->mvp_points;
+		$mvp_points2 = $player2->roles[ROLE_CIVILIAN]->mvp_points;
+		break;
+	case SORT_BY_MAF:
+		$mvp_points1 = $player1->roles[ROLE_MAFIA]->mvp_points;
+		$mvp_points2 = $player2->roles[ROLE_MAFIA]->mvp_points;
 		break;
 	case SORT_BY_SHERIFF:
 		$mvp_points1 = $player1->roles[ROLE_SHERIFF]->mvp_points;
@@ -242,31 +252,6 @@ class Page extends TournamentPageBase
 				echo '</a>';
 			}
 			echo '</a></td><td><b>' . $team->name . '</b></td>';
-			// if (isset($team->nom_flags) && $team->nom_flags)
-			// {
-				// echo '<td align="right">';
-				// if (($team->nom_flags & COMPETITION_BEST_RED) && ($this->flags & TOURNAMENT_FLAG_AWARD_RED))
-				// {
-					// echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
-				// }
-				// if (($team->nom_flags & COMPETITION_BEST_BLACK) && ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK))
-				// {
-					// echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
-				// }
-				// if (($team->nom_flags & COMPETITION_BEST_DON) && ($this->flags & TOURNAMENT_FLAG_AWARD_DON))
-				// {
-					// echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
-				// }
-				// if (($team->nom_flags & COMPETITION_BEST_SHERIFF) && ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF))
-				// {
-					// echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
-				// }
-				// if (($team->nom_flags & COMPETITION_MVP) && ($this->flags & TOURNAMENT_FLAG_AWARD_MVP))
-				// {
-					// echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
-				// }
-				// echo '</td>';
-			// }
 			echo '</tr></table></td>';
 			
 			echo '<td align="center" class="dark"' . score_title($team->points, $team->raw_points, 1) . '>' . format_score($team->points) . '</td>';
@@ -368,6 +353,12 @@ class Page extends TournamentPageBase
 		}
 		echo '</tr>';
 		
+		$mvp_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_MVP) ? COMPETITION_MVP : 0;
+		$best_red_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_RED) ? (($this->flags & TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED) ? COMPETITION_BEST_CIV : COMPETITION_BEST_RED) : 0;
+		$best_black_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK) ? (($this->flags & TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK) ? COMPETITION_BEST_MAF : COMPETITION_BEST_BLACK) : 0;
+		$best_sheriff_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF) ? COMPETITION_BEST_SHERIFF : 0;
+		$best_don_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_DON) ? COMPETITION_BEST_DON : 0;
+		
 		$page_start = $_page * PAGE_SIZE;
 		$page_count = min($players_count, $page_start + PAGE_SIZE);
 		for ($number = $page_start; $number < $page_count; ++$number)
@@ -398,23 +389,23 @@ class Page extends TournamentPageBase
 			if (isset($player->nom_flags) && $player->nom_flags)
 			{
 				echo '<td align="right">';
-				if (($player->nom_flags & COMPETITION_BEST_RED) && ($this->flags & TOURNAMENT_FLAG_AWARD_RED))
+				if ($player->nom_flags & $best_red_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
 				}
-				if (($player->nom_flags & COMPETITION_BEST_BLACK) && ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK))
+				if ($player->nom_flags & $best_black_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
 				}
-				if (($player->nom_flags & COMPETITION_BEST_DON) && ($this->flags & TOURNAMENT_FLAG_AWARD_DON))
+				if ($player->nom_flags & $best_don_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
 				}
-				if (($player->nom_flags & COMPETITION_BEST_SHERIFF) && ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF))
+				if ($player->nom_flags & $best_sheriff_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
 				}
-				if (($player->nom_flags & COMPETITION_MVP) && ($this->flags & TOURNAMENT_FLAG_AWARD_MVP))
+				if ($player->nom_flags & $mvp_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
 				}
@@ -674,10 +665,16 @@ class Page extends TournamentPageBase
 		}
 		if ($this->flags & TOURNAMENT_FLAG_AWARD_RED)
 		{
-			echo '<td width="50" align="center">';
-			if ($_mvp_sorting != SORT_BY_RED)
+			$sort = SORT_BY_RED;
+			if ($this->flags & TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED)
 			{
-				echo '<a href="#" onclick="goTo({sort:' . SORT_BY_RED . ', page:undefined})"><img src="images/civ.png" style="opacity: 0.5;"></a>';
+				$sort = SORT_BY_CIV;
+			}
+			
+			echo '<td width="50" align="center">';
+			if ($_mvp_sorting != $sort)
+			{
+				echo '<a href="#" onclick="goTo({sort:' . $sort . ', page:undefined})"><img src="images/civ.png" style="opacity: 0.5;"></a>';
 			}
 			else
 			{
@@ -687,10 +684,16 @@ class Page extends TournamentPageBase
 		}
 		if ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK)
 		{
-			echo '<td width="50" align="center">';
-			if ($_mvp_sorting != SORT_BY_BLACK)
+			$sort = SORT_BY_BLACK;
+			if ($this->flags & TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK)
 			{
-				echo '<a href="#" onclick="goTo({sort:' . SORT_BY_BLACK . ', page:undefined})"><img src="images/maf.png" style="opacity: 0.5;"></a>';
+				$sort = SORT_BY_MAF;
+			}
+			
+			echo '<td width="50" align="center">';
+			if ($_mvp_sorting != $sort)
+			{
+				echo '<a href="#" onclick="goTo({sort:' . $sort . ', page:undefined})"><img src="images/maf.png" style="opacity: 0.5;"></a>';
 			}
 			else
 			{
@@ -725,6 +728,12 @@ class Page extends TournamentPageBase
 			echo '</td>';
 		}
 		echo '</tr>';
+
+		$mvp_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_MVP) ? COMPETITION_MVP : 0;
+		$best_red_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_RED) ? (($this->flags & TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED) ? COMPETITION_BEST_CIV : COMPETITION_BEST_RED) : 0;
+		$best_black_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK) ? (($this->flags & TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK) ? COMPETITION_BEST_MAF : COMPETITION_BEST_BLACK) : 0;
+		$best_sheriff_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF) ? COMPETITION_BEST_SHERIFF : 0;
+		$best_don_flag = ($this->flags & TOURNAMENT_FLAG_AWARD_DON) ? COMPETITION_BEST_DON : 0;
 		
 		$page_start = $_page * PAGE_SIZE;
 		if ($players_count > $page_start + PAGE_SIZE)
@@ -759,23 +768,23 @@ class Page extends TournamentPageBase
 			if (isset($player->nom_flags) && $player->nom_flags)
 			{
 				echo '<td align="right">';
-				if (($player->nom_flags & COMPETITION_BEST_RED) && ($this->flags & TOURNAMENT_FLAG_AWARD_RED))
+				if ($player->nom_flags & $best_red_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
 				}
-				if (($player->nom_flags & COMPETITION_BEST_BLACK) && ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK))
+				if ($player->nom_flags & $best_black_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
 				}
-				if (($player->nom_flags & COMPETITION_BEST_DON) && ($this->flags & TOURNAMENT_FLAG_AWARD_DON))
+				if ($player->nom_flags & $best_don_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
 				}
-				if (($player->nom_flags & COMPETITION_BEST_SHERIFF) && ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF))
+				if ($player->nom_flags & $best_sheriff_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
 				}
-				if (($player->nom_flags & COMPETITION_MVP) && ($this->flags & TOURNAMENT_FLAG_AWARD_MVP))
+				if ($player->nom_flags & $mvp_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
 				}
@@ -795,11 +804,25 @@ class Page extends TournamentPageBase
 			}
 			if ($this->flags & TOURNAMENT_FLAG_AWARD_RED)
 			{
-				echo '<td align="center"' . ($_mvp_sorting == SORT_BY_RED ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_CIVILIAN]->mvp_points + $player->roles[ROLE_SHERIFF]->mvp_points) . '</td>';
+				if ($this->flags & TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED)
+				{
+					echo '<td align="center"' . ($_mvp_sorting == SORT_BY_CIV ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_CIVILIAN]->mvp_points) . '</td>';
+				}
+				else
+				{
+					echo '<td align="center"' . ($_mvp_sorting == SORT_BY_RED ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_CIVILIAN]->mvp_points + $player->roles[ROLE_SHERIFF]->mvp_points) . '</td>';
+				}
 			}
 			if ($this->flags & TOURNAMENT_FLAG_AWARD_BLACK)
 			{
-				echo '<td align="center"' . ($_mvp_sorting == SORT_BY_BLACK ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_MAFIA]->mvp_points + $player->roles[ROLE_DON]->mvp_points) . '</td>';
+				if ($this->flags & TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK)
+				{
+					echo '<td align="center"' . ($_mvp_sorting == SORT_BY_MAF ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_MAFIA]->mvp_points) . '</td>';
+				}
+				else
+				{
+					echo '<td align="center"' . ($_mvp_sorting == SORT_BY_BLACK ? ' class="dark"' : '') . '>' . format_score($player->roles[ROLE_MAFIA]->mvp_points + $player->roles[ROLE_DON]->mvp_points) . '</td>';
+				}
 			}
 			if ($this->flags & TOURNAMENT_FLAG_AWARD_SHERIFF)
 			{
