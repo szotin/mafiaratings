@@ -167,6 +167,8 @@ try
 	echo '<td><input type="checkbox" id="form-award-black" checked> ' . get_label('best black player') . '</td></tr>';
 	echo '<tr><td><input type="checkbox" id="form-award-sheriff"> ' . get_label('best sheriff') . '</td>';
 	echo '<td><input type="checkbox" id="form-award-don"> ' . get_label('best don') . '</td></tr>';
+	echo '<tr><td><p><input type="checkbox" id="form-award-no-sheriff"> ' . get_label('exclude the sheriff games from the "best red" award') . '</p></td>';
+	echo '<td><p><input type="checkbox" id="form-award-no-don"> ' . get_label('exclude the don games from the "best black" award') . '</p></td></tr>';
 	echo '</table>';
 	echo '</td></tr>';
 	
@@ -485,6 +487,8 @@ try
 		if ($("#form-award-black").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_BLACK; ?>;
 		if ($("#form-award-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_SHERIFF; ?>;
 		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
+		if ($("#form-award-no-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED; ?>;
+		if ($("#form-award-no-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
 		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
