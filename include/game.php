@@ -3103,7 +3103,7 @@ class Game
 						}
 						$killed = ($killed > 0);
 						
-						$kill_all_red_voters_count = 0;
+						$kill_all_red_votes_count = 0;
 						$kill_all_votes_count = 0;
 						foreach ($action->kill_all as $src)
 						{
@@ -3114,7 +3114,7 @@ class Game
 							++$kill_all_votes_count;
 							if (!$this->is_maf($src))
 							{
-								++$kill_all_red_voters_count;
+								++$kill_all_red_votes_count;
 							}
 							foreach ($winners as $dst)
 							{

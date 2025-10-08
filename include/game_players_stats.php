@@ -358,7 +358,7 @@ class GamePlayersStats
 			$player->mr_points = 0;
 			for ($j = 0; $j < 10; ++$j)
 			{
-				$player->mr_points += $mr_points->points[$i][$j];
+				$player->mr_points += $mr_points->pos_points[$i][$j] + $mr_points->neg_points[$i][$j];
 			}
 			
 			$death_type = '';

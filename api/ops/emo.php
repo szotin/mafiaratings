@@ -306,6 +306,7 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('No games received from [0]', 'emotion.games'));
 			}
 			$end = $start + $duration;
+			$game_start = (int)$start;
 			
 			$existing_games = array();
 			if ($overwrite)
@@ -334,14 +335,15 @@ class ApiPage extends OpsApiPageBase
 			}
 			else
 			{
-				$query = new DbQuery('SELECT id, event_id, table_num, game_num FROM games WHERE tournament_id = ?', $tournament_id);
+				$query = new DbQuery('SELECT id, event_id, table_num, game_num, start_time FROM games WHERE tournament_id = ?', $tournament_id);
 				while ($row = $query->next())
 				{
-					list ($game_id, $event_id, $table_num, $game_num) = $row;
+					list ($game_id, $event_id, $table_num, $game_num, $g_start) = $row;
 					if (!is_null($table_num) && !is_null($game_num))
 					{
 						$existing_games[$event_id . '-' . $table_num . '-' . $game_num] = (int)$game_id;
 					}
+					$game_start = max($game_start, (int)$g_start);
 				}
 			}
 			
@@ -402,10 +404,8 @@ class ApiPage extends OpsApiPageBase
 			}
 			$lang = get_lang_code($lang);
 			
-			$game_start = $start;
 			$game_number = 1;
 			$game_stage = 1;
-			
 			$games = array();
 			foreach ($emo_games as $game_num => $game)
 			{
