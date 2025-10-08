@@ -3066,6 +3066,7 @@ class Game
 						$max_votes = max($max_votes, count($votes));
 					}
 
+					$action->points = array();
 					if (isset($action->kill_all))
 					{
 						$civ_winners = 0;
@@ -3127,11 +3128,11 @@ class Game
 						
 						foreach ($action->kill_all as $src)
 						{
-							if ($src < 0)
+							if ($src < 0 || $this->is_maf($src))
 							{
 								continue;
 							}
-							$src_maf = $this->is_maf($src);
+							
 							foreach ($winners as $dst)
 							{
 								if ($src == $dst)
@@ -3139,35 +3140,15 @@ class Game
 									continue;
 								}
 								
-								if ($src_maf)
+								$pts = ($redness[$dst-1] - $new_redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_red_votes_count;
+								if ($this->is_maf($dst))
 								{
-									if ($mafs > $maf_winners)
-									{
-										if ($this->is_maf($dst))
-										{
-											$action->points[] = array($src, $dst, 0); // Zero means disregard all previous on-record points.
-										}
-										else
-										{
-											$dst_player = $this->data->players[$dst-1];
-											if (isset($dst_player->death) && $dst_player->death->type != DEATH_TYPE_NIGHT)
-											{
-												$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_votes_count);
-											}
-											else
-											{
-												$action->points[] = array($src, $dst, POINTS_TO_BE_FOUND_LATER); // The result will be final dst points multiplied by src redness.
-											}
-										}
-									}
+									$action->points[] = array($src, $dst, $pts);
+									$action->points[] = array($dst, $src, -$pts);
 								}
-								else if ($this->is_maf($dst))
+								else if ($critical || $this->is_sheriff($dst))
 								{
-									$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_red_votes_count);
-								}
-								else if ($critical)
-								{
-									$action->points[] = array($src, $dst, ($new_redness[$dst-1] - $redness[$dst-1]) * ($killed ? DECIDING_VOTE_COEFF : 1) / $kill_all_red_votes_count);
+									$action->points[] = array($src, $dst, -$pts);
 								}
 							}
 						}
@@ -3207,37 +3188,20 @@ class Game
 
 							foreach ($votes as $src)
 							{
-								if ($src == $dst)
+								if ($src == $dst || $this->is_maf($src))
 								{
 									continue;
 								}
 								
-								if ($this->is_maf($src))
+								$pts = ($redness[$dst-1] - $new_redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $red_votes_count;
+								if ($this->is_maf($dst))
 								{
-									if ($this->is_maf($dst))
-									{
-										$action->points[] = array($src, $dst, 0); // Zero means disregard all previous on-record points.
-									}
-									else
-									{
-										$dst_player = $this->data->players[$dst-1];
-										if (isset($dst_player->death) && $dst_player->death->type != DEATH_TYPE_NIGHT)
-										{
-											$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $votes_count);
-										}
-										else
-										{
-											$action->points[] = array($src, $dst, POINTS_TO_BE_FOUND_LATER); // The result will be final dst points multiplied by src redness.
-										}
-									}
-								}
-								else if ($this->is_maf($dst))
-								{
-									$action->points[] = array($src, $dst, ($redness[$dst-1] - $new_redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $red_votes_count);
+									$action->points[] = array($src, $dst, $pts);
+									$action->points[] = array($dst, $src, -$pts);
 								}
 								else if ($civs <= $mafs + 2) // critical round
 								{
-									$action->points[] = array($src, $dst, ($new_redness[$dst-1] - $redness[$dst-1]) * ($dst == $winner ? DECIDING_VOTE_COEFF : 1) / $red_votes_count);
+									$action->points[] = array($src, $dst, -$pts);
 								}
 							}
 						}
@@ -3262,39 +3226,18 @@ class Game
 							$new_redness[$dst-1] *= (1 - $redness[$src-1] * DAMPING_COEFF);
 						}
 						
-						if ($this->is_maf($src))
+						if (!$this->is_maf($src))
 						{
-							$dst_player = $this->data->players[$dst-1];
+							$pts = $redness[$dst-1] - $new_redness[$dst-1];
 							if ($this->is_maf($dst))
 							{
-								if (!isset($dst_player->death))
-								{
-									$action->points[] = array($src, $dst, (1 - $redness[$dst-1]) * $redness[$src-1] * DAMPING_COEFF);
-								}
-								else if ($dst_player->death->type == DEATH_TYPE_DAY && $this->compare_gametimes($action, $this->get_player_death_time($dst)) < 0)
-								{
-									$action->points[] = array($src, $dst, ($redness[$dst-1] - 1) * $redness[$src-1] * DAMPING_COEFF);
-								}
+								$action->points[] = array($src, $dst, $pts);
+								$action->points[] = array($dst, $src, -$pts);
 							}
 							else
 							{
-								if (isset($dst_player->death) && $dst_player->death->type != DEATH_TYPE_NIGHT && $dst_player->death->round > 0 && $this->compare_gametimes($action, $this->get_player_death_time($dst)) < 0)
-								{
-									$action->points[] = array($src, $dst, abs($new_redness[$dst-1]-$redness[$dst-1]));
-								}
-								else
-								{
-									$action->points[] = array($src, $dst, POINTS_TO_BE_FOUND_LATER); // The result will be final dst points multiplied by src redness.
-								}
+								$action->points[] = array($src, $dst, -$pts);
 							}
-						}
-						else if ($this->is_maf($dst))
-						{
-							$action->points[] = array($src, $dst, $redness[$dst-1] - $new_redness[$dst-1]);
-						}
-						else
-						{
-							$action->points[] = array($src, $dst, $new_redness[$dst-1] - $redness[$dst-1]);
 						}
 					}
 					break;
@@ -3331,10 +3274,12 @@ class Game
 		}
 		
 		// calculate points
-		$points = array(array(0,0,0,0,0,0,0,0,0,0));
+		$pos_points = array(array(0,0,0,0,0,0,0,0,0,0));
+		$neg_points = array(array(0,0,0,0,0,0,0,0,0,0));
 		for ($i = 1; $i < 10; ++$i)
 		{
-			$points[] = $points[0];
+			$pos_points[] = $pos_points[0];
+			$neg_points[] = $neg_points[0];
 		}
 		
 		// calculate for civs
@@ -3347,63 +3292,15 @@ class Game
 			foreach ($action->points as $ap)
 			{
 				$src = $ap[0];
-				if ($this->is_maf($src))
-				{
-					continue;
-				}
-				
 				$dst = $ap[1];
 				$p = $ap[2];
 				if ($p < 0)
 				{
-					$points[$src-1][$dst-1] = min($points[$src-1][$dst-1], $p);
+					$neg_points[$src-1][$dst-1] = min($neg_points[$src-1][$dst-1], $p);
 				}
 				else
 				{
-					$points[$src-1][$dst-1] = max($points[$src-1][$dst-1], $p);
-				}
-			}
-		}
-		
-		// calculate for mafs
-		foreach ($actions as $action)
-		{
-			if (!isset($action->points))
-			{
-				continue;
-			}
-			foreach ($action->points as &$ap)
-			{
-				$src = $ap[0];
-				if (!$this->is_maf($src))
-				{
-					continue;
-				}
-				
-				$dst = $ap[1];
-				$p = $ap[2];
-				if ($p == POINTS_TO_BE_FOUND_LATER) // Convert the result to the final dst points multiplied by src redness.
-				{
-					$p = 0;
-					for ($i = 0; $i < 10; ++$i)
-					{
-						$p += $points[$dst-1][$i];
-					}
-					$p *= -$action->redness[$src-1];
-					$ap[2] = $p;
-				}
-				
-				if ($p == 0) // Zero means disregard all previous on-record points.
-				{
-					$points[$src-1][$dst-1] = 0;
-				}
-				else if ($p < 0)
-				{
-					$points[$src-1][$dst-1] = min($points[$src-1][$dst-1], $p);
-				}
-				else
-				{
-					$points[$src-1][$dst-1] = max($points[$src-1][$dst-1], $p);
+					$pos_points[$src-1][$dst-1] = max($pos_points[$src-1][$dst-1], $p);
 				}
 			}
 		}
@@ -3411,7 +3308,8 @@ class Game
 		//throw new Exc($points);
 		$result = new stdClass();
 		$result->actions = $actions;
-		$result->points = $points;
+		$result->pos_points = $pos_points;
+		$result->neg_points = $neg_points;
 		return $result;
 	}
 	

@@ -2081,12 +2081,13 @@ class Page extends PageBase
 					$class = ' class="dark"';
 				}
 				echo '<td align="center"'.$class.'>';
-				if ($p->points[$i][$j] != 0)
+				$pts = $p->pos_points[$i][$j] + $p->neg_points[$i][$j];
+				if ($pts != 0)
 				{
-					echo number_format($p->points[$i][$j], 2);
+					echo number_format($pts, 2);
 				}
 				echo '</td>';
-				$sum += $p->points[$i][$j];
+				$sum += $pts;
 			}
 			echo '<td align="center"><b><a href="javascript:goTo({view:'.VIEW_MR_POINTS_LOG.',player_num:'.($i+1).'})">' . number_format($sum, 2) . '</a></b></td></tr>';
 		}
@@ -2278,15 +2279,15 @@ class Page extends PageBase
 					$pts = $points[2];
 					if ($this->player_num == 0 || $this->player_num == $src || $this->player_num == $dst)
 					{
-						$is_active = ($pts == $p->points[$src-1][$dst-1]);
+						$active_points = $pts < 0 ? $p->neg_points[$src-1][$dst-1] : $p->pos_points[$src-1][$dst-1];
 						echo $delim;
-						if ($is_active)
+						if ($pts == $active_points)
 						{
 							echo '<b>' . get_label('[0] receives [1] points for giving color to [2].', $src, number_format($pts, 2), $dst) . '</b>';
 						}
 						else
 						{
-							echo get_label('[0] could receive [1] points for giving color to [2] but they already have [3] points for it.', $src, number_format($pts, 2), $dst, number_format($p->points[$src-1][$dst-1], 2));
+							echo get_label('[0] could receive [1] points for giving color to [2] but they already have [3] points for it.', $src, number_format($pts, 2), $dst, number_format($active_points, 2));
 						}
 						$delim = '<br>';
 					}
