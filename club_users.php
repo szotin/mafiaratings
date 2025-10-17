@@ -118,7 +118,7 @@ class Page extends ClubPageBase
 			if ($this->is_manager)
 			{
 				echo '<td class="dark">';
-				echo '<button class="icon" onclick="mr.removeClubMember(' . $id . ', ' . $this->id . ')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="removeMember(' . $id . ', \'' . $name . '\')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editClubAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.clubUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
 				if ($club_id == $this->id)
@@ -199,6 +199,16 @@ class Page extends ClubPageBase
 				goTo({ id: data.club_id, page: -data.user_id });
 			});
 		}
+		
+		function removeMember(userId, userName)
+		{
+			let msg = "<?php echo get_label('Are you sure you want to remove {name}?'); ?>";
+			dlg.yesNo(msg.replaceAll("{name}", userName), null, null, function()
+			{
+				json.post("api/ops/club.php", { op: "remove_user", club_id: <?php echo $this->id; ?>, user_id: userId }, function() { goTo({ page: undefined }); });
+			});
+		}
+		
 <?php
 	}
 }

@@ -113,7 +113,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			Db::exec(
 				get_label('user'), 
-				'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_REFEREE | USER_PERM_MANAGER) . ')',
+				'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ')',
 				$_profile->user_id, $club_id);
 			db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $_profile->user_id, $club_id);
 			if ($_profile->user_club_id == NULL)
@@ -413,12 +413,19 @@ class ApiPage extends OpsApiPageBase
 		$club_id = (int)get_required_param('club_id');
 		
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
+
+		$flags = (int)get_optional_param('access_flags', USER_PERM_PLAYER) & USER_PERM_MASK;
+		if ($flags == 0)
+		{
+			throw new Exc(get_label('Please choose at least one role for the user.'));
+		}
+		$flags += USER_CLUB_NEW_PLAYER_FLAGS;
 		
 		Db::begin();
 		list ($count) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if ($count == 0)
 		{
-			Db::exec(get_label('membership'), 'INSERT INTO club_users (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
+			Db::exec(get_label('membership'), 'INSERT INTO club_users (user_id, club_id, flags) values (?, ?, ?)', $user_id, $club_id, $flags);
 			db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
 			if ($user_id == $owner_id)
 			{

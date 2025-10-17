@@ -30,8 +30,8 @@ try
 	check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
 	
 	
-	list ($city_id, $city_name, $team_id, $team_name) = Db::record(get_label('registration'), 
-		'SELECT r.city_id, n.name, r.team_id, t.name'.
+	list ($city_id, $city_name, $team_id, $team_name, $flags) = Db::record(get_label('registration'), 
+		'SELECT r.city_id, n.name, r.team_id, t.name, r.flags'.
 		' FROM tournament_users r'.
 		' JOIN cities c ON c.id = r.city_id' .
 		' JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0'.
@@ -43,7 +43,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td>' . get_label('City') . ':</td><td>';
 	show_city_input('form-city', $city_name, -1, 'onCitySelect');
-	echo '</tr>';
+	echo '</td></tr>';
 	
 	if ($flags & TOURNAMENT_FLAG_TEAM)
 	{
@@ -71,6 +71,13 @@ try
 	{
 		echo '<input id="form-team" type="hidden" value="">';
 	}
+	
+	echo '<tr><td colspan="2">';
+	echo '<input type="checkbox" id="form-manager"' . (($flags & USER_PERM_MANAGER) ? ' checked' : '') . '> '.get_label('Manager');
+	echo '<br><input type="checkbox" id="form-referee"' . (($flags & USER_PERM_REFEREE) ? ' checked' : '') . '> '.get_label('Referee');
+	echo '<br><input type="checkbox" id="form-player"' . (($flags & USER_PERM_PLAYER) ? ' checked' : '') . '> '.get_label('Player');
+	echo '</td></tr>';
+	
 	echo '</table>';
 
 ?>
@@ -83,6 +90,11 @@ try
 	
 	function commit(onSuccess)
 	{
+		var flags = 0;
+		if ($("#form-manager").attr("checked")) flags |= <?php echo USER_PERM_MANAGER; ?>;
+		if ($("#form-referee").attr("checked")) flags |= <?php echo USER_PERM_REFEREE; ?>;
+		if ($("#form-player").attr("checked")) flags |= <?php echo USER_PERM_PLAYER; ?>;
+		
 		json.post("api/ops/tournament.php",
 		{
 			op: "edit_user"
@@ -90,6 +102,7 @@ try
 			, tournament_id: <?php echo $tournament_id; ?>
 			, city_id: cityId
 			, team: $('#form-team').val()
+			, access_flags: flags
 		}, onSuccess);
 	}
 	</script>

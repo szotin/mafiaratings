@@ -104,6 +104,13 @@ try
 			echo '</td></tr>';
 		}
 	}
+	
+	echo '<tr><td colspan="2">';
+	echo '<input type="checkbox" id="form-manager"> '.get_label('Manager');
+	echo '<br><input type="checkbox" id="form-referee"> '.get_label('Referee');
+	echo '<br><input type="checkbox" id="form-player" checked> '.get_label('Player');
+	echo '</td></tr>';
+	
 	echo '</table>';
 
 ?>
@@ -140,6 +147,11 @@ try
 	
 	function commit(onSuccess)
 	{
+		var flags = 0;
+		if ($("#form-manager").attr("checked")) flags |= <?php echo USER_PERM_MANAGER; ?>;
+		if ($("#form-referee").attr("checked")) flags |= <?php echo USER_PERM_REFEREE; ?>;
+		if ($("#form-player").attr("checked")) flags |= <?php echo USER_PERM_PLAYER; ?>;
+		
 		if (userId <= 0)
 		{
 			dlg.error("<?php echo get_label('Unknown [0]', get_label('player')); ?>");
@@ -155,6 +167,7 @@ try
 			op: "add_user"
 			, user_id: userId
 			, event_id: <?php echo $event_id; ?>
+			, access_flags: flags
 		}, onSuccess);
 <?php
 	}
@@ -170,6 +183,7 @@ try
 				, city_id: cityId
 				, tournament_id: <?php echo $tournament_id; ?>
 				, team: $('#form-team').val()
+				, access_flags: flags
 			}, onSuccess);
 <?php
 		}
@@ -182,6 +196,7 @@ try
 				, user_id: userId
 				, city_id: cityId
 				, tournament_id: <?php echo $tournament_id; ?>
+				, access_flags: flags
 			}, onSuccess);
 <?php
 		}
@@ -194,6 +209,7 @@ try
 			op: "add_user"
 			, user_id: userId
 			, club_id: <?php echo $club_id; ?>
+			, access_flags: flags
 		}, onSuccess);
 <?php
 	}

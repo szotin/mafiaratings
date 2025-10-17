@@ -1215,11 +1215,6 @@ var mr = new function()
 		dlg.form("form/user_access.php?user_id=" + userId + "&event_id=" + eventId, refr, 400);
 	}
 	
-	this.editTournamentAccess = function(userId, tournamentId)
-	{
-		dlg.form("form/user_access.php?user_id=" + userId + "&tournament_id=" + tournamentId, refr, 400);
-	}
-	
 	this.eventUserPhoto = function(userId, eventId)
 	{
 		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&event_id=" + eventId, 400);

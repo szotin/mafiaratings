@@ -58,7 +58,7 @@ try
 		{
 ?>	
 			<script>
-			function doCommit(onSuccess)
+			function commit(onSuccess)
 			{
 				json.post("api/ops/user.php",
 				{
@@ -78,7 +78,7 @@ try
 		{
 ?>	
 			<script>
-			function doCommit(onSuccess)
+			function commit(onSuccess)
 			{
 				json.post("api/ops/user.php",
 				{
@@ -98,7 +98,7 @@ try
 		{
 ?>	
 			<script>
-			function doCommit(onSuccess)
+			function commit(onSuccess)
 			{
 				json.post("api/ops/user.php",
 				{
@@ -120,7 +120,7 @@ try
 		echo '<input type="checkbox" id="form-admin" value="1"' . ((($user_flags & USER_PERM_ADMIN) != 0) ? ' checked' : '') . '> '.get_label('Admin');
 ?>	
 		<script>
-		function doCommit(onSuccess)
+		function commit(onSuccess)
 		{
 			json.post("api/ops/user.php",
 			{
@@ -133,24 +133,6 @@ try
 		</script>
 <?php
 	}
-?>	
-	<script>
-	function commit(onSuccess)
-	{
-		if ($("#form-player").length == 0 || $("#form-player").attr("checked"))
-		{
-			doCommit(onSuccess);
-		}
-		else
-		{
-			dlg.yesNo("<?php echo get_label('Are you sure you want to revoke player permission from [0]? They will not be able to play if you do it.', $user_name); ?>", null, null, function()
-			{
-				doCommit(onSuccess);
-			});
-		}
-	}
-	</script>
-<?php
 	echo '<ok>';
 }
 catch (Exception $e)

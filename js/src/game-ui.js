@@ -1252,7 +1252,9 @@ var timer = new function()
 			if (t <= 0)
 			{
 				document.getElementById('prompt-snd').pause();
-				document.getElementById('end-snd').play();
+				document.getElementById('end-snd').play().then(() => { console.log('end'); }).catch(error => {
+					console.error('End sound failed due to a user gesture restriction:', error);
+				});
 				if ((_settingsFlags & 8/*GAME_SETTINGS_NO_BLINKING*/) == 0)
 				{
 					_blinkCount = 12;
@@ -1266,7 +1268,9 @@ var timer = new function()
 			{
 				if (_get() > _prompt && t <= _prompt)
 				{
-					document.getElementById('prompt-snd').play();
+					document.getElementById('prompt-snd').play().then(() => { console.log('prompt'); }).catch(error => {
+						console.error('Prompt sound failed due to a user gesture restriction:', error);
+					});
 					if ((_settingsFlags & 8/*GAME_SETTINGS_NO_BLINKING*/) == 0)
 					{
 						_blinkCount = 2;
