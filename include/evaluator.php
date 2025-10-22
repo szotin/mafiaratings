@@ -471,6 +471,10 @@ class EvNode
 	{
 		return false;
 	}
+	
+	function add_functions(&$functions)
+	{
+	}
 }
 
 class EvValueNode extends EvNode
@@ -566,6 +570,14 @@ class EvUnaryOpNode extends EvNode
 	function has_function($name)
 	{
 		return isset($this->child) ? $this->child->has_function($name) : false;
+	}
+	
+	function add_functions(&$functions)
+	{
+		if (isset($this->child))
+		{
+			$this->child->add_functions($functions);
+		}
 	}
 }
 
@@ -739,6 +751,18 @@ class EvBinaryOpNode extends EvNode
 			return true;
 		}
 		return false;
+	}	
+	
+	function add_functions(&$functions)
+	{
+		if (isset($this->left))
+		{
+			$this->left->add_functions($functions);
+		}
+		if (isset($this->right))
+		{
+			$this->right->add_functions($functions);
+		}
 	}
 }
 
@@ -895,6 +919,22 @@ class EvTernaryOpNode extends EvNode
 			return true;
 		}
 		return false;
+	}
+	
+	function add_functions(&$functions)
+	{
+		if (isset($this->first))
+		{
+			$this->first->add_functions($functions);
+		}
+		if (isset($this->second))
+		{
+			$this->second->add_functions($functions);
+		}
+		if (isset($this->third))
+		{
+			$this->third->add_functions($functions);
+		}
 	}
 }
 
@@ -1107,6 +1147,26 @@ class EvFuncNode extends EvNode
 		}
 		return false;
 	}
+	
+	function add_functions(&$functions)
+	{
+		$name = strtolower($this->name);
+		if (array_key_exists($name, $functions))
+		{
+			++$functions[$name];
+		}
+		else
+		{
+			$functions[$name] = 1;
+		}
+		if (isset($this->args))
+		{
+			foreach ($this->args as $arg)
+			{
+				$arg->add_functions($functions);
+			}
+		}
+	}
 }
 
 class EvBracketNode extends EvNode
@@ -1305,6 +1365,20 @@ class Evaluator
 	public function has_function($name)
 	{
 		return $this->node->has_function($name);
+	}
+	
+	// Adds all used functions to the array in the form: function-name => use-count
+	public function add_functions(&$functions)
+	{
+		$this->node->add_functions($functions);
+	}
+	
+	// Returns array in the form: function-name => use-count
+	public function get_functions()
+	{
+		$functions = array();
+		$this->add_functions($functions);
+		return $functions;
 	}
 	
 	private function parse_next_lexem($expr, &$index, $prevNode)

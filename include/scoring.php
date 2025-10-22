@@ -97,6 +97,19 @@ define('SCORING_LOD_PER_ROLE', 64); // adds scores per role
 define('SCORING_OPTION_NO_NIGHT_KILLS', 1); // Do not use policies dependent on the night kills
 define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent on the game difficulty
 
+define('SCORING_FUNCTION_ROUND',      0x0001); //      1
+define('SCORING_FUNCTION_FLOOR',      0x0002); //      2
+define('SCORING_FUNCTION_CEIL',       0x0004); //      4
+define('SCORING_FUNCTION_LOG',        0x0008); //      8
+define('SCORING_FUNCTION_MIN',        0x0010); //     16
+define('SCORING_FUNCTION_MAX',        0x0020); //     32
+define('SCORING_FUNCTION_COUNTER',    0x0040); //     64
+define('SCORING_FUNCTION_BONUS',      0x0080); //    128
+define('SCORING_FUNCTION_ROLE',       0x0100); //    256
+define('SCORING_FUNCTION_DIFFICULTY', 0x0200); //    512
+define('SCORING_FUNCTION_MATTER',     0x0400); //   1024
+define('SCORING_FUNCTION_MR_POINTS',  0x0800); //   2048
+
 $_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_EXTRA, SCORING_GROUP_LEGACY, SCORING_GROUP_PENALTY, SCORING_GROUP_NIGHT1);
 
 class EvFuncMatter extends EvFunction
@@ -589,7 +602,7 @@ function init_player_score($player, $scoring, $lod_flags)
 }
 
 // returns true if game difficulty is used
-function create_evaluators($scoring)
+function create_scoring_evaluators($scoring)
 {
 	global $_scoring_groups;
 	$scoring->is_game_difficulty_used = false;
@@ -629,6 +642,34 @@ function create_evaluators($scoring)
 					$policy->mvpEvaluator = new Evaluator($policy->mvp, $functions);
 				}
 				$scoring->is_game_difficulty_used = $scoring->is_game_difficulty_used || $policy->mvpEvaluator->has_function('difficulty');
+			}
+		}
+	}
+}
+
+function remove_scoring_evaluators($scoring)
+{
+	global $_scoring_groups;
+	
+	$functions = get_scoring_functions();
+	foreach ($_scoring_groups as $group_name)
+	{
+		if (!isset($scoring->$group_name))
+		{
+			continue;
+		}
+		 
+		$group = &$scoring->$group_name;
+		for ($i = 0; $i < count($group); ++$i)
+		{
+			$policy = $group[$i];
+			if (isset($policy->evaluator))
+			{
+				unset($policy->evaluator);
+			}
+			if (isset($policy->mvpEvaluator))
+			{
+				unset($policy->mvpEvaluator);
 			}
 		}
 	}
@@ -1173,7 +1214,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 	}
 	
 	// Create evaluators
-	create_evaluators($scoring);
+	create_scoring_evaluators($scoring);
 	
 	// Calculate town win rate
 	$red_win_rate = 0;
@@ -1618,7 +1659,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 	}
 	
 	// Create evaluators
-	create_evaluators($scoring);
+	create_scoring_evaluators($scoring);
 	
     if ($tournament_flags & TOURNAMENT_FLAG_LONG_TERM)
     {
@@ -2342,5 +2383,81 @@ function get_scoring_policy_label($policy)
 	return get_label('points') . ' ' . get_scoring_matter_label($policy, true);
 }
 
+function get_scoring_function_flags($scoring)
+{
+	global $_scoring_groups;
+	
+	$functions = get_scoring_functions();
+	$function_list = array();
+	foreach ($_scoring_groups as $group_name)
+	{
+		if (!isset($scoring->$group_name))
+		{
+			continue;
+		}
+		 
+		$group = &$scoring->$group_name;
+		for ($i = 0; $i < count($group); ++$i)
+		{
+			$policy = $group[$i];
+			if (isset($policy->points) && is_string($policy->points))
+			{
+				$evaluator = new Evaluator($policy->points, $functions);
+				$evaluator->add_functions($function_list);
+			}
+			
+			if (isset($policy->mvp) && is_string($policy->mvp))
+			{
+				$evaluator = new Evaluator($policy->mvp, $functions);
+				$evaluator->add_functions($function_list);
+			}
+		}
+	}
+	
+	$flags = 0;
+	foreach ($function_list as $name => $count)
+	{
+		switch ($name)
+		{
+		case 'round':
+			$flags |= SCORING_FUNCTION_ROUND;
+			break;
+		case 'floor':
+			$flags |= SCORING_FUNCTION_FLOOR;
+			break;
+		case 'ceil':
+			$flags |= SCORING_FUNCTION_CEIL;
+			break;
+		case 'log':
+			$flags |= SCORING_FUNCTION_LOG;
+			break;
+		case 'min':
+			$flags |= SCORING_FUNCTION_MIN;
+			break;
+		case 'max':
+			$flags |= SCORING_FUNCTION_MAX;
+			break;
+		case 'counter':
+			$flags |= SCORING_FUNCTION_COUNTER;
+			break;
+		case 'bonus':
+			$flags |= SCORING_FUNCTION_BONUS;
+			break;
+		case 'role':
+			$flags |= SCORING_FUNCTION_ROLE;
+			break;
+		case 'difficulty':
+			$flags |= SCORING_FUNCTION_DIFFICULTY;
+			break;
+		case 'matter':
+			$flags |= SCORING_FUNCTION_MATTER;
+			break;
+		case 'mr_points':
+			$flags |= SCORING_FUNCTION_MR_POINTS;
+			break;
+		}
+	}
+	return $flags;
+}
 
 ?>

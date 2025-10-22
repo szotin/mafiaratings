@@ -58,14 +58,12 @@ class ApiPage extends OpsApiPageBase
 		$copy_id = (int)get_optional_param('copy_id', -1);
 		$name = trim(get_required_param('name'));
 		$gaining = get_optional_param('gaining', '{}');
-		if (!is_string($gaining))
+		if (is_string($gaining))
 		{
-			$gaining = json_encode($gaining);
+			$gaining = json_decode($gaining);
 		}
-		else
-		{
-			$gaining = check_json($gaining);
-		}
+		$function_flags = get_gaining_function_flags($gaining);
+		$gaining = json_encode($gaining);
 		
 		Db::begin();
 		$this->check_name($name, $league_id);
@@ -75,14 +73,14 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($copy_id > 0)
 		{
-			$query = new DbQuery('SELECT gaining FROM gaining_versions WHERE gaining_id = ? ORDER BY version DESC LIMIT 1', $copy_id);
+			$query = new DbQuery('SELECT gaining, functions FROM gaining_versions WHERE gaining_id = ? ORDER BY version DESC LIMIT 1', $copy_id);
 			if ($row = $query->next())
 			{
-				list ($gaining) = $row;
+				list ($gaining, $function_flags) = $row;
 			}
 		}
 		
-		Db::exec(get_label('gaining system'), 'INSERT INTO gaining_versions (gaining_id, version, gaining) VALUES (?, 1, ?)', $gaining_id, $gaining);
+		Db::exec(get_label('gaining system'), 'INSERT INTO gaining_versions (gaining_id, version, gaining, functions) VALUES (?, 1, ?, ?)', $gaining_id, $gaining, $function_flags);
 		Db::exec(get_label('gaining system'), 'UPDATE gainings SET version = 1 WHERE id = ?', $gaining_id);
 		
 		$log_details = new stdClass();
@@ -127,18 +125,16 @@ class ApiPage extends OpsApiPageBase
 		$name = trim(get_optional_param('name', $old_name));
 		$this->check_name($name, $league_id, $gaining_id);
 		
-		$gaining = get_optional_param('gaining', NULL);
-		if (!is_string($gaining))
+		list ($old_gaining, $version) = Db::record(get_label('gaining system'), 'SELECT v.gaining, s.version FROM gainings s JOIN gaining_versions v ON v.gaining_id = s.id AND v.version = s.version WHERE s.id = ?', $gaining_id);
+		$gaining = get_optional_param('gaining', $old_gaining);
+		if (is_string($gaining))
 		{
-			$gaining = json_encode($gaining);
+			$gaining = json_decode($gaining);
 		}
-		else
-		{
-			$gaining = check_json($gaining);
-		}
+		$function_flags = get_gaining_function_flags($gaining);
+		$gaining = json_encode($gaining);
 		
 		$overwrite = false;
-		list ($old_gaining, $version) = Db::record(get_label('gaining system'), 'SELECT v.gaining, s.version FROM gainings s JOIN gaining_versions v ON v.gaining_id = s.id AND v.version = s.version WHERE s.id = ?', $gaining_id);
 		if ($old_gaining != $gaining)
 		{
 			// count only complete series
@@ -162,30 +158,27 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, NULL, $league_id);
 		}
 		
-		if (!is_null($gaining))
+		if ($overwrite)
 		{
-			if ($overwrite)
+			Db::exec(get_label('gaining system'), 'UPDATE gaining_versions SET gaining = ?, functions = ? WHERE gaining_id = ? AND version = ?', $gaining, $function_flags, $gaining_id, $version);
+			if (Db::affected_rows() > 0)
 			{
-				Db::exec(get_label('gaining system'), 'UPDATE gaining_versions SET gaining = ? WHERE gaining_id = ? AND version = ?', $gaining, $gaining_id, $version);
-				if (Db::affected_rows() > 0)
-				{
-					$log_details = new stdClass();
-					$log_details->gaining = $gaining;
-					db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, NULL, $league_id);
-				}
+				$log_details = new stdClass();
+				$log_details->gaining = $gaining;
+				db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, NULL, $league_id);
 			}
-			else
+		}
+		else
+		{
+			++$version;
+			Db::exec(get_label('gaining system'), 'INSERT INTO gaining_versions (gaining_id, version, gaining, functions) VALUES (?, ?, ?, ?)', $gaining_id, $version, $gaining, $function_flags);
+			Db::exec(get_label('gaining system'), 'UPDATE gainings SET version = ? WHERE id = ?', $version, $gaining_id);
+			if (Db::affected_rows() > 0)
 			{
-				++$version;
-				Db::exec(get_label('gaining system'), 'INSERT INTO gaining_versions (gaining_id, version, gaining) VALUES (?, ?, ?)', $gaining_id, $version, $gaining);
-				Db::exec(get_label('gaining system'), 'UPDATE gainings SET version = ? WHERE id = ?', $version, $gaining_id);
-				if (Db::affected_rows() > 0)
-				{
-					$log_details = new stdClass();
-					$log_details->gaining = $gaining;
-					$log_details->version = $version;
-					db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, NULL, $league_id);
-				}
+				$log_details = new stdClass();
+				$log_details->gaining = $gaining;
+				$log_details->version = $version;
+				db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, NULL, $league_id);
 			}
 		}
 		Db::commit();

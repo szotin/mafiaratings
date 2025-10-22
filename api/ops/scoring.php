@@ -127,6 +127,7 @@ class ApiPage extends OpsApiPageBase
 			$scoring = json_decode($scoring);
 		}
 		check_scoring($scoring);
+		$function_flags = get_scoring_function_flags($scoring);
 		$scoring = json_encode($scoring);
 		
 		Db::begin();
@@ -137,14 +138,14 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($copy_id > 0)
 		{
-			$query = new DbQuery('SELECT scoring FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $copy_id);
+			$query = new DbQuery('SELECT scoring, functions FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $copy_id);
 			if ($row = $query->next())
 			{
-				list ($scoring) = $row;
+				list ($scoring, $function_flags) = $row;
 			}
 		}
-		
-		Db::exec(get_label('scoring system'), 'INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (?, 1, ?)', $scoring_id, $scoring);
+
+		Db::exec(get_label('scoring system'), 'INSERT INTO scoring_versions (scoring_id, version, scoring, functions) VALUES (?, 1, ?, ?)', $scoring_id, $scoring, $function_flags);
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = 1 WHERE id = ?', $scoring_id);
 		
 		$log_details = new stdClass();
@@ -174,6 +175,7 @@ class ApiPage extends OpsApiPageBase
 	function change_op()
 	{
 		$scoring_id = (int)get_required_param('scoring_id');
+		$function_flags = 0;
 		
 		Db::begin();
 		
@@ -206,6 +208,7 @@ class ApiPage extends OpsApiPageBase
 				$scoring = json_decode($scoring);
 			}
 			check_scoring($scoring);
+			$function_flags = get_scoring_function_flags($scoring);
 			$scoring = json_encode($scoring);
 		}
 		
@@ -236,11 +239,15 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_SCORING_SYSTEM, 'changed', $log_details, $scoring_id, $club_id, $league_id);
 		}
 		
-		if (!is_null($scoring))
+		if (is_null($scoring))
+		{
+			Db::exec(get_label('scoring system'), 'UPDATE scoring_versions SET functions = ? WHERE scoring_id = ? AND version = ?', $function_flags, $scoring_id, $version);
+		}
+		else
 		{
 			if ($overwrite)
 			{
-				Db::exec(get_label('scoring system'), 'UPDATE scoring_versions SET scoring = ? WHERE scoring_id = ? AND version = ?', $scoring, $scoring_id, $version);
+				Db::exec(get_label('scoring system'), 'UPDATE scoring_versions SET scoring = ?, functions = ? WHERE scoring_id = ? AND version = ?', $scoring, $function_flags, $scoring_id, $version);
 				if (Db::affected_rows() > 0)
 				{
 					$log_details = new stdClass();
@@ -256,7 +263,7 @@ class ApiPage extends OpsApiPageBase
 			else
 			{
 				++$version;
-				Db::exec(get_label('scoring system'), 'INSERT INTO scoring_versions (scoring_id, version, scoring) VALUES (?, ?, ?)', $scoring_id, $version, $scoring);
+				Db::exec(get_label('scoring system'), 'INSERT INTO scoring_versions (scoring_id, version, scoring, functions) VALUES (?, ?, ?, ?)', $scoring_id, $version, $scoring, $function_flags);
 				Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = ? WHERE id = ?', $version, $scoring_id);
 				if (Db::affected_rows() > 0)
 				{
