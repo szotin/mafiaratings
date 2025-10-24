@@ -125,8 +125,8 @@ class Page extends TournamentPageBase
 				' JOIN users u ON u.id = p.user_id' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = g.tournament_id AND tu.user_id = u.id' .
-				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
+				' LEFT OUTER JOIN tournament_regs tu ON tu.tournament_id = g.tournament_id AND tu.user_id = u.id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
 				' WHERE g.tournament_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0',
 			$this->id, $condition);
 		$query->add(' GROUP BY p.user_id');
@@ -198,7 +198,7 @@ class Page extends TournamentPageBase
 		}
 		echo '</a></td></tr>';
 		
-		$tournament_user_pic =
+		$tournament_reg_pic =
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic));
@@ -207,15 +207,15 @@ class Page extends TournamentPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags, $tournament_user_flags, $club_user_flags) = $row;
+			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags, $tournament_reg_flags, $club_reg_flags) = $row;
 
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
-			$tournament_user_pic->
-				set($id, $name, $tournament_user_flags, 't' . $this->id)->
-				set($id, $name, $club_user_flags, 'c' . $this->club_id)->
+			$tournament_reg_pic->
+				set($id, $name, $tournament_reg_flags, 't' . $this->id)->
+				set($id, $name, $club_reg_flags, 'c' . $this->club_id)->
 				set($id, $name, $flags);
-			$tournament_user_pic->show(ICONS_DIR, true, 50);
+			$tournament_reg_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td><a href="tournament_player.php?id=' . $this->id . '&user_id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
 			$this->club_pic->set($club_id, $club_name, $club_flags);

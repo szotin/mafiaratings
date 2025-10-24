@@ -75,7 +75,7 @@ class ApiPage extends GetApiPageBase
 		
 		if ($user_id > 0)
 		{
-			$condition->add(' AND c.id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $user_id);
+			$condition->add(' AND c.id IN (SELECT club_id FROM club_regs WHERE user_id = ?)', $user_id);
 		}
 		
 		if ($langs > 0)

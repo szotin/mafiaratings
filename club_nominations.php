@@ -169,7 +169,7 @@ class Page extends ClubPageBase
 				' JOIN users u ON u.id = p.user_id' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
 				' WHERE g.club_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0',
 			$this->id, $condition);
 		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $min_games);
@@ -241,18 +241,18 @@ class Page extends ClubPageBase
 		}
 		echo '</a></td></tr>';
 		
-		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+		$club_reg_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 		
 		$number = 0;
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
+			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags, $club_reg_flags) = $row;
 
 			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
-			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
-			$club_user_pic->show(ICONS_DIR, true, 50);
+			$club_reg_pic->set($id, $name, $club_reg_flags, 'c' . $this->id)->set($id, $name, $flags);
+			$club_reg_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($club_id))

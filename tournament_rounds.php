@@ -74,7 +74,7 @@ class Page extends TournamentPageBase
 				' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 				' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos' .
 				' FROM events e ' .
-				' LEFT OUTER JOIN event_users eu ON eu.event_id = e.id AND eu.user_id = ?' .
+				' LEFT OUTER JOIN event_regs eu ON eu.event_id = e.id AND eu.user_id = ?' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN scorings s ON s.id = e.scoring_id',

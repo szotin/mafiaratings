@@ -480,7 +480,7 @@ class PhotoAlbum
 			{
 				$condition->add(
 					' OR (a.viewers = ' . FOR_MEMBERS . 
-					' AND a.club_id IN (SELECT club_id FROM club_users WHERE user_id = ?))',
+					' AND a.club_id IN (SELECT club_id FROM club_regs WHERE user_id = ?))',
 					$_profile->user_id);
 			}
 			$condition->add(')');
@@ -501,7 +501,7 @@ class PhotoAlbum
 			$condition = new SQL('(p.viewers = ' . FOR_EVERYONE . ' OR p.user_id = ?', $_profile->user_id);
 			if (count($_profile->clubs) > 0)
 			{
-				$condition->add(' OR (p.viewers = ' . FOR_MEMBERS . ' AND a.club_id IN (SELECT club_id FROM club_users WHERE user_id = ?))', $_profile->user_id);
+				$condition->add(' OR (p.viewers = ' . FOR_MEMBERS . ' AND a.club_id IN (SELECT club_id FROM club_regs WHERE user_id = ?))', $_profile->user_id);
 			}
 			$condition->add(')');
 		}

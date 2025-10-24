@@ -57,9 +57,9 @@ try
 				' FROM users u' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN events e ON e.id = ?' .
-				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
+				' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id' .
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
 				' WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')', $_REQUEST['event_id']);
 		}
 		else if (isset($_REQUEST['tournament_id']))
@@ -69,8 +69,8 @@ try
 				' FROM users u' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN tournaments t ON t.id = ?' .
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = t.id' .
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = t.club_id' .
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = t.id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = t.club_id' .
 				' WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')', $_REQUEST['tournament_id']);
 		}
 		else if (isset($_REQUEST['club_id']))
@@ -79,7 +79,7 @@ try
 				'SELECT u.id, nu.name, u.flags, NULL, NULL, NULL, NULL, NULL, cu.club_id, cu.flags' . 
 				' FROM users u' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 				' WHERE u.id IN(' . $player_list . ') ORDER BY FIELD(u.id, ' . $player_list . ')', $_REQUEST['club_id']);
 			$link = 'club_competition.php?id=' . $_REQUEST['club_id'] . '&user_id=';
 		}
@@ -119,7 +119,7 @@ try
 		$player = $players[$i];
 		if ($player != NULL)
 		{
-			list($user_id, $user_name, $user_flags, $event_id, $event_user_nickname, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $player;
+			list($user_id, $user_name, $user_flags, $event_id, $event_reg_nickname, $event_reg_flags, $tournament_id, $tournament_reg_flags, $club_id, $club_reg_flags) = $player;
 			
 			if ($user_id != $main_player)
 			{
@@ -142,9 +142,9 @@ try
 			// I started doing it, but have no time at the moment. Check the $link variable.
 			// echo '<a href="' . $link . $user_id . '">';
 			$user_pic->
-				set($user_id, $event_user_nickname, $event_user_flags, 'e' . $event_id)->
-				set($user_id, $user_name, $tournament_user_flags, 't' . $tournament_id)->
-				set($user_id, $user_name, $club_user_flags, 'c' . $club_id)->
+				set($user_id, $event_reg_nickname, $event_reg_flags, 'e' . $event_id)->
+				set($user_id, $user_name, $tournament_reg_flags, 't' . $tournament_id)->
+				set($user_id, $user_name, $club_reg_flags, 'c' . $club_id)->
 				set($user_id, $user_name, $user_flags);
 			$user_pic->show(ICONS_DIR, false, 42);
 //			echo '</a></td>';

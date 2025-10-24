@@ -299,14 +299,14 @@ var mr = new function()
 
 	this.joinClub = function(id)
 	{
-		json.post("api/ops/club.php", { op: 'add_user', club_id: id }, refr);
+		json.post("api/ops/club.php", { op: 'add_member', club_id: id }, refr);
 	}
 
 	this.quitClub = function(id, confirmMessage)
 	{
 		function proceed()
 		{
-			json.post("api/ops/club.php", { op: 'remove_user', club_id: id }, refr);
+			json.post("api/ops/club.php", { op: 'remove_member', club_id: id }, refr);
 		}
 		
 		if (isString(confirmMessage))
@@ -323,12 +323,12 @@ var mr = new function()
 	{
 		if (!isSet(onSuccess))
 			onSuccess = refr;
-		dlg.form("form/add_user.php?club_id=" + id, onSuccess, 400);
+		dlg.form("form/registration_create.php?club_id=" + id, onSuccess, 400);
 	}
 
 	this.removeClubMember = function(userId, clubId)
 	{
-		json.post("api/ops/club.php", { op: "remove_user", club_id: clubId, user_id: userId }, refr);
+		json.post("api/ops/club.php", { op: "remove_member", club_id: clubId, user_id: userId }, refr);
 	}
 	
 	//--------------------------------------------------------------------------------------
@@ -544,16 +544,16 @@ var mr = new function()
 		}
 	}
 	
-	this.addEventUser = function(id, onSuccess)
+	this.addEventReg = function(id, onSuccess)
 	{
 		if (!isSet(onSuccess))
 			onSuccess = refr;
-		dlg.form("form/add_user.php?event_id=" + id, onSuccess, 400);
+		dlg.form("form/registration_create.php?event_id=" + id, onSuccess, 400);
 	}
 
-	this.removeEventUser = function(userId, eventId)
+	this.removeEventReg = function(userId, eventId)
 	{
-		json.post("api/ops/event.php", { op: "remove_user", event_id: eventId, user_id: userId }, refr);
+		json.post("api/ops/event.php", { op: "remove_registration", event_id: eventId, user_id: userId }, refr);
 	}
 	
 	this.eventCreateBroadcast = function(eventId)
@@ -646,21 +646,21 @@ var mr = new function()
 		}, 600);
 	}
 	
-	this.addTournamentUser = function(tournamentId)
+	this.addTournamentReg = function(tournamentId)
 	{
-		dlg.form("form/add_user.php?tournament_id=" + tournamentId, refr, 400);
+		dlg.form("form/registration_create.php?tournament_id=" + tournamentId, refr, 400);
 	}
 
-	this.editTournamentUser = function(tournamentId, userId)
+	this.editTournamentReg = function(tournamentId, userId)
 	{
-		dlg.form("form/edit_user.php?tournament_id=" + tournamentId + "&user_id=" + userId, refr, 400);
+		dlg.form("form/registration_edit.php?tournament_id=" + tournamentId + "&user_id=" + userId, refr, 400);
 	}
 
-	this.removeTournamentUser = function(tournamentId, userId, confirmMessage)
+	this.removeTournamentReg = function(tournamentId, userId, confirmMessage)
 	{
 		function _remove()
 		{
-			json.post("api/ops/tournament.php", { op: "remove_user", tournament_id: tournamentId, user_id: userId }, refr);
+			json.post("api/ops/tournament.php", { op: "remove_registration", tournament_id: tournamentId, user_id: userId }, refr);
 		}
 		
 		if (isString(confirmMessage))
@@ -673,23 +673,22 @@ var mr = new function()
 		}
 	}
 	
-	
-	this.acceptTournamentUser = function(tournamentId, userId)
+	this.acceptTournamentReg = function(tournamentId, userId)
 	{
-		json.post("api/ops/tournament.php", { op: "accept_user", tournament_id: tournamentId, user_id: userId }, refr);
+		json.post("api/ops/tournament.php", { op: "accept_registration", tournament_id: tournamentId, user_id: userId }, refr);
 	}
 	
 	this.attendTournament = function(tournamentId, isTeam)
 	{
 		if (isTeam)
-			dlg.form("form/add_user.php?self=1&tournament_id=" + tournamentId, refr, 400);
+			dlg.form("form/registration_create.php?self=1&tournament_id=" + tournamentId, refr, 400);
 		else
-			json.post("api/ops/tournament.php", { op: "add_user", tournament_id: tournamentId }, refr);
+			json.post("api/ops/tournament.php", { op: "add_registration", tournament_id: tournamentId }, refr);
 	}
 	
 	this.unattendTournament = function(tournamentId)
 	{
-		json.post("api/ops/tournament.php", { op: "remove_user", tournament_id: tournamentId }, refr);
+		json.post("api/ops/tournament.php", { op: "remove_registration", tournament_id: tournamentId }, refr);
 	}
 	
 	//--------------------------------------------------------------------------------------

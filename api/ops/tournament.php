@@ -682,7 +682,7 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('Unable to change tournament type because the tournament has already started.'));
 			}
 			
-			Db::exec(get_label('round'), 'DELETE FROM event_users WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+			Db::exec(get_label('round'), 'DELETE FROM event_regs WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
 			Db::exec(get_label('round'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
 			Db::exec(get_label('round'), 'DELETE FROM events WHERE tournament_id = ?', $tournament_id);
 			
@@ -950,7 +950,7 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		Db::exec(get_label('user'), 'DELETE FROM tournament_users WHERE tournament_id = ?', $tournament_id);
+		Db::exec(get_label('user'), 'DELETE FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details->users = Db::affected_rows();
@@ -1026,7 +1026,7 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 			
-		Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('user'), 'DELETE FROM event_regs WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
 		Db::exec(get_label('user'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
 		Db::exec(get_label('comment'), 'DELETE FROM event_comments WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
 		Db::exec(get_label('points'), 'DELETE FROM event_extra_points WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
@@ -1134,32 +1134,32 @@ class ApiPage extends OpsApiPageBase
 			{
 				$nickname = $user_name; 
 			}
-			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users eu JOIN events e ON eu.event_id = e.id WHERE eu.user_id = ? AND e.tournament_id = ?', $new_user_id, $tournament_id);
+			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_regs eu JOIN events e ON eu.event_id = e.id WHERE eu.user_id = ? AND e.tournament_id = ?', $new_user_id, $tournament_id);
 			if ($count > 0)
 			{
-				Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE user_id = ? AND event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $user_id, $tournament_id);
+				Db::exec(get_label('registration'), 'DELETE FROM event_regs WHERE user_id = ? AND event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $user_id, $tournament_id);
 			}
 			else
 			{
-				Db::exec(get_label('registration'), 'UPDATE event_users eu JOIN events e ON eu.event_id = e.id SET eu.user_id = ?, eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $new_user_id, $nickname, $user_id, $tournament_id);
+				Db::exec(get_label('registration'), 'UPDATE event_regs eu JOIN events e ON eu.event_id = e.id SET eu.user_id = ?, eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $new_user_id, $nickname, $user_id, $tournament_id);
 			}
 			$changed = $changed || Db::affected_rows() > 0;
 			
-			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $new_user_id, $tournament_id);
+			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $new_user_id, $tournament_id);
 			if ($count > 0)
 			{
-				Db::exec(get_label('registration'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+				Db::exec(get_label('registration'), 'DELETE FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 			}
 			else
 			{
-				Db::exec(get_label('registration'), 'UPDATE tournament_users SET user_id = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $new_user_id, $user_city_id, $user_rating, $user_id, $tournament_id);
+				Db::exec(get_label('registration'), 'UPDATE tournament_regs SET user_id = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $new_user_id, $user_city_id, $user_rating, $user_id, $tournament_id);
 			}
 			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		else if ($nickname != NULL)
 		{
-			Db::exec(get_label('registration'), 'UPDATE event_users eu JOIN events e ON eu.event_id = e.id SET eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $nickname, $user_id, $tournament_id);
+			Db::exec(get_label('registration'), 'UPDATE event_regs eu JOIN events e ON eu.event_id = e.id SET eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $nickname, $user_id, $tournament_id);
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
@@ -1492,9 +1492,9 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
-	// add_user
+	// add_registration
 	//-------------------------------------------------------------------------------------------------------
-	function add_user_op()
+	function add_registration_op()
 	{
 		global $_profile;
 		
@@ -1540,7 +1540,7 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		$query = new DbQuery('SELECT t.id, t.name, u.flags, u.city_id, u.rating FROM tournament_users u LEFT OUTER JOIN tournament_teams t ON u.team_id = t.id WHERE u.user_id = ? AND u.tournament_id = ?', $user_id, $tournament_id);
+		$query = new DbQuery('SELECT t.id, t.name, u.flags, u.city_id, u.rating FROM tournament_regs u LEFT OUTER JOIN tournament_teams t ON u.team_id = t.id WHERE u.user_id = ? AND u.tournament_id = ?', $user_id, $tournament_id);
 		if ($row = $query->next())
 		{
 			list($old_team_id, $old_team, $old_flags, $old_city_id, $old_rating) = $row;
@@ -1548,7 +1548,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				if ($team == NULL || empty($team))
 				{
-					Db::exec(get_label('registration'), 'UPDATE tournament_users SET team_id = NULL, flags = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $flags, $city_id, $user_rating, $user_id, $tournament_id);
+					Db::exec(get_label('registration'), 'UPDATE tournament_regs SET team_id = NULL, flags = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $flags, $city_id, $user_rating, $user_id, $tournament_id);
 				}
 				else
 				{
@@ -1562,10 +1562,10 @@ class ApiPage extends OpsApiPageBase
 						Db::exec(get_label('team'), 'INSERT INTO tournament_teams (tournament_id, name) VALUES (?, ?)', $tournament_id, $team);
 						list ($team_id) = Db::record(get_label('team'), 'SELECT LAST_INSERT_ID()');
 					}
-					Db::exec(get_label('registration'), 'UPDATE tournament_users SET team_id = ?, flags = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $team_id, $flags, $city_id, $user_rating, $user_id, $tournament_id);
+					Db::exec(get_label('registration'), 'UPDATE tournament_regs SET team_id = ?, flags = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $team_id, $flags, $city_id, $user_rating, $user_id, $tournament_id);
 				}
 				
-				list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_users WHERE team_id = ? AND tournament_id = ?', $old_team_id, $tournament_id);
+				list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_regs WHERE team_id = ? AND tournament_id = ?', $old_team_id, $tournament_id);
 				if ($count <= 0)
 				{
 					Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE id = ?', $old_team_id);
@@ -1573,7 +1573,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			else if ($flags != $old_flags || $city_id != $old_city_id || $old_rating != $user_rating)
 			{
-				Db::exec(get_label('registration'), 'UPDATE tournament_users SET flags = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $flags, $city_id, $user_rating, $user_id, $tournament_id);
+				Db::exec(get_label('registration'), 'UPDATE tournament_regs SET flags = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $flags, $city_id, $user_rating, $user_id, $tournament_id);
 			}
 		}
 		else if ($tournament_flags & TOURNAMENT_FLAG_TEAM)
@@ -1592,7 +1592,7 @@ class ApiPage extends OpsApiPageBase
 					list ($team_id) = Db::record(get_label('team'), 'SELECT LAST_INSERT_ID()');
 				}
 			}
-			Db::exec(get_label('registration'), 'INSERT INTO tournament_users (user_id, tournament_id, flags, team_id, city_id, rating) values (?, ?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $team_id, $city_id, $user_rating);
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, team_id, city_id, rating) values (?, ?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $team_id, $city_id, $user_rating);
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
 			if ($team_id != NULL)
@@ -1603,7 +1603,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			Db::exec(get_label('registration'), 'INSERT INTO tournament_users (user_id, tournament_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $city_id, $user_rating);
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $city_id, $user_rating);
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
 			db_log(LOG_OBJECT_USER, 'joined tournament', $log_details, $user_id, $club_id);
@@ -1621,7 +1621,7 @@ class ApiPage extends OpsApiPageBase
 		}
 	}
 	
-	function add_user_op_help()
+	function add_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Register user to the tournament.');
 		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
@@ -1633,9 +1633,9 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// edit_user
+	// edit_registration
 	//-------------------------------------------------------------------------------------------------------
-	function edit_user_op()
+	function edit_registration_op()
 	{
 		global $_profile, $_lang;
 		
@@ -1654,7 +1654,7 @@ class ApiPage extends OpsApiPageBase
 		
 		list ($old_team_id, $old_team, $old_city_id, $old_city_name, $user_club_id, $old_flags) = Db::record(get_label('user'), 
 			'SELECT tu.team_id, t.name, tu.city_id, n.name, u.club_id, tu.flags'.
-			' FROM tournament_users tu'.
+			' FROM tournament_regs tu'.
 			' JOIN users u ON u.id = tu.user_id'.
 			' LEFT OUTER JOIN tournament_teams t ON t.id = tu.team_id AND t.tournament_id = tu.tournament_id'.
 			' JOIN cities c ON c.id = tu.city_id'.
@@ -1675,7 +1675,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				Db::exec(get_label('city'), 'UPDATE users SET city_id = ? WHERE id = ?', $city_id, $user_id);
 			}
-			Db::exec(get_label('registration'), 'UPDATE tournament_users SET city_id = ?, flags = ? WHERE user_id = ? AND tournament_id = ?', $city_id, $flags, $user_id, $tournament_id);
+			Db::exec(get_label('registration'), 'UPDATE tournament_regs SET city_id = ?, flags = ? WHERE user_id = ? AND tournament_id = ?', $city_id, $flags, $user_id, $tournament_id);
 			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
 		}
 		
@@ -1683,7 +1683,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($team == NULL || empty($team))
 			{
-				Db::exec(get_label('registration'), 'UPDATE tournament_users SET team_id = NULL WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+				Db::exec(get_label('registration'), 'UPDATE tournament_regs SET team_id = NULL WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 			}
 			else
 			{
@@ -1697,10 +1697,10 @@ class ApiPage extends OpsApiPageBase
 					Db::exec(get_label('team'), 'INSERT INTO tournament_teams (tournament_id, name) VALUES (?, ?)', $tournament_id, $team);
 					list ($team_id) = Db::record(get_label('team'), 'SELECT LAST_INSERT_ID()');
 				}
-				Db::exec(get_label('registration'), 'UPDATE tournament_users SET team_id = ? WHERE user_id = ? AND tournament_id = ?', $team_id, $user_id, $tournament_id);
+				Db::exec(get_label('registration'), 'UPDATE tournament_regs SET team_id = ? WHERE user_id = ? AND tournament_id = ?', $team_id, $user_id, $tournament_id);
 			}
 			
-			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_users WHERE team_id = ? AND tournament_id = ?', $old_team_id, $tournament_id);
+			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_regs WHERE team_id = ? AND tournament_id = ?', $old_team_id, $tournament_id);
 			if ($count <= 0)
 			{
 				Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE id = ?', $old_team_id);
@@ -1709,7 +1709,7 @@ class ApiPage extends OpsApiPageBase
 		Db::commit();
 	}
 	
-	function edit_user_op_help()
+	function edit_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Edit user registration.');
 		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
@@ -1721,9 +1721,9 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// remove_user
+	// remove_registration
 	//-------------------------------------------------------------------------------------------------------
-	function remove_user_op()
+	function remove_registration_op()
 	{
 		global $_profile;
 		
@@ -1740,8 +1740,8 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
 		
-		list($team_id) = Db::record(get_label('registration'), 'SELECT team_id FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
-		Db::exec(get_label('registration'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		list($team_id) = Db::record(get_label('registration'), 'SELECT team_id FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		Db::exec(get_label('registration'), 'DELETE FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -1752,7 +1752,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		if (!is_null($team_id))
 		{
-			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_users WHERE team_id = ? AND tournament_id = ?', $team_id, $tournament_id);
+			list($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM tournament_regs WHERE team_id = ? AND tournament_id = ?', $team_id, $tournament_id);
 			if ($count <= 0)
 			{
 				Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE id = ?', $team_id);
@@ -1764,7 +1764,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['user_id'] = $user_id;
 	}
 	
-	function remove_user_op_help()
+	function remove_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Remove user from the registrations to the tournament.');
 		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');
@@ -1775,9 +1775,9 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// accept_user
+	// accept_registration
 	//-------------------------------------------------------------------------------------------------------
-	function accept_user_op()
+	function accept_registration_op()
 	{
 		global $_profile, $_lang;
 		
@@ -1794,7 +1794,7 @@ class ApiPage extends OpsApiPageBase
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' WHERE u.id = ?', $user_id);
 		
-		Db::exec(get_label('registration'), 'UPDATE tournament_users SET flags = flags & '.~USER_TOURNAMENT_FLAG_NOT_ACCEPTED.' WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET flags = flags & '.~USER_TOURNAMENT_FLAG_NOT_ACCEPTED.' WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -1818,7 +1818,7 @@ class ApiPage extends OpsApiPageBase
 				'user_name' => new Tag($user_name),
 				'tournament_id' => new Tag($tournament_id),
 				'tournament_name' => new Tag($tournament_name));
-			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/tournament_user_accept.php';
+			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/tournament_reg_accept.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);
 			send_email($user_email, $body, $text_body, $subj, user_unsubscribe_url($user_id), $user_lang);
@@ -1828,7 +1828,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['user_id'] = $user_id;
 	}
 	
-	function accept_user_op_help()
+	function accept_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Accept user application for the tournament participation.');
 		$help->request_param('user_id', 'User id. If the user is accepted already success is returned anyway.', 'the one who is making request is used.');

@@ -83,18 +83,18 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(get_label('game'), 'UPDATE games SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('email'), 'UPDATE emails SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
-		Db::exec(get_label('club'), 'DELETE FROM club_users WHERE user_id = ? AND club_id IN (SELECT club_id FROM (SELECT club_id FROM club_users WHERE user_id = ?) x)', $src_id, $dst_id);
-		Db::exec(get_label('club'), 'UPDATE club_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
-		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM event_users WHERE user_id = ?) x)', $src_id, $dst_id);
-		Db::exec(get_label('event'), 'UPDATE event_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('club'), 'DELETE FROM club_regs WHERE user_id = ? AND club_id IN (SELECT club_id FROM (SELECT club_id FROM club_regs WHERE user_id = ?) x)', $src_id, $dst_id);
+		Db::exec(get_label('club'), 'UPDATE club_regs SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('event'), 'DELETE FROM event_regs WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM event_regs WHERE user_id = ?) x)', $src_id, $dst_id);
+		Db::exec(get_label('event'), 'UPDATE event_regs SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('event'), 'DELETE FROM event_places WHERE user_id = ? AND event_id IN (SELECT event_id FROM (SELECT event_id FROM event_places WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('event'), 'UPDATE event_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('log'), 'UPDATE log SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE user_id = ? AND tournament_id IN (SELECT tournament_id FROM (SELECT tournament_id FROM tournament_places WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('tournament'), 'UPDATE tournament_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
-		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~'.TOURNAMENT_FLAG_FINISHED.' WHERE id IN (SELECT tournament_id FROM tournament_users WHERE user_id=?)', $src_id); // tournaments need to be rebuild to make sure rating in the registration is up to date
-		Db::exec(get_label('tournament'), 'DELETE FROM tournament_users WHERE user_id = ? AND tournament_id IN (SELECT tournament_id FROM (SELECT tournament_id FROM tournament_users WHERE user_id = ?) x)', $src_id, $dst_id);
-		Db::exec(get_label('tournament'), 'UPDATE tournament_users SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~'.TOURNAMENT_FLAG_FINISHED.' WHERE id IN (SELECT tournament_id FROM tournament_regs WHERE user_id=?)', $src_id); // tournaments need to be rebuild to make sure rating in the registration is up to date
+		Db::exec(get_label('tournament'), 'DELETE FROM tournament_regs WHERE user_id = ? AND tournament_id IN (SELECT tournament_id FROM (SELECT tournament_id FROM tournament_regs WHERE user_id = ?) x)', $src_id, $dst_id);
+		Db::exec(get_label('tournament'), 'UPDATE tournament_regs SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('series'), 'DELETE FROM series_places WHERE user_id = ? AND series_id IN (SELECT series_id FROM (SELECT series_id FROM series_places WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('series'), 'UPDATE series_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('league'), 'UPDATE league_requests SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
@@ -205,8 +205,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::exec(get_label('email'), 'DELETE FROM emails WHERE user_id = ?', $user_id);
-		Db::exec(get_label('club'), 'DELETE FROM club_users WHERE user_id = ?', $user_id);
-		Db::exec(get_label('event'), 'DELETE FROM event_users WHERE user_id = ?', $user_id);
+		Db::exec(get_label('club'), 'DELETE FROM club_regs WHERE user_id = ?', $user_id);
+		Db::exec(get_label('event'), 'DELETE FROM event_regs WHERE user_id = ?', $user_id);
 		Db::exec(get_label('log'), 'DELETE FROM log WHERE user_id = ?', $user_id);
 		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE objection_id IN (SELECT id FROM (SELECT id FROM objections WHERE user_id = ?) x)', $user_id);
 		Db::exec(get_label('objection'), 'DELETE FROM objections WHERE user_id = ?', $user_id);
@@ -282,11 +282,11 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		if ($event_id > 0)
 		{
-			list($club_id, $tour_id, $flags) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, eu.flags FROM event_users eu JOIN events e ON e.id = eu.event_id WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
+			list($club_id, $tour_id, $flags) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, eu.flags FROM event_regs eu JOIN events e ON e.id = eu.event_id WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
 			$flags = access_flags($flags);
 			
-			Db::exec(get_label('user'), 'UPDATE event_users SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
+			Db::exec(get_label('user'), 'UPDATE event_regs SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = new stdClass();
@@ -299,14 +299,14 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($club_id, $flags, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 
 				'SELECT t.club_id, tu.flags, a.lat, a.lon, t.flags'.
-				' FROM tournament_users tu'.
+				' FROM tournament_regs tu'.
 				' JOIN tournaments t ON t.id = tu.tournament_id'.
 				' JOIN addresses a ON a.id = t.address_id'.
 				' WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 			$flags = access_flags($flags);
 			
-			Db::exec(get_label('user'), 'UPDATE tournament_users SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
+			Db::exec(get_label('user'), 'UPDATE tournament_regs SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = new stdClass();
@@ -320,10 +320,10 @@ class ApiPage extends OpsApiPageBase
 		else if ($club_id > 0)
 		{
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-			list($flags) = Db::record(get_label('club'), 'SELECT cu.flags FROM club_users cu JOIN clubs c ON c.id = cu.club_id WHERE cu.club_id = ? AND cu.user_id = ?', $club_id, $user_id);
+			list($flags) = Db::record(get_label('club'), 'SELECT cu.flags FROM club_regs cu JOIN clubs c ON c.id = cu.club_id WHERE cu.club_id = ? AND cu.user_id = ?', $club_id, $user_id);
 			$flags = access_flags($flags);
 			
-			Db::exec(get_label('user'), 'UPDATE club_users SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
+			Db::exec(get_label('user'), 'UPDATE club_regs SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = new stdClass();
@@ -387,7 +387,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		Db::exec(get_label('user'), 'UPDATE club_users SET flags = flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ' WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		Db::exec(get_label('user'), 'UPDATE club_regs SET flags = flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ' WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -420,7 +420,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		Db::exec(get_label('user'), 'UPDATE club_users SET flags = flags & ~' . USER_CLUB_FLAG_SUBSCRIBED . ' WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		Db::exec(get_label('user'), 'UPDATE club_regs SET flags = flags & ~' . USER_CLUB_FLAG_SUBSCRIBED . ' WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -750,10 +750,10 @@ class ApiPage extends OpsApiPageBase
 			$name_id, $flags, $city_id, $langs, $phone, $club_id, $mwt_id, $email, $user_id);
 		if (Db::affected_rows() > 0)
 		{
-			list($is_member) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+			list($is_member) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_regs WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 			if ($is_member <= 0 && !is_null($club_id))
 			{
-				Db::exec(get_label('membership'), 'INSERT INTO club_users (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
+				Db::exec(get_label('membership'), 'INSERT INTO club_regs (user_id, club_id, flags) values (?, ?, ' . USER_CLUB_NEW_PLAYER_FLAGS . ')', $user_id, $club_id);
 				db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
 				$update_clubs = true;
 			}
@@ -855,7 +855,7 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($event_id > 0)
 		{
-			$query = new DbQuery('SELECT e.club_id, e.tournament_id, eu.flags FROM event_users eu JOIN events e ON e.id = eu.event_id WHERE eu.user_id = ? AND eu.event_id = ?', $user_id, $event_id);
+			$query = new DbQuery('SELECT e.club_id, e.tournament_id, eu.flags FROM event_regs eu JOIN events e ON e.id = eu.event_id WHERE eu.user_id = ? AND eu.event_id = ?', $user_id, $event_id);
 			if ($row = $query->next())
 			{
 				list($club_id, $tour_id, $flags) = $row;
@@ -889,7 +889,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			Db::begin();
-			Db::exec(get_label('user'), 'UPDATE event_users SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
+			Db::exec(get_label('user'), 'UPDATE event_regs SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = new stdClass();
@@ -900,7 +900,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else if ($tournament_id > 0)
 		{
-			$query = new DbQuery('SELECT e.club_id, eu.flags FROM tournament_users eu JOIN tournaments e ON e.id = eu.tournament_id WHERE eu.user_id = ? AND eu.tournament_id = ?', $user_id, $tournament_id);
+			$query = new DbQuery('SELECT e.club_id, eu.flags FROM tournament_regs eu JOIN tournaments e ON e.id = eu.tournament_id WHERE eu.user_id = ? AND eu.tournament_id = ?', $user_id, $tournament_id);
 			if ($row = $query->next())
 			{
 				list($club_id, $flags) = $row;
@@ -934,7 +934,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			Db::begin();
-			Db::exec(get_label('user'), 'UPDATE tournament_users SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
+			Db::exec(get_label('user'), 'UPDATE tournament_regs SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = new stdClass();
@@ -946,7 +946,7 @@ class ApiPage extends OpsApiPageBase
 		else if ($club_id > 0)
 		{
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-			$query = new DbQuery('SELECT flags FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+			$query = new DbQuery('SELECT flags FROM club_regs WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
@@ -979,7 +979,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			Db::begin();
-			Db::exec(get_label('user'), 'UPDATE club_users SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
+			Db::exec(get_label('user'), 'UPDATE club_regs SET flags = ? WHERE user_id = ? AND club_id = ?', $flags, $user_id, $club_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = new stdClass();

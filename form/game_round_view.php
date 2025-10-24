@@ -180,9 +180,9 @@ try
 				' FROM users u' .
 				' JOIN events e ON e.id = ?'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
+				' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
 				' WHERE u.id IN (' . $plist . ')', $event_id);
 		while ($row = $query->next())
 		{

@@ -53,7 +53,7 @@ function check_password($password, $confirm)
 function nick_name_chooser($user_id, $user_name, $nickname = NULL)
 {
 	$nicks = array();
-	$query = new DbQuery('SELECT nickname FROM event_users WHERE user_id = ? GROUP BY nickname ORDER BY COUNT(*) DESC', $user_id);
+	$query = new DbQuery('SELECT nickname FROM event_regs WHERE user_id = ? GROUP BY nickname ORDER BY COUNT(*) DESC', $user_id);
 	$nicks[] = $user_name;
 	$nick = $user_name;
 	if ($row = $query->next())
@@ -122,7 +122,7 @@ function check_nickname($nick, $event_id)
 	$count = 0;
 	if ($event_id > 0)
 	{
-		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE event_id = ? AND nickname = ?', $event_id, $nick);
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_regs WHERE event_id = ? AND nickname = ?', $event_id, $nick);
 	}
 	
 	if ($count > 0)

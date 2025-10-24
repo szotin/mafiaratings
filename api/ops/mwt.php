@@ -540,8 +540,8 @@ class ApiPage extends OpsApiPageBase
 						Db::exec(get_label('user'), 'UPDATE users SET mwt_name = ? WHERE id = ?', $player->nickname, $player_id);
 					}
 					
-					Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $round_id, $player_id, $user_name);
-					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, '.USER_TOURNAMENT_NEW_PLAYER_FLAGS.', ?, ?)', $tournament_id, $player_id, $player_city_id, $player_rating);
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_regs (event_id, user_id, nickname) VALUES (?, ?, ?)', $round_id, $player_id, $user_name);
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_regs (tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, '.USER_TOURNAMENT_NEW_PLAYER_FLAGS.', ?, ?)', $tournament_id, $player_id, $player_city_id, $player_rating);
 				}
 				$players[] = $player_id;
 			}
@@ -675,12 +675,12 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($event->misc), $event->id);
-			Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE event_id = ? AND user_id IN (SELECT id FROM users WHERE mwt_id = ?)', $event->id, $mwt_id);
-			Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $event->id, $user_id, $user_name);
+			Db::exec(get_label('registration'), 'DELETE FROM event_regs WHERE event_id = ? AND user_id IN (SELECT id FROM users WHERE mwt_id = ?)', $event->id, $mwt_id);
+			Db::exec(get_label('registration'), 'INSERT IGNORE INTO event_regs (event_id, user_id, nickname) VALUES (?, ?, ?)', $event->id, $user_id, $user_name);
 		}
 
-		Db::exec(get_label('registration'), 'DELETE FROM tournament_users WHERE tournament_id = ? AND user_id IN (SELECT id FROM users WHERE mwt_id = ?)', $tournament_id, $mwt_id);
-		Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)', $tournament_id, $user_id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $user_city_id, $user_rating);
+		Db::exec(get_label('registration'), 'DELETE FROM tournament_regs WHERE tournament_id = ? AND user_id IN (SELECT id FROM users WHERE mwt_id = ?)', $tournament_id, $mwt_id);
+		Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_regs (tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)', $tournament_id, $user_id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $user_city_id, $user_rating);
 		Db::exec(get_label('round'), 'UPDATE tournaments SET misc = ? WHERE id = ?', json_encode($tournament_misc), $tournament_id);
 		update_tournament_stats($tournament_id, $tournament_lat, $tournament_lon, $tournament_flags);
 

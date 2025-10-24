@@ -115,7 +115,7 @@ class Page extends EventPageBase
 			}
 		}
 		
-		$event_user_pic =
+		$event_reg_pic =
 			new Picture(USER_EVENT_PICTURE, 
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
@@ -167,12 +167,12 @@ class Page extends EventPageBase
 			
 			echo '<td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">';
 			echo '<table class="transp" width="100%"><tr><td width="56">';
-			$event_user_pic->
-				set($player->id, $player->nickname, $player->event_user_flags, 'e' . $this->id)->
-				set($player->id, $player->name, $player->tournament_user_flags, 't' . $this->tournament_id)->
-				set($player->id, $player->name, $player->club_user_flags, 'c' . $this->club_id)->
+			$event_reg_pic->
+				set($player->id, $player->nickname, $player->event_reg_flags, 'e' . $this->id)->
+				set($player->id, $player->name, $player->tournament_reg_flags, 't' . $this->tournament_id)->
+				set($player->id, $player->name, $player->club_reg_flags, 'c' . $this->club_id)->
 				set($player->id, $player->name, $player->flags);
-			$event_user_pic->show(ICONS_DIR, true, 50);
+			$event_reg_pic->show(ICONS_DIR, true, 50);
 			echo '</a></td><td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">' . $player->name . '</a></td>';
 			if (isset($player->nom_flags) && $player->nom_flags)
 			{

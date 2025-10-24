@@ -25,7 +25,7 @@ try
 	}
 	else
 	{
-		$query = new DbQuery('SELECT c.id, c.name, c.flags FROM club_users cu JOIN clubs c ON c.id = cu.club_id WHERE cu.user_id = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 AND (cu.flags & ' . USER_PERM_REFEREE . ') <> 0 ORDER BY c.name', $_profile->user_id);
+		$query = new DbQuery('SELECT c.id, c.name, c.flags FROM club_regs cu JOIN clubs c ON c.id = cu.club_id WHERE cu.user_id = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 AND (cu.flags & ' . USER_PERM_REFEREE . ') <> 0 ORDER BY c.name', $_profile->user_id);
 	}				
 	
 	echo '<table class="dialog_form" width="100%"><tr>';

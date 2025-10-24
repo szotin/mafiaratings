@@ -79,7 +79,7 @@ try
 		list ($club_id, $club_name) = Db::record(get_label('email'), 'SELECT c.id, c.name FROM event_mailings em JOIN events e ON e.id = em.event_id JOIN clubs c ON c.id = e.club_id WHERE em.id = ?', $obj_id);
 		if (isset($_REQUEST['undo']))
 		{
-			Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+			Db::exec(get_label('user'), 'UPDATE club_regs SET flags = (flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 			if (Db::affected_rows() > 0)
 			{
 				db_log(LOG_OBJECT_USER, 'subscribed', NULL, $user_id, $club_id);
@@ -93,7 +93,7 @@ try
 		}
 		else
 		{
-			Db::exec(get_label('user'), 'UPDATE club_users SET flags = (flags & ~' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+			Db::exec(get_label('user'), 'UPDATE club_regs SET flags = (flags & ~' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 			if (Db::affected_rows() > 0)
 			{
 				db_log(LOG_OBJECT_USER, 'unsubscribed', NULL, $user_id, $club_id);

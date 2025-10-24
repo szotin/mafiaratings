@@ -35,8 +35,8 @@ class Page extends TournamentPageBase
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON p.game_id = g.id' . 
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
 				' JOIN cities ct ON ct.id = tu.city_id' .
 				' JOIN names nc ON nc.id = ct.name_id AND (nc.langs & '.$_lang.') <> 0'.
 				' WHERE g.tournament_id = ? ORDER BY nu.name', $this->id);
@@ -51,8 +51,8 @@ class Page extends TournamentPageBase
 				' JOIN users u ON u.id = g.moderator_id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
 				' WHERE g.tournament_id = ? ORDER BY nu.name', $this->id);
 			while ($row = $query->next())
 			{
@@ -63,11 +63,11 @@ class Page extends TournamentPageBase
 		{
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags, nc.name, ct.lat, ct.lon, tu.rating' . 
-				' FROM tournament_users tu' . 
+				' FROM tournament_regs tu' . 
 				' JOIN users u ON tu.user_id = u.id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 				' JOIN cities ct ON ct.id = tu.city_id' .
 				' JOIN names nc ON nc.id = ct.name_id AND (nc.langs & '.$_lang.') <> 0'.
 				' WHERE tu.tournament_id = ? ORDER BY nu.name', $this->club_id, $this->id);
@@ -93,7 +93,7 @@ class Page extends TournamentPageBase
 			}
 		}
 		
-		$tournament_user_pic =
+		$tournament_reg_pic =
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic));
@@ -103,7 +103,7 @@ class Page extends TournamentPageBase
 		$column_count = 0;
 		foreach ($players as $row)
 		{
-			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_user_flags, $club_user_flags, $city, $lat, $lon, $rating) = $row;
+			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_reg_flags, $club_reg_flags, $city, $lat, $lon, $rating) = $row;
 			if ($column_count == 0)
 			{
 				if ($row_count == 0)
@@ -124,18 +124,18 @@ class Page extends TournamentPageBase
 			$club_pic->show(ICONS_DIR, false, 24);
 			echo '</td><td><b>' . $user_name . '</b></td></tr>';
 			echo '<tr><td colspan="2" align="center">';
-			$tournament_user_pic->
-				set($user_id, $user_name, $tournament_user_flags, 't' . $this->id)->
-				set($user_id, $user_name, $club_user_flags, 'c' . $this->club_id)->
+			$tournament_reg_pic->
+				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
+				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
 				set($user_id, $user_name, $user_flags);
 			if ($games_count > 0)
 			{
-				$tournament_user_pic->show(ICONS_DIR, true, 64);
+				$tournament_reg_pic->show(ICONS_DIR, true, 64);
 			}
 			else
 			{
 				echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
-				$tournament_user_pic->show(ICONS_DIR, false, 64);
+				$tournament_reg_pic->show(ICONS_DIR, false, 64);
 				echo '</a>';
 			}
 			echo '</td></tr>';
@@ -167,7 +167,7 @@ class Page extends TournamentPageBase
 		$column_count = 0;
 		foreach ($applications as $row)
 		{
-			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_user_flags, $club_user_flags, $city, $lat, $lon, $rating) = $row;
+			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_reg_flags, $club_reg_flags, $city, $lat, $lon, $rating) = $row;
 			if ($column_count == 0)
 			{
 				if ($row_count == 0)
@@ -188,18 +188,18 @@ class Page extends TournamentPageBase
 			$club_pic->show(ICONS_DIR, false, 24);
 			echo '</td><td><b>' . $user_name . '</b></td></tr>';
 			echo '<tr><td colspan="2" align="center">';
-			$tournament_user_pic->
-				set($user_id, $user_name, $tournament_user_flags, 't' . $this->id)->
-				set($user_id, $user_name, $club_user_flags, 'c' . $this->club_id)->
+			$tournament_reg_pic->
+				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
+				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
 				set($user_id, $user_name, $user_flags);
 			if ($games_count > 0)
 			{
-				$tournament_user_pic->show(ICONS_DIR, true, 64);
+				$tournament_reg_pic->show(ICONS_DIR, true, 64);
 			}
 			else
 			{
 				echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
-				$tournament_user_pic->show(ICONS_DIR, false, 64);
+				$tournament_reg_pic->show(ICONS_DIR, false, 64);
 				echo '</a>';
 			}
 			echo '</td></tr>';
@@ -231,7 +231,7 @@ class Page extends TournamentPageBase
 		$column_count = 0;
 		foreach ($referees as $row)
 		{
-			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_user_flags, $club_user_flags) = $row;
+			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_reg_flags, $club_reg_flags) = $row;
 			if ($column_count == 0)
 			{
 				if ($row_count == 0)
@@ -252,18 +252,18 @@ class Page extends TournamentPageBase
 			$club_pic->show(ICONS_DIR, false, 24);
 			echo '</td><td><b>' . $user_name . '</b></td></tr>';
 			echo '<tr><td colspan="2" align="center">';
-			$tournament_user_pic->
-				set($user_id, $user_name, $tournament_user_flags, 't' . $this->id)->
-				set($user_id, $user_name, $club_user_flags, 'c' . $this->club_id)->
+			$tournament_reg_pic->
+				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
+				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
 				set($user_id, $user_name, $user_flags);
 			if ($games_count > 0)
 			{
-				$tournament_user_pic->show(ICONS_DIR, true, 64);
+				$tournament_reg_pic->show(ICONS_DIR, true, 64);
 			}
 			else
 			{
 				echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
-				$tournament_user_pic->show(ICONS_DIR, false, 64);
+				$tournament_reg_pic->show(ICONS_DIR, false, 64);
 				echo '</a>';
 			}
 			echo '</td></tr></table>';

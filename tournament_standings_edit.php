@@ -17,7 +17,7 @@ class Page extends TournamentPageBase
 	{
 		global $_profile, $_page, $_lang;
 		
-		$tournament_user_pic =
+		$tournament_reg_pic =
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic));
@@ -46,12 +46,12 @@ class Page extends TournamentPageBase
 			' JOIN users u ON u.id = p.user_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-			' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = p.tournament_id AND tu.user_id = p.user_id' .
-			' LEFT OUTER JOIN club_users cu ON cu.club_id = ? AND cu.user_id = p.user_id' .
+			' LEFT OUTER JOIN tournament_regs tu ON tu.tournament_id = p.tournament_id AND tu.user_id = p.user_id' .
+			' LEFT OUTER JOIN club_regs cu ON cu.club_id = ? AND cu.user_id = p.user_id' .
 			' WHERE p.tournament_id = ? ORDER BY p.place', $this->club_id, $this->id);
 		while ($row = $query->next())
 		{
-			list($user_id, $user_name, $user_flags, $club_id, $club_name, $club_flags, $place, $main_points, $bonus_points, $shot_points, $games_count, $tournament_user_flags, $club_user_flags) = $row;
+			list($user_id, $user_name, $user_flags, $club_id, $club_name, $club_flags, $place, $main_points, $bonus_points, $shot_points, $games_count, $tournament_reg_flags, $club_reg_flags) = $row;
 			$sum = $main_points;
 			if (!is_null($bonus_points))
 			{
@@ -71,11 +71,11 @@ class Page extends TournamentPageBase
 			echo '<td align="center" class="dark">' . $place . '</td>';
 			
 			echo '<td width="50"><a href="tournament_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">';
-			$tournament_user_pic->
-				set($user_id, $user_name, $tournament_user_flags, 't' . $this->id)->
-				set($user_id, $user_name, $club_user_flags, 'c' . $this->club_id)->
+			$tournament_reg_pic->
+				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
+				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
 				set($user_id, $user_name, $user_flags);
-			$tournament_user_pic->show(ICONS_DIR, false, 50);
+			$tournament_reg_pic->show(ICONS_DIR, false, 50);
 			echo '</a></td><td><a href="tournament_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">' . $user_name . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($club_id) && $club_id > 0)

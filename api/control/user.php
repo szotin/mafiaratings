@@ -89,7 +89,7 @@ class ApiPage extends ControlApiPageBase
 					// ' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0' .
 					// ' JOIN cities i ON i.id = u.city_id'.
 					// ' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
-					// ' JOIN event_users r ON r.user_id = u.id' .
+					// ' JOIN event_regs r ON r.user_id = u.id' .
 					// ' WHERE r.nickname <> nu.name AND r.nickname LIKE ? ORDER BY mtch, user_name',
 				// $term, $term, $wildcard, $wildcard);
 		}

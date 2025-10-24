@@ -83,7 +83,7 @@ class Page extends ClubPageBase
 				' FROM users u' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN clubs c ON u.club_id = c.id' .
-				' LEFT OUTER JOIN club_users cu ON cu.club_id = c.id AND cu.user_id = u.id',
+				' LEFT OUTER JOIN club_regs cu ON cu.club_id = c.id AND cu.user_id = u.id',
 				$condition);
 		$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
 		if ($this->user_id > 0)
@@ -138,7 +138,7 @@ class Page extends ClubPageBase
 		}
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
-		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+		$club_reg_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 			
 		list ($count) = Db::record(get_label('rating'), $count_query);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -181,7 +181,7 @@ class Page extends ClubPageBase
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $rating, $red_rating, $black_rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
+			list ($id, $name, $rating, $red_rating, $black_rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags, $club_reg_flags) = $row;
 
 			if ($id == $this->user_id)
 			{
@@ -196,8 +196,8 @@ class Page extends ClubPageBase
 
 			echo '<td align="center" class="' . $highlight . '">' . $number . '</td>';
 			echo '<td width="60" align="center">';
-			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
-			$club_user_pic->show(ICONS_DIR, true, 50);
+			$club_reg_pic->set($id, $name, $club_reg_flags, 'c' . $this->id)->set($id, $name, $flags);
+			$club_reg_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 			if ($this->sort == SORT_BY_RATING)

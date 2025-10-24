@@ -46,7 +46,7 @@ function get_profile_event_permissions($event_id)
 
 		if (is_numeric($event_id) && $event_id > 0)
 		{
-			$query = new DbQuery('SELECT flags FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $_profile->user_id);
+			$query = new DbQuery('SELECT flags FROM event_regs WHERE event_id = ? AND user_id = ?', $event_id, $_profile->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
@@ -70,7 +70,7 @@ function get_profile_tournament_permissions($tournament_id)
 
 		if (is_numeric($tournament_id) && $tournament_id > 0)
 		{
-			$query = new DbQuery('SELECT flags FROM tournament_users WHERE tournament_id = ? AND user_id = ?', $tournament_id, $_profile->user_id);
+			$query = new DbQuery('SELECT flags FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $tournament_id, $_profile->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;

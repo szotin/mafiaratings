@@ -113,7 +113,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			Db::exec(
 				get_label('user'), 
-				'INSERT INTO club_users (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ')',
+				'INSERT INTO club_regs (user_id, club_id, flags) VALUES (?, ?, ' . (USER_CLUB_NEW_PLAYER_FLAGS | USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ')',
 				$_profile->user_id, $club_id);
 			db_log(LOG_OBJECT_USER, 'becomes club manager', NULL, $_profile->user_id, $club_id);
 			if ($_profile->user_club_id == NULL)
@@ -367,7 +367,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			// it is possible that the permission is missing because the club is retired
 			$query = new DbQuery(
-				'SELECT * FROM club_users WHERE user_id = ? AND club_id = ? AND (flags & ' . USER_PERM_MANAGER . ') <> 0',
+				'SELECT * FROM club_regs WHERE user_id = ? AND club_id = ? AND (flags & ' . USER_PERM_MANAGER . ') <> 0',
 				$_profile->user_id, $club_id);
 			if (!$query->next())
 			{
@@ -397,9 +397,9 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// add_user
+	// add_member
 	//-------------------------------------------------------------------------------------------------------
-	function add_user_op()
+	function add_member_op()
 	{
 		global $_profile;
 		
@@ -422,10 +422,10 @@ class ApiPage extends OpsApiPageBase
 		$flags += USER_CLUB_NEW_PLAYER_FLAGS;
 		
 		Db::begin();
-		list ($count) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		list ($count) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_regs WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if ($count == 0)
 		{
-			Db::exec(get_label('membership'), 'INSERT INTO club_users (user_id, club_id, flags) values (?, ?, ?)', $user_id, $club_id, $flags);
+			Db::exec(get_label('membership'), 'INSERT INTO club_regs (user_id, club_id, flags) values (?, ?, ?)', $user_id, $club_id, $flags);
 			db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
 			if ($user_id == $owner_id)
 			{
@@ -438,7 +438,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['user_id'] = $user_id;
 	}
 	
-	function add_user_op_help()
+	function add_member_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Make user a club member.');
 		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
@@ -449,9 +449,9 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// remove_user
+	// remove_member
 	//-------------------------------------------------------------------------------------------------------
-	function remove_user_op()
+	function remove_member_op()
 	{
 		global $_profile;
 		
@@ -467,7 +467,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $club_id);
 		
 		Db::begin();
-		Db::exec(get_label('membership'), 'DELETE FROM club_users WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
+		Db::exec(get_label('membership'), 'DELETE FROM club_regs WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_USER, 'left club', NULL, $user_id, $club_id);
@@ -482,7 +482,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['user_id'] = $user_id;
 	}
 	
-	function remove_user_op_help()
+	function remove_member_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, 'Remove user from the members of the club.');
 		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');

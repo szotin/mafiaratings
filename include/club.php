@@ -132,7 +132,7 @@ class ClubPageBase extends PageBase
 					'JOIN countries cr ON cr.id = ct.country_id ' .
 					'JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0 ' .
 					'JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0 ' .
-					'LEFT OUTER JOIN club_users u ON u.club_id = c.id AND u.user_id = ? ' .
+					'LEFT OUTER JOIN club_regs u ON u.club_id = c.id AND u.user_id = ? ' .
 					'LEFT OUTER JOIN clubs p ON c.parent_id = p.id ' .
 					'LEFT OUTER JOIN currencies cu ON c.currency_id = cu.id ' .
 					'WHERE c.id = ?',
@@ -174,7 +174,7 @@ class ClubPageBase extends PageBase
 			
 		if ($this->is_manager || $this->is_referee)
 		{
-			$managment_menu = array(new MenuItem('club_users.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name)));
+			$managment_menu = array(new MenuItem('club_regs.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name)));
 			$managment_menu[] = new MenuItem('club_addresses.php?id=' . $this->id, get_label('Addresses'), get_label('[0] addresses', $this->name));
 			$managment_menu[] = new MenuItem('club_upcoming_events.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name));
 			if ($this->is_manager)

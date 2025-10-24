@@ -21,7 +21,7 @@ define('RATING_POSITIONS', 15);
 class Page extends ClubPageBase
 {
 	private $tournament_pic;
-	private $club_user_pic;
+	private $club_reg_pic;
 	
 	private function show_tournament($tournament)
 	{
@@ -240,7 +240,7 @@ class Page extends ClubPageBase
 		global $_profile, $_lang;
 		
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$this->club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+		$this->club_reg_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 	
 		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
 		$have_tables = false;
@@ -428,7 +428,7 @@ class Page extends ClubPageBase
 		// managers
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.flags, c.flags'.
-			' FROM club_users c'.
+			' FROM club_regs c'.
 			' JOIN users u ON u.id = c.user_id'.
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' WHERE c.club_id = ? AND (c.flags & ' . USER_PERM_MANAGER . ') <> 0', 
@@ -452,8 +452,8 @@ class Page extends ClubPageBase
 				}
 				echo '<td width="' . MANAGER_COLUMN_WIDTH . '%" align="center">';
 				echo '<a href="user_info.php?bck=1&id=' . $manager_id . '">' . $manager_name . '<br>';
-				$this->club_user_pic->set($manager_id, $manager_name, $club_manager_flags, 'c' . $this->id)->set($manager_id, $manager_name, $manager_flags);
-				$this->club_user_pic->show(ICONS_DIR, false);
+				$this->club_reg_pic->set($manager_id, $manager_name, $club_manager_flags, 'c' . $this->id)->set($manager_id, $manager_name, $manager_flags);
+				$this->club_reg_pic->show(ICONS_DIR, false);
 				echo '</a></td>';
 				
 				++$columns_count;
@@ -521,7 +521,7 @@ class Page extends ClubPageBase
 				'SELECT u.id, nu.name, u.rating, u.games, u.games_won, u.flags, cu.flags' .
 					' FROM users u' .
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = u.club_id' .
+					' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = u.club_id' .
 					' WHERE u.club_id = ?' .
 					' ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id' .
 					' LIMIT ' . RATING_POSITIONS,
@@ -532,12 +532,12 @@ class Page extends ClubPageBase
 			$number = 1;
 			while ($row = $query->next())
 			{
-				list ($id, $name, $rating, $games_played, $games_won, $flags, $club_user_flags) = $row;
+				list ($id, $name, $rating, $games_played, $games_won, $flags, $club_reg_flags) = $row;
 
 				echo '<td width="20" align="center">' . $number . '</td>';
 				echo '<td width="50">';
-				$this->club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
-				$this->club_user_pic->show(ICONS_DIR, true, 50);
+				$this->club_reg_pic->set($id, $name, $club_reg_flags, 'c' . $this->id)->set($id, $name, $flags);
+				$this->club_reg_pic->show(ICONS_DIR, true, 50);
 				echo '</td><td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
 				echo '<td width="60" align="center">' . number_format(USER_INITIAL_RATING + $rating) . '</td>';
 				echo '</tr>';

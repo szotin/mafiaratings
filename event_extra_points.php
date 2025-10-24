@@ -24,7 +24,7 @@ class Page extends EventPageBase
 		list ($count) = Db::record(get_label('extra points'), 'SELECT count(*) FROM event_extra_points WHERE event_id = ?', $this->id);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$event_user_pic =
+		$event_reg_pic =
 			new Picture(USER_EVENT_PICTURE, 
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
@@ -46,13 +46,13 @@ class Page extends EventPageBase
 				' JOIN users u ON u.id = p.user_id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN events e ON e.id = p.event_id' . 
-				' LEFT OUTER JOIN event_users eu ON eu.event_id = e.id AND eu.user_id = u.id' .
-				' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = e.tournament_id AND tu.user_id = u.id' .
-				' LEFT OUTER JOIN club_users cu ON cu.club_id = e.club_id AND cu.user_id = u.id' .
+				' LEFT OUTER JOIN event_regs eu ON eu.event_id = e.id AND eu.user_id = u.id' .
+				' LEFT OUTER JOIN tournament_regs tu ON tu.tournament_id = e.tournament_id AND tu.user_id = u.id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.club_id = e.club_id AND cu.user_id = u.id' .
 				' WHERE p.event_id = ?', $this->id);
 		while ($row = $query->next())
 		{
-			list($points_id, $user_id, $user_name, $user_flags, $reason, $details, $points, $mvp, $user_nickname, $event_user_flags, $tournament_user_flags, $club_user_flags) = $row;
+			list($points_id, $user_id, $user_name, $user_flags, $reason, $details, $points, $mvp, $user_nickname, $event_reg_flags, $tournament_reg_flags, $club_reg_flags) = $row;
 			
 			echo '<tr>';
 			echo '<td valign="center">';
@@ -61,12 +61,12 @@ class Page extends EventPageBase
 			echo '</td>';
 			echo '<td width="60" align="center">';
 			$this->user_pic->set($user_id, $user_name, $user_flags);
-			$event_user_pic->
-				set($user_id, $user_nickname, $event_user_flags, 'e' . $this->id)->
-				set($user_id, $user_name, $tournament_user_flags, 't' . $this->tournament_id)->
-				set($user_id, $user_name, $club_user_flags, 'c' . $this->club_id)->
+			$event_reg_pic->
+				set($user_id, $user_nickname, $event_reg_flags, 'e' . $this->id)->
+				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->tournament_id)->
+				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
 				set($user_id, $user_name, $user_flags);
-			$event_user_pic->show(ICONS_DIR, true, 50);
+			$event_reg_pic->show(ICONS_DIR, true, 50);
 			echo '</td><td>';
 			echo '<a href="event_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">' . $user_name . '</a></td>';
 			echo '<td>' . $reason . '</td>';

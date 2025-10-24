@@ -114,9 +114,9 @@ class Page extends PageBase
 		if (!is_permitted(PERMISSION_ADMIN))
 		{
 			$condition->add(
-				' AND ( e.club_id IN (SELECT club_id FROM club_users WHERE (flags & ' . USER_PERM_REFEREE . ') <> 0 AND user_id = ?)' .
-				' OR e.id IN (SELECT event_id FROM event_users WHERE (flags & ' . USER_PERM_REFEREE . ') <> 0 AND user_id = ?)' .
-				' OR e.tournament_id IN (SELECT tournament_id FROM tournament_users WHERE (flags & ' . USER_PERM_REFEREE . ') <> 0 AND user_id = ?))', $_profile->user_id, $_profile->user_id, $_profile->user_id);
+				' AND ( e.club_id IN (SELECT club_id FROM club_regs WHERE (flags & ' . USER_PERM_REFEREE . ') <> 0 AND user_id = ?)' .
+				' OR e.id IN (SELECT event_id FROM event_regs WHERE (flags & ' . USER_PERM_REFEREE . ') <> 0 AND user_id = ?)' .
+				' OR e.tournament_id IN (SELECT tournament_id FROM tournament_regs WHERE (flags & ' . USER_PERM_REFEREE . ') <> 0 AND user_id = ?))', $_profile->user_id, $_profile->user_id, $_profile->user_id);
 		}
 
 		echo '<p><table class="transp" width="100%"><tr><td>';

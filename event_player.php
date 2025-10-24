@@ -81,13 +81,13 @@ class Page extends EventPageBase
 				$this->player->id = $this->user_id;
 				$this->player->games = array();
 				$this->player->points = 0;
-				list ($this->player->name, $this->player->flags, $this->player->nickname, $this->player->event_user_flags, $this->player->tournament_user_flags, $this->player->club_user_flags) = 
+				list ($this->player->name, $this->player->flags, $this->player->nickname, $this->player->event_reg_flags, $this->player->tournament_reg_flags, $this->player->club_reg_flags) = 
 					Db::record(get_label('user'), 
 						'SELECT nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM users u' .
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-						' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
-						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
-						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+						' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = ?' .
+						' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+						' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 						' WHERE u.id = ?', $this->id, $this->tournament_id, $this->club_id, $this->user_id);
 			}
 		}
@@ -98,7 +98,7 @@ class Page extends EventPageBase
 			$this->player->games = array();
 			$this->player->points = 0;
 			$this->player->nickname = $this->player->name = '';
-			$this->player->flags = $this->player->event_user_flags = $this->player->tournament_user_flags = $this->player->club_user_flags = 0;
+			$this->player->flags = $this->player->event_reg_flags = $this->player->tournament_reg_flags = $this->player->club_reg_flags = 0;
 		}
 		
 		
@@ -108,9 +108,9 @@ class Page extends EventPageBase
 			new Picture(USER_CLUB_PICTURE,
 			new Picture(USER_PICTURE))));
 		$this->player_pic->
-			set($this->player->id, $this->player->nickname, $this->player->event_user_flags, 'e' . $this->id)->
-			set($this->player->id, $this->player->name, $this->player->tournament_user_flags, 't' . $this->tournament_id)->
-			set($this->player->id, $this->player->name, $this->player->club_user_flags, 'c' . $this->club_id)->
+			set($this->player->id, $this->player->nickname, $this->player->event_reg_flags, 'e' . $this->id)->
+			set($this->player->id, $this->player->name, $this->player->tournament_reg_flags, 't' . $this->tournament_id)->
+			set($this->player->id, $this->player->name, $this->player->club_reg_flags, 'c' . $this->club_id)->
 			set($this->player->id, $this->player->name, $this->player->flags);
 	}
 	

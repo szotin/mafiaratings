@@ -73,14 +73,14 @@ class Page extends TournamentPageBase
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = g.tournament_id AND tu.user_id = u.id' .
-				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id',
+				' LEFT OUTER JOIN tournament_regs tu ON tu.tournament_id = g.tournament_id AND tu.user_id = u.id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.club_id = g.club_id AND cu.user_id = u.id',
 				$condition);
  		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC, u.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
 			$moder = new stdClass();
-			list($moder->id, $moder->name, $moder->flags, $moder->red_wins, $moder->black_wins, $moder->ties, $moder->club_id, $moder->club_name, $moder->club_flags, $moder->tournament_user_flags, $moder->club_user_flags) = $row;
+			list($moder->id, $moder->name, $moder->flags, $moder->red_wins, $moder->black_wins, $moder->ties, $moder->club_id, $moder->club_name, $moder->club_flags, $moder->tournament_reg_flags, $moder->club_reg_flags) = $row;
 			$moders[] = $moder;
 		}
 		
@@ -101,7 +101,7 @@ class Page extends TournamentPageBase
 			list($id, $moder->bonus, $moder->warnings, $moder->worst_moves, $moder->kick_offs, $moder->team_kick_offs) = $row;
 		}
 		
-		$tournament_user_pic =
+		$tournament_reg_pic =
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic));
@@ -127,11 +127,11 @@ class Page extends TournamentPageBase
 
 			echo '<tr><td align="center" width="40" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
-			$tournament_user_pic->
-				set($moder->id, $moder->name, $moder->tournament_user_flags, 't' . $this->id)->
-				set($moder->id, $moder->name, $moder->club_user_flags, 'c' . $this->club_id)->
+			$tournament_reg_pic->
+				set($moder->id, $moder->name, $moder->tournament_reg_flags, 't' . $this->id)->
+				set($moder->id, $moder->name, $moder->club_reg_flags, 'c' . $this->club_id)->
 				set($moder->id, $moder->name, $moder->flags);
-			$tournament_user_pic->show(ICONS_DIR, true, 50);
+			$tournament_reg_pic->show(ICONS_DIR, true, 50);
 			echo '<td><a href="user_games.php?id=' . $moder->id . '&moder=1&bck=1">' . $moder->name . '</a></td>';
 			echo '<td width="50" align="center">';
 			$this->club_pic->set($moder->club_id, $moder->club_name, $moder->club_flags);

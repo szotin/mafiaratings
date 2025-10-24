@@ -585,7 +585,7 @@ class Page extends GeneralPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add(' AND c.id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $_profile->user_id);
+				$condition->add(' AND c.id IN (SELECT club_id FROM club_regs WHERE user_id = ?)', $_profile->user_id);
 			}
 			break;
 		case CCCF_CITY:
@@ -658,11 +658,11 @@ class Page extends GeneralPageBase
 		case CCCF_CLUB:
 			if ($ccc_id > 0)
 			{
-				$query->add(' AND u.id IN (SELECT user_id FROM club_users WHERE club_id = ?)', $ccc_id);
+				$query->add(' AND u.id IN (SELECT user_id FROM club_regs WHERE club_id = ?)', $ccc_id);
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$query->add(' AND u.id IN (SELECT user_id FROM club_users WHERE club_id IN (' . $_profile->get_comma_sep_clubs() . '))');
+				$query->add(' AND u.id IN (SELECT user_id FROM club_regs WHERE club_id IN (' . $_profile->get_comma_sep_clubs() . '))');
 			}
 			break;
 		case CCCF_CITY:

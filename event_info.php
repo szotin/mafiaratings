@@ -53,12 +53,12 @@ class Page extends EventPageBase
 		$declined = 0;
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, eu.nickname, eu.coming_odds, eu.people_with_me, u.flags, eu.late, eu.flags, e.tournament_id, tu.flags, e.club_id, cu.flags' . 
-			' FROM event_users eu' . 
+			' FROM event_regs eu' . 
 			' JOIN events e ON e.id = eu.event_id ' .
 			' JOIN users u ON eu.user_id = u.id' . 
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
-			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
+			' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
+			' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
 			' WHERE e.id = ? ORDER BY eu.coming_odds DESC, eu.late, eu.people_with_me DESC, nu.name', $this->id);
 		while ($row = $query->next())
 		{
@@ -93,7 +93,7 @@ class Page extends EventPageBase
 			$attendance[] = $row;
 		}
 		
-		$event_user_pic =
+		$event_reg_pic =
 			new Picture(USER_EVENT_PICTURE, 
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
@@ -105,7 +105,7 @@ class Page extends EventPageBase
 			$col = 0;
 			foreach ($attendance as $a)
 			{
-				list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $a;
+				list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_reg_flags, $tournament_id, $tournament_reg_flags, $club_id, $club_reg_flags) = $a;
 				if ($odds > 0)
 				{
 					if ($col == 0)
@@ -146,12 +146,12 @@ class Page extends EventPageBase
 						echo 'class="lighter"';
 					}
 					echo 'align="center">';
-					$event_user_pic->
-						set($user_id, $nickname, $event_user_flags, 'e' . $this->id)->
-						set($user_id, $name, $tournament_user_flags, 't' . $tournament_id)->
-						set($user_id, $name, $club_user_flags, 'c' . $club_id)->
+					$event_reg_pic->
+						set($user_id, $nickname, $event_reg_flags, 'e' . $this->id)->
+						set($user_id, $name, $tournament_reg_flags, 't' . $tournament_id)->
+						set($user_id, $name, $club_reg_flags, 'c' . $club_id)->
 						set($user_id, $name, $user_flags);
-					$event_user_pic->show(ICONS_DIR, true, 50);
+					$event_reg_pic->show(ICONS_DIR, true, 50);
 					if (empty($nickname))
 					{
 						echo '<br>' . $name;
@@ -197,7 +197,7 @@ class Page extends EventPageBase
 			$col = 0;
 			foreach ($attendance as $a)
 			{
-				list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $a;
+				list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_reg_flags, $tournament_id, $tournament_reg_flags, $club_id, $club_reg_flags) = $a;
 				if ($odds <= 0)
 				{
 					if ($col == 0)
@@ -215,12 +215,12 @@ class Page extends EventPageBase
 					}
 					
 					echo '<td width="16.66%" align="center">';
-					$event_user_pic->
-						set($user_id, $nickname, $event_user_flags, 'e' . $this->id)->
-						set($user_id, $name, $tournament_user_flags, 't' . $tournament_id)->
-						set($user_id, $name, $club_user_flags, 'c' . $club_id)->
+					$event_reg_pic->
+						set($user_id, $nickname, $event_reg_flags, 'e' . $this->id)->
+						set($user_id, $name, $tournament_reg_flags, 't' . $tournament_id)->
+						set($user_id, $name, $club_reg_flags, 'c' . $club_id)->
 						set($user_id, $name, $user_flags);
-					$event_user_pic->show(ICONS_DIR, true, 50);
+					$event_reg_pic->show(ICONS_DIR, true, 50);
 					echo '<br>' . $name . '</td>';
 					++$col;
 					if ($col == 6)
@@ -258,7 +258,7 @@ class Page extends EventPageBase
 
 			foreach ($attendance as $a)
 			{
-				list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_user_flags) = $a;
+				list($user_id, $name, $nickname, $odds, $bringing, $user_flags, $late, $event_reg_flags, $tournament_id, $tournament_reg_flags, $club_id, $club_reg_flags) = $a;
 				if ($odds > 50)
 				{
 					echo '<tr class="lighter">';
@@ -273,12 +273,12 @@ class Page extends EventPageBase
 				}
 				
 				echo '<td width="50">';
-				$event_user_pic->
-					set($user_id, $nickname, $event_user_flags, 'e' . $this->id)->
-					set($user_id, $name, $tournament_user_flags, 't' . $tournament_id)->
-					set($user_id, $name, $club_user_flags, 'c' . $club_id)->
+				$event_reg_pic->
+					set($user_id, $nickname, $event_reg_flags, 'e' . $this->id)->
+					set($user_id, $name, $tournament_reg_flags, 't' . $tournament_id)->
+					set($user_id, $name, $club_reg_flags, 'c' . $club_id)->
 					set($user_id, $name, $user_flags);
-				$event_user_pic->show(ICONS_DIR, true, 50);
+				$event_reg_pic->show(ICONS_DIR, true, 50);
 				echo '</td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . cut_long_name($name, 80) . '</a></td><td width="280" align="center"><b>';
 				echo event_odds_str($odds, $bringing, $late) . '</b></td></tr>';
 			}

@@ -12,7 +12,7 @@ class Page extends EventPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id, $this->tournament_id);
 		$can_edit = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id, $this->id, $this->tournament_id);
 		
-		$event_user_pic =
+		$event_reg_pic =
 			new Picture(USER_EVENT_PICTURE, 
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
@@ -23,28 +23,28 @@ class Page extends EventPageBase
 		echo '<td width="87">';
 		if ($can_edit)
 		{
-			echo '<button class="icon" onclick="mr.addEventUser(' . $this->id . ')" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.addEventReg(' . $this->id . ')" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button>';
 		}
 		echo '</td>';
 		echo '<td colspan="4">' . get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
 		
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.email, u.flags, eu.nickname, eu.flags, tu.tournament_id, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags, ni.name' .
-			' FROM event_users eu' .
+			' FROM event_regs eu' .
 			' JOIN users u ON eu.user_id = u.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN cities i ON i.id = u.city_id'.
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 			' JOIN events e ON e.id = eu.event_id' .
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-			' LEFT OUTER JOIN tournament_users tu ON tu.tournament_id = e.tournament_id AND tu.user_id = eu.user_id' .
-			' LEFT OUTER JOIN club_users cu ON cu.club_id = e.club_id AND cu.user_id = eu.user_id' .
+			' LEFT OUTER JOIN tournament_regs tu ON tu.tournament_id = e.tournament_id AND tu.user_id = eu.user_id' .
+			' LEFT OUTER JOIN club_regs cu ON cu.club_id = e.club_id AND cu.user_id = eu.user_id' .
 			' WHERE eu.event_id = ?' .
 			' ORDER BY nu.name',
 			$this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $email, $user_flags, $user_nickname, $event_user_flags, $tournament_id, $tournament_user_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_user_flags, $city) = $row;
+			list($id, $name, $email, $user_flags, $user_nickname, $event_reg_flags, $tournament_id, $tournament_reg_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_reg_flags, $city) = $row;
 		
 			echo '<tr class="light"><td class="dark">';
 			if ($can_edit)
@@ -60,12 +60,12 @@ class Page extends EventPageBase
 			echo '</td>';
 			
 			echo '<td width="60" align="center">';
-			$event_user_pic->
-				set($id, $user_nickname, $event_user_flags, 'e' . $this->id)->
-				set($id, $name, $tournament_user_flags, 't' . $tournament_id)->
-				set($id, $name, $club_user_flags, 'c' . $user_club_id)->
+			$event_reg_pic->
+				set($id, $user_nickname, $event_reg_flags, 'e' . $this->id)->
+				set($id, $name, $tournament_reg_flags, 't' . $tournament_id)->
+				set($id, $name, $club_reg_flags, 'c' . $user_club_id)->
 				set($id, $name, $user_flags);
-			$event_user_pic->show(ICONS_DIR, true, 50);
+			$event_reg_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
 			echo '<td width="200">';
@@ -83,7 +83,7 @@ class Page extends EventPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			if ($event_user_flags & USER_PERM_PLAYER)
+			if ($event_reg_flags & USER_PERM_PLAYER)
 			{
 				echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
 			}
@@ -91,7 +91,7 @@ class Page extends EventPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($event_user_flags & USER_PERM_REFEREE)
+			if ($event_reg_flags & USER_PERM_REFEREE)
 			{
 				echo '<img src="images/referee.png" width="32" title="' . get_label('Referee') . '">';
 			}
@@ -99,7 +99,7 @@ class Page extends EventPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($event_user_flags & USER_PERM_MANAGER)
+			if ($event_reg_flags & USER_PERM_MANAGER)
 			{
 				echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
 			}

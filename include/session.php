@@ -136,7 +136,7 @@ class Profile
 		else
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, uc.flags, c.flags, c.langs, i.id, ni.name, i.country_id, no.name, i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.fee, c.currency_id, c.parent_id FROM club_users uc' .
+				'SELECT c.id, c.name, uc.flags, c.flags, c.langs, i.id, ni.name, i.country_id, no.name, i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.fee, c.currency_id, c.parent_id FROM club_regs uc' .
 					' JOIN clubs c ON c.id = uc.club_id' .
 					' JOIN cities i ON i.id = c.city_id' .
 					' JOIN names ni ON i.name_id = ni.id AND (ni.langs & '.$_lang.') <> 0' .
@@ -243,7 +243,7 @@ class Profile
 
 		if (is_numeric($event_id) && $event_id > 0)
 		{
-			$query = new DbQuery('SELECT flags FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $this->user_id);
+			$query = new DbQuery('SELECT flags FROM event_regs WHERE event_id = ? AND user_id = ?', $event_id, $this->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
@@ -262,7 +262,7 @@ class Profile
 
 		if (is_numeric($event_id) && $event_id > 0)
 		{
-			$query = new DbQuery('SELECT flags FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $this->user_id);
+			$query = new DbQuery('SELECT flags FROM event_regs WHERE event_id = ? AND user_id = ?', $event_id, $this->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
@@ -281,7 +281,7 @@ class Profile
 
 		if (is_numeric($event_id) && $event_id > 0)
 		{
-			$query = new DbQuery('SELECT flags FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $this->user_id);
+			$query = new DbQuery('SELECT flags FROM event_regs WHERE event_id = ? AND user_id = ?', $event_id, $this->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
@@ -300,7 +300,7 @@ class Profile
 
 		if (is_numeric($tournament_id) && $tournament_id > 0)
 		{
-			$query = new DbQuery('SELECT flags FROM tournament_users WHERE tournament_id = ? AND user_id = ?', $tournament_id, $this->user_id);
+			$query = new DbQuery('SELECT flags FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $tournament_id, $this->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
@@ -319,7 +319,7 @@ class Profile
 
 		if (is_numeric($tournament_id) && $tournament_id > 0)
 		{
-			$query = new DbQuery('SELECT flags FROM tournament_users WHERE tournament_id = ? AND user_id = ?', $tournament_id, $this->user_id);
+			$query = new DbQuery('SELECT flags FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $tournament_id, $this->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
@@ -338,7 +338,7 @@ class Profile
 
 		if (is_numeric($tournament_id) && $tournament_id > 0)
 		{
-			$query = new DbQuery('SELECT flags FROM tournament_users WHERE tournament_id = ? AND user_id = ?', $tournament_id, $this->user_id);
+			$query = new DbQuery('SELECT flags FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $tournament_id, $this->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;

@@ -220,9 +220,9 @@ class Page extends PageBase
 					' JOIN cities ct ON ct.id = a.city_id' .
 					' JOIN users m ON m.id = g.moderator_id' .
 					' JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
-					' LEFT OUTER JOIN event_users eu ON eu.user_id = m.id AND eu.event_id = g.event_id' .
-					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = m.id AND tu.tournament_id = g.tournament_id' .
-					' LEFT OUTER JOIN club_users cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
+					' LEFT OUTER JOIN event_regs eu ON eu.user_id = m.id AND eu.event_id = g.event_id' .
+					' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = m.id AND tu.tournament_id = g.tournament_id' .
+					' LEFT OUTER JOIN club_regs cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
 					' WHERE g.id = ?',
 				$this->id);
 			$this->url_params = '?game_id=' . $this->id;
@@ -272,9 +272,9 @@ class Page extends PageBase
 				'SELECT u.id, nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags'.
 				' FROM users u'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+				' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = ?' .
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 				' WHERE u.id = ?',
 				$this->event_id, $this->tournament_id, $this->club_id, $this->game->data->moderator->id);
 		}
@@ -335,9 +335,9 @@ class Page extends PageBase
 					' FROM users u' .
 					' JOIN events e ON e.id = ?'.
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
-					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
-					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
+					' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
+					' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
+					' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
 					' WHERE u.id IN (' . $plist . ')', $this->event_id);
 			while ($row = $query->next())
 			{
@@ -1458,9 +1458,9 @@ class Page extends PageBase
 					' FROM users u' .
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' JOIN events e ON e.id = ?' . 
-					' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
-					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
-					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
+					' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
+					' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
+					' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
 					' WHERE u.id = ?', $this->event_id, $player->id);
 			if (empty($player_name))
 			{

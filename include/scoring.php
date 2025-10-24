@@ -1185,9 +1185,9 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN events e ON e.id = g.event_id' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
-			' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' .
-			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
-			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
+			' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id' .
+			' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
+			' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
 			' WHERE g.event_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $event_id, $condition);
     $query->add(' GROUP BY u.id');
 	while ($row = $query->next())
@@ -1205,9 +1205,9 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 		$player->wins = (int)$row[9];
 		$player->special_role_wins = (int)$row[10];
 		$player->nickname = $row[11];
-		$player->event_user_flags = (int)$row[12];
-		$player->tournament_user_flags = (int)$row[13];
-		$player->club_user_flags = (int)$row[14];
+		$player->event_reg_flags = (int)$row[12];
+		$player->tournament_reg_flags = (int)$row[13];
+		$player->club_reg_flags = (int)$row[14];
 
         init_player_score($player, $scoring, $lod_flags);
         $players[$player->id] = $player;
@@ -1613,9 +1613,9 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			' JOIN cities ct ON ct.id = u.city_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
-			' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
+			' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
 			' LEFT OUTER JOIN cities ct1 ON ct1.id = tu.city_id' .
-			' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
+			' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
 			' WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $tournament_id, $condition);
 	$query->add(' GROUP BY u.id');
 	while ($row = $query->next())
@@ -1624,7 +1624,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		list (
 			$player->id, $player->name, $player->flags, $player->langs, $player->club_id, $player->club_name, $player->club_flags,
 			$player->games_count, $player->events_count, $player->killed_first_count, $player->wins, $player->special_role_wins, 
-			$player->tournament_user_flags, $player->club_user_flags, $city1_id, $lat1, $lon1, $city_id, $lat, $lon) = $row;
+			$player->tournament_reg_flags, $player->club_reg_flags, $city1_id, $lat1, $lon1, $city_id, $lat, $lon) = $row;
 		$player->id = (int)$player->id;
 		$player->flags = (int)$player->flags;
 		$player->langs = (int)$player->langs;
@@ -1636,8 +1636,8 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$player->wins = (int)$player->wins;
 		$player->special_role_wins = (int)$player->special_role_wins;
 		$player->normalizer = $normalizer;
-		$player->tournament_user_flags = (int)$player->tournament_user_flags;
-		$player->club_user_flags = (int)$player->club_user_flags;
+		$player->tournament_reg_flags = (int)$player->tournament_reg_flags;
+		$player->club_reg_flags = (int)$player->club_reg_flags;
 		if (is_null($city_id))
 		{
 			$player->city_id = $city1_id;
@@ -1911,7 +1911,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 	{
 		// Prepare teams
 		$scores = array();
-		$query = new DbQuery('SELECT u.user_id, u.team_id, t.name FROM tournament_users u JOIN tournament_teams t ON t.id = u.team_id WHERE u.tournament_id = ?', $tournament_id);
+		$query = new DbQuery('SELECT u.user_id, u.team_id, t.name FROM tournament_regs u JOIN tournament_teams t ON t.id = u.team_id WHERE u.tournament_id = ?', $tournament_id);
 		while ($row = $query->next())
 		{
 			list($user_id, $team_id, $team_name) = $row;

@@ -28,7 +28,7 @@ try
 	}
 	
 	//$club_pic = new Picture(CLUB_PICTURE);
-	$tournament_user_pic =
+	$tournament_reg_pic =
 		new Picture(USER_TOURNAMENT_PICTURE,
 		new Picture(USER_CLUB_PICTURE,
 		new Picture(USER_PICTURE)));
@@ -58,16 +58,16 @@ try
 			list($series_id) = $row;
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.flags, tu.flags, cu.flags, sp.score, sp.place'.
-				' FROM tournament_users tu'.
+				' FROM tournament_regs tu'.
 				' JOIN users u ON u.id = tu.user_id'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN series_places sp ON sp.user_id = u.id AND series_id = ?'.
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?'.
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?'.
 				' WHERE tu.tournament_id = ? AND (tu.flags & ' . USER_PERM_PLAYER . ') <> 0 ORDER BY sp.score DESC, u.rating DESC, u.id', $series_id, $club_id, $tournament_id);
 			while ($row = $query->next())
 			{
 				$player = new stdClass();
-				list($player->id, $player->name, $player->flags, $player->tournament_user_flags, $player->club_user_flags, $player->points, $player->place) = $row;
+				list($player->id, $player->name, $player->flags, $player->tournament_reg_flags, $player->club_reg_flags, $player->points, $player->place) = $row;
 				$players[] = $player;
 				++$players_count;
 			}
@@ -108,11 +108,11 @@ try
 			echo '<tr>';
 			echo '<td align="center" class="dark"><big><big><b>' . $player->place . '</b></big></big></td>';
 			echo '<td width="50">';
-			$tournament_user_pic->
-				set($player->id, $player->name, $player->tournament_user_flags, 't' . $tournament_id)->
-				set($player->id, $player->name, $player->club_user_flags, 'c' . $club_id)->
+			$tournament_reg_pic->
+				set($player->id, $player->name, $player->tournament_reg_flags, 't' . $tournament_id)->
+				set($player->id, $player->name, $player->club_reg_flags, 'c' . $club_id)->
 				set($player->id, $player->name, $player->flags);
-			echo '<img src="' . '../' . $tournament_user_pic->url(ICONS_DIR) . '" width="60">';
+			echo '<img src="' . '../' . $tournament_reg_pic->url(ICONS_DIR) . '" width="60">';
 			echo '</td><td width="300"><big><big><b>' . $player->name . '</b></big></big></td>';
 			echo '<td width="50" align="center">';
 			// if (!is_null($player->club_id) && $player->club_id > 0)

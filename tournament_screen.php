@@ -14,7 +14,7 @@ try
 	
 	$club_pic = new Picture(CLUB_PICTURE);
 	$tournament_pic = new Picture(TOURNAMENT_PICTURE, $club_pic);
-	$tournament_user_pic =
+	$tournament_reg_pic =
 		new Picture(USER_TOURNAMENT_PICTURE,
 		new Picture(USER_CLUB_PICTURE,
 		new Picture(USER_PICTURE)));
@@ -157,11 +157,11 @@ try
 			
 				$query = new DbQuery(
 					'SELECT u.id, nu.name, '.USER_INITIAL_RATING.' + u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
-						' FROM tournament_users tu' . 
+						' FROM tournament_regs tu' . 
 						' JOIN users u ON tu.user_id = u.id' .
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+						' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 						' WHERE tu.tournament_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
 						$club_id, $tournament_id);
 				while ($row = $query->next())
@@ -176,7 +176,7 @@ try
 						' FROM users u' . 
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = c.id' .
+						' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = c.id' .
 						' WHERE c.id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
 						$club_id);
 					while ($row = $query->next())
@@ -196,7 +196,7 @@ try
 						{
 							break;
 						}
-						list ($id, $name, $points, $games_played, $games_won, $flags, $user_club_id, $user_club_name, $club_user_flags, $tournament_user_flags, $club_user_flags) = $players[$number++];
+						list ($id, $name, $points, $games_played, $games_won, $flags, $user_club_id, $user_club_name, $club_reg_flags, $tournament_reg_flags, $club_reg_flags) = $players[$number++];
 						
 						if ($j == 0)
 						{
@@ -213,14 +213,14 @@ try
 						echo '<tr>';
 						echo '<td align="center" class="dark">' . $number . '</td>';
 						echo '<td width="50">';
-						$tournament_user_pic->
-							set($id, $name, $tournament_user_flags, 't' . $tournament_id)->
-							set($id, $name, $club_user_flags, 'c' . $club_id)->
+						$tournament_reg_pic->
+							set($id, $name, $tournament_reg_flags, 't' . $tournament_id)->
+							set($id, $name, $club_reg_flags, 'c' . $club_id)->
 							set($id, $name, $flags);
-						$tournament_user_pic->show(ICONS_DIR, false, 50);
+						$tournament_reg_pic->show(ICONS_DIR, false, 50);
 						echo '</td><td>' . $name . '</td>';
 						echo '<td width="50" align="center">';
-						$club_pic->set($user_club_id, $user_club_name, $club_user_flags);
+						$club_pic->set($user_club_id, $user_club_name, $club_reg_flags);
 						$club_pic->show(ICONS_DIR, false, 40);
 						echo '</td>';
 						echo '<td align="center" class="lighter">';
@@ -269,11 +269,11 @@ try
 						echo '<tr>';
 						echo '<td align="center" class="dark">' . $number . '</td>';
 						echo '<td width="50">';
-						$tournament_user_pic->
-							set($player->id, $player->name, $player->tournament_user_flags, 't' . $tournament_id)->
-							set($player->id, $player->name, $player->club_user_flags, 'c' . $club_id)->
+						$tournament_reg_pic->
+							set($player->id, $player->name, $player->tournament_reg_flags, 't' . $tournament_id)->
+							set($player->id, $player->name, $player->club_reg_flags, 'c' . $club_id)->
 							set($player->id, $player->name, $player->flags);
-						$tournament_user_pic->show(ICONS_DIR, false, 50);
+						$tournament_reg_pic->show(ICONS_DIR, false, 50);
 						echo '</td><td>' . $player->name . '</td>';
 						echo '<td width="50" align="center">';
 						if (!is_null($player->club_id) && $player->club_id > 0)

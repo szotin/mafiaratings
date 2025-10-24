@@ -78,7 +78,7 @@ class Page extends ClubPageBase
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.club_id = g.club_id AND cu.user_id = u.id' .
 				' WHERE g.club_id = ?',
 			$this->id, $condition);
 		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -91,18 +91,18 @@ class Page extends ClubPageBase
 		echo '<td width="100" align="center">'.get_label('Ties').'</td>';
 		echo '</tr>';
 
-		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+		$club_reg_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 		
 		$number = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
 			++$number;
-			list ($id, $name, $flags, $civil_wins, $mafia_wins, $ties, $club_id, $club_name, $club_flags, $club_user_flags) = $row;
+			list ($id, $name, $flags, $civil_wins, $mafia_wins, $ties, $club_id, $club_name, $club_flags, $club_reg_flags) = $row;
 
 			echo '<tr><td class="dark" align="center">' . $number . '</td>';
 			echo '<td width="50">';
-			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
-			$club_user_pic->show(ICONS_DIR, true, 50);
+			$club_reg_pic->set($id, $name, $club_reg_flags, 'c' . $this->id)->set($id, $name, $flags);
+			$club_reg_pic->show(ICONS_DIR, true, 50);
 			echo '<td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
 			echo '<td width="50" align="center">';
 			if (!is_null($club_id))

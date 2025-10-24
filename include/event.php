@@ -259,7 +259,7 @@ function get_event_reg_array($event_id)
 	$by_name = array();
 	$regs = array();
 	$query = new DbQuery(
-		'SELECT u.id, nu.name, nc.name FROM event_users eu'.
+		'SELECT u.id, nu.name, nc.name FROM event_regs eu'.
 		' JOIN users u ON u.id = eu.user_id'.
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 		' JOIN cities c ON c.id = u.city_id'.
@@ -357,7 +357,7 @@ class EventPageBase extends PageBase
 						' JOIN countries o ON i.country_id = o.id' .
 						' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 						' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
-						' LEFT OUTER JOIN event_users u ON u.event_id = e.id AND u.user_id = ?' .
+						' LEFT OUTER JOIN event_regs u ON u.event_id = e.id AND u.user_id = ?' .
 						' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 						' LEFT OUTER JOIN currencies cu ON e.currency_id = cu.id' .
 						' WHERE e.id = ?',
@@ -421,7 +421,7 @@ class EventPageBase extends PageBase
 		{
 			$manager_menu = array();
 			
-			$manager_menu[] = new MenuItem('event_users.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name));
+			$manager_menu[] = new MenuItem('event_regs.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name));
 			if ($this->is_manager)
 			{
 				$manager_menu[] = new MenuItem('event_mailings.php?id=' . $this->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->name));

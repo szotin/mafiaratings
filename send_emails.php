@@ -72,7 +72,7 @@ try
 	{
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.club_id, count(tu.user_id)'.
-			' FROM tournament_users tu'.
+			' FROM tournament_regs tu'.
 			' JOIN tournaments t ON t.id = tu.tournament_id'.
 			' WHERE (tu.flags & '.(USER_TOURNAMENT_FLAG_NOT_ACCEPTED | USER_TOURNAMENT_MANAGER_NOTIFIED).') = '.USER_TOURNAMENT_FLAG_NOT_ACCEPTED.
 			' GROUP BY t.id'.
@@ -83,7 +83,7 @@ try
 			$send_to_club_managers = true;
 			$query1 = new DbQuery(
 				'SELECT u.id, nu.name, u.email, u.def_lang'.
-				' FROM tournament_users tu'.
+				' FROM tournament_regs tu'.
 				' JOIN users u ON u.id = tu.user_id'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 				' WHERE (tu.flags & '.USER_PERM_MANAGER.') <> 0 AND tu.tournament_id = ? AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0', $tournament_id);
@@ -99,7 +99,7 @@ try
 			{
 				$query1 = new DbQuery(
 					'SELECT u.id, nu.name, u.email, u.def_lang'.
-					' FROM club_users cu'.
+					' FROM club_regs cu'.
 					' JOIN users u ON u.id = cu.user_id'.
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 					' WHERE (cu.flags & '.USER_PERM_MANAGER.') <> 0 AND cu.club_id = ? AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0', $club_id);
@@ -111,7 +111,7 @@ try
 				}
 			}
 		}
-		Db::exec(get_label('user'), 'UPDATE tournament_users SET flags = flags | ' . USER_TOURNAMENT_MANAGER_NOTIFIED);
+		Db::exec(get_label('user'), 'UPDATE tournament_regs SET flags = flags | ' . USER_TOURNAMENT_MANAGER_NOTIFIED);
 	}
 
 	$event_emails = array();
@@ -172,37 +172,37 @@ try
 				{
 					if ($to_flags & MAILING_FLAG_TO_DECLINED)
 					{
-						$condition->add(' AND u.id IN (SELECT user_id FROM event_users WHERE event_id = ?)', $event_id);
+						$condition->add(' AND u.id IN (SELECT user_id FROM event_regs WHERE event_id = ?)', $event_id);
 					}
 					else if ($to_flags & MAILING_FLAG_TO_DESIDING)
 					{
-						$condition->add(' AND u.id NOT IN (SELECT user_id FROM event_users WHERE event_id = ? AND coming_odds <= 0)', $event_id);
+						$condition->add(' AND u.id NOT IN (SELECT user_id FROM event_regs WHERE event_id = ? AND coming_odds <= 0)', $event_id);
 					}
 					else
 					{
-						$condition->add(' AND u.id IN (SELECT user_id FROM event_users WHERE event_id = ? AND coming_odds > 0)', $event_id);
+						$condition->add(' AND u.id IN (SELECT user_id FROM event_regs WHERE event_id = ? AND coming_odds > 0)', $event_id);
 					}
 				}
 				else if ($to_flags & MAILING_FLAG_TO_DECLINED)
 				{
 					if ($to_flags & MAILING_FLAG_TO_DESIDING)
 					{
-						$condition->add(' AND u.id NOT IN (SELECT user_id FROM event_users WHERE event_id = ? AND coming_odds > 0)', $event_id);
+						$condition->add(' AND u.id NOT IN (SELECT user_id FROM event_regs WHERE event_id = ? AND coming_odds > 0)', $event_id);
 					}
 					else
 					{
-						$condition->add(' AND u.id IN (SELECT user_id FROM event_users WHERE event_id = ? AND coming_odds <= 0)', $event_id);
+						$condition->add(' AND u.id IN (SELECT user_id FROM event_regs WHERE event_id = ? AND coming_odds <= 0)', $event_id);
 					}
 				}
 				else
 				{
-					$condition->add(' AND u.id NOT IN (SELECT user_id FROM event_users WHERE event_id = ?)', $event_id);
+					$condition->add(' AND u.id NOT IN (SELECT user_id FROM event_regs WHERE event_id = ?)', $event_id);
 				}
 			}
 			
 			$query1 = new DbQuery(
 				'SELECT u.id, nu.name, u.email, u.def_lang, u.languages'.
-				' FROM club_users uc'.
+				' FROM club_regs uc'.
 				' JOIN users u ON u.id = uc.user_id'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 				' WHERE ', $condition);

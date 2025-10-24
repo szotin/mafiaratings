@@ -138,7 +138,7 @@ try
 	{
 		json.post("api/ops/club.php",
 		{
-			op: "add_user"
+			op: "add_member"
 			, user_id: <?php echo $user_id; ?>
 			, club_id: $('#form-join-club').val()
 		},
@@ -151,7 +151,7 @@ try
 		{
 			json.post("api/ops/club.php",
 			{
-				op: "remove_user"
+				op: "remove_member"
 				, user_id: <?php echo $user_id; ?>
 				, club_id: clubId
 			},

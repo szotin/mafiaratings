@@ -119,8 +119,8 @@ class Page extends TournamentPageBase
 				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' LEFT OUTER JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = m.id AND tu.tournament_id = g.tournament_id' .
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = m.id AND tu.tournament_id = g.tournament_id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = m.id AND cu.club_id = g.club_id' .
 				' JOIN cities ct ON ct.id = c.city_id',
 			$condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);

@@ -141,9 +141,9 @@ try
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN events e ON e.id = ?' . 
-				' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
-				' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
+				' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id' . 
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' . 
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' . 
 				' WHERE u.id = ?', $event_id, $player->id);
 		if (empty($player_name))
 		{

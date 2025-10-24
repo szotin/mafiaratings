@@ -95,16 +95,16 @@ class ApiPage extends GetApiPageBase
 			
 			if (isset($player->id) && $player->id > 0)
 			{
-				list($event_user_flags, $tournament_user_flags, $club_user_flags, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $player->city, $player->country) = Db::record(get_label('user'), 
+				list($event_reg_flags, $tournament_reg_flags, $club_reg_flags, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $player->city, $player->country) = Db::record(get_label('user'), 
 					'SELECT eu.flags, tu.flags, cu.flags, u.flags, c.id, c.name, c.flags, ni.name, no.name FROM users u' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
 					' JOIN cities i ON i.id = u.city_id' .
 					' JOIN countries o ON o.id = i.country_id' .
 					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 					' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
-					' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
-					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
-					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+					' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = ?' .
+					' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+					' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 					' WHERE u.id = ?', 
 					$this->event_id, $this->tournament_id, $this->club_id, $player->id);
 				if ($user_flags & USER_FLAG_MALE)
@@ -129,12 +129,12 @@ class ApiPage extends GetApiPageBase
 			}
 			else
 			{
-				$event_user_flags = $tournament_user_flags = $club_user_flags = $user_flags = 0;
+				$event_reg_flags = $tournament_reg_flags = $club_reg_flags = $user_flags = 0;
 			}
 			$this->user_pic->
-				set($player->id, $player->name, $event_user_flags, 'e' . $this->event_id)->
-				set($player->id, $player->name, $tournament_user_flags, 't' . $this->tournament_id)->
-				set($player->id, $player->name, $club_user_flags, 'c' . $this->club_id)->
+				set($player->id, $player->name, $event_reg_flags, 'e' . $this->event_id)->
+				set($player->id, $player->name, $tournament_reg_flags, 't' . $this->tournament_id)->
+				set($player->id, $player->name, $club_reg_flags, 'c' . $this->club_id)->
 				set($player->id, $player->name, $user_flags);
 			$player->photoUrl = $server_url . '/' . $this->user_pic->url(SOURCE_DIR);
 			$player->tnailUrl = $server_url . '/' . $this->user_pic->url(TNAILS_DIR);
@@ -239,7 +239,7 @@ class ApiPage extends GetApiPageBase
 			$game->moderator->id = (int)$g->moderator->id;
 			if ($game->moderator->id > 0)
 			{
-				list($game->moderator->name, $event_user_flags, $tournament_user_flags, $club_user_flags, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $game->moderator->city, $game->moderator->country) = Db::record(get_label('user'), 
+				list($game->moderator->name, $event_reg_flags, $tournament_reg_flags, $club_reg_flags, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $game->moderator->city, $game->moderator->country) = Db::record(get_label('user'), 
 					'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, nu.name, u.flags, c.id, c.name, c.flags, ni.name, no.name' .
 					' FROM users u' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
@@ -248,9 +248,9 @@ class ApiPage extends GetApiPageBase
 					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 					' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' LEFT OUTER JOIN event_users eu ON eu.user_id = u.id AND eu.event_id = ?' .
-					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
-					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+					' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = ?' .
+					' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+					' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 					' WHERE u.id = ?', 
 					$this->event_id, $this->tournament_id, $this->club_id, $game->moderator->id);
 				if (is_null($game->moderator->name))
@@ -270,12 +270,12 @@ class ApiPage extends GetApiPageBase
 			else
 			{
 				$game->moderator->name = '';
-				$event_user_flags = $tournament_user_flags = $club_user_flags = $user_flags = 0;
+				$event_reg_flags = $tournament_reg_flags = $club_reg_flags = $user_flags = 0;
 			}
 			$this->user_pic->
-				set($game->moderator->id, $game->moderator->name, $event_user_flags, 'e' . $this->event_id)->
-				set($game->moderator->id, $game->moderator->name, $tournament_user_flags, 't' . $this->tournament_id)->
-				set($game->moderator->id, $game->moderator->name, $club_user_flags, 'c' . $this->club_id)->
+				set($game->moderator->id, $game->moderator->name, $event_reg_flags, 'e' . $this->event_id)->
+				set($game->moderator->id, $game->moderator->name, $tournament_reg_flags, 't' . $this->tournament_id)->
+				set($game->moderator->id, $game->moderator->name, $club_reg_flags, 'c' . $this->club_id)->
 				set($game->moderator->id, $game->moderator->name, $user_flags);
 			$game->moderator->photoUrl = $server_url . '/' . $this->user_pic->url(SOURCE_DIR);
 			$game->moderator->tnailUrl = $server_url . '/' . $this->user_pic->url(TNAILS_DIR);

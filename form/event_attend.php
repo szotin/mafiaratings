@@ -24,7 +24,7 @@ try
 	$friends = 0;
 	$late = 0;
 	$nickname = NULL;
-	$query = new DbQuery('SELECT coming_odds, people_with_me, late, nickname FROM event_users WHERE event_id = ? AND user_id = ?', $id, $_profile->user_id);
+	$query = new DbQuery('SELECT coming_odds, people_with_me, late, nickname FROM event_regs WHERE event_id = ? AND user_id = ?', $id, $_profile->user_id);
 	if ($row = $query->next())
 	{
 		list ($odds, $friends, $late, $nickname) = $row;

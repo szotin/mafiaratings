@@ -21,7 +21,7 @@ class Page extends TournamentPageBase
 			// $is_team_tournament = ($count > 0);
 		// }
 		
-		$tournament_user_pic =
+		$tournament_reg_pic =
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic));
@@ -35,7 +35,7 @@ class Page extends TournamentPageBase
 		echo '<td width="87">';
 		if ($can_edit)
 		{
-			echo '<button class="icon" onclick="mr.addTournamentUser(' . $this->id . ')" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.addTournamentReg(' . $this->id . ')" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button>';
 		}
 		echo '</td>';
 		echo '<td colspan="5">' . get_label('Player') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
@@ -46,13 +46,13 @@ class Page extends TournamentPageBase
 		$current_team = NULL;
 		$query = new DbQuery(
 			'SELECT t.name, u.id, nu.name, u.email, u.flags, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags, ni.name' .
-			' FROM tournament_users tu' .
+			' FROM tournament_regs tu' .
 			' JOIN users u ON tu.user_id = u.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN cities i ON i.id = u.city_id'.
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
-			' LEFT OUTER JOIN club_users cu ON cu.club_id = tu.tournament_id AND cu.user_id = tu.user_id' .
+			' LEFT OUTER JOIN club_regs cu ON cu.club_id = tu.tournament_id AND cu.user_id = tu.user_id' .
 			' LEFT OUTER JOIN tournament_teams t ON tu.team_id = t.id' .
 			' WHERE tu.tournament_id = ?' .
 			' ORDER BY t.name, nu.name',
@@ -102,9 +102,9 @@ class Page extends TournamentPageBase
 			for ($i = 0; $i < $players_count; ++$i)
 			{
 				$row = $team->players[$i];
-				list($team_name, $id, $name, $email, $user_flags, $tournament_user_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_user_flags, $city) = $row;
+				list($team_name, $id, $name, $email, $user_flags, $tournament_reg_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_reg_flags, $city) = $row;
 			
-				if ($tournament_user_flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
+				if ($tournament_reg_flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
 				{
 					echo '<tr class="dark">';
 				}
@@ -136,8 +136,8 @@ class Page extends TournamentPageBase
 				echo '<td class="dark">';
 				if ($can_edit)
 				{
-					echo '<button class="icon" onclick="mr.removeTournamentUser(' . $this->id . ', ' . $id . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
-					echo '<button class="icon" onclick="mr.editTournamentUser(' . $this->id . ', ' . $id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.removeTournamentReg(' . $this->id . ', ' . $id . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
+					echo '<button class="icon" onclick="mr.editTournamentReg(' . $this->id . ', ' . $id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
 					echo '<button class="icon" onclick="mr.tournamentUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
 				}
 				else
@@ -147,17 +147,17 @@ class Page extends TournamentPageBase
 				echo '</td>';
 				
 				echo '<td width="60" align="center">';
-				$tournament_user_pic->
-					set($id, $name, $tournament_user_flags, 't' . $this->id)->
-					set($id, $name, $club_user_flags, 'c' . $user_club_id)->
+				$tournament_reg_pic->
+					set($id, $name, $tournament_reg_flags, 't' . $this->id)->
+					set($id, $name, $club_reg_flags, 'c' . $user_club_id)->
 					set($id, $name, $user_flags);
-				$tournament_user_pic->show(ICONS_DIR, true, 50);
+				$tournament_reg_pic->show(ICONS_DIR, true, 50);
 				echo '</td>';
 				
-				if ($tournament_user_flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
+				if ($tournament_reg_flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
 				{
 					echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
-					echo '<td width="150" align="center"><button onclick="mr.acceptTournamentUser('.$this->id.','.$id.')">'.get_label('Accept application').'</button></td>';
+					echo '<td width="150" align="center"><button onclick="mr.removeTournamentReg('.$this->id.','.$id.')">'.get_label('Accept application').'</button></td>';
 				}
 				else
 				{
@@ -179,7 +179,7 @@ class Page extends TournamentPageBase
 				echo '</td>';
 				
 				echo '<td>';
-				if ($tournament_user_flags & USER_PERM_PLAYER)
+				if ($tournament_reg_flags & USER_PERM_PLAYER)
 				{
 					echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
 				}
@@ -187,7 +187,7 @@ class Page extends TournamentPageBase
 				{
 					echo '<img src="images/transp.png" width="32">';
 				}
-				if ($tournament_user_flags & USER_PERM_REFEREE)
+				if ($tournament_reg_flags & USER_PERM_REFEREE)
 				{
 					echo '<img src="images/referee.png" width="32" title="' . get_label('Referee') . '">';
 				}
@@ -195,7 +195,7 @@ class Page extends TournamentPageBase
 				{
 					echo '<img src="images/transp.png" width="32">';
 				}
-				if ($tournament_user_flags & USER_PERM_MANAGER)
+				if ($tournament_reg_flags & USER_PERM_MANAGER)
 				{
 					echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
 				}

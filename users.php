@@ -65,7 +65,7 @@ class Page extends GeneralPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $_profile->user_id);
+				$condition->add($sep . 'u.club_id IN (SELECT club_id FROM club_regs WHERE user_id = ?)', $_profile->user_id);
 				$sep = ' AND ';
 			}
 			break;
@@ -104,7 +104,7 @@ class Page extends GeneralPageBase
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN cities i ON i.id = u.city_id'.
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
-			' LEFT OUTER JOIN club_users uc ON uc.user_id = u.id' .
+			' LEFT OUTER JOIN club_regs uc ON uc.user_id = u.id' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id', $condition);
 		$query->add(' GROUP BY u.id ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())

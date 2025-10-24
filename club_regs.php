@@ -33,7 +33,7 @@ class Page extends ClubPageBase
 			if ($row = $query->next())
 			{
 				list($this->user_name) = $row;
-				list($is_member) = Db::record(get_label('user'), 'SELECT count(*) FROM club_users WHERE user_id = ? AND club_id = ?', $this->user_id, $this->id);
+				list($is_member) = Db::record(get_label('user'), 'SELECT count(*) FROM club_regs WHERE user_id = ? AND club_id = ?', $this->user_id, $this->id);
 				if ($is_member <= 0)
 				{
 					$this->errorMessage(get_label('[0] is not a member of [1].', $this->user_name, $this->name));
@@ -57,7 +57,7 @@ class Page extends ClubPageBase
 		{
 			$pos_query = new DbQuery(
 				'SELECT count(*)'.
-				' FROM club_users uc'.
+				' FROM club_regs uc'.
 				' JOIN users u ON uc.user_id = u.id'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' WHERE uc.club_id = ? AND nu.name < ?', $this->id, $this->user_name);
@@ -65,7 +65,7 @@ class Page extends ClubPageBase
 			$_page = floor($user_pos / PAGE_SIZE);
 		}
 		
-		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+		$club_reg_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 
 		echo '<form method="get" name="viewForm">';
 		echo '<input type="hidden" name="id" value="' . $this->id . '">';
@@ -74,7 +74,7 @@ class Page extends ClubPageBase
 		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific user is located.'));
 		echo '</td></tr></table></form>';
 		
-		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users u, club_users uc WHERE ', $condition);
+		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users u, club_regs uc WHERE ', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		echo '<table class="bordered light" width="100%">';
@@ -94,7 +94,7 @@ class Page extends ClubPageBase
 
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.email, u.flags, uc.flags, c.id, c.name, c.flags, ni.name' .
-			' FROM club_users uc' .
+			' FROM club_regs uc' .
 			' JOIN users u ON uc.user_id = u.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN cities i ON u.city_id = i.id'.
@@ -105,7 +105,7 @@ class Page extends ClubPageBase
 			$this->id);
 		while ($row = $query->next())
 		{
-			list($id, $name, $email, $flags, $club_user_flags, $club_id, $club_name, $club_flags, $city) = $row;
+			list($id, $name, $email, $flags, $club_reg_flags, $club_id, $club_name, $club_flags, $city) = $row;
 		
 			if ($id == $this->user_id)
 			{
@@ -129,8 +129,8 @@ class Page extends ClubPageBase
 			}
 			
 			echo '<td width="60" align="center">';
-			$club_user_pic->set($id, $name, $club_user_flags, 'c' . $this->id)->set($id, $name, $flags);
-			$club_user_pic->show(ICONS_DIR, true, 50);
+			$club_reg_pic->set($id, $name, $club_reg_flags, 'c' . $this->id)->set($id, $name, $flags);
+			$club_reg_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
 			echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
 			if ($this->is_manager)
@@ -151,7 +151,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			if ($club_user_flags & USER_CLUB_FLAG_SUBSCRIBED)
+			if ($club_reg_flags & USER_CLUB_FLAG_SUBSCRIBED)
 			{	
 				echo '<img src="images/email.png" width="24" title="' . get_label('Subscribed') . '">';
 			}
@@ -159,7 +159,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="24">';
 			}
-			if ($club_user_flags & USER_PERM_PLAYER)
+			if ($club_reg_flags & USER_PERM_PLAYER)
 			{
 				echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
 			}
@@ -167,7 +167,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($club_user_flags & USER_PERM_REFEREE)
+			if ($club_reg_flags & USER_PERM_REFEREE)
 			{
 				echo '<img src="images/referee.png" width="32" title="' . get_label('Referee') . '">';
 			}
@@ -175,7 +175,7 @@ class Page extends ClubPageBase
 			{
 				echo '<img src="images/transp.png" width="32">';
 			}
-			if ($club_user_flags & USER_PERM_MANAGER)
+			if ($club_reg_flags & USER_PERM_MANAGER)
 			{
 				echo '<img src="images/manager.png" width="32" title="' . get_label('Manager') . '">';
 			}
@@ -205,7 +205,7 @@ class Page extends ClubPageBase
 			let msg = "<?php echo get_label('Are you sure you want to remove {name}?'); ?>";
 			dlg.yesNo(msg.replaceAll("{name}", userName), null, null, function()
 			{
-				json.post("api/ops/club.php", { op: "remove_user", club_id: <?php echo $this->id; ?>, user_id: userId }, function() { goTo({ page: undefined }); });
+				json.post("api/ops/club.php", { op: "remove_member", club_id: <?php echo $this->id; ?>, user_id: userId }, function() { goTo({ page: undefined }); });
 			});
 		}
 		

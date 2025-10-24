@@ -233,7 +233,7 @@ function complete_tournament()
 				' JOIN tournaments t ON t.id = tp.tournament_id'.
 				' JOIN users u ON u.id = tp.user_id'.
 				' JOIN cities uc ON uc.id = u.city_id'.
-				' LEFT OUTER JOIN tournament_users tu ON tu.user_id = tp.user_id AND tu.tournament_id = tp.tournament_id'.
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = tp.user_id AND tu.tournament_id = tp.tournament_id'.
 				' LEFT OUTER JOIN cities tc ON tc.id = tu.city_id'.
 				' LEFT OUTER JOIN players p ON p.user_id = u.id AND p.game_end_time = (SELECT MAX(game_end_time) FROM players WHERE user_id = u.id AND game_end_time < t.start_time)'.
 				' WHERE tp.tournament_id = ?'.
@@ -262,7 +262,7 @@ function complete_tournament()
 				$importance = get_tournament_importance($stars, $player->place, $players_count);
 				Db::exec(get_label('player'), 'UPDATE tournament_places SET importance = ? WHERE tournament_id = ? AND user_id = ?', $importance, $tournament_id, $player->id);
 				Db::exec(get_label('player'), 
-					'INSERT INTO tournament_users(tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)'.
+					'INSERT INTO tournament_regs(tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)'.
 					' ON DUPLICATE KEY UPDATE rating = ?, flags = (flags | ' . USER_PERM_PLAYER . ') & ~' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED, 
 					$tournament_id, $player->id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $player->city_id, $player->rating, $player->rating);
 					
@@ -369,7 +369,7 @@ function complete_tournament()
 					'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
 					$tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags, $player->wins);
 				Db::exec(get_label('player'), 
-					'INSERT INTO tournament_users(tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)'.
+					'INSERT INTO tournament_regs(tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)'.
 					' ON DUPLICATE KEY UPDATE rating = ?, flags = (flags | ' . USER_PERM_PLAYER . ') & ~' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED, 
 					$tournament_id, $player->id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $player->city_id, $player->rating, $player->rating);
 					

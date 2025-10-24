@@ -209,7 +209,7 @@ class TournamentPageBase extends PageBase
 		{
 			$manager_menu = array
 			(
-				new MenuItem('tournament_users.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name)),
+				new MenuItem('tournament_regs.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name)),
 				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
 				new MenuItem(null, null, null),
@@ -293,7 +293,7 @@ class TournamentPageBase extends PageBase
 			}
 			else if ($_profile != NULL)
 			{
-				$query = new DbQuery('SELECT flags FROM tournament_users WHERE tournament_id = ? AND user_id = ?', $this->id, $_profile->user_id);
+				$query = new DbQuery('SELECT flags FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $this->id, $_profile->user_id);
 				if ($row = $query->next())
 				{
 					list($tu_flags) = $row;
@@ -529,7 +529,7 @@ function update_tournament_stats($tournament_id, $lat = NULL, $lon = NULL, $flag
 		$guest_coeff = 0;
 		$query = new DbQuery(
 			'SELECT c.lon, c.lat, tu.rating'.
-			' FROM tournament_users tu'.
+			' FROM tournament_regs tu'.
 			' JOIN cities c ON c.id = tu.city_id'.
 			' WHERE tu.tournament_id = ? AND (tu.flags & '.(USER_TOURNAMENT_FLAG_NOT_ACCEPTED | USER_PERM_PLAYER).') = '.USER_PERM_PLAYER.
 			' ORDER BY tu.rating DESC', $tournament_id);

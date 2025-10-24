@@ -202,13 +202,13 @@ class Page extends TournamentPageBase
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' JOIN cities i ON i.id = u.city_id'.
 					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
-					' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
-					' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+					' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+					' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 					' WHERE u.id IN ('.$players_list.')', $this->id, $this->club_id);
 				while ($row = $query->next())
 				{
 					$user = $this->users[$row[0]];
-					list($user->id, $user->name, $user->flags, $user->city_name, $user->tournament_user_flags, $user->club_user_flags) = $row;
+					list($user->id, $user->name, $user->flags, $user->city_name, $user->tournament_reg_flags, $user->club_reg_flags) = $row;
 				}
 			}
 			
@@ -361,8 +361,8 @@ class Page extends TournamentPageBase
 			{
 				echo '<tr><td align="center">' . $ref_beg;
 				$this->user_pic->
-					set($user->id, $user->name, $user->tournament_user_flags, 't' . $this->id)->
-					set($user->id, $user->name, $user->club_user_flags, 'c' . $this->club_id)->
+					set($user->id, $user->name, $user->tournament_reg_flags, 't' . $this->id)->
+					set($user->id, $user->name, $user->club_reg_flags, 'c' . $this->club_id)->
 					set($user->id, $user->name, $user->flags);
 				$this->user_pic->show(ICONS_DIR, false, 48);
 				echo $ref_end.'</td></tr>';

@@ -33,7 +33,7 @@ class Page extends GeneralPageBase
 			}
 			else if ($ccc_id == 0 && $_profile != NULL)
 			{
-				$query->add(' AND u.club_id IN (SELECT club_id FROM club_users WHERE user_id = ?)', $_profile->user_id);
+				$query->add(' AND u.club_id IN (SELECT club_id FROM club_regs WHERE user_id = ?)', $_profile->user_id);
 			}
 			break;
 		case CCCF_CITY:

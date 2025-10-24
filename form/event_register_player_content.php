@@ -60,14 +60,14 @@ try
 		$query->add(
 				' AND (n.name LIKE ? OR' .
 				' u.email LIKE ? OR' .
-				' u.id IN (SELECT DISTINCT user_id FROM event_users WHERE nickname LIKE ?))',
+				' u.id IN (SELECT DISTINCT user_id FROM event_regs WHERE nickname LIKE ?))',
 			$name_wildcard,
 			$name_wildcard,
 			$name_wildcard);
 	}
 	else if ($club_id > 0)
 	{
-		$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM club_users WHERE club_id = ?)', $club_id);
+		$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM club_regs WHERE club_id = ?)', $club_id);
 	}
 	$query->add(' ORDER BY mtch, games_count DESC LIMIT ' . (COLUMN_COUNT * MAX_ROW_COUNT));
 	

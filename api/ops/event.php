@@ -245,7 +245,7 @@ class ApiPage extends OpsApiPageBase
 						// Club moderator who is creating the event should have management permissions for the event
 						Db::exec(
 							get_label('registration'), 
-							'INSERT INTO event_users (event_id, user_id, flags) VALUES (?, ?, ?)',
+							'INSERT INTO event_regs (event_id, user_id, flags) VALUES (?, ?, ?)',
 							$event_id, $_profile->user_id, USER_PERM_MANAGER);
 					}
 				}
@@ -291,7 +291,7 @@ class ApiPage extends OpsApiPageBase
 				// Club moderator who is creating the event should have management permissions for the event
 				Db::exec(
 					get_label('registration'), 
-					'INSERT INTO event_users (event_id, user_id, flags) VALUES (?, ?, ?)',
+					'INSERT INTO event_regs (event_id, user_id, flags) VALUES (?, ?, ?)',
 					$event_id, $_profile->user_id, USER_PERM_MANAGER);
 			}
 		}
@@ -485,13 +485,13 @@ class ApiPage extends OpsApiPageBase
 				}
 				
 				// Add event registrations to tournament registrations
-				$query = new DbQuery('SELECT e.user_id, e.flags, u.city_id, u.rating FROM event_users e JOIN users u ON u.id = e.user_id WHERE e.event_id = ?', $event_id);
+				$query = new DbQuery('SELECT e.user_id, e.flags, u.city_id, u.rating FROM event_regs e JOIN users u ON u.id = e.user_id WHERE e.event_id = ?', $event_id);
 				while ($row = $query->next())
 				{
 					list($user_id, $user_flags, $user_city_id, $user_rating) = $row;
 					$user_flags &= USER_PERM_MASK;
 					// Note that we are loosing user custom picture here if exists. We can fix it in the future if it is a problem.
-					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $tournament_id, $user_id, $user_flags, $user_city_id, $user_rating);
+					Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_regs (tournament_id, user_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $tournament_id, $user_id, $user_flags, $user_city_id, $user_rating);
 				}
 				update_tournament_stats($tournament_id, $tournament_lat, $tournament_lon, $tournament_flags);
 				
@@ -718,9 +718,9 @@ class ApiPage extends OpsApiPageBase
 			}
 			
 			Db::begin();
-			Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $user_id);
+			Db::exec(get_label('registration'), 'DELETE FROM event_regs WHERE event_id = ? AND user_id = ?', $event_id, $user_id);
 			Db::exec(get_label('registration'), 
-				'INSERT INTO event_users (event_id, user_id, coming_odds, people_with_me, late, nickname) VALUES (?, ?, ?, ?, ?, ?)',
+				'INSERT INTO event_regs (event_id, user_id, coming_odds, people_with_me, late, nickname) VALUES (?, ?, ?, ?, ?, ?)',
 				$event_id, $user_id, $odds, $friends, $late, $nickname);
 			Db::commit();
 			
@@ -809,7 +809,7 @@ class ApiPage extends OpsApiPageBase
 			$names = new Names(-1, get_label('user name'), 'users', 0, new SQL(' AND o.city_id = ?', $city_id), $name);
 			$user_id = create_user($names, $email, $club_id, $city_id);
 			Db::exec(get_label('registration'), 
-				'INSERT INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)',
+				'INSERT INTO event_regs (event_id, user_id, nickname) VALUES (?, ?, ?)',
 				$event_id, $user_id, $name);
 			Db::commit();
 				
@@ -1007,10 +1007,10 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		Db::exec(get_label('user'), 'DELETE FROM event_users WHERE event_id = ?', $event_id);
+		Db::exec(get_label('user'), 'DELETE FROM event_regs WHERE event_id = ?', $event_id);
 		if (Db::affected_rows() > 0)
 		{
-			$log_details->event_users = Db::affected_rows();
+			$log_details->event_regs = Db::affected_rows();
 		}
 		Db::exec(get_label('user'), 'DELETE FROM event_incomers WHERE event_id = ?', $event_id);
 		if (Db::affected_rows() > 0)
@@ -1107,7 +1107,7 @@ class ApiPage extends OpsApiPageBase
 					list($nickname) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $new_user_id);
 				}
 				
-				Db::exec(get_label('registration'), 'INSERT INTO event_users (event_id, user_id, nickname) VALUES (?, ?, ?)', $event_id, $new_user_id, $nickname);
+				Db::exec(get_label('registration'), 'INSERT INTO event_regs (event_id, user_id, nickname) VALUES (?, ?, ?)', $event_id, $new_user_id, $nickname);
 				$changed = $changed || Db::affected_rows() > 0;
 				
 				Db::exec(get_label('registration'), 'DELETE FROM event_incomers WHERE id = ?', $incomer_id);
@@ -1138,7 +1138,7 @@ class ApiPage extends OpsApiPageBase
 			list ($incomer_id) = Db::record(get_label('registration'), 'SELECT LAST_INSERT_ID()');
 			$new_user_id = -$incomer_id;
 			
-			Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE event_id = ? AND user_id = ?', $event_id, $user_id);
+			Db::exec(get_label('registration'), 'DELETE FROM event_regs WHERE event_id = ? AND user_id = ?', $event_id, $user_id);
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		else if ($user_id != $new_user_id)
@@ -1147,12 +1147,12 @@ class ApiPage extends OpsApiPageBase
 			{
 				list($nickname) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $new_user_id);
 			}
-			Db::exec(get_label('registration'), 'UPDATE event_users SET user_id = ?, nickname = ? WHERE user_id = ? AND event_id = ?', $new_user_id, $nickname, $user_id, $event_id);
+			Db::exec(get_label('registration'), 'UPDATE event_regs SET user_id = ?, nickname = ? WHERE user_id = ? AND event_id = ?', $new_user_id, $nickname, $user_id, $event_id);
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		else if ($nickname != NULL)
 		{
-			Db::exec(get_label('registration'), 'UPDATE event_users SET nickname = ? WHERE user_id = ? AND event_id = ?', $nickname, $user_id, $event_id);
+			Db::exec(get_label('registration'), 'UPDATE event_regs SET nickname = ? WHERE user_id = ? AND event_id = ?', $nickname, $user_id, $event_id);
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		
@@ -1560,13 +1560,13 @@ class ApiPage extends OpsApiPageBase
 		$log_details->flags = 0;
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
-		$query = new DbQuery('SELECT e.user_id, e.flags, u.city_id, u.rating FROM event_users e JOIN users u ON u.id = e.user_id WHERE e.event_id = ?', $event_id);
+		$query = new DbQuery('SELECT e.user_id, e.flags, u.city_id, u.rating FROM event_regs e JOIN users u ON u.id = e.user_id WHERE e.event_id = ?', $event_id);
 		while ($row = $query->next())
 		{
 			list($user_id, $user_flags, $user_city_id, $user_rating) = $row;
 			$user_flags &= USER_PERM_MASK;
 			// Note that we are loosing user custom picture here if exists. We can fix it in the future if it is a problem.
-			Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_users (tournament_id, user_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $tournament_id, $user_id, $user_flags, $user_city_id, $user_rating);
+			Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_regs (tournament_id, user_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $tournament_id, $user_id, $user_flags, $user_city_id, $user_rating);
 		}
 		update_tournament_stats($tournament_id, $lat, $lon, 0);
 			
@@ -1666,7 +1666,7 @@ class ApiPage extends OpsApiPageBase
 		$query = new DbQuery(
 			'(SELECT u.id, nu.name, u.email, u.flags, u.def_lang FROM users u' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-			' JOIN event_users eu ON u.id = eu.user_id' .
+			' JOIN event_regs eu ON u.id = eu.user_id' .
 			' WHERE eu.coming_odds > 0 AND eu.event_id = ?)' .
 			' UNION DISTINCT ' .
 			' (SELECT DISTINCT u.id, nu.name, u.email, u.flags, u.def_lang FROM users u' .
@@ -1716,9 +1716,9 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
-	// add_user
+	// add_registration
 	//-------------------------------------------------------------------------------------------------------
-	function add_user_op()
+	function add_registration_op()
 	{
 		global $_profile;
 		
@@ -1741,17 +1741,17 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
-		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
+		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_regs WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
 		if ($count == 0)
 		{
-			Db::exec(get_label('registration'), 'INSERT INTO event_users (user_id, event_id, flags) values (?, ?, ?)', $user_id, $event_id, $flags);
+			Db::exec(get_label('registration'), 'INSERT INTO event_regs (user_id, event_id, flags) values (?, ?, ?)', $user_id, $event_id, $flags);
 			$log_details = new stdClass();
 			$log_details->event_id = $event_id;
 			db_log(LOG_OBJECT_USER, 'joined event', $log_details, $user_id, $club_id);
 		}
 		else
 		{
-			Db::exec(get_label('registration'), 'UPDATE event_users SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
+			Db::exec(get_label('registration'), 'UPDATE event_regs SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
 		}
 		Db::commit();
 		
@@ -1759,7 +1759,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['user_id'] = $user_id;
 	}
 	
-	function add_user_op_help()
+	function add_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_REFEREE, 'Register user to an event.');
 		$help->request_param('user_id', 'User id. If the user is a member already success is returned anyway.', 'the one who is making request is used.');
@@ -1771,9 +1771,9 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// remove_user
+	// remove_registration
 	//-------------------------------------------------------------------------------------------------------
-	function remove_user_op()
+	function remove_registration_op()
 	{
 		global $_profile;
 		
@@ -1790,7 +1790,7 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
 		
-		Db::exec(get_label('registration'), 'DELETE FROM event_users WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
+		Db::exec(get_label('registration'), 'DELETE FROM event_regs WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -1803,7 +1803,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['user_id'] = $user_id;
 	}
 	
-	function remove_user_op_help()
+	function remove_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_REFEREE, 'Remove user from the registrations to the event.');
 		$help->request_param('user_id', 'User id. If the user is not a member already success is returned anyway.', 'the one who is making request is used.');

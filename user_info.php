@@ -175,7 +175,7 @@ class Page extends UserPageBase
             echo '<tr><td class="dark">'.get_label('Gender').':</td><td>'.get_label('female').'</td></tr>';
         }
 		
-		$query = new DbQuery('SELECT DISTINCT nickname FROM event_users WHERE user_id = ? ORDER BY nickname', $this->id);
+		$query = new DbQuery('SELECT DISTINCT nickname FROM event_regs WHERE user_id = ? ORDER BY nickname', $this->id);
 		if ($row = $query->next())
 		{
 			echo '<tr><td class="dark">'.get_label('Nicks').':</td><td>' . cut_long_name($row[0], 88);
@@ -202,7 +202,7 @@ class Page extends UserPageBase
 			{
 				$status = get_label('activated');
 			}
-			$query = new DbQuery('SELECT flags FROM club_users WHERE user_id = ? AND club_id = ?', $this->id, $this->club_id);
+			$query = new DbQuery('SELECT flags FROM club_regs WHERE user_id = ? AND club_id = ?', $this->id, $this->club_id);
 			if ($row = $query->next())
 			{
 				list($club_flags) = $row;

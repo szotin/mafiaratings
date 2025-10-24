@@ -121,13 +121,13 @@ class Page extends TournamentPageBase
 				$this->player->normalization = 1;
 				$this->player->points = 0;
 				$this->player->raw_points = 0;
-				list ($this->player->name, $this->player->flags, $this->player->tournament_user_flags, $this->player->club_user_flags) = 
+				list ($this->player->name, $this->player->flags, $this->player->tournament_reg_flags, $this->player->club_reg_flags) = 
 					Db::record(get_label('user'), 
 						'SELECT nu.name, u.flags, tu.flags, cu.flags'.
 						' FROM users u'.
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-						' LEFT OUTER JOIN tournament_users tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
-						' LEFT OUTER JOIN club_users cu ON cu.user_id = u.id AND cu.club_id = ?' .
+						' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+						' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 						' WHERE u.id = ?', $this->id, $this->club_id, $this->user_id);
 			}
 		}
@@ -140,7 +140,7 @@ class Page extends TournamentPageBase
 			$this->player->points = 0;
 			$this->player->raw_points = 0;
 			$this->player->name = '';
-			$this->player->flags = $this->player->tournament_user_flags = $this->player->club_user_flags = 0;
+			$this->player->flags = $this->player->tournament_reg_flags = $this->player->club_reg_flags = 0;
 		}
 		
 		$this->player_pic =
@@ -148,8 +148,8 @@ class Page extends TournamentPageBase
 			new Picture(USER_CLUB_PICTURE,
 			new Picture(USER_PICTURE)));
 		$this->player_pic->
-			set($this->player->id, $this->player->name, $this->player->tournament_user_flags, 't' . $this->id)->
-			set($this->player->id, $this->player->name, $this->player->club_user_flags, 'c' . $this->club_id)->
+			set($this->player->id, $this->player->name, $this->player->tournament_reg_flags, 't' . $this->id)->
+			set($this->player->id, $this->player->name, $this->player->club_reg_flags, 'c' . $this->club_id)->
 			set($this->player->id, $this->player->name, $this->player->flags);
 	}
 	

@@ -45,7 +45,7 @@ class Page extends ClubPageBase
 		
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$event_pic = new Picture(EVENT_PICTURE);
-		$club_user_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
+		$club_reg_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		echo '<select id="results" onChange="filterChanged()">';
@@ -130,7 +130,7 @@ class Page extends ClubPageBase
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' LEFT OUTER JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN club_users cu ON cu.club_id = g.club_id AND cu.user_id = m.id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.club_id = g.club_id AND cu.user_id = m.id' .
 				' JOIN cities c ON c.id = a.city_id',
 			$condition);
 		$query->add(' ORDER BY g.end_time DESC, g.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -219,8 +219,8 @@ class Page extends ClubPageBase
 			echo '</td>';
 			
 			echo '<td>';
-			$club_user_pic->set($referee_id, $referee_name, $club_referee_flags, 'c' . $this->id)->set($referee_id, $referee_name, $referee_flags);
-			$club_user_pic->show(ICONS_DIR, true, 48);
+			$club_reg_pic->set($referee_id, $referee_name, $club_referee_flags, 'c' . $this->id)->set($referee_id, $referee_name, $referee_flags);
+			$club_reg_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 			
 			echo '<td>';

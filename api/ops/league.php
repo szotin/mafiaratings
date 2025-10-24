@@ -658,7 +658,7 @@ class ApiPage extends OpsApiPageBase
 				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
 				$query = new DbQuery(
 					'SELECT u.id, nu.name, u.email, u.def_lang'.
-					' FROM club_users uc'.
+					' FROM club_regs uc'.
 					' JOIN users u ON uc.user_id = u.id'.
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 					' WHERE uc.club_id = ? AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0 AND uc.flags & ' . USER_PERM_MANAGER, $club_id);
@@ -775,7 +775,7 @@ class ApiPage extends OpsApiPageBase
 			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.email, u.def_lang'.
-				' FROM club_users uc'.
+				' FROM club_regs uc'.
 				' JOIN users u ON uc.user_id = u.id'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 				' WHERE uc.club_id = ? AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0 AND uc.flags & ' . USER_PERM_MANAGER, $club_id);

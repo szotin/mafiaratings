@@ -33,7 +33,7 @@ class Page extends GeneralPageBase
 		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, ni.name, no.name, i.timezone, a.address, a.map_url');
 		if ($_profile != null)
 		{
-			$query->add(', eu.coming_odds, eu.people_with_me, eu.late FROM events e LEFT OUTER JOIN event_users eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
+			$query->add(', eu.coming_odds, eu.people_with_me, eu.late FROM events e LEFT OUTER JOIN event_regs eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
 		}
 		else
 		{
