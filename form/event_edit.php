@@ -14,7 +14,7 @@ initiate_session();
 try
 {
 	dialog_title(get_label('Edit [0]', get_label('event')));
-
+	
 	if (!isset($_REQUEST['event_id']))
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('event')));
@@ -63,10 +63,10 @@ try
 	
 	echo '</tr>';
 	
-	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= ? AND start_time + duration >= ? AND (flags & ' . TOURNAMENT_FLAG_LONG_TERM . ') <> 0 ORDER BY name', $club_id, $start_time, $start_time);
+	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= ? AND start_time + duration >= ? ORDER BY name', $club_id, $start_time, $start_time);
 	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
 	show_option(0, $tour_id, '');
-	$tournament_found = is_null($tid);
+	$tournament_found = is_null($tour_id);
 	while ($row = $query->next())
 	{
 		list($tid, $tname) = $row;

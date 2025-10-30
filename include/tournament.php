@@ -511,7 +511,19 @@ function update_tournament_stats($tournament_id, $lat = NULL, $lon = NULL, $flag
 {
 	if (is_null($flags) || is_null($lat) || is_null($lon))
 	{
-		list ($flags, $lat, $lon) = Db::record(get_label('tournament'), 'SELECT t.flags, a.lat, a.lon FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
+		list ($_flags, $_lat, $_lon) = Db::record(get_label('tournament'), 'SELECT t.flags, a.lat, a.lon FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
+		if (is_null($flags))
+		{
+			$flags = $_flags;
+		}
+		if (is_null($lat))
+		{
+			$lat = $_lat;
+		}
+		if (is_null($lon))
+		{
+			$lon = $_lon;
+		}
 	}
 	
 	if ($flags & TOURNAMENT_FLAG_FINISHED)

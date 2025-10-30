@@ -49,11 +49,11 @@ class Page extends ClubPageBase
 			$this->id);
 		if ($future)
 		{
-			$condition->add(' AND e.start_time + e.duration >= UNIX_TIMESTAMP()');
+			$condition->add(' AND e.start_time + e.duration >= UNIX_TIMESTAMP() AND (e.flags & '.EVENT_FLAG_HIDDEN_AFTER. ') = 0');
 		}
 		else
 		{
-			$condition->add(' AND e.start_time < UNIX_TIMESTAMP()');
+			$condition->add(' AND e.start_time < UNIX_TIMESTAMP() AND (e.flags & '.EVENT_FLAG_HIDDEN_BEFORE. ') = 0');
 			
 			if ($filter & FLAG_FILTER_VIDEOS)
 			{
