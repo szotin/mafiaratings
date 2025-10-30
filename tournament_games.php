@@ -17,6 +17,8 @@ define('FLAG_FILTER_NO_CANCELED', 0x0020);
 
 define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NO_CANCELED);
 
+define('MAX_TABS', 5);
+
 class Page extends TournamentPageBase
 {
 	protected function show_body()
@@ -37,6 +39,47 @@ class Page extends TournamentPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
+		$event_table = 0;
+		$event_filter = 0;
+		$table_filter = 0;
+		if (isset($_REQUEST['et']))
+		{
+			$event_table = (int)$_REQUEST['et'];
+			$event_filter = floor($event_table / 100);
+			$table_filter = $event_table % 100;
+		}
+		
+		$tables_count = 0;
+		$rounds = array();
+		$query = new DbQuery('SELECT g.event_id, g.table_num, e.name, COUNT(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? GROUP BY e.name, g.table_num ORDER BY g.event_id, g.table_num', $this->id);
+		while ($row = $query->next())
+		{
+			list ($event_id, $table_num, $event_name, $games_count) = $row;
+			
+			if (array_key_exists($event_id, $rounds))
+			{
+				$round = $rounds[$event_id];
+			}
+			else
+			{
+				$round = new stdClass();
+				$round->event_name = $event_name;
+				$round->tables = array();
+				$rounds[$event_id] = $round;
+				++$tables_count;
+			}
+			
+			if (!is_null($table_num) && !array_key_exists($table_num, $round->tables))
+			{
+				if (!empty($round->tables))
+				{
+					++$tables_count;
+				}
+				$round->tables[$table_num] = (int)$games_count;
+			}
+		}
+		//print_json($rounds);
+		
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		echo '<select id="results" onChange="filterChanged()">';
 		show_option(-1, $result_filter, get_label('All games'));
@@ -48,7 +91,46 @@ class Page extends TournamentPageBase
 		show_date_filter();
 		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('with video'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
-		echo '</td></tr></table></p>';
+		echo '</td>';
+		if ($tables_count > MAX_TABS)
+		{
+			echo '<td align="right"><select id="event-table" onchange="eventTableChange()">';
+			show_option(0, $event_table, get_label('All'));
+			foreach ($rounds as $event_id => $round)
+			{
+				$et = $event_id * 100;
+				show_option($et, $event_table, $round->event_name);
+				if (count($round->tables) > 1)
+				{
+					foreach ($round->tables as $table_num => $count)
+					{
+						show_option($et + $table_num, $event_table, get_label('[0], table [1]', $round->event_name, $table_num));
+					}
+				}
+			}
+			echo '</select></td>';
+		}
+		echo '</tr></table></p>';
+		
+		if ($tables_count > 1 && $tables_count <= MAX_TABS)
+		{
+			echo '<div class="tab">';
+			echo '<button ' . ($event_table == 0 ? 'class="active" ' : '') . 'onclick="goTo({et:0,page:undefined})" style="height: 52px;">' . get_label('All') . '</button>';
+			foreach ($rounds as $event_id => $round)
+			{
+				$et = $event_id * 100;
+				echo '<button ' . ($event_table == $et ? 'class="active" ' : '') . 'onclick="goTo({et:' . $et . ',page:undefined})" style="height: 52px;">' . $round->event_name . '</button>';
+				if (count($round->tables) > 1)
+				{
+					foreach ($round->tables as $table_num => $count)
+					{
+						$e = $et + $table_num;
+						echo '<button ' . ($event_table == $e ? 'class="active" ' : '') . 'onclick="goTo({et:' . $e . ',page:undefined})" style="height: 52px;">' . $round->event_name . '<br>' . get_label('table [0]', $table_num) . '</button>';
+					}
+				}
+			}
+			echo '</div>';
+		}
 		
 		$condition = new SQL(' WHERE g.tournament_id = ?', $this->id);
 		if ($result_filter > 0)
@@ -90,6 +172,15 @@ class Page extends TournamentPageBase
 			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
+		if ($event_filter > 0)
+		{
+			$condition->add(' AND g.event_id = ?', $event_filter);
+		}
+		if ($table_filter > 0)
+		{
+			$condition->add(' AND g.table_num = ?', $table_filter);
+		}
+		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
@@ -112,7 +203,7 @@ class Page extends TournamentPageBase
 		echo '>&nbsp;</td><td width="100">'.get_label('Round').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, g.user_id, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags,' . 
-			' e.id, e.name, e.flags, a.id, a.name, a.flags, tu.flags, cu.flags' . 
+			' e.id, e.name, e.flags, a.id, a.name, a.flags, tu.flags, cu.flags, g.table_num, g.game_num' . 
 				' FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
@@ -129,7 +220,8 @@ class Page extends TournamentPageBase
 		{
 			list (
 				$game_id, $game_user_id, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $flags, 
-				$event_id, $event_name, $event_flags, $address_id, $address_name, $address_flags, $tournament_moder_flags, $club_moder_flags) = $row;
+				$event_id, $event_name, $event_flags, $address_id, $address_name, $address_flags, $tournament_moder_flags, $club_moder_flags,
+				$table_num, $game_num) = $row;
 
 			echo '<tr align="center"';
 			if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
@@ -173,9 +265,21 @@ class Page extends TournamentPageBase
 			{
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&tournament_id=' . $this->id . '&bck=1"><b>' . get_label('Game #[0]', $game_id);
-			echo '</b><br>' . $event_name;
-			echo '</b><br>' . format_date($start, $timezone, true) . '</a>';
+			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>';
+			if (is_null($game_num))
+			{
+				echo get_label('Game #[0]', $game_id);
+			}
+			else if (is_null($table_num))
+			{
+				echo  get_label('Game [0]', $game_num);
+			}
+			else
+			{
+				echo  get_label('Table [0], Game [1]', $table_num, $game_num);
+			}
+			echo '<br>'. $event_name . '</b>';
+			echo '<br>' . format_date($start, $timezone, true) . '</a>';
 			if ($video_id != NULL)
 			{
 				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
@@ -231,7 +335,16 @@ class Page extends TournamentPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({results: $('#results').val(), filter: checkboxFilterFlags(), page: 0 });
+			goTo({results: $('#results').val(), filter: checkboxFilterFlags(), page: undefined });
+		}
+		
+		function eventTableChange(e)
+		{
+			if (!isSet(e))
+			{
+				e = $('#event-table').val();
+			}
+			goTo({et: e != 0 ? e : undefined, page: undefined });
 		}
 <?php
 	}

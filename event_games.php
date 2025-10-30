@@ -39,6 +39,23 @@ class Page extends EventPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
+		$table_filter = 0;
+		if (isset($_REQUEST['table']))
+		{
+			$table_filter = (int)$_REQUEST['table'];
+		}
+		
+		$tables = array();
+		$query = new DbQuery('SELECT table_num, COUNT(*) FROM games WHERE event_id = ? GROUP BY table_num ORDER BY table_num', $this->id);
+		while ($row = $query->next())
+		{
+			list ($t, $games_count) = $row;
+			if (!is_null($t))
+			{
+				$tables[$t] = $games_count;
+			}
+		}
+		
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		echo '<select id="results" onChange="filterChanged()">';
 		show_option(-1, $result_filter, get_label('All games'));
@@ -51,6 +68,17 @@ class Page extends EventPageBase
 		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('with video'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
 		echo '</td></tr></table></p>';
+		
+		if (count($tables) > 1)
+		{
+			echo '<div class="tab">';
+			echo '<button ' . ($table_filter == 0 ? 'class="active" ' : '') . 'onclick="goTo({table:undefined,page:undefined})">' . get_label('All') . '</button>';
+			foreach ($tables as $table_num => $games_count)
+			{
+				echo '<button ' . ($table_filter == $table_num ? 'class="active" ' : '') . 'onclick="goTo({table:' . $table_num . ',page:undefined})">' . get_label('Table [0]', $table_num) . '</button>';
+			}
+			echo '</div>';
+		}
 		
 		$condition = new SQL(' WHERE g.event_id = ?', $this->id);
 		if ($result_filter > 0)
@@ -91,6 +119,10 @@ class Page extends EventPageBase
 		{
 			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
+		if ($table_filter > 0)
+		{
+			$condition->add(' AND g.table_num = ?', $table_filter);
+		}
 		
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -116,7 +148,7 @@ class Page extends EventPageBase
 		$query = new DbQuery(
 			'SELECT g.id, g.user_id, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags,' .
 			' t.id, t.name, t.flags,' . 
-			' eu.nickname, eu.flags, tu.flags, cu.flags FROM games g' .
+			' eu.nickname, eu.flags, tu.flags, cu.flags, g.table_num, g.game_num FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' LEFT OUTER JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
@@ -134,7 +166,7 @@ class Page extends EventPageBase
 			list (
 				$game_id, $game_user_id, $timezone, $referee_id, $referee_name, $referee_flags, $start, $duration, $game_result, $video_id, $flags, 
 				$tournament_id, $tournament_name, $tournament_flags,
-				$event_referee_nickname, $event_referee_flags, $tournament_referee_flags, $club_referee_flags) = $row;
+				$event_referee_nickname, $event_referee_flags, $tournament_referee_flags, $club_referee_flags, $table_num, $game_num) = $row;
 			
 			echo '<tr align="center"';
 			if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
@@ -178,7 +210,19 @@ class Page extends EventPageBase
 			{
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&event_id=' . $this->id . '&bck=1"><b>' . get_label('Game #[0]', $game_id);
+			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>';
+			if (is_null($game_num))
+			{
+				echo get_label('Game #[0]', $game_id);
+			}
+			else if (is_null($table_num))
+			{
+				echo  get_label('Game [0]', $game_num);
+			}
+			else
+			{
+				echo  get_label('Table [0], Game [1]', $table_num, $game_num);
+			}
 			echo '</b><br>' . format_date($start, $timezone, true) . '</a>';
 			if ($video_id != NULL)
 			{

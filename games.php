@@ -148,7 +148,7 @@ class Page extends GeneralPageBase
 		$is_user = is_permitted(PERMISSION_USER);
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td width="48"></td><td'; 
-		if ($is_user)
+		if ($this->is_admin)
 		{
 			echo ' colspan="3"';
 		}
@@ -158,7 +158,7 @@ class Page extends GeneralPageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags, a.id, a.name, a.flags FROM games g' .
+			'SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags, a.id, a.name, a.flags, g.table_num, g.game_num FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
 				' JOIN addresses a ON a.id = e.address_id' .
@@ -172,7 +172,7 @@ class Page extends GeneralPageBase
 		$num = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
-			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $flags, $address_id, $address_name, $address_flags) = $row;
+			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, $game_result, $video_id, $flags, $address_id, $address_name, $address_flags, $table_num, $game_num) = $row;
 			
 			echo '<tr align="center"';
 			if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
@@ -197,11 +197,6 @@ class Page extends GeneralPageBase
 				}
 				echo '</td>';
 			}
-			else if ($is_user)
-			{
-				echo '<td class="dark" width="30">';
-				echo '</td>';
-			}
 			
 			if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 			{
@@ -216,12 +211,29 @@ class Page extends GeneralPageBase
 			{
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
+			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>';
+			if (is_null($game_num))
+			{
+				echo get_label('Game #[0]', $game_id);
+			}
+			else if (is_null($table_num))
+			{
+				echo  get_label('Game [0]', $game_num);
+			}
+			else
+			{
+				echo  get_label('Table [0], Game [1]', $table_num, $game_num);
+			}
+			echo '<br>';
 			if ($tournament_name != NULL)
 			{
-				echo $tournament_name . ': ';
+				echo $tournament_name . '</b>, ' . $event_name;
 			}
-			echo $event_name . '<br>' . format_date($start, $timezone, true) . '</a>';
+			else
+			{
+				echo $event_name . '</b>';
+			}
+			echo '<br>' . format_date($start, $timezone, true) . '</a>';
 			if ($video_id != NULL)
 			{
 				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
