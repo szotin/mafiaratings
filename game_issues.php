@@ -22,7 +22,7 @@ class Page extends GeneralPageBase
 		$query = new DbQuery('SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, i.issues, i.feature_flags, i.new_feature_flags FROM game_issues i JOIN games g ON g.id = i.game_id JOIN events e ON e.id = g.event_id JOIN clubs c ON c.id = g.club_id ORDER BY i.game_id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 	
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td width="56"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="90">' . get_label('Game') . '</td><td width="90">' . get_label('Features') . '</td><td width="90">' . get_label('Removed features') . '</td><td>' . get_label('Issues') . '</td></tr>';
+		echo '<tr class="th darker" align="center"><td width="84"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="90">' . get_label('Game') . '</td><td width="90">' . get_label('Features') . '</td><td width="90">' . get_label('Removed features') . '</td><td>' . get_label('Issues') . '</td></tr>';
 		while ($row = $query->next())
 		{
 			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $issues, $feature_flags, $new_feature_flags) = $row;
@@ -33,6 +33,7 @@ class Page extends GeneralPageBase
 			echo '<td valign="top">';
 			echo '<button class="icon" onclick="rawEditGame(' . $game_id . ', ' . $feature_flags . ')" title="' . get_label('Edit game json [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
 			echo '<button class="icon" onclick="deleteGameIssue(' . $game_id .  ', ' . $feature_flags . ')" title="' . get_label('Not an issue.') . '"><img src="images/delete.png" border="0"></button>';
+			echo '<button class="icon" onclick="reapply(' . $game_id .  ')" title="' . get_label('Try to apply it again.') . '"><img src="images/refresh.png" border="0"></button>';
 			echo '</td>';
 			
 			echo '<td>';
@@ -63,10 +64,18 @@ class Page extends GeneralPageBase
 		
 		function deleteGameIssue(gameId, featureFlags)
 		{
-			json.post("api/ops/game.php", { op: "delete_issue", game_id: gameId, features: featureFlags }, function()
+			dlg.yesNo("<?php echo get_label('Are you sure you want to delete game issue?'); ?>", null, null, function()
 			{
-				dlg.info("<?php echo get_label('Game is accepted as is. Issue record is deleted.'); ?>", "<?php echo get_label('Game'); ?>" + gameId, undefined, refr);
+				json.post("api/ops/game.php", { op: "delete_issue", game_id: gameId, features: featureFlags }, function()
+				{
+					dlg.info("<?php echo get_label('Game is accepted as is. Issue record is deleted.'); ?>", "<?php echo get_label('Game'); ?>" + gameId, undefined, refr);
+				});
 			});
+		}
+		
+		function reapply(gameId)
+		{
+			json.post("api/ops/game.php", { op: "reapply_issue", game_id: gameId }, refr);
 		}
 <?php
 	}

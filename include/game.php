@@ -611,22 +611,27 @@ class Game
 			{
 				continue;
 			}
+			
 			$death_time = $this->get_player_death_time($i + 1, true);
 			$speech_time->round = count($player->nominating) - 1;
 			$speech_time->time = GAMETIME_SPEAKING;
 			$speech_time->speaker = $i + 1;
 			if ($death_time != NULL && $speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0)
 			{
-				if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' was dead when they nominated player ' . $player->nominating[$speech_time->round] . ' in round ' . $speech_time->round . '.', ' Nomination is removed.'))
+				// In 2010 and 2011 we allowed the player who was killed in night to nominate. This rule does not exist any more. 1420070400 is January 1 2015
+				if ($this->data->startTime > 1420070400 || $death_time->time != GAMETIME_NIGHT_KILL_SPEAKING) 
 				{
-					do
+					if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' was dead when they nominated player ' . $player->nominating[$speech_time->round] . ' in round ' . $speech_time->round . '.', ' Nomination is removed.'))
 					{
-						$player->nominating[$speech_time->round] = NULL;
-						--$speech_time->round;
+						do
+						{
+							$player->nominating[$speech_time->round] = NULL;
+							--$speech_time->round;
+						}
+						while ($speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0);
+						$player->nominating = Game::cut_ending_nulls($player->nominating);
+						return false;
 					}
-					while ($speech_time->round >= 0 && $this->compare_gametimes($death_time, $speech_time) < 0);
-					$player->nominating = Game::cut_ending_nulls($player->nominating);
-					return false;
 				}
 			}
 			

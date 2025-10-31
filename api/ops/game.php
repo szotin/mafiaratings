@@ -14,6 +14,20 @@ define('CURRENT_VERSION', 4); // must match _version in js/src/game.js
 
 class ApiPage extends OpsApiPageBase
 {
+	private function set_issues_text($game)
+	{
+		if (isset($game->issues))
+		{
+			$text = get_label('The game contains the next issues:') . '<ul>';
+			foreach ($game->issues as $issue)
+			{
+				$text .= '<li>' . $issue . '</li>';
+			}
+			$text .= '</ul>' . get_label('They are all fixed but the original version of the game is also saved. Please check Game Issues in the management menu.');
+			$this->response['message'] = $text;
+		}
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -35,16 +49,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['rebuild_ratings'] = $game->create();
 		Db::commit();
 		
-		if (isset($game->issues))
-		{
-			$text = get_label('The game contains the next issues:') . '<ul>';
-			foreach ($game->issues as $issue)
-			{
-				$text .= '<li>' . $issue . '</li>';
-			}
-			$text .= '</ul>' . get_label('They are all fixed but the original version of the game is also saved. Please check Game Issues in the management menu.');
-			$this->response['message'] = $text;
-		}
+		$this->set_issues_text($game);
 	}
 	
 	function create_op_help()
@@ -87,16 +92,7 @@ class ApiPage extends OpsApiPageBase
 		$this->response['rebuild_ratings'] = $game->update();
 		Db::commit();
 		
-		if (isset($game->issues))
-		{
-			$text = get_label('The game contains the next issues:') . '<ul>';
-			foreach ($game->issues as $issue)
-			{
-				$text .= '<li>' . $issue . '</li>';
-			}
-			$text .= '</ul>' . get_label('They are all fixed but the original version of the game is also saved. Please check Game Issues in the management menu.');
-			$this->response['message'] = $text;
-		}
+		$this->set_issues_text($game);
 	}
 	
 	function change_op_help()
@@ -333,6 +329,40 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	// function delete_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_ADMIN, 'Delete game.');
+		// $help->request_param('game_id', 'Game id.');
+		// return $help;
+	// }
+	
+	//-------------------------------------------------------------------------------------------------------
+	// reapply_issue
+	//-------------------------------------------------------------------------------------------------------
+	function reapply_issue_op()
+	{
+		$game_id = (int)get_required_param('game_id');
+		check_permissions(PERMISSION_ADMIN);
+	
+		Db::begin();
+		list($json, $feature_flags) = Db::record(get_label('game'), 'SELECT json, feature_flags FROM game_issues WHERE game_id = ? LIMIT 1', $game_id);
+		
+		$game = new Game($json, $feature_flags);
+		if (!isset($game->data->id))
+		{
+			$game->data->id = $game_id;
+		}
+		else if ($game->data->id != $game_id)
+		{
+			throw new Exc(get_label('Game id does not match the one in the game'));
+		}	
+		
+		$this->response['rebuild_ratings'] = $game->update();
+		Db::commit();
+		
+		$this->set_issues_text($game);
+	}
+	
+	// function reapply_issue_op_help()
 	// {
 		// $help = new ApiHelp(PERMISSION_ADMIN, 'Delete game.');
 		// $help->request_param('game_id', 'Game id.');
