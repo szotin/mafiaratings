@@ -1116,7 +1116,6 @@ class ApiPage extends OpsApiPageBase
 			
 			$flags = (int)get_optional_param('flags', $old_flags);
 			$flags = ($flags & GAME_SETTINGS_EDITABLE_MASK) + ($old_flags & ~GAME_SETTINGS_EDITABLE_MASK);
-			$flags |= GAME_NON_CONFIGURABLE_FEATURES;
 			
 			$prompt_sound_id = (int)get_optional_param('prompt_sound_id', $old_prompt_sound_id);
 			if ($prompt_sound_id <= 0)

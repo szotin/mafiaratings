@@ -834,6 +834,26 @@ function _gameIsEnd()
 			}
 		}
 		
+		let d = _whenVotingIsDecided(game.time.round);
+		if (d != null && gameCompareTimes(d, game.time) <= 0)
+		{
+			for (const w of d.winners)
+			{
+				let p = game.players[w];
+				if (!isSet(p.death))
+				{
+					if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
+					{
+						--blackAlive;
+					}
+					else
+					{
+						--redAlive;
+					}
+				}
+			}
+		}
+		
 		if (blackAlive <= 0)
 		{
 			return 1;
@@ -915,14 +935,18 @@ function gamePlayerWarning(num)
 	{
 		player.warnings = [];
 	}
-	player.warnings.push(structuredClone(game.time));
-	
-	if (player.warnings.length >= 4)
+	if (player.warnings.length < 4)
 	{
-		player.death = { round: game.time.round, type: 'warnings' };
-		_gameCheckEnd();
+		player.warnings.push(structuredClone(game.time));
+		
+		if (player.warnings.length >= 4)
+		{
+			_gameCheckEnd(); // we need to check is game ended before the mod kill, because mod kill can change the game result
+			player.death = { round: game.time.round, type: 'warnings' };
+			_gameCheckEnd();
+		}
+		gameDirty();
 	}
-	gameDirty();
 }
 
 function gamePlayerGiveUp(num)
@@ -930,6 +954,7 @@ function gamePlayerGiveUp(num)
 	let player = game.players[num];
 	gamePushState();
 	_gameIncTimeOrder();
+	_gameCheckEnd(); // we need to check is game ended before the mod kill, because mod kill can change the game result
 	player.death = { 'round': game.time.round, 'type': 'giveUp', 'time': structuredClone(game.time) };
 	_gameCheckEnd();
 	gameDirty();
@@ -940,6 +965,7 @@ function gamePlayerKickOut(num)
 	let player = game.players[num];
 	gamePushState();
 	_gameIncTimeOrder();
+	_gameCheckEnd(); // we need to check is game ended before the mod kill, because mod kill can change the game result
 	player.death = { 'round': game.time.round, 'type': 'kickOut', 'time': structuredClone(game.time) };
 	_gameCheckEnd();
 	gameDirty();
@@ -950,14 +976,23 @@ function gamePlayerTeamKickOut(num)
 	let p = game.players[num];
 	gamePushState();
 	_gameIncTimeOrder();
-	p.death = { 'round': game.time.round, 'type': 'teamKickOut', 'time': structuredClone(game.time) };
-	if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
+	
+	// if game is ended already there is no need to do team kick out. The result of the game should not be changed. So we replace it with a simple kickOut
+	if (_gameCheckEnd())
 	{
-		_gameEnd('civ');
+		p.death = { 'round': game.time.round, 'type': 'kickOut', 'time': structuredClone(game.time) };
 	}
 	else
 	{
-		_gameEnd('maf');
+		p.death = { 'round': game.time.round, 'type': type, 'time': structuredClone(game.time) };
+		if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
+		{
+			_gameEnd('civ');
+		}
+		else
+		{
+			_gameEnd('maf');
+		}
 	}
 	gameDirty();
 }
@@ -1167,7 +1202,7 @@ function _whenVotingIsDecided(round)
 		}
 		if (noms.length == 1)
 		{
-			return { "round":round, "time":'voting start' };
+			return { "round":round, "time":'voting start', "winners":winners };
 		}
 		for (let i = 0; i < noms.length - 2; ++i)
 		{
@@ -1742,7 +1777,7 @@ function gameVoteAll(vote)
 		let changed = false;
 		for (let i = 0; i < 10; ++i)
 		{
-			if (_gameVote(i, vote ? 1 : -1) != 0)
+			if (!isSet(game.players[i].death) && _gameVote(i, vote ? 1 : -1) != 0)
 			{
 				changed = true;
 			}

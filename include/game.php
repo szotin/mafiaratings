@@ -929,10 +929,14 @@ class Game
 					}
 					else if ($round != 0 || get_rule($this->get_rules(), RULES_FIRST_DAY_VOTING) != RULES_FIRST_DAY_VOTING_TO_TALK)
 					{
-						if ($this->set_issue($fix, 'Player ' . $voting->winner . ' was voted out in round ' . $round . ' but did not die.', ' All votings are removed.'))
+						$player = $this->data->players[$voting->winner - 1];
+						if (!isset($player->death) || $player->death->round != $round || ($player->death->type == DEATH_TYPE_DAY || $player->death->type == DEATH_TYPE_NIGHT))
 						{
-							$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
-							return false;
+							if ($this->set_issue($fix, 'Player ' . $voting->winner . ' was voted out in round ' . $round . ' but did not die.', ' All votings are removed.'))
+							{
+								$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
+								return false;
+							}
 						}
 					}
 				}
@@ -1460,7 +1464,6 @@ class Game
 					$result->votingRound = $voting_round;
 					$result->time = GAMETIME_VOTING;
 					$result->nominee = $noms[count($noms) - 2];
-					$result->winners = $winners;  // winners is not needed in time definition, but we use it in isVotingCanceled to avoid recalculating winners there
 					for ($i = 0; $i < count($noms) - 2; ++$i)
 					{
 						$n = $noms[$i];
@@ -1479,6 +1482,9 @@ class Game
 			$result->round = $round;
 			$result->votingRound = $voting_round;
 			$result->time = GAMETIME_VOTING_KILL_ALL;
+		}
+		if (!is_null($result))
+		{
 			$result->winners = $winners;  // winners is not needed in time definition, but we use it in isVotingCanceled to avoid recalculating winners there
 		}
 		return $result;
@@ -1580,7 +1586,7 @@ class Game
 				if ($r == $round)
 				{
 					$d = $this->when_voting_is_decided($r);
-					if ($d == NULL || $this->compare_gametimes($d, $this->get_player_death_time($i + 1)) >= 0 && $i != $this->get_night_kill($r))
+					if ($d == NULL || $this->compare_gametimes($d, $this->get_player_death_time($i + 1), true) >= 0 && $i != $this->get_night_kill($r))
 					{
 						return GAME_YES;
 					}
@@ -1588,7 +1594,7 @@ class Game
 				else if ($r == $round - 1)
 				{
 					$d = $this->when_voting_is_decided($r);
-					if ($d != NULL && $this->compare_gametimes($d, $this->get_player_death_time($i + 1)) < 0)
+					if ($d != NULL && $this->compare_gametimes($d, $this->get_player_death_time($i + 1), true) < 0)
 					{
 						// when the one who is mod-killed is also voted out, the voting is not canceked in the next round
 						$votedOut = false;
@@ -1645,40 +1651,103 @@ class Game
 			}
 		}
 	}
-		
-	function who_speaks_first($round)
+	
+	// Note: next two functions are not what you expect. They are just a service functions for who_speaks_first($round)
+	// They return next and prev speakers based on their alive status at the beginning of the round. Not based on their speech. 
+	// They also do not consider who is speaking first/last. For example _prev_speaker(0, 0) returns 9, though 10 does not speak before 1 in round 0. Same: _next_speaker(9, 0) returns 0, thought 1 does not speak after 10.
+	private function _next_speaker($index, $round)
 	{
-		// todo: support mafclub rules
-		$candidate = 1;
-		if ($round > 0)
-		{
-			$candidate = $this->who_speaks_first($round - 1) + 1;
-			if ($candidate > 10)
-			{
-				$candidate = 1;
-			}
-		}
-		
 		$day_start = new stdClass();
 		$day_start->round = $round;
 		$day_start->time = GAMETIME_NIGHT_KILL_SPEAKING;
-		for ($i = 0; $i < 10; ++$i)
+		$end = $index;
+		do
 		{
-			if ($this->compare_gametimes($this->get_player_death_time($candidate), $day_start) > 0)
+			if (++$index >= 10)
 			{
-				break;
+				$index = 0;
 			}
-			else if (++$candidate > 10)
+			
+			if ($this->compare_gametimes($this->get_player_death_time($index + 1), $day_start) > 0)
 			{
-				$candidate = 1;
+				return $index;
 			}
 		}
-		if ($i >= 10)
-		{
-			return 0;
-		}
-		return $candidate;
+		while ($index != $end);
+		return -1;
 	}
+
+	private function _prev_speaker($index, $round)
+	{
+		$day_start = new stdClass();
+		$day_start->round = $round;
+		$day_start->time = GAMETIME_NIGHT_KILL_SPEAKING;
+		$end = $index;
+		do
+		{
+			if (--$index < 0)
+			{
+				$index = 9;
+			}
+			
+			if ($this->compare_gametimes($this->get_player_death_time($index + 1), $day_start) > 0)
+			{
+				return $index;
+			}
+		}
+		while ($index != $end);
+		return -1;
+	}
+	
+	function who_speaks_first($round)
+	{
+		if ($round == 0)
+		{
+			return $this->_next_speaker(9, 0) + 1;
+		}
+
+		$prev = $this->who_speaks_first($round - 1) - 1;
+		if (get_rule($this->get_rules(), RULES_ROTATION) != RULES_ROTATION_LAST)
+		{
+			$prev = $this->_next_speaker($this->_prev_speaker($prev, $round - 1), $round);
+		}
+		return $this->_next_speaker($prev, $round) + 1;
+	}
+	
+		
+	// function who_speaks_first($round)
+	// {
+		// // todo: support mafclub rules
+		// $candidate = 1;
+		// if ($round > 0)
+		// {
+			// $candidate = $this->who_speaks_first($round - 1) + 1;
+			// if ($candidate > 10)
+			// {
+				// $candidate = 1;
+			// }
+		// }
+		
+		// $day_start = new stdClass();
+		// $day_start->round = $round;
+		// $day_start->time = GAMETIME_NIGHT_KILL_SPEAKING;
+		// for ($i = 0; $i < 10; ++$i)
+		// {
+			// if ($this->compare_gametimes($this->get_player_death_time($candidate), $day_start) > 0)
+			// {
+				// break;
+			// }
+			// else if (++$candidate > 10)
+			// {
+				// $candidate = 1;
+			// }
+		// }
+		// if ($i >= 10)
+		// {
+			// return 0;
+		// }
+		// return $candidate;
+	// }
 	
 	// returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
 	// num1 and num2 are 1 based. The range is 1-10.
@@ -2084,7 +2153,7 @@ class Game
 	}
 	
 	// returns <0 if $gt1 < $gt2; >0 if $gt1 > $gt2; 0 if $gt1 == $gt2
-	function compare_gametimes($gt1, $gt2)
+	function compare_gametimes($gt1, $gt2, $no_order = false)
 	{
 		$round1 = isset($gt1->round) ? $gt1->round : 0;
 		$round2 = isset($gt2->round) ? $gt2->round : 0;
@@ -2134,7 +2203,7 @@ class Game
 			break;
 		}
 		
-		if ($result == 0)
+		if ($result == 0 && !$no_order)
 		{
 			$result = (isset($gt1->order) ? $gt1->order : -1) - (isset($gt2->order) ? $gt2->order : -1);
 		}
@@ -2584,15 +2653,15 @@ class Game
 			}
 			if ($max > 0)
 			{
-				$first = $this->who_speaks_first($round);
+				$first = $this->who_speaks_first($round) - 1;
 				$i = $first;
 				do
 				{
 					$p = $this->data->players[$i];
-					if (isset($p->nominating) && $round < count($p->nominating))
+					if (isset($p->nominating) && !is_null($p->nominating) && $round < count($p->nominating))
 					{
 						$n = $p->nominating[$round];
-						if ($votes[$n-1] == $max)
+						if (!is_null($n) && $votes[$n-1] == $max)
 						{
 							$noms[] = $n;
 						}
@@ -2607,7 +2676,7 @@ class Game
 		}
 		else
 		{
-			$first = $this->who_speaks_first($round);
+			$first = $this->who_speaks_first($round) - 1;
 			$i = $first;
 			do
 			{

@@ -837,7 +837,7 @@ function _uiProceedKeyEvent(e)
 {
 	if (!dlg.onScreen() && !e.ctrlKey) // some referees use ctrl-number to switch between tabs, so we prevent any proceeding with ctrl
 	{
-		var code = e.keyCode;
+		let code = e.keyCode;
 		if (!timer._hidden)
 		{
 			if (code == /*space*/32)
@@ -896,19 +896,21 @@ function _uiProceedKeyEvent(e)
 		
 		if (isSet(game.time))
 		{
-			if (index >= 0)
+			if (index >= 0 && !isSet(game.players[index].death))
 			{
-				if (isSet(game.time.speaker) && e.shiftKey && e.altKey)
-				{
-					uiPlayerActions(index);
-					return true;
-				}
 				if (e.shiftKey)
 				{
-					gamePlayerWarning(index);
+					if (!e.altKey)
+					{
+						gamePlayerWarning(index);
+					}
+					else
+					{
+						uiPlayerActions(index);
+					}
 					return true;
 				}
-				else if (e.altKey)
+				else if (e.altKey && isSet(game.time.speaker))
 				{
 					gameToggleOnRecord(index + 1);
 					return true;
@@ -952,45 +954,45 @@ function _uiProceedKeyEvent(e)
 			else switch (game.time.time)
 			{
 			case 'start':
-				if (code == /*g*/71 && (_settingsFlags & 16/*GAME_SETTINGS_RANDOMIZE_SEATING*/) != 0)
+				if (code == /*g*/71)
 				{
 					gameGenerateRoles();
 					return true;
 				}
 				break;
 			case 'speaking':
-				if (code == /*-*/189)
+				if (code == /*-*/189 || code == /*n*/78)
 				{
 					gameNominatePlayer(-1);
 					return true;
 				}
 				break;
 			case 'voting':
-				if (code == /*+*/187)
+				if (code == /*+*/187 || code == /*a*/65)
 				{
 					gameVoteAll(1);
 					return true;
 				}
-				else if (code == /*-*/189)
+				else if (code == /*-*/189 || code == /*n*/78)
 				{
 					gameVoteAll(0);
 					return true;
 				}
 				break;
 			case 'voting kill all':
-				if (code == /*+*/187)
+				if (code == /*+*/187 || code == /*a*/65)
 				{
 					gameAllVoteToKillAll(true);
 					return true;
 				}
-				else if (code == /*-*/189)
+				else if (code == /*-*/189 || code == /*n*/78)
 				{
 					gameAllVoteToKillAll(false);
 					return true;
 				}
 				break;
 			case 'shooting':
-				if (code == /*-*/189)
+				if (code == /*-*/189 || code == /*n*/78)
 				{
 					let shots = gameGetShots();
 					for (let i = 0; i < shots.length; ++i)
@@ -1001,21 +1003,21 @@ function _uiProceedKeyEvent(e)
 				}
 				break;
 			case 'don':
-				if (code == /*-*/189)
+				if (code == /*-*/189 || code == /*n*/78)
 				{
 					gameDonCheck(-1);
 					return true;
 				}
 				break;
 			case 'sheriff':
-				if (code == /*-*/189)
+				if (code == /*-*/189 || code == /*n*/78)
 				{
 					gameSheriffCheck(-1);
 					return true;
 				}
 				break;
 			case 'night kill speaking':
-				if (code == /*-*/189 && game.time.round == 1)
+				if ((code == /*-*/189 || code == /*n*/78) && game.time.round == 1)
 				{
 					gameSetLegacy(-1);
 					return true;

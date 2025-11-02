@@ -21,14 +21,18 @@ class Page extends GeneralPageBase
 
 		$query = new DbQuery('SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, i.issues, i.feature_flags, i.new_feature_flags FROM game_issues i JOIN games g ON g.id = i.game_id JOIN events e ON e.id = g.event_id JOIN clubs c ON c.id = g.club_id ORDER BY i.game_id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 	
+		$count = 0;
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td width="84"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="90">' . get_label('Game') . '</td><td width="90">' . get_label('Features') . '</td><td width="90">' . get_label('Removed features') . '</td><td>' . get_label('Issues') . '</td></tr>';
+		echo '<tr class="th darker" align="center"><td width="32"></td><td width="84"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="90">' . get_label('Game') . '</td><td width="90">' . get_label('Features') . '</td><td width="90">' . get_label('Removed features') . '</td><td>' . get_label('Issues') . '</td></tr>';
 		while ($row = $query->next())
 		{
 			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $issues, $feature_flags, $new_feature_flags) = $row;
 			$removed_feature_flags = (((int)$feature_flags ^ (int)$new_feature_flags) & (int)$feature_flags);
 		
 			echo '<tr>';
+			
+			echo '<td align="center">' . ++$count . '</td>';
+			
 			
 			echo '<td valign="top">';
 			echo '<button class="icon" onclick="rawEditGame(' . $game_id . ', ' . $feature_flags . ')" title="' . get_label('Edit game json [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
