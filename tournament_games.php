@@ -265,7 +265,16 @@ class Page extends TournamentPageBase
 			{
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>';
+			echo '<a href="view_game.php?id=' . $game_id . '&tournament_id=' . $this->id;
+			if ($event_table != 0)
+			{
+				echo '&event_id=' . $event_filter;
+				if ($table_filter != 0)
+				{
+					echo '&table=' . $table_filter;
+				}
+			}
+			echo '&bck=1"><b>';
 			if (is_null($game_num))
 			{
 				echo get_label('Game #[0]', $game_id);

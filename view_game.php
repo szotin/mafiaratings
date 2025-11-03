@@ -2,6 +2,7 @@
 
 require_once 'include/page_base.php';
 require_once 'include/game.php';
+require_once 'include/series.php';
 
 define('VIEW_GENERAL', 0);
 define('VIEW_LOG', 1);
@@ -361,6 +362,12 @@ class Page extends PageBase
 			$condition->add(' AND g.event_id = ?', $event_id);
 			$this->url_base .= $separator . 'event_id=' . $event_id;
 			$separator = '&';
+			if (isset($_REQUEST['table']))
+			{
+				$table_num = (int)$_REQUEST['table'];
+				$condition->add(' AND g.table_num = ?', $table_num);
+				$this->url_base .= $separator . 'table=' . $table_num;
+			}
 		}
 		
 		if (isset($_REQUEST['tournament_id']))
@@ -368,6 +375,23 @@ class Page extends PageBase
 			$tournament_id = (int)$_REQUEST['tournament_id'];
 			$condition->add(' AND g.tournament_id = ?', $tournament_id);
 			$this->url_base .= $separator . 'tournament_id=' . $tournament_id;
+			$separator = '&';
+		}
+		
+		if (isset($_REQUEST['series_id']))
+		{
+			$series_id = (int)$_REQUEST['series_id'];
+			$subseries_csv = get_subseries_csv($series_id);
+			$condition->add(' AND g.tournament_id IN (SELECT tournament_id FROM series_tournaments WHERE series_id IN ('.$subseries_csv.'))');
+			$this->url_base .= $separator . 'series_id=' . $series_id;
+			$separator = '&';
+		}
+		
+		if (isset($_REQUEST['league_id']))
+		{
+			$league_id = (int)$_REQUEST['league_id'];
+			$condition->add(' AND g.tournament_id IN (SELECT st.tournament_id FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE s.league_id = ?)', $league_id);
+			$this->url_base .= $separator . 'league_id=' . $league_id;
 			$separator = '&';
 		}
 		

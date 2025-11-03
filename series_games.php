@@ -211,7 +211,7 @@ class Page extends SeriesPageBase
 			{
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>';
+			echo '<a href="view_game.php?id=' . $game_id . '&series_id=' . $this->id . '&bck=1"><b>';
 			if (is_null($game_num))
 			{
 				echo get_label('Game #[0]', $game_id);

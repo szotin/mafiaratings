@@ -210,7 +210,12 @@ class Page extends EventPageBase
 			{
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&bck=1"><b>';
+			echo '<a href="view_game.php?id=' . $game_id . '&event_id=' . $this->id;
+			if ($table_filter != 0)
+			{
+				echo '&table=' . $table_filter;
+			}
+			echo '&bck=1"><b>';
 			if (is_null($game_num))
 			{
 				echo get_label('Game #[0]', $game_id);

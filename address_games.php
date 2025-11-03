@@ -124,7 +124,7 @@ class Page extends AddressPageBase
 		}
 		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
-			'SELECT g.id, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags, e.id, e.name, e.flags, t.id, t.name, t.flags FROM games g' .
+			'SELECT g.id, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, g.table_num, g.game_num FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
 			' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 			' LEFT OUTER JOIN users m ON m.id = g.moderator_id'.
@@ -134,7 +134,7 @@ class Page extends AddressPageBase
 		$num = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
-			list ($game_id, $referee_id, $referee_name, $referee_flags, $start, $duration, $game_result, $video_id, $flags, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags) = $row;
+			list ($game_id, $referee_id, $referee_name, $referee_flags, $start, $duration, $game_result, $video_id, $flags, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $table_num, $game_num) = $row;
 			
 			echo '<tr align="center"';
 			if (($flags & (GAME_FLAG_CANCELED | GAME_FLAG_RATING)) != GAME_FLAG_RATING)
@@ -178,12 +178,32 @@ class Page extends AddressPageBase
 			{
 				echo '<table class="transp" width="100%"><tr><td>';
 			}
-			echo '<a href="view_game.php?id=' . $game_id . '&address_id=' . $this->id . '&bck=1"><b>' . get_label('Game #[0]', $game_id) . '</b><br>';
+
+
+			echo '<a href="view_game.php?id=' . $game_id . '&address_id=' . $this->id . '&bck=1"><b>';
+			if (is_null($game_num))
+			{
+				echo get_label('Game #[0]', $game_id);
+			}
+			else if (is_null($table_num))
+			{
+				echo  get_label('Game [0]', $game_num);
+			}
+			else
+			{
+				echo  get_label('Table [0], Game [1]', $table_num, $game_num);
+			}
+			echo '<br>';
 			if ($tournament_name != NULL)
 			{
-				echo $tournament_name . ': ';
+				echo $tournament_name . '</b>, ' . $event_name;
 			}
-			echo $event_name . '<br>' . format_date($start, $this->timezone, true) . '</a>';
+			else
+			{
+				echo $event_name . '</b>';
+			}
+			echo '<br>' . format_date($start, $this->timezone, true) . '</a>';
+
 			if ($video_id != NULL)
 			{
 				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
