@@ -449,7 +449,7 @@ class Page extends PageBase
 			{
 				$darker_class = ' class="darkest"';
 				$normal_class = ' class="darker"';
-				$url = 'view_game.php?bck=1&id=' . $games[$i]->game_id;
+				$url = 'view_game.php?bck=1&event_id=' . $event_id . '&id=' . $games[$i]->game_id;
 				if ($r->result <= 0)
 				{
 					$text = get_label('Playing using different method');
