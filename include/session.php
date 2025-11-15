@@ -493,6 +493,12 @@ function initiate_session($lang_code = NULL)
 		$_lang = get_browser_lang();
 		$lang_code = $_SESSION['lang_code'] = get_lang_code($_lang);
 	}
+	
+	if (!is_valid_lang_code($lang_code))
+	{
+		$_lang = LANG_ENGLISH;
+		$lang_code = $_SESSION['lang_code'] = get_lang_code(LANG_ENGLISH);
+	}
 
 	$_session_state = get_session_state();
 	$_profile = NULL;

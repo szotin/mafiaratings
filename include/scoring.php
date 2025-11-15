@@ -935,6 +935,10 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 	
 	if ($lod_flags & SCORING_LOD_PER_ROLE)
 	{
+		if ($game_role >= 4)
+		{
+			trigger_error('Invalid game role ' . $game_role, E_USER_ERROR);
+		}
 		$r = $player->roles[$game_role];
 		$r->points += $total_points;
 		$r->mvp_points += $total_mvp_points;

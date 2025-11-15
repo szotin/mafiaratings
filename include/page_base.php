@@ -451,6 +451,16 @@ class PageBase
 		}
 	}
 	
+	protected function hasError()
+	{
+		return !is_null($this->_err_message);
+	}
+	
+	protected function getErrorMessage()
+	{
+		return $this->_err_message;
+	}
+	
 	private function _js()
 	{
 		global $_profile, $_lang;

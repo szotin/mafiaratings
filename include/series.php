@@ -107,6 +107,12 @@ class SeriesPageBase extends PageBase
 	
 	protected function show_title()
 	{
+		if ($this->hasError())
+		{
+			trigger_error('Exception: ' . $this->getErrorMessage(), E_USER_ERROR);
+			parent::show_title();
+			return;
+		}
 		echo '<table class="head" width="100%">';
 
 		$is_manager = is_permitted(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $this->league_id, $this->id);

@@ -485,6 +485,18 @@ function is_valid_lang($lang, $langs = LANG_ALL)
 	return (($lang & $langs) != 0);
 }
 
+function is_valid_lang_code($lang_code)
+{
+	switch ($lang_code)
+	{
+	case 'en';
+	case 'ru';
+	case 'ua';
+		return true;
+	}
+	return false;
+}
+
 function detect_lang($str)
 {
 	$lat_count = 0;
