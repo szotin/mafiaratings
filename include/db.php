@@ -169,6 +169,10 @@ class DbQuery extends SQL
 		{
 			return 'NULL';
 		}
+		if (is_object($param) || is_array($param))
+		{
+			$param = json_encode($param);
+		}
 		return '\'' . mysql_real_escape_string($param) . '\'';
 	}
 	

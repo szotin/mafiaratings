@@ -661,9 +661,29 @@ class ApiPage extends OpsApiPageBase
 				
 				$seating = NULL;
 				$misc = json_decode($misc);
-				if (isset($misc->seating) && isset($misc->seating[$table_num - 1]) && isset($misc->seating[$table_num - 1][$game_num - 1]))
+				if (isset($misc->seating))
 				{
-					$seating = $misc->seating[$table_num - 1][$game_num - 1];
+					$tables = &$misc->seating;
+					if (is_object($misc->seating))
+					{
+						$tables = &$tables->tables;
+					}
+					if ($table_num <= count($tables) && $game_num <= count($tables[$table_num - 1]))
+					{
+						$seating = $tables[$table_num - 1][$game_num - 1];
+						if (isset($misc->seating->mapping))
+						{
+							for ($i = 0; $i < count($seating); ++$i)
+							{
+								$player_id = $misc->seating->mapping[$seating[$i]];
+								if (is_object($player_id))
+								{
+									$player_id = isset($player_id->id) ? $player_id->id : 0;
+								}
+								$seating[$i] = $player_id;
+							}
+						}
+					}
 				}
 				
 				$game = new stdClass();

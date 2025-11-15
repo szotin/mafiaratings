@@ -32,6 +32,7 @@ class Page extends TournamentPageBase
 		{
 			echo '<td width="100">' . get_label('Team') . '</td>';
 		}
+		echo '<td width="36"></td>';
 		echo '<td width="87">';
 		if ($can_edit)
 		{
@@ -95,7 +96,8 @@ class Page extends TournamentPageBase
 		{
 			$teams[] = $no_team;
 		}
-			
+		
+		$number = 0;		
 		foreach ($teams as $team)
 		{
 			$players_count = count($team->players);
@@ -133,6 +135,7 @@ class Page extends TournamentPageBase
 						echo ' align="center">' . $team_name . '</td>';
 					}
 				}
+				echo '<td align="center">' . ++$number . '</td>';
 				echo '<td class="dark">';
 				if ($can_edit)
 				{

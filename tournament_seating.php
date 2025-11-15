@@ -9,9 +9,10 @@ require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 
-define('VIEW_BY_GAME', 0);
-define('VIEW_BY_TABLE', 1);
-define('VIEW_COUNT', 2);
+define('VIEW_SETUP', 0);
+define('VIEW_BY_GAME', 1);
+define('VIEW_BY_TABLE', 2);
+define('VIEW_COUNT', 3);
 
 define('HIDE_PLAYED', 1);
 define('SHOW_ICONS', 2);
@@ -104,7 +105,7 @@ class Page extends TournamentPageBase
 				$this->round_id = $event_id;
 			}
 			
-			$disabled = ' disabled';
+			$disabled = $this->is_manager ? '' : ' disabled';
 			if (!is_null($misc))
 			{
 				$misc = json_decode($misc);
@@ -134,11 +135,52 @@ class Page extends TournamentPageBase
 			$view = (int)$_REQUEST['view'];
 			if ($view >= VIEW_COUNT || $view < 0)
 			{
-				$view = 0;
+				$view = VIEW_BY_GAME;
 			}
 		}
+		if ($view == VIEW_SETUP && !$this->is_manager)
+		{
+			$view = VIEW_BY_GAME;
+		}
+		
+		$this->mapping = null;
 		if (!is_null($this->misc) && isset($this->misc->seating))
 		{
+			$this->tables = &$this->misc->seating;
+			if (is_object($this->tables))
+			{
+				$this->tables = &$this->tables->tables;
+				if (isset($this->misc->seating->mapping))
+				{
+					$this->mapping = &$this->misc->seating->mapping;
+					for ($i = 0; $i < count($this->tables); ++$i)
+					{
+						$games = &$this->tables[$i];
+						for ($j = 0; $j < count($games); ++$j)
+						{
+							$game = &$games[$j];
+							for ($k = 0; $k < count($game); ++$k)
+							{
+								$index = $game[$k];
+								if ($index >= count($this->mapping))
+								{
+									$game[$k] = -$index - 1;
+								}
+								else if ($index >= 0)
+								{
+									$player_id = $this->mapping[$index];
+									if (is_object($player_id))
+									{
+										$player_id = isset($player_id->id) ? $player_id->id : -$index - 1;
+									}
+									$game[$k] = $player_id;
+								}
+							}
+						}
+					}
+				}
+			}
+			
 			echo '<p><input type="checkbox" id="hide_played"'.(($this->options & HIDE_PLAYED) ? ' checked' : '').' onclick="hidePlayed()"> '.get_label('show only non-played games');
 			echo ' <input type="checkbox" id="show_icons"'.(($this->options & SHOW_ICONS) ? ' checked' : '').' onclick="showIcons()"> '.get_label('show user pictures');
 			if ($this->user_id > 0)
@@ -152,6 +194,10 @@ class Page extends TournamentPageBase
 			echo '</p>';
 			
 			echo '<p><div class="tab">';
+			if ($this->is_manager)
+			{
+				echo '<button' . ($view == VIEW_SETUP ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_SETUP.'})">' . get_label('Setup') . '</button>';
+			}
 			echo '<button' . ($view == VIEW_BY_GAME ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_GAME.'})">' . get_label('By game') . '</button>';
 			echo '<button' . ($view == VIEW_BY_TABLE ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_TABLE.'})">' . get_label('By table') . '</button>';
 			echo '</div></p>';
@@ -166,29 +212,26 @@ class Page extends TournamentPageBase
 			$players_list = '';
 			$this->users = array();
 			$delim = '';
-			if (isset($this->misc->seating))
+			foreach ($this->tables as $table)
 			{
-				foreach ($this->misc->seating as $table)
+				foreach ($table as $game)
 				{
-					foreach ($table as $game)
+					if (is_null($game))
 					{
-						if (is_null($game))
+						continue;
+					}
+					foreach ($game as $user_id)
+					{
+						if ($user_id > 0 && !isset($this->users[$user_id]))
 						{
-							continue;
-						}
-						foreach ($game as $user_id)
-						{
-							if ($user_id > 0 && !isset($this->users[$user_id]))
-							{
-								$user = new stdClass();
-								$user->id = $user_id;
-								$user->name = '';
-								$user->flags = 0;
-								
-								$this->users[$user_id] = $user;
-								$players_list .= $delim . $user_id;
-								$delim = ',';
-							}
+							$user = new stdClass();
+							$user->id = $user_id;
+							$user->name = '';
+							$user->flags = 0;
+							
+							$this->users[$user_id] = $user;
+							$players_list .= $delim . $user_id;
+							$delim = ',';
 						}
 					}
 				}
@@ -216,6 +259,9 @@ class Page extends TournamentPageBase
 			
 			switch ($view)
 			{
+				case VIEW_SETUP:
+					$this->showSetup();
+					break;
 				case VIEW_BY_GAME:
 					$this->showByGame();
 					break;
@@ -223,6 +269,10 @@ class Page extends TournamentPageBase
 					$this->showByTable();
 					break;
 			}
+		}
+		else if ($this->is_manager)
+		{
+			$this->showSetup();
 		}
 	}
 	
@@ -232,12 +282,12 @@ class Page extends TournamentPageBase
 		
 		if ($this->options & ONLY_HIGHLIGHTED)
 		{
-			for ($i = 0; $i < count($this->misc->seating); ++$i)
+			for ($i = 0; $i < count($this->tables); ++$i)
 			{
-				$table = $this->misc->seating[$i];
+				$table = &$this->tables[$i];
 				for ($j = 0; $j < count($table); ++$j)
 				{
-					$game = $table[$j];
+					$game = &$table[$j];
 					if (is_null($game))
 					{
 						continue;
@@ -254,7 +304,7 @@ class Page extends TournamentPageBase
 					}
 					if (!$found)
 					{
-						$this->misc->seating[$i][$j] = NULL;
+						$table[$j] = NULL;
 						$normalize = true;
 					}
 				}
@@ -263,12 +313,12 @@ class Page extends TournamentPageBase
 		
 		if ($this->options & ONLY_MY)
 		{
-			for ($i = 0; $i < count($this->misc->seating); ++$i)
+			for ($i = 0; $i < count($this->tables); ++$i)
 			{
-				$table = $this->misc->seating[$i];
+				$table = &$this->tables[$i];
 				for ($j = 0; $j < count($table); ++$j)
 				{
-					$game = $table[$j];
+					$game = &$table[$j];
 					if (is_null($game))
 					{
 						continue;
@@ -285,7 +335,7 @@ class Page extends TournamentPageBase
 					}
 					if (!$found)
 					{
-						$this->misc->seating[$i][$j] = NULL;
+						$table[$j] = NULL;
 						$normalize = true;
 					}
 				}
@@ -299,11 +349,11 @@ class Page extends TournamentPageBase
 			{
 				list($t, $g) = $row;
 				if (
-					!is_null($t) && $t > 0 && $t <= count($this->misc->seating) && 
-					$this->misc->seating[$t-1] != NULL &&
-					!is_null($g) && $g > 0 && $g <= count($this->misc->seating[$t-1]))
+					!is_null($t) && $t > 0 && $t <= count($this->tables) && 
+					$this->tables[$t-1] != NULL &&
+					!is_null($g) && $g > 0 && $g <= count($this->tables[$t-1]))
 				{
-					$this->misc->seating[$t-1][$g-1] = NULL;
+					$this->tables[$t-1][$g-1] = NULL;
 					$normalize = true;
 				}
 			}
@@ -311,9 +361,9 @@ class Page extends TournamentPageBase
 		
 		if ($normalize)
 		{
-			for ($i = 0; $i < count($this->misc->seating); ++$i)
+			for ($i = 0; $i < count($this->tables); ++$i)
 			{
-				$table = $this->misc->seating[$i];
+				$table = &$this->tables[$i];
 				$found = false;
 				for ($j = 0; $j < count($table); ++$j)
 				{
@@ -324,7 +374,7 @@ class Page extends TournamentPageBase
 				}
 				if (!$found)
 				{
-					$this->misc->seating[$i] = NULL;
+					$this->tables[$i] = NULL;
 				}
 			}
 		}
@@ -381,14 +431,28 @@ class Page extends TournamentPageBase
 				}
 			}
 		}
+		else if ($user_id < 0)
+		{
+			$index = -$user_id - 1;
+			echo $ref_beg;
+			if (!is_null($this->mapping) && $index < count($this->mapping) && isset($this->mapping[$index]->name))
+			{
+				echo $this->mapping[$index]->name;
+			}
+			else
+			{
+				echo '#' . ($index + 1);
+			}
+			echo $ref_end;
+		}
 		echo '</td>';
 	}
 	
 	private function showByTable()
 	{
-		for ($i = 0; $i < count($this->misc->seating); ++$i)
+		for ($i = 0; $i < count($this->tables); ++$i)
 		{
-			$table = $this->misc->seating[$i];
+			$table = &$this->tables[$i];
 			if (is_null($table))
 			{
 				continue;
@@ -419,12 +483,154 @@ class Page extends TournamentPageBase
 		}
 	}
 	
+	private function showSetup()
+	{
+		global $_lang;
+		
+		if (!$this->is_manager)
+		{
+			return;
+		}
+	
+		echo '<p><table class="transp" width="100%"><tr><td><input type="file" id="upload" style="display:none" onchange="doUploadDimTom()">';
+		$url = 'https://dimtom.github.io/web_schedule';
+		echo get_label('Import seating from [0]', '<a href="' . $url . '" target="_blank">' . $url . '</a>');  
+		echo ': <button class="upload" onclick="uploadDimTom();">' . get_label('Upload seating file') . '</button></td>';
+		if (!is_null($this->mapping))
+		{
+			$buttons = 0;
+			foreach ($this->mapping as $p)
+			{
+				if (is_object($p))
+				{
+					if (isset($p->id))
+					{
+						$buttons |= 1;
+					}
+					else
+					{
+						$buttons |= 2;
+					}
+				}
+				else if ($p > 0)
+				{
+					$buttons |= 1;
+				}
+				else
+				{
+					$buttons |= 2;
+				}
+				if ($buttons == 3)
+				{
+					break;
+				}
+			}
+			
+			if ($buttons > 0)
+			{
+				echo '<td align="right">';
+				if ($buttons & 1)
+				{
+					echo '<button onclick="clearMappings()">' . get_label('Clear mappings') . '</button>';
+				}
+				if ($buttons & 2)
+				{
+					echo ' <button onclick="fillMappings()">' . get_label('Fill mappings') . '</button>';
+				}
+			}
+		}
+		echo '</tr></table></p>';
+		
+		if (!is_null($this->mapping))
+		{
+			$players_list = '';
+			$delim = '';
+			foreach ($this->mapping as $player)
+			{
+				$id = 0;
+				if (!is_object($player))
+				{
+					$id = $player;
+				}
+				else if (isset($player->id))
+				{
+					$id = $player->id;
+				}
+
+				if ($id !== 0)
+				{
+					$players_list .= $delim . $id;
+					$delim = ',';
+				}
+			}
+			
+			$users = array();
+			if (!empty($players_list))
+			{
+				$query = new DbQuery(
+					'SELECT u.id, nu.name, u.flags, ni.name, tu.flags, cu.flags'.
+					' FROM users u'.
+					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+					' JOIN cities i ON i.id = u.city_id'.
+					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
+					' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+					' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
+					' WHERE u.id IN ('.$players_list.')', $this->id, $this->club_id);
+				while ($row = $query->next())
+				{
+					$user = new stdClass();
+					list($user->id, $user->name, $user->flags, $user->city_name, $user->tournament_reg_flags, $user->club_reg_flags) = $row;
+					$users[$user->id] = $user;
+				}
+			}
+			
+			$number = 0;
+			echo '<p><h3>' . get_label('Players') . '</h3>';
+			echo '<table class="bordered light" width="100%">';
+			foreach ($this->mapping as $player)
+			{
+				$player_name = '';
+				if (is_object($player) && isset($player->name))
+				{
+					$player_name = $player->name;
+				}
+				
+				echo '<tr><td width="40" align="center">' . ($number + 1) . '</td><td width="420">';
+				echo '<table class="transp" width="100%"><tr><td width="32"><button class="icon" onclick="createPlayer(' . $number . ', \'' . $player_name . '\')" title="' . get_label('Create new user') . '"><img src="images/create.png"></button></td>';
+				echo '<td>' . $player_name . '</td></tr></table>';
+				echo '</td>';
+				
+				echo '<td width="40" align="center"><button class="big_icon" onclick="mapPlayer(' . $number . ')"><img src="images/right.png" width="32"></button>';
+				if (isset($player->id) && $player->id > 0 && array_key_exists($player->id, $users))
+				{
+					$user = $users[$player->id];
+					
+					echo '<td><table class="transp" width="100%"><tr>';
+					echo '<td width="52">';
+					$this->user_pic->
+						set($user->id, $user->name, $user->tournament_reg_flags, 't' . $this->id)->
+						set($user->id, $user->name, $user->club_reg_flags, 'c' . $this->club_id)->
+						set($user->id, $user->name, $user->flags);
+					$this->user_pic->show(ICONS_DIR, false, 48);
+					echo '</td><td><a href="user_info.php?id='.$player->id.'&bck=1">' . $user->name . '</a></td></tr></table></td>';
+				}
+				else
+				{
+					echo '<td></td>';
+				}
+				echo '</td></tr>';
+				++$number;
+			}
+			echo '</table></p>';
+		}
+	}
+	
 	private function showByGame()
 	{
 		$by_game = array();
-		for ($i = 0; $i < count($this->misc->seating); ++$i)
+		for ($i = 0; $i < count($this->tables); ++$i)
 		{
-			$table = $this->misc->seating[$i];
+			$table = &$this->tables[$i];
 			if (is_null($table))
 			{
 				continue;
@@ -583,6 +789,77 @@ class Page extends TournamentPageBase
 		function highlight(userId)
 		{
 			goTo({hlt: userId});
+		}
+		
+		function uploadDimTom()
+		{
+<?php
+			if (!is_null($this->misc) && isset($this->misc->seating))
+			{
+?>
+				dlg.yesNo("<?php echo get_label('This round already has seating. Do you want to replace it?'); ?>", null, null, function() { $('#upload').trigger('click'); });
+<?php
+			}
+			else
+			{
+?>
+				$('#upload').trigger('click');
+<?php
+			}
+?>
+		}
+		
+		function doUploadDimTom()
+		{
+			console.log(document.getElementById("upload").files[0]);
+			json.upload('api/ops/event.php', 
+			{
+				op: "import_dimtom"
+				, event_id: <?php echo $this->round_id; ?>
+				, file: document.getElementById("upload").files[0]
+			}, 
+			2097152, 
+			refr);
+		}
+		
+		function mapPlayer(number)
+		{
+			dlg.form("form/map_player.php?number=" + number + "&event_id=<?php echo $this->round_id; ?>", refr, 480);
+		}
+		
+		function createPlayer(number, name)
+		{
+			dlg.form("form/create_user.php?name=" + name + "&club_id=<?php echo $this->club_id; ?>", 
+				function(data)
+				{
+					json.post("api/ops/event.php",
+					{
+						op: "map_player"
+						, event_id: <?php echo $this->round_id; ?>
+						, user_id: data.id
+						, number: number
+					}, refr);
+					
+				}, 480);
+		}
+		
+		function clearMappings()
+		{
+			dlg.yesNo("<?php echo get_label('Are you sure you want to clear player mappings?'); ?>", null, null, function() {
+				json.post("api/ops/event.php",
+				{
+					op: "clear_mappings"
+					, event_id: <?php echo $this->round_id; ?>
+				}, refr)});
+		}
+
+		function fillMappings()
+		{
+			json.post("api/ops/event.php",
+			{
+				op: "fill_mappings"
+				, event_id: <?php echo $this->round_id; ?>
+			}, refr);
 		}
 <?php
 	}

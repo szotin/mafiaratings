@@ -984,7 +984,7 @@ function gamePlayerTeamKickOut(num)
 	}
 	else
 	{
-		p.death = { 'round': game.time.round, 'type': type, 'time': structuredClone(game.time) };
+		p.death = { 'round': game.time.round, 'type': 'teamKickOut', 'time': structuredClone(game.time) };
 		if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
 		{
 			_gameEnd('civ');

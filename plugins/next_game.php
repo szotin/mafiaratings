@@ -42,10 +42,17 @@ try
 	{
 		throw new Exc('No seating for this event');
 	}
-	if ($table_num - 1 >= count($misc->seating))
+	
+	$tables = &$misc->seating;
+	if (is_object($tables))
 	{
-		throw new Exc('Table ' . $table_num . ' is invalid. There are only ' . count($misc->seating) . ' tables.' );
+		$tables = &$tables->tables;
 	}
+	if ($table_num > count($tables))
+	{
+		throw new Exc('Table ' . $table_num . ' is invalid. There are only ' . count($tables) . ' tables.' );
+	}
+	$table = &$tables[$table_num - 1];
 
 	$playing_now = array();
 	$query = new DbQuery('SELECT game_num, game FROM current_games WHERE event_id = ? AND table_num = ? ORDER BY game_num', $event_id, $table_num);
@@ -84,9 +91,9 @@ try
 		while (array_key_exists($game_num, $playing_now));
 	}
 	
-	if ($game_num <= count($misc->seating[$table_num - 1]))
+	if ($game_num <= count($table))
 	{
-		$seating = $misc->seating[$table_num - 1][$game_num - 1];
+		$seating = &$table[$game_num - 1];
 		$user_list = '';
 		$delim = '';
 		foreach ($seating as $user_id)

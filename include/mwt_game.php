@@ -682,7 +682,21 @@ function convert_game_to_mwt($game_id)
 		$result->game_bonus[] = $game_bonus;
 		$result->penalty[] = $penalty;
 		$result->penalty_disciplinary[] = $penalty_disciplinary;
-		$result->is_replacement[] = (!isset($misc->seating) || $misc->seating[$table_num - 1][$game_num - 1][$i] == $player->id) ? 0 : 1;
+		
+		$replacement = 0;
+		if (isset($misc->seating))
+		{
+			$tables = &$misc->seating;
+			if (!is_array($tables))
+			{
+				$tables = &$tables->tables;
+			}
+			if ($table_num <= count($tables) && $game_num <= count($tables[$table_num - 1]) && $tables[$table_num - 1][$game_num - 1][$i] != $player->id)
+			{
+				$replacement = 1;
+			}
+		}
+		$result->is_replacement[] = $replacement;
 		
 		if (isset($player->don))
 		{
