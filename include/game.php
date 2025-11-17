@@ -3716,6 +3716,7 @@ class Game
 		}
 		
 		// Fix json if needed and save original json to game_issues table
+		Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $data->id, $this->flags); 
 		if (isset($this->issues))
 		{
 			$this->check(true);
@@ -3726,7 +3727,6 @@ class Game
 				$issues .= '<li>' . $issue . '</li>';
 			}
 			$issues .= '</ul>';
-			Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $data->id, $old_feature_flags);
 			Db::exec(get_label('game issue'), 'INSERT INTO game_issues (game_id, json, issues, feature_flags, new_feature_flags) VALUES (?, ?, ?, ?, ?)', $data->id, $json, $issues, $old_feature_flags, $this->flags);
 			$json = $new_json;
 			
@@ -3760,7 +3760,6 @@ class Game
 			Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id = ?', $data->id);
 			Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id = ?', $data->id);
 			Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id = ?', $data->id);
-			Db::exec(get_label('game issue'), 'DELETE FROM game_issues WHERE game_id = ? AND feature_flags = ?', $data->id, $this->flags);
 		}
 		
 		// Save game json and feature flags
