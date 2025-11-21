@@ -212,15 +212,15 @@ class Page extends TournamentPageBase
 			$players_list = '';
 			$this->users = array();
 			$delim = '';
-			foreach ($this->tables as $table)
+			for ($i = 0; $i < count($this->tables); ++$i)
 			{
-				foreach ($table as $game)
+				for ($j = 0; $j < count($this->tables[$i]); ++$j)
 				{
-					if (is_null($game))
+					if (is_null($this->tables[$i][$j]))
 					{
 						continue;
 					}
-					foreach ($game as $user_id)
+					foreach ($this->tables[$i][$j] as $user_id)
 					{
 						if ($user_id > 0 && !isset($this->users[$user_id]))
 						{
@@ -492,6 +492,15 @@ class Page extends TournamentPageBase
 			return;
 		}
 	
+		if ($this->round_id <= 0)
+		{
+			list ($tournament_type) = Db::record(get_label('tournament'), 'SELECT type FROM tournaments WHERE id = ?', $this->id);
+			echo '<p>' . get_label('This tournament has no rounds. Please create rounds to apply seating. The easiest way of doing it is to change tournament type here.') . '</p><p>';
+			show_tournament_type_select($tournament_type, 'tournament-type');
+			echo '</p><p><button onclick="changeTournamentType()">' . get_label('Change') . '</button></p>';
+			return;
+		}
+		
 		echo '<p><table class="transp" width="100%"><tr><td><input type="file" id="upload" style="display:none" onchange="doUploadDimTom()">';
 		$url = 'https://dimtom.github.io/web_schedule';
 		echo get_label('Import seating from [0]', '<a href="' . $url . '" target="_blank">' . $url . '</a>');  
@@ -860,6 +869,17 @@ class Page extends TournamentPageBase
 				op: "fill_mappings"
 				, event_id: <?php echo $this->round_id; ?>
 			}, refr);
+		}
+		
+		function changeTournamentType()
+		{
+			json.post("api/ops/tournament.php", 			
+			{
+				op: "change",
+				tournament_id: <?php echo $this->id; ?>,
+				type: $('#tournament-type').val(),
+			}, refr);
+			
 		}
 <?php
 	}

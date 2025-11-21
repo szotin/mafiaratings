@@ -77,15 +77,9 @@ try
 	end_upload_logo_button(TOURNAMENT_PIC_CODE, $tournament_id);
 	echo '</td></tr>';
 
-	echo '<tr><td>' . get_label('Tournament type') . '</td><td><select id="form-type" onchange="typeChanged()">';
-	show_option(TOURNAMENT_TYPE_CUSTOM, $tournament_type, get_label('Custom tournament. I will set up everything manually.'));
-	show_option(TOURNAMENT_TYPE_FIIM_ONE_ROUND, $tournament_type, get_label('FIIM style tournament with only one round. (Mini-tournament).'));
-	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3, $tournament_type, get_label('FIIM style tournament with two rounds - main, and final. The final round has less than 4 games.'));
-	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4, $tournament_type, get_label('FIIM style tournament with two rounds - main, and final. The final round has 4 games or more.'));
-	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3, $tournament_type, get_label('FIIM style tournament with three rounds - main, semi-final, and final. The final round has less than 4 games.'));
-	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4, $tournament_type, get_label('FIIM style tournament with three rounds - main, semi-final, and final. The final round has 4 games or more.'));
-	show_option(TOURNAMENT_TYPE_CHAMPIONSHIP, $tournament_type, get_label('Seasonal championship.'));
-	echo '</select></td></tr>';
+	echo '<tr><td>' . get_label('Tournament type') . '</td><td>';
+	show_tournament_type_select($tournament_type, 'form-type', 'typeChanged()');
+	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
 	

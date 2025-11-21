@@ -565,4 +565,22 @@ function update_tournament_stats($tournament_id, $lat = NULL, $lon = NULL, $flag
 	}
 }
 
+function show_tournament_type_select($tournament_type, $control_id, $on_change = null)
+{
+	echo '<select id="' . $control_id . '"';
+	if (!is_null($on_change))
+	{
+		echo ' onchange="' . $on_change . '"';
+	}
+	echo '>';
+	show_option(TOURNAMENT_TYPE_CUSTOM, $tournament_type, get_label('Custom tournament. I will set up everything manually.'));
+	show_option(TOURNAMENT_TYPE_FIIM_ONE_ROUND, $tournament_type, get_label('One round. (Mini-tournament).'));
+	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3, $tournament_type, get_label('Two rounds - main, and final. The final round has less than 4 games.'));
+	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4, $tournament_type, get_label('Two rounds - main, and final. The final round has 4 games or more.'));
+	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3, $tournament_type, get_label('Three rounds - main, semi-final, and final. The final round has less than 4 games.'));
+	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4, $tournament_type, get_label('Three rounds - main, semi-final, and final. The final round has 4 games or more.'));
+	show_option(TOURNAMENT_TYPE_CHAMPIONSHIP, $tournament_type, get_label('Seasonal championship.'));
+	echo '</select>';
+}
+
 ?>
