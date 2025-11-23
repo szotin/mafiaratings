@@ -49,7 +49,7 @@ class Page extends EventPageBase
 			echo '<tr class="light"><td class="dark">';
 			if ($can_edit)
 			{
-				echo '<button class="icon" onclick="mr.removeEventUser(' . $id . ', ' . $this->id . ')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.removeEventReg(' . $id . ', ' . $this->id . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editEventAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/edit.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.eventUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
 			}

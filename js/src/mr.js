@@ -551,9 +551,21 @@ var mr = new function()
 		dlg.form("form/registration_create.php?event_id=" + id, onSuccess, 400);
 	}
 
-	this.removeEventReg = function(userId, eventId)
+	this.removeEventReg = function(userId, eventId, confirmMessage)
 	{
-		json.post("api/ops/event.php", { op: "remove_registration", event_id: eventId, user_id: userId }, refr);
+		function _remove()
+		{
+			json.post("api/ops/event.php", { op: "remove_registration", event_id: eventId, user_id: userId }, refr);
+		}
+		
+		if (isString(confirmMessage))
+		{
+			dlg.yesNo(confirmMessage, null, null, _remove);
+		}
+		else
+		{
+			_remove();
+		}
 	}
 	
 	this.eventCreateBroadcast = function(eventId)
