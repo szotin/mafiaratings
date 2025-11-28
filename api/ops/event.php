@@ -1047,6 +1047,12 @@ class ApiPage extends OpsApiPageBase
 		{
 			$log_details->videos = Db::affected_rows();
 		}
+		Db::exec(get_label('game'), 'DELETE FROM current_games WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->current_games = Db::affected_rows();
+		}
+		
 		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $prev_game_id, $event_id);
 		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
 		Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
@@ -1614,17 +1620,17 @@ class ApiPage extends OpsApiPageBase
 	function rebuild_places_op()
 	{
 		$event_id = (int)get_optional_param('event_id', 0);
-		list($event_id, $tournament_id, $club_id) = Db::record(get_label('event'), 'SELECT e.id, e.tournament_id, e.club_id FROM events e WHERE e.id = ?', $event_id);
-		check_permissions(PERMISSION_MANAGER, $club_id, $event_id, $tournament_id);
-		
+
 		Db::begin();
-		
 		if ($event_id > 0)
 		{
+			list($event_id, $tournament_id, $club_id) = Db::record(get_label('event'), 'SELECT e.id, e.tournament_id, e.club_id FROM events e WHERE e.id = ?', $event_id);
+			check_permissions(PERMISSION_MANAGER, $club_id, $event_id, $tournament_id);
 			Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ' . (~EVENT_FLAG_FINISHED) . ' WHERE id = ?', $event_id);
 		}
 		else
 		{
+			check_permissions(PERMISSION_ADMIN);
 			Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ' . (~EVENT_FLAG_FINISHED));
 		}
 		db_log(LOG_OBJECT_EVENT, 'rebuild_places', NULL, $event_id);

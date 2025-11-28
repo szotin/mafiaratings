@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/error.php';
 require_once __DIR__ . '/server.php';
+require_once __DIR__ . '/api_keys.php';
 
 class SQL
 {
@@ -444,11 +445,11 @@ if (is_testing_server())
 }
 else if (is_demo_server())
 {
-	Db::init('mafiawor_demomafia', 'mafiawor_demo', '4uyF6vHYTn7nOf67L');
+	Db::init(DB_DEMO_NAME, DB_DEMO_USER_NAME, DB_DEMO_PASSWORD);
 }
 else
 {
-	Db::init('mafiawor_mafia', 'mafiawor_php', 'sasha1203');
+	Db::init(DB_NAME, DB_USER_NAME, DB_PASSWORD);
 }
 
 ?>

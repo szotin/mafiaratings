@@ -2,6 +2,9 @@
 
 require_once __DIR__ . '/branding.php';
 
+$_testing_server = -1;
+$_demo_server = -1;
+
 function is_web()
 {
 	return array_key_exists('HTTP_HOST', $_SERVER);
@@ -46,13 +49,40 @@ function get_server_name()
 
 function is_testing_server()
 {
-	$server = get_server_name();
-	return $server == 'localhost' || $server == '127.0.0.1';
+	global $_testing_server;
+	
+	if ($_testing_server < 0)
+	{
+		if (PHP_SAPI === 'cli' && isset($_SERVER['argv']))
+		{
+			$_testing_server = false;
+			foreach ($_SERVER['argv'] as $arg)
+			{
+				if ($arg == '-test')
+				{
+					$_testing_server = true;
+					break;
+				}
+			}
+		}
+		else
+		{
+			$server = get_server_name();
+			$_testing_server = ($server == 'localhost' || $server == '127.0.0.1');
+		}
+	}
+	return $_testing_server;
 }
 
 function is_demo_server()
 {
-	return stripos(get_server_name(), 'demo') !== false;
+	global $_demo_server;
+	
+	if ($_demo_server < 0)
+	{
+		$_demo_server = (PHP_SAPI !== 'cli' && stripos(get_server_name(), 'demo') !== false);
+	}
+	return $_demo_server;
 }
 
 function is_production_server()

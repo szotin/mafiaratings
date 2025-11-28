@@ -985,6 +985,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			$log_details->videos = Db::affected_rows();
 		}
+		Db::exec(get_label('game'), 'DELETE FROM current_games WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->current_games = Db::affected_rows();
+		}
 		
 		// delete games
 		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $prev_game_id, $tournament_id);
@@ -1211,13 +1216,15 @@ class ApiPage extends OpsApiPageBase
 		$tournament_id = (int)get_optional_param('tournament_id', 0);
 		
 		Db::begin();
-		
 		if ($tournament_id > 0)
 		{
+			list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
 		}
 		else
 		{
+			check_permissions(PERMISSION_ADMIN);
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED);
 		}
 		db_log(LOG_OBJECT_TOURNAMENT, 'rebuild_places', NULL, $tournament_id);

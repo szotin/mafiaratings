@@ -454,6 +454,39 @@ class ApiPage extends OpsApiPageBase
 	{
 		return PERMISSION_ADMIN;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// fix_names
+	//-------------------------------------------------------------------------------------------------------
+	function fix_names_op()
+	{
+		$count = 0;
+		Db::begin();
+		$query = new DbQuery('SELECT id, SUM(langs) as l FROM names GROUP BY id HAVING l <> ' . DB_ALL_LANGS);
+		while ($row = $query->next())
+		{
+			list ($id, $langs_sum) = $row;
+			list ($langs) = Db::record(get_label('name'), 'SELECT langs FROM names WHERE id = ? ORDER BY langs LIMIT 1', $id);
+			$new_langs = (DB_ALL_LANGS & ~(int)$langs_sum) | (int)$langs;
+			Db::exec(get_label('name'), 'UPDATE names SET langs = ? WHERE id = ? AND langs = ?', $new_langs, $id, $langs);
+			++$count;
+		}
+		Db::commit();
+		$this->response['count'] = $count;
+	}
+	
+	// No help. We want to keep this API internal.
+	// function fix_names_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_ADMIN, '.');
+		// return $help;
+	// }
+	
+	function fix_names_op_permissions()
+	{
+		return PERMISSION_ADMIN;
+	}
+	
 }
 
 // No version support. We want to keep this API internal.

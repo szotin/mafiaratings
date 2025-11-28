@@ -60,7 +60,12 @@ class Page extends GeneralPageBase
 		{
 			echo '<p align="center"><input type="submit" class="btn long" value="Lock the site" onclick="mr.lockSite(true)"></p>';
 		}
-			
+		
+		echo '<h3>' . 'General' . '</h3>';
+		echo '<p>';
+		echo '<input type="submit" class="btn long" value="Fix names" onclick="fixNames()"> ';
+		echo '</p>';
+		
 		echo '<h3>' . 'Rebuild assets' . '</h3>';
 		echo '<p>';
 		echo '<input type="submit" class="btn long" value="Rebuild address icons" onclick="rebuildAddrIcons()"> ';
@@ -315,6 +320,14 @@ class Page extends GeneralPageBase
 			json.post("api/ops/series.php", { op: 'rebuild_places' }, function(data)
 			{
 				dlg.info('Places for the series are scheduled for rebuild. It will be complete in about one hour.', 'Done', null, function() {});
+			});
+		}
+		
+		function fixNames()
+		{
+			json.post("api/ops/repair.php", { op: 'fix_names' }, function(data)
+			{
+				dlg.info('Fixed ' + data.count + ' names.', 'Done', null, function() {});
 			});
 		}
 <?php
