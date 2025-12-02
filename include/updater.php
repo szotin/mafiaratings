@@ -412,6 +412,28 @@ class Updater
 		return $this->task;
 	}
 	
+	private function getTaskNum()
+	{
+		if (!is_null($this->task))
+		{
+			$num = 0;
+			$methods = get_class_methods(get_class($this));
+			foreach ($methods as $method)
+			{
+				if (substr($method, -5) == '_task')
+				{
+					$task = substr($method, 0, -5);
+					if ($this->task == $task)
+					{
+						return $num;
+					}
+					++$num;
+				}
+			}
+		}
+		return -1;
+	}
+	
 	private function uniqueTaskName()
 	{
 		return get_class($this) . '.' . $this->task;
@@ -441,7 +463,7 @@ class Updater
 			return;
 		}
 		
-		$query = new DbQuery('SELECT batches, items, times, items_times, items_items, last_items_count, current_run_items, vars FROM maintenance_tasks WHERE name = ?', $this->uniqueTaskName());
+		$query = new DbQuery('SELECT batches, items, times, items_times, items_items, last_items_count, current_run_items, vars FROM maintenance_tasks WHERE name = ? AND script_name = ?', $this->task, get_class($this));
 		if ($row = $query->next())
 		{
 			list ($this->stats->batches, $this->stats->items, $this->stats->times, $this->stats->items_times, $this->stats->items_items, $this->stats->last_items_count, $this->stats->current_run_items, $vars) = $row;
@@ -486,10 +508,12 @@ class Updater
 		}
 		
 		$vars = json_encode($this->vars);
-		Db::exec(get_label('task'),
-			'INSERT INTO maintenance_tasks(name, batches, runs, items, times, items_times, items_items, last_items_count, current_run_items, vars) VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?)'.
+		$script_name = get_class($this);
+		Db::exec('script', 'INSERT IGNORE INTO maintenance_scripts (name, filename) VALUES (?, ?)', $script_name, $this->name);
+		Db::exec('task',
+			'INSERT INTO maintenance_tasks(script_name, name, num, batches, runs, items, times, items_times, items_items, last_items_count, current_run_items, vars) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)'.
 			' ON DUPLICATE KEY UPDATE batches = ?, runs = runs + 1, items = ?, times = ?, items_times = ?, items_items = ?, last_items_count = ?, current_run_items = ?, vars = ?',
-			$this->uniqueTaskName(),
+			$script_name, $this->task, $this->getTaskNum(),
 			$this->stats->batches, $this->stats->items, $this->stats->times, $this->stats->items_times, $this->stats->items_items, $this->stats->last_items_count, $this->stats->current_run_items, $vars,
 			$this->stats->batches, $this->stats->items, $this->stats->times, $this->stats->items_times, $this->stats->items_items, $this->stats->last_items_count, $this->stats->current_run_items, $vars);
 	}
@@ -676,33 +700,48 @@ class Updater
 		$this->stats->last_items_count = $items_count;
 	}
 	
-	protected function getAverageItemTime()
+	public static function averageItemTime($batches, $items, $times, $items_items, $items_times)
 	{
-		$stats = $this->stats;
-		$div = $stats->batches * $stats->items_items - $stats->items * $stats->items;
+		$div = $batches * $items_items - $items * $items;
 		if ($div < -0.00001 || $div > 0.00001)
 		{
-			$result = ($stats->batches * $stats->items_times - $stats->items * $stats->times) / $div;
+			$result = ($batches * $items_times - $items * $times) / $div;
 		}
-		else if ($stats->items == 0)
+		else if ($items == 0)
 		{
-			$result = $this->maxExecTime / MIN_EXPECTED_ITEMS;
+			return 0;
 		}
 		else
 		{
-			$result = $stats->times / $stats->items;
+			$result = $times / $items;
 		}
 		return max($result, 0.001);
+	}
+	
+	public static function averageConstTime($batches, $items, $times, $items_items, $items_times)
+	{
+		if ($batches <= 0)
+		{
+			return 0;
+		}
+		return ($times - $items * Updater::averageItemTime($batches, $items, $times, $items_items, $items_times)) / $batches;
+	}
+	
+	protected function getAverageItemTime()
+	{
+		$stats = $this->stats;
+		$result = Updater::averageItemTime($stats->batches, $stats->items, $stats->times, $stats->items_items, $stats->items_times);
+		if ($result == 0)
+		{
+			$result = $this->maxExecTime / MIN_EXPECTED_ITEMS;
+		}
+		return $result;
 	}
 	
 	protected function getAverageConstTime()
 	{
 		$stats = $this->stats;
-		if ($stats->batches <= 0)
-		{
-			return 0;
-		}
-		return ($stats->times - $stats->items * $this->getAverageItemTime()) / $stats->batches;
+		return Updater::averageConstTime($stats->batches, $stats->items, $stats->times, $stats->items_items, $stats->items_times);
 	}
 	
 	protected function canDoOneMoreItem()

@@ -41,6 +41,7 @@ button.icon { height: 28px; width: 28px; margin: 0px; padding: 1px; border: 0px;
 button.icon:hover { border: 1px outset #ccccc0; padding: 0px;  }
 button.icon[checked] { border: 1px solid #909090; padding: 0px; background-color: #aaccdd; }
 button.icon:active { border: 1px inset #ccccc0; padding: 0px;  }
+button.icon:disabled { padding: 0px; color: #808080; background-color: transparent; opacity: 0.2; }
 
 button.big_icon { height: 36px; width: 36px; margin: 0px; padding: 1px; border: 0px; background-color:transparent; }
 button.big_icon:hover { border: 1px outset #ccccc0; padding: 0px;  }

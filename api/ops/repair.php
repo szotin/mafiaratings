@@ -487,6 +487,67 @@ class ApiPage extends OpsApiPageBase
 		return PERMISSION_ADMIN;
 	}
 	
+	//-------------------------------------------------------------------------------------------------------
+	// delete_task_stats
+	//-------------------------------------------------------------------------------------------------------
+	function delete_task_stats_op()
+	{
+		$script = get_required_param('script');
+		$task = get_optional_param('task', null);
+		if (is_null($task))
+		{
+			Db::exec('task stats', 'DELETE FROM maintenance_tasks WHERE script_name = ?', $script);
+		}
+		else
+		{
+			Db::exec('task stats', 'DELETE FROM maintenance_tasks WHERE script_name = ? AND name = ?', $script, $task);
+		}
+	}
+	
+	// No help. We want to keep this API internal.
+	// function delete_task_stats_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_ADMIN, '.');
+		// return $help;
+	// }
+	
+	function delete_task_stats_op_permissions()
+	{
+		return PERMISSION_ADMIN;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// delete_log
+	//-------------------------------------------------------------------------------------------------------
+	function delete_log_op()
+	{
+		$script = get_required_param('script');
+		$task = get_optional_param('task', null);
+		if (is_null($task))
+		{
+			$files = glob('../../logs/'.$script.'.*.log');
+			foreach ($files as $file)
+			{
+				unlink($file);
+			}
+		}
+		else if (!unlink('../../logs/'.$script.'.'.$task.'.log'))
+		{
+			throw new Exc('Unable to delete '.$script.'.'.$task.'.log');
+		}
+	}
+	
+	// No help. We want to keep this API internal.
+	// function delete_log_op_help()
+	// {
+		// $help = new ApiHelp(PERMISSION_ADMIN, '.');
+		// return $help;
+	// }
+	
+	function delete_log_op_permissions()
+	{
+		return PERMISSION_ADMIN;
+	}
 }
 
 // No version support. We want to keep this API internal.

@@ -74,6 +74,7 @@ class GeneralPageBase extends PageBase
 				new MenuItem('duplicated_users.php' . $ccc, get_label('Duplicated users'), get_label('Merge duplicated user accounts.')),
 				new MenuItem(null, null, null),
 				new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things')),
+				new MenuItem('maintenance_tasks.php' . $ccc, get_label('Maintenance tasks'), get_label('Manage recuring maintanance scripts')),
 				new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log')),
 			));
 		}
