@@ -160,7 +160,7 @@ class Page extends TournamentPageBase
 				if ($tournament_reg_flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
 				{
 					echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
-					echo '<td width="150" align="center"><button onclick="mr.removeTournamentReg('.$this->id.','.$id.')">'.get_label('Accept application').'</button></td>';
+					echo '<td width="150" align="center"><button onclick="mr.acceptTournamentReg('.$this->id.','.$id.')">'.get_label('Accept application').'</button></td>';
 				}
 				else
 				{
