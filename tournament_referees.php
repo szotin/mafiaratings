@@ -19,6 +19,42 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_RATING | FLAG_FILTER_NO_CANCELED);
 
 class Page extends TournamentPageBase
 {
+	protected function prepare()
+	{
+		global $_page, $_lang;
+		
+		parent::prepare();
+		
+		$this->filter = FLAG_FILTER_DEFAULT;
+		if (isset($_REQUEST['filter']))
+		{
+			$this->filter = (int)$_REQUEST['filter'];
+		}
+		
+		$this->user_id = 0;
+		$this->user_name = '';
+		if ($_page < 0)
+		{
+			$this->user_id = -$_page;
+			$_page = 0;
+			$query = new DbQuery(
+				'SELECT nu.name, u.club_id, u.city_id, c.country_id'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities c ON c.id = u.city_id'.
+				' WHERE u.id = ?', $this->user_id);
+			if ($row = $query->next())
+			{
+				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
+				$this->_title .= ' ' . get_label('Following [0].', $this->user_name);
+			}
+			else
+			{
+				$this->errorMessage(get_label('Player not found.'));
+			}
+		}
+	}
+	
 	protected function show_body()
 	{
 		global $_page, $_lang;
@@ -34,6 +70,8 @@ class Page extends TournamentPageBase
 		show_date_filter();
 		echo '&emsp;&emsp;';
 		show_checkbox_filter(array(get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
+		echo '</td><td align="right"><img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
+		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(' WHERE g.tournament_id = ?', $this->id);
@@ -61,6 +99,31 @@ class Page extends TournamentPageBase
 		if (isset($_REQUEST['to']) && !empty($_REQUEST['to']))
 		{
 			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
+		}
+		
+		if ($this->user_id > 0)
+		{
+			$pos_query = new DbQuery('SELECT count(g.id) FROM users u JOIN games g ON g.moderator_id = u.id', $condition);
+			$pos_query->add(' AND u.id = ?', $this->user_id);
+			if ($row = $pos_query->next())
+			{
+				list ($u_games) = $row;
+				if ($u_games > 0)
+				{
+					$pos_query = new DbQuery('SELECT count(*) FROM (SELECT u.id FROM users u JOIN games g ON g.moderator_id = u.id', $condition);
+					$pos_query->add(' GROUP BY u.id HAVING count(g.id) > ? OR (count(g.id) = ? AND u.id < ?)) as prev', $u_games, $u_games, $this->user_id);
+					list($user_pos) = $pos_query->next();
+					$_page = floor($user_pos / PAGE_SIZE);
+				}
+				else
+				{
+					$this->errorMessage(get_label('[0] refereed no games.', $this->user_name));
+				}
+			}
+			else
+			{
+				$this->errorMessage(get_label('[0] refereed no games.', $this->user_name));
+			}
 		}
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g', $condition);
@@ -125,7 +188,16 @@ class Page extends TournamentPageBase
 		{
 			++$number;
 
-			echo '<tr><td align="center" width="40" class="dark">' . $number . '</td>';
+            if ($moder->id == $this->user_id)
+            {
+                echo '<tr class="dark">';
+            }
+            else
+            {
+                echo '<tr>';
+            }
+			
+			echo '<td align="center" width="40" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
 			$tournament_reg_pic->
 				set($moder->id, $moder->name, $moder->tournament_reg_flags, 't' . $this->id)->

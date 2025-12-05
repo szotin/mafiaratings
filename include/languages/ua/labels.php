@@ -1828,6 +1828,8 @@ $labelMenu = array (
 'Two rounds - main, and final. The final round has 4 games or more.' => '[EMPTY]', // include/tournament.php, include/tournament.php
 'Three rounds - main, semi-final, and final. The final round has less than 4 games.' => '[EMPTY]', // include/tournament.php, include/tournament.php
 'Three rounds - main, semi-final, and final. The final round has 4 games or more.' => '[EMPTY]', // include/tournament.php, include/tournament.php
+'Maintenance tasks' => '[EMPTY]', // include/general_page_base.php, include/general_page_base.php
+'Manage recuring maintanance scripts' => '[EMPTY]', // include/general_page_base.php, include/general_page_base.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1843,8 +1845,7 @@ $labelMenu = array (
 'During don\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'During sheriff\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => '[EMPTY]', // form/account_edit.php, form/account_edit.php
-'Maintenance tasks' => '[EMPTY]', // include/general_page_base.php
-'Manage recuring maintanance scripts' => '[EMPTY]', // include/general_page_base.php
+'Tournaments refereed' => '[EMPTY]', // league_referees.php
 );
 
 return $labelMenu;

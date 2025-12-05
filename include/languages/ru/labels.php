@@ -1828,6 +1828,8 @@ $labelMenu = array (
 'Two rounds - main, and final. The final round has 4 games or more.' => 'Два раунда - основной и финал. В финале 4 или более игр.', // include/tournament.php
 'Three rounds - main, semi-final, and final. The final round has less than 4 games.' => 'Три раунда - основной, полуфинал и финал. В финале меньше 4 игр.', // include/tournament.php
 'Three rounds - main, semi-final, and final. The final round has 4 games or more.' => 'Три раунда - основной, полуфинал и финал. В финале 4 или более игр.', // include/tournament.php
+'Maintenance tasks' => 'Обслуживающие скрипты', // include/general_page_base.php
+'Manage recuring maintanance scripts' => 'Управлять скриптами обслуживающими функционирование mafiaratings', // include/general_page_base.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1843,8 +1845,7 @@ $labelMenu = array (
 'During don\'s check' => 'Во время донской проверки', // game_obs.php
 'During sheriff\'s check' => 'Во время шерифской проверки', // game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
-'Maintenance tasks' => 'Обслуживающие скрипты', // include/general_page_base.php
-'Manage recuring maintanance scripts' => 'Управлять скриптами обслуживающими функционирование mafiaratings', // include/general_page_base.php
+'Tournaments refereed' => 'Проведено турниров', // league_referees.php
 );
 
 return $labelMenu;

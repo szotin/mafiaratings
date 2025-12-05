@@ -39,6 +39,29 @@ class Page extends LeaguePageBase
 		{
 			$this->filter = (int)$_REQUEST['filter'];
 		}
+		
+		$this->user_id = 0;
+		$this->user_name = '';
+		if ($_page < 0)
+		{
+			$this->user_id = -$_page;
+			$_page = 0;
+			$query = new DbQuery(
+				'SELECT nu.name, u.club_id, u.city_id, c.country_id'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities c ON c.id = u.city_id'.
+				' WHERE u.id = ?', $this->user_id);
+			if ($row = $query->next())
+			{
+				list($this->user_name, $this->user_club_id, $this->user_city_id, $this->user_country_id) = $row;
+				$this->_title .= ' ' . get_label('Following [0].', $this->user_name);
+			}
+			else
+			{
+				$this->errorMessage(get_label('Player not found.'));
+			}
+		}
 	}
 	
 	protected function show_body()
@@ -103,12 +126,49 @@ class Page extends LeaguePageBase
 			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
+		if ($this->user_id > 0)
+		{
+			$pos_query = new DbQuery(
+				'SELECT count(g.id)'.
+				' FROM users u'.
+				' JOIN games g ON g.moderator_id = u.id'.
+				' JOIN series_tournaments st ON st.tournament_id = g.tournament_id'.
+				' JOIN series s ON s.id = st.series_id',
+				$condition);
+			$pos_query->add(' AND u.id = ?', $this->user_id);
+			if ($row = $pos_query->next())
+			{
+				list ($u_games) = $row;
+				if ($u_games > 0)
+				{
+					$pos_query = new DbQuery(
+						'SELECT count(*)'.
+						' FROM (SELECT u.id FROM users u'.
+						' JOIN games g ON g.moderator_id = u.id'.
+						' JOIN series_tournaments st ON st.tournament_id = g.tournament_id'.
+						' JOIN series s ON s.id = st.series_id',
+						$condition);
+					$pos_query->add(' GROUP BY u.id HAVING count(g.id) > ? OR (count(g.id) = ? AND u.id < ?)) as prev', $u_games, $u_games, $this->user_id);
+					list($user_pos) = $pos_query->next();
+					$_page = floor($user_pos / PAGE_SIZE);
+				}
+				else
+				{
+					$this->errorMessage(get_label('[0] refereed no games.', $this->user_name));
+				}
+			}
+			else
+			{
+				$this->errorMessage(get_label('[0] refereed no games.', $this->user_name));
+			}
+		}
+		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g JOIN users u ON u.id = g.moderator_id JOIN series_tournaments st ON st.tournament_id = g.tournament_id JOIN series s ON s.id = st.series_id', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$moders = array();
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = ' . GAME_RESULT_TOWN . ', 1, 0)) AS civ, SUM(IF(g.result = ' . GAME_RESULT_MAFIA . ', 1, 0)) AS maf, SUM(IF(g.result = ' . GAME_RESULT_TIE . ', 1, 0)) AS tie, c.id, c.name, c.flags' . 
+			'SELECT u.id, nu.name, u.flags, COUNT(DISTINCT g.tournament_id), SUM(IF(g.result = ' . GAME_RESULT_TOWN . ', 1, 0)) AS civ, SUM(IF(g.result = ' . GAME_RESULT_MAFIA . ', 1, 0)) AS maf, SUM(IF(g.result = ' . GAME_RESULT_TIE . ', 1, 0)) AS tie, c.id, c.name, c.flags' . 
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
@@ -120,7 +180,7 @@ class Page extends LeaguePageBase
 		while ($row = $query->next())
 		{
 			$moder = new stdClass();
-			list($moder->id, $moder->name, $moder->flags, $moder->red_wins, $moder->black_wins, $moder->ties, $moder->club_id, $moder->club_name, $moder->club_flags) = $row;
+			list($moder->id, $moder->name, $moder->flags, $moder->tournaments, $moder->red_wins, $moder->black_wins, $moder->ties, $moder->club_id, $moder->club_name, $moder->club_flags) = $row;
 			$moders[] = $moder;
 		}
 		
@@ -146,6 +206,7 @@ class Page extends LeaguePageBase
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker"><td width="20">&nbsp;</td>';
 		echo '<td colspan="3">'.get_label('User name') . '</td>';
+		echo '<td width="60" align="center">'.get_label('Tournaments refereed').'</td>';
 		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
 		echo '<td width="60" align="center">'.get_label('Civil wins').'</td>';
 		echo '<td width="60" align="center">'.get_label('Mafia wins').'</td>';
@@ -162,7 +223,15 @@ class Page extends LeaguePageBase
 		{
 			++$number;
 
-			echo '<tr><td align="center" width="40" class="dark">' . $number . '</td>';
+            if ($moder->id == $this->user_id)
+            {
+                echo '<tr class="dark">';
+            }
+            else
+            {
+                echo '<tr>';
+            }
+			echo '<td align="center" width="40" class="dark">' . $number . '</td>';
 			echo '<td width="50">';
 			$this->user_pic->set($moder->id, $moder->name, $moder->flags);
 			$this->user_pic->show(ICONS_DIR, true, 50);
@@ -174,6 +243,7 @@ class Page extends LeaguePageBase
 			
 			$games = $moder->red_wins + $moder->black_wins + $moder->ties;
 			
+			echo '<td align="center">' . $moder->tournaments . '</td>';
 			echo '<td align="center" class="dark">' . $games . '</td>';
 			if ($moder->red_wins > 0)
 			{
