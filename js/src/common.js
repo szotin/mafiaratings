@@ -140,6 +140,18 @@ var dlg = new function()
 		}, onClose);
 	}
 
+	this.warning = function(text, title, width, onClose)
+	{
+		if (!isString(title))
+		{
+			title = l("Attention");
+		}
+		return dlg.custom(text, title, width, 
+		{
+			ok: { id:"dlg-ok", text: l("Ok"), click: function() { $(this).dialog("close"); } }
+		}, onClose);
+	}
+
 	this.info = function(text, title, width, onClose)
 	{
 		if (!isString(title))

@@ -213,11 +213,15 @@ function gameDirty()
 }
 
 // Cancels the game and deletes the server record. All game data will be lost
-function gameCancel()
+function gameCancel(backPage)
 {
 	json.post('api/ops/game.php', { op: 'cancel_current', event_id: game.eventId, table_num: game.tableNum, game_num: game.gameNum }, function()
 	{
-		goTo({game_num:undefined, demo:undefined});
+		if (!backPage)
+		{
+			backPage = {game_num:undefined, demo:undefined};
+		}
+		goTo(backPage);
 	});
 }
 

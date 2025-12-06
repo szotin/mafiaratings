@@ -1539,9 +1539,9 @@ function uiPlayerActions(num)
 	dlg.custom(html, l('PlayerActions', num + 1), 360, {});
 }
 
-function uiCancelGame()
+function uiCancelGame(backPage)
 {
-	dlg.yesNo(l('CancelGame'), null, null, gameCancel);
+	dlg.yesNo(l('CancelGame'), null, null, function() { gameCancel(backPage); });
 }
 
 function uiArrangePlayer(num, night)

@@ -5,6 +5,11 @@ require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/user.php';
 require_once __DIR__ . '/picture.php';
 
+define('PROMPT_TYPE_NONE', 0); 
+define('PROMPT_TYPE_INFO', 1); 
+define('PROMPT_TYPE_ERROR', 2); 
+define('PROMPT_TYPE_WARNING', 3); 
+
 class PageBase
 {
 	private $_state;
@@ -13,7 +18,8 @@ class PageBase
 	protected $_locked;
 	protected $_admin;
 	
-	private $_err_message;
+	private $_prompt;
+	private $_prompt_type;
 	private $_login;
 	
 	protected $_facebook;
@@ -32,7 +38,8 @@ class PageBase
 	{
 		global $_profile;
 		
-		$this->_err_message = NULL;
+		$this->_prompt = NULL;
+		$this->_prompt_type = PROMPT_TYPE_NONE;
 		$this->_login = 0;
 		if (isset($_REQUEST['_login_']))
 		{
@@ -442,23 +449,34 @@ class PageBase
 		$this->errorMessage($message, $login);
 	}
 	
-	protected function errorMessage($message, $login = 0)
+	protected function setUserPrompt($message, $prompt_type = PROMPT_TYPE_INFO)
 	{
-		$this->_err_message = $message;
-		if ($this->_login == 0)
+		$this->_prompt = $message;
+		$this->_prompt_type = $prompt_type;
+	}
+	
+	protected function getUserPrompt($prompt_type = PROMPT_TYPE_NONE)
+	{
+		if ($prompt_type == PROMPT_TYPE_NONE || $this->_prompt_type == $prompt_type)
 		{
-			$this->_login = $login;
+			return $this->_prompt;
 		}
+		return null;
+	}
+	
+	protected function errorMessage($message)
+	{
+		setUserPrompt($message, PROMPT_TYPE_ERROR);
 	}
 	
 	protected function hasError()
 	{
-		return !is_null($this->_err_message);
+		return $this->hasUserPrompt(PROMPT_TYPE_ERROR);
 	}
 	
 	protected function getErrorMessage()
 	{
-		return $this->_err_message;
+		return $this->getUserPrompt(PROMPT_TYPE_ERROR);
 	}
 	
 	private function _js()
@@ -537,14 +555,14 @@ class PageBase
 		}
 		echo "\n\t$(function()";
 		echo "\n\t{\n";
-		if ($this->_login && ($_profile == NULL || ($_profile->user_id != $this->_login && strtolower($_profile->user_name) != strtolower($this->_login))))
+		if ($this->_login > 0 && ($_profile == NULL || ($_profile->user_id != $this->_login && strtolower($_profile->user_name) != strtolower($this->_login))))
 		{
 			$login_name = '';
 			if (is_string($this->_login))
 			{
 				$login_name = $this->_login;
 			}
-			else if ($this->_login > 0)
+			else
 			{
 				$query = new DbQuery('SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $this->_login);
 				if ($row = $query->next())
@@ -552,11 +570,19 @@ class PageBase
 					list ($login_name) = $row;
 				}
 			}
-			echo "\n\t\tloginDialog(\"" . $this->_err_message . '", "' . $login_name . '");';
+			echo "\n\t\tloginDialog(\"" . $this->_prompt . '", "' . $login_name . '");';
 		}
-		else if ($this->_err_message != NULL)
+		switch ($this->_prompt_type)
 		{
-			echo "\n\t\tdlg.error(\"" . $this->_err_message . "\");";
+		case PROMPT_TYPE_INFO:
+			echo "\n\t\tdlg.info(\"" . $this->_prompt . "\");";
+			break;
+		case PROMPT_TYPE_ERROR: 
+			echo "\n\t\tdlg.error(\"" . $this->_prompt . "\");";
+			break;
+		case PROMPT_TYPE_WARNING: 
+			echo "\n\t\tdlg.warning(\"" . $this->_prompt . "\");";
+			break;
 		}
 		echo "\n\t\tshowMenuBar();\n\n";
 		if ($_profile != NULL && ($_profile->user_flags & USER_FLAG_NO_PASSWORD) != 0)
@@ -565,7 +591,7 @@ class PageBase
 		}
 		$this->js_on_load();
 		echo "\n\t});\n";
-		if (is_null($this->_err_message))
+		if (is_null($this->_prompt))
 		{
 			$this->js();
 		}

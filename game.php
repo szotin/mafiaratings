@@ -32,6 +32,7 @@ class Page extends PageBase
 		$this->table_num = 0;
 		$this->game_num = 0;
 		$this->demo = false;
+		$this->unfinished = false;
 		
 		if (isset($_REQUEST['event_id']))
 		{
@@ -91,6 +92,10 @@ class Page extends PageBase
 			$this->game_num = 1;
 			$this->demo = true;
 		}
+		else if (isset($_REQUEST['unfinished']))
+		{
+			$this->unfinished = true;
+		}
 	}
 	
 	private function select_event()
@@ -127,7 +132,7 @@ class Page extends PageBase
 		
 		echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="center" class="light">';	
 		echo '<p><a href="game.php?demo=1">' . get_label('Demo game');
-		echo '</p><p><img src="images/thegame.png" border="0"></p>';
+		echo '</p><p><img src="images/thegame.png" border="0" width="60"></p>';
 		echo '</td>';
 		
 		if ($this->tournament_id > 0)
@@ -150,9 +155,21 @@ class Page extends PageBase
 		
 		echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="center" class="light">';	
 		echo '<p><a href="#" onclick="' . $create_event_func . '">' . $create_event_title;
-		echo '</p><p><img src="images/create_big.png" border="0" width="48"></p>';
+		echo '</p><p><img src="images/create_big.png" border="0" width="60"></p>';
 		echo '</td>';
 		
+		list ($unfinished_count) = Db::record(get_label('game'), 'SELECT COUNT(*) FROM current_games WHERE user_id = ?', $_profile->user_id);
+		if ($unfinished_count > 0)
+		{
+			++$event_count;
+			++$column_count;
+			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="center" class="light">';	
+			echo '<p><a href="game.php?bck=1&unfinished=1">' . get_label('Unfinished games');
+			echo '</p><p><img src="images/clubs_big.png" border="0" width="60"></p>';
+			echo '</td>';
+			$this->setUserPrompt(get_label('You have unfinished games. Please finish or cancel them.'), PROMPT_TYPE_WARNING);
+		}
+
 		$club_pic = new Picture(CLUB_PICTURE);
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE));
 		$query = new DbQuery(
@@ -281,7 +298,7 @@ class Page extends PageBase
 			echo 'tournament_standings.php?bck=1&id=' . $tournament_id;
 		}
 		echo '">';
-		$pic->show(ICONS_DIR, false, 56);
+		$pic->show(ICONS_DIR, false, 60);
 		echo '</a></td><td><h2>' . $event_name . '</h2></td><td>';
 		show_back_button();
 		echo '</td><tr></table></p>';
@@ -561,9 +578,17 @@ class Page extends PageBase
 			echo '<div id="demo">'.get_label('Demo').'</div>';
 		}
 		
+		$back_page = get_back_page();
 		echo '<ul id="ops-menu" style="position:absolute;" hidden>';
-		echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({game_num:undefined, demo:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
-		echo '<li id="cancel" class="ops-item"><a href="#" onclick="uiCancelGame()"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
+		if (empty($back_page))
+		{
+			echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({game_num:undefined, demo:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
+		}
+		else
+		{
+			echo '<li id="back" class="ops-item"><a href="'.$back_page.'"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
+		}
+		echo '<li id="cancel" class="ops-item"><a href="#" onclick="uiCancelGame(\''.$back_page.'\')"><img src="images/delete.png" class="text"> '.get_label('Cancel the game').'</li>';
 		echo '<li type="separator"></li>';
 		if ($this->event_id > 0)
 		{
@@ -654,9 +679,105 @@ class Page extends PageBase
 		echo '<audio id="end-snd"></audio>';
 	}
 	
+	private function select_unfinished()
+	{
+		global $_lang, $_profile;
+		
+		check_permissions(PERMISSION_USER);
+		
+?>
+		<script>
+		function deleteGame(eventId, tableNum, gameNum)
+		{
+			dlg.yesNo("<?php echo get_label('Are you sure you want to delete the game?'); ?>", null, null, function()
+			{
+				json.post('api/ops/game.php', {op:'cancel_current', event_id:eventId, table_num:tableNum, game_num:gameNum}, refr);
+			});
+		}
+		</script>
+<?php		
+		echo '<p><table class="transp" width="100%"><tr><td><h3>'.get_label('Unfinished games').'</h3></td><td align="right">';
+		show_back_button();
+		echo '</td><tr></table></p>';
+		
+		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+		$game_count = 0;
+		$column_count = 0;
+		$query = new DbQuery(
+			'SELECT e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, g.table_num, g.game_num'.
+			' FROM current_games g'.
+			' JOIN events e ON e.id = g.event_id'. 
+			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+			' JOIN clubs c ON c.id = e.club_id'.
+			' WHERE g.user_id = ?'.
+			' ORDER BY g.event_id, g.table_num, g.game_num',
+			$_profile->user_id);
+		while ($row = $query->next())
+		{
+			list ($event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $table_num, $game_num) = $row;
+			if ($column_count == 0)
+			{
+				if ($game_count == 0)
+				{
+					echo '<table class="bordered light" width="100%">';
+				}
+				else
+				{
+					echo '</tr>';
+				}
+				echo '<tr>';
+			}
+			
+			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
+			
+			echo '<table class="transp" width="100%">';
+			echo '<tr class="darker"><td width="32" align="center"><button class="icon" onclick="deleteGame('.$event_id.', '.$table_num.', '.$game_num.')"><img src="images/delete.png" title="'.get_label('Delete the game').'"></button></td>';
+			echo '<td align="center"><p><b>';
+			if (!is_null($tournament_name))
+			{
+				echo $tournament_name;
+			}
+			else
+			{
+				echo $club_name;
+			}
+			echo '<br>' . $event_name . '<br>' . get_label('Table [0], Game [1]', $table_num, $game_num) . '</b></p></td></tr>';
+			echo '<tr><td align="center" colspan="2"><p>';
+			echo '<a href="game.php?bck=1&event_id=' . $event_id . '&table_num=' . $table_num . '&game_num=' . $game_num .'">';
+			$pic->
+				set($event_id, $event_name, $event_flags)->
+				set($tournament_id, $tournament_name, $tournament_flags)->
+				set($club_id, $club_name, $club_flags);
+			$pic->show(ICONS_DIR, false, 60);
+			echo '</a></p></td></tr></table>';
+			
+			echo '</td>';
+			
+			++$game_count;
+			++$column_count;
+			if ($column_count >= COLUMN_COUNT)
+			{
+				$column_count = 0;
+			}
+		}
+		
+		if ($game_count > 0)
+		{
+			if ($column_count > 0)
+			{
+				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
+			}
+			echo '</tr></table>';
+		}
+	}
+	
 	protected function show_body()
 	{
-		if ($this->demo)
+		if ($this->unfinished)
+		{
+			$this->select_unfinished();
+		}
+		else if ($this->demo)
 		{
 			$this->game();
 		}
