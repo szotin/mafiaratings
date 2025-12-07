@@ -12,7 +12,9 @@ define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 define('VIEW_SETUP', 0);
 define('VIEW_BY_GAME', 1);
 define('VIEW_BY_TABLE', 2);
-define('VIEW_COUNT', 3);
+define('VIEW_TABLE_STATS', 3);
+define('VIEW_PVP_STATS', 4);
+define('VIEW_COUNT', 5);
 
 define('HIDE_PLAYED', 1);
 define('SHOW_ICONS', 2);
@@ -200,6 +202,8 @@ class Page extends TournamentPageBase
 			}
 			echo '<button' . ($view == VIEW_BY_GAME ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_GAME.'})">' . get_label('By game') . '</button>';
 			echo '<button' . ($view == VIEW_BY_TABLE ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_TABLE.'})">' . get_label('By table') . '</button>';
+			echo '<button' . ($view == VIEW_TABLE_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_TABLE_STATS.'})">' . get_label('By table stats') . '</button>';
+			echo '<button' . ($view == VIEW_PVP_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_PVP_STATS.'})">' . get_label('PvP stats') . '</button>';
 			echo '</div></p>';
 
 			if ($this->options & SHOW_ICONS)
@@ -267,6 +271,12 @@ class Page extends TournamentPageBase
 					break;
 				case VIEW_BY_TABLE:
 					$this->showByTable();
+					break;
+				case VIEW_TABLE_STATS:
+					$this->showTableStats();
+					break;
+				case VIEW_PVP_STATS:
+					$this->showPvpStats();
 					break;
 			}
 		}
@@ -380,6 +390,35 @@ class Page extends TournamentPageBase
 		}
 	}
 	
+	private function getPlayerName($user_id)
+	{
+		if ($user_id > 0)
+		{
+			return $this->users[$user_id]->name;
+		}
+		
+		if (!is_null($this->mwt_players))
+		{
+			foreach ($this->mwt_players as $p)
+			{
+				if ($p->id == $user_id)
+				{
+					return $p->name;
+				}
+			}
+		}
+		
+		if ($user_id < 0)
+		{
+			$user_id = -$user_id - 1;
+			if (!is_null($this->mapping) && $user_id < count($this->mapping) && isset($this->mapping[$user_id]->name))
+			{
+				return $this->mapping[$user_id]->name;
+			}
+		}
+		return '#' . ($user_id + 1);
+	}
+	
 	private function showPlayer($user_id)
 	{
 		$class = '';
@@ -402,7 +441,7 @@ class Page extends TournamentPageBase
 			$ref_beg = '<a href="javascript:highlight('.$user_id.')">';
 			$ref_end = '</a>';
 		}
-		echo '<td align="center" ' . ($this->highlight_id == $user_id ? ' class="darker"' : '') . '>';
+		echo '<td align="center" ' . ($this->highlight_id == $user_id ? ' class="darker"' : '') . ' width="100">';
 		if ($user_id > 0)
 		{
 			$user = $this->users[$user_id];
@@ -477,6 +516,227 @@ class Page extends TournamentPageBase
 				{
 					$this->showPlayer($game[$k]);
 				}
+				echo '</tr>';
+			}
+			echo '</table>';
+		}
+	}
+	
+	private function showTableStats()
+	{
+		$pl = array();
+		for ($i = 0; $i < count($this->tables); ++$i)
+		{
+			$table = &$this->tables[$i];
+			for ($j = 0; $j < count($table); ++$j)
+			{
+				for ($k = 0; $k < count($table[$j]) && $k < 10; ++$k)
+				{
+					$user_id = $table[$j][$k];
+					if (!array_key_exists($user_id, $pl))
+					{
+						$player = new stdClass();
+						$player->id = $user_id;
+						$player->name = $this->getPlayerName($user_id);
+						$player->tables = array_fill(0, count($this->tables), 0);
+						$pl[$user_id] = $player;
+					}
+					++$pl[$user_id]->tables[$i];
+				}
+			}
+		}
+		
+		$players = array();
+		foreach ($pl as $user_id => $player)
+		{
+			$players[] = $player;
+		}
+		usort($players, function($p1, $p2) { return strcmp($p1->name, $p2->name); });
+		
+		echo '<table class="bordered light">';
+		echo '<tr class="darker"><td width="120"></td>';
+		for ($i = 0; $i < count($this->tables); ++$i)
+		{
+			$table = &$this->tables[$i];
+			if (is_null($table))
+			{
+				continue;
+			}
+			echo '<td width="80" align="center"><b>'.get_label('Table [0]', $i + 1).'</b></td>';
+		}
+		echo '</tr>';
+		
+		foreach ($players as $player)
+		{
+			if ($player->id == $this->highlight_id)
+			{
+				echo '<tr class="dark">';
+			}
+			else
+			{
+				echo '<tr>';
+			}
+			$this->showPlayer($player->id);
+			foreach ($player->tables as $count)
+			{
+				echo '<td align="center">' . $count . '</td>';
+			}
+			echo '</tr>';
+		}
+		echo '</table>';
+	}
+	
+	private function showPvpStats()
+	{
+		$highlight_id = -1;
+		$pl = array();
+		for ($i = 0; $i < count($this->tables); ++$i)
+		{
+			$table = &$this->tables[$i];
+			for ($j = 0; $j < count($table); ++$j)
+			{
+				for ($k = 0; $k < count($table[$j]) && $k < 10; ++$k)
+				{
+					$user_id = $table[$j][$k];
+					if (!array_key_exists($user_id, $pl))
+					{
+						$player = new stdClass();
+						$player->id = $user_id;
+						$player->name = $this->getPlayerName($user_id);
+						$player->players = array();
+						$pl[$user_id] = $player;
+					}
+				}
+			}
+		}
+		
+		foreach ($pl as $user1_id => $player1)
+		{
+			foreach ($pl as $user2_id => $player2)
+			{
+				if ($user1_id != $user2_id)
+				{
+					$player1->players[$user2_id] = 0;
+				}
+			}
+		}
+		
+		
+		for ($i = 0; $i < count($this->tables); ++$i)
+		{
+			$table = &$this->tables[$i];
+			for ($j = 0; $j < count($table); ++$j)
+			{
+				for ($k = 0; $k < count($table[$j]) && $k < 10; ++$k)
+				{
+					$user1_id = $table[$j][$k];
+					if ($this->highlight_id == $user1_id)
+					{
+						$highlight_id = $this->highlight_id;
+					}
+					for ($l = 0; $l < count($table[$j]) && $l < 10; ++$l)
+					{
+						if ($k != $l)
+						{
+							$user2_id = $table[$j][$l];
+							++$pl[$user2_id]->players[$user1_id];
+							++$pl[$user1_id]->players[$user2_id];
+						}
+					}
+				}
+			}
+		}
+		
+		$players = array();
+		foreach ($pl as $user_id => $player)
+		{
+			$players[] = $player;
+		}
+		usort($players, function($p1, $p2) { return strcmp($p1->name, $p2->name); });
+
+		echo '<p><select id="player" onchange="highlight($(\'#player\').val())">';
+		show_option(0, $highlight_id, '');
+		foreach ($players as $player)
+		{
+			show_option($player->id, $highlight_id, $player->name);
+		}
+		echo '</select></p>';
+		
+		if ($highlight_id > 0)
+		{
+			$player = $pl[$highlight_id];
+			$playing_with = array();
+			foreach ($player->players as $pid => $p)
+			{
+				$index = $p / 2;
+				for ($i = count($playing_with); $i <= $index; ++$i)
+				{
+					$playing_with[] = array();
+				}
+				$playing_with[$index][] = $pid;
+			}
+			
+			echo '<table class="bordered light" width="100%">';
+			echo '<tr class="darker"><th width="80">'.get_label('Games together').'</th><th></th></tr>';
+			for ($i = count($playing_with) - 1; $i >= 0; --$i)
+			{
+				if (count($playing_with[$i]) == 0)
+				{
+					continue;
+				}
+				echo '<tr><td align="center" class="dark"><b>'.$i.'</b></td><td>';
+				$count = 0;
+				foreach ($playing_with[$i] as $user_id)
+				{
+					if ($count == 0)
+					{
+						echo '<table class="transp"><tr>';
+					}
+					else if ($count % 9 == 0)
+					{
+						echo '</tr><tr>';
+					}
+					$this->showPlayer($user_id);
+					++$count;
+				}
+				if ($count > 0)
+				{
+					$cols = $count % 9;
+					if ($cols > 0)
+					{
+						echo '<td colspan="'.$cols.'"></td>';
+					}
+					echo '</tr></table>';
+				}
+			}
+		}
+		else
+		{
+			$pairs = array();
+			$max = 1;
+			$sum = 0;
+			foreach ($players as $player1)
+			{
+				foreach ($players as $player2)
+				{
+					if ($player1->id > $player2->id)
+					{
+						$index = $player1->players[$player2->id] / 2;
+						for ($i = count($pairs); $i <= $index; ++$i)
+						{
+							$pairs[] = 0;
+						}
+						$max = max(++$pairs[$index], $max);
+						++$sum;
+					}
+				}
+			}
+			echo '<table class="bordered light" width="100%">';
+			echo '<tr class="darker"><th width="80">'.get_label('Games together').'</th><th width="80">'.get_label('Pairs').'</th><th></th></tr>';
+			for ($i = count($pairs) - 1; $i >= 0; --$i)
+			{
+				echo '<tr align="center"><td class="dark"><b>' . $i . '</b></td><td>' . $pairs[$i] . '</td>';
+				echo '<td align="left"><img src="images/black_dot.png" width="' . round((760 * $pairs[$i]) / $max) . '" height="12" title="' . $pairs[$i] . ' ('.format_float(100 * $pairs[$i] / $sum, 1).'%)" style="opacity: 0.3;"></td>';
 				echo '</tr>';
 			}
 			echo '</table>';

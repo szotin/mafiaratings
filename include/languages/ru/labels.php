@@ -1566,7 +1566,7 @@ $labelMenu = array (
 'Please ented [0] ID of this tournament' => 'Пожалуйста введите ID этого турнира на сайте [0]', // tournament_emo.php, tournament_imafia.php, tournament_mwt.php
 'Done' => 'Сделано', // tournament_mwt.php
 'Players mapping' => 'Соответствие игроков', // tournament_mwt.php
-'Table [0]' => 'Стол [0]', // event_broadcasts.php, event_broadcasts.php, event_games.php, game.php, tournament_broadcasts.php, tournament_broadcasts.php, tournament_mwt.php, tournament_seating.php, tournament_seating.php
+'Table [0]' => 'Стол [0]', // event_broadcasts.php, event_broadcasts.php, event_games.php, game.php, tournament_broadcasts.php, tournament_broadcasts.php, tournament_mwt.php, tournament_seating.php, tournament_seating.php, tournament_seating.php
 'Round [0]' => 'Игра [0]', // tournament_mwt.php
 'Please login to the MWT site' => 'Пожалуйста войдите на сайт MWT', // tournament_mwt.php
 'Login' => 'Логин', // tournament_mwt.php, include/page_base.php
@@ -1831,6 +1831,10 @@ $labelMenu = array (
 'Maintenance tasks' => 'Обслуживающие скрипты', // include/general_page_base.php
 'Manage recuring maintanance scripts' => 'Управлять скриптами обслуживающими функционирование mafiaratings', // include/general_page_base.php
 'Tournaments refereed' => 'Проведено турниров', // address_referees.php, club_referees.php, league_referees.php, referees.php, series_referees.php
+'Unfinished games' => 'Недоигранные игры', // game.php, game.php
+'You have unfinished games. Please finish or cancel them.' => 'У вас есть недоигранные игры. Пожалуйста закончите их, или удалите.', // game.php
+'Are you sure you want to delete the game?' => 'Вы уверены, что хотите удалить игру?', // game.php
+'Delete the game' => 'Удалить игру', // game.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1846,10 +1850,10 @@ $labelMenu = array (
 'During don\'s check' => 'Во время донской проверки', // game_obs.php
 'During sheriff\'s check' => 'Во время шерифской проверки', // game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
-'Unfinished games' => 'Недоигранные игры', // game.php, game.php
-'You have unfinished games. Please finish or cancel them.' => 'У вас есть недоигранные игры. Пожалуйста закончите их, или удалите.', // game.php
-'Are you sure you want to delete the game?' => 'Вы уверены, что хотите удалить игру?', // game.php
-'Delete the game' => 'Удалить игру', // game.php
+'By table stats' => 'Статистика по столам', // tournament_seating.php
+'PvP stats' => 'Статистика PvP', // tournament_seating.php
+'Games together' => 'Игр вместе', // tournament_seating.php, tournament_seating.php
+'Pairs' => 'Пар', // tournament_seating.php
 );
 
 return $labelMenu;

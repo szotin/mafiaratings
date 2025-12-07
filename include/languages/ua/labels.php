@@ -1561,7 +1561,7 @@ $labelMenu = array (
 'Import seating' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php, tournament_mwt.php, tournament_mwt.php
 'Done' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
 'Players mapping' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
-'Table [0]' => '[EMPTY]', // event_broadcasts.php, event_broadcasts.php, event_games.php, game.php, tournament_broadcasts.php, tournament_broadcasts.php, tournament_mwt.php, tournament_seating.php, tournament_seating.php, event_broadcasts.php, event_broadcasts.php, event_games.php, game.php, tournament_broadcasts.php, tournament_broadcasts.php, tournament_mwt.php, tournament_seating.php, tournament_seating.php
+'Table [0]' => '[EMPTY]', // event_broadcasts.php, event_broadcasts.php, event_games.php, game.php, tournament_broadcasts.php, tournament_broadcasts.php, tournament_mwt.php, tournament_seating.php, tournament_seating.php, tournament_seating.php, event_broadcasts.php, event_broadcasts.php, event_games.php, game.php, tournament_broadcasts.php, tournament_broadcasts.php, tournament_mwt.php, tournament_seating.php, tournament_seating.php, tournament_seating.php
 'Round [0]' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
 'Please login to the MWT site' => '[EMPTY]', // tournament_mwt.php, tournament_mwt.php
 'Login' => '[EMPTY]', // tournament_mwt.php, include/page_base.php, tournament_mwt.php, include/page_base.php
@@ -1831,6 +1831,10 @@ $labelMenu = array (
 'Maintenance tasks' => '[EMPTY]', // include/general_page_base.php, include/general_page_base.php
 'Manage recuring maintanance scripts' => '[EMPTY]', // include/general_page_base.php, include/general_page_base.php
 'Tournaments refereed' => '[EMPTY]', // address_referees.php, club_referees.php, league_referees.php, referees.php, series_referees.php, address_referees.php, club_referees.php, league_referees.php, referees.php, series_referees.php
+'Unfinished games' => '[EMPTY]', // game.php, game.php, game.php, game.php
+'You have unfinished games. Please finish or cancel them.' => '[EMPTY]', // game.php, game.php
+'Are you sure you want to delete the game?' => '[EMPTY]', // game.php, game.php
+'Delete the game' => '[EMPTY]', // game.php, game.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1846,10 +1850,10 @@ $labelMenu = array (
 'During don\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'During sheriff\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => '[EMPTY]', // form/account_edit.php, form/account_edit.php
-'Unfinished games' => '[EMPTY]', // game.php, game.php
-'You have unfinished games. Please finish or cancel them.' => '[EMPTY]', // game.php
-'Are you sure you want to delete the game?' => '[EMPTY]', // game.php
-'Delete the game' => '[EMPTY]', // game.php
+'By table stats' => '[EMPTY]', // tournament_seating.php
+'PvP stats' => '[EMPTY]', // tournament_seating.php
+'Games together' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
+'Pairs' => '[EMPTY]', // tournament_seating.php
 );
 
 return $labelMenu;
