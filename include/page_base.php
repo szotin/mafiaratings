@@ -464,6 +464,15 @@ class PageBase
 		return null;
 	}
 	
+	protected function hasUserPrompt($prompt_type = PROMPT_TYPE_NONE)
+	{
+		if ($prompt_type == PROMPT_TYPE_NONE || $this->_prompt_type == $prompt_type)
+		{
+			return !empty($this->_prompt);
+		}
+		return false;
+	}
+	
 	protected function errorMessage($message)
 	{
 		setUserPrompt($message, PROMPT_TYPE_ERROR);
