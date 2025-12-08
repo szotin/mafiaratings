@@ -702,25 +702,27 @@ class Page extends TournamentPageBase
 				{
 					if ($count == 0)
 					{
-						echo '<table class="transp" width="100%"><tr>';
+						echo '<table class="transp"><tr>';
 					}
-					else if ($count % 9 == 0)
+					else if ($count % 14 == 0)
 					{
 						echo '</tr><tr>';
 					}
-					$this->showPlayer($user_id, 'width="100"');
+					$this->showPlayer($user_id, 'width="60"');
 					++$count;
 				}
 				if ($count > 0)
 				{
-					$cols = 9 - $count % 9;
-					if ($cols < 9)
+					$cols = 14 - $count % 14;
+					if ($cols < 14)
 					{
 						echo '<td colspan="'.$cols.'"></td>';
 					}
 					echo '</tr></table>';
 				}
+				echo '</td></tr>';
 			}
+			echo '</table>';
 		}
 		else
 		{
