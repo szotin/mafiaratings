@@ -14,7 +14,8 @@ define('VIEW_BY_GAME', 1);
 define('VIEW_BY_TABLE', 2);
 define('VIEW_TABLE_STATS', 3);
 define('VIEW_PVP_STATS', 4);
-define('VIEW_COUNT', 5);
+define('VIEW_NUMBERS_STATS', 5);
+define('VIEW_COUNT', 6);
 
 define('HIDE_PLAYED', 1);
 define('SHOW_ICONS', 2);
@@ -204,6 +205,7 @@ class Page extends TournamentPageBase
 			echo '<button' . ($view == VIEW_BY_TABLE ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_TABLE.'})">' . get_label('By table') . '</button>';
 			echo '<button' . ($view == VIEW_TABLE_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_TABLE_STATS.'})">' . get_label('By table stats') . '</button>';
 			echo '<button' . ($view == VIEW_PVP_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_PVP_STATS.'})">' . get_label('PvP stats') . '</button>';
+			echo '<button' . ($view == VIEW_NUMBERS_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_NUMBERS_STATS.'})">' . get_label('By numbers stats') . '</button>';
 			echo '</div></p>';
 
 			if ($this->options & SHOW_ICONS)
@@ -277,6 +279,9 @@ class Page extends TournamentPageBase
 					break;
 				case VIEW_PVP_STATS:
 					$this->showPvpStats();
+					break;
+				case VIEW_NUMBERS_STATS:
+					$this->showNumbersStats();
 					break;
 			}
 		}
@@ -419,7 +424,7 @@ class Page extends TournamentPageBase
 		return '#' . ($user_id + 1);
 	}
 	
-	private function showPlayer($user_id)
+	private function showPlayer($user_id, $cell_attributes = '')
 	{
 		$class = '';
 		if ($this->highlight_id == $user_id)
@@ -441,7 +446,12 @@ class Page extends TournamentPageBase
 			$ref_beg = '<a href="javascript:highlight('.$user_id.')">';
 			$ref_end = '</a>';
 		}
-		echo '<td align="center" ' . ($this->highlight_id == $user_id ? ' class="darker"' : '') . ' width="100">';
+		
+		if (empty($cell_attributes))
+		{
+			$cell_attributes = $this->highlight_id == $user_id ? ' class="darker"' : '';
+		}
+		echo '<td align="center"' . $cell_attributes . '>';
 		if ($user_id > 0)
 		{
 			$user = $this->users[$user_id];
@@ -571,12 +581,14 @@ class Page extends TournamentPageBase
 			if ($player->id == $this->highlight_id)
 			{
 				echo '<tr class="dark">';
+				$cell_attributes = ' class="darker"';
 			}
 			else
 			{
 				echo '<tr>';
+				$cell_attributes = ' class="dark"';
 			}
-			$this->showPlayer($player->id);
+			$this->showPlayer($player->id, $cell_attributes);
 			foreach ($player->tables as $count)
 			{
 				echo '<td align="center">' . $count . '</td>';
@@ -690,19 +702,19 @@ class Page extends TournamentPageBase
 				{
 					if ($count == 0)
 					{
-						echo '<table class="transp"><tr>';
+						echo '<table class="transp" width="100%"><tr>';
 					}
 					else if ($count % 9 == 0)
 					{
 						echo '</tr><tr>';
 					}
-					$this->showPlayer($user_id);
+					$this->showPlayer($user_id, 'width="100"');
 					++$count;
 				}
 				if ($count > 0)
 				{
-					$cols = $count % 9;
-					if ($cols > 0)
+					$cols = 9 - $count % 9;
+					if ($cols < 9)
 					{
 						echo '<td colspan="'.$cols.'"></td>';
 					}
@@ -715,6 +727,7 @@ class Page extends TournamentPageBase
 			$pairs = array();
 			$max = 1;
 			$sum = 0;
+			$min_index = 10000;
 			foreach ($players as $player1)
 			{
 				foreach ($players as $player2)
@@ -727,13 +740,14 @@ class Page extends TournamentPageBase
 							$pairs[] = 0;
 						}
 						$max = max(++$pairs[$index], $max);
+						$min_index = min($index, $min_index);
 						++$sum;
 					}
 				}
 			}
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="darker"><th width="80">'.get_label('Games together').'</th><th width="80">'.get_label('Pairs').'</th><th></th></tr>';
-			for ($i = count($pairs) - 1; $i >= 0; --$i)
+			for ($i = count($pairs) - 1; $i >= $min_index; --$i)
 			{
 				echo '<tr align="center"><td class="dark"><b>' . $i . '</b></td><td>' . $pairs[$i] . '</td>';
 				echo '<td align="left"><img src="images/black_dot.png" width="' . round((760 * $pairs[$i]) / $max) . '" height="12" title="' . $pairs[$i] . ' ('.format_float(100 * $pairs[$i] / $sum, 1).'%)" style="opacity: 0.3;"></td>';
@@ -741,6 +755,67 @@ class Page extends TournamentPageBase
 			}
 			echo '</table>';
 		}
+	}
+	
+	private function showNumbersStats()
+	{
+		$pl = array();
+		for ($i = 0; $i < count($this->tables); ++$i)
+		{
+			$table = &$this->tables[$i];
+			for ($j = 0; $j < count($table); ++$j)
+			{
+				for ($k = 0; $k < count($table[$j]) && $k < 10; ++$k)
+				{
+					$user_id = $table[$j][$k];
+					if (!array_key_exists($user_id, $pl))
+					{
+						$player = new stdClass();
+						$player->id = $user_id;
+						$player->name = $this->getPlayerName($user_id);
+						$player->numbers = array_fill(0, 10, 0);
+						$pl[$user_id] = $player;
+					}
+					++$pl[$user_id]->numbers[$k];
+				}
+			}
+		}
+		
+		$players = array();
+		foreach ($pl as $user_id => $player)
+		{
+			$players[] = $player;
+		}
+		usort($players, function($p1, $p2) { return strcmp($p1->name, $p2->name); });
+		
+		echo '<table class="bordered light" width="100%">';
+		echo '<tr class="darker"><td width="120"></td>';
+		for ($i = 0; $i < 10; ++$i)
+		{
+			echo '<td width="80" align="center"><b>'.($i + 1).'</b></td>';
+		}
+		echo '</tr>';
+		
+		foreach ($players as $player)
+		{
+			if ($player->id == $this->highlight_id)
+			{
+				echo '<tr class="dark">';
+				$cell_attributes = ' class="darker"';
+			}
+			else
+			{
+				echo '<tr>';
+				$cell_attributes = ' class="dark"';
+			}
+			$this->showPlayer($player->id, $cell_attributes);
+			for ($i = 0; $i < 10; ++$i)
+			{
+				echo '<td align="center">' . $player->numbers[$i] . '</td>';
+			}
+			echo '</tr>';
+		}
+		echo '</table>';
 	}
 	
 	private function showSetup()

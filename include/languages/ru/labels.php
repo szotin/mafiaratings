@@ -1835,6 +1835,10 @@ $labelMenu = array (
 'You have unfinished games. Please finish or cancel them.' => 'У вас есть недоигранные игры. Пожалуйста закончите их, или удалите.', // game.php
 'Are you sure you want to delete the game?' => 'Вы уверены, что хотите удалить игру?', // game.php
 'Delete the game' => 'Удалить игру', // game.php
+'By table stats' => 'Статистика по столам', // tournament_seating.php
+'PvP stats' => 'Статистика PvP', // tournament_seating.php
+'Games together' => 'Игр вместе', // tournament_seating.php, tournament_seating.php
+'Pairs' => 'Пар', // tournament_seating.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1850,10 +1854,7 @@ $labelMenu = array (
 'During don\'s check' => 'Во время донской проверки', // game_obs.php
 'During sheriff\'s check' => 'Во время шерифской проверки', // game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
-'By table stats' => 'Статистика по столам', // tournament_seating.php
-'PvP stats' => 'Статистика PvP', // tournament_seating.php
-'Games together' => 'Игр вместе', // tournament_seating.php, tournament_seating.php
-'Pairs' => 'Пар', // tournament_seating.php
+'By numbers stats' => 'Статистика по номерам', // tournament_seating.php
 );
 
 return $labelMenu;

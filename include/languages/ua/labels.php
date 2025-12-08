@@ -1835,6 +1835,10 @@ $labelMenu = array (
 'You have unfinished games. Please finish or cancel them.' => '[EMPTY]', // game.php, game.php
 'Are you sure you want to delete the game?' => '[EMPTY]', // game.php, game.php
 'Delete the game' => '[EMPTY]', // game.php, game.php
+'By table stats' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
+'PvP stats' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
+'Games together' => '[EMPTY]', // tournament_seating.php, tournament_seating.php, tournament_seating.php, tournament_seating.php
+'Pairs' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1850,10 +1854,7 @@ $labelMenu = array (
 'During don\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'During sheriff\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => '[EMPTY]', // form/account_edit.php, form/account_edit.php
-'By table stats' => '[EMPTY]', // tournament_seating.php
-'PvP stats' => '[EMPTY]', // tournament_seating.php
-'Games together' => '[EMPTY]', // tournament_seating.php, tournament_seating.php
-'Pairs' => '[EMPTY]', // tournament_seating.php
+'By numbers stats' => '[EMPTY]', // tournament_seating.php
 );
 
 return $labelMenu;
