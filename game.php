@@ -659,7 +659,7 @@ class Page extends PageBase
 		echo '<tr class="day-empty footer-row" id="r-1">';
 		echo '<td colspan="3">';
 		echo '<table class="invis" width="100%"><tr>';
-		echo '<td><img id="saving-img" border="0" src="images/connected.png"></td>';
+		echo '<td width="36"><img id="saving-img" border="0" src="images/connected.png"></td><td>'.get_label('version').' <span id="version"></span></td>';
 		echo '<td id="saving"></td>';
 		echo '<td align="right"><button id="game-id" class="config-btn" onclick="uiConfig()"><b>'.get_label('[0]: Table [1]. Game [2].', $event_name, $this->table_num, $this->game_num).'</b></button></td>';
 		echo '</tr></table>';
@@ -674,9 +674,7 @@ class Page extends PageBase
 		echo '<td id="info" align="center"></td>';
 		echo '<td align="right"><button class="game-btn" id="game-next" onclick="uiNext()" title="' . get_label('Next') . '"><img src="images/next.png" class="text"></button></td>';
 		echo '</tr></table></div>';
-		
-		echo '<audio id="prompt-snd"></audio>';
-		echo '<audio id="end-snd"></audio>';
+		echo '<span id="sound"></span>';
 	}
 	
 	private function select_unfinished()

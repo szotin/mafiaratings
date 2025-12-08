@@ -1254,7 +1254,7 @@ var timer = new function()
 			if (t <= 0)
 			{
 				document.getElementById('prompt-snd').pause();
-				document.getElementById('end-snd').play().then(() => { console.log('end'); }).catch(error => {
+				document.getElementById('end-snd').play().then(() => {}).catch(error => {
 					console.error('End sound failed due to a user gesture restriction:', error);
 				});
 				if ((_settingsFlags & 8/*GAME_SETTINGS_NO_BLINKING*/) == 0)
@@ -1270,7 +1270,7 @@ var timer = new function()
 			{
 				if (_get() > _prompt && t <= _prompt)
 				{
-					document.getElementById('prompt-snd').play().then(() => { console.log('prompt'); }).catch(error => {
+					document.getElementById('prompt-snd').play().then(() => {}).catch(error => {
 						console.error('Prompt sound failed due to a user gesture restriction:', error);
 					});
 					if ((_settingsFlags & 8/*GAME_SETTINGS_NO_BLINKING*/) == 0)
@@ -1321,6 +1321,8 @@ function uiStart(eventId, tableNum, roundNum)
 	
 	gameInit(eventId, tableNum, roundNum, _uiRender, _uiErrorListener, _uiConnectionListener, function(data)
 	{
+		$('#version').html(game.version);
+		$('#sound').html('<audio id="prompt-snd"></audio><audio id="end-snd"></audio>');
 		document.getElementById('prompt-snd').src = data.prompt_sound;
 		document.getElementById('end-snd').src = data.end_sound;
 		_settingsFlags = data.flags;

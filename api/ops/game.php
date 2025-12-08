@@ -742,6 +742,7 @@ class ApiPage extends OpsApiPageBase
 			$regs = $data->regs;
 			$langs = $data->langs;
 			$log = $data->log;
+			Game::convert_to_current_version($game);
 		}
 		else
 		{

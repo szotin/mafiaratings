@@ -1,4 +1,4 @@
-var version = "1.1"; // It must exactly match the value of GAME_CURRENT_VERSION in include/game.php
+var version = "1.2"; // It must exactly match the value of GAME_CURRENT_VERSION in include/game.php
 var game; // All vars here can be used by UI code, but it is strongly recommended to use them for reading only. If changes are absolutely needed, make sure gameDirty(...) is called after that.
 var log; // array of games in the previous times - it is used to return back in time.
 var lastSaved; // index in the log array of the last record that is saved to the server.
