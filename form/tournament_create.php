@@ -115,30 +115,21 @@ try
 	}
 	echo '</select></td></tr>';
 	
-	$rules_code = $club->rules_code;
+	$rules_code = upgrade_rules_code($club->rules_code);
 	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
 	echo '<select id="form-rules">';
-	if (show_option($club->rules_code, $rules_code, get_label('[default]')))
-	{
-		$rules_code = '';
-	}
+	show_option($rules_code, $rules_code, get_label('[default]'));
 	$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $club_id);
 	while ($row = $query->next())
 	{
 		list ($league_name, $rules) = $row;
-		if (show_option($rules, $rules_code, $league_name))
-		{
-			$rules_code = '';
-		}
+		show_option(upgrade_rules_code($rules), null, $league_name);
 	}
 	$query = new DbQuery('SELECT name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
 	while ($row = $query->next())
 	{
 		list ($rules_name, $rules) = $row;
-		if (show_option($rules, $rules_code, $rules_name))
-		{
-			$rules_code = '';
-		}
+		show_option(upgrade_rules_code($rules), null, $rules_name);
 	}
 	echo '</select></td></tr>';
 	

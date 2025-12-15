@@ -187,12 +187,14 @@ return array
 					'The first game «day» has an exception to other days, if there is only one candidate then a vote is not held, and no one is eliminated. Over the next «days» any number of players put to vote will be voted on.',
 					'The first game «day» has an exception to other days, the player with the most votes does not leave the game. They get another 30 sec speech instead.',
 					'The first game «day» has an exception to other days, if there is only one candidate then a vote is not held, and no one is eliminated. If only one player wins the vote, noone dies, no speech, the night is falling. In other cases it works like any other voting.',
+					'The first game «day» has an exception to other days, if there is only one candidate then a vote is not held, and no one is eliminated. If only one player wins the vote, they die only if they vote for themselves. Otherwise they get a 30 sec speech.',
 				),
 				array
 				(
 					'One candidate is not voted.',
 					'Voting as usual but the winner is not killed. They speack 30 sec instead.',
 					'One candidate is not voted. Split can not be broken.',
+					'One candidate is not voted. Split can be broken only to themself.',
 				),
 			),
 			'If two or more players gain the same number of votes, these players receive an additional 30 seconds for their defence speeches. Players speak in the order of voting. After an additional 30 seconds, a second vote only occurs between these players. If the vote is repeated, the Moderator raises the question: «Who wants all the players to leave the game?» If the majority votes for a knockout, both players leave the game. If the majority of players vote against, or the votes are equally divided, then the players remain in the game.', // 7.17.
@@ -325,14 +327,42 @@ return array
 		(
 			'The Moderator is responsible for detecting violations of the rules.', // 9.1.
 			'Players who break the rules are punished by the Moderator in accordance with the disciplinary regulations specified in paragraph 10.', // 9.2.
-			'There are the following penalties. In order of increasing severity.<ul><li>Verbal warning.</li><li>Warning.</li><li>Disqualification from the game.</li><li>Team defeat.</li></ul>', // 9.3.
+			'There are the following penalties. In order of increasing severity.<ul><li>Verbal warning.</li><li>Warning aka foul.</li><li>Technical foul.</li><li>Disqualification from the game.</li><li>Team defeat.</li></ul>', // 9.3.
 			'In addition to penalties 9.3.3 and 9.3.4, tournament penalties can also be applied. This is either the removal of tournament points, or disqualification from the tournament (red card), or tournament warning (yellow card). Yellow and red cards can also be accompanied by the removal of tournament points. This is determined by the tournament regulations. See the document League Rules for Tournaments for more details.', // 9.4.
-			'A player with three warnings is missing the speech at their closest minute. Except for the case when it is their last word or justifying word when re-voting. A player loses the speech once. In the following days, the player will have the speech as usual.', // 9.5.
-			'A player who misses the speech still has the right to nominate a candidate.', // 9.6.
-			'Short speech. When there are three or four players left in the game, the player who receives three fouls is given a «shortened» speech for 30 seconds.', // 9.7.
-			'If a player with three warnings gets into a re-vote situation, they have the right to speak. They will miss their speech in the following day instead.', // 9.8.
-			'When receiving a fourth warning or disqualifying foul, the player immediately leaves the game without the last word.', // 9.9.
-			array // 9.10.
+			array // 9.5.
+			(
+				RULES_3_WARNINGS,
+				'Three warnings penalty',
+				array
+				(
+					'A player with three warnings is missing the speech at their closest minute. Except for the case when it is their last word or justifying word when re-voting. A player loses the speech once. In the following days, the player will have the speech as usual. A player who misses the speech still has the right to nominate a candidate. When there are three or four players left in the game, the player who receives three fouls is given a «shortened» speech for 30 seconds. If a player with three warnings gets into a re-vote situation, they have the right to speak. They will miss their speech in the following day instead.', // 9.5.1.
+					'The next speech of a player with three warnings gets shortened to 30 seconds. All other speeches remail as usual.', // 9.5.2.
+					'There is no penalty for three warnings.', // 9.5.3.
+				),
+				array
+				(
+					'Loosing next speech.',
+					'Next speech is shortened.',
+					'No penalty.',
+				),
+			),
+			array // 9.6.
+			(
+				RULES_TECH_FAUL,
+				'Technical foul',
+				array
+				(
+					'Technical fauls are not supported in this version of the rules.', // 9.6.1.
+					'Referee can give a technical foul to a player. Technical fouls can be given for too high emotions, loud knoks on the table, or rude comments about other players. Technical fouls are counted independently of the normal ones. Two technical fauls result a disqualification from the game.', // 9.6.2.
+				),
+				array
+				(
+					'No.',
+					'Yes.',
+				),
+			),
+			'When receiving a fourth warning, disqualification, or second technical foul, the player immediately leaves the game without the last word.', // 9.7.
+			array // 9.8.
 			(
 				RULES_ANTIMONSTER,
 				'Anti-monster: when a player is killed by warnings',
@@ -351,7 +381,7 @@ return array
 					'Voting is not canceled. The dead monster participates as a nominee.',
 				),
 			),
-			'When a player gets a fourth warning or disqualifying foul during the last speech of another player, the result of the game is determined by the result of the vote. The removed player receives a penalty in accordance with the tournament regulations.', // 9.11.
+			'When a player gets a fourth warning or disqualifying foul during the last speech of another player, the result of the game is determined by the result of the vote. The removed player receives a penalty in accordance with the tournament regulations.', // 9.9.
 		),
 	),
 

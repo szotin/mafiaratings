@@ -306,6 +306,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$rules_code = $club->rules_code;
 		}
+		$rules_code = check_rules_code($rules_code);
 
 		Db::exec(
 			get_label('tournament'), 
@@ -458,7 +459,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		$scoring_options = get_optional_param('scoring_options', $old_scoring_options);
 		$type = (int)get_optional_param('type', $old_type);
-		$rules_code = get_optional_param('rules_code', $old_rules_code);
+		$rules_code = check_rules_code(get_optional_param('rules_code', $old_rules_code));
 		
 		if ($scoring_version < 0)
 		{

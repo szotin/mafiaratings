@@ -42,6 +42,7 @@ class ApiPage extends GetApiPageBase
 				throw new Exc(get_label('Unknown [0]', get_label('rules')));
 			}
 		}
+		$rules_code = check_rules_code($rules_code);
 		$this->response['rules'] = rules_code_to_object($rules_code, $detailed);
 	}
 	

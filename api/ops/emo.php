@@ -240,6 +240,7 @@ class ApiPage extends OpsApiPageBase
 			Db::record(get_label('tournament'), 'SELECT club_id, emo_id, address_id, start_time, duration, notes, langs, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags, misc FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		
+		$rules_code = check_rules_code($rules_code);
 		if (is_null($misc))
 		{
 			$misc = new stdClass();

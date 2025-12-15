@@ -16,8 +16,8 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		$rules_name = trim(get_required_param('name'));
-		$rules_code = get_required_param('rules');
-		if (is_string($rules_code) && !is_valid_rules_code($rules_code))
+		$rules_code = upgrade_rules_code(get_required_param('rules', ''));
+		if (!is_valid_rules_code($rules_code))
 		{
 			$rules_code = rules_code_from_object($rules_code);
 		}

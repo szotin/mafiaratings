@@ -151,6 +151,7 @@ class Profile
 			{
 				$pc = new ProfileClub();
 				list($pc->id, $pc->name, $pc->flags, $pc->club_flags, $pc->langs, $pc->city_id, $pc->city, $pc->country_id, $pc->country, $pc->timezone, $pc->rules_code, $pc->scoring_id, $pc->normalizer_id, $pc->fee, $pc->currency_id, $pc->parent_id) = $row;
+				$pc->rules_code = upgrade_rules_code($pc->rules_code);
 				$this->clubs[$pc->id] = $pc;
 			}
 		}

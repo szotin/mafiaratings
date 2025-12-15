@@ -71,6 +71,7 @@ define('RULES_FIRST_DAY_VOTING', 4);
 define('RULES_FIRST_DAY_VOTING_STANDARD', 0); // 7.16.1. Если в первый игровой «день» выставлена только одна кандидатура, то голосование не проводится. В течение следующих «дней» голосуется любое количество выставленных на голосование игроков.
 define('RULES_FIRST_DAY_VOTING_TO_TALK', 1); // 7.16.2. Игрок победивший в голосовании в первый игровой «день» не покидает игру, а просто получает доподнительные 30 секунд, чтобы поговорить.
 define('RULES_FIRST_DAY_VOTING_NO_BREAKING', 2); // 7.16.2. Если в первый игровой «день» выставлена только одна кандидатура, то голосование не проводится. Если в голосовании побеждает только один игрок, то никто не умирает, слово ему не дается, наступает ночь. В случае попила, игроки разговаривают по 30 секунд. Поднять двоих можно.
+define('RULES_FIRST_DAY_VOTING_BREAKING_TO_THEMSELF', 3); // 7.16.2. Если в первый игровой «день» выставлена только одна кандидатура, то голосование не проводится. Если в голосовании победил только один игрок, то он умирает только в том случае, если проголосовал за себя сам. В остальных случаях он просто получает дополнительные 30 секунд для речи.
 
 // 7.18. Порядок повторного голосования после попила.
 // splitOrder
@@ -108,15 +109,28 @@ define('RULES_GAME_END_SPEECH', 10);
 define('RULES_GAME_END_SPEECH_YES', 0); // 8.19.1. Судья предоставляет заключительную минуту последнему убитому игроку, кроме случаев когда последний убитый игрок был убит замечаниями или удален с игрового стола. И только по окончании заключительной минуты останавливает игру и объявляет победу той или иной команды. При этом замечания и удаления полученные во время последней речи не могут изменить результат игры. Если, например, последний оставшийся мафиози в момент заключительной речи убитого игрока получает четвертое замечание и удаляется из игры, Судья все равно объявляет победу мафии.
 define('RULES_GAME_END_SPEECH_NO', 1); // 8.19.2. Судья не предоставляет последнего слова, а просто объявляет победу той или иной команды.
 
-// 9.10. Если игрок покидает игровой стол, получая 4-й или дисквалифицирующий фол. Или за нарушение которое карается удалением.
-// antimonster
-define('RULES_ANTIMONSTER', 11);
-define('RULES_ANTIMONSTER_NO_VOTING', 0); // 9.10.1. Ближайшее или текущее голосование не проводится, кроме случаев, когда этот игрок был убит ночью или является покинувшим игру по результату голосования. Если игрок покидает игровой стол, получая 4-й или дисквалифицирующий фол, во время голосования, после того, как был определён результат голосования, и он не является покинувшим игру по результату этого голосования, то следующее голосование не проводится.
-define('RULES_ANTIMONSTER_NO', 1); // 9.10.2. Это никак не влияет на проведение последующих голосований.
-define('RULES_ANTIMONSTER_NOMINATED', 2); // 9.10.3. Ближайшее или текущее голосование не проводится, кроме случаев, когда этот игрок был выставлен на голосование. Если игрок покидает игровой стол, получая 4-й или дисквалифицирующий фол, во время голосования, после того, как был определён результат голосования, и он не является покинувшим игру по результату этого голосования, то следующее голосование не проводится.
-define('RULES_ANTIMONSTER_PARTICIPATION', 3); // 9.10.3. Ближайшее проводится, но если ушедший игрок был выставлен, то он участвует в голосовании наравне со всеми несмотря на то, что его нет за столом. Если он побеждает в голосовании, больше никто не покидает стол.
+// 9.5. Наказание за три замечания.
+// threeFouls
+define('RULES_3_WARNINGS', 11);
+define('RULES_3_WARNINGS_LOSE_SPEECH', 0); // 9.5.1. При получении трёх фолов игрок лишается права слова в свою ближайшую минуту. За исключением случаев, когда это его последнее слово или оправдательное слово при переголосовании. Игрок лишается слова один раз. В последующие дни игрок получит слово. У игрока получившего три фола остается право выставить кандидатуру на голосование. Когда за столом остается три или четыре игрока, игроку получившему три фола предоставляется «укороченная» речь 30 секунд. Если игрок с тремя фолами попал в ситуацию переголосования, то он имеет право слова. Он пропустит свое слово в последующие дни.
+define('RULES_3_WARNINGS_SHORT_SPEECH', 1); // 9.5.2. При получении трёх фолов речь игрока в ближайшую минуту сокращается до 30 секунд. Речь сокращается один раз. В последующие дни игрок получит полные 30 секунд.
+define('RULES_3_WARNINGS_NO', 2); // 9.5.3. При получении трёх фолов игрока не получает никакого наказания.
 
-define('RULE_OPTIONS_COUNT', 12);
+// 9.6. Наказание за три замечания.
+// threeFouls
+define('RULES_TECH_FAUL', 12);
+define('RULES_TECH_FAUL_NO', 0); // 9.6.1. В этой версии правил технических фолов нет.
+define('RULES_TECH_FAUL_YES', 1); // 9.6.2. За повышенные эмоции, споры с судьей, стуки по столу отвлекающие от игры, а также грубые высказывания в адрес других игроков, судья может дать технический фол. Технические фолы считаются отдельно от основных. За два технических фола игрок получает удаление.
+
+// 9.8. Если игрок покидает игровой стол, получая 4-й или дисквалифицирующий фол. Или за нарушение которое карается удалением.
+// antimonster
+define('RULES_ANTIMONSTER', 13);
+define('RULES_ANTIMONSTER_NO_VOTING', 0); // 9.8.1. Ближайшее или текущее голосование не проводится, кроме случаев, когда этот игрок был убит ночью или является покинувшим игру по результату голосования. Если игрок покидает игровой стол, получая 4-й или дисквалифицирующий фол, во время голосования, после того, как был определён результат голосования, и он не является покинувшим игру по результату этого голосования, то следующее голосование не проводится.
+define('RULES_ANTIMONSTER_NO', 1); // 9.8.2. Это никак не влияет на проведение последующих голосований.
+define('RULES_ANTIMONSTER_NOMINATED', 2); // 9.8.3. Ближайшее или текущее голосование не проводится, кроме случаев, когда этот игрок был выставлен на голосование. Если игрок покидает игровой стол, получая 4-й или дисквалифицирующий фол, во время голосования, после того, как был определён результат голосования, и он не является покинувшим игру по результату этого голосования, то следующее голосование не проводится.
+define('RULES_ANTIMONSTER_PARTICIPATION', 3); // 9.8.4. Ближайшее проводится, но если ушедший игрок был выставлен, то он участвует в голосовании наравне со всеми несмотря на то, что его нет за столом. Если он побеждает в голосовании, больше никто не покидает стол.
+
+define('RULE_OPTIONS_COUNT', 14);
 
 define('RULE_OPTION_NAME', 0);
 define('RULE_OPTION_VALUES', 1);
@@ -137,14 +151,16 @@ $_rules_options = array(
 	array('onRecord', array('no', 'night-killed', 'killed', 'except-split', 'all'), 5, 6, false),
 	array('onRecordCount', array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9), 5, 7, false),
 	array('withdraw', array('allowed', 'auto', 'no'), 6, 4, false),
-	array('firstVoting', array('standard', 'to-talk', 'no-break'), 6, 15, false),
+	array('firstVoting', array('standard', 'to-talk', 'no-break', 'self-break'), 6, 15, false),
 	array('splitOrder', array('same', 'reverse'), 6, 17, false),
 	array('killAll', array('no', 'draw'), 6, 20, false),
 	array('splitOnFour', array(true, false), 6, 21, true),
 	array('splitOnNine', array(true, false), 6, 22, true),
 	array('legacy', array(true, false), 7, 16, false),
 	array('gameEndSpeech', array(true, false), 7, 18, false),
-	array('antimonster', array('no-voting', 'no', 'nominated', 'participation'), 8, 9, false),
+	array('threeFouls', array('lose-speech', 'short-speech', 'no'), 8, 4, false),
+	array('techFouls', array('no', 'yes'), 8, 5, false),
+	array('antimonster', array('no-voting', 'no', 'nominated', 'participation'), 8, 7, false),
 );
 
 function is_valid_rules_code($rules_code)
@@ -166,22 +182,36 @@ function is_valid_rules_code($rules_code)
 	return true;
 }
 
+function upgrade_rules_code($rules_code)
+{
+	if (is_string($rules_code))
+	{
+		if (strlen($rules_code) == 29)
+		{
+			$rules_code = substr($rules_code, 0, 20);
+			$rules_code = substr($rules_code, 0, 17) . substr($rules_code, 19);
+			$rules_code = substr($rules_code, 0, 12) . substr($rules_code, 15);
+			$rules_code = substr($rules_code, 0, 9) . substr($rules_code, 10);
+			$rules_code = substr($rules_code, 0, 6) . substr($rules_code, 8);
+			$rules_code = substr($rules_code, 0, 4) . substr($rules_code, 5);
+			$rules_code = substr($rules_code, 0, 1) . substr($rules_code, 3);
+			
+			$rules_code = substr($rules_code, 0, 2) . '00' . substr($rules_code, 2);
+			$rules_code = substr($rules_code, 0, 6) . '0' . substr($rules_code, 6);
+			$rules_code = substr($rules_code, 0, 9) . '0' . substr($rules_code, 9);
+		}
+		
+		if (strlen($rules_code) == 12)
+		{
+			$rules_code = substr($rules_code, 0, 11) . '00' . substr($rules_code, 11);
+		}
+	}
+	return $rules_code;
+}
+
 function check_rules_code($rules_code)
 {
-	if (strlen($rules_code) == 29)
-	{
-		$rules_code = substr($rules_code, 0, 20);
-		$rules_code = substr($rules_code, 0, 17) . substr($rules_code, 19);
-		$rules_code = substr($rules_code, 0, 12) . substr($rules_code, 15);
-		$rules_code = substr($rules_code, 0, 9) . substr($rules_code, 10);
-		$rules_code = substr($rules_code, 0, 6) . substr($rules_code, 8);
-		$rules_code = substr($rules_code, 0, 4) . substr($rules_code, 5);
-		$rules_code = substr($rules_code, 0, 1) . substr($rules_code, 3);
-		
-		$rules_code = substr($rules_code, 0, 2) . '00' . substr($rules_code, 2);
-		$rules_code = substr($rules_code, 0, 6) . '0' . substr($rules_code, 6);
-		$rules_code = substr($rules_code, 0, 9) . '0' . substr($rules_code, 9);
-	}
+	$rules_code = upgrade_rules_code($rules_code);
 	
 	if (!is_valid_rules_code($rules_code))
 	{
@@ -230,6 +260,7 @@ function rules_code_to_object($rules_code, $detailed = false)
 {
 	global $_rules_options;
 	
+	$rules_code = check_rules_code($rules_code);
 	$min_index = $detailed ? 0 : 1;
 	$obj = new stdClass();
 	$obj->code = $rules_code;
@@ -254,7 +285,7 @@ function rules_code_from_json($json)
 
 function rules_code_to_json($rules_code)
 {
-		return json_encode(rules_code_to_object($rules_code));
+	return json_encode(rules_code_to_object($rules_code));
 }
 
 function get_rule($rules_code, $rule_index)
@@ -316,6 +347,7 @@ function correct_rules($rules_code, $rules_filter)
 {
 	global $_rules_options;
 	
+	$rules_code = upgrade_rules_code($rules_code);
 	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
 	{
 		$rule = $_rules_options[$i];

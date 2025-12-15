@@ -176,6 +176,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list ($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 		}
+		$rules_code = check_rules_code($rules_code);
 		
 		list($address_id, $timezone) = $this->get_address_id($club, -1);
 		if ($address_id <= 0)

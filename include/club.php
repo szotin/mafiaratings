@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/page_base.php';
 require_once __DIR__ . '/league.php';
+require_once __DIR__ . '/rules.php';
 
 define('ALL_CLUBS', -1);
 define('MY_CLUBS', 0);
@@ -138,6 +139,7 @@ class ClubPageBase extends PageBase
 					'WHERE c.id = ?',
 				$user_id, $this->id);
 				
+		$this->rules_code = upgrade_rules_code($this->rules_code);
 		$this->event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(ADDRESS_PICTURE)));
 		$this->league_pic = new Picture(LEAGUE_PICTURE);
 	}

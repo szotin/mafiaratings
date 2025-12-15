@@ -22,7 +22,7 @@ class ApiPage extends GetApiPageBase
 		$country_id = (int)get_optional_param('country_id', -1);
 		$user_id = (int)get_optional_param('user_id', -1);
 		$langs = (int)get_optional_param('langs', 0);
-		$rules_code = get_optional_param('rules_code');
+		$rules_code = upgrade_rules_code(get_optional_param('rules_code', ''));
 		$scoring_id = (int)get_optional_param('scoring_id', -1);
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);

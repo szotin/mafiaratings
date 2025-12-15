@@ -76,6 +76,7 @@ class ApiPage extends OpsApiPageBase
 		if ($parent_id > 0)
 		{
 			list($rules_code, $scoring_id, $normalizer_id) = Db::record(get_label('club'), 'SELECT rules, scoring_id, normalizer_id FROM clubs WHERE id = ?', $parent_id);
+			$rules_code = upgrade_rules_code($rules_code);
 		}
 		else
 		{

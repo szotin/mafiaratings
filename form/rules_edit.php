@@ -48,6 +48,7 @@ try
 	{
 		list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
 	}
+	$rules_code = upgrade_rules_code($rules_code);
 	
 	if ($_profile == NULL || !$_profile->is_club_manager($club_id))
 	{
