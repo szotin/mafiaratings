@@ -538,14 +538,19 @@ var html = new function()
 	function _success(text, onSuccess, onError)
 	{
 		let title = "";
-		let pos;
-		if (text.substring(0, 7) == "<title=")
+		let pos = text.indexOf("<title=");
+		
+		if (pos >= 0)
 		{
-			pos = text.indexOf(">");
-			if (pos > 0)
+			pos += 7;
+			let end = text.indexOf(">", pos);
+			if (end > 0)
 			{
-				title = text.substring(7, pos);
-				text = text.substring(pos + 1);
+				title = text.substring(pos, end);
+			}
+			else
+			{
+				title = text.substring(pos);
 			}
 		}
 		

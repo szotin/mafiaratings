@@ -1052,44 +1052,6 @@ var mr = new function()
 	}
 	
 	//--------------------------------------------------------------------------------------
-	// rules
-	//--------------------------------------------------------------------------------------
-	this.createRules = function(clubId, leagueId)
-	{
-		var u = "form/rules_edit.php?create&club_id=" + clubId;
-		if (isSet(leagueId))
-			u += "&league_id=" + leagueId;
-		dlg.form(u, refr);
-	}
-
-	this.editRules = function(clubId, leagueId, rulesId)
-	{
-		var u = "form/rules_edit.php?club_id=" + clubId;
-		if (isSet(leagueId))
-			u += "&league_id=" + leagueId;
-		if (isSet(rulesId))
-			u += "&rules_id=" + rulesId;
-		dlg.form(u, refr);
-	}
-
-	this.deleteRules = function(rulesId, confirmMessage)
-	{
-		function _delete()
-		{
-			json.post("api/ops/rules.php", { op: 'delete', rules_id: rulesId }, refr);
-		}
-
-		if (isString(confirmMessage))
-		{
-			dlg.yesNo(confirmMessage, null, null, _delete);
-		}
-		else
-		{
-			_delete();
-		}
-	}
-	
-	//--------------------------------------------------------------------------------------
 	// game
 	//--------------------------------------------------------------------------------------
 	this.deleteGame = function(gameId, confirmMessage, onSuccess)

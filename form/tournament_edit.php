@@ -129,7 +129,7 @@ try
 	$rules_code = upgrade_rules_code($rules_code);
 	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
 	echo '<select id="form-rules">';
-	if (show_option(upgrade_rules_code($club->rules_code), $rules_code, get_label('[default]')))
+	if (show_option(upgrade_rules_code($club->rules_code), $rules_code, $club->name))
 	{
 		$rules_code = '';
 	}
@@ -150,6 +150,10 @@ try
 		{
 			$rules_code = '';
 		}
+	}
+	if (!empty($rules_code))
+	{
+		show_option($rules_code, $rules_code, get_label('Custom...'));
 	}
 	echo '</select></td></tr>';
 	

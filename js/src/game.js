@@ -152,7 +152,7 @@ function gameInit(eventId, tableNum, gameNum, gameOnChange, errorListener, conne
 	});
 }
 
-function gameSave()
+function gameSave(onSuccess)
 {
 	if (_isDirty && _runSaving)
 	{
@@ -170,6 +170,10 @@ function gameSave()
 				delete localStorage['game'];
 				_isDirty = false;
 				lastSaved = log.length;
+				if (onSuccess)
+				{
+					onSuccess();
+				}
 			},
 			function(message) // error
 			{

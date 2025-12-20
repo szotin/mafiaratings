@@ -607,6 +607,7 @@ class Page extends PageBase
 			}
 			echo '})"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
 		}
+		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSetRules()"><img src="images/rules.png" class="text"> '.get_label('Rules').'</a></li>';
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSettings()"><img src="images/settings.png" class="text"> '.get_label('Settings').'</a></li>';
 		echo '</ul>';
 		

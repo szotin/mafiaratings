@@ -1688,6 +1688,16 @@ function uiViewGame()
 	goTo('view_game.php', {bck: 1, event_id: game.eventId, table_num: game.tableNum, game_num: game.gameNum});
 }
 
+function uiSetRules()
+{
+	// make sure game exists
+	gameDirty();
+	gameSave(function()
+	{
+		dlg.form("form/rules_edit.php?event_id=" + game.eventId + "&table=" + game.tableNum + "&game=" + game.gameNum, refr);
+	});
+}
+
 function uiNext()
 {
 	if (isSet(game.time)) 

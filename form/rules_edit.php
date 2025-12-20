@@ -1,9 +1,58 @@
 <?php
 
 require_once '../include/session.php';
+require_once '../include/security.php';
 require_once '../include/rules.php';
 
 initiate_session();
+
+function show_rules_select($club_id, $rules_code)
+{
+	list ($club_rules_code, $club_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
+	
+	$found = false;
+	
+	$all_rules = array();
+	$r = new stdClass();
+	$r->code = $club_rules_code;
+	$r->name = $club_name;
+	$all_rules[] = $r;
+	
+	$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $club_id);
+	while ($row = $query->next())
+	{
+		list ($league_name, $rules) = $row;
+		$r = new stdClass();
+		$r->code = $rules;
+		$r->name = $league_name;
+		$all_rules[] = $r;
+	}
+	
+	$query = new DbQuery('SELECT name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
+	while ($row = $query->next())
+	{
+		list ($rules_name, $rules) = $row;
+		$r = new stdClass();
+		$r->code = $rules;
+		$r->name = $rules_name;
+		$all_rules[] = $r;
+	}
+	
+	$r = new stdClass();
+	$r->code = $rules_code;
+	$r->name = get_label('Custom...');
+	$all_rules[] = $r;
+	
+	echo '<select id="rules" onchange="rulesChanged()">';
+	foreach ($all_rules as $r)
+	{
+		if (show_option(upgrade_rules_code($r->code), $rules_code, $r->name))
+		{
+			$rules_code = '';
+		}
+	}
+	echo '</select>';
+}
 
 try
 {
@@ -12,6 +61,37 @@ try
 	if (isset($_REQUEST['club_id']))
 	{
 		$club_id = (int)$_REQUEST['club_id'];
+	}
+	
+	$demo_game = null;
+	$event_id = 0;
+	if (isset($_REQUEST['event_id']))
+	{
+		$event_id = (int)$_REQUEST['event_id'];
+		if ($event_id > 0)
+		{
+			$table_num = 0;
+			if (isset($_REQUEST['table']))
+			{
+				$table_num = (int)$_REQUEST['table'];
+			}
+			
+			$game_num = 0;
+			if (isset($_REQUEST['game']))
+			{
+				$game_num = (int)$_REQUEST['game'];
+			}
+		}
+		else if (isset($_SESSION['demogame']))
+		{
+			$demo_game = $_SESSION['demogame']->game;
+		}
+	}
+	
+	$tournament_id = 0;
+	if (isset($_REQUEST['tournament_id']))
+	{
+		$tournament_id = (int)$_REQUEST['tournament_id'];
 	}
 	
 	$league_id = 0;
@@ -27,59 +107,11 @@ try
 	}
 
 	$rules_filter = 'null';
-	if ($club_id <= 0)
+	if ($rules_id > 0)
 	{
 		list($club_id, $rules_code, $rules_name) = Db::record(get_label('rules'), 'SELECT club_id, rules, name FROM club_rules WHERE id = ?', $rules_id);
-	}
-	else if ($create)
-	{
-		$rules_name = '';
-		list($rules_code) = Db::record(get_label('club'), 'SELECT rules FROM clubs WHERE id = ?', $club_id);
-	}
-	else if ($rules_id > 0)
-	{
-		list($rules_code, $rules_name) = Db::record(get_label('rules'), 'SELECT rules, name FROM club_rules WHERE id = ? AND club_id = ?', $rules_id, $club_id);
-	}
-	else if ($league_id > 0)
-	{
-		list($rules_code, $rules_name, $rules_filter) = Db::record(get_label('league'), 'SELECT c.rules, l.name, l.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? AND c.league_id = ?', $club_id, $league_id);
-	}
-	else
-	{
-		list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
-	}
-	$rules_code = upgrade_rules_code($rules_code);
-	
-	if ($_profile == NULL || !$_profile->is_club_manager($club_id))
-	{
-		throw new FatalExc(get_label('No permissions'));
-	}
-	
-	if ($create)
-	{
-		dialog_title(get_label('Create [0]', get_label('rules')));
-?>
-		<script>
-		var rulesCode = "<?php echo $rules_code; ?>";
-		function commit(onSuccess)
-		{
-			var params =
-			{
-				op: 'create'
-				, club_id: <?php echo $club_id; ?>
-				, name: $("#form-name").val()
-				, rules: rulesCode
-			};
-			json.post("api/ops/rules.php", params, onSuccess);
-		}
-		</script>
-<?php
-		echo '<table class="transp" width="100%"><tr><td>';
-		echo '<p><input class="longest" id="form-name"></p>';
-		echo '</td></tr>';
-	}
-	else if ($rules_id > 0)
-	{
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
+
 		dialog_title(get_label('Edit [0]', get_label('rules [0]', $rules_name)));
 ?>
 		<script>
@@ -101,9 +133,254 @@ try
 		echo '<p><input class="longest" id="form-name" value="' . $rules_name . '"></p>';
 		echo '</td></tr>';
 	}
+	else if ($event_id > 0)
+	{
+		if ($table_num > 0 && $game_num > 0)
+		{
+			list($club_id, $tournament_id, $rules_code, $game, $rules_name, $tournament_name) = Db::record(get_label('game'), 
+				'SELECT e.club_id, e.tournament_id, e.rules, g.game, e.name, t.name'.
+				' FROM current_games g'.
+				' JOIN events e ON e.id = g.event_id'.
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+				' WHERE g.event_id = ? AND table_num = ? AND game_num = ?', $event_id, $table_num, $game_num);
+			$game = json_decode($game);
+			if (isset($game->clubId))
+			{
+				$club_id = $game->clubId;
+			}
+			if (isset($game->eventId))
+			{
+				$event_id = $game->eventId;
+			}
+			if (isset($game->tournamentId))
+			{
+				$tournament_id = $game->tournamentId;
+			}
+			if (isset($game->rules))
+			{
+				$rules_code = $game->rules;
+			}
+			
+			if ($tournament_name != null)
+			{
+				$rules_name = $tournament_name . ' - ' . $rules_name;
+			}
+			$rules_name .= ' ' . get_label('Table [0] / Game [1]', $table_num, $game_num);
+?>			
+			<script>
+			var rulesCode = "<?php echo $rules_code; ?>";
+			function commit(onSuccess)
+			{
+				let text = '<p><?php echo get_label('Also use these rules:'); ?></p><table class="transp">';
+<?php
+				if ($tournament_id != null)
+				{
+?>
+					text += '<td><input type="checkbox" id="form-tournament" checked></td><td><?php echo get_label('in the tournament'); ?></td></tr>';
+<?php
+				}
+				else
+				{
+?>
+					text += '<td><input type="checkbox" id="form-event" checked></td><td><?php echo get_label('in the event'); ?></td></tr>';
+<?php
+				}
+?>
+				text += '<td><input type="checkbox" id="form-club"></td><td><?php echo get_label('in the club'); ?></td></tr></table>';
+	
+				dlg.okCancel(text, null, 200, function()
+				{
+					let flags = 0;
+					if ($('#form-event').attr("checked"))
+						flags |= <?php echo UPDATE_FLAG_EVENT; ?>;
+					if ($('#form-club').attr("checked"))
+						flags |= <?php echo UPDATE_FLAG_CLUB; ?>;
+<?php
+					if ($tournament_id != null)
+					{
+?>
+						if ($('#form-tournament').attr("checked"))
+							flags |= <?php echo UPDATE_FLAG_TOURNAMENT; ?>;
+<?php
+					}
+?>
+					var params =
+					{
+						op: 'rules'
+						, event_id: <?php echo $event_id; ?>
+						, table_num: <?php echo $table_num; ?>
+						, game_num: <?php echo $game_num; ?>
+						, rules_code: rulesCode
+						, update_flags: flags
+					};
+					json.post("api/ops/game.php", params, onSuccess);
+				});
+			}
+			</script>
+<?php
+		}
+		else
+		{
+			list($club_id, $tournament_id, $rules_code, $rules_name) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, rules, name FROM events WHERE id = ?', $event_id);
+			
+?>
+			<script>
+			var rulesCode = "<?php echo $rules_code; ?>";
+			function commit(onSuccess)
+			{
+				let text = '<p><?php echo get_label('Also use these rules:'); ?></p><table class="transp">';
+<?php
+				if ($tournament_id != null)
+				{
+?>
+					text += '<tr><td><input type="checkbox" id="form-tournament"></td><td><?php echo get_label('in the tournament'); ?></td></tr>';
+<?php
+				}
+?>
+				text += '<tr><td><input type="checkbox" id="form-club"></td><td><?php echo get_label('in the club'); ?></td></tr></table>';
+	
+				dlg.okCancel(text, null, 200, function()
+				{
+					let flags = 0;
+					if ($('#form-club').attr("checked"))
+						flags |= <?php echo UPDATE_FLAG_CLUB; ?>;
+<?php
+					if ($tournament_id != null)
+					{
+?>
+						if ($('#form-tournament').attr("checked"))
+							flags |= <?php echo UPDATE_FLAG_TOURNAMENT; ?>;
+<?php
+					}
+?>
+					var params =
+					{
+						op: 'change'
+						, event_id: <?php echo $event_id; ?>
+						, rules_code: rulesCode
+						, update_flags: flags
+					};
+					json.post("api/ops/event.php", params, onSuccess);
+				});
+			}
+			</script>
+<?php
+		}
+		if (is_null($tournament_id))
+		{
+			$tournament_id = 0;
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE, $club_id, $event_id);
+		}
+		else
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+		}
+		
+		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
+		echo '<table class="transp" width="100%"><tr><td><h3>';
+		show_rules_select($club_id, $rules_code);
+		echo '</h3><br></td></tr>';
+	}
+	else if ($demo_game)
+	{
+		$club_id = $demo_game->clubId;
+		$rules_code = $demo_game->rules;
+		$rules_name = get_label('Demo');
+		
+?>			
+			<script>
+			var rulesCode = "<?php echo $rules_code; ?>";
+			function commit(onSuccess)
+			{
+				var params =
+				{
+					op: 'rules'
+					, event_id: 0
+					, rules_code: rulesCode
+				};
+				json.post("api/ops/game.php", params, onSuccess);
+			}
+			</script>
+<?php
+		
+		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
+		echo '<table class="transp" width="100%"><tr><td><h3>';
+		show_rules_select($club_id, $rules_code);
+		echo '</h3><br></td></tr>';
+	}
+	else if ($tournament_id > 0)
+	{
+		list($club_id, $rules_code, $rules_name) = Db::record(get_label('rules'), 'SELECT club_id, rules, name FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
+
+		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
+		
+?>
+			<script>
+			var rulesCode = "<?php echo $rules_code; ?>";
+			function commit(onSuccess)
+			{
+				let text = '<p><?php echo get_label('Also use these rules:'); ?></p><table class="transp">';
+				text += '<tr><td><input type="checkbox" id="form-club"></td><td><?php echo get_label('in the club'); ?></td></tr></table>';
+	
+				dlg.okCancel(text, null, 200, function()
+				{
+					let flags = 0;
+					if ($('#form-club').attr("checked"))
+						flags |= <?php echo UPDATE_FLAG_CLUB; ?>;
+					var params =
+					{
+						op: 'change'
+						, tournament_id: <?php echo $tournament_id; ?>
+						, rules_code: rulesCode
+						, update_flags: flags
+					};
+					json.post("api/ops/tournament.php", params, onSuccess);
+				});
+			}
+			</script>
+<?php
+		echo '<table class="transp" width="100%"><tr><td><h3>';
+		show_rules_select($club_id, $rules_code);
+		echo '</h3><br></td></tr>';
+	}
+	else if ($club_id <= 0)
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('club')));
+	}
+	else if ($create)
+	{
+		$rules_name = '';
+		list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
+		
+		dialog_title(get_label('Create [0]', get_label('rules for [0]', $rules_name)));
+?>
+		<script>
+		var rulesCode = "<?php echo $rules_code; ?>";
+		function commit(onSuccess)
+		{
+			var params =
+			{
+				op: 'create'
+				, club_id: <?php echo $club_id; ?>
+				, name: $("#form-name").val()
+				, rules: rulesCode
+			};
+			json.post("api/ops/rules.php", params, onSuccess);
+		}
+		</script>
+<?php
+		echo '<table class="transp" width="100%"><tr><td>';
+		echo '<p><input class="longest" id="form-name"></p>';
+		echo '</td></tr>';
+	}
 	else if ($league_id > 0)
 	{
-		dialog_title(get_label('Edit [0]', get_label('rules [0]', $rules_name)));
+		list ($rules_code, $rules_name) = Db::record(get_label('league'), 'SELECT lc.rules, l.name FROM league_clubs lc JOIN leagues l ON l.id = lc.league_id WHERE lc.league_id = ? AND lc.club_id = ?', $league_id, $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
+
+		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
 ?>
 		<script>
 		var rulesCode = "<?php echo $rules_code; ?>";
@@ -126,7 +403,10 @@ try
 	}
 	else
 	{
-		dialog_title(get_label('Edit [0]', get_label('rules [0]', $rules_name)));
+		list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
+		
+		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
 ?>
 		<script>
 		var rulesCode = "<?php echo $rules_code; ?>";
@@ -165,6 +445,13 @@ try
 	
 ?>	
 	var rulesFilter = <?php echo $rules_filter; ?>;
+	var currentRule = 0;
+	
+	function rulesChanged()
+	{
+		rulesCode = $('#rules').val();
+		showRule(currentRule);
+	}
 
 	function getRule(ruleNum)
 	{
@@ -175,6 +462,11 @@ try
 	{
 		rulesCode = rulesCode.substr(0, ruleNum) + value + rulesCode.substr(ruleNum + 1);
 		$('#form-full-text').html('<p>' + rulesOptions[ruleNum][1] + '. ' + rulesOptions[ruleNum][2][value] + '</p>');
+		if ($('#rules').length > 0)
+		{
+			$('#rules option:last').val(rulesCode);
+			$('#rules').val(rulesCode);
+		}
 	}
 	
 	function isRuleAllowed(ruleNum, value)
@@ -207,6 +499,8 @@ try
 		
 	function showRule(ruleNum)
 	{
+		currentRule = ruleNum;
+		
 		var html = '<table class="bordered" width="100%"><tr class="bordered"><td class="bordered" width="300" valign="top">';
 		var prev = -1;
 		var next = -1;
@@ -279,7 +573,7 @@ try
 		$('#form-rules').html(html);
 	}
 	
-	showRule(0);
+	showRule(currentRule);
 	</script>
 <?php
 	echo '<ok>';

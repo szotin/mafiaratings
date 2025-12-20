@@ -118,7 +118,7 @@ try
 	$rules_code = upgrade_rules_code($club->rules_code);
 	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
 	echo '<select id="form-rules">';
-	show_option($rules_code, $rules_code, get_label('[default]'));
+	show_option($rules_code, $rules_code, $club->name);
 	$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $club_id);
 	while ($row = $query->next())
 	{

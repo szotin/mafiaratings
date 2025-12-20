@@ -148,6 +148,10 @@ try
 			$rules_code = '';
 		}
 	}
+	if (!empty($rules_code))
+	{
+		show_option($rules_code, $rules_code, get_label('Custom...'));
+	}
 	echo '</select></td></tr>';
 	
 	echo '<tr><td valign="top">' . get_label('Scoring system').':</td><td>';

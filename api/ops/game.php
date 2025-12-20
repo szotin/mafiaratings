@@ -1054,6 +1054,104 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// rules
+	//-------------------------------------------------------------------------------------------------------
+	private function changeRules($game, $log, $rules_code)
+	{
+		$changed = false;
+		if ($game->rules !== $rules_code)
+		{
+			$game->rules = $rules_code;
+			$changed = true;
+		}
+		
+		if ($log != null)
+		{
+			foreach ($log as $g)
+			{
+				if ($g->rules !== $rules_code)
+				{
+					$g->rules = $rules_code;
+					$changed = true;
+				}
+			}
+		}
+		return $changed;
+	}
+	
+	function rules_op()
+	{
+		global $_profile;
+		
+		$event_id = (int)get_required_param('event_id');
+		if ($event_id > 0)
+		{
+			$table_num = (int)get_required_param('table_num');
+			$game_num = (int)get_required_param('game_num');
+			$update_flags = (int)get_optional_param('update_flags', 0);
+			
+			Db::begin();
+			list ($user_id, $game, $log) = Db::record(get_label('game'), 'SELECT user_id, game, log FROM current_games WHERE event_id = ? AND table_num = ? AND game_num = ?', $event_id, $table_num, $game_num);
+			check_permissions(PERMISSION_OWNER, $user_id);
+			
+			$game = json_decode($game);
+			$log = json_decode($log);
+			$rules_code = check_rules_code(get_optional_param('rules_code', $game->rules));
+			
+			if ($this->changeRules($game, $log, $rules_code))
+			{
+				Db::exec(get_label('game'), 'UPDATE current_games SET game = ?, log = ? WHERE event_id = ? AND table_num = ? AND game_num = ?', json_encode($game), json_encode($log), $event_id, $table_num, $game_num);
+			}
+			
+			if ($update_flags & UPDATE_FLAG_CLUB)
+			{
+				Db::exec(get_label('club'), 'UPDATE clubs SET rules = ? WHERE id = ?', $rules_code, $game->clubId);
+				if (isset($_profile->clubs[$game->clubId]))
+				{
+					$_profile->clubs[$game->clubId]->rules_code = $rules_code;
+				}
+			}
+			
+			if (($update_flags & UPDATE_FLAG_TOURNAMENT) != 0 && isset($game->tournamentId) && $game->tournamentId > 0)
+			{
+				Db::exec(get_label('tournament'), 'UPDATE tournaments SET rules = ? WHERE id = ?', $rules_code, $game->tournamentId);
+				Db::exec(get_label('events'), 'UPDATE events SET rules = ? WHERE tournament_id = ?', $rules_code, $game->tournamentId);
+			}
+			
+			if ($update_flags & UPDATE_FLAG_EVENT)
+			{
+				Db::exec(get_label('events'), 'UPDATE events SET rules = ? WHERE id = ?', $rules_code, $game->eventId);
+			}
+			Db::commit();
+		}
+		else if (isset($_SESSION['demogame']))
+		{
+			$data = $_SESSION['demogame'];
+			$game = $data->game;
+			$log = $data->log;
+			$rules_code = check_rules_code(get_optional_param('rules_code', $game->rules));
+			$this->changeRules($game, $log, $rules_code);
+		}
+	}
+	
+	function rules_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER, 'Set game rules.');
+						// , event_id: 
+						// , table_num:
+						// , game_num: 
+						// , rules_code: rulesCode
+						// , update_flags: flags
+		
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('table_num', 'Table number in the event. Starting from 1.');
+		$help->request_param('game_num', 'Game number. Starting from 1.');
+		$help->request_param('rules_code', 'Rules code for this game.');
+		$help->request_param('update_flags', 'A combination of bit flags where 1 applies these rules to the event; 2 - to the tournament (if exists); 4 to the club.', '0 is used');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// settings
 	//-------------------------------------------------------------------------------------------------------
 	function settings_op()
@@ -1184,7 +1282,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function settings_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Set game settings for a club or a user.');
+		$help = new ApiHelp(PERMISSION_OWNER, 'Set game settings for a club or a user.');
 		$help->request_param('club_id', 'Club id to set default game settings for.', 'the default settings are set for the current user.');
 		$help->request_param('prompt_sound_id', 'Sound id for the ten second prompt before the end of the speech.', 'remains the same');
 		$help->request_param('end_sound_id', 'Sound id for the the end of the speech.', 'remains the same');

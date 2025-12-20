@@ -14,19 +14,19 @@ class Page extends ClubPageBase
 		++$count;
 
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td width="52"><a href ="javascript:mr.createRules(' . $this->id . ')" title="'.get_label('New rules').'">';
+		echo '<tr class="darker"><td width="52"><a href ="javascript:createRules()" title="'.get_label('New rules').'">';
 		echo '<img src="images/create.png" border="0"></a></td>';
 		
 		echo '<td>'.get_label('Rules name').'</td></tr>';
 		
-		echo '<tr><td><a href="#" onclick="mr.editRules(' . $this->id . ')" title="' . get_label('Edit [0] in [1]', get_label('[default]'), $this->name) . '"><img src="images/edit.png" border="0"></a>';
+		echo '<tr><td><a href="#" onclick="editRules()" title="' . get_label('Edit [0] in [1]', get_label('[default]'), $this->name) . '"><img src="images/edit.png" border="0"></a>';
 		echo '</td><td>' . get_label('[default]') . '</td></tr>';
 		
 		$query = new DbQuery('SELECT l.id, l.name, l.flags FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $this->id);
 		while ($row = $query->next())
 		{
 			list ($league_id, $league_name, $league_flags) = $row;
-			echo '<tr><td class="dark"><a href="#" onclick="mr.editRules(' . $this->id . ', ' . $league_id . ')" title="' . get_label('Edit [0] in [1]', $league_name, $this->name) . '"><img src="images/edit.png" border="0"></a>';
+			echo '<tr><td class="dark"><a href="#" onclick="editRules(0, ' . $league_id . ')" title="' . get_label('Edit [0] in [1]', $league_name, $this->name) . '"><img src="images/edit.png" border="0"></a>';
 			echo '</td><td><table class="transp" width="100%"><tr><td width="30">';
 			$this->league_pic->set($league_id, $league_name, $league_flags);
 			$this->league_pic->show(ICONS_DIR, false, 24);
@@ -37,11 +37,42 @@ class Page extends ClubPageBase
 		while ($row = $query->next())
 		{
 			list ($rules_id, $rules_name) = $row;
-			echo '<tr><td class="dark"><a href="#" onclick="mr.editRules(' . $this->id . ', undefined, ' . $rules_id . ')" title="' . get_label('Edit [0] in [1]', $rules_name, $this->name) . '"><img src="images/edit.png" border="0"></a>';
+			echo '<tr><td class="dark"><a href="#" onclick="editRules(' . $rules_id . ')" title="' . get_label('Edit [0] in [1]', $rules_name, $this->name) . '"><img src="images/edit.png" border="0"></a>';
 			echo '<a href="#" onclick="mr.deleteRules(' . $rules_id . ', \'' . get_label('Are you sure you want to delete rules [0]?', $rules_name) . '\')" title="' . get_label('Delete [0] in [1]', $rules_name, $this->name) . '"><img src="images/delete.png" border="0"></a>';
 			echo '</td><td>' . $rules_name . '</td></tr>';
 		}
 		echo '</table>';
+	}
+	
+	protected function js()
+	{
+		parent::js();
+?>
+		function editRules(rulesId, leagueId)
+		{
+			let url = "form/rules_edit.php?";
+			if (rulesId)
+				url += "rules_id=" + rulesId;
+			else
+			{
+				url += "club_id=<?php echo $this->id; ?>";
+				if (leagueId)
+					url += "&league_id=" + leagueId;
+			}
+			dlg.form(url, refr);
+		}
+		
+		function createRules()
+		{
+			dlg.form("form/rules_edit.php?create&club_id=<?php echo $this->id; ?>", refr);
+		}
+		
+		function deleteRules(rulesId, message)
+		{
+			dlg.yesNo(message, null, null, function() { 
+				json.post("api/ops/rules.php", { op: 'delete', rules_id: rulesId }, refr); } );
+		}
+<?php	
 	}
 }
 

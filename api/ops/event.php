@@ -418,6 +418,8 @@ class ApiPage extends OpsApiPageBase
 		$rules_code = get_optional_param('rules_code', $old_rules_code);
 		$rules_code = check_rules_code($rules_code);
 		
+		$update_flags = (int)get_optional_param('update_flags', 0);
+		
 		$flags = (int)get_optional_param('flags', $old_flags);
 		$flags = ($flags & EVENT_EDITABLE_MASK) + ($old_flags & ~EVENT_EDITABLE_MASK);
 		
@@ -566,6 +568,23 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
 		}
 		
+		if ($rules_code != $old_rules_code)
+		{
+			if ($update_flags & UPDATE_FLAG_CLUB)
+			{
+				Db::exec(get_label('club'), 'UPDATE clubs SET rules = ? WHERE id = ?', $rules_code, $club_id);
+				if (isset($_profile->clubs[$club_id]))
+				{
+					$_profile->clubs[$club_id]->rules_code = $rules_code;
+				}
+			}
+			if (($update_flags & UPDATE_FLAG_TOURNAMENT) != 0 && $tournament_id != null && $tournament_id > 0)
+			{
+				Db::exec(get_label('tournament'), 'UPDATE tournaments SET rules = ? WHERE id = ?', $rules_code, $tournament_id);
+				Db::exec(get_label('events'), 'UPDATE events SET rules = ? WHERE tournament_id = ?', $rules_code, $tournament_id);
+			}
+		}
+		
 		Db::exec(
 			get_label('event'), 
 			'UPDATE events SET ' .
@@ -575,7 +594,6 @@ class ApiPage extends OpsApiPageBase
 			$name, $tournament_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options,
 			$address_id, $start_timestamp, $notes, $duration, $flags,
 			$langs, $round_num, $event_id);
-		
 		if (Db::affected_rows() > 0)
 		{
 			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $address_id);

@@ -460,6 +460,8 @@ class ApiPage extends OpsApiPageBase
 		$scoring_options = get_optional_param('scoring_options', $old_scoring_options);
 		$type = (int)get_optional_param('type', $old_type);
 		$rules_code = check_rules_code(get_optional_param('rules_code', $old_rules_code));
+
+		$update_flags = (int)get_optional_param('update_flags', 0);
 		
 		if ($scoring_version < 0)
 		{
@@ -724,7 +726,16 @@ class ApiPage extends OpsApiPageBase
 				}
 			}
 		}
-		
+	
+		if ($rules_code != $old_rules_code && ($update_flags & UPDATE_FLAG_CLUB) != 0)
+		{
+			Db::exec(get_label('club'), 'UPDATE clubs SET rules = ? WHERE id = ?', $rules_code, $club_id);
+			if (isset($_profile->clubs[$club_id]))
+			{
+				$_profile->clubs[$club_id]->rules_code = $rules_code;
+			}
+		}
+	
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
