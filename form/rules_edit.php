@@ -106,6 +106,12 @@ try
 		$rules_id = $_REQUEST['rules_id'];
 	}
 
+	$last_rule = 0;
+	if (isset($_SESSION['last_edited_rule']))
+	{
+		$last_rule = (int)$_SESSION['last_edited_rule'];
+	}
+
 	$rules_filter = 'null';
 	if ($rules_id > 0)
 	{
@@ -445,7 +451,7 @@ try
 	
 ?>	
 	var rulesFilter = <?php echo $rules_filter; ?>;
-	var currentRule = 0;
+	var currentRule = <?php echo $last_rule; ?>;
 	
 	function rulesChanged()
 	{
@@ -499,7 +505,15 @@ try
 		
 	function showRule(ruleNum)
 	{
-		currentRule = ruleNum;
+		if (currentRule != ruleNum)
+		{
+			currentRule = ruleNum;
+			json.post("api/ops/rules.php", 
+			{
+				op: 'set_last_rule',
+				rule: currentRule
+			});
+		}
 		
 		var html = '<table class="bordered" width="100%"><tr class="bordered"><td class="bordered" width="300" valign="top">';
 		var prev = -1;

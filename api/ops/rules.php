@@ -70,6 +70,12 @@ class ApiPage extends OpsApiPageBase
 		$rules_id = (int)get_optional_param('rules_id', 0);
 		$club_id = (int)get_optional_param('club_id', 0);
 		$league_id = (int)get_optional_param('league_id', 0);
+
+		$last_rule = (int)get_optional_param('last_edited_rule', -1);
+		if ($last_rule >= 0)
+		{
+			$_SESSION['last_edited_rule'] = $last_rule;
+		}
 		
 		Db::begin();
 		
@@ -168,6 +174,21 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete custom game rules in a club.');
 		$help->request_param('rules_id', 'Rules id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// set_last_rule
+	//-------------------------------------------------------------------------------------------------------
+	function set_last_rule_op()
+	{
+		$_SESSION['last_edited_rule'] = (int)get_required_param('rule');
+	}
+	
+	function set_last_rule_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_USER, 'Set last edited rule number for this session.');
+		$help->request_param('rule', 'Rule number.');
 		return $help;
 	}
 }
