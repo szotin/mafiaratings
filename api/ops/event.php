@@ -573,6 +573,8 @@ class ApiPage extends OpsApiPageBase
 			if ($update_flags & UPDATE_FLAG_CLUB)
 			{
 				Db::exec(get_label('club'), 'UPDATE clubs SET rules = ? WHERE id = ?', $rules_code, $club_id);
+				Db::exec(get_label('tournament'), 'UPDATE tournaments SET rules = ? WHERE club_id = ? AND start_time > UNIX_TIMESTAMP()', $rules_code, $club_id);
+				Db::exec(get_label('events'), 'UPDATE events SET rules = ? WHERE club_id = ? AND start_time > UNIX_TIMESTAMP()', $rules_code, $club_id);
 				if (isset($_profile->clubs[$club_id]))
 				{
 					$_profile->clubs[$club_id]->rules_code = $rules_code;

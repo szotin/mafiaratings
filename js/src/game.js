@@ -1383,13 +1383,33 @@ function gameChangeNomination(num, nomNum)
 	}
 }
 
+function gameCanLeaveOnRecord()
+{
+	if (isSet(game.time) && isSet(game.time.speaker))
+	{
+		let r = gameGetRule(/*RULES_ON_RECORD*/1);
+		switch (game.time.time)
+		{
+		case 'night kill speaking':
+			return r > /*RULES_ON_RECORD_NONE*/0;
+		case 'day kill speaking':
+			return r > /*RULES_ON_RECORD_NIGHT_KILLED*/1;
+		case 'speaking':
+			return r > /*RULES_ON_RECORD_KILLED*/2;
+		case 'voting':
+			return r > /*RULES_ON_RECORD_EXCEPT_SPLIT*/3;
+		}
+	}
+	return false;
+}
+
 // num is 1 to 10 or -1 to -10. Positive values mean that player is left as town, negative - as mafia.
 // The function toggles the onRecord state. If the player is already left on record with the same role, the record is removed.
 function gameSetOnRecord(num)
 {
-	let t = game.time.time;
-	if (isSet(game.time.speaker))
+	if (gameCanLeaveOnRecord())
 	{
+		let t = game.time.time;
 		let player = game.players[game.time.speaker - 1];
 		if (!isSet(player.record))
 		{
@@ -1427,6 +1447,12 @@ function gameSetOnRecord(num)
 					}
 				}
 				r.record.push(num);
+				
+				let max = gameGetRule(/*RULES_ON_RECORD_COUNT*/2);
+				while (max > 0 && r.record.length > max)
+				{
+					r.record.shift();
+				}
 				gameDirty();
 				return;
 			}
@@ -1445,9 +1471,9 @@ function gameSetOnRecord(num)
 // The function toggles the onRecord state. If the player is left as town, it toggles to mafia. If left as mafia - removes on record. If no record - leaves as town.
 function gameToggleOnRecord(num)
 {
-	let t = game.time.time;
-	if (isSet(game.time.speaker))
+	if (gameCanLeaveOnRecord())
 	{
+		let t = game.time.time;
 		let player = game.players[game.time.speaker - 1];
 		if (!isSet(player.record))
 		{
@@ -1485,6 +1511,12 @@ function gameToggleOnRecord(num)
 					}
 				}
 				r.record.push(num);
+				
+				let max = gameGetRule(/*RULES_ON_RECORD_COUNT*/2);
+				while (max > 0 && r.record.length > max)
+				{
+					r.record.shift();
+				}
 				gameDirty();
 				return;
 			}
@@ -1761,7 +1793,7 @@ function _gameCreateVoting(num)
 					}
 					a[game.time.votingRound] = noms[noms.length - 1];
 				}
-				else if (noms.length > (game.time.round > 0 ? 0 : 1))
+				else if (noms.length > 0)
 				{
 					player.voting[game.time.round] = noms[noms.length - 1];
 				}
@@ -2242,6 +2274,26 @@ function _gameLastSpeechExists()
 	return true; // yes last speech
 }
 
+function _gameCanStartVoting()
+{
+	if (gameIsVotingCanceled())
+	{
+		return false;
+	}
+	
+	let noms = gameGetNominees();
+	if (noms.length == 0 || (noms.length == 1 && game.time.round == 0))
+	{
+		return gameGetRule(/*RULES_FIRST_DAY_VOTING*/4) == /*RULES_FIRST_DAY_VOTING_TO_TALK*/1;
+	}
+	return true;
+}
+
+function _gameIsVotingToKill()
+{
+	return game.time.round >= 0 || gameGetRule(/*RULES_FIRST_DAY_VOTING*/4) != /*RULES_FIRST_DAY_VOTING_STANDARD*/1;
+}
+
 function gameNext()
 {
 	if (gameCanGoNext())
@@ -2290,22 +2342,13 @@ function gameNext()
 					}
 					if (game.time.speaker == first + 1)
 					{
-						let round = game.time.round;
-						if (gameIsVotingCanceled())
+						if (_gameCanStartVoting())
 						{
-							game.time = { round: round + 1, time: 'night start' };
+							game.time = { round: game.time.round, time: 'voting start' };
 						}
 						else
 						{
-							let noms = gameGetNominees();
-							if (noms.length == 0 || (noms.length == 1 && round == 0))
-							{
-								game.time = { round: round + 1, time: 'night start' };
-							}
-							else
-							{
-								game.time = { round: round, time: 'voting start' };
-							}
+							game.time = { round: game.time.round + 1, time: 'night start' };
 						}
 						break;
 					}
@@ -2313,23 +2356,14 @@ function gameNext()
 				while (isSet(game.players[game.time.speaker - 1].death));
 				break;
 			case 'voting start':
-				if (gameIsVotingCanceled())
+				if (_gameCanStartVoting())
 				{
-					game.time = { round: game.time.round + 1, time: 'night start' };
+					game.time = { round: game.time.round, time: 'voting', votingRound: 0, nominee: gameGetNominees()[0] };
+					_gameCreateVoting();
 				}
 				else
 				{
-					let noms = gameGetNominees();
-					let round = game.time.round;
-					if (noms.length == 0 || (noms.length == 1 && round == 0))
-					{
-						game.time = { round: round + 1, time: 'night start' };
-					}
-					else
-					{
-						game.time = { round: round, time: 'voting', votingRound: 0, nominee: noms[0] };
-						_gameCreateVoting();
-					}
+					game.time = { round: game.time.round + 1, time: 'night start' };
 				}
 				break;
 			case 'voting':
@@ -2340,8 +2374,8 @@ function gameNext()
 				else if (isSet(game.time.nominee))
 				{
 					let noms = gameGetNominees();
-					let i = noms.length;
-					for (i = 1; i < noms.length; ++i)
+					let i = 1;
+					for (; i < noms.length; ++i)
 					{
 						if (noms[i-1] == game.time.nominee)
 						{
@@ -2354,19 +2388,24 @@ function gameNext()
 						let winners = gameGetNominees(game.time.votingRound + 1);
 						if (winners.length == 1)
 						{
-							var player = game.players[winners[0] - 1];
+							let player = game.players[winners[0] - 1];
+							let r = gameGetRule(/*RULES_FIRST_DAY_VOTING*/4);
 							game.time = { time: 'day kill speaking', speaker: winners[0], round: game.time.round };
 							if (isSet(player.death) && (player.death.type == 'warnings' || player.death.type == 'giveUp' || player.death.type == 'kickOut'))
 							{
 								gameNext(); // skip this speech, go next - the player is dead already
 							}
-							else
+							else if (game.time.round > 0 || r == /*RULES_FIRST_DAY_VOTING_STANDARD*/0 || (r == /*RULES_FIRST_DAY_VOTING_BREAKING_TO_THEMSELF*/3 && player.voting[0] == winners[0]))
 							{
 								player.death = { type: 'day', round: game.time.round };
 								if (!_gameLastSpeechExists())
 								{
 									_gameCheckEnd();
 								}
+							}
+							else if (r == /*RULES_FIRST_DAY_VOTING_NO_BREAKING*/2)
+							{
+								game.time = { round: game.time.round + 1, time: 'night start' };
 							}
 						}
 						else if (game.time.votingRound > 0 && winners.length == noms.length)

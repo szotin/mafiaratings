@@ -1069,7 +1069,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			foreach ($log as $g)
 			{
-				if ($g->rules !== $rules_code)
+				if ($g != null && $g->rules !== $rules_code)
 				{
 					$g->rules = $rules_code;
 					$changed = true;
@@ -1106,6 +1106,8 @@ class ApiPage extends OpsApiPageBase
 			if ($update_flags & UPDATE_FLAG_CLUB)
 			{
 				Db::exec(get_label('club'), 'UPDATE clubs SET rules = ? WHERE id = ?', $rules_code, $game->clubId);
+				Db::exec(get_label('tournament'), 'UPDATE tournaments SET rules = ? WHERE club_id = ? AND start_time > UNIX_TIMESTAMP()', $rules_code, $game->clubId);
+				Db::exec(get_label('events'), 'UPDATE events SET rules = ? WHERE club_id = ? AND start_time > UNIX_TIMESTAMP()', $rules_code, $game->clubId);
 				if (isset($_profile->clubs[$game->clubId]))
 				{
 					$_profile->clubs[$game->clubId]->rules_code = $rules_code;

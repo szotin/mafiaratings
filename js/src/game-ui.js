@@ -38,23 +38,23 @@ function _uiGenerateNoms()
 
 function _uiShowOnRecordButtons()
 {
-	let player = game.players[game.time.speaker - 1];
-	let record = [];
-	if (isSet(player.record) && player.record.length > 0)
+	if (gameCanLeaveOnRecord())
 	{
-		let r = player.record[player.record.length - 1];
-		if (
-			r.time == game.time.time && r.round == game.time.round &&
-			(!isSet(game.time.votingRound) || !isSet(r.votingRound) || game.time.votingRound == r.votingRound))
+		let player = game.players[game.time.speaker - 1];
+		let record = [];
+		if (isSet(player.record) && player.record.length > 0)
 		{
-			record = r.record;
+			let r = player.record[player.record.length - 1];
+			if (
+				r.time == game.time.time && r.round == game.time.round &&
+				(!isSet(game.time.votingRound) || !isSet(r.votingRound) || game.time.votingRound == r.votingRound))
+			{
+				record = r.record;
+			}
 		}
-	}
-	game.players.forEach(function(p,i)
-	{
-		let n = i + 1;
-		if (n != game.time.speaker)
+		game.players.forEach(function(p,i)
 		{
+			let n = i + 1;
 			let checked = 0;
 			for (const r of record)
 			{
@@ -66,8 +66,8 @@ function _uiShowOnRecordButtons()
 			$('#controlx'+i).html(
 				'<button class="icon" onclick="gameSetOnRecord(' +  n + ')" title="' + l('RecordCiv', n) + '"' + (checked > 0 ? ' checked' : '') + '><img class="role-icon" src="images/civ.png"></button>' +
 				'<button class="icon" onclick="gameSetOnRecord(-' + n + ')" title="' + l('RecordMaf', n) + '"' + (checked < 0 ? ' checked' : '') + '><img class="role-icon" src="images/maf.png"></button>');
-		}
-	});
+		});
+	}
 }
 
 function _uiNominate(playerIndex)
@@ -481,8 +481,15 @@ function _uiRender(resetTimer)
 			}
 			$('#r' + (game.time.speaker - 1)).removeClass().addClass('day-mark');
 			
-			
-			status = l('DayKill', _uiPlayerTitle(game.time.speaker - 1), l('KilledMale')) + ' ' + l('LastSpeech', l('He'), l('his'));
+			status = l('DayKill', _uiPlayerTitle(game.time.speaker - 1), l('KilledMale')) + ' ';
+			if (isSet(game.players[game.time.speaker - 1].death))
+			{
+				status += l('LastSpeech', l('He'), l('his'));
+			}
+			else
+			{
+				status += l('Speech', l('He'), l('his'));
+			}
 			_uiShowOnRecordButtons();
 			break;
 		case 'night start':

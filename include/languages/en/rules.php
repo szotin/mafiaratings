@@ -114,7 +114,7 @@ return array
 				'Number of players on record',
 				array
 				(
-					'',
+					'Any number of players can be left «on record». These players cannot be changed in the rest of the speech.',
 					'Only one player can be left «on record». This player cannot be changed in the rest of the speech.',
 					'Up to two players can be left «on record». These players cannot be changed in the rest of the speech.',
 					'Up to three players can be left «on record». These players cannot be changed in the rest of the speech.',
@@ -123,11 +123,11 @@ return array
 					'Up to six players can be left «on record». These players cannot be changed in the rest of the speech.',
 					'Up to sevent players can be left «on record». These players cannot be changed in the rest of the speech.',
 					'Up to eight players can be left «on record». These players cannot be changed in the rest of the speech.',
-					'Any number of players can be left «on record». These players cannot be changed in the rest of the speech.',
+					'Up to nine players can be left «on record». These players cannot be changed in the rest of the speech.',
 				),
 				array
 				(
-					'0 players',
+					'any number',
 					'1 player',
 					'up to 2 players',
 					'up to 3 players',
@@ -288,7 +288,7 @@ return array
 			array // 8.17.
 			(
 				RULES_LEGACY,
-				'«Legacy»',
+				'«Legacy» of the first kill',
 				array
 				(
 					'The player «killed» the first «night» has the right to leave a «legacy». The moderator wakes them up at the end of the first night and asks them to guess three black players. If they guess two or three of them right, they can get additional tournament points according to the rules of the tournament they are playing. A player is not entitled to a «legacy» if two or more players have left the game on the first day.',
